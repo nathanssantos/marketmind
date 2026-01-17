@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import {
   calculateDynamicExposure,
   calculatePositionExposure,
@@ -162,7 +163,7 @@ export class RiskManagerService {
     } catch (error) {
       logger.error({
         walletId,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error validating new position');
       return {
         isValid: false,
@@ -203,7 +204,7 @@ export class RiskManagerService {
     } catch (error) {
       logger.error({
         walletId,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error getting current exposure');
       return {
         totalValue: 0,
@@ -242,7 +243,7 @@ export class RiskManagerService {
     } catch (error) {
       logger.error({
         walletId,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error getting daily PnL');
       return {
         pnl: 0,
@@ -315,7 +316,7 @@ export class RiskManagerService {
     } catch (error) {
       logger.error({
         walletId,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error checking drawdown');
       return {
         currentDrawdown: 0,

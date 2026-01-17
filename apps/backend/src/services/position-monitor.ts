@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import type { PendingOrderAction, PendingOrdersCheckResult } from '@marketmind/logger';
 import { calculateTotalFees } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
@@ -62,7 +63,7 @@ export class PositionMonitorService {
           await this.checkAllPositions();
         } catch (error) {
           logger.error({
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Error in position monitoring loop');
         }
         scheduleNext();
@@ -72,7 +73,7 @@ export class PositionMonitorService {
     this.checkAllPositions()
       .catch((error) => {
         logger.error({
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         }, 'Error in initial position check');
       })
       .finally(() => {
@@ -109,7 +110,7 @@ export class PositionMonitorService {
       }
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error updating trailing stops');
     }
 
@@ -120,7 +121,7 @@ export class PositionMonitorService {
         this.checkPositionGroup(groupKey, executions).catch(error => {
           logger.error({
             groupKey,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Error checking position group');
         })
       )
@@ -132,7 +133,7 @@ export class PositionMonitorService {
         await this.checkLiquidationRisk(futuresExecutions);
       } catch (error) {
         logger.error({
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         }, 'Error checking liquidation risk');
       }
     }
@@ -141,7 +142,7 @@ export class PositionMonitorService {
       await opportunityCostManagerService.checkAllPositions();
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error checking opportunity cost');
     }
   }
@@ -312,7 +313,7 @@ export class PositionMonitorService {
           side: execution.side,
           action: 'ERROR',
           limitPrice: execution.limitEntryPrice ? parseFloat(execution.limitEntryPrice) : null,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         });
       }
     }
@@ -654,7 +655,7 @@ export class PositionMonitorService {
       logger.error({
         executionId: execution.id,
         reason,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to execute exit');
       throw error;
     } finally {
@@ -777,7 +778,7 @@ export class PositionMonitorService {
       logger.error({
         symbol,
         marketType,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to get current price');
       throw error;
     }
@@ -804,7 +805,7 @@ export class PositionMonitorService {
       logger.error({
         symbol,
         price,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to update price cache');
     }
   }
@@ -822,7 +823,7 @@ export class PositionMonitorService {
     } catch (error) {
       logger.error({
         symbol,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to invalidate price cache');
     }
   }
@@ -1007,7 +1008,7 @@ export class PositionMonitorService {
       } catch (error) {
         logger.error({
           symbol,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         }, 'Error checking liquidation risk for symbol');
       }
     }

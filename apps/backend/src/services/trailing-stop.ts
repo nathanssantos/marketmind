@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
 import type { FibonacciProjectionData, Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
@@ -307,7 +308,7 @@ export class TrailingStopService {
       } catch (error) {
         logger.error({
           symbol,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         }, 'Error processing trailing stops for symbol');
       }
     }

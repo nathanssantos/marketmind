@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
@@ -418,7 +419,7 @@ export class PyramidingService {
       logger.warn({
         symbol,
         marketType,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to get current price for pyramiding, using entry price');
       currentPrice = entryPrice;
     }

@@ -22,6 +22,7 @@ import { getMarketCapDataService } from '../services/market-cap-data';
 import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { riskManagerService } from '../services/risk-manager';
 import { protectedProcedure, router } from '../trpc';
+import { serializeError } from '../utils/errors';
 import { getBtcTrendInfo } from '../utils/filters/btc-correlation-filter';
 import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
@@ -115,7 +116,7 @@ export const autoTradingRouter = router({
         useTrendFilter: z.boolean().optional(),
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2', '2.618']).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
         dynamicSymbolLimit: z.number().min(1).max(50).optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
@@ -974,7 +975,7 @@ export const autoTradingRouter = router({
           results.push({ symbol, success: true, fromRanking });
           return true;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          const errorMessage = serializeError(error);
           results.push({ symbol, success: false, error: errorMessage, fromRanking });
           log('❌ Failed to start watcher', { symbol, error: errorMessage, fromRanking });
           return false;
@@ -1259,7 +1260,7 @@ export const autoTradingRouter = router({
         result.watchersStopped = 1;
         log(`⏹️ Stopped all watchers for wallet`, { walletId: input.walletId });
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorMsg = serializeError(error);
         result.errors.push(`Failed to stop watchers: ${errorMsg}`);
         logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
       }
@@ -1289,7 +1290,7 @@ export const autoTradingRouter = router({
               result.algoOrdersCancelled++;
               log(`❌ Cancelled algo orders for ${symbol}`, { walletId: input.walletId, symbol });
             } catch (error) {
-              const errorMsg = error instanceof Error ? error.message : String(error);
+              const errorMsg = serializeError(error);
               if (!errorMsg.includes('No algo orders')) {
                 result.errors.push(`Failed to cancel algo orders for ${symbol}: ${errorMsg}`);
               }
@@ -1317,7 +1318,7 @@ export const autoTradingRouter = router({
                 exitPrice: closeResult.avgPrice,
               });
             } catch (error) {
-              const errorMsg = error instanceof Error ? error.message : String(error);
+              const errorMsg = serializeError(error);
               result.errors.push(`Failed to close position ${position.symbol}: ${errorMsg}`);
               logger.error(
                 { error: errorMsg, symbol: position.symbol },
@@ -1382,7 +1383,7 @@ export const autoTradingRouter = router({
             }
           }
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
+          const errorMsg = serializeError(error);
           result.errors.push(`Exchange operation failed: ${errorMsg}`);
           logger.error({ error: errorMsg }, '[EmergencyStop] Exchange operation failed');
         }

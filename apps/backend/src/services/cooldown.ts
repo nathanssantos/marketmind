@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { and, eq, lt } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeCooldown } from '../db/schema';
@@ -187,7 +188,7 @@ export class CooldownService {
       return { inCooldown: false };
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         strategyId,
         symbol,
         interval,
@@ -213,7 +214,7 @@ export class CooldownService {
       return count;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to cleanup expired cooldowns');
       return 0;
     }

@@ -1,3 +1,4 @@
+import { serializeError } from '../../../utils/errors';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -58,7 +59,7 @@ export class StrategyLoader {
             definitions.push(definition);
           }
         } catch (error) {
-          logger.error({ filePath, error: error instanceof Error ? error.message : String(error) }, 'Failed to load strategy');
+          logger.error({ filePath, error: serializeError(error) }, 'Failed to load strategy');
         }
       }
     }
@@ -233,7 +234,7 @@ export class StrategyLoader {
             const strategies = await this.loadAll();
             callback(strategies);
           } catch (error) {
-            logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Error reloading strategies');
+            logger.error({ error: serializeError(error) }, 'Error reloading strategies');
           }
         }
       );

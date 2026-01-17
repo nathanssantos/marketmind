@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -83,7 +84,7 @@ export class OpportunityCostManagerService {
           logger.error({
             executionId: execution.id,
             symbol: execution.symbol,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Error checking opportunity cost for position');
         }
       }
@@ -455,7 +456,7 @@ export class OpportunityCostManagerService {
       logger.error({
         symbol,
         marketType,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error fetching current price');
       return null;
     }

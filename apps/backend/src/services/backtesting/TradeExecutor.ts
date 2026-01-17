@@ -16,6 +16,7 @@ export interface TradeExecutorConfig {
   stopLossPercent?: number;
   takeProfitPercent?: number;
   tpCalculationMode?: 'default' | 'fibonacci';
+  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
 }
 
 export interface TradeStats {
@@ -144,11 +145,16 @@ export class TradeExecutor {
     const fib = setup.fibonacciProjection;
     if (!fib || !fib.levels || fib.levels.length === 0) return null;
 
-    const primaryLevelData = fib.levels.find(
-      (l: { level: number; price: number }) => Math.abs(l.level - fib.primaryLevel) < 0.001
+    const configLevel = this.config.fibonacciTargetLevel ?? 'auto';
+    const targetLevel = configLevel === 'auto'
+      ? fib.primaryLevel
+      : parseFloat(configLevel);
+
+    const targetLevelData = fib.levels.find(
+      (l: { level: number; price: number }) => Math.abs(l.level - targetLevel) < 0.001
     );
 
-    if (primaryLevelData) return primaryLevelData.price;
+    if (targetLevelData) return targetLevelData.price;
 
     const level1618 = fib.levels.find(
       (l: { level: number; price: number }) => Math.abs(l.level - 1.618) < 0.001

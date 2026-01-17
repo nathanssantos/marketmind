@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { createLogger } from '@marketmind/logger';
 import type { Interval } from '@marketmind/types';
 import { ABSOLUTE_MINIMUM_KLINES, REQUIRED_KLINES } from '../constants';
@@ -60,7 +61,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
         totalInDb: 0,
         gaps: 0,
         alreadyComplete: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: serializeError(err),
       };
     }
   }
@@ -91,7 +92,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
       alreadyComplete: result.alreadyComplete,
     };
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorMessage = serializeError(err);
     if (!silent) {
       log.error('❌ Failed to prefetch klines', { symbol, interval, marketType, error: errorMessage });
     }
@@ -205,7 +206,7 @@ export const checkKlineAvailability = async (
 
     return { hasSufficient: true, totalAvailable: result.totalInDb, required, apiExhausted };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorMessage = serializeError(error);
     if (!silent) log.error('❌ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
     return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
   }

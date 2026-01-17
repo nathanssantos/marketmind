@@ -18,6 +18,7 @@ import {
 } from '../db/schema';
 import { env } from '../env';
 import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
+import { serializeError } from '../utils/errors';
 import {
   ADX_FILTER,
   checkAdxCondition,
@@ -87,7 +88,7 @@ const log = (message: string, data?: Record<string, unknown>): void => {
     ensureLogDir();
     fs.appendFileSync(LOG_FILE, `${logLine}\n`);
   } catch (error) {
-    console.error('[Auto-Trading] Failed to write to log file:', error instanceof Error ? error.message : String(error));
+    console.error('[Auto-Trading] Failed to write to log file:', serializeError(error));
   }
 };
 
@@ -352,7 +353,7 @@ export class AutoTradingScheduler {
       } catch (error) {
         log('❌ [DynamicRotation] Rotation check failed', {
           stateKey,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         });
       } finally {
         this.isCheckingRotation.delete(stateKey);
@@ -546,9 +547,9 @@ export class AutoTradingScheduler {
       return result;
     } catch (error) {
       logBuffer.error('❌', 'Error processing watcher', {
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
-      return logBuffer.toResult('error', error instanceof Error ? error.message : String(error));
+      return logBuffer.toResult('error', serializeError(error));
     }
   }
 
@@ -793,7 +794,7 @@ export class AutoTradingScheduler {
 
     this.incrementBarsForOpenTrades(watcher.symbol, watcher.interval, parseFloat(lastCandle.close)).catch((error: unknown) => {
       logBuffer.warn('⚠️', 'Failed to increment bars for open trades', {
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     });
 
@@ -827,7 +828,7 @@ export class AutoTradingScheduler {
     } catch (error) {
       logBuffer.error('❌', 'Setup execution failed', {
         setup: setup.type,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
       return false;
     }
@@ -1611,7 +1612,7 @@ export class AutoTradingScheduler {
             });
           } catch (leverageError) {
             log('❌ Failed to configure leverage/margin, aborting entry', {
-              error: leverageError instanceof Error ? leverageError.message : String(leverageError),
+              error: serializeError(leverageError),
             });
             return;
           }
@@ -1728,7 +1729,7 @@ export class AutoTradingScheduler {
               }
             } catch (ocoError) {
               log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
-                error: ocoError instanceof Error ? ocoError.message : String(ocoError),
+                error: serializeError(ocoError),
               });
               try {
                 const slResult = await autoTradingService.createStopLossOrder(
@@ -1748,7 +1749,7 @@ export class AutoTradingScheduler {
                 log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
               } catch (slError) {
                 log('⚠️ Failed to place stop loss order', {
-                  error: slError instanceof Error ? slError.message : String(slError),
+                  error: serializeError(slError),
                 });
               }
               try {
@@ -1769,7 +1770,7 @@ export class AutoTradingScheduler {
                 log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
               } catch (tpError) {
                 log('⚠️ Failed to place take profit order', {
-                  error: tpError instanceof Error ? tpError.message : String(tpError),
+                  error: serializeError(tpError),
                 });
               }
             }
@@ -1792,13 +1793,13 @@ export class AutoTradingScheduler {
               log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLossAlgoId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
             } catch (slError) {
               log('⚠️ Failed to place stop loss order', {
-                error: slError instanceof Error ? slError.message : String(slError),
+                error: serializeError(slError),
               });
             }
           }
         } catch (orderError) {
           log('❌ Failed to execute Binance order', {
-            error: orderError instanceof Error ? orderError.message : String(orderError),
+            error: serializeError(orderError),
           });
           return;
         }
@@ -1894,7 +1895,7 @@ export class AutoTradingScheduler {
                 );
               } catch (pendingError) {
                 log('❌ Failed to create pending order', {
-                  error: pendingError instanceof Error ? pendingError.message : String(pendingError),
+                  error: serializeError(pendingError),
                 });
               }
 
@@ -1933,7 +1934,7 @@ export class AutoTradingScheduler {
           }
         } catch (priceError) {
           log('⚠️ Failed to get market price, using setup price with slippage', {
-            error: priceError instanceof Error ? priceError.message : String(priceError),
+            error: serializeError(priceError),
           });
         }
       }
@@ -2043,7 +2044,7 @@ export class AutoTradingScheduler {
       } catch (dbError) {
         logBuffer.error('❌', 'Failed to insert trade execution', {
           executionId,
-          error: dbError instanceof Error ? dbError.message : String(dbError),
+          error: serializeError(dbError),
         });
         throw dbError;
       }
@@ -2066,7 +2067,7 @@ export class AutoTradingScheduler {
     } catch (error) {
       logBuffer.error('❌', 'Error executing setup', {
         type: setup.type,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       });
     }
   }
@@ -2152,7 +2153,7 @@ export class AutoTradingScheduler {
         this.configCache.set(config.walletId, { data: config, timestamp: Date.now() });
         this.configCacheMetrics.preloads++;
       }
-      log(`📦 Pre-loaded ${configs.length} configs for ${walletIds.length} wallets`);
+      startupBuffer.setPreloadedConfigs(configs.length, walletIds.length);
     }
 
     const requiredKlines = calculateRequiredKlines();
@@ -2216,13 +2217,13 @@ export class AutoTradingScheduler {
           profileId: pw.profileId ?? undefined,
           isManual: pw.isManual,
           status: 'failed',
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         });
       }
     }
 
     const results = startupBuffer.getResults();
-    outputStartupResults(results.watchers, results.persistedCount, results.durationMs);
+    outputStartupResults(results.watchers, results.persistedCount, results.durationMs, results.preloadedConfigs, results.walletCount);
 
     await this.restoreRotationStates(persistedWatchers);
   }
@@ -2294,7 +2295,7 @@ export class AutoTradingScheduler {
         log('⚠️ [Startup] Failed to restore rotation', {
           walletId,
           interval: watcherInfo.interval,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         });
       }
     }
@@ -2303,7 +2304,7 @@ export class AutoTradingScheduler {
 
   private getFibonacciTargetPrice(
     setup: TradingSetup,
-    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' = 'auto'
+    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = 'auto'
   ): number | null {
     const fib = setup.fibonacciProjection;
     if (!fib || !fib.levels || fib.levels.length === 0) return null;

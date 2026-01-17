@@ -1,3 +1,4 @@
+import { serializeError } from '../../../utils/errors';
 
 import type {
   ComparisonOperator,
@@ -342,7 +343,7 @@ export class ConditionEvaluator {
       return evaluateTokens(tokens);
       
     } catch (error) {
-      logger.error({ expression, error: error instanceof Error ? error.message : String(error) }, 'Error evaluating calc expression');
+      logger.error({ expression, error: serializeError(error) }, 'Error evaluating calc expression');
       return null;
     }
   }

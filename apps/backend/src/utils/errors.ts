@@ -1,5 +1,22 @@
 import { TRPCError } from '@trpc/server';
 
+export const serializeError = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error === null || error === undefined) return 'Unknown error';
+  if (typeof error === 'object') {
+    const binanceError = error as { code?: number; msg?: string; message?: string };
+    if (binanceError.msg) return `[${binanceError.code ?? 'ERR'}] ${binanceError.msg}`;
+    if (binanceError.message) return binanceError.message;
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return Object.prototype.toString.call(error);
+    }
+  }
+  return String(error);
+};
+
 export const throwNotFound = (resource: string): never => {
   throw new TRPCError({
     code: 'NOT_FOUND',

@@ -6,6 +6,7 @@ import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcher
 import { loadMultiWatcherConfigFromAutoTrading, buildMultiWatcherConfigFromWatchers } from '../services/backtesting/configLoader';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
+import { serializeError } from '../utils/errors';
 import { generateEntityId } from '../utils/id';
 
 type CachedBacktestResult = Partial<BacktestResult> & { id: string; status: BacktestResult['status'] };
@@ -74,7 +75,7 @@ export const backtestRouter = router({
         trendFilterPeriod: z.number().min(1).optional(),
         useTrailingStop: z.boolean().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2', '2.618']).optional(),
         exposureMultiplier: z.number().min(0.1).max(10).optional(),
         leverage: z.number().min(1).max(125).optional(),
         cooldownMinutes: z.number().min(0).optional(),
@@ -170,7 +171,7 @@ export const backtestRouter = router({
       } catch (error) {
         logger.error({
           backtestId,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
           stack: error instanceof Error ? error.stack : undefined,
         }, 'Backtest failed');
 
@@ -280,7 +281,7 @@ export const backtestRouter = router({
         marketType: z.enum(['SPOT', 'FUTURES']).optional(),
         leverage: z.number().min(1).max(125).optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2']).optional(),
+        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2', '2.618']).optional(),
         useMtfFilter: z.boolean().optional(),
         useBtcCorrelationFilter: z.boolean().optional(),
         useMarketRegimeFilter: z.boolean().optional(),
@@ -411,7 +412,7 @@ export const backtestRouter = router({
         logger.error(
           {
             backtestId,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
             stack: error instanceof Error ? error.stack : undefined,
           },
           'Multi-watcher backtest failed'

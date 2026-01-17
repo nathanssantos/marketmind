@@ -437,7 +437,9 @@ export const createBatchResult = (
 export const formatStartupResults = (
   watchers: RestoredWatcherInfo[],
   persistedCount: number,
-  durationMs: number
+  durationMs: number,
+  preloadedConfigs = 0,
+  walletCount = 0
 ): string => {
   const lines: string[] = [];
 
@@ -457,8 +459,13 @@ export const formatStartupResults = (
     colorize(`> ${manualCount} manual`, 'cyan'),
     colorize(`* ${dynamicCount} dynamic`, 'magenta'),
   ];
+  const configParts = preloadedConfigs > 0 ? [
+    colorize(`📦 ${preloadedConfigs} configs`, 'dim'),
+    colorize(`${walletCount} wallets`, 'dim'),
+  ] : [];
   lines.push(createSummaryLine('#', summaryParts));
   lines.push(createSummaryLine('#', typeParts));
+  if (configParts.length > 0) lines.push(createSummaryLine('#', configParts));
 
   if (watchers.length > 0) {
     const watcherTable = createLogTable(
@@ -519,9 +526,11 @@ export const formatStartupResults = (
 export const outputStartupResults = (
   watchers: RestoredWatcherInfo[],
   persistedCount: number,
-  durationMs: number
+  durationMs: number,
+  preloadedConfigs = 0,
+  walletCount = 0
 ): void => {
-  const summary = formatStartupResults(watchers, persistedCount, durationMs);
+  const summary = formatStartupResults(watchers, persistedCount, durationMs, preloadedConfigs, walletCount);
   console.log(summary);
   writeToFile(`${summary}\n`);
 };

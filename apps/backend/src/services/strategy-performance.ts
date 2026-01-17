@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import type { NewStrategyPerformance, StrategyPerformance } from '../db/schema';
@@ -72,7 +73,7 @@ export class StrategyPerformanceService {
       return created ?? null;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         executionId,
       }, 'Failed to update strategy performance');
       return null;
@@ -233,7 +234,7 @@ export class StrategyPerformanceService {
       return perf ?? null;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         strategyId,
         symbol,
         interval,
@@ -249,7 +250,7 @@ export class StrategyPerformanceService {
       });
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to get all strategy performance');
       return [];
     }

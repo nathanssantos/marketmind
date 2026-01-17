@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import type { Wallet } from '../db/schema';
 import { createBinanceClient } from './binance-client';
 import { createBinanceFuturesClient, submitFuturesAlgoOrder, cancelFuturesAlgoOrder } from './binance-futures-client';
@@ -82,7 +83,7 @@ export class ExchangeTrailingStopService {
       return result as TrailingStopResult;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol: params.symbol,
       }, 'Failed to place exchange trailing stop');
       return null;
@@ -114,7 +115,7 @@ export class ExchangeTrailingStopService {
       return true;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol,
         orderId,
       }, 'Failed to cancel exchange trailing stop');
@@ -161,7 +162,7 @@ export class ExchangeTrailingStopService {
       };
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol: params.symbol,
       }, 'Failed to place futures exchange trailing stop');
       return null;
@@ -183,7 +184,7 @@ export class ExchangeTrailingStopService {
       return true;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         algoId,
       }, 'Failed to cancel futures exchange trailing stop');
       return false;

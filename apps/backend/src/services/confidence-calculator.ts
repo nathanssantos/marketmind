@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { calculateATR } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { logger } from './logger';
@@ -138,7 +139,7 @@ export class ConfidenceCalculator {
       return 0.85;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to calculate volatility factor');
       return 1.0;
     }

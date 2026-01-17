@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import type { Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from './binance-client';
 import { logger } from './logger';
@@ -103,7 +104,7 @@ export class OCOOrderService {
       };
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol,
         side,
         stopLoss,
@@ -139,7 +140,7 @@ export class OCOOrderService {
       return true;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol,
         orderListId,
       }, '[OCO] Failed to cancel order');
@@ -183,7 +184,7 @@ export class OCOOrderService {
       return ocoResult;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol: params.symbol,
       }, '[OCO] Failed to place order');
       return null;

@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import type { Interval, MarketType } from '@marketmind/types';
 import type { KlineInterval } from 'binance';
 import { WebsocketClient } from 'binance';
@@ -135,7 +136,7 @@ export class BinanceKlineStreamService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.client as any).on('error', (error: unknown) => {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Binance kline WebSocket error');
     });
 
@@ -182,7 +183,7 @@ export class BinanceKlineStreamService {
       logger.error({
         symbol,
         interval,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to subscribe to kline stream');
     }
   }
@@ -205,7 +206,7 @@ export class BinanceKlineStreamService {
           logger.error({
             symbol,
             interval,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Failed to unsubscribe from kline stream');
         }
       }
@@ -251,7 +252,7 @@ export class BinanceKlineStreamService {
       }
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error processing kline message');
     }
   }
@@ -271,7 +272,7 @@ export class BinanceKlineStreamService {
     } catch (error) {
       logger.error({
         symbol: update.symbol,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error processing kline update');
     }
   }
@@ -390,7 +391,7 @@ export class BinanceKlineStreamService {
       logger.error({
         symbol: update.symbol,
         interval: update.interval,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error persisting kline to database');
     }
   }
@@ -446,7 +447,7 @@ export class BinanceFuturesKlineStreamService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.client as any).on('error', (error: unknown) => {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Binance futures kline WebSocket error');
     });
 
@@ -494,7 +495,7 @@ export class BinanceFuturesKlineStreamService {
       logger.error({
         symbol,
         interval,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Failed to subscribe to futures kline stream');
     }
   }
@@ -517,7 +518,7 @@ export class BinanceFuturesKlineStreamService {
           logger.error({
             symbol,
             interval,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Failed to unsubscribe from futures kline stream');
         }
       }
@@ -559,7 +560,7 @@ export class BinanceFuturesKlineStreamService {
       }
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error processing futures kline message');
     }
   }
@@ -579,7 +580,7 @@ export class BinanceFuturesKlineStreamService {
     } catch (error) {
       logger.error({
         symbol: update.symbol,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error processing futures kline update');
     }
   }
@@ -698,7 +699,7 @@ export class BinanceFuturesKlineStreamService {
       logger.error({
         symbol: update.symbol,
         interval: update.interval,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error persisting futures kline to database');
     }
   }

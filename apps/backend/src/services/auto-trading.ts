@@ -6,6 +6,7 @@ import { VOLATILITY } from '../constants';
 import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
+import { serializeError } from '../utils/errors';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
 import { submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
@@ -192,7 +193,7 @@ export class AutoTradingService {
       return 1.0;
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         symbol,
         interval,
       }, 'Error calculating volatility adjustment');
@@ -418,7 +419,7 @@ export class AutoTradingService {
       };
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
         orderParams,
         walletType: wallet.walletType,
         marketType,
@@ -557,8 +558,18 @@ export class AutoTradingService {
     }
 
     const client = createBinanceFuturesClient(wallet);
-    await client.setLeverage({ symbol, leverage });
-    logger.info({ symbol, leverage }, 'Futures leverage set');
+    try {
+      await client.setLeverage({ symbol, leverage });
+      logger.info({ symbol, leverage }, 'Futures leverage set');
+    } catch (error) {
+      const errorMsg = serializeError(error);
+      if (errorMsg.includes('No need to change') || errorMsg.includes('leverage not changed')) {
+        logger.info({ symbol, leverage }, 'Leverage already set');
+        return;
+      }
+      logger.error({ symbol, leverage, error: errorMsg }, 'Failed to set futures leverage');
+      throw new Error(`Failed to set leverage for ${symbol}: ${errorMsg}`);
+    }
   }
 
   async setFuturesMarginType(

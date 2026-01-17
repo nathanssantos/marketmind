@@ -1,3 +1,4 @@
+import { serializeError } from '../utils/errors';
 import { WebsocketClient } from 'binance';
 import { eq, inArray } from 'drizzle-orm';
 import { WEBSOCKET_CONFIG } from '../constants';
@@ -41,7 +42,7 @@ export class BinancePriceStreamService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.client as any).on('error', (error: unknown) => {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Binance WebSocket error');
     });
 
@@ -119,7 +120,7 @@ export class BinancePriceStreamService {
       }
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error handling Binance message');
     }
   }
@@ -150,7 +151,7 @@ export class BinancePriceStreamService {
       logger.error({
         symbol: update.symbol,
         price: update.price,
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error processing price update');
     }
   }
@@ -217,7 +218,7 @@ export class BinancePriceStreamService {
       }
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error subscribing to active positions');
     }
   }
@@ -236,7 +237,7 @@ export class BinancePriceStreamService {
       this.subscribedSymbols.add(symbol);
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, `Failed to subscribe to ${symbol}`);
     }
   }
@@ -283,7 +284,7 @@ export class BinancePriceStreamService {
       }, 'Resubscription complete');
     } catch (error) {
       logger.error({
-        error: error instanceof Error ? error.message : String(error),
+        error: serializeError(error),
       }, 'Error during resubscription - falling back to spot');
 
       for (const symbol of symbols) {

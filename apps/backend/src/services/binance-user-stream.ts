@@ -286,7 +286,7 @@ export class BinanceUserStreamService {
             }, 'Opposite order cancelled');
           } catch (cancelError) {
             logger.error({
-              error: cancelError instanceof Error ? cancelError.message : String(cancelError),
+              error: serializeError(cancelError),
               orderToCancel,
             }, 'Failed to cancel opposite order');
           }

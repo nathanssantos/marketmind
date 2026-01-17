@@ -13,6 +13,7 @@ import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '
 import { cancelFuturesAlgoOrder, submitFuturesAlgoOrder } from '../services/binance-futures-client';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
+import { serializeError } from '../utils/errors';
 import { generateEntityId } from '../utils/id';
 
 export const tradingRouter = router({
@@ -659,7 +660,7 @@ export const tradingRouter = router({
         } catch (error) {
           logger.error({
             positionId: position.id,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Failed to execute Binance exit order for position');
 
           throw new TRPCError({
@@ -833,7 +834,7 @@ export const tradingRouter = router({
                 logger.warn({
                   orderId,
                   symbol: execution.symbol,
-                  error: error instanceof Error ? error.message : String(error),
+                  error: serializeError(error),
                 }, 'Failed to cancel Binance Futures order (may already be filled/cancelled)');
               }
             }
@@ -847,7 +848,7 @@ export const tradingRouter = router({
                 logger.warn({
                   orderId,
                   symbol: execution.symbol,
-                  error: error instanceof Error ? error.message : String(error),
+                  error: serializeError(error),
                 }, 'Failed to cancel Binance order (may already be filled/cancelled)');
               }
             }
@@ -959,7 +960,7 @@ export const tradingRouter = router({
         } catch (error) {
           logger.error({
             executionId: execution.id,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Failed to execute Binance exit order');
 
           throw new TRPCError({
@@ -1079,7 +1080,7 @@ export const tradingRouter = router({
               logger.warn({
                 orderId,
                 symbol: execution.symbol,
-                error: error instanceof Error ? error.message : String(error),
+                error: serializeError(error),
               }, 'Failed to cancel Binance Futures order (may already be filled/cancelled)');
             }
           }
@@ -1094,7 +1095,7 @@ export const tradingRouter = router({
               logger.warn({
                 orderId,
                 symbol: execution.symbol,
-                error: error instanceof Error ? error.message : String(error),
+                error: serializeError(error),
               }, 'Failed to cancel Binance order (may already be filled/cancelled)');
             }
           }
@@ -1107,7 +1108,7 @@ export const tradingRouter = router({
               logger.warn({
                 orderListId: execution.orderListId,
                 symbol: execution.symbol,
-                error: error instanceof Error ? error.message : String(error),
+                error: serializeError(error),
               }, 'Failed to cancel OCO order list (may already be executed)');
             }
           }
@@ -1279,7 +1280,7 @@ export const tradingRouter = router({
         } catch (error) {
           logger.error({
             executionId: execution.id,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           }, 'Failed to update SL/TP orders on Binance');
 
           throw new TRPCError({
@@ -1374,7 +1375,7 @@ export const tradingRouter = router({
 
           return prices;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorMessage = serializeError(error);
           const isRetryable = errorMessage.includes('ETIMEDOUT') ||
             errorMessage.includes('ECONNRESET') ||
             errorMessage.includes('ENOTFOUND') ||
@@ -1398,7 +1399,7 @@ export const tradingRouter = router({
       try {
         return await fetchPrices(1);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage = serializeError(error);
         logger.error({
           errorMessage,
           symbols: input.symbols,

@@ -197,7 +197,7 @@ export class BinanceFuturesUserStreamService {
         logger.error(
           {
             walletId,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           },
           '[FuturesUserStream] Failed to sync wallet balance'
         );
@@ -224,7 +224,7 @@ export class BinanceFuturesUserStreamService {
       }
     } catch (error) {
       logger.error(
-        { error: error instanceof Error ? error.message : String(error) },
+        { error: serializeError(error) },
         '[FuturesUserStream] Error subscribing active wallets'
       );
     }
@@ -259,7 +259,7 @@ export class BinanceFuturesUserStreamService {
         logger.error(
           {
             walletId: wallet.id,
-            error: error instanceof Error ? error.message : String(error),
+            error: serializeError(error),
           },
           '[FuturesUserStream] WebSocket exception'
         );
@@ -288,7 +288,7 @@ export class BinanceFuturesUserStreamService {
             logger.error(
               {
                 walletId: wallet.id,
-                error: syncError instanceof Error ? syncError.message : String(syncError),
+                error: serializeError(syncError),
               },
               '[FuturesUserStream] Post-reconnect sync failed'
             );
@@ -306,7 +306,7 @@ export class BinanceFuturesUserStreamService {
       logger.error(
         {
           walletId: wallet.id,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         },
         '[FuturesUserStream] Failed to subscribe'
       );
@@ -345,7 +345,7 @@ export class BinanceFuturesUserStreamService {
       logger.error(
         {
           walletId,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         },
         '[FuturesUserStream] Error handling message'
       );
@@ -514,7 +514,7 @@ export class BinanceFuturesUserStreamService {
                 '[FuturesUserStream] Opposite order cancelled'
               );
             } catch (cancelError) {
-              const errorMessage = cancelError instanceof Error ? cancelError.message : String(cancelError);
+              const errorMessage = serializeError(cancelError);
               if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist')) {
                 cancelSuccess = true;
                 logger.info(
@@ -877,7 +877,7 @@ export class BinanceFuturesUserStreamService {
                 '[FuturesUserStream] Opposite algo order cancelled'
               );
             } catch (cancelError) {
-              const errorMessage = cancelError instanceof Error ? cancelError.message : String(cancelError);
+              const errorMessage = serializeError(cancelError);
               if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
                 cancelSuccess = true;
                 logger.info(
@@ -913,7 +913,7 @@ export class BinanceFuturesUserStreamService {
         {
           walletId,
           algoId,
-          error: error instanceof Error ? error.message : String(error),
+          error: serializeError(error),
         },
         '[FuturesUserStream] Error handling algo order update'
       );

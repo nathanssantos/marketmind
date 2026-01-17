@@ -96,7 +96,7 @@ export class PositionSyncService {
         } else {
           const wallet = liveWallets[syncResults.indexOf(settledResult)];
           if (!wallet) continue;
-          const errorMsg = settledResult.reason instanceof Error ? settledResult.reason.message : String(settledResult.reason);
+          const errorMsg = serializeError(settledResult.reason);
           results.push({
             walletId: wallet.id,
             synced: false,
@@ -137,7 +137,7 @@ export class PositionSyncService {
       outputPositionSyncResults(syncResult);
     } catch (error) {
       logger.error(
-        { error: error instanceof Error ? error.message : String(error) },
+        { error: serializeError(error) },
         '[PositionSync] Failed to sync wallets'
       );
     }
