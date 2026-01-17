@@ -7,7 +7,7 @@ import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtu
 
 vi.mock('../../services/price-cache', () => ({
   priceCache: {
-    get: vi.fn().mockResolvedValue(50000),
+    fetchPrice: vi.fn().mockResolvedValue(50000),
   },
 }));
 
