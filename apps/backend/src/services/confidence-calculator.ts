@@ -57,6 +57,41 @@ export class ConfidenceCalculator {
       final: finalConfidence,
     };
 
+    if (lossesPenalty < 0.9) {
+      logger.warn({
+        symbol,
+        strategyId,
+        consecutiveLosses: performance?.currentConsecutiveLosses,
+        penalty: lossesPenalty,
+        adjustedConfidence: finalConfidence.toFixed(1),
+      }, '[Confidence] Consecutive losses penalty applied');
+    }
+
+    if (perfFactor < 0.8 && performance && performance.totalTrades >= 20) {
+      logger.warn({
+        symbol,
+        strategyId,
+        winRate: performance.winRate,
+        avgRr: performance.avgRr,
+        perfFactor,
+        adjustedConfidence: finalConfidence.toFixed(1),
+      }, '[Confidence] Poor strategy performance penalty applied');
+    }
+
+    logger.debug({
+      symbol,
+      strategyId,
+      interval,
+      factors: {
+        base: baseConfidence.toFixed(1),
+        perf: perfFactor.toFixed(2),
+        vol: volatilityFactor.toFixed(2),
+        volume: volumeFactor.toFixed(2),
+        losses: lossesPenalty.toFixed(2),
+      },
+      final: finalConfidence.toFixed(1),
+    }, '[Confidence] Calculation complete');
+
     return factors;
   }
 

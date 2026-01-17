@@ -352,7 +352,7 @@ export class RiskManagerService {
           currentDrawdown: drawdownCheck.currentDrawdown.toFixed(2),
           maxDrawdown: maxDrawdownPercent,
         },
-        '[RiskManager] ⚠️ Max drawdown exceeded - blocking new positions'
+        '[RiskManager] Max drawdown exceeded - blocking new positions'
       );
 
       return {

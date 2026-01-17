@@ -414,6 +414,15 @@ export class TrailingStopService {
           useBnbDiscount,
         };
 
+        logger.debug({
+          symbol,
+          interval,
+          atrPercent: atrPercent.toFixed(2),
+          volatilityLevel: profile.level,
+          atrMultiplier: profile.atrMultiplier,
+          breakevenThreshold: (profile.breakevenThreshold * 100).toFixed(2),
+          minTrailingDistance: (profile.minTrailingDistance * 100).toFixed(3),
+        }, '[TrailingStop] Volatility-based profile applied');
       }
 
       for (const execution of groupExecutions) {

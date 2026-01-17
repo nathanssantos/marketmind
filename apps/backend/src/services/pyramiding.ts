@@ -159,6 +159,12 @@ export class PyramidingService {
     }
 
     if (openExecutions.length >= pyramidConfig.maxEntries) {
+      logger.debug({
+        symbol,
+        direction,
+        currentEntries: openExecutions.length,
+        maxEntries: pyramidConfig.maxEntries,
+      }, '[Pyramiding] Rejected: maximum entries reached');
       return {
         canPyramid: false,
         reason: `Maximum entries reached (${pyramidConfig.maxEntries})`,
@@ -176,6 +182,12 @@ export class PyramidingService {
       : (avgEntryPrice - currentPrice) / avgEntryPrice;
 
     if (profitPercent < pyramidConfig.profitThreshold) {
+      logger.debug({
+        symbol,
+        direction,
+        currentProfit: (profitPercent * 100).toFixed(2),
+        requiredProfit: (pyramidConfig.profitThreshold * 100).toFixed(2),
+      }, '[Pyramiding] Rejected: insufficient profit');
       return {
         canPyramid: false,
         reason: `Position not in sufficient profit (${(profitPercent * 100).toFixed(2)}% < ${(pyramidConfig.profitThreshold * 100).toFixed(2)}%)`,
@@ -240,7 +252,7 @@ export class PyramidingService {
     const totalExposure = calculateTotalExposure(openExecutions) + scaledSize * currentPrice;
     const maxPositionSize = parseFloat(tradingConfig.maxPositionSize);
 
-    return {
+    const result = {
       canPyramid: true,
       reason: 'Position eligible for pyramid entry',
       suggestedSize: roundQuantity(scaledSize),
@@ -249,6 +261,19 @@ export class PyramidingService {
       profitPercent,
       exposurePercent: (totalExposure / maxPositionSize) * 100,
     };
+
+    logger.info({
+      symbol,
+      direction,
+      entryNumber: openExecutions.length + 1,
+      suggestedSize: result.suggestedSize,
+      profitPercent: (profitPercent * 100).toFixed(2),
+      exposurePercent: result.exposurePercent.toFixed(1),
+      avgEntryPrice: avgEntryPrice.toFixed(6),
+      currentPrice,
+    }, '[Pyramiding] Entry approved');
+
+    return result;
   }
 
   async calculateDynamicPositionSize(
@@ -370,6 +395,12 @@ export class PyramidingService {
     const remainingCapacity = maxTotalExposure - currentExposure;
 
     if (remainingCapacity <= 0) {
+      logger.info({
+        symbol,
+        direction,
+        currentExposure: currentExposure.toFixed(2),
+        maxExposure: maxTotalExposure.toFixed(2),
+      }, '[Pyramiding] Maximum exposure reached');
       return {
         quantity: 0,
         sizePercent: 0,

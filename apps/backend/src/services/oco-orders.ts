@@ -94,7 +94,7 @@ export class OCOOrderService {
         stopLoss,
         takeProfit,
         quantity,
-      }, '✅ OCO exit orders placed successfully');
+      }, '[OCO] Exit orders placed successfully');
 
       return {
         orderListId: ocoResult.orderListId,
@@ -109,7 +109,7 @@ export class OCOOrderService {
         stopLoss,
         takeProfit,
         quantity,
-      }, '❌ Failed to place OCO exit orders');
+      }, '[OCO] Failed to place exit orders');
       return null;
     }
   }
@@ -134,7 +134,7 @@ export class OCOOrderService {
       logger.info({
         symbol,
         orderListId,
-      }, '✅ OCO order cancelled');
+      }, '[OCO] Order cancelled');
 
       return true;
     } catch (error) {
@@ -142,7 +142,7 @@ export class OCOOrderService {
         error: error instanceof Error ? error.message : String(error),
         symbol,
         orderListId,
-      }, '❌ Failed to cancel OCO order');
+      }, '[OCO] Failed to cancel order');
       return false;
     }
   }
@@ -178,14 +178,14 @@ export class OCOOrderService {
         symbol: params.symbol,
         orderListId: ocoResult.orderListId,
         orders: ocoResult.orders?.length ?? 0,
-      }, '✅ OCO order placed successfully');
+      }, '[OCO] Order placed successfully');
 
       return ocoResult;
     } catch (error) {
       logger.error({
         error: error instanceof Error ? error.message : String(error),
         symbol: params.symbol,
-      }, '❌ Failed to place OCO order');
+      }, '[OCO] Failed to place order');
       return null;
     }
   }

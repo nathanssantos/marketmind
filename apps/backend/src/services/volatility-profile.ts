@@ -1,5 +1,6 @@
 import type { MarketType, VolatilityLevel, VolatilityProfile } from '@marketmind/types';
 import { BINANCE_FEES, applyBnbDiscount } from '@marketmind/types';
+import { logger } from './logger';
 
 export const calculateATRPercent = (atr: number, price: number): number => {
   if (price <= 0) return 0;
@@ -31,8 +32,10 @@ export const getVolatilityProfile = (
   const { marketType = 'SPOT', useBnbDiscount = false } = options;
   const baseFees = calculateBaseFeesThreshold(marketType, useBnbDiscount);
 
+  let profile: VolatilityProfile;
+
   if (atrPercent < 1.0) {
-    return {
+    profile = {
       level: 'LOW' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 2.0,
@@ -40,9 +43,8 @@ export const getVolatilityProfile = (
       feesThreshold: baseFees,
       minTrailingDistance: 0.003,
     };
-  }
-  if (atrPercent < 2.0) {
-    return {
+  } else if (atrPercent < 2.0) {
+    profile = {
       level: 'MEDIUM' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 2.5,
@@ -50,9 +52,8 @@ export const getVolatilityProfile = (
       feesThreshold: baseFees + 0.005,
       minTrailingDistance: 0.004,
     };
-  }
-  if (atrPercent < 3.0) {
-    return {
+  } else if (atrPercent < 3.0) {
+    profile = {
       level: 'HIGH' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 3.0,
@@ -60,9 +61,8 @@ export const getVolatilityProfile = (
       feesThreshold: baseFees + 0.01,
       minTrailingDistance: 0.005,
     };
-  }
-  if (atrPercent < 4.0) {
-    return {
+  } else if (atrPercent < 4.0) {
+    profile = {
       level: 'VERY_HIGH' as VolatilityLevel,
       atrPercent,
       atrMultiplier: 3.5,
@@ -70,15 +70,29 @@ export const getVolatilityProfile = (
       feesThreshold: baseFees + 0.015,
       minTrailingDistance: 0.006,
     };
+  } else {
+    profile = {
+      level: 'EXTREME' as VolatilityLevel,
+      atrPercent,
+      atrMultiplier: Math.min(5.0, 4.0 + (atrPercent - 4) * 0.25),
+      breakevenThreshold: 0.03,
+      feesThreshold: baseFees + 0.02,
+      minTrailingDistance: 0.007,
+    };
   }
-  return {
-    level: 'EXTREME' as VolatilityLevel,
-    atrPercent,
-    atrMultiplier: Math.min(5.0, 4.0 + (atrPercent - 4) * 0.25),
-    breakevenThreshold: 0.03,
-    feesThreshold: baseFees + 0.02,
-    minTrailingDistance: 0.007,
-  };
+
+  if (profile.level !== 'LOW' && profile.level !== 'MEDIUM') {
+    logger.debug({
+      level: profile.level,
+      atrPercent: atrPercent.toFixed(2),
+      atrMultiplier: profile.atrMultiplier.toFixed(2),
+      breakevenThreshold: (profile.breakevenThreshold * 100).toFixed(2),
+      minTrailingDistance: (profile.minTrailingDistance * 100).toFixed(3),
+      marketType,
+    }, '[VolatilityProfile] Elevated volatility level selected');
+  }
+
+  return profile;
 };
 
 export const getVolatilityAdjustedMultiplier = (

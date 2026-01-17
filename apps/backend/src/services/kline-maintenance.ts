@@ -14,7 +14,7 @@ import { klines, pairMaintenanceLog } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { binanceKlineStreamService, binanceFuturesKlineStreamService } from './binance-kline-stream';
 import { KlineValidator } from './kline-validator';
-import { logger } from './logger';
+import { logger, serializeError } from './logger';
 import type { OHLCMismatchEntry, ReconnectionValidationResult } from '@marketmind/logger';
 import {
   MaintenanceLogBuffer,
@@ -364,8 +364,8 @@ class KlineMaintenance {
           pairs.push({ symbol: sub.symbol, interval: sub.interval as Interval, marketType: 'FUTURES' });
         }
       }
-    } catch {
-      // Services may not be initialized yet at startup
+    } catch (error) {
+      logger.debug({ error: serializeError(error) }, '[KlineMaintenance] Stream services not available (expected during startup)');
     }
 
     return pairs;
@@ -623,7 +623,11 @@ class KlineMaintenance {
         takerBuyBaseVolume: k[9],
         takerBuyQuoteVolume: k[10],
       };
-    } catch {
+    } catch (error) {
+      logger.warn(
+        { symbol, interval, timestamp, marketType, error: serializeError(error) },
+        '[KlineMaintenance] Failed to fetch kline from Binance API'
+      );
       return null;
     }
   }

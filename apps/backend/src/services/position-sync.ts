@@ -5,7 +5,7 @@ import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceFuturesClient, isPaperWallet, getPositions } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
-import { logger } from './logger';
+import { logger, serializeError } from './logger';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -223,8 +223,11 @@ export class PositionSyncService {
 
               result.changes.balanceUpdated = true;
             }
-          } catch {
-            // Price fetch failed - continue without PnL calculation
+          } catch (error) {
+            logger.warn(
+              { walletId: wallet.id, symbol: dbPosition.symbol, error: serializeError(error) },
+              '[PositionSync] Failed to fetch mark price for orphaned position PnL calculation'
+            );
           }
 
           result.detailedOrphaned?.push({
@@ -343,8 +346,13 @@ export class PositionSyncService {
         }
       }
     } catch (error) {
+      const errorMsg = serializeError(error);
       result.synced = false;
-      result.errors.push(error instanceof Error ? error.message : String(error));
+      result.errors.push(errorMsg);
+      logger.error(
+        { walletId: wallet.id, walletName: wallet.name, error: errorMsg },
+        '[PositionSync] Failed to sync wallet positions'
+      );
     }
 
     return result;

@@ -563,7 +563,7 @@ export class PositionMonitorService {
         pnl,
         oldBalance: currentBalance,
         newBalance,
-      }, '💰 Wallet balance updated after position exit');
+      }, '[PositionMonitor] Wallet balance updated after position exit');
 
       await db
         .update(tradeExecutions)
@@ -593,8 +593,7 @@ export class PositionMonitorService {
         pnlPercent: adjustedPnlPercent.toFixed(2),
         newBalance: newBalance.toFixed(2),
         isPaperTrading: isPaperWallet(wallet),
-        message: `Posição fechada automaticamente: ${reason === 'STOP_LOSS' ? 'Stop Loss atingido' : 'Take Profit atingido'}`,
-      }, '🤖 [ALGORITHM] Position closed automatically');
+      }, '[PositionMonitor] Position closed automatically');
 
       const wsService = getWebSocketService();
       if (wsService) {
