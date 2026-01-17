@@ -54,6 +54,7 @@ export const WatcherManager = () => {
   const [tpModeExpanded, setTpModeExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [opportunityCostExpanded, setOpportunityCostExpanded] = useState(false);
+  const [pyramidingExpanded, setPyramidingExpanded] = useState(false);
   const [watchersExpanded, setWatchersExpanded] = useState(true);
   const [dynamicSelectionExpanded, setDynamicSelectionExpanded] = useState(false);
   const [quickStartCount, setQuickStartCount] = useState(10);
@@ -1154,6 +1155,247 @@ export const WatcherManager = () => {
                           </Flex>
                         </Box>
                       </Grid>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Stack>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Box>
+
+      {/* Pyramiding Settings */}
+      <Box borderWidth={1} borderRadius="lg" overflow="hidden">
+        <Flex
+          p={4}
+          bg="bg.subtle"
+          cursor="pointer"
+          onClick={() => setPyramidingExpanded(!pyramidingExpanded)}
+          justify="space-between"
+          align="center"
+        >
+          <HStack gap={3}>
+            <Box p={2} bg="purple.500/10" borderRadius="md">
+              <LuChartBar size={20} color="var(--chakra-colors-purple-500)" />
+            </Box>
+            <Box>
+              <HStack gap={2}>
+                <Text fontWeight="semibold">
+                  {t('settings.algorithmicAutoTrading.pyramiding.title')}
+                </Text>
+                {config?.pyramidingEnabled && (
+                  <Box px={2} py={0.5} bg="purple.500/20" borderRadius="full">
+                    <Text fontSize="xs" color="purple.500" fontWeight="medium">
+                      {config.pyramidingMode?.toUpperCase()}
+                    </Text>
+                  </Box>
+                )}
+              </HStack>
+              <Text fontSize="sm" color="fg.muted">
+                {t('settings.algorithmicAutoTrading.pyramiding.description')}
+              </Text>
+            </Box>
+          </HStack>
+          {pyramidingExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
+        </Flex>
+        <Collapsible.Root open={pyramidingExpanded}>
+          <Collapsible.Content>
+            <Stack p={4} gap={4}>
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.pyramiding.enable')}
+                description={t('settings.algorithmicAutoTrading.pyramiding.enableDescription')}
+                checked={config?.pyramidingEnabled ?? false}
+                onChange={(value) => {
+                  if (!walletId) return;
+                  updateConfig.mutate({ walletId, pyramidingEnabled: value });
+                }}
+                disabled={updateConfig.isPending}
+              />
+
+              {config?.pyramidingEnabled && (
+                <>
+                  <Box p={3} bg="bg.muted" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      {t('settings.algorithmicAutoTrading.pyramiding.mode')}
+                    </Text>
+                    <RadioGroup
+                      value={config?.pyramidingMode ?? 'static'}
+                      onValueChange={(e) => {
+                        if (!walletId) return;
+                        updateConfig.mutate({
+                          walletId,
+                          pyramidingMode: e.value as 'static' | 'dynamic' | 'fibonacci',
+                        });
+                      }}
+                    >
+                      <Stack gap={2}>
+                        <Radio value="static">
+                          <Box>
+                            <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.modeStatic')}</Text>
+                            <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.modeStaticDesc')}</Text>
+                          </Box>
+                        </Radio>
+                        <Radio value="dynamic">
+                          <Box>
+                            <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.modeDynamic')}</Text>
+                            <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.modeDynamicDesc')}</Text>
+                          </Box>
+                        </Radio>
+                        <Radio value="fibonacci">
+                          <Box>
+                            <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.modeFibonacci')}</Text>
+                            <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.modeFibonacciDesc')}</Text>
+                          </Box>
+                        </Radio>
+                      </Stack>
+                    </RadioGroup>
+                  </Box>
+
+                  <Grid templateColumns="1fr 1fr" gap={4}>
+                    <Box p={3} bg="bg.muted" borderRadius="md">
+                      <Text fontSize="sm" fontWeight="medium" mb={2}>
+                        {t('settings.algorithmicAutoTrading.pyramiding.maxEntries')}
+                      </Text>
+                      <NumberInput
+                        min={2}
+                        max={10}
+                        value={String(config?.maxPyramidEntries ?? 5)}
+                        onValueChange={(e) => {
+                          if (!walletId) return;
+                          const value = parseInt(e.value, 10);
+                          if (!isNaN(value) && value >= 2 && value <= 10) {
+                            updateConfig.mutate({ walletId, maxPyramidEntries: value });
+                          }
+                        }}
+                        size="sm"
+                      />
+                    </Box>
+
+                    <Box p={3} bg="bg.muted" borderRadius="md">
+                      <Text fontSize="sm" fontWeight="medium" mb={2}>
+                        {t('settings.algorithmicAutoTrading.pyramiding.scaleFactor')}
+                      </Text>
+                      <Flex gap={2} align="center">
+                        <NumberInput
+                          min={0.1}
+                          max={1}
+                          step={0.05}
+                          value={config?.pyramidScaleFactor ?? '0.80'}
+                          onValueChange={(e) => {
+                            if (!walletId) return;
+                            const value = parseFloat(e.value);
+                            if (!isNaN(value) && value >= 0.1 && value <= 1) {
+                              updateConfig.mutate({ walletId, pyramidScaleFactor: value.toFixed(2) });
+                            }
+                          }}
+                          size="sm"
+                          w="100px"
+                        />
+                        <Text fontSize="sm" color="fg.muted">x</Text>
+                      </Flex>
+                    </Box>
+                  </Grid>
+
+                  {config?.pyramidingMode === 'dynamic' && (
+                    <Box p={3} bg="purple.500/5" borderRadius="md" borderWidth={1} borderColor="purple.500/20">
+                      <Text fontSize="sm" fontWeight="medium" mb={3} color="purple.500">
+                        {t('settings.algorithmicAutoTrading.pyramiding.dynamicIndicators')}
+                      </Text>
+                      <Stack gap={3}>
+                        <FilterToggle
+                          label={t('settings.algorithmicAutoTrading.pyramiding.useAdx')}
+                          description={t('settings.algorithmicAutoTrading.pyramiding.useAdxDesc')}
+                          checked={config?.pyramidUseAdx ?? true}
+                          onChange={(value) => handleFilterToggle('pyramidUseAdx', value)}
+                          disabled={updateConfig.isPending}
+                        />
+                        {config?.pyramidUseAdx && (
+                          <Box ml={4}>
+                            <Text fontSize="xs" color="fg.muted" mb={1}>
+                              {t('settings.algorithmicAutoTrading.pyramiding.adxThreshold')}
+                            </Text>
+                            <NumberInput
+                              min={15}
+                              max={50}
+                              value={String(config?.pyramidAdxThreshold ?? 25)}
+                              onValueChange={(e) => {
+                                if (!walletId) return;
+                                const value = parseInt(e.value, 10);
+                                if (!isNaN(value) && value >= 15 && value <= 50) {
+                                  updateConfig.mutate({ walletId, pyramidAdxThreshold: value });
+                                }
+                              }}
+                              size="sm"
+                              w="80px"
+                            />
+                          </Box>
+                        )}
+                        <FilterToggle
+                          label={t('settings.algorithmicAutoTrading.pyramiding.useAtr')}
+                          description={t('settings.algorithmicAutoTrading.pyramiding.useAtrDesc')}
+                          checked={config?.pyramidUseAtr ?? true}
+                          onChange={(value) => handleFilterToggle('pyramidUseAtr', value)}
+                          disabled={updateConfig.isPending}
+                        />
+                        <FilterToggle
+                          label={t('settings.algorithmicAutoTrading.pyramiding.useRsi')}
+                          description={t('settings.algorithmicAutoTrading.pyramiding.useRsiDesc')}
+                          checked={config?.pyramidUseRsi ?? false}
+                          onChange={(value) => handleFilterToggle('pyramidUseRsi', value)}
+                          disabled={updateConfig.isPending}
+                        />
+                        <FilterToggle
+                          label={t('settings.algorithmicAutoTrading.pyramiding.leverageAware')}
+                          description={t('settings.algorithmicAutoTrading.pyramiding.leverageAwareDesc')}
+                          checked={config?.leverageAwarePyramid ?? true}
+                          onChange={(value) => handleFilterToggle('leverageAwarePyramid', value)}
+                          disabled={updateConfig.isPending}
+                        />
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {config?.pyramidingMode === 'fibonacci' && (
+                    <Box p={3} bg="orange.500/5" borderRadius="md" borderWidth={1} borderColor="orange.500/20">
+                      <Text fontSize="sm" fontWeight="medium" mb={2} color="orange.500">
+                        {t('settings.algorithmicAutoTrading.pyramiding.fiboLevels')}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted" mb={3}>
+                        {t('settings.algorithmicAutoTrading.pyramiding.fiboLevelsDesc')}
+                      </Text>
+                      <Flex gap={2} flexWrap="wrap">
+                        {['1', '1.272', '1.618', '2', '2.618'].map((level) => {
+                          const enabledLevels: string[] = (() => {
+                            try {
+                              return JSON.parse(config?.pyramidFiboLevels ?? '["1", "1.618"]');
+                            } catch {
+                              return ['1', '1.618'];
+                            }
+                          })();
+                          const isEnabled = enabledLevels.includes(level);
+                          return (
+                            <Button
+                              key={level}
+                              size="sm"
+                              variant={isEnabled ? 'solid' : 'outline'}
+                              colorPalette={isEnabled ? 'orange' : 'gray'}
+                              onClick={() => {
+                                if (!walletId) return;
+                                const newLevels = isEnabled
+                                  ? enabledLevels.filter((l) => l !== level)
+                                  : [...enabledLevels, level];
+                                if (newLevels.length === 0) return;
+                                updateConfig.mutate({
+                                  walletId,
+                                  pyramidFiboLevels: JSON.stringify(newLevels.sort((a, b) => parseFloat(a) - parseFloat(b))),
+                                });
+                              }}
+                            >
+                              {level}x
+                            </Button>
+                          );
+                        })}
+                      </Flex>
                     </Box>
                   )}
                 </>

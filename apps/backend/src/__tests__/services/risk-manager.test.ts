@@ -2,18 +2,18 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { autoTradingConfig, tradeExecutions, wallets } from '../../db/schema';
 import {
-    RiskManagerService,
     calculateDrawdownPercent,
     calculateExposureUtilization,
     calculateMaxDailyLoss,
     calculateMaxPositionValue,
     calculateMaxTotalExposure,
     calculatePositionExposure,
+    RiskManagerService,
     validateOrderSizePure,
     type PositionLike,
 } from '../../services/risk-manager';
 import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestUser, createTestWallet } from '../helpers/test-fixtures';
+import { createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG } from '../helpers/test-fixtures';
 
 describe('Risk Manager - Pure Utility Functions', () => {
   describe('calculatePositionExposure', () => {
@@ -189,6 +189,7 @@ describe('RiskManagerService', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -290,6 +291,7 @@ describe('RiskManagerService', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -354,6 +356,7 @@ describe('RiskManagerService', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -418,6 +421,7 @@ describe('RiskManagerService', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -507,6 +511,7 @@ describe('RiskManagerService', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

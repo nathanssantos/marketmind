@@ -1456,12 +1456,25 @@ export class AutoTradingScheduler {
       );
 
       if (sameDirectionPositions.length > 0) {
-        const pyramidEval = await pyramidingService.evaluatePyramid(
+        if (!config.pyramidingEnabled) {
+          logBuffer.addRejection({
+            setupType: setup.type,
+            direction: setup.direction,
+            reason: 'Pyramiding disabled',
+            details: { existingPositions: sameDirectionPositions.length },
+          });
+          return;
+        }
+
+        const stopLoss = setup.stopLoss ?? null;
+        const pyramidEval = await pyramidingService.evaluatePyramidByMode(
           watcher.userId,
           watcher.walletId,
           watcher.symbol,
           setup.direction,
           setup.entryPrice,
+          cycleKlines,
+          stopLoss,
           setup.confidence ? setup.confidence / 100 : undefined
         );
 
@@ -1473,6 +1486,8 @@ export class AutoTradingScheduler {
             details: {
               currentEntries: pyramidEval.currentEntries,
               maxEntries: pyramidEval.maxEntries,
+              mode: pyramidEval.mode ?? 'static',
+              adxValue: pyramidEval.adxValue ?? null,
             },
           });
           return;
@@ -1481,6 +1496,10 @@ export class AutoTradingScheduler {
         logBuffer.log('📈', 'Pyramiding opportunity', {
           currentEntries: pyramidEval.currentEntries,
           suggestedSize: pyramidEval.suggestedSize,
+          mode: pyramidEval.mode ?? 'static',
+          adxValue: pyramidEval.adxValue ?? null,
+          adjustedScaleFactor: pyramidEval.adjustedScaleFactor ?? null,
+          fiboLevel: pyramidEval.fiboTriggerLevel ?? null,
         });
       }
 
@@ -1575,7 +1594,7 @@ export class AutoTradingScheduler {
       const expectedEntryWithSlippage = setup.entryPrice * slippageFactor;
 
       let entryOrderId: number | null = null;
-      let actualEntryPrice = expectedEntryWithSlippage;
+      let actualEntryPrice = isLiveExecution ? setup.entryPrice : expectedEntryWithSlippage;
       let actualQuantity = dynamicSize.quantity;
       let stopLossOrderId: number | null = null;
       let takeProfitOrderId: number | null = null;
@@ -1585,13 +1604,21 @@ export class AutoTradingScheduler {
       let takeProfitIsAlgo = false;
       let orderListId: number | null = null;
 
-      log('💸 Entry price adjusted for slippage', {
-        originalEntry: setup.entryPrice,
-        expectedEntry: expectedEntryWithSlippage,
-        slippagePercent: SLIPPAGE_PERCENT,
-        commissionPercent: COMMISSION_PERCENT,
-        direction: setup.direction,
-      });
+      if (isLiveExecution) {
+        log('💸 Live execution - will use actual fill price from Binance', {
+          setupEntry: setup.entryPrice,
+          commissionPercent: COMMISSION_PERCENT,
+          direction: setup.direction,
+        });
+      } else {
+        log('💸 Paper trading - entry price adjusted for simulated slippage', {
+          originalEntry: setup.entryPrice,
+          expectedEntry: expectedEntryWithSlippage,
+          slippagePercent: SLIPPAGE_PERCENT,
+          commissionPercent: COMMISSION_PERCENT,
+          direction: setup.direction,
+        });
+      }
 
       const useLimit = false;
       const orderType = 'MARKET' as const;

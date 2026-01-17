@@ -16,6 +16,7 @@ import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { walletQueries } from '../services/database/walletQueries';
+import { getCurrentIndicatorValues } from '../services/dynamic-pyramid-evaluator';
 import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
 import { checkKlineAvailability } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
@@ -29,6 +30,8 @@ import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { parseEnabledSetupTypes, stringifyDynamicSymbolExcluded, stringifyEnabledSetupTypes, transformAutoTradingConfig } from '../utils/profile-transformers';
+
+const PYRAMID_FIBO_LEVELS = ['1', '1.272', '1.618', '2', '2.618'] as const;
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   if (data) {
@@ -133,6 +136,20 @@ export const autoTradingRouter = router({
         timeBasedStopTighteningEnabled: z.boolean().optional(),
         timeTightenAfterBars: z.number().min(1).max(50).optional(),
         timeTightenPercentPerBar: z.string().optional(),
+        pyramidingEnabled: z.boolean().optional(),
+        pyramidingMode: z.enum(['static', 'dynamic', 'fibonacci']).optional(),
+        maxPyramidEntries: z.number().min(1).max(10).optional(),
+        pyramidProfitThreshold: z.string().optional(),
+        pyramidScaleFactor: z.string().optional(),
+        pyramidMinDistance: z.string().optional(),
+        pyramidUseAtr: z.boolean().optional(),
+        pyramidUseAdx: z.boolean().optional(),
+        pyramidUseRsi: z.boolean().optional(),
+        pyramidAdxThreshold: z.number().min(10).max(50).optional(),
+        pyramidRsiLowerBound: z.number().min(20).max(50).optional(),
+        pyramidRsiUpperBound: z.number().min(50).max(80).optional(),
+        pyramidFiboLevels: z.array(z.enum(PYRAMID_FIBO_LEVELS)).optional(),
+        leverageAwarePyramid: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -216,6 +233,34 @@ export const autoTradingRouter = router({
         {updateData.timeTightenAfterBars = input.timeTightenAfterBars;}
       if (input.timeTightenPercentPerBar !== undefined)
         {updateData.timeTightenPercentPerBar = input.timeTightenPercentPerBar;}
+      if (input.pyramidingEnabled !== undefined)
+        {updateData.pyramidingEnabled = input.pyramidingEnabled;}
+      if (input.pyramidingMode !== undefined)
+        {updateData.pyramidingMode = input.pyramidingMode;}
+      if (input.maxPyramidEntries !== undefined)
+        {updateData.maxPyramidEntries = input.maxPyramidEntries;}
+      if (input.pyramidProfitThreshold !== undefined)
+        {updateData.pyramidProfitThreshold = input.pyramidProfitThreshold;}
+      if (input.pyramidScaleFactor !== undefined)
+        {updateData.pyramidScaleFactor = input.pyramidScaleFactor;}
+      if (input.pyramidMinDistance !== undefined)
+        {updateData.pyramidMinDistance = input.pyramidMinDistance;}
+      if (input.pyramidUseAtr !== undefined)
+        {updateData.pyramidUseAtr = input.pyramidUseAtr;}
+      if (input.pyramidUseAdx !== undefined)
+        {updateData.pyramidUseAdx = input.pyramidUseAdx;}
+      if (input.pyramidUseRsi !== undefined)
+        {updateData.pyramidUseRsi = input.pyramidUseRsi;}
+      if (input.pyramidAdxThreshold !== undefined)
+        {updateData.pyramidAdxThreshold = input.pyramidAdxThreshold;}
+      if (input.pyramidRsiLowerBound !== undefined)
+        {updateData.pyramidRsiLowerBound = input.pyramidRsiLowerBound;}
+      if (input.pyramidRsiUpperBound !== undefined)
+        {updateData.pyramidRsiUpperBound = input.pyramidRsiUpperBound;}
+      if (input.pyramidFiboLevels !== undefined)
+        {updateData.pyramidFiboLevels = JSON.stringify(input.pyramidFiboLevels);}
+      if (input.leverageAwarePyramid !== undefined)
+        {updateData.leverageAwarePyramid = input.leverageAwarePyramid;}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -1435,6 +1480,57 @@ export const autoTradingRouter = router({
       return {
         success: result.errors.length === 0,
         ...result,
+      };
+    }),
+
+  getPyramidIndicators: protectedProcedure
+    .input(z.object({
+      symbol: z.string(),
+      interval: z.string().default('1h'),
+      marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+    }))
+    .query(async ({ ctx, input }) => {
+      const dbKlines = await ctx.db
+        .select()
+        .from(klines)
+        .where(and(
+          eq(klines.symbol, input.symbol),
+          eq(klines.interval, input.interval),
+          eq(klines.marketType, input.marketType)
+        ))
+        .orderBy(desc(klines.openTime))
+        .limit(100);
+
+      if (dbKlines.length < 30) {
+        return {
+          symbol: input.symbol,
+          interval: input.interval,
+          atr: null,
+          adx: null,
+          rsi: null,
+          plusDI: null,
+          minusDI: null,
+          trendStrength: 'unknown' as const,
+          message: 'Insufficient kline data for indicator calculation',
+        };
+      }
+
+      const mappedKlines = mapDbKlinesReversed(dbKlines);
+      const indicators = getCurrentIndicatorValues(mappedKlines);
+
+      let trendStrength: 'strong' | 'moderate' | 'weak' | 'unknown' = 'unknown';
+      if (indicators.adx !== null) {
+        if (indicators.adx >= 40) trendStrength = 'strong';
+        else if (indicators.adx >= 25) trendStrength = 'moderate';
+        else trendStrength = 'weak';
+      }
+
+      return {
+        symbol: input.symbol,
+        interval: input.interval,
+        ...indicators,
+        trendStrength,
+        message: null,
       };
     }),
 });

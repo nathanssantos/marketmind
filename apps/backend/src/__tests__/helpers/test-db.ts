@@ -1,9 +1,9 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { sql } from 'drizzle-orm';
-import pg from 'pg';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
+import { resetDatabase, setTestDatabase, type DatabaseType } from '../../db/client';
 import * as schema from '../../db/schema';
-import { setTestDatabase, resetDatabase, type DatabaseType } from '../../db/client';
 
 const { Pool } = pg;
 
@@ -166,6 +166,20 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   dynamic_symbol_excluded TEXT,
   enable_auto_rotation BOOLEAN DEFAULT true NOT NULL,
   trailing_stop_mode VARCHAR(10) DEFAULT 'local',
+  pyramiding_enabled BOOLEAN DEFAULT false NOT NULL,
+  pyramiding_mode VARCHAR(20) DEFAULT 'static' NOT NULL,
+  max_pyramid_entries INTEGER DEFAULT 5 NOT NULL,
+  pyramid_profit_threshold NUMERIC(5, 4) DEFAULT '0.01' NOT NULL,
+  pyramid_scale_factor NUMERIC(4, 2) DEFAULT '0.80' NOT NULL,
+  pyramid_min_distance NUMERIC(5, 4) DEFAULT '0.005' NOT NULL,
+  pyramid_use_atr BOOLEAN DEFAULT true NOT NULL,
+  pyramid_use_adx BOOLEAN DEFAULT true NOT NULL,
+  pyramid_use_rsi BOOLEAN DEFAULT false NOT NULL,
+  pyramid_adx_threshold INTEGER DEFAULT 25 NOT NULL,
+  pyramid_rsi_lower_bound INTEGER DEFAULT 40 NOT NULL,
+  pyramid_rsi_upper_bound INTEGER DEFAULT 60 NOT NULL,
+  pyramid_fibo_levels TEXT DEFAULT '["1", "1.272", "1.618"]',
+  leverage_aware_pyramid BOOLEAN DEFAULT true NOT NULL,
   opportunity_cost_enabled BOOLEAN DEFAULT false NOT NULL,
   max_holding_period_bars INTEGER DEFAULT 20 NOT NULL,
   stale_price_threshold_percent NUMERIC(5, 2) DEFAULT '0.5' NOT NULL,

@@ -1,10 +1,53 @@
-import { serializeError } from '../utils/errors';
+import { colorize, createTable } from '@marketmind/logger';
+import type { Kline } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
-import type { TradeExecution } from '../db/schema';
+import type { AutoTradingConfig, TradeExecution } from '../db/schema';
 import { autoTradingConfig, tradeExecutions } from '../db/schema';
+import { serializeError } from '../utils/errors';
+import {
+    calculateLeverageAdjustedScaleFactor,
+    evaluateDynamicConditions,
+    prioritizePyramidCandidates as prioritizeCandidatesByAdx,
+    type DynamicPyramidConfig,
+    type DynamicPyramidEvaluation,
+    type PyramidCandidate,
+} from './dynamic-pyramid-evaluator';
+import {
+    clearFiboState,
+    evaluateFiboPyramidTrigger,
+    initializeFiboState,
+    type FiboLevel,
+    type FiboPyramidConfig,
+    type FiboPyramidEvaluation,
+} from './fibonacci-pyramid-evaluator';
 import { logger } from './logger';
 import { positionMonitorService } from './position-monitor';
+
+const logPyramidTable = (
+  action: 'EVALUATE' | 'APPROVED' | 'REJECTED',
+  symbol: string,
+  direction: string,
+  data: Record<string, string | number | null | undefined>
+): void => {
+  const actionColor = action === 'APPROVED' ? 'green' : action === 'REJECTED' ? 'red' : 'cyan';
+  const icon = action === 'APPROVED' ? '📈' : action === 'REJECTED' ? '🚫' : '🔍';
+
+  const table = createTable({
+    head: ['Field', 'Value'],
+    headColor: actionColor,
+    colWidths: [20, 25],
+  });
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      table.push([colorize(key, 'dim'), String(value)]);
+    }
+  });
+
+  console.log(`\n  ${icon} ${colorize(`PYRAMID ${action}`, actionColor)} │ ${colorize(symbol, 'bright')} │ ${colorize(direction, direction === 'LONG' ? 'green' : 'red')}`);
+  console.log(table.toString());
+};
 
 export interface ExecutionLike {
   entryPrice: string;
@@ -90,6 +133,11 @@ export interface PyramidEvaluation {
   maxEntries: number;
   profitPercent: number;
   exposurePercent: number;
+  adxValue?: number | null;
+  mode?: 'static' | 'dynamic' | 'fibonacci';
+  adjustedScaleFactor?: number;
+  adjustedMinDistance?: number;
+  fiboTriggerLevel?: string | null;
 }
 
 export interface PyramidConfig {
@@ -98,6 +146,16 @@ export interface PyramidConfig {
   maxEntries: number;
   scaleFactor: number;
   mlConfidenceBoost: number;
+  mode: 'static' | 'dynamic' | 'fibonacci';
+  useAtr: boolean;
+  useAdx: boolean;
+  useRsi: boolean;
+  adxThreshold: number;
+  rsiLowerBound: number;
+  rsiUpperBound: number;
+  fiboLevels: FiboLevel[];
+  leverage: number;
+  leverageAware: boolean;
 }
 
 export const DEFAULT_PYRAMIDING_CONFIG: PyramidConfig = {
@@ -106,6 +164,16 @@ export const DEFAULT_PYRAMIDING_CONFIG: PyramidConfig = {
   maxEntries: 5,
   scaleFactor: 0.8,
   mlConfidenceBoost: 1.2,
+  mode: 'static',
+  useAtr: true,
+  useAdx: true,
+  useRsi: false,
+  adxThreshold: 25,
+  rsiLowerBound: 40,
+  rsiUpperBound: 60,
+  fiboLevels: ['1', '1.272', '1.618'],
+  leverage: 1,
+  leverageAware: true,
 };
 
 export class PyramidingService {
@@ -262,6 +330,19 @@ export class PyramidingService {
       profitPercent,
       exposurePercent: (totalExposure / maxPositionSize) * 100,
     };
+
+    logPyramidTable('APPROVED', symbol, direction, {
+      Mode: 'static',
+      'Entry #': `${openExecutions.length + 1}/${pyramidConfig.maxEntries}`,
+      'Avg Entry': avgEntryPrice.toFixed(4),
+      'Current Price': currentPrice.toFixed(4),
+      'Profit %': `${(profitPercent * 100).toFixed(2)}%`,
+      'Base Size': baseSize.toFixed(6),
+      'Scale Factor': pyramidConfig.scaleFactor.toFixed(2),
+      'ML Boost': mlConfidence && mlConfidence > 0.7 ? `${pyramidConfig.mlConfidenceBoost.toFixed(2)}x` : 'N/A',
+      'Pyramid Size': result.suggestedSize.toFixed(6),
+      'Exposure %': `${result.exposurePercent.toFixed(1)}%`,
+    });
 
     logger.info({
       symbol,
@@ -494,6 +575,385 @@ export class PyramidingService {
       unrealizedPnLPercent,
     };
   }
+
+  async evaluatePyramidByMode(
+    userId: string,
+    walletId: string,
+    symbol: string,
+    direction: 'LONG' | 'SHORT',
+    currentPrice: number,
+    klines: Kline[],
+    stopLoss: number | null,
+    mlConfidence?: number
+  ): Promise<PyramidEvaluation> {
+    const [tradingConfig] = await db
+      .select()
+      .from(autoTradingConfig)
+      .where(
+        and(
+          eq(autoTradingConfig.userId, userId),
+          eq(autoTradingConfig.walletId, walletId)
+        )
+      );
+
+    if (!tradingConfig) {
+      return {
+        canPyramid: false,
+        reason: 'No trading configuration found',
+        suggestedSize: 0,
+        currentEntries: 0,
+        maxEntries: this.config.maxEntries,
+        profitPercent: 0,
+        exposurePercent: 0,
+        mode: 'static',
+      };
+    }
+
+    const pyramidConfig = this.buildPyramidConfigFromDb(tradingConfig);
+
+    if (!tradingConfig.pyramidingEnabled) {
+      return {
+        canPyramid: false,
+        reason: 'Pyramiding is disabled',
+        suggestedSize: 0,
+        currentEntries: 0,
+        maxEntries: pyramidConfig.maxEntries,
+        profitPercent: 0,
+        exposurePercent: 0,
+        mode: pyramidConfig.mode,
+      };
+    }
+
+    switch (pyramidConfig.mode) {
+      case 'dynamic':
+        return this.evaluateDynamicPyramid(
+          userId,
+          walletId,
+          symbol,
+          direction,
+          currentPrice,
+          klines,
+          pyramidConfig,
+          mlConfidence
+        );
+      case 'fibonacci':
+        return this.evaluateFibonacciPyramid(
+          userId,
+          walletId,
+          symbol,
+          direction,
+          currentPrice,
+          stopLoss,
+          pyramidConfig,
+          mlConfidence
+        );
+      default:
+        return this.evaluatePyramid(
+          userId,
+          walletId,
+          symbol,
+          direction,
+          currentPrice,
+          mlConfidence,
+          pyramidConfig
+        );
+    }
+  }
+
+  private async evaluateDynamicPyramid(
+    userId: string,
+    walletId: string,
+    symbol: string,
+    direction: 'LONG' | 'SHORT',
+    currentPrice: number,
+    klines: Kline[],
+    config: PyramidConfig,
+    mlConfidence?: number
+  ): Promise<PyramidEvaluation> {
+    const dynamicConfig: DynamicPyramidConfig = {
+      useAtr: config.useAtr,
+      useAdx: config.useAdx,
+      useRsi: config.useRsi,
+      adxThreshold: config.adxThreshold,
+      rsiLowerBound: config.rsiLowerBound,
+      rsiUpperBound: config.rsiUpperBound,
+      baseMinDistance: config.minDistance,
+      baseScaleFactor: config.scaleFactor,
+      leverage: config.leverage,
+      leverageAware: config.leverageAware,
+    };
+
+    const dynamicEval = evaluateDynamicConditions(klines, dynamicConfig);
+
+    if (!dynamicEval.canPyramid) {
+      logPyramidTable('REJECTED', symbol, direction, {
+        Mode: 'dynamic',
+        Reason: dynamicEval.reason,
+        ADX: dynamicEval.adxValue?.toFixed(2) ?? 'N/A',
+        'ADX Threshold': config.adxThreshold,
+        RSI: dynamicEval.rsiValue?.toFixed(2) ?? 'N/A',
+        'RSI Range': `${config.rsiLowerBound}-${config.rsiUpperBound}`,
+        ATR: dynamicEval.atrValue?.toFixed(6) ?? 'N/A',
+        'Adj Scale': dynamicEval.adjustedScaleFactor?.toFixed(3) ?? 'N/A',
+        'Adj Distance': dynamicEval.adjustedMinDistance?.toFixed(4) ?? 'N/A',
+      });
+
+      return {
+        canPyramid: false,
+        reason: dynamicEval.reason,
+        suggestedSize: 0,
+        currentEntries: 0,
+        maxEntries: config.maxEntries,
+        profitPercent: 0,
+        exposurePercent: 0,
+        adxValue: dynamicEval.adxValue,
+        mode: 'dynamic',
+        adjustedScaleFactor: dynamicEval.adjustedScaleFactor,
+        adjustedMinDistance: dynamicEval.adjustedMinDistance,
+      };
+    }
+
+    const adjustedConfig: Partial<PyramidConfig> = {
+      ...config,
+      minDistance: dynamicEval.adjustedMinDistance,
+      scaleFactor: dynamicEval.adjustedScaleFactor,
+    };
+
+    const staticEval = await this.evaluatePyramid(
+      userId,
+      walletId,
+      symbol,
+      direction,
+      currentPrice,
+      mlConfidence,
+      adjustedConfig
+    );
+
+    if (staticEval.canPyramid) {
+      logPyramidTable('APPROVED', symbol, direction, {
+        Mode: 'dynamic',
+        'Entry #': `${staticEval.currentEntries + 1}/${staticEval.maxEntries}`,
+        'Profit %': `${(staticEval.profitPercent * 100).toFixed(2)}%`,
+        ADX: dynamicEval.adxValue?.toFixed(2) ?? 'N/A',
+        RSI: dynamicEval.rsiValue?.toFixed(2) ?? 'N/A',
+        ATR: dynamicEval.atrValue?.toFixed(6) ?? 'N/A',
+        'Base Scale': config.scaleFactor.toFixed(2),
+        'Adj Scale': dynamicEval.adjustedScaleFactor.toFixed(3),
+        'Adj Distance': `${(dynamicEval.adjustedMinDistance * 100).toFixed(2)}%`,
+        'Pyramid Size': staticEval.suggestedSize.toFixed(6),
+        Leverage: config.leverage,
+      });
+    }
+
+    return {
+      ...staticEval,
+      adxValue: dynamicEval.adxValue,
+      mode: 'dynamic',
+      adjustedScaleFactor: dynamicEval.adjustedScaleFactor,
+      adjustedMinDistance: dynamicEval.adjustedMinDistance,
+    };
+  }
+
+  private async evaluateFibonacciPyramid(
+    userId: string,
+    walletId: string,
+    symbol: string,
+    direction: 'LONG' | 'SHORT',
+    currentPrice: number,
+    stopLoss: number | null,
+    config: PyramidConfig,
+    _mlConfidence?: number
+  ): Promise<PyramidEvaluation> {
+    const openExecutions = await db
+      .select()
+      .from(tradeExecutions)
+      .where(
+        and(
+          eq(tradeExecutions.userId, userId),
+          eq(tradeExecutions.walletId, walletId),
+          eq(tradeExecutions.symbol, symbol),
+          eq(tradeExecutions.side, direction),
+          eq(tradeExecutions.status, 'open')
+        )
+      );
+
+    if (openExecutions.length === 0) {
+      return {
+        canPyramid: false,
+        reason: 'No existing position to pyramid into',
+        suggestedSize: 0,
+        currentEntries: 0,
+        maxEntries: config.maxEntries,
+        profitPercent: 0,
+        exposurePercent: 0,
+        mode: 'fibonacci',
+      };
+    }
+
+    if (openExecutions.length >= config.maxEntries) {
+      return {
+        canPyramid: false,
+        reason: `Maximum entries reached (${config.maxEntries})`,
+        suggestedSize: 0,
+        currentEntries: openExecutions.length,
+        maxEntries: config.maxEntries,
+        profitPercent: 0,
+        exposurePercent: 0,
+        mode: 'fibonacci',
+      };
+    }
+
+    const avgEntryPrice = calculateWeightedAvgPrice(openExecutions);
+    const effectiveStopLoss = stopLoss ?? parseFloat(openExecutions[0]?.stopLoss ?? '0');
+
+    if (effectiveStopLoss === 0) {
+      return {
+        canPyramid: false,
+        reason: 'Stop loss required for Fibonacci pyramid mode',
+        suggestedSize: 0,
+        currentEntries: openExecutions.length,
+        maxEntries: config.maxEntries,
+        profitPercent: 0,
+        exposurePercent: 0,
+        mode: 'fibonacci',
+      };
+    }
+
+    const fiboConfig: FiboPyramidConfig = {
+      enabledLevels: config.fiboLevels,
+      leverage: config.leverage,
+      leverageAware: config.leverageAware,
+      baseScaleFactor: config.scaleFactor,
+    };
+
+    const fiboEval = evaluateFiboPyramidTrigger(
+      symbol,
+      direction,
+      avgEntryPrice,
+      effectiveStopLoss,
+      currentPrice,
+      fiboConfig
+    );
+
+    const profitPercent = direction === 'LONG'
+      ? (currentPrice - avgEntryPrice) / avgEntryPrice
+      : (avgEntryPrice - currentPrice) / avgEntryPrice;
+
+    if (!fiboEval.canPyramid) {
+      logPyramidTable('REJECTED', symbol, direction, {
+        Mode: 'fibonacci',
+        Reason: fiboEval.reason,
+        'Entry #': `${openExecutions.length}/${config.maxEntries}`,
+        'Avg Entry': avgEntryPrice.toFixed(4),
+        'Current Price': currentPrice.toFixed(4),
+        'Stop Loss': effectiveStopLoss.toFixed(4),
+        'Profit %': `${(profitPercent * 100).toFixed(2)}%`,
+        'Next Level': fiboEval.nextLevel ?? 'N/A',
+        'Enabled Levels': config.fiboLevels.join(', '),
+      });
+
+      return {
+        canPyramid: false,
+        reason: fiboEval.reason,
+        suggestedSize: 0,
+        currentEntries: openExecutions.length,
+        maxEntries: config.maxEntries,
+        profitPercent,
+        exposurePercent: 0,
+        mode: 'fibonacci',
+        fiboTriggerLevel: fiboEval.nextLevel,
+      };
+    }
+
+    const scaleFactor = calculateLeverageAdjustedScaleFactor(
+      config.scaleFactor,
+      config.leverage,
+      config.leverageAware
+    );
+
+    const baseSize = calculateBaseSize(openExecutions);
+    const scaledSize = baseSize * Math.pow(scaleFactor, openExecutions.length);
+
+    logPyramidTable('APPROVED', symbol, direction, {
+      Mode: 'fibonacci',
+      'Fibo Level': fiboEval.triggerLevel ?? '-',
+      'Entry #': `${openExecutions.length + 1}/${config.maxEntries}`,
+      'Avg Entry': avgEntryPrice.toFixed(4),
+      'Current Price': currentPrice.toFixed(4),
+      'Profit %': `${(profitPercent * 100).toFixed(2)}%`,
+      'Base Size': baseSize.toFixed(6),
+      'Scale Factor': scaleFactor.toFixed(2),
+      'Pyramid Size': roundQuantity(scaledSize).toFixed(6),
+      Leverage: config.leverage,
+      'Next Level': fiboEval.nextLevel ?? 'N/A',
+    });
+
+    logger.info({
+      symbol,
+      direction,
+      fiboLevel: fiboEval.triggerLevel,
+      entryNumber: openExecutions.length + 1,
+      suggestedSize: roundQuantity(scaledSize),
+      profitPercent: (profitPercent * 100).toFixed(2),
+    }, '[Pyramiding] Fibonacci entry approved');
+
+    return {
+      canPyramid: true,
+      reason: `Fibonacci ${fiboEval.triggerLevel} level triggered`,
+      suggestedSize: roundQuantity(scaledSize),
+      currentEntries: openExecutions.length,
+      maxEntries: config.maxEntries,
+      profitPercent,
+      exposurePercent: 0,
+      mode: 'fibonacci',
+      fiboTriggerLevel: fiboEval.triggerLevel,
+      adjustedScaleFactor: scaleFactor,
+    };
+  }
+
+  buildPyramidConfigFromDb(tradingConfig: AutoTradingConfig): PyramidConfig {
+    let fiboLevels: FiboLevel[] = ['1', '1.272', '1.618'];
+    try {
+      if (tradingConfig.pyramidFiboLevels) {
+        const parsed = JSON.parse(tradingConfig.pyramidFiboLevels);
+        if (Array.isArray(parsed)) {
+          fiboLevels = parsed as FiboLevel[];
+        }
+      }
+    } catch {
+      logger.warn('Failed to parse pyramidFiboLevels, using defaults');
+    }
+
+    return {
+      profitThreshold: parseFloat(tradingConfig.pyramidProfitThreshold),
+      minDistance: parseFloat(tradingConfig.pyramidMinDistance),
+      maxEntries: tradingConfig.maxPyramidEntries,
+      scaleFactor: parseFloat(tradingConfig.pyramidScaleFactor),
+      mlConfidenceBoost: this.config.mlConfidenceBoost,
+      mode: tradingConfig.pyramidingMode,
+      useAtr: tradingConfig.pyramidUseAtr,
+      useAdx: tradingConfig.pyramidUseAdx,
+      useRsi: tradingConfig.pyramidUseRsi,
+      adxThreshold: tradingConfig.pyramidAdxThreshold,
+      rsiLowerBound: tradingConfig.pyramidRsiLowerBound,
+      rsiUpperBound: tradingConfig.pyramidRsiUpperBound,
+      fiboLevels,
+      leverage: tradingConfig.leverage ?? 1,
+      leverageAware: tradingConfig.leverageAwarePyramid,
+    };
+  }
+
+  initializeFiboTracking(symbol: string, direction: 'LONG' | 'SHORT', entryPrice: number): void {
+    initializeFiboState(symbol, direction, entryPrice);
+  }
+
+  clearFiboTracking(symbol: string, direction: 'LONG' | 'SHORT'): void {
+    clearFiboState(symbol, direction);
+  }
 }
 
 export const pyramidingService = new PyramidingService();
+
+export { prioritizeCandidatesByAdx as prioritizePyramidCandidates };
+export type { DynamicPyramidEvaluation, FiboPyramidEvaluation, PyramidCandidate };
+

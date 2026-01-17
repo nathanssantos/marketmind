@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import * as schema from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 import { getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestTradingProfile, createTestUser, createTestWallet } from '../helpers/test-fixtures';
+import { createTestTradingProfile, createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG } from '../helpers/test-fixtures';
 
 vi.mock('../../services/binance-kline-stream', () => ({
   binanceKlineStreamService: {
@@ -199,6 +199,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -268,6 +269,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         timeBasedStopTighteningEnabled: false,
         timeTightenAfterBars: 10,
         timeTightenPercentPerBar: '5',
+        ...DEFAULT_PYRAMID_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

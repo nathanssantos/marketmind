@@ -1,7 +1,7 @@
 import { hash } from '@node-rs/argon2';
-import { getTestDatabase } from './test-db';
 import * as schema from '../../db/schema';
 import { generateEntityId, generateSessionId } from '../../utils/id';
+import { getTestDatabase } from './test-db';
 
 type User = typeof schema.users.$inferSelect;
 type Session = typeof schema.sessions.$inferSelect;
@@ -115,6 +115,23 @@ export interface CreateAutoTradingConfigOptions {
   leverage?: number;
   marginType?: 'ISOLATED' | 'CROSSED';
 }
+
+export const DEFAULT_PYRAMID_CONFIG = {
+  pyramidingEnabled: false,
+  pyramidingMode: 'static' as const,
+  maxPyramidEntries: 3,
+  pyramidProfitThreshold: '0.01',
+  pyramidScaleFactor: '0.8',
+  pyramidMinDistance: '0.005',
+  pyramidUseAtr: false,
+  pyramidUseAdx: false,
+  pyramidUseRsi: false,
+  pyramidAdxThreshold: 25,
+  pyramidRsiLowerBound: 30,
+  pyramidRsiUpperBound: 70,
+  pyramidFiboLevels: '["1","1.618"]',
+  leverageAwarePyramid: true,
+};
 
 const hashPassword = async (password: string): Promise<string> => {
   return hash(password, {
