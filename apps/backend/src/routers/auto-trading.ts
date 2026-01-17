@@ -918,6 +918,8 @@ export const autoTradingRouter = router({
           dynamicSymbolExcluded: autoTradingConfig.dynamicSymbolExcluded,
           dynamicSymbolRotationInterval: autoTradingConfig.dynamicSymbolRotationInterval,
           enableAutoRotation: autoTradingConfig.enableAutoRotation,
+          leverage: autoTradingConfig.leverage,
+          exposureMultiplier: autoTradingConfig.exposureMultiplier,
         })
         .from(autoTradingConfig)
         .where(
@@ -1079,6 +1081,9 @@ export const autoTradingRouter = router({
             interval: input.interval,
             profileId: input.profileId,
             enableAutoRotation: config?.enableAutoRotation ?? true,
+            leverage: config?.leverage ?? 1,
+            exposureMultiplier: parseFloat(config?.exposureMultiplier ?? '1.5'),
+            walletBalance: parseFloat(wallet.currentBalance ?? '0'),
           }
         );
       }
@@ -1177,6 +1182,9 @@ export const autoTradingRouter = router({
           marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
           interval: config.dynamicSymbolRotationInterval,
           profileId: undefined,
+          leverage: config.leverage ?? 1,
+          exposureMultiplier: parseFloat(config.exposureMultiplier ?? '1.5'),
+          walletBalance: parseFloat(wallet.currentBalance ?? '0'),
         }
       );
 

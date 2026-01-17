@@ -25,8 +25,6 @@ import {
 
 const GAP_CHECK_INTERVAL = 5 * TIME_MS.MINUTE;
 const MIN_GAP_SIZE_TO_FILL = 1;
-const BINANCE_FUTURES_API = 'https://fapi.binance.com/fapi/v1/klines';
-const BINANCE_SPOT_API = 'https://api.binance.com/api/v3/klines';
 
 interface GapInfo {
   symbol: string;
@@ -41,20 +39,6 @@ interface ActivePair {
   symbol: string;
   interval: Interval;
   marketType: 'SPOT' | 'FUTURES';
-}
-
-interface BinanceKlineResponse {
-  openTime: number;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-  volume: string;
-  closeTime: number;
-  quoteVolume: string;
-  trades: number;
-  takerBuyBaseVolume: string;
-  takerBuyQuoteVolume: string;
 }
 
 class KlineMaintenance {
@@ -593,45 +577,6 @@ class KlineMaintenance {
     }
   }
 
-  private async fetchBinanceKline(
-    symbol: string,
-    interval: string,
-    timestamp: number,
-    marketType: 'SPOT' | 'FUTURES'
-  ): Promise<BinanceKlineResponse | null> {
-    const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
-    const url = `${baseUrl}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${timestamp}&limit=1`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) return null;
-
-      const data = await response.json();
-      if (data.length === 0) return null;
-
-      const k = data[0];
-      return {
-        openTime: k[0],
-        open: k[1],
-        high: k[2],
-        low: k[3],
-        close: k[4],
-        volume: k[5],
-        closeTime: k[6],
-        quoteVolume: k[7],
-        trades: k[8],
-        takerBuyBaseVolume: k[9],
-        takerBuyQuoteVolume: k[10],
-      };
-    } catch (error) {
-      logger.warn(
-        { symbol, interval, timestamp, marketType, error: serializeError(error) },
-        '[KlineMaintenance] Failed to fetch kline from Binance API'
-      );
-      return null;
-    }
-  }
-
   private async detectAndFixCorruptedKlines(pair: ActivePair, silent = false): Promise<{ corruptedFound: number; fixed: number }> {
     const intervalMs = getIntervalMilliseconds(pair.interval);
     const lookbackMs = CORRUPTION_CHECK_KLINES * intervalMs;
@@ -687,41 +632,87 @@ class KlineMaintenance {
 
     const recentClosedKlines = closedKlines.slice(-API_VALIDATION_RECENT_COUNT);
 
-    for (const kline of recentClosedKlines) {
-      const alreadyMarked = corruptedKlines.some(
-        (c) => c.kline.openTime.getTime() === kline.openTime.getTime()
-      );
-      if (alreadyMarked) continue;
-
-      const validationResult = await KlineValidator.validateAgainstAPI(
-        kline,
-        pair.symbol,
-        pair.interval,
-        pair.marketType
+    if (recentClosedKlines.length > 0) {
+      const klinesToValidate = recentClosedKlines.filter(
+        (k) => !corruptedKlines.some((c) => c.kline.openTime.getTime() === k.openTime.getTime())
       );
 
-      if (!validationResult.isValid) {
-        const mismatchDetails = validationResult.mismatches
-          .map((m) => `${m.field}: ${m.dbValue} vs ${m.apiValue} (${m.diffPercent.toFixed(2)}%)`)
-          .join(', ');
-        corruptedKlines.push({ kline, reason: `API validation mismatch: ${mismatchDetails}` });
+      if (klinesToValidate.length > 0) {
+        const sortedForBatch = [...klinesToValidate].sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+        const firstKline = sortedForBatch[0];
+        const lastKline = sortedForBatch[sortedForBatch.length - 1];
+
+        if (firstKline && lastKline) {
+          const apiKlinesMap = await KlineValidator.fetchBinanceKlinesBatch(
+            pair.symbol,
+            pair.interval,
+            firstKline.openTime.getTime(),
+            lastKline.openTime.getTime(),
+            pair.marketType
+          );
+
+          const TOLERANCE = 0.001;
+          const VOLUME_TOLERANCE = 0.9;
+
+          for (const kline of klinesToValidate) {
+            const apiKline = apiKlinesMap.get(kline.openTime.getTime());
+            if (!apiKline) continue;
+
+            const dbOHLC = {
+              open: parseFloat(kline.open),
+              high: parseFloat(kline.high),
+              low: parseFloat(kline.low),
+              close: parseFloat(kline.close),
+              volume: parseFloat(kline.volume),
+            };
+
+            const apiOHLC = {
+              open: parseFloat(apiKline.open),
+              high: parseFloat(apiKline.high),
+              low: parseFloat(apiKline.low),
+              close: parseFloat(apiKline.close),
+              volume: parseFloat(apiKline.volume),
+            };
+
+            const mismatchFields: string[] = [];
+            if (apiOHLC.volume > 0 && dbOHLC.volume < apiOHLC.volume * VOLUME_TOLERANCE) mismatchFields.push('volume');
+            if (apiOHLC.open > 0 && Math.abs(dbOHLC.open - apiOHLC.open) / apiOHLC.open > TOLERANCE) mismatchFields.push('open');
+            if (apiOHLC.high > 0 && Math.abs(dbOHLC.high - apiOHLC.high) / apiOHLC.high > TOLERANCE) mismatchFields.push('high');
+            if (apiOHLC.low > 0 && Math.abs(dbOHLC.low - apiOHLC.low) / apiOHLC.low > TOLERANCE) mismatchFields.push('low');
+            if (apiOHLC.close > 0 && Math.abs(dbOHLC.close - apiOHLC.close) / apiOHLC.close > TOLERANCE) mismatchFields.push('close');
+
+            if (mismatchFields.length > 0) {
+              const mismatchDetails = mismatchFields
+                .map((f) => `${f}: ${dbOHLC[f as keyof typeof dbOHLC]} vs ${apiOHLC[f as keyof typeof apiOHLC]}`)
+                .join(', ');
+              corruptedKlines.push({ kline, reason: `API validation mismatch: ${mismatchDetails}` });
+            }
+          }
+        }
       }
     }
 
     if (corruptedKlines.length === 0) return { corruptedFound: 0, fixed: 0 };
 
-    const BATCH_SIZE = 5;
     let fixed = 0;
 
-    const fixKline = async (kline: typeof corruptedKlines[0]['kline']): Promise<boolean> => {
-      const binanceKline = await this.fetchBinanceKline(
+    const sortedCorrupted = [...corruptedKlines].sort((a, b) => a.kline.openTime.getTime() - b.kline.openTime.getTime());
+    const firstCorrupted = sortedCorrupted[0];
+    const lastCorrupted = sortedCorrupted[sortedCorrupted.length - 1];
+
+    if (firstCorrupted && lastCorrupted) {
+      const fixKlinesMap = await KlineValidator.fetchBinanceKlinesBatch(
         pair.symbol,
         pair.interval,
-        kline.openTime.getTime(),
+        firstCorrupted.kline.openTime.getTime(),
+        lastCorrupted.kline.openTime.getTime(),
         pair.marketType
       );
 
-      if (binanceKline) {
+      for (const { kline } of corruptedKlines) {
+        const binanceKline = fixKlinesMap.get(kline.openTime.getTime());
+        if (!binanceKline) continue;
+
         await db
           .update(klines)
           .set({
@@ -744,15 +735,8 @@ class KlineMaintenance {
               eq(klines.openTime, kline.openTime)
             )
           );
-        return true;
+        fixed++;
       }
-      return false;
-    };
-
-    for (let i = 0; i < corruptedKlines.length; i += BATCH_SIZE) {
-      const batch = corruptedKlines.slice(i, i + BATCH_SIZE);
-      const results = await Promise.all(batch.map(({ kline }) => fixKline(kline).catch(() => false)));
-      fixed += results.filter(Boolean).length;
     }
 
     if (!silent && fixed > 0) {
@@ -796,10 +780,11 @@ class KlineMaintenance {
     let totalChecked = 0;
     let totalFixed = 0;
     const mismatches: OHLCMismatchEntry[] = [];
+    const API_DELAY_MS = 100;
 
     for (const pair of activePairs) {
       const intervalMs = getIntervalMilliseconds(pair.interval);
-      const lookbackMs = 50 * intervalMs;
+      const lookbackMs = 1000 * intervalMs;
       const lookbackStart = new Date(Date.now() - lookbackMs);
 
       const recentKlines = await db.query.klines.findMany({
@@ -812,64 +797,96 @@ class KlineMaintenance {
         orderBy: [asc(klines.openTime)],
       });
 
+      if (recentKlines.length === 0) continue;
+
       totalChecked += recentKlines.length;
 
+      const sortedKlines = [...recentKlines].sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+      const firstKline = sortedKlines[0];
+      const lastKline = sortedKlines[sortedKlines.length - 1];
+      if (!firstKline || !lastKline) continue;
+      const batchStartTime = firstKline.openTime.getTime();
+      const batchEndTime = lastKline.openTime.getTime();
+
+      const apiKlinesMap = await KlineValidator.fetchBinanceKlinesBatch(
+        pair.symbol,
+        pair.interval,
+        batchStartTime,
+        batchEndTime,
+        pair.marketType
+      );
+
+      await new Promise(resolve => setTimeout(resolve, API_DELAY_MS));
+
       for (const kline of recentKlines) {
-        const validationResult = await KlineValidator.validateAgainstAPI(
-          kline,
-          pair.symbol,
-          pair.interval,
-          pair.marketType
-        );
+        const openTimeMs = kline.openTime.getTime();
+        const apiKline = apiKlinesMap.get(openTimeMs);
 
-        if (!validationResult.isValid) {
-          const apiKline = await this.fetchBinanceKline(
-            pair.symbol,
-            pair.interval,
-            kline.openTime.getTime(),
-            pair.marketType
-          );
+        if (!apiKline) continue;
 
-          let fixed = false;
-          if (apiKline) {
-            await db
-              .update(klines)
-              .set({
-                open: apiKline.open,
-                high: apiKline.high,
-                low: apiKline.low,
-                close: apiKline.close,
-                volume: apiKline.volume,
-                quoteVolume: apiKline.quoteVolume,
-                trades: apiKline.trades,
-                takerBuyBaseVolume: apiKline.takerBuyBaseVolume,
-                takerBuyQuoteVolume: apiKline.takerBuyQuoteVolume,
-                closeTime: new Date(apiKline.closeTime),
-              })
-              .where(
-                and(
-                  eq(klines.symbol, pair.symbol),
-                  eq(klines.interval, pair.interval),
-                  eq(klines.marketType, pair.marketType),
-                  eq(klines.openTime, kline.openTime)
-                )
-              );
+        const dbOHLC = {
+          open: parseFloat(kline.open),
+          high: parseFloat(kline.high),
+          low: parseFloat(kline.low),
+          close: parseFloat(kline.close),
+          volume: parseFloat(kline.volume),
+        };
 
-            totalFixed++;
-            fixed = true;
-          }
+        const apiOHLC = {
+          open: parseFloat(apiKline.open),
+          high: parseFloat(apiKline.high),
+          low: parseFloat(apiKline.low),
+          close: parseFloat(apiKline.close),
+          volume: parseFloat(apiKline.volume),
+        };
 
-          for (const mismatch of validationResult.mismatches) {
+        const mismatchFields: Array<'open' | 'high' | 'low' | 'close' | 'volume'> = [];
+        const TOLERANCE = 0.001;
+        const VOLUME_TOLERANCE = 0.9;
+
+        if (apiOHLC.volume > 0 && dbOHLC.volume < apiOHLC.volume * VOLUME_TOLERANCE) mismatchFields.push('volume');
+        if (apiOHLC.open > 0 && Math.abs(dbOHLC.open - apiOHLC.open) / apiOHLC.open > TOLERANCE) mismatchFields.push('open');
+        if (apiOHLC.high > 0 && Math.abs(dbOHLC.high - apiOHLC.high) / apiOHLC.high > TOLERANCE) mismatchFields.push('high');
+        if (apiOHLC.low > 0 && Math.abs(dbOHLC.low - apiOHLC.low) / apiOHLC.low > TOLERANCE) mismatchFields.push('low');
+        if (apiOHLC.close > 0 && Math.abs(dbOHLC.close - apiOHLC.close) / apiOHLC.close > TOLERANCE) mismatchFields.push('close');
+
+        if (mismatchFields.length > 0) {
+          await db
+            .update(klines)
+            .set({
+              open: apiKline.open,
+              high: apiKline.high,
+              low: apiKline.low,
+              close: apiKline.close,
+              volume: apiKline.volume,
+              quoteVolume: apiKline.quoteVolume,
+              trades: apiKline.trades,
+              takerBuyBaseVolume: apiKline.takerBuyBaseVolume,
+              takerBuyQuoteVolume: apiKline.takerBuyQuoteVolume,
+              closeTime: new Date(apiKline.closeTime),
+            })
+            .where(
+              and(
+                eq(klines.symbol, pair.symbol),
+                eq(klines.interval, pair.interval),
+                eq(klines.marketType, pair.marketType),
+                eq(klines.openTime, kline.openTime)
+              )
+            );
+
+          totalFixed++;
+
+          for (const field of mismatchFields) {
             mismatches.push({
               symbol: pair.symbol,
               interval: pair.interval,
               marketType: pair.marketType,
               openTime: kline.openTime,
-              field: mismatch.field,
-              dbValue: mismatch.dbValue,
-              apiValue: mismatch.apiValue,
-              diffPercent: mismatch.diffPercent,
-              fixed,
+              field,
+              dbValue: dbOHLC[field],
+              apiValue: apiOHLC[field],
+              diffPercent: apiOHLC[field] > 0 ? Math.abs(dbOHLC[field] - apiOHLC[field]) / apiOHLC[field] * 100 : 0,
+              fixed: true,
             });
           }
         }

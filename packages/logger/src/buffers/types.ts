@@ -147,6 +147,7 @@ export interface RotationResult {
   kept: number;
   skippedWithPositions: string[];
   skippedInsufficientKlines: string[];
+  skippedInsufficientCapital: string[];
   klineValidations: KlineValidationEntry[];
   hasChanges: boolean;
   logs: RotationLogEntry[];
@@ -157,7 +158,7 @@ export interface OHLCMismatchEntry {
   interval: string;
   marketType: string;
   openTime: Date;
-  field: 'open' | 'high' | 'low' | 'close';
+  field: 'open' | 'high' | 'low' | 'close' | 'volume';
   dbValue: number;
   apiValue: number;
   diffPercent: number;

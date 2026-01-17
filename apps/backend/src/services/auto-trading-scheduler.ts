@@ -338,9 +338,23 @@ export class AutoTradingScheduler {
       this.isCheckingRotation.add(stateKey);
 
       try {
+        const walletId = stateKey.split(':')[0]!;
         const rotationService = getDynamicSymbolRotationService();
+
+        if (state.config.capitalRequirement) {
+          const [wallet] = await db
+            .select({ currentBalance: wallets.currentBalance })
+            .from(wallets)
+            .where(eq(wallets.id, walletId))
+            .limit(1);
+
+          if (wallet) {
+            state.config.capitalRequirement.walletBalance = parseFloat(wallet.currentBalance ?? '0');
+          }
+        }
+
         const result = await rotationService.executeRotation(
-          stateKey.split(':')[0]!,
+          walletId,
           state.userId,
           state.config
         );
@@ -2307,7 +2321,13 @@ export class AutoTradingScheduler {
       .from(autoTradingConfig)
       .where(inArray(autoTradingConfig.walletId, walletIds));
 
+    const walletsData = await db
+      .select({ id: wallets.id, currentBalance: wallets.currentBalance })
+      .from(wallets)
+      .where(inArray(wallets.id, walletIds));
+
     const configByWallet = new Map(configs.map(c => [c.walletId, c]));
+    const walletBalanceMap = new Map(walletsData.map(w => [w.id, parseFloat(w.currentBalance ?? '0')]));
 
     let restoredCount = 0;
     for (const [key, watcherInfo] of dynamicWatchersByWallet.entries()) {
@@ -2325,6 +2345,9 @@ export class AutoTradingScheduler {
           interval: watcherInfo.interval,
           profileId: watcherInfo.profileId,
           enableAutoRotation: config.enableAutoRotation,
+          leverage: config.leverage ?? 1,
+          exposureMultiplier: parseFloat(config.exposureMultiplier ?? '1.5'),
+          walletBalance: walletBalanceMap.get(walletId),
         });
         restoredCount++;
       } catch (error) {
@@ -2379,6 +2402,9 @@ export class AutoTradingScheduler {
       interval: string;
       profileId?: string;
       enableAutoRotation?: boolean;
+      leverage?: number;
+      exposureMultiplier?: number;
+      walletBalance?: number;
     }
   ): Promise<void> {
     if (!config.useDynamicSymbolSelection) {
@@ -2397,6 +2423,12 @@ export class AutoTradingScheduler {
       interval: config.interval,
       excludedSymbols,
       marketType: config.marketType,
+      capitalRequirement: config.walletBalance !== undefined ? {
+        walletBalance: config.walletBalance,
+        leverage: config.leverage ?? 1,
+        activeWatchersCount: config.dynamicSymbolLimit,
+        exposureMultiplier: config.exposureMultiplier ?? 1.5,
+      } : undefined,
     };
 
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
@@ -2578,6 +2610,9 @@ export class AutoTradingScheduler {
       marketType: MarketType;
       interval: string;
       profileId?: string;
+      leverage?: number;
+      exposureMultiplier?: number;
+      walletBalance?: number;
     }
   ): Promise<RotationResult> {
     const rotationService = getDynamicSymbolRotationService();
@@ -2589,6 +2624,12 @@ export class AutoTradingScheduler {
       interval: config.interval,
       excludedSymbols,
       marketType: config.marketType,
+      capitalRequirement: config.walletBalance !== undefined ? {
+        walletBalance: config.walletBalance,
+        leverage: config.leverage ?? 1,
+        activeWatchersCount: config.dynamicSymbolLimit,
+        exposureMultiplier: config.exposureMultiplier ?? 1.5,
+      } : undefined,
     };
 
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);

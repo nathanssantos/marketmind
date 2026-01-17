@@ -701,10 +701,18 @@ export const formatRotationResults = (result: RotationResult): string => {
     summaryParts.push(colorize(`~ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
   }
 
+  if (result.skippedInsufficientCapital.length > 0) {
+    summaryParts.push(colorize(`$ ${result.skippedInsufficientCapital.length} low capital`, 'dim'));
+  }
+
   lines.push(`  ${summaryParts.join(' │ ')}`);
 
   if (result.skippedInsufficientKlines.length > 0) {
     lines.push(`  ${colorize('~ Skipped (no data):', 'dim')} ${result.skippedInsufficientKlines.join(', ')}`);
+  }
+
+  if (result.skippedInsufficientCapital.length > 0) {
+    lines.push(`  ${colorize('$ Skipped (capital < minNotional):', 'dim')} ${result.skippedInsufficientCapital.join(', ')}`);
   }
 
   if (result.skippedWithPositions.length > 0) {
@@ -739,6 +747,10 @@ export const formatRotationNoChanges = (result: RotationResult): string => {
 
   if (result.skippedInsufficientKlines.length > 0) {
     summaryParts.push(colorize(`~ ${result.skippedInsufficientKlines.length} no data`, 'dim'));
+  }
+
+  if (result.skippedInsufficientCapital.length > 0) {
+    summaryParts.push(colorize(`$ ${result.skippedInsufficientCapital.length} low capital`, 'dim'));
   }
 
   lines.push(createSummaryLine('#', summaryParts));

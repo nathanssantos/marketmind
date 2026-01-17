@@ -71,6 +71,20 @@ const fetchKlineFromREST = async (
     if (!data.length) return null;
 
     const k = data[0];
+    const returnedOpenTime = k[0] as number;
+
+    if (returnedOpenTime !== openTime) {
+      logger.warn({
+        symbol,
+        interval,
+        marketType,
+        requestedTime: new Date(openTime).toISOString(),
+        returnedTime: new Date(returnedOpenTime).toISOString(),
+        diffMs: returnedOpenTime - openTime,
+      }, 'REST API returned kline for different timestamp - rejecting to prevent data corruption');
+      return null;
+    }
+
     return {
       open: k[1],
       high: k[2],
@@ -359,7 +373,8 @@ export class BinanceKlineStreamService {
             openTime: openTime.toISOString(),
             wsVolume: update.volume,
             reason: suspiciousCheck.reason,
-          }, 'Suspicious kline data and REST API unavailable');
+          }, 'Suspicious kline data and REST API unavailable - SKIPPING save to prevent corruption');
+          return;
         }
       }
 
@@ -666,7 +681,8 @@ export class BinanceFuturesKlineStreamService {
             openTime: openTime.toISOString(),
             wsVolume: update.volume,
             reason: suspiciousCheck.reason,
-          }, 'Suspicious futures kline data and REST API unavailable');
+          }, 'Suspicious futures kline data and REST API unavailable - SKIPPING save to prevent corruption');
+          return;
         }
       }
 

@@ -68,7 +68,7 @@ export interface CorruptedKline {
 }
 
 export interface OHLCMismatch {
-  field: 'open' | 'high' | 'low' | 'close';
+  field: 'open' | 'high' | 'low' | 'close' | 'volume';
   dbValue: number;
   apiValue: number;
   diffPercent: number;
@@ -297,9 +297,8 @@ export class KlineValidator {
     const comparison = compareOHLC(kline, apiKline);
 
     const mismatches: OHLCMismatch[] = comparison.mismatchFields
-      .filter(field => field !== 'volume')
       .map(field => ({
-        field: field as 'open' | 'high' | 'low' | 'close',
+        field: field as 'open' | 'high' | 'low' | 'close' | 'volume',
         dbValue: comparison.ws[field as keyof typeof comparison.ws],
         apiValue: comparison.rest[field as keyof typeof comparison.rest],
         diffPercent: Math.abs(comparison.ws[field as keyof typeof comparison.ws] - comparison.rest[field as keyof typeof comparison.rest]) / comparison.rest[field as keyof typeof comparison.rest] * 100,
@@ -325,6 +324,12 @@ export class KlineValidator {
       if (data.length === 0) return null;
 
       const k = data[0];
+      const returnedOpenTime = k[0] as number;
+
+      if (returnedOpenTime !== timestamp) {
+        return null;
+      }
+
       return {
         openTime: k[0],
         open: k[1],
@@ -341,5 +346,85 @@ export class KlineValidator {
     } catch {
       return null;
     }
+  }
+
+  static async fetchBinanceKlinesBatch(
+    symbol: string,
+    interval: string,
+    startTime: number,
+    endTime: number,
+    marketType: 'SPOT' | 'FUTURES'
+  ): Promise<Map<number, BinanceKlineResponse>> {
+    const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
+    const url = `${baseUrl}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=1000`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return new Map();
+
+      const data = await response.json();
+      const klineMap = new Map<number, BinanceKlineResponse>();
+
+      for (const k of data) {
+        klineMap.set(k[0] as number, {
+          openTime: k[0],
+          open: k[1],
+          high: k[2],
+          low: k[3],
+          close: k[4],
+          volume: k[5],
+          closeTime: k[6],
+          quoteVolume: k[7],
+          trades: k[8],
+          takerBuyBaseVolume: k[9],
+          takerBuyQuoteVolume: k[10],
+        });
+      }
+
+      return klineMap;
+    } catch {
+      return new Map();
+    }
+  }
+
+  static async validateBatchAgainstAPI(
+    dbKlines: DbKline[],
+    symbol: string,
+    interval: Interval,
+    marketType: 'SPOT' | 'FUTURES'
+  ): Promise<Map<number, ValidationAgainstAPIResult>> {
+    const results = new Map<number, ValidationAgainstAPIResult>();
+    if (dbKlines.length === 0) return results;
+
+    const sortedKlines = [...dbKlines].sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
+    const firstKline = sortedKlines[0];
+    const lastKline = sortedKlines[sortedKlines.length - 1];
+    if (!firstKline || !lastKline) return results;
+    const startTime = firstKline.openTime.getTime();
+    const endTime = lastKline.openTime.getTime();
+
+    const apiKlines = await this.fetchBinanceKlinesBatch(symbol, interval, startTime, endTime, marketType);
+
+    for (const kline of dbKlines) {
+      const openTimeMs = kline.openTime.getTime();
+      const apiKline = apiKlines.get(openTimeMs);
+
+      if (!apiKline) {
+        results.set(openTimeMs, { isValid: true, mismatches: [] });
+        continue;
+      }
+
+      const comparison = compareOHLC(kline, apiKline);
+      const mismatches: OHLCMismatch[] = comparison.mismatchFields.map(field => ({
+        field: field as 'open' | 'high' | 'low' | 'close' | 'volume',
+        dbValue: comparison.ws[field as keyof typeof comparison.ws],
+        apiValue: comparison.rest[field as keyof typeof comparison.rest],
+        diffPercent: Math.abs(comparison.ws[field as keyof typeof comparison.ws] - comparison.rest[field as keyof typeof comparison.rest]) / comparison.rest[field as keyof typeof comparison.rest] * 100,
+      }));
+
+      results.set(openTimeMs, { isValid: mismatches.length === 0, mismatches });
+    }
+
+    return results;
   }
 }

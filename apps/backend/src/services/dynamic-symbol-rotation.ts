@@ -5,6 +5,7 @@ import { db } from '../db';
 import { activeWatchers, tradeExecutions } from '../db/schema';
 import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
+import { getMinNotionalFilterService, type CapitalRequirement } from './min-notional-filter';
 import { getOpportunityScoringService, type SymbolScore } from './opportunity-scoring';
 import { outputRotationResults, RotationLogBuffer } from './watcher-batch-logger';
 
@@ -24,6 +25,7 @@ export interface RotationConfig {
   interval: string;
   excludedSymbols: string[];
   marketType: MarketType;
+  capitalRequirement?: CapitalRequirement;
 }
 
 export interface RotationResult {
@@ -32,6 +34,7 @@ export interface RotationResult {
   kept: string[];
   skippedWithPositions: string[];
   skippedInsufficientKlines: string[];
+  skippedInsufficientCapital: string[];
   timestamp: Date;
 }
 
@@ -48,11 +51,39 @@ export class DynamicSymbolRotationService {
 
     try {
       const scoringService = getOpportunityScoringService();
-      const scores = await scoringService.getSymbolScores(config.marketType, config.limit * 2);
+      const minNotionalFilter = getMinNotionalFilterService();
 
-      const filteredScores = scores.filter(
+      const fetchMultiplier = config.capitalRequirement ? 4 : 2;
+      const scores = await scoringService.getSymbolScores(config.marketType, config.limit * fetchMultiplier);
+
+      let filteredScores = scores.filter(
         (s) => !config.excludedSymbols.includes(s.symbol)
       );
+
+      const skippedInsufficientCapital: string[] = [];
+
+      if (config.capitalRequirement) {
+        const allSymbols = filteredScores.map(s => s.symbol);
+        const capitalFilter = await minNotionalFilter.filterSymbolsByCapital(
+          allSymbols,
+          config.capitalRequirement,
+          config.marketType
+        );
+
+        skippedInsufficientCapital.push(...capitalFilter.filtered);
+
+        filteredScores = filteredScores.filter(s => capitalFilter.eligible.includes(s.symbol));
+
+        if (skippedInsufficientCapital.length > 0) {
+          logger.info({
+            walletId,
+            marketType: config.marketType,
+            skippedCount: skippedInsufficientCapital.length,
+            eligibleCount: filteredScores.length,
+            capitalPerWatcher: minNotionalFilter.calculateCapitalPerWatcher(config.capitalRequirement).toFixed(2),
+          }, '[DynamicRotation] Filtered symbols by capital requirement');
+        }
+      }
 
       const optimalSymbols = filteredScores.slice(0, config.limit).map((s) => s.symbol);
 
@@ -145,6 +176,7 @@ export class DynamicSymbolRotationService {
         kept,
         skippedWithPositions,
         skippedInsufficientKlines,
+        skippedInsufficientCapital,
         timestamp: new Date(),
       };
 
@@ -164,6 +196,7 @@ export class DynamicSymbolRotationService {
         kept: kept.length,
         skippedWithPositions,
         skippedInsufficientKlines,
+        skippedInsufficientCapital,
       });
 
       outputRotationResults(logBuffer.toResult());
@@ -177,6 +210,7 @@ export class DynamicSymbolRotationService {
         kept: [],
         skippedWithPositions: [],
         skippedInsufficientKlines: [],
+        skippedInsufficientCapital: [],
         timestamp: new Date(),
       };
     }

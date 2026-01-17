@@ -13,6 +13,7 @@ export class RotationLogBuffer {
   private _kept = 0;
   private _skippedWithPositions: string[] = [];
   private _skippedInsufficientKlines: string[] = [];
+  private _skippedInsufficientCapital: string[] = [];
   private _klineValidations: KlineValidationEntry[] = [];
 
   constructor(
@@ -51,12 +52,14 @@ export class RotationLogBuffer {
     kept: number;
     skippedWithPositions: string[];
     skippedInsufficientKlines: string[];
+    skippedInsufficientCapital: string[];
   }): void {
     this._added = result.added;
     this._removed = result.removed;
     this._kept = result.kept;
     this._skippedWithPositions = result.skippedWithPositions;
     this._skippedInsufficientKlines = result.skippedInsufficientKlines;
+    this._skippedInsufficientCapital = result.skippedInsufficientCapital;
   }
 
   addKlineValidation(validation: KlineValidationEntry): void {
@@ -80,6 +83,7 @@ export class RotationLogBuffer {
       kept: this._kept,
       skippedWithPositions: this._skippedWithPositions,
       skippedInsufficientKlines: this._skippedInsufficientKlines,
+      skippedInsufficientCapital: this._skippedInsufficientCapital,
       klineValidations: this._klineValidations,
       hasChanges,
       logs: this.logs,
