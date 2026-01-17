@@ -180,13 +180,14 @@ export const formatBatchResults = (batch: BatchResult): string => {
   if (batch.watcherResults.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Status', 'Klines', 'Setups', 'Trades', 'Time', 'Details'],
-      'cyan'
+      'cyan',
+      [12, 10, 10, 8, 8, 8, 8, 10, 50]
     );
 
     for (const result of batch.watcherResults) {
       const klines = result.klinesCount?.toString() ?? '-';
       const details = result.reason ?? (result.setupsDetected.length > 0
-        ? result.setupsDetected.map(s => `${s.type.slice(0, 15)}(${s.direction[0]})`).join(', ')
+        ? result.setupsDetected.map(s => `${s.type}(${s.direction[0]})`).join(', ')
         : '-');
 
       watcherTable.push([
@@ -198,7 +199,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         result.setupsDetected.length.toString(),
         result.tradesExecuted.toString(),
         `${result.durationMs}ms`,
-        details.slice(0, 38),
+        details,
       ]);
     }
 

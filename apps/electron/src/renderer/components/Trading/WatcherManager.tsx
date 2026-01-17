@@ -124,7 +124,7 @@ export const WatcherManager = () => {
     if (!walletId) return;
     updateConfig.mutate({
       walletId,
-      fibonacciTargetLevel: details.value as 'auto' | '1.272' | '1.618' | '2',
+      fibonacciTargetLevel: details.value as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
     });
   };
 
@@ -820,6 +820,14 @@ export const WatcherManager = () => {
                         <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extended')}</Text>
                         <Text fontSize="xs" color="fg.muted">
                           {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extendedDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                    <Radio value="2.618">
+                      <Box>
+                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtended')}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtendedDescription')}
                         </Text>
                       </Box>
                     </Radio>

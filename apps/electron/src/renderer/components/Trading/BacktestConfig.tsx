@@ -1,9 +1,10 @@
-import { Badge, Box, Flex, Group, HStack, Stack, Text, Icon } from '@chakra-ui/react';
+import { Badge, Box, Flex, Group, HStack, Icon, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import type { BacktestConfig as BacktestConfigType, MarketType } from '@marketmind/types';
+import { BINANCE_DEFAULT_FEES } from '@marketmind/types';
 import { TimeframeSelector, type Timeframe } from '@renderer/components/Chart/TimeframeSelector';
 import { SetupTogglePopover } from '@renderer/components/Layout/SetupTogglePopover';
 import { SymbolSelector } from '@renderer/components/SymbolSelector';
-import { BulkSymbolSelector } from './BulkSymbolSelector';
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { NumberInput } from '@renderer/components/ui/number-input';
@@ -12,10 +13,9 @@ import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
 import { useSetupStore } from '@renderer/store/setupStore';
-import type { BacktestConfig as BacktestConfigType, MarketType } from '@marketmind/types';
-import { BINANCE_DEFAULT_FEES } from '@marketmind/types';
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { LuDownload } from 'react-icons/lu';
+import { BulkSymbolSelector } from './BulkSymbolSelector';
 
 interface BacktestConfigProps {
   onBacktestComplete?: (resultId: string) => void;
@@ -81,7 +81,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [useConfluenceScoring, setUseConfluenceScoring] = useState(true);
   const [confluenceMinScore, setConfluenceMinScore] = useState('60');
   const [tpCalculationMode, setTpCalculationMode] = useState<'default' | 'fibonacci'>('default');
-  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<'auto' | '1' | '1.272' | '1.618' | '2'>('auto');
+  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<'auto' | '1' | '1.272' | '1.618' | '2' | '2.618'>('auto');
 
   const loadFromAutoTrading = useCallback(() => {
     if (!autoTradingConfig) return;
@@ -504,14 +504,14 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
               </HStack>
               {tpCalculationMode === 'fibonacci' && (
                 <HStack gap={1} flexWrap="wrap">
-                  {(['auto', '1.272', '1.618', '2'] as const).map((level) => (
+                  {(['auto', '1.272', '1.618', '2', '2.618'] as const).map((level) => (
                     <Button
                       key={level}
                       size="2xs"
                       variant={fibonacciTargetLevel === level ? 'solid' : 'ghost'}
                       onClick={() => setFibonacciTargetLevel(level)}
                     >
-                      {level === 'auto' ? 'Auto' : `${level}%`}
+                      {level === 'auto' ? 'Auto' : `${(parseFloat(level) * 100).toFixed(1)}%`}
                     </Button>
                   ))}
                 </HStack>

@@ -223,14 +223,16 @@
           "title": "Nivel del Objetivo Fibonacci",
           "auto": "Automático (basado en ADX)",
           "autoDescription": "Selecciona dinámicamente el nivel basado en la fuerza de la tendencia (ADX), volatilidad (ATR) y volumen",
-          "conservative": "100% (Conservador)",
-          "conservativeDescription": "Ideal para mercados laterales o tendencias débiles (ADX < 20)",
-          "moderate": "127.2% (Moderado)",
-          "moderateDescription": "Ideal para condiciones normales de tendencia (ADX 20-30)",
-          "aggressive": "161.8% (Proporción Áurea)",
-          "aggressiveDescription": "El nivel dorado - ideal para tendencias fuertes con confirmación de volumen (ADX > 30)",
-          "extended": "200% (Extendido)",
-          "extendedDescription": "Extensión máxima - solo para rupturas muy fuertes y movimientos de momentum"
+          "conservative": "100% (1.0)",
+          "conservativeDescription": "Objetivo conservador - ideal para mercados laterales o tendencias débiles (ADX < 20)",
+          "moderate": "127.2% (1.272)",
+          "moderateDescription": "Extensión moderada - ideal para condiciones normales de tendencia (ADX 20-30)",
+          "aggressive": "161.8% (1.618)",
+          "aggressiveDescription": "Proporción áurea - ideal para tendencias fuertes con confirmación de volumen (ADX > 30)",
+          "extended": "200% (2.0)",
+          "extendedDescription": "Extensión doble - para rupturas muy fuertes y movimientos de momentum",
+          "superExtended": "261.8% (2.618)",
+          "superExtendedDescription": "Extensión máxima de Fibonacci - para movimientos parabólicos y momentum excepcional"
         }
       },
       "filters": {
