@@ -932,9 +932,10 @@ export const autoTradingRouter = router({
         .limit(1);
 
       const useDynamicSelection = config?.useDynamicSymbolSelection ?? false;
-      const dynamicLimit = config?.dynamicSymbolLimit ?? 20;
+      const configDynamicLimit = config?.dynamicSymbolLimit ?? 50;
+      const dynamicLimit = input.targetCount !== undefined ? Math.max(input.targetCount, configDynamicLimit) : configDynamicLimit;
 
-      log('📊 Config loaded', { useDynamicSelection, dynamicLimit });
+      log('📊 Config loaded', { useDynamicSelection, configDynamicLimit, dynamicLimit, inputTargetCount: input.targetCount });
 
       const existingWatchers = await ctx.db
         .select({ symbol: activeWatchers.symbol })

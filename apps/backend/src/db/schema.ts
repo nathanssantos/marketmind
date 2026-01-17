@@ -231,7 +231,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   tpCalculationMode: varchar('tp_calculation_mode', { length: 20 }).$type<'default' | 'fibonacci'>().default('default').notNull(),
   fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.618' | '2' | '2.618'>().default('auto').notNull(),
   useDynamicSymbolSelection: boolean('use_dynamic_symbol_selection').default(false).notNull(),
-  dynamicSymbolLimit: integer('dynamic_symbol_limit').default(20).notNull(),
+  dynamicSymbolLimit: integer('dynamic_symbol_limit').default(50).notNull(),
   dynamicSymbolRotationInterval: varchar('dynamic_symbol_rotation_interval', { length: 10 }).$type<'1h' | '4h' | '1d'>().default('4h').notNull(),
   dynamicSymbolExcluded: text('dynamic_symbol_excluded'),
   enableAutoRotation: boolean('enable_auto_rotation').default(true).notNull(),

@@ -416,10 +416,12 @@ export class AutoTradingScheduler {
 
       const klineMaintenance = getKlineMaintenance();
 
+      const requiredKlinesForRotation = calculateRequiredKlines();
+
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          log('📥 [DynamicRotation] Starting prefetch', { symbol, interval, marketType });
-          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, silent: false });
+          log('📥 [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
+          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, targetCount: requiredKlinesForRotation, silent: false });
           log('📊 [DynamicRotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
@@ -734,6 +736,7 @@ export class AutoTradingScheduler {
         symbol: watcher.symbol,
         interval: watcher.interval,
         marketType: watcher.marketType,
+        targetCount: requiredKlines,
         silent: true,
       });
 
@@ -2579,10 +2582,12 @@ export class AutoTradingScheduler {
         symbols: symbolsToAdd.join(', '),
       });
 
+      const requiredKlinesForApply = calculateRequiredKlines();
+
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          log('📥 [Rotation] Starting prefetch', { symbol, interval, marketType });
-          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, silent: false });
+          log('📥 [Rotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForApply });
+          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, targetCount: requiredKlinesForApply, silent: false });
           log('📊 [Rotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
