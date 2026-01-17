@@ -292,10 +292,12 @@ export class AutoTradingScheduler {
     this.configCache.delete(walletId);
   }
 
-  private async checkAllRotationsOnce(): Promise<void> {
+  private async checkAllRotationsOnce(): Promise<string[]> {
+    const allAddedWatcherIds: string[] = [];
+
     if (this.rotationStates.size === 0) {
       log('📊 [DynamicRotation] No rotation states configured');
-      return;
+      return allAddedWatcherIds;
     }
 
     const now = Date.now();
@@ -313,7 +315,7 @@ export class AutoTradingScheduler {
     }
 
     if (rotationsToExecute.length === 0) {
-      return;
+      return allAddedWatcherIds;
     }
 
     log('🔄 [DynamicRotation] Checking rotations', {
@@ -334,7 +336,7 @@ export class AutoTradingScheduler {
 
         if (result.added.length > 0 || result.removed.length > 0) {
           const walletId = stateKey.split(':')[0]!;
-          await this.applyRotationWithQueue(
+          const addedIds = await this.applyRotationWithQueue(
             walletId,
             state.userId,
             result,
@@ -342,6 +344,7 @@ export class AutoTradingScheduler {
             state.profileId,
             state.config.marketType
           );
+          allAddedWatcherIds.push(...addedIds);
         }
 
         state.lastCheckTime = now;
@@ -354,6 +357,8 @@ export class AutoTradingScheduler {
         this.isCheckingRotation.delete(stateKey);
       }
     }
+
+    return allAddedWatcherIds;
   }
 
   private async applyRotationWithQueue(
@@ -363,7 +368,9 @@ export class AutoTradingScheduler {
     interval: string,
     profileId?: string,
     marketType: MarketType = 'SPOT'
-  ): Promise<void> {
+  ): Promise<string[]> {
+    const addedWatcherIds: string[] = [];
+
     for (const symbol of result.removed) {
       const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
       const idx = this.processingQueue.indexOf(watcherId);
@@ -371,39 +378,40 @@ export class AutoTradingScheduler {
       await this.stopWatcher(walletId, symbol, interval, marketType);
     }
 
-    const symbolsToBackfill = result.added.filter(symbol => {
+    const symbolsToAdd = result.added.filter(symbol => {
       const existingWatcher = this.activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
       return !existingWatcher;
     });
 
-    if (symbolsToBackfill.length > 0) {
+    if (symbolsToAdd.length > 0) {
       log('📥 [DynamicRotation] Backfilling new symbols', {
-        count: symbolsToBackfill.length,
-        symbols: symbolsToBackfill.join(', '),
+        count: symbolsToAdd.length,
+        symbols: symbolsToAdd.join(', '),
       });
 
+      const klineMaintenance = getKlineMaintenance();
+
       await Promise.all(
-        symbolsToBackfill.map(symbol =>
-          prefetchKlines({ symbol, interval, marketType, silent: true })
-        )
+        symbolsToAdd.map(async (symbol) => {
+          await prefetchKlines({ symbol, interval, marketType, silent: true });
+          await klineMaintenance.forceCheckSymbol(symbol, interval as Interval, marketType);
+        })
       );
     }
 
-    for (const symbol of result.added) {
+    for (const symbol of symbolsToAdd) {
       const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
-      if (!this.activeWatchers.has(watcherId)) {
-        await this.startWatcher(walletId, userId, symbol, interval, profileId, false, marketType, false, false);
-        if (!this.processingQueue.includes(watcherId)) {
-          this.processingQueue.push(watcherId);
-        }
-      }
+      await this.startWatcher(walletId, userId, symbol, interval, profileId, false, marketType, false, false, true);
+      addedWatcherIds.push(watcherId);
     }
 
     log('📊 [DynamicRotation] Applied changes', {
-      added: result.added.length,
+      added: addedWatcherIds.length,
       removed: result.removed.length,
       queueSize: this.processingQueue.length,
     });
+
+    return addedWatcherIds;
   }
 
   private async getCachedFundingRate(symbol: string): Promise<number | null> {
@@ -448,7 +456,15 @@ export class AutoTradingScheduler {
       this.pendingCycleStartTime = new Date();
       this.pendingResults = [];
 
-      await this.checkAllRotationsOnce();
+      const newWatcherIds = await this.checkAllRotationsOnce();
+
+      if (newWatcherIds.length > 0) {
+        log('📥 [DynamicRotation] Adding new watchers to current cycle', {
+          count: newWatcherIds.length,
+          watcherIds: newWatcherIds.slice(0, 5).join(', ') + (newWatcherIds.length > 5 ? '...' : ''),
+        });
+        this.processingQueue.push(...newWatcherIds);
+      }
     }
 
     while (this.processingQueue.length > 0) {
@@ -483,7 +499,7 @@ export class AutoTradingScheduler {
 
     const hasPendingWatchers = this.pendingResults.some(r => r.status === 'pending');
 
-    if (!hasPendingWatchers && this.pendingResults.length > 0) {
+    if (this.pendingResults.length > 0) {
       const unifiedResult = createBatchResult(
         this.pendingCycleId!,
         this.pendingCycleStartTime!,
@@ -491,10 +507,12 @@ export class AutoTradingScheduler {
       );
       outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS, this.getConfigCacheStats());
 
-      this.pendingCycleId = null;
-      this.pendingCycleStartTime = null;
-      this.pendingResults = [];
-      this.processedThisCycle.clear();
+      if (!hasPendingWatchers) {
+        this.pendingCycleId = null;
+        this.pendingCycleStartTime = null;
+        this.pendingResults = [];
+        this.processedThisCycle.clear();
+      }
     }
 
     this.isProcessingQueue = false;
@@ -653,9 +671,51 @@ export class AutoTradingScheduler {
     }
 
     const now = Date.now();
+    const intervalMs = this.getIntervalMs(watcher.interval);
+    const expectedCandleOpenTime = Math.floor(now / intervalMs) * intervalMs - intervalMs;
     const candleCloseTime = lastCandle.closeTime;
     const safeCloseTime = candleCloseTime + CANDLE_CLOSE_SAFETY_BUFFER_MS;
     const isCandleClosed = now >= safeCloseTime;
+
+    if (lastCandle.openTime < expectedCandleOpenTime) {
+      const missingCandleCloseTime = expectedCandleOpenTime + intervalMs;
+      const safeMissingClose = missingCandleCloseTime + CANDLE_CLOSE_SAFETY_BUFFER_MS;
+      const waitMs = Math.max(0, safeMissingClose - now);
+
+      if (waitMs > 0 && waitMs < 10000) {
+        logBuffer.log('⏳', 'Waiting for latest candle', {
+          expected: new Date(expectedCandleOpenTime).toISOString(),
+          actual: new Date(lastCandle.openTime).toISOString(),
+          waitMs,
+        });
+
+        setTimeout(() => {
+          this.queueWatcherProcessing(watcherId);
+        }, waitMs + 500);
+
+        return logBuffer.toResult('pending', `Waiting for latest candle (${Math.ceil(waitMs / 1000)}s)`);
+      }
+
+      logBuffer.log('📥', 'Fetching latest candle', {
+        expected: new Date(expectedCandleOpenTime).toISOString(),
+        actual: new Date(lastCandle.openTime).toISOString(),
+      });
+
+      const result = await prefetchKlines({
+        symbol: watcher.symbol,
+        interval: watcher.interval,
+        marketType: watcher.marketType,
+        silent: true,
+      });
+
+      if (result.success && result.downloaded > 0) {
+        setTimeout(() => {
+          this.queueWatcherProcessing(watcherId);
+        }, 500);
+
+        return logBuffer.toResult('pending', 'Fetched missing candle, reprocessing');
+      }
+    }
 
     if (!isCandleClosed) {
       const remainingMs = safeCloseTime - now;
@@ -789,7 +849,7 @@ export class AutoTradingScheduler {
     skipDbPersist: boolean = false,
     marketType: MarketType = 'SPOT',
     isManual: boolean = true,
-    runImmediateCheck: boolean = false,
+    _runImmediateCheck: boolean = false,
     silent: boolean = false
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
@@ -911,21 +971,6 @@ export class AutoTradingScheduler {
       binanceKlineStreamService.subscribe(symbol, interval);
     }
 
-    if (runImmediateCheck) {
-      setImmediate(() => {
-        void (async () => {
-          try {
-            const result = await prefetchKlines({ symbol, interval, marketType, silent: true });
-            if (!result.success) return;
-            const apiExhausted = result.alreadyComplete || result.gaps === 0;
-            if (!meetsKlineRequirementWithTolerance(result.totalInDb, ABSOLUTE_MINIMUM_KLINES, apiExhausted)) return;
-            this.queueWatcherProcessing(watcherId);
-          } catch {
-            // Non-fatal immediate check error
-          }
-        })();
-      });
-    }
   }
 
   async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'SPOT'): Promise<void> {
@@ -2294,7 +2339,12 @@ export class AutoTradingScheduler {
     };
 
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
-    await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
+    const addedWatcherIds = await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
+
+    if (addedWatcherIds.length > 0) {
+      this.processingQueue.push(...addedWatcherIds);
+      void this.processWatcherQueue();
+    }
 
     if (enableAutoRotation) {
       const stateKey = getRotationStateKey(walletId, config.interval);
@@ -2359,7 +2409,9 @@ export class AutoTradingScheduler {
     interval: string,
     profileId?: string,
     marketType: MarketType = 'SPOT'
-  ): Promise<void> {
+  ): Promise<string[]> {
+    const addedWatcherIds: string[] = [];
+
     for (const symbol of result.removed) {
       const existingWatcher = await db
         .select()
@@ -2381,6 +2433,7 @@ export class AutoTradingScheduler {
     const klineMaintenance = getKlineMaintenance();
     const validations: Array<{ symbol: string; gapsFilled: number; corruptedFixed: number }> = [];
 
+    const symbolsToAdd: string[] = [];
     for (const symbol of result.added) {
       const existingWatcher = await db
         .select()
@@ -2394,32 +2447,51 @@ export class AutoTradingScheduler {
         .limit(1);
 
       if (existingWatcher.length === 0) {
-        const validationResult = await klineMaintenance.forceCheckSymbol(
-          symbol,
-          interval as Interval,
-          marketType
-        );
-
-        if (validationResult.gapsFilled > 0 || validationResult.corruptedFixed > 0) {
-          validations.push({
-            symbol,
-            gapsFilled: validationResult.gapsFilled,
-            corruptedFixed: validationResult.corruptedFixed,
-          });
-        }
-
-        await this.startWatcher(
-          walletId,
-          userId,
-          symbol,
-          interval,
-          profileId,
-          false,
-          marketType,
-          false,
-          true
-        );
+        symbolsToAdd.push(symbol);
       }
+    }
+
+    if (symbolsToAdd.length > 0) {
+      log('📥 [Rotation] Backfilling new symbols', {
+        count: symbolsToAdd.length,
+        symbols: symbolsToAdd.join(', '),
+      });
+
+      await Promise.all(
+        symbolsToAdd.map(async (symbol) => {
+          await prefetchKlines({ symbol, interval, marketType, silent: true });
+          const validationResult = await klineMaintenance.forceCheckSymbol(
+            symbol,
+            interval as Interval,
+            marketType
+          );
+
+          if (validationResult.gapsFilled > 0 || validationResult.corruptedFixed > 0) {
+            validations.push({
+              symbol,
+              gapsFilled: validationResult.gapsFilled,
+              corruptedFixed: validationResult.corruptedFixed,
+            });
+          }
+        })
+      );
+    }
+
+    for (const symbol of symbolsToAdd) {
+      const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
+      await this.startWatcher(
+        walletId,
+        userId,
+        symbol,
+        interval,
+        profileId,
+        false,
+        marketType,
+        false,
+        false,
+        true
+      );
+      addedWatcherIds.push(watcherId);
     }
 
     if (validations.length > 0) {
@@ -2430,6 +2502,13 @@ export class AutoTradingScheduler {
         details: validations,
       });
     }
+
+    log('📊 [Rotation] Applied changes', {
+      added: addedWatcherIds.length,
+      removed: result.removed.length,
+    });
+
+    return addedWatcherIds;
   }
 
   async triggerManualRotation(
@@ -2455,7 +2534,12 @@ export class AutoTradingScheduler {
     };
 
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);
-    await this.applyRotation(walletId, userId, result, config.interval, config.profileId, config.marketType);
+    const addedWatcherIds = await this.applyRotation(walletId, userId, result, config.interval, config.profileId, config.marketType);
+
+    if (addedWatcherIds.length > 0) {
+      this.processingQueue.push(...addedWatcherIds);
+      void this.processWatcherQueue();
+    }
 
     return result;
   }
