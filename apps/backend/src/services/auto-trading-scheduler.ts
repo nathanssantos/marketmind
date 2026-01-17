@@ -497,7 +497,7 @@ export class AutoTradingScheduler {
 
     if (this.pendingResults.length > 0) {
       const unifiedResult = createBatchResult(
-        this.pendingCycleId!,
+        this.pendingCycleId,
         this.pendingCycleStartTime!,
         this.pendingResults
       );
@@ -2307,7 +2307,7 @@ export class AutoTradingScheduler {
     fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = 'auto'
   ): number | null {
     const fib = setup.fibonacciProjection;
-    if (!fib || !fib.levels || fib.levels.length === 0) return null;
+    if (!fib?.levels || fib.levels.length === 0) return null;
 
     const targetLevel = fibonacciTargetLevel === 'auto'
       ? fib.primaryLevel

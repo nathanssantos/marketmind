@@ -1,9 +1,9 @@
-import type { Interval, BacktestConfig, BacktestResult, MultiWatcherBacktestResult } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, Interval, MultiWatcherBacktestResult } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { BacktestEngine } from '../services/backtesting/BacktestEngine';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
-import { loadMultiWatcherConfigFromAutoTrading, buildMultiWatcherConfigFromWatchers } from '../services/backtesting/configLoader';
+import { buildMultiWatcherConfigFromWatchers, loadMultiWatcherConfigFromAutoTrading } from '../services/backtesting/configLoader';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
