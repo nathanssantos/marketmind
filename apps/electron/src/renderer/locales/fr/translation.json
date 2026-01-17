@@ -172,7 +172,10 @@
       "topPadding": "Marge supérieure",
       "bottomPadding": "Marge inférieure",
       "leftPadding": "Marge gauche",
-      "rightPadding": "Marge droite"
+      "rightPadding": "Marge droite",
+      "trading": "Trading",
+      "enableShiftAltOrderEntry": "Activer la Saisie d'Ordres Shift/Alt",
+      "enableShiftAltOrderEntryHelper": "Maintenez Shift pour prévisualiser les ordres long ou Alt/Option pour prévisualiser les ordres short en cliquant sur le graphique"
     },
     "tradingSimulator": {
       "title": "Paramètres du Simulateur de Trading",

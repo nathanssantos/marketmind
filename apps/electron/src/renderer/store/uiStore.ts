@@ -15,6 +15,7 @@ const MIGRATION_VERSION_4 = 4;
 const MIGRATION_VERSION_5 = 5;
 const MIGRATION_VERSION_6 = 6;
 const MIGRATION_VERSION_7 = 7;
+const MIGRATION_VERSION_8 = 8;
 
 interface UIState {
   tradingSidebarTab: TradingSidebarTab;
@@ -58,6 +59,9 @@ interface UIState {
 
   showEventRow: boolean;
   setShowEventRow: (show: boolean) => void;
+
+  enableShiftAltOrderEntry: boolean;
+  setEnableShiftAltOrderEntry: (enabled: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -104,10 +108,13 @@ export const useUIStore = create<UIState>()(
 
       showEventRow: false,
       setShowEventRow: (show) => set({ showEventRow: show }),
+
+      enableShiftAltOrderEntry: false,
+      setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
     }),
     {
       name: 'ui-storage',
-      version: 7,
+      version: 8,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as UIState;
 
@@ -135,6 +142,10 @@ export const useUIStore = create<UIState>()(
 
         if (version < MIGRATION_VERSION_7) {
           state.showEventRow = false;
+        }
+
+        if (version < MIGRATION_VERSION_8) {
+          state.enableShiftAltOrderEntry = false;
         }
 
         return state;

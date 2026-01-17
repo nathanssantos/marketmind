@@ -693,15 +693,18 @@ class KlineMaintenance {
       );
       if (alreadyMarked) continue;
 
-      const isValid = await KlineValidator.validateAgainstAPI(
+      const validationResult = await KlineValidator.validateAgainstAPI(
         kline,
         pair.symbol,
         pair.interval,
         pair.marketType
       );
 
-      if (!isValid) {
-        corruptedKlines.push({ kline, reason: 'API validation mismatch' });
+      if (!validationResult.isValid) {
+        const mismatchDetails = validationResult.mismatches
+          .map((m) => `${m.field}: ${m.dbValue} vs ${m.apiValue} (${m.diffPercent.toFixed(2)}%)`)
+          .join(', ');
+        corruptedKlines.push({ kline, reason: `API validation mismatch: ${mismatchDetails}` });
       }
     }
 

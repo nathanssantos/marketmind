@@ -1,3 +1,4 @@
+import { useUIStore } from '@/renderer/store/uiStore';
 import { useEffect, useState } from 'react';
 
 export interface TradingShortcutsConfig {
@@ -6,13 +7,12 @@ export interface TradingShortcutsConfig {
   enabled: boolean;
 }
 
-export const ENABLE_SHIFT_ALT_ORDER_ENTRY = false;
-
 export const useTradingShortcuts = (config: TradingShortcutsConfig) => {
   const [shiftPressed, setShiftPressed] = useState(false);
   const [altPressed, setAltPressed] = useState(false);
+  const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
 
-  const featureEnabled = config.enabled && ENABLE_SHIFT_ALT_ORDER_ENTRY;
+  const featureEnabled = config.enabled && enableShiftAltOrderEntry;
 
   useEffect(() => {
     if (!featureEnabled) {

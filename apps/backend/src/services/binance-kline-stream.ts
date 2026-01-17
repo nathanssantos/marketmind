@@ -10,7 +10,7 @@ import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
-import { KlineValidator } from './kline-validator';
+import { KlineValidator, compareOHLC } from './kline-validator';
 
 class ReconnectionGuard {
   private isInGracePeriod = false;
@@ -325,18 +325,17 @@ export class BinanceKlineStreamService {
       };
 
       if (restData) {
-        const wsVolume = parseFloat(update.volume);
-        const restVolume = parseFloat(restData.volume);
+        const comparison = compareOHLC(update, restData);
 
-        if (wsVolume < restVolume * 0.9) {
+        if (comparison.hasMismatch) {
           logger.warn({
             symbol: update.symbol,
             interval: update.interval,
             openTime: openTime.toISOString(),
-            wsVolume: update.volume,
-            restVolume: restData.volume,
-            volumeRatio: ((wsVolume / restVolume) * 100).toFixed(2) + '%',
-          }, 'WebSocket volume lower than REST API, using REST data');
+            mismatchFields: comparison.mismatchFields.join(', '),
+            ws: comparison.ws,
+            rest: comparison.rest,
+          }, 'WebSocket data differs from REST API, using REST data');
 
           finalData = {
             open: restData.open,
@@ -633,18 +632,17 @@ export class BinanceFuturesKlineStreamService {
       };
 
       if (restData) {
-        const wsVolume = parseFloat(update.volume);
-        const restVolume = parseFloat(restData.volume);
+        const comparison = compareOHLC(update, restData);
 
-        if (wsVolume < restVolume * 0.9) {
+        if (comparison.hasMismatch) {
           logger.warn({
             symbol: update.symbol,
             interval: update.interval,
             openTime: openTime.toISOString(),
-            wsVolume: update.volume,
-            restVolume: restData.volume,
-            volumeRatio: ((wsVolume / restVolume) * 100).toFixed(2) + '%',
-          }, 'WebSocket volume lower than REST API, using REST data');
+            mismatchFields: comparison.mismatchFields.join(', '),
+            ws: comparison.ws,
+            rest: comparison.rest,
+          }, 'WebSocket data differs from REST API, using REST data');
 
           finalData = {
             open: restData.open,

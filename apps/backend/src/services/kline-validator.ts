@@ -10,6 +10,52 @@ const RANGE_ANOMALY_RATIO = 0.05;
 const BINANCE_SPOT_API = 'https://api.binance.com/api/v3/klines';
 const BINANCE_FUTURES_API = 'https://fapi.binance.com/fapi/v1/klines';
 
+export const OHLC_TOLERANCE = 0.001;
+export const VOLUME_TOLERANCE = 0.9;
+
+export interface OHLCData {
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+}
+
+export interface OHLCComparisonResult {
+  hasMismatch: boolean;
+  mismatchFields: string[];
+  ws: { open: number; high: number; low: number; close: number; volume: number };
+  rest: { open: number; high: number; low: number; close: number; volume: number };
+}
+
+export const compareOHLC = (wsData: OHLCData, restData: OHLCData): OHLCComparisonResult => {
+  const ws = {
+    open: parseFloat(wsData.open),
+    high: parseFloat(wsData.high),
+    low: parseFloat(wsData.low),
+    close: parseFloat(wsData.close),
+    volume: parseFloat(wsData.volume),
+  };
+
+  const rest = {
+    open: parseFloat(restData.open),
+    high: parseFloat(restData.high),
+    low: parseFloat(restData.low),
+    close: parseFloat(restData.close),
+    volume: parseFloat(restData.volume),
+  };
+
+  const mismatchFields: string[] = [];
+
+  if (ws.volume < rest.volume * VOLUME_TOLERANCE) mismatchFields.push('volume');
+  if (Math.abs(ws.open - rest.open) / rest.open > OHLC_TOLERANCE) mismatchFields.push('open');
+  if (Math.abs(ws.high - rest.high) / rest.high > OHLC_TOLERANCE) mismatchFields.push('high');
+  if (Math.abs(ws.low - rest.low) / rest.low > OHLC_TOLERANCE) mismatchFields.push('low');
+  if (Math.abs(ws.close - rest.close) / rest.close > OHLC_TOLERANCE) mismatchFields.push('close');
+
+  return { hasMismatch: mismatchFields.length > 0, mismatchFields, ws, rest };
+};
+
 export interface ValidationResult {
   isValid: boolean;
   reason?: string;
@@ -248,29 +294,16 @@ export class KlineValidator {
 
     if (!apiKline) return { isValid: true, mismatches: [] };
 
-    const tolerance = 0.001;
-    const fields: Array<{ name: 'open' | 'high' | 'low' | 'close'; db: number; api: number }> = [
-      { name: 'open', db: parseFloat(kline.open), api: parseFloat(apiKline.open) },
-      { name: 'high', db: parseFloat(kline.high), api: parseFloat(apiKline.high) },
-      { name: 'low', db: parseFloat(kline.low), api: parseFloat(apiKline.low) },
-      { name: 'close', db: parseFloat(kline.close), api: parseFloat(apiKline.close) },
-    ];
+    const comparison = compareOHLC(kline, apiKline);
 
-    const mismatches: OHLCMismatch[] = [];
-
-    for (const field of fields) {
-      const diff = Math.abs(field.db - field.api);
-      const relativeDiff = diff / field.api;
-
-      if (relativeDiff > tolerance) {
-        mismatches.push({
-          field: field.name,
-          dbValue: field.db,
-          apiValue: field.api,
-          diffPercent: relativeDiff * 100,
-        });
-      }
-    }
+    const mismatches: OHLCMismatch[] = comparison.mismatchFields
+      .filter(field => field !== 'volume')
+      .map(field => ({
+        field: field as 'open' | 'high' | 'low' | 'close',
+        dbValue: comparison.ws[field as keyof typeof comparison.ws],
+        apiValue: comparison.rest[field as keyof typeof comparison.rest],
+        diffPercent: Math.abs(comparison.ws[field as keyof typeof comparison.ws] - comparison.rest[field as keyof typeof comparison.rest]) / comparison.rest[field as keyof typeof comparison.rest] * 100,
+      }));
 
     return { isValid: mismatches.length === 0, mismatches };
   }

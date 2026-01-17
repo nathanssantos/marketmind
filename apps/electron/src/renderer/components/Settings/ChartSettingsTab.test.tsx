@@ -13,6 +13,16 @@ vi.mock('@/renderer/hooks/useDebounceCallback', () => ({
     useDebounceCallback: (fn: (...args: unknown[]) => void) => fn,
 }));
 
+const mockSetEnableShiftAltOrderEntry = vi.fn();
+
+vi.mock('@/renderer/store/uiStore', () => ({
+    useUIStore: (selector: (state: { enableShiftAltOrderEntry: boolean; setEnableShiftAltOrderEntry: typeof mockSetEnableShiftAltOrderEntry }) => unknown) =>
+        selector({
+            enableShiftAltOrderEntry: false,
+            setEnableShiftAltOrderEntry: mockSetEnableShiftAltOrderEntry,
+        }),
+}));
+
 const renderWithChakra = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>
@@ -39,6 +49,7 @@ describe('ChartSettingsTab', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockSetEnableShiftAltOrderEntry.mockClear();
     });
 
     it('renders reset button', () => {
@@ -323,6 +334,25 @@ describe('ChartSettingsTab', () => {
             ...mockConfig,
             paddingRight: 18,
         });
+    });
+
+    it('renders trading section with shift/alt order entry toggle', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        expect(screen.getByText('settings.chart.trading')).toBeDefined();
+        expect(screen.getByText('settings.chart.enableShiftAltOrderEntry')).toBeDefined();
+        expect(screen.getByText('settings.chart.enableShiftAltOrderEntryHelper')).toBeDefined();
+    });
+
+    it('renders shift/alt order entry checkbox', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        const checkbox = screen.getByRole('checkbox', { name: /enableShiftAltOrderEntry/i });
+        expect(checkbox).toBeDefined();
     });
 
 });

@@ -164,6 +164,7 @@ describe('uiStore', () => {
       expect(typeof state.setOrdersTableSort).toBe('function');
       expect(typeof state.setPortfolioTableSort).toBe('function');
       expect(typeof state.setOrdersSortBy).toBe('function');
+      expect(typeof state.setEnableShiftAltOrderEntry).toBe('function');
     });
 
     it('should expose all state properties', () => {
@@ -181,6 +182,7 @@ describe('uiStore', () => {
       expect(state.portfolioTableSortKey).toBeDefined();
       expect(state.portfolioTableSortDirection).toBeDefined();
       expect(state.ordersSortBy).toBeDefined();
+      expect(state.enableShiftAltOrderEntry).toBeDefined();
     });
   });
 
@@ -355,6 +357,26 @@ describe('uiStore', () => {
       const { setOrdersSortBy } = useUIStore.getState();
       setOrdersSortBy('price-desc');
       expect(useUIStore.getState().ordersSortBy).toBe('price-desc');
+    });
+  });
+
+  describe('enableShiftAltOrderEntry', () => {
+    it('should initialize with false', () => {
+      const state = useUIStore.getState();
+      expect(state.enableShiftAltOrderEntry).toBe(false);
+    });
+
+    it('should update to true', () => {
+      const { setEnableShiftAltOrderEntry } = useUIStore.getState();
+      setEnableShiftAltOrderEntry(true);
+      expect(useUIStore.getState().enableShiftAltOrderEntry).toBe(true);
+    });
+
+    it('should update back to false', () => {
+      const { setEnableShiftAltOrderEntry } = useUIStore.getState();
+      setEnableShiftAltOrderEntry(true);
+      setEnableShiftAltOrderEntry(false);
+      expect(useUIStore.getState().enableShiftAltOrderEntry).toBe(false);
     });
   });
 });

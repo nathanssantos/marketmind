@@ -172,7 +172,10 @@
       "topPadding": "Preenchimento Superior",
       "bottomPadding": "Preenchimento Inferior",
       "leftPadding": "Preenchimento Esquerdo",
-      "rightPadding": "Preenchimento Direito"
+      "rightPadding": "Preenchimento Direito",
+      "trading": "Trading",
+      "enableShiftAltOrderEntry": "Habilitar Entrada de Ordens com Shift/Alt",
+      "enableShiftAltOrderEntryHelper": "Segure Shift para visualizar ordens long ou Alt/Option para visualizar ordens short ao clicar no gráfico"
     },
     "tradingSimulator": {
       "title": "Configurações do Simulador de Trading",

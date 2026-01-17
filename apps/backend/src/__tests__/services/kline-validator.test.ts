@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { KlineValidator } from '../../services/kline-validator';
+import { KlineValidator, compareOHLC, OHLC_TOLERANCE, VOLUME_TOLERANCE } from '../../services/kline-validator';
 
 describe('KlineValidator', () => {
   describe('isKlineDataSuspicious', () => {
@@ -304,5 +304,122 @@ describe('KlineValidator', () => {
       const result = KlineValidator.isKlineSpikeCorrupted(curr, null, next);
       expect(result).toBeNull();
     });
+  });
+});
+
+describe('compareOHLC', () => {
+  const createOHLC = (open: string, high: string, low: string, close: string, volume: string) => ({
+    open, high, low, close, volume,
+  });
+
+  it('should return no mismatch for identical data', () => {
+    const wsData = createOHLC('100', '105', '95', '102', '1000');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(false);
+    expect(result.mismatchFields).toHaveLength(0);
+  });
+
+  it('should return no mismatch for data within tolerance', () => {
+    const wsData = createOHLC('100.05', '105.05', '95.05', '102.05', '1000');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(false);
+  });
+
+  it('should detect close mismatch above tolerance', () => {
+    const wsData = createOHLC('100', '105', '95', '103', '1000');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(true);
+    expect(result.mismatchFields).toContain('close');
+  });
+
+  it('should detect high mismatch', () => {
+    const wsData = createOHLC('100', '110', '95', '102', '1000');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(true);
+    expect(result.mismatchFields).toContain('high');
+  });
+
+  it('should detect low mismatch', () => {
+    const wsData = createOHLC('100', '105', '90', '102', '1000');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(true);
+    expect(result.mismatchFields).toContain('low');
+  });
+
+  it('should detect open mismatch', () => {
+    const wsData = createOHLC('99', '105', '95', '102', '1000');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(true);
+    expect(result.mismatchFields).toContain('open');
+  });
+
+  it('should detect volume mismatch (WS < REST * 0.9)', () => {
+    const wsData = createOHLC('100', '105', '95', '102', '800');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(true);
+    expect(result.mismatchFields).toContain('volume');
+  });
+
+  it('should not flag volume when WS >= REST * 0.9', () => {
+    const wsData = createOHLC('100', '105', '95', '102', '950');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.mismatchFields).not.toContain('volume');
+  });
+
+  it('should detect multiple mismatches', () => {
+    const wsData = createOHLC('99', '110', '90', '103', '500');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.hasMismatch).toBe(true);
+    expect(result.mismatchFields.length).toBeGreaterThan(1);
+    expect(result.mismatchFields).toContain('volume');
+    expect(result.mismatchFields).toContain('open');
+    expect(result.mismatchFields).toContain('high');
+    expect(result.mismatchFields).toContain('low');
+    expect(result.mismatchFields).toContain('close');
+  });
+
+  it('should return parsed numeric values in result', () => {
+    const wsData = createOHLC('100.5', '105.5', '95.5', '102.5', '1000.5');
+    const restData = createOHLC('100', '105', '95', '102', '1000');
+
+    const result = compareOHLC(wsData, restData);
+    expect(result.ws.open).toBe(100.5);
+    expect(result.ws.high).toBe(105.5);
+    expect(result.ws.low).toBe(95.5);
+    expect(result.ws.close).toBe(102.5);
+    expect(result.ws.volume).toBe(1000.5);
+    expect(result.rest.open).toBe(100);
+    expect(result.rest.high).toBe(105);
+    expect(result.rest.low).toBe(95);
+    expect(result.rest.close).toBe(102);
+    expect(result.rest.volume).toBe(1000);
+  });
+});
+
+describe('OHLC Constants', () => {
+  it('should have OHLC_TOLERANCE set to 0.001 (0.1%)', () => {
+    expect(OHLC_TOLERANCE).toBe(0.001);
+  });
+
+  it('should have VOLUME_TOLERANCE set to 0.9 (90%)', () => {
+    expect(VOLUME_TOLERANCE).toBe(0.9);
   });
 });

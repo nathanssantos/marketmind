@@ -1,10 +1,12 @@
 import { Button } from '@/renderer/components/ui/button';
+import { Checkbox } from '@/renderer/components/ui/checkbox';
 import { Field } from '@/renderer/components/ui/field';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Grid, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
@@ -18,6 +20,8 @@ interface ChartSettingsTabProps {
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
+  const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
+  const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
 
   const debouncedConfigChange = useDebounceCallback(onConfigChange, 300);
 
@@ -186,6 +190,21 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
         </Grid>
+      </Box>
+
+      <Box>
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          {t('settings.chart.trading')}
+        </Text>
+        <Checkbox
+          checked={enableShiftAltOrderEntry}
+          onCheckedChange={setEnableShiftAltOrderEntry}
+        >
+          {t('settings.chart.enableShiftAltOrderEntry')}
+        </Checkbox>
+        <Text fontSize="xs" color="fg.muted" mt={1} ml={6}>
+          {t('settings.chart.enableShiftAltOrderEntryHelper')}
+        </Text>
       </Box>
 
       <Button
