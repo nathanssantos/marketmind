@@ -2376,7 +2376,7 @@ export class AutoTradingScheduler {
           profileId: watcherInfo.profileId,
           enableAutoRotation: config.enableAutoRotation,
           leverage: config.leverage ?? 1,
-          exposureMultiplier: parseFloat(config.exposureMultiplier ?? '1.5'),
+          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
           walletBalance: walletBalanceMap.get(walletId),
         });
         restoredCount++;
@@ -2457,7 +2457,7 @@ export class AutoTradingScheduler {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
         targetWatchersCount: config.dynamicSymbolLimit,
-        exposureMultiplier: config.exposureMultiplier ?? 1.5,
+        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
       } : undefined,
     };
 
@@ -2671,7 +2671,7 @@ export class AutoTradingScheduler {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
         targetWatchersCount: config.dynamicSymbolLimit,
-        exposureMultiplier: config.exposureMultiplier ?? 1.5,
+        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
       } : undefined,
     };
 

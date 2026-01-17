@@ -1,5 +1,5 @@
 import { colorize, createTable } from '@marketmind/logger';
-import { AUTO_TRADING_CONFIG, FIBONACCI_TARGET_LEVELS } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG, FIBONACCI_TARGET_LEVELS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -979,7 +979,6 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
-      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? '1.5');
 
       const minNotionalFilter = getMinNotionalFilterService();
       const capitalFilterResult = await minNotionalFilter.filterSymbolsByCapital(
@@ -988,7 +987,7 @@ export const autoTradingRouter = router({
           walletBalance,
           leverage,
           targetWatchersCount: dynamicLimit,
-          exposureMultiplier,
+          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
         },
         input.marketType
       );
@@ -1097,7 +1096,7 @@ export const autoTradingRouter = router({
             walletBalance,
             leverage,
             targetWatchersCount: dynamicLimit,
-            exposureMultiplier,
+            exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
           },
           input.marketType
         );
@@ -1144,14 +1143,14 @@ export const autoTradingRouter = router({
           ctx.user.id,
           {
             useDynamicSymbolSelection: true,
-            dynamicSymbolLimit: dynamicLimit,
+            dynamicSymbolLimit: capitalLimitedTarget,
             dynamicSymbolExcluded: config?.dynamicSymbolExcluded ?? null,
             marketType: input.marketType,
             interval: input.interval,
             profileId: input.profileId,
             enableAutoRotation: config?.enableAutoRotation ?? true,
             leverage: config?.leverage ?? 1,
-            exposureMultiplier: parseFloat(config?.exposureMultiplier ?? '1.5'),
+            exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
             walletBalance: parseFloat(wallet.currentBalance ?? '0'),
           }
         );
@@ -1205,6 +1204,58 @@ export const autoTradingRouter = router({
       return scores;
     }),
 
+  getCapitalLimits: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const [config] = await ctx.db
+        .select()
+        .from(autoTradingConfig)
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
+      const leverage = config?.leverage ?? 1;
+      const exposureMultiplier = TRADING_DEFAULTS.EXPOSURE_MULTIPLIER;
+
+      const minNotionalFilter = getMinNotionalFilterService();
+      const availableCapital = minNotionalFilter.calculateAvailableCapital(walletBalance, leverage);
+      const defaultMinNotional = input.marketType === 'FUTURES' ? 5 : 10;
+      const maxAffordableWatchers = minNotionalFilter.calculateMaxAffordableWatchers(
+        availableCapital,
+        exposureMultiplier,
+        defaultMinNotional
+      );
+
+      logApiTable('getCapitalLimits', [
+        ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
+        ['Leverage', `${leverage}x`],
+        ['Exposure Multiplier', `${exposureMultiplier}x`],
+        ['Available Capital', `$${availableCapital.toFixed(2)}`],
+        ['Max Affordable Watchers', maxAffordableWatchers],
+      ]);
+
+      return {
+        walletBalance,
+        leverage,
+        exposureMultiplier,
+        availableCapital,
+        maxAffordableWatchers,
+        minNotional: defaultMinNotional,
+      };
+    }),
+
   triggerSymbolRotation: protectedProcedure
     .input(
       z.object({
@@ -1253,7 +1304,7 @@ export const autoTradingRouter = router({
           interval: config.dynamicSymbolRotationInterval,
           profileId: undefined,
           leverage: config.leverage ?? 1,
-          exposureMultiplier: parseFloat(config.exposureMultiplier ?? '1.5'),
+          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
           walletBalance: parseFloat(wallet.currentBalance ?? '0'),
         }
       );

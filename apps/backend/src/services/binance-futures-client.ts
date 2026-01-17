@@ -254,7 +254,27 @@ export async function submitFuturesOrder(
     if (params.closePosition !== undefined) orderParams.closePosition = params.closePosition ? 'true' : 'false';
     if (params.newClientOrderId) orderParams.newClientOrderId = params.newClientOrderId;
 
+    logger.info({ params, orderParams }, '[Futures] Submitting order to Binance');
+
     const result = await client.submitNewOrder(orderParams);
+
+    logger.info({
+      orderId: result.orderId,
+      symbol: result.symbol,
+      status: result.status,
+      side: result.side,
+      type: result.type,
+      price: result.price,
+      avgPrice: result.avgPrice,
+      origQty: result.origQty,
+      executedQty: result.executedQty,
+      cumQuote: result.cumQuote,
+      timeInForce: result.timeInForce,
+      reduceOnly: result.reduceOnly,
+      positionSide: result.positionSide,
+      stopPrice: result.stopPrice,
+      workingType: result.workingType,
+    }, '[Futures] Order submitted - Binance response');
 
     return {
       orderId: result.orderId,

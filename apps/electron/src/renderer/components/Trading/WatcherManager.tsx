@@ -10,7 +10,7 @@ import { useBackendAutoTrading, useDynamicSymbolScores, useRotationStatus, useTr
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuChartBar, LuChevronDown, LuChevronUp, LuPause, LuPlay, LuPlus, LuRefreshCw, LuTriangleAlert, LuZap } from 'react-icons/lu';
@@ -58,12 +58,25 @@ export const WatcherManager = () => {
   const [watchersExpanded, setWatchersExpanded] = useState(true);
   const [dynamicSelectionExpanded, setDynamicSelectionExpanded] = useState(false);
   const [quickStartCount, setQuickStartCount] = useState(10);
-  const [quickStartTimeframe, setQuickStartTimeframe] = useState<TimeInterval>('4h');
+  const [quickStartTimeframe, setQuickStartTimeframe] = useState<TimeInterval>('30m');
   const [quickStartMarketType, setQuickStartMarketType] = useState<MarketType>('FUTURES');
   const [leverageSettingsExpanded, setLeverageSettingsExpanded] = useState(false);
 
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
+
+  const { data: capitalLimits } = trpc.autoTrading.getCapitalLimits.useQuery(
+    { walletId, marketType: quickStartMarketType },
+    { enabled: !!walletId, staleTime: 30000 }
+  );
+
+  const maxAffordableWatchers = capitalLimits?.maxAffordableWatchers ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
+  const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
+
+  useEffect(() => {
+    if (capitalLimits) setQuickStartCount(effectiveMax);
+  }, [capitalLimits, effectiveMax]);
+
   const symbolFetchLimit = Math.max(quickStartCount * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER, AUTO_TRADING_CONFIG.MIN_SYMBOL_FETCH);
   const { symbolScores, isLoadingScores } = useDynamicSymbolScores(quickStartMarketType, symbolFetchLimit);
 
@@ -571,16 +584,21 @@ export const WatcherManager = () => {
                             onTimeframeChange={setQuickStartTimeframe}
                           />
                         </Box>
-                        <Box flex="0 0 80px">
-                          <NumberInput
-                            min={AUTO_TRADING_CONFIG.TARGET_COUNT.MIN}
-                            max={AUTO_TRADING_CONFIG.TARGET_COUNT.MAX}
-                            value={quickStartCount}
-                            onChange={(e) => setQuickStartCount(parseInt(e.target.value, 10) || 10)}
-                            size="sm"
-                            px={3}
-                          />
-                        </Box>
+                        <Flex align="center" gap={2}>
+                          <Box flex="0 0 70px">
+                            <NumberInput
+                              min={AUTO_TRADING_CONFIG.TARGET_COUNT.MIN}
+                              max={effectiveMax}
+                              value={Math.min(quickStartCount, effectiveMax)}
+                              onChange={(e) => setQuickStartCount(Math.min(parseInt(e.target.value, 10) || 10, effectiveMax))}
+                              size="sm"
+                              px={3}
+                            />
+                          </Box>
+                          <Text fontSize="xs" color="fg.muted" whiteSpace="nowrap" title={capitalLimits ? `$${capitalLimits.walletBalance.toFixed(2)} × ${capitalLimits.leverage}x × ${capitalLimits.exposureMultiplier}x / $${capitalLimits.minNotional * 1.1}` : ''}>
+                            / {effectiveMax} max
+                          </Text>
+                        </Flex>
                         <Text fontSize="sm" color="fg.muted" flex={1}>
                           {t('tradingProfiles.dynamicSelection.quickStartDescription')}
                         </Text>
