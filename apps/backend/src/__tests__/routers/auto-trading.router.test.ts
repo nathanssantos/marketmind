@@ -1,9 +1,9 @@
 import { TRPCError } from '@trpc/server';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
-import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtures';
+import { createAuthenticatedUser, createTestWallet, createTestTradingProfile, createTestActiveWatcher, createTestAutoTradingConfig } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
-import { autoTradingConfig, tradeExecutions, setupDetections } from '../../db/schema';
+import { autoTradingConfig, tradeExecutions, setupDetections, activeWatchers } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { generateEntityId } from '../../utils/id';
 
@@ -649,6 +649,477 @@ describe('Auto-Trading Router', () => {
       expect(status).toBeDefined();
       expect(status.active).toBeDefined();
       expect(status.watchers).toBeDefined();
+    });
+
+    it('should include database watchers in status', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const profile = await createTestTradingProfile({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestActiveWatcher({
+        userId: user.id,
+        walletId: wallet.id,
+        profileId: profile.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+      });
+
+      const status = await caller.autoTrading.getWatcherStatus({ walletId: wallet.id });
+
+      expect(status.watchers).toBeDefined();
+    });
+  });
+
+  describe('startWatcher', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.startWatcher({
+          walletId: 'wallet-1',
+          symbol: 'BTCUSDT',
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should reject if wallet not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.autoTrading.startWatcher({
+          walletId: 'nonexistent',
+          symbol: 'BTCUSDT',
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should reject if wallet does not belong to user', async () => {
+      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+      const wallet = await createTestWallet({ userId: user2.id });
+      const caller = createAuthenticatedCaller(user1, session1);
+
+      await expect(
+        caller.autoTrading.startWatcher({
+          walletId: wallet.id,
+          symbol: 'BTCUSDT',
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should start watcher and create database entry', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const profile = await createTestTradingProfile({ userId: user.id });
+      const db = getTestDatabase();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestAutoTradingConfig({
+        userId: user.id,
+        walletId: wallet.id,
+        isEnabled: true,
+      });
+
+      const result = await caller.autoTrading.startWatcher({
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        profileId: profile.id,
+      });
+
+      expect(result.success).toBe(true);
+
+      const watchers = await db
+        .select()
+        .from(activeWatchers)
+        .where(eq(activeWatchers.walletId, wallet.id));
+
+      expect(watchers.length).toBe(1);
+      expect(watchers[0]!.symbol).toBe('BTCUSDT');
+      expect(watchers[0]!.interval).toBe('1h');
+    });
+  });
+
+  describe('stopWatcher', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.stopWatcher({
+          walletId: 'wallet-1',
+          symbol: 'BTCUSDT',
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should stop watcher successfully', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestActiveWatcher({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+      });
+
+      const result = await caller.autoTrading.stopWatcher({
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject if wallet not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.autoTrading.stopWatcher({
+          walletId: 'nonexistent',
+          symbol: 'BTCUSDT',
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe('stopAllWatchers', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.stopAllWatchers({ walletId: 'wallet-1' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should stop all watchers for wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const db = getTestDatabase();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestActiveWatcher({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+      });
+
+      await createTestActiveWatcher({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'ETHUSDT',
+        interval: '1h',
+      });
+
+      const result = await caller.autoTrading.stopAllWatchers({ walletId: wallet.id });
+
+      expect(result.success).toBe(true);
+
+      const watchers = await db
+        .select()
+        .from(activeWatchers)
+        .where(eq(activeWatchers.walletId, wallet.id));
+
+      expect(watchers.length).toBe(0);
+    });
+
+    it('should not affect other users watchers', async () => {
+      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+      const wallet1 = await createTestWallet({ userId: user1.id });
+      const wallet2 = await createTestWallet({ userId: user2.id });
+      const db = getTestDatabase();
+      const caller = createAuthenticatedCaller(user1, session1);
+
+      await createTestActiveWatcher({
+        userId: user1.id,
+        walletId: wallet1.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+      });
+
+      await createTestActiveWatcher({
+        userId: user2.id,
+        walletId: wallet2.id,
+        symbol: 'ETHUSDT',
+        interval: '1h',
+      });
+
+      await caller.autoTrading.stopAllWatchers({ walletId: wallet1.id });
+
+      const user2Watchers = await db
+        .select()
+        .from(activeWatchers)
+        .where(eq(activeWatchers.walletId, wallet2.id));
+
+      expect(user2Watchers.length).toBe(1);
+    });
+  });
+
+  describe('getTopSymbols', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.getTopSymbols({ limit: 10 })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return symbols list', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getTopSymbols({ limit: 10 });
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe('startWatchersBulk', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.startWatchersBulk({
+          walletId: 'wallet-1',
+          symbols: ['BTCUSDT', 'ETHUSDT'],
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should reject if wallet not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.autoTrading.startWatchersBulk({
+          walletId: 'nonexistent',
+          symbols: ['BTCUSDT'],
+          interval: '1h',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe('getRotationHistory', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.getRotationHistory({ walletId: 'wallet-1' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return rotation history object', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getRotationHistory({ walletId: wallet.id });
+
+      expect(result).toBeDefined();
+      expect(result.history).toBeDefined();
+      expect(Array.isArray(result.history)).toBe(true);
+      expect(result.isActive).toBeDefined();
+    });
+  });
+
+  describe('getRotationStatus', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.getRotationStatus({ walletId: 'wallet-1' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return rotation status', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getRotationStatus({ walletId: wallet.id });
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('getBtcTrendStatus', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(caller.autoTrading.getBtcTrendStatus()).rejects.toThrow(TRPCError);
+    });
+
+    it('should return BTC trend status', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getBtcTrendStatus();
+
+      expect(result).toBeDefined();
+      expect(typeof result.trend).toBe('string');
+    });
+  });
+
+  describe('emergencyStop', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.emergencyStop({ walletId: 'wallet-1' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should stop all trading activity', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const db = getTestDatabase();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestAutoTradingConfig({
+        userId: user.id,
+        walletId: wallet.id,
+        isEnabled: true,
+      });
+
+      await createTestActiveWatcher({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        interval: '1h',
+      });
+
+      const result = await caller.autoTrading.emergencyStop({ walletId: wallet.id });
+
+      expect(result.success).toBe(true);
+
+      const watchers = await db
+        .select()
+        .from(activeWatchers)
+        .where(eq(activeWatchers.walletId, wallet.id));
+
+      expect(watchers.length).toBe(0);
+
+      const [config] = await db
+        .select()
+        .from(autoTradingConfig)
+        .where(eq(autoTradingConfig.walletId, wallet.id));
+
+      expect(config!.isEnabled).toBe(false);
+    });
+
+    it('should reject if wallet not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.autoTrading.emergencyStop({ walletId: 'nonexistent' })
+      ).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe('triggerSymbolRotation', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.triggerSymbolRotation({ walletId: 'wallet-1' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should reject if wallet not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.autoTrading.triggerSymbolRotation({ walletId: 'nonexistent' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should reject if dynamic symbol selection not enabled', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestAutoTradingConfig({
+        userId: user.id,
+        walletId: wallet.id,
+        isEnabled: true,
+      });
+
+      await expect(
+        caller.autoTrading.triggerSymbolRotation({ walletId: wallet.id })
+      ).rejects.toThrow('Dynamic symbol selection is not enabled');
+    });
+  });
+
+  describe('getDynamicSymbolScores', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.getDynamicSymbolScores({ limit: 10 })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return scores array', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getDynamicSymbolScores({ limit: 10 });
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe('getTopCoinsByMarketCap', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.getTopCoinsByMarketCap({ limit: 10 })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return list of coins', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getTopCoinsByMarketCap({ limit: 10 });
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe('getBatchFundingRates', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.autoTrading.getBatchFundingRates({ symbols: ['BTCUSDT'] })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return funding rates object', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.autoTrading.getBatchFundingRates({ symbols: ['BTCUSDT', 'ETHUSDT'] });
+
+      expect(typeof result).toBe('object');
     });
   });
 });

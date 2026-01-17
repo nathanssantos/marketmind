@@ -62,6 +62,15 @@ export const BACKTEST_DEFAULTS = {
   MIN_RISK_REWARD_RATIO: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
 } as const;
 
+export const DEFAULT_ENABLED_SETUPS = [
+  'larry-williams-9-1',
+  'larry-williams-9-2',
+  'larry-williams-9-3',
+  'larry-williams-9-4',
+] as const;
+
+export const SESSION_DURATION_DAYS = 30;
+
 export const TRADE_STATUS = SHARED_TRADE_STATUS;
 export const ACTIVE_TRADE_STATUSES = SHARED_ACTIVE_TRADE_STATUSES;
 export const ORDER_TYPE = SHARED_ORDER_TYPE;

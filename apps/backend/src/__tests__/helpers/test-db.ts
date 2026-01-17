@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS wallets (
   user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   wallet_type VARCHAR(20) DEFAULT 'paper',
+  market_type VARCHAR(10) DEFAULT 'SPOT',
   api_key_encrypted TEXT NOT NULL,
   api_secret_encrypted TEXT NOT NULL,
   initial_balance NUMERIC(20, 8),
@@ -163,6 +164,8 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   dynamic_symbol_limit INTEGER DEFAULT 20 NOT NULL,
   dynamic_symbol_rotation_interval VARCHAR(10) DEFAULT '4h' NOT NULL,
   dynamic_symbol_excluded TEXT,
+  enable_auto_rotation BOOLEAN DEFAULT true NOT NULL,
+  trailing_stop_mode VARCHAR(10) DEFAULT 'local',
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -247,6 +250,15 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   trigger_candle_data TEXT,
   trigger_indicator_values TEXT,
   fibonacci_projection TEXT,
+  entry_fee NUMERIC(20, 8),
+  exit_fee NUMERIC(20, 8),
+  commission_asset VARCHAR(20),
+  trailing_stop_algo_id BIGINT,
+  trailing_stop_mode VARCHAR(10),
+  stop_loss_algo_id BIGINT,
+  take_profit_algo_id BIGINT,
+  stop_loss_is_algo BOOLEAN DEFAULT false,
+  take_profit_is_algo BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -365,6 +377,8 @@ export const getTestDatabase = (): TestDatabase => {
 
 export const cleanupTables = async (): Promise<void> => {
   const db = getTestDatabase();
+  await db.delete(schema.priceCache);
+  await db.delete(schema.klines);
   await db.delete(schema.tradeCooldowns);
   await db.delete(schema.strategyPerformance);
   await db.delete(schema.tradeExecutions);

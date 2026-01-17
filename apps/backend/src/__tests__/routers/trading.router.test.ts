@@ -1,8 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase, cleanupTables } from '../helpers/test-db';
-import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtures';
+import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
+import { createAuthenticatedUser, createTestWallet, createTestTradeExecution } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
+import { eq } from 'drizzle-orm';
+import { tradeExecutions } from '../../db/schema';
 
 describe('Trading Router', () => {
   beforeAll(async () => {
@@ -524,6 +526,298 @@ describe('Trading Router', () => {
       expect(parseFloat(result.totalWalletBalance as string)).toBe(10000);
       expect(parseFloat(result.availableBalance as string)).toBe(10000);
       expect(result.positions).toEqual([]);
+    });
+  });
+
+  describe('getTradeExecutions', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.getTradeExecutions({ walletId: 'wallet-id' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return trade executions for wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        status: 'open',
+      });
+
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'ETHUSDT',
+        status: 'closed',
+      });
+
+      const executions = await caller.trading.getTradeExecutions({
+        walletId: wallet.id,
+      });
+
+      expect(executions.length).toBe(2);
+    });
+
+    it('should filter by status', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'open',
+      });
+
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+      });
+
+      const openExecutions = await caller.trading.getTradeExecutions({
+        walletId: wallet.id,
+        status: 'open',
+      });
+
+      expect(openExecutions.length).toBe(1);
+      expect(openExecutions[0]!.status).toBe('open');
+    });
+
+    it('should return empty array for nonexistent wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.trading.getTradeExecutions({ walletId: 'nonexistent' });
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('closeTradeExecution', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.closeTradeExecution({ id: 'exec-1', exitPrice: '50000' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should close an open trade execution', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '48000',
+        quantity: '0.1',
+        status: 'open',
+      });
+
+      const result = await caller.trading.closeTradeExecution({
+        id: execution.id,
+        exitPrice: '50000',
+      });
+
+      expect(result.pnl).toBeDefined();
+      expect(result.exitPrice).toBe('50000');
+
+      const [closedExecution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution.id))
+        .limit(1);
+
+      expect(closedExecution!.status).toBe('closed');
+    });
+
+    it('should reject if execution not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.trading.closeTradeExecution({ id: 'nonexistent', exitPrice: '50000' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should reject if execution already closed', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+      });
+
+      await expect(
+        caller.trading.closeTradeExecution({ id: execution.id, exitPrice: '50000' })
+      ).rejects.toThrow('not open');
+    });
+  });
+
+  describe('cancelTradeExecution', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.cancelTradeExecution({ id: 'exec-1' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should cancel a pending trade execution', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'pending',
+      });
+
+      const result = await caller.trading.cancelTradeExecution({
+        id: execution.id,
+      });
+
+      expect(result.success).toBe(true);
+
+      const [cancelledExecution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution.id))
+        .limit(1);
+
+      expect(cancelledExecution!.status).toBe('cancelled');
+    });
+
+    it('should reject if execution not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.trading.cancelTradeExecution({ id: 'nonexistent' })
+      ).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe('updateTradeExecutionSLTP', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.updateTradeExecutionSLTP({ id: 'exec-1', stopLoss: 45000 })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should update stop loss and take profit', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        stopLoss: '48000',
+        takeProfit: '55000',
+        status: 'open',
+      });
+
+      const result = await caller.trading.updateTradeExecutionSLTP({
+        id: execution.id,
+        stopLoss: 47000,
+        takeProfit: 58000,
+      });
+
+      expect(result.success).toBe(true);
+
+      const [updated] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution.id))
+        .limit(1);
+
+      expect(parseFloat(updated!.stopLoss!)).toBe(47000);
+      expect(parseFloat(updated!.takeProfit!)).toBe(58000);
+    });
+
+    it('should reject if execution not found', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.trading.updateTradeExecutionSLTP({
+          id: 'nonexistent',
+          stopLoss: 45000,
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+  });
+
+  describe('getTickerPrices', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.getTickerPrices({ walletId: 'wallet-id', symbols: ['BTCUSDT'] })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return ticker prices for paper wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.trading.getTickerPrices({
+        walletId: wallet.id,
+        symbols: ['BTCUSDT', 'ETHUSDT'],
+      });
+
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('object');
+    });
+  });
+
+  describe('setFuturesPositionMode', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.setFuturesPositionMode({
+          walletId: 'wallet-id',
+          dualSidePosition: true,
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should set position mode for paper wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.trading.setFuturesPositionMode({
+        walletId: wallet.id,
+        dualSidePosition: true,
+      });
+
+      expect(result.success).toBe(true);
     });
   });
 });

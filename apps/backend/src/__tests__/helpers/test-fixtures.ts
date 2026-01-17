@@ -7,6 +7,12 @@ type User = typeof schema.users.$inferSelect;
 type Session = typeof schema.sessions.$inferSelect;
 type Wallet = typeof schema.wallets.$inferSelect;
 type TradingProfile = typeof schema.tradingProfiles.$inferSelect;
+type TradeExecution = typeof schema.tradeExecutions.$inferSelect;
+type ActiveWatcher = typeof schema.activeWatchers.$inferSelect;
+type Kline = typeof schema.klines.$inferSelect;
+type SetupDetection = typeof schema.setupDetections.$inferSelect;
+type Order = typeof schema.orders.$inferSelect;
+type AutoTradingConfig = typeof schema.autoTradingConfig.$inferSelect;
 
 export interface CreateUserOptions {
   email?: string;
@@ -35,6 +41,79 @@ export interface CreateTradingProfileOptions {
 export interface CreateSessionOptions {
   userId: string;
   expiresAt?: Date;
+}
+
+export interface CreateTradeExecutionOptions {
+  userId: string;
+  walletId: string;
+  symbol?: string;
+  side?: 'LONG' | 'SHORT';
+  entryPrice?: string;
+  quantity?: string;
+  stopLoss?: string;
+  takeProfit?: string;
+  status?: 'pending' | 'open' | 'closed' | 'cancelled';
+  setupType?: string;
+  marketType?: 'SPOT' | 'FUTURES';
+  leverage?: number;
+}
+
+export interface CreateActiveWatcherOptions {
+  userId: string;
+  walletId: string;
+  profileId?: string;
+  symbol?: string;
+  interval?: string;
+  marketType?: 'SPOT' | 'FUTURES';
+  isManual?: boolean;
+}
+
+export interface CreateKlinesOptions {
+  symbol?: string;
+  interval?: string;
+  marketType?: 'SPOT' | 'FUTURES';
+  count?: number;
+  startTime?: Date;
+  basePrice?: number;
+}
+
+export interface CreateSetupDetectionOptions {
+  userId: string;
+  symbol?: string;
+  interval?: string;
+  setupType?: string;
+  direction?: 'LONG' | 'SHORT';
+  entryPrice?: string;
+  stopLoss?: string;
+  takeProfit?: string;
+  confidence?: number;
+  expiresAt?: Date;
+}
+
+export interface CreateOrderOptions {
+  userId: string;
+  walletId: string;
+  orderId?: number;
+  symbol?: string;
+  side?: 'BUY' | 'SELL';
+  type?: string;
+  price?: string;
+  origQty?: string;
+  executedQty?: string;
+  status?: string;
+  marketType?: 'SPOT' | 'FUTURES';
+}
+
+export interface CreateAutoTradingConfigOptions {
+  userId: string;
+  walletId: string;
+  isEnabled?: boolean;
+  maxConcurrentPositions?: number;
+  maxPositionSize?: string;
+  dailyLossLimit?: string;
+  enabledSetupTypes?: string[];
+  leverage?: number;
+  marginType?: 'ISOLATED' | 'CROSSED';
 }
 
 const hashPassword = async (password: string): Promise<string> => {
@@ -152,4 +231,250 @@ export const createAuthenticatedUser = async (options: CreateUserOptions = {}): 
   const session = await createTestSession({ userId: user.id });
 
   return { user, password, session };
+};
+
+export const createTestOrder = async (options: CreateOrderOptions): Promise<Order> => {
+  const db = getTestDatabase();
+  const {
+    userId,
+    walletId,
+    orderId = Date.now(),
+    symbol = 'BTCUSDT',
+    side = 'BUY',
+    type = 'MARKET',
+    price = '50000',
+    origQty = '0.01',
+    executedQty = '0.01',
+    status = 'FILLED',
+    marketType = 'SPOT',
+  } = options;
+
+  const [order] = await db.insert(schema.orders).values({
+    orderId,
+    userId,
+    walletId,
+    symbol,
+    side,
+    type,
+    price,
+    origQty,
+    executedQty,
+    status,
+    marketType,
+    time: Date.now(),
+    updateTime: Date.now(),
+  }).returning();
+
+  if (!order) throw new Error('Failed to create test order');
+
+  return order;
+};
+
+export const createTestTradeExecution = async (options: CreateTradeExecutionOptions): Promise<TradeExecution> => {
+  const db = getTestDatabase();
+  const {
+    userId,
+    walletId,
+    symbol = 'BTCUSDT',
+    side = 'LONG',
+    entryPrice = '50000',
+    quantity = '0.01',
+    stopLoss = '49000',
+    takeProfit = '52000',
+    status = 'open',
+    setupType = 'larry-williams-9.1',
+    marketType = 'SPOT',
+    leverage = 1,
+  } = options;
+
+  const executionId = generateEntityId();
+
+  const [execution] = await db.insert(schema.tradeExecutions).values({
+    id: executionId,
+    userId,
+    walletId,
+    symbol,
+    side,
+    entryPrice,
+    quantity,
+    stopLoss,
+    takeProfit,
+    status,
+    setupType,
+    marketType,
+    leverage,
+    openedAt: new Date(),
+  }).returning();
+
+  if (!execution) throw new Error('Failed to create test trade execution');
+
+  return execution;
+};
+
+export const createTestActiveWatcher = async (options: CreateActiveWatcherOptions): Promise<ActiveWatcher> => {
+  const db = getTestDatabase();
+  const {
+    userId,
+    walletId,
+    profileId,
+    symbol = 'BTCUSDT',
+    interval = '1h',
+    marketType = 'SPOT',
+    isManual = true,
+  } = options;
+
+  const watcherId = generateEntityId();
+
+  const [watcher] = await db.insert(schema.activeWatchers).values({
+    id: watcherId,
+    userId,
+    walletId,
+    profileId,
+    symbol,
+    interval,
+    marketType,
+    isManual,
+    startedAt: new Date(),
+  }).returning();
+
+  if (!watcher) throw new Error('Failed to create test active watcher');
+
+  return watcher;
+};
+
+export const createTestKlines = async (options: CreateKlinesOptions = {}): Promise<Kline[]> => {
+  const db = getTestDatabase();
+  const {
+    symbol = 'BTCUSDT',
+    interval = '1h',
+    marketType = 'SPOT',
+    count = 100,
+    startTime = new Date(Date.now() - count * 60 * 60 * 1000),
+    basePrice = 50000,
+  } = options;
+
+  const klines: Kline[] = [];
+  const intervalMs = getIntervalMs(interval);
+
+  for (let i = 0; i < count; i++) {
+    const openTime = new Date(startTime.getTime() + i * intervalMs);
+    const closeTime = new Date(openTime.getTime() + intervalMs - 1);
+
+    const volatility = 0.02;
+    const change = (Math.random() - 0.5) * 2 * volatility;
+    const open = basePrice * (1 + change);
+    const close = open * (1 + (Math.random() - 0.5) * volatility);
+    const high = Math.max(open, close) * (1 + Math.random() * volatility * 0.5);
+    const low = Math.min(open, close) * (1 - Math.random() * volatility * 0.5);
+    const volume = 100 + Math.random() * 900;
+
+    const [kline] = await db.insert(schema.klines).values({
+      symbol,
+      interval,
+      marketType,
+      openTime,
+      closeTime,
+      open: open.toFixed(8),
+      high: high.toFixed(8),
+      low: low.toFixed(8),
+      close: close.toFixed(8),
+      volume: volume.toFixed(8),
+      quoteVolume: (volume * close).toFixed(8),
+      trades: Math.floor(100 + Math.random() * 500),
+      takerBuyBaseVolume: (volume * 0.5).toFixed(8),
+      takerBuyQuoteVolume: (volume * close * 0.5).toFixed(8),
+    }).returning();
+
+    if (kline) klines.push(kline);
+  }
+
+  return klines;
+};
+
+export const createTestSetupDetection = async (options: CreateSetupDetectionOptions): Promise<SetupDetection> => {
+  const db = getTestDatabase();
+  const {
+    userId,
+    symbol = 'BTCUSDT',
+    interval = '1h',
+    setupType = 'larry-williams-9.1',
+    direction = 'LONG',
+    entryPrice = '50000',
+    stopLoss = '49000',
+    takeProfit = '52000',
+    confidence = 75,
+    expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000),
+  } = options;
+
+  const detectionId = generateEntityId();
+
+  const [detection] = await db.insert(schema.setupDetections).values({
+    id: detectionId,
+    userId,
+    symbol,
+    interval,
+    setupType,
+    direction,
+    entryPrice,
+    stopLoss,
+    takeProfit,
+    confidence,
+    expiresAt,
+    riskReward: '2.00',
+    detectedAt: new Date(),
+  }).returning();
+
+  if (!detection) throw new Error('Failed to create test setup detection');
+
+  return detection;
+};
+
+export const createTestAutoTradingConfig = async (options: CreateAutoTradingConfigOptions): Promise<AutoTradingConfig> => {
+  const db = getTestDatabase();
+  const {
+    userId,
+    walletId,
+    isEnabled = false,
+    maxConcurrentPositions = 5,
+    maxPositionSize = '15',
+    dailyLossLimit = '5',
+    enabledSetupTypes = ['larry-williams-9.1'],
+    leverage = 1,
+    marginType = 'ISOLATED',
+  } = options;
+
+  const configId = generateEntityId();
+
+  const [config] = await db.insert(schema.autoTradingConfig).values({
+    id: configId,
+    userId,
+    walletId,
+    isEnabled,
+    maxConcurrentPositions,
+    maxPositionSize,
+    dailyLossLimit,
+    enabledSetupTypes: JSON.stringify(enabledSetupTypes),
+    leverage,
+    marginType,
+  }).returning();
+
+  if (!config) throw new Error('Failed to create test auto trading config');
+
+  return config;
+};
+
+const getIntervalMs = (interval: string): number => {
+  const units: Record<string, number> = {
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+    w: 7 * 24 * 60 * 60 * 1000,
+  };
+
+  const match = interval.match(/^(\d+)([mhdw])$/);
+  if (!match) return 60 * 60 * 1000;
+
+  const value = parseInt(match[1] ?? '1', 10);
+  const unit = match[2] ?? 'h';
+  return value * (units[unit] ?? 60 * 60 * 1000);
 };
