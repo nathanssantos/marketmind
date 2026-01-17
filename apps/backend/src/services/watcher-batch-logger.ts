@@ -40,8 +40,8 @@ const ICONS = {
   SUCCESS: '✅',
   ERROR: '❌',
   WARNING: '⚠️',
-  SKIP: '⏭️',
   PENDING: '⏳',
+  SKIP: '⏭️',
   SEARCH: '🔍',
   DOWNLOAD: '📥',
   TIMER: '⏱️',
@@ -67,8 +67,8 @@ const COLORS = {
 const STATUS = {
   SUCCESS: 'success',
   ERROR: 'error',
-  SKIPPED: 'skipped',
   PENDING: 'pending',
+  SKIPPED: 'skipped',
   PARTIAL: 'partial',
   FAILED: 'failed',
   EXECUTED: 'executed',
@@ -148,8 +148,8 @@ const writeToFile = (content: string): void => {
 const getStatusDisplay = (status: string): string => {
   switch (status) {
     case STATUS.SUCCESS: return colorize(ICONS.SUCCESS, COLORS.SUCCESS);
-    case STATUS.SKIPPED: return colorize(ICONS.SKIP, COLORS.WARNING);
     case STATUS.PENDING: return colorize(ICONS.PENDING, COLORS.PENDING);
+    case STATUS.SKIPPED: return colorize(ICONS.SKIP, COLORS.DIM);
     case STATUS.ERROR: return colorize(ICONS.ERROR, COLORS.ERROR);
     default: return status;
   }
@@ -165,7 +165,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
     `${batch.totalWatchers} watchers`,
     colorize(`${ICONS.SUCCESS} ${batch.successCount}`, 'green'),
     colorize(`${ICONS.PENDING} ${batch.pendingCount}`, 'cyan'),
-    colorize(`${ICONS.SKIP} ${batch.skippedCount}`, 'yellow'),
+    colorize(`${ICONS.SKIP} ${batch.skippedCount}`, 'dim'),
     colorize(`${ICONS.ERROR} ${batch.errorCount}`, 'red'),
   ];
   const detailParts = [

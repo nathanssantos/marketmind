@@ -83,6 +83,7 @@
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
+    "@vitest/coverage-v8": "^4.0.16",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",

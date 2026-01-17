@@ -10,6 +10,7 @@ vi.mock('../../db', () => ({
       },
       strategyPerformance: {
         findFirst: vi.fn(),
+        findMany: vi.fn(),
       },
     },
     update: vi.fn(),
@@ -86,6 +87,103 @@ describe('StrategyPerformanceService', () => {
       const result = await service.getPerformance('larry-williams-9-1', 'BTCUSDT', '1h');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('updatePerformance', () => {
+    it('should return null if execution not found', async () => {
+      const { db } = await import('../../db');
+      vi.mocked(db.query.tradeExecutions.findFirst).mockResolvedValue(undefined);
+
+      const result = await service.updatePerformance('non-existent-id');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if execution is not closed', async () => {
+      const { db } = await import('../../db');
+      vi.mocked(db.query.tradeExecutions.findFirst).mockResolvedValue({
+        id: 'exec-1',
+        closedAt: null,
+        setupType: 'larry-williams-9-1',
+        symbol: 'BTCUSDT',
+      } as unknown);
+
+      const result = await service.updatePerformance('exec-1');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if execution has no setup type', async () => {
+      const { db } = await import('../../db');
+      vi.mocked(db.query.tradeExecutions.findFirst).mockResolvedValue({
+        id: 'exec-1',
+        closedAt: new Date(),
+        setupType: null,
+        symbol: 'BTCUSDT',
+      } as unknown);
+
+      const result = await service.updatePerformance('exec-1');
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle errors during update', async () => {
+      const { db } = await import('../../db');
+      vi.mocked(db.query.tradeExecutions.findFirst).mockRejectedValue(new Error('DB error'));
+
+      const result = await service.updatePerformance('exec-1');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getAllPerformance', () => {
+    it('should return all performance records', async () => {
+      const { db } = await import('../../db');
+      const perfRecords = [
+        {
+          id: 1,
+          strategyId: 'larry-williams-9-1',
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          totalTrades: 10,
+          winRate: '75.00',
+        },
+        {
+          id: 2,
+          strategyId: 'larry-williams-9-2',
+          symbol: 'ETHUSDT',
+          interval: '4h',
+          totalTrades: 5,
+          winRate: '60.00',
+        },
+      ];
+
+      vi.mocked(db.query.strategyPerformance.findMany).mockResolvedValue(perfRecords as unknown[]);
+
+      const result = await service.getAllPerformance();
+
+      expect(result).toEqual(perfRecords);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array when no records exist', async () => {
+      const { db } = await import('../../db');
+      vi.mocked(db.query.strategyPerformance.findMany).mockResolvedValue([]);
+
+      const result = await service.getAllPerformance();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle errors and return empty array', async () => {
+      const { db } = await import('../../db');
+      vi.mocked(db.query.strategyPerformance.findMany).mockRejectedValue(new Error('DB error'));
+
+      const result = await service.getAllPerformance();
+
+      expect(result).toEqual([]);
     });
   });
 });

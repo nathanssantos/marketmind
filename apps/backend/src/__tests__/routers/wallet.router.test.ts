@@ -278,4 +278,164 @@ describe('Wallet Router', () => {
       );
     });
   });
+
+  describe('createPaper (FUTURES)', () => {
+    it('should create a paper wallet with FUTURES market type', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.wallet.createPaper({
+        name: 'Futures Paper Wallet',
+        marketType: 'FUTURES',
+      });
+
+      expect(result.name).toBe('Futures Paper Wallet');
+      expect(result.marketType).toBe('FUTURES');
+      expect(result.walletType).toBe('paper');
+    });
+
+    it('should create FUTURES wallet with custom initial balance', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.wallet.createPaper({
+        name: 'High Balance Futures',
+        marketType: 'FUTURES',
+        initialBalance: '100000',
+      });
+
+      expect(result.initialBalance).toBe('100000');
+      expect(result.currentBalance).toBe('100000');
+      expect(result.marketType).toBe('FUTURES');
+    });
+  });
+
+  describe('multiple wallets', () => {
+    it('should list multiple wallets', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await caller.wallet.createPaper({ name: 'Wallet 1' });
+      await caller.wallet.createPaper({ name: 'Wallet 2', marketType: 'FUTURES' });
+      await caller.wallet.createPaper({ name: 'Wallet 3', currency: 'USDC' });
+
+      const result = await caller.wallet.list();
+
+      expect(result).toHaveLength(3);
+      const names = result.map(w => w.name);
+      expect(names).toContain('Wallet 1');
+      expect(names).toContain('Wallet 2');
+      expect(names).toContain('Wallet 3');
+    });
+
+    it('should track active and inactive wallets correctly', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const wallet1 = await caller.wallet.createPaper({ name: 'Active Wallet' });
+      const wallet2 = await caller.wallet.createPaper({ name: 'Inactive Wallet' });
+      await caller.wallet.update({ id: wallet2.id, isActive: false });
+
+      const result = await caller.wallet.list();
+
+      expect(result).toHaveLength(2);
+      const activeWallet = result.find(w => w.id === wallet1.id);
+      const inactiveWallet = result.find(w => w.id === wallet2.id);
+      expect(activeWallet?.isActive).toBe(true);
+      expect(inactiveWallet?.isActive).toBe(false);
+    });
+  });
+
+  describe('wallet isolation', () => {
+    it('should not allow syncing another users wallet', async () => {
+      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+
+      const caller1 = createAuthenticatedCaller(user1, session1);
+      const caller2 = createAuthenticatedCaller(user2, session2);
+
+      const wallet = await caller1.wallet.createPaper({ name: 'User1 Wallet' });
+
+      await expect(caller2.wallet.syncBalance({ id: wallet.id })).rejects.toThrow(
+        expect.objectContaining({ code: 'NOT_FOUND' })
+      );
+    });
+
+    it('should not allow testing connection on another users wallet', async () => {
+      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+
+      const caller1 = createAuthenticatedCaller(user1, session1);
+      const caller2 = createAuthenticatedCaller(user2, session2);
+
+      const wallet = await caller1.wallet.createPaper({ name: 'User1 Wallet' });
+
+      await expect(caller2.wallet.testConnection({ id: wallet.id })).rejects.toThrow(
+        expect.objectContaining({ code: 'NOT_FOUND' })
+      );
+    });
+
+    it('should not allow getting portfolio on another users wallet', async () => {
+      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+
+      const caller1 = createAuthenticatedCaller(user1, session1);
+      const caller2 = createAuthenticatedCaller(user2, session2);
+
+      const wallet = await caller1.wallet.createPaper({ name: 'User1 Wallet' });
+
+      await expect(caller2.wallet.getPortfolio({ id: wallet.id })).rejects.toThrow(
+        expect.objectContaining({ code: 'NOT_FOUND' })
+      );
+    });
+  });
+
+  describe('update edge cases', () => {
+    it('should update only name when provided', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const wallet = await caller.wallet.createPaper({ name: 'Original' });
+      await caller.wallet.update({ id: wallet.id, name: 'Updated' });
+
+      const result = await caller.wallet.getById({ id: wallet.id });
+      expect(result.name).toBe('Updated');
+      expect(result.isActive).toBe(true);
+    });
+
+    it('should update only isActive when provided', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const wallet = await caller.wallet.createPaper({ name: 'My Wallet' });
+      await caller.wallet.update({ id: wallet.id, isActive: false });
+
+      const result = await caller.wallet.getById({ id: wallet.id });
+      expect(result.name).toBe('My Wallet');
+      expect(result.isActive).toBe(false);
+    });
+
+    it('should update both name and isActive together', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const wallet = await caller.wallet.createPaper({ name: 'Original' });
+      await caller.wallet.update({ id: wallet.id, name: 'Updated', isActive: false });
+
+      const result = await caller.wallet.getById({ id: wallet.id });
+      expect(result.name).toBe('Updated');
+      expect(result.isActive).toBe(false);
+    });
+  });
+
+  describe('testConnection (paper wallet) edge cases', () => {
+    it('should throw NOT_FOUND for non-existent wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(caller.wallet.testConnection({ id: 'non-existent' })).rejects.toThrow(
+        expect.objectContaining({ code: 'NOT_FOUND' })
+      );
+    });
+  });
 });
