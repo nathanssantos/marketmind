@@ -32,6 +32,20 @@ export const TRAILING_STOP_CONFIG = {
   FIBO_PROGRESSIVE_LEVEL: 1.272,
 } as const;
 
+export const OPPORTUNITY_COST_CONFIG = {
+  DEFAULT_MAX_HOLDING_PERIOD_BARS: 20,
+  DEFAULT_STALE_THRESHOLD_PERCENT: 0.5,
+  DEFAULT_TIGHTEN_AFTER_BARS: 10,
+  DEFAULT_TIGHTEN_PERCENT_PER_BAR: 5,
+  MAX_LOCK_PERCENT: 80,
+  ALERT_COOLDOWN_MS: 3600000,
+  STALE_TRADE_ACTIONS: {
+    ALERT_ONLY: 'ALERT_ONLY',
+    TIGHTEN_STOP: 'TIGHTEN_STOP',
+    AUTO_CLOSE: 'AUTO_CLOSE',
+  },
+} as const;
+
 export const BACKTEST_ENGINE_CONFIG = {
   INTERVAL_SECONDS: {
     MINUTE: 60,
@@ -235,6 +249,9 @@ export const EXIT_REASON = {
   STOP_LOSS: 'STOP_LOSS',
   TAKE_PROFIT: 'TAKE_PROFIT',
   NONE: 'NONE',
+  TIME_STOP: 'TIME_STOP',
+  STALE_TRADE: 'STALE_TRADE',
+  OPPORTUNITY_COST: 'OPPORTUNITY_COST',
 } as const;
 
 export type TradeStatusValue = (typeof TRADE_STATUS)[keyof typeof TRADE_STATUS];
@@ -246,6 +263,8 @@ export type ExitReasonValue = (typeof EXIT_REASON)[keyof typeof EXIT_REASON];
 
 export type TradingDefaultsConstants = typeof TRADING_DEFAULTS;
 export type TrailingStopConfigConstants = typeof TRAILING_STOP_CONFIG;
+export type OpportunityCostConfigConstants = typeof OPPORTUNITY_COST_CONFIG;
+export type StaleTradeAction = (typeof OPPORTUNITY_COST_CONFIG.STALE_TRADE_ACTIONS)[keyof typeof OPPORTUNITY_COST_CONFIG.STALE_TRADE_ACTIONS];
 export type BacktestEngineConfigConstants = typeof BACKTEST_ENGINE_CONFIG;
 export type PositionSizingConfigConstants = typeof POSITION_SIZING_CONFIG;
 export type ExitCalculatorConfigConstants = typeof EXIT_CALCULATOR_CONFIG;

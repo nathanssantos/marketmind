@@ -53,6 +53,7 @@ export const WatcherManager = () => {
   const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
   const [tpModeExpanded, setTpModeExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [opportunityCostExpanded, setOpportunityCostExpanded] = useState(false);
   const [watchersExpanded, setWatchersExpanded] = useState(true);
   const [dynamicSelectionExpanded, setDynamicSelectionExpanded] = useState(false);
   const [quickStartCount, setQuickStartCount] = useState(10);
@@ -948,6 +949,207 @@ export const WatcherManager = () => {
                   disabled={updateConfig.isPending}
                 />
               </Grid>
+            </Stack>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Box>
+
+      <Separator />
+
+      <Box>
+        <Flex
+          justify="space-between"
+          align="center"
+          cursor="pointer"
+          onClick={() => setOpportunityCostExpanded(!opportunityCostExpanded)}
+          _hover={{ bg: 'bg.muted' }}
+          p={2}
+          mx={-2}
+          borderRadius="md"
+        >
+          <Box>
+            <Flex align="center" gap={2}>
+              <Text fontSize="lg" fontWeight="bold">
+                {t('settings.algorithmicAutoTrading.opportunityCost.title')}
+              </Text>
+              {config?.opportunityCostEnabled && (
+                <Box
+                  px={2}
+                  py={0.5}
+                  bg="purple.100"
+                  color="purple.800"
+                  borderRadius="full"
+                  fontSize="xs"
+                  fontWeight="medium"
+                  _dark={{ bg: 'purple.900', color: 'purple.200' }}
+                >
+                  {t('common.active')}
+                </Box>
+              )}
+            </Flex>
+            <Text fontSize="sm" color="fg.muted">
+              {t('settings.algorithmicAutoTrading.opportunityCost.description')}
+            </Text>
+          </Box>
+          {opportunityCostExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
+        </Flex>
+
+        <Collapsible.Root open={opportunityCostExpanded}>
+          <Collapsible.Content>
+            <Stack gap={4} mt={4}>
+              <Flex justify="space-between" align="center" p={3} bg="bg.muted" borderRadius="md">
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium">
+                    {t('settings.algorithmicAutoTrading.opportunityCost.enable')}
+                  </Text>
+                  <Text fontSize="xs" color="fg.muted">
+                    {t('settings.algorithmicAutoTrading.opportunityCost.enableDescription')}
+                  </Text>
+                </Box>
+                <Switch
+                  checked={config?.opportunityCostEnabled ?? false}
+                  onCheckedChange={(e) => {
+                    if (!walletId) return;
+                    updateConfig.mutate({ walletId, opportunityCostEnabled: e.checked });
+                  }}
+                  disabled={updateConfig.isPending}
+                />
+              </Flex>
+
+              {config?.opportunityCostEnabled && (
+                <>
+                  <Box p={3} bg="bg.muted" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      {t('settings.algorithmicAutoTrading.opportunityCost.maxHoldingPeriod')}
+                    </Text>
+                    <Flex gap={2} align="center">
+                      <NumberInput
+                        min={5}
+                        max={100}
+                        value={String(config?.maxHoldingPeriodBars ?? 20)}
+                        onValueChange={(e) => {
+                          if (!walletId) return;
+                          const value = parseInt(e.value, 10);
+                          if (!isNaN(value) && value >= 5 && value <= 100) {
+                            updateConfig.mutate({ walletId, maxHoldingPeriodBars: value });
+                          }
+                        }}
+                        size="sm"
+                        w="100px"
+                      />
+                      <Text fontSize="sm" color="fg.muted">
+                        {t('settings.algorithmicAutoTrading.opportunityCost.bars')}
+                      </Text>
+                    </Flex>
+                  </Box>
+
+                  <Box p={3} bg="bg.muted" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      {t('settings.algorithmicAutoTrading.opportunityCost.staleThreshold')}
+                    </Text>
+                    <Flex gap={2} align="center">
+                      <NumberInput
+                        min={0.1}
+                        max={5}
+                        step={0.1}
+                        value={config?.stalePriceThresholdPercent ?? '0.5'}
+                        onValueChange={(e) => {
+                          if (!walletId) return;
+                          const value = parseFloat(e.value);
+                          if (!isNaN(value) && value >= 0.1 && value <= 5) {
+                            updateConfig.mutate({ walletId, stalePriceThresholdPercent: value.toString() });
+                          }
+                        }}
+                        size="sm"
+                        w="100px"
+                      />
+                      <Text fontSize="sm" color="fg.muted">%</Text>
+                    </Flex>
+                  </Box>
+
+                  <Box p={3} bg="bg.muted" borderRadius="md">
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>
+                      {t('settings.algorithmicAutoTrading.opportunityCost.actionWhenStale')}
+                    </Text>
+                    <RadioGroup
+                      value={config?.staleTradeAction ?? 'TIGHTEN_STOP'}
+                      onValueChange={(e) => {
+                        if (!walletId) return;
+                        updateConfig.mutate({
+                          walletId,
+                          staleTradeAction: e.value as 'ALERT_ONLY' | 'TIGHTEN_STOP' | 'AUTO_CLOSE',
+                        });
+                      }}
+                    >
+                      <Stack gap={2}>
+                        <Radio value="ALERT_ONLY">
+                          {t('settings.algorithmicAutoTrading.opportunityCost.alertOnly')}
+                        </Radio>
+                        <Radio value="TIGHTEN_STOP">
+                          {t('settings.algorithmicAutoTrading.opportunityCost.tightenStop')}
+                        </Radio>
+                        <Radio value="AUTO_CLOSE">
+                          {t('settings.algorithmicAutoTrading.opportunityCost.autoClose')}
+                        </Radio>
+                      </Stack>
+                    </RadioGroup>
+                  </Box>
+
+                  <FilterToggle
+                    label={t('settings.algorithmicAutoTrading.opportunityCost.timeBasedTightening.title')}
+                    description={t('settings.algorithmicAutoTrading.opportunityCost.timeBasedTightening.description')}
+                    checked={config?.timeBasedStopTighteningEnabled ?? true}
+                    onChange={(value) => handleFilterToggle('timeBasedStopTighteningEnabled', value)}
+                    disabled={updateConfig.isPending}
+                  />
+
+                  {config?.timeBasedStopTighteningEnabled && (
+                    <Box p={3} bg="bg.muted" borderRadius="md" ml={4}>
+                      <Grid templateColumns="1fr 1fr" gap={4}>
+                        <Box>
+                          <Text fontSize="sm" mb={1}>
+                            {t('settings.algorithmicAutoTrading.opportunityCost.tightenAfterBars')}
+                          </Text>
+                          <NumberInput
+                            min={1}
+                            max={50}
+                            value={String(config?.timeTightenAfterBars ?? 10)}
+                            onValueChange={(e) => {
+                              if (!walletId) return;
+                              const value = parseInt(e.value, 10);
+                              if (!isNaN(value) && value >= 1 && value <= 50) {
+                                updateConfig.mutate({ walletId, timeTightenAfterBars: value });
+                              }
+                            }}
+                            size="sm"
+                          />
+                        </Box>
+                        <Box>
+                          <Text fontSize="sm" mb={1}>
+                            {t('settings.algorithmicAutoTrading.opportunityCost.tightenPercentPerBar')}
+                          </Text>
+                          <Flex gap={2} align="center">
+                            <NumberInput
+                              min={1}
+                              max={20}
+                              value={config?.timeTightenPercentPerBar ?? '5'}
+                              onValueChange={(e) => {
+                                if (!walletId) return;
+                                const value = parseFloat(e.value);
+                                if (!isNaN(value) && value >= 1 && value <= 20) {
+                                  updateConfig.mutate({ walletId, timeTightenPercentPerBar: value.toString() });
+                                }
+                              }}
+                              size="sm"
+                            />
+                            <Text fontSize="sm">%</Text>
+                          </Flex>
+                        </Box>
+                      </Grid>
+                    </Box>
+                  )}
+                </>
+              )}
             </Stack>
           </Collapsible.Content>
         </Collapsible.Root>

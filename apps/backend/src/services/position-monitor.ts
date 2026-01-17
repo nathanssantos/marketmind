@@ -14,6 +14,7 @@ import { strategyPerformanceService } from './strategy-performance';
 import { trailingStopService } from './trailing-stop';
 import { outputPendingOrdersCheckResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
+import { opportunityCostManagerService } from './opportunity-cost-manager';
 
 const LIQUIDATION_THRESHOLDS = {
   WARNING: 0.50,
@@ -134,6 +135,14 @@ export class PositionMonitorService {
           error: error instanceof Error ? error.message : String(error),
         }, 'Error checking liquidation risk');
       }
+    }
+
+    try {
+      await opportunityCostManagerService.checkAllPositions();
+    } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+      }, 'Error checking opportunity cost');
     }
   }
 

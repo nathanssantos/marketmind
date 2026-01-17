@@ -166,6 +166,13 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   dynamic_symbol_excluded TEXT,
   enable_auto_rotation BOOLEAN DEFAULT true NOT NULL,
   trailing_stop_mode VARCHAR(10) DEFAULT 'local',
+  opportunity_cost_enabled BOOLEAN DEFAULT false NOT NULL,
+  max_holding_period_bars INTEGER DEFAULT 20 NOT NULL,
+  stale_price_threshold_percent NUMERIC(5, 2) DEFAULT '0.5' NOT NULL,
+  stale_trade_action VARCHAR(20) DEFAULT 'TIGHTEN_STOP' NOT NULL,
+  time_based_stop_tightening_enabled BOOLEAN DEFAULT true NOT NULL,
+  time_tighten_after_bars INTEGER DEFAULT 10 NOT NULL,
+  time_tighten_percent_per_bar NUMERIC(5, 2) DEFAULT '5' NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -259,6 +266,13 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   take_profit_algo_id BIGINT,
   stop_loss_is_algo BOOLEAN DEFAULT false,
   take_profit_is_algo BOOLEAN DEFAULT false,
+  entry_interval VARCHAR(10),
+  bars_in_trade INTEGER DEFAULT 0,
+  last_price_movement_bar INTEGER DEFAULT 0,
+  highest_price_since_entry NUMERIC(20, 8),
+  lowest_price_since_entry NUMERIC(20, 8),
+  opportunity_cost_alert_sent_at TIMESTAMP,
+  original_stop_loss NUMERIC(20, 8),
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

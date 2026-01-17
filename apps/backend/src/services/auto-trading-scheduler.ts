@@ -47,6 +47,7 @@ import {
 import { getKlineMaintenance } from './kline-maintenance';
 import { meetsKlineRequirementWithTolerance, prefetchKlines } from './kline-prefetch';
 import { ocoOrderService } from './oco-orders';
+import { opportunityCostManagerService } from './opportunity-cost-manager';
 import { positionMonitorService } from './position-monitor';
 import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
@@ -795,6 +796,12 @@ export class AutoTradingScheduler {
 
     watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
 
+    this.incrementBarsForOpenTrades(watcher.symbol, watcher.interval, parseFloat(lastCandle.close)).catch((error: unknown) => {
+      logBuffer.warn('⚠️', 'Failed to increment bars for open trades', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+
     if (detectedSetups.length === 0) {
       logBuffer.log('📭', 'No setups found');
       watcher.lastProcessedTime = Date.now();
@@ -839,6 +846,20 @@ export class AutoTradingScheduler {
     return parseInt(match[1]) * unitMs;
   }
 
+  private async incrementBarsForOpenTrades(symbol: string, interval: string, currentPrice: number): Promise<void> {
+    const openTrades = await db
+      .select()
+      .from(tradeExecutions)
+      .where(and(
+        eq(tradeExecutions.symbol, symbol),
+        eq(tradeExecutions.entryInterval, interval),
+        eq(tradeExecutions.status, 'open')
+      ));
+
+    for (const trade of openTrades) {
+      await opportunityCostManagerService.incrementBarsInTrade(trade.id, currentPrice);
+    }
+  }
 
   async startWatcher(
     walletId: string,
@@ -1830,6 +1851,10 @@ export class AutoTradingScheduler {
                   limitEntryPrice: setup.limitEntryPrice.toString(),
                   expiresAt,
                   marketType: watcher.marketType,
+                  entryInterval: watcher.interval,
+                  originalStopLoss: setup.stopLoss?.toString(),
+                  highestPriceSinceEntry: setup.limitEntryPrice.toString(),
+                  lowestPriceSinceEntry: setup.limitEntryPrice.toString(),
                   triggerKlineIndex: setup.triggerKlineIndex,
                   triggerKlineOpenTime: triggerCandle?.openTime,
                   triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
@@ -1983,6 +2008,10 @@ export class AutoTradingScheduler {
           entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
           marketType: watcher.marketType,
           leverage: config.leverage ?? 1,
+          entryInterval: watcher.interval,
+          originalStopLoss: setup.stopLoss?.toString(),
+          highestPriceSinceEntry: actualEntryPrice.toString(),
+          lowestPriceSinceEntry: actualEntryPrice.toString(),
           triggerKlineIndex: setup.triggerKlineIndex,
           triggerKlineOpenTime: triggerCandle?.openTime,
           triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,

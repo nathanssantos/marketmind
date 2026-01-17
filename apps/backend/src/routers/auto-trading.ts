@@ -116,6 +116,13 @@ export const autoTradingRouter = router({
         trailingStopMode: z.enum(['local', 'binance']).optional(),
         leverage: z.number().min(1).max(125).optional(),
         marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
+        opportunityCostEnabled: z.boolean().optional(),
+        maxHoldingPeriodBars: z.number().min(5).max(100).optional(),
+        stalePriceThresholdPercent: z.string().optional(),
+        staleTradeAction: z.enum(['ALERT_ONLY', 'TIGHTEN_STOP', 'AUTO_CLOSE']).optional(),
+        timeBasedStopTighteningEnabled: z.boolean().optional(),
+        timeTightenAfterBars: z.number().min(1).max(50).optional(),
+        timeTightenPercentPerBar: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -185,6 +192,20 @@ export const autoTradingRouter = router({
         {updateData.leverage = input.leverage;}
       if (input.marginType !== undefined)
         {updateData.marginType = input.marginType;}
+      if (input.opportunityCostEnabled !== undefined)
+        {updateData.opportunityCostEnabled = input.opportunityCostEnabled;}
+      if (input.maxHoldingPeriodBars !== undefined)
+        {updateData.maxHoldingPeriodBars = input.maxHoldingPeriodBars;}
+      if (input.stalePriceThresholdPercent !== undefined)
+        {updateData.stalePriceThresholdPercent = input.stalePriceThresholdPercent;}
+      if (input.staleTradeAction !== undefined)
+        {updateData.staleTradeAction = input.staleTradeAction;}
+      if (input.timeBasedStopTighteningEnabled !== undefined)
+        {updateData.timeBasedStopTighteningEnabled = input.timeBasedStopTighteningEnabled;}
+      if (input.timeTightenAfterBars !== undefined)
+        {updateData.timeTightenAfterBars = input.timeTightenAfterBars;}
+      if (input.timeTightenPercentPerBar !== undefined)
+        {updateData.timeTightenPercentPerBar = input.timeTightenPercentPerBar;}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -431,6 +452,10 @@ export const autoTradingRouter = router({
         openedAt: new Date(),
         status: 'open',
         marketType: input.marketType,
+        entryInterval: setup.interval,
+        originalStopLoss: setup.stopLoss,
+        highestPriceSinceEntry: setup.entryPrice,
+        lowestPriceSinceEntry: setup.entryPrice,
         triggerKlineOpenTime: setup.detectedAt.getTime(),
       });
 

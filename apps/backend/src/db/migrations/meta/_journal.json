@@ -260,6 +260,13 @@
       "when": 1768566409179,
       "tag": "0036_yielding_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1768656453053,
+      "tag": "0037_green_makkari",
+      "breakpoints": true
     }
   ]
 }

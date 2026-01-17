@@ -267,6 +267,30 @@
         "confluence": {
           "title": "Score de Confluência",
           "description": "Calcula um score de confluência de todos os filtros. Só opera quando score excede o mínimo."
+        },
+        "opportunityCost": {
+          "title": "Gestão de Custo de Oportunidade",
+          "description": "Gerenciar trades que prendem capital sem progresso.",
+          "enable": "Ativar Gestão de Custo de Oportunidade",
+          "enableDescription": "Monitorar e agir em trades que demoram demais.",
+          "maxHoldingPeriod": "Período Máximo de Retenção",
+          "bars": "barras",
+          "staleThreshold": "Limiar de Estagnação",
+          "actionWhenStale": "Ação Quando Estagnado",
+          "alertOnly": "Apenas Alerta",
+          "alertOnlyDescription": "Enviar notificação, mas não alterar o trade",
+          "tightenStop": "Apertar Stop",
+          "tightenStopDescription": "Mover stop loss progressivamente para proteger lucros",
+          "autoClose": "Fechar Automaticamente",
+          "autoCloseDescription": "Fechar a posição automaticamente",
+          "timeBasedTightening": {
+            "title": "Aperto Baseado em Tempo",
+            "description": "Apertar stops progressivamente quando trades estão em lucro",
+            "tightenAfterBars": "Apertar Após",
+            "tightenPercentPerBar": "% Por Barra"
+          },
+          "timeframeNote": "Contagem de barras baseada no intervalo de entrada do trade",
+          "barsEquivalent": "{{bars}} barras = ~{{hours}}h no intervalo {{interval}}"
         }
       }
     }
