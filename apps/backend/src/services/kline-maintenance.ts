@@ -90,7 +90,7 @@ class KlineMaintenance {
 
       for (const pair of activePairs) {
         try {
-          const { corruptedFound, fixed } = await this.detectAndFixCorruptedKlines(pair);
+          const { corruptedFound, fixed } = await this.detectAndFixCorruptedKlines(pair, true);
 
           await this.updateMaintenanceLog(pair, { corruptedFixed: fixed, checkType: 'corruption' });
 
@@ -771,10 +771,10 @@ class KlineMaintenance {
       gapsFilled += results.reduce((sum, n) => sum + n, 0);
     }
 
-    const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair);
+    const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair, true);
 
     if (gapsFilled > 0 || corruptedFixed > 0) {
-      logger.debug({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');
+      logger.info({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');
     }
 
     await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
