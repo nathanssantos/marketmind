@@ -1204,6 +1204,98 @@ export const autoTradingRouter = router({
       return scores;
     }),
 
+  getFilteredSymbolsForQuickStart: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+        interval: z.string().default('30m'),
+        limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX).default(10),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const [config] = await ctx.db
+        .select()
+        .from(autoTradingConfig)
+        .where(
+          and(
+            eq(autoTradingConfig.walletId, input.walletId),
+            eq(autoTradingConfig.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
+      const leverage = config?.leverage ?? 1;
+      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
+
+      const scoringService = getOpportunityScoringService();
+      const minNotionalFilter = getMinNotionalFilterService();
+
+      const fetchMultiplier = 4;
+      const scores = await scoringService.getSymbolScores(input.marketType, input.limit * fetchMultiplier);
+
+      const capitalRequirement = {
+        walletBalance,
+        leverage,
+        targetWatchersCount: input.limit,
+        exposureMultiplier,
+      };
+
+      const allSymbols = scores.map(s => s.symbol);
+      const capitalFilter = await minNotionalFilter.filterSymbolsByCapital(
+        allSymbols,
+        capitalRequirement,
+        input.marketType
+      );
+
+      let filteredScores = scores.filter(s => capitalFilter.eligible.includes(s.symbol));
+
+      const eligibleSymbols: string[] = [];
+      const skippedInsufficientKlines: string[] = [];
+      const skippedInsufficientCapital = capitalFilter.filtered;
+
+      for (const score of filteredScores) {
+        if (eligibleSymbols.length >= input.limit) break;
+
+        const klineCheck = await checkKlineAvailability(
+          score.symbol,
+          input.interval,
+          input.marketType,
+          true
+        );
+
+        if (klineCheck.hasSufficient) {
+          eligibleSymbols.push(score.symbol);
+        } else {
+          skippedInsufficientKlines.push(score.symbol);
+        }
+      }
+
+      logApiTable('getFilteredSymbolsForQuickStart', [
+        ['Market Type', input.marketType],
+        ['Interval', input.interval],
+        ['Target Count', input.limit],
+        ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
+        ['Leverage', `${leverage}x`],
+        ['Total Scored', scores.length],
+        ['Eligible (Capital)', capitalFilter.eligible.length],
+        ['Skipped (Capital)', skippedInsufficientCapital.length],
+        ['Skipped (Klines)', skippedInsufficientKlines.length],
+        ['Final Symbols', eligibleSymbols.length],
+      ]);
+
+      return {
+        symbols: eligibleSymbols,
+        skippedInsufficientCapital,
+        skippedInsufficientKlines,
+        capitalPerWatcher: capitalFilter.capitalPerWatcher,
+        maxAffordableWatchers: capitalFilter.maxAffordableWatchers,
+      };
+    }),
+
   getCapitalLimits: protectedProcedure
     .input(
       z.object({

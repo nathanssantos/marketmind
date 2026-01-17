@@ -6,7 +6,7 @@ import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Switch } from '@renderer/components/ui/switch';
-import { useBackendAutoTrading, useDynamicSymbolScores, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
+import { useBackendAutoTrading, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
@@ -70,30 +70,28 @@ export const WatcherManager = () => {
     { enabled: !!walletId, staleTime: 30000 }
   );
 
-  const maxAffordableWatchers = capitalLimits?.maxAffordableWatchers ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
+  const {
+    filteredSymbols: quickStartSymbols,
+    maxAffordableWatchers: filteredMaxAffordable,
+    isLoadingFiltered,
+  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, quickStartCount);
+
+  const maxAffordableWatchers = filteredMaxAffordable || capitalLimits?.maxAffordableWatchers || AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
   const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
 
   useEffect(() => {
-    if (capitalLimits) setQuickStartCount(effectiveMax);
-  }, [capitalLimits, effectiveMax]);
-
-  const symbolFetchLimit = Math.max(quickStartCount * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER, AUTO_TRADING_CONFIG.MIN_SYMBOL_FETCH);
-  const { symbolScores, isLoadingScores } = useDynamicSymbolScores(quickStartMarketType, symbolFetchLimit);
+    if (maxAffordableWatchers > 0) setQuickStartCount(Math.min(effectiveMax, quickStartCount || effectiveMax));
+  }, [maxAffordableWatchers, effectiveMax]);
 
   const { data: btcTrendStatus } = trpc.autoTrading.getBtcTrendStatus.useQuery(undefined, {
     enabled: config?.useBtcCorrelationFilter === true,
     staleTime: 60000,
   });
 
-  const symbolsToCheck = useMemo(
-    () => symbolScores.slice(0, symbolFetchLimit).map((s) => s.symbol),
-    [symbolScores, symbolFetchLimit]
-  );
-
   const { data: fundingRates } = trpc.autoTrading.getBatchFundingRates.useQuery(
-    { symbols: symbolsToCheck },
+    { symbols: quickStartSymbols },
     {
-      enabled: quickStartMarketType === 'FUTURES' && config?.useFundingFilter === true && symbolsToCheck.length > 0,
+      enabled: quickStartMarketType === 'FUTURES' && config?.useFundingFilter === true && quickStartSymbols.length > 0,
       staleTime: 60000,
     }
   );
@@ -105,16 +103,8 @@ export const WatcherManager = () => {
         : []
     );
 
-    const result: string[] = [];
-
-    for (const score of symbolScores) {
-      if (result.length >= quickStartCount) break;
-      if (extremeSymbols.has(score.symbol)) continue;
-      result.push(score.symbol);
-    }
-
-    return result;
-  }, [symbolScores, quickStartCount, fundingRates, config?.useFundingFilter, quickStartMarketType]);
+    return quickStartSymbols.filter(symbol => !extremeSymbols.has(symbol));
+  }, [quickStartSymbols, fundingRates, config?.useFundingFilter, quickStartMarketType]);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
   const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
@@ -607,7 +597,7 @@ export const WatcherManager = () => {
                           colorPalette="green"
                           onClick={handleQuickStartFromRankings}
                           loading={isStartingWatchersBulk}
-                          disabled={isLoadingScores || filteredSymbols.length === 0}
+                          disabled={isLoadingFiltered || filteredSymbols.length === 0}
                         >
                           <LuPlay />
                           {t('tradingProfiles.dynamicSelection.quickStartButton', { count: filteredSymbols.length })}

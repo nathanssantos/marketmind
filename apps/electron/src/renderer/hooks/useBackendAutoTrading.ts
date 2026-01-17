@@ -237,6 +237,29 @@ export const useDynamicSymbolScores = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES
   };
 };
 
+export const useFilteredSymbolsForQuickStart = (
+  walletId: string,
+  marketType: 'SPOT' | 'FUTURES',
+  interval: string,
+  limit: number
+) => {
+  const { data, isLoading, error, refetch } = trpc.autoTrading.getFilteredSymbolsForQuickStart.useQuery(
+    { walletId, marketType, interval, limit },
+    { enabled: !!walletId, staleTime: 30 * 1000 }
+  );
+
+  return {
+    filteredSymbols: data?.symbols ?? [],
+    skippedInsufficientCapital: data?.skippedInsufficientCapital ?? [],
+    skippedInsufficientKlines: data?.skippedInsufficientKlines ?? [],
+    capitalPerWatcher: data?.capitalPerWatcher ?? 0,
+    maxAffordableWatchers: data?.maxAffordableWatchers ?? 0,
+    isLoadingFiltered: isLoading,
+    filteredError: error,
+    refetchFiltered: refetch,
+  };
+};
+
 export const useTopCoinsByMarketCap = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 100) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getTopCoinsByMarketCap.useQuery(
     { marketType, limit },

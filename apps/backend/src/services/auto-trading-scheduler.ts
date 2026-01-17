@@ -1,3 +1,4 @@
+import { calculateFibonacciProjection } from '@marketmind/indicators';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { getDefaultFee, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
@@ -1109,10 +1110,22 @@ export class AutoTradingScheduler {
     const tpCalculationMode = config?.tpCalculationMode ?? 'default';
     const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
 
+    logBuffer.log('🎯', 'TP calculation config', {
+      tpCalculationMode,
+      fibonacciTargetLevel,
+      originalTP: setup.takeProfit?.toFixed(6),
+    });
+
     let effectiveTakeProfit = setup.takeProfit;
 
-    if (tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
-      const fibTarget = this.getFibonacciTargetPrice(setup, fibonacciTargetLevel);
+    if (tpCalculationMode === 'fibonacci') {
+      const fibTarget = this.calculateFibonacciTakeProfit(
+        cycleKlines,
+        setup.entryPrice,
+        setup.direction,
+        fibonacciTargetLevel
+      );
+
       if (fibTarget !== null) {
         const isValidTarget = setup.direction === 'LONG'
           ? fibTarget > setup.entryPrice
@@ -1123,23 +1136,28 @@ export class AutoTradingScheduler {
             originalTP: setup.takeProfit?.toFixed(6),
             fibonacciTP: fibTarget.toFixed(6),
             configLevel: fibonacciTargetLevel,
-            primaryLevel: setup.fibonacciProjection.primaryLevel,
             direction: setup.direction,
           });
           effectiveTakeProfit = fibTarget;
         } else {
-          logBuffer.warn('⚠️', 'Fibonacci target invalid for direction, using default TP', {
+          const rrFallback = this.calculateRiskRewardTP(setup.entryPrice, setup.stopLoss, setup.direction, fibonacciTargetLevel);
+          logBuffer.warn('⚠️', 'Fibonacci target invalid for direction, using R:R fallback', {
             fibTarget: fibTarget.toFixed(6),
+            rrFallback: rrFallback?.toFixed(6),
             entryPrice: setup.entryPrice.toFixed(6),
             direction: setup.direction,
           });
+          if (rrFallback) effectiveTakeProfit = rrFallback;
         }
       } else {
-        logBuffer.warn('⚠️', 'Fibonacci target not available, using default TP', {
+        const rrFallback = this.calculateRiskRewardTP(setup.entryPrice, setup.stopLoss, setup.direction, fibonacciTargetLevel);
+        logBuffer.warn('⚠️', 'Fibonacci projection not available, using R:R fallback', {
           configLevel: fibonacciTargetLevel,
-          hasFibProjection: !!setup.fibonacciProjection,
-          fibLevels: setup.fibonacciProjection?.levels?.length ?? 0,
+          rrFallback: rrFallback?.toFixed(6),
+          klinesCount: cycleKlines.length,
+          direction: setup.direction,
         });
+        if (rrFallback) effectiveTakeProfit = rrFallback;
       }
     }
 
@@ -2391,34 +2409,68 @@ export class AutoTradingScheduler {
 
   }
 
-  private getFibonacciTargetPrice(
-    setup: TradingSetup,
+  private calculateFibonacciTakeProfit(
+    klines: Kline[],
+    _entryPrice: number,
+    direction: 'LONG' | 'SHORT',
     fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = 'auto'
   ): number | null {
-    const fib = setup.fibonacciProjection;
-    if (!fib?.levels || fib.levels.length === 0) return null;
+    const currentIndex = klines.length - 1;
+    const projection = calculateFibonacciProjection(klines, currentIndex, 100, direction);
 
-    const targetLevel = fibonacciTargetLevel === 'auto'
-      ? fib.primaryLevel
-      : parseFloat(fibonacciTargetLevel);
+    if (!projection || projection.levels.length === 0) {
+      log('⚠️ Fibonacci projection failed', {
+        klinesCount: klines.length,
+        currentIndex,
+        direction,
+        hasProjection: !!projection,
+        levelsCount: projection?.levels?.length ?? 0,
+      });
+      return null;
+    }
 
-    const targetLevelData = fib.levels.find(
+    const targetLevel = fibonacciTargetLevel === 'auto' ? 1.618 : parseFloat(fibonacciTargetLevel);
+
+    const targetLevelData = projection.levels.find(
       (l) => Math.abs(l.level - targetLevel) < 0.001
     );
 
     if (targetLevelData) {
+      log('✅ Fibonacci TP calculated', {
+        targetLevel,
+        price: targetLevelData.price,
+        swingLow: projection.swingLow.price,
+        swingHigh: projection.swingHigh.price,
+        range: projection.range,
+      });
       return targetLevelData.price;
     }
 
-    log('⚠️ Fibonacci target level not found in levels, falling back to 161.8%', {
-      configLevel: fibonacciTargetLevel,
-      primaryLevel: fib.primaryLevel,
+    log('⚠️ Target level not found, using 161.8%', {
       targetLevel,
-      availableLevels: fib.levels.map(l => l.level),
+      availableLevels: projection.levels.map(l => l.level),
     });
 
-    const level1618 = fib.levels.find((l) => Math.abs(l.level - 1.618) < 0.001);
+    const level1618 = projection.levels.find((l) => Math.abs(l.level - 1.618) < 0.001);
     return level1618?.price ?? null;
+  }
+
+  private calculateRiskRewardTP(
+    entryPrice: number,
+    stopLoss: number | undefined,
+    direction: 'LONG' | 'SHORT',
+    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618'
+  ): number | null {
+    if (!stopLoss) return null;
+
+    const riskMultiplier = fibonacciTargetLevel === 'auto' ? 1.618 : parseFloat(fibonacciTargetLevel);
+    const risk = Math.abs(entryPrice - stopLoss);
+
+    if (direction === 'LONG') {
+      return entryPrice + (risk * riskMultiplier);
+    } else {
+      return entryPrice - (risk * riskMultiplier);
+    }
   }
 
   async startDynamicRotation(

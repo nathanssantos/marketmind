@@ -587,12 +587,13 @@ export class AutoTradingService {
       await client.setMarginType({ symbol, marginType });
       logger.info({ symbol, marginType }, 'Futures margin type set');
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorMsg = serializeError(error);
       if (errorMsg.includes('No need to change margin type')) {
         logger.info({ symbol, marginType }, 'Margin type already set');
         return;
       }
-      throw error;
+      logger.error({ symbol, marginType, error: errorMsg }, 'Failed to set futures margin type');
+      throw new Error(`Failed to set margin type for ${symbol}: ${errorMsg}`);
     }
   }
 
@@ -610,11 +611,13 @@ export class AutoTradingService {
       await client.setPositionMode({ dualSidePosition: dualSidePosition ? 'true' : 'false' });
       logger.info({ dualSidePosition }, 'Futures position mode set');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('No need to change position side')) {
+      const errorMsg = serializeError(error);
+      if (errorMsg.includes('No need to change position side')) {
         logger.info({ dualSidePosition }, 'Position mode already set');
         return;
       }
-      throw error;
+      logger.error({ dualSidePosition, error: errorMsg }, 'Failed to set futures position mode');
+      throw new Error(`Failed to set position mode: ${errorMsg}`);
     }
   }
 }
