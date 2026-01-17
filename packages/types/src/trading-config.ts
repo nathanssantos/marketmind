@@ -200,6 +200,15 @@ export const CONTEXT_AGGREGATOR_CONFIG = {
 
 export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'] as const;
 
+export const FIBONACCI_TARGET_LEVELS = ['auto', '1', '1.272', '1.618', '2', '2.618'] as const;
+export type FibonacciTargetLevel = (typeof FIBONACCI_TARGET_LEVELS)[number];
+
+export const BACKTEST_DEFAULTS = {
+  LEVERAGE: 2,
+  MIN_CONFIDENCE: 50,
+  TRAILING_STOP_ATR_MULTIPLIER: 2.0,
+} as const;
+
 export const KLINE_CONFIG = {
   ABSOLUTE_MINIMUM: 2000,
   REQUIRED_FOR_BACKTEST: 40_000,

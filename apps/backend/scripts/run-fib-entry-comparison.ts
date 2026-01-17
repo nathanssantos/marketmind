@@ -2,6 +2,10 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
+import {
+  TRADING_DEFAULTS,
+  BACKTEST_DEFAULTS,
+} from '@marketmind/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,17 +49,17 @@ const CONFIG = {
   interval: '2h',
   startDate: '2024-01-17',
   endDate: '2026-01-17',
-  initialCapital: 10000,
+  initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
-  leverage: 2,
+  leverage: BACKTEST_DEFAULTS.LEVERAGE,
   setupTypes: SETUPS,
-  minConfidence: 50,
-  minRiskRewardRatio: 1.2,
+  minConfidence: BACKTEST_DEFAULTS.MIN_CONFIDENCE,
+  minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
   useAlgorithmicLevels: true,
   onlyWithTrend: true,
   useTrendFilter: true,
   useTrailingStop: true,
-  trailingStopATRMultiplier: 2.0,
+  trailingStopATRMultiplier: BACKTEST_DEFAULTS.TRAILING_STOP_ATR_MULTIPLIER,
   tpCalculationMode: 'fibonacci' as const,
   fibonacciTargetLevel: 'auto' as const,
   useMtfFilter: true,
@@ -68,7 +72,7 @@ const CONFIG = {
   simulateFundingRates: true,
   simulateLiquidation: true,
   useCooldown: true,
-  cooldownMinutes: 15,
+  cooldownMinutes: TRADING_DEFAULTS.COOLDOWN_MINUTES,
 };
 
 const runBacktest = async (fibLevel: number): Promise<BacktestResult> => {

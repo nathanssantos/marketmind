@@ -1,4 +1,5 @@
 import type { BacktestConfig, BacktestResult, Interval, MultiWatcherBacktestResult } from '@marketmind/types';
+import { FIBONACCI_TARGET_LEVELS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { BacktestEngine } from '../services/backtesting/BacktestEngine';
@@ -75,7 +76,7 @@ export const backtestRouter = router({
         trendFilterPeriod: z.number().min(1).optional(),
         useTrailingStop: z.boolean().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2', '2.618']).optional(),
+        fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         exposureMultiplier: z.number().min(0.1).max(10).optional(),
         leverage: z.number().min(1).max(125).optional(),
         cooldownMinutes: z.number().min(0).optional(),
@@ -281,7 +282,7 @@ export const backtestRouter = router({
         marketType: z.enum(['SPOT', 'FUTURES']).optional(),
         leverage: z.number().min(1).max(125).optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2', '2.618']).optional(),
+        fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         useMtfFilter: z.boolean().optional(),
         useBtcCorrelationFilter: z.boolean().optional(),
         useMarketRegimeFilter: z.boolean().optional(),

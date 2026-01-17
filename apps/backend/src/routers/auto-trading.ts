@@ -1,4 +1,5 @@
 import { colorize, createTable } from '@marketmind/logger';
+import { FIBONACCI_TARGET_LEVELS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -116,7 +117,7 @@ export const autoTradingRouter = router({
         useTrendFilter: z.boolean().optional(),
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(['auto', '1', '1.272', '1.618', '2', '2.618']).optional(),
+        fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
         dynamicSymbolLimit: z.number().min(1).max(50).optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),

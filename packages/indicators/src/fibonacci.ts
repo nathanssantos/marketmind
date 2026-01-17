@@ -1,4 +1,5 @@
 import type { Kline } from '@marketmind/types';
+import { FILTER_THRESHOLDS } from '@marketmind/types';
 import {
     findSignificantSwingHigh,
     findSignificantSwingLow,
@@ -243,19 +244,15 @@ export interface FibonacciLevelSelectionResult {
   reason: string;
 }
 
-const ADX_VERY_STRONG_TREND_THRESHOLD = 45;
-const VOLUME_SPIKE_THRESHOLD = 1.5;
-const VERY_HIGH_VOLATILITY_THRESHOLD = 4.0;
-
 export const selectDynamicFibonacciLevel = (
   context: FibonacciLevelSelectionContext
 ): FibonacciLevelSelectionResult => {
   const { adx, atrPercent, volumeRatio } = context;
 
-  const hasVolumeConfirmation = volumeRatio !== undefined && volumeRatio > VOLUME_SPIKE_THRESHOLD;
-  const hasVeryHighVolatility = atrPercent > VERY_HIGH_VOLATILITY_THRESHOLD;
+  const hasVolumeConfirmation = volumeRatio !== undefined && volumeRatio > FILTER_THRESHOLDS.VOLUME_SPIKE_MULTIPLIER;
+  const hasVeryHighVolatility = atrPercent > FILTER_THRESHOLDS.VERY_HIGH_VOLATILITY_ATR;
 
-  if (adx >= ADX_VERY_STRONG_TREND_THRESHOLD && (hasVolumeConfirmation || hasVeryHighVolatility)) {
+  if (adx >= FILTER_THRESHOLDS.ADX_VERY_STRONG && (hasVolumeConfirmation || hasVeryHighVolatility)) {
     return { level: 2.618, reason: 'very_strong_trend_confirmed' };
   }
 

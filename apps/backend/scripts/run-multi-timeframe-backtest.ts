@@ -2,6 +2,11 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
+import {
+  TRADING_DEFAULTS,
+  EXIT_CALCULATOR_CONFIG,
+  BACKTEST_DEFAULTS,
+} from '@marketmind/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,20 +49,20 @@ const BASE_CONFIG = {
   symbol: 'BTCUSDT',
   startDate: '2024-01-17',
   endDate: '2026-01-17',
-  initialCapital: 10000,
+  initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
-  leverage: 2,
+  leverage: BACKTEST_DEFAULTS.LEVERAGE,
   setupTypes: SETUPS,
-  minConfidence: 50,
-  minRiskRewardRatio: 1.2,
+  minConfidence: BACKTEST_DEFAULTS.MIN_CONFIDENCE,
+  minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
   useAlgorithmicLevels: true,
   onlyWithTrend: true,
   useTrendFilter: true,
   useTrailingStop: true,
-  trailingStopATRMultiplier: 2.0,
+  trailingStopATRMultiplier: BACKTEST_DEFAULTS.TRAILING_STOP_ATR_MULTIPLIER,
   tpCalculationMode: 'fibonacci' as const,
   fibonacciTargetLevel: '2' as const,
-  maxFibonacciEntryProgressPercent: 88.6,
+  maxFibonacciEntryProgressPercent: EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
   useMtfFilter: true,
   useMomentumTimingFilter: true,
   useAdxFilter: false,
@@ -68,7 +73,7 @@ const BASE_CONFIG = {
   simulateFundingRates: true,
   simulateLiquidation: true,
   useCooldown: true,
-  cooldownMinutes: 15,
+  cooldownMinutes: TRADING_DEFAULTS.COOLDOWN_MINUTES,
 };
 
 const runBacktest = async (interval: string): Promise<BacktestResult | null> => {
