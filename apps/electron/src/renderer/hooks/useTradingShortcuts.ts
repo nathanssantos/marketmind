@@ -6,12 +6,16 @@ export interface TradingShortcutsConfig {
   enabled: boolean;
 }
 
+export const ENABLE_SHIFT_ALT_ORDER_ENTRY = false;
+
 export const useTradingShortcuts = (config: TradingShortcutsConfig) => {
   const [shiftPressed, setShiftPressed] = useState(false);
   const [altPressed, setAltPressed] = useState(false);
 
+  const featureEnabled = config.enabled && ENABLE_SHIFT_ALT_ORDER_ENTRY;
+
   useEffect(() => {
-    if (!config.enabled) {
+    if (!featureEnabled) {
       setShiftPressed(false);
       setAltPressed(false);
       return;
@@ -36,10 +40,10 @@ export const useTradingShortcuts = (config: TradingShortcutsConfig) => {
       setShiftPressed(false);
       setAltPressed(false);
     };
-  }, [config.enabled]);
+  }, [featureEnabled]);
 
   return {
-    shiftPressed: config.enabled && shiftPressed,
-    altPressed: config.enabled && altPressed,
+    shiftPressed: featureEnabled && shiftPressed,
+    altPressed: featureEnabled && altPressed,
   };
 };

@@ -1,8 +1,13 @@
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BACKEND_TRPC_URL } from '@shared/constants/api';
 import { trpc } from '../utils/trpc';
+
+const clearStaleCache = (client: QueryClient) => {
+    client.invalidateQueries({ queryKey: ['kline'] });
+    client.removeQueries({ queryKey: ['kline'], predicate: () => true });
+};
 
 export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(() => new QueryClient({
@@ -52,6 +57,10 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
             ],
         })
     );
+
+    useEffect(() => {
+        clearStaleCache(queryClient);
+    }, [queryClient]);
 
     return (
         <trpc.Provider client={trpcClient} queryClient={queryClient}>

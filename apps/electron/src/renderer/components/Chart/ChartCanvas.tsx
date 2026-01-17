@@ -27,6 +27,7 @@ import { useCMOWorker } from '@renderer/hooks/useCMOWorker';
 import { useDEMAWorker } from '@renderer/hooks/useDEMAWorker';
 import { useDonchianWorker } from '@renderer/hooks/useDonchianWorker';
 import { useElderRayWorker } from '@renderer/hooks/useElderRayWorker';
+import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useFibonacciWorker } from '@renderer/hooks/useFibonacciWorker';
 import { useFVGWorker } from '@renderer/hooks/useFVGWorker';
 import { useHMAWorker } from '@renderer/hooks/useHMAWorker';
@@ -35,9 +36,8 @@ import { useKeltnerWorker } from '@renderer/hooks/useKeltnerWorker';
 import { useKlingerWorker } from '@renderer/hooks/useKlingerWorker';
 import { useLiquidityLevelsWorker } from '@renderer/hooks/useLiquidityLevelsWorker';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
-import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
-import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
 import { useMACDWorker } from '@renderer/hooks/useMACDWorker';
+import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
 import { useMFIWorker } from '@renderer/hooks/useMFIWorker';
 import { useOBVWorker } from '@renderer/hooks/useOBVWorker';
 import { useParabolicSARWorker } from '@renderer/hooks/useParabolicSARWorker';
@@ -1275,20 +1275,6 @@ export const ChartCanvas = ({
         event.stopPropagation();
         return;
       }
-    }
-
-    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed)) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const price = manager.yToPrice(mouseY);
-
-      if (shiftPressed) {
-        handleLongEntry(price);
-      } else if (altPressed) {
-        handleShortEntry(price);
-      }
-      return;
     }
 
     if (!shiftPressed && !altPressed && orderDragHandler.handleMouseDown(mouseX, mouseY)) {
