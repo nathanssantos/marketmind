@@ -587,7 +587,8 @@ export class AutoTradingService {
       await client.setMarginType({ symbol, marginType });
       logger.info({ symbol, marginType }, 'Futures margin type set');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('No need to change margin type')) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes('No need to change margin type')) {
         logger.info({ symbol, marginType }, 'Margin type already set');
         return;
       }

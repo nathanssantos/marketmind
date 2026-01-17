@@ -61,7 +61,8 @@ export async function setMarginType(
   try {
     await client.setMarginType({ symbol, marginType });
   } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes('No need to change margin type')) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (errorMsg.includes('No need to change margin type')) {
       return;
     }
     logger.error({ error: serializeError(error), symbol, marginType }, 'Failed to set margin type');

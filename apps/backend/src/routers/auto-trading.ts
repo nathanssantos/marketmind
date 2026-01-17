@@ -995,14 +995,17 @@ export const autoTradingRouter = router({
 
       const skippedCapitalSymbols = capitalFilterResult.filtered;
       const symbolsToTry = capitalFilterResult.eligible;
+      const capitalLimitedTarget = Math.min(effectiveTargetCount, capitalFilterResult.maxAffordableWatchers);
 
-      if (skippedCapitalSymbols.length > 0) {
-        log('💰 Symbols filtered by capital requirement', {
-          skipped: skippedCapitalSymbols,
+      if (skippedCapitalSymbols.length > 0 || capitalFilterResult.maxAffordableWatchers < effectiveTargetCount) {
+        log('💰 Capital filter applied', {
+          skippedSymbols: skippedCapitalSymbols.length,
           capitalPerWatcher: capitalFilterResult.capitalPerWatcher.toFixed(2),
           walletBalance,
           leverage,
-          dynamicLimit,
+          maxAffordableWatchers: capitalFilterResult.maxAffordableWatchers,
+          originalTarget: effectiveTargetCount,
+          capitalLimitedTarget,
         });
       }
 
@@ -1073,19 +1076,19 @@ export const autoTradingRouter = router({
       }
 
       for (const symbol of symbolsToTry) {
-        if (startedSymbols.size >= effectiveTargetCount) break;
+        if (startedSymbols.size >= capitalLimitedTarget) break;
         await tryStartWatcher(symbol, false);
       }
 
-      if (startedSymbols.size < effectiveTargetCount) {
+      if (startedSymbols.size < capitalLimitedTarget) {
         log('🔄 Fetching additional symbols from ranking', {
           current: startedSymbols.size,
-          target: effectiveTargetCount,
-          needed: effectiveTargetCount - startedSymbols.size,
+          target: capitalLimitedTarget,
+          needed: capitalLimitedTarget - startedSymbols.size,
         });
 
         const scoringService = getOpportunityScoringService();
-        const scores = await scoringService.getSymbolScores(input.marketType, effectiveTargetCount * 4);
+        const scores = await scoringService.getSymbolScores(input.marketType, capitalLimitedTarget * 4);
 
         const rankingSymbols = scores.map(s => s.symbol).filter(s => !attemptedSymbols.has(s));
         const rankingFilterResult = await minNotionalFilter.filterSymbolsByCapital(
@@ -1111,7 +1114,7 @@ export const autoTradingRouter = router({
         }
 
         for (const symbol of rankingFilterResult.eligible) {
-          if (startedSymbols.size >= effectiveTargetCount) break;
+          if (startedSymbols.size >= capitalLimitedTarget) break;
           await tryStartWatcher(symbol, true);
         }
       }
@@ -1120,12 +1123,13 @@ export const autoTradingRouter = router({
       const skippedKlinesCount = results.filter(r => r.skippedReason === 'insufficient_klines').length;
       const skippedCapitalCount = results.filter(r => r.skippedReason === 'insufficient_capital').length;
       const fromRankingCount = results.filter(r => r.success && r.fromRanking).length;
-      const targetMet = successCount >= effectiveTargetCount;
+      const targetMet = successCount >= capitalLimitedTarget;
 
       log('✅ Bulk watcher creation complete', {
         total: results.length,
         success: successCount,
-        effectiveTargetCount,
+        capitalLimitedTarget,
+        maxAffordableWatchers: capitalFilterResult.maxAffordableWatchers,
         existingCount,
         dynamicLimit,
         targetMet,
