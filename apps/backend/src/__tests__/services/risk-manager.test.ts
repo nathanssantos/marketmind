@@ -1,19 +1,19 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import {
-  RiskManagerService,
-  calculatePositionExposure,
-  calculateMaxPositionValue,
-  calculateMaxTotalExposure,
-  calculateMaxDailyLoss,
-  calculateDrawdownPercent,
-  validateOrderSizePure,
-  calculateExposureUtilization,
-  type PositionLike,
-} from '../../services/risk-manager';
-import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
-import { createTestUser, createTestWallet } from '../helpers/test-fixtures';
-import { tradeExecutions, autoTradingConfig, wallets } from '../../db/schema';
 import { eq } from 'drizzle-orm';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { autoTradingConfig, tradeExecutions, wallets } from '../../db/schema';
+import {
+    RiskManagerService,
+    calculateDrawdownPercent,
+    calculateExposureUtilization,
+    calculateMaxDailyLoss,
+    calculateMaxPositionValue,
+    calculateMaxTotalExposure,
+    calculatePositionExposure,
+    validateOrderSizePure,
+    type PositionLike,
+} from '../../services/risk-manager';
+import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
+import { createTestUser, createTestWallet } from '../helpers/test-fixtures';
 
 describe('Risk Manager - Pure Utility Functions', () => {
   describe('calculatePositionExposure', () => {
@@ -182,6 +182,13 @@ describe('RiskManagerService', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -276,6 +283,13 @@ describe('RiskManagerService', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -333,6 +347,13 @@ describe('RiskManagerService', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -390,6 +411,13 @@ describe('RiskManagerService', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -472,6 +500,13 @@ describe('RiskManagerService', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

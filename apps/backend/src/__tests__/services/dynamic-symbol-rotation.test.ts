@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
-import {
-  DynamicSymbolRotationService,
-  getIntervalMs,
-  type RotationConfig,
-} from '../../services/dynamic-symbol-rotation';
+import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
 import { db } from '../../db';
+import {
+    DynamicSymbolRotationService,
+    getIntervalMs,
+    type RotationConfig,
+} from '../../services/dynamic-symbol-rotation';
 import { logger } from '../../services/logger';
 
 vi.mock('../../db', () => ({
@@ -107,10 +107,6 @@ describe('DynamicSymbolRotationService', () => {
   beforeEach(() => {
     rotationService = new DynamicSymbolRotationService();
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    rotationService.stopAll();
   });
 
   describe('executeRotation - count maintenance', () => {
@@ -253,15 +249,6 @@ describe('DynamicSymbolRotationService', () => {
       rotationService.cleanupWallet('test-wallet');
 
       expect(rotationService.getRotationHistory('test-wallet')).toHaveLength(0);
-    });
-
-    it('should stop scheduled rotation when cleaning up wallet', () => {
-      rotationService.startRotation('test-wallet', 'test-user', baseConfig);
-      expect(rotationService.isRotationActive('test-wallet')).toBe(true);
-
-      rotationService.cleanupWallet('test-wallet');
-
-      expect(rotationService.isRotationActive('test-wallet')).toBe(false);
     });
   });
 

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { StrategyPerformance, TradeExecution } from '../../db/schema';
 import { StrategyPerformanceService } from '../strategy-performance';
 
 vi.mock('../../db', () => ({
@@ -107,7 +108,7 @@ describe('StrategyPerformanceService', () => {
         closedAt: null,
         setupType: 'larry-williams-9-1',
         symbol: 'BTCUSDT',
-      } as unknown);
+      } as TradeExecution);
 
       const result = await service.updatePerformance('exec-1');
 
@@ -121,7 +122,7 @@ describe('StrategyPerformanceService', () => {
         closedAt: new Date(),
         setupType: null,
         symbol: 'BTCUSDT',
-      } as unknown);
+      } as TradeExecution);
 
       const result = await service.updatePerformance('exec-1');
 
@@ -160,7 +161,7 @@ describe('StrategyPerformanceService', () => {
         },
       ];
 
-      vi.mocked(db.query.strategyPerformance.findMany).mockResolvedValue(perfRecords as unknown[]);
+      vi.mocked(db.query.strategyPerformance.findMany).mockResolvedValue(perfRecords as StrategyPerformance[]);
 
       const result = await service.getAllPerformance();
 

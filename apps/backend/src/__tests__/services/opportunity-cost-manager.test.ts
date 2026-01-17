@@ -1,9 +1,9 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
-import { createTestWallet, createAuthenticatedUser } from '../helpers/test-fixtures';
-import { autoTradingConfig, tradeExecutions } from '../../db/schema';
 import { eq } from 'drizzle-orm';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { autoTradingConfig, tradeExecutions } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
+import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
+import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtures';
 
 vi.mock('../../services/price-cache', () => ({
   priceCache: {
@@ -18,8 +18,8 @@ vi.mock('../../services/websocket', () => ({
   })),
 }));
 
-import { OpportunityCostManagerService } from '../../services/opportunity-cost-manager';
 import type { OpportunityCostConfig, StaleTradeCheck } from '../../services/opportunity-cost-manager';
+import { OpportunityCostManagerService } from '../../services/opportunity-cost-manager';
 import { priceCache } from '../../services/price-cache';
 
 describe('OpportunityCostManagerService', () => {
@@ -675,7 +675,7 @@ describe('OpportunityCostManagerService', () => {
         openedAt: new Date(),
       });
 
-      vi.mocked(priceCache.get).mockResolvedValue(50100);
+      vi.mocked(priceCache.fetchPrice).mockResolvedValue(50100);
 
       const service = new OpportunityCostManagerService();
       const results = await service.checkAllPositions();
@@ -719,14 +719,14 @@ describe('OpportunityCostManagerService', () => {
         openedAt: new Date(),
       });
 
-      vi.mocked(priceCache.get).mockResolvedValue(50100);
+      vi.mocked(priceCache.fetchPrice).mockResolvedValue(50100);
 
       const service = new OpportunityCostManagerService();
       const results = await service.checkAllPositions();
 
       expect(results.length).toBe(1);
-      expect(results[0].symbol).toBe('BTCUSDT');
-      expect(results[0].isStale).toBe(true);
+      expect(results[0]!.symbol).toBe('BTCUSDT');
+      expect(results[0]!.isStale).toBe(true);
     });
   });
 

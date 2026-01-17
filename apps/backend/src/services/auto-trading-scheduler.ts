@@ -134,11 +134,21 @@ interface WalletRotationState {
   config: RotationConfig;
   userId: string;
   profileId?: string;
-  lastCheckTime: number;
+  lastCandleCloseTime: number;
 }
 
 const getRotationStateKey = (walletId: string, interval: string): string =>
   `${walletId}:${interval}`;
+
+const getCandleCloseTime = (interval: string, timestamp: number = Date.now()): number => {
+  const intervalMs = getIntervalMs(interval);
+  return Math.floor(timestamp / intervalMs) * intervalMs;
+};
+
+const getNextCandleCloseTime = (interval: string, timestamp: number = Date.now()): number => {
+  const intervalMs = getIntervalMs(interval);
+  return Math.ceil(timestamp / intervalMs) * intervalMs;
+};
 
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
@@ -308,10 +318,9 @@ export class AutoTradingScheduler {
     for (const [stateKey, state] of this.rotationStates.entries()) {
       if (this.isCheckingRotation.has(stateKey)) continue;
 
-      const intervalMs = getIntervalMs(state.config.interval);
-      const timeSinceLastCheck = now - state.lastCheckTime;
+      const currentCandleClose = getCandleCloseTime(state.config.interval, now);
 
-      if (timeSinceLastCheck >= intervalMs) {
+      if (currentCandleClose > state.lastCandleCloseTime) {
         rotationsToExecute.push({ stateKey, state });
       }
     }
@@ -349,7 +358,7 @@ export class AutoTradingScheduler {
           allAddedWatcherIds.push(...addedIds);
         }
 
-        state.lastCheckTime = now;
+        state.lastCandleCloseTime = getCandleCloseTime(state.config.interval, now);
       } catch (error) {
         log('❌ [DynamicRotation] Rotation check failed', {
           stateKey,
@@ -2373,11 +2382,13 @@ export class AutoTradingScheduler {
 
     if (enableAutoRotation) {
       const stateKey = getRotationStateKey(walletId, config.interval);
+      const currentCandleClose = getCandleCloseTime(config.interval);
+
       this.rotationStates.set(stateKey, {
         config: rotationConfig,
         userId,
         profileId: config.profileId,
-        lastCheckTime: Date.now(),
+        lastCandleCloseTime: currentCandleClose,
       });
 
     } else {
@@ -2595,11 +2606,12 @@ export class AutoTradingScheduler {
 
   getNextRotationTime(walletId: string): Date | null {
     let earliestTime: Date | null = null;
+    const now = Date.now();
 
     for (const [key, state] of this.rotationStates.entries()) {
       if (key.startsWith(`${walletId}:`)) {
-        const intervalMs = getIntervalMs(state.config.interval);
-        const nextTime = new Date(state.lastCheckTime + intervalMs);
+        const nextCandleClose = getNextCandleCloseTime(state.config.interval, now);
+        const nextTime = new Date(nextCandleClose);
         if (!earliestTime || nextTime < earliestTime) {
           earliestTime = nextTime;
         }
@@ -2620,14 +2632,15 @@ export class AutoTradingScheduler {
 
   getRotationCycles(walletId: string): Array<{ interval: string; nextRotation: Date; config: RotationConfig }> {
     const cycles: Array<{ interval: string; nextRotation: Date; config: RotationConfig }> = [];
+    const now = Date.now();
 
     for (const [key, state] of this.rotationStates.entries()) {
       if (key.startsWith(`${walletId}:`)) {
         const interval = key.split(':')[1] ?? state.config.interval;
-        const intervalMs = getIntervalMs(state.config.interval);
+        const nextCandleClose = getNextCandleCloseTime(state.config.interval, now);
         cycles.push({
           interval,
-          nextRotation: new Date(state.lastCheckTime + intervalMs),
+          nextRotation: new Date(nextCandleClose),
           config: state.config,
         });
       }

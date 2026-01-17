@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { eq, and, desc } from 'drizzle-orm';
-import { getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestUser, createTestWallet, createTestTradingProfile } from '../helpers/test-fixtures';
+import { and, desc, eq } from 'drizzle-orm';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as schema from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
+import { getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
+import { createTestTradingProfile, createTestUser, createTestWallet } from '../helpers/test-fixtures';
 
 vi.mock('../../services/binance-kline-stream', () => ({
   binanceKlineStreamService: {
@@ -192,6 +192,13 @@ describe('Auto-Trading Flow Integration Tests', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -254,6 +261,13 @@ describe('Auto-Trading Flow Integration Tests', () => {
         dynamicSymbolExcluded: null,
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
+        opportunityCostEnabled: false,
+        maxHoldingPeriodBars: 20,
+        stalePriceThresholdPercent: '0.5',
+        staleTradeAction: 'ALERT_ONLY' as const,
+        timeBasedStopTighteningEnabled: false,
+        timeTightenAfterBars: 10,
+        timeTightenPercentPerBar: '5',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

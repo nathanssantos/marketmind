@@ -23,7 +23,7 @@ interface BacktestResult {
   avgLoss: number;
 }
 
-const TARGET_LEVELS = ['auto', '1', '1.272', '1.618', '2', '2.618'] as const;
+const TARGET_LEVELS = ['auto', '2'] as const;
 
 const SETUPS = [
   'chaikin-money-flow',

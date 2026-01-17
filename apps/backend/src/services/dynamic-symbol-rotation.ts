@@ -35,74 +35,9 @@ export interface RotationResult {
   timestamp: Date;
 }
 
-interface ScheduledRotation {
-  walletId: string;
-  userId: string;
-  timeoutId: ReturnType<typeof setTimeout>;
-  nextRunAt: Date;
-}
-
 export class DynamicSymbolRotationService {
-  private scheduledRotations: Map<string, ScheduledRotation> = new Map();
   private previousRankings: Map<string, Map<string, number>> = new Map();
   private rotationHistory: Map<string, RotationResult[]> = new Map();
-
-  async startRotation(
-    walletId: string,
-    userId: string,
-    config: RotationConfig
-  ): Promise<void> {
-    this.stopRotation(walletId);
-
-    const intervalMs = getIntervalMs(config.interval);
-    const now = Date.now();
-    const nextRun = Math.ceil(now / intervalMs) * intervalMs;
-    const delay = nextRun - now;
-
-    const timeoutId = setTimeout(() => {
-      this.executeRotation(walletId, userId, config);
-      this.scheduleNextRotation(walletId, userId, config);
-    }, delay);
-
-    this.scheduledRotations.set(walletId, {
-      walletId,
-      userId,
-      timeoutId,
-      nextRunAt: new Date(nextRun),
-    });
-
-    logger.info({ walletId, interval: config.interval, nextRun: new Date(nextRun) },
-      '[DynamicRotation] Scheduled rotation');
-  }
-
-  stopRotation(walletId: string): void {
-    const scheduled = this.scheduledRotations.get(walletId);
-    if (scheduled) {
-      clearTimeout(scheduled.timeoutId);
-      this.scheduledRotations.delete(walletId);
-      logger.info({ walletId }, '[DynamicRotation] Stopped rotation');
-    }
-  }
-
-  private scheduleNextRotation(
-    walletId: string,
-    userId: string,
-    config: RotationConfig
-  ): void {
-    const intervalMs = getIntervalMs(config.interval);
-
-    const timeoutId = setTimeout(() => {
-      this.executeRotation(walletId, userId, config);
-      this.scheduleNextRotation(walletId, userId, config);
-    }, intervalMs);
-
-    this.scheduledRotations.set(walletId, {
-      walletId,
-      userId,
-      timeoutId,
-      nextRunAt: new Date(Date.now() + intervalMs),
-    });
-  }
 
   async executeRotation(
     walletId: string,
@@ -277,15 +212,6 @@ export class DynamicSymbolRotationService {
     return history.slice(0, limit);
   }
 
-  getNextRotationTime(walletId: string): Date | null {
-    const scheduled = this.scheduledRotations.get(walletId);
-    return scheduled?.nextRunAt ?? null;
-  }
-
-  isRotationActive(walletId: string): boolean {
-    return this.scheduledRotations.has(walletId);
-  }
-
   async getRecommendedSymbols(
     marketType: MarketType,
     limit: number = 20,
@@ -304,15 +230,8 @@ export class DynamicSymbolRotationService {
   }
 
   cleanupWallet(walletId: string): void {
-    this.stopRotation(walletId);
     this.rotationHistory.delete(walletId);
     this.previousRankings.delete(walletId);
-  }
-
-  stopAll(): void {
-    for (const [walletId] of this.scheduledRotations) {
-      this.stopRotation(walletId);
-    }
   }
 }
 

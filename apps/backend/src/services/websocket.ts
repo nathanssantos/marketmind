@@ -233,6 +233,14 @@ export class WebSocketService {
     this.io.to(`positions:${walletId}`).emit('trade:notification', notification);
   }
 
+  public emitNotification(walletId: string, notification: {
+    type: 'info' | 'warning' | 'success' | 'error';
+    title: string;
+    message: string;
+  }): void {
+    this.io.to(`wallet:${walletId}`).emit('notification', notification);
+  }
+
   public getIO(): SocketIOServer {
     return this.io;
   }

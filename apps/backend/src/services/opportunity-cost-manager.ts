@@ -1,9 +1,9 @@
-import { serializeError } from '../utils/errors';
 import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { autoTradingConfig, tradeExecutions } from '../db/schema';
+import { serializeError } from '../utils/errors';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
@@ -236,7 +236,7 @@ export class OpportunityCostManagerService {
 
   async handleStalePosition(
     execution: TradeExecution,
-    config: OpportunityCostConfig,
+    _config: OpportunityCostConfig,
     check: StaleTradeCheck,
     currentPrice: number
   ): Promise<void> {
@@ -333,7 +333,7 @@ export class OpportunityCostManagerService {
     execution: TradeExecution,
     config: OpportunityCostConfig,
     currentPrice: number,
-    profitPercent: number
+    _profitPercent: number
   ): number {
     const entryPrice = parseNumeric(execution.entryPrice);
     const currentStopLoss = parseNumeric(execution.stopLoss);
@@ -451,7 +451,7 @@ export class OpportunityCostManagerService {
 
   private async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES'): Promise<number | null> {
     try {
-      return await priceCache.get(symbol, marketType);
+      return await priceCache.fetchPrice(symbol, marketType);
     } catch (error) {
       logger.error({
         symbol,

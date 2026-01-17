@@ -243,12 +243,8 @@ export interface FibonacciLevelSelectionResult {
   reason: string;
 }
 
-const ADX_RANGING_THRESHOLD = 20;
-const ADX_WEAK_TREND_THRESHOLD = 25;
-const ADX_STRONG_TREND_THRESHOLD = 35;
 const ADX_VERY_STRONG_TREND_THRESHOLD = 45;
 const VOLUME_SPIKE_THRESHOLD = 1.5;
-const HIGH_VOLATILITY_THRESHOLD = 2.5;
 const VERY_HIGH_VOLATILITY_THRESHOLD = 4.0;
 
 export const selectDynamicFibonacciLevel = (
@@ -257,24 +253,11 @@ export const selectDynamicFibonacciLevel = (
   const { adx, atrPercent, volumeRatio } = context;
 
   const hasVolumeConfirmation = volumeRatio !== undefined && volumeRatio > VOLUME_SPIKE_THRESHOLD;
-  const hasHighVolatility = atrPercent > HIGH_VOLATILITY_THRESHOLD;
   const hasVeryHighVolatility = atrPercent > VERY_HIGH_VOLATILITY_THRESHOLD;
-
-  if (adx < ADX_RANGING_THRESHOLD) {
-    return { level: 1.618, reason: 'ranging_market' };
-  }
-
-  if (adx < ADX_WEAK_TREND_THRESHOLD) {
-    return { level: 2, reason: 'weak_trend' };
-  }
 
   if (adx >= ADX_VERY_STRONG_TREND_THRESHOLD && (hasVolumeConfirmation || hasVeryHighVolatility)) {
     return { level: 2.618, reason: 'very_strong_trend_confirmed' };
   }
 
-  if (adx >= ADX_STRONG_TREND_THRESHOLD || hasVolumeConfirmation || hasHighVolatility) {
-    return { level: 2, reason: 'strong_trend' };
-  }
-
-  return { level: 2, reason: 'moderate_trend' };
+  return { level: 2, reason: 'default_optimized' };
 };

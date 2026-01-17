@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
-import { createAuthenticatedUser, createTestWallet, createTestTradeExecution } from '../helpers/test-fixtures';
-import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
 import { eq } from 'drizzle-orm';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { tradeExecutions } from '../../db/schema';
+import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
+import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
+import { createAuthenticatedUser, createTestTradeExecution, createTestWallet } from '../helpers/test-fixtures';
 
 describe('Trading Router', () => {
   beforeAll(async () => {
@@ -776,17 +776,16 @@ describe('Trading Router', () => {
       const caller = createUnauthenticatedCaller();
 
       await expect(
-        caller.trading.getTickerPrices({ walletId: 'wallet-id', symbols: ['BTCUSDT'] })
+        caller.trading.getTickerPrices({ symbols: ['BTCUSDT'] })
       ).rejects.toThrow(TRPCError);
     });
 
     it('should return ticker prices for paper wallet', async () => {
       const { user, session } = await createAuthenticatedUser();
-      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      await createTestWallet({ userId: user.id, walletType: 'paper' });
       const caller = createAuthenticatedCaller(user, session);
 
       const result = await caller.trading.getTickerPrices({
-        walletId: wallet.id,
         symbols: ['BTCUSDT', 'ETHUSDT'],
       });
 
