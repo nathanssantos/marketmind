@@ -2230,9 +2230,6 @@ export class AutoTradingScheduler {
       }
     }
 
-    if (restoredCount > 0) {
-      log('✅ [Startup] Restored rotation states', { count: restoredCount });
-    }
   }
 
   private getFibonacciTargetPrice(
@@ -2296,15 +2293,6 @@ export class AutoTradingScheduler {
       marketType: config.marketType,
     };
 
-    log('🔄 Starting dynamic symbol rotation', {
-      walletId,
-      limit: rotationConfig.limit,
-      interval: rotationConfig.interval,
-      excludedSymbols: excludedSymbols.length,
-      marketType: config.marketType,
-      autoRotation: enableAutoRotation,
-    });
-
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
     await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
 
@@ -2317,12 +2305,6 @@ export class AutoTradingScheduler {
         lastCheckTime: Date.now(),
       });
 
-      const nextCheckMs = getIntervalMs(config.interval);
-      log('✅ Dynamic symbol rotation started (synced with watcher ticks)', {
-        walletId,
-        interval: config.interval,
-        nextCheckIn: `${nextCheckMs / 1000}s`,
-      });
     } else {
       log('ℹ️ Auto rotation disabled - manual rotation only', { walletId });
     }

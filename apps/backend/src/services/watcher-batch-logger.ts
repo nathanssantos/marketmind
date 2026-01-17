@@ -158,10 +158,10 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const summaryParts = [
     `${batch.totalWatchers} watchers`,
-    colorize(`+ ${batch.successCount}`, 'green'),
-    colorize(`~ ${batch.pendingCount}`, 'cyan'),
-    colorize(`> ${batch.skippedCount}`, 'yellow'),
-    colorize(`x ${batch.errorCount}`, 'red'),
+    colorize(`${ICONS.SUCCESS} ${batch.successCount}`, 'green'),
+    colorize(`${ICONS.PENDING} ${batch.pendingCount}`, 'cyan'),
+    colorize(`${ICONS.SKIP} ${batch.skippedCount}`, 'yellow'),
+    colorize(`${ICONS.ERROR} ${batch.errorCount}`, 'red'),
   ];
   const detailParts = [
     colorize(`# ${batch.totalSetupsDetected} setups`, 'magenta'),
@@ -449,8 +449,8 @@ export const formatStartupResults = (
 
   const summaryParts = [
     `${persistedCount} persisted`,
-    colorize(`+ ${successCount} restored`, 'green'),
-    colorize(`x ${failedCount} failed`, failedCount > 0 ? 'red' : 'dim'),
+    colorize(`${ICONS.SUCCESS} ${successCount} restored`, 'green'),
+    colorize(`${ICONS.ERROR} ${failedCount} failed`, failedCount > 0 ? 'red' : 'dim'),
   ];
   const typeParts = [
     colorize(`> ${manualCount} manual`, 'cyan'),
@@ -626,9 +626,9 @@ export const formatMaintenanceResults = (result: MaintenanceResult): string => {
 
   const summaryParts = [
     `${result.pairsChecked} pairs`,
-    colorize(`🔍 ${result.totalGapsFound} gaps`, result.totalGapsFound > 0 ? 'yellow' : 'dim'),
-    colorize(`📥 ${result.totalCandlesFilled} filled`, result.totalCandlesFilled > 0 ? 'green' : 'dim'),
-    colorize(`+ ${result.totalCorruptedFixed} fixed`, result.totalCorruptedFixed > 0 ? 'blue' : 'dim'),
+    colorize(`${ICONS.SEARCH} ${result.totalGapsFound} gaps`, result.totalGapsFound > 0 ? 'yellow' : 'dim'),
+    colorize(`${ICONS.DOWNLOAD} ${result.totalCandlesFilled} filled`, result.totalCandlesFilled > 0 ? 'green' : 'dim'),
+    colorize(`${ICONS.SUCCESS} ${result.totalCorruptedFixed} fixed`, result.totalCorruptedFixed > 0 ? 'blue' : 'dim'),
   ];
   lines.push(createSummaryLine('#', summaryParts));
 
@@ -656,7 +656,7 @@ export const formatRotationResults = (result: RotationResult): string => {
 
   const contextParts = [
     colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
-    colorize(`⏱️ ${result.interval}`, 'dim'),
+    colorize(`${ICONS.TIMER} ${result.interval}`, 'dim'),
     colorize(`> Target: ${result.targetCount}`, 'bright'),
     colorize(`# Slots: ${result.slotsAvailable}`, result.slotsAvailable > 0 ? 'green' : 'dim'),
   ];
@@ -761,9 +761,9 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
 
   const summaryParts = [
     `${result.pairsChecked} pairs`,
-    `🔍 ${result.klinesChecked} klines`,
-    `! ${result.totalMismatches} mismatches`,
-    `+ ${result.totalFixed} fixed`,
+    `${ICONS.SEARCH} ${result.klinesChecked} klines`,
+    result.totalMismatches > 0 ? colorize(`${ICONS.WARNING} ${result.totalMismatches} mismatches`, 'yellow') : `${ICONS.SUCCESS} 0 mismatches`,
+    result.totalFixed > 0 ? colorize(`${ICONS.SUCCESS} ${result.totalFixed} fixed`, 'green') : `${ICONS.SUCCESS} 0 fixed`,
   ];
   lines.push(createSummaryLine('#', summaryParts));
 
@@ -819,9 +819,9 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
 
   const summaryParts = [
     `${result.walletsChecked} wallets`,
-    result.totalOrphaned > 0 ? colorize(`! ${result.totalOrphaned} orphaned`, 'yellow') : `+ 0 orphaned`,
-    result.totalUnknown > 0 ? colorize(`! ${result.totalUnknown} unknown`, 'red') : `+ 0 unknown`,
-    result.totalUpdated > 0 ? colorize(`* ${result.totalUpdated} updated`, 'cyan') : `+ 0 updated`,
+    result.totalOrphaned > 0 ? colorize(`${ICONS.WARNING} ${result.totalOrphaned} orphaned`, 'yellow') : `${ICONS.SUCCESS} 0 orphaned`,
+    result.totalUnknown > 0 ? colorize(`${ICONS.ERROR} ${result.totalUnknown} unknown`, 'red') : `${ICONS.SUCCESS} 0 unknown`,
+    result.totalUpdated > 0 ? colorize(`${ICONS.SUCCESS} ${result.totalUpdated} updated`, 'cyan') : `${ICONS.SUCCESS} 0 updated`,
   ];
   lines.push(createSummaryLine('#', summaryParts));
 
@@ -924,11 +924,11 @@ const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult): stri
 
   const summaryParts = [
     `${result.totalChecked} orders`,
-    result.filledCount > 0 ? colorize(`> ${result.filledCount} filled`, 'green') : `+ 0 filled`,
-    result.expiredCount > 0 ? colorize(`~ ${result.expiredCount} expired`, 'yellow') : `+ 0 expired`,
-    result.invalidCount > 0 ? colorize(`x ${result.invalidCount} invalid`, 'red') : `+ 0 invalid`,
-    result.pendingCount > 0 ? colorize(`~ ${result.pendingCount} pending`, 'cyan') : '',
-    result.errorCount > 0 ? colorize(`! ${result.errorCount} errors`, 'red') : '',
+    result.filledCount > 0 ? colorize(`${ICONS.SUCCESS} ${result.filledCount} filled`, 'green') : `${ICONS.SUCCESS} 0 filled`,
+    result.expiredCount > 0 ? colorize(`${ICONS.WARNING} ${result.expiredCount} expired`, 'yellow') : `${ICONS.SUCCESS} 0 expired`,
+    result.invalidCount > 0 ? colorize(`${ICONS.ERROR} ${result.invalidCount} invalid`, 'red') : `${ICONS.SUCCESS} 0 invalid`,
+    result.pendingCount > 0 ? colorize(`${ICONS.PENDING} ${result.pendingCount} pending`, 'cyan') : '',
+    result.errorCount > 0 ? colorize(`${ICONS.ERROR} ${result.errorCount} errors`, 'red') : '',
   ].filter(Boolean);
   lines.push(createSummaryLine('#', summaryParts));
 
