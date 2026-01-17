@@ -656,7 +656,7 @@ export const formatRotationResults = (result: RotationResult): string => {
 
   const contextParts = [
     colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
-    colorize(`${ICONS.TIMER} ${result.interval}`, 'dim'),
+    colorize(`${ICONS.TIMER}  ${result.interval}`, 'dim'),
     colorize(`> Target: ${result.targetCount}`, 'bright'),
     colorize(`# Slots: ${result.slotsAvailable}`, result.slotsAvailable > 0 ? 'green' : 'dim'),
   ];
@@ -717,13 +717,13 @@ export const formatRotationNoChanges = (result: RotationResult): string => {
 
   const contextParts = [
     colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
-    colorize(`${ICONS.TIMER} ${result.interval}`, 'dim'),
+    colorize(`${ICONS.TIMER}  ${result.interval}`, 'dim'),
     colorize(`> Target: ${result.targetCount}`, 'bright'),
   ];
   lines.push(`  ${contextParts.join(' │ ')}`);
 
   const summaryParts = [
-    colorize(`${ICONS.SUCCESS} No changes`, 'green'),
+    colorize(`${ICONS.SUCCESS}  No changes`, 'green'),
     colorize(`# ${result.kept} symbols`, 'cyan'),
   ];
 
