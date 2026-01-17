@@ -47,16 +47,21 @@ const ICONS = {
   TIMER: '⏱️',
 } as const;
 
+const SECTION_ICON = '>' as const;
+
 const COLORS = {
   SUCCESS: 'green',
   ERROR: 'red',
   WARNING: 'yellow',
   PENDING: 'cyan',
-  INFO: 'blue',
+  INFO: 'cyan',
+  MAINTENANCE: 'blue',
   DIM: 'dim',
   BRIGHT: 'bright',
   MANUAL: 'cyan',
   DYNAMIC: 'magenta',
+  SETUP: 'magenta',
+  TRADE: 'green',
 } as const;
 
 const STATUS = {
@@ -202,7 +207,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const setupResults = batch.watcherResults.filter(r => r.setupsDetected.length > 0);
   if (setupResults.length > 0) {
-    lines.push(...createSectionHeader('#', 'DETECTED SETUPS', 'magenta'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'DETECTED SETUPS', 'magenta'));
 
     const setupTable = createLogTable(
       ['Symbol', 'Strategy', 'Dir', 'Conf', 'Entry', 'Stop Loss', 'Take Profit', 'R:R'],
@@ -230,7 +235,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const errorResults = batch.watcherResults.filter(r => r.status === STATUS.ERROR);
   if (errorResults.length > 0) {
-    lines.push(...createSectionHeader('x', 'ERRORS', 'red'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'ERRORS', 'red'));
 
     const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], 'red');
 
@@ -249,7 +254,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const rejectionResults = batch.watcherResults.filter(r => r.rejections.length > 0);
   if (rejectionResults.length > 0) {
-    lines.push(...createSectionHeader('!', 'SETUP REJECTIONS', 'yellow'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'SETUP REJECTIONS', 'yellow'));
 
     const rejectionTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
@@ -277,7 +282,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const filterBlockResults = batch.watcherResults.filter(r => r.filterChecks.some(f => !f.passed));
   if (filterBlockResults.length > 0) {
-    lines.push(...createSectionHeader('@', 'FILTER BLOCKS', 'red'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'FILTER BLOCKS', 'red'));
 
     const filterTable = createLogTable(
       ['Symbol', 'Filter', 'Reason', 'Details'],
@@ -303,11 +308,11 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const tradeResults = batch.watcherResults.filter(r => r.tradeExecutions.length > 0);
   if (tradeResults.length > 0) {
-    lines.push(...createSectionHeader('$', 'TRADE EXECUTIONS', 'blue'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'TRADE EXECUTIONS', 'green'));
 
     const tradeTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Entry', 'Qty', 'SL', 'TP', 'Type', 'Status'],
-      'blue'
+      'green'
     );
 
     for (const result of tradeResults) {
@@ -481,13 +486,13 @@ export const formatStartupResults = (
       ]);
     }
 
-    lines.push(...createSectionHeader('>', 'RESTORED WATCHERS', 'cyan'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'RESTORED WATCHERS', 'cyan'));
     lines.push(watcherTable.toString());
   }
 
   const failedWatchers = watchers.filter(w => w.status === STATUS.FAILED);
   if (failedWatchers.length > 0) {
-    lines.push(...createSectionHeader('x', 'FAILED RESTORATIONS', 'red'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'FAILED RESTORATIONS', 'red'));
 
     const errorTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Error'],
@@ -531,7 +536,7 @@ const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
   const gapsWithActivity = gapFills.filter(g => g.gapsFound > 0 || g.candlesFilled > 0);
   if (gapsWithActivity.length === 0) return lines;
 
-  lines.push(...createSectionHeader('-', 'GAP FILLS', 'yellow'));
+  lines.push(...createSectionHeader(SECTION_ICON, 'GAP FILLS', 'yellow'));
 
   const gapTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Gaps', 'Candles', 'Status'],
@@ -559,7 +564,7 @@ const formatCorruptionFixesTable = (corruptionFixes: CorruptionFixEntry[]): stri
   const corruptionsWithActivity = corruptionFixes.filter(c => c.corruptedFound > 0);
   if (corruptionsWithActivity.length === 0) return lines;
 
-  lines.push(...createSectionHeader('+', 'CORRUPTION FIXES', 'blue'));
+  lines.push(...createSectionHeader(SECTION_ICON, 'CORRUPTION FIXES', 'blue'));
 
   const corruptionTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Found', 'Fixed', 'Status'],
@@ -587,7 +592,7 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
   const errors = gapFills.filter(g => g.status === STATUS.ERROR);
   if (errors.length === 0) return lines;
 
-  lines.push(...createSectionHeader('x', 'ERRORS', 'red'));
+  lines.push(...createSectionHeader(SECTION_ICON, 'ERRORS', 'red'));
 
   const errorTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Error'],
@@ -610,9 +615,9 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
 export const formatMaintenanceResults = (result: MaintenanceResult): string => {
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
-  const title = result.type === 'startup' ? 'KLINE MAINTENANCE (STARTUP)' : 'KLINE MAINTENANCE (PERIODIC)';
+  const title = result.type === 'startup' ? 'STARTUP MAINTENANCE' : 'PERIODIC MAINTENANCE';
 
-  lines.push(...createMainHeader('*', title, result.startTime, durationMs));
+  lines.push(...createMainHeader('*', title, result.startTime, durationMs, 'blue'));
 
   const summaryParts = [
     `${result.pairsChecked} pairs`,
@@ -642,7 +647,7 @@ export const formatRotationResults = (result: RotationResult): string => {
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
-  lines.push(...createMainHeader('*', 'SYMBOL ROTATION', result.startTime, durationMs));
+  lines.push(...createMainHeader('*', 'SYMBOL ROTATION', result.startTime, durationMs, 'magenta'));
 
   const contextParts = [
     colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
@@ -703,7 +708,7 @@ export const formatRotationNoChanges = (result: RotationResult): string => {
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
-  lines.push(...createMainHeader('*', 'SYMBOL ROTATION', result.startTime, durationMs));
+  lines.push(...createMainHeader('*', 'SYMBOL ROTATION', result.startTime, durationMs, 'magenta'));
 
   const contextParts = [
     colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
@@ -747,7 +752,7 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
-  lines.push(...createMainHeader('*', 'POST-RECONNECTION VALIDATION', result.startTime, durationMs));
+  lines.push(...createMainHeader('*', 'RECONNECTION VALIDATION', result.startTime, durationMs, 'yellow'));
 
   const summaryParts = [
     `${result.pairsChecked} pairs`,
@@ -758,7 +763,7 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
   lines.push(createSummaryLine('#', summaryParts));
 
   if (result.mismatches.length > 0) {
-    lines.push(...createSectionHeader('*', 'OHLC CORRECTIONS', 'yellow'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'OHLC CORRECTIONS', 'yellow'));
 
     const mismatchTable = createLogTable(
       ['Symbol', 'Interval', 'OpenTime', 'Field', 'DB Value', 'API Value', 'Diff %', 'Status'],
@@ -815,7 +820,7 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
   lines.push(createSummaryLine('#', summaryParts));
 
   if (result.orphanedPositions.length > 0) {
-    lines.push(...createSectionHeader('!', 'ORPHANED POSITIONS (closed on exchange but open in DB)', 'yellow'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'ORPHANED POSITIONS (closed on exchange but open in DB)', 'yellow'));
 
     const orphanedTable = createLogTable(
       ['Wallet', 'Symbol', 'Side', 'Entry', 'Exit', 'Qty', 'PnL', 'PnL %'],
@@ -840,7 +845,7 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
   }
 
   if (result.unknownPositions.length > 0) {
-    lines.push(...createSectionHeader('!', 'UNKNOWN POSITIONS (on exchange but NOT in DB - MANUAL CHECK REQUIRED)', 'red'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'UNKNOWN POSITIONS (on exchange but NOT in DB - MANUAL CHECK REQUIRED)', 'red'));
 
     const unknownTable = createLogTable(
       ['Wallet', 'Symbol', 'Position', 'Entry', 'Unrealized PnL', 'Leverage', 'Margin'],
@@ -864,7 +869,7 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
   }
 
   if (result.updatedPositions.length > 0) {
-    lines.push(...createSectionHeader('*', 'POSITION UPDATES (synced from exchange)', 'cyan'));
+    lines.push(...createSectionHeader(SECTION_ICON, 'POSITION UPDATES (synced from exchange)', 'cyan'));
 
     const updatedTable = createLogTable(
       ['Wallet', 'Symbol', 'Field', 'Old Value', 'New Value'],
