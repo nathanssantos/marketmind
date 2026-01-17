@@ -92,7 +92,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
         setup: null,
         confidence: 0,
         rejection: {
-          reason: 'Entry above max Fibonacci level (61.8%)',
+          reason: `Entry above max Fibonacci level (${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%)`,
           details: {
             entryProgress: `${fibEntryValidation.progress.toFixed(1)}%`,
             maxAllowed: `${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%`,
