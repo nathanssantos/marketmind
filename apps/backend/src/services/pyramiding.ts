@@ -1,5 +1,7 @@
 import { colorize, createTable } from '@marketmind/logger';
+import { calculateDynamicExposure } from '@marketmind/risk';
 import type { Kline } from '@marketmind/types';
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { AutoTradingConfig, TradeExecution } from '../db/schema';
@@ -411,18 +413,17 @@ export class PyramidingService {
     }
 
     const configMaxPositionSize = parseFloat(tradingConfig.maxPositionSize);
-    const exposureMultiplier = parseFloat(tradingConfig.exposureMultiplier);
 
-    let maxPositionSizePercent: number;
-    if (activeWatchersCount && activeWatchersCount > 0) {
-      maxPositionSizePercent = Math.min((100 * exposureMultiplier) / activeWatchersCount, 100);
-    } else {
-      maxPositionSizePercent = configMaxPositionSize;
-    }
-
-    const maxTotalExposure = activeWatchersCount && activeWatchersCount > 0
-      ? walletBalance
-      : (walletBalance * configMaxPositionSize * tradingConfig.maxConcurrentPositions) / 100;
+    const { exposurePerWatcher, maxTotalExposure } = calculateDynamicExposure(
+      walletBalance,
+      activeWatchersCount ?? 0,
+      {
+        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+        maxPositionSizePercent: configMaxPositionSize,
+        maxConcurrentPositions: tradingConfig.maxConcurrentPositions,
+      }
+    );
+    const maxPositionSizePercent = exposurePerWatcher;
 
     const totalWalletExposure = calculateTotalExposure(allOpenPositions);
     const remainingBalance = Math.max(0, walletBalance - totalWalletExposure);

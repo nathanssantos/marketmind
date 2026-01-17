@@ -1,3 +1,4 @@
+import { calculateDynamicExposure } from '@marketmind/risk';
 import type { MarketType } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { TIME_MS } from '../constants';
@@ -160,11 +161,16 @@ export class MinNotionalFilterService {
     watchersCount: number,
     exposureMultiplier: number
   ): number {
-    if (watchersCount <= 0) {
-      return availableCapital * (TRADING_DEFAULTS.MAX_POSITION_SIZE_PERCENT / 100);
-    }
-    const exposurePerWatcher = Math.min((100 * exposureMultiplier) / watchersCount, 100);
-    return (availableCapital * exposurePerWatcher) / 100;
+    const { maxPositionValue } = calculateDynamicExposure(
+      availableCapital,
+      watchersCount,
+      {
+        exposureMultiplier,
+        maxPositionSizePercent: TRADING_DEFAULTS.MAX_POSITION_SIZE_PERCENT,
+        maxConcurrentPositions: 1,
+      }
+    );
+    return maxPositionValue;
   }
 
   async filterSymbolsByCapital(
