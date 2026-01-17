@@ -104,10 +104,10 @@ const writeToFile = (content: string): void => {
 
 const getStatusDisplay = (status: string): string => {
   switch (status) {
-    case 'success': return colorize('✅ OK', 'green');
-    case 'skipped': return colorize('⏭️ SKIP', 'yellow');
-    case 'pending': return colorize('⏳ WAIT', 'cyan');
-    case 'error': return colorize('❌ ERR', 'red');
+    case 'success': return colorize('[OK]', 'green');
+    case 'skipped': return colorize('[SKIP]', 'yellow');
+    case 'pending': return colorize('[WAIT]', 'cyan');
+    case 'error': return colorize('[ERR]', 'red');
     default: return status;
   }
 };
@@ -431,7 +431,7 @@ export const formatStartupResults = (
     for (const w of watchers) {
       const typeStr = w.isManual ? 'Manual' : 'Dynamic';
       const typeColor = w.isManual ? 'cyan' : 'magenta';
-      const statusStr = w.status === 'success' ? '✅' : '❌';
+      const statusStr = w.status === 'success' ? '[OK]' : '[ERR]';
       const statusColor = w.status === 'success' ? 'green' : 'red';
       const klinesStr = w.totalKlinesInDb ? `${(w.totalKlinesInDb / 1000).toFixed(1)}k` : '-';
       const nextCandle = w.nextCandleClose
@@ -490,9 +490,9 @@ export const outputStartupResults = (
 };
 
 const getMaintenanceStatusDisplay = (status: 'success' | 'partial' | 'skipped' | 'error'): { color: ColorName; icon: string } => {
-  if (status === 'success') return { color: 'green', icon: '✅' };
-  if (status === 'partial') return { color: 'yellow', icon: '⚠️' };
-  return { color: 'red', icon: '❌' };
+  if (status === 'success') return { color: 'green', icon: '[OK]' };
+  if (status === 'partial') return { color: 'yellow', icon: '[PART]' };
+  return { color: 'red', icon: '[ERR]' };
 };
 
 const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
@@ -734,7 +734,7 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
 
     for (const m of result.mismatches) {
       const timeStr = m.openTime.toISOString().replace('T', ' ').slice(0, 19);
-      const status = m.fixed ? colorize('✅', 'green') : colorize('❌', 'red');
+      const status = m.fixed ? colorize('[OK]', 'green') : colorize('[ERR]', 'red');
       const diffStr = m.diffPercent.toFixed(2) + '%';
 
       mismatchTable.push([
