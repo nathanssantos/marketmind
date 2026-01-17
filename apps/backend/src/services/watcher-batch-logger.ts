@@ -36,6 +36,44 @@ const LOG_WIDTH = 150;
 const HEADER_LINE_MAIN = '═'.repeat(LOG_WIDTH - 53);
 const HEADER_LINE_SECONDARY = '─'.repeat(LOG_WIDTH - 53);
 
+const ICONS = {
+  SUCCESS: '✅',
+  ERROR: '❌',
+  WARNING: '⚠️',
+  SKIP: '⏭️',
+  PENDING: '⏳',
+  SEARCH: '🔍',
+  DOWNLOAD: '📥',
+  TIMER: '⏱️',
+} as const;
+
+const COLORS = {
+  SUCCESS: 'green',
+  ERROR: 'red',
+  WARNING: 'yellow',
+  PENDING: 'cyan',
+  INFO: 'blue',
+  DIM: 'dim',
+  BRIGHT: 'bright',
+  MANUAL: 'cyan',
+  DYNAMIC: 'magenta',
+} as const;
+
+const STATUS = {
+  SUCCESS: 'success',
+  ERROR: 'error',
+  SKIPPED: 'skipped',
+  PENDING: 'pending',
+  PARTIAL: 'partial',
+  FAILED: 'failed',
+  EXECUTED: 'executed',
+} as const;
+
+const DIRECTION = {
+  LONG: 'LONG',
+  SHORT: 'SHORT',
+} as const;
+
 const createMainHeader = (
   icon: string,
   title: string,
@@ -104,10 +142,10 @@ const writeToFile = (content: string): void => {
 
 const getStatusDisplay = (status: string): string => {
   switch (status) {
-    case 'success': return colorize('[OK]', 'green');
-    case 'skipped': return colorize('[SKIP]', 'yellow');
-    case 'pending': return colorize('[WAIT]', 'cyan');
-    case 'error': return colorize('[ERR]', 'red');
+    case STATUS.SUCCESS: return colorize(ICONS.SUCCESS, COLORS.SUCCESS);
+    case STATUS.SKIPPED: return colorize(ICONS.SKIP, COLORS.WARNING);
+    case STATUS.PENDING: return colorize(ICONS.PENDING, COLORS.PENDING);
+    case STATUS.ERROR: return colorize(ICONS.ERROR, COLORS.ERROR);
     default: return status;
   }
 };
@@ -116,28 +154,28 @@ export const formatBatchResults = (batch: BatchResult): string => {
   const lines: string[] = [];
   const durationMs = batch.endTime.getTime() - batch.startTime.getTime();
 
-  lines.push(...createMainHeader('🔄', `CYCLE #${batch.batchId}`, batch.startTime, durationMs));
+  lines.push(...createMainHeader('*', `CYCLE #${batch.batchId}`, batch.startTime, durationMs));
 
   const summaryParts = [
     `${batch.totalWatchers} watchers`,
-    colorize(`✅ ${batch.successCount}`, 'green'),
-    colorize(`⏳ ${batch.pendingCount}`, 'cyan'),
-    colorize(`⏭ ${batch.skippedCount}`, 'yellow'),
-    colorize(`❌ ${batch.errorCount}`, 'red'),
+    colorize(`+ ${batch.successCount}`, 'green'),
+    colorize(`~ ${batch.pendingCount}`, 'cyan'),
+    colorize(`> ${batch.skippedCount}`, 'yellow'),
+    colorize(`x ${batch.errorCount}`, 'red'),
   ];
   const detailParts = [
-    colorize(`📍 ${batch.totalSetupsDetected} setups`, 'magenta'),
-    batch.totalRejections > 0 ? colorize(`🚫 ${batch.totalRejections} rejected`, 'yellow') : '',
-    batch.totalFilterBlocks > 0 ? colorize(`🔒 ${batch.totalFilterBlocks} blocked`, 'red') : '',
-    batch.totalTradesExecuted > 0 ? colorize(`💹 ${batch.totalTradesExecuted} trades`, 'green') : '',
+    colorize(`# ${batch.totalSetupsDetected} setups`, 'magenta'),
+    batch.totalRejections > 0 ? colorize(`! ${batch.totalRejections} rejected`, 'yellow') : '',
+    batch.totalFilterBlocks > 0 ? colorize(`@ ${batch.totalFilterBlocks} blocked`, 'red') : '',
+    batch.totalTradesExecuted > 0 ? colorize(`$ ${batch.totalTradesExecuted} trades`, 'green') : '',
   ].filter(Boolean);
-  lines.push(createSummaryLine('📊', summaryParts));
-  lines.push(createSummaryLine('📈', detailParts));
+  lines.push(createSummaryLine('#', summaryParts));
+  lines.push(createSummaryLine('>', detailParts));
 
   if (batch.watcherResults.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Status', 'Klines', 'Setups', 'Trades', 'Time', 'Details'],
-      [14, 12, 12, 12, 10, 10, 10, 12, 58],
+      [14, 12, 12, 12, 10, 10, 10, 12, 40],
       'cyan'
     );
 
@@ -156,7 +194,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         result.setupsDetected.length.toString(),
         result.tradesExecuted.toString(),
         `${result.durationMs}ms`,
-        details.slice(0, 56),
+        details.slice(0, 38),
       ]);
     }
 
@@ -165,17 +203,17 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const setupResults = batch.watcherResults.filter(r => r.setupsDetected.length > 0);
   if (setupResults.length > 0) {
-    lines.push(...createSectionHeader('📍', 'DETECTED SETUPS', 'magenta'));
+    lines.push(...createSectionHeader('#', 'DETECTED SETUPS', 'magenta'));
 
     const setupTable = createLogTable(
       ['Symbol', 'Strategy', 'Dir', 'Conf', 'Entry', 'Stop Loss', 'Take Profit', 'R:R'],
-      [14, 34, 8, 8, 20, 20, 20, 27],
+      [14, 34, 8, 8, 20, 20, 20, 14],
       'magenta'
     );
 
     for (const result of setupResults) {
       for (const setup of result.setupsDetected) {
-        const dirColor = setup.direction === 'LONG' ? 'green' : 'red';
+        const dirColor = setup.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
         setupTable.push([
           colorize(result.symbol, 'bright'),
           setup.type.slice(0, 32),
@@ -192,11 +230,11 @@ export const formatBatchResults = (batch: BatchResult): string => {
     lines.push(setupTable.toString());
   }
 
-  const errorResults = batch.watcherResults.filter(r => r.status === 'error');
+  const errorResults = batch.watcherResults.filter(r => r.status === STATUS.ERROR);
   if (errorResults.length > 0) {
-    lines.push(...createSectionHeader('❌', 'ERRORS', 'red'));
+    lines.push(...createSectionHeader('x', 'ERRORS', 'red'));
 
-    const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], [14, 10, 132], 'red');
+    const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], [14, 10, 40], 'red');
 
     for (const result of errorResults) {
       const errorLogs = result.logs.filter(l => l.level === 'error');
@@ -204,7 +242,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
       errorTable.push([
         result.symbol,
         result.interval,
-        colorize(errorMsg.slice(0, 124), 'red'),
+        colorize(errorMsg.slice(0, 38), 'red'),
       ]);
     }
 
@@ -213,19 +251,19 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const rejectionResults = batch.watcherResults.filter(r => r.rejections.length > 0);
   if (rejectionResults.length > 0) {
-    lines.push(...createSectionHeader('🚫', 'SETUP REJECTIONS', 'yellow'));
+    lines.push(...createSectionHeader('!', 'SETUP REJECTIONS', 'yellow'));
 
     const rejectionTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      [14, 28, 8, 34, 70],
+      [14, 28, 8, 34, 40],
       'yellow'
     );
 
     for (const result of rejectionResults) {
       for (const rejection of result.rejections) {
-        const dirColor = rejection.direction === 'LONG' ? 'green' : 'red';
+        const dirColor = rejection.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
         const detailStr = rejection.details
-          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 64)
+          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 38)
           : '-';
         rejectionTable.push([
           colorize(result.symbol, 'bright'),
@@ -242,23 +280,23 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const filterBlockResults = batch.watcherResults.filter(r => r.filterChecks.some(f => !f.passed));
   if (filterBlockResults.length > 0) {
-    lines.push(...createSectionHeader('🔒', 'FILTER BLOCKS', 'red'));
+    lines.push(...createSectionHeader('@', 'FILTER BLOCKS', 'red'));
 
     const filterTable = createLogTable(
       ['Symbol', 'Filter', 'Reason', 'Details'],
-      [14, 24, 50, 67],
+      [14, 24, 50, 40],
       'red'
     );
 
     for (const result of filterBlockResults) {
       for (const filter of result.filterChecks.filter(f => !f.passed)) {
         const detailStr = filter.details
-          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 60)
+          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 38)
           : '-';
         filterTable.push([
           colorize(result.symbol, 'bright'),
           colorize(filter.filterName, 'red'),
-          filter.reason.slice(0, 48),
+          filter.reason.slice(0, 38),
           detailStr,
         ]);
       }
@@ -269,18 +307,18 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
   const tradeResults = batch.watcherResults.filter(r => r.tradeExecutions.length > 0);
   if (tradeResults.length > 0) {
-    lines.push(...createSectionHeader('💹', 'TRADE EXECUTIONS', 'blue'));
+    lines.push(...createSectionHeader('$', 'TRADE EXECUTIONS', 'blue'));
 
     const tradeTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Entry', 'Qty', 'SL', 'TP', 'Type', 'Status'],
-      [14, 26, 8, 16, 16, 16, 16, 12, 26],
+      [14, 26, 8, 16, 16, 16, 16, 12, 14],
       'blue'
     );
 
     for (const result of tradeResults) {
       for (const trade of result.tradeExecutions) {
-        const dirColor = trade.direction === 'LONG' ? 'green' : 'red';
-        const statusColor = trade.status === 'executed' ? 'green' : trade.status === 'pending' ? 'yellow' : 'red';
+        const dirColor = trade.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
+        const statusColor = trade.status === STATUS.EXECUTED ? COLORS.SUCCESS : trade.status === STATUS.PENDING ? COLORS.WARNING : COLORS.ERROR;
         tradeTable.push([
           colorize(result.symbol, 'bright'),
           trade.setupType.slice(0, 24),
@@ -341,7 +379,7 @@ export const outputBatchResults = (batch: BatchResult, verbose = false, configCa
 
     if (priceCacheStats.metrics.hits + priceCacheStats.metrics.misses > 0) {
       lines.push(
-        `  💾 PriceCache: ${priceCacheStats.size} entries │ ` +
+        `  # PriceCache: ${priceCacheStats.size} entries │ ` +
         `${priceCacheStats.metrics.hits} hits │ ${priceCacheStats.metrics.misses} misses │ ` +
         `${(priceCacheStats.metrics.hitRate * 100).toFixed(1)}% rate │ ` +
         `${priceCacheStats.metrics.apiFetches} API │ ${priceCacheStats.metrics.websocketUpdates} WS`
@@ -350,7 +388,7 @@ export const outputBatchResults = (batch: BatchResult, verbose = false, configCa
 
     if (configCacheStats && (configCacheStats.hits + configCacheStats.misses > 0)) {
       lines.push(
-        `  📦 ConfigCache: ${configCacheStats.size} entries │ ` +
+        `  # ConfigCache: ${configCacheStats.size} entries │ ` +
         `${configCacheStats.hits} hits │ ${configCacheStats.misses} misses │ ` +
         `${(configCacheStats.hitRate * 100).toFixed(1)}% rate │ ` +
         `${configCacheStats.preloads} preloaded`
@@ -383,10 +421,10 @@ export const createBatchResult = (
     startTime,
     endTime,
     totalWatchers: results.length,
-    successCount: results.filter(r => r.status === 'success').length,
-    skippedCount: results.filter(r => r.status === 'skipped').length,
-    pendingCount: results.filter(r => r.status === 'pending').length,
-    errorCount: results.filter(r => r.status === 'error').length,
+    successCount: results.filter(r => r.status === STATUS.SUCCESS).length,
+    skippedCount: results.filter(r => r.status === STATUS.SKIPPED).length,
+    pendingCount: results.filter(r => r.status === STATUS.PENDING).length,
+    errorCount: results.filter(r => r.status === STATUS.ERROR).length,
     totalSetupsDetected: results.reduce((sum, r) => sum + r.setupsDetected.length, 0),
     totalRejections: results.reduce((sum, r) => sum + r.rejections.length, 0),
     totalFilterBlocks: filterBlocks,
@@ -402,37 +440,37 @@ export const formatStartupResults = (
 ): string => {
   const lines: string[] = [];
 
-  lines.push(...createMainHeader('🚀', 'AUTO-TRADING STARTUP', new Date(), durationMs));
+  lines.push(...createMainHeader('*', 'AUTO-TRADING STARTUP', new Date(), durationMs));
 
-  const successCount = watchers.filter(w => w.status === 'success').length;
-  const failedCount = watchers.filter(w => w.status === 'failed').length;
+  const successCount = watchers.filter(w => w.status === STATUS.SUCCESS).length;
+  const failedCount = watchers.filter(w => w.status === STATUS.FAILED).length;
   const manualCount = watchers.filter(w => w.isManual).length;
   const dynamicCount = watchers.filter(w => !w.isManual).length;
 
   const summaryParts = [
     `${persistedCount} persisted`,
-    colorize(`✅ ${successCount} restored`, 'green'),
-    colorize(`❌ ${failedCount} failed`, failedCount > 0 ? 'red' : 'dim'),
+    colorize(`+ ${successCount} restored`, 'green'),
+    colorize(`x ${failedCount} failed`, failedCount > 0 ? 'red' : 'dim'),
   ];
   const typeParts = [
-    colorize(`📌 ${manualCount} manual`, 'cyan'),
-    colorize(`🔄 ${dynamicCount} dynamic`, 'magenta'),
+    colorize(`> ${manualCount} manual`, 'cyan'),
+    colorize(`* ${dynamicCount} dynamic`, 'magenta'),
   ];
-  lines.push(createSummaryLine('📋', summaryParts));
-  lines.push(createSummaryLine('📊', typeParts));
+  lines.push(createSummaryLine('#', summaryParts));
+  lines.push(createSummaryLine('#', typeParts));
 
   if (watchers.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Type', 'Status', 'Klines', 'Next Candle'],
-      [14, 14, 14, 14, 14, 14, 68],
+      [14, 14, 14, 14, 14, 14, 14],
       'cyan'
     );
 
     for (const w of watchers) {
       const typeStr = w.isManual ? 'Manual' : 'Dynamic';
-      const typeColor = w.isManual ? 'cyan' : 'magenta';
-      const statusStr = w.status === 'success' ? '[OK]' : '[ERR]';
-      const statusColor = w.status === 'success' ? 'green' : 'red';
+      const typeColor = w.isManual ? COLORS.MANUAL : COLORS.DYNAMIC;
+      const statusStr = w.status === STATUS.SUCCESS ? ICONS.SUCCESS : ICONS.ERROR;
+      const statusColor = w.status === STATUS.SUCCESS ? COLORS.SUCCESS : COLORS.ERROR;
       const klinesStr = w.totalKlinesInDb ? `${(w.totalKlinesInDb / 1000).toFixed(1)}k` : '-';
       const nextCandle = w.nextCandleClose
         ? w.nextCandleClose.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -449,17 +487,17 @@ export const formatStartupResults = (
       ]);
     }
 
-    lines.push(...createSectionHeader('📡', 'RESTORED WATCHERS', 'cyan'));
+    lines.push(...createSectionHeader('>', 'RESTORED WATCHERS', 'cyan'));
     lines.push(watcherTable.toString());
   }
 
-  const failedWatchers = watchers.filter(w => w.status === 'failed');
+  const failedWatchers = watchers.filter(w => w.status === STATUS.FAILED);
   if (failedWatchers.length > 0) {
-    lines.push(...createSectionHeader('❌', 'FAILED RESTORATIONS', 'red'));
+    lines.push(...createSectionHeader('x', 'FAILED RESTORATIONS', 'red'));
 
     const errorTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Error'],
-      [14, 14, 14, 113],
+      [14, 14, 14, 40],
       'red'
     );
 
@@ -468,7 +506,7 @@ export const formatStartupResults = (
         colorize(w.symbol, 'bright'),
         w.interval,
         w.marketType,
-        colorize(w.error?.slice(0, 111) ?? 'Unknown error', 'red'),
+        colorize(w.error?.slice(0, 38) ?? 'Unknown error', 'red'),
       ]);
     }
 
@@ -490,9 +528,9 @@ export const outputStartupResults = (
 };
 
 const getMaintenanceStatusDisplay = (status: 'success' | 'partial' | 'skipped' | 'error'): { color: ColorName; icon: string } => {
-  if (status === 'success') return { color: 'green', icon: '[OK]' };
-  if (status === 'partial') return { color: 'yellow', icon: '[PART]' };
-  return { color: 'red', icon: '[ERR]' };
+  if (status === STATUS.SUCCESS) return { color: COLORS.SUCCESS, icon: ICONS.SUCCESS };
+  if (status === STATUS.PARTIAL) return { color: COLORS.WARNING, icon: ICONS.WARNING };
+  return { color: COLORS.ERROR, icon: ICONS.ERROR };
 };
 
 const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
@@ -500,11 +538,11 @@ const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
   const gapsWithActivity = gapFills.filter(g => g.gapsFound > 0 || g.candlesFilled > 0);
   if (gapsWithActivity.length === 0) return lines;
 
-  lines.push(...createSectionHeader('📉', 'GAP FILLS', 'yellow'));
+  lines.push(...createSectionHeader('-', 'GAP FILLS', 'yellow'));
 
   const gapTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Gaps', 'Candles', 'Status'],
-    [14, 14, 14, 14, 14, 83],
+    [14, 14, 14, 14, 14, 14],
     'yellow'
   );
 
@@ -529,11 +567,11 @@ const formatCorruptionFixesTable = (corruptionFixes: CorruptionFixEntry[]): stri
   const corruptionsWithActivity = corruptionFixes.filter(c => c.corruptedFound > 0);
   if (corruptionsWithActivity.length === 0) return lines;
 
-  lines.push(...createSectionHeader('🛠️', 'CORRUPTION FIXES', 'blue'));
+  lines.push(...createSectionHeader('+', 'CORRUPTION FIXES', 'blue'));
 
   const corruptionTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Found', 'Fixed', 'Status'],
-    [14, 14, 14, 14, 14, 83],
+    [14, 14, 14, 14, 14, 14],
     'blue'
   );
 
@@ -555,14 +593,14 @@ const formatCorruptionFixesTable = (corruptionFixes: CorruptionFixEntry[]): stri
 
 const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
   const lines: string[] = [];
-  const errors = gapFills.filter(g => g.status === 'error');
+  const errors = gapFills.filter(g => g.status === STATUS.ERROR);
   if (errors.length === 0) return lines;
 
-  lines.push(...createSectionHeader('❌', 'ERRORS', 'red'));
+  lines.push(...createSectionHeader('x', 'ERRORS', 'red'));
 
   const errorTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Error'],
-    [14, 14, 14, 113],
+    [14, 14, 14, 40],
     'red'
   );
 
@@ -571,7 +609,7 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
       colorize(e.symbol, 'bright'),
       e.interval,
       e.marketType,
-      colorize(e.reason?.slice(0, 111) ?? 'Unknown error', 'red'),
+      colorize(e.reason?.slice(0, 38) ?? 'Unknown error', 'red'),
     ]);
   }
 
@@ -584,15 +622,15 @@ export const formatMaintenanceResults = (result: MaintenanceResult): string => {
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
   const title = result.type === 'startup' ? 'KLINE MAINTENANCE (STARTUP)' : 'KLINE MAINTENANCE (PERIODIC)';
 
-  lines.push(...createMainHeader('🔧', title, result.startTime, durationMs));
+  lines.push(...createMainHeader('*', title, result.startTime, durationMs));
 
   const summaryParts = [
     `${result.pairsChecked} pairs`,
     colorize(`🔍 ${result.totalGapsFound} gaps`, result.totalGapsFound > 0 ? 'yellow' : 'dim'),
     colorize(`📥 ${result.totalCandlesFilled} filled`, result.totalCandlesFilled > 0 ? 'green' : 'dim'),
-    colorize(`🛠️ ${result.totalCorruptedFixed} fixed`, result.totalCorruptedFixed > 0 ? 'blue' : 'dim'),
+    colorize(`+ ${result.totalCorruptedFixed} fixed`, result.totalCorruptedFixed > 0 ? 'blue' : 'dim'),
   ];
-  lines.push(createSummaryLine('📊', summaryParts));
+  lines.push(createSummaryLine('#', summaryParts));
 
   lines.push(...formatGapFillsTable(result.gapFills));
   lines.push(...formatCorruptionFixesTable(result.corruptionFixes));
@@ -614,18 +652,18 @@ export const formatRotationResults = (result: RotationResult): string => {
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
-  lines.push(...createMainHeader('🔄', 'SYMBOL ROTATION', result.startTime, durationMs, 'magenta'));
+  lines.push(...createMainHeader('*', 'SYMBOL ROTATION', result.startTime, durationMs));
 
   const contextParts = [
-    colorize(`📊 ${result.marketType || 'FUTURES'}`, 'cyan'),
+    colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
     colorize(`⏱️ ${result.interval}`, 'dim'),
-    colorize(`🎯 Target: ${result.targetCount}`, 'bright'),
-    colorize(`📦 Slots: ${result.slotsAvailable}`, result.slotsAvailable > 0 ? 'green' : 'dim'),
+    colorize(`> Target: ${result.targetCount}`, 'bright'),
+    colorize(`# Slots: ${result.slotsAvailable}`, result.slotsAvailable > 0 ? 'green' : 'dim'),
   ];
   lines.push(`  ${contextParts.join(' │ ')}`);
 
   if (result.added.length > 0 || result.removed.length > 0) {
-    const changeTable = createLogTable(['Action', 'Symbol', 'Status'], [14, 20, 122], 'magenta');
+    const changeTable = createLogTable(['Action', 'Symbol', 'Status'], [14, 20, 40], 'magenta');
 
     for (const symbol of result.added) {
       const validation = result.klineValidations?.find(v => v.symbol === symbol);
@@ -633,38 +671,38 @@ export const formatRotationResults = (result: RotationResult): string => {
       if (validation && (validation.gapsFilled > 0 || validation.corruptedFixed > 0)) {
         status = colorize(`Validated (gaps: ${validation.gapsFilled}, fixed: ${validation.corruptedFixed})`, 'cyan');
       }
-      changeTable.push([colorize('➕ ADD', 'green'), colorize(symbol, 'bright'), status]);
+      changeTable.push([colorize('+ ADD', 'green'), colorize(symbol, 'bright'), status]);
     }
 
     for (const symbol of result.removed) {
-      changeTable.push([colorize('➖ REM', 'red'), colorize(symbol, 'bright'), colorize('Removed', 'dim')]);
+      changeTable.push([colorize('- REM', 'red'), colorize(symbol, 'bright'), colorize('Removed', 'dim')]);
     }
 
     lines.push(changeTable.toString());
   }
 
   const summaryParts = [
-    colorize(`📊 ${result.kept} kept`, 'cyan'),
-    colorize(`➕ ${result.added.length} added`, 'green'),
-    colorize(`➖ ${result.removed.length} removed`, 'red'),
+    colorize(`# ${result.kept} kept`, 'cyan'),
+    colorize(`+ ${result.added.length} added`, 'green'),
+    colorize(`- ${result.removed.length} removed`, 'red'),
   ];
 
   if (result.skippedWithPositions.length > 0) {
-    summaryParts.push(colorize(`🔒 ${result.skippedWithPositions.length} with positions`, 'yellow'));
+    summaryParts.push(colorize(`@ ${result.skippedWithPositions.length} with positions`, 'yellow'));
   }
 
   if (result.skippedInsufficientKlines.length > 0) {
-    summaryParts.push(colorize(`⏳ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
+    summaryParts.push(colorize(`~ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
   }
 
   lines.push(`  ${summaryParts.join(' │ ')}`);
 
   if (result.skippedInsufficientKlines.length > 0) {
-    lines.push(`  ${colorize('⏳ Skipped (no data):', 'dim')} ${result.skippedInsufficientKlines.join(', ')}`);
+    lines.push(`  ${colorize('~ Skipped (no data):', 'dim')} ${result.skippedInsufficientKlines.join(', ')}`);
   }
 
   if (result.skippedWithPositions.length > 0) {
-    lines.push(`  ${colorize('🔒 Protected (open positions):', 'yellow')} ${result.skippedWithPositions.join(', ')}`);
+    lines.push(`  ${colorize('@ Protected (open positions):', 'yellow')} ${result.skippedWithPositions.join(', ')}`);
   }
 
   lines.push('');
@@ -675,23 +713,29 @@ export const formatRotationNoChanges = (result: RotationResult): string => {
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
-  lines.push(...createSecondaryHeader('🔄', 'SYMBOL ROTATION', result.startTime, `Duration: ${durationMs}ms │ ${result.marketType || 'FUTURES'} │ ${result.interval}`));
+  lines.push(...createMainHeader('*', 'SYMBOL ROTATION', result.startTime, durationMs));
+
+  const contextParts = [
+    colorize(`# ${result.marketType || 'FUTURES'}`, 'cyan'),
+    colorize(`${ICONS.TIMER} ${result.interval}`, 'dim'),
+    colorize(`> Target: ${result.targetCount}`, 'bright'),
+  ];
+  lines.push(`  ${contextParts.join(' │ ')}`);
 
   const summaryParts = [
-    colorize(`✅ No changes`, 'green'),
-    colorize(`📊 ${result.kept} symbols`, 'cyan'),
-    colorize(`🎯 Target: ${result.targetCount}`, 'dim'),
+    colorize(`${ICONS.SUCCESS} No changes`, 'green'),
+    colorize(`# ${result.kept} symbols`, 'cyan'),
   ];
 
   if (result.skippedWithPositions.length > 0) {
-    summaryParts.push(colorize(`🔒 ${result.skippedWithPositions.length} protected`, 'yellow'));
+    summaryParts.push(colorize(`@ ${result.skippedWithPositions.length} protected`, 'yellow'));
   }
 
   if (result.skippedInsufficientKlines.length > 0) {
-    summaryParts.push(colorize(`⏳ ${result.skippedInsufficientKlines.length} no data`, 'dim'));
+    summaryParts.push(colorize(`~ ${result.skippedInsufficientKlines.length} no data`, 'dim'));
   }
 
-  lines.push(`  ${summaryParts.join(' │ ')}`);
+  lines.push(createSummaryLine('#', summaryParts));
   lines.push('');
   return lines.join('\n');
 };
@@ -713,28 +757,28 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
   const lines: string[] = [];
   const durationMs = result.endTime.getTime() - result.startTime.getTime();
 
-  lines.push(...createMainHeader('🔌', 'POST-RECONNECTION VALIDATION', result.startTime, durationMs));
+  lines.push(...createMainHeader('*', 'POST-RECONNECTION VALIDATION', result.startTime, durationMs));
 
   const summaryParts = [
     `${result.pairsChecked} pairs`,
     `🔍 ${result.klinesChecked} klines`,
-    `⚠️ ${result.totalMismatches} mismatches`,
-    `🛠️ ${result.totalFixed} fixed`,
+    `! ${result.totalMismatches} mismatches`,
+    `+ ${result.totalFixed} fixed`,
   ];
-  lines.push(createSummaryLine('📊', summaryParts));
+  lines.push(createSummaryLine('#', summaryParts));
 
   if (result.mismatches.length > 0) {
-    lines.push(...createSectionHeader('🔧', 'OHLC CORRECTIONS', 'yellow'));
+    lines.push(...createSectionHeader('*', 'OHLC CORRECTIONS', 'yellow'));
 
     const mismatchTable = createLogTable(
       ['Symbol', 'Interval', 'OpenTime', 'Field', 'DB Value', 'API Value', 'Diff %', 'Status'],
-      [14, 12, 24, 10, 16, 16, 12, 47],
+      [14, 12, 24, 10, 16, 16, 12, 14],
       'yellow'
     );
 
     for (const m of result.mismatches) {
       const timeStr = m.openTime.toISOString().replace('T', ' ').slice(0, 19);
-      const status = m.fixed ? colorize('[OK]', 'green') : colorize('[ERR]', 'red');
+      const status = m.fixed ? colorize(ICONS.SUCCESS, COLORS.SUCCESS) : colorize(ICONS.ERROR, COLORS.ERROR);
       const diffStr = m.diffPercent.toFixed(2) + '%';
 
       mismatchTable.push([
@@ -771,22 +815,22 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
   const hasIssues = result.totalOrphaned > 0 || result.totalUnknown > 0;
   const headerColor = hasIssues ? 'yellow' : 'dim';
 
-  lines.push(...createSecondaryHeader('🔄', 'POSITION SYNC', result.startTime, `Duration: ${durationMs}ms`, headerColor));
+  lines.push(...createSecondaryHeader('*', 'POSITION SYNC', result.startTime, `Duration: ${durationMs}ms`, headerColor));
 
   const summaryParts = [
     `${result.walletsChecked} wallets`,
-    result.totalOrphaned > 0 ? colorize(`⚠️ ${result.totalOrphaned} orphaned`, 'yellow') : `✅ 0 orphaned`,
-    result.totalUnknown > 0 ? colorize(`🚨 ${result.totalUnknown} unknown`, 'red') : `✅ 0 unknown`,
-    result.totalUpdated > 0 ? colorize(`🔄 ${result.totalUpdated} updated`, 'cyan') : `✅ 0 updated`,
+    result.totalOrphaned > 0 ? colorize(`! ${result.totalOrphaned} orphaned`, 'yellow') : `+ 0 orphaned`,
+    result.totalUnknown > 0 ? colorize(`! ${result.totalUnknown} unknown`, 'red') : `+ 0 unknown`,
+    result.totalUpdated > 0 ? colorize(`* ${result.totalUpdated} updated`, 'cyan') : `+ 0 updated`,
   ];
-  lines.push(createSummaryLine('📊', summaryParts));
+  lines.push(createSummaryLine('#', summaryParts));
 
   if (result.orphanedPositions.length > 0) {
-    lines.push(...createSectionHeader('⚠️', 'ORPHANED POSITIONS (closed on exchange but open in DB)', 'yellow'));
+    lines.push(...createSectionHeader('!', 'ORPHANED POSITIONS (closed on exchange but open in DB)', 'yellow'));
 
     const orphanedTable = createLogTable(
       ['Wallet', 'Symbol', 'Side', 'Entry', 'Exit', 'Qty', 'PnL', 'PnL %'],
-      [14, 14, 10, 16, 16, 14, 16, 51],
+      [14, 14, 10, 16, 16, 14, 16, 14],
       'yellow'
     );
 
@@ -808,11 +852,11 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
   }
 
   if (result.unknownPositions.length > 0) {
-    lines.push(...createSectionHeader('🚨', 'UNKNOWN POSITIONS (on exchange but NOT in DB - MANUAL CHECK REQUIRED)', 'red'));
+    lines.push(...createSectionHeader('!', 'UNKNOWN POSITIONS (on exchange but NOT in DB - MANUAL CHECK REQUIRED)', 'red'));
 
     const unknownTable = createLogTable(
       ['Wallet', 'Symbol', 'Position', 'Entry', 'Unrealized PnL', 'Leverage', 'Margin'],
-      [12, 12, 12, 12, 14, 10, 10],
+      [12, 12, 12, 12, 14, 10, 14],
       'red'
     );
 
@@ -833,7 +877,7 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
   }
 
   if (result.updatedPositions.length > 0) {
-    lines.push(...createSectionHeader('🔄', 'POSITION UPDATES (synced from exchange)', 'cyan'));
+    lines.push(...createSectionHeader('*', 'POSITION UPDATES (synced from exchange)', 'cyan'));
 
     const updatedTable = createLogTable(
       ['Wallet', 'Symbol', 'Field', 'Old Value', 'New Value'],
@@ -876,52 +920,52 @@ const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult): stri
   const hasActivity = result.expiredCount > 0 || result.invalidCount > 0 || result.filledCount > 0 || result.errorCount > 0;
   const headerColor = hasActivity ? 'yellow' : 'dim';
 
-  lines.push(...createSecondaryHeader('📋', 'PENDING ORDERS CHECK', result.startTime, `Duration: ${durationMs}ms`, headerColor));
+  lines.push(...createSecondaryHeader('#', 'PENDING ORDERS CHECK', result.startTime, `Duration: ${durationMs}ms`, headerColor));
 
   const summaryParts = [
     `${result.totalChecked} orders`,
-    result.filledCount > 0 ? colorize(`🎯 ${result.filledCount} filled`, 'green') : `✅ 0 filled`,
-    result.expiredCount > 0 ? colorize(`⏰ ${result.expiredCount} expired`, 'yellow') : `✅ 0 expired`,
-    result.invalidCount > 0 ? colorize(`❌ ${result.invalidCount} invalid`, 'red') : `✅ 0 invalid`,
-    result.pendingCount > 0 ? colorize(`⏳ ${result.pendingCount} pending`, 'cyan') : '',
-    result.errorCount > 0 ? colorize(`⚠️ ${result.errorCount} errors`, 'red') : '',
+    result.filledCount > 0 ? colorize(`> ${result.filledCount} filled`, 'green') : `+ 0 filled`,
+    result.expiredCount > 0 ? colorize(`~ ${result.expiredCount} expired`, 'yellow') : `+ 0 expired`,
+    result.invalidCount > 0 ? colorize(`x ${result.invalidCount} invalid`, 'red') : `+ 0 invalid`,
+    result.pendingCount > 0 ? colorize(`~ ${result.pendingCount} pending`, 'cyan') : '',
+    result.errorCount > 0 ? colorize(`! ${result.errorCount} errors`, 'red') : '',
   ].filter(Boolean);
-  lines.push(createSummaryLine('📊', summaryParts));
+  lines.push(createSummaryLine('#', summaryParts));
 
   const actionsToShow = result.actions.filter(a => a.action !== 'PENDING');
   if (actionsToShow.length > 0) {
     const orderTable = createLogTable(
       ['Symbol', 'Side', 'Action', 'Limit Price', 'Current Price', 'Details'],
-      [12, 8, 10, 14, 14, 35],
+      [12, 8, 10, 14, 14, 40],
       'yellow'
     );
 
     for (const action of actionsToShow) {
-      const sideColor = action.side === 'LONG' ? 'green' : 'red';
+      const sideColor = action.side === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
       let actionColor: ColorName = 'dim';
       let actionIcon = '';
 
       switch (action.action) {
         case 'FILLED':
           actionColor = 'green';
-          actionIcon = '🎯';
+          actionIcon = '>';
           break;
         case 'EXPIRED':
           actionColor = 'yellow';
-          actionIcon = '⏰';
+          actionIcon = '~';
           break;
         case 'INVALID':
           actionColor = 'red';
-          actionIcon = '❌';
+          actionIcon = 'x';
           break;
         case 'ERROR':
           actionColor = 'red';
-          actionIcon = '⚠️';
+          actionIcon = '!';
           break;
       }
 
       const details = action.error
-        ? action.error.slice(0, 33)
+        ? action.error.slice(0, 38)
         : action.action === 'EXPIRED' && action.expiresAt
           ? `Expired at ${action.expiresAt.toLocaleTimeString()}`
           : action.action === 'FILLED' && action.currentPrice
