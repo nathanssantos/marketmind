@@ -32,7 +32,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOG_FILE = path.join(__dirname, '../../logs/auto-trading.log');
 
-const LOG_WIDTH = 150;
+const LOG_WIDTH = 130;
 const HEADER_LINE_MAIN = '═'.repeat(LOG_WIDTH - 53);
 const HEADER_LINE_SECONDARY = '─'.repeat(LOG_WIDTH - 53);
 
@@ -107,11 +107,11 @@ const createSectionHeader = (icon: string, title: string, color: ColorName): str
 
 const createLogTable = (
   head: string[],
-  colWidths: number[],
-  headColor: ColorName
+  headColor: ColorName,
+  colWidths?: number[]
 ): Table.Table => new Table({
   head,
-  colWidths,
+  ...(colWidths && { colWidths }),
   style: { head: [headColor], border: ['gray'] },
   chars: TABLE_CHARS,
 });
@@ -175,7 +175,6 @@ export const formatBatchResults = (batch: BatchResult): string => {
   if (batch.watcherResults.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Status', 'Klines', 'Setups', 'Trades', 'Time', 'Details'],
-      [14, 12, 12, 12, 10, 10, 10, 12, 40],
       'cyan'
     );
 
@@ -207,7 +206,6 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const setupTable = createLogTable(
       ['Symbol', 'Strategy', 'Dir', 'Conf', 'Entry', 'Stop Loss', 'Take Profit', 'R:R'],
-      [14, 34, 8, 8, 20, 20, 20, 14],
       'magenta'
     );
 
@@ -234,7 +232,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
   if (errorResults.length > 0) {
     lines.push(...createSectionHeader('x', 'ERRORS', 'red'));
 
-    const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], [14, 10, 40], 'red');
+    const errorTable = createLogTable(['Symbol', 'Interval', 'Error'], 'red');
 
     for (const result of errorResults) {
       const errorLogs = result.logs.filter(l => l.level === 'error');
@@ -255,7 +253,6 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const rejectionTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      [14, 28, 8, 34, 40],
       'yellow'
     );
 
@@ -263,7 +260,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
       for (const rejection of result.rejections) {
         const dirColor = rejection.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
         const detailStr = rejection.details
-          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 38)
+          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 48)
           : '-';
         rejectionTable.push([
           colorize(result.symbol, 'bright'),
@@ -284,7 +281,6 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const filterTable = createLogTable(
       ['Symbol', 'Filter', 'Reason', 'Details'],
-      [14, 24, 50, 40],
       'red'
     );
 
@@ -311,7 +307,6 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const tradeTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Entry', 'Qty', 'SL', 'TP', 'Type', 'Status'],
-      [14, 26, 8, 16, 16, 16, 16, 12, 14],
       'blue'
     );
 
@@ -462,7 +457,6 @@ export const formatStartupResults = (
   if (watchers.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Type', 'Status', 'Klines', 'Next Candle'],
-      [14, 14, 14, 14, 14, 14, 14],
       'cyan'
     );
 
@@ -497,7 +491,6 @@ export const formatStartupResults = (
 
     const errorTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Error'],
-      [14, 14, 14, 40],
       'red'
     );
 
@@ -542,7 +535,6 @@ const formatGapFillsTable = (gapFills: GapFillEntry[]): string[] => {
 
   const gapTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Gaps', 'Candles', 'Status'],
-    [14, 14, 14, 14, 14, 14],
     'yellow'
   );
 
@@ -571,7 +563,6 @@ const formatCorruptionFixesTable = (corruptionFixes: CorruptionFixEntry[]): stri
 
   const corruptionTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Found', 'Fixed', 'Status'],
-    [14, 14, 14, 14, 14, 14],
     'blue'
   );
 
@@ -600,7 +591,6 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
 
   const errorTable = createLogTable(
     ['Symbol', 'Interval', 'Market', 'Error'],
-    [14, 14, 14, 40],
     'red'
   );
 
@@ -663,7 +653,7 @@ export const formatRotationResults = (result: RotationResult): string => {
   lines.push(`  ${contextParts.join(' │ ')}`);
 
   if (result.added.length > 0 || result.removed.length > 0) {
-    const changeTable = createLogTable(['Action', 'Symbol', 'Status'], [14, 20, 40], 'magenta');
+    const changeTable = createLogTable(['Action', 'Symbol', 'Status'], 'magenta');
 
     for (const symbol of result.added) {
       const validation = result.klineValidations?.find(v => v.symbol === symbol);
@@ -772,7 +762,6 @@ const formatReconnectionValidationResults = (result: ReconnectionValidationResul
 
     const mismatchTable = createLogTable(
       ['Symbol', 'Interval', 'OpenTime', 'Field', 'DB Value', 'API Value', 'Diff %', 'Status'],
-      [14, 12, 24, 10, 16, 16, 12, 14],
       'yellow'
     );
 
@@ -830,7 +819,6 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
 
     const orphanedTable = createLogTable(
       ['Wallet', 'Symbol', 'Side', 'Entry', 'Exit', 'Qty', 'PnL', 'PnL %'],
-      [14, 14, 10, 16, 16, 14, 16, 14],
       'yellow'
     );
 
@@ -856,7 +844,6 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
 
     const unknownTable = createLogTable(
       ['Wallet', 'Symbol', 'Position', 'Entry', 'Unrealized PnL', 'Leverage', 'Margin'],
-      [12, 12, 12, 12, 14, 10, 14],
       'red'
     );
 
@@ -881,7 +868,6 @@ const formatPositionSyncResults = (result: PositionSyncResult): string => {
 
     const updatedTable = createLogTable(
       ['Wallet', 'Symbol', 'Field', 'Old Value', 'New Value'],
-      [12, 12, 14, 14, 14],
       'cyan'
     );
 
@@ -936,7 +922,6 @@ const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult): stri
   if (actionsToShow.length > 0) {
     const orderTable = createLogTable(
       ['Symbol', 'Side', 'Action', 'Limit Price', 'Current Price', 'Details'],
-      [12, 8, 10, 14, 14, 40],
       'yellow'
     );
 
