@@ -759,9 +759,10 @@ export class AutoTradingScheduler {
       const result = interpreter.detect(mappedKlines, currentIndex);
 
       if (result.rejection) {
+        const rejectionDirection = result.rejection.details?.direction as string | undefined;
         logBuffer.addRejection({
           setupType: strategy.name,
-          direction: '-',
+          direction: rejectionDirection ?? '-',
           reason: result.rejection.reason,
           details: result.rejection.details,
         });

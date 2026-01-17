@@ -258,20 +258,21 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const rejectionTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      'yellow'
+      'yellow',
+      [12, 28, 7, 36, 60]
     );
 
     for (const result of rejectionResults) {
       for (const rejection of result.rejections) {
         const dirColor = rejection.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
         const detailStr = rejection.details
-          ? Object.entries(rejection.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 48)
+          ? Object.entries(rejection.details).filter(([k]) => k !== 'direction').map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 58)
           : '-';
         rejectionTable.push([
           colorize(result.symbol, 'bright'),
           rejection.setupType.slice(0, 26),
           colorize(rejection.direction, dirColor),
-          colorize(rejection.reason.slice(0, 32), 'yellow'),
+          colorize(rejection.reason.slice(0, 34), 'yellow'),
           detailStr,
         ]);
       }
