@@ -406,12 +406,6 @@ export class AutoTradingScheduler {
       addedWatcherIds.push(watcherId);
     }
 
-    log('📊 [DynamicRotation] Applied changes', {
-      added: addedWatcherIds.length,
-      removed: result.removed.length,
-      queueSize: this.processingQueue.length,
-    });
-
     return addedWatcherIds;
   }
 
@@ -2532,11 +2526,6 @@ export class AutoTradingScheduler {
         details: validations,
       });
     }
-
-    log('📊 [Rotation] Applied changes', {
-      added: addedWatcherIds.length,
-      removed: result.removed.length,
-    });
 
     return addedWatcherIds;
   }
