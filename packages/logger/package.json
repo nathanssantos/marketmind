@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/logger",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "description": "Unified logging infrastructure for MarketMind",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

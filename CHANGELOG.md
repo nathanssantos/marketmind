@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.0] - 2026-01-17
+
+### Added
+- **Opportunity Cost Management** for auto-trading
+  - Detects stale trades that tie up capital without meaningful price movement
+  - Configurable max holding period (in bars based on entry timeframe)
+  - Three action modes: Alert Only, Tighten Stop, Auto Close
+  - Time-based progressive stop tightening for profitable trades
+  - `entryInterval` tracking to count bars on the correct timeframe
+  - Full UI controls in auto-trading modal with translations (EN, PT, ES, FR)
+- **New exit reasons**: `TIME_STOP`, `STALE_TRADE`, `OPPORTUNITY_COST`
+- **31 unit tests** for opportunity cost manager service
+
+### Changed
+- **Trade executions schema** - Added 7 new tracking fields for opportunity cost
+- **Auto-trading config schema** - Added 7 new configuration fields
+- **Position monitor** - Now checks opportunity cost on each cycle
+- **Auto-trading scheduler** - Increments bar count on kline closes
+
+---
+
 ## [0.46.0] - 2025-01-15
 
 ### Added
