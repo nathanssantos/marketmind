@@ -239,8 +239,13 @@ export class BacktestEngine {
     const strategyOverrides = config.strategyParams || {};
 
     console.log('[Backtest] Dynamic setups:', setupsToEnable);
+    if (config.maxFibonacciEntryProgressPercent !== undefined) {
+      console.log(`[Backtest] Max Fibonacci entry progress: ${config.maxFibonacciEntryProgressPercent}%`);
+    }
 
-    const setupDetectionService = new SetupDetectionService({});
+    const setupDetectionService = new SetupDetectionService({
+      maxFibonacciEntryProgressPercent: config.maxFibonacciEntryProgressPercent,
+    });
 
     const loadedStrategies: StrategyDefinition[] = [];
     const strategyMap = new Map<string, StrategyDefinition>();

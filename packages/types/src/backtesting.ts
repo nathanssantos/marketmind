@@ -75,6 +75,8 @@ export interface BacktestConfig {
   tpCalculationMode?: 'default' | 'fibonacci'; // TP calculation mode (default: 'default')
   fibonacciTpLevel?: number; // Fibonacci level to use for TP (default: uses primaryLevel from projection, e.g., 0.618, 1.0, 1.618)
   fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2'; // Named Fibonacci target level
+
+  maxFibonacciEntryProgressPercent?: number; // Max % progress in Fibonacci range for entry validation (default: 88.6)
 }
 
 export interface BacktestTrade {

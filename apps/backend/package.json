@@ -41,6 +41,7 @@
     "backtest:sensitivity": "tsx src/cli/backtest-runner.ts sensitivity",
     "backtest:compare": "tsx src/cli/backtest-runner.ts compare",
     "backtest:export": "tsx src/cli/backtest-runner.ts export",
+    "backtest:fib-entry": "tsx scripts/run-fib-entry-comparison.ts",
     "validate:all": "tsx validate-strategies.mts",
     "optimize:all": "node batch-optimize.mjs",
     "test:all": "tsx validate-strategies.mts && node batch-optimize.mjs",

@@ -1,31 +1,32 @@
+import { colorize, createTable } from '@marketmind/logger';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
-import { calculatePnl } from '../utils/pnl-calculator';
 import {
-  activeWatchers,
-  autoTradingConfig,
-  tradeExecutions,
-  setupDetections,
-  klines,
+    activeWatchers,
+    autoTradingConfig,
+    klines,
+    setupDetections,
+    tradeExecutions,
 } from '../db/schema';
-import { getBtcTrendInfo } from '../utils/filters/btc-correlation-filter';
-import { getBinanceFuturesDataService } from '../services/binance-futures-data';
-import { riskManagerService } from '../services/risk-manager';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
+import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
+import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../services/binance-futures-client';
+import { getBinanceFuturesDataService } from '../services/binance-futures-data';
+import { walletQueries } from '../services/database/walletQueries';
+import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
 import { checkKlineAvailability } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
-import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
+import { getMarketCapDataService } from '../services/market-cap-data';
+import { getOpportunityScoringService } from '../services/opportunity-scoring';
+import { riskManagerService } from '../services/risk-manager';
 import { protectedProcedure, router } from '../trpc';
+import { getBtcTrendInfo } from '../utils/filters/btc-correlation-filter';
 import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
-import { transformAutoTradingConfig, parseEnabledSetupTypes, stringifyEnabledSetupTypes, stringifyDynamicSymbolExcluded } from '../utils/profile-transformers';
-import { getOpportunityScoringService } from '../services/opportunity-scoring';
-import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
-import { getMarketCapDataService } from '../services/market-cap-data';
-import { walletQueries } from '../services/database/walletQueries';
-import { createBinanceFuturesClient, isPaperWallet, getPositions, cancelAllFuturesAlgoOrders, closePosition } from '../services/binance-futures-client';
+import { calculatePnl } from '../utils/pnl-calculator';
+import { parseEnabledSetupTypes, stringifyDynamicSymbolExcluded, stringifyEnabledSetupTypes, transformAutoTradingConfig } from '../utils/profile-transformers';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   if (data) {
@@ -33,6 +34,13 @@ const log = (message: string, data?: Record<string, unknown>): void => {
   } else {
     logger.info(`[Auto-Trading] ${message}`);
   }
+};
+
+const logApiTable = (endpoint: string, rows: [string, string | number][]): void => {
+  const table = createTable({ head: ['Field', 'Value'], headColor: 'cyan', colWidths: [25, 30] });
+  rows.forEach(row => table.push([colorize(row[0], 'dim'), String(row[1])]));
+  console.log(`\n  📊 ${colorize(endpoint, 'cyan')}`);
+  console.log(table.toString());
 };
 
 export const autoTradingRouter = router({
@@ -1065,10 +1073,13 @@ export const autoTradingRouter = router({
       })
     )
     .query(async ({ input }) => {
-      log('📊 getDynamicSymbolScores called', { marketType: input.marketType, limit: input.limit });
       const scoringService = getOpportunityScoringService();
       const scores = await scoringService.getSymbolScores(input.marketType, input.limit);
-      log('✅ Symbol scores fetched', { count: scores.length });
+      logApiTable('getDynamicSymbolScores', [
+        ['Market Type', input.marketType],
+        ['Limit', input.limit],
+        ['Scores Fetched', `✅ ${scores.length}`],
+      ]);
       return scores;
     }),
 
@@ -1172,8 +1183,6 @@ export const autoTradingRouter = router({
     }),
 
   getBtcTrendStatus: protectedProcedure.query(async ({ ctx }) => {
-    log('📊 getBtcTrendStatus called');
-
     const btcKlinesData = await ctx.db.query.klines.findMany({
       where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, '4h')),
       orderBy: [desc(klines.openTime)],
@@ -1182,7 +1191,11 @@ export const autoTradingRouter = router({
 
     const mappedKlines = mapDbKlinesReversed(btcKlinesData);
     const trendInfo = getBtcTrendInfo(mappedKlines);
-    log('✅ BTC trend status fetched', { trend: trendInfo.trend, score: trendInfo.score });
+    const trendEmoji = trendInfo.trend === 'BULLISH' ? '🟢' : trendInfo.trend === 'BEARISH' ? '🔴' : '⚪';
+    logApiTable('getBtcTrendStatus', [
+      ['Trend', `${trendEmoji} ${trendInfo.trend}`],
+      ['Score', trendInfo.score],
+    ]);
 
     return trendInfo;
   }),
@@ -1194,8 +1207,6 @@ export const autoTradingRouter = router({
       })
     )
     .query(async ({ input }) => {
-      log('📊 getBatchFundingRates called', { symbolCount: input.symbols.length });
-
       const futuresService = getBinanceFuturesDataService();
       const allMarkPrices = await futuresService.getAllMarkPrices();
 
@@ -1216,7 +1227,11 @@ export const autoTradingRouter = router({
       });
 
       const extremeCount = results.filter((r) => r.isExtreme).length;
-      log('✅ Batch funding rates fetched', { total: results.length, extreme: extremeCount });
+      logApiTable('getBatchFundingRates', [
+        ['Symbols', input.symbols.length],
+        ['Total Fetched', `✅ ${results.length}`],
+        ['Extreme Rates', extremeCount > 0 ? `⚠️ ${extremeCount}` : `${extremeCount}`],
+      ]);
 
       return results;
     }),

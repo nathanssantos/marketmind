@@ -32,6 +32,7 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   strategy: StrategyDefinition;
   parameterOverrides?: Record<string, number>;
   silent?: boolean;
+  maxFibonacciEntryProgressPercent?: number;
 }
 
 export class StrategyInterpreter extends BaseSetupDetector {
@@ -41,6 +42,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private conditionEvaluator: ConditionEvaluator;
   private exitCalculator: ExitCalculator;
   private silent: boolean;
+  private maxFibEntryProgress: number;
 
   constructor(config: StrategyInterpreterConfig) {
     super({
@@ -55,6 +57,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.conditionEvaluator = new ConditionEvaluator(this.indicatorEngine);
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
     this.silent = config.silent ?? false;
+    this.maxFibEntryProgress = config.maxFibonacciEntryProgressPercent ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
   }
 
   detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
@@ -92,10 +95,10 @@ export class StrategyInterpreter extends BaseSetupDetector {
         setup: null,
         confidence: 0,
         rejection: {
-          reason: `Entry above max Fibonacci level (${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%)`,
+          reason: `Entry above max Fibonacci level (${this.maxFibEntryProgress}%)`,
           details: {
             entryProgress: `${fibEntryValidation.progress.toFixed(1)}%`,
-            maxAllowed: `${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%`,
+            maxAllowed: `${this.maxFibEntryProgress}%`,
             direction,
           },
         },
@@ -547,7 +550,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
       ? ((entryPrice - swingLow.price) / swingRange) * 100
       : ((swingHigh.price - entryPrice) / swingRange) * 100;
 
-    const isValid = progress <= MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
+    const isValid = progress <= this.maxFibEntryProgress;
 
     if (!isValid && !this.silent) {
       logger.warn({
@@ -556,7 +559,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
         swingLow: swingLow.price.toFixed(4),
         swingHigh: swingHigh.price.toFixed(4),
         fibLevel: `${progress.toFixed(1)}%`,
-        maxAllowed: `${MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT}%`,
+        maxAllowed: `${this.maxFibEntryProgress}%`,
       }, '⚠️ Entry price above max Fibonacci level - setup rejected');
     }
 
