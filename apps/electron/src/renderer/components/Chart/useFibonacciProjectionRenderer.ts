@@ -1,5 +1,4 @@
-import type { FibonacciProjectionData } from '@marketmind/types';
-import type { Kline } from '@marketmind/types';
+import type { FibonacciProjectionData, Kline } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useCallback } from 'react';
@@ -12,18 +11,12 @@ interface UseFibonacciProjectionRendererProps {
 }
 
 const SECONDARY_LEVELS = [0.236, 0.382, 0.618, 0.786];
-const DEFAULT_LEVEL_COLOR = 'rgba(180, 180, 180, 0.7)';
+const PRIMARY_LEVEL_COLOR = 'rgba(180, 180, 180, 0.7)';
 const SECONDARY_LEVEL_COLOR = 'rgba(120, 120, 120, 0.4)';
-const LEVEL_127_COLOR = 'rgba(66, 165, 245, 0.9)';
-const LEVEL_161_COLOR = 'rgba(255, 167, 38, 0.9)';
-const LEVEL_200_COLOR = 'rgba(76, 175, 80, 0.9)';
 
 const getLevelColor = (level: number): string => {
-  if (level === 1.272) return LEVEL_127_COLOR;
-  if (level === 1.618) return LEVEL_161_COLOR;
-  if (level === 2) return LEVEL_200_COLOR;
   if (SECONDARY_LEVELS.includes(level)) return SECONDARY_LEVEL_COLOR;
-  return DEFAULT_LEVEL_COLOR;
+  return PRIMARY_LEVEL_COLOR;
 };
 
 const SWING_LINE_WIDTH = 2;
