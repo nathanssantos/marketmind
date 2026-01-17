@@ -21,6 +21,7 @@ import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rota
 import { checkKlineAvailability } from '../services/kline-prefetch';
 import { logger } from '../services/logger';
 import { getMarketCapDataService } from '../services/market-cap-data';
+import { getMinNotionalFilterService } from '../services/min-notional-filter';
 import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { riskManagerService } from '../services/risk-manager';
 import { protectedProcedure, router } from '../trpc';
@@ -965,6 +966,7 @@ export const autoTradingRouter = router({
           successCount: 0,
           failedCount: 0,
           skippedKlinesCount: 0,
+          skippedCapitalCount: 0,
           fromRankingCount: 0,
           targetCount,
           targetMet: false,
@@ -972,6 +974,35 @@ export const autoTradingRouter = router({
           dynamicLimit,
           message: `Limit reached: ${existingCount}/${dynamicLimit} watchers already active`,
         };
+      }
+
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
+      const leverage = config?.leverage ?? 1;
+      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? '1.5');
+
+      const minNotionalFilter = getMinNotionalFilterService();
+      const capitalFilterResult = await minNotionalFilter.filterSymbolsByCapital(
+        input.symbols,
+        {
+          walletBalance,
+          leverage,
+          activeWatchersCount: dynamicLimit,
+          exposureMultiplier,
+        },
+        input.marketType
+      );
+
+      const skippedCapitalSymbols = capitalFilterResult.filtered;
+      const symbolsToTry = capitalFilterResult.eligible;
+
+      if (skippedCapitalSymbols.length > 0) {
+        log('💰 Symbols filtered by capital requirement', {
+          skipped: skippedCapitalSymbols,
+          capitalPerWatcher: capitalFilterResult.capitalPerWatcher.toFixed(2),
+          walletBalance,
+          leverage,
+          dynamicLimit,
+        });
       }
 
       await ctx.db
@@ -1030,7 +1061,17 @@ export const autoTradingRouter = router({
         }
       };
 
-      for (const symbol of input.symbols) {
+      for (const symbol of skippedCapitalSymbols) {
+        results.push({
+          symbol,
+          success: false,
+          error: `Capital per watcher (${capitalFilterResult.capitalPerWatcher.toFixed(2)} USDT) below minNotional`,
+          skippedReason: 'insufficient_capital',
+          fromRanking: false,
+        });
+      }
+
+      for (const symbol of symbolsToTry) {
         if (startedSymbols.size >= effectiveTargetCount) break;
         await tryStartWatcher(symbol, false);
       }
@@ -1043,18 +1084,40 @@ export const autoTradingRouter = router({
         });
 
         const scoringService = getOpportunityScoringService();
-        const scores = await scoringService.getSymbolScores(input.marketType, effectiveTargetCount * 3);
+        const scores = await scoringService.getSymbolScores(input.marketType, effectiveTargetCount * 4);
 
-        for (const score of scores) {
+        const rankingSymbols = scores.map(s => s.symbol).filter(s => !attemptedSymbols.has(s));
+        const rankingFilterResult = await minNotionalFilter.filterSymbolsByCapital(
+          rankingSymbols,
+          {
+            walletBalance,
+            leverage,
+            activeWatchersCount: dynamicLimit,
+            exposureMultiplier,
+          },
+          input.marketType
+        );
+
+        for (const symbol of rankingFilterResult.filtered) {
+          results.push({
+            symbol,
+            success: false,
+            error: `Capital per watcher (${rankingFilterResult.capitalPerWatcher.toFixed(2)} USDT) below minNotional`,
+            skippedReason: 'insufficient_capital',
+            fromRanking: true,
+          });
+          attemptedSymbols.add(symbol);
+        }
+
+        for (const symbol of rankingFilterResult.eligible) {
           if (startedSymbols.size >= effectiveTargetCount) break;
-          if (!attemptedSymbols.has(score.symbol)) {
-            await tryStartWatcher(score.symbol, true);
-          }
+          await tryStartWatcher(symbol, true);
         }
       }
 
       const successCount = results.filter(r => r.success).length;
       const skippedKlinesCount = results.filter(r => r.skippedReason === 'insufficient_klines').length;
+      const skippedCapitalCount = results.filter(r => r.skippedReason === 'insufficient_capital').length;
       const fromRankingCount = results.filter(r => r.success && r.fromRanking).length;
       const targetMet = successCount >= effectiveTargetCount;
 
@@ -1067,6 +1130,7 @@ export const autoTradingRouter = router({
         targetMet,
         fromRanking: fromRankingCount,
         skippedInsufficientKlines: skippedKlinesCount,
+        skippedInsufficientCapital: skippedCapitalCount,
       });
 
       if (useDynamicSelection && successCount > 0) {
@@ -1093,6 +1157,7 @@ export const autoTradingRouter = router({
         successCount,
         failedCount: results.length - successCount,
         skippedKlinesCount,
+        skippedCapitalCount,
         fromRankingCount,
         targetCount,
         effectiveTargetCount,

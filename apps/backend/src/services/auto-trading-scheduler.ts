@@ -418,7 +418,17 @@ export class AutoTradingScheduler {
 
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          await prefetchKlines({ symbol, interval, marketType, silent: true });
+          log('📥 [DynamicRotation] Starting prefetch', { symbol, interval, marketType });
+          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, silent: false });
+          log('📊 [DynamicRotation] Prefetch result', {
+            symbol,
+            success: prefetchResult.success,
+            downloaded: prefetchResult.downloaded,
+            totalInDb: prefetchResult.totalInDb,
+            gaps: prefetchResult.gaps,
+            alreadyComplete: prefetchResult.alreadyComplete,
+            error: prefetchResult.error,
+          });
           await klineMaintenance.forceCheckSymbol(symbol, interval as Interval, marketType);
         })
       );
@@ -2214,12 +2224,29 @@ export class AutoTradingScheduler {
     for (const pw of persistedWatchers) {
       const marketType = (pw.marketType as MarketType) ?? 'SPOT';
 
+      log('📥 [Startup] Prefetching klines for watcher', {
+        symbol: pw.symbol,
+        interval: pw.interval,
+        marketType,
+        targetCount: requiredKlines,
+      });
+
       const result = await prefetchKlines({
         symbol: pw.symbol,
         interval: pw.interval,
         marketType,
         targetCount: requiredKlines,
-        silent: true,
+        silent: false,
+      });
+
+      log('📊 [Startup] Prefetch result', {
+        symbol: pw.symbol,
+        success: result.success,
+        downloaded: result.downloaded,
+        totalInDb: result.totalInDb,
+        gaps: result.gaps,
+        alreadyComplete: result.alreadyComplete,
+        error: result.error,
       });
 
       if (!result.success) {
@@ -2554,7 +2581,18 @@ export class AutoTradingScheduler {
 
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          await prefetchKlines({ symbol, interval, marketType, silent: true });
+          log('📥 [Rotation] Starting prefetch', { symbol, interval, marketType });
+          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, silent: false });
+          log('📊 [Rotation] Prefetch result', {
+            symbol,
+            success: prefetchResult.success,
+            downloaded: prefetchResult.downloaded,
+            totalInDb: prefetchResult.totalInDb,
+            gaps: prefetchResult.gaps,
+            alreadyComplete: prefetchResult.alreadyComplete,
+            error: prefetchResult.error,
+          });
+
           const validationResult = await klineMaintenance.forceCheckSymbol(
             symbol,
             interval as Interval,

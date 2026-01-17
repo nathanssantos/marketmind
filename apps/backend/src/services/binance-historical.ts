@@ -241,9 +241,9 @@ export const smartBackfillKlines = async (
   const calculatedStartTime = now - intervalMs * targetCount;
   const targetStartTime = Math.max(calculatedStartTime, minStartTime);
 
-  logger.debug(
+  logger.info(
     { symbol, interval, marketType, targetCount, targetStartTime: new Date(targetStartTime).toISOString() },
-    'Smart backfill: analyzing existing data'
+    '📥 [SmartBackfill] Analyzing existing data'
   );
 
   const existingKlines = await db
@@ -261,16 +261,16 @@ export const smartBackfillKlines = async (
 
   const currentCount = existingKlines.length;
 
-  logger.debug(
+  logger.info(
     { symbol, interval, marketType, currentCount, targetCount },
-    'Smart backfill: current vs target'
+    '📊 [SmartBackfill] Current count vs target'
   );
 
   const gaps: Array<{ start: number; end: number; type: 'start' | 'end' | 'internal' }> = [];
   let totalDownloaded = 0;
 
   if (existingKlines.length === 0) {
-    logger.debug({ symbol, interval, marketType }, 'Smart backfill: no existing data, downloading full range');
+    logger.info({ symbol, interval, marketType, targetCount }, '🚀 [SmartBackfill] No existing data, downloading full range');
     const downloaded = await backfillHistoricalKlines(
       symbol,
       interval,
@@ -317,10 +317,11 @@ export const smartBackfillKlines = async (
   }
 
   if (gaps.length === 0) {
+    logger.info({ symbol, interval, marketType, currentCount }, '✅ [SmartBackfill] No gaps found, data complete');
     return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
   }
 
-  logger.debug({ symbol, interval, marketType, gapsCount: gaps.length }, 'Smart backfill: filling gaps');
+  logger.info({ symbol, interval, marketType, gapsCount: gaps.length }, '🔧 [SmartBackfill] Filling gaps');
 
   const gapsFilled: Set<number> = new Set();
 
@@ -366,9 +367,9 @@ export const smartBackfillKlines = async (
   const isOperationallyComplete = hasSufficientData || criticalGaps.length === 0;
   const reportedGaps = isOperationallyComplete ? 0 : criticalGaps.length;
 
-  logger.debug(
+  logger.info(
     { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps, hasSufficientData, isOperationallyComplete },
-    'Smart backfill: complete'
+    '✅ [SmartBackfill] Complete'
   );
 
   return { totalInDb: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps, alreadyComplete: isOperationallyComplete };

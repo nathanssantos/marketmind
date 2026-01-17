@@ -22,6 +22,7 @@ export interface CapitalFilterResult {
   eligible: string[];
   filtered: string[];
   filterReasons: Map<string, string>;
+  capitalPerWatcher: number;
 }
 
 export interface CapitalRequirement {
@@ -198,7 +199,7 @@ export class MinNotionalFilterService {
       );
     }
 
-    return { eligible, filtered, filterReasons };
+    return { eligible, filtered, filterReasons, capitalPerWatcher };
   }
 
   getMinNotionalForSymbol(symbol: string, marketType: MarketType): number {
