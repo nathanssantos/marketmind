@@ -1087,7 +1087,7 @@
       "enable": "Activer la Sélection Dynamique",
       "enableDescription": "Sélectionnez automatiquement les meilleurs symboles en fonction du market cap et des scores d'opportunité",
       "symbolLimit": "Limite de Symboles",
-      "symbolLimitDescription": "Nombre maximum de symboles à surveiller (1-50)",
+      "symbolLimitDescription": "Nombre maximum de symboles à surveiller (1-100)",
       "rotationInterval": "Intervalle de Rotation",
       "rotationIntervalDescription": "Fréquence de réévaluation et rotation des symboles",
       "interval1h": "Toutes les heures",

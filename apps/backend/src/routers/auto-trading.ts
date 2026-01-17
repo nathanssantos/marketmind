@@ -987,7 +987,7 @@ export const autoTradingRouter = router({
         {
           walletBalance,
           leverage,
-          activeWatchersCount: dynamicLimit,
+          targetWatchersCount: dynamicLimit,
           exposureMultiplier,
         },
         input.marketType
@@ -1093,7 +1093,7 @@ export const autoTradingRouter = router({
           {
             walletBalance,
             leverage,
-            activeWatchersCount: dynamicLimit,
+            targetWatchersCount: dynamicLimit,
             exposureMultiplier,
           },
           input.marketType
@@ -1140,7 +1140,7 @@ export const autoTradingRouter = router({
           ctx.user.id,
           {
             useDynamicSymbolSelection: true,
-            dynamicSymbolLimit: config?.dynamicSymbolLimit ?? targetCount,
+            dynamicSymbolLimit: dynamicLimit,
             dynamicSymbolExcluded: config?.dynamicSymbolExcluded ?? null,
             marketType: input.marketType,
             interval: input.interval,

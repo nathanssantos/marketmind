@@ -2456,7 +2456,7 @@ export class AutoTradingScheduler {
       capitalRequirement: config.walletBalance !== undefined ? {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
-        activeWatchersCount: config.dynamicSymbolLimit,
+        targetWatchersCount: config.dynamicSymbolLimit,
         exposureMultiplier: config.exposureMultiplier ?? 1.5,
       } : undefined,
     };
@@ -2670,7 +2670,7 @@ export class AutoTradingScheduler {
       capitalRequirement: config.walletBalance !== undefined ? {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
-        activeWatchersCount: config.dynamicSymbolLimit,
+        targetWatchersCount: config.dynamicSymbolLimit,
         exposureMultiplier: config.exposureMultiplier ?? 1.5,
       } : undefined,
     };

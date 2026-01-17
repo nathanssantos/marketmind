@@ -23,12 +23,13 @@ export interface CapitalFilterResult {
   filtered: string[];
   filterReasons: Map<string, string>;
   capitalPerWatcher: number;
+  maxAffordableWatchers: number;
 }
 
 export interface CapitalRequirement {
   walletBalance: number;
   leverage: number;
-  activeWatchersCount: number;
+  targetWatchersCount: number;
   exposureMultiplier: number;
 }
 
@@ -139,16 +140,30 @@ export class MinNotionalFilterService {
     }
   }
 
-  calculateCapitalPerWatcher(req: CapitalRequirement): number {
-    const { walletBalance, leverage, activeWatchersCount, exposureMultiplier } = req;
+  calculateAvailableCapital(walletBalance: number, leverage: number): number {
+    return walletBalance * leverage;
+  }
 
-    const availableCapital = walletBalance * leverage;
+  calculateMaxAffordableWatchers(
+    availableCapital: number,
+    exposureMultiplier: number,
+    minNotional: number
+  ): number {
+    const safetyMargin = 1.1;
+    const requiredPerWatcher = minNotional * safetyMargin;
+    const maxWatchers = Math.floor((availableCapital * exposureMultiplier) / requiredPerWatcher);
+    return Math.max(1, maxWatchers);
+  }
 
-    if (activeWatchersCount <= 0) {
+  calculateCapitalPerWatcher(
+    availableCapital: number,
+    watchersCount: number,
+    exposureMultiplier: number
+  ): number {
+    if (watchersCount <= 0) {
       return availableCapital * (TRADING_DEFAULTS.MAX_POSITION_SIZE_PERCENT / 100);
     }
-
-    const exposurePerWatcher = Math.min((100 * exposureMultiplier) / activeWatchersCount, 100);
+    const exposurePerWatcher = Math.min((100 * exposureMultiplier) / watchersCount, 100);
     return (availableCapital * exposurePerWatcher) / 100;
   }
 
@@ -157,16 +172,36 @@ export class MinNotionalFilterService {
     capitalReq: CapitalRequirement,
     marketType: MarketType
   ): Promise<CapitalFilterResult> {
+    const { walletBalance, leverage, targetWatchersCount, exposureMultiplier } = capitalReq;
     const filters = await this.getSymbolFilters(marketType);
-    const capitalPerWatcher = this.calculateCapitalPerWatcher(capitalReq);
+    const availableCapital = this.calculateAvailableCapital(walletBalance, leverage);
+
+    const defaultMinNotional = marketType === 'FUTURES' ? 5 : 10;
+    const maxAffordableWatchers = this.calculateMaxAffordableWatchers(
+      availableCapital,
+      exposureMultiplier,
+      defaultMinNotional
+    );
+
+    const effectiveWatchersCount = Math.min(targetWatchersCount, maxAffordableWatchers);
+    const capitalPerWatcher = this.calculateCapitalPerWatcher(
+      availableCapital,
+      effectiveWatchersCount,
+      exposureMultiplier
+    );
 
     const eligible: string[] = [];
     const filtered: string[] = [];
     const filterReasons = new Map<string, string>();
 
     for (const symbol of symbols) {
-      const symbolFilter = filters.get(symbol);
+      if (eligible.length >= effectiveWatchersCount) {
+        filtered.push(symbol);
+        filterReasons.set(symbol, `Exceeded max affordable watchers (${effectiveWatchersCount})`);
+        continue;
+      }
 
+      const symbolFilter = filters.get(symbol);
       if (!symbolFilter) {
         eligible.push(symbol);
         continue;
@@ -186,20 +221,23 @@ export class MinNotionalFilterService {
       }
     }
 
-    if (filtered.length > 0) {
-      logger.info(
-        {
-          marketType,
-          capitalPerWatcher: capitalPerWatcher.toFixed(2),
-          eligibleCount: eligible.length,
-          filteredCount: filtered.length,
-          filteredSymbols: filtered.slice(0, 5),
-        },
-        '[MinNotionalFilter] Filtered symbols by capital requirement'
-      );
-    }
+    logger.info(
+      {
+        marketType,
+        walletBalance,
+        leverage,
+        availableCapital: availableCapital.toFixed(2),
+        targetWatchersCount,
+        maxAffordableWatchers,
+        effectiveWatchersCount,
+        capitalPerWatcher: capitalPerWatcher.toFixed(2),
+        eligibleCount: eligible.length,
+        filteredCount: filtered.length,
+      },
+      '[MinNotionalFilter] Capital filter applied'
+    );
 
-    return { eligible, filtered, filterReasons, capitalPerWatcher };
+    return { eligible, filtered, filterReasons, capitalPerWatcher, maxAffordableWatchers };
   }
 
   getMinNotionalForSymbol(symbol: string, marketType: MarketType): number {

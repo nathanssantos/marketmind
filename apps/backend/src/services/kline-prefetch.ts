@@ -150,7 +150,7 @@ export const checkKlineAvailability = async (
       symbol,
       interval,
       marketType,
-      targetCount: required,
+      targetCount: REQUIRED_KLINES,
       silent,
     });
 

@@ -80,7 +80,8 @@ export class DynamicSymbolRotationService {
             marketType: config.marketType,
             skippedCount: skippedInsufficientCapital.length,
             eligibleCount: filteredScores.length,
-            capitalPerWatcher: minNotionalFilter.calculateCapitalPerWatcher(config.capitalRequirement).toFixed(2),
+            capitalPerWatcher: capitalFilter.capitalPerWatcher.toFixed(2),
+            maxAffordableWatchers: capitalFilter.maxAffordableWatchers,
           }, '[DynamicRotation] Filtered symbols by capital requirement');
         }
       }
