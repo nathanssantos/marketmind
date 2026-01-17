@@ -1,5 +1,5 @@
 import { colorize, createTable } from '@marketmind/logger';
-import { FIBONACCI_TARGET_LEVELS } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG, FIBONACCI_TARGET_LEVELS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -110,7 +110,7 @@ export const autoTradingRouter = router({
       z.object({
         walletId: z.string(),
         isEnabled: z.boolean().optional(),
-        maxConcurrentPositions: z.number().min(1).max(20).optional(),
+        maxConcurrentPositions: z.number().min(AUTO_TRADING_CONFIG.CONCURRENT_POSITIONS.MIN).max(AUTO_TRADING_CONFIG.CONCURRENT_POSITIONS.MAX).optional(),
         maxPositionSize: z.string().optional(),
         dailyLossLimit: z.string().optional(),
         enabledSetupTypes: z.array(z.string()).optional(),
@@ -123,32 +123,32 @@ export const autoTradingRouter = router({
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
-        dynamicSymbolLimit: z.number().min(1).max(50).optional(),
+        dynamicSymbolLimit: z.number().min(AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.MIN).max(AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.MAX).optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
         enableAutoRotation: z.boolean().optional(),
         trailingStopMode: z.enum(['local', 'binance']).optional(),
-        leverage: z.number().min(1).max(125).optional(),
+        leverage: z.number().min(AUTO_TRADING_CONFIG.LEVERAGE.MIN).max(AUTO_TRADING_CONFIG.LEVERAGE.MAX).optional(),
         marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
         opportunityCostEnabled: z.boolean().optional(),
-        maxHoldingPeriodBars: z.number().min(5).max(100).optional(),
+        maxHoldingPeriodBars: z.number().min(AUTO_TRADING_CONFIG.HOLDING_PERIOD_BARS.MIN).max(AUTO_TRADING_CONFIG.HOLDING_PERIOD_BARS.MAX).optional(),
         stalePriceThresholdPercent: z.string().optional(),
         staleTradeAction: z.enum(['ALERT_ONLY', 'TIGHTEN_STOP', 'AUTO_CLOSE']).optional(),
         timeBasedStopTighteningEnabled: z.boolean().optional(),
-        timeTightenAfterBars: z.number().min(1).max(50).optional(),
+        timeTightenAfterBars: z.number().min(AUTO_TRADING_CONFIG.TIGHTEN_AFTER_BARS.MIN).max(AUTO_TRADING_CONFIG.TIGHTEN_AFTER_BARS.MAX).optional(),
         timeTightenPercentPerBar: z.string().optional(),
         pyramidingEnabled: z.boolean().optional(),
         pyramidingMode: z.enum(['static', 'dynamic', 'fibonacci']).optional(),
-        maxPyramidEntries: z.number().min(1).max(10).optional(),
+        maxPyramidEntries: z.number().min(AUTO_TRADING_CONFIG.PYRAMID_ENTRIES.MIN).max(AUTO_TRADING_CONFIG.PYRAMID_ENTRIES.MAX).optional(),
         pyramidProfitThreshold: z.string().optional(),
         pyramidScaleFactor: z.string().optional(),
         pyramidMinDistance: z.string().optional(),
         pyramidUseAtr: z.boolean().optional(),
         pyramidUseAdx: z.boolean().optional(),
         pyramidUseRsi: z.boolean().optional(),
-        pyramidAdxThreshold: z.number().min(10).max(50).optional(),
-        pyramidRsiLowerBound: z.number().min(20).max(50).optional(),
-        pyramidRsiUpperBound: z.number().min(50).max(80).optional(),
+        pyramidAdxThreshold: z.number().min(AUTO_TRADING_CONFIG.ADX_THRESHOLD.MIN).max(AUTO_TRADING_CONFIG.ADX_THRESHOLD.MAX).optional(),
+        pyramidRsiLowerBound: z.number().min(AUTO_TRADING_CONFIG.RSI_BOUNDS.LOWER.MIN).max(AUTO_TRADING_CONFIG.RSI_BOUNDS.LOWER.MAX).optional(),
+        pyramidRsiUpperBound: z.number().min(AUTO_TRADING_CONFIG.RSI_BOUNDS.UPPER.MIN).max(AUTO_TRADING_CONFIG.RSI_BOUNDS.UPPER.MAX).optional(),
         pyramidFiboLevels: z.array(z.enum(PYRAMID_FIBO_LEVELS)).optional(),
         leverageAwarePyramid: z.boolean().optional(),
       })
@@ -883,11 +883,11 @@ export const autoTradingRouter = router({
     .input(
       z.object({
         walletId: z.string(),
-        symbols: z.array(z.string()).min(1).max(50),
+        symbols: z.array(z.string()).min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX),
         interval: z.string(),
         profileId: z.string().optional(),
         marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
-        targetCount: z.number().min(1).max(50).optional(),
+        targetCount: z.number().min(AUTO_TRADING_CONFIG.TARGET_COUNT.MIN).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX).optional(),
         isManual: z.boolean().optional(),
       })
     )
@@ -932,7 +932,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       const useDynamicSelection = config?.useDynamicSymbolSelection ?? false;
-      const configDynamicLimit = config?.dynamicSymbolLimit ?? 50;
+      const configDynamicLimit = config?.dynamicSymbolLimit ?? AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.DEFAULT;
       const dynamicLimit = input.targetCount !== undefined ? Math.max(input.targetCount, configDynamicLimit) : configDynamicLimit;
 
       log('📊 Config loaded', { useDynamicSelection, configDynamicLimit, dynamicLimit, inputTargetCount: input.targetCount });
@@ -1187,7 +1187,7 @@ export const autoTradingRouter = router({
     .input(
       z.object({
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER).default(AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.DEFAULT),
       })
     )
     .query(async ({ input }) => {
@@ -1324,7 +1324,7 @@ export const autoTradingRouter = router({
   getBatchFundingRates: protectedProcedure
     .input(
       z.object({
-        symbols: z.array(z.string()).max(100),
+        symbols: z.array(z.string()).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER),
       })
     )
     .query(async ({ input }) => {

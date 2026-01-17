@@ -10,8 +10,8 @@ export const serializeError = (error: unknown): string => {
   }
   if (error && typeof error === 'object') {
     const obj = error as Record<string, unknown>;
-    if ('message' in obj && typeof obj.message === 'string') {
-      return obj.message;
+    if ('message' in obj && typeof obj['message'] === 'string') {
+      return obj['message'];
     }
     try {
       return JSON.stringify(error);

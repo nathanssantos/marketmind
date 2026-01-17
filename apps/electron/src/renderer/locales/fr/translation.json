@@ -1118,8 +1118,7 @@
       "keptCount": "{{count}} symboles conservés",
       "quickStartTitle": "Démarrage Rapide depuis le Classement",
       "quickStartDescription": "Démarrer les watchers pour les meilleurs symboles par score",
-      "quickStartButton": "Démarrer Top {{count}}",
-      "fundingFiltered": "{{count}} symboles exclus (funding extrême)"
+      "quickStartButton": "Démarrer Top {{count}}"
     }
   },
   "strategyInfo": {

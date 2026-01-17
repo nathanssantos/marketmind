@@ -198,6 +198,56 @@ export const CONTEXT_AGGREGATOR_CONFIG = {
   MAX_NEWS_ARTICLES: 10,
 } as const;
 
+export const AUTO_TRADING_CONFIG = {
+  DYNAMIC_SYMBOL_LIMIT: {
+    MIN: 1,
+    MAX: 100,
+    DEFAULT: 50,
+  },
+  TARGET_COUNT: {
+    MIN: 1,
+    MAX: 100,
+  },
+  LEVERAGE: {
+    MIN: 1,
+    MAX: 125,
+    DEFAULT: 1,
+  },
+  CONCURRENT_POSITIONS: {
+    MIN: 1,
+    MAX: 20,
+    DEFAULT: 3,
+  },
+  PYRAMID_ENTRIES: {
+    MIN: 1,
+    MAX: 10,
+    DEFAULT: 5,
+  },
+  HOLDING_PERIOD_BARS: {
+    MIN: 5,
+    MAX: 100,
+    DEFAULT: 20,
+  },
+  TIGHTEN_AFTER_BARS: {
+    MIN: 1,
+    MAX: 50,
+    DEFAULT: 10,
+  },
+  ADX_THRESHOLD: {
+    MIN: 10,
+    MAX: 50,
+    DEFAULT: 25,
+  },
+  RSI_BOUNDS: {
+    LOWER: { MIN: 20, MAX: 50, DEFAULT: 30 },
+    UPPER: { MIN: 50, MAX: 80, DEFAULT: 70 },
+  },
+  SYMBOL_FETCH_MULTIPLIER: 2,
+  MIN_SYMBOL_FETCH: 100,
+} as const;
+
+export type AutoTradingConfigConstants = typeof AUTO_TRADING_CONFIG;
+
 export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'] as const;
 
 export const FIBONACCI_TARGET_LEVELS = ['auto', '1', '1.272', '1.618', '2', '2.618'] as const;

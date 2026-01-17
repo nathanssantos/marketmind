@@ -1,7 +1,7 @@
 import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, Collapsible, Flex, Grid, Group, HStack, IconButton, Portal, Separator, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import type { MarketType, TimeInterval } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG, type MarketType, type TimeInterval } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { NumberInput } from '@renderer/components/ui/number-input';
@@ -64,7 +64,8 @@ export const WatcherManager = () => {
 
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
-  const { symbolScores, isLoadingScores } = useDynamicSymbolScores(quickStartMarketType, 50);
+  const symbolFetchLimit = Math.max(quickStartCount * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER, AUTO_TRADING_CONFIG.MIN_SYMBOL_FETCH);
+  const { symbolScores, isLoadingScores } = useDynamicSymbolScores(quickStartMarketType, symbolFetchLimit);
 
   const { data: btcTrendStatus } = trpc.autoTrading.getBtcTrendStatus.useQuery(undefined, {
     enabled: config?.useBtcCorrelationFilter === true,
@@ -72,8 +73,8 @@ export const WatcherManager = () => {
   });
 
   const symbolsToCheck = useMemo(
-    () => symbolScores.slice(0, Math.min(quickStartCount * 2, 100)).map((s) => s.symbol),
-    [symbolScores, quickStartCount]
+    () => symbolScores.slice(0, symbolFetchLimit).map((s) => s.symbol),
+    [symbolScores, symbolFetchLimit]
   );
 
   const { data: fundingRates } = trpc.autoTrading.getBatchFundingRates.useQuery(
@@ -84,7 +85,7 @@ export const WatcherManager = () => {
     }
   );
 
-  const { filteredSymbols, fundingFilteredCount } = useMemo(() => {
+  const filteredSymbols = useMemo(() => {
     const extremeSymbols = new Set(
       quickStartMarketType === 'FUTURES' && config?.useFundingFilter && fundingRates
         ? fundingRates.filter((f) => f.isExtreme).map((f) => f.symbol)
@@ -92,22 +93,14 @@ export const WatcherManager = () => {
     );
 
     const result: string[] = [];
-    let filtered = 0;
 
     for (const score of symbolScores) {
       if (result.length >= quickStartCount) break;
-
-      if (extremeSymbols.has(score.symbol)) {
-        filtered++;
-        continue;
-      }
+      if (extremeSymbols.has(score.symbol)) continue;
       result.push(score.symbol);
     }
 
-    return {
-      filteredSymbols: result,
-      fundingFilteredCount: filtered,
-    };
+    return result;
   }, [symbolScores, quickStartCount, fundingRates, config?.useFundingFilter, quickStartMarketType]);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
@@ -178,7 +171,7 @@ export const WatcherManager = () => {
 
   const handleQuickStartFromRankings = async (): Promise<void> => {
     if (!walletId || filteredSymbols.length === 0) return;
-    await startWatchersBulk(filteredSymbols, quickStartTimeframe, undefined, quickStartMarketType);
+    await startWatchersBulk(filteredSymbols, quickStartTimeframe, undefined, quickStartMarketType, quickStartCount);
   };
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
@@ -580,8 +573,8 @@ export const WatcherManager = () => {
                         </Box>
                         <Box flex="0 0 80px">
                           <NumberInput
-                            min={1}
-                            max={50}
+                            min={AUTO_TRADING_CONFIG.TARGET_COUNT.MIN}
+                            max={AUTO_TRADING_CONFIG.TARGET_COUNT.MAX}
                             value={quickStartCount}
                             onChange={(e) => setQuickStartCount(parseInt(e.target.value, 10) || 10)}
                             size="sm"
@@ -602,14 +595,6 @@ export const WatcherManager = () => {
                           {t('tradingProfiles.dynamicSelection.quickStartButton', { count: filteredSymbols.length })}
                         </Button>
                       </Flex>
-                      {fundingFilteredCount > 0 && (
-                        <Text fontSize="xs" color="orange.600" _dark={{ color: 'orange.300' }}>
-                          {t('tradingProfiles.dynamicSelection.fundingFiltered', {
-                            count: fundingFilteredCount,
-                            defaultValue: '{{count}} symbols excluded (extreme funding)',
-                          })}
-                        </Text>
-                      )}
                     </Stack>
                   </Box>
 

@@ -210,7 +210,7 @@ export class OpportunityCostManagerService {
     };
 
     if (significantMovement) {
-      updateData.lastPriceMovementBar = newBarsInTrade;
+      updateData['lastPriceMovementBar'] = newBarsInTrade;
     }
 
     await db

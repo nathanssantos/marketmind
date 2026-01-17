@@ -790,7 +790,7 @@ export class AutoTradingScheduler {
       const result = interpreter.detect(mappedKlines, currentIndex);
 
       if (result.rejection) {
-        const rejectionDirection = result.rejection.details?.direction as string | undefined;
+        const rejectionDirection = result.rejection.details?.['direction'] as string | undefined;
         logBuffer.addRejection({
           setupType: strategy.name,
           direction: rejectionDirection ?? '-',

@@ -1129,8 +1129,7 @@
       "keptCount": "{{count}} símbolos mantenidos",
       "quickStartTitle": "Inicio Rápido desde Rankings",
       "quickStartDescription": "Iniciar watchers para los mejores símbolos por puntuación",
-      "quickStartButton": "Iniciar Top {{count}}",
-      "fundingFiltered": "{{count}} símbolos excluidos (funding extremo)"
+      "quickStartButton": "Iniciar Top {{count}}"
     }
   },
   "strategyInfo": {
