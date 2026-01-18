@@ -5,7 +5,17 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { ABSOLUTE_MINIMUM_KLINES, INTERVAL_MS, TIME_MS, TRADING_CONFIG, UNIT_MS } from '../constants';
+import {
+  ABSOLUTE_MINIMUM_KLINES,
+  AUTO_TRADING_BATCH,
+  AUTO_TRADING_CACHE,
+  AUTO_TRADING_ROTATION,
+  AUTO_TRADING_TIMING,
+  INTERVAL_MS,
+  TIME_MS,
+  TRADING_CONFIG,
+  UNIT_MS,
+} from '../constants';
 import { db } from '../db';
 import {
   activeWatchers as activeWatchersTable,
@@ -39,6 +49,7 @@ import {
 import { calculateRequiredKlines } from '../utils/kline-calculator';
 import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
 import { autoTradingService } from './auto-trading';
+import { createBinanceFuturesClient } from './binance-client';
 import { cooldownService } from './cooldown';
 import {
   getDynamicSymbolRotationService,
@@ -108,8 +119,11 @@ interface ActiveWatcher {
   isManual: boolean;
 }
 
-const CANDLE_CLOSE_SAFETY_BUFFER_MS = 2000;
-const BATCH_SIZE = parseInt(process.env['WATCHER_BATCH_SIZE'] ?? '6', 10);
+const CANDLE_CLOSE_SAFETY_BUFFER_MS = AUTO_TRADING_TIMING.CANDLE_CLOSE_SAFETY_BUFFER_MS;
+const BATCH_SIZE = parseInt(
+  process.env['WATCHER_BATCH_SIZE'] ?? String(AUTO_TRADING_BATCH.WATCHER_BATCH_SIZE),
+  10
+);
 const VERBOSE_BATCH_LOGS = process.env['VERBOSE_BATCH_LOGS'] === 'true';
 
 const yieldToEventLoop = (): Promise<void> =>
@@ -129,11 +143,11 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_TTL_MS = AUTO_TRADING_CACHE.DEFAULT_TTL_MS;
 
-const MIN_ROTATION_ANTICIPATION_MS = 60 * 1000;
-const MAX_ROTATION_ANTICIPATION_MS = 10 * 60 * 1000;
-const MIN_ROTATION_PREPARATION_TIME_MS = 30 * 1000;
+const MIN_ROTATION_ANTICIPATION_MS = AUTO_TRADING_ROTATION.MIN_ANTICIPATION_MS;
+const MAX_ROTATION_ANTICIPATION_MS = AUTO_TRADING_ROTATION.MAX_ANTICIPATION_MS;
+const MIN_ROTATION_PREPARATION_TIME_MS = AUTO_TRADING_ROTATION.MIN_PREPARATION_TIME_MS;
 
 const getRotationAnticipationMs = (interval: string): number => {
   const intervalMs = INTERVAL_MS[interval as Interval] ?? TIME_MS.HOUR;
@@ -173,16 +187,16 @@ export class AutoTradingScheduler {
   private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private fundingRateCache: Map<string, CacheEntry<number>> = new Map();
   private configCache: Map<string, CacheEntry<typeof autoTradingConfig.$inferSelect>> = new Map();
-  private readonly CONFIG_CACHE_TTL_MS = 30_000;
+  private readonly CONFIG_CACHE_TTL_MS = AUTO_TRADING_CACHE.CONFIG_TTL_MS;
   private configCacheMetrics = { hits: 0, misses: 0, preloads: 0 };
-  private readonly FUNDING_CACHE_TTL_MS = 5 * TIME_MS.MINUTE;
+  private readonly FUNDING_CACHE_TTL_MS = AUTO_TRADING_CACHE.FUNDING_RATE_TTL_MS;
 
   private rotationStates: Map<string, WalletRotationState> = new Map();
   private isCheckingRotation: Set<string> = new Set();
   private rotationPendingWatchers = new Map<string, { addedAt: number; targetCandleClose: number }>();
   private recentlyRotatedWatchers = new Map<string, number>();
   private anticipationCheckIntervalId: ReturnType<typeof setInterval> | null = null;
-  private readonly ANTICIPATION_CHECK_INTERVAL_MS = 15 * 1000;
+  private readonly ANTICIPATION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.ANTICIPATION_CHECK_INTERVAL_MS;
 
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
@@ -2123,6 +2137,74 @@ export class AutoTradingScheduler {
                 error: serializeError(slError),
               });
             }
+          }
+
+          const hasStopLossProtection = stopLossOrderId !== null || stopLossAlgoId !== null;
+          if (!hasStopLossProtection && entryOrderId !== null) {
+            log('🚨 CRITICAL: Position opened WITHOUT stop loss protection - closing immediately', {
+              executionId,
+              symbol: watcher.symbol,
+              side: setup.direction,
+              entryPrice: actualEntryPrice,
+              quantity: actualQuantity,
+              marketType: watcher.marketType,
+            });
+
+            try {
+              if (watcher.marketType === 'FUTURES') {
+                const { closePosition } = await import('./binance-futures-client');
+                const client = createBinanceFuturesClient(wallet as Wallet);
+                const positionAmt = setup.direction === 'LONG'
+                  ? actualQuantity.toString()
+                  : (-actualQuantity).toString();
+                await closePosition(client, watcher.symbol, positionAmt);
+              } else {
+                const closeSide = setup.direction === 'LONG' ? 'SELL' : 'BUY';
+                await autoTradingService.executeBinanceOrder(
+                  wallet as Wallet,
+                  {
+                    symbol: watcher.symbol,
+                    side: closeSide,
+                    type: 'MARKET',
+                    quantity: actualQuantity,
+                  },
+                  'SPOT'
+                );
+              }
+              log('✅ Unprotected position closed successfully', {
+                symbol: watcher.symbol,
+                quantity: actualQuantity,
+                marketType: watcher.marketType,
+              });
+            } catch (closeError) {
+              log('🚨 CRITICAL: Failed to close unprotected position - MANUAL INTERVENTION REQUIRED', {
+                executionId,
+                symbol: watcher.symbol,
+                side: setup.direction,
+                quantity: actualQuantity,
+                marketType: watcher.marketType,
+                error: serializeError(closeError),
+              });
+
+              const wsServiceAlert = getWebSocketService();
+              if (wsServiceAlert) {
+                wsServiceAlert.emitRiskAlert(watcher.walletId, {
+                  type: 'ORDER_REJECTED',
+                  level: 'critical',
+                  symbol: watcher.symbol,
+                  message: `CRITICAL: Position ${watcher.symbol} ${setup.direction} has no stop loss and could not be auto-closed. CLOSE MANUALLY!`,
+                  data: {
+                    reason: 'unprotected_position',
+                    side: setup.direction,
+                    quantity: actualQuantity.toString(),
+                    entryPrice: actualEntryPrice.toString(),
+                    marketType: watcher.marketType,
+                  },
+                  timestamp: Date.now(),
+                });
+              }
+            }
+            return;
           }
         } catch (orderError) {
           log('❌ Failed to execute Binance order', {

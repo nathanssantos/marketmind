@@ -19,6 +19,7 @@ describe('BinanceFuturesDataService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetch.mockReset();
     service = new BinanceFuturesDataService();
     service.clearCache();
   });

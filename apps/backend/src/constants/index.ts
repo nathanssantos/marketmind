@@ -87,6 +87,20 @@ export const API_VALIDATION_RECENT_COUNT = KLINE_CONFIG.API_VALIDATION_RECENT_CO
 
 export { ADX_FILTER } from '../utils/filters';
 
+export {
+  AUTO_TRADING,
+  AUTO_TRADING_TIMING,
+  AUTO_TRADING_CACHE,
+  AUTO_TRADING_ROTATION,
+  AUTO_TRADING_BATCH,
+  AUTO_TRADING_API,
+  AUTO_TRADING_KELLY,
+  AUTO_TRADING_VOLATILITY,
+  AUTO_TRADING_LIQUIDATION,
+  AUTO_TRADING_ORDER,
+  AUTO_TRADING_RETRY,
+} from './auto-trading';
+
 export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
 export type PositionSizingConstants = typeof POSITION_SIZING;
 export type ExitCalculatorConstants = typeof EXIT_CALCULATOR;

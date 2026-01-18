@@ -5,31 +5,16 @@ import type {
 } from '@marketmind/indicators';
 import type { FuturesSymbolInfo, FuturesContractType } from '@marketmind/types';
 import { WEBSOCKET_CONFIG } from '../constants';
+import { withRetryFetch } from '../utils/retry';
 import { logger, serializeError } from './logger';
 
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
 const RATE_LIMIT_DELAY = 100;
-const MAX_RETRIES = 3;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-const fetchWithRetry = async (url: string, retries = MAX_RETRIES): Promise<Response> => {
-  for (let i = 0; i < retries; i++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), WEBSOCKET_CONFIG.FETCH_TIMEOUT_MS);
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-      return response;
-    } catch (error) {
-      clearTimeout(timeout);
-      if (i === retries - 1) throw error;
-      const delay = 1000 * Math.pow(2, i);
-      logger.warn({ url, attempt: i + 1, retries, delay }, 'Fetch failed, retrying...');
-      await sleep(delay);
-    }
-  }
-  throw new Error('Max retries exceeded');
+const fetchWithRetry = async (url: string): Promise<Response> => {
+  return withRetryFetch(url, {}, { timeoutMs: WEBSOCKET_CONFIG.FETCH_TIMEOUT_MS });
 };
 
 interface BinanceFundingRateResponse {

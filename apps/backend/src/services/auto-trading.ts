@@ -2,12 +2,13 @@ import { calculateATR } from '@marketmind/indicators';
 import type { MarketType } from '@marketmind/types';
 import { getRoundTripFee, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
-import { VOLATILITY } from '../constants';
+import { AUTO_TRADING_KELLY, AUTO_TRADING_ORDER, AUTO_TRADING_VOLATILITY, VOLATILITY } from '../constants';
 import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatQuantityForBinance, formatPriceForBinance } from '../utils/formatters';
+import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
 import { submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
@@ -158,19 +159,7 @@ export class AutoTradingService {
 
       if (recentKlines.length < 14) return 1.0;
 
-      const mappedKlines = recentKlines.reverse().map((k): import('@marketmind/types').Kline => ({
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-        volume: k.volume,
-        quoteVolume: k.quoteVolume || '0',
-        takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
-        takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
-        trades: k.trades || 0,
-        openTime: k.openTime.getTime(),
-        closeTime: k.closeTime.getTime(),
-      }));
+      const mappedKlines = mapDbKlinesReversed(recentKlines);
 
       const atrValues = calculateATR(mappedKlines, 14);
       if (atrValues.length === 0) return 1.0;
@@ -180,7 +169,7 @@ export class AutoTradingService {
       
       const atrPercent = (lastATR / currentPrice) * 100;
 
-      const REDUCTION_FACTOR = 0.7;
+      const REDUCTION_FACTOR = AUTO_TRADING_VOLATILITY.HIGH_VOLATILITY_REDUCTION_FACTOR;
 
       if (atrPercent > VOLATILITY.HIGH_THRESHOLD) {
         logger.info({
@@ -209,27 +198,27 @@ export class AutoTradingService {
     symbol?: string,
     interval?: string
   ): Promise<number> {
-    const DEFAULT_WIN_RATE = 0.50;
-    const DEFAULT_AVG_RR = 1.5;
-    const FRACTIONAL_KELLY = 0.25;
-    const MIN_TRADES = 20;
+    const DEFAULT_WIN_RATE = AUTO_TRADING_KELLY.DEFAULT_WIN_RATE;
+    const DEFAULT_AVG_RR = AUTO_TRADING_KELLY.DEFAULT_AVG_RR;
+    const FRACTIONAL_KELLY = AUTO_TRADING_KELLY.FRACTIONAL_KELLY;
+    const MIN_TRADES = AUTO_TRADING_KELLY.MIN_TRADES_FOR_STATS;
 
-    let winRate = DEFAULT_WIN_RATE;
-    let avgRR = DEFAULT_AVG_RR;
+    let winRate: number = DEFAULT_WIN_RATE;
+    let avgRR: number = DEFAULT_AVG_RR;
 
     if (strategyId && symbol && interval) {
       try {
         const stats = await this.getStrategyStatistics(strategyId, symbol, interval);
-        
+
         if (stats && stats.totalTrades >= MIN_TRADES) {
           winRate = stats.winRate;
           avgRR = stats.avgRR;
-          
+
           logger.info({
             strategyId,
             symbol,
             interval,
-            winRate: `${(winRate * 100).toFixed(1)  }%`,
+            winRate: `${(winRate * 100).toFixed(1)}%`,
             avgRR: avgRR.toFixed(2),
             trades: stats.totalTrades,
           }, 'Kelly using real strategy statistics');
@@ -368,6 +357,25 @@ export class AutoTradingService {
       const tickSize = filters?.tickSize?.toString();
 
       const formattedQuantity = parseFloat(formatQuantityForBinance(orderParams.quantity, stepSize));
+
+      const minNotional = filters?.minNotional ?? AUTO_TRADING_ORDER.DEFAULT_MIN_NOTIONAL;
+      const MIN_NOTIONAL_BUFFER = AUTO_TRADING_ORDER.MIN_NOTIONAL_BUFFER;
+      const requiredNotional = minNotional * MIN_NOTIONAL_BUFFER;
+      const orderPrice = orderParams.price ?? 0;
+      const estimatedNotional = formattedQuantity * orderPrice;
+
+      if (orderPrice > 0 && estimatedNotional < requiredNotional) {
+        const errorMsg = `Order notional ${estimatedNotional.toFixed(2)} is below minimum ${requiredNotional.toFixed(2)} (minNotional: ${minNotional}, buffer: 10%)`;
+        logger.warn({
+          symbol: orderParams.symbol,
+          quantity: formattedQuantity,
+          price: orderPrice,
+          notional: estimatedNotional,
+          minNotional,
+          requiredNotional,
+        }, errorMsg);
+        throw new Error(errorMsg);
+      }
 
       if (marketType === 'FUTURES') {
         const client = createBinanceFuturesClient(wallet);

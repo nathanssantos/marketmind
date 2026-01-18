@@ -1,14 +1,15 @@
 import type { Interval } from '@marketmind/types';
 import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
-import { ABSOLUTE_MINIMUM_KLINES } from '../constants';
+import { ABSOLUTE_MINIMUM_KLINES, AUTO_TRADING_API, AUTO_TRADING_BATCH } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
+import { withRetryFetch } from '../utils/retry';
 import { logger } from './logger';
 
-const BATCH_SIZE = 1000;
-const RATE_LIMIT_DELAY = 200;
-const GAP_TOLERANCE_MULTIPLIER = 1.5;
+const BATCH_SIZE = AUTO_TRADING_BATCH.KLINE_FETCH_BATCH_SIZE;
+const RATE_LIMIT_DELAY = AUTO_TRADING_API.RATE_LIMIT_DELAY_MS;
+const GAP_TOLERANCE_MULTIPLIER = AUTO_TRADING_API.GAP_TOLERANCE_MULTIPLIER;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -42,7 +43,7 @@ export const backfillHistoricalKlines = async (
   while (currentStartTime < finalEndTime) {
     try {
       const url = `${baseUrl}?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
-      const response = await fetch(url);
+      const response = await withRetryFetch(url);
 
       if (!response.ok) {
         throw new Error(`Binance ${marketType} API error: ${response.status} ${response.statusText}`);
@@ -117,7 +118,7 @@ export const fetchHistoricalKlinesFromAPI = async (
   while (currentStartTime < finalEndTime) {
     try {
       const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
-      const response = await fetch(url);
+      const response = await withRetryFetch(url);
 
       if (!response.ok) {
         throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
@@ -177,7 +178,7 @@ export const fetchFuturesKlinesFromAPI = async (
   while (currentStartTime < finalEndTime) {
     try {
       const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&startTime=${currentStartTime}&limit=${BATCH_SIZE}`;
-      const response = await fetch(url);
+      const response = await withRetryFetch(url);
 
       if (!response.ok) {
         throw new Error(`Binance Futures API error: ${response.status} ${response.statusText}`);

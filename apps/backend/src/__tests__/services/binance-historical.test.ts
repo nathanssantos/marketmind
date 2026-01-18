@@ -147,7 +147,10 @@ describe('BinanceHistorical Service', () => {
       );
 
       expect(result).toBe(1);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('api.binance.com'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('api.binance.com'),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     it('should fetch and insert klines for FUTURES market', async () => {
@@ -174,7 +177,10 @@ describe('BinanceHistorical Service', () => {
       );
 
       expect(result).toBe(1);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('fapi.binance.com'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('fapi.binance.com'),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     it('should throw error on API failure', async () => {
@@ -186,7 +192,7 @@ describe('BinanceHistorical Service', () => {
 
       await expect(
         backfillHistoricalKlines('BTCUSDT', '1h', new Date(1700000000000))
-      ).rejects.toThrow('Binance SPOT API error: 500 Internal Server Error');
+      ).rejects.toThrow('Server error: 500 Internal Server Error');
     });
 
     it('should stop when no more candles are returned', async () => {
@@ -244,7 +250,7 @@ describe('BinanceHistorical Service', () => {
 
       await expect(
         fetchHistoricalKlinesFromAPI('BTCUSDT', '1h', new Date(1700000000000))
-      ).rejects.toThrow('Binance API error');
+      ).rejects.toThrow('Server error: 500 Internal Server Error');
     });
   });
 
@@ -273,7 +279,10 @@ describe('BinanceHistorical Service', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].openTime).toBe(1700000000000);
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('fapi.binance.com'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('fapi.binance.com'),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     it('should throw error on API failure', async () => {
@@ -285,7 +294,7 @@ describe('BinanceHistorical Service', () => {
 
       await expect(
         fetchFuturesKlinesFromAPI('BTCUSDT', '1h', new Date(1700000000000))
-      ).rejects.toThrow('Binance Futures API error');
+      ).rejects.toThrow('Server error: 500');
     });
   });
 

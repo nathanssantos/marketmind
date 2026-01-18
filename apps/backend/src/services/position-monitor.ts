@@ -1,12 +1,13 @@
 import { serializeError } from '../utils/errors';
 import type { PendingOrderAction, PendingOrdersCheckResult } from '@marketmind/logger';
 import { calculateTotalFees } from '@marketmind/types';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { AUTO_TRADING_LIQUIDATION, AUTO_TRADING_TIMING } from '../constants';
 import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache as priceCacheTable, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
-import { formatPrice } from '../utils/formatters';
+import { calculateNotional, calculatePnl, formatPrice, roundToDecimals } from '../utils/formatters';
 import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClient, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
@@ -18,9 +19,9 @@ import { getWebSocketService } from './websocket';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
 
 const LIQUIDATION_THRESHOLDS = {
-  WARNING: 0.50,
-  DANGER: 0.25,
-  CRITICAL: 0.10,
+  WARNING: AUTO_TRADING_LIQUIDATION.WARNING_THRESHOLD,
+  DANGER: AUTO_TRADING_LIQUIDATION.DANGER_THRESHOLD,
+  CRITICAL: AUTO_TRADING_LIQUIDATION.CRITICAL_THRESHOLD,
 } as const;
 
 type LiquidationRiskLevel = 'safe' | 'warning' | 'danger' | 'critical';
@@ -45,7 +46,7 @@ export interface PositionCheckResult {
 
 export class PositionMonitorService {
   private monitoringTimeout: NodeJS.Timeout | null = null;
-  private readonly CHECK_INTERVAL_MS = 5000;
+  private readonly CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.CHECK_INTERVAL_MS;
   private processingExits: Set<string> = new Set();
   private processingGroups: Set<string> = new Set();
 
@@ -515,20 +516,15 @@ export class PositionMonitorService {
       }
 
       const entryPrice = parseFloat(execution.entryPrice);
-      let grossPnl = 0;
-      if (execution.side === 'LONG') {
-        grossPnl = (exitPrice - entryPrice) * quantity;
-      } else {
-        grossPnl = (entryPrice - exitPrice) * quantity;
-      }
+      const grossPnl = calculatePnl(entryPrice, exitPrice, quantity, execution.side);
 
-      const entryValue = entryPrice * quantity;
-      const exitValue = exitPrice * quantity;
+      const entryValue = calculateNotional(entryPrice, quantity);
+      const exitValue = calculateNotional(exitPrice, quantity);
       const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
       const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
-      const pnl = grossPnl - totalFees;
+      const pnl = roundToDecimals(grossPnl - totalFees, 8);
 
-      const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+      const pnlPercent = roundToDecimals(((exitPrice - entryPrice) / entryPrice) * 100, 4);
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
 
       let exitOrderId: number | null = null;
@@ -557,12 +553,11 @@ export class PositionMonitorService {
       }
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
-      const newBalance = currentBalance + pnl;
 
       await db
         .update(wallets)
         .set({
-          currentBalance: newBalance.toString(),
+          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
           updatedAt: new Date(),
         })
         .where(eq(wallets.id, wallet.id));
@@ -571,9 +566,9 @@ export class PositionMonitorService {
         walletId: wallet.id,
         walletType: wallet.walletType,
         pnl,
-        oldBalance: currentBalance,
-        newBalance,
-      }, '[PositionMonitor] Wallet balance updated after position exit');
+        previousBalance: currentBalance,
+        expectedNewBalance: currentBalance + pnl,
+      }, '[PositionMonitor] Wallet balance updated atomically after position exit');
 
       await db
         .update(tradeExecutions)
@@ -591,6 +586,7 @@ export class PositionMonitorService {
         })
         .where(eq(tradeExecutions.id, execution.id));
 
+      const expectedNewBalance = roundToDecimals(currentBalance + pnl, 8);
       logger.info({
         executionId: execution.id,
         symbol: execution.symbol,
@@ -601,7 +597,7 @@ export class PositionMonitorService {
         quantity,
         pnl: pnl.toFixed(2),
         pnlPercent: adjustedPnlPercent.toFixed(2),
-        newBalance: newBalance.toFixed(2),
+        expectedNewBalance: expectedNewBalance.toFixed(2),
         isPaperTrading: isPaperWallet(wallet),
       }, '[PositionMonitor] Position closed automatically');
 
@@ -938,8 +934,8 @@ export class PositionMonitorService {
   }
 
   private lastLiquidationAlerts: Map<string, { level: LiquidationRiskLevel; timestamp: number }> = new Map();
-  private readonly LIQUIDATION_ALERT_COOLDOWN_MS = 60000;
-  private readonly MAX_LIQUIDATION_ALERTS = 200;
+  private readonly LIQUIDATION_ALERT_COOLDOWN_MS = AUTO_TRADING_LIQUIDATION.ALERT_COOLDOWN_MS;
+  private readonly MAX_LIQUIDATION_ALERTS = AUTO_TRADING_LIQUIDATION.MAX_ALERTS_IN_MEMORY;
 
   private cleanupOldLiquidationAlerts(): void {
     const now = Date.now();

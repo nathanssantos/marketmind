@@ -2,6 +2,7 @@ import { calculateDynamicExposure } from '@marketmind/risk';
 import type { MarketType } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { TIME_MS } from '../constants';
+import { withRetryFetch } from '../utils/retry';
 import { logger } from './logger';
 
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
@@ -52,7 +53,7 @@ export class MinNotionalFilterService {
     }
 
     try {
-      const response = await fetch(`${FUTURES_BASE_URL}/fapi/v1/exchangeInfo`);
+      const response = await withRetryFetch(`${FUTURES_BASE_URL}/fapi/v1/exchangeInfo`);
       if (!response.ok) {
         logger.warn({ status: response.status }, '[MinNotionalFilter] Failed to fetch futures exchange info');
         return this.futuresFiltersCache?.data ?? new Map();
@@ -99,7 +100,7 @@ export class MinNotionalFilterService {
     }
 
     try {
-      const response = await fetch(`${SPOT_BASE_URL}/api/v3/exchangeInfo`);
+      const response = await withRetryFetch(`${SPOT_BASE_URL}/api/v3/exchangeInfo`);
       if (!response.ok) {
         logger.warn({ status: response.status }, '[MinNotionalFilter] Failed to fetch spot exchange info');
         return this.spotFiltersCache?.data ?? new Map();

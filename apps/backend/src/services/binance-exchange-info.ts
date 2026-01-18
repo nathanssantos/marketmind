@@ -1,4 +1,5 @@
 import type { MarketType } from '@marketmind/types';
+import { withRetryFetch } from '../utils/retry';
 import { logger } from './logger';
 
 const BINANCE_SPOT_API = 'https://api.binance.com';
@@ -96,7 +97,7 @@ class Ticker24hrCache {
       const url = new URL(`${baseUrl}${endpoint}`);
       url.searchParams.set('symbols', JSON.stringify(symbols));
 
-      const response = await fetch(url.toString());
+      const response = await withRetryFetch(url.toString());
 
       if (!response.ok) {
         logger.warn({ status: response.status }, 'Failed to fetch 24hr tickers');
@@ -135,7 +136,7 @@ class Ticker24hrCache {
     const endpoint = marketType === 'FUTURES' ? '/fapi/v1/ticker/24hr' : '/api/v3/ticker/24hr';
 
     try {
-      const response = await fetch(`${baseUrl}${endpoint}`);
+      const response = await withRetryFetch(`${baseUrl}${endpoint}`);
 
       if (!response.ok) {
         logger.warn({ status: response.status }, 'Failed to fetch all 24hr tickers');
@@ -310,7 +311,10 @@ export const getAvailableSymbols = async (marketType: MarketType = 'SPOT'): Prom
   const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
   const endpoint = marketType === 'FUTURES' ? '/fapi/v1/exchangeInfo' : '/api/v3/exchangeInfo';
 
-  const response = await fetch(`${baseUrl}${endpoint}`);
+  const response = await withRetryFetch(`${baseUrl}${endpoint}`, {}, {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch exchange info: ${response.statusText}`);

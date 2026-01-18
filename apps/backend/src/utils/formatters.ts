@@ -1,6 +1,26 @@
 export const formatPrice = (price: number): string =>
   price >= 1 ? price.toFixed(2) : price.toFixed(6);
 
+export const roundToDecimals = (value: number, decimals: number = 8): number => {
+  if (!Number.isFinite(value)) return 0;
+  const multiplier = Math.pow(10, decimals);
+  return Math.round(value * multiplier) / multiplier;
+};
+
+export const calculatePnl = (
+  entryPrice: number,
+  exitPrice: number,
+  quantity: number,
+  side: 'LONG' | 'SHORT'
+): number => {
+  const priceDiff = roundToDecimals(exitPrice - entryPrice, 8);
+  const grossPnl = roundToDecimals(priceDiff * quantity, 8);
+  return side === 'LONG' ? grossPnl : -grossPnl;
+};
+
+export const calculateNotional = (price: number, quantity: number): number =>
+  roundToDecimals(price * quantity, 8);
+
 export const formatNumberForBinance = (value: number, precision: number = 8): string => {
   if (value === 0) return '0';
   if (!Number.isFinite(value)) return '0';
