@@ -119,7 +119,7 @@ class FundingRateService {
 
         const fundingPayment = calculateFundingPayment(
           positionValue,
-          fundingRate * 100,
+          fundingRate,
           position.side
         );
 
