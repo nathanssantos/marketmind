@@ -1697,10 +1697,22 @@ export class AutoTradingScheduler {
               marginType: configMarginType,
             });
           } catch (leverageError) {
-            log('❌ Failed to configure leverage/margin, aborting entry', {
-              error: serializeError(leverageError),
-            });
-            return;
+            const errorMsg = serializeError(leverageError);
+            const isBenignError = errorMsg.includes('No need to change') ||
+              errorMsg.includes('leverage not changed') ||
+              errorMsg.includes('already set');
+
+            if (isBenignError) {
+              log('⚙️ Futures leverage/margin already configured (skipping)', {
+                symbol: watcher.symbol,
+                message: errorMsg,
+              });
+            } else {
+              log('❌ Failed to configure leverage/margin, aborting entry', {
+                error: errorMsg,
+              });
+              return;
+            }
           }
         }
 
@@ -1736,7 +1748,8 @@ export class AutoTradingScheduler {
               quantity: adjustedQuantity,
               price: useLimit ? setup.limitEntryPrice : undefined,
               timeInForce: useLimit ? 'GTC' : undefined,
-            }
+            },
+            watcher.marketType
           );
 
           entryOrderId = orderResult.orderId;
