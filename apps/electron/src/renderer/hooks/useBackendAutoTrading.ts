@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { CAPITAL_RULES } from '@marketmind/types';
 import { QUERY_CONFIG } from '@shared/constants';
+import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
 
 export const useBackendAutoTrading = (walletId: string) => {
@@ -316,5 +317,49 @@ export const useTriggerRotation = (walletId: string) => {
     triggerRotation: () => mutation.mutateAsync({ walletId }),
     isTriggeringRotation: mutation.isPending,
     triggerRotationError: mutation.error,
+  };
+};
+
+export interface CapitalLimits {
+  walletBalance: number;
+  leverage: number;
+  exposureMultiplier: number;
+  availableCapital: number;
+  maxAffordableWatchers: number;
+  capitalPerWatcher: number;
+  maxCapitalPerPosition: number;
+}
+
+export const useCapitalLimits = (
+  walletId: string,
+  marketType: 'SPOT' | 'FUTURES'
+) => {
+  const { data, isLoading, error, refetch } = trpc.autoTrading.getCapitalLimits.useQuery(
+    { walletId, marketType },
+    { enabled: !!walletId, staleTime: 30000 }
+  );
+
+  const capitalLimits: CapitalLimits | null = data ? {
+    walletBalance: data.walletBalance,
+    leverage: data.leverage,
+    exposureMultiplier: data.exposureMultiplier,
+    availableCapital: data.availableCapital,
+    maxAffordableWatchers: data.maxAffordableWatchers,
+    capitalPerWatcher: data.capitalPerWatcher,
+    maxCapitalPerPosition: data.maxCapitalPerPosition,
+  } : null;
+
+  const formatCapitalTooltip = (): string => {
+    if (!capitalLimits) return '';
+    const { walletBalance, leverage, exposureMultiplier, maxCapitalPerPosition } = capitalLimits;
+    return `$${walletBalance.toFixed(2)} × ${leverage}x × ${exposureMultiplier}x | Max/pos: $${maxCapitalPerPosition.toFixed(2)} (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO} rule)`;
+  };
+
+  return {
+    capitalLimits,
+    isLoadingCapitalLimits: isLoading,
+    capitalLimitsError: error,
+    refetchCapitalLimits: refetch,
+    formatCapitalTooltip,
   };
 };

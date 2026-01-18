@@ -1,4 +1,3 @@
-import { serializeError } from '../utils/errors';
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
 import type { FibonacciProjectionData, Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
@@ -6,9 +5,11 @@ import { and, desc, eq } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
-import { autoTradingConfig, klines, priceCache, setupDetections, tradeExecutions } from '../db/schema';
+import { autoTradingConfig, klines, priceCache, setupDetections, tradeExecutions, wallets } from '../db/schema';
+import { serializeError } from '../utils/errors';
 import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
+import { updateStopLossOrder } from './protection-orders';
 import {
     calculateProfitPercent,
     computeTrailingStopCore,
@@ -564,10 +565,35 @@ export class TrailingStopService {
     newStopLoss: number,
     oldStopLoss: number | null
   ): Promise<void> {
+    let newAlgoId: number | null = null;
+
+    if (execution.marketType === 'FUTURES' && execution.stopLossAlgoId && execution.stopLossIsAlgo) {
+      try {
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, execution.walletId)).limit(1);
+        
+        if (wallet && wallet.walletType === 'live') {
+          const result = await updateStopLossOrder({
+            wallet,
+            symbol: execution.symbol,
+            side: execution.side as 'LONG' | 'SHORT',
+            quantity: parseFloat(execution.quantity),
+            triggerPrice: newStopLoss,
+            marketType: 'FUTURES',
+            currentAlgoId: execution.stopLossAlgoId,
+          });
+          newAlgoId = result.algoId ?? null;
+          logger.info({ algoId: newAlgoId, executionId: execution.id }, '[TrailingStop] SL order updated via protection-orders service');
+        }
+      } catch (error) {
+        logger.error({ error: serializeError(error), executionId: execution.id }, '[TrailingStop] Failed to update SL order on Binance');
+      }
+    }
+
     await db
       .update(tradeExecutions)
       .set({
         stopLoss: newStopLoss.toString(),
+        ...(newAlgoId && { stopLossAlgoId: newAlgoId }),
         updatedAt: new Date(),
       })
       .where(eq(tradeExecutions.id, execution.id));

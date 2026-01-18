@@ -6,7 +6,7 @@ import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Switch } from '@renderer/components/ui/switch';
-import { useBackendAutoTrading, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
+import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
@@ -65,10 +65,7 @@ export const WatcherManager = () => {
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
 
-  const { data: capitalLimits } = trpc.autoTrading.getCapitalLimits.useQuery(
-    { walletId, marketType: quickStartMarketType },
-    { enabled: !!walletId, staleTime: 30000 }
-  );
+  const { capitalLimits, formatCapitalTooltip, isLoadingCapitalLimits } = useCapitalLimits(walletId, quickStartMarketType);
 
   const {
     filteredSymbols: quickStartSymbols,
@@ -76,8 +73,9 @@ export const WatcherManager = () => {
     isLoadingFiltered,
   } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, quickStartCount);
 
-  const maxAffordableWatchers = filteredMaxAffordable || capitalLimits?.maxAffordableWatchers || AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
+  const maxAffordableWatchers = capitalLimits?.maxAffordableWatchers ?? filteredMaxAffordable ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
   const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
+  const isLoadingMax = isLoadingCapitalLimits || isLoadingFiltered;
 
   useEffect(() => {
     if (maxAffordableWatchers > 0) setQuickStartCount(Math.min(effectiveMax, quickStartCount || effectiveMax));
@@ -585,8 +583,8 @@ export const WatcherManager = () => {
                               px={3}
                             />
                           </Box>
-                          <Text fontSize="xs" color="fg.muted" whiteSpace="nowrap" title={capitalLimits ? `$${capitalLimits.walletBalance.toFixed(2)} × ${capitalLimits.leverage}x × ${capitalLimits.exposureMultiplier}x / $${capitalLimits.minNotional * 1.1}` : ''}>
-                            / {effectiveMax} max
+                          <Text fontSize="xs" color="fg.muted" whiteSpace="nowrap" title={formatCapitalTooltip()}>
+                            / {isLoadingMax ? '...' : effectiveMax} max
                           </Text>
                         </Flex>
                         <Text fontSize="sm" color="fg.muted" flex={1}>

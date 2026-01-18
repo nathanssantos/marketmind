@@ -1,17 +1,18 @@
-import { USDMClient } from 'binance';
-import { decryptApiKey } from './encryption';
-import type { Wallet } from '../db/schema';
 import type {
-  FuturesPosition,
-  FuturesAccount,
-  FuturesLeverage,
-  MarginType,
-  FuturesOrder,
+    FuturesAccount,
+    FuturesLeverage,
+    FuturesOrder,
+    FuturesPosition,
+    MarginType,
 } from '@marketmind/types';
+import { USDMClient } from 'binance';
+import type { Wallet } from '../db/schema';
+import { formatQuantityForBinance } from '../utils/formatters';
+import { getWalletType, isPaperWallet, type WalletType } from './binance-client';
+import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
-import { isPaperWallet, getWalletType, type WalletType } from './binance-client';
 
-export { isPaperWallet, getWalletType, type WalletType };
+export { getWalletType, isPaperWallet, type WalletType };
 
 export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
   const walletType = getWalletType(wallet);
@@ -333,16 +334,18 @@ export async function cancelAllFuturesOrders(
 export async function closePosition(
   client: USDMClient,
   symbol: string,
-  positionAmt: string
+  positionAmt: string,
+  stepSize?: string
 ): Promise<FuturesOrder> {
   const quantity = Math.abs(parseFloat(positionAmt));
   const side = parseFloat(positionAmt) > 0 ? 'SELL' : 'BUY';
+  const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
 
   return submitFuturesOrder(client, {
     symbol,
     side,
     type: 'MARKET',
-    quantity: quantity.toString(),
+    quantity: formattedQuantity,
     reduceOnly: true,
   });
 }

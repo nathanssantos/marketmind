@@ -7,6 +7,7 @@ import { feesRouter } from '../routers/fees';
 import { futuresTradingRouter } from '../routers/futures-trading';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
+import { orderSyncRouter } from '../routers/order-sync';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { tradingRouter } from '../routers/trading';
@@ -29,6 +30,7 @@ export const appRouter = router({
   backtest: backtestRouter,
   tradingProfiles: tradingProfilesRouter,
   apiKey: apiKeyRouter,
+  orderSync: orderSyncRouter,
 });
 
 export type AppRouter = typeof appRouter;

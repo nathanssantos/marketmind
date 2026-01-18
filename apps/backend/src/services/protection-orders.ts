@@ -1,0 +1,201 @@
+import type { MarketType } from '@marketmind/types';
+import type { Wallet } from '../db/schema';
+import { serializeError } from '../utils/errors';
+import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
+import { createBinanceClient } from './binance-client';
+import { cancelFuturesAlgoOrder, createBinanceFuturesClient, submitFuturesAlgoOrder } from './binance-futures-client';
+import { logger } from './logger';
+import { getMinNotionalFilterService } from './min-notional-filter';
+
+export interface ProtectionOrderParams {
+  wallet: Wallet;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  quantity: number;
+  triggerPrice: number;
+  marketType: MarketType;
+}
+
+export interface UpdateProtectionOrderParams extends ProtectionOrderParams {
+  currentAlgoId?: number | null;
+  currentOrderId?: number | null;
+}
+
+export interface ProtectionOrderResult {
+  algoId?: number | null;
+  orderId?: number | null;
+  isAlgoOrder: boolean;
+}
+
+export interface CancelProtectionOrderParams {
+  wallet: Wallet;
+  symbol: string;
+  marketType: MarketType;
+  algoId?: number | null;
+  orderId?: number | null;
+}
+
+async function getSymbolFilters(symbol: string, marketType: MarketType) {
+  const minNotionalFilter = getMinNotionalFilterService();
+  const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
+  const filters = symbolFilters.get(symbol);
+  return {
+    stepSize: filters?.stepSize?.toString(),
+    tickSize: filters?.tickSize?.toString(),
+  };
+}
+
+export async function cancelProtectionOrder(params: CancelProtectionOrderParams): Promise<boolean> {
+  const { wallet, symbol, marketType, algoId, orderId } = params;
+
+  if (marketType === 'FUTURES') {
+    if (!algoId) return false;
+
+    try {
+      const client = createBinanceFuturesClient(wallet);
+      await cancelFuturesAlgoOrder(client, algoId);
+      logger.info({ algoId, symbol }, '[ProtectionOrders] Cancelled futures algo order');
+      return true;
+    } catch (error) {
+      logger.warn({ algoId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel futures algo order');
+      return false;
+    }
+  }
+
+  if (!orderId) return false;
+
+  try {
+    const client = createBinanceClient(wallet);
+    await client.cancelOrder({ symbol, orderId });
+    logger.info({ orderId, symbol }, '[ProtectionOrders] Cancelled spot order');
+    return true;
+  } catch (error) {
+    logger.warn({ orderId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel spot order');
+    return false;
+  }
+}
+
+export async function createStopLossOrder(params: ProtectionOrderParams): Promise<ProtectionOrderResult> {
+  const { wallet, symbol, side, quantity, triggerPrice, marketType } = params;
+  const closeSide = side === 'LONG' ? 'SELL' : 'BUY';
+  const { stepSize, tickSize } = await getSymbolFilters(symbol, marketType);
+
+  if (marketType === 'FUTURES') {
+    const client = createBinanceFuturesClient(wallet);
+    const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
+    const formattedPrice = formatPriceForBinance(triggerPrice, tickSize);
+
+    const order = await submitFuturesAlgoOrder(client, {
+      symbol,
+      side: closeSide,
+      type: 'STOP_MARKET',
+      triggerPrice: formattedPrice,
+      quantity: formattedQuantity,
+      reduceOnly: true,
+      workingType: 'CONTRACT_PRICE',
+    });
+
+    logger.info({ algoId: order.algoId, symbol, triggerPrice: formattedPrice }, '[ProtectionOrders] Created futures SL algo order');
+    return { algoId: order.algoId, isAlgoOrder: true };
+  }
+
+  const client = createBinanceClient(wallet);
+  const order = await client.submitNewOrder({
+    symbol,
+    side: closeSide,
+    type: 'STOP_LOSS_LIMIT',
+    stopPrice: triggerPrice,
+    price: triggerPrice,
+    quantity,
+    timeInForce: 'GTC',
+  });
+
+  const result = order as { orderId: number };
+  logger.info({ orderId: result.orderId, symbol, stopPrice: triggerPrice }, '[ProtectionOrders] Created spot SL order');
+  return { orderId: result.orderId, isAlgoOrder: false };
+}
+
+export async function createTakeProfitOrder(params: ProtectionOrderParams): Promise<ProtectionOrderResult> {
+  const { wallet, symbol, side, quantity, triggerPrice, marketType } = params;
+  const closeSide = side === 'LONG' ? 'SELL' : 'BUY';
+  const { stepSize, tickSize } = await getSymbolFilters(symbol, marketType);
+
+  if (marketType === 'FUTURES') {
+    const client = createBinanceFuturesClient(wallet);
+    const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
+    const formattedPrice = formatPriceForBinance(triggerPrice, tickSize);
+
+    const order = await submitFuturesAlgoOrder(client, {
+      symbol,
+      side: closeSide,
+      type: 'TAKE_PROFIT_MARKET',
+      triggerPrice: formattedPrice,
+      quantity: formattedQuantity,
+      reduceOnly: true,
+      workingType: 'CONTRACT_PRICE',
+    });
+
+    logger.info({ algoId: order.algoId, symbol, triggerPrice: formattedPrice }, '[ProtectionOrders] Created futures TP algo order');
+    return { algoId: order.algoId, isAlgoOrder: true };
+  }
+
+  const client = createBinanceClient(wallet);
+  const order = await client.submitNewOrder({
+    symbol,
+    side: closeSide,
+    type: 'TAKE_PROFIT_LIMIT',
+    stopPrice: triggerPrice,
+    price: triggerPrice,
+    quantity,
+    timeInForce: 'GTC',
+  });
+
+  const result = order as { orderId: number };
+  logger.info({ orderId: result.orderId, symbol, stopPrice: triggerPrice }, '[ProtectionOrders] Created spot TP order');
+  return { orderId: result.orderId, isAlgoOrder: false };
+}
+
+export async function updateStopLossOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {
+  const { currentAlgoId, currentOrderId, ...createParams } = params;
+
+  await cancelProtectionOrder({
+    wallet: params.wallet,
+    symbol: params.symbol,
+    marketType: params.marketType,
+    algoId: currentAlgoId,
+    orderId: currentOrderId,
+  });
+
+  return createStopLossOrder(createParams);
+}
+
+export async function updateTakeProfitOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {
+  const { currentAlgoId, currentOrderId, ...createParams } = params;
+
+  await cancelProtectionOrder({
+    wallet: params.wallet,
+    symbol: params.symbol,
+    marketType: params.marketType,
+    algoId: currentAlgoId,
+    orderId: currentOrderId,
+  });
+
+  return createTakeProfitOrder(createParams);
+}
+
+export async function cancelAllProtectionOrders(params: {
+  wallet: Wallet;
+  symbol: string;
+  marketType: MarketType;
+  stopLossAlgoId?: number | null;
+  stopLossOrderId?: number | null;
+  takeProfitAlgoId?: number | null;
+  takeProfitOrderId?: number | null;
+}): Promise<void> {
+  const { wallet, symbol, marketType, stopLossAlgoId, stopLossOrderId, takeProfitAlgoId, takeProfitOrderId } = params;
+
+  await Promise.all([
+    cancelProtectionOrder({ wallet, symbol, marketType, algoId: stopLossAlgoId, orderId: stopLossOrderId }),
+    cancelProtectionOrder({ wallet, symbol, marketType, algoId: takeProfitAlgoId, orderId: takeProfitOrderId }),
+  ]);
+}

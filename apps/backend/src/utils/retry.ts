@@ -63,7 +63,8 @@ const isRetryableError = (
   retryablePatterns: string[] = BINANCE_RETRYABLE_ERRORS,
   nonRetryablePatterns: string[] = BINANCE_NON_RETRYABLE_ERRORS
 ): boolean => {
-  const errorString = error.message + (error.cause ? String(error.cause) : '');
+  const cause = 'cause' in error ? String(error.cause) : '';
+  const errorString = error.message + cause;
 
   for (const pattern of nonRetryablePatterns) {
     if (errorString.includes(pattern)) return false;
@@ -164,4 +165,5 @@ export const withRetryFetch = async (
   }, retryOptions);
 };
 
-export { BINANCE_RETRYABLE_ERRORS, BINANCE_NON_RETRYABLE_ERRORS };
+export { BINANCE_NON_RETRYABLE_ERRORS, BINANCE_RETRYABLE_ERRORS };
+

@@ -1,5 +1,6 @@
 import { colorize, createTable } from '@marketmind/logger';
-import { AUTO_TRADING_CONFIG, FIBONACCI_TARGET_LEVELS, TRADING_DEFAULTS } from '@marketmind/types';
+import { calculateCapitalLimits } from '@marketmind/risk';
+import { AUTO_TRADING_CONFIG, CAPITAL_RULES, FIBONACCI_TARGET_LEVELS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -123,7 +124,6 @@ export const autoTradingRouter = router({
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
-        dynamicSymbolLimit: z.number().min(AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.MIN).max(AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.MAX).optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
         enableAutoRotation: z.boolean().optional(),
@@ -206,8 +206,6 @@ export const autoTradingRouter = router({
         {updateData.fibonacciTargetLevel = input.fibonacciTargetLevel;}
       if (input.useDynamicSymbolSelection !== undefined)
         {updateData.useDynamicSymbolSelection = input.useDynamicSymbolSelection;}
-      if (input.dynamicSymbolLimit !== undefined)
-        {updateData.dynamicSymbolLimit = input.dynamicSymbolLimit;}
       if (input.dynamicSymbolRotationInterval !== undefined)
         {updateData.dynamicSymbolRotationInterval = input.dynamicSymbolRotationInterval;}
       if (input.dynamicSymbolExcluded !== undefined)
@@ -915,7 +913,6 @@ export const autoTradingRouter = router({
       const [config] = await ctx.db
         .select({
           useDynamicSymbolSelection: autoTradingConfig.useDynamicSymbolSelection,
-          dynamicSymbolLimit: autoTradingConfig.dynamicSymbolLimit,
           dynamicSymbolExcluded: autoTradingConfig.dynamicSymbolExcluded,
           dynamicSymbolRotationInterval: autoTradingConfig.dynamicSymbolRotationInterval,
           enableAutoRotation: autoTradingConfig.enableAutoRotation,
@@ -932,10 +929,9 @@ export const autoTradingRouter = router({
         .limit(1);
 
       const useDynamicSelection = config?.useDynamicSymbolSelection ?? false;
-      const configDynamicLimit = config?.dynamicSymbolLimit ?? AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.DEFAULT;
-      const dynamicLimit = input.targetCount !== undefined ? Math.max(input.targetCount, configDynamicLimit) : configDynamicLimit;
+      const maxWatcherLimit = AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
 
-      log('📊 Config loaded', { useDynamicSelection, configDynamicLimit, dynamicLimit, inputTargetCount: input.targetCount });
+      log('📊 Config loaded', { useDynamicSelection, maxWatcherLimit, inputTargetCount: input.targetCount });
 
       const existingWatchers = await ctx.db
         .select({ symbol: activeWatchers.symbol })
@@ -949,19 +945,19 @@ export const autoTradingRouter = router({
 
       const existingSymbols = new Set(existingWatchers.map(w => w.symbol));
       const existingCount = existingSymbols.size;
-      const availableSlots = Math.max(0, dynamicLimit - existingCount);
+      const availableSlots = Math.max(0, maxWatcherLimit - existingCount);
       const effectiveTargetCount = Math.min(targetCount, availableSlots);
 
       log('📊 Watcher limits', {
         existingCount,
-        dynamicLimit,
+        maxWatcherLimit,
         availableSlots,
         requestedTarget: targetCount,
         effectiveTargetCount,
       });
 
       if (availableSlots === 0) {
-        log('⚠️ No available slots for new watchers', { existingCount, dynamicLimit });
+        log('⚠️ No available slots for new watchers', { existingCount, maxWatcherLimit });
         return {
           results: [],
           successCount: 0,
@@ -972,8 +968,8 @@ export const autoTradingRouter = router({
           targetCount,
           targetMet: false,
           existingCount,
-          dynamicLimit,
-          message: `Limit reached: ${existingCount}/${dynamicLimit} watchers already active`,
+          maxWatcherLimit,
+          message: `Limit reached: ${existingCount}/${maxWatcherLimit} watchers already active`,
         };
       }
 
@@ -986,7 +982,7 @@ export const autoTradingRouter = router({
         {
           walletBalance,
           leverage,
-          targetWatchersCount: dynamicLimit,
+          targetWatchersCount: effectiveTargetCount,
           exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
         },
         input.marketType
@@ -1095,7 +1091,7 @@ export const autoTradingRouter = router({
           {
             walletBalance,
             leverage,
-            targetWatchersCount: dynamicLimit,
+            targetWatchersCount: effectiveTargetCount,
             exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
           },
           input.marketType
@@ -1130,7 +1126,7 @@ export const autoTradingRouter = router({
         capitalLimitedTarget,
         maxAffordableWatchers: capitalFilterResult.maxAffordableWatchers,
         existingCount,
-        dynamicLimit,
+        maxWatcherLimit,
         targetMet,
         fromRanking: fromRankingCount,
         skippedInsufficientKlines: skippedKlinesCount,
@@ -1143,7 +1139,7 @@ export const autoTradingRouter = router({
           ctx.user.id,
           {
             useDynamicSymbolSelection: true,
-            dynamicSymbolLimit: capitalLimitedTarget,
+            targetWatcherCount: capitalLimitedTarget,
             dynamicSymbolExcluded: config?.dynamicSymbolExcluded ?? null,
             marketType: input.marketType,
             interval: input.interval,
@@ -1166,7 +1162,7 @@ export const autoTradingRouter = router({
         targetCount,
         effectiveTargetCount,
         existingCount,
-        dynamicLimit,
+        maxWatcherLimit,
         targetMet,
       };
     }),
@@ -1190,7 +1186,7 @@ export const autoTradingRouter = router({
     .input(
       z.object({
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
-        limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER).default(AUTO_TRADING_CONFIG.DYNAMIC_SYMBOL_LIMIT.DEFAULT),
+        limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * AUTO_TRADING_CONFIG.SYMBOL_FETCH_MULTIPLIER).default(AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT),
       })
     )
     .query(async ({ input }) => {
@@ -1319,32 +1315,39 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
-      const exposureMultiplier = TRADING_DEFAULTS.EXPOSURE_MULTIPLIER;
+
+      const limits = calculateCapitalLimits({
+        walletBalance,
+        leverage,
+        marketType: input.marketType,
+      });
 
       const minNotionalFilter = getMinNotionalFilterService();
-      const availableCapital = minNotionalFilter.calculateAvailableCapital(walletBalance, leverage);
-      const defaultMinNotional = input.marketType === 'FUTURES' ? 5 : 10;
-      const maxAffordableWatchers = minNotionalFilter.calculateMaxAffordableWatchers(
-        availableCapital,
-        exposureMultiplier,
-        defaultMinNotional
+      const capitalPerWatcher = minNotionalFilter.getCapitalPerWatcher(
+        limits.availableCapital,
+        limits.maxAffordableWatchers,
+        TRADING_DEFAULTS.EXPOSURE_MULTIPLIER
       );
 
       logApiTable('getCapitalLimits', [
         ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
         ['Leverage', `${leverage}x`],
-        ['Exposure Multiplier', `${exposureMultiplier}x`],
-        ['Available Capital', `$${availableCapital.toFixed(2)}`],
-        ['Max Affordable Watchers', maxAffordableWatchers],
+        ['Exposure Multiplier', `${TRADING_DEFAULTS.EXPOSURE_MULTIPLIER}x`],
+        ['Available Capital', `$${limits.availableCapital.toFixed(2)}`],
+        [`Max Capital/Position (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO})`, `$${limits.maxCapitalPerPosition.toFixed(2)}`],
+        ['Effective Min Required', `$${limits.effectiveMinRequired.toFixed(2)}`],
+        ['Capital Per Watcher', `$${capitalPerWatcher.toFixed(2)}`],
+        ['Max Affordable Watchers', limits.maxAffordableWatchers],
       ]);
 
       return {
         walletBalance,
         leverage,
-        exposureMultiplier,
-        availableCapital,
-        maxAffordableWatchers,
-        minNotional: defaultMinNotional,
+        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+        availableCapital: limits.availableCapital,
+        maxAffordableWatchers: limits.maxAffordableWatchers,
+        capitalPerWatcher,
+        maxCapitalPerPosition: limits.maxCapitalPerPosition,
       };
     }),
 
@@ -1386,11 +1389,14 @@ export const autoTradingRouter = router({
         });
       }
 
+      const activeCount = autoTradingScheduler.getDynamicWatcherCount(input.walletId);
+      const targetCount = activeCount > 0 ? activeCount : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
+
       const result = await autoTradingScheduler.triggerManualRotation(
         input.walletId,
         ctx.user.id,
         {
-          dynamicSymbolLimit: transformedConfig.dynamicSymbolLimit,
+          targetWatcherCount: targetCount,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
           marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
           interval: config.dynamicSymbolRotationInterval,
@@ -1566,15 +1572,22 @@ export const autoTradingRouter = router({
 
           const exitPricesBySymbol = new Map<string, string>();
 
+          const minNotionalFilter = getMinNotionalFilterService();
+          const symbolFilters = await minNotionalFilter.getSymbolFilters('FUTURES');
+
           const exchangePositions = await getPositions(client);
           for (const position of exchangePositions) {
             if (parseFloat(position.positionAmt) === 0) continue;
 
             try {
+              const filters = symbolFilters.get(position.symbol);
+              const stepSize = filters?.stepSize?.toString();
+
               const closeResult = await closePosition(
                 client,
                 position.symbol,
-                position.positionAmt
+                position.positionAmt,
+                stepSize
               );
               exitPricesBySymbol.set(position.symbol, closeResult.avgPrice);
               result.positionsClosed++;

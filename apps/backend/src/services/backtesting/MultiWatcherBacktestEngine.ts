@@ -604,7 +604,16 @@ export class MultiWatcherBacktestEngine {
       return;
     }
 
-    const effectiveTakeProfit = this.getEffectiveTakeProfit(event.setup);
+    const effectiveTakeProfitResult = this.getEffectiveTakeProfit(event.setup);
+
+    if (effectiveTakeProfitResult.rejected) {
+      watcher.stats.tradesSkipped++;
+      const reasonKey = effectiveTakeProfitResult.reason ?? 'fibonacci-unavailable';
+      watcher.stats.skippedReasons[reasonKey] = (watcher.stats.skippedReasons[reasonKey] ?? 0) + 1;
+      return;
+    }
+
+    const effectiveTakeProfit = effectiveTakeProfitResult.takeProfit;
 
     let atr: number | undefined;
     if (this.config.useTrailingStop && event.klineIndex > 14) {
@@ -1116,23 +1125,48 @@ export class MultiWatcherBacktestEngine {
     return parseInt(match[1]) * unitMs;
   }
 
-  private getEffectiveTakeProfit(setup: TradingSetup): number | undefined {
-    let effectiveTakeProfit = setup.takeProfit;
-
-    if (this.config.tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
-      const fibTarget = this.getFibonacciTargetPrice(setup.fibonacciProjection, setup.direction, setup.entryPrice);
-      if (fibTarget !== null) {
-        const isValidTarget = setup.direction === 'LONG'
-          ? fibTarget > setup.entryPrice
-          : fibTarget < setup.entryPrice;
-
-        if (isValidTarget) {
-          effectiveTakeProfit = fibTarget;
-        }
+  private getEffectiveTakeProfit(setup: TradingSetup): { takeProfit: number | undefined; rejected: boolean; reason?: string } {
+    if (this.config.tpCalculationMode === 'fibonacci') {
+      if (!setup.fibonacciProjection) {
+        return {
+          takeProfit: undefined,
+          rejected: true,
+          reason: 'no-trend-structure',
+        };
       }
+
+      const fibTarget = this.getFibonacciTargetPrice(setup.fibonacciProjection, setup.direction, setup.entryPrice);
+
+      if (fibTarget === null) {
+        return {
+          takeProfit: undefined,
+          rejected: true,
+          reason: 'fibonacci-invalid',
+        };
+      }
+
+      const isValidTarget = setup.direction === 'LONG'
+        ? fibTarget > setup.entryPrice
+        : fibTarget < setup.entryPrice;
+
+      if (!isValidTarget) {
+        return {
+          takeProfit: undefined,
+          rejected: true,
+          reason: 'fibonacci-wrong-direction',
+        };
+      }
+
+      return {
+        takeProfit: fibTarget,
+        rejected: false,
+      };
     }
 
-    return effectiveTakeProfit;
+    return {
+      takeProfit: setup.takeProfit,
+      rejected: false,
+    };
   }
 
   private getFibonacciTargetPrice(

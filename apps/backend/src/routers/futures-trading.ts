@@ -1,26 +1,27 @@
+import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { TRADING_CONFIG } from '../constants';
 import { orders, positions } from '../db/schema';
-import { walletQueries } from '../services/database/walletQueries';
 import {
-  createBinanceFuturesClient,
-  isPaperWallet,
-  setLeverage,
-  setMarginType,
-  getPositions as getFuturesPositions,
-  getPosition,
-  submitFuturesOrder,
-  cancelFuturesOrder,
-  closePosition as closeExchangePosition,
-  getOpenOrders,
-  getSymbolLeverageBrackets,
+    cancelFuturesOrder,
+    closePosition as closeExchangePosition,
+    createBinanceFuturesClient,
+    getPositions as getFuturesPositions,
+    getOpenOrders,
+    getPosition,
+    getSymbolLeverageBrackets,
+    isPaperWallet,
+    setLeverage,
+    setMarginType,
+    submitFuturesOrder,
 } from '../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
+import { walletQueries } from '../services/database/walletQueries';
 import { logger } from '../services/logger';
+import { getMinNotionalFilterService } from '../services/min-notional-filter';
 import { protectedProcedure, router } from '../trpc';
-import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
-import { TRADING_CONFIG } from '../constants';
 import { generateEntityId } from '../utils/id';
 
 const FUTURES_TAKER_FEE = getDefaultFee('FUTURES', 'TAKER');
@@ -498,7 +499,9 @@ export const futuresTradingRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
         }
 
-        const result = await closeExchangePosition(client, input.symbol, position.positionAmt);
+        const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
+        const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
+        const result = await closeExchangePosition(client, input.symbol, position.positionAmt, stepSize);
 
         logger.info({
           walletId: input.walletId,

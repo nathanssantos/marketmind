@@ -57,8 +57,9 @@ export { useTradingProfiles } from './useTradingProfiles';
 export { useTradingShortcuts } from './useTradingShortcuts';
 export { useWalletUpdates } from './useWalletUpdates';
 
+export { useBackendAutoTrading, useCapitalLimits, useTopSymbols } from './useBackendAutoTrading';
 export { useBackendKlines, useKlineStream } from './useBackendKlines';
 export { useBackendTradingMutations } from './useBackendTradingMutations';
-export { useRealtimeTradingSync } from './useRealtimeTradingSync';
-export { useBackendAutoTrading, useTopSymbols } from './useBackendAutoTrading';
 export { useEventRefreshScheduler } from './useEventRefreshScheduler';
+export { useRealtimeTradingSync } from './useRealtimeTradingSync';
+

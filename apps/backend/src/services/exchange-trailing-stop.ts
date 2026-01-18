@@ -1,8 +1,10 @@
-import { serializeError } from '../utils/errors';
 import type { Wallet } from '../db/schema';
+import { serializeError } from '../utils/errors';
+import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { createBinanceClient } from './binance-client';
-import { createBinanceFuturesClient, submitFuturesAlgoOrder, cancelFuturesAlgoOrder } from './binance-futures-client';
+import { createBinanceFuturesClient, submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
+import { cancelProtectionOrder } from './protection-orders';
 
 export interface TrailingStopParams {
   symbol: string;
@@ -10,10 +12,13 @@ export interface TrailingStopParams {
   quantity: number;
   activationPrice?: number;
   callbackRate: number;
+  stepSize?: string;
+  tickSize?: string;
 }
 
 export interface FuturesTrailingStopParams extends TrailingStopParams {
   positionSide?: 'LONG' | 'SHORT';
+  tickSize?: string;
 }
 
 export interface TrailingStopResult {
@@ -63,14 +68,18 @@ export class ExchangeTrailingStopService {
 
     try {
       const client = createBinanceClient(wallet);
+      const formattedQuantity = formatQuantityForBinance(params.quantity, params.stepSize);
+      const formattedActivationPrice = params.activationPrice 
+        ? formatPriceForBinance(params.activationPrice, params.tickSize) 
+        : undefined;
 
       const orderParams = {
         symbol: params.symbol,
         side: params.side,
         type: 'TRAILING_STOP_MARKET',
-        quantity: params.quantity,
+        quantity: formattedQuantity,
         callbackRate: params.callbackRate.toString(),
-        ...(params.activationPrice && { activationPrice: params.activationPrice.toString() }),
+        ...(formattedActivationPrice && { activationPrice: formattedActivationPrice }),
       };
       const result = await client.submitNewOrder(orderParams as never);
 
@@ -137,14 +146,18 @@ export class ExchangeTrailingStopService {
   ): Promise<FuturesTrailingStopResult | null> {
     try {
       const client = createBinanceFuturesClient(wallet);
+      const formattedQuantity = formatQuantityForBinance(params.quantity, params.stepSize);
+      const formattedActivationPrice = params.activationPrice 
+        ? formatPriceForBinance(params.activationPrice, params.tickSize) 
+        : undefined;
 
       const result = await submitFuturesAlgoOrder(client, {
         symbol: params.symbol,
         side: params.side,
         type: 'TRAILING_STOP_MARKET',
-        quantity: params.quantity.toString(),
+        quantity: formattedQuantity,
         callbackRate: params.callbackRate.toString(),
-        ...(params.activationPrice && { activationPrice: params.activationPrice.toString() }),
+        ...(formattedActivationPrice && { activationPrice: formattedActivationPrice }),
         ...(params.positionSide && { positionSide: params.positionSide }),
       });
 
@@ -173,22 +186,18 @@ export class ExchangeTrailingStopService {
     wallet: Wallet,
     algoId: number
   ): Promise<boolean> {
-    try {
-      const client = createBinanceFuturesClient(wallet);
-      await cancelFuturesAlgoOrder(client, algoId);
+    const cancelled = await cancelProtectionOrder({
+      wallet,
+      symbol: '',
+      marketType: 'FUTURES',
+      algoId,
+    });
 
-      logger.info({
-        algoId,
-      }, 'Futures exchange trailing stop cancelled via Algo API');
-
-      return true;
-    } catch (error) {
-      logger.error({
-        error: serializeError(error),
-        algoId,
-      }, 'Failed to cancel futures exchange trailing stop');
-      return false;
+    if (cancelled) {
+      logger.info({ algoId }, 'Futures exchange trailing stop cancelled');
     }
+
+    return cancelled;
   }
 
   calculateActivationPrice(entryPrice: number, side: 'LONG' | 'SHORT', breakevenThreshold: number = 0.0015): number {

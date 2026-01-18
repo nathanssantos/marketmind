@@ -7,12 +7,12 @@ import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
 import { serializeError } from '../utils/errors';
-import { formatQuantityForBinance, formatPriceForBinance } from '../utils/formatters';
+import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
-import { submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
+import { createStopLossOrder as createSLOrder, createTakeProfitOrder as createTPOrder } from './protection-orders';
 
 export interface AlgoOrderResult {
   algoId: number;
@@ -504,43 +504,19 @@ export class AutoTradingService {
     side: 'LONG' | 'SHORT',
     marketType: MarketType = 'SPOT'
   ): Promise<OrderResult> {
-    const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
-
     if (marketType === 'FUTURES') {
-      const client = createBinanceFuturesClient(wallet);
-
-      const minNotionalFilter = getMinNotionalFilterService();
-      const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
-      const filters = symbolFilters.get(symbol);
-      const stepSize = filters?.stepSize?.toString();
-      const tickSize = filters?.tickSize?.toString();
-
-      const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
-      const formattedTriggerPrice = formatPriceForBinance(stopLoss, tickSize);
-
-      const algoOrder = await submitFuturesAlgoOrder(client, {
+      const result = await createSLOrder({
+        wallet,
         symbol,
-        side: orderSide,
-        type: 'STOP_MARKET',
-        quantity: formattedQuantity,
-        triggerPrice: formattedTriggerPrice,
-        reduceOnly: true,
-        workingType: 'CONTRACT_PRICE',
+        side,
+        quantity,
+        triggerPrice: stopLoss,
+        marketType,
       });
-
-      logger.info({
-        algoId: algoOrder.algoId,
-        symbol,
-        side: orderSide,
-        type: 'STOP_MARKET',
-        triggerPrice: formattedTriggerPrice,
-        quantity: formattedQuantity,
-        walletType: wallet.walletType,
-      }, '[Futures] Stop-loss algo order created via Algo API');
-
-      return { algoId: algoOrder.algoId, isAlgoOrder: true };
+      return { algoId: result.algoId!, isAlgoOrder: true };
     }
 
+    const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
     const orderParams: OrderParams = {
       symbol,
       side: orderSide,
@@ -563,43 +539,19 @@ export class AutoTradingService {
     side: 'LONG' | 'SHORT',
     marketType: MarketType = 'SPOT'
   ): Promise<OrderResult> {
-    const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
-
     if (marketType === 'FUTURES') {
-      const client = createBinanceFuturesClient(wallet);
-
-      const minNotionalFilter = getMinNotionalFilterService();
-      const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
-      const filters = symbolFilters.get(symbol);
-      const stepSize = filters?.stepSize?.toString();
-      const tickSize = filters?.tickSize?.toString();
-
-      const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
-      const formattedTriggerPrice = formatPriceForBinance(takeProfit, tickSize);
-
-      const algoOrder = await submitFuturesAlgoOrder(client, {
+      const result = await createTPOrder({
+        wallet,
         symbol,
-        side: orderSide,
-        type: 'TAKE_PROFIT_MARKET',
-        quantity: formattedQuantity,
-        triggerPrice: formattedTriggerPrice,
-        reduceOnly: true,
-        workingType: 'CONTRACT_PRICE',
+        side,
+        quantity,
+        triggerPrice: takeProfit,
+        marketType,
       });
-
-      logger.info({
-        algoId: algoOrder.algoId,
-        symbol,
-        side: orderSide,
-        type: 'TAKE_PROFIT_MARKET',
-        triggerPrice: formattedTriggerPrice,
-        quantity: formattedQuantity,
-        walletType: wallet.walletType,
-      }, '[Futures] Take-profit algo order created via Algo API');
-
-      return { algoId: algoOrder.algoId, isAlgoOrder: true };
+      return { algoId: result.algoId!, isAlgoOrder: true };
     }
 
+    const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
     const orderParams: OrderParams = {
       symbol,
       side: orderSide,

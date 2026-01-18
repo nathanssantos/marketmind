@@ -1,50 +1,50 @@
 import { calculateFibonacciProjection } from '@marketmind/indicators';
 import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
-import { getDefaultFee, TRADING_DEFAULTS } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG, getDefaultFee, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
-  ABSOLUTE_MINIMUM_KLINES,
-  AUTO_TRADING_BATCH,
-  AUTO_TRADING_CACHE,
-  AUTO_TRADING_ROTATION,
-  AUTO_TRADING_TIMING,
-  INTERVAL_MS,
-  TIME_MS,
-  TRADING_CONFIG,
-  UNIT_MS,
+    ABSOLUTE_MINIMUM_KLINES,
+    AUTO_TRADING_BATCH,
+    AUTO_TRADING_CACHE,
+    AUTO_TRADING_ROTATION,
+    AUTO_TRADING_TIMING,
+    INTERVAL_MS,
+    TIME_MS,
+    TRADING_CONFIG,
+    UNIT_MS,
 } from '../constants';
 import { db } from '../db';
 import {
-  activeWatchers as activeWatchersTable,
-  autoTradingConfig,
-  klines,
-  setupDetections,
-  tradeExecutions,
-  tradingProfiles,
-  wallets,
-  type Wallet,
+    activeWatchers as activeWatchersTable,
+    autoTradingConfig,
+    klines,
+    setupDetections,
+    tradeExecutions,
+    tradingProfiles,
+    wallets,
+    type Wallet,
 } from '../db/schema';
 import { env } from '../env';
 import { calculateConfluenceScore, type FilterResults } from '../utils/confluence-scoring';
 import { serializeError } from '../utils/errors';
 import {
-  ADX_FILTER,
-  checkAdxCondition,
-  checkBtcCorrelation,
-  checkFundingRate,
-  checkMarketRegime,
-  checkMomentumTiming,
-  checkMtfCondition,
-  checkStochasticCondition,
-  checkTrendCondition,
-  checkVolumeCondition,
-  getHigherTimeframe,
-  MOMENTUM_TIMING_FILTER,
-  MTF_FILTER,
-  STOCHASTIC_FILTER,
+    ADX_FILTER,
+    checkAdxCondition,
+    checkBtcCorrelation,
+    checkFundingRate,
+    checkMarketRegime,
+    checkMomentumTiming,
+    checkMtfCondition,
+    checkStochasticCondition,
+    checkTrendCondition,
+    checkVolumeCondition,
+    getHigherTimeframe,
+    MOMENTUM_TIMING_FILTER,
+    MTF_FILTER,
+    STOCHASTIC_FILTER,
 } from '../utils/filters';
 import { calculateRequiredKlines } from '../utils/kline-calculator';
 import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
@@ -52,13 +52,14 @@ import { autoTradingService } from './auto-trading';
 import { createBinanceFuturesClient } from './binance-client';
 import { cooldownService } from './cooldown';
 import {
-  getDynamicSymbolRotationService,
-  getIntervalMs,
-  type RotationConfig,
-  type RotationResult,
+    getDynamicSymbolRotationService,
+    getIntervalMs,
+    type RotationConfig,
+    type RotationResult,
 } from './dynamic-symbol-rotation';
 import { getKlineMaintenance } from './kline-maintenance';
 import { meetsKlineRequirementWithTolerance, prefetchKlines } from './kline-prefetch';
+import { getMinNotionalFilterService } from './min-notional-filter';
 import { ocoOrderService } from './oco-orders';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
 import { positionMonitorService } from './position-monitor';
@@ -66,13 +67,13 @@ import { pyramidingService } from './pyramiding';
 import { riskManagerService } from './risk-manager';
 import { StrategyInterpreter, StrategyLoader } from './setup-detection/dynamic';
 import {
-  createBatchResult,
-  outputBatchResults,
-  outputStartupResults,
-  StartupLogBuffer,
-  WatcherLogBuffer,
-  type SetupLogEntry,
-  type WatcherResult,
+    createBatchResult,
+    outputBatchResults,
+    outputStartupResults,
+    StartupLogBuffer,
+    WatcherLogBuffer,
+    type SetupLogEntry,
+    type WatcherResult,
 } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -286,6 +287,91 @@ export class AutoTradingScheduler {
     this.htfKlinesCache.clear();
     this.fundingRateCache.clear();
     this.configCache.clear();
+  }
+
+  private btcStreamSubscribed: Set<string> = new Set();
+
+  private async ensureBtcKlineStream(
+    walletId: string,
+    userId: string,
+    interval: string,
+    marketType: MarketType
+  ): Promise<void> {
+    const config = await this.getCachedConfig(walletId, userId);
+    if (!config?.useBtcCorrelationFilter) return;
+
+    const btcKey = `BTCUSDT-${interval}-${marketType}`;
+    if (this.btcStreamSubscribed.has(btcKey)) return;
+
+    const hasBtcWatcher = Array.from(this.activeWatchers.values()).some(
+      (w) => w.symbol === 'BTCUSDT' && w.interval === interval && w.marketType === marketType
+    );
+
+    if (hasBtcWatcher) return;
+
+    const requiredKlines = calculateRequiredKlines();
+    log('📥 [BTC Correlation] Prefetching BTCUSDT klines', { interval, marketType, requiredKlines });
+
+    const prefetchResult = await prefetchKlines({
+      symbol: 'BTCUSDT',
+      interval,
+      marketType,
+      targetCount: requiredKlines,
+      silent: false,
+    });
+
+    log('📊 [BTC Correlation] BTCUSDT prefetch result', {
+      success: prefetchResult.success,
+      downloaded: prefetchResult.downloaded,
+      totalInDb: prefetchResult.totalInDb,
+      gaps: prefetchResult.gaps,
+      alreadyComplete: prefetchResult.alreadyComplete,
+      error: prefetchResult.error,
+    });
+
+    try {
+      const klineMaintenance = getKlineMaintenance();
+      await klineMaintenance.forceCheckSymbol('BTCUSDT', interval as Interval, marketType);
+    } catch (error) {
+      log('⚠️ [BTC Correlation] Failed to run maintenance check for BTCUSDT', { error: serializeError(error) });
+    }
+
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
+    if (marketType === 'FUTURES') {
+      binanceFuturesKlineStreamService.subscribe('BTCUSDT', interval);
+    } else {
+      binanceKlineStreamService.subscribe('BTCUSDT', interval);
+    }
+
+    this.btcStreamSubscribed.add(btcKey);
+    log('📊 [BTC Correlation] BTCUSDT stream subscribed and data initialized', { interval, marketType });
+  }
+
+  private async cleanupBtcKlineStreamIfNeeded(interval: string, marketType: MarketType): Promise<void> {
+    const btcKey = `BTCUSDT-${interval}-${marketType}`;
+    if (!this.btcStreamSubscribed.has(btcKey)) return;
+
+    const hasActiveWatchersForInterval = Array.from(this.activeWatchers.values()).some(
+      (w) => w.interval === interval && w.marketType === marketType
+    );
+
+    if (hasActiveWatchersForInterval) return;
+
+    const hasBtcWatcher = Array.from(this.activeWatchers.values()).some(
+      (w) => w.symbol === 'BTCUSDT' && w.interval === interval && w.marketType === marketType
+    );
+
+    if (hasBtcWatcher) return;
+
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
+    if (marketType === 'FUTURES') {
+      binanceFuturesKlineStreamService.unsubscribe('BTCUSDT', interval);
+    } else {
+      binanceKlineStreamService.unsubscribe('BTCUSDT', interval);
+    }
+
+    this.btcStreamSubscribed.delete(btcKey);
+    log('📊 Unsubscribed from BTCUSDT kline stream (no more watchers)', { interval, marketType });
   }
 
   private async getCachedConfig(walletId: string, userId?: string): Promise<typeof autoTradingConfig.$inferSelect | null> {
@@ -1247,6 +1333,8 @@ export class AutoTradingScheduler {
       binanceKlineStreamService.subscribe(symbol, interval);
     }
 
+    await this.ensureBtcKlineStream(walletId, userId, interval, marketType);
+
   }
 
   async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'SPOT'): Promise<void> {
@@ -1269,6 +1357,8 @@ export class AutoTradingScheduler {
       binanceKlineStreamService.unsubscribe(symbol, interval);
     }
     log('📊 Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
+
+    await this.cleanupBtcKlineStreamIfNeeded(interval, marketType);
 
     await db
       .delete(activeWatchersTable)
@@ -1363,24 +1453,29 @@ export class AutoTradingScheduler {
           });
           effectiveTakeProfit = fibTarget;
         } else {
-          const rrFallback = this.calculateRiskRewardTP(setup.entryPrice, setup.stopLoss, setup.direction, fibonacciTargetLevel);
-          logBuffer.warn('⚠️', 'Fibonacci target invalid for direction, using R:R fallback', {
-            fibTarget: fibTarget.toFixed(6),
-            rrFallback: rrFallback?.toFixed(6),
-            entryPrice: setup.entryPrice.toFixed(6),
+          logBuffer.addRejection({
+            setupType: setup.type,
             direction: setup.direction,
+            reason: 'Fibonacci target invalid for direction',
+            details: {
+              fibTarget: fibTarget.toFixed(6),
+              entryPrice: setup.entryPrice.toFixed(6),
+            },
           });
-          if (rrFallback) effectiveTakeProfit = rrFallback;
+          return;
         }
       } else {
-        const rrFallback = this.calculateRiskRewardTP(setup.entryPrice, setup.stopLoss, setup.direction, fibonacciTargetLevel);
-        logBuffer.warn('⚠️', 'Fibonacci projection not available, using R:R fallback', {
-          configLevel: fibonacciTargetLevel,
-          rrFallback: rrFallback?.toFixed(6),
-          klinesCount: cycleKlines.length,
+        logBuffer.addRejection({
+          setupType: setup.type,
           direction: setup.direction,
+          reason: 'No clear trend structure (ranging market)',
+          details: {
+            klinesCount: cycleKlines.length,
+            interval: watcher.interval,
+            fibLevel: fibonacciTargetLevel,
+          },
         });
-        if (rrFallback) effectiveTakeProfit = rrFallback;
+        return;
       }
     }
 
@@ -1782,7 +1877,8 @@ export class AutoTradingScheduler {
         walletBalance,
         setup.entryPrice,
         undefined,
-        activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
+        activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined,
+        watcher.marketType
       );
 
       if (dynamicSize.quantity <= 0) {
@@ -2152,13 +2248,18 @@ export class AutoTradingScheduler {
             });
 
             try {
+              const minNotionalFilter = getMinNotionalFilterService();
+              const symbolFilters = await minNotionalFilter.getSymbolFilters(watcher.marketType);
+              const filters = symbolFilters.get(watcher.symbol);
+              const stepSize = filters?.stepSize?.toString();
+
               if (watcher.marketType === 'FUTURES') {
                 const { closePosition } = await import('./binance-futures-client');
                 const client = createBinanceFuturesClient(wallet as Wallet);
                 const positionAmt = setup.direction === 'LONG'
                   ? actualQuantity.toString()
                   : (-actualQuantity).toString();
-                await closePosition(client, watcher.symbol, positionAmt);
+                await closePosition(client, watcher.symbol, positionAmt, stepSize);
               } else {
                 const closeSide = setup.direction === 'LONG' ? 'SELL' : 'BUY';
                 await autoTradingService.executeBinanceOrder(
@@ -2714,9 +2815,12 @@ export class AutoTradingScheduler {
       if (!config?.useDynamicSymbolSelection) continue;
 
       try {
+        const activeCount = this.getDynamicWatcherCount(walletId);
+        const targetCount = activeCount > 0 ? activeCount : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
+
         await this.startDynamicRotation(walletId, watcherInfo.userId, {
           useDynamicSymbolSelection: true,
-          dynamicSymbolLimit: config.dynamicSymbolLimit,
+          targetWatcherCount: targetCount,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
           marketType: watcherInfo.marketType,
           interval: watcherInfo.interval,
@@ -2814,30 +2918,12 @@ export class AutoTradingScheduler {
     return level1618?.price ?? null;
   }
 
-  private calculateRiskRewardTP(
-    entryPrice: number,
-    stopLoss: number | undefined,
-    direction: 'LONG' | 'SHORT',
-    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618'
-  ): number | null {
-    if (!stopLoss) return null;
-
-    const riskMultiplier = fibonacciTargetLevel === 'auto' ? 1.618 : parseFloat(fibonacciTargetLevel);
-    const risk = Math.abs(entryPrice - stopLoss);
-
-    if (direction === 'LONG') {
-      return entryPrice + (risk * riskMultiplier);
-    } else {
-      return entryPrice - (risk * riskMultiplier);
-    }
-  }
-
   async startDynamicRotation(
     walletId: string,
     userId: string,
     config: {
       useDynamicSymbolSelection: boolean;
-      dynamicSymbolLimit: number;
+      targetWatcherCount: number;
       dynamicSymbolExcluded: string | null;
       marketType: MarketType;
       interval: string;
@@ -2860,14 +2946,14 @@ export class AutoTradingScheduler {
 
     const rotationConfig: RotationConfig = {
       enabled: true,
-      limit: config.dynamicSymbolLimit,
+      limit: config.targetWatcherCount,
       interval: config.interval,
       excludedSymbols,
       marketType: config.marketType,
       capitalRequirement: config.walletBalance !== undefined ? {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
-        targetWatchersCount: config.dynamicSymbolLimit,
+        targetWatchersCount: config.targetWatcherCount,
         exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
       } : undefined,
     };
@@ -3067,7 +3153,7 @@ export class AutoTradingScheduler {
     walletId: string,
     userId: string,
     config: {
-      dynamicSymbolLimit: number;
+      targetWatcherCount: number;
       dynamicSymbolExcluded: string | null;
       marketType: MarketType;
       interval: string;
@@ -3082,14 +3168,14 @@ export class AutoTradingScheduler {
 
     const rotationConfig: RotationConfig = {
       enabled: true,
-      limit: config.dynamicSymbolLimit,
+      limit: config.targetWatcherCount,
       interval: config.interval,
       excludedSymbols,
       marketType: config.marketType,
       capitalRequirement: config.walletBalance !== undefined ? {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
-        targetWatchersCount: config.dynamicSymbolLimit,
+        targetWatchersCount: config.targetWatcherCount,
         exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
       } : undefined,
     };

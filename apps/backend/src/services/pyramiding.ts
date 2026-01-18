@@ -24,6 +24,7 @@ import {
     type FiboPyramidEvaluation,
 } from './fibonacci-pyramid-evaluator';
 import { logger } from './logger';
+import { getMinNotionalFilterService } from './min-notional-filter';
 import { positionMonitorService } from './position-monitor';
 
 const logPyramidTable = (
@@ -368,7 +369,8 @@ export class PyramidingService {
     walletBalance: number,
     entryPrice: number,
     _mlConfidence?: number,
-    activeWatchersCount?: number
+    activeWatchersCount?: number,
+    marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
   ): Promise<{ quantity: number; sizePercent: number; reason: string }> {
     const openExecutions = await db
       .select()
@@ -451,10 +453,52 @@ export class PyramidingService {
 
       const quantity = positionValue / entryPrice;
       const roundedQuantity = roundQuantity(quantity);
+
+      const minNotionalFilter = getMinNotionalFilterService();
+      const minQtyValidation = await minNotionalFilter.validateQuantityAgainstMinQty(
+        symbol,
+        roundedQuantity,
+        entryPrice,
+        marketType
+      );
+
+      if (!minQtyValidation.isValid) {
+        logger.warn({
+          symbol,
+          quantity: roundedQuantity,
+          entryPrice,
+          minQty: minQtyValidation.minQty,
+          minValue: minQtyValidation.minValue,
+          positionValue,
+          activeWatchersCount,
+        }, `[Pyramiding] ${minQtyValidation.reason}`);
+        return {
+          quantity: 0,
+          sizePercent: 0,
+          reason: minQtyValidation.reason ?? 'Quantity below minimum',
+        };
+      }
+
       const actualPositionValue = roundedQuantity * entryPrice;
 
       if (actualPositionValue > remainingBalance) {
         const adjustedQuantity = Math.floor((remainingBalance / entryPrice) * 100000) / 100000;
+
+        const adjustedValidation = await minNotionalFilter.validateQuantityAgainstMinQty(
+          symbol,
+          adjustedQuantity,
+          entryPrice,
+          marketType
+        );
+
+        if (!adjustedValidation.isValid) {
+          return {
+            quantity: 0,
+            sizePercent: 0,
+            reason: adjustedValidation.reason ?? 'Adjusted quantity below minimum',
+          };
+        }
+
         const adjustedValue = adjustedQuantity * entryPrice;
         const sizePercent = (adjustedValue / walletBalance) * 100;
 
@@ -493,7 +537,6 @@ export class PyramidingService {
 
     const avgEntryPrice = calculateWeightedAvgPrice(openExecutions);
     let currentPrice: number;
-    const marketType = openExecutions[0]?.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
 
     try {
       currentPrice = await positionMonitorService.getCurrentPrice(symbol, marketType);
@@ -524,10 +567,35 @@ export class PyramidingService {
     const pyramidValue = pyramidSize * entryPrice;
     const maxPyramidValue = Math.min(pyramidValue, remainingCapacity);
     const finalQuantity = maxPyramidValue / entryPrice;
+    const roundedFinalQuantity = roundQuantity(finalQuantity);
+
+    const minNotionalFilter = getMinNotionalFilterService();
+    const pyramidValidation = await minNotionalFilter.validateQuantityAgainstMinQty(
+      symbol,
+      roundedFinalQuantity,
+      entryPrice,
+      marketType
+    );
+
+    if (!pyramidValidation.isValid) {
+      logger.warn({
+        symbol,
+        quantity: roundedFinalQuantity,
+        entryPrice,
+        minQty: pyramidValidation.minQty,
+        pyramidEntry: openExecutions.length + 1,
+      }, `[Pyramiding] ${pyramidValidation.reason}`);
+      return {
+        quantity: 0,
+        sizePercent: 0,
+        reason: pyramidValidation.reason ?? 'Pyramid quantity below minimum',
+      };
+    }
+
     const sizePercent = (maxPyramidValue / walletBalance) * 100;
 
     return {
-      quantity: roundQuantity(finalQuantity),
+      quantity: roundedFinalQuantity,
       sizePercent,
       reason: `Pyramid entry #${openExecutions.length + 1}: ${sizePercent.toFixed(1)}% (profit: ${(profitPercent * 100).toFixed(2)}%)`,
     };

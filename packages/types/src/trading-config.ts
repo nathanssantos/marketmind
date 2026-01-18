@@ -13,6 +13,13 @@ export const TRADING_DEFAULTS = {
   SESSION_DURATION_MS: 30 * TIME_MS.DAY,
 } as const;
 
+export const CAPITAL_RULES = {
+  MAX_POSITION_CAPITAL_RATIO: 5,
+  SAFETY_MARGIN: 1.1,
+  MIN_NOTIONAL_FUTURES: 5,
+  MIN_NOTIONAL_SPOT: 10,
+} as const;
+
 export const TRAILING_STOP_CONFIG = {
   BREAKEVEN_THRESHOLD: 0.01,
   FEES_COVERAGE_THRESHOLD: 0.015,
@@ -199,14 +206,10 @@ export const CONTEXT_AGGREGATOR_CONFIG = {
 } as const;
 
 export const AUTO_TRADING_CONFIG = {
-  DYNAMIC_SYMBOL_LIMIT: {
-    MIN: 1,
-    MAX: 100,
-    DEFAULT: 50,
-  },
   TARGET_COUNT: {
     MIN: 1,
     MAX: 100,
+    DEFAULT: 10,
   },
   LEVERAGE: {
     MIN: 1,

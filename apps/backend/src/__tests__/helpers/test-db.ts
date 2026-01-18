@@ -161,7 +161,6 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   tp_calculation_mode VARCHAR(20) DEFAULT 'default' NOT NULL,
   fibonacci_target_level VARCHAR(10) DEFAULT 'auto' NOT NULL,
   use_dynamic_symbol_selection BOOLEAN DEFAULT false NOT NULL,
-  dynamic_symbol_limit INTEGER DEFAULT 20 NOT NULL,
   dynamic_symbol_rotation_interval VARCHAR(10) DEFAULT '4h' NOT NULL,
   dynamic_symbol_excluded TEXT,
   enable_auto_rotation BOOLEAN DEFAULT true NOT NULL,

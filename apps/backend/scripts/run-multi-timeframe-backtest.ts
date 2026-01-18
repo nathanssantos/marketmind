@@ -28,7 +28,7 @@ interface BacktestResult {
   avgLoss: number;
 }
 
-const TIMEFRAMES = ['1w', '3d', '1d', '12h', '8h', '6h', '4h', '2h', '1h', '30m'] as const;
+const TIMEFRAMES = ['30m'] as const;
 
 const SETUPS = [
   'chaikin-money-flow',
@@ -47,11 +47,11 @@ const SETUPS = [
 
 const BASE_CONFIG = {
   symbol: 'BTCUSDT',
-  startDate: '2024-01-17',
-  endDate: '2026-01-17',
+  startDate: '2021-11-01',
+  endDate: '2022-12-31',
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
-  leverage: BACKTEST_DEFAULTS.LEVERAGE,
+  leverage: 1,
   setupTypes: SETUPS,
   minConfidence: BACKTEST_DEFAULTS.MIN_CONFIDENCE,
   minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,

@@ -127,6 +127,9 @@ const start = async (): Promise<void> => {
     const klineMaintenance = initializeKlineMaintenance();
     await klineMaintenance.start();
 
+    const { orderSyncService } = await import('./services/order-sync');
+    await orderSyncService.start({ autoCancelOrphans: false });
+
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);
