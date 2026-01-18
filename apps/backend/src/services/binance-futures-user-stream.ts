@@ -116,6 +116,17 @@ interface FuturesAlgoOrderUpdate {
   };
 }
 
+interface FuturesConditionalOrderReject {
+  e: 'CONDITIONAL_ORDER_TRIGGER_REJECT';
+  E: number;
+  T: number;
+  or: {
+    s: string;
+    i: number;
+    r: string;
+  };
+}
+
 export class BinanceFuturesUserStreamService {
   private connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
@@ -348,6 +359,13 @@ export class BinanceFuturesUserStreamService {
           break;
         case 'ALGO_UPDATE':
           void this.handleAlgoOrderUpdate(walletId, message as unknown as FuturesAlgoOrderUpdate);
+          break;
+        case 'CONDITIONAL_ORDER_TRIGGER_REJECT':
+          void this.handleConditionalOrderReject(walletId, message as unknown as FuturesConditionalOrderReject);
+          break;
+        case 'listenKeyExpired':
+          logger.warn({ walletId }, '[FuturesUserStream] Listen key expired - will reconnect');
+          void this.resubscribeWallet(walletId);
           break;
         default:
           logger.debug({ walletId, eventType }, '[FuturesUserStream] Unhandled event type');
@@ -930,6 +948,90 @@ export class BinanceFuturesUserStreamService {
           error: serializeError(error),
         },
         '[FuturesUserStream] Error handling algo order update'
+      );
+    }
+  }
+
+  private async handleConditionalOrderReject(walletId: string, event: FuturesConditionalOrderReject): Promise<void> {
+    const { or: orderReject } = event;
+    const { s: symbol, i: orderId, r: reason } = orderReject;
+
+    logger.error(
+      {
+        walletId,
+        symbol,
+        orderId,
+        reason,
+      },
+      '[FuturesUserStream] ⚠️ CRITICAL: Conditional order (TP/SL) was REJECTED'
+    );
+
+    const wsService = getWebSocketService();
+    if (wsService) {
+      wsService.emitRiskAlert(walletId, {
+        type: 'ORDER_REJECTED',
+        level: 'critical',
+        symbol,
+        message: `TP/SL order rejected: ${reason}`,
+        data: { orderId, reason },
+        timestamp: Date.now(),
+      });
+    }
+
+    try {
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        )
+        .limit(1);
+
+      if (execution) {
+        const isSLReject = execution.stopLossOrderId === orderId || execution.stopLossAlgoId === orderId;
+        const isTPReject = execution.takeProfitOrderId === orderId || execution.takeProfitAlgoId === orderId;
+
+        if (isSLReject || isTPReject) {
+          logger.error(
+            {
+              executionId: execution.id,
+              symbol,
+              orderId,
+              isSLReject,
+              isTPReject,
+              reason,
+            },
+            '[FuturesUserStream] ⚠️ CRITICAL: Position protection order REJECTED - MANUAL INTERVENTION REQUIRED'
+          );
+        }
+      }
+    } catch (error) {
+      logger.error(
+        { walletId, orderId, error: serializeError(error) },
+        '[FuturesUserStream] Error handling conditional order reject'
+      );
+    }
+  }
+
+  private async resubscribeWallet(walletId: string): Promise<void> {
+    try {
+      this.unsubscribeWallet(walletId);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+      if (wallet && wallet.isActive && !isPaperWallet(wallet) && wallet.marketType === 'FUTURES') {
+        await this.subscribeWallet(wallet as Wallet);
+        logger.info({ walletId }, '[FuturesUserStream] Successfully resubscribed after listenKey expiry');
+      }
+    } catch (error) {
+      logger.error(
+        { walletId, error: serializeError(error) },
+        '[FuturesUserStream] Failed to resubscribe wallet'
       );
     }
   }
