@@ -7,6 +7,7 @@ import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
 import { serializeError } from '../utils/errors';
+import { formatNumberForBinance } from '../utils/formatters';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
 import { submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
@@ -482,12 +483,15 @@ export class AutoTradingService {
 
     if (marketType === 'FUTURES') {
       const client = createBinanceFuturesClient(wallet);
+      const formattedQuantity = formatNumberForBinance(quantity);
+      const formattedTriggerPrice = formatNumberForBinance(stopLoss);
+
       const algoOrder = await submitFuturesAlgoOrder(client, {
         symbol,
         side: orderSide,
         type: 'STOP_MARKET',
-        quantity: quantity.toString(),
-        triggerPrice: stopLoss.toString(),
+        quantity: formattedQuantity,
+        triggerPrice: formattedTriggerPrice,
         reduceOnly: true,
         workingType: 'CONTRACT_PRICE',
       });
@@ -497,8 +501,8 @@ export class AutoTradingService {
         symbol,
         side: orderSide,
         type: 'STOP_MARKET',
-        triggerPrice: stopLoss,
-        quantity,
+        triggerPrice: formattedTriggerPrice,
+        quantity: formattedQuantity,
         walletType: wallet.walletType,
       }, '[Futures] Stop-loss algo order created via Algo API');
 
@@ -531,12 +535,15 @@ export class AutoTradingService {
 
     if (marketType === 'FUTURES') {
       const client = createBinanceFuturesClient(wallet);
+      const formattedQuantity = formatNumberForBinance(quantity);
+      const formattedTriggerPrice = formatNumberForBinance(takeProfit);
+
       const algoOrder = await submitFuturesAlgoOrder(client, {
         symbol,
         side: orderSide,
         type: 'TAKE_PROFIT_MARKET',
-        quantity: quantity.toString(),
-        triggerPrice: takeProfit.toString(),
+        quantity: formattedQuantity,
+        triggerPrice: formattedTriggerPrice,
         reduceOnly: true,
         workingType: 'CONTRACT_PRICE',
       });
@@ -546,8 +553,8 @@ export class AutoTradingService {
         symbol,
         side: orderSide,
         type: 'TAKE_PROFIT_MARKET',
-        triggerPrice: takeProfit,
-        quantity,
+        triggerPrice: formattedTriggerPrice,
+        quantity: formattedQuantity,
         walletType: wallet.walletType,
       }, '[Futures] Take-profit algo order created via Algo API');
 

@@ -90,19 +90,24 @@ interface FuturesAccountConfigUpdate {
 }
 
 interface FuturesAlgoOrderUpdate {
-  e: 'ALGO_ORDER_UPDATE';
+  e: 'ALGO_UPDATE';
   E: number;
   T: number;
-  s: string;
-  i: number;
-  S: 'BUY' | 'SELL';
-  o: string;
-  q: string;
-  p: string;
-  sp: string;
-  X: 'NEW' | 'TRIGGERED' | 'WORKING' | 'CANCELLED' | 'EXPIRED' | 'REJECTED' | 'FILLED';
-  ps: 'LONG' | 'SHORT' | 'BOTH';
-  R: boolean;
+  o: {
+    aid: number;
+    caid: string;
+    at: string;
+    s: string;
+    sd: 'BUY' | 'SELL';
+    q: string;
+    tp: string;
+    tpt: string;
+    ps: 'LONG' | 'SHORT' | 'BOTH';
+    ot: string;
+    r: boolean;
+    X: 'NEW' | 'TRIGGERED' | 'WORKING' | 'CANCELLED' | 'EXPIRED' | 'REJECTED' | 'FILLED';
+    lt: string;
+  };
 }
 
 export class BinanceFuturesUserStreamService {
@@ -335,7 +340,7 @@ export class BinanceFuturesUserStreamService {
         case 'ACCOUNT_CONFIG_UPDATE':
           this.handleConfigUpdate(walletId, message as unknown as FuturesAccountConfigUpdate);
           break;
-        case 'ALGO_ORDER_UPDATE':
+        case 'ALGO_UPDATE':
           void this.handleAlgoOrderUpdate(walletId, message as unknown as FuturesAlgoOrderUpdate);
           break;
         default:
@@ -795,7 +800,8 @@ export class BinanceFuturesUserStreamService {
   }
 
   private async handleAlgoOrderUpdate(walletId: string, event: FuturesAlgoOrderUpdate): Promise<void> {
-    const { s: symbol, i: algoId, X: status, o: orderType, ps: positionSide } = event;
+    const { o: algoData } = event;
+    const { s: symbol, aid: algoId, X: status, ot: orderType, ps: positionSide } = algoData;
 
     logger.info(
       {
