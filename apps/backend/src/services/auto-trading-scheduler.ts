@@ -2878,8 +2878,8 @@ export class AutoTradingScheduler {
 
     if (targetLevelData) {
       log('✅ Fibonacci TP calculated', {
-        interval,
-        lookback: adaptiveLookback,
+        interval: _interval,
+        lookback,
         targetLevel,
         price: targetLevelData.price,
         swingLow: projection.swingLow.price,
