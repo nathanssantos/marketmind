@@ -180,8 +180,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
   if (batch.watcherResults.length > 0) {
     const watcherTable = createLogTable(
       ['Symbol', 'Interval', 'Market', 'Status', 'Klines', 'Setups', 'Trades', 'Time', 'Details'],
-      'cyan',
-      [12, 10, 10, 8, 8, 8, 8, 10, 50]
+      'cyan'
     );
 
     for (const result of batch.watcherResults) {
@@ -224,7 +223,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         const dirColor = setup.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
         setupTable.push([
           colorize(result.symbol, 'bright'),
-          setup.type.slice(0, 32),
+          setup.type,
           colorize(setup.direction, dirColor),
           `${setup.confidence}%`,
           setup.entryPrice,
@@ -250,7 +249,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
       errorTable.push([
         result.symbol,
         result.interval,
-        colorize(errorMsg.slice(0, 38), 'red'),
+        colorize(errorMsg, 'red'),
       ]);
     }
 
@@ -263,21 +262,20 @@ export const formatBatchResults = (batch: BatchResult): string => {
 
     const rejectionTable = createLogTable(
       ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      'yellow',
-      [12, 28, 7, 36, 60]
+      'yellow'
     );
 
     for (const result of rejectionResults) {
       for (const rejection of result.rejections) {
         const dirColor = rejection.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
         const detailStr = rejection.details
-          ? Object.entries(rejection.details).filter(([k]) => k !== 'direction').map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 58)
+          ? Object.entries(rejection.details).filter(([k]) => k !== 'direction').map(([k, v]) => `${k}:${v}`).join(' ')
           : '-';
         rejectionTable.push([
           colorize(result.symbol, 'bright'),
-          rejection.setupType.slice(0, 26),
+          rejection.setupType,
           colorize(rejection.direction, dirColor),
-          colorize(rejection.reason.slice(0, 34), 'yellow'),
+          colorize(rejection.reason, 'yellow'),
           detailStr,
         ]);
       }
@@ -298,12 +296,12 @@ export const formatBatchResults = (batch: BatchResult): string => {
     for (const result of filterBlockResults) {
       for (const filter of result.filterChecks.filter(f => !f.passed)) {
         const detailStr = filter.details
-          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ').slice(0, 38)
+          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ')
           : '-';
         filterTable.push([
           colorize(result.symbol, 'bright'),
           colorize(filter.filterName, 'red'),
-          filter.reason.slice(0, 38),
+          filter.reason,
           detailStr,
         ]);
       }
@@ -327,7 +325,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
         const statusColor = trade.status === STATUS.EXECUTED ? COLORS.SUCCESS : trade.status === STATUS.PENDING ? COLORS.WARNING : COLORS.ERROR;
         tradeTable.push([
           colorize(result.symbol, 'bright'),
-          trade.setupType.slice(0, 24),
+          trade.setupType,
           colorize(trade.direction, dirColor),
           trade.entryPrice,
           trade.quantity,
@@ -517,7 +515,7 @@ export const formatStartupResults = (
         colorize(w.symbol, 'bright'),
         w.interval,
         w.marketType,
-        colorize(w.error?.slice(0, 38) ?? 'Unknown error', 'red'),
+        colorize(w.error ?? 'Unknown error', 'red'),
       ]);
     }
 
@@ -619,7 +617,7 @@ const formatMaintenanceErrorsTable = (gapFills: GapFillEntry[]): string[] => {
       colorize(e.symbol, 'bright'),
       e.interval,
       e.marketType,
-      colorize(e.reason?.slice(0, 38) ?? 'Unknown error', 'red'),
+      colorize(e.reason ?? 'Unknown error', 'red'),
     ]);
   }
 
@@ -982,7 +980,7 @@ const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult): stri
       }
 
       const details = action.error
-        ? action.error.slice(0, 38)
+        ? action.error
         : action.action === 'EXPIRED' && action.expiresAt
           ? `Expired at ${action.expiresAt.toLocaleTimeString()}`
           : action.action === 'FILLED' && action.currentPrice

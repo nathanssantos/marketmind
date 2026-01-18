@@ -151,7 +151,7 @@ const MIN_ROTATION_PREPARATION_TIME_MS = AUTO_TRADING_ROTATION.MIN_PREPARATION_T
 
 const getRotationAnticipationMs = (interval: string): number => {
   const intervalMs = INTERVAL_MS[interval as Interval] ?? TIME_MS.HOUR;
-  const anticipation = Math.floor(intervalMs * 0.02);
+  const anticipation = Math.floor(intervalMs * 0.05);
   return Math.max(MIN_ROTATION_ANTICIPATION_MS, Math.min(anticipation, MAX_ROTATION_ANTICIPATION_MS));
 };
 
@@ -1345,7 +1345,8 @@ export class AutoTradingScheduler {
         cycleKlines,
         setup.entryPrice,
         setup.direction,
-        fibonacciTargetLevel
+        fibonacciTargetLevel,
+        watcher.interval
       );
 
       if (fibTarget !== null) {
@@ -2741,10 +2742,37 @@ export class AutoTradingScheduler {
     klines: Kline[],
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
-    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = 'auto'
+    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = 'auto',
+    interval: string = '4h'
   ): number | null {
     const currentIndex = klines.length - 1;
-    const projection = calculateFibonacciProjection(klines, currentIndex, 100, direction);
+
+    const LOOKBACK_BY_INTERVAL: Record<string, number> = {
+      '1m': 30,
+      '3m': 40,
+      '5m': 50,
+      '15m': 75,
+      '30m': 100,
+      '1h': 100,
+      '2h': 120,
+      '4h': 150,
+      '6h': 150,
+      '8h': 150,
+      '12h': 175,
+      '1d': 200,
+      '3d': 250,
+      '1w': 300,
+      '1M': 400,
+    };
+    const adaptiveLookback = LOOKBACK_BY_INTERVAL[interval] ?? 100;
+
+    log('📐 Fibonacci lookback calculation', {
+      interval,
+      adaptiveLookback,
+      klinesAvailable: klines.length,
+    });
+
+    const projection = calculateFibonacciProjection(klines, currentIndex, adaptiveLookback, direction);
 
     if (!projection || projection.levels.length === 0) {
       log('⚠️ Fibonacci projection failed', {
@@ -2765,11 +2793,14 @@ export class AutoTradingScheduler {
 
     if (targetLevelData) {
       log('✅ Fibonacci TP calculated', {
+        interval,
+        lookback: adaptiveLookback,
         targetLevel,
         price: targetLevelData.price,
         swingLow: projection.swingLow.price,
         swingHigh: projection.swingHigh.price,
         range: projection.range,
+        rangePercent: ((projection.range / projection.swingLow.price) * 100).toFixed(2),
       });
       return targetLevelData.price;
     }

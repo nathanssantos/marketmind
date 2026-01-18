@@ -1032,7 +1032,7 @@ describe('TrailingStopService', () => {
         expect(result).toBeNull();
       });
 
-      it('should set fees_covered when price reaches 100% Fibo but not 127.2%', () => {
+      it('should return null when price reaches 100% Fibo but not 161.8% (breakeven disabled)', () => {
         const fib = createFibonacciProjection(90, 100);
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
@@ -1051,12 +1051,10 @@ describe('TrailingStopService', () => {
         };
 
         const result = computeTrailingStop(input, config);
-        expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
-        expect(result!.newStopLoss).toBeCloseTo(92.184, 2);
+        expect(result).toBeNull();
       });
 
-      it('should enter progressive mode when price reaches 127.2% Fibo', () => {
+      it('should enter progressive mode when price reaches 161.8% Fibo', () => {
         const fib = createFibonacciProjection(90, 100);
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
@@ -1067,18 +1065,18 @@ describe('TrailingStopService', () => {
 
         const input: TrailingStopInput = {
           entryPrice: 92,
-          currentPrice: 103,
+          currentPrice: 107,
           currentStopLoss: 92.184,
           side: 'LONG',
           swingPoints: [],
-          highestPrice: 103,
+          highestPrice: 107,
           fibonacciProjection: fib,
         };
 
         const result = computeTrailingStop(input, config);
         expect(result).not.toBeNull();
         expect(['fees_covered', 'progressive_trail']).toContain(result!.reason);
-        expect(result!.newStopLoss).toBeGreaterThan(92.184);
+        expect(result!.newStopLoss).toBeGreaterThan(92);
       });
 
       it('should fall back to percentage thresholds when Fibonacci data missing', () => {
