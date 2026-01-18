@@ -98,15 +98,21 @@ interface FuturesAlgoOrderUpdate {
     caid: string;
     at: string;
     s: string;
-    sd: 'BUY' | 'SELL';
-    q: string;
-    tp: string;
-    tpt: string;
+    S: 'BUY' | 'SELL';
+    o: string;
     ps: 'LONG' | 'SHORT' | 'BOTH';
-    ot: string;
-    r: boolean;
-    X: 'NEW' | 'TRIGGERED' | 'WORKING' | 'CANCELLED' | 'EXPIRED' | 'REJECTED' | 'FILLED';
-    lt: string;
+    f: string;
+    q: string;
+    X: 'NEW' | 'CANCELED' | 'TRIGGERING' | 'TRIGGERED' | 'FINISHED' | 'REJECTED' | 'EXPIRED';
+    ai: string;
+    ap: string;
+    aq: string;
+    tp: string;
+    p: string;
+    wt: string;
+    R: boolean;
+    cp: boolean;
+    pP: boolean;
   };
 }
 
@@ -801,7 +807,7 @@ export class BinanceFuturesUserStreamService {
 
   private async handleAlgoOrderUpdate(walletId: string, event: FuturesAlgoOrderUpdate): Promise<void> {
     const { o: algoData } = event;
-    const { s: symbol, aid: algoId, X: status, ot: orderType, ps: positionSide } = algoData;
+    const { s: symbol, aid: algoId, X: status, o: orderType, ps: positionSide } = algoData;
 
     logger.info(
       {
@@ -815,7 +821,7 @@ export class BinanceFuturesUserStreamService {
       '[FuturesUserStream] Algo order update received'
     );
 
-    if (status !== 'TRIGGERED' && status !== 'FILLED') {
+    if (status !== 'TRIGGERED' && status !== 'TRIGGERING') {
       return;
     }
 
