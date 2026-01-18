@@ -251,9 +251,8 @@ const OrdersListComponent = () => {
             </Stack>
           </Box>
 
-          <Flex gap={2} align="flex-end">
+          <Flex gap={2} align="center">
             <ChakraField.Root flex={1}>
-              <ChakraField.Label fontSize="xs">{t('trading.orders.filterByStatus')}</ChakraField.Label>
               <Select
                 size="xs"
                 value={filterStatus}
@@ -273,7 +272,6 @@ const OrdersListComponent = () => {
 
             {viewMode === 'cards' && (
               <ChakraField.Root flex={1}>
-                <ChakraField.Label fontSize="xs">{t('trading.orders.sortBy')}</ChakraField.Label>
                 <Select
                   size="xs"
                   value={sortBy}
@@ -298,7 +296,7 @@ const OrdersListComponent = () => {
             <Group attached>
               <IconButton
                 aria-label={t('trading.viewMode.cards')}
-                size="xs"
+                size="2xs"
                 variant={viewMode === 'cards' ? 'solid' : 'outline'}
                 onClick={() => setViewMode('cards')}
               >
@@ -306,7 +304,7 @@ const OrdersListComponent = () => {
               </IconButton>
               <IconButton
                 aria-label={t('trading.viewMode.table')}
-                size="xs"
+                size="2xs"
                 variant={viewMode === 'table' ? 'solid' : 'outline'}
                 onClick={() => setViewMode('table')}
               >
@@ -824,7 +822,7 @@ const OrdersTable = memo(({ orders, currency, onCancel, onClose, onNavigateToSym
               {(canClose || canCancel) && (
                 <MenuRoot id={`order-table-menu-${getOrderId(order)}`} positioning={{ placement: 'bottom-end' }}>
                   <MenuTrigger asChild>
-                    <IconButton size="2xs" variant="ghost" aria-label="Order options">
+                    <IconButton size="xs" variant="ghost" aria-label="Order options">
                       <BsThreeDotsVertical />
                     </IconButton>
                   </MenuTrigger>

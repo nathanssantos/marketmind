@@ -185,9 +185,8 @@ const PortfolioComponent = () => {
             </Stack>
           </Box>
 
-          <Flex gap={2} align="flex-end">
+          <Flex gap={2} align="center">
             <ChakraField.Root flex={1}>
-              <ChakraField.Label fontSize="xs">{t('trading.portfolio.filterBy')}</ChakraField.Label>
               <Select
                 size="xs"
                 value={filterOption}
@@ -205,7 +204,6 @@ const PortfolioComponent = () => {
 
             {viewMode === 'cards' && (
               <ChakraField.Root flex={1}>
-                <ChakraField.Label fontSize="xs">{t('trading.portfolio.sortBy')}</ChakraField.Label>
                 <Select
                   size="xs"
                   value={sortBy}
@@ -228,7 +226,7 @@ const PortfolioComponent = () => {
             <Group attached>
               <IconButton
                 aria-label={t('trading.viewMode.cards')}
-                size="xs"
+                size="2xs"
                 variant={viewMode === 'cards' ? 'solid' : 'outline'}
                 onClick={() => setViewMode('cards')}
               >
@@ -236,7 +234,7 @@ const PortfolioComponent = () => {
               </IconButton>
               <IconButton
                 aria-label={t('trading.viewMode.table')}
-                size="xs"
+                size="2xs"
                 variant={viewMode === 'table' ? 'solid' : 'outline'}
                 onClick={() => setViewMode('table')}
               >

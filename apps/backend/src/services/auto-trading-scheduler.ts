@@ -2340,6 +2340,22 @@ export class AutoTradingScheduler {
 
               try {
                 const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
+                const nowMs = Date.now();
+                const openedAtDate = new Date();
+                console.log('🔍 [TRADE DEBUG - PENDING] Timestamp values at trade creation:', {
+                  nowMs,
+                  nowISO: new Date(nowMs).toISOString(),
+                  openedAt: openedAtDate.toISOString(),
+                  triggerCandleRaw: triggerCandle,
+                  triggerCandleOpenTime: triggerCandle?.openTime,
+                  triggerCandleOpenTimeType: typeof triggerCandle?.openTime,
+                  triggerCandleOpenTimeISO: triggerCandle?.openTime ? new Date(triggerCandle.openTime).toISOString() : null,
+                  triggerKlineIndex: setup.triggerKlineIndex,
+                  setupType: setup.type,
+                  symbol: watcher.symbol,
+                  interval: watcher.interval,
+                  allTriggerCandleData: setup.triggerCandleData,
+                });
                 await db.insert(tradeExecutions).values({
                   id: executionId,
                   userId: watcher.userId,
@@ -2352,7 +2368,7 @@ export class AutoTradingScheduler {
                   quantity: actualQuantity.toFixed(8),
                   stopLoss: setup.stopLoss?.toString(),
                   takeProfit: effectiveTakeProfit?.toString(),
-                  openedAt: new Date(),
+                  openedAt: openedAtDate,
                   status: 'pending',
                   entryOrderType: 'LIMIT',
                   limitEntryPrice: setup.limitEntryPrice.toString(),
@@ -2490,6 +2506,22 @@ export class AutoTradingScheduler {
 
       try {
         const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
+        const nowMs = Date.now();
+        const openedAtDate = new Date();
+        console.log('🔍 [TRADE DEBUG - OPEN] Timestamp values at trade creation:', {
+          nowMs,
+          nowISO: new Date(nowMs).toISOString(),
+          openedAt: openedAtDate.toISOString(),
+          triggerCandleRaw: triggerCandle,
+          triggerCandleOpenTime: triggerCandle?.openTime,
+          triggerCandleOpenTimeType: typeof triggerCandle?.openTime,
+          triggerCandleOpenTimeISO: triggerCandle?.openTime ? new Date(triggerCandle.openTime).toISOString() : null,
+          triggerKlineIndex: setup.triggerKlineIndex,
+          setupType: setup.type,
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          allTriggerCandleData: setup.triggerCandleData,
+        });
         await db.insert(tradeExecutions).values({
           id: executionId,
           userId: watcher.userId,
@@ -2510,7 +2542,7 @@ export class AutoTradingScheduler {
           quantity: actualQuantity.toFixed(8),
           stopLoss: setup.stopLoss?.toString(),
           takeProfit: effectiveTakeProfit?.toString(),
-          openedAt: new Date(),
+          openedAt: openedAtDate,
           status: 'open',
           entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
           marketType: watcher.marketType,
