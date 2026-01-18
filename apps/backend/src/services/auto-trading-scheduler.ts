@@ -2846,37 +2846,18 @@ export class AutoTradingScheduler {
     klines: Kline[],
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
-    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = 'auto',
-    interval: string = '4h'
+    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' = '2',
+    _interval: string = '4h'
   ): number | null {
     const currentIndex = klines.length - 1;
-
-    const LOOKBACK_BY_INTERVAL: Record<string, number> = {
-      '1m': 30,
-      '3m': 40,
-      '5m': 50,
-      '15m': 75,
-      '30m': 100,
-      '1h': 100,
-      '2h': 120,
-      '4h': 150,
-      '6h': 150,
-      '8h': 150,
-      '12h': 175,
-      '1d': 200,
-      '3d': 250,
-      '1w': 300,
-      '1M': 400,
-    };
-    const adaptiveLookback = LOOKBACK_BY_INTERVAL[interval] ?? 100;
+    const lookback = 100;
 
     log('📐 Fibonacci lookback calculation', {
-      interval,
-      adaptiveLookback,
+      lookback,
       klinesAvailable: klines.length,
     });
 
-    const projection = calculateFibonacciProjection(klines, currentIndex, adaptiveLookback, direction);
+    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction);
 
     if (!projection || projection.levels.length === 0) {
       log('⚠️ Fibonacci projection failed', {
@@ -2889,7 +2870,7 @@ export class AutoTradingScheduler {
       return null;
     }
 
-    const targetLevel = fibonacciTargetLevel === 'auto' ? 1.618 : parseFloat(fibonacciTargetLevel);
+    const targetLevel = fibonacciTargetLevel === 'auto' ? 2 : parseFloat(fibonacciTargetLevel);
 
     const targetLevelData = projection.levels.find(
       (l) => Math.abs(l.level - targetLevel) < 0.001

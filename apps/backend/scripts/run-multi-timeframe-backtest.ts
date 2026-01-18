@@ -47,8 +47,8 @@ const SETUPS = [
 
 const BASE_CONFIG = {
   symbol: 'BTCUSDT',
-  startDate: '2021-11-01',
-  endDate: '2022-12-31',
+  startDate: '2024-01-17',
+  endDate: '2026-01-17',
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
   leverage: 1,

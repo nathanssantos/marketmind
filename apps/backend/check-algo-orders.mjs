@@ -24,9 +24,24 @@ const client = new USDMClient({
     api_secret: decrypt(wallet.api_secret_encrypted),
 });
 
+// Check positions
+const positions = await client.getPositions();
+const activePositions = positions.filter(p => parseFloat(p.positionAmt) !== 0);
+console.log('=== ACTIVE POSITIONS ===');
+activePositions.forEach(p => {
+    console.log({
+        symbol: p.symbol,
+        positionAmt: p.positionAmt,
+        entryPrice: p.entryPrice,
+        markPrice: p.markPrice,
+        unrealizedProfit: p.unrealizedProfit,
+    });
+});
+
 // Get all open algo orders
 const algoOrders = await client.getOpenAlgoOrders({ algoType: 'CONDITIONAL' });
-console.log('=== OPEN ALGO ORDERS ===');
+console.log('\n=== OPEN ALGO ORDERS ===');
+console.log('Total orders:', algoOrders.orders?.length ?? 0);
 algoOrders.orders?.forEach(o => {
     console.log({
         algoId: o.algoId,
@@ -39,5 +54,39 @@ algoOrders.orders?.forEach(o => {
         algoStatus: o.algoStatus,
     });
 });
+
+// Check algo order history for DOTUSDT
+console.log('\n=== ALGO ORDER HISTORY (DOTUSDT, last 5) ===');
+try {
+    const historyDOT = await client.getAllAlgoOrders({ algoType: 'CONDITIONAL', symbol: 'DOTUSDT' });
+    historyDOT.orders?.slice(0, 5).forEach(o => {
+        console.log({
+            algoId: o.algoId,
+            symbol: o.symbol,
+            type: o.orderType,
+            triggerPrice: o.triggerPrice,
+            algoStatus: o.algoStatus,
+        });
+    });
+} catch (e) {
+    console.log('Error:', e.message);
+}
+
+// Check algo order history for BNBUSDT  
+console.log('\n=== ALGO ORDER HISTORY (BNBUSDT, last 5) ===');
+try {
+    const historyBNB = await client.getAllAlgoOrders({ algoType: 'CONDITIONAL', symbol: 'BNBUSDT' });
+    historyBNB.orders?.slice(0, 5).forEach(o => {
+        console.log({
+            algoId: o.algoId,
+            symbol: o.symbol,
+            type: o.orderType,
+            triggerPrice: o.triggerPrice,
+            algoStatus: o.algoStatus,
+        });
+    });
+} catch (e) {
+    console.log('Error:', e.message);
+}
 
 await pool.end();

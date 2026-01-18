@@ -2,7 +2,7 @@
   "id": "momentum-breakout-2025",
   "name": "Momentum Breakout 2025",
   "version": "1.1.0",
-  "description": "Momentum trend strategy (LONG ONLY). Enters when EMA fast > slow, price > trend EMA, and RSI confirms momentum. Simplified conditions.",
+  "description": "Momentum trend strategy. Long: EMA fast > slow, price > trend EMA, RSI > 55. Short: EMA fast < slow, price < trend EMA, RSI < 45.",
   "author": "MarketMind",
   "tags": [
     "trend-following",
@@ -73,6 +73,13 @@
       "max": 65,
       "step": 5,
       "description": "RSI threshold for long (momentum confirmation)"
+    },
+    "rsiShort": {
+      "default": 45,
+      "min": 35,
+      "max": 50,
+      "step": 5,
+      "description": "RSI threshold for short (bearish momentum)"
     },
     "atrPeriod": {
       "default": 14,
@@ -146,6 +153,26 @@
           "left": "rsi",
           "op": ">",
           "right": "$rsiLong"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "emaFast",
+          "op": "<",
+          "right": "emaSlow"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "emaTrend"
+        },
+        {
+          "left": "rsi",
+          "op": "<",
+          "right": "$rsiShort"
         }
       ]
     }

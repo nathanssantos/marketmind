@@ -2,7 +2,7 @@
   "id": "momentum-rotation",
   "name": "Momentum Rotation",
   "version": "1.0.0",
-  "description": "Rotação baseada em momentum relativo. Compra ativos com maior momentum recente. Sistema de ranking e rotação.",
+  "description": "Momentum rotation strategy. Long: ROC > 5% and price > EMA50. Short: ROC < -5% and price < EMA50.",
   "author": "MarketMind",
   "tags": [
     "momentum",
@@ -35,12 +35,19 @@
       "step": 5,
       "description": "Período momentum"
     },
-    "minMomentum": {
+    "minMomentumLong": {
       "default": 5,
       "min": 0,
       "max": 15,
       "step": 2.5,
-      "description": "Momentum mínimo %"
+      "description": "Minimum positive momentum % for long"
+    },
+    "minMomentumShort": {
+      "default": -5,
+      "min": -15,
+      "max": 0,
+      "step": 2.5,
+      "description": "Maximum negative momentum % for short"
     },
     "atrMultiplier": {
       "default": 2,
@@ -77,11 +84,26 @@
         {
           "left": "roc",
           "op": ">",
-          "right": "$minMomentum"
+          "right": "$minMomentumLong"
         },
         {
           "left": "close",
           "op": ">",
+          "right": "ema50"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "roc",
+          "op": "<",
+          "right": "$minMomentumShort"
+        },
+        {
+          "left": "close",
+          "op": "<",
           "right": "ema50"
         }
       ]
@@ -111,6 +133,16 @@
           {
             "left": "roc",
             "op": "<",
+            "right": 0
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "roc",
+            "op": ">",
             "right": 0
           }
         ]

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
-import { createBinanceFuturesClient, getOpenAlgoOrders, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
+import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
 import { logger, serializeError } from './logger';
 import { cancelProtectionOrder } from './protection-orders';
 import { getWebSocketService } from './websocket';
@@ -13,6 +13,7 @@ export interface OrphanOrder {
   side: string;
   triggerPrice: string;
   quantity: string;
+  hasPositionOnExchange: boolean;
 }
 
 export interface MismatchedOrder {
@@ -135,7 +136,7 @@ export class OrderSyncService {
     try {
       const client = createBinanceFuturesClient(wallet);
 
-      const [dbOpenPositions, exchangeOrders] = await Promise.all([
+      const [dbOpenPositions, exchangeOrders, exchangePositions] = await Promise.all([
         db
           .select()
           .from(tradeExecutions)
@@ -147,7 +148,12 @@ export class OrderSyncService {
             )
           ),
         getOpenAlgoOrders(client),
+        getPositions(client),
       ]);
+
+      const symbolsWithPositionOnExchange = new Set(
+        exchangePositions.filter(p => parseFloat(p.positionAmt) !== 0).map(p => p.symbol)
+      );
 
       const dbAlgoIds = new Set<number>();
       const dbOrdersBySymbol = new Map<string, typeof dbOpenPositions[0]>();
@@ -167,6 +173,8 @@ export class OrderSyncService {
 
       for (const order of exchangeOrders) {
         if (!dbAlgoIds.has(order.algoId)) {
+          const hasPositionOnExchange = symbolsWithPositionOnExchange.has(order.symbol);
+
           result.orphanOrders.push({
             algoId: order.algoId,
             symbol: order.symbol,
@@ -174,9 +182,12 @@ export class OrderSyncService {
             side: order.side,
             triggerPrice: order.triggerPrice || '',
             quantity: order.quantity,
+            hasPositionOnExchange,
           });
 
-          if (this.autoCancelOrphans) {
+          const shouldCancel = this.autoCancelOrphans && !hasPositionOnExchange;
+
+          if (shouldCancel) {
             try {
               await cancelProtectionOrder({
                 wallet,
@@ -185,10 +196,15 @@ export class OrderSyncService {
                 algoId: order.algoId,
               });
               result.cancelledOrphans++;
-              logger.info({ algoId: order.algoId, symbol: order.symbol }, '[OrderSync] Cancelled orphan order');
+              logger.info({ algoId: order.algoId, symbol: order.symbol }, '[OrderSync] Cancelled orphan order (no position on exchange)');
             } catch (cancelError) {
               logger.warn({ algoId: order.algoId, error: serializeError(cancelError) }, '[OrderSync] Failed to cancel orphan order');
             }
+          } else if (this.autoCancelOrphans && hasPositionOnExchange) {
+            logger.warn(
+              { algoId: order.algoId, symbol: order.symbol },
+              '[OrderSync] Orphan order has position on exchange - NOT cancelling (database may be out of sync)'
+            );
           }
         }
       }

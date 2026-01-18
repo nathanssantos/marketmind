@@ -3,7 +3,7 @@
   "id": "rsi-oversold-bounce",
   "name": "RSI Oversold Bounce",
   "version": "1.0.0",
-  "description": "Long quando RSI sai da zona de oversold (cruza acima de 30). Ideal para capturar reversões após quedas fortes.",
+  "description": "RSI mean-reversion. Long: RSI crosses above 30 (oversold bounce). Short: RSI crosses below 70 (overbought reversal).",
   "author": "MarketMind",
   "tags": [
     "reversal",
@@ -46,14 +46,28 @@
       "min": 20,
       "max": 35,
       "step": 5,
-      "description": "Nível de oversold"
+      "description": "RSI oversold level for long entry"
     },
-    "exitLevel": {
+    "overboughtLevel": {
+      "default": 70,
+      "min": 65,
+      "max": 80,
+      "step": 5,
+      "description": "RSI overbought level for short entry"
+    },
+    "exitLevelLong": {
       "default": 50,
       "min": 40,
       "max": 60,
       "step": 5,
-      "description": "Nível de saída (RSI neutro)"
+      "description": "RSI exit level for long (neutral zone)"
+    },
+    "exitLevelShort": {
+      "default": 50,
+      "min": 40,
+      "max": 60,
+      "step": 5,
+      "description": "RSI exit level for short (neutral zone)"
     },
     "atrMultiplier": {
       "default": 2,
@@ -98,6 +112,21 @@
           "right": "$oversoldLevel"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi.prev",
+          "op": ">",
+          "right": "$overboughtLevel"
+        },
+        {
+          "left": "rsi",
+          "op": "<=",
+          "right": "$overboughtLevel"
+        }
+      ]
     }
   },
   "exit": {
@@ -108,7 +137,17 @@
           {
             "left": "rsi",
             "op": ">",
-            "right": "$exitLevel"
+            "right": "$exitLevelLong"
+          }
+        ]
+      },
+      "short": {
+        "operator": "AND",
+        "conditions": [
+          {
+            "left": "rsi",
+            "op": "<",
+            "right": "$exitLevelShort"
           }
         ]
       }

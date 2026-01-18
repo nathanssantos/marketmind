@@ -3,7 +3,7 @@
   "id": "connors-rsi2-original",
   "name": "Connors RSI 2 Original",
   "version": "1.0.0",
-  "description": "Larry Connors' original RSI 2 mean-reversion strategy (LONG ONLY) from 'Short-Term Trading Strategies That Work' (2008). Rules: RSI(2) < 5 + above 200 SMA = long. Backtested: 75% win rate over 34 years.",
+  "description": "Larry Connors' RSI 2 mean-reversion strategy from 'Short-Term Trading Strategies That Work' (2008). Long: RSI(2) < 15 + above SMA. Short: RSI(2) > 85 + below SMA.",
   "author": "MarketMind",
   "tags": [
     "mean-reversion",
@@ -42,12 +42,19 @@
       "step": 1,
       "description": "RSI period (2 is original)"
     },
-    "rsiEntry": {
+    "rsiEntryLong": {
       "default": 15,
       "min": 5,
       "max": 25,
       "step": 1,
-      "description": "RSI entry threshold (crypto needs higher value than stocks)"
+      "description": "RSI entry threshold for long (oversold)"
+    },
+    "rsiEntryShort": {
+      "default": 85,
+      "min": 75,
+      "max": 95,
+      "step": 1,
+      "description": "RSI entry threshold for short (overbought)"
     },
     "smaTrend": {
       "default": 50,
@@ -111,11 +118,26 @@
         {
           "left": "rsi2",
           "op": "<",
-          "right": "$rsiEntry"
+          "right": "$rsiEntryLong"
         },
         {
           "left": "close",
           "op": ">",
+          "right": "sma200"
+        }
+      ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi2",
+          "op": ">",
+          "right": "$rsiEntryShort"
+        },
+        {
+          "left": "close",
+          "op": "<",
           "right": "sma200"
         }
       ]
@@ -129,6 +151,16 @@
           {
             "left": "close",
             "op": ">",
+            "right": "sma5"
+          }
+        ]
+      },
+      "short": {
+        "operator": "AND",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "<",
             "right": "sma5"
           }
         ]

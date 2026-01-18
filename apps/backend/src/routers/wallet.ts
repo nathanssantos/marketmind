@@ -135,7 +135,7 @@ export const walletRouter = router({
           }
 
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
-          initialBalance = usdtAsset?.availableBalance ? parseFloat(String(usdtAsset.availableBalance)) : 0;
+          initialBalance = usdtAsset?.walletBalance ? parseFloat(String(usdtAsset.walletBalance)) : 0;
         } else {
           const client = new MainClient({
             api_key: input.apiKey,
@@ -301,8 +301,8 @@ export const walletRouter = router({
           const client = createBinanceFuturesClient(wallet);
           const accountInfo = await client.getAccountInformation();
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
-          currentBalance = usdtAsset?.availableBalance
-            ? parseFloat(String(usdtAsset.availableBalance))
+          currentBalance = usdtAsset?.walletBalance
+            ? parseFloat(String(usdtAsset.walletBalance))
             : 0;
         } else {
           const client = createBinanceClient(wallet);
@@ -430,6 +430,7 @@ export const walletRouter = router({
 
       try {
         let totalValueUSDT = 0;
+        let realizedBalanceUSDT = 0;
         let assets: Array<{ asset: string; free: string; locked: string; valueUSDT: string }> = [];
 
         if (wallet.marketType === 'FUTURES') {
@@ -442,18 +443,19 @@ export const walletRouter = router({
           }) || [];
 
           for (const asset of nonZeroAssets) {
-            const walletBalance = parseFloat(String(asset.walletBalance || '0'));
+            const assetWalletBalance = parseFloat(String(asset.walletBalance || '0'));
             const availableBalance = parseFloat(String(asset.availableBalance || '0'));
             const marginBalance = parseFloat(String(asset.marginBalance || '0'));
 
             if (asset.asset === 'USDT') {
               totalValueUSDT += marginBalance;
+              realizedBalanceUSDT += assetWalletBalance;
             }
 
             assets.push({
               asset: asset.asset,
               free: availableBalance.toString(),
-              locked: (walletBalance - availableBalance).toFixed(2),
+              locked: (assetWalletBalance - availableBalance).toFixed(2),
               valueUSDT: marginBalance.toFixed(2),
             });
           }
@@ -513,6 +515,7 @@ export const walletRouter = router({
           );
 
           assets = assetsWithValue;
+          realizedBalanceUSDT = totalValueUSDT;
         }
 
         const sortedAssets = assets.sort(
@@ -522,13 +525,14 @@ export const walletRouter = router({
         await ctx.db
           .update(wallets)
           .set({
-            currentBalance: totalValueUSDT.toFixed(2),
+            currentBalance: realizedBalanceUSDT.toFixed(2),
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, input.id));
 
         return {
           totalValueUSDT: totalValueUSDT.toFixed(2),
+          realizedBalance: realizedBalanceUSDT.toFixed(2),
           walletType: wallet.walletType,
           marketType: wallet.marketType,
           assets: sortedAssets,
