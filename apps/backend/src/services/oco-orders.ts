@@ -65,6 +65,11 @@ export class OCOOrderService {
       return null;
     }
 
+    if (wallet.marketType === 'FUTURES') {
+      logger.warn({ symbol, marketType: wallet.marketType }, 'OCO orders not supported on FUTURES - use separate SL/TP orders');
+      return null;
+    }
+
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
     const slLimitPrice = stopLoss * (orderSide === 'SELL' ? 0.995 : 1.005);
 

@@ -1774,29 +1774,43 @@ export class AutoTradingScheduler {
           }
 
           if (orderFilled && setup.stopLoss && effectiveTakeProfit) {
-            try {
-              const ocoResult = await ocoOrderService.createExitOCO(
-                wallet as Wallet,
-                watcher.symbol,
-                actualQuantity,
-                setup.stopLoss,
-                effectiveTakeProfit,
-                setup.direction
-              );
+            const useSeparateOrders = watcher.marketType === 'FUTURES';
 
-              if (ocoResult) {
-                orderListId = ocoResult.orderListId;
-                stopLossOrderId = ocoResult.stopLossOrderId;
-                takeProfitOrderId = ocoResult.takeProfitOrderId;
-                log('✅ OCO exit orders placed', {
-                  orderListId,
-                  stopLossOrderId,
-                  takeProfitOrderId,
-                  stopLoss: setup.stopLoss,
-                  takeProfit: effectiveTakeProfit,
-                });
-              } else {
-                log('⚠️ OCO placement returned null, falling back to separate orders');
+            if (useSeparateOrders) {
+              log('📊 FUTURES market - using separate SL/TP orders (OCO not supported)', {
+                symbol: watcher.symbol,
+                marketType: watcher.marketType,
+              });
+            }
+
+            try {
+              if (!useSeparateOrders) {
+                const ocoResult = await ocoOrderService.createExitOCO(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  setup.stopLoss,
+                  effectiveTakeProfit,
+                  setup.direction
+                );
+
+                if (ocoResult) {
+                  orderListId = ocoResult.orderListId;
+                  stopLossOrderId = ocoResult.stopLossOrderId;
+                  takeProfitOrderId = ocoResult.takeProfitOrderId;
+                  log('✅ OCO exit orders placed', {
+                    orderListId,
+                    stopLossOrderId,
+                    takeProfitOrderId,
+                    stopLoss: setup.stopLoss,
+                    takeProfit: effectiveTakeProfit,
+                  });
+                } else {
+                  log('⚠️ OCO placement returned null, falling back to separate orders');
+                }
+              }
+
+              if (useSeparateOrders || !orderListId) {
                 const slResult = await autoTradingService.createStopLossOrder(
                   wallet as Wallet,
                   watcher.symbol,
@@ -1824,6 +1838,17 @@ export class AutoTradingScheduler {
                   takeProfitAlgoId = tpResult.algoId;
                 } else {
                   takeProfitOrderId = tpResult.orderId;
+                }
+
+                if (useSeparateOrders) {
+                  log('✅ Separate SL/TP orders placed for FUTURES', {
+                    stopLossOrderId,
+                    stopLossAlgoId,
+                    takeProfitOrderId,
+                    takeProfitAlgoId,
+                    stopLoss: setup.stopLoss,
+                    takeProfit: effectiveTakeProfit,
+                  });
                 }
               }
             } catch (ocoError) {

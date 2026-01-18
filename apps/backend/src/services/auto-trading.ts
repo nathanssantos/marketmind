@@ -362,16 +362,27 @@ export class AutoTradingService {
       if (marketType === 'FUTURES') {
         const client = createBinanceFuturesClient(wallet);
 
-        const order = await client.submitNewOrder({
+        const orderPayload: Parameters<typeof client.submitNewOrder>[0] = {
           symbol: orderParams.symbol,
           side: orderParams.side,
           type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
           quantity: orderParams.quantity,
-          price: orderParams.price,
-          stopPrice: orderParams.stopPrice,
-          timeInForce: orderParams.timeInForce,
-          reduceOnly: orderParams.reduceOnly ? 'true' : undefined,
-        });
+        };
+
+        if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
+          orderPayload.price = orderParams.price;
+        }
+        if (orderParams.stopPrice !== undefined) {
+          orderPayload.stopPrice = orderParams.stopPrice;
+        }
+        if (orderParams.timeInForce) {
+          orderPayload.timeInForce = orderParams.timeInForce;
+        }
+        if (orderParams.reduceOnly) {
+          orderPayload.reduceOnly = 'true';
+        }
+
+        const order = await client.submitNewOrder(orderPayload);
 
         logger.info({
           orderId: order.orderId,
@@ -392,15 +403,24 @@ export class AutoTradingService {
 
       const client = createBinanceClient(wallet);
 
-      const order = await client.submitNewOrder({
+      const spotOrderPayload: Parameters<typeof client.submitNewOrder>[0] = {
         symbol: orderParams.symbol,
         side: orderParams.side,
         type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS_LIMIT',
         quantity: orderParams.quantity,
-        price: orderParams.price,
-        stopPrice: orderParams.stopPrice,
-        timeInForce: orderParams.timeInForce,
-      });
+      };
+
+      if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
+        spotOrderPayload.price = orderParams.price;
+      }
+      if (orderParams.stopPrice !== undefined) {
+        spotOrderPayload.stopPrice = orderParams.stopPrice;
+      }
+      if (orderParams.timeInForce) {
+        spotOrderPayload.timeInForce = orderParams.timeInForce;
+      }
+
+      const order = await client.submitNewOrder(spotOrderPayload);
 
       logger.info({
         orderId: order.orderId,

@@ -832,18 +832,20 @@ export class BinanceFuturesUserStreamService {
         return;
       }
 
-      const isSLOrder = execution.stopLossOrderId === algoId;
-      const isTPOrder = execution.takeProfitOrderId === algoId;
+      const isSLOrder = execution.stopLossAlgoId === algoId || execution.stopLossOrderId === algoId;
+      const isTPOrder = execution.takeProfitAlgoId === algoId || execution.takeProfitOrderId === algoId;
 
       if (!isSLOrder && !isTPOrder) {
         logger.debug(
-          { walletId, symbol, algoId, stopLossOrderId: execution.stopLossOrderId, takeProfitOrderId: execution.takeProfitOrderId },
+          { walletId, symbol, algoId, stopLossAlgoId: execution.stopLossAlgoId, takeProfitAlgoId: execution.takeProfitAlgoId },
           '[FuturesUserStream] Algo order not recognized as SL or TP for this execution'
         );
         return;
       }
 
-      const orderToCancel = isSLOrder ? execution.takeProfitOrderId : execution.stopLossOrderId;
+      const orderToCancel = isSLOrder
+        ? (execution.takeProfitAlgoId || execution.takeProfitOrderId)
+        : (execution.stopLossAlgoId || execution.stopLossOrderId);
       const exitReason = isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT';
 
       logger.info(
