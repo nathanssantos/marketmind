@@ -7,10 +7,11 @@ import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
 import { serializeError } from '../utils/errors';
-import { formatNumberForBinance } from '../utils/formatters';
+import { formatQuantityForBinance, formatPriceForBinance } from '../utils/formatters';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
 import { submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
+import { getMinNotionalFilterService } from './min-notional-filter';
 
 export interface AlgoOrderResult {
   algoId: number;
@@ -360,6 +361,14 @@ export class AutoTradingService {
     }
 
     try {
+      const minNotionalFilter = getMinNotionalFilterService();
+      const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
+      const filters = symbolFilters.get(orderParams.symbol);
+      const stepSize = filters?.stepSize?.toString();
+      const tickSize = filters?.tickSize?.toString();
+
+      const formattedQuantity = parseFloat(formatQuantityForBinance(orderParams.quantity, stepSize));
+
       if (marketType === 'FUTURES') {
         const client = createBinanceFuturesClient(wallet);
 
@@ -367,14 +376,14 @@ export class AutoTradingService {
           symbol: orderParams.symbol,
           side: orderParams.side,
           type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
-          quantity: orderParams.quantity,
+          quantity: formattedQuantity,
         };
 
         if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
-          orderPayload.price = orderParams.price;
+          orderPayload.price = parseFloat(formatPriceForBinance(orderParams.price, tickSize));
         }
         if (orderParams.stopPrice !== undefined) {
-          orderPayload.stopPrice = orderParams.stopPrice;
+          orderPayload.stopPrice = parseFloat(formatPriceForBinance(orderParams.stopPrice, tickSize));
         }
         if (orderParams.timeInForce) {
           orderPayload.timeInForce = orderParams.timeInForce;
@@ -382,6 +391,14 @@ export class AutoTradingService {
         if (orderParams.reduceOnly) {
           orderPayload.reduceOnly = 'true';
         }
+
+        logger.debug({
+          symbol: orderParams.symbol,
+          originalQuantity: orderParams.quantity,
+          formattedQuantity,
+          stepSize,
+          tickSize,
+        }, 'Formatted order parameters for Binance');
 
         const order = await client.submitNewOrder(orderPayload);
 
@@ -408,14 +425,14 @@ export class AutoTradingService {
         symbol: orderParams.symbol,
         side: orderParams.side,
         type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS_LIMIT',
-        quantity: orderParams.quantity,
+        quantity: formattedQuantity,
       };
 
       if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
-        spotOrderPayload.price = orderParams.price;
+        spotOrderPayload.price = parseFloat(formatPriceForBinance(orderParams.price, tickSize));
       }
       if (orderParams.stopPrice !== undefined) {
-        spotOrderPayload.stopPrice = orderParams.stopPrice;
+        spotOrderPayload.stopPrice = parseFloat(formatPriceForBinance(orderParams.stopPrice, tickSize));
       }
       if (orderParams.timeInForce) {
         spotOrderPayload.timeInForce = orderParams.timeInForce;
@@ -483,8 +500,15 @@ export class AutoTradingService {
 
     if (marketType === 'FUTURES') {
       const client = createBinanceFuturesClient(wallet);
-      const formattedQuantity = formatNumberForBinance(quantity);
-      const formattedTriggerPrice = formatNumberForBinance(stopLoss);
+
+      const minNotionalFilter = getMinNotionalFilterService();
+      const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
+      const filters = symbolFilters.get(symbol);
+      const stepSize = filters?.stepSize?.toString();
+      const tickSize = filters?.tickSize?.toString();
+
+      const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
+      const formattedTriggerPrice = formatPriceForBinance(stopLoss, tickSize);
 
       const algoOrder = await submitFuturesAlgoOrder(client, {
         symbol,
@@ -535,8 +559,15 @@ export class AutoTradingService {
 
     if (marketType === 'FUTURES') {
       const client = createBinanceFuturesClient(wallet);
-      const formattedQuantity = formatNumberForBinance(quantity);
-      const formattedTriggerPrice = formatNumberForBinance(takeProfit);
+
+      const minNotionalFilter = getMinNotionalFilterService();
+      const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
+      const filters = symbolFilters.get(symbol);
+      const stepSize = filters?.stepSize?.toString();
+      const tickSize = filters?.tickSize?.toString();
+
+      const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
+      const formattedTriggerPrice = formatPriceForBinance(takeProfit, tickSize);
 
       const algoOrder = await submitFuturesAlgoOrder(client, {
         symbol,
