@@ -57,6 +57,7 @@ export interface WatcherResult {
   tradesExecuted: number;
   durationMs: number;
   logs: LogEntry[];
+  isRecentlyRotated?: boolean;
 }
 
 export interface BatchResult {

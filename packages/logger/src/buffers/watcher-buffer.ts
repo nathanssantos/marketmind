@@ -76,7 +76,12 @@ export class WatcherLogBuffer {
     this.tradesExecuted++;
   }
 
-  toResult(status: 'success' | 'skipped' | 'pending' | 'error', reason?: string, klinesCount?: number): WatcherResult {
+  toResult(
+    status: 'success' | 'skipped' | 'pending' | 'error',
+    reason?: string,
+    klinesCount?: number,
+    isRecentlyRotated?: boolean
+  ): WatcherResult {
     return {
       watcherId: this.watcherId,
       symbol: this.symbol,
@@ -93,6 +98,7 @@ export class WatcherLogBuffer {
       tradesExecuted: this.tradesExecuted,
       durationMs: Date.now() - this.startTime,
       logs: this.logs,
+      isRecentlyRotated,
     };
   }
 }

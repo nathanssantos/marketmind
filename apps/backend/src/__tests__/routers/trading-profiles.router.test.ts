@@ -1,8 +1,38 @@
 import { TRPCError } from '@trpc/server';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables } from '../helpers/test-db';
 import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
+
+vi.mock('../../services/binance-kline-stream', () => ({
+  binanceKlineStreamService: {
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+    getActiveSubscriptions: vi.fn().mockReturnValue([]),
+  },
+  binanceFuturesKlineStreamService: {
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+    getActiveSubscriptions: vi.fn().mockReturnValue([]),
+  },
+}));
+
+vi.mock('../../services/kline-prefetch', () => ({
+  checkKlineAvailability: vi.fn().mockResolvedValue({
+    hasSufficient: true,
+    totalAvailable: 5000,
+    required: 4500,
+    apiExhausted: false,
+  }),
+  prefetchKlines: vi.fn().mockResolvedValue({
+    success: true,
+    downloaded: 0,
+    totalInDb: 5000,
+    gaps: 0,
+    alreadyComplete: true,
+  }),
+  prefetchKlinesAsync: vi.fn(),
+}));
 
 describe('Trading Profiles Router', () => {
   beforeAll(async () => {

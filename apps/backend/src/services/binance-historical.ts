@@ -229,20 +229,24 @@ export const smartBackfillKlines = async (
   symbol: string,
   interval: Interval,
   targetCount: number,
-  marketType: 'SPOT' | 'FUTURES' = 'SPOT'
+  marketType: 'SPOT' | 'FUTURES' = 'SPOT',
+  forRotation: boolean = false
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMilliseconds(interval);
   const now = Date.now();
+
+  const currentCandleOpenTime = Math.floor(now / intervalMs) * intervalMs;
+  const effectiveEndTime = forRotation ? currentCandleOpenTime - 1 : now;
 
   const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
   const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
   const minStartTime = marketType === 'FUTURES' ? BINANCE_FUTURES_START : BINANCE_SPOT_START;
 
-  const calculatedStartTime = now - intervalMs * targetCount;
+  const calculatedStartTime = effectiveEndTime - intervalMs * targetCount;
   const targetStartTime = Math.max(calculatedStartTime, minStartTime);
 
   logger.info(
-    { symbol, interval, marketType, targetCount, targetStartTime: new Date(targetStartTime).toISOString() },
+    { symbol, interval, marketType, targetCount, targetStartTime: new Date(targetStartTime).toISOString(), forRotation },
     '📥 [SmartBackfill] Analyzing existing data'
   );
 
@@ -270,12 +274,12 @@ export const smartBackfillKlines = async (
   let totalDownloaded = 0;
 
   if (existingKlines.length === 0) {
-    logger.info({ symbol, interval, marketType, targetCount }, '🚀 [SmartBackfill] No existing data, downloading full range');
+    logger.info({ symbol, interval, marketType, targetCount, forRotation }, '🚀 [SmartBackfill] No existing data, downloading full range');
     const downloaded = await backfillHistoricalKlines(
       symbol,
       interval,
       new Date(targetStartTime),
-      new Date(),
+      new Date(effectiveEndTime),
       marketType
     );
     const isComplete = downloaded === 0;
@@ -293,10 +297,10 @@ export const smartBackfillKlines = async (
     );
   }
 
-  if (newestExisting < now - intervalMs * GAP_TOLERANCE_MULTIPLIER) {
-    gaps.push({ start: newestExisting + intervalMs, end: now, type: 'end' });
+  if (newestExisting < effectiveEndTime - intervalMs * GAP_TOLERANCE_MULTIPLIER) {
+    gaps.push({ start: newestExisting + intervalMs, end: effectiveEndTime, type: 'end' });
     logger.debug(
-      { symbol, interval, marketType, gapStart: new Date(newestExisting).toISOString(), gapEnd: new Date(now).toISOString() },
+      { symbol, interval, marketType, gapStart: new Date(newestExisting).toISOString(), gapEnd: new Date(effectiveEndTime).toISOString() },
       'Smart backfill: detected gap at end (need recent data)'
     );
   }

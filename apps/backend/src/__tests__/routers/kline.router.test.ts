@@ -207,7 +207,7 @@ describe('Kline Router', () => {
       });
 
       expect(result.length).toBe(2);
-      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1m', 10, 'SPOT');
+      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1m', 10, 'SPOT', false);
       expect(binanceKlineStreamService.subscribe).toHaveBeenCalledWith('BTCUSDT', '1m');
     });
 
@@ -269,7 +269,7 @@ describe('Kline Router', () => {
       expect(result.success).toBe(true);
       expect(result.downloaded).toBeDefined();
       expect(result.totalInDb).toBeDefined();
-      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1h', 500, 'SPOT');
+      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1h', 500, 'SPOT', false);
     });
 
     it('should trigger backfill for FUTURES market', async () => {
@@ -284,7 +284,7 @@ describe('Kline Router', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(smartBackfillKlines).toHaveBeenCalledWith('ETHUSDT', '4h', 200, 'FUTURES');
+      expect(smartBackfillKlines).toHaveBeenCalledWith('ETHUSDT', '4h', 200, 'FUTURES', false);
     });
   });
 

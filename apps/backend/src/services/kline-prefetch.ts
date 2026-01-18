@@ -20,6 +20,7 @@ export interface PrefetchOptions {
   marketType?: 'SPOT' | 'FUTURES';
   targetCount?: number;
   silent?: boolean;
+  forRotation?: boolean;
 }
 
 export interface PrefetchResult {
@@ -38,6 +39,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     marketType = 'FUTURES',
     targetCount = REQUIRED_KLINES,
     silent = false,
+    forRotation = false,
   } = options;
 
   const key = getBackfillKey(symbol, interval, marketType);
@@ -66,7 +68,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     }
   }
 
-  const backfillPromise = smartBackfillKlines(symbol, interval as Interval, targetCount, marketType);
+  const backfillPromise = smartBackfillKlines(symbol, interval as Interval, targetCount, marketType, forRotation);
   activeBackfills.set(key, backfillPromise);
 
   try {

@@ -190,8 +190,12 @@ export const formatBatchResults = (batch: BatchResult): string => {
         ? result.setupsDetected.map(s => `${s.type}(${s.direction[0]})`).join(', ')
         : '-');
 
+      const symbolDisplay = result.isRecentlyRotated
+        ? colorize(result.symbol, 'bright') + colorize(' R', 'magenta')
+        : colorize(result.symbol, 'bright');
+
       watcherTable.push([
-        colorize(result.symbol, 'bright'),
+        symbolDisplay,
         result.interval,
         result.marketType,
         getStatusDisplay(result.status),

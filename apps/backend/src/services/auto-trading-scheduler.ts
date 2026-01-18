@@ -131,11 +131,22 @@ interface CacheEntry<T> {
 
 const CACHE_TTL_MS = 60 * 1000;
 
+const MIN_ROTATION_ANTICIPATION_MS = 60 * 1000;
+const MAX_ROTATION_ANTICIPATION_MS = 10 * 60 * 1000;
+const MIN_ROTATION_PREPARATION_TIME_MS = 30 * 1000;
+
+const getRotationAnticipationMs = (interval: string): number => {
+  const intervalMs = INTERVAL_MS[interval as Interval] ?? TIME_MS.HOUR;
+  const anticipation = Math.floor(intervalMs * 0.02);
+  return Math.max(MIN_ROTATION_ANTICIPATION_MS, Math.min(anticipation, MAX_ROTATION_ANTICIPATION_MS));
+};
+
 interface WalletRotationState {
   config: RotationConfig;
   userId: string;
   profileId?: string;
   lastCandleCloseTime: number;
+  lastRotationCandleClose: number;
 }
 
 const getRotationStateKey = (walletId: string, interval: string): string =>
@@ -143,12 +154,12 @@ const getRotationStateKey = (walletId: string, interval: string): string =>
 
 const getCandleCloseTime = (interval: string, timestamp: number = Date.now()): number => {
   const intervalMs = getIntervalMs(interval);
-  return Math.floor(timestamp / intervalMs) * intervalMs;
+  const candleOpenTime = Math.floor(timestamp / intervalMs) * intervalMs;
+  return candleOpenTime + intervalMs;
 };
 
 const getNextCandleCloseTime = (interval: string, timestamp: number = Date.now()): number => {
-  const intervalMs = getIntervalMs(interval);
-  return Math.ceil(timestamp / intervalMs) * intervalMs;
+  return getCandleCloseTime(interval, timestamp) + getIntervalMs(interval);
 };
 
 export class AutoTradingScheduler {
@@ -168,6 +179,10 @@ export class AutoTradingScheduler {
 
   private rotationStates: Map<string, WalletRotationState> = new Map();
   private isCheckingRotation: Set<string> = new Set();
+  private rotationPendingWatchers = new Map<string, { addedAt: number; targetCandleClose: number }>();
+  private recentlyRotatedWatchers = new Map<string, number>();
+  private anticipationCheckIntervalId: ReturnType<typeof setInterval> | null = null;
+  private readonly ANTICIPATION_CHECK_INTERVAL_MS = 15 * 1000;
 
   constructor() {
     this.strategyLoader = new StrategyLoader([STRATEGIES_DIR]);
@@ -305,24 +320,128 @@ export class AutoTradingScheduler {
     this.configCache.delete(walletId);
   }
 
-  private async checkAllRotationsOnce(): Promise<string[]> {
-    const allAddedWatcherIds: string[] = [];
+  private startAnticipationTimer(): void {
+    if (this.anticipationCheckIntervalId) return;
 
-    if (this.rotationStates.size === 0) {
-      log('📊 [DynamicRotation] No rotation states configured');
-      return allAddedWatcherIds;
-    }
+    this.anticipationCheckIntervalId = setInterval(() => {
+      void this.checkAnticipatedRotations();
+    }, this.ANTICIPATION_CHECK_INTERVAL_MS);
+
+    log('⏰ [DynamicRotation] Started anticipation timer', {
+      intervalMs: this.ANTICIPATION_CHECK_INTERVAL_MS,
+    });
+  }
+
+  private stopAnticipationTimer(): void {
+    if (!this.anticipationCheckIntervalId) return;
+
+    clearInterval(this.anticipationCheckIntervalId);
+    this.anticipationCheckIntervalId = null;
+
+    log('⏹️ [DynamicRotation] Stopped anticipation timer');
+  }
+
+  private async checkAnticipatedRotations(): Promise<void> {
+    if (this.rotationStates.size === 0) return;
 
     const now = Date.now();
-    const rotationsToExecute: Array<{ stateKey: string; state: WalletRotationState }> = [];
 
     for (const [stateKey, state] of this.rotationStates.entries()) {
       if (this.isCheckingRotation.has(stateKey)) continue;
 
+      const anticipationMs = getRotationAnticipationMs(state.config.interval);
       const currentCandleClose = getCandleCloseTime(state.config.interval, now);
+      const timeUntilCurrentClose = currentCandleClose - now;
 
-      if (currentCandleClose > state.lastCandleCloseTime) {
-        rotationsToExecute.push({ stateKey, state });
+      const isInRotationWindow = timeUntilCurrentClose > 0 &&
+                                 timeUntilCurrentClose <= anticipationMs &&
+                                 timeUntilCurrentClose >= MIN_ROTATION_PREPARATION_TIME_MS;
+
+      if (isInRotationWindow && state.lastRotationCandleClose !== currentCandleClose) {
+        log('🔮 [DynamicRotation] Anticipating rotation', {
+          stateKey,
+          interval: state.config.interval,
+          marketType: state.config.marketType,
+          timeUntilClose: `${Math.round(timeUntilCurrentClose / 1000)}s`,
+          targetCandleClose: new Date(currentCandleClose).toISOString(),
+        });
+
+        this.isCheckingRotation.add(stateKey);
+
+        try {
+          const walletId = stateKey.split(':')[0]!;
+          const rotationService = getDynamicSymbolRotationService();
+
+          if (state.config.capitalRequirement) {
+            const [wallet] = await db
+              .select({ currentBalance: wallets.currentBalance })
+              .from(wallets)
+              .where(eq(wallets.id, walletId))
+              .limit(1);
+
+            if (wallet) {
+              state.config.capitalRequirement.walletBalance = parseFloat(wallet.currentBalance ?? '0');
+            }
+          }
+
+          const result = await rotationService.executeRotation(
+            walletId,
+            state.userId,
+            state.config
+          );
+
+          if (result.added.length > 0 || result.removed.length > 0) {
+            log('🔮 [DynamicRotation] Applying anticipated rotation', {
+              walletId,
+              added: result.added.length,
+              removed: result.removed.length,
+              targetCandleClose: new Date(currentCandleClose).toISOString(),
+            });
+
+            await this.applyRotationWithQueue(
+              walletId,
+              state.userId,
+              result,
+              state.config.interval,
+              state.profileId,
+              state.config.marketType,
+              currentCandleClose
+            );
+          }
+
+          state.lastRotationCandleClose = currentCandleClose;
+        } catch (error) {
+          log('❌ [DynamicRotation] Anticipated rotation failed', {
+            stateKey,
+            error: serializeError(error),
+          });
+        } finally {
+          this.isCheckingRotation.delete(stateKey);
+        }
+      }
+    }
+  }
+
+  private async checkAllRotationsOnce(): Promise<string[]> {
+    const allAddedWatcherIds: string[] = [];
+
+    if (this.rotationStates.size === 0) {
+      return allAddedWatcherIds;
+    }
+
+    const now = Date.now();
+    const rotationsToExecute: Array<{ stateKey: string; state: WalletRotationState; targetCandleClose: number; isAnticipated: boolean }> = [];
+
+    for (const [stateKey, state] of this.rotationStates.entries()) {
+      if (this.isCheckingRotation.has(stateKey)) continue;
+
+      const intervalMs = INTERVAL_MS[state.config.interval as Interval] ?? TIME_MS.HOUR;
+      const currentCandleClose = getCandleCloseTime(state.config.interval, now);
+      const previousCandleClose = currentCandleClose - intervalMs;
+      const isNewCandle = currentCandleClose > state.lastCandleCloseTime;
+
+      if (isNewCandle && state.lastRotationCandleClose !== previousCandleClose) {
+        rotationsToExecute.push({ stateKey, state, targetCandleClose: previousCandleClose, isAnticipated: false });
       }
     }
 
@@ -333,9 +452,10 @@ export class AutoTradingScheduler {
     log('🔄 [DynamicRotation] Checking rotations', {
       count: rotationsToExecute.length,
       wallets: rotationsToExecute.map(r => r.state.config.marketType).join(', '),
+      anticipated: rotationsToExecute.filter(r => r.isAnticipated).length,
     });
 
-    for (const { stateKey, state } of rotationsToExecute) {
+    for (const { stateKey, state, targetCandleClose, isAnticipated } of rotationsToExecute) {
       this.isCheckingRotation.add(stateKey);
 
       try {
@@ -361,19 +481,28 @@ export class AutoTradingScheduler {
         );
 
         if (result.added.length > 0 || result.removed.length > 0) {
-          const walletId = stateKey.split(':')[0]!;
+          log('🔄 [DynamicRotation] Applying rotation', {
+            walletId,
+            added: result.added.length,
+            removed: result.removed.length,
+            anticipated: isAnticipated,
+            targetCandleClose: new Date(targetCandleClose).toISOString(),
+          });
+
           const addedIds = await this.applyRotationWithQueue(
             walletId,
             state.userId,
             result,
             state.config.interval,
             state.profileId,
-            state.config.marketType
+            state.config.marketType,
+            targetCandleClose
           );
           allAddedWatcherIds.push(...addedIds);
         }
 
         state.lastCandleCloseTime = getCandleCloseTime(state.config.interval, now);
+        state.lastRotationCandleClose = targetCandleClose;
       } catch (error) {
         log('❌ [DynamicRotation] Rotation check failed', {
           stateKey,
@@ -393,7 +522,8 @@ export class AutoTradingScheduler {
     result: RotationResult,
     interval: string,
     profileId?: string,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'SPOT',
+    targetCandleClose?: number
   ): Promise<string[]> {
     const addedWatcherIds: string[] = [];
 
@@ -413,6 +543,7 @@ export class AutoTradingScheduler {
       log('📥 [DynamicRotation] Backfilling new symbols', {
         count: symbolsToAdd.length,
         symbols: symbolsToAdd.join(', '),
+        targetCandleClose: targetCandleClose ? new Date(targetCandleClose).toISOString() : 'not set',
       });
 
       const klineMaintenance = getKlineMaintenance();
@@ -422,7 +553,14 @@ export class AutoTradingScheduler {
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
           log('📥 [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
-          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, targetCount: requiredKlinesForRotation, silent: false });
+          const prefetchResult = await prefetchKlines({
+            symbol,
+            interval,
+            marketType,
+            targetCount: requiredKlinesForRotation,
+            silent: false,
+            forRotation: true,
+          });
           log('📊 [DynamicRotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
@@ -439,8 +577,17 @@ export class AutoTradingScheduler {
 
     for (const symbol of symbolsToAdd) {
       const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
-      await this.startWatcher(walletId, userId, symbol, interval, profileId, false, marketType, false, false, true);
+      await this.startWatcher(walletId, userId, symbol, interval, profileId, false, marketType, false, false, true, targetCandleClose);
       addedWatcherIds.push(watcherId);
+
+      this.recentlyRotatedWatchers.set(watcherId, Date.now());
+
+      if (targetCandleClose) {
+        this.rotationPendingWatchers.set(watcherId, {
+          addedAt: Date.now(),
+          targetCandleClose,
+        });
+      }
     }
 
     return addedWatcherIds;
@@ -578,15 +725,32 @@ export class AutoTradingScheduler {
       watcher.profileName
     );
 
+    const isRecentlyRotated = this.isWatcherRecentlyRotated(watcherId);
+
     try {
       const result = await this.processWatcherCore(watcher, logBuffer);
+      result.isRecentlyRotated = isRecentlyRotated;
       return result;
     } catch (error) {
       logBuffer.error('❌', 'Error processing watcher', {
         error: serializeError(error),
       });
-      return logBuffer.toResult('error', serializeError(error));
+      const result = logBuffer.toResult('error', serializeError(error));
+      result.isRecentlyRotated = isRecentlyRotated;
+      return result;
     }
+  }
+
+  private isWatcherRecentlyRotated(watcherId: string): boolean {
+    const rotatedAt = this.recentlyRotatedWatchers.get(watcherId);
+    if (!rotatedAt) return false;
+
+    const maxAge = 2 * TIME_MS.HOUR;
+    if (Date.now() - rotatedAt > maxAge) {
+      this.recentlyRotatedWatchers.delete(watcherId);
+      return false;
+    }
+    return true;
   }
 
   // eslint-disable-next-line complexity
@@ -680,6 +844,10 @@ export class AutoTradingScheduler {
 
     klinesData.reverse();
 
+    const now = Date.now();
+    const intervalMs = this.getIntervalMs(watcher.interval);
+    const currentCandleOpenTime = Math.floor(now / intervalMs) * intervalMs;
+
     const mappedKlines: Kline[] = klinesData.map((k) => ({
       symbol: k.symbol,
       interval: k.interval,
@@ -696,14 +864,37 @@ export class AutoTradingScheduler {
       takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
     }));
 
-    const lastCandle = mappedKlines[mappedKlines.length - 1];
+    const closedKlines = mappedKlines.filter(k => k.openTime < currentCandleOpenTime);
+
+    const lastCandle = closedKlines[closedKlines.length - 1];
     if (!lastCandle) {
-      logBuffer.warn('⚠️', 'No candles available');
-      return logBuffer.toResult('skipped', 'No candles');
+      logBuffer.warn('⚠️', 'No closed candles available');
+      return logBuffer.toResult('skipped', 'No closed candles');
     }
 
-    const now = Date.now();
-    const intervalMs = this.getIntervalMs(watcher.interval);
+    const pendingRotation = this.rotationPendingWatchers.get(watcherId);
+    if (pendingRotation) {
+      const targetSafeTime = pendingRotation.targetCandleClose + CANDLE_CLOSE_SAFETY_BUFFER_MS;
+      if (now < targetSafeTime) {
+        const remainingMs = targetSafeTime - now;
+        logBuffer.log('🔄', 'Rotation sync pending', {
+          targetCandleClose: new Date(pendingRotation.targetCandleClose).toISOString(),
+          remainingMs,
+        });
+
+        if (remainingMs > 0 && remainingMs < 10 * TIME_MS.MINUTE) {
+          setTimeout(() => {
+            this.queueWatcherProcessing(watcherId);
+          }, Math.min(remainingMs + 100, 5000));
+        }
+
+        return logBuffer.toResult('pending', `Rotation sync: ${Math.ceil(remainingMs / 1000)}s`);
+      }
+
+      this.rotationPendingWatchers.delete(watcherId);
+      logBuffer.log('✅', 'Rotation sync complete, processing normally');
+    }
+
     const expectedCandleOpenTime = Math.floor(now / intervalMs) * intervalMs - intervalMs;
     const candleCloseTime = lastCandle.closeTime;
     const safeCloseTime = candleCloseTime + CANDLE_CLOSE_SAFETY_BUFFER_MS;
@@ -771,11 +962,11 @@ export class AutoTradingScheduler {
 
     logBuffer.log('📊', 'Scanning for setups', {
       strategies: filteredStrategies.length,
-      klines: mappedKlines.length,
+      klines: closedKlines.length,
     });
 
     const detectedSetups: TradingSetup[] = [];
-    const currentIndex = mappedKlines.length - 1;
+    const currentIndex = closedKlines.length - 1;
 
     for (const strategy of filteredStrategies) {
       await yieldToEventLoop();
@@ -788,7 +979,7 @@ export class AutoTradingScheduler {
         silent: true,
       });
 
-      const result = interpreter.detect(mappedKlines, currentIndex);
+      const result = interpreter.detect(closedKlines, currentIndex);
 
       if (result.rejection) {
         const rejectionDirection = result.rejection.details?.['direction'] as string | undefined;
@@ -838,18 +1029,18 @@ export class AutoTradingScheduler {
     if (detectedSetups.length === 0) {
       logBuffer.log('📭', 'No setups found');
       watcher.lastProcessedTime = Date.now();
-      return logBuffer.toResult('success', undefined, mappedKlines.length);
+      return logBuffer.toResult('success', undefined, closedKlines.length);
     }
 
     for (const setup of detectedSetups) {
-      const executed = await this.executeSetupSafe(watcher, setup, filteredStrategies, mappedKlines, logBuffer);
+      const executed = await this.executeSetupSafe(watcher, setup, filteredStrategies, closedKlines, logBuffer);
       if (executed) {
         logBuffer.incrementTrades();
       }
     }
 
     watcher.lastProcessedTime = Date.now();
-    return logBuffer.toResult('success', undefined, mappedKlines.length);
+    return logBuffer.toResult('success', undefined, closedKlines.length);
   }
 
   private async executeSetupSafe(
@@ -904,7 +1095,8 @@ export class AutoTradingScheduler {
     marketType: MarketType = 'SPOT',
     isManual: boolean = true,
     _runImmediateCheck: boolean = false,
-    silent: boolean = false
+    silent: boolean = false,
+    targetCandleClose?: number
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
@@ -1004,7 +1196,18 @@ export class AutoTradingScheduler {
 
     const intervalMs = INTERVAL_MS[interval as keyof typeof INTERVAL_MS] ?? TIME_MS.HOUR;
     const currentCandleOpenTime = Math.floor(now / intervalMs) * intervalMs;
-    const previousCandleOpenTime = currentCandleOpenTime - intervalMs;
+
+    const isFromRotation = targetCandleClose !== undefined;
+    const candlesBack = isFromRotation ? 2 : 1;
+    const lastProcessedCandleOpenTime = currentCandleOpenTime - (intervalMs * candlesBack);
+
+    if (isFromRotation && !silent) {
+      log('🔄 [Rotation] Watcher initialized for rotation', {
+        watcherId,
+        targetCandleClose: new Date(targetCandleClose).toISOString(),
+        lastProcessedCandleOpenTime: new Date(lastProcessedCandleOpenTime).toISOString(),
+      });
+    }
 
     const watcher: ActiveWatcher = {
       walletId,
@@ -1017,7 +1220,7 @@ export class AutoTradingScheduler {
       profileName,
       intervalId: syncTimeoutId as unknown as ReturnType<typeof setInterval>,
       lastProcessedTime: Date.now(),
-      lastProcessedCandleOpenTime: previousCandleOpenTime,
+      lastProcessedCandleOpenTime,
       isManual,
     };
 
@@ -2566,15 +2769,19 @@ export class AutoTradingScheduler {
 
     if (enableAutoRotation) {
       const stateKey = getRotationStateKey(walletId, config.interval);
+      const intervalMs = INTERVAL_MS[config.interval as Interval] ?? TIME_MS.HOUR;
       const currentCandleClose = getCandleCloseTime(config.interval);
+      const previousCandleClose = currentCandleClose - intervalMs;
 
       this.rotationStates.set(stateKey, {
         config: rotationConfig,
         userId,
         profileId: config.profileId,
         lastCandleCloseTime: currentCandleClose,
+        lastRotationCandleClose: previousCandleClose,
       });
 
+      this.startAnticipationTimer();
     } else {
       log('ℹ️ Auto rotation disabled - manual rotation only', { walletId });
     }
@@ -2596,6 +2803,10 @@ export class AutoTradingScheduler {
     for (const key of keysToDelete) {
       this.rotationStates.delete(key);
       this.isCheckingRotation.delete(key);
+    }
+
+    if (this.rotationStates.size === 0) {
+      this.stopAnticipationTimer();
     }
 
     if (stopDynamicWatchers) {
