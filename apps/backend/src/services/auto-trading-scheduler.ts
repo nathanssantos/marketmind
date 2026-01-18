@@ -1002,6 +1002,10 @@ export class AutoTradingScheduler {
       }
     }, delayUntilNextCandle);
 
+    const intervalMs = INTERVAL_MS[interval as keyof typeof INTERVAL_MS] ?? TIME_MS.HOUR;
+    const currentCandleOpenTime = Math.floor(now / intervalMs) * intervalMs;
+    const previousCandleOpenTime = currentCandleOpenTime - intervalMs;
+
     const watcher: ActiveWatcher = {
       walletId,
       userId,
@@ -1013,6 +1017,7 @@ export class AutoTradingScheduler {
       profileName,
       intervalId: syncTimeoutId as unknown as ReturnType<typeof setInterval>,
       lastProcessedTime: Date.now(),
+      lastProcessedCandleOpenTime: previousCandleOpenTime,
       isManual,
     };
 
