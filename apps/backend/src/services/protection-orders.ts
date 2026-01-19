@@ -100,18 +100,20 @@ export async function createStopLossOrder(params: ProtectionOrderParams): Promis
   }
 
   const client = createBinanceClient(wallet);
+  const formattedQuantity = parseFloat(formatQuantityForBinance(quantity, stepSize));
+  const formattedPrice = parseFloat(formatPriceForBinance(triggerPrice, tickSize));
   const order = await client.submitNewOrder({
     symbol,
     side: closeSide,
     type: 'STOP_LOSS_LIMIT',
-    stopPrice: triggerPrice,
-    price: triggerPrice,
-    quantity,
+    stopPrice: formattedPrice,
+    price: formattedPrice,
+    quantity: formattedQuantity,
     timeInForce: 'GTC',
   });
 
   const result = order as { orderId: number };
-  logger.info({ orderId: result.orderId, symbol, stopPrice: triggerPrice }, '[ProtectionOrders] Created spot SL order');
+  logger.info({ orderId: result.orderId, symbol, stopPrice: formattedPrice }, '[ProtectionOrders] Created spot SL order');
   return { orderId: result.orderId, isAlgoOrder: false };
 }
 
@@ -140,18 +142,20 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
   }
 
   const client = createBinanceClient(wallet);
+  const formattedQuantity = parseFloat(formatQuantityForBinance(quantity, stepSize));
+  const formattedPrice = parseFloat(formatPriceForBinance(triggerPrice, tickSize));
   const order = await client.submitNewOrder({
     symbol,
     side: closeSide,
     type: 'TAKE_PROFIT_LIMIT',
-    stopPrice: triggerPrice,
-    price: triggerPrice,
-    quantity,
+    stopPrice: formattedPrice,
+    price: formattedPrice,
+    quantity: formattedQuantity,
     timeInForce: 'GTC',
   });
 
   const result = order as { orderId: number };
-  logger.info({ orderId: result.orderId, symbol, stopPrice: triggerPrice }, '[ProtectionOrders] Created spot TP order');
+  logger.info({ orderId: result.orderId, symbol, stopPrice: formattedPrice }, '[ProtectionOrders] Created spot TP order');
   return { orderId: result.orderId, isAlgoOrder: false };
 }
 

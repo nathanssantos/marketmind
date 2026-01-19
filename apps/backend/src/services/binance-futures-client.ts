@@ -246,6 +246,7 @@ export async function submitFuturesOrder(
       side: params.side,
       type: params.type,
       quantity: Number(params.quantity),
+      newOrderRespType: 'RESULT',
     };
 
     if (params.price) orderParams.price = Number(params.price);

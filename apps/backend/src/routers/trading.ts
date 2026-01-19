@@ -110,6 +110,7 @@ export const tradingRouter = router({
             stopPrice: input.stopPrice ? parseFloat(input.stopPrice) : undefined,
             timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
             reduceOnly: input.reduceOnly ? 'true' : undefined,
+            newOrderRespType: 'RESULT',
           });
 
           await ctx.db.insert(orders).values({
@@ -626,6 +627,7 @@ export const tradingRouter = router({
               type: 'MARKET',
               quantity: qty,
               reduceOnly: 'true',
+              newOrderRespType: 'RESULT',
             });
 
             exitOrderId = order.orderId;
@@ -904,6 +906,7 @@ export const tradingRouter = router({
               type: 'MARKET',
               quantity: qty,
               reduceOnly: 'true',
+              newOrderRespType: 'RESULT',
             });
 
             exitOrderId = order.orderId;

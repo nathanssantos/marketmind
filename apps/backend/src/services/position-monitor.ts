@@ -7,7 +7,8 @@ import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache as priceCacheTable, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
-import { calculateNotional, calculatePnl, formatPrice, roundToDecimals } from '../utils/formatters';
+import { calculateNotional, calculatePnl, formatPrice, formatQuantityForBinance, roundToDecimals } from '../utils/formatters';
+import { getMinNotionalFilterService } from './min-notional-filter';
 import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClient, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getAllTradeFeesForPosition, getLastClosingTrade } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
@@ -816,21 +817,32 @@ export class PositionMonitorService {
   ): Promise<number> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
+    const minNotionalFilter = getMinNotionalFilterService();
+    const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
+    const filters = symbolFilters.get(symbol);
+    const stepSize = filters?.stepSize?.toString();
+    const formattedQuantity = parseFloat(formatQuantityForBinance(quantity, stepSize));
+
+    logger.info({ symbol, originalQuantity: quantity, formattedQuantity, stepSize }, 'Formatting quantity for exit order');
+
     if (marketType === 'FUTURES') {
       const client = createBinanceFuturesClient(wallet);
       const order = await client.submitNewOrder({
         symbol,
         side: orderSide,
         type: 'MARKET',
-        quantity,
+        quantity: formattedQuantity,
         reduceOnly: 'true',
+        newOrderRespType: 'RESULT',
       });
 
       logger.info({
         orderId: order.orderId,
         symbol,
         side: orderSide,
-        quantity,
+        quantity: formattedQuantity,
+        avgPrice: order.avgPrice,
+        executedQty: order.executedQty,
         marketType: 'FUTURES',
       }, 'Exit order created on Binance Futures');
 
@@ -842,14 +854,14 @@ export class PositionMonitorService {
       symbol,
       side: orderSide,
       type: 'MARKET',
-      quantity,
+      quantity: formattedQuantity,
     });
 
     logger.info({
       orderId: order.orderId,
       symbol,
       side: orderSide,
-      quantity,
+      quantity: formattedQuantity,
       marketType: 'SPOT',
     }, 'Exit order created on Binance Spot');
 

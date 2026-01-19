@@ -1098,6 +1098,10 @@ export class AutoTradingScheduler {
           reason: result.rejection.reason,
           details: result.rejection.details,
         });
+        logBuffer.warn('🚫', `Setup rejected: ${result.rejection.reason}`, {
+          setup: strategy.name,
+          direction: rejectionDirection ?? '-',
+        });
       }
 
       if (result.setup && result.confidence >= 50) {
@@ -1499,6 +1503,10 @@ export class AutoTradingScheduler {
               entryPrice: setup.entryPrice.toFixed(6),
             },
           });
+          logBuffer.warn('🚫', 'Fibonacci target invalid for direction', {
+            setup: setup.type,
+            direction: setup.direction,
+          });
           return;
         }
       } else {
@@ -1511,6 +1519,10 @@ export class AutoTradingScheduler {
             interval: watcher.interval,
             fibLevel: fibonacciTargetLevel,
           },
+        });
+        logBuffer.warn('🚫', 'No clear trend structure (ranging market)', {
+          setup: setup.type,
+          fibLevel: fibonacciTargetLevel,
         });
         return;
       }
@@ -1539,6 +1551,10 @@ export class AutoTradingScheduler {
           reason: 'Invalid stop loss - no risk',
           details: { entryPrice, stopLoss },
         });
+        logBuffer.warn('🚫', 'Invalid stop loss - no risk', {
+          setup: setup.type,
+          direction: setup.direction,
+        });
         return;
       }
 
@@ -1546,10 +1562,11 @@ export class AutoTradingScheduler {
 
       if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
         const usingFibonacci = tpCalculationMode === 'fibonacci' && effectiveTakeProfit !== setup.takeProfit;
+        const reason = usingFibonacci ? 'Insufficient R:R (Fibonacci TP)' : 'Insufficient R:R ratio';
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
-          reason: usingFibonacci ? 'Insufficient R:R (Fibonacci TP)' : 'Insufficient R:R ratio',
+          reason,
           details: {
             riskReward: riskRewardRatio.toFixed(2),
             minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
@@ -1557,6 +1574,11 @@ export class AutoTradingScheduler {
             takeProfit: takeProfit.toFixed(4),
             entryPrice: entryPrice.toFixed(4),
           },
+        });
+        logBuffer.warn('🚫', reason, {
+          setup: setup.type,
+          rr: riskRewardRatio.toFixed(2),
+          minRR: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
         });
         return;
       }
@@ -1570,6 +1592,7 @@ export class AutoTradingScheduler {
         direction: setup.direction,
         reason: 'Missing stop loss',
       });
+      logBuffer.warn('🚫', 'Missing stop loss', { setup: setup.type, direction: setup.direction });
       return;
     } else {
       logBuffer.log('ℹ️', 'Setup without take profit - skipping R:R validation');
@@ -1627,6 +1650,7 @@ export class AutoTradingScheduler {
           reason: 'Cooldown active',
           details: { remainingMinutes, cooldownReason: cooldownCheck.reason ?? 'N/A' },
         });
+        logBuffer.warn('🚫', 'Cooldown active', { setup: setup.type, remainingMinutes });
         return;
       }
 
@@ -1795,6 +1819,7 @@ export class AutoTradingScheduler {
             direction: setup.direction,
             reason: 'Insufficient klines for ADX',
           });
+          logBuffer.warn('🚫', 'Insufficient klines for ADX', { setup: setup.type, klinesCount: cycleKlines.length });
           return;
         }
 
@@ -1822,6 +1847,7 @@ export class AutoTradingScheduler {
             direction: setup.direction,
             reason: 'Insufficient klines for Trend',
           });
+          logBuffer.warn('🚫', 'Insufficient klines for Trend', { setup: setup.type, klinesCount: cycleKlines.length });
           return;
         }
 
@@ -1848,6 +1874,7 @@ export class AutoTradingScheduler {
           reason: 'Opposite position exists',
           details: { existingDirection: oppositeDirectionPosition.side },
         });
+        logBuffer.warn('🚫', 'Opposite position exists', { setup: setup.type, existingDirection: oppositeDirectionPosition.side });
         return;
       }
 
@@ -1863,6 +1890,7 @@ export class AutoTradingScheduler {
             reason: 'Pyramiding disabled',
             details: { existingPositions: sameDirectionPositions.length },
           });
+          logBuffer.warn('🚫', 'Pyramiding disabled', { setup: setup.type, existingPositions: sameDirectionPositions.length });
           return;
         }
 
@@ -1890,6 +1918,7 @@ export class AutoTradingScheduler {
               adxValue: pyramidEval.adxValue ?? null,
             },
           });
+          logBuffer.warn('🚫', pyramidEval.reason ?? 'Cannot pyramid', { setup: setup.type, currentEntries: pyramidEval.currentEntries });
           return;
         }
 
@@ -1925,6 +1954,7 @@ export class AutoTradingScheduler {
           reason: 'Zero quantity from sizing',
           details: { reason: dynamicSize.reason },
         });
+        logBuffer.warn('🚫', 'Zero quantity from sizing', { setup: setup.type, reason: dynamicSize.reason });
         return;
       }
 
@@ -1950,6 +1980,7 @@ export class AutoTradingScheduler {
           reason: 'Risk validation failed',
           details: { reason: riskValidation.reason ?? 'Unknown' },
         });
+        logBuffer.warn('🚫', 'Risk validation failed', { setup: setup.type, reason: riskValidation.reason ?? 'Unknown' });
         return;
       }
 
@@ -2117,6 +2148,16 @@ export class AutoTradingScheduler {
             orderType,
             filled: orderFilled,
           });
+
+          if (!orderFilled) {
+            log('⚠️ MARKET order not filled (executedQty=0) - aborting trade creation', {
+              orderId: entryOrderId,
+              symbol: watcher.symbol,
+              orderType,
+              executedQty: orderResult.executedQty,
+            });
+            return;
+          }
 
           if (orderFilled && entryOrderId && watcher.marketType === 'FUTURES') {
             try {
@@ -2517,6 +2558,8 @@ export class AutoTradingScheduler {
               },
               timestamp: Date.now(),
             });
+
+            return;
           }
         } catch (orderError) {
           log('❌ Failed to execute Binance order', {
@@ -2695,6 +2738,7 @@ export class AutoTradingScheduler {
             reason: 'Invalid SL after slippage',
             details: { actualEntry: actualEntryPrice.toFixed(4), stopLoss: setup.stopLoss },
           });
+          logBuffer.warn('🚫', 'Invalid SL after slippage', { setup: setup.type, actualEntry: actualEntryPrice.toFixed(4) });
           return;
         }
 
@@ -2710,6 +2754,7 @@ export class AutoTradingScheduler {
               minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
             },
           });
+          logBuffer.warn('🚫', 'R:R too low after slippage', { setup: setup.type, finalRR: finalRiskRewardRatio.toFixed(2) });
           return;
         }
       }

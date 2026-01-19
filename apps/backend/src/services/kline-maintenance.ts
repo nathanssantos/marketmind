@@ -1,7 +1,6 @@
 import type { Interval } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import {
-  ABSOLUTE_MINIMUM_KLINES,
   REQUIRED_KLINES,
   TIME_MS,
   COOLDOWN_GAP_CHECK,
@@ -406,19 +405,16 @@ class KlineMaintenance {
 
     const gaps: GapInfo[] = [];
     const firstKline = dbKlines[0];
-    const hasSufficientData = dbKlines.length >= ABSOLUTE_MINIMUM_KLINES;
 
-    if (!hasSufficientData && !knownEarliestDate && dbKlines.length < REQUIRED_KLINES && firstKline) {
-      if (firstKline.openTime.getTime() > startTime.getTime()) {
-        const missingAtStart = Math.floor((firstKline.openTime.getTime() - startTime.getTime()) / intervalMs);
-        if (missingAtStart >= MIN_GAP_SIZE_TO_FILL) {
-          gaps.push({
-            ...pair,
-            gapStart: startTime,
-            gapEnd: new Date(firstKline.openTime.getTime() - intervalMs),
-            missingCandles: missingAtStart,
-          });
-        }
+    if (firstKline && !knownEarliestDate && firstKline.openTime.getTime() > startTime.getTime()) {
+      const missingAtStart = Math.floor((firstKline.openTime.getTime() - startTime.getTime()) / intervalMs);
+      if (missingAtStart >= MIN_GAP_SIZE_TO_FILL) {
+        gaps.push({
+          ...pair,
+          gapStart: startTime,
+          gapEnd: new Date(firstKline.openTime.getTime() - intervalMs),
+          missingCandles: missingAtStart,
+        });
       }
     }
 

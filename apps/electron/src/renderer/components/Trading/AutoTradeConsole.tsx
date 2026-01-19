@@ -1,12 +1,13 @@
 import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
 import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
+import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import type { FrontendLogEntry } from '@renderer/hooks/useWebSocket';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp, LuMinus, LuPlus, LuTrash2 } from 'react-icons/lu';
 
-const FONT_SIZE_STEPS = [10, 11, 12, 13, 14] as const;
-const DEFAULT_FONT_SIZE_INDEX = 2;
+const FONT_SIZE_STEPS = [6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
+const DEFAULT_FONT_SIZE_INDEX = 6;
 
 interface LogLineProps {
   entry: FrontendLogEntry;
@@ -63,9 +64,9 @@ export const AutoTradeConsole = memo(({ walletId, hasActiveWatchers = false }: A
   const { logs, isLoading, clearLogs } = useAutoTradingLogs(walletId, hasActiveWatchers);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fontSizeIndex, setFontSizeIndex] = useState(DEFAULT_FONT_SIZE_INDEX);
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [autoScroll, setAutoScroll] = useState(true);
+  const [fontSizeIndex, setFontSizeIndex] = useLocalStorage('marketmind:autoTradeConsole:fontSizeIndex', DEFAULT_FONT_SIZE_INDEX);
+  const [isExpanded, setIsExpanded] = useLocalStorage('marketmind:autoTradeConsole:isExpanded', true);
+  const [autoScroll, setAutoScroll] = useLocalStorage('marketmind:autoTradeConsole:autoScroll', true);
 
   const fontSize = FONT_SIZE_STEPS[fontSizeIndex] ?? 12;
 
@@ -80,15 +81,15 @@ export const AutoTradeConsole = memo(({ walletId, hasActiveWatchers = false }: A
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
     setAutoScroll(isAtBottom);
-  }, []);
+  }, [setAutoScroll]);
 
   const increaseFontSize = useCallback(() => {
     setFontSizeIndex(prev => Math.min(prev + 1, FONT_SIZE_STEPS.length - 1));
-  }, []);
+  }, [setFontSizeIndex]);
 
   const decreaseFontSize = useCallback(() => {
     setFontSizeIndex(prev => Math.max(prev - 1, 0));
-  }, []);
+  }, [setFontSizeIndex]);
 
   if (!hasActiveWatchers && logs.length === 0 && !isLoading) return null;
 

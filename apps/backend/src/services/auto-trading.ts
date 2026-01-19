@@ -385,6 +385,7 @@ export class AutoTradingService {
           side: orderParams.side,
           type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
           quantity: formattedQuantity,
+          newOrderRespType: 'RESULT',
         };
 
         if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
@@ -578,14 +579,23 @@ export class AutoTradingService {
     }
 
     try {
+      const minNotionalFilter = getMinNotionalFilterService();
+      const symbolFilters = await minNotionalFilter.getSymbolFilters(marketType);
+      const filters = symbolFilters.get(symbol);
+      const stepSize = filters?.stepSize?.toString();
+      const formattedQuantity = parseFloat(formatQuantityForBinance(quantity, stepSize));
+
+      logger.info({ symbol, originalQuantity: quantity, formattedQuantity, stepSize }, 'Formatting quantity for close position');
+
       if (marketType === 'FUTURES') {
         const client = createBinanceFuturesClient(wallet);
         const result = await client.submitNewOrder({
           symbol,
           side,
           type: 'MARKET',
-          quantity,
+          quantity: formattedQuantity,
           reduceOnly: 'true',
+          newOrderRespType: 'RESULT',
         });
         logger.info({ symbol, orderId: result.orderId, avgPrice: result.avgPrice }, 'Futures position closed');
         return {
@@ -599,7 +609,7 @@ export class AutoTradingService {
         symbol,
         side,
         type: 'MARKET',
-        quantity,
+        quantity: formattedQuantity,
       });
       const avgPrice = result.fills?.[0]?.price ? parseFloat(String(result.fills[0].price)) : 0;
       logger.info({ symbol, orderId: result.orderId, avgPrice }, 'Spot position closed');
