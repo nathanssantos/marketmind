@@ -128,7 +128,10 @@ const start = async (): Promise<void> => {
     await klineMaintenance.start();
 
     const { orderSyncService } = await import('./services/order-sync');
-    await orderSyncService.start({ autoCancelOrphans: false });
+    await orderSyncService.start({ autoCancelOrphans: true });
+
+    const { incomeSyncService } = await import('./services/income-sync-service');
+    incomeSyncService.start();
 
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);

@@ -778,6 +778,7 @@
         "netPnL": "P&L Net",
         "grossPnL": "Brut",
         "fees": "Frais",
+        "funding": "Financement",
         "winRate": "Taux de Réussite",
         "profitFactor": "Facteur de Profit",
         "totalTrades": "Total des Trades",
@@ -1311,6 +1312,15 @@
       "exit": "Stop en dessous du swing récent, sortir quand le RSI atteint 50-70",
       "candleMinus1": "RSI en baisse tandis qu'au-dessus de SMA 200",
       "candleTrigger": "RSI survendu avec prix au-dessus du filtre de tendance SMA 200"
+    }
+  },
+  "autoTrading": {
+    "console": {
+      "title": "Logs",
+      "clear": "Effacer les logs",
+      "increaseFont": "Augmenter la taille",
+      "decreaseFont": "Diminuer la taille",
+      "waiting": "En attente des logs..."
     }
   }
 }

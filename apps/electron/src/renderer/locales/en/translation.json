@@ -711,6 +711,7 @@
         "netPnL": "Net PnL",
         "grossPnL": "Gross",
         "fees": "Fees",
+        "funding": "Funding",
         "winRate": "Win Rate",
         "profitFactor": "Profit Factor",
         "totalTrades": "Total Trades",
@@ -1248,6 +1249,15 @@
       "exit": "Stop below recent swing, exit when RSI reaches 50-70",
       "candleMinus1": "RSI declining while above SMA 200",
       "candleTrigger": "RSI oversold with price above SMA 200 trend filter"
+    }
+  },
+  "autoTrading": {
+    "console": {
+      "title": "Logs",
+      "clear": "Clear logs",
+      "increaseFont": "Increase font size",
+      "decreaseFont": "Decrease font size",
+      "waiting": "Waiting for logs..."
     }
   }
 }

@@ -205,7 +205,8 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
   const isProfitable = netPnL >= 0;
 
   const totalFees = performance?.totalFees ?? 0;
-  const grossPnL = netPnL + totalFees;
+  const totalFunding = performance?.totalFunding ?? 0;
+  const grossPnL = netPnL + totalFees + totalFunding;
 
   const badgeInfo = getWalletTypeBadge(wallet.walletType);
   const canSync = wallet.walletType === 'testnet' || wallet.walletType === 'live';
@@ -313,11 +314,11 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.wallets.netPnL')}</Text>
-          <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0}>
-            <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium" cursor={totalFees > 0 ? 'help' : 'default'}>
+          <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.funding')}: ${totalFunding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0 && totalFunding === 0}>
+            <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium" cursor={totalFees > 0 || totalFunding !== 0 ? 'help' : 'default'}>
               {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
-              {totalFees > 0 && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}
+              {(totalFees > 0 || totalFunding !== 0) && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}
             </Text>
           </TooltipWrapper>
         </Flex>

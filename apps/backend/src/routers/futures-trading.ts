@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
 import { orders, positions } from '../db/schema';
 import {
+    cancelAllFuturesAlgoOrders,
     cancelFuturesOrder,
     closePosition as closeExchangePosition,
     createBinanceFuturesClient,
+    getOpenAlgoOrders,
     getPositions as getFuturesPositions,
     getOpenOrders,
     getPosition,
@@ -606,4 +608,68 @@ export const futuresTradingRouter = router({
     const dataService = getBinanceFuturesDataService();
     return dataService.getExchangeInfo();
   }),
+
+  getOpenAlgoOrders: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (isPaperWallet(wallet)) {
+        return [];
+      }
+
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        return await getOpenAlgoOrders(client, input.symbol);
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to get open algo orders',
+          cause: error,
+        });
+      }
+    }),
+
+  cancelAllAlgoOrders: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (isPaperWallet(wallet)) {
+        logger.info({ symbol: input.symbol }, 'Paper wallet - skipping algo order cancellation');
+        return { success: true, cancelled: 0 };
+      }
+
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        const openOrders = await getOpenAlgoOrders(client, input.symbol);
+        const orderCount = openOrders.length;
+
+        if (orderCount === 0) {
+          logger.info({ symbol: input.symbol }, 'No algo orders to cancel');
+          return { success: true, cancelled: 0 };
+        }
+
+        await cancelAllFuturesAlgoOrders(client, input.symbol);
+        logger.info({ symbol: input.symbol, cancelled: orderCount }, 'Cancelled all algo orders for symbol');
+
+        return { success: true, cancelled: orderCount };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to cancel algo orders',
+          cause: error,
+        });
+      }
+    }),
 });

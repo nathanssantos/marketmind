@@ -11,6 +11,16 @@ interface UseWebSocketOptions {
   };
 }
 
+export interface FrontendLogEntry {
+  id: string;
+  timestamp: number;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  emoji: string;
+  message: string;
+  symbol?: string;
+  interval?: string;
+}
+
 interface WebSocketEvents {
   'order:update': (order: unknown) => void;
   'order:created': (order: unknown) => void;
@@ -46,6 +56,7 @@ interface WebSocketEvents {
       detectedAt: Date;
     };
   }) => void;
+  'autoTrading:log': (entry: FrontendLogEntry) => void;
 }
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {
@@ -123,6 +134,10 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       const socket = socketService.getSocket();
       socket?.emit('subscribe:setups', userId);
     },
+    autoTradingLogs: (walletId: string) => {
+      const socket = socketService.getSocket();
+      socket?.emit('subscribe:autoTradingLogs', walletId);
+    },
   };
 
   const unsubscribe = {
@@ -149,6 +164,10 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     setups: (userId: string) => {
       const socket = socketService.getSocket();
       socket?.emit('unsubscribe:setups', userId);
+    },
+    autoTradingLogs: (walletId: string) => {
+      const socket = socketService.getSocket();
+      socket?.emit('unsubscribe:autoTradingLogs', walletId);
     },
   };
 

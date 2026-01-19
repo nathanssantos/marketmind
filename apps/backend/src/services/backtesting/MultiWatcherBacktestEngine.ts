@@ -84,11 +84,12 @@ export class MultiWatcherBacktestEngine {
   constructor(private config: MultiWatcherBacktestConfig) {
     const marketType = config.marketType ?? 'SPOT';
     const useBnbDiscount = config.useBnbDiscount ?? false;
+    const vipLevel = config.vipLevel ?? 0;
 
     this.trailingStopConfig = {
       marketType,
       useBnbDiscount,
-      feePercent: getRoundTripFee({ marketType, useBnbDiscount }),
+      feePercent: getRoundTripFee({ marketType, useBnbDiscount, vipLevel }),
       atrMultiplier: config.trailingATRMultiplier ?? 2.0,
       minTrailingDistancePercent: 0.002,
       trailingDistancePercent: 0.25,
@@ -799,7 +800,7 @@ export class MultiWatcherBacktestEngine {
     const { totalFees: commission } = calculateTotalFees(
       position.positionValue,
       exitValue,
-      { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount }
+      { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount, vipLevel: this.config.vipLevel ?? 0 }
     );
 
     const exitTime = exitResult.exitTime ?? fallbackExitTime;
@@ -917,7 +918,7 @@ export class MultiWatcherBacktestEngine {
       const { totalFees: commission } = calculateTotalFees(
         position.positionValue,
         exitValue,
-        { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount }
+        { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount, vipLevel: this.config.vipLevel ?? 0 }
       );
 
       const tradeResult = this.portfolio.closePosition(

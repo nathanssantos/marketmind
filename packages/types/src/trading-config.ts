@@ -314,6 +314,35 @@ export const EXIT_REASON = {
   TIME_STOP: 'TIME_STOP',
   STALE_TRADE: 'STALE_TRADE',
   OPPORTUNITY_COST: 'OPPORTUNITY_COST',
+  SL_CREATION_FAILED: 'SL_CREATION_FAILED',
+  COMPENSATION_CLOSE: 'COMPENSATION_CLOSE',
+} as const;
+
+export const PROTECTION_CONFIG = {
+  UNPROTECTED_ALERT_COOLDOWN_MS: 5 * TIME_MS.MINUTE,
+  EMERGENCY_SL_PERCENT: 0.05,
+  COMPENSATION_RETRY_ATTEMPTS: 2,
+  COMPENSATION_RETRY_DELAY_MS: 500,
+} as const;
+
+export const RISK_ALERT_TYPES = {
+  LIQUIDATION_RISK: 'LIQUIDATION_RISK',
+  DAILY_LOSS_LIMIT: 'DAILY_LOSS_LIMIT',
+  MAX_DRAWDOWN: 'MAX_DRAWDOWN',
+  POSITION_CLOSED: 'POSITION_CLOSED',
+  MARGIN_TOP_UP: 'MARGIN_TOP_UP',
+  UNKNOWN_POSITION: 'UNKNOWN_POSITION',
+  ORDER_REJECTED: 'ORDER_REJECTED',
+  ORPHAN_ORDERS: 'ORPHAN_ORDERS',
+  ORDER_MISMATCH: 'ORDER_MISMATCH',
+  UNPROTECTED_POSITION: 'UNPROTECTED_POSITION',
+} as const;
+
+export const RISK_ALERT_LEVELS = {
+  INFO: 'info',
+  WARNING: 'warning',
+  DANGER: 'danger',
+  CRITICAL: 'critical',
 } as const;
 
 export type TradeStatusValue = (typeof TRADE_STATUS)[keyof typeof TRADE_STATUS];
@@ -339,3 +368,6 @@ export type RiskManagerConfigConstants = typeof RISK_MANAGER_CONFIG;
 export type FloatComparisonConstants = typeof FLOAT_COMPARISON;
 export type ContextAggregatorConfigConstants = typeof CONTEXT_AGGREGATOR_CONFIG;
 export type KlineConfigConstants = typeof KLINE_CONFIG;
+export type ProtectionConfigConstants = typeof PROTECTION_CONFIG;
+export type RiskAlertType = (typeof RISK_ALERT_TYPES)[keyof typeof RISK_ALERT_TYPES];
+export type RiskAlertLevel = (typeof RISK_ALERT_LEVELS)[keyof typeof RISK_ALERT_LEVELS];

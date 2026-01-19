@@ -2,13 +2,14 @@ import { serializeError } from '../utils/errors';
 import type { PendingOrderAction, PendingOrdersCheckResult } from '@marketmind/logger';
 import { calculateTotalFees } from '@marketmind/types';
 import { eq, sql } from 'drizzle-orm';
-import { AUTO_TRADING_LIQUIDATION, AUTO_TRADING_TIMING } from '../constants';
+import { AUTO_TRADING_LIQUIDATION, AUTO_TRADING_TIMING, PROTECTION_CONFIG, RISK_ALERT_TYPES, RISK_ALERT_LEVELS } from '../constants';
 import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
 import { priceCache as priceCacheTable, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { calculateNotional, calculatePnl, formatPrice, roundToDecimals } from '../utils/formatters';
 import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClient, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
+import { getAllTradeFeesForPosition, getLastClosingTrade } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
@@ -17,6 +18,7 @@ import { trailingStopService } from './trailing-stop';
 import { outputPendingOrdersCheckResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
+import { cancelAllProtectionOrders } from './protection-orders';
 
 const LIQUIDATION_THRESHOLDS = {
   WARNING: AUTO_TRADING_LIQUIDATION.WARNING_THRESHOLD,
@@ -49,6 +51,7 @@ export class PositionMonitorService {
   private readonly CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.CHECK_INTERVAL_MS;
   private processingExits: Set<string> = new Set();
   private processingGroups: Set<string> = new Set();
+  private unprotectedAlerts: Map<string, number> = new Map();
 
   start(): void {
     if (this.monitoringTimeout) {
@@ -442,6 +445,30 @@ export class PositionMonitorService {
     };
 
     if (!execution.stopLoss && !execution.takeProfit) {
+      const alertKey = `unprotected-${execution.id}`;
+      const lastAlert = this.unprotectedAlerts.get(alertKey);
+      const now = Date.now();
+
+      if (!lastAlert || now - lastAlert > PROTECTION_CONFIG.UNPROTECTED_ALERT_COOLDOWN_MS) {
+        this.unprotectedAlerts.set(alertKey, now);
+
+        const wsService = getWebSocketService();
+        wsService?.emitRiskAlert(execution.walletId, {
+          type: RISK_ALERT_TYPES.UNPROTECTED_POSITION,
+          level: RISK_ALERT_LEVELS.DANGER,
+          symbol: execution.symbol,
+          message: `Position ${execution.symbol} ${execution.side} has NO stop loss protection. Add SL manually!`,
+          data: {
+            executionId: execution.id,
+            entryPrice: execution.entryPrice,
+            quantity: execution.quantity,
+          },
+          timestamp: now,
+        });
+
+        logger.warn({ executionId: execution.id, symbol: execution.symbol },
+          '[PositionMonitor] UNPROTECTED POSITION - no SL/TP');
+      }
       return result;
     }
 
@@ -528,6 +555,7 @@ export class PositionMonitorService {
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
 
       let exitOrderId: number | null = null;
+      let positionSyncedFromExchange = false;
 
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
@@ -542,14 +570,97 @@ export class PositionMonitorService {
         }, 'Paper/disabled mode: simulating exit order');
       } else {
         const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
-        exitOrderId = await this.createExitOrder(
-          wallet,
-          execution.symbol,
-          quantity,
-          exitPrice,
-          execution.side,
-          marketType
-        );
+        try {
+          exitOrderId = await this.createExitOrder(
+            wallet,
+            execution.symbol,
+            quantity,
+            exitPrice,
+            execution.side,
+            marketType
+          );
+        } catch (orderError) {
+          const errorMessage = serializeError(orderError);
+          if (errorMessage.includes('ReduceOnly Order is rejected')) {
+            logger.warn({
+              executionId: execution.id,
+              symbol: execution.symbol,
+              side: execution.side,
+              reason,
+            }, 'Position not found on exchange (ReduceOnly rejected) - marking as synced closed');
+            positionSyncedFromExchange = true;
+          } else {
+            throw orderError;
+          }
+        }
+      }
+
+      let actualExitPrice = exitPrice;
+      let actualFees = totalFees;
+      let actualPnl = pnl;
+      let actualPnlPercent = adjustedPnlPercent;
+
+      let actualEntryFee = parseFloat(execution.entryFee || '0');
+      let actualExitFee = 0;
+
+      if (positionSyncedFromExchange && marketType === 'FUTURES') {
+        try {
+          const client = createBinanceFuturesClient(wallet);
+          const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
+          const allFees = await getAllTradeFeesForPosition(client, execution.symbol, execution.side, openedAt);
+
+          if (allFees) {
+            actualExitPrice = allFees.exitPrice || exitPrice;
+            actualEntryFee = allFees.entryFee;
+            actualExitFee = allFees.exitFee;
+            actualFees = allFees.totalFees;
+
+            const grossPnl = calculatePnl(entryPrice, actualExitPrice, quantity, execution.side);
+            actualPnl = roundToDecimals(grossPnl - actualFees, 8);
+
+            const pnlPercentCalc = roundToDecimals(((actualExitPrice - entryPrice) / entryPrice) * 100, 4);
+            actualPnlPercent = execution.side === 'LONG' ? pnlPercentCalc : -pnlPercentCalc;
+
+            logger.info({
+              executionId: execution.id,
+              symbol: execution.symbol,
+              originalExitPrice: exitPrice,
+              actualExitPrice,
+              actualEntryFee,
+              actualExitFee,
+              actualFees,
+              actualPnl,
+              binanceRealizedPnl: allFees.realizedPnl,
+            }, '[PositionMonitor] Fetched actual trade fees from Binance (entry + exit)');
+          } else {
+            const closingTrade = await getLastClosingTrade(client, execution.symbol, execution.side, openedAt);
+            if (closingTrade) {
+              actualExitPrice = closingTrade.price;
+              actualExitFee = closingTrade.commission;
+              actualFees = actualEntryFee + actualExitFee;
+
+              const grossPnl = calculatePnl(entryPrice, actualExitPrice, quantity, execution.side);
+              actualPnl = roundToDecimals(grossPnl - actualFees, 8);
+
+              const pnlPercentCalc = roundToDecimals(((actualExitPrice - entryPrice) / entryPrice) * 100, 4);
+              actualPnlPercent = execution.side === 'LONG' ? pnlPercentCalc : -pnlPercentCalc;
+
+              logger.info({
+                executionId: execution.id,
+                symbol: execution.symbol,
+                actualExitPrice,
+                actualExitFee,
+                actualFees,
+                actualPnl,
+              }, '[PositionMonitor] Fetched exit fee from Binance (fallback)');
+            }
+          }
+        } catch (fetchError) {
+          logger.warn({
+            executionId: execution.id,
+            error: serializeError(fetchError),
+          }, '[PositionMonitor] Failed to fetch actual fees from Binance, using detected values');
+        }
       }
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
@@ -557,7 +668,7 @@ export class PositionMonitorService {
       await db
         .update(wallets)
         .set({
-          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${actualPnl}`,
           updatedAt: new Date(),
         })
         .where(eq(wallets.id, wallet.id));
@@ -565,20 +676,24 @@ export class PositionMonitorService {
       logger.info({
         walletId: wallet.id,
         walletType: wallet.walletType,
-        pnl,
+        pnl: actualPnl,
         previousBalance: currentBalance,
-        expectedNewBalance: currentBalance + pnl,
+        expectedNewBalance: currentBalance + actualPnl,
       }, '[PositionMonitor] Wallet balance updated atomically after position exit');
+
+      const exitSource = positionSyncedFromExchange ? 'EXCHANGE_SYNC' : 'ALGORITHM';
 
       await db
         .update(tradeExecutions)
         .set({
-          exitPrice: exitPrice.toString(),
+          exitPrice: actualExitPrice.toString(),
           exitOrderId,
-          pnl: pnl.toString(),
-          pnlPercent: adjustedPnlPercent.toString(),
-          fees: totalFees.toString(),
-          exitSource: 'ALGORITHM',
+          pnl: actualPnl.toString(),
+          pnlPercent: actualPnlPercent.toString(),
+          fees: actualFees.toString(),
+          entryFee: actualEntryFee.toString(),
+          exitFee: actualExitFee.toString(),
+          exitSource,
           exitReason: reason,
           status: 'closed',
           closedAt: new Date(),
@@ -586,11 +701,40 @@ export class PositionMonitorService {
         })
         .where(eq(tradeExecutions.id, execution.id));
 
+      const hasProtectionOrders = execution.stopLossAlgoId || execution.stopLossOrderId ||
+        execution.takeProfitAlgoId || execution.takeProfitOrderId;
+
+      if (hasProtectionOrders && !isPaperWallet(wallet)) {
+        try {
+          await cancelAllProtectionOrders({
+            wallet,
+            symbol: execution.symbol,
+            marketType: execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT',
+            stopLossAlgoId: execution.stopLossAlgoId,
+            stopLossOrderId: execution.stopLossOrderId,
+            takeProfitAlgoId: execution.takeProfitAlgoId,
+            takeProfitOrderId: execution.takeProfitOrderId,
+          });
+          logger.info({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            stopLossAlgoId: execution.stopLossAlgoId,
+            takeProfitAlgoId: execution.takeProfitAlgoId,
+          }, '[PositionMonitor] Cancelled remaining protection orders after position exit');
+        } catch (cancelError) {
+          logger.warn({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            error: serializeError(cancelError),
+          }, '[PositionMonitor] Failed to cancel protection orders - they may have already been filled or cancelled');
+        }
+      }
+
       const expectedNewBalance = roundToDecimals(currentBalance + pnl, 8);
       logger.info({
         executionId: execution.id,
         symbol: execution.symbol,
-        exitSource: 'ALGORITHM',
+        exitSource,
         reason,
         exitPrice,
         entryPrice,
@@ -599,7 +743,10 @@ export class PositionMonitorService {
         pnlPercent: adjustedPnlPercent.toFixed(2),
         expectedNewBalance: expectedNewBalance.toFixed(2),
         isPaperTrading: isPaperWallet(wallet),
-      }, '[PositionMonitor] Position closed automatically');
+        positionSyncedFromExchange,
+      }, positionSyncedFromExchange
+        ? '[PositionMonitor] Position closed (synced from exchange - position not found)'
+        : '[PositionMonitor] Position closed automatically');
 
       const wsService = getWebSocketService();
       if (wsService) {

@@ -763,6 +763,7 @@
         "netPnL": "L&P Líquido",
         "grossPnL": "Bruto",
         "fees": "Taxas",
+        "funding": "Funding",
         "winRate": "Taxa de Acerto",
         "profitFactor": "Fator de Lucro",
         "totalTrades": "Total de Trades",
@@ -1300,6 +1301,15 @@
       "exit": "Stop abaixo do swing recente, sair quando RSI atinge 50-70",
       "candleMinus1": "RSI caindo enquanto acima da SMA 200",
       "candleTrigger": "RSI oversold com preço acima do filtro de tendência SMA 200"
+    }
+  },
+  "autoTrading": {
+    "console": {
+      "title": "Logs",
+      "clear": "Limpar logs",
+      "increaseFont": "Aumentar fonte",
+      "decreaseFont": "Diminuir fonte",
+      "waiting": "Aguardando logs..."
     }
   }
 }

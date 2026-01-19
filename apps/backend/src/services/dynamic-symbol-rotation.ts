@@ -132,13 +132,26 @@ export class DynamicSymbolRotationService {
               kept.push(symbol);
             }
           } else if (previousRank && !currentRank) {
-            toRemove.push(symbol);
+            if (filteredScores.length === 0) {
+              kept.push(symbol);
+            } else {
+              toRemove.push(symbol);
+            }
           } else {
             kept.push(symbol);
           }
         } else {
           kept.push(symbol);
         }
+      }
+
+      if (filteredScores.length === 0 && currentSymbols.size > 0) {
+        logger.warn({
+          walletId,
+          marketType: config.marketType,
+          currentWatchersCount: currentSymbols.size,
+          keptCount: kept.length,
+        }, '[DynamicRotation] ⚠️ All symbols filtered by capital - keeping existing watchers to avoid removing all');
       }
 
       const targetCount = currentSymbols.size === 0 ? config.limit : currentSymbols.size;

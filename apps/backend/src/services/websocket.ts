@@ -1,6 +1,7 @@
 import type { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { binancePriceStreamService } from './binance-price-stream';
+import type { FrontendLogEntry } from './auto-trading-log-buffer';
 
 export interface SocketData {
   userId?: number;
@@ -120,6 +121,17 @@ export class WebSocketService {
         socket.leave(`user:${userId}`);
       });
 
+      socket.on('subscribe:autoTradingLogs', (walletId: string) => {
+        const room = `autoTradingLogs:${walletId}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+        }
+      });
+
+      socket.on('unsubscribe:autoTradingLogs', (walletId: string) => {
+        socket.leave(`autoTradingLogs:${walletId}`);
+      });
+
       socket.on('disconnect', () => {
       });
     });
@@ -171,12 +183,12 @@ export class WebSocketService {
   }
 
   public emitRiskAlert(walletId: string, alert: {
-    type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP' | 'UNKNOWN_POSITION' | 'ORDER_REJECTED' | 'ORPHAN_ORDERS' | 'ORDER_MISMATCH';
+    type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP' | 'UNKNOWN_POSITION' | 'ORDER_REJECTED' | 'ORPHAN_ORDERS' | 'ORDER_MISMATCH' | 'UNPROTECTED_POSITION';
     level: 'info' | 'warning' | 'danger' | 'critical';
     positionId?: string;
     symbol?: string;
     message: string;
-    data: Record<string, unknown>;
+    data?: Record<string, unknown>;
     timestamp: number;
   }): void {
     this.io.to(`wallet:${walletId}`).emit('risk:alert', alert);
@@ -239,6 +251,10 @@ export class WebSocketService {
     message: string;
   }): void {
     this.io.to(`wallet:${walletId}`).emit('notification', notification);
+  }
+
+  public emitAutoTradingLog(walletId: string, entry: FrontendLogEntry): void {
+    this.io.to(`autoTradingLogs:${walletId}`).emit('autoTrading:log', entry);
   }
 
   public getIO(): SocketIOServer {

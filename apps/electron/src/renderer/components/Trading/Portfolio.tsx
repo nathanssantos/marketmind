@@ -17,6 +17,7 @@ import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { AutoTradeConsole } from './AutoTradeConsole';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 import { StrategyInfoPopover } from './StrategyInfoPopover';
 import { TradingProfilesModal } from './TradingProfilesModal';
@@ -261,6 +262,10 @@ const PortfolioComponent = () => {
           isLoading={isLoadingWatcherStatus}
           onNavigateToSymbol={globalActions?.navigateToSymbol}
         />
+      )}
+
+      {activeWalletId && (
+        <AutoTradeConsole walletId={activeWalletId} hasActiveWatchers={activeWatchers.length > 0} />
       )}
     </Stack>
   );

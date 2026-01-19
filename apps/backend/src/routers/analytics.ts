@@ -115,6 +115,11 @@ export const analyticsRouter = router({
         return sum + fees;
       }, 0);
 
+      const totalFunding = trades.reduce((sum, t) => {
+        const funding = t.accumulatedFunding ? parseFloat(t.accumulatedFunding) : 0;
+        return sum + funding;
+      }, 0);
+
       const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
 
       const avgWin =
@@ -177,6 +182,7 @@ export const analyticsRouter = router({
         winRate: parseFloat(winRate.toFixed(2)),
         grossPnL: parseFloat(grossPnL.toFixed(2)),
         totalFees: parseFloat(totalFees.toFixed(2)),
+        totalFunding: parseFloat(totalFunding.toFixed(2)),
         netPnL: parseFloat(netPnL.toFixed(2)),
         avgWin: parseFloat(avgWin.toFixed(2)),
         avgLoss: parseFloat(avgLoss.toFixed(2)),

@@ -4,7 +4,7 @@ import { AUTO_TRADING_CONFIG, CAPITAL_RULES, FIBONACCI_TARGET_LEVELS, TRADING_DE
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { TRADING_CONFIG } from '../constants';
+import { PROTECTION_CONFIG, TRADING_CONFIG } from '../constants';
 import {
     activeWatchers,
     autoTradingConfig,
@@ -12,6 +12,9 @@ import {
     setupDetections,
     tradeExecutions,
 } from '../db/schema';
+import { autoTradingService } from '../services/auto-trading';
+import { positionMonitorService } from '../services/position-monitor';
+import { autoTradingLogBuffer } from '../services/auto-trading-log-buffer';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../services/binance-futures-client';
@@ -1765,6 +1768,106 @@ export const autoTradingRouter = router({
         ...indicators,
         trendStrength,
         message: null,
+      };
+    }),
+
+  getRecentLogs: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        limit: z.number().min(10).max(500).default(100),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      return autoTradingLogBuffer.getRecentLogs(input.walletId, input.limit);
+    }),
+
+  recoverUnprotectedPosition: protectedProcedure
+    .input(z.object({
+      executionId: z.string(),
+      stopLoss: z.number().optional(),
+      takeProfit: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      log('🔧 recoverUnprotectedPosition called', { executionId: input.executionId });
+
+      const [execution] = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(
+          eq(tradeExecutions.id, input.executionId),
+          eq(tradeExecutions.userId, ctx.user.id),
+          eq(tradeExecutions.status, 'open')
+        ))
+        .limit(1);
+
+      if (!execution) {
+        log('❌ Execution not found or not open', { executionId: input.executionId });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Open execution not found' });
+      }
+
+      if (execution.stopLoss) {
+        log('⚠️ Execution already has stop loss', { executionId: input.executionId, stopLoss: execution.stopLoss });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Execution already has a stop loss' });
+      }
+
+      const wallet = await walletQueries.getByIdAndUser(execution.walletId, ctx.user.id);
+      const marketType = (execution.marketType || 'FUTURES') as 'SPOT' | 'FUTURES';
+
+      const currentPrice = await positionMonitorService.getCurrentPrice(execution.symbol, marketType);
+
+      const stopLoss = input.stopLoss ?? (
+        execution.side === 'LONG'
+          ? currentPrice * (1 - PROTECTION_CONFIG.EMERGENCY_SL_PERCENT)
+          : currentPrice * (1 + PROTECTION_CONFIG.EMERGENCY_SL_PERCENT)
+      );
+
+      log('📊 Recovery parameters', {
+        executionId: input.executionId,
+        symbol: execution.symbol,
+        side: execution.side,
+        currentPrice,
+        calculatedStopLoss: stopLoss,
+        userProvidedSL: input.stopLoss,
+      });
+
+      const slResult = await autoTradingService.createStopLossOrder(
+        wallet,
+        execution.symbol,
+        parseFloat(execution.quantity),
+        stopLoss,
+        execution.side as 'LONG' | 'SHORT',
+        marketType
+      );
+
+      const algoId = slResult.isAlgoOrder ? slResult.algoId : null;
+      const orderId = slResult.isAlgoOrder ? null : slResult.orderId;
+
+      await ctx.db
+        .update(tradeExecutions)
+        .set({
+          stopLoss: stopLoss.toString(),
+          stopLossAlgoId: algoId,
+          stopLossOrderId: orderId,
+          stopLossIsAlgo: slResult.isAlgoOrder,
+          updatedAt: new Date(),
+        })
+        .where(eq(tradeExecutions.id, input.executionId));
+
+      log('✅ Stop loss added to unprotected position', {
+        executionId: input.executionId,
+        symbol: execution.symbol,
+        stopLoss,
+        algoId,
+        orderId,
+      });
+
+      return {
+        success: true,
+        stopLoss,
+        algoId,
+        orderId,
       };
     }),
 });

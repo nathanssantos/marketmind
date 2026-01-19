@@ -245,7 +245,7 @@ export class FuturesBacktestEngine {
       );
 
       const grossPnl = (leveragedPnlPercent / 100) * marginRequired;
-      const commission = trade.commission ?? (positionValue * getRoundTripFee({ marketType: 'FUTURES' }));
+      const commission = trade.commission ?? (positionValue * getRoundTripFee({ marketType: 'FUTURES', useBnbDiscount: config.useBnbDiscount, vipLevel: config.vipLevel ?? 0 }));
       const netPnl = isLiquidated
         ? -(marginRequired - liquidationFee) // Loss of entire margin on liquidation
         : grossPnl + fundingPayments - commission;

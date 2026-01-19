@@ -1,0 +1,404 @@
+import { eq, and, gte, desc } from 'drizzle-orm';
+import { TIME_MS } from '../constants';
+import { db } from '../db';
+import { tradeExecutions, wallets } from '../db/schema';
+import type { Wallet } from '../db/schema';
+import {
+  createBinanceFuturesClient,
+  getIncomeHistory,
+  isPaperWallet,
+  type IncomeHistoryRecord,
+} from './binance-futures-client';
+import { logger } from './logger';
+import { serializeError } from '../utils/errors';
+
+const SYNC_INTERVAL_MS = TIME_MS.HOUR;
+const INCOME_LOOKBACK_MS = 24 * TIME_MS.HOUR;
+const BACKFILL_LOOKBACK_DAYS = 30;
+
+export interface IncomeSyncResult {
+  walletId: string;
+  walletName: string;
+  commissionRecords: number;
+  fundingRecords: number;
+  totalCommission: number;
+  totalFunding: number;
+  tradesUpdated: number;
+  errors: string[];
+}
+
+class IncomeSyncService {
+  private syncInterval: ReturnType<typeof setInterval> | null = null;
+  private isRunning = false;
+  private lastSyncTime: Map<string, number> = new Map();
+
+  start(): void {
+    if (this.isRunning) return;
+    this.isRunning = true;
+
+    logger.info({ intervalMs: SYNC_INTERVAL_MS }, '[IncomeSyncService] Starting income sync service');
+
+    this.syncInterval = setInterval(() => {
+      void this.syncAllWallets();
+    }, SYNC_INTERVAL_MS);
+
+    void this.syncAllWallets();
+  }
+
+  stop(): void {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval);
+      this.syncInterval = null;
+    }
+    this.isRunning = false;
+    logger.info('[IncomeSyncService] Stopped');
+  }
+
+  async syncAllWallets(): Promise<IncomeSyncResult[]> {
+    const results: IncomeSyncResult[] = [];
+
+    try {
+      const liveWallets = await db
+        .select()
+        .from(wallets)
+        .where(eq(wallets.marketType, 'FUTURES'));
+
+      const realWallets = liveWallets.filter(w => !isPaperWallet(w));
+
+      if (realWallets.length === 0) {
+        logger.debug('[IncomeSyncService] No live futures wallets to sync');
+        return results;
+      }
+
+      logger.info({ walletCount: realWallets.length }, '[IncomeSyncService] Starting income sync for live wallets');
+
+      for (const wallet of realWallets) {
+        try {
+          const result = await this.syncWalletIncome(wallet);
+          results.push(result);
+        } catch (error) {
+          logger.error({
+            walletId: wallet.id,
+            error: serializeError(error),
+          }, '[IncomeSyncService] Failed to sync wallet income');
+          results.push({
+            walletId: wallet.id,
+            walletName: wallet.name,
+            commissionRecords: 0,
+            fundingRecords: 0,
+            totalCommission: 0,
+            totalFunding: 0,
+            tradesUpdated: 0,
+            errors: [serializeError(error)],
+          });
+        }
+      }
+
+      const totalCommission = results.reduce((sum, r) => sum + r.totalCommission, 0);
+      const totalFunding = results.reduce((sum, r) => sum + r.totalFunding, 0);
+      const totalTradesUpdated = results.reduce((sum, r) => sum + r.tradesUpdated, 0);
+
+      logger.info({
+        walletsProcessed: results.length,
+        totalCommission: totalCommission.toFixed(4),
+        totalFunding: totalFunding.toFixed(4),
+        totalTradesUpdated,
+      }, '[IncomeSyncService] Income sync completed');
+
+      return results;
+    } catch (error) {
+      logger.error({ error: serializeError(error) }, '[IncomeSyncService] Failed to sync all wallets');
+      return results;
+    }
+  }
+
+  async syncWalletIncome(wallet: Wallet): Promise<IncomeSyncResult> {
+    const result: IncomeSyncResult = {
+      walletId: wallet.id,
+      walletName: wallet.name,
+      commissionRecords: 0,
+      fundingRecords: 0,
+      totalCommission: 0,
+      totalFunding: 0,
+      tradesUpdated: 0,
+      errors: [],
+    };
+
+    try {
+      const client = createBinanceFuturesClient(wallet);
+      const lastSync = this.lastSyncTime.get(wallet.id) || (Date.now() - INCOME_LOOKBACK_MS);
+      const now = Date.now();
+
+      const [commissionHistory, fundingHistory] = await Promise.all([
+        getIncomeHistory(client, {
+          incomeType: 'COMMISSION',
+          startTime: lastSync,
+          endTime: now,
+          limit: 1000,
+        }),
+        getIncomeHistory(client, {
+          incomeType: 'FUNDING_FEE',
+          startTime: lastSync,
+          endTime: now,
+          limit: 1000,
+        }),
+      ]);
+
+      result.commissionRecords = commissionHistory.length;
+      result.fundingRecords = fundingHistory.length;
+
+      for (const record of commissionHistory) {
+        const income = parseFloat(record.income);
+        result.totalCommission += Math.abs(income);
+      }
+
+      for (const record of fundingHistory) {
+        const income = parseFloat(record.income);
+        result.totalFunding += income;
+      }
+
+      const tradesUpdated = await this.updateTradesWithActualFees(
+        wallet.id,
+        commissionHistory,
+        fundingHistory
+      );
+      result.tradesUpdated = tradesUpdated;
+
+      this.lastSyncTime.set(wallet.id, now);
+
+      if (result.commissionRecords > 0 || result.fundingRecords > 0) {
+        logger.info({
+          walletId: wallet.id,
+          walletName: wallet.name,
+          commissionRecords: result.commissionRecords,
+          fundingRecords: result.fundingRecords,
+          totalCommission: result.totalCommission.toFixed(4),
+          totalFunding: result.totalFunding.toFixed(4),
+          tradesUpdated: result.tradesUpdated,
+        }, '[IncomeSyncService] Wallet income synced');
+      }
+
+      return result;
+    } catch (error) {
+      result.errors.push(serializeError(error));
+      throw error;
+    }
+  }
+
+  private async updateTradesWithActualFees(
+    walletId: string,
+    commissionHistory: IncomeHistoryRecord[],
+    fundingHistory: IncomeHistoryRecord[],
+    lookbackMs: number = INCOME_LOOKBACK_MS
+  ): Promise<number> {
+    let updatedCount = 0;
+
+    const symbolCommissions = new Map<string, { total: number; records: IncomeHistoryRecord[] }>();
+    for (const record of commissionHistory) {
+      if (!record.symbol) continue;
+      const existing = symbolCommissions.get(record.symbol) || { total: 0, records: [] };
+      existing.total += Math.abs(parseFloat(record.income));
+      existing.records.push(record);
+      symbolCommissions.set(record.symbol, existing);
+    }
+
+    const symbolFunding = new Map<string, { total: number; records: IncomeHistoryRecord[] }>();
+    for (const record of fundingHistory) {
+      if (!record.symbol) continue;
+      const existing = symbolFunding.get(record.symbol) || { total: 0, records: [] };
+      existing.total += parseFloat(record.income);
+      existing.records.push(record);
+      symbolFunding.set(record.symbol, existing);
+    }
+
+    const recentTrades = await db
+      .select()
+      .from(tradeExecutions)
+      .where(
+        and(
+          eq(tradeExecutions.walletId, walletId),
+          eq(tradeExecutions.marketType, 'FUTURES'),
+          gte(tradeExecutions.createdAt, new Date(Date.now() - lookbackMs))
+        )
+      )
+      .orderBy(desc(tradeExecutions.createdAt));
+
+    logger.debug({
+      walletId,
+      tradesFound: recentTrades.length,
+      commissionSymbols: Array.from(symbolCommissions.keys()),
+      fundingSymbols: Array.from(symbolFunding.keys()),
+    }, '[IncomeSyncService] Matching trades with income records');
+
+    for (const trade of recentTrades) {
+      const commissionData = symbolCommissions.get(trade.symbol);
+      const fundingData = symbolFunding.get(trade.symbol);
+
+      if (!commissionData && !fundingData) {
+        logger.debug({
+          tradeId: trade.id,
+          symbol: trade.symbol,
+          availableSymbols: [...symbolCommissions.keys(), ...symbolFunding.keys()],
+        }, '[IncomeSyncService] No commission/funding data for trade symbol');
+        continue;
+      }
+
+      const tradeOpenTime = trade.openedAt?.getTime() || trade.createdAt.getTime();
+      const tradeCloseTime = trade.closedAt?.getTime() || Date.now();
+
+      let tradeCommission = 0;
+      if (commissionData) {
+        for (const record of commissionData.records) {
+          if (record.time >= tradeOpenTime && record.time <= tradeCloseTime) {
+            tradeCommission += Math.abs(parseFloat(record.income));
+          }
+        }
+      }
+
+      let tradeFunding = 0;
+      if (fundingData) {
+        for (const record of fundingData.records) {
+          if (record.time >= tradeOpenTime && record.time <= tradeCloseTime) {
+            tradeFunding += parseFloat(record.income);
+          }
+        }
+      }
+
+      if (tradeCommission > 0 || tradeFunding !== 0) {
+        const currentFees = parseFloat(trade.fees || '0');
+        const currentFunding = parseFloat(trade.accumulatedFunding || '0');
+        const currentPnl = parseFloat(trade.pnl || '0');
+
+        const entryPrice = parseFloat(trade.entryPrice);
+        const exitPrice = parseFloat(trade.exitPrice || trade.entryPrice);
+        const quantity = parseFloat(trade.quantity);
+        const grossPnl = trade.side === 'LONG'
+          ? (exitPrice - entryPrice) * quantity
+          : (entryPrice - exitPrice) * quantity;
+
+        const actualFees = tradeCommission > 0 ? tradeCommission : currentFees;
+        const actualFunding = tradeFunding !== 0 ? tradeFunding : currentFunding;
+        const expectedPnl = grossPnl - actualFees + actualFunding;
+
+        const feesNeedUpdate =
+          (tradeCommission > 0 && Math.abs(tradeCommission - currentFees) > 0.0001) ||
+          (tradeFunding !== 0 && Math.abs(tradeFunding - currentFunding) > 0.0001);
+
+        const pnlNeedsRecalculation = Math.abs(expectedPnl - currentPnl) > 0.0001;
+
+        if (feesNeedUpdate || pnlNeedsRecalculation) {
+          await db
+            .update(tradeExecutions)
+            .set({
+              fees: actualFees.toString(),
+              accumulatedFunding: actualFunding.toString(),
+              pnl: expectedPnl.toFixed(8),
+              updatedAt: new Date(),
+            })
+            .where(eq(tradeExecutions.id, trade.id));
+
+          updatedCount++;
+
+          logger.info({
+            tradeId: trade.id,
+            symbol: trade.symbol,
+            fees: `${currentFees.toFixed(4)} → ${actualFees.toFixed(4)}`,
+            funding: `${currentFunding.toFixed(4)} → ${actualFunding.toFixed(4)}`,
+            pnl: `${currentPnl.toFixed(4)} → ${expectedPnl.toFixed(4)}`,
+          }, '[IncomeSyncService] Trade updated with actual fees');
+        }
+      }
+    }
+
+    return updatedCount;
+  }
+
+  async backfillAllTrades(startTime?: number): Promise<{ tradesProcessed: number; tradesUpdated: number }> {
+    const lookbackTime = startTime || Date.now() - (BACKFILL_LOOKBACK_DAYS * 24 * TIME_MS.HOUR);
+
+    logger.info({
+      lookbackTime: new Date(lookbackTime).toISOString(),
+    }, '[IncomeSyncService] Starting backfill of actual fees');
+
+    let totalProcessed = 0;
+    let totalUpdated = 0;
+
+    const liveWallets = await db
+      .select()
+      .from(wallets)
+      .where(eq(wallets.marketType, 'FUTURES'));
+
+    const realWallets = liveWallets.filter(w => !isPaperWallet(w));
+
+    for (const wallet of realWallets) {
+      try {
+        const client = createBinanceFuturesClient(wallet);
+
+        const [commissionHistory, fundingHistory] = await Promise.all([
+          getIncomeHistory(client, {
+            incomeType: 'COMMISSION',
+            startTime: lookbackTime,
+            endTime: Date.now(),
+            limit: 1000,
+          }),
+          getIncomeHistory(client, {
+            incomeType: 'FUNDING_FEE',
+            startTime: lookbackTime,
+            endTime: Date.now(),
+            limit: 1000,
+          }),
+        ]);
+
+        const trades = await db
+          .select()
+          .from(tradeExecutions)
+          .where(
+            and(
+              eq(tradeExecutions.walletId, wallet.id),
+              eq(tradeExecutions.marketType, 'FUTURES'),
+              gte(tradeExecutions.createdAt, new Date(lookbackTime))
+            )
+          );
+
+        totalProcessed += trades.length;
+
+        const lookbackMs = Date.now() - lookbackTime;
+        const updated = await this.updateTradesWithActualFees(
+          wallet.id,
+          commissionHistory,
+          fundingHistory,
+          lookbackMs
+        );
+
+        totalUpdated += updated;
+
+        logger.info({
+          walletId: wallet.id,
+          walletName: wallet.name,
+          tradesProcessed: trades.length,
+          tradesUpdated: updated,
+          commissionRecords: commissionHistory.length,
+          fundingRecords: fundingHistory.length,
+        }, '[IncomeSyncService] Wallet backfill completed');
+      } catch (error) {
+        logger.error({
+          walletId: wallet.id,
+          error: serializeError(error),
+        }, '[IncomeSyncService] Failed to backfill wallet');
+      }
+    }
+
+    logger.info({
+      totalProcessed,
+      totalUpdated,
+    }, '[IncomeSyncService] Backfill completed');
+
+    return { tradesProcessed: totalProcessed, tradesUpdated: totalUpdated };
+  }
+
+  async runOnce(): Promise<IncomeSyncResult[]> {
+    return this.syncAllWallets();
+  }
+}
+
+export const incomeSyncService = new IncomeSyncService();

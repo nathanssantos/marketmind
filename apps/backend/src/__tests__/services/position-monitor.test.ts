@@ -15,6 +15,19 @@ vi.mock('../../services/binance-client', () => ({
   silentWsLogger: {},
 }));
 
+vi.mock('../../services/binance-futures-client', () => ({
+  createBinanceFuturesClient: vi.fn(() => ({
+    get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
+    submitNewOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+  })),
+  createBinanceFuturesClientForPrices: vi.fn(() => ({
+    get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
+  })),
+  getAllTradeFeesForPosition: vi.fn(),
+  getLastClosingTrade: vi.fn(),
+  isPaperWallet: vi.fn((wallet) => wallet.walletType === 'paper'),
+}));
+
 vi.mock('../../services/binance-futures-data', () => ({
   getBinanceFuturesDataService: vi.fn(() => ({
     getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),

@@ -565,6 +565,54 @@ export class AutoTradingService {
     return { orderId: result.orderId, isAlgoOrder: false };
   }
 
+  async closePosition(
+    wallet: Wallet,
+    symbol: string,
+    quantity: number,
+    side: 'BUY' | 'SELL',
+    marketType: MarketType
+  ): Promise<{ orderId: number; avgPrice: number } | null> {
+    if (isPaperWallet(wallet)) {
+      logger.info({ symbol, quantity, side, marketType }, 'Paper wallet: simulating position close');
+      return { orderId: 0, avgPrice: 0 };
+    }
+
+    try {
+      if (marketType === 'FUTURES') {
+        const client = createBinanceFuturesClient(wallet);
+        const result = await client.submitNewOrder({
+          symbol,
+          side,
+          type: 'MARKET',
+          quantity,
+          reduceOnly: 'true',
+        });
+        logger.info({ symbol, orderId: result.orderId, avgPrice: result.avgPrice }, 'Futures position closed');
+        return {
+          orderId: result.orderId,
+          avgPrice: parseFloat(String(result.avgPrice || result.price || '0')),
+        };
+      }
+
+      const client = createBinanceClient(wallet);
+      const result = await client.submitNewOrder({
+        symbol,
+        side,
+        type: 'MARKET',
+        quantity,
+      });
+      const avgPrice = result.fills?.[0]?.price ? parseFloat(String(result.fills[0].price)) : 0;
+      logger.info({ symbol, orderId: result.orderId, avgPrice }, 'Spot position closed');
+      return {
+        orderId: result.orderId,
+        avgPrice,
+      };
+    } catch (error) {
+      logger.error({ symbol, quantity, side, marketType, error: serializeError(error) }, 'Failed to close position');
+      return null;
+    }
+  }
+
   async setFuturesLeverage(
     wallet: Wallet,
     symbol: string,

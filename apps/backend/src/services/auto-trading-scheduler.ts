@@ -11,11 +11,16 @@ import {
     AUTO_TRADING_CACHE,
     AUTO_TRADING_ROTATION,
     AUTO_TRADING_TIMING,
+    EXIT_REASON,
     INTERVAL_MS,
+    PROTECTION_ORDER_RETRY,
+    RISK_ALERT_LEVELS,
+    RISK_ALERT_TYPES,
     TIME_MS,
     TRADING_CONFIG,
     UNIT_MS,
 } from '../constants';
+import { withRetrySafe } from '../utils/retry';
 import { db } from '../db';
 import {
     activeWatchers as activeWatchersTable,
@@ -48,8 +53,10 @@ import {
 } from '../utils/filters';
 import { calculateRequiredKlines } from '../utils/kline-calculator';
 import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
+import { autoTradingLogBuffer, type FrontendLogEntry } from './auto-trading-log-buffer';
 import { autoTradingService } from './auto-trading';
 import { createBinanceFuturesClient } from './binance-client';
+import { getOrderEntryFee } from './binance-futures-client';
 import { cooldownService } from './cooldown';
 import {
     getDynamicSymbolRotationService,
@@ -59,7 +66,6 @@ import {
 } from './dynamic-symbol-rotation';
 import { getKlineMaintenance } from './kline-maintenance';
 import { meetsKlineRequirementWithTolerance, prefetchKlines } from './kline-prefetch';
-import { getMinNotionalFilterService } from './min-notional-filter';
 import { ocoOrderService } from './oco-orders';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
 import { positionMonitorService } from './position-monitor';
@@ -183,6 +189,7 @@ export class AutoTradingScheduler {
   private processingQueue: string[] = [];
   private isProcessingQueue = false;
   private processedThisCycle: Set<string> = new Set();
+  private executingSetups: Set<string> = new Set();
 
   private btcKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
@@ -785,6 +792,8 @@ export class AutoTradingScheduler {
         this.pendingResults
       );
       outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS, this.getConfigCacheStats());
+
+      this.emitLogsToWebSocket(unifiedResult.watcherResults);
 
       if (!hasPendingWatchers) {
         this.pendingCycleId = null;
@@ -1411,6 +1420,34 @@ export class AutoTradingScheduler {
     cycleKlines: Kline[],
     logBuffer: WatcherLogBuffer
   ): Promise<void> {
+    const executionLockKey = `${watcher.walletId}-${watcher.symbol}-${setup.type}`;
+
+    if (this.executingSetups.has(executionLockKey)) {
+      logBuffer.log('⏳', 'Setup execution already in progress, skipping duplicate', {
+        type: setup.type,
+        symbol: watcher.symbol,
+        lockKey: executionLockKey,
+      });
+      return;
+    }
+
+    this.executingSetups.add(executionLockKey);
+
+    try {
+      await this.executeSetupInternal(watcher, setup, strategies, cycleKlines, logBuffer);
+    } finally {
+      this.executingSetups.delete(executionLockKey);
+    }
+  }
+
+  // eslint-disable-next-line complexity
+  private async executeSetupInternal(
+    watcher: ActiveWatcher,
+    setup: TradingSetup,
+    strategies: StrategyDefinition[],
+    cycleKlines: Kline[],
+    logBuffer: WatcherLogBuffer
+  ): Promise<void> {
     logBuffer.log('🚀', 'Attempting to execute setup', {
       type: setup.type,
       direction: setup.direction,
@@ -1960,6 +1997,7 @@ export class AutoTradingScheduler {
       let entryOrderId: number | null = null;
       let actualEntryPrice = isLiveExecution ? setup.entryPrice : expectedEntryWithSlippage;
       let actualQuantity = dynamicSize.quantity;
+      let actualEntryFee: number | null = null;
       let stopLossOrderId: number | null = null;
       let takeProfitOrderId: number | null = null;
       let stopLossAlgoId: number | null = null;
@@ -2080,6 +2118,29 @@ export class AutoTradingScheduler {
             filled: orderFilled,
           });
 
+          if (orderFilled && entryOrderId && watcher.marketType === 'FUTURES') {
+            try {
+              const client = createBinanceFuturesClient(wallet as Wallet);
+              const feeResult = await getOrderEntryFee(client, watcher.symbol, entryOrderId);
+              if (feeResult) {
+                actualEntryFee = feeResult.entryFee;
+                if (feeResult.avgPrice > 0) {
+                  actualEntryPrice = feeResult.avgPrice;
+                }
+                log('💰 Entry fee captured from Binance', {
+                  entryOrderId,
+                  entryFee: actualEntryFee,
+                  avgPrice: feeResult.avgPrice,
+                });
+              }
+            } catch (feeError) {
+              log('⚠️ Failed to fetch entry fee, will be captured on close', {
+                entryOrderId,
+                error: serializeError(feeError),
+              });
+            }
+          }
+
           if (!orderFilled && useLimit) {
             log('📋 LIMIT order pending - will create SL/TP when filled', {
               orderId: entryOrderId,
@@ -2094,11 +2155,111 @@ export class AutoTradingScheduler {
               log('📊 FUTURES market - using separate SL/TP orders (OCO not supported)', {
                 symbol: watcher.symbol,
                 marketType: watcher.marketType,
+                stopLoss: setup.stopLoss,
+                takeProfit: effectiveTakeProfit,
               });
-            }
 
-            try {
-              if (!useSeparateOrders) {
+              const slRetryResult = await withRetrySafe(
+                () => autoTradingService.createStopLossOrder(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  setup.stopLoss!,
+                  setup.direction,
+                  watcher.marketType
+                ),
+                { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+              );
+
+              if (slRetryResult.success) {
+                const slResult = slRetryResult.result;
+                stopLossIsAlgo = slResult.isAlgoOrder;
+                if (slResult.isAlgoOrder) {
+                  stopLossAlgoId = slResult.algoId;
+                } else {
+                  stopLossOrderId = slResult.orderId;
+                }
+                log('🛡️ FUTURES stop loss order placed', {
+                  stopLossOrderId,
+                  stopLossAlgoId,
+                  stopLoss: setup.stopLoss,
+                  isAlgoOrder: slResult.isAlgoOrder,
+                });
+              } else {
+                log('❌ FUTURES: Failed to place stop loss order after retries', {
+                  error: serializeError(slRetryResult.lastError),
+                  stopLoss: setup.stopLoss,
+                  quantity: actualQuantity,
+                });
+              }
+
+              const tpRetryResult = await withRetrySafe(
+                () => autoTradingService.createTakeProfitOrder(
+                  wallet as Wallet,
+                  watcher.symbol,
+                  actualQuantity,
+                  effectiveTakeProfit!,
+                  setup.direction,
+                  watcher.marketType
+                ),
+                { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+              );
+
+              if (tpRetryResult.success) {
+                const tpResult = tpRetryResult.result;
+                takeProfitIsAlgo = tpResult.isAlgoOrder;
+                if (tpResult.isAlgoOrder) {
+                  takeProfitAlgoId = tpResult.algoId;
+                } else {
+                  takeProfitOrderId = tpResult.orderId;
+                }
+                log('🎯 FUTURES take profit order placed', {
+                  takeProfitOrderId,
+                  takeProfitAlgoId,
+                  takeProfit: effectiveTakeProfit,
+                  isAlgoOrder: tpResult.isAlgoOrder,
+                });
+              } else {
+                log('❌ FUTURES: Failed to place take profit order after retries', {
+                  error: serializeError(tpRetryResult.lastError),
+                  takeProfit: effectiveTakeProfit,
+                  quantity: actualQuantity,
+                });
+              }
+
+              const hasSL = stopLossOrderId !== null || stopLossAlgoId !== null;
+              const hasTP = takeProfitOrderId !== null || takeProfitAlgoId !== null;
+
+              if (!hasSL || !hasTP) {
+                log('🚨 CRITICAL: Incomplete protection orders - emitting alert', {
+                  symbol: watcher.symbol,
+                  hasSL,
+                  hasTP,
+                  stopLossAlgoId,
+                  takeProfitAlgoId,
+                });
+
+                const wsServiceProtection = getWebSocketService();
+                if (wsServiceProtection) {
+                  wsServiceProtection.emitRiskAlert(watcher.walletId, {
+                    type: 'ORDER_REJECTED',
+                    level: 'critical',
+                    symbol: watcher.symbol,
+                    message: `CRITICAL: Position ${watcher.symbol} ${setup.direction} has incomplete protection. SL: ${hasSL ? 'OK' : 'MISSING'}, TP: ${hasTP ? 'OK' : 'MISSING'}. Please add missing orders manually!`,
+                    data: {
+                      reason: 'incomplete_protection_orders',
+                      side: setup.direction,
+                      hasSL,
+                      hasTP,
+                      stopLossAlgoId,
+                      takeProfitAlgoId,
+                    },
+                    timestamp: Date.now(),
+                  });
+                }
+              }
+            } else {
+              try {
                 const ocoResult = await ocoOrderService.createExitOCO(
                   wallet as Wallet,
                   watcher.symbol,
@@ -2122,106 +2283,137 @@ export class AutoTradingScheduler {
                 } else {
                   log('⚠️ OCO placement returned null, falling back to separate orders');
                 }
-              }
 
-              if (useSeparateOrders || !orderListId) {
-                const slResult = await autoTradingService.createStopLossOrder(
-                  wallet as Wallet,
-                  watcher.symbol,
-                  actualQuantity,
-                  setup.stopLoss,
-                  setup.direction,
-                  watcher.marketType
-                );
-                stopLossIsAlgo = slResult.isAlgoOrder;
-                if (slResult.isAlgoOrder) {
-                  stopLossAlgoId = slResult.algoId;
-                } else {
-                  stopLossOrderId = slResult.orderId;
+                if (!orderListId) {
+                  const slFallbackResult = await withRetrySafe(
+                    () => autoTradingService.createStopLossOrder(
+                      wallet as Wallet,
+                      watcher.symbol,
+                      actualQuantity,
+                      setup.stopLoss!,
+                      setup.direction,
+                      watcher.marketType
+                    ),
+                    { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+                  );
+
+                  if (slFallbackResult.success) {
+                    const slResult = slFallbackResult.result;
+                    stopLossIsAlgo = slResult.isAlgoOrder;
+                    if (slResult.isAlgoOrder) {
+                      stopLossAlgoId = slResult.algoId;
+                    } else {
+                      stopLossOrderId = slResult.orderId;
+                    }
+                    log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
+                  } else {
+                    log('⚠️ Failed to place stop loss order (fallback) after retries', {
+                      error: serializeError(slFallbackResult.lastError),
+                    });
+                  }
+
+                  const tpFallbackResult = await withRetrySafe(
+                    () => autoTradingService.createTakeProfitOrder(
+                      wallet as Wallet,
+                      watcher.symbol,
+                      actualQuantity,
+                      effectiveTakeProfit!,
+                      setup.direction,
+                      watcher.marketType
+                    ),
+                    { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+                  );
+
+                  if (tpFallbackResult.success) {
+                    const tpResult = tpFallbackResult.result;
+                    takeProfitIsAlgo = tpResult.isAlgoOrder;
+                    if (tpResult.isAlgoOrder) {
+                      takeProfitAlgoId = tpResult.algoId;
+                    } else {
+                      takeProfitOrderId = tpResult.orderId;
+                    }
+                    log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
+                  } else {
+                    log('⚠️ Failed to place take profit order (fallback) after retries', {
+                      error: serializeError(tpFallbackResult.lastError),
+                    });
+                  }
                 }
-                const tpResult = await autoTradingService.createTakeProfitOrder(
-                  wallet as Wallet,
-                  watcher.symbol,
-                  actualQuantity,
-                  effectiveTakeProfit,
-                  setup.direction,
-                  watcher.marketType
+              } catch (ocoError) {
+                log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
+                  error: serializeError(ocoError),
+                });
+
+                const slOcoFallbackResult = await withRetrySafe(
+                  () => autoTradingService.createStopLossOrder(
+                    wallet as Wallet,
+                    watcher.symbol,
+                    actualQuantity,
+                    setup.stopLoss!,
+                    setup.direction,
+                    watcher.marketType
+                  ),
+                  { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
                 );
-                takeProfitIsAlgo = tpResult.isAlgoOrder;
-                if (tpResult.isAlgoOrder) {
-                  takeProfitAlgoId = tpResult.algoId;
+
+                if (slOcoFallbackResult.success) {
+                  const slResult = slOcoFallbackResult.result;
+                  stopLossIsAlgo = slResult.isAlgoOrder;
+                  if (slResult.isAlgoOrder) {
+                    stopLossAlgoId = slResult.algoId;
+                  } else {
+                    stopLossOrderId = slResult.orderId;
+                  }
+                  log('🛡️ Stop loss order placed (OCO fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
                 } else {
-                  takeProfitOrderId = tpResult.orderId;
+                  log('⚠️ Failed to place stop loss order after retries', {
+                    error: serializeError(slOcoFallbackResult.lastError),
+                  });
                 }
 
-                if (useSeparateOrders) {
-                  log('✅ Separate SL/TP orders placed for FUTURES', {
-                    stopLossOrderId,
-                    stopLossAlgoId,
-                    takeProfitOrderId,
-                    takeProfitAlgoId,
-                    stopLoss: setup.stopLoss,
-                    takeProfit: effectiveTakeProfit,
+                const tpOcoFallbackResult = await withRetrySafe(
+                  () => autoTradingService.createTakeProfitOrder(
+                    wallet as Wallet,
+                    watcher.symbol,
+                    actualQuantity,
+                    effectiveTakeProfit!,
+                    setup.direction,
+                    watcher.marketType
+                  ),
+                  { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+                );
+
+                if (tpOcoFallbackResult.success) {
+                  const tpResult = tpOcoFallbackResult.result;
+                  takeProfitIsAlgo = tpResult.isAlgoOrder;
+                  if (tpResult.isAlgoOrder) {
+                    takeProfitAlgoId = tpResult.algoId;
+                  } else {
+                    takeProfitOrderId = tpResult.orderId;
+                  }
+                  log('🎯 Take profit order placed (OCO fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
+                } else {
+                  log('⚠️ Failed to place take profit order after retries', {
+                    error: serializeError(tpOcoFallbackResult.lastError),
                   });
                 }
               }
-            } catch (ocoError) {
-              log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
-                error: serializeError(ocoError),
-              });
-              try {
-                const slResult = await autoTradingService.createStopLossOrder(
-                  wallet as Wallet,
-                  watcher.symbol,
-                  actualQuantity,
-                  setup.stopLoss,
-                  setup.direction,
-                  watcher.marketType
-                );
-                stopLossIsAlgo = slResult.isAlgoOrder;
-                if (slResult.isAlgoOrder) {
-                  stopLossAlgoId = slResult.algoId;
-                } else {
-                  stopLossOrderId = slResult.orderId;
-                }
-                log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
-              } catch (slError) {
-                log('⚠️ Failed to place stop loss order', {
-                  error: serializeError(slError),
-                });
-              }
-              try {
-                const tpResult = await autoTradingService.createTakeProfitOrder(
-                  wallet as Wallet,
-                  watcher.symbol,
-                  actualQuantity,
-                  effectiveTakeProfit,
-                  setup.direction,
-                  watcher.marketType
-                );
-                takeProfitIsAlgo = tpResult.isAlgoOrder;
-                if (tpResult.isAlgoOrder) {
-                  takeProfitAlgoId = tpResult.algoId;
-                } else {
-                  takeProfitOrderId = tpResult.orderId;
-                }
-                log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
-              } catch (tpError) {
-                log('⚠️ Failed to place take profit order', {
-                  error: serializeError(tpError),
-                });
-              }
             }
           } else if (orderFilled && setup.stopLoss) {
-            try {
-              const slResult = await autoTradingService.createStopLossOrder(
+            const slOnlyResult = await withRetrySafe(
+              () => autoTradingService.createStopLossOrder(
                 wallet as Wallet,
                 watcher.symbol,
                 actualQuantity,
-                setup.stopLoss,
+                setup.stopLoss!,
                 setup.direction,
                 watcher.marketType
-              );
+              ),
+              { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+            );
+
+            if (slOnlyResult.success) {
+              const slResult = slOnlyResult.result;
               stopLossIsAlgo = slResult.isAlgoOrder;
               if (slResult.isAlgoOrder) {
                 stopLossAlgoId = slResult.algoId;
@@ -2229,16 +2421,16 @@ export class AutoTradingScheduler {
                 stopLossOrderId = slResult.orderId;
               }
               log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLossAlgoId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
-            } catch (slError) {
-              log('⚠️ Failed to place stop loss order', {
-                error: serializeError(slError),
+            } else {
+              log('⚠️ Failed to place stop loss order after retries', {
+                error: serializeError(slOnlyResult.lastError),
               });
             }
           }
 
           const hasStopLossProtection = stopLossOrderId !== null || stopLossAlgoId !== null;
-          if (!hasStopLossProtection && entryOrderId !== null) {
-            log('🚨 CRITICAL: Position opened WITHOUT stop loss protection - closing immediately', {
+          if (!hasStopLossProtection && entryOrderId !== null && orderFilled) {
+            log('🚨 CRITICAL: SL creation failed - attempting to close entry position', {
               executionId,
               symbol: watcher.symbol,
               side: setup.direction,
@@ -2248,65 +2440,83 @@ export class AutoTradingScheduler {
             });
 
             try {
-              const minNotionalFilter = getMinNotionalFilterService();
-              const symbolFilters = await minNotionalFilter.getSymbolFilters(watcher.marketType);
-              const filters = symbolFilters.get(watcher.symbol);
-              const stepSize = filters?.stepSize?.toString();
+              const closeSide = setup.direction === 'LONG' ? 'SELL' : 'BUY';
+              const closeResult = await autoTradingService.closePosition(
+                wallet as Wallet,
+                watcher.symbol,
+                actualQuantity,
+                closeSide,
+                watcher.marketType
+              );
 
-              if (watcher.marketType === 'FUTURES') {
-                const { closePosition } = await import('./binance-futures-client');
-                const client = createBinanceFuturesClient(wallet as Wallet);
-                const positionAmt = setup.direction === 'LONG'
-                  ? actualQuantity.toString()
-                  : (-actualQuantity).toString();
-                await closePosition(client, watcher.symbol, positionAmt, stepSize);
-              } else {
-                const closeSide = setup.direction === 'LONG' ? 'SELL' : 'BUY';
-                await autoTradingService.executeBinanceOrder(
-                  wallet as Wallet,
-                  {
-                    symbol: watcher.symbol,
-                    side: closeSide,
-                    type: 'MARKET',
-                    quantity: actualQuantity,
-                  },
-                  'SPOT'
-                );
-              }
-              log('✅ Unprotected position closed successfully', {
-                symbol: watcher.symbol,
-                quantity: actualQuantity,
-                marketType: watcher.marketType,
-              });
-            } catch (closeError) {
-              log('🚨 CRITICAL: Failed to close unprotected position - MANUAL INTERVENTION REQUIRED', {
-                executionId,
-                symbol: watcher.symbol,
-                side: setup.direction,
-                quantity: actualQuantity,
-                marketType: watcher.marketType,
-                error: serializeError(closeError),
-              });
+              if (closeResult) {
+                log('✅ Compensation successful - position closed', {
+                  closeOrderId: closeResult.orderId,
+                  avgPrice: closeResult.avgPrice,
+                  entryPrice: actualEntryPrice,
+                });
 
-              const wsServiceAlert = getWebSocketService();
-              if (wsServiceAlert) {
-                wsServiceAlert.emitRiskAlert(watcher.walletId, {
-                  type: 'ORDER_REJECTED',
-                  level: 'critical',
+                const wsServiceCompensation = getWebSocketService();
+                wsServiceCompensation?.emitRiskAlert(watcher.walletId, {
+                  type: RISK_ALERT_TYPES.ORDER_REJECTED,
+                  level: RISK_ALERT_LEVELS.WARNING,
                   symbol: watcher.symbol,
-                  message: `CRITICAL: Position ${watcher.symbol} ${setup.direction} has no stop loss and could not be auto-closed. CLOSE MANUALLY!`,
+                  message: `Position ${watcher.symbol} was closed due to failed SL creation. Entry: ${actualEntryPrice}, Exit: ${closeResult.avgPrice}`,
                   data: {
-                    reason: 'unprotected_position',
+                    reason: 'sl_creation_failed_compensation',
                     side: setup.direction,
-                    quantity: actualQuantity.toString(),
                     entryPrice: actualEntryPrice.toString(),
-                    marketType: watcher.marketType,
+                    exitPrice: closeResult.avgPrice.toString(),
                   },
                   timestamp: Date.now(),
                 });
+
+                await db.insert(tradeExecutions).values({
+                  id: executionId,
+                  userId: watcher.userId,
+                  walletId: watcher.walletId,
+                  setupId,
+                  setupType: setup.type,
+                  symbol: watcher.symbol,
+                  side: setup.direction,
+                  entryPrice: actualEntryPrice.toString(),
+                  quantity: actualQuantity.toFixed(8),
+                  stopLoss: setup.stopLoss?.toString(),
+                  takeProfit: effectiveTakeProfit?.toString(),
+                  openedAt: new Date(),
+                  closedAt: new Date(),
+                  status: 'cancelled',
+                  exitReason: EXIT_REASON.SL_CREATION_FAILED,
+                  exitPrice: closeResult.avgPrice.toString(),
+                  marketType: watcher.marketType,
+                  entryInterval: watcher.interval,
+                  entryOrderId,
+                });
+
+                return;
               }
+            } catch (closeError) {
+              log('❌ CRITICAL: Failed to close unprotected position', {
+                error: serializeError(closeError),
+              });
             }
-            return;
+
+            const wsServiceAlert = getWebSocketService();
+            wsServiceAlert?.emitRiskAlert(watcher.walletId, {
+              type: RISK_ALERT_TYPES.UNPROTECTED_POSITION,
+              level: RISK_ALERT_LEVELS.CRITICAL,
+              symbol: watcher.symbol,
+              message: `CRITICAL: Position ${watcher.symbol} ${setup.direction} is UNPROTECTED. SL creation failed and compensation failed. MANUAL INTERVENTION REQUIRED!`,
+              data: {
+                reason: 'sl_creation_failed_compensation_failed',
+                side: setup.direction,
+                quantity: actualQuantity.toString(),
+                entryPrice: actualEntryPrice.toString(),
+                marketType: watcher.marketType,
+                executionId,
+              },
+              timestamp: Date.now(),
+            });
           }
         } catch (orderError) {
           log('❌ Failed to execute Binance order', {
@@ -2532,6 +2742,7 @@ export class AutoTradingScheduler {
           side: setup.direction,
           entryPrice: actualEntryPrice.toString(),
           entryOrderId,
+          entryFee: actualEntryFee?.toString(),
           stopLossOrderId,
           takeProfitOrderId,
           stopLossAlgoId,
@@ -3276,6 +3487,28 @@ export class AutoTradingScheduler {
     }
 
     return cycles.sort((a, b) => a.nextRotation.getTime() - b.nextRotation.getTime());
+  }
+
+  private emitLogsToWebSocket(watcherResults: WatcherResult[]): void {
+    const wsService = getWebSocketService();
+    if (!wsService) return;
+
+    for (const result of watcherResults) {
+      const watcher = this.activeWatchers.get(result.watcherId);
+      if (!watcher) continue;
+
+      for (const log of result.logs) {
+        const entry: FrontendLogEntry = autoTradingLogBuffer.addLog(watcher.walletId, {
+          timestamp: log.timestamp.getTime(),
+          level: log.level,
+          emoji: log.emoji,
+          message: log.message,
+          symbol: result.symbol,
+          interval: result.interval,
+        });
+        wsService.emitAutoTradingLog(watcher.walletId, entry);
+      }
+    }
   }
 }
 

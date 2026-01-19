@@ -135,7 +135,7 @@ export const walletRouter = router({
           }
 
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
-          initialBalance = usdtAsset?.walletBalance ? parseFloat(String(usdtAsset.walletBalance)) : 0;
+          initialBalance = usdtAsset?.marginBalance ? parseFloat(String(usdtAsset.marginBalance)) : 0;
         } else {
           const client = new MainClient({
             api_key: input.apiKey,
@@ -296,14 +296,28 @@ export const walletRouter = router({
 
       try {
         let currentBalance = 0;
+        let debugInfo: Record<string, string> = {};
 
         if (wallet.marketType === 'FUTURES') {
           const client = createBinanceFuturesClient(wallet);
           const accountInfo = await client.getAccountInformation();
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
-          currentBalance = usdtAsset?.walletBalance
-            ? parseFloat(String(usdtAsset.walletBalance))
+          currentBalance = usdtAsset?.marginBalance
+            ? parseFloat(String(usdtAsset.marginBalance))
             : 0;
+
+          debugInfo = {
+            totalWalletBalance: String(accountInfo.totalWalletBalance ?? '0'),
+            totalUnrealizedProfit: String(accountInfo.totalUnrealizedProfit ?? '0'),
+            totalMarginBalance: String(accountInfo.totalMarginBalance ?? '0'),
+            availableBalance: String(accountInfo.availableBalance ?? '0'),
+            usdtWalletBalance: String(usdtAsset?.walletBalance ?? '0'),
+            usdtUnrealizedProfit: String(usdtAsset?.unrealizedProfit ?? '0'),
+            usdtMarginBalance: String(usdtAsset?.marginBalance ?? '0'),
+            storedInitialBalance: wallet.initialBalance ?? '0',
+          };
+
+          console.log('[syncBalance] Binance Futures balances:', debugInfo);
         } else {
           const client = createBinanceClient(wallet);
           const accountInfo = await client.getAccountInformation();
@@ -334,6 +348,7 @@ export const walletRouter = router({
           currentBalance: currentBalance.toString(),
           currency: 'USDT',
           walletType: wallet.walletType,
+          debug: debugInfo,
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

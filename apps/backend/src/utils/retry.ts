@@ -137,6 +137,25 @@ export const withRetry = async <T>(
   throw lastError ?? new Error('Retry failed with unknown error');
 };
 
+export type RetryResult<T> =
+  | { success: true; result: T }
+  | { success: false; lastError: Error };
+
+export const withRetrySafe = async <T>(
+  fn: () => Promise<T>,
+  options: Partial<RetryOptions> = {}
+): Promise<RetryResult<T>> => {
+  try {
+    const result = await withRetry(fn, options);
+    return { success: true, result };
+  } catch (error) {
+    return {
+      success: false,
+      lastError: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
+};
+
 export const withRetryFetch = async (
   url: string,
   fetchOptions: RequestInit = {},

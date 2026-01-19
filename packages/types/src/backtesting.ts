@@ -31,6 +31,7 @@ export interface BacktestConfig {
 
   marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)
   useBnbDiscount?: boolean; // Apply 25% BNB discount to fees (default: false)
+  vipLevel?: number; // Binance VIP level 0-9 for fee calculation (default: 0)
   leverage?: number; // Futures leverage 1-125 (default: 1)
   marginType?: 'ISOLATED' | 'CROSSED'; // Futures margin type (default: ISOLATED)
   simulateFundingRates?: boolean; // Simulate funding rate payments every 8h

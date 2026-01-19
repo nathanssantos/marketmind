@@ -5,8 +5,10 @@ import {
   clearFeeCache,
   getBacktestFee,
 } from '../services/fee-service';
+import { incomeSyncService } from '../services/income-sync-service';
 import { walletQueries } from '../services/database/walletQueries';
 import { BINANCE_FEES } from '@marketmind/types';
+import { TIME_MS } from '../constants';
 
 export const feesRouter = router({
   defaults: publicProcedure.query(() => ({
@@ -84,11 +86,12 @@ export const feesRouter = router({
       z.object({
         marketType: z.enum(['SPOT', 'FUTURES']),
         useBnbDiscount: z.boolean().default(false),
+        vipLevel: z.number().min(0).max(9).default(0),
       })
     )
     .query(({ input }) => {
-      const makerFee = getBacktestFee(input.marketType, 'MAKER', input.useBnbDiscount);
-      const takerFee = getBacktestFee(input.marketType, 'TAKER', input.useBnbDiscount);
+      const makerFee = getBacktestFee(input.marketType, 'MAKER', input.useBnbDiscount, input.vipLevel);
+      const takerFee = getBacktestFee(input.marketType, 'TAKER', input.useBnbDiscount, input.vipLevel);
 
       return {
         maker: makerFee,
@@ -97,6 +100,35 @@ export const feesRouter = router({
         takerPercent: takerFee * 100,
         marketType: input.marketType,
         useBnbDiscount: input.useBnbDiscount,
+        vipLevel: input.vipLevel,
+      };
+    }),
+
+  syncIncome: protectedProcedure.mutation(async () => {
+    const results = await incomeSyncService.runOnce();
+    return {
+      walletsProcessed: results.length,
+      totalCommission: results.reduce((sum, r) => sum + r.totalCommission, 0),
+      totalFunding: results.reduce((sum, r) => sum + r.totalFunding, 0),
+      totalTradesUpdated: results.reduce((sum, r) => sum + r.tradesUpdated, 0),
+      errors: results.flatMap((r) => r.errors),
+    };
+  }),
+
+  backfillActualFees: protectedProcedure
+    .input(
+      z.object({
+        days: z.number().min(1).max(90).default(30),
+      }).optional()
+    )
+    .mutation(async ({ input }) => {
+      const days = input?.days ?? 30;
+      const startTime = Date.now() - days * 24 * TIME_MS.HOUR;
+      const result = await incomeSyncService.backfillAllTrades(startTime);
+      return {
+        tradesProcessed: result.tradesProcessed,
+        tradesUpdated: result.tradesUpdated,
+        lookbackDays: days,
       };
     }),
 });
