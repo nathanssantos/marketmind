@@ -390,6 +390,82 @@ export class MinNotionalFilterService {
     this.futuresPriceCache = null;
     this.spotPriceCache = null;
   }
+
+  async calculateMaxWatchersFromSymbols(
+    symbols: string[],
+    walletBalance: number,
+    leverage: number,
+    exposureMultiplier: number,
+    marketType: MarketType
+  ): Promise<{ maxWatchers: number; capitalPerWatcher: number; eligibleSymbols: string[]; excludedSymbols: Map<string, string> }> {
+    const filters = await this.getSymbolFilters(marketType);
+    const prices = await this.getSymbolPrices(marketType);
+    const availableCapital = walletBalance * leverage * exposureMultiplier;
+    const maxCapitalPerPosition = availableCapital / CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO;
+
+    logger.info({
+      walletBalance,
+      leverage,
+      exposureMultiplier,
+      availableCapital,
+      maxCapitalPerPosition,
+      symbolsCount: symbols.length,
+      filtersCount: filters.size,
+      pricesCount: prices.size,
+    }, '[MinNotionalFilter] calculateMaxWatchersFromSymbols input');
+
+    const eligibleSymbols: string[] = [];
+    const excludedSymbols = new Map<string, string>();
+    const eligibleMinNotionals: number[] = [];
+
+    for (const symbol of symbols) {
+      const symbolFilter = filters.get(symbol);
+      const price = prices.get(symbol) ?? 0;
+
+      let minRequired: number;
+      if (!symbolFilter) {
+        minRequired = getDefaultMinNotional(marketType) * CAPITAL_RULES.SAFETY_MARGIN;
+      } else {
+        const result = this.getMinRequiredCapitalForSymbol(symbolFilter, price);
+        minRequired = result.minRequired;
+      }
+
+      if (minRequired > maxCapitalPerPosition) {
+        excludedSymbols.set(symbol, `Min required $${minRequired.toFixed(2)} > 1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO} of capital $${maxCapitalPerPosition.toFixed(2)}`);
+        continue;
+      }
+
+      eligibleSymbols.push(symbol);
+      eligibleMinNotionals.push(minRequired);
+    }
+
+    eligibleMinNotionals.sort((a, b) => a - b);
+
+    let maxWatchers = 0;
+    let totalRequired = 0;
+
+    for (const minRequired of eligibleMinNotionals) {
+      totalRequired += minRequired;
+      if (totalRequired <= availableCapital) {
+        maxWatchers++;
+      } else {
+        break;
+      }
+    }
+
+    maxWatchers = Math.max(1, Math.min(maxWatchers, eligibleSymbols.length));
+    const capitalPerWatcher = maxWatchers > 0 ? availableCapital / maxWatchers : availableCapital;
+
+    logger.info({
+      eligibleCount: eligibleSymbols.length,
+      excludedCount: excludedSymbols.size,
+      maxWatchers,
+      capitalPerWatcher,
+      firstExcluded: excludedSymbols.size > 0 ? Array.from(excludedSymbols.entries()).slice(0, 3) : [],
+    }, '[MinNotionalFilter] calculateMaxWatchersFromSymbols result');
+
+    return { maxWatchers, capitalPerWatcher, eligibleSymbols, excludedSymbols };
+  }
 }
 
 let minNotionalFilterService: MinNotionalFilterService | null = null;

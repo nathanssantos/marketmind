@@ -64,15 +64,19 @@ export class DynamicSymbolRotationService {
 
       if (config.capitalRequirement) {
         const allSymbols = filteredScores.map(s => s.symbol);
-        const capitalFilter = await minNotionalFilter.filterSymbolsByCapital(
-          allSymbols,
-          config.capitalRequirement,
-          config.marketType
-        );
+        const { eligibleSymbols, excludedSymbols, capitalPerWatcher, maxWatchers } =
+          await minNotionalFilter.calculateMaxWatchersFromSymbols(
+            allSymbols,
+            config.capitalRequirement.walletBalance,
+            config.capitalRequirement.leverage,
+            config.capitalRequirement.exposureMultiplier,
+            config.marketType
+          );
 
-        skippedInsufficientCapital.push(...capitalFilter.filtered);
+        skippedInsufficientCapital.push(...excludedSymbols.keys());
 
-        filteredScores = filteredScores.filter(s => capitalFilter.eligible.includes(s.symbol));
+        const eligibleSet = new Set(eligibleSymbols);
+        filteredScores = filteredScores.filter(s => eligibleSet.has(s.symbol));
 
         if (skippedInsufficientCapital.length > 0) {
           logger.info({
@@ -80,8 +84,8 @@ export class DynamicSymbolRotationService {
             marketType: config.marketType,
             skippedCount: skippedInsufficientCapital.length,
             eligibleCount: filteredScores.length,
-            capitalPerWatcher: capitalFilter.capitalPerWatcher.toFixed(2),
-            maxAffordableWatchers: capitalFilter.maxAffordableWatchers,
+            capitalPerWatcher: capitalPerWatcher.toFixed(2),
+            maxAffordableWatchers: maxWatchers,
           }, '[DynamicRotation] Filtered symbols by capital requirement');
         }
       }

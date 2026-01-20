@@ -1,5 +1,4 @@
 import { colorize, createTable } from '@marketmind/logger';
-import { calculateCapitalLimits } from '@marketmind/risk';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, FIBONACCI_TARGET_LEVELS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -979,30 +978,29 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
+      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
 
       const minNotionalFilter = getMinNotionalFilterService();
-      const capitalFilterResult = await minNotionalFilter.filterSymbolsByCapital(
-        input.symbols,
-        {
+      const { maxWatchers, capitalPerWatcher, eligibleSymbols, excludedSymbols } =
+        await minNotionalFilter.calculateMaxWatchersFromSymbols(
+          input.symbols,
           walletBalance,
           leverage,
-          targetWatchersCount: effectiveTargetCount,
-          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
-        },
-        input.marketType
-      );
+          exposureMultiplier,
+          input.marketType
+        );
 
-      const skippedCapitalSymbols = capitalFilterResult.filtered;
-      const symbolsToTry = capitalFilterResult.eligible;
-      const capitalLimitedTarget = Math.min(effectiveTargetCount, capitalFilterResult.maxAffordableWatchers);
+      const skippedCapitalSymbols = Array.from(excludedSymbols.keys());
+      const symbolsToTry = eligibleSymbols;
+      const capitalLimitedTarget = Math.min(effectiveTargetCount, maxWatchers);
 
-      if (skippedCapitalSymbols.length > 0 || capitalFilterResult.maxAffordableWatchers < effectiveTargetCount) {
+      if (skippedCapitalSymbols.length > 0 || maxWatchers < effectiveTargetCount) {
         log('💰 Capital filter applied', {
           skippedSymbols: skippedCapitalSymbols.length,
-          capitalPerWatcher: capitalFilterResult.capitalPerWatcher.toFixed(2),
+          capitalPerWatcher: capitalPerWatcher.toFixed(2),
           walletBalance,
           leverage,
-          maxAffordableWatchers: capitalFilterResult.maxAffordableWatchers,
+          maxAffordableWatchers: maxWatchers,
           originalTarget: effectiveTargetCount,
           capitalLimitedTarget,
         });
@@ -1068,7 +1066,7 @@ export const autoTradingRouter = router({
         results.push({
           symbol,
           success: false,
-          error: `Capital per watcher (${capitalFilterResult.capitalPerWatcher.toFixed(2)} USDT) below minNotional`,
+          error: `Capital per watcher ($${capitalPerWatcher.toFixed(2)} USDT) below minNotional`,
           skippedReason: 'insufficient_capital',
           fromRanking: false,
         });
@@ -1090,29 +1088,27 @@ export const autoTradingRouter = router({
         const scores = await scoringService.getSymbolScores(input.marketType, capitalLimitedTarget * 4);
 
         const rankingSymbols = scores.map(s => s.symbol).filter(s => !attemptedSymbols.has(s));
-        const rankingFilterResult = await minNotionalFilter.filterSymbolsByCapital(
-          rankingSymbols,
-          {
+        const { eligibleSymbols: rankingEligible, excludedSymbols: rankingExcluded, capitalPerWatcher: rankingCapitalPerWatcher } =
+          await minNotionalFilter.calculateMaxWatchersFromSymbols(
+            rankingSymbols,
             walletBalance,
             leverage,
-            targetWatchersCount: effectiveTargetCount,
-            exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
-          },
-          input.marketType
-        );
+            exposureMultiplier,
+            input.marketType
+          );
 
-        for (const symbol of rankingFilterResult.filtered) {
+        for (const symbol of rankingExcluded.keys()) {
           results.push({
             symbol,
             success: false,
-            error: `Capital per watcher (${rankingFilterResult.capitalPerWatcher.toFixed(2)} USDT) below minNotional`,
+            error: `Capital per watcher ($${rankingCapitalPerWatcher.toFixed(2)} USDT) below minNotional`,
             skippedReason: 'insufficient_capital',
             fromRanking: true,
           });
           attemptedSymbols.add(symbol);
         }
 
-        for (const symbol of rankingFilterResult.eligible) {
+        for (const symbol of rankingEligible) {
           if (startedSymbols.size >= capitalLimitedTarget) break;
           await tryStartWatcher(symbol, true);
         }
@@ -1128,7 +1124,7 @@ export const autoTradingRouter = router({
         total: results.length,
         success: successCount,
         capitalLimitedTarget,
-        maxAffordableWatchers: capitalFilterResult.maxAffordableWatchers,
+        maxAffordableWatchers: maxWatchers,
         existingCount,
         maxWatcherLimit,
         targetMet,
@@ -1237,25 +1233,31 @@ export const autoTradingRouter = router({
       const fetchMultiplier = 4;
       const scores = await scoringService.getSymbolScores(input.marketType, input.limit * fetchMultiplier);
 
-      const capitalRequirement = {
-        walletBalance,
-        leverage,
-        targetWatchersCount: input.limit,
-        exposureMultiplier,
-      };
+      let allSymbols: string[];
+      if (scores.length > 0) {
+        allSymbols = scores.map(s => s.symbol);
+      } else {
+        allSymbols = await getTopSymbolsByVolume(input.marketType, input.limit * fetchMultiplier);
+        logger.info({ count: allSymbols.length }, '[getFilteredSymbolsForQuickStart] Using top symbols by volume as fallback');
+      }
 
-      const allSymbols = scores.map(s => s.symbol);
-      const capitalFilter = await minNotionalFilter.filterSymbolsByCapital(
-        allSymbols,
-        capitalRequirement,
-        input.marketType
-      );
+      const { maxWatchers, capitalPerWatcher, eligibleSymbols: capitalEligible, excludedSymbols } =
+        await minNotionalFilter.calculateMaxWatchersFromSymbols(
+          allSymbols,
+          walletBalance,
+          leverage,
+          exposureMultiplier,
+          input.marketType
+        );
 
-      let filteredScores = scores.filter(s => capitalFilter.eligible.includes(s.symbol));
+      const filteredSymbolSet = new Set(capitalEligible);
+      const filteredScores = scores.length > 0
+        ? scores.filter(s => filteredSymbolSet.has(s.symbol))
+        : allSymbols.filter(s => filteredSymbolSet.has(s)).map(symbol => ({ symbol, score: 0 }));
 
       const eligibleSymbols: string[] = [];
       const skippedInsufficientKlines: string[] = [];
-      const skippedInsufficientCapital = capitalFilter.filtered;
+      const skippedInsufficientCapital = Array.from(excludedSymbols.keys());
 
       for (const score of filteredScores) {
         if (eligibleSymbols.length >= input.limit) break;
@@ -1281,18 +1283,19 @@ export const autoTradingRouter = router({
         ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
         ['Leverage', `${leverage}x`],
         ['Total Scored', scores.length],
-        ['Eligible (Capital)', capitalFilter.eligible.length],
+        ['Eligible (Capital)', capitalEligible.length],
         ['Skipped (Capital)', skippedInsufficientCapital.length],
         ['Skipped (Klines)', skippedInsufficientKlines.length],
         ['Final Symbols', eligibleSymbols.length],
+        ['Max Affordable', maxWatchers],
       ]);
 
       return {
         symbols: eligibleSymbols,
         skippedInsufficientCapital,
         skippedInsufficientKlines,
-        capitalPerWatcher: capitalFilter.capitalPerWatcher,
-        maxAffordableWatchers: capitalFilter.maxAffordableWatchers,
+        capitalPerWatcher,
+        maxAffordableWatchers: maxWatchers,
       };
     }),
 
@@ -1348,39 +1351,55 @@ export const autoTradingRouter = router({
       }
 
       const leverage = config?.leverage ?? 1;
+      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
 
-      const limits = calculateCapitalLimits({
-        walletBalance,
-        leverage,
-        marketType: input.marketType,
-      });
-
+      const scoringService = getOpportunityScoringService();
       const minNotionalFilter = getMinNotionalFilterService();
-      const capitalPerWatcher = minNotionalFilter.getCapitalPerWatcher(
-        limits.availableCapital,
-        limits.maxAffordableWatchers,
-        TRADING_DEFAULTS.EXPOSURE_MULTIPLIER
-      );
+
+      let rankingSymbols: string[] = [];
+      const scores = await scoringService.getSymbolScores(input.marketType, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * 2);
+
+      if (scores.length > 0) {
+        rankingSymbols = scores.map(s => s.symbol);
+      } else {
+        const topByVolume = await getTopSymbolsByVolume(input.marketType, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * 2);
+        rankingSymbols = topByVolume;
+        logger.info({ count: rankingSymbols.length }, '[getCapitalLimits] Using Binance volume fallback');
+      }
+
+      const { maxWatchers, capitalPerWatcher, eligibleSymbols, excludedSymbols } =
+        await minNotionalFilter.calculateMaxWatchersFromSymbols(
+          rankingSymbols,
+          walletBalance,
+          leverage,
+          exposureMultiplier,
+          input.marketType
+        );
+
+      const availableCapital = walletBalance * leverage * exposureMultiplier;
+      const maxCapitalPerPosition = availableCapital / CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO;
 
       logApiTable('getCapitalLimits', [
         ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
         ['Leverage', `${leverage}x`],
-        ['Exposure Multiplier', `${TRADING_DEFAULTS.EXPOSURE_MULTIPLIER}x`],
-        ['Available Capital', `$${limits.availableCapital.toFixed(2)}`],
-        [`Max Capital/Position (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO})`, `$${limits.maxCapitalPerPosition.toFixed(2)}`],
-        ['Effective Min Required', `$${limits.effectiveMinRequired.toFixed(2)}`],
+        ['Exposure Multiplier', `${exposureMultiplier}x`],
+        ['Available Capital', `$${availableCapital.toFixed(2)}`],
+        [`Max Capital/Position (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO})`, `$${maxCapitalPerPosition.toFixed(2)}`],
+        ['Ranking Symbols', rankingSymbols.length],
+        ['Eligible Symbols', eligibleSymbols.length],
+        ['Excluded Symbols', excludedSymbols.size],
         ['Capital Per Watcher', `$${capitalPerWatcher.toFixed(2)}`],
-        ['Max Affordable Watchers', limits.maxAffordableWatchers],
+        ['Max Affordable Watchers', maxWatchers],
       ]);
 
       return {
         walletBalance,
         leverage,
-        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
-        availableCapital: limits.availableCapital,
-        maxAffordableWatchers: limits.maxAffordableWatchers,
+        exposureMultiplier,
+        availableCapital,
+        maxAffordableWatchers: maxWatchers,
         capitalPerWatcher,
-        maxCapitalPerPosition: limits.maxCapitalPerPosition,
+        maxCapitalPerPosition,
       };
     }),
 
