@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.0] - 2026-01-19
+
+### Added
+- **Pyramiding Feature** for auto-trading
+  - Dynamic mode: adds to winning positions based on trend strength
+  - Fibonacci mode: scales in at key retracement levels
+  - Configurable max pyramid levels and position sizing
+  - Minimum quantity validation to prevent dust orders
+- **Auto Trading Logs Console** with real-time WebSocket integration
+  - Live log streaming for debugging and monitoring
+  - Filterable by log level and watcher
+- **Capital Filtering** for dynamic symbol rotation
+  - Skips symbols where capital is insufficient for minimum notional
+  - Configurable leverage and exposure multiplier per profile
+  - `getCapitalLimits` query for wallet capital analysis
+- **Wallet Deposits/Withdrawals Tracking**
+  - Total deposits and withdrawals display in wallet details
+  - Historical balance tracking
+- **Fibonacci Enhancements**
+  - Extended target levels to include 2.618 extension
+  - Fibonacci-based TP/SL recalculation for open trades
+  - Dynamic max Fibonacci entry progress percent in rejection reasons
+- **Shift/Alt Order Entry Toggle** in Chart Settings
+  - Configure modifier key for one-click order placement
+- **Quick Start Symbol Filtering**
+  - `getFilteredSymbolsForQuickStart` query for enhanced symbol selection
+
+### Changed
+- **Dynamic Symbol Limit** increased from 25 to 50 (configurable up to 100)
+- **AUTO_TRADING_CONFIG** centralized configuration for dynamic limits and validation
+- **Min Notional Filter** refactored capital calculation methods
+- **Futures Order Handling** improved OCO order logging and algo order handling
+- **Leverage/Margin Error Handling** enhanced in AutoTradingScheduler
+- **Breakeven and Progressive Targets** updated Fibonacci levels
+
+### Fixed
+- **Funding Rate Calculation** removed unnecessary multiplication causing incorrect values
+- **Candle Tracking** added `lastProcessedCandleOpenTime` to ActiveWatcher for accurate tracking
+- **Trigger Kline Open Time** fix for existing trades
+- **Conditional Order Rejection** proper handling and risk alert emission
+
+---
+
 ## [0.47.0] - 2026-01-17
 
 ### Added
