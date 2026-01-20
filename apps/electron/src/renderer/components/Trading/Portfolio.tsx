@@ -121,6 +121,8 @@ const PortfolioComponent = () => {
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
     initialBalance: parseFloat(w.initialBalance || '0'),
+    totalDeposits: parseFloat(w.totalDeposits || '0'),
+    totalWithdrawals: parseFloat(w.totalWithdrawals || '0'),
     currency: (w.currency || 'USDT'),
     createdAt: new Date(w.createdAt),
   }));
@@ -130,6 +132,10 @@ const PortfolioComponent = () => {
   const { positions: filteredPositions, stats } = usePortfolioFilters(positions, filterOption, sortBy);
 
   const { totalPnL, totalPnLPercent, profitableCount, losingCount } = stats;
+
+  const effectiveCapital = activeWallet
+    ? activeWallet.initialBalance + activeWallet.totalDeposits - activeWallet.totalWithdrawals
+    : 0;
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
 
@@ -180,7 +186,7 @@ const PortfolioComponent = () => {
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.pnlVsBalance')}</Text>
                 <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
-                  {totalPnL >= 0 ? '+' : ''}{((totalPnL / activeWallet.balance) * 100).toFixed(2)}%
+                  {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
                 </Text>
               </Flex>
             </Stack>
