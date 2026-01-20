@@ -574,6 +574,7 @@
       "initialBalance": "Saldo Inicial",
       "currency": "Moeda",
       "balance": "Saldo",
+      "netDeposits": "Depósitos Líquidos",
       "totalPnL": "L&P Total",
       "viewPerformance": "Ver Desempenho",
       "delete": "Excluir Carteira",

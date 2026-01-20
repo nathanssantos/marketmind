@@ -97,6 +97,8 @@ export interface Wallet extends Account {
   name: string;
   balance: number;
   initialBalance: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
   currency: WalletCurrency;
   createdAt: number | Date;
   performance: WalletPerformancePoint[];

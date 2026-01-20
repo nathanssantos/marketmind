@@ -281,6 +281,13 @@
       "when": 1768760891250,
       "tag": "0039_young_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1768868997706,
+      "tag": "0040_gorgeous_nebula",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import {
     klines,
     setupDetections,
     tradeExecutions,
+    wallets,
 } from '../db/schema';
 import { autoTradingService } from '../services/auto-trading';
 import { positionMonitorService } from '../services/position-monitor';
@@ -1316,7 +1317,36 @@ export const autoTradingRouter = router({
         )
         .limit(1);
 
-      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
+      let walletBalance = parseFloat(wallet.currentBalance ?? '0');
+
+      if (!isPaperWallet(wallet) && input.marketType === 'FUTURES') {
+        try {
+          const client = createBinanceFuturesClient(wallet);
+          const accountInfo = await client.getAccountInformation();
+          const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
+          const marginBalance = usdtAsset?.marginBalance
+            ? parseFloat(String(usdtAsset.marginBalance))
+            : 0;
+          const availableBalance = usdtAsset?.availableBalance
+            ? parseFloat(String(usdtAsset.availableBalance))
+            : marginBalance;
+
+          walletBalance = availableBalance;
+
+          if (marginBalance !== parseFloat(wallet.currentBalance ?? '0')) {
+            await ctx.db
+              .update(wallets)
+              .set({
+                currentBalance: marginBalance.toString(),
+                updatedAt: new Date(),
+              })
+              .where(eq(wallets.id, wallet.id));
+          }
+        } catch (error) {
+          logger.error({ walletId: wallet.id, error }, '[getCapitalLimits] Failed to fetch live balance, using stored value');
+        }
+      }
+
       const leverage = config?.leverage ?? 1;
 
       const limits = calculateCapitalLimits({

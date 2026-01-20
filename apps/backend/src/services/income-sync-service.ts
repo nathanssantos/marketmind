@@ -21,8 +21,11 @@ export interface IncomeSyncResult {
   walletName: string;
   commissionRecords: number;
   fundingRecords: number;
+  transferRecords: number;
   totalCommission: number;
   totalFunding: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
   tradesUpdated: number;
   errors: string[];
 }
@@ -86,8 +89,11 @@ class IncomeSyncService {
             walletName: wallet.name,
             commissionRecords: 0,
             fundingRecords: 0,
+            transferRecords: 0,
             totalCommission: 0,
             totalFunding: 0,
+            totalDeposits: 0,
+            totalWithdrawals: 0,
             tradesUpdated: 0,
             errors: [serializeError(error)],
           });
@@ -96,12 +102,16 @@ class IncomeSyncService {
 
       const totalCommission = results.reduce((sum, r) => sum + r.totalCommission, 0);
       const totalFunding = results.reduce((sum, r) => sum + r.totalFunding, 0);
+      const totalDeposits = results.reduce((sum, r) => sum + r.totalDeposits, 0);
+      const totalWithdrawals = results.reduce((sum, r) => sum + r.totalWithdrawals, 0);
       const totalTradesUpdated = results.reduce((sum, r) => sum + r.tradesUpdated, 0);
 
       logger.info({
         walletsProcessed: results.length,
         totalCommission: totalCommission.toFixed(4),
         totalFunding: totalFunding.toFixed(4),
+        totalDeposits: totalDeposits.toFixed(4),
+        totalWithdrawals: totalWithdrawals.toFixed(4),
         totalTradesUpdated,
       }, '[IncomeSyncService] Income sync completed');
 
@@ -118,8 +128,11 @@ class IncomeSyncService {
       walletName: wallet.name,
       commissionRecords: 0,
       fundingRecords: 0,
+      transferRecords: 0,
       totalCommission: 0,
       totalFunding: 0,
+      totalDeposits: 0,
+      totalWithdrawals: 0,
       tradesUpdated: 0,
       errors: [],
     };
@@ -129,7 +142,7 @@ class IncomeSyncService {
       const lastSync = this.lastSyncTime.get(wallet.id) || (Date.now() - INCOME_LOOKBACK_MS);
       const now = Date.now();
 
-      const [commissionHistory, fundingHistory] = await Promise.all([
+      const [commissionHistory, fundingHistory, transferHistory] = await Promise.all([
         getIncomeHistory(client, {
           incomeType: 'COMMISSION',
           startTime: lastSync,
@@ -142,10 +155,17 @@ class IncomeSyncService {
           endTime: now,
           limit: 1000,
         }),
+        getIncomeHistory(client, {
+          incomeType: 'TRANSFER',
+          startTime: lastSync,
+          endTime: now,
+          limit: 1000,
+        }),
       ]);
 
       result.commissionRecords = commissionHistory.length;
       result.fundingRecords = fundingHistory.length;
+      result.transferRecords = transferHistory.length;
 
       for (const record of commissionHistory) {
         const income = parseFloat(record.income);
@@ -157,6 +177,43 @@ class IncomeSyncService {
         result.totalFunding += income;
       }
 
+      const walletCreatedAt = wallet.createdAt.getTime();
+      for (const record of transferHistory) {
+        if (record.time < walletCreatedAt) continue;
+
+        const income = parseFloat(record.income);
+        if (income > 0) {
+          result.totalDeposits += income;
+        } else {
+          result.totalWithdrawals += Math.abs(income);
+        }
+      }
+
+      if (result.totalDeposits > 0 || result.totalWithdrawals > 0) {
+        const currentDeposits = parseFloat(wallet.totalDeposits ?? '0');
+        const currentWithdrawals = parseFloat(wallet.totalWithdrawals ?? '0');
+
+        await db
+          .update(wallets)
+          .set({
+            totalDeposits: (currentDeposits + result.totalDeposits).toString(),
+            totalWithdrawals: (currentWithdrawals + result.totalWithdrawals).toString(),
+            lastTransferSyncAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+
+        logger.info({
+          walletId: wallet.id,
+          walletName: wallet.name,
+          transferRecords: result.transferRecords,
+          newDeposits: result.totalDeposits.toFixed(4),
+          newWithdrawals: result.totalWithdrawals.toFixed(4),
+          totalDeposits: (currentDeposits + result.totalDeposits).toFixed(4),
+          totalWithdrawals: (currentWithdrawals + result.totalWithdrawals).toFixed(4),
+        }, '[IncomeSyncService] Wallet transfers synced');
+      }
+
       const tradesUpdated = await this.updateTradesWithActualFees(
         wallet.id,
         commissionHistory,
@@ -166,14 +223,17 @@ class IncomeSyncService {
 
       this.lastSyncTime.set(wallet.id, now);
 
-      if (result.commissionRecords > 0 || result.fundingRecords > 0) {
+      if (result.commissionRecords > 0 || result.fundingRecords > 0 || result.transferRecords > 0) {
         logger.info({
           walletId: wallet.id,
           walletName: wallet.name,
           commissionRecords: result.commissionRecords,
           fundingRecords: result.fundingRecords,
+          transferRecords: result.transferRecords,
           totalCommission: result.totalCommission.toFixed(4),
           totalFunding: result.totalFunding.toFixed(4),
+          totalDeposits: result.totalDeposits.toFixed(4),
+          totalWithdrawals: result.totalWithdrawals.toFixed(4),
           tradesUpdated: result.tradesUpdated,
         }, '[IncomeSyncService] Wallet income synced');
       }
@@ -277,12 +337,12 @@ class IncomeSyncService {
           : (entryPrice - exitPrice) * quantity;
 
         const actualFees = tradeCommission > 0 ? tradeCommission : currentFees;
-        const actualFunding = tradeFunding !== 0 ? tradeFunding : currentFunding;
+        const actualFunding = currentFunding + tradeFunding;
         const expectedPnl = grossPnl - actualFees + actualFunding;
 
         const feesNeedUpdate =
           (tradeCommission > 0 && Math.abs(tradeCommission - currentFees) > 0.0001) ||
-          (tradeFunding !== 0 && Math.abs(tradeFunding - currentFunding) > 0.0001);
+          (tradeFunding !== 0);
 
         const pnlNeedsRecalculation = Math.abs(expectedPnl - currentPnl) > 0.0001;
 
@@ -394,6 +454,92 @@ class IncomeSyncService {
     }, '[IncomeSyncService] Backfill completed');
 
     return { tradesProcessed: totalProcessed, tradesUpdated: totalUpdated };
+  }
+
+  async backfillTransfers(walletId?: string): Promise<{ walletsProcessed: number; totalDeposits: number; totalWithdrawals: number }> {
+    const TRANSFER_LOOKBACK_DAYS = 90;
+
+    logger.info({
+      walletId: walletId ?? 'all',
+    }, '[IncomeSyncService] Starting transfer backfill');
+
+    let totalDeposits = 0;
+    let totalWithdrawals = 0;
+    let walletsProcessed = 0;
+
+    const query = walletId
+      ? db.select().from(wallets).where(and(eq(wallets.id, walletId), eq(wallets.marketType, 'FUTURES')))
+      : db.select().from(wallets).where(eq(wallets.marketType, 'FUTURES'));
+
+    const liveWallets = await query;
+    const realWallets = liveWallets.filter(w => !isPaperWallet(w));
+
+    for (const wallet of realWallets) {
+      try {
+        const client = createBinanceFuturesClient(wallet);
+
+        const walletCreatedAt = wallet.createdAt.getTime();
+        const maxLookback = Date.now() - (TRANSFER_LOOKBACK_DAYS * 24 * TIME_MS.HOUR);
+        const startTime = Math.max(walletCreatedAt, maxLookback);
+
+        const transferHistory = await getIncomeHistory(client, {
+          incomeType: 'TRANSFER',
+          startTime,
+          endTime: Date.now(),
+          limit: 1000,
+        });
+
+        let walletDeposits = 0;
+        let walletWithdrawals = 0;
+
+        for (const record of transferHistory) {
+          if (record.time < walletCreatedAt) continue;
+
+          const income = parseFloat(record.income);
+          if (income > 0) {
+            walletDeposits += income;
+          } else {
+            walletWithdrawals += Math.abs(income);
+          }
+        }
+
+        await db
+          .update(wallets)
+          .set({
+            totalDeposits: walletDeposits.toString(),
+            totalWithdrawals: walletWithdrawals.toString(),
+            lastTransferSyncAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+
+        totalDeposits += walletDeposits;
+        totalWithdrawals += walletWithdrawals;
+        walletsProcessed++;
+
+        logger.info({
+          walletId: wallet.id,
+          walletName: wallet.name,
+          walletCreatedAt: new Date(walletCreatedAt).toISOString(),
+          transferRecords: transferHistory.length,
+          filteredDeposits: walletDeposits.toFixed(4),
+          filteredWithdrawals: walletWithdrawals.toFixed(4),
+        }, '[IncomeSyncService] Wallet transfer backfill completed');
+      } catch (error) {
+        logger.error({
+          walletId: wallet.id,
+          error: serializeError(error),
+        }, '[IncomeSyncService] Failed to backfill wallet transfers');
+      }
+    }
+
+    logger.info({
+      walletsProcessed,
+      totalDeposits: totalDeposits.toFixed(4),
+      totalWithdrawals: totalWithdrawals.toFixed(4),
+    }, '[IncomeSyncService] Transfer backfill completed');
+
+    return { walletsProcessed, totalDeposits, totalWithdrawals };
   }
 
   async runOnce(): Promise<IncomeSyncResult[]> {

@@ -589,6 +589,7 @@
       "initialBalance": "Solde Initial",
       "currency": "Devise",
       "balance": "Solde",
+      "netDeposits": "Dépôts Nets",
       "totalPnL": "P&L Total",
       "viewPerformance": "Voir les Performances",
       "delete": "Supprimer le Portefeuille",

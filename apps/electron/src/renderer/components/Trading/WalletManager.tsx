@@ -29,6 +29,7 @@ export const WalletManager = () => {
     createPaperWallet,
     createWallet,
     syncBalance,
+    syncTransfers,
     isDeleting,
     isCreatingPaper,
     isCreating,
@@ -42,6 +43,8 @@ export const WalletManager = () => {
       walletType: (w.walletType ?? 'paper') as WalletType,
       balance: parseFloat(w.currentBalance || '0'),
       initialBalance: parseFloat(w.initialBalance || '0'),
+      totalDeposits: parseFloat(w.totalDeposits || '0'),
+      totalWithdrawals: parseFloat(w.totalWithdrawals || '0'),
       currency: (w.currency || 'USDT') as 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH',
       createdAt: new Date(w.createdAt),
       performance: [],
@@ -101,7 +104,10 @@ export const WalletManager = () => {
   const handleSyncBalance = async (id: string) => {
     setSyncingWalletId(id);
     try {
-      await syncBalance(id);
+      await Promise.all([
+        syncBalance(id),
+        syncTransfers(id),
+      ]);
     } finally {
       setSyncingWalletId(null);
     }
@@ -200,8 +206,10 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
   const { t } = useTranslation();
   const { performance } = useBackendAnalytics(wallet.id, 'all');
 
-  const netPnL = wallet.balance - wallet.initialBalance;
-  const netPnLPercent = wallet.initialBalance > 0 ? (netPnL / wallet.initialBalance) * PERCENT_MULTIPLIER : 0;
+  const netDeposits = wallet.totalDeposits - wallet.totalWithdrawals;
+  const effectiveInitial = wallet.initialBalance + netDeposits;
+  const netPnL = wallet.balance - effectiveInitial;
+  const netPnLPercent = effectiveInitial > 0 ? (netPnL / effectiveInitial) * PERCENT_MULTIPLIER : 0;
   const isProfitable = netPnL >= 0;
 
   const totalFees = performance?.totalFees ?? 0;
@@ -312,6 +320,14 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
             {wallet.currency} {wallet.initialBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </Flex>
+        {netDeposits !== 0 && (
+          <Flex justify="space-between">
+            <Text color="fg.muted">{t('trading.wallets.netDeposits', 'Net Deposits')}</Text>
+            <Text color={netDeposits > 0 ? 'blue.500' : 'orange.500'}>
+              {netDeposits > 0 ? '+' : ''}{netDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+          </Flex>
+        )}
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.wallets.netPnL')}</Text>
           <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.funding')}: ${totalFunding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0 && totalFunding === 0}>

@@ -41,6 +41,12 @@ export const useBackendWallet = () => {
     },
   });
 
+  const syncTransfersMutation = trpc.wallet.syncTransfers.useMutation({
+    onSuccess: () => {
+      utils.wallet.list.invalidate();
+    },
+  });
+
   const createWallet = useCallback(
     async (data: { name: string; apiKey: string; apiSecret: string; walletType: 'testnet' | 'live' }) => {
       return createMutation.mutateAsync(data);
@@ -75,7 +81,14 @@ export const useBackendWallet = () => {
     },
     [syncBalanceMutation]
   );
-  
+
+  const syncTransfers = useCallback(
+    async (id: string) => {
+      return syncTransfersMutation.mutateAsync({ id });
+    },
+    [syncTransfersMutation]
+  );
+
   const stableWallets = useMemo(() => wallets ?? EMPTY_WALLETS, [wallets]);
 
   return {
@@ -86,15 +99,18 @@ export const useBackendWallet = () => {
     updateWallet,
     deleteWallet,
     syncBalance,
+    syncTransfers,
     isCreating: createMutation.isPending,
     isCreatingPaper: createPaperMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isSyncing: syncBalanceMutation.isPending,
+    isSyncingTransfers: syncTransfersMutation.isPending,
     createError: createMutation.error,
     createPaperError: createPaperMutation.error,
     updateError: updateMutation.error,
     deleteError: deleteMutation.error,
     syncError: syncBalanceMutation.error,
+    syncTransfersError: syncTransfersMutation.error,
   };
 };

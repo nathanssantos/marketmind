@@ -21,6 +21,8 @@ export const walletRouter = router({
         currency: wallets.currency,
         initialBalance: wallets.initialBalance,
         currentBalance: wallets.currentBalance,
+        totalDeposits: wallets.totalDeposits,
+        totalWithdrawals: wallets.totalWithdrawals,
         isActive: wallets.isActive,
         createdAt: wallets.createdAt,
         updatedAt: wallets.updatedAt,
@@ -43,6 +45,8 @@ export const walletRouter = router({
           currency: wallets.currency,
           initialBalance: wallets.initialBalance,
           currentBalance: wallets.currentBalance,
+          totalDeposits: wallets.totalDeposits,
+          totalWithdrawals: wallets.totalWithdrawals,
           isActive: wallets.isActive,
           createdAt: wallets.createdAt,
           updatedAt: wallets.updatedAt,
@@ -355,6 +359,60 @@ export const walletRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: `Failed to sync balance from Binance ${wallet.walletType}: ${errorMessage}`,
+          cause: error,
+        });
+      }
+    }),
+
+  syncTransfers: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Wallet not found',
+        });
+      }
+
+      if (isPaperWallet(wallet)) {
+        return {
+          success: true,
+          totalDeposits: '0',
+          totalWithdrawals: '0',
+          message: 'Paper wallet - no transfers to sync',
+        };
+      }
+
+      try {
+        const { incomeSyncService } = await import('../services/income-sync-service');
+        const result = await incomeSyncService.backfillTransfers(wallet.id);
+
+        const [updatedWallet] = await ctx.db
+          .select({
+            totalDeposits: wallets.totalDeposits,
+            totalWithdrawals: wallets.totalWithdrawals,
+          })
+          .from(wallets)
+          .where(eq(wallets.id, wallet.id))
+          .limit(1);
+
+        return {
+          success: true,
+          totalDeposits: updatedWallet?.totalDeposits ?? '0',
+          totalWithdrawals: updatedWallet?.totalWithdrawals ?? '0',
+          walletsProcessed: result.walletsProcessed,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to sync transfers: ${errorMessage}`,
           cause: error,
         });
       }

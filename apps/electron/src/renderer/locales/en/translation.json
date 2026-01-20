@@ -522,6 +522,7 @@
       "initialBalance": "Initial Balance",
       "currency": "Currency",
       "balance": "Balance",
+      "netDeposits": "Net Deposits",
       "totalPnL": "Total P&L",
       "viewPerformance": "View Performance",
       "delete": "Delete Wallet",

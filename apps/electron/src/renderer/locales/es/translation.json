@@ -600,6 +600,7 @@
       "initialBalance": "Saldo Inicial",
       "currency": "Moneda",
       "balance": "Saldo",
+      "netDeposits": "Depósitos Netos",
       "totalPnL": "P&L Total",
       "viewPerformance": "Ver Rendimiento",
       "delete": "Eliminar Cartera",
