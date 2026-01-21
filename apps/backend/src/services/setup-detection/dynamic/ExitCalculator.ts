@@ -1,3 +1,14 @@
+import {
+  analyzePivots,
+  findMostRecentSwingHigh,
+  findMostRecentSwingLow,
+  findNearestPivotTarget,
+  findSignificantSwingHigh,
+  findSignificantSwingLow,
+  type EnhancedPivotPoint,
+  type PivotDetectionConfig,
+  type PivotStrength,
+} from '@marketmind/indicators';
 import type {
   Condition,
   ConditionOperand,
@@ -8,15 +19,6 @@ import type {
   StrategyDefinition,
 } from '@marketmind/types';
 import { isParameterReference } from '@marketmind/types';
-import {
-  analyzePivots,
-  findNearestPivotTarget,
-  findSignificantSwingHigh,
-  findSignificantSwingLow,
-  type EnhancedPivotPoint,
-  type PivotDetectionConfig,
-  type PivotStrength,
-} from '@marketmind/indicators';
 
 import { EXIT_CALCULATOR, FLOAT_COMPARISON } from '../../../constants';
 import { logger } from '../../logger';
@@ -607,40 +609,98 @@ export class ExitCalculator {
     const lookback = Math.min(100, currentIndex);
     const searchEndIndex = currentIndex - skipRecent;
 
-    const swingPoint = findSignificantSwingLow(klines, searchEndIndex, lookback);
+    const significantSwing = findSignificantSwingLow(klines, searchEndIndex, lookback);
+    if (significantSwing && significantSwing.price) {
+      logger.debug({
+        currentIndex,
+        skipRecent,
+        swingIndex: significantSwing.index,
+        swingPrice: significantSwing.price.toFixed(4),
+        method: 'findSignificantSwingLow',
+      }, 'Found significant swing low for stop placement');
+      return significantSwing.price;
+    }
 
-    if (swingPoint && swingPoint.price) {
-      return swingPoint.price;
+    const recentSwing = findMostRecentSwingLow(klines, searchEndIndex, lookback, 3);
+    if (recentSwing && recentSwing.price) {
+      logger.debug({
+        currentIndex,
+        skipRecent,
+        swingIndex: recentSwing.index,
+        swingPrice: recentSwing.price.toFixed(4),
+        method: 'findMostRecentSwingLow',
+      }, 'Found most recent swing low (fallback) for stop placement');
+      return recentSwing.price;
     }
 
     const fallbackStart = Math.max(0, currentIndex - 20);
-    const fallbackEnd = Math.max(fallbackStart, searchEndIndex);
+    const fallbackEnd = Math.max(fallbackStart, searchEndIndex - 3);
     const lows = [];
     for (let i = fallbackStart; i <= fallbackEnd; i++) {
       const kline = klines[i];
       if (kline) lows.push(parseFloat(String((kline as { low: string }).low)));
     }
-    return lows.length > 0 ? Math.min(...lows) : parseFloat(String((klines[currentIndex] as { low: string }).low));
+    const minLow = lows.length > 0 ? Math.min(...lows) : parseFloat(String((klines[currentIndex] as { low: string }).low));
+
+    logger.debug({
+      currentIndex,
+      skipRecent,
+      fallbackStart,
+      fallbackEnd,
+      minLow: minLow.toFixed(4),
+      method: 'minimumOfRecentLows',
+    }, 'Using minimum of recent lows (last resort fallback) for stop placement');
+
+    return minLow;
   }
 
   private findSwingHigh(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {
     const lookback = Math.min(100, currentIndex);
     const searchEndIndex = currentIndex - skipRecent;
 
-    const swingPoint = findSignificantSwingHigh(klines, searchEndIndex, lookback);
+    const significantSwing = findSignificantSwingHigh(klines, searchEndIndex, lookback);
+    if (significantSwing && significantSwing.price) {
+      logger.debug({
+        currentIndex,
+        skipRecent,
+        swingIndex: significantSwing.index,
+        swingPrice: significantSwing.price.toFixed(4),
+        method: 'findSignificantSwingHigh',
+      }, 'Found significant swing high for stop placement');
+      return significantSwing.price;
+    }
 
-    if (swingPoint && swingPoint.price) {
-      return swingPoint.price;
+    const recentSwing = findMostRecentSwingHigh(klines, searchEndIndex, lookback, 3);
+    if (recentSwing && recentSwing.price) {
+      logger.debug({
+        currentIndex,
+        skipRecent,
+        swingIndex: recentSwing.index,
+        swingPrice: recentSwing.price.toFixed(4),
+        method: 'findMostRecentSwingHigh',
+      }, 'Found most recent swing high (fallback) for stop placement');
+      return recentSwing.price;
     }
 
     const fallbackStart = Math.max(0, currentIndex - 20);
-    const fallbackEnd = Math.max(fallbackStart, searchEndIndex);
+    const fallbackEnd = Math.max(fallbackStart, searchEndIndex - 3);
     const highs = [];
     for (let i = fallbackStart; i <= fallbackEnd; i++) {
       const kline = klines[i];
       if (kline) highs.push(parseFloat(String((kline as { high: string }).high)));
     }
-    return highs.length > 0 ? Math.max(...highs) : parseFloat(String((klines[currentIndex] as { high: string }).high));
+    const maxHigh = highs.length > 0 ? Math.max(...highs) : parseFloat(String((klines[currentIndex] as { high: string }).high));
+
+    logger.debug({
+      currentIndex,
+      skipRecent,
+      fallbackStart,
+      fallbackEnd,
+      maxHigh: maxHigh.toFixed(4),
+      method: 'maximumOfRecentHighs',
+    }, 'Using maximum of recent highs (last resort fallback) for stop placement');
+
+    return maxHigh;
   }
 
   private calculatePivotBasedStop(exit: ExitLevel, context: ExitContext): number {
