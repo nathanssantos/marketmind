@@ -2,6 +2,7 @@ import { Badge, Box, Flex, Group, IconButton, Portal, Stack, Text } from '@chakr
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Order, OrderStatus, WalletCurrency } from '@marketmind/types';
+import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
@@ -556,33 +557,48 @@ const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.orders.entryPrice')}</Text>
-          <Text>{currency} {getOrderPrice(order).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          <Stack gap={0} align="flex-end">
+            <Text>{currency} {getOrderPrice(order).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <BrlValue usdtValue={getOrderPrice(order)} />
+          </Stack>
         </Flex>
         {order.currentPrice && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.currentPrice')}</Text>
-            <Text color="blue.500" fontWeight="medium">{currency} {order.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text color="blue.500" fontWeight="medium">{currency} {order.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <BrlValue usdtValue={order.currentPrice} />
+            </Stack>
           </Flex>
         )}
         {order.stopLoss && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
-            <Text color="red.500">{currency} {order.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text color="red.500">{currency} {order.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <BrlValue usdtValue={order.stopLoss} />
+            </Stack>
           </Flex>
         )}
         {order.takeProfit && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
-            <Text color="green.500">{currency} {order.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text color="green.500">{currency} {order.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <BrlValue usdtValue={order.takeProfit} />
+            </Stack>
           </Flex>
         )}
         {order.pnl !== undefined && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.pnl')}</Text>
-            <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'green.500' : 'red.500'}>
-              {parseFloat(order.pnl) >= 0 ? '+' : ''}{parseFloat(order.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {order.pnlPercent !== undefined && ` (${parseFloat(order.pnl) >= 0 ? '+' : ''}${parseFloat(order.pnlPercent).toFixed(2)}%)`}
-            </Text>
+            <Stack gap={0} align="flex-end">
+              <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'green.500' : 'red.500'}>
+                {parseFloat(order.pnl) >= 0 ? '+' : ''}{parseFloat(order.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {order.pnlPercent !== undefined && ` (${parseFloat(order.pnl) >= 0 ? '+' : ''}${parseFloat(order.pnlPercent).toFixed(2)}%)`}
+              </Text>
+              <BrlValue usdtValue={parseFloat(order.pnl)} />
+            </Stack>
           </Flex>
         )}
         {false && (

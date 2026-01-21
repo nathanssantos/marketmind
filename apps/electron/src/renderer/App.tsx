@@ -28,6 +28,7 @@ import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { useSetupStore } from './store/setupStore';
 import { useUIStore } from './store/uiStore';
 import { system } from './theme';
@@ -116,6 +117,7 @@ function AppContent(): ReactElement {
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
   const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:marketType', 'SPOT');
 
+  useCurrencyAutoRefresh();
   useOrderNotifications();
 
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);

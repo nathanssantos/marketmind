@@ -1,5 +1,6 @@
 import { Badge, Box, Button, Flex, Progress, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
+import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
@@ -143,11 +144,17 @@ const FuturesPositionCard = memo(({
         <Stack gap={1} fontSize="xs">
           <Flex justify="space-between">
             <Text color="fg.muted">Entry Price</Text>
-            <Text>${formatPrice(entryPrice)}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text>${formatPrice(entryPrice)}</Text>
+              <BrlValue usdtValue={entryPrice} />
+            </Stack>
           </Flex>
           <Flex justify="space-between">
             <Text color="fg.muted">Mark Price</Text>
-            <Text fontWeight="medium">${formatPrice(markPrice)}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text fontWeight="medium">${formatPrice(markPrice)}</Text>
+              <BrlValue usdtValue={markPrice} />
+            </Stack>
           </Flex>
           <Flex justify="space-between">
             <Text color="fg.muted">Size</Text>
@@ -155,16 +162,22 @@ const FuturesPositionCard = memo(({
           </Flex>
           <Flex justify="space-between">
             <Text color="fg.muted">Unrealized PnL</Text>
-            <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'green.500' : 'red.500'}>
-              {unrealizedPnl >= 0 ? '+' : ''}${Math.abs(unrealizedPnl).toFixed(2)} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
-            </Text>
+            <Stack gap={0} align="flex-end">
+              <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'green.500' : 'red.500'}>
+                {unrealizedPnl >= 0 ? '+' : ''}${Math.abs(unrealizedPnl).toFixed(2)} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
+              </Text>
+              <BrlValue usdtValue={unrealizedPnl} />
+            </Stack>
           </Flex>
           {accumulatedFunding !== 0 && (
             <Flex justify="space-between">
               <Text color="fg.muted">Accumulated Funding</Text>
-              <Text color={accumulatedFunding >= 0 ? 'green.500' : 'red.500'}>
-                {accumulatedFunding >= 0 ? '+' : ''}${accumulatedFunding.toFixed(4)}
-              </Text>
+              <Stack gap={0} align="flex-end">
+                <Text color={accumulatedFunding >= 0 ? 'green.500' : 'red.500'}>
+                  {accumulatedFunding >= 0 ? '+' : ''}${accumulatedFunding.toFixed(4)}
+                </Text>
+                <BrlValue usdtValue={accumulatedFunding} />
+              </Stack>
             </Flex>
           )}
         </Stack>

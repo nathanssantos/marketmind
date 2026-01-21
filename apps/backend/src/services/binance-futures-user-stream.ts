@@ -7,6 +7,12 @@ import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
+import {
+  detectExitReason,
+  isClosingSide,
+  clearProtectionOrderIds,
+  type ProtectionOrderField,
+} from './execution-manager';
 import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
 import { getWebSocketService } from './websocket';
@@ -386,13 +392,14 @@ export class BinanceFuturesUserStreamService {
       const {
         o: {
           s: symbol,
+          S: orderSide,
           X: status,
           x: execType,
           i: orderId,
           L: lastFilledPrice,
           z: executedQty,
           ap: avgPrice,
-          rp: _realizedProfit,
+          rp: realizedProfit,
           ps: positionSide,
           n: commission,
           N: commissionAsset,
@@ -425,7 +432,7 @@ export class BinanceFuturesUserStreamService {
           )
           .limit(1);
 
-        if (pendingExecution?.entryOrderId === orderId) {
+        if (pendingExecution && Number(pendingExecution.entryOrderId) === Number(orderId)) {
           const fillPrice = parseFloat(avgPrice || lastFilledPrice);
           const entryFee = parseFloat(commission || '0');
           logger.info(
@@ -482,18 +489,44 @@ export class BinanceFuturesUserStreamService {
           return;
         }
 
-        const isSLOrder = (execution.stopLossOrderId && execution.stopLossOrderId === orderId) ||
-          (execution.stopLossAlgoId && execution.stopLossAlgoId === orderId);
-        const isTPOrder = (execution.takeProfitOrderId && execution.takeProfitOrderId === orderId) ||
-          (execution.takeProfitAlgoId && execution.takeProfitAlgoId === orderId);
+        let isSLOrder = (execution.stopLossOrderId && Number(execution.stopLossOrderId) === Number(orderId)) ||
+          (execution.stopLossAlgoId && Number(execution.stopLossAlgoId) === Number(orderId));
+        let isTPOrder = (execution.takeProfitOrderId && Number(execution.takeProfitOrderId) === Number(orderId)) ||
+          (execution.takeProfitAlgoId && Number(execution.takeProfitAlgoId) === Number(orderId));
         const isAlgoTriggerFill = !isSLOrder && !isTPOrder && execution.exitReason;
 
         if (!isSLOrder && !isTPOrder && !isAlgoTriggerFill) {
-          logger.warn(
-            { walletId, symbol, orderId, executionId: execution.id },
-            '[FuturesUserStream] Order not recognized as SL or TP'
-          );
-          return;
+          const rpValue = parseFloat(realizedProfit || '0');
+          const isClosingOrder = isClosingSide(execution.side, orderSide);
+
+          if (rpValue !== 0 && isClosingOrder) {
+            const exitPrice = parseFloat(avgPrice || lastFilledPrice);
+            const entryPrice = parseFloat(execution.entryPrice);
+
+            const detectedExitReason = detectExitReason(execution.side, entryPrice, exitPrice);
+
+            isSLOrder = detectedExitReason === 'STOP_LOSS';
+            isTPOrder = detectedExitReason === 'TAKE_PROFIT';
+
+            logger.warn(
+              {
+                executionId: execution.id,
+                symbol,
+                orderId,
+                realizedProfit: rpValue,
+                exitPrice,
+                entryPrice,
+                detectedExitReason,
+              },
+              '[FuturesUserStream] ⚠️ Detected closing order via realizedProfit fallback - ALGO_UPDATE may have been missed'
+            );
+          } else {
+            logger.warn(
+              { walletId, symbol, orderId, executionId: execution.id },
+              '[FuturesUserStream] Order not recognized as SL or TP'
+            );
+            return;
+          }
         }
 
         if (isAlgoTriggerFill) {
@@ -628,6 +661,10 @@ export class BinanceFuturesUserStreamService {
             exitFee: actualExitFee.toString(),
             exitSource: 'ALGORITHM',
             exitReason: determinedExitReason,
+            stopLossAlgoId: null,
+            stopLossOrderId: null,
+            takeProfitAlgoId: null,
+            takeProfitOrderId: null,
             updatedAt: new Date(),
           })
           .where(eq(tradeExecutions.id, execution.id));
@@ -862,8 +899,8 @@ export class BinanceFuturesUserStreamService {
         return;
       }
 
-      const isSLOrder = execution.stopLossAlgoId === algoId || execution.stopLossOrderId === algoId;
-      const isTPOrder = execution.takeProfitAlgoId === algoId || execution.takeProfitOrderId === algoId;
+      const isSLOrder = Number(execution.stopLossAlgoId) === Number(algoId) || Number(execution.stopLossOrderId) === Number(algoId);
+      const isTPOrder = Number(execution.takeProfitAlgoId) === Number(algoId) || Number(execution.takeProfitOrderId) === Number(algoId);
 
       if (!isSLOrder && !isTPOrder) {
         logger.debug(
@@ -993,10 +1030,13 @@ export class BinanceFuturesUserStreamService {
         .limit(1);
 
       if (execution) {
-        const isSLReject = execution.stopLossOrderId === orderId || execution.stopLossAlgoId === orderId;
-        const isTPReject = execution.takeProfitOrderId === orderId || execution.takeProfitAlgoId === orderId;
+        const isSLReject = Number(execution.stopLossOrderId) === Number(orderId) || Number(execution.stopLossAlgoId) === Number(orderId);
+        const isTPReject = Number(execution.takeProfitOrderId) === Number(orderId) || Number(execution.takeProfitAlgoId) === Number(orderId);
 
         if (isSLReject || isTPReject) {
+          const field: ProtectionOrderField = isSLReject ? 'stopLoss' : 'takeProfit';
+          await clearProtectionOrderIds(execution.id, field);
+
           logger.error(
             {
               executionId: execution.id,
@@ -1005,8 +1045,9 @@ export class BinanceFuturesUserStreamService {
               isSLReject,
               isTPReject,
               reason,
+              clearedField: field,
             },
-            '[FuturesUserStream] ⚠️ CRITICAL: Position protection order REJECTED - MANUAL INTERVENTION REQUIRED'
+            '[FuturesUserStream] ⚠️ CRITICAL: Position protection order REJECTED - IDs cleared, MANUAL INTERVENTION REQUIRED'
           );
         }
       }

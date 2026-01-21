@@ -1,5 +1,6 @@
 import { Badge, Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
@@ -191,9 +192,12 @@ const OrderTicketComponent = () => {
             </Flex>
             <Flex justify="space-between" fontSize="xs">
               <Text color="fg.muted">{t('trading.wallets.balance')}</Text>
-              <Text fontWeight="medium">
-                {activeWallet.currency} {activeWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
+              <Stack gap={0} align="flex-end">
+                <Text fontWeight="medium">
+                  {activeWallet.currency} {activeWallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+                <BrlValue usdtValue={activeWallet.balance} />
+              </Stack>
             </Flex>
           </Box>
 
@@ -316,16 +320,22 @@ const OrderTicketComponent = () => {
               <Box p={3} bg="bg.muted" borderRadius="md">
                 <Flex justify="space-between" fontSize="xs" mb={marketType === 'FUTURES' ? 1 : 0}>
                   <Text color="fg.muted">{t('trading.ticket.totalCost')}</Text>
-                  <Text fontWeight="medium" color={canAfford ? 'fg.default' : 'red.500'}>
-                    {activeWallet.currency} {cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </Text>
+                  <Stack gap={0} align="flex-end">
+                    <Text fontWeight="medium" color={canAfford ? 'fg.default' : 'red.500'}>
+                      {activeWallet.currency} {cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                    <BrlValue usdtValue={cost} />
+                  </Stack>
                 </Flex>
                 {marketType === 'FUTURES' && (
                   <Flex justify="space-between" fontSize="xs">
                     <Text color="fg.muted">Margin Required</Text>
-                    <Text fontWeight="medium" color={canAfford ? 'fg.default' : 'red.500'}>
-                      {activeWallet.currency} {effectiveCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </Text>
+                    <Stack gap={0} align="flex-end">
+                      <Text fontWeight="medium" color={canAfford ? 'fg.default' : 'red.500'}>
+                        {activeWallet.currency} {effectiveCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                      <BrlValue usdtValue={effectiveCost} />
+                    </Stack>
                   </Flex>
                 )}
               </Box>

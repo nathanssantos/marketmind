@@ -227,3 +227,44 @@ export const createMockPosition = (options: {
   notional: options.notional || '5100',
   positionSide: options.positionSide || 'BOTH',
 });
+
+export const createFuturesAlgoUpdateEvent = (options: {
+  symbol?: string;
+  algoId?: number;
+  status?: 'NEW' | 'TRIGGERED' | 'TRIGGERING' | 'CANCELLED' | 'REJECTED' | 'EXPIRED';
+  orderType?: 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | 'TRAILING_STOP_MARKET';
+  side?: 'BUY' | 'SELL';
+  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
+  triggerPrice?: string;
+}) => ({
+  e: 'ALGO_UPDATE',
+  E: Date.now(),
+  T: Date.now(),
+  o: {
+    s: options.symbol || 'BTCUSDT',
+    aid: options.algoId || 123456789,
+    X: options.status || 'TRIGGERED',
+    o: options.orderType || 'STOP_MARKET',
+    S: options.side || 'SELL',
+    ps: options.positionSide || 'BOTH',
+    tp: options.triggerPrice || '49000',
+    q: '0.1',
+    ap: '0',
+    cp: options.triggerPrice || '49000',
+  },
+});
+
+export const createFuturesConditionalOrderRejectEvent = (options: {
+  symbol?: string;
+  orderId?: number;
+  reason?: string;
+}) => ({
+  e: 'CONDITIONAL_ORDER_TRIGGER_REJECT',
+  E: Date.now(),
+  T: Date.now(),
+  or: {
+    s: options.symbol || 'BTCUSDT',
+    i: options.orderId || 123456789,
+    r: options.reason || 'PRICE_NOT_MET',
+  },
+});

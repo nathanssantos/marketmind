@@ -194,6 +194,7 @@ export const ChartCanvas = ({
     createOrder: addBackendOrder,
     closeExecution,
     updateExecutionSLTP,
+    cancelProtectionOrder,
   } = useBackendTradingMutations();
 
   const hasTradingEnabled = !!backendWalletId;
@@ -426,6 +427,19 @@ export const ChartCanvas = ({
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
 
+    if (orderToClose.startsWith('sltp-')) {
+      const parts = orderToClose.split('-');
+      const type = parts[1] as 'stopLoss' | 'takeProfit';
+      const executionIds = parts[2]?.split(',') || [];
+
+      if (executionIds.length > 0) {
+        await cancelProtectionOrder(executionIds, type);
+      }
+
+      setOrderToClose(null);
+      return;
+    }
+
     const exec = filteredBackendExecutions.find((e) => e.id === orderToClose);
     if (exec) {
       const klines = manager.getKlines();
@@ -435,7 +449,7 @@ export const ChartCanvas = ({
     }
 
     setOrderToClose(null);
-  }, [orderToClose, manager, filteredBackendExecutions, closeExecution]);
+  }, [orderToClose, manager, filteredBackendExecutions, closeExecution, cancelProtectionOrder]);
 
   const { render: renderGrid } = useGridRenderer({
     manager,

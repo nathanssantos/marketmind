@@ -819,4 +819,219 @@ describe('Trading Router', () => {
       expect(result.success).toBe(true);
     });
   });
+
+  describe('cancelIndividualProtectionOrder', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+
+      await expect(
+        caller.trading.cancelIndividualProtectionOrder({
+          executionIds: ['exec-1'],
+          type: 'stopLoss',
+        })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should cancel stop loss for an open execution', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        stopLoss: '48000',
+        stopLossAlgoId: 12345,
+        status: 'open',
+      });
+
+      const result = await caller.trading.cancelIndividualProtectionOrder({
+        executionIds: [execution.id],
+        type: 'stopLoss',
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]!.success).toBe(true);
+
+      const [updated] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution.id))
+        .limit(1);
+
+      expect(updated!.stopLoss).toBeNull();
+      expect(updated!.stopLossAlgoId).toBeNull();
+      expect(updated!.status).toBe('open');
+    });
+
+    it('should cancel take profit for an open execution', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        takeProfit: '55000',
+        takeProfitAlgoId: 67890,
+        status: 'open',
+      });
+
+      const result = await caller.trading.cancelIndividualProtectionOrder({
+        executionIds: [execution.id],
+        type: 'takeProfit',
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]!.success).toBe(true);
+
+      const [updated] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution.id))
+        .limit(1);
+
+      expect(updated!.takeProfit).toBeNull();
+      expect(updated!.takeProfitAlgoId).toBeNull();
+      expect(updated!.status).toBe('open');
+    });
+
+    it('should handle multiple executions', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const execution1 = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        stopLoss: '48000',
+        stopLossAlgoId: 11111,
+        status: 'open',
+      });
+
+      const execution2 = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'ETHUSDT',
+        stopLoss: '2000',
+        stopLossAlgoId: 22222,
+        status: 'open',
+      });
+
+      const result = await caller.trading.cancelIndividualProtectionOrder({
+        executionIds: [execution1.id, execution2.id],
+        type: 'stopLoss',
+      });
+
+      expect(result.results).toHaveLength(2);
+      expect(result.results.every(r => r.success)).toBe(true);
+
+      const [updated1] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution1.id))
+        .limit(1);
+
+      const [updated2] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, execution2.id))
+        .limit(1);
+
+      expect(updated1!.stopLoss).toBeNull();
+      expect(updated2!.stopLoss).toBeNull();
+    });
+
+    it('should return error for non-existent execution', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.trading.cancelIndividualProtectionOrder({
+        executionIds: ['nonexistent'],
+        type: 'stopLoss',
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]!.success).toBe(false);
+      expect(result.results[0]!.error).toContain('not found');
+    });
+
+    it('should return error for closed execution', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        stopLoss: '48000',
+        stopLossAlgoId: 12345,
+        status: 'closed',
+      });
+
+      const result = await caller.trading.cancelIndividualProtectionOrder({
+        executionIds: [execution.id],
+        type: 'stopLoss',
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]!.success).toBe(false);
+      expect(result.results[0]!.error).toContain('not open');
+    });
+
+    it('should succeed silently if no order to cancel', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const execution = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'open',
+      });
+
+      const result = await caller.trading.cancelIndividualProtectionOrder({
+        executionIds: [execution.id],
+        type: 'stopLoss',
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]!.success).toBe(true);
+    });
+
+    it('should not allow cancelling another user order', async () => {
+      const { user: user1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
+      const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
+
+      const wallet = await createTestWallet({ userId: user1.id, walletType: 'paper' });
+      const execution = await createTestTradeExecution({
+        userId: user1.id,
+        walletId: wallet.id,
+        stopLoss: '48000',
+        stopLossAlgoId: 12345,
+        status: 'open',
+      });
+
+      const caller2 = createAuthenticatedCaller(user2, session2);
+
+      const result = await caller2.trading.cancelIndividualProtectionOrder({
+        executionIds: [execution.id],
+        type: 'stopLoss',
+      });
+
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]!.success).toBe(false);
+      expect(result.results[0]!.error).toContain('not found');
+    });
+  });
 });

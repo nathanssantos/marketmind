@@ -1,5 +1,6 @@
 import { Badge, Box, Flex, Group, IconButton, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -173,15 +174,21 @@ const PortfolioComponent = () => {
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
-                <Text fontWeight="medium">
-                  {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0) / activeWallet.balance) * 100).toFixed(1)}%)
-                </Text>
+                <Stack gap={0} align="flex-end">
+                  <Text fontWeight="medium">
+                    {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0) / activeWallet.balance) * 100).toFixed(1)}%)
+                  </Text>
+                  <BrlValue usdtValue={positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0)} />
+                </Stack>
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
-                <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
-                  {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
-                </Text>
+                <Stack gap={0} align="flex-end">
+                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+                    {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
+                  </Text>
+                  <BrlValue usdtValue={totalPnL} />
+                </Stack>
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.pnlVsBalance')}</Text>
@@ -683,30 +690,45 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.avgPrice')}</Text>
-          <Text>{currency} {position.avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          <Stack gap={0} align="flex-end">
+            <Text>{currency} {position.avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <BrlValue usdtValue={position.avgPrice} />
+          </Stack>
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.currentPrice')}</Text>
-          <Text fontWeight="medium">{currency} {position.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          <Stack gap={0} align="flex-end">
+            <Text fontWeight="medium">{currency} {position.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <BrlValue usdtValue={position.currentPrice} />
+          </Stack>
         </Flex>
         {position.stopLoss && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
-            <Text color="red.500">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text color="red.500">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <BrlValue usdtValue={position.stopLoss} />
+            </Stack>
           </Flex>
         )}
         {position.takeProfit && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
-            <Text color="green.500">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            <Stack gap={0} align="flex-end">
+              <Text color="green.500">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <BrlValue usdtValue={position.takeProfit} />
+            </Stack>
           </Flex>
         )}
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.pnl')}</Text>
-          <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
-            {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
-          </Text>
+          <Stack gap={0} align="flex-end">
+            <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
+              {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+            </Text>
+            <BrlValue usdtValue={position.pnl} />
+          </Stack>
         </Flex>
       </Stack>
     </Box>

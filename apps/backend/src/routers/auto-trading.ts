@@ -574,6 +574,11 @@ export const autoTradingRouter = router({
           status: 'cancelled',
           closedAt: new Date(),
           updatedAt: new Date(),
+          stopLossAlgoId: null,
+          stopLossOrderId: null,
+          takeProfitAlgoId: null,
+          takeProfitOrderId: null,
+          entryOrderId: null,
         })
         .where(eq(tradeExecutions.id, input.executionId));
 
@@ -712,6 +717,10 @@ export const autoTradingRouter = router({
           status: 'closed',
           closedAt: new Date(),
           updatedAt: new Date(),
+          stopLossAlgoId: null,
+          stopLossOrderId: null,
+          takeProfitAlgoId: null,
+          takeProfitOrderId: null,
         })
         .where(eq(tradeExecutions.id, input.executionId));
 
@@ -1687,6 +1696,10 @@ export const autoTradingRouter = router({
                   fees: totalFees.toString(),
                   closedAt: new Date(),
                   updatedAt: new Date(),
+                  stopLossAlgoId: null,
+                  stopLossOrderId: null,
+                  takeProfitAlgoId: null,
+                  takeProfitOrderId: null,
                 })
                 .where(eq(tradeExecutions.id, execution.id));
 
@@ -1710,6 +1723,10 @@ export const autoTradingRouter = router({
                   exitReason: 'EMERGENCY_STOP',
                   closedAt: new Date(),
                   updatedAt: new Date(),
+                  stopLossAlgoId: null,
+                  stopLossOrderId: null,
+                  takeProfitAlgoId: null,
+                  takeProfitOrderId: null,
                 })
                 .where(eq(tradeExecutions.id, execution.id));
             }
@@ -1737,6 +1754,10 @@ export const autoTradingRouter = router({
               exitReason: 'EMERGENCY_STOP',
               closedAt: new Date(),
               updatedAt: new Date(),
+              stopLossAlgoId: null,
+              stopLossOrderId: null,
+              takeProfitAlgoId: null,
+              takeProfitOrderId: null,
             })
             .where(eq(tradeExecutions.id, execution.id));
         }

@@ -50,8 +50,12 @@ export interface CreateTradeExecutionOptions {
   side?: 'LONG' | 'SHORT';
   entryPrice?: string;
   quantity?: string;
-  stopLoss?: string;
-  takeProfit?: string;
+  stopLoss?: string | null;
+  stopLossAlgoId?: number | null;
+  stopLossOrderId?: number | null;
+  takeProfit?: string | null;
+  takeProfitAlgoId?: number | null;
+  takeProfitOrderId?: number | null;
   status?: 'pending' | 'open' | 'closed' | 'cancelled';
   setupType?: string;
   marketType?: 'SPOT' | 'FUTURES';
@@ -296,8 +300,12 @@ export const createTestTradeExecution = async (options: CreateTradeExecutionOpti
     side = 'LONG',
     entryPrice = '50000',
     quantity = '0.01',
-    stopLoss = '49000',
-    takeProfit = '52000',
+    stopLoss,
+    stopLossAlgoId,
+    stopLossOrderId,
+    takeProfit,
+    takeProfitAlgoId,
+    takeProfitOrderId,
     status = 'open',
     setupType = 'larry-williams-9.1',
     marketType = 'SPOT',
@@ -314,8 +322,12 @@ export const createTestTradeExecution = async (options: CreateTradeExecutionOpti
     side,
     entryPrice,
     quantity,
-    stopLoss,
-    takeProfit,
+    stopLoss: stopLoss ?? null,
+    stopLossAlgoId: stopLossAlgoId ?? null,
+    stopLossOrderId: stopLossOrderId ?? null,
+    takeProfit: takeProfit ?? null,
+    takeProfitAlgoId: takeProfitAlgoId ?? null,
+    takeProfitOrderId: takeProfitOrderId ?? null,
     status,
     setupType,
     marketType,

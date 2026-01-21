@@ -1,6 +1,6 @@
 import { serializeError } from '../utils/errors';
 import { WebsocketClient } from 'binance';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
@@ -15,12 +15,15 @@ export interface PriceUpdate {
   timestamp: number;
 }
 
+const POSITION_CHECK_THROTTLE_MS = 500;
+
 export class BinancePriceStreamService {
   private client: WebsocketClient | null = null;
   private subscribedSymbols: Set<string> = new Set();
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private isReconnecting = false;
   private subscriptionInterval: ReturnType<typeof setInterval> | null = null;
+  private lastPositionCheck: Map<string, number> = new Map();
 
   start(): void {
     if (this.client) {
@@ -84,6 +87,7 @@ export class BinancePriceStreamService {
       this.client.closeAll(true);
       this.client = null;
       this.subscribedSymbols.clear();
+      this.lastPositionCheck.clear();
       logger.info('Binance price stream service stopped');
     }
   }
@@ -127,22 +131,31 @@ export class BinancePriceStreamService {
 
   private async processPriceUpdate(update: PriceUpdate): Promise<void> {
     try {
-      await positionMonitorService.updatePrice(update.symbol, update.price);
-
       const wsService = getWebSocketService();
       if (wsService) {
         wsService.emitPriceUpdate(update.symbol, update.price, update.timestamp);
       }
 
+      const now = Date.now();
+      const lastCheck = this.lastPositionCheck.get(update.symbol) || 0;
+      if (now - lastCheck < POSITION_CHECK_THROTTLE_MS) {
+        return;
+      }
+      this.lastPositionCheck.set(update.symbol, now);
+
+      void positionMonitorService.updatePrice(update.symbol, update.price);
+
       const openExecutions = await db
         .select()
         .from(tradeExecutions)
-        .where(eq(tradeExecutions.symbol, update.symbol));
+        .where(and(
+          eq(tradeExecutions.symbol, update.symbol),
+          eq(tradeExecutions.status, 'open')
+        ));
 
-      const openOnly = openExecutions.filter(e => e.status === 'open');
-      if (openOnly.length === 0) return;
+      if (openExecutions.length === 0) return;
 
-      const groups = positionMonitorService.groupExecutionsBySymbolAndSidePublic(openOnly);
+      const groups = positionMonitorService.groupExecutionsBySymbolAndSidePublic(openExecutions);
 
       for (const [_groupKey, groupExecutions] of groups) {
         await positionMonitorService.checkPositionGroupByPrice(groupExecutions, update.price);
@@ -248,6 +261,7 @@ export class BinancePriceStreamService {
     }
 
     this.subscribedSymbols.delete(symbol);
+    this.lastPositionCheck.delete(symbol);
   }
 
   private async resubscribeAll(): Promise<void> {

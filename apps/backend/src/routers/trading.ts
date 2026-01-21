@@ -11,7 +11,8 @@ import { autoTradingService } from '../services/auto-trading';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
 import { walletQueries } from '../services/database/walletQueries';
 import { logger } from '../services/logger';
-import { cancelAllProtectionOrders, updateStopLossOrder, updateTakeProfitOrder } from '../services/protection-orders';
+import { clearProtectionOrderIds } from '../services/execution-manager';
+import { cancelAllProtectionOrders, cancelProtectionOrder, updateStopLossOrder, updateTakeProfitOrder } from '../services/protection-orders';
 import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
 import { generateEntityId } from '../utils/id';
@@ -863,6 +864,11 @@ export const tradingRouter = router({
             status: 'cancelled',
             closedAt: new Date(),
             updatedAt: new Date(),
+            stopLossAlgoId: null,
+            stopLossOrderId: null,
+            takeProfitAlgoId: null,
+            takeProfitOrderId: null,
+            entryOrderId: null,
           })
           .where(eq(tradeExecutions.id, input.id));
 
@@ -995,6 +1001,10 @@ export const tradingRouter = router({
             fees: totalFees.toString(),
             closedAt: new Date(),
             updatedAt: new Date(),
+            stopLossAlgoId: null,
+            stopLossOrderId: null,
+            takeProfitAlgoId: null,
+            takeProfitOrderId: null,
           })
           .where(eq(tradeExecutions.id, input.id));
 
@@ -1100,6 +1110,11 @@ export const tradingRouter = router({
         .set({
           status: 'cancelled',
           updatedAt: new Date(),
+          stopLossAlgoId: null,
+          stopLossOrderId: null,
+          takeProfitAlgoId: null,
+          takeProfitOrderId: null,
+          entryOrderId: null,
         })
         .where(eq(tradeExecutions.id, input.id));
 
@@ -1452,5 +1467,80 @@ export const tradingRouter = router({
           cause: error,
         });
       }
+    }),
+
+  cancelIndividualProtectionOrder: protectedProcedure
+    .input(
+      z.object({
+        executionIds: z.array(z.string()),
+        type: z.enum(['stopLoss', 'takeProfit']),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const results: { executionId: string; success: boolean; error?: string }[] = [];
+
+      for (const executionId of input.executionIds) {
+        try {
+          const [execution] = await ctx.db
+            .select()
+            .from(tradeExecutions)
+            .where(and(eq(tradeExecutions.id, executionId), eq(tradeExecutions.userId, ctx.user.id)))
+            .limit(1);
+
+          if (!execution) {
+            results.push({ executionId, success: false, error: 'Execution not found' });
+            continue;
+          }
+
+          if (execution.status !== 'open' && execution.status !== 'pending') {
+            results.push({ executionId, success: false, error: 'Execution is not open or pending' });
+            continue;
+          }
+
+          const wallet = await walletQueries.getById(execution.walletId);
+          const walletSupportsLive = !isPaperWallet(wallet);
+          const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+          const marketType = execution.marketType as 'SPOT' | 'FUTURES';
+
+          const algoId = input.type === 'stopLoss' ? execution.stopLossAlgoId : execution.takeProfitAlgoId;
+          const orderId = input.type === 'stopLoss' ? execution.stopLossOrderId : execution.takeProfitOrderId;
+
+          if (!algoId && !orderId) {
+            results.push({ executionId, success: true });
+            continue;
+          }
+
+          if (shouldExecuteReal) {
+            const cancelled = await cancelProtectionOrder({
+              wallet,
+              symbol: execution.symbol,
+              marketType,
+              algoId,
+              orderId,
+            });
+
+            if (!cancelled) {
+              logger.warn({ executionId, type: input.type, algoId, orderId }, 'Failed to cancel protection order on exchange - may already be filled');
+            }
+          }
+
+          await clearProtectionOrderIds(executionId, input.type);
+
+          logger.info({
+            executionId,
+            type: input.type,
+            algoId,
+            orderId,
+            isLive: shouldExecuteReal,
+          }, 'Cancelled individual protection order');
+
+          results.push({ executionId, success: true });
+        } catch (error) {
+          logger.error({ executionId, type: input.type, error: serializeError(error) }, 'Error cancelling protection order');
+          results.push({ executionId, success: false, error: serializeError(error) });
+        }
+      }
+
+      return { results };
     }),
 });

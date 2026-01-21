@@ -11,7 +11,9 @@ import {
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
+import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
+import { formatBRL } from '../../utils/currencyFormatter';
 
 interface PerformancePanelProps {
   walletId: string;
@@ -22,6 +24,8 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
   const period = useUIStore((s) => s.performancePeriod);
   const setPeriod = useUIStore((s) => s.setPerformancePeriod);
   const { performance, isLoadingPerformance } = useBackendAnalytics(walletId, period);
+  const usdtBrlRate = useCurrencyStore((s) => s.usdtBrlRate);
+  const showBrlValues = useCurrencyStore((s) => s.showBrlValues);
 
   if (isLoadingPerformance) {
     return (
@@ -53,6 +57,13 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
   const formatCurrency = (value: number) => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}$${Math.abs(value).toFixed(2)}`;
+  };
+
+  const formatCurrencyWithBrl = (value: number) => {
+    const usd = formatCurrency(value);
+    if (!showBrlValues) return usd;
+    const brl = formatBRL(convertUsdtToBrl(Math.abs(value), usdtBrlRate));
+    return `${usd} (${brl})`;
   };
 
   const periods: { value: AnalyticsPeriod; labelKey: string }[] = [
@@ -118,7 +129,7 @@ export const PerformancePanel = ({ walletId }: PerformancePanelProps) => {
         />
         <MetricCard
           label={t('trading.analytics.performance.netPnL')}
-          value={formatCurrency(performance.netPnL)}
+          value={formatCurrencyWithBrl(performance.netPnL)}
           valueColor={getValueColor(performance.netPnL)}
           subtext={`${t('trading.analytics.performance.grossPnL')}: ${formatCurrency(performance.grossPnL)} - ${t('trading.analytics.performance.fees')}: $${performance.totalFees.toFixed(2)}`}
         />

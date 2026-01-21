@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
+import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './execution-manager';
 import { logger, serializeError } from './logger';
 import { cancelProtectionOrder } from './protection-orders';
 import { getWebSocketService } from './websocket';
@@ -26,11 +27,21 @@ export interface MismatchedOrder {
   exchangeTriggerPrice: string | null;
 }
 
+export interface FixedOrder {
+  executionId: string;
+  symbol: string;
+  field: 'stopLoss' | 'takeProfit';
+  oldAlgoId: number | null;
+  newAlgoId: number;
+  newTriggerPrice: string;
+}
+
 export interface OrderSyncResult {
   walletId: string;
   synced: boolean;
   orphanOrders: OrphanOrder[];
   mismatchedOrders: MismatchedOrder[];
+  fixedOrders: FixedOrder[];
   cancelledOrphans: number;
   errors: string[];
 }
@@ -39,13 +50,15 @@ export class OrderSyncService {
   private isRunning = false;
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private autoCancelOrphans = false;
+  private autoFixMismatches = false;
 
-  async start(options?: { autoCancelOrphans?: boolean }): Promise<void> {
+  async start(options?: { autoCancelOrphans?: boolean; autoFixMismatches?: boolean }): Promise<void> {
     if (this.isRunning) return;
     this.isRunning = true;
     this.autoCancelOrphans = options?.autoCancelOrphans ?? false;
+    this.autoFixMismatches = options?.autoFixMismatches ?? false;
 
-    logger.info({ autoCancelOrphans: this.autoCancelOrphans }, '[OrderSync] Starting Order Sync service');
+    logger.info({ autoCancelOrphans: this.autoCancelOrphans, autoFixMismatches: this.autoFixMismatches }, '[OrderSync] Starting Order Sync service');
 
     await this.syncAllWallets();
 
@@ -83,12 +96,13 @@ export class OrderSyncService {
           const result = await this.syncWallet(wallet);
           results.push(result);
 
-          if (result.orphanOrders.length > 0 || result.mismatchedOrders.length > 0) {
+          if (result.orphanOrders.length > 0 || result.mismatchedOrders.length > 0 || result.fixedOrders.length > 0) {
             logger.warn({
               walletId: wallet.id,
               walletName: wallet.name,
               orphanOrders: result.orphanOrders.length,
               mismatchedOrders: result.mismatchedOrders.length,
+              fixedOrders: result.fixedOrders.length,
               cancelledOrphans: result.cancelledOrphans,
             }, '[OrderSync] Sync completed with issues');
           }
@@ -98,6 +112,7 @@ export class OrderSyncService {
             synced: false,
             orphanOrders: [],
             mismatchedOrders: [],
+            fixedOrders: [],
             cancelledOrphans: 0,
             errors: [serializeError(error)],
           });
@@ -106,13 +121,15 @@ export class OrderSyncService {
 
       const totalOrphans = results.reduce((sum, r) => sum + r.orphanOrders.length, 0);
       const totalMismatched = results.reduce((sum, r) => sum + r.mismatchedOrders.length, 0);
+      const totalFixed = results.reduce((sum, r) => sum + r.fixedOrders.length, 0);
       const totalCancelled = results.reduce((sum, r) => sum + r.cancelledOrphans, 0);
 
-      if (totalOrphans > 0 || totalMismatched > 0) {
+      if (totalOrphans > 0 || totalMismatched > 0 || totalFixed > 0) {
         logger.info({
           walletsChecked: liveWallets.length,
           totalOrphanOrders: totalOrphans,
           totalMismatchedOrders: totalMismatched,
+          totalFixedOrders: totalFixed,
           totalCancelledOrphans: totalCancelled,
         }, '[OrderSync] All wallets sync completed');
       }
@@ -129,6 +146,7 @@ export class OrderSyncService {
       synced: true,
       orphanOrders: [],
       mismatchedOrders: [],
+      fixedOrders: [],
       cancelledOrphans: 0,
       errors: [],
     };
@@ -218,28 +236,111 @@ export class OrderSyncService {
           );
 
           if (!slOrder) {
-            result.mismatchedOrders.push({
-              executionId: position.id,
-              symbol,
-              field: 'stopLoss',
-              dbValue: position.stopLoss ? parseFloat(position.stopLoss) : null,
-              dbAlgoId: position.stopLossAlgoId,
-              exchangeAlgoId: null,
-              exchangeTriggerPrice: null,
-            });
-          } else {
-            const dbSL = position.stopLoss ? parseFloat(position.stopLoss) : 0;
-            const exchangeSL = parseFloat(slOrder.triggerPrice || '0');
-            if (Math.abs(dbSL - exchangeSL) > 0.00001) {
+            const anySlOrder = exchangeOrdersForSymbol.find((o) => o.type === 'STOP_MARKET');
+
+            if (this.autoFixMismatches && anySlOrder) {
+              try {
+                await syncProtectionOrderIdFromExchange(
+                  position.id,
+                  'stopLoss',
+                  anySlOrder.algoId,
+                  parseFloat(anySlOrder.triggerPrice || '0')
+                );
+                result.fixedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'stopLoss',
+                  oldAlgoId: position.stopLossAlgoId,
+                  newAlgoId: anySlOrder.algoId,
+                  newTriggerPrice: anySlOrder.triggerPrice || '',
+                });
+                logger.info({ executionId: position.id, symbol, oldAlgoId: position.stopLossAlgoId, newAlgoId: anySlOrder.algoId }, '[OrderSync] Auto-fixed SL order ID from exchange');
+              } catch (fixError) {
+                logger.warn({ executionId: position.id, error: serializeError(fixError) }, '[OrderSync] Failed to auto-fix SL order');
+                result.mismatchedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'stopLoss',
+                  dbValue: position.stopLoss ? parseFloat(position.stopLoss) : null,
+                  dbAlgoId: position.stopLossAlgoId,
+                  exchangeAlgoId: null,
+                  exchangeTriggerPrice: null,
+                });
+              }
+            } else if (this.autoFixMismatches) {
+              try {
+                await clearProtectionOrderIds(position.id, 'stopLoss');
+                result.fixedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'stopLoss',
+                  oldAlgoId: position.stopLossAlgoId,
+                  newAlgoId: 0,
+                  newTriggerPrice: '',
+                });
+                logger.info({ executionId: position.id, symbol, oldAlgoId: position.stopLossAlgoId }, '[OrderSync] Cleared stale SL order ID (no matching order on exchange)');
+              } catch (fixError) {
+                logger.warn({ executionId: position.id, error: serializeError(fixError) }, '[OrderSync] Failed to clear SL order ID');
+                result.mismatchedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'stopLoss',
+                  dbValue: position.stopLoss ? parseFloat(position.stopLoss) : null,
+                  dbAlgoId: position.stopLossAlgoId,
+                  exchangeAlgoId: null,
+                  exchangeTriggerPrice: null,
+                });
+              }
+            } else {
               result.mismatchedOrders.push({
                 executionId: position.id,
                 symbol,
                 field: 'stopLoss',
-                dbValue: dbSL,
+                dbValue: position.stopLoss ? parseFloat(position.stopLoss) : null,
                 dbAlgoId: position.stopLossAlgoId,
-                exchangeAlgoId: slOrder.algoId,
-                exchangeTriggerPrice: slOrder.triggerPrice || null,
+                exchangeAlgoId: null,
+                exchangeTriggerPrice: null,
               });
+            }
+          } else {
+            const dbSL = position.stopLoss ? parseFloat(position.stopLoss) : 0;
+            const exchangeSL = parseFloat(slOrder.triggerPrice || '0');
+            if (Math.abs(dbSL - exchangeSL) > 0.00001) {
+              if (this.autoFixMismatches) {
+                try {
+                  await syncProtectionOrderIdFromExchange(position.id, 'stopLoss', slOrder.algoId, exchangeSL);
+                  result.fixedOrders.push({
+                    executionId: position.id,
+                    symbol,
+                    field: 'stopLoss',
+                    oldAlgoId: position.stopLossAlgoId,
+                    newAlgoId: slOrder.algoId,
+                    newTriggerPrice: slOrder.triggerPrice || '',
+                  });
+                  logger.info({ executionId: position.id, symbol, dbValue: dbSL, exchangeValue: exchangeSL }, '[OrderSync] Auto-fixed SL trigger price from exchange');
+                } catch (fixError) {
+                  logger.warn({ executionId: position.id, error: serializeError(fixError) }, '[OrderSync] Failed to auto-fix SL trigger price');
+                  result.mismatchedOrders.push({
+                    executionId: position.id,
+                    symbol,
+                    field: 'stopLoss',
+                    dbValue: dbSL,
+                    dbAlgoId: position.stopLossAlgoId,
+                    exchangeAlgoId: slOrder.algoId,
+                    exchangeTriggerPrice: slOrder.triggerPrice || null,
+                  });
+                }
+              } else {
+                result.mismatchedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'stopLoss',
+                  dbValue: dbSL,
+                  dbAlgoId: position.stopLossAlgoId,
+                  exchangeAlgoId: slOrder.algoId,
+                  exchangeTriggerPrice: slOrder.triggerPrice || null,
+                });
+              }
             }
           }
         }
@@ -250,28 +351,111 @@ export class OrderSyncService {
           );
 
           if (!tpOrder) {
-            result.mismatchedOrders.push({
-              executionId: position.id,
-              symbol,
-              field: 'takeProfit',
-              dbValue: position.takeProfit ? parseFloat(position.takeProfit) : null,
-              dbAlgoId: position.takeProfitAlgoId,
-              exchangeAlgoId: null,
-              exchangeTriggerPrice: null,
-            });
-          } else {
-            const dbTP = position.takeProfit ? parseFloat(position.takeProfit) : 0;
-            const exchangeTP = parseFloat(tpOrder.triggerPrice || '0');
-            if (Math.abs(dbTP - exchangeTP) > 0.00001) {
+            const anyTpOrder = exchangeOrdersForSymbol.find((o) => o.type === 'TAKE_PROFIT_MARKET');
+
+            if (this.autoFixMismatches && anyTpOrder) {
+              try {
+                await syncProtectionOrderIdFromExchange(
+                  position.id,
+                  'takeProfit',
+                  anyTpOrder.algoId,
+                  parseFloat(anyTpOrder.triggerPrice || '0')
+                );
+                result.fixedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'takeProfit',
+                  oldAlgoId: position.takeProfitAlgoId,
+                  newAlgoId: anyTpOrder.algoId,
+                  newTriggerPrice: anyTpOrder.triggerPrice || '',
+                });
+                logger.info({ executionId: position.id, symbol, oldAlgoId: position.takeProfitAlgoId, newAlgoId: anyTpOrder.algoId }, '[OrderSync] Auto-fixed TP order ID from exchange');
+              } catch (fixError) {
+                logger.warn({ executionId: position.id, error: serializeError(fixError) }, '[OrderSync] Failed to auto-fix TP order');
+                result.mismatchedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'takeProfit',
+                  dbValue: position.takeProfit ? parseFloat(position.takeProfit) : null,
+                  dbAlgoId: position.takeProfitAlgoId,
+                  exchangeAlgoId: null,
+                  exchangeTriggerPrice: null,
+                });
+              }
+            } else if (this.autoFixMismatches) {
+              try {
+                await clearProtectionOrderIds(position.id, 'takeProfit');
+                result.fixedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'takeProfit',
+                  oldAlgoId: position.takeProfitAlgoId,
+                  newAlgoId: 0,
+                  newTriggerPrice: '',
+                });
+                logger.info({ executionId: position.id, symbol, oldAlgoId: position.takeProfitAlgoId }, '[OrderSync] Cleared stale TP order ID (no matching order on exchange)');
+              } catch (fixError) {
+                logger.warn({ executionId: position.id, error: serializeError(fixError) }, '[OrderSync] Failed to clear TP order ID');
+                result.mismatchedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'takeProfit',
+                  dbValue: position.takeProfit ? parseFloat(position.takeProfit) : null,
+                  dbAlgoId: position.takeProfitAlgoId,
+                  exchangeAlgoId: null,
+                  exchangeTriggerPrice: null,
+                });
+              }
+            } else {
               result.mismatchedOrders.push({
                 executionId: position.id,
                 symbol,
                 field: 'takeProfit',
-                dbValue: dbTP,
+                dbValue: position.takeProfit ? parseFloat(position.takeProfit) : null,
                 dbAlgoId: position.takeProfitAlgoId,
-                exchangeAlgoId: tpOrder.algoId,
-                exchangeTriggerPrice: tpOrder.triggerPrice || null,
+                exchangeAlgoId: null,
+                exchangeTriggerPrice: null,
               });
+            }
+          } else {
+            const dbTP = position.takeProfit ? parseFloat(position.takeProfit) : 0;
+            const exchangeTP = parseFloat(tpOrder.triggerPrice || '0');
+            if (Math.abs(dbTP - exchangeTP) > 0.00001) {
+              if (this.autoFixMismatches) {
+                try {
+                  await syncProtectionOrderIdFromExchange(position.id, 'takeProfit', tpOrder.algoId, exchangeTP);
+                  result.fixedOrders.push({
+                    executionId: position.id,
+                    symbol,
+                    field: 'takeProfit',
+                    oldAlgoId: position.takeProfitAlgoId,
+                    newAlgoId: tpOrder.algoId,
+                    newTriggerPrice: tpOrder.triggerPrice || '',
+                  });
+                  logger.info({ executionId: position.id, symbol, dbValue: dbTP, exchangeValue: exchangeTP }, '[OrderSync] Auto-fixed TP trigger price from exchange');
+                } catch (fixError) {
+                  logger.warn({ executionId: position.id, error: serializeError(fixError) }, '[OrderSync] Failed to auto-fix TP trigger price');
+                  result.mismatchedOrders.push({
+                    executionId: position.id,
+                    symbol,
+                    field: 'takeProfit',
+                    dbValue: dbTP,
+                    dbAlgoId: position.takeProfitAlgoId,
+                    exchangeAlgoId: tpOrder.algoId,
+                    exchangeTriggerPrice: tpOrder.triggerPrice || null,
+                  });
+                }
+              } else {
+                result.mismatchedOrders.push({
+                  executionId: position.id,
+                  symbol,
+                  field: 'takeProfit',
+                  dbValue: dbTP,
+                  dbAlgoId: position.takeProfitAlgoId,
+                  exchangeAlgoId: tpOrder.algoId,
+                  exchangeTriggerPrice: tpOrder.triggerPrice || null,
+                });
+              }
             }
           }
         }
@@ -314,15 +498,21 @@ export class OrderSyncService {
     return result;
   }
 
-  async runOnce(options?: { autoCancelOrphans?: boolean }): Promise<OrderSyncResult[]> {
+  async runOnce(options?: { autoCancelOrphans?: boolean; autoFixMismatches?: boolean }): Promise<OrderSyncResult[]> {
     const previousAutoCancelOrphans = this.autoCancelOrphans;
+    const previousAutoFixMismatches = this.autoFixMismatches;
+
     if (options?.autoCancelOrphans !== undefined) {
       this.autoCancelOrphans = options.autoCancelOrphans;
+    }
+    if (options?.autoFixMismatches !== undefined) {
+      this.autoFixMismatches = options.autoFixMismatches;
     }
 
     const results = await this.syncAllWallets();
 
     this.autoCancelOrphans = previousAutoCancelOrphans;
+    this.autoFixMismatches = previousAutoFixMismatches;
     return results;
   }
 }

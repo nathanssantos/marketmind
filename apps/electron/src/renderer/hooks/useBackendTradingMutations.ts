@@ -44,6 +44,13 @@ export const useBackendTradingMutations = () => {
     },
   });
 
+  const cancelProtectionOrderMutation = trpc.trading.cancelIndividualProtectionOrder.useMutation({
+    onSuccess: () => {
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+    },
+  });
+
   const createOrder = useCallback(
     async (data: {
       walletId: string;
@@ -89,21 +96,31 @@ export const useBackendTradingMutations = () => {
     [updateExecutionSLTPMutation]
   );
 
+  const cancelProtectionOrder = useCallback(
+    async (executionIds: string[], type: 'stopLoss' | 'takeProfit') => {
+      return cancelProtectionOrderMutation.mutateAsync({ executionIds, type });
+    },
+    [cancelProtectionOrderMutation]
+  );
+
   return {
     createOrder,
     cancelOrder,
     closeExecution,
     cancelExecution,
     updateExecutionSLTP,
+    cancelProtectionOrder,
     isCreatingOrder: createOrderMutation.isPending,
     isCancelingOrder: cancelOrderMutation.isPending,
     isClosingExecution: closeExecutionMutation.isPending,
     isCancelingExecution: cancelExecutionMutation.isPending,
     isUpdatingExecutionSLTP: updateExecutionSLTPMutation.isPending,
+    isCancelingProtectionOrder: cancelProtectionOrderMutation.isPending,
     createOrderError: createOrderMutation.error,
     cancelOrderError: cancelOrderMutation.error,
     closeExecutionError: closeExecutionMutation.error,
     cancelExecutionError: cancelExecutionMutation.error,
     updateExecutionSLTPError: updateExecutionSLTPMutation.error,
+    cancelProtectionOrderError: cancelProtectionOrderMutation.error,
   };
 };

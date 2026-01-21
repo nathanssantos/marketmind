@@ -21,6 +21,7 @@ import { ChartProvider } from '../context/ChartContext';
 import { useBackendKlines, useKlineStream } from '../hooks/useBackendKlines';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useCurrencyAutoRefresh } from '../store/currencyStore';
 import { useSetupStore } from '../store/setupStore';
 import { system } from '../theme';
 import { toaster } from '../utils/toaster';
@@ -80,6 +81,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
   const [symbol, setSymbol] = useLocalStorage('marketmind:chartwindow:symbol', routeSymbol || initialSymbol || 'BTCUSDT');
   const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:chartwindow:marketType', 'SPOT');
+
+  useCurrencyAutoRefresh();
 
   const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
   const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);

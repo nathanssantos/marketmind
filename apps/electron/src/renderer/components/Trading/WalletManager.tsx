@@ -1,6 +1,7 @@
 import { Badge, Box, Flex, IconButton, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
+import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { Button } from '@renderer/components/ui/button';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
@@ -310,32 +311,44 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
       <Stack gap={1} fontSize="xs">
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.wallets.balance')}</Text>
-          <Text fontWeight="medium">
-            {wallet.currency} {wallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </Text>
+          <Stack gap={0} align="flex-end">
+            <Text fontWeight="medium">
+              {wallet.currency} {wallet.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+            <BrlValue usdtValue={wallet.balance} />
+          </Stack>
         </Flex>
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.wallets.initialBalance')}</Text>
-          <Text>
-            {wallet.currency} {wallet.initialBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </Text>
+          <Stack gap={0} align="flex-end">
+            <Text>
+              {wallet.currency} {wallet.initialBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+            <BrlValue usdtValue={wallet.initialBalance} />
+          </Stack>
         </Flex>
         {netDeposits !== 0 && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.wallets.netDeposits', 'Net Deposits')}</Text>
-            <Text color={netDeposits > 0 ? 'blue.500' : 'orange.500'}>
-              {netDeposits > 0 ? '+' : ''}{netDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
+            <Stack gap={0} align="flex-end">
+              <Text color={netDeposits > 0 ? 'blue.500' : 'orange.500'}>
+                {netDeposits > 0 ? '+' : ''}{netDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+              <BrlValue usdtValue={netDeposits} />
+            </Stack>
           </Flex>
         )}
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.wallets.netPnL')}</Text>
           <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.funding')}: ${totalFunding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0 && totalFunding === 0}>
-            <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium" cursor={totalFees > 0 || totalFunding !== 0 ? 'help' : 'default'}>
-              {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
-              {(totalFees > 0 || totalFunding !== 0) && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}
-            </Text>
+            <Stack gap={0} align="flex-end">
+              <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium" cursor={totalFees > 0 || totalFunding !== 0 ? 'help' : 'default'}>
+                {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
+                {(totalFees > 0 || totalFunding !== 0) && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}
+              </Text>
+              <BrlValue usdtValue={netPnL} />
+            </Stack>
           </TooltipWrapper>
         </Flex>
       </Stack>

@@ -9,6 +9,8 @@ import {
   createFuturesAccountUpdateEvent,
   createFuturesMarginCallEvent,
   createFuturesConfigUpdateEvent,
+  createFuturesAlgoUpdateEvent,
+  createFuturesConditionalOrderRejectEvent,
 } from '../helpers/binance-mock';
 
 const { MockWebsocketClient, getMockWsClient, setMockWsClient: _setMockWsClient } = vi.hoisted(() => {
@@ -63,6 +65,7 @@ vi.mock('../../services/binance-futures-client', () => ({
   })),
   isPaperWallet: vi.fn((wallet) => wallet.walletType === 'paper'),
   getWalletType: vi.fn((wallet) => wallet.walletType === 'testnet' ? 'testnet' : 'live'),
+  cancelFuturesAlgoOrder: vi.fn().mockResolvedValue({ status: 'CANCELLED' }),
 }));
 
 vi.mock('../../services/encryption', () => ({
@@ -564,6 +567,284 @@ describe('BinanceFuturesUserStreamService', () => {
       expect(() => getMockWsClient()?.emit('formattedMessage', null)).not.toThrow();
       expect(() => getMockWsClient()?.emit('formattedMessage', 'invalid')).not.toThrow();
       expect(() => getMockWsClient()?.emit('formattedMessage', { e: 'UNKNOWN_EVENT' })).not.toThrow();
+
+      service.stop();
+    });
+  });
+
+  describe('handleAlgoOrderUpdate - OCO-like behavior', () => {
+    it('should set exitReason when algo SL is triggered', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+      });
+
+      const executionId = generateEntityId();
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.1',
+        status: 'open',
+        marketType: 'FUTURES',
+        stopLossAlgoId: 111111,
+        takeProfitAlgoId: 222222,
+        leverage: 10,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      const event = createFuturesAlgoUpdateEvent({
+        symbol: 'BTCUSDT',
+        algoId: 111111,
+        status: 'TRIGGERED',
+        orderType: 'STOP_MARKET',
+        side: 'SELL',
+      });
+
+      getMockWsClient()?.emit('formattedMessage', event);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      expect(execution!.exitReason).toBe('STOP_LOSS');
+      expect(execution!.status).toBe('open');
+
+      service.stop();
+    });
+
+    it('should set exitReason when algo TP is triggered', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+      });
+
+      const executionId = generateEntityId();
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.1',
+        status: 'open',
+        marketType: 'FUTURES',
+        stopLossAlgoId: 111111,
+        takeProfitAlgoId: 222222,
+        leverage: 10,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      const event = createFuturesAlgoUpdateEvent({
+        symbol: 'BTCUSDT',
+        algoId: 222222,
+        status: 'TRIGGERED',
+        orderType: 'TAKE_PROFIT_MARKET',
+        side: 'SELL',
+      });
+
+      getMockWsClient()?.emit('formattedMessage', event);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      expect(execution!.exitReason).toBe('TAKE_PROFIT');
+      expect(execution!.status).toBe('open');
+
+      service.stop();
+    });
+
+    it('should ignore CANCELLED algo orders (manual cancel)', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+      });
+
+      const executionId = generateEntityId();
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.1',
+        status: 'open',
+        marketType: 'FUTURES',
+        stopLossAlgoId: 111111,
+        takeProfitAlgoId: 222222,
+        leverage: 10,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      const event = createFuturesAlgoUpdateEvent({
+        symbol: 'BTCUSDT',
+        algoId: 111111,
+        status: 'CANCELLED',
+        orderType: 'STOP_MARKET',
+      });
+
+      getMockWsClient()?.emit('formattedMessage', event);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      expect(execution!.exitReason).toBeNull();
+      expect(execution!.status).toBe('open');
+
+      service.stop();
+    });
+  });
+
+  describe('handleConditionalOrderReject', () => {
+    it('should clear order IDs when order is rejected', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+      });
+
+      const executionId = generateEntityId();
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.1',
+        status: 'open',
+        marketType: 'FUTURES',
+        stopLoss: '49000',
+        stopLossAlgoId: 111111,
+        takeProfitAlgoId: 222222,
+        leverage: 10,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      const event = createFuturesConditionalOrderRejectEvent({
+        symbol: 'BTCUSDT',
+        orderId: 111111,
+        reason: 'PRICE_NOT_MET',
+      });
+
+      getMockWsClient()?.emit('formattedMessage', event);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      expect(execution!.stopLoss).toBeNull();
+      expect(execution!.stopLossAlgoId).toBeNull();
+      expect(execution!.takeProfitAlgoId).toBe(222222);
+      expect(execution!.status).toBe('open');
+
+      service.stop();
+    });
+  });
+
+  describe('order ID clearing on position close', () => {
+    it('should clear all order IDs when position closes', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+        initialBalance: '10000',
+      });
+
+      const executionId = generateEntityId();
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.1',
+        status: 'open',
+        marketType: 'FUTURES',
+        stopLossOrderId: 111111,
+        stopLossAlgoId: 333333,
+        takeProfitOrderId: 222222,
+        takeProfitAlgoId: 444444,
+        leverage: 10,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      const event = createFuturesOrderUpdateEvent({
+        symbol: 'BTCUSDT',
+        orderId: 111111,
+        status: 'FILLED',
+        execType: 'TRADE',
+        avgPrice: '49000',
+        executedQty: '0.1',
+      });
+
+      getMockWsClient()?.emit('formattedMessage', event);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      expect(execution!.status).toBe('closed');
+      expect(execution!.stopLossOrderId).toBeNull();
+      expect(execution!.stopLossAlgoId).toBeNull();
+      expect(execution!.takeProfitOrderId).toBeNull();
+      expect(execution!.takeProfitAlgoId).toBeNull();
 
       service.stop();
     });
