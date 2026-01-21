@@ -317,30 +317,20 @@ export class AutoTradingScheduler {
     if (hasBtcWatcher) return;
 
     const requiredKlines = calculateRequiredKlines();
-    log('📥 [BTC Correlation] Prefetching BTCUSDT klines', { interval, marketType, requiredKlines });
 
-    const prefetchResult = await prefetchKlines({
+    await prefetchKlines({
       symbol: 'BTCUSDT',
       interval,
       marketType,
       targetCount: requiredKlines,
-      silent: false,
-    });
-
-    log('📊 [BTC Correlation] BTCUSDT prefetch result', {
-      success: prefetchResult.success,
-      downloaded: prefetchResult.downloaded,
-      totalInDb: prefetchResult.totalInDb,
-      gaps: prefetchResult.gaps,
-      alreadyComplete: prefetchResult.alreadyComplete,
-      error: prefetchResult.error,
+      silent: true,
     });
 
     try {
       const klineMaintenance = getKlineMaintenance();
       await klineMaintenance.forceCheckSymbol('BTCUSDT', interval as Interval, marketType);
     } catch (error) {
-      log('⚠️ [BTC Correlation] Failed to run maintenance check for BTCUSDT', { error: serializeError(error) });
+      log('⚠️ [BTC Correlation] Maintenance check failed for BTCUSDT', { error: serializeError(error) });
     }
 
     const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
@@ -351,7 +341,6 @@ export class AutoTradingScheduler {
     }
 
     this.btcStreamSubscribed.add(btcKey);
-    log('📊 [BTC Correlation] BTCUSDT stream subscribed and data initialized', { interval, marketType });
   }
 
   private async cleanupBtcKlineStreamIfNeeded(interval: string, marketType: MarketType): Promise<void> {
@@ -433,10 +422,6 @@ export class AutoTradingScheduler {
     this.anticipationCheckIntervalId = setInterval(() => {
       void this.checkAnticipatedRotations();
     }, this.ANTICIPATION_CHECK_INTERVAL_MS);
-
-    log('⏰ [DynamicRotation] Started anticipation timer', {
-      intervalMs: this.ANTICIPATION_CHECK_INTERVAL_MS,
-    });
   }
 
   private stopAnticipationTimer(): void {
@@ -2593,22 +2578,7 @@ export class AutoTradingScheduler {
 
               try {
                 const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
-                const nowMs = Date.now();
                 const openedAtDate = new Date();
-                console.log('🔍 [TRADE DEBUG - PENDING] Timestamp values at trade creation:', {
-                  nowMs,
-                  nowISO: new Date(nowMs).toISOString(),
-                  openedAt: openedAtDate.toISOString(),
-                  triggerCandleRaw: triggerCandle,
-                  triggerCandleOpenTime: triggerCandle?.openTime,
-                  triggerCandleOpenTimeType: typeof triggerCandle?.openTime,
-                  triggerCandleOpenTimeISO: triggerCandle?.openTime ? new Date(triggerCandle.openTime).toISOString() : null,
-                  triggerKlineIndex: setup.triggerKlineIndex,
-                  setupType: setup.type,
-                  symbol: watcher.symbol,
-                  interval: watcher.interval,
-                  allTriggerCandleData: setup.triggerCandleData,
-                });
                 await db.insert(tradeExecutions).values({
                   id: executionId,
                   userId: watcher.userId,
@@ -2761,22 +2731,7 @@ export class AutoTradingScheduler {
 
       try {
         const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
-        const nowMs = Date.now();
         const openedAtDate = new Date();
-        console.log('🔍 [TRADE DEBUG - OPEN] Timestamp values at trade creation:', {
-          nowMs,
-          nowISO: new Date(nowMs).toISOString(),
-          openedAt: openedAtDate.toISOString(),
-          triggerCandleRaw: triggerCandle,
-          triggerCandleOpenTime: triggerCandle?.openTime,
-          triggerCandleOpenTimeType: typeof triggerCandle?.openTime,
-          triggerCandleOpenTimeISO: triggerCandle?.openTime ? new Date(triggerCandle.openTime).toISOString() : null,
-          triggerKlineIndex: setup.triggerKlineIndex,
-          setupType: setup.type,
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          allTriggerCandleData: setup.triggerCandleData,
-        });
         await db.insert(tradeExecutions).values({
           id: executionId,
           userId: watcher.userId,
@@ -2963,29 +2918,12 @@ export class AutoTradingScheduler {
     for (const pw of persistedWatchers) {
       const marketType = (pw.marketType as MarketType) ?? 'SPOT';
 
-      log('📥 [Startup] Prefetching klines for watcher', {
-        symbol: pw.symbol,
-        interval: pw.interval,
-        marketType,
-        targetCount: requiredKlines,
-      });
-
       const result = await prefetchKlines({
         symbol: pw.symbol,
         interval: pw.interval,
         marketType,
         targetCount: requiredKlines,
         silent: false,
-      });
-
-      log('📊 [Startup] Prefetch result', {
-        symbol: pw.symbol,
-        success: result.success,
-        downloaded: result.downloaded,
-        totalInDb: result.totalInDb,
-        gaps: result.gaps,
-        alreadyComplete: result.alreadyComplete,
-        error: result.error,
       });
 
       if (!result.success) {
@@ -3139,12 +3077,6 @@ export class AutoTradingScheduler {
   ): number | null {
     const currentIndex = klines.length - 1;
     const lookback = 100;
-
-    log('📐 Fibonacci lookback calculation', {
-      lookback,
-      klinesAvailable: klines.length,
-    });
-
     const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction);
 
     if (!projection || projection.levels.length === 0) {
@@ -3164,19 +3096,7 @@ export class AutoTradingScheduler {
       (l) => Math.abs(l.level - targetLevel) < 0.001
     );
 
-    if (targetLevelData) {
-      log('✅ Fibonacci TP calculated', {
-        interval: _interval,
-        lookback,
-        targetLevel,
-        price: targetLevelData.price,
-        swingLow: projection.swingLow.price,
-        swingHigh: projection.swingHigh.price,
-        range: projection.range,
-        rangePercent: ((projection.range / projection.swingLow.price) * 100).toFixed(2),
-      });
-      return targetLevelData.price;
-    }
+    if (targetLevelData) return targetLevelData.price;
 
     log('⚠️ Target level not found, using 161.8%', {
       targetLevel,

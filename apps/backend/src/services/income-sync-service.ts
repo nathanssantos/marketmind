@@ -39,8 +39,6 @@ class IncomeSyncService {
     if (this.isRunning) return;
     this.isRunning = true;
 
-    logger.info({ intervalMs: SYNC_INTERVAL_MS }, '[IncomeSyncService] Starting income sync service');
-
     this.syncInterval = setInterval(() => {
       void this.syncAllWallets();
     }, SYNC_INTERVAL_MS);
@@ -72,8 +70,6 @@ class IncomeSyncService {
         logger.debug('[IncomeSyncService] No live futures wallets to sync');
         return results;
       }
-
-      logger.info({ walletCount: realWallets.length }, '[IncomeSyncService] Starting income sync for live wallets');
 
       for (const wallet of realWallets) {
         try {
@@ -223,20 +219,6 @@ class IncomeSyncService {
 
       this.lastSyncTime.set(wallet.id, now);
 
-      if (result.commissionRecords > 0 || result.fundingRecords > 0 || result.transferRecords > 0) {
-        logger.info({
-          walletId: wallet.id,
-          walletName: wallet.name,
-          commissionRecords: result.commissionRecords,
-          fundingRecords: result.fundingRecords,
-          transferRecords: result.transferRecords,
-          totalCommission: result.totalCommission.toFixed(4),
-          totalFunding: result.totalFunding.toFixed(4),
-          totalDeposits: result.totalDeposits.toFixed(4),
-          totalWithdrawals: result.totalWithdrawals.toFixed(4),
-          tradesUpdated: result.tradesUpdated,
-        }, '[IncomeSyncService] Wallet income synced');
-      }
 
       return result;
     } catch (error) {
@@ -358,14 +340,6 @@ class IncomeSyncService {
             .where(eq(tradeExecutions.id, trade.id));
 
           updatedCount++;
-
-          logger.info({
-            tradeId: trade.id,
-            symbol: trade.symbol,
-            fees: `${currentFees.toFixed(4)} → ${actualFees.toFixed(4)}`,
-            funding: `${currentFunding.toFixed(4)} → ${actualFunding.toFixed(4)}`,
-            pnl: `${currentPnl.toFixed(4)} → ${expectedPnl.toFixed(4)}`,
-          }, '[IncomeSyncService] Trade updated with actual fees');
         }
       }
     }

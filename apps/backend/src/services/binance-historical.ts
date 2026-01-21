@@ -246,11 +246,6 @@ export const smartBackfillKlines = async (
   const calculatedStartTime = effectiveEndTime - intervalMs * targetCount;
   const targetStartTime = Math.max(calculatedStartTime, minStartTime);
 
-  logger.info(
-    { symbol, interval, marketType, targetCount, targetStartTime: new Date(targetStartTime).toISOString(), forRotation },
-    '📥 [SmartBackfill] Analyzing existing data'
-  );
-
   const existingKlines = await db
     .select({ openTime: klines.openTime })
     .from(klines)
@@ -265,11 +260,6 @@ export const smartBackfillKlines = async (
     .orderBy(asc(klines.openTime));
 
   const currentCount = existingKlines.length;
-
-  logger.info(
-    { symbol, interval, marketType, currentCount, targetCount },
-    '📊 [SmartBackfill] Current count vs target'
-  );
 
   const gaps: Array<{ start: number; end: number; type: 'start' | 'end' | 'internal' }> = [];
   let totalDownloaded = 0;
@@ -322,11 +312,11 @@ export const smartBackfillKlines = async (
   }
 
   if (gaps.length === 0) {
-    logger.info({ symbol, interval, marketType, currentCount }, '✅ [SmartBackfill] No gaps found, data complete');
+    logger.debug({ symbol, interval, marketType, currentCount }, '[SmartBackfill] Data complete');
     return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
   }
 
-  logger.info({ symbol, interval, marketType, gapsCount: gaps.length }, '🔧 [SmartBackfill] Filling gaps');
+  logger.debug({ symbol, interval, marketType, gapsCount: gaps.length }, '[SmartBackfill] Filling gaps');
 
   const gapsFilled: Set<number> = new Set();
 
@@ -372,9 +362,9 @@ export const smartBackfillKlines = async (
   const isOperationallyComplete = hasSufficientData || criticalGaps.length === 0;
   const reportedGaps = isOperationallyComplete ? 0 : criticalGaps.length;
 
-  logger.info(
-    { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps, hasSufficientData, isOperationallyComplete },
-    '✅ [SmartBackfill] Complete'
+  logger.debug(
+    { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps },
+    '[SmartBackfill] Complete'
   );
 
   return { totalInDb: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps, alreadyComplete: isOperationallyComplete };

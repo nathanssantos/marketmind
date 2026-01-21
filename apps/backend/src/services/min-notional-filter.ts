@@ -100,8 +100,6 @@ export class MinNotionalFilterService {
       }
 
       this.futuresFiltersCache = { data: filtersMap, timestamp: Date.now() };
-      logger.info({ symbolCount: filtersMap.size }, '[MinNotionalFilter] Futures exchange info cached');
-
       return filtersMap;
     } catch (error) {
       logger.error({ error }, '[MinNotionalFilter] Error fetching futures exchange info');
@@ -403,17 +401,6 @@ export class MinNotionalFilterService {
     const availableCapital = walletBalance * leverage * exposureMultiplier;
     const maxCapitalPerPosition = availableCapital / CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO;
 
-    logger.info({
-      walletBalance,
-      leverage,
-      exposureMultiplier,
-      availableCapital,
-      maxCapitalPerPosition,
-      symbolsCount: symbols.length,
-      filtersCount: filters.size,
-      pricesCount: prices.size,
-    }, '[MinNotionalFilter] calculateMaxWatchersFromSymbols input');
-
     const eligibleSymbols: string[] = [];
     const excludedSymbols = new Map<string, string>();
     const eligibleMinNotionals: number[] = [];
@@ -456,13 +443,16 @@ export class MinNotionalFilterService {
     maxWatchers = Math.max(1, Math.min(maxWatchers, eligibleSymbols.length));
     const capitalPerWatcher = maxWatchers > 0 ? availableCapital / maxWatchers : availableCapital;
 
-    logger.info({
+    logger.debug({
+      walletBalance,
+      availableCapital,
+      symbolsCount: symbols.length,
       eligibleCount: eligibleSymbols.length,
       excludedCount: excludedSymbols.size,
       maxWatchers,
       capitalPerWatcher,
       firstExcluded: excludedSymbols.size > 0 ? Array.from(excludedSymbols.entries()).slice(0, 3) : [],
-    }, '[MinNotionalFilter] calculateMaxWatchersFromSymbols result');
+    }, '[MinNotionalFilter] Capital filter calculated');
 
     return { maxWatchers, capitalPerWatcher, eligibleSymbols, excludedSymbols };
   }

@@ -58,8 +58,6 @@ export class OrderSyncService {
     this.autoCancelOrphans = options?.autoCancelOrphans ?? false;
     this.autoFixMismatches = options?.autoFixMismatches ?? false;
 
-    logger.info({ autoCancelOrphans: this.autoCancelOrphans, autoFixMismatches: this.autoFixMismatches }, '[OrderSync] Starting Order Sync service');
-
     await this.syncAllWallets();
 
     this.syncInterval = setInterval(() => {
@@ -96,15 +94,15 @@ export class OrderSyncService {
           const result = await this.syncWallet(wallet);
           results.push(result);
 
-          if (result.orphanOrders.length > 0 || result.mismatchedOrders.length > 0 || result.fixedOrders.length > 0) {
+          const hasActionableIssues = result.orphanOrders.length > 0 || result.fixedOrders.length > 0 || result.cancelledOrphans > 0;
+          if (hasActionableIssues) {
             logger.warn({
               walletId: wallet.id,
               walletName: wallet.name,
               orphanOrders: result.orphanOrders.length,
-              mismatchedOrders: result.mismatchedOrders.length,
               fixedOrders: result.fixedOrders.length,
               cancelledOrphans: result.cancelledOrphans,
-            }, '[OrderSync] Sync completed with issues');
+            }, '[OrderSync] Sync found issues');
           }
         } catch (error) {
           results.push({
@@ -124,7 +122,7 @@ export class OrderSyncService {
       const totalFixed = results.reduce((sum, r) => sum + r.fixedOrders.length, 0);
       const totalCancelled = results.reduce((sum, r) => sum + r.cancelledOrphans, 0);
 
-      if (totalOrphans > 0 || totalMismatched > 0 || totalFixed > 0) {
+      if ((totalOrphans > 0 || totalMismatched > 0 || totalFixed > 0) && liveWallets.length > 1) {
         logger.info({
           walletsChecked: liveWallets.length,
           totalOrphanOrders: totalOrphans,

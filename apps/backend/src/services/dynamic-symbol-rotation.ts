@@ -64,7 +64,7 @@ export class DynamicSymbolRotationService {
 
       if (config.capitalRequirement) {
         const allSymbols = filteredScores.map(s => s.symbol);
-        const { eligibleSymbols, excludedSymbols, capitalPerWatcher, maxWatchers } =
+        const { eligibleSymbols, excludedSymbols } =
           await minNotionalFilter.calculateMaxWatchersFromSymbols(
             allSymbols,
             config.capitalRequirement.walletBalance,
@@ -77,17 +77,6 @@ export class DynamicSymbolRotationService {
 
         const eligibleSet = new Set(eligibleSymbols);
         filteredScores = filteredScores.filter(s => eligibleSet.has(s.symbol));
-
-        if (skippedInsufficientCapital.length > 0) {
-          logger.info({
-            walletId,
-            marketType: config.marketType,
-            skippedCount: skippedInsufficientCapital.length,
-            eligibleCount: filteredScores.length,
-            capitalPerWatcher: capitalPerWatcher.toFixed(2),
-            maxAffordableWatchers: maxWatchers,
-          }, '[DynamicRotation] Filtered symbols by capital requirement');
-        }
       }
 
       const optimalSymbols = filteredScores.slice(0, config.limit).map((s) => s.symbol);

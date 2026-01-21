@@ -760,9 +760,6 @@ class KlineMaintenance {
 
     const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair, true);
 
-    if (gapsFilled > 0 || corruptedFixed > 0) {
-      logger.info({ symbol, interval, marketType, gapsFilled, corruptedFixed }, 'Force check completed');
-    }
 
     await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
     await this.updateMaintenanceLog(pair, { corruptedFixed, checkType: 'corruption' });
