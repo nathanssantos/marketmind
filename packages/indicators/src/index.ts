@@ -53,4 +53,5 @@ export * from './volumeUtils';
 export * from './vwap';
 export * from './williamsR';
 export * from './wma';
+export * from './validation';
 

@@ -90,8 +90,9 @@ export interface SignalProcessorDeps {
   isWatcherRecentlyRotated: (watcherId: string) => boolean;
   getRotationPendingWatcher: (watcherId: string) => RotationPendingWatcher | undefined;
   deleteRotationPendingWatcher: (watcherId: string) => void;
-  queueWatcherProcessing: (watcherId: string) => void;
   incrementBarsForOpenTrades: (symbol: string, interval: string, currentPrice: number) => Promise<void>;
+  checkAllRotationsOnce: () => Promise<string[]>;
+  getConfigCacheStats: () => { size: number; hits: number; misses: number; preloads: number; hitRate: number };
 }
 
 export interface RotationManagerDeps {

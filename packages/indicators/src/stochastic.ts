@@ -4,6 +4,11 @@ const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
 const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
+/**
+ * Stochastic Oscillator calculation result
+ * @property k - %K line values (smoothed fast stochastic)
+ * @property d - %D line values (SMA of %K)
+ */
 export interface StochasticResult {
   k: (number | null)[];
   d: (number | null)[];
@@ -39,6 +44,47 @@ const calculatePureSMA = (values: (number | null)[], period: number): (number | 
   return result;
 };
 
+/**
+ * Stochastic Oscillator
+ *
+ * A momentum indicator comparing a particular closing price to a range of
+ * prices over a given period. The indicator generates overbought and oversold
+ * signals based on price position relative to the trading range.
+ *
+ * @reference Lane, G. (1950s). "Lane's Stochastics"
+ * @see https://www.investopedia.com/terms/s/stochasticoscillator.asp
+ *
+ * @formula
+ * Fast %K = 100 × (Close - Lowest Low) / (Highest High - Lowest Low)
+ * Slow %K = SMA(Fast %K, kSmoothing)  [This is the %K output]
+ * %D = SMA(Slow %K, dPeriod)
+ *
+ * Lowest Low = Lowest low of last kPeriod periods
+ * Highest High = Highest high of last kPeriod periods
+ *
+ * @variations
+ * - Fast Stochastic: Raw %K, %D = SMA(%K, 3)
+ * - Slow Stochastic: %K = SMA(Fast %K, 3), %D = SMA(Slow %K, 3) [this implementation]
+ * - Full Stochastic: All parameters customizable
+ *
+ * @interpretation
+ * - %K > 80: Overbought
+ * - %K < 20: Oversold
+ * - %K crosses above %D: Bullish signal
+ * - %K crosses below %D: Bearish signal
+ * - Divergence: Potential reversal
+ *
+ * @param klines - Array of candlestick data
+ * @param kPeriod - Lookback period for highest/lowest (default: 14)
+ * @param kSmoothing - Smoothing period for %K (default: 3)
+ * @param dPeriod - Period for %D line (default: 3)
+ * @returns StochasticResult with k and d arrays (0-100 range)
+ *
+ * @example
+ * const result = calculateStochastic(klines, 14, 3, 3);
+ * // result.k: Slow %K (smoothed)
+ * // result.d: %D (signal line)
+ */
 export const calculateStochastic = (
   klines: Kline[],
   kPeriod: number = 14,
@@ -91,6 +137,17 @@ export const calculateStochastic = (
   return { k: slowK, d: slowD };
 };
 
+/**
+ * Stochastic Oscillator configuration
+ * @property kPeriod - Lookback period for highest/lowest calculation
+ * @property kSmoothing - Smoothing period for %K
+ * @property dPeriod - Period for %D (signal) line
+ * @property enabled - Whether the indicator is enabled
+ * @property kColor - Color for %K line
+ * @property dColor - Color for %D line
+ * @property overboughtLevel - Overbought threshold (typically 80)
+ * @property oversoldLevel - Oversold threshold (typically 20)
+ */
 export interface StochasticConfig {
   kPeriod: number;
   kSmoothing: number;

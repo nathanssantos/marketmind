@@ -2,10 +2,50 @@ import type { Kline } from '@marketmind/types';
 
 const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
+/**
+ * RSI calculation result
+ * @property values - Array of RSI values (0-100), null for insufficient data periods
+ */
 export interface RSIResult {
   values: (number | null)[];
 }
 
+/**
+ * Relative Strength Index (RSI)
+ *
+ * Measures the speed and magnitude of recent price changes to evaluate
+ * overbought or oversold conditions.
+ *
+ * @reference Wilder, J.W. (1978). "New Concepts in Technical Trading Systems"
+ * @see https://www.investopedia.com/terms/r/rsi.asp
+ *
+ * @formula
+ * RSI = 100 - (100 / (1 + RS))
+ * RS = Average Gain / Average Loss
+ *
+ * Initial Average (first period):
+ *   Avg Gain = Sum of Gains over n periods / n
+ *   Avg Loss = Sum of Losses over n periods / n
+ *
+ * Subsequent values (Wilder smoothing):
+ *   Avg Gain = ((Previous Avg Gain × (n-1)) + Current Gain) / n
+ *   Avg Loss = ((Previous Avg Loss × (n-1)) + Current Loss) / n
+ *
+ * @interpretation
+ * - RSI > 70: Overbought (potential reversal down)
+ * - RSI < 30: Oversold (potential reversal up)
+ * - RSI = 50: Neutral
+ * - Divergence between price and RSI indicates potential reversal
+ *
+ * @param klines - Array of candlestick data
+ * @param period - Lookback period (default: 2, standard: 14)
+ * @returns RSIResult with values array (0-100 range, null for insufficient data)
+ *
+ * @example
+ * const klines = [...]; // Array of Kline objects
+ * const result = calculateRSI(klines, 14);
+ * // result.values: [null, null, ..., 70.53, 66.32, ...]
+ */
 export const calculateRSI = (klines: Kline[], period: number = 2): RSIResult => {
   if (klines.length < period + 1) {
     return { values: Array(klines.length).fill(null) };
