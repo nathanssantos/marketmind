@@ -106,9 +106,7 @@ export class AutoTradingService {
       }
 
       case 'kelly': {
-        const riskPercent = Math.abs((entryPrice - stopLoss) / entryPrice);
         const kellyFraction = await this.calculateKellyCriterion(
-          riskPercent,
           setupType,
           symbol,
           interval
@@ -193,7 +191,6 @@ export class AutoTradingService {
   }
 
   private async calculateKellyCriterion(
-    _riskPercent: number,
     strategyId?: string,
     symbol?: string,
     interval?: string
@@ -208,7 +205,7 @@ export class AutoTradingService {
 
     if (strategyId && symbol && interval) {
       try {
-        const stats = await this.getStrategyStatistics(strategyId, symbol, interval);
+        const stats = await this.getStrategyStatistics(strategyId, symbol);
 
         if (stats && stats.totalTrades >= MIN_TRADES) {
           winRate = stats.winRate;
@@ -243,8 +240,7 @@ export class AutoTradingService {
 
   private async getStrategyStatistics(
     strategyId: string,
-    symbol: string,
-    _interval: string
+    symbol: string
   ): Promise<{ winRate: number; avgRR: number; totalTrades: number } | null> {
     try {
       const results = await db

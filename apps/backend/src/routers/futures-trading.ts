@@ -1,4 +1,6 @@
-import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
+import { calculateLiquidationPrice } from '@marketmind/types';
+
+import { calculatePnl } from '../utils/pnl-calculator';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -25,8 +27,6 @@ import { logger } from '../services/logger';
 import { getMinNotionalFilterService } from '../services/min-notional-filter';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
-
-const FUTURES_TAKER_FEE = getDefaultFee('FUTURES', 'TAKER');
 
 export const futuresTradingRouter = router({
   setLeverage: protectedProcedure
@@ -443,19 +443,17 @@ export const futuresTradingRouter = router({
           const leverage = position.leverage ?? 1;
           const accumulatedFunding = parseFloat(position.accumulatedFunding ?? '0');
 
-          const positionValue = entryPrice * quantity;
-          const exitValue = exitPrice * quantity;
+          const { grossPnl, totalFees, netPnl: basePnl } = calculatePnl({
+            entryPrice,
+            exitPrice,
+            quantity,
+            side: position.side as 'LONG' | 'SHORT',
+            marketType: 'FUTURES',
+            leverage,
+          });
 
-          const grossPnl = position.side === 'LONG'
-            ? exitValue - positionValue
-            : positionValue - exitValue;
-
-          const entryFee = positionValue * FUTURES_TAKER_FEE;
-          const exitFee = exitValue * FUTURES_TAKER_FEE;
-          const totalFees = entryFee + exitFee;
-
-          const netPnl = grossPnl - totalFees + accumulatedFunding;
-          const marginValue = positionValue / leverage;
+          const netPnl = basePnl + accumulatedFunding;
+          const marginValue = (entryPrice * quantity) / leverage;
           const pnlPercent = (netPnl / marginValue) * 100;
 
           await ctx.db

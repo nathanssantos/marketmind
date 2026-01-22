@@ -1,5 +1,4 @@
-import type { BinanceNewOrderResult, BinanceOrderQueryResult, MarketType } from '@marketmind/types';
-import { calculateTotalFees } from '@marketmind/types';
+import { calculatePnl } from '../utils/pnl-calculator';
 import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
 import { and, desc, eq } from 'drizzle-orm';
@@ -9,6 +8,7 @@ import { orders, positions, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from '../services/auto-trading';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
+import { createMarketClient } from '../services/market-client-factory';
 import { walletQueries } from '../services/database/walletQueries';
 import { logger } from '../services/logger';
 import { clearProtectionOrderIds } from '../services/execution-manager';
@@ -99,97 +99,49 @@ export const tradingRouter = router({
           };
         }
 
-        if (input.marketType === 'FUTURES') {
-          const client = createBinanceFuturesClient(wallet);
+        const marketClient = createMarketClient(wallet, input.marketType);
 
-          const binanceOrder = await client.submitNewOrder({
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
-            quantity: parseFloat(input.quantity),
-            price: input.price ? parseFloat(input.price) : undefined,
-            stopPrice: input.stopPrice ? parseFloat(input.stopPrice) : undefined,
-            timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
-            reduceOnly: input.reduceOnly ? 'true' : undefined,
-            newOrderRespType: 'RESULT',
-          });
-
-          await ctx.db.insert(orders).values({
-            orderId: binanceOrder.orderId,
-            userId: ctx.user.id,
-            walletId: input.walletId,
-            symbol: binanceOrder.symbol,
-            side: binanceOrder.side,
-            type: binanceOrder.type,
-            price: binanceOrder.price?.toString(),
-            origQty: binanceOrder.origQty?.toString(),
-            executedQty: binanceOrder.executedQty?.toString(),
-            status: binanceOrder.status,
-            timeInForce: binanceOrder.timeInForce,
-            time: binanceOrder.updateTime,
-            updateTime: binanceOrder.updateTime,
-            setupId: input.setupId,
-            setupType: input.setupType,
-            marketType: 'FUTURES',
-            reduceOnly: input.reduceOnly,
-          });
-
-          return {
-            orderId: binanceOrder.orderId,
-            symbol: binanceOrder.symbol,
-            side: binanceOrder.side,
-            type: binanceOrder.type,
-            status: binanceOrder.status,
-            price: binanceOrder.price,
-            quantity: binanceOrder.origQty,
-            executedQty: binanceOrder.executedQty,
-            marketType: 'FUTURES' as MarketType,
-          };
-        }
-
-        const client = createBinanceClient(wallet);
-
-        const binanceOrder = await client.submitNewOrder({
+        const binanceOrder = await marketClient.createOrder({
           symbol: input.symbol,
           side: input.side,
-          type: input.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT',
+          type: input.type,
           quantity: parseFloat(input.quantity),
           price: input.price ? parseFloat(input.price) : undefined,
           stopPrice: input.stopPrice ? parseFloat(input.stopPrice) : undefined,
           timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
+          reduceOnly: input.reduceOnly,
         });
 
-        const orderData = binanceOrder as BinanceNewOrderResult;
-
         await ctx.db.insert(orders).values({
-          orderId: orderData.orderId,
+          orderId: binanceOrder.orderId,
           userId: ctx.user.id,
           walletId: input.walletId,
-          symbol: orderData.symbol,
-          side: orderData.side,
-          type: orderData.type,
-          price: orderData.price?.toString(),
-          origQty: orderData.origQty?.toString(),
-          executedQty: orderData.executedQty?.toString(),
-          status: orderData.status,
-          timeInForce: orderData.timeInForce,
-          time: orderData.transactTime,
-          updateTime: orderData.transactTime,
+          symbol: binanceOrder.symbol,
+          side: binanceOrder.side,
+          type: binanceOrder.type,
+          price: binanceOrder.price,
+          origQty: binanceOrder.origQty,
+          executedQty: binanceOrder.executedQty,
+          status: binanceOrder.status,
+          timeInForce: binanceOrder.timeInForce,
+          time: binanceOrder.time,
+          updateTime: binanceOrder.updateTime,
           setupId: input.setupId,
           setupType: input.setupType,
-          marketType: 'SPOT',
+          marketType: input.marketType,
+          reduceOnly: input.reduceOnly,
         });
 
         return {
-          orderId: orderData.orderId,
-          symbol: orderData.symbol,
-          side: orderData.side,
-          type: orderData.type,
-          status: orderData.status,
-          price: orderData.price,
-          quantity: orderData.origQty,
-          executedQty: orderData.executedQty,
-          marketType: 'SPOT' as MarketType,
+          orderId: binanceOrder.orderId,
+          symbol: binanceOrder.symbol,
+          side: binanceOrder.side,
+          type: binanceOrder.type,
+          status: binanceOrder.status,
+          price: binanceOrder.price,
+          quantity: binanceOrder.origQty,
+          executedQty: binanceOrder.executedQty,
+          marketType: input.marketType,
         };
       } catch (error) {
         throw new TRPCError({
@@ -236,35 +188,8 @@ export const tradingRouter = router({
           };
         }
 
-        if (input.marketType === 'FUTURES') {
-          const client = createBinanceFuturesClient(wallet);
-
-          const canceledOrder = await client.cancelOrder({
-            symbol: input.symbol,
-            orderId: input.orderId,
-          });
-
-          await ctx.db
-            .update(orders)
-            .set({
-              status: 'CANCELED',
-              updateTime: Date.now(),
-            })
-            .where(eq(orders.orderId, input.orderId));
-
-          return {
-            orderId: canceledOrder.orderId,
-            symbol: canceledOrder.symbol,
-            status: 'CANCELED',
-          };
-        }
-
-        const client = createBinanceClient(wallet);
-
-        const canceledOrder = await client.cancelOrder({
-          symbol: input.symbol,
-          orderId: input.orderId,
-        });
+        const marketClient = createMarketClient(wallet, input.marketType);
+        const canceledOrder = await marketClient.cancelOrder(input.symbol, input.orderId);
 
         await ctx.db
           .update(orders)
@@ -274,11 +199,7 @@ export const tradingRouter = router({
           })
           .where(eq(orders.orderId, input.orderId));
 
-        return {
-          orderId: canceledOrder.orderId,
-          symbol: canceledOrder.symbol,
-          status: 'CANCELED',
-        };
+        return canceledOrder;
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -369,95 +290,42 @@ export const tradingRouter = router({
           return { synced: 0, message: 'Paper wallets do not sync with Binance' };
         }
 
-        if (input.marketType === 'FUTURES') {
-          const client = createBinanceFuturesClient(wallet);
-
-          const binanceOrders = await client.getAllOrders({
-            symbol: input.symbol,
-            limit: 100,
-          });
-
-          for (const binanceOrder of binanceOrders) {
-            const [existingOrder] = await ctx.db
-              .select()
-              .from(orders)
-              .where(eq(orders.orderId, binanceOrder.orderId))
-              .limit(1);
-
-            if (existingOrder) {
-              await ctx.db
-                .update(orders)
-                .set({
-                  status: binanceOrder.status,
-                  executedQty: binanceOrder.executedQty?.toString(),
-                  updateTime: binanceOrder.updateTime,
-                })
-                .where(eq(orders.orderId, binanceOrder.orderId));
-            } else {
-              await ctx.db.insert(orders).values({
-                orderId: binanceOrder.orderId,
-                userId: ctx.user.id,
-                walletId: input.walletId,
-                symbol: binanceOrder.symbol,
-                side: binanceOrder.side,
-                type: binanceOrder.type,
-                price: binanceOrder.price?.toString(),
-                origQty: binanceOrder.origQty?.toString(),
-                executedQty: binanceOrder.executedQty?.toString(),
-                status: binanceOrder.status,
-                timeInForce: binanceOrder.timeInForce,
-                time: binanceOrder.time,
-                updateTime: binanceOrder.updateTime,
-                marketType: 'FUTURES',
-                reduceOnly: binanceOrder.reduceOnly,
-              });
-            }
-          }
-
-          return { synced: binanceOrders.length };
-        }
-
-        const client = createBinanceClient(wallet);
-
-        const binanceOrders = await client.getAllOrders({
-          symbol: input.symbol,
-          limit: 100,
-        });
+        const marketClient = createMarketClient(wallet, input.marketType);
+        const binanceOrders = await marketClient.getAllOrders(input.symbol, 100);
 
         for (const binanceOrder of binanceOrders) {
-          const orderData = binanceOrder as BinanceOrderQueryResult;
-
           const [existingOrder] = await ctx.db
             .select()
             .from(orders)
-            .where(eq(orders.orderId, orderData.orderId))
+            .where(eq(orders.orderId, binanceOrder.orderId))
             .limit(1);
 
           if (existingOrder) {
             await ctx.db
               .update(orders)
               .set({
-                status: orderData.status,
-                executedQty: orderData.executedQty?.toString(),
-                updateTime: orderData.updateTime,
+                status: binanceOrder.status,
+                executedQty: binanceOrder.executedQty,
+                updateTime: binanceOrder.updateTime,
               })
-              .where(eq(orders.orderId, orderData.orderId));
+              .where(eq(orders.orderId, binanceOrder.orderId));
           } else {
             await ctx.db.insert(orders).values({
-              orderId: orderData.orderId,
+              orderId: binanceOrder.orderId,
               userId: ctx.user.id,
               walletId: input.walletId,
-              symbol: orderData.symbol,
-              side: orderData.side,
-              type: orderData.type,
-              price: orderData.price?.toString(),
-              origQty: orderData.origQty?.toString(),
-              executedQty: orderData.executedQty?.toString(),
-              status: orderData.status,
-              timeInForce: orderData.timeInForce,
-              time: orderData.time,
-              updateTime: orderData.updateTime,
-              marketType: 'SPOT',
+              symbol: binanceOrder.symbol,
+              side: binanceOrder.side,
+              type: binanceOrder.type,
+              price: binanceOrder.price,
+              origQty: binanceOrder.origQty,
+              executedQty: binanceOrder.executedQty,
+              status: binanceOrder.status,
+              timeInForce: binanceOrder.timeInForce,
+              time: binanceOrder.time,
+              updateTime: binanceOrder.updateTime,
+              marketType: input.marketType,
+              reduceOnly: binanceOrder.reduceOnly,
             });
           }
         }
@@ -689,21 +557,15 @@ export const tradingRouter = router({
         }, '👤 [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
       }
 
-      const entryValue = entryPrice * qty;
-      const exitValue = exitPrice * qty;
       const marketType = isFutures ? 'FUTURES' : 'SPOT';
-      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
-
-      let grossPnl = 0;
-      if (position.side === 'LONG') {
-        grossPnl = (exitPrice - entryPrice) * qty;
-      } else {
-        grossPnl = (entryPrice - exitPrice) * qty;
-      }
-
-      const netPnl = grossPnl - totalFees;
-      const marginValue = entryValue / leverage;
-      const pnlPercent = (netPnl / marginValue) * 100;
+      const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
+        entryPrice,
+        exitPrice,
+        quantity: qty,
+        side: position.side as 'LONG' | 'SHORT',
+        marketType,
+        leverage,
+      });
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
@@ -970,21 +832,15 @@ export const tradingRouter = router({
         }, 'Manual close: Paper/disabled mode - simulating exit');
       }
 
-      const entryValue = entryPrice * qty;
-      const exitValue = exitPrice * qty;
       const marketType = isFutures ? 'FUTURES' : 'SPOT';
-      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
-
-      let grossPnl = 0;
-      if (execution.side === 'LONG') {
-        grossPnl = (exitPrice - entryPrice) * qty;
-      } else {
-        grossPnl = (entryPrice - exitPrice) * qty;
-      }
-
-      const netPnl = grossPnl - totalFees;
-      const marginValue = entryValue / leverage;
-      const pnlPercent = (netPnl / marginValue) * 100;
+      const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
+        entryPrice,
+        exitPrice,
+        quantity: qty,
+        side: execution.side as 'LONG' | 'SHORT',
+        marketType,
+        leverage,
+      });
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
