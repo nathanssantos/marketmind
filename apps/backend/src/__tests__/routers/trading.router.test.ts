@@ -324,7 +324,7 @@ describe('Trading Router', () => {
           side: 'LONG',
           entryPrice: '50000',
           entryQty: '0.1',
-          stopLoss: '49000',
+          stopLoss: '48000',
           takeProfit: '51000',
         })
       ).rejects.toThrow(TRPCError);
