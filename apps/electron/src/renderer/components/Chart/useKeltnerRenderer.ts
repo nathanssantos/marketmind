@@ -1,6 +1,7 @@
 import type { KeltnerResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseKeltnerRendererProps {
@@ -98,10 +99,10 @@ export const useKeltnerRenderer = ({
       ctx.fill();
     };
 
-    fillBetween(keltnerData.upper, keltnerData.lower, colors.keltner?.fill ?? 'rgba(156, 39, 176, 0.1)');
-    drawLine(keltnerData.upper, colors.keltner?.upper ?? '#9c27b0', 1);
-    drawLine(keltnerData.middle, colors.keltner?.middle ?? '#9c27b0', 1.5);
-    drawLine(keltnerData.lower, colors.keltner?.lower ?? '#9c27b0', 1);
+    fillBetween(keltnerData.upper, keltnerData.lower, colors.keltner?.fill ?? INDICATOR_COLORS.KELTNER_FILL);
+    drawLine(keltnerData.upper, colors.keltner?.upper ?? INDICATOR_COLORS.KELTNER_LINE, 1);
+    drawLine(keltnerData.middle, colors.keltner?.middle ?? INDICATOR_COLORS.KELTNER_LINE, 1.5);
+    drawLine(keltnerData.lower, colors.keltner?.lower ?? INDICATOR_COLORS.KELTNER_LINE, 1);
 
     ctx.restore();
   }, [manager, keltnerData, enabled, colors]);

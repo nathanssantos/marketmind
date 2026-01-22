@@ -2,7 +2,7 @@ import type { HighlightedCandle } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawCandleLabel, drawKline } from '@renderer/utils/canvas/drawingUtils';
-import { CHART_CONFIG } from '@shared/constants';
+import { ACTIVITY_COLORS, CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineTrades, getKlineVolume } from '@shared/utils';
 import type { MutableRefObject } from 'react';
 import { useCallback } from 'react';
@@ -21,10 +21,10 @@ export interface UseKlineRendererReturn {
 }
 
 const HIGHLIGHT_LABEL_COLORS = {
-  trigger: '#9333ea',
-  confirmation: '#3b82f6',
-  reference: '#6b7280',
-  context: '#94a3b8',
+  trigger: INDICATOR_COLORS.HIGHLIGHT_TRIGGER,
+  confirmation: INDICATOR_COLORS.HIGHLIGHT_CONFIRMATION,
+  reference: INDICATOR_COLORS.HIGHLIGHT_REFERENCE,
+  context: INDICATOR_COLORS.HIGHLIGHT_CONTEXT,
 };
 
 export const useKlineRenderer = ({
@@ -119,13 +119,13 @@ export const useKlineRenderer = ({
           const indicatorY = highY - indicatorSize - 4;
 
           ctx.save();
-          ctx.fillStyle = isHighActivity ? '#00FF00' : '#FF1493';
+          ctx.fillStyle = isHighActivity ? ACTIVITY_COLORS.HIGH_ACTIVITY : ACTIVITY_COLORS.LOW_ACTIVITY;
           ctx.globalAlpha = 0.9;
           ctx.beginPath();
           ctx.arc(indicatorX, indicatorY, indicatorSize, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.strokeStyle = isHighActivity ? '#00CC00' : '#CC0066';
+          ctx.strokeStyle = isHighActivity ? ACTIVITY_COLORS.HIGH_ACTIVITY_STROKE : ACTIVITY_COLORS.LOW_ACTIVITY_STROKE;
           ctx.lineWidth = 0.5;
           ctx.stroke();
           ctx.restore();

@@ -1,7 +1,7 @@
 import type { OBVResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseOBVRendererProps {
@@ -38,7 +38,7 @@ export const useOBVRenderer = ({
 
     ctx.save();
 
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.02)';
+    ctx.fillStyle = PANEL_COLORS.BACKGROUND;
     ctx.fillRect(0, panelTop, chartWidth, PANEL_HEIGHT);
 
     const visibleStartIndex = Math.floor(viewport.start);
@@ -123,7 +123,7 @@ export const useOBVRenderer = ({
     }
 
     ctx.font = '10px monospace';
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+    ctx.fillStyle = PANEL_COLORS.LABEL_TEXT;
     ctx.textAlign = 'right';
     ctx.fillText('OBV', chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN - 4, panelTop + padding + 10);
 

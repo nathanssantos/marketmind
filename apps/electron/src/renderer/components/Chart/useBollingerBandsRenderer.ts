@@ -1,7 +1,7 @@
 import { calculateBollingerBandsArray } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback, useMemo } from 'react';
 
 export interface UseBollingerBandsRendererProps {
@@ -71,7 +71,7 @@ export const useBollingerBandsRenderer = ({
     }
 
     if (upperPoints.length > 1 && lowerPoints.length > 1) {
-      ctx.fillStyle = colors.bollingerBands?.fill ?? 'rgba(33, 150, 243, 0.08)';
+      ctx.fillStyle = colors.bollingerBands?.fill ?? INDICATOR_COLORS.BOLLINGER_FILL;
       ctx.beginPath();
 
       ctx.moveTo(upperPoints[0]!.x, upperPoints[0]!.y);
@@ -87,7 +87,7 @@ export const useBollingerBandsRenderer = ({
       ctx.fill();
     }
 
-    ctx.strokeStyle = colors.bollingerBands?.upper ?? 'rgba(33, 150, 243, 0.6)';
+    ctx.strokeStyle = colors.bollingerBands?.upper ?? INDICATOR_COLORS.BOLLINGER_UPPER;
     ctx.lineWidth = 1;
     ctx.beginPath();
     if (upperPoints.length > 0) {
@@ -98,7 +98,7 @@ export const useBollingerBandsRenderer = ({
     }
     ctx.stroke();
 
-    ctx.strokeStyle = colors.bollingerBands?.lower ?? 'rgba(33, 150, 243, 0.6)';
+    ctx.strokeStyle = colors.bollingerBands?.lower ?? INDICATOR_COLORS.BOLLINGER_LOWER;
     ctx.beginPath();
     if (lowerPoints.length > 0) {
       ctx.moveTo(lowerPoints[0]!.x, lowerPoints[0]!.y);
@@ -108,7 +108,7 @@ export const useBollingerBandsRenderer = ({
     }
     ctx.stroke();
 
-    ctx.strokeStyle = colors.bollingerBands?.middle ?? 'rgba(33, 150, 243, 0.9)';
+    ctx.strokeStyle = colors.bollingerBands?.middle ?? INDICATOR_COLORS.BOLLINGER_MIDDLE;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     if (middlePoints.length > 0) {

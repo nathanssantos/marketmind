@@ -1,7 +1,7 @@
 import type { CCIResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -64,7 +64,7 @@ export const useCCIRenderer = ({
     drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: overboughtY, bottomY: oversoldY });
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: zeroY }] });
 
-    ctx.strokeStyle = colors.cci?.line ?? '#ff9800';
+    ctx.strokeStyle = colors.cci?.line ?? INDICATOR_COLORS.CCI_LINE;
     ctx.lineWidth = 1;
     ctx.beginPath();
 

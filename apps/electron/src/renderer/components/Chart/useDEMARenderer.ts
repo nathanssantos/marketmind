@@ -1,6 +1,7 @@
 import type { DEMAResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseDEMARendererProps {
@@ -37,7 +38,7 @@ export const useDEMARenderer = ({
     const indexToX = (index: number): number =>
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
-    ctx.strokeStyle = colors.dema?.line ?? '#ff9800';
+    ctx.strokeStyle = colors.dema?.line ?? INDICATOR_COLORS.DEMA_LINE;
     ctx.lineWidth = 1;
     ctx.beginPath();
 

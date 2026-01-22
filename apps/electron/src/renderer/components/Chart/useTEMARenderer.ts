@@ -1,6 +1,7 @@
 import type { TEMAResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseTEMARendererProps {
@@ -37,7 +38,7 @@ export const useTEMARenderer = ({
     const indexToX = (index: number): number =>
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
-    ctx.strokeStyle = colors.tema?.line ?? '#e91e63';
+    ctx.strokeStyle = colors.tema?.line ?? INDICATOR_COLORS.TEMA_LINE;
     ctx.lineWidth = 1;
     ctx.beginPath();
 

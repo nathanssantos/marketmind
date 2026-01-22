@@ -1,7 +1,7 @@
 import type { WilliamsRResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -54,7 +54,7 @@ export const useWilliamsRRenderer = ({
     drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: overboughtY, bottomY: oversoldY });
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
-    ctx.strokeStyle = colors.williamsR?.line ?? '#9c27b0';
+    ctx.strokeStyle = colors.williamsR?.line ?? INDICATOR_COLORS.WILLIAMS_R_LINE;
     ctx.lineWidth = 1;
     ctx.beginPath();
 

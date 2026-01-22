@@ -1,6 +1,7 @@
 import type { ParabolicSARResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseParabolicSARRendererProps {
@@ -55,8 +56,8 @@ export const useParabolicSARRenderer = ({
 
       const color =
         trend === 'up'
-          ? colors.parabolicSar?.bullish ?? '#4caf50'
-          : colors.parabolicSar?.bearish ?? '#f44336';
+          ? colors.parabolicSar?.bullish ?? INDICATOR_COLORS.PARABOLIC_SAR_BULLISH
+          : colors.parabolicSar?.bearish ?? INDICATOR_COLORS.PARABOLIC_SAR_BEARISH;
 
       ctx.fillStyle = color;
       ctx.fill();

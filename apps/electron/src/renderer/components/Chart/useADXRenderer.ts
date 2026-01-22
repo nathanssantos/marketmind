@@ -1,7 +1,7 @@
 import type { ADXResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -75,9 +75,9 @@ export const useADXRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(adxData.plusDI, colors.adx?.plusDI ?? '#26a69a', 1);
-    drawLine(adxData.minusDI, colors.adx?.minusDI ?? '#ef5350', 1);
-    drawLine(adxData.adx, colors.adx?.adxLine ?? '#7c4dff', 1);
+    drawLine(adxData.plusDI, colors.adx?.plusDI ?? INDICATOR_COLORS.ADX_PLUS_DI, 1);
+    drawLine(adxData.minusDI, colors.adx?.minusDI ?? INDICATOR_COLORS.ADX_MINUS_DI, 1);
+    drawLine(adxData.adx, colors.adx?.adxLine ?? INDICATOR_COLORS.ADX_LINE, 1);
 
     ctx.restore();
   }, [manager, adxData, enabled, colors]);

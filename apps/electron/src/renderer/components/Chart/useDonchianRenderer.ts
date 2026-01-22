@@ -1,6 +1,7 @@
 import type { DonchianResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseDonchianRendererProps {
@@ -98,10 +99,10 @@ export const useDonchianRenderer = ({
       ctx.fill();
     };
 
-    fillBetween(donchianData.upper, donchianData.lower, colors.donchian?.fill ?? 'rgba(0, 150, 136, 0.1)');
-    drawLine(donchianData.upper, colors.donchian?.upper ?? '#009688', 1);
-    drawLine(donchianData.middle, colors.donchian?.middle ?? '#009688', 1.5);
-    drawLine(donchianData.lower, colors.donchian?.lower ?? '#009688', 1);
+    fillBetween(donchianData.upper, donchianData.lower, colors.donchian?.fill ?? INDICATOR_COLORS.DONCHIAN_FILL);
+    drawLine(donchianData.upper, colors.donchian?.upper ?? INDICATOR_COLORS.DONCHIAN_LINE, 1);
+    drawLine(donchianData.middle, colors.donchian?.middle ?? INDICATOR_COLORS.DONCHIAN_LINE, 1.5);
+    drawLine(donchianData.lower, colors.donchian?.lower ?? INDICATOR_COLORS.DONCHIAN_LINE, 1);
 
     ctx.restore();
   }, [manager, donchianData, enabled, colors]);

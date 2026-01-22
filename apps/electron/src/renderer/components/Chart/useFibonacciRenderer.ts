@@ -10,15 +10,26 @@ interface UseFibonacciRendererProps {
   enabled?: boolean;
 }
 
-const SECONDARY_LEVELS = [0.236, 0.382, 0.618, 0.786];
-const PRIMARY_LEVEL_COLOR = 'rgba(180, 180, 180, 0.7)';
-const SECONDARY_LEVEL_COLOR = 'rgba(120, 120, 120, 0.4)';
 const LINE_WIDTH = 1;
 const LEVEL_DASH = [4, 4] as const;
+const DEFAULT_LEVEL_COLOR = 'rgba(180, 180, 180, 0.7)';
 
-const getLevelColor = (level: number): string => {
-  if (SECONDARY_LEVELS.includes(level)) return SECONDARY_LEVEL_COLOR;
-  return PRIMARY_LEVEL_COLOR;
+const getLevelColor = (level: number, colors: ChartThemeColors): string => {
+  const fibColors = colors.fibonacci;
+  if (!fibColors) return DEFAULT_LEVEL_COLOR;
+
+  if (level === 0) return fibColors.level0 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 0.236) return fibColors.level236 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 0.382) return fibColors.level382 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 0.5) return fibColors.level50 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 0.618) return fibColors.level618 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 0.786) return fibColors.level786 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 1) return fibColors.level100 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 1.27 || level === 1.272) return fibColors.level127 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 1.618) return fibColors.level161 ?? DEFAULT_LEVEL_COLOR;
+  if (level === 2) return fibColors.level200 ?? DEFAULT_LEVEL_COLOR;
+
+  return DEFAULT_LEVEL_COLOR;
 };
 
 export const useFibonacciRenderer = ({
@@ -47,7 +58,7 @@ export const useFibonacciRenderer = ({
 
       if (y < 0 || y > chartHeight) continue;
 
-      const color = getLevelColor(level.level);
+      const color = getLevelColor(level.level, colors);
       ctx.strokeStyle = color;
       ctx.lineWidth = LINE_WIDTH;
       ctx.setLineDash([...LEVEL_DASH]);

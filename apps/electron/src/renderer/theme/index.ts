@@ -718,6 +718,24 @@ const customConfig = defineConfig({
             _dark: 'rgba(128, 128, 128, 0.7)',
           },
         },
+        'chart.panel.background': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.02)',
+            _dark: 'rgba(128, 128, 128, 0.02)',
+          },
+        },
+        'chart.panel.scaleLabel': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.6)',
+            _dark: 'rgba(128, 128, 128, 0.6)',
+          },
+        },
+        'chart.panel.label': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.5)',
+            _dark: 'rgba(128, 128, 128, 0.5)',
+          },
+        },
         'chart.ma.4': {
           value: {
             base: '#0d9488',
@@ -1068,6 +1086,11 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       resistanceBg: resolveValue(tokens['chart.liquidityLevels.resistanceBg']),
     },
     indicatorZone: resolveValue(tokens['chart.indicator.zone']),
+    panel: {
+      background: resolveValue(tokens['chart.panel.background']),
+      scaleLabel: resolveValue(tokens['chart.panel.scaleLabel']),
+      label: resolveValue(tokens['chart.panel.label']),
+    },
   };
 };
 

@@ -1,5 +1,5 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, PANEL_COLORS } from '@shared/constants';
 
 export interface PanelRenderContext {
   ctx: CanvasRenderingContext2D;
@@ -71,7 +71,7 @@ export const createValueToY = (
 
 export const drawPanelBackground = (
   context: PanelRenderContext,
-  backgroundColor = 'rgba(128, 128, 128, 0.02)'
+  backgroundColor = PANEL_COLORS.BACKGROUND
 ): void => {
   const { ctx, panelTop, chartWidth, panelHeight } = context;
   ctx.fillStyle = backgroundColor;
@@ -188,7 +188,7 @@ export const drawHistogram = (
 export const drawScaleLabels = (
   context: PanelRenderContext,
   labels: { value: number; y: number }[],
-  color = 'rgba(128, 128, 128, 0.6)',
+  color = PANEL_COLORS.SCALE_LABEL_TEXT,
   fontSize = 10
 ): void => {
   const { ctx, panelTop, panelHeight, padding } = context;
@@ -206,7 +206,7 @@ export const drawScaleLabels = (
 export const drawPanelLabel = (
   context: PanelRenderContext,
   label: string,
-  color = 'rgba(128, 128, 128, 0.5)',
+  color = PANEL_COLORS.LABEL_TEXT,
   fontSize = 10
 ): void => {
   const { ctx, panelTop, chartWidth, padding } = context;

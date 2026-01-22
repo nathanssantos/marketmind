@@ -1,6 +1,7 @@
 import type { HMAResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseHMARendererProps {
@@ -37,7 +38,7 @@ export const useHMARenderer = ({
     const indexToX = (index: number): number =>
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
-    ctx.strokeStyle = colors.hma?.line ?? '#00bcd4';
+    ctx.strokeStyle = colors.hma?.line ?? INDICATOR_COLORS.HMA_LINE;
     ctx.lineWidth = 1;
     ctx.beginPath();
 

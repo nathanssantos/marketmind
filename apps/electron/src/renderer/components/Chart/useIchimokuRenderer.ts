@@ -1,6 +1,7 @@
 import type { IchimokuResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseIchimokuRendererProps {
@@ -40,8 +41,8 @@ export const useIchimokuRenderer = ({
       (index - viewport.start) * klineWidth + klineWidth / 2;
 
     const fillCloud = (): void => {
-      const senkouAColor = colors.ichimoku?.senkouAFill ?? 'rgba(38, 166, 154, 0.2)';
-      const senkouBColor = colors.ichimoku?.senkouBFill ?? 'rgba(239, 83, 80, 0.2)';
+      const senkouAColor = colors.ichimoku?.senkouAFill ?? INDICATOR_COLORS.ICHIMOKU_SENKOU_A_FILL;
+      const senkouBColor = colors.ichimoku?.senkouBFill ?? INDICATOR_COLORS.ICHIMOKU_SENKOU_B_FILL;
 
       for (let i = visibleStartIndex; i < visibleEndIndex - 1; i++) {
         const senkouA1 = ichimokuData.senkouA[i];
@@ -101,9 +102,9 @@ export const useIchimokuRenderer = ({
     };
 
     fillCloud();
-    drawLine(ichimokuData.tenkan, colors.ichimoku?.tenkan ?? '#2962ff', 1);
-    drawLine(ichimokuData.kijun, colors.ichimoku?.kijun ?? '#b71c1c', 1);
-    drawLine(ichimokuData.chikou, colors.ichimoku?.chikou ?? '#7c4dff', 1);
+    drawLine(ichimokuData.tenkan, colors.ichimoku?.tenkan ?? INDICATOR_COLORS.ICHIMOKU_TENKAN, 1);
+    drawLine(ichimokuData.kijun, colors.ichimoku?.kijun ?? INDICATOR_COLORS.ICHIMOKU_KIJUN, 1);
+    drawLine(ichimokuData.chikou, colors.ichimoku?.chikou ?? INDICATOR_COLORS.ICHIMOKU_CHIKOU, 1);
 
     ctx.restore();
   }, [manager, ichimokuData, enabled, colors]);

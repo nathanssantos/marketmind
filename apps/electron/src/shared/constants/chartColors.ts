@@ -3,10 +3,12 @@ export const INDICATOR_COLORS = {
   MACD_SIGNAL: '#ff6d00',
   MACD_HISTOGRAM_POSITIVE: '#26a69a',
   MACD_HISTOGRAM_NEGATIVE: '#ef5350',
+  MACD_ZERO_LINE: 'rgba(128, 128, 128, 0.5)',
 
   ADX_LINE: '#7c4dff',
   ADX_PLUS_DI: '#26a69a',
   ADX_MINUS_DI: '#ef5350',
+  ADX_THRESHOLD: 'rgba(128, 128, 128, 0.5)',
 
   FIBONACCI_DEFAULT: 'rgba(180, 180, 180, 0.7)',
   FIBONACCI_SECONDARY: 'rgba(120, 120, 120, 0.4)',
@@ -26,34 +28,87 @@ export const INDICATOR_COLORS = {
   OBV_LINE: '#2196f3',
   OBV_SMA: '#ff9800',
   VWAP_LINE: '#FFD700',
+
+  BOLLINGER_UPPER: 'rgba(33, 150, 243, 0.6)',
+  BOLLINGER_MIDDLE: 'rgba(33, 150, 243, 0.9)',
+  BOLLINGER_LOWER: 'rgba(33, 150, 243, 0.6)',
+  BOLLINGER_FILL: 'rgba(33, 150, 243, 0.08)',
+
+  KELTNER_LINE: '#9c27b0',
+  KELTNER_FILL: 'rgba(156, 39, 176, 0.1)',
+
   DONCHIAN_LINE: '#009688',
   DONCHIAN_FILL: 'rgba(0, 150, 136, 0.1)',
+
+  ICHIMOKU_TENKAN: '#2962ff',
+  ICHIMOKU_KIJUN: '#b71c1c',
+  ICHIMOKU_CHIKOU: '#7c4dff',
+  ICHIMOKU_SENKOU_A_FILL: 'rgba(38, 166, 154, 0.2)',
+  ICHIMOKU_SENKOU_B_FILL: 'rgba(239, 83, 80, 0.2)',
+
   SUPERTREND_UP: '#26a69a',
   SUPERTREND_DOWN: '#ef5350',
+
+  PARABOLIC_SAR_BULLISH: '#26a69a',
+  PARABOLIC_SAR_BEARISH: '#ef5350',
+
   CMF_POSITIVE: '#4caf50',
   CMF_NEGATIVE: '#f44336',
   CCI_LINE: '#ff9800',
+  CCI_ZONE: 'rgba(128, 128, 128, 0.3)',
   ROC_LINE: '#00bcd4',
   CMO_LINE: '#2196f3',
+  CMO_ZONE: 'rgba(128, 128, 128, 0.3)',
   WILLIAMS_R_LINE: '#9c27b0',
+  WILLIAMS_R_ZONE: 'rgba(128, 128, 128, 0.3)',
   ULTIMATE_OSC_LINE: '#673ab7',
+  ULTIMATE_OSC_ZONE: 'rgba(128, 128, 128, 0.3)',
   TSI_LINE: '#2196f3',
   TSI_SIGNAL: '#ff9800',
   VORTEX_PLUS: '#26a69a',
   VORTEX_MINUS: '#ef5350',
   AROON_UP: '#26a69a',
   AROON_DOWN: '#ef5350',
+  AROON_ZONE: 'rgba(128, 128, 128, 0.3)',
   ELDER_BULL: '#26a69a',
   ELDER_BEAR: '#ef5350',
   PPO_LINE: '#2196f3',
   PPO_SIGNAL: '#ff9800',
+  PPO_HISTOGRAM_POSITIVE: '#26a69a',
+  PPO_HISTOGRAM_NEGATIVE: '#ef5350',
+  PPO_ZERO_LINE: 'rgba(128, 128, 128, 0.5)',
   MFI_LINE: '#9c27b0',
+  MFI_ZONE: 'rgba(128, 128, 128, 0.3)',
   STOCH_RSI_K: '#2196f3',
   STOCH_RSI_D: '#ff9800',
+  STOCH_ZONE: 'rgba(128, 128, 128, 0.7)',
   AO_POSITIVE: '#26a69a',
   AO_NEGATIVE: '#ef5350',
   KLINGER_LINE: '#2196f3',
   KLINGER_SIGNAL: '#ff9800',
+  KLINGER_ZERO_LINE: 'rgba(128, 128, 128, 0.5)',
+
+  RSI_LINE: '#9c27b0',
+  RSI_ZONE: 'rgba(128, 128, 128, 0.7)',
+
+  DEMA_LINE: '#ff9800',
+  TEMA_LINE: '#e91e63',
+  WMA_LINE: '#9c27b0',
+  HMA_LINE: '#00bcd4',
+
+  PIVOT_POINT: '#2196f3',
+  PIVOT_SUPPORT: '#22c55e',
+  PIVOT_RESISTANCE: '#ef4444',
+
+  FVG_BULLISH: 'rgba(34, 197, 94, 0.2)',
+  FVG_BEARISH: 'rgba(239, 68, 68, 0.2)',
+  FVG_BULLISH_BORDER: 'rgba(34, 197, 94, 0.5)',
+  FVG_BEARISH_BORDER: 'rgba(239, 68, 68, 0.5)',
+
+  LIQUIDITY_SUPPORT: '#22c55e',
+  LIQUIDITY_RESISTANCE: '#ef4444',
+  LIQUIDITY_SUPPORT_BG: 'rgba(34, 197, 94, 0.1)',
+  LIQUIDITY_RESISTANCE_BG: 'rgba(239, 68, 68, 0.1)',
 } as const;
 
 export const PANEL_COLORS = {
@@ -61,6 +116,7 @@ export const PANEL_COLORS = {
   ZONE_FILL: 'rgba(128, 128, 128, 0.08)',
   ZONE_LINE: 'rgba(128, 128, 128, 0.3)',
   LABEL_TEXT: 'rgba(128, 128, 128, 0.5)',
+  SCALE_LABEL_TEXT: 'rgba(128, 128, 128, 0.6)',
 } as const;
 
 export const ACTIVITY_COLORS = {
@@ -80,4 +136,31 @@ export const KLINE_COLORS = {
 export const GRID_COLORS = {
   LINE: 'rgba(128, 128, 128, 0.2)',
   TEXT: 'rgba(128, 128, 128, 0.7)',
+} as const;
+
+export const ORDER_LINE_COLORS = {
+  PROFIT_AREA: 'rgba(34, 197, 94, 0.08)',
+  LOSS_AREA: 'rgba(239, 68, 68, 0.08)',
+  SL_PROFIT_LINE: 'rgba(34, 197, 94, 0.6)',
+  SL_LOSS_LINE: 'rgba(239, 68, 68, 0.6)',
+  TP_LINE: 'rgba(34, 197, 94, 0.6)',
+  LONG_LINE: 'rgba(34, 197, 94, 0.8)',
+  LONG_FILL: 'rgba(34, 197, 94, 0.9)',
+  SHORT_LINE: 'rgba(239, 68, 68, 0.8)',
+  SHORT_FILL: 'rgba(239, 68, 68, 0.9)',
+  POSITION_LONG_LINE: 'rgba(59, 130, 246, 0.8)',
+  POSITION_LONG_FILL: 'rgba(59, 130, 246, 0.9)',
+  POSITION_SHORT_LINE: 'rgba(251, 146, 60, 0.8)',
+  POSITION_SHORT_FILL: 'rgba(251, 146, 60, 0.9)',
+  PENDING_LONG_LINE: 'rgba(34, 197, 94, 0.6)',
+  PENDING_LONG_FILL: 'rgba(34, 197, 94, 0.7)',
+  PENDING_SHORT_LINE: 'rgba(239, 68, 68, 0.6)',
+  PENDING_SHORT_FILL: 'rgba(239, 68, 68, 0.7)',
+  SETUP_PROFIT_LINE: 'rgba(34, 197, 94, 0.4)',
+  SETUP_LOSS_LINE: 'rgba(239, 68, 68, 0.4)',
+  BOT_ICON_STROKE: 'rgba(255, 255, 255, 0.95)',
+  PERCENT_POSITIVE_BG: 'rgba(34, 197, 94, 1)',
+  PERCENT_NEGATIVE_BG: 'rgba(239, 68, 68, 1)',
+  TEXT_WHITE: '#ffffff',
+  CLOSE_BUTTON_BG: 'rgba(0, 0, 0, 0.3)',
 } as const;
