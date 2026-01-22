@@ -6,7 +6,9 @@ import { storageService } from './services/StorageService';
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
 
-const { app, BrowserWindow, ipcMain, net, Notification, crashReporter } = electron;
+const { app, BrowserWindow, ipcMain, net, Notification, crashReporter, powerSaveBlocker } = electron;
+
+let powerSaveBlockerId: number | null = null;
 
 app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization');
 app.commandLine.appendSwitch('disable-gpu-driver-bug-workarounds');
@@ -647,12 +649,26 @@ const logGpuInfo = (): void => {
   console.log('[Main] ═══════════════════════════════════════════════════════════');
 };
 
+const startPowerSaveBlocker = (): void => {
+  if (powerSaveBlockerId !== null) return;
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-display-sleep');
+  debugLog('[Main] PowerSaveBlocker started with id:', powerSaveBlockerId);
+};
+
+const stopPowerSaveBlocker = (): void => {
+  if (powerSaveBlockerId === null) return;
+  powerSaveBlocker.stop(powerSaveBlockerId);
+  debugLog('[Main] PowerSaveBlocker stopped');
+  powerSaveBlockerId = null;
+};
+
 const initializeApp = async (): Promise<void> => {
   try {
     await app.whenReady();
     debugLog('App ready, setting up IPC handlers...');
     logGpuInfo();
     startMemoryMonitor();
+    startPowerSaveBlocker();
     setupIpcHandlers();
     setupWindowHandlers();
     setupNotificationHandlers();
@@ -706,4 +722,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopMemoryMonitor();
+  stopPowerSaveBlocker();
 });

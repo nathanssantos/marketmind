@@ -433,10 +433,6 @@ class IncomeSyncService {
   async backfillTransfers(walletId?: string): Promise<{ walletsProcessed: number; totalDeposits: number; totalWithdrawals: number }> {
     const TRANSFER_LOOKBACK_DAYS = 90;
 
-    logger.info({
-      walletId: walletId ?? 'all',
-    }, '[IncomeSyncService] Starting transfer backfill');
-
     let totalDeposits = 0;
     let totalWithdrawals = 0;
     let walletsProcessed = 0;
@@ -490,15 +486,6 @@ class IncomeSyncService {
         totalDeposits += walletDeposits;
         totalWithdrawals += walletWithdrawals;
         walletsProcessed++;
-
-        logger.info({
-          walletId: wallet.id,
-          walletName: wallet.name,
-          walletCreatedAt: new Date(walletCreatedAt).toISOString(),
-          transferRecords: transferHistory.length,
-          filteredDeposits: walletDeposits.toFixed(4),
-          filteredWithdrawals: walletWithdrawals.toFixed(4),
-        }, '[IncomeSyncService] Wallet transfer backfill completed');
       } catch (error) {
         logger.error({
           walletId: wallet.id,

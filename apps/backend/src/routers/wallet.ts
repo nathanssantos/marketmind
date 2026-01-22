@@ -321,7 +321,6 @@ export const walletRouter = router({
             storedInitialBalance: wallet.initialBalance ?? '0',
           };
 
-          console.log('[syncBalance] Binance Futures balances:', debugInfo);
         } else {
           const client = createBinanceClient(wallet);
           const accountInfo = await client.getAccountInformation();

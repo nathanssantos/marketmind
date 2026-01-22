@@ -28,6 +28,7 @@ import { useDebounce } from './hooks/useDebounce';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { useVisibilityChange } from './hooks/useVisibilityChange';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { useSetupStore } from './store/setupStore';
 import { useUIStore } from './store/uiStore';
@@ -368,6 +369,18 @@ function AppContent(): ReactElement {
       }
     }
   }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, backendKlinesQuery]);
+
+  const handleVisibilityRestore = useCallback((state: { hiddenDuration: number }) => {
+    if (state.hiddenDuration > 30_000) {
+      setLiveKlines([]);
+      backendKlinesQuery.refetch();
+    }
+  }, [backendKlinesQuery]);
+
+  useVisibilityChange({
+    onBecameVisible: handleVisibilityRestore,
+    minHiddenDurationForRefresh: 30_000,
+  });
 
   const displayKlines = useMemo(() => {
     if (!marketData?.klines) return [];

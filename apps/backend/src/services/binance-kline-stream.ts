@@ -23,7 +23,7 @@ class ReconnectionGuard {
 
     setTimeout(() => {
       this.isInGracePeriod = false;
-      logger.info({ marketType }, 'Grace period ended - resuming normal kline persistence');
+      logger.debug({ marketType }, 'Grace period ended - resuming normal kline persistence');
 
       void this.triggerPostReconnectionCheck();
     }, this.GRACE_PERIOD_MS);

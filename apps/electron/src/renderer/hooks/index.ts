@@ -62,4 +62,5 @@ export { useBackendKlines, useKlineStream } from './useBackendKlines';
 export { useBackendTradingMutations } from './useBackendTradingMutations';
 export { useEventRefreshScheduler } from './useEventRefreshScheduler';
 export { useRealtimeTradingSync } from './useRealtimeTradingSync';
+export { useVisibilityChange } from './useVisibilityChange';
 
