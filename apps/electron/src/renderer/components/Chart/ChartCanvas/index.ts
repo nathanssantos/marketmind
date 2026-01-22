@@ -102,3 +102,29 @@ export type {
   UseKeyboardNavigationProps,
   UseKeyboardNavigationResult,
 } from './useKeyboardNavigation';
+
+export { useOptimizedRendering } from './useOptimizedRendering';
+export type {
+  UseOptimizedRenderingProps,
+  UseOptimizedRenderingResult,
+} from './useOptimizedRendering';
+
+export {
+  createBackgroundLayer,
+  createDataLayer,
+  createIndicatorLayer,
+  createOverlayLayer,
+  getIndicatorRenderOrder,
+} from './layers';
+export type {
+  BackgroundLayerProps,
+  BackgroundLayerResult,
+  DataLayerProps,
+  DataLayerResult,
+  IndicatorLayerProps,
+  IndicatorLayerResult,
+  IndicatorRenderFunctions,
+  OverlayLayerProps,
+  OverlayLayerResult,
+  OverlayRenderFunctions,
+} from './layers';
