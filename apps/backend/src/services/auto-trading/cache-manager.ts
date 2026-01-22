@@ -95,7 +95,7 @@ export class CacheManager {
     return mappedKlines;
   }
 
-  async getCachedConfig(walletId: string, userId?: string): Promise<typeof autoTradingConfig.$inferSelect | null> {
+  async getCachedConfig(walletId: string, _userId?: string): Promise<typeof autoTradingConfig.$inferSelect | null> {
     const cached = this.configCache.get(walletId);
 
     if (this.isCacheValid(cached, CONFIG_CACHE_TTL_MS)) {
