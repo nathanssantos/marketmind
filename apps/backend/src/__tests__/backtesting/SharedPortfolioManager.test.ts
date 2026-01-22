@@ -43,13 +43,18 @@ const createSetup = (overrides: Partial<TradingSetup> = {}): TradingSetup => ({
 describe('SharedPortfolioManager', () => {
   describe('Dynamic Exposure Calculation', () => {
     it('should calculate exposure per watcher using auto-trading formula', () => {
-      const portfolio = new SharedPortfolioManager(createPortfolioConfig(), 3);
+      const activeWatchers = 3;
+      const portfolio = new SharedPortfolioManager(createPortfolioConfig(), activeWatchers);
       const { exposurePerWatcher, maxPositionValue, maxTotalExposure } =
         portfolio.calculateExposureForNewPosition();
 
-      expect(exposurePerWatcher).toBe(50);
-      expect(maxPositionValue).toBe(5000);
-      expect(maxTotalExposure).toBe(15000);
+      const expectedExposure = (100 * TRADING_DEFAULTS.EXPOSURE_MULTIPLIER) / activeWatchers;
+      const expectedPositionValue = (TRADING_DEFAULTS.INITIAL_CAPITAL * expectedExposure) / 100;
+      const expectedTotalExposure = TRADING_DEFAULTS.INITIAL_CAPITAL * TRADING_DEFAULTS.EXPOSURE_MULTIPLIER;
+
+      expect(exposurePerWatcher).toBeCloseTo(expectedExposure, 2);
+      expect(maxPositionValue).toBeCloseTo(expectedPositionValue, 2);
+      expect(maxTotalExposure).toBeCloseTo(expectedTotalExposure, 2);
     });
 
     it('should cap exposure at 100% per watcher', () => {

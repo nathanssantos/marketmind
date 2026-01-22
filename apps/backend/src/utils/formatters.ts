@@ -26,8 +26,10 @@ export const formatNumberForBinance = (value: number, precision: number = 8): st
   if (!Number.isFinite(value)) return '0';
 
   const fixed = value.toFixed(precision);
-  const trimmed = fixed.replace(/\.?0+$/, '');
 
+  if (!fixed.includes('.')) return fixed;
+
+  const trimmed = fixed.replace(/\.?0+$/, '');
   return trimmed || '0';
 };
 
