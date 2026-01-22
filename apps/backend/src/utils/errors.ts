@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { logger } from '../services/logger';
 
 export const serializeError = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -58,3 +59,21 @@ export const throwInternalError = (message = 'Internal server error'): never => 
     message,
   });
 };
+
+export const handleTRPCError = (
+  error: unknown,
+  context: Record<string, unknown> = {}
+): never => {
+  const errorMessage = serializeError(error);
+
+  logger.error({ ...context, error: errorMessage }, 'Operation failed');
+
+  if (error instanceof TRPCError) throw error;
+
+  throw new TRPCError({
+    code: 'INTERNAL_SERVER_ERROR',
+    message: errorMessage,
+    cause: error,
+  });
+};
+

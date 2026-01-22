@@ -1,34 +1,34 @@
 import { calculateLiquidationPrice } from '@marketmind/types';
-
-import { calculatePnl } from '../utils/pnl-calculator';
+import { calculatePnl } from '../../utils/pnl-calculator';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { TRADING_CONFIG } from '../constants';
-import { orders, positions } from '../db/schema';
+import { TRADING_CONFIG } from '../../constants';
+import { orders, positions } from '../../db/schema';
 import {
-    cancelAllFuturesAlgoOrders,
-    cancelFuturesOrder,
-    closePosition as closeExchangePosition,
-    createBinanceFuturesClient,
-    getOpenAlgoOrders,
-    getPositions as getFuturesPositions,
-    getOpenOrders,
-    getPosition,
-    getSymbolLeverageBrackets,
-    isPaperWallet,
-    setLeverage,
-    setMarginType,
-    submitFuturesOrder,
-} from '../services/binance-futures-client';
-import { getBinanceFuturesDataService } from '../services/binance-futures-data';
-import { walletQueries } from '../services/database/walletQueries';
-import { logger } from '../services/logger';
-import { getMinNotionalFilterService } from '../services/min-notional-filter';
-import { protectedProcedure, router } from '../trpc';
-import { generateEntityId } from '../utils/id';
+  cancelAllFuturesAlgoOrders,
+  cancelFuturesOrder,
+  closePosition as closeExchangePosition,
+  createBinanceFuturesClient,
+  getOpenAlgoOrders,
+  getPositions as getFuturesPositions,
+  getOpenOrders,
+  getPosition,
+  getSymbolLeverageBrackets,
+  isPaperWallet,
+  setLeverage,
+  setMarginType,
+  submitFuturesOrder,
+} from '../../services/binance-futures-client';
+import { getBinanceFuturesDataService } from '../../services/binance-futures-data';
+import { walletQueries } from '../../services/database/walletQueries';
+import { logger } from '../../services/logger';
+import { getMinNotionalFilterService } from '../../services/min-notional-filter';
+import { autoTradingService } from '../../services/auto-trading';
+import { protectedProcedure, router } from '../../trpc';
+import { generateEntityId } from '../../utils/id';
 
-export const futuresTradingRouter = router({
+export const futuresRouter = router({
   setLeverage: protectedProcedure
     .input(
       z.object({
@@ -80,6 +80,69 @@ export const futuresTradingRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to set margin type',
+          cause: error,
+        });
+      }
+    }),
+
+  setPositionMode: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        dualSidePosition: z.boolean(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      try {
+        await autoTradingService.setFuturesPositionMode(wallet, input.dualSidePosition);
+        return { success: true, dualSidePosition: input.dualSidePosition };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to set position mode',
+          cause: error,
+        });
+      }
+    }),
+
+  getAccountInfo: protectedProcedure
+    .input(z.object({ walletId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (isPaperWallet(wallet)) {
+        return {
+          totalWalletBalance: wallet.currentBalance || '0',
+          availableBalance: wallet.currentBalance || '0',
+          positions: [],
+        };
+      }
+
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        const account = await client.getAccountInformation();
+
+        return {
+          totalWalletBalance: account.totalWalletBalance,
+          availableBalance: account.availableBalance,
+          positions: account.positions
+            .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
+            .map((p) => ({
+              symbol: p.symbol,
+              positionAmt: String(p.positionAmt),
+              entryPrice: String(p.entryPrice),
+              unrealizedProfit: String(p.unrealizedProfit),
+              leverage: String(p.leverage),
+              marginType: (p as unknown as { marginType?: string }).marginType,
+              liquidationPrice: (p as unknown as { liquidationPrice?: string }).liquidationPrice,
+            })),
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to get futures account info',
           cause: error,
         });
       }
@@ -242,11 +305,7 @@ export const futuresTradingRouter = router({
     }),
 
   getPositions: protectedProcedure
-    .input(
-      z.object({
-        walletId: z.string(),
-      })
-    )
+    .input(z.object({ walletId: z.string() }))
     .query(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 

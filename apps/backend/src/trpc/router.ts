@@ -13,6 +13,7 @@ import { setupDetectionRouter } from '../routers/setup-detection';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
+import { nestedTradingRouter } from '../routers/trading/index';
 import { router } from '../trpc';
 
 export const appRouter = router({
@@ -31,6 +32,7 @@ export const appRouter = router({
   tradingProfiles: tradingProfilesRouter,
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
+  trade: nestedTradingRouter,
 });
 
 export type AppRouter = typeof appRouter;
