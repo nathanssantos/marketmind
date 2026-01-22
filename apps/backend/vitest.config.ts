@@ -6,17 +6,22 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: './src/__tests__/setup.ts',
+    globalSetup: './src/__tests__/globalSetup.ts',
     include: ['src/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
-    pool: 'threads',
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 4,
-        minThreads: 1,
+      forks: {
+        singleFork: true,
       },
     },
     isolate: true,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    sequence: {
+      shuffle: false,
+    },
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

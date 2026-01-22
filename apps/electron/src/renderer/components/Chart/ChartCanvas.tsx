@@ -12,116 +12,46 @@ import {
   DialogTitle,
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
-import { calculateFibonacciProjection, calculateMovingAverage, type StochasticResult } from '@marketmind/indicators';
-import type { Kline, MarketEvent, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
-import { useADXWorker } from '@renderer/hooks/useADXWorker';
-import { useAOWorker } from '@renderer/hooks/useAOWorker';
-import { useAroonWorker } from '@renderer/hooks/useAroonWorker';
+import { calculateFibonacciProjection } from '@marketmind/indicators';
+import type { Kline, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
-import { useCCIWorker } from '@renderer/hooks/useCCIWorker';
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import { useCMFWorker } from '@renderer/hooks/useCMFWorker';
-import { useCMOWorker } from '@renderer/hooks/useCMOWorker';
-import { useDEMAWorker } from '@renderer/hooks/useDEMAWorker';
-import { useDonchianWorker } from '@renderer/hooks/useDonchianWorker';
-import { useElderRayWorker } from '@renderer/hooks/useElderRayWorker';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
-import { useFibonacciWorker } from '@renderer/hooks/useFibonacciWorker';
-import { useFVGWorker } from '@renderer/hooks/useFVGWorker';
-import { useHMAWorker } from '@renderer/hooks/useHMAWorker';
-import { useIchimokuWorker } from '@renderer/hooks/useIchimokuWorker';
-import { useKeltnerWorker } from '@renderer/hooks/useKeltnerWorker';
-import { useKlingerWorker } from '@renderer/hooks/useKlingerWorker';
-import { useLiquidityLevelsWorker } from '@renderer/hooks/useLiquidityLevelsWorker';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
-import { useMACDWorker } from '@renderer/hooks/useMACDWorker';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
-import { useMFIWorker } from '@renderer/hooks/useMFIWorker';
-import { useOBVWorker } from '@renderer/hooks/useOBVWorker';
-import { useParabolicSARWorker } from '@renderer/hooks/useParabolicSARWorker';
-import { usePivotPointsWorker } from '@renderer/hooks/usePivotPointsWorker';
-import { usePPOWorker } from '@renderer/hooks/usePPOWorker';
-import { useROCWorker } from '@renderer/hooks/useROCWorker';
-import { useRSIWorker } from '@renderer/hooks/useRSIWorker';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
-import { useStochRSIWorker } from '@renderer/hooks/useStochRSIWorker';
-import { useSupertrendWorker } from '@renderer/hooks/useSupertrendWorker';
-import { useTEMAWorker } from '@renderer/hooks/useTEMAWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { useTSIWorker } from '@renderer/hooks/useTSIWorker';
-import { useUltimateOscWorker } from '@renderer/hooks/useUltimateOscWorker';
-import { useVortexWorker } from '@renderer/hooks/useVortexWorker';
-import { useWilliamsRWorker } from '@renderer/hooks/useWilliamsRWorker';
-import { useWMAWorker } from '@renderer/hooks/useWMAWorker';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
-import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume, isOrderLong, isOrderPending } from '@shared/utils';
-import type React from 'react';
+import { getKlineClose, isOrderLong, isOrderPending } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
-import { useADXRenderer } from './useADXRenderer';
-import { useAORenderer } from './useAORenderer';
-import { useAroonRenderer } from './useAroonRenderer';
-import { useATRRenderer } from './useATRRenderer';
-import { useBollingerBandsRenderer } from './useBollingerBandsRenderer';
-import { useCCIRenderer } from './useCCIRenderer';
 import { useChartCanvas } from './useChartCanvas';
-import { useCMFRenderer } from './useCMFRenderer';
-import { useCMORenderer } from './useCMORenderer';
-import { useCrosshairPriceLineRenderer } from './useCrosshairPriceLineRenderer';
-import { useCurrentPriceLineRenderer } from './useCurrentPriceLineRenderer';
-import { useDEMARenderer } from './useDEMARenderer';
-import { useDonchianRenderer } from './useDonchianRenderer';
-import { useElderRayRenderer } from './useElderRayRenderer';
-import { useEventScaleRenderer } from './useEventScaleRenderer';
-import { useFibonacciProjectionRenderer } from './useFibonacciProjectionRenderer';
-import { useFibonacciRenderer } from './useFibonacciRenderer';
-import { useFVGRenderer } from './useFVGRenderer';
-import { useGridRenderer } from './useGridRenderer';
-import { useHMARenderer } from './useHMARenderer';
-import { useIchimokuRenderer } from './useIchimokuRenderer';
-import { useKeltnerRenderer } from './useKeltnerRenderer';
-import { useKlineRenderer } from './useKlineRenderer';
-import { useKlingerRenderer } from './useKlingerRenderer';
-import { useLineChartRenderer } from './useLineChartRenderer';
-import { useLiquidityLevelsRenderer } from './useLiquidityLevelsRenderer';
-import { useMACDRenderer } from './useMACDRenderer';
-import { useMFIRenderer } from './useMFIRenderer';
-import { useMovingAverageRenderer, type MovingAverageConfig } from './useMovingAverageRenderer';
-import { useOBVRenderer } from './useOBVRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
 import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
-import { useParabolicSARRenderer } from './useParabolicSARRenderer';
-import { usePivotPointsRenderer } from './usePivotPointsRenderer';
-import { usePPORenderer } from './usePPORenderer';
-import { useROCRenderer } from './useROCRenderer';
-import { useRSIRenderer } from './useRSIRenderer';
-import { useStochasticRenderer } from './useStochasticRenderer';
-import { useStochRSIRenderer } from './useStochRSIRenderer';
-import { useSupertrendRenderer } from './useSupertrendRenderer';
-import { useTEMARenderer } from './useTEMARenderer';
-import { useTSIRenderer } from './useTSIRenderer';
-import { useUltimateOscRenderer } from './useUltimateOscRenderer';
-import { useVolumeRenderer } from './useVolumeRenderer';
-import { useVortexRenderer } from './useVortexRenderer';
-import { useVWAPRenderer } from './useVWAPRenderer';
-import { useWatermarkRenderer } from './useWatermarkRenderer';
-import { useWilliamsRRenderer } from './useWilliamsRRenderer';
-import { useWMARenderer } from './useWMARenderer';
-
-const RIGHT_MOUSE_BUTTON = 2;
+import type { MovingAverageConfig } from './useMovingAverageRenderer';
+import {
+  useChartState,
+  useCursorManager,
+  useChartIndicators,
+  useChartPanelHeights,
+  useChartBaseRenderers,
+  useChartIndicatorRenderers,
+  useChartInteraction,
+  type IndicatorId,
+} from './ChartCanvas/index';
 
 export interface ChartCanvasProps {
   klines: Kline[];
@@ -244,7 +174,6 @@ export const ChartCanvas = ({
         fibonacciProjection: exec.fibonacciProjection ? JSON.parse(exec.fibonacciProjection) : null,
       }));
   }, [backendExecutions, symbol, marketType]);
-  const hoveredSetup = null as ReturnType<typeof useSetupStore.getState>['detectedSetups'][0] | null;
 
   const handleLongEntry = useCallback((price: number) => {
     if (!backendWalletId) {
@@ -286,108 +215,6 @@ export const ChartCanvas = ({
     enabled: hasTradingEnabled && !isAutoTradingActive,
   });
 
-  const [tooltipData, setTooltipData] = useState<{
-    kline: Kline | null;
-    x: number;
-    y: number;
-    visible: boolean;
-    containerWidth?: number;
-    containerHeight?: number;
-    klineIndex?: number;
-    movingAverage?: {
-      period: number;
-      type: 'SMA' | 'EMA';
-      color: string;
-      value?: number;
-    };
-    measurement?: {
-      klineCount: number;
-      priceChange: number;
-      percentChange: number;
-      startPrice: number;
-      endPrice: number;
-    };
-    order?: Order;
-    currentPrice?: number;
-    setup?: typeof hoveredSetup;
-    marketEvent?: MarketEvent;
-  }>({
-    kline: null,
-    x: 0,
-    y: 0,
-    visible: false,
-  });
-  const mousePositionRef = useRef<{ x: number; y: number } | null>(null);
-  const orderPreviewRef = useRef<{ price: number; type: 'long' | 'short' } | null>(null);
-  const hoveredMAIndexRef = useRef<number | undefined>(undefined);
-  const hoveredOrderIdRef = useRef<string | null>(null);
-  const lastHoveredOrderRef = useRef<string | null>(null);
-  const lastTooltipOrderRef = useRef<string | null>(null);
-  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const cursorRef = useRef<'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer'>('crosshair');
-  const mouseMoveRafRef = useRef<number | null>(null);
-  const pendingMouseEventRef = useRef<{ x: number; y: number; rect: DOMRect } | null>(null);
-  const tooltipEnabledRef = useRef(true);
-  const tooltipDebounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  const [measurementArea, setMeasurementArea] = useState<{
-    startX: number;
-    startY: number;
-    endX: number;
-    endY: number;
-    startIndex: number;
-    endIndex: number;
-  } | null>(null);
-  const [isMeasuring, setIsMeasuring] = useState(false);
-  const [orderToClose, setOrderToClose] = useState<string | null>(null);
-  const [stochasticData, setStochasticData] = useState<StochasticResult | null>(null);
-  const { calculateStochastic } = useStochasticWorker();
-  const rsiWorkerData = useRSIWorker(klines, 2, showRSI);
-
-  const activeIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
-  const isIndicatorActive = useCallback((id: string): boolean => activeIndicators.includes(id as never), [activeIndicators]);
-
-  const parabolicSarData = useParabolicSARWorker(klines, isIndicatorActive('parabolicSar'));
-  const keltnerData = useKeltnerWorker(klines, isIndicatorActive('keltner'));
-  const donchianData = useDonchianWorker(klines, isIndicatorActive('donchian'));
-  const obvData = useOBVWorker(klines, isIndicatorActive('obv'));
-  const cmfData = useCMFWorker(klines, isIndicatorActive('cmf'));
-  const stochRsiData = useStochRSIWorker(klines, isIndicatorActive('stochRsi'));
-  const macdData = useMACDWorker(klines, isIndicatorActive('macd'));
-  const adxData = useADXWorker(klines, isIndicatorActive('adx'));
-  const williamsRData = useWilliamsRWorker(klines, isIndicatorActive('williamsR'));
-  const cciData = useCCIWorker(klines, isIndicatorActive('cci'));
-  const supertrendData = useSupertrendWorker(klines, isIndicatorActive('supertrend'));
-  const ichimokuData = useIchimokuWorker(klines, isIndicatorActive('ichimoku'));
-  const klingerData = useKlingerWorker(klines, isIndicatorActive('klinger'));
-  const elderRayData = useElderRayWorker(klines, isIndicatorActive('elderRay'));
-  const aroonData = useAroonWorker(klines, isIndicatorActive('aroon'));
-  const vortexData = useVortexWorker(klines, isIndicatorActive('vortex'));
-  const mfiData = useMFIWorker(klines, isIndicatorActive('mfi'));
-  const rocData = useROCWorker(klines, isIndicatorActive('roc'));
-  const aoData = useAOWorker(klines, isIndicatorActive('ao'));
-  const tsiData = useTSIWorker(klines, isIndicatorActive('tsi'));
-  const ppoData = usePPOWorker(klines, isIndicatorActive('ppo'));
-  const cmoData = useCMOWorker(klines, isIndicatorActive('cmo'));
-  const ultimateOscData = useUltimateOscWorker(klines, isIndicatorActive('ultimateOsc'));
-  const demaData = useDEMAWorker(klines, isIndicatorActive('dema'));
-  const temaData = useTEMAWorker(klines, isIndicatorActive('tema'));
-  const wmaData = useWMAWorker(klines, isIndicatorActive('wma'));
-  const hmaData = useHMAWorker(klines, isIndicatorActive('hma'));
-  const pivotPointsData = usePivotPointsWorker(klines, isIndicatorActive('pivotPoints'));
-  const fibonacciData = useFibonacciWorker(klines, isIndicatorActive('fibonacci'));
-  const fvgData = useFVGWorker(klines, isIndicatorActive('fvg'));
-  const liquidityLevelsData = useLiquidityLevelsWorker(klines, isIndicatorActive('liquidityLevels'));
-
-  const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow });
-
-  useEventRefreshScheduler({
-    activeWatchers: watcherStatus?.activeWatchers ?? [],
-    chartInterval: timeframe as TimeInterval,
-    enabled: showEventRow,
-    onRefresh: refetchMarketEvents,
-  });
-
   const {
     canvasRef,
     manager,
@@ -400,6 +227,50 @@ export const ChartCanvas = ({
     klines,
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
+  });
+
+  const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({
+    klines,
+    movingAverages,
+  });
+
+  const { tooltipData, measurementArea, isMeasuring, orderToClose, stochasticData } = chartState;
+  const {
+    setTooltip: setTooltipData,
+    setMeasurementArea,
+    setIsMeasuring,
+    setOrderToClose,
+    setStochasticData,
+  } = chartActions;
+  const {
+    mousePosition: mousePositionRef,
+    orderPreview: orderPreviewRef,
+    hoveredMAIndex: hoveredMAIndexRef,
+    hoveredOrderId: hoveredOrderIdRef,
+    lastHoveredOrder: lastHoveredOrderRef,
+    lastTooltipOrder: lastTooltipOrderRef,
+    tooltipEnabled: tooltipEnabledRef,
+    tooltipDebounce: tooltipDebounceRef,
+  } = chartRefs;
+
+  const cursorManager = useCursorManager(canvasRef);
+  const { calculateStochastic } = useStochasticWorker();
+
+  const activeIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
+
+  const indicatorData = useChartIndicators({
+    klines,
+    activeIndicators: activeIndicators as IndicatorId[],
+    showRSI,
+  });
+
+  const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow });
+
+  useEventRefreshScheduler({
+    activeWatchers: watcherStatus?.activeWatchers ?? [],
+    chartInterval: timeframe as TimeInterval,
+    enabled: showEventRow,
+    onRefresh: refetchMarketEvents,
   });
 
   useEffect(() => {
@@ -416,13 +287,6 @@ export const ChartCanvas = ({
       if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current);
     };
   }, [isPanning]);
-
-  const updateCursor = useCallback((newCursor: typeof cursorRef.current) => {
-    if (cursorRef.current !== newCursor) {
-      cursorRef.current = newCursor;
-      if (canvasRef.current) canvasRef.current.style.cursor = newCursor;
-    }
-  }, [canvasRef]);
 
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
@@ -451,312 +315,36 @@ export const ChartCanvas = ({
     setOrderToClose(null);
   }, [orderToClose, manager, filteredBackendExecutions, closeExecution, cancelProtectionOrder]);
 
-  const { render: renderGrid } = useGridRenderer({
-    manager,
-    colors,
-    enabled: showGrid,
-    ...(advancedConfig?.gridLineWidth !== undefined && { gridLineWidth: advancedConfig.gridLineWidth }),
-  });
-
-  const { render: renderKlines } = useKlineRenderer({
-    manager,
-    colors,
-    enabled: chartType === 'kline',
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-    ...(advancedConfig?.klineWickWidth !== undefined && { klineWickWidth: advancedConfig.klineWickWidth }),
-    ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
-    highlightedCandlesRef,
-  });
-
-  const { render: renderLineChart } = useLineChartRenderer({
-    manager,
-    colors,
-    enabled: chartType === 'line',
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-  });
-
-  const maValuesCache = useMemo(() => {
-    const cache = new Map<string, (number | null)[]>();
-    for (const ma of movingAverages) {
-      if (ma.visible === false) continue;
-      const key = `${ma.type}-${ma.period}`;
-      cache.set(key, calculateMovingAverage(klines, ma.period, ma.type));
-    }
-    return cache;
-  }, [klines, movingAverages]);
-
-  const { render: renderVolume } = useVolumeRenderer({
-    manager,
-    colors,
-    enabled: showVolume,
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-    ...(advancedConfig?.volumeHeightRatio !== undefined && { volumeHeightRatio: advancedConfig.volumeHeightRatio }),
-    ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
-    timeframe,
-    showVolumeMA: true,
-  });
-
-  const { render: renderMovingAverages, getHoveredMATag } = useMovingAverageRenderer({
-    manager,
-    movingAverages,
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-    hoveredMAIndexRef,
+  const {
+    renderGrid,
+    renderKlines,
+    renderLineChart,
+    renderVolume,
+    renderMovingAverages,
+    renderCurrentPriceLine_Line,
+    renderCurrentPriceLine_Label,
+    renderCrosshairPriceLine,
+    renderWatermark,
+    getHoveredMATag,
     maValuesCache,
-  });
-
-  const { render: renderStochastic } = useStochasticRenderer({
+  } = useChartBaseRenderers({
     manager,
-    stochasticData,
+    klines,
     colors,
-    enabled: showStochastic,
-  });
-
-  const { render: renderRSI } = useRSIRenderer({
-    manager,
-    rsiData: rsiWorkerData,
-    colors,
-    enabled: showRSI,
-  });
-
-  const { render: renderBollingerBands } = useBollingerBandsRenderer({
-    manager,
-    colors,
-    enabled: showBollingerBands,
-  });
-
-  const { render: renderATR } = useATRRenderer({
-    manager,
-    colors,
-    enabled: showATR,
-  });
-
-  const { render: renderVWAP } = useVWAPRenderer({
-    manager,
-    enabled: showVWAP,
-  });
-
-  const { render: renderParabolicSAR } = useParabolicSARRenderer({
-    manager,
-    parabolicSarData,
-    colors,
-    enabled: isIndicatorActive('parabolicSar'),
-  });
-
-  const { render: renderKeltner } = useKeltnerRenderer({
-    manager,
-    keltnerData,
-    colors,
-    enabled: isIndicatorActive('keltner'),
-  });
-
-  const { render: renderDonchian } = useDonchianRenderer({
-    manager,
-    donchianData,
-    colors,
-    enabled: isIndicatorActive('donchian'),
-  });
-
-  const { render: renderOBV } = useOBVRenderer({
-    manager,
-    obvData,
-    colors,
-    enabled: isIndicatorActive('obv'),
-  });
-
-  const { render: renderCMF } = useCMFRenderer({
-    manager,
-    cmfData,
-    colors,
-    enabled: isIndicatorActive('cmf'),
-  });
-
-  const { render: renderStochRSI } = useStochRSIRenderer({
-    manager,
-    stochRsiData,
-    colors,
-    enabled: isIndicatorActive('stochRsi'),
-  });
-
-  const { render: renderMACD } = useMACDRenderer({
-    manager,
-    macdData,
-    colors,
-    enabled: isIndicatorActive('macd'),
-  });
-
-  const { render: renderADX } = useADXRenderer({
-    manager,
-    adxData,
-    colors,
-    enabled: isIndicatorActive('adx'),
-  });
-
-  const { render: renderWilliamsR } = useWilliamsRRenderer({
-    manager,
-    williamsRData,
-    colors,
-    enabled: isIndicatorActive('williamsR'),
-  });
-
-  const { render: renderCCI } = useCCIRenderer({
-    manager,
-    cciData,
-    colors,
-    enabled: isIndicatorActive('cci'),
-  });
-
-  const { render: renderSupertrend } = useSupertrendRenderer({
-    manager,
-    supertrendData,
-    colors,
-    enabled: isIndicatorActive('supertrend'),
-  });
-
-  const { render: renderIchimoku } = useIchimokuRenderer({
-    manager,
-    ichimokuData,
-    colors,
-    enabled: isIndicatorActive('ichimoku'),
-  });
-
-  const { render: renderKlinger } = useKlingerRenderer({
-    manager,
-    klingerData,
-    colors,
-    enabled: isIndicatorActive('klinger'),
-  });
-
-  const { render: renderElderRay } = useElderRayRenderer({
-    manager,
-    elderRayData,
-    colors,
-    enabled: isIndicatorActive('elderRay'),
-  });
-
-  const { render: renderAroon } = useAroonRenderer({
-    manager,
-    aroonData,
-    colors,
-    enabled: isIndicatorActive('aroon'),
-  });
-
-  const { render: renderVortex } = useVortexRenderer({
-    manager,
-    vortexData,
-    colors,
-    enabled: isIndicatorActive('vortex'),
-  });
-
-  const { render: renderMFI } = useMFIRenderer({
-    manager,
-    mfiData,
-    colors,
-    enabled: isIndicatorActive('mfi'),
-  });
-
-  const { render: renderROC } = useROCRenderer({
-    manager,
-    rocData,
-    colors,
-    enabled: isIndicatorActive('roc'),
-  });
-
-  const { render: renderAO } = useAORenderer({
-    manager,
-    aoData,
-    colors,
-    enabled: isIndicatorActive('ao'),
-  });
-
-  const { render: renderTSI } = useTSIRenderer({
-    manager,
-    tsiData,
-    colors,
-    enabled: isIndicatorActive('tsi'),
-  });
-
-  const { render: renderPPO } = usePPORenderer({
-    manager,
-    ppoData,
-    colors,
-    enabled: isIndicatorActive('ppo'),
-  });
-
-  const { render: renderCMO } = useCMORenderer({
-    manager,
-    cmoData,
-    colors,
-    enabled: isIndicatorActive('cmo'),
-  });
-
-  const { render: renderUltimateOsc } = useUltimateOscRenderer({
-    manager,
-    ultimateOscData,
-    colors,
-    enabled: isIndicatorActive('ultimateOsc'),
-  });
-
-  const { render: renderDEMA } = useDEMARenderer({
-    manager,
-    demaData,
-    colors,
-    enabled: isIndicatorActive('dema'),
-  });
-
-  const { render: renderTEMA } = useTEMARenderer({
-    manager,
-    temaData,
-    colors,
-    enabled: isIndicatorActive('tema'),
-  });
-
-  const { render: renderWMA } = useWMARenderer({
-    manager,
-    wmaData,
-    colors,
-    enabled: isIndicatorActive('wma'),
-  });
-
-  const { render: renderHMA } = useHMARenderer({
-    manager,
-    hmaData,
-    colors,
-    enabled: isIndicatorActive('hma'),
-  });
-
-  const { render: renderPivotPoints } = usePivotPointsRenderer({
-    manager,
-    pivotData: pivotPointsData,
-    colors,
-    enabled: isIndicatorActive('pivotPoints'),
-  });
-
-  const { render: renderFibonacci } = useFibonacciRenderer({
-    manager,
-    fibonacciData,
-    colors,
-    enabled: isIndicatorActive('fibonacci'),
-  });
-
-  const { render: renderFVG } = useFVGRenderer({
-    manager,
-    fvgData,
-    colors,
-    enabled: isIndicatorActive('fvg'),
-  });
-
-  const { render: renderLiquidityLevels } = useLiquidityLevelsRenderer({
-    manager,
-    liquidityData: liquidityLevelsData,
-    colors,
-    enabled: isIndicatorActive('liquidityLevels'),
-  });
-
-  const { render: renderEventScale, getEventAtPosition } = useEventScaleRenderer({
-    manager,
-    events: marketEvents,
-    colors,
-    enabled: showEventRow,
+    chartType,
+    advancedConfig,
+    movingAverages,
+    showGrid,
+    showVolume,
+    showCurrentPriceLine,
+    showCrosshair,
+    hoveredKlineIndex: tooltipData.klineIndex,
+    highlightedCandlesRef,
+    hoveredMAIndexRef,
+    mousePositionRef,
+    timeframe,
+    symbol,
+    marketType,
   });
 
   const fibonacciProjectionData = useMemo(() => {
@@ -770,19 +358,19 @@ export const ChartCanvas = ({
       }
 
       if (manager) {
-        const klines = manager.getKlines();
-        if (klines.length > 0) {
+        const klinesData = manager.getKlines();
+        if (klinesData.length > 0) {
           const triggerTime = activePosition.triggerKlineOpenTime;
           let entryIndex = -1;
 
           if (triggerTime) {
             const triggerTimestamp = typeof triggerTime === 'number' ? triggerTime : new Date(triggerTime).getTime();
-            entryIndex = klines.findIndex(k => k.openTime === triggerTimestamp);
+            entryIndex = klinesData.findIndex(k => k.openTime === triggerTimestamp);
           }
 
           if (entryIndex !== -1) {
             const direction = activePosition.side as 'LONG' | 'SHORT';
-            const projection = calculateFibonacciProjection(klines, entryIndex, 100, direction);
+            const projection = calculateFibonacciProjection(klinesData, entryIndex, 100, direction);
 
             if (projection) {
               return {
@@ -802,42 +390,63 @@ export const ChartCanvas = ({
     return visibleSetup?.fibonacciProjection ?? null;
   }, [filteredBackendExecutions, detectedSetups, manager]);
 
-  const { render: renderFibonacciProjection } = useFibonacciProjectionRenderer({
+  const {
+    renderStochastic,
+    renderRSI,
+    renderBollingerBands,
+    renderATR,
+    renderVWAP,
+    renderParabolicSAR,
+    renderKeltner,
+    renderDonchian,
+    renderSupertrend,
+    renderIchimoku,
+    renderOBV,
+    renderCMF,
+    renderStochRSI,
+    renderMACD,
+    renderADX,
+    renderWilliamsR,
+    renderCCI,
+    renderKlinger,
+    renderElderRay,
+    renderAroon,
+    renderVortex,
+    renderMFI,
+    renderROC,
+    renderAO,
+    renderTSI,
+    renderPPO,
+    renderCMO,
+    renderUltimateOsc,
+    renderDEMA,
+    renderTEMA,
+    renderWMA,
+    renderHMA,
+    renderPivotPoints,
+    renderFibonacci,
+    renderFVG,
+    renderLiquidityLevels,
+    renderEventScale,
+    renderFibonacciProjection,
+    getEventAtPosition,
+  } = useChartIndicatorRenderers({
     manager,
-    projectionData: fibonacciProjectionData,
     colors,
-    enabled: showFibonacciProjection,
-  });
-
-  const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } = useCurrentPriceLineRenderer({
-    manager,
-    colors,
-    enabled: showCurrentPriceLine,
-    ...(advancedConfig?.currentPriceLineWidth !== undefined && { lineWidth: advancedConfig.currentPriceLineWidth }),
-    ...(advancedConfig?.currentPriceLineStyle !== undefined && { lineStyle: advancedConfig.currentPriceLineStyle }),
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
-  });
-
-  const { render: renderCrosshairPriceLine } = useCrosshairPriceLineRenderer({
-    manager,
-    colors,
-    enabled: showCrosshair,
-    mousePositionRef,
-    lineWidth: 1,
-    lineStyle: 'solid',
-    ...(advancedConfig?.rightMargin !== undefined && { rightMargin: advancedConfig.rightMargin }),
+    indicatorData,
+    stochasticData,
+    showStochastic,
+    showRSI,
+    showBollingerBands,
+    showATR,
+    showVWAP,
+    showFibonacciProjection,
+    showEventRow,
+    marketEvents,
+    fibonacciProjectionData,
   });
 
   const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, filteredBackendExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas);
-
-  const { render: renderWatermark } = useWatermarkRenderer({
-    manager,
-    colors,
-    symbol,
-    timeframe,
-    marketType,
-    enabled: true,
-  });
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -913,446 +522,53 @@ export const ChartCanvas = ({
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
   });
 
-  const processMouseMoveTooltip = useCallback((mouseX: number, mouseY: number, rect: DOMRect): void => {
-    if (!manager || !tooltipEnabledRef.current) return;
-
-    const viewport = manager.getViewport();
-    const dimensions = manager.getDimensions();
-    const bounds = manager.getBounds();
-
-    if (!dimensions || !bounds) return;
-
-    const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
-    const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
-
-    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
-    const isOnTimeScale = mouseY >= timeScaleTop;
-    const isInChartArea = mouseX < dimensions.chartWidth && mouseY < timeScaleTop;
-
-    const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
-
-    if (isOnPriceScale && hoveredTagIndex === undefined) {
-      hoveredMAIndexRef.current = undefined;
-      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-      return;
-    }
-
-    if (isOnTimeScale) {
-      hoveredMAIndexRef.current = undefined;
-      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-      return;
-    }
-
-    if (showEventRow && manager) {
-      const eventRowY = manager.getEventRowY();
-      const eventRowHeight = manager.getEventRowHeight();
-      if (mouseY >= eventRowY && mouseY <= eventRowY + eventRowHeight) {
-        const event = getEventAtPosition(mouseX, mouseY);
-        if (event) {
-          setTooltipData({
-            kline: null, x: mouseX, y: mouseY, visible: true,
-            containerWidth: rect.width, containerHeight: rect.height,
-            marketEvent: event,
-          });
-          return;
-        }
-      }
-    }
-
-    const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
-    const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
-
-    if (hoveredOrderForTooltip && klines.length > 0) {
-      if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {
-        lastTooltipOrderRef.current = hoveredOrderIdForTooltip;
-        const lastKline = klines[klines.length - 1];
-        const currentPriceVal = lastKline ? getKlineClose(lastKline) : undefined;
-        setTooltipData({
-          kline: null, x: mouseX, y: mouseY, visible: true,
-          containerWidth: rect?.width, containerHeight: rect?.height,
-          order: hoveredOrderForTooltip,
-          ...(currentPriceVal && { currentPrice: currentPriceVal }),
-        });
-      }
-      return;
-    }
-
-    if (!hoveredOrderForTooltip && lastTooltipOrderRef.current) {
-      lastTooltipOrderRef.current = null;
-      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-      return;
-    }
-
-    const distanceToLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
-      const A = px - x1;
-      const B = py - y1;
-      const C = x2 - x1;
-      const D = y2 - y1;
-      const dot = A * C + B * D;
-      const lenSq = C * C + D * D;
-      const param = lenSq !== 0 ? dot / lenSq : -1;
-      let xx: number, yy: number;
-      if (param < 0) { xx = x1; yy = y1; }
-      else if (param > 1) { xx = x2; yy = y2; }
-      else { xx = x1 + param * C; yy = y1 + param * D; }
-      const dx = px - xx;
-      const dy = py - yy;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    let closestMAIndex: number | undefined = undefined;
-    let closestMADistance = Infinity;
-    let closestMAValue: number | undefined = undefined;
-    const HOVER_THRESHOLD = 8;
-
-    if (hoveredTagIndex !== undefined) {
-      closestMAIndex = hoveredTagIndex;
-    } else if (movingAverages.length > 0) {
-      const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-      const visibleRange = viewport.end - viewport.start;
-      const widthPerKline = effectiveWidth / visibleRange;
-      const { klineWidth } = viewport;
-      const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
-
-      for (let maIdx = 0; maIdx < movingAverages.length; maIdx++) {
-        const ma = movingAverages[maIdx];
-        if (!ma || ma.visible === false) continue;
-        const cacheKey = `${ma.type}-${ma.period}`;
-        const maValues = maValuesCache.get(cacheKey);
-        if (!maValues) continue;
-
-        const startIdx = Math.max(0, Math.floor(viewport.start));
-        const endIdx = Math.min(klines.length, Math.ceil(viewport.end));
-
-        for (let i = startIdx; i < endIdx - 1; i++) {
-          const value1 = maValues[i];
-          const value2 = maValues[i + 1];
-          if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
-
-          const x1 = manager.indexToX(i) + klineCenterOffset;
-          const y1 = manager.priceToY(value1);
-          const x2 = manager.indexToX(i + 1) + klineCenterOffset;
-          const y2 = manager.priceToY(value2);
-          const distance = distanceToLine(mouseX, mouseY, x1, y1, x2, y2);
-
-          if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
-            closestMADistance = distance;
-            closestMAIndex = maIdx;
-            closestMAValue = (value1 + value2) / 2;
-          }
-        }
-        if (closestMADistance < HOVER_THRESHOLD * 0.5) break;
-      }
-    }
-
-    hoveredMAIndexRef.current = closestMAIndex;
-
-    if (closestMAIndex !== undefined) {
-      const ma = movingAverages[closestMAIndex];
-      if (ma) {
-        setTooltipData({
-          kline: null, x: mouseX, y: mouseY, visible: true,
-          containerWidth: rect.width, containerHeight: rect.height,
-          movingAverage: { period: ma.period, type: ma.type, color: ma.color, ...(closestMAValue !== undefined && { value: closestMAValue }) },
-        });
-        return;
-      }
-    }
-
-    if (!isInChartArea) {
-      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-      return;
-    }
-
-    const visibleRange = viewport.end - viewport.start;
-    const widthPerKline = dimensions.chartWidth / visibleRange;
-    const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * visibleRange);
-
-    if (hoveredIndex >= 0 && hoveredIndex < klines.length) {
-      const kline = klines[hoveredIndex];
-      if (kline) {
-        const relativeIndex = hoveredIndex - viewport.start;
-        const hitAreaLeft = relativeIndex * widthPerKline;
-        const hitAreaRight = hitAreaLeft + widthPerKline;
-
-        const openY = manager.priceToY(getKlineOpen(kline));
-        const closeY = manager.priceToY(getKlineClose(kline));
-        const highY = manager.priceToY(getKlineHigh(kline));
-        const lowY = manager.priceToY(getKlineLow(kline));
-        const bodyTop = Math.min(openY, closeY);
-        const bodyBottom = Math.max(openY, closeY);
-
-        const volumeHeightRatio = advancedConfig?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
-        const volumeOverlayHeight = dimensions.chartHeight * volumeHeightRatio;
-        const volumeBaseY = dimensions.chartHeight;
-        const volumeRatio = getKlineVolume(kline) / bounds.maxVolume;
-        const barHeight = volumeRatio * volumeOverlayHeight;
-        const volumeTop = volumeBaseY - barHeight;
-
-        const isOnKlineBody = mouseX >= hitAreaLeft && mouseX <= hitAreaRight && mouseY >= bodyTop && mouseY <= bodyBottom;
-        const isOnKlineWick = mouseX >= hitAreaLeft && mouseX <= hitAreaRight && mouseY >= highY && mouseY <= lowY;
-        const isOnVolumeBar = showVolume && mouseX >= hitAreaLeft && mouseX <= hitAreaRight && mouseY >= volumeTop && mouseY <= volumeBaseY;
-
-        if (isOnKlineBody || isOnKlineWick || isOnVolumeBar) {
-          setTooltipData({
-            kline, x: mouseX, y: mouseY, visible: true,
-            containerWidth: rect.width, containerHeight: rect.height, klineIndex: hoveredIndex,
-          });
-          return;
-        }
-      }
-    }
-
-    setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-  }, [manager, klines, movingAverages, maValuesCache, advancedConfig, showVolume, getHoveredMATag, getHoveredOrder, showEventRow, getEventAtPosition]);
-
-  const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement>): void => {
-    if (!canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    if (orderDragHandler.isDragging) {
-      orderDragHandler.handleMouseMove(mouseY);
-      return;
-    }
-
-    if (isMeasuring && manager && measurementArea) {
-      const viewport = manager.getViewport();
-      const dimensions = manager.getDimensions();
-      if (!dimensions) return;
-
-      const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start));
-
-      setMeasurementArea({
-        ...measurementArea,
-        endX: mouseX,
-        endY: mouseY,
-        endIndex: hoveredIndex,
-      });
-      manager.markDirty('overlays');
-
-      const startIndex = Math.min(measurementArea.startIndex, hoveredIndex);
-      const endIndex = Math.max(measurementArea.startIndex, hoveredIndex);
-      const klineCount = Math.abs(endIndex - startIndex);
-
-      const startPrice = manager.yToPrice(measurementArea.startY);
-      const endPrice = manager.yToPrice(mouseY);
-      const priceChange = endPrice - startPrice;
-      const percentChange = (priceChange / startPrice) * 100;
-
-      setTooltipData({
-        kline: null, x: mouseX, y: mouseY, visible: true,
-        containerWidth: rect.width, containerHeight: rect.height,
-        measurement: { klineCount, priceChange, percentChange, startPrice, endPrice },
-      });
-
-      mousePositionRef.current = { x: mouseX, y: mouseY };
-      return;
-    }
-
-    handleMouseMove(event);
-
-    if (isPanning) {
-      mousePositionRef.current = { x: mouseX, y: mouseY };
-      return;
-    }
-
-    if (!manager) return;
-
-    const hoveredOrderButton = getClickedOrderId(mouseX, mouseY);
-    const hoveredSLTP = getSLTPAtPosition(mouseX, mouseY);
-    const hoveredOrder = hoveredSLTP ? null : getHoveredOrder(mouseX, mouseY);
-
-    const newHoveredId = hoveredOrder?.id || null;
-    if (newHoveredId !== lastHoveredOrderRef.current) {
-      lastHoveredOrderRef.current = newHoveredId;
-      hoveredOrderIdRef.current = newHoveredId;
-      manager.markDirty('overlays');
-    }
-
-    if (orderDragHandler.isDragging) {
-      updateCursor('ns-resize');
-    } else if (hoveredOrderButton) {
-      updateCursor('pointer');
-    } else if (hoveredSLTP) {
-      updateCursor('ns-resize');
-    } else if (hoveredOrder) {
-      updateCursor('ns-resize');
-    } else if (cursorRef.current !== 'crosshair') {
-      updateCursor('crosshair');
-    }
-
-    mousePositionRef.current = { x: mouseX, y: mouseY };
-    manager.markDirty('overlays');
-
-    const dimensions = manager.getDimensions();
-    if (!dimensions) return;
-
-    const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
-    const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
-    const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    const lastKlineX = manager.indexToX(klines.length - 1);
-    const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
-    const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
-    const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
-    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
-    const isOnTimeScale = mouseY >= timeScaleTop;
-
-    const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
-
-    if (hoveredTagIndex !== undefined) updateCursor('pointer');
-    else if (isOnPriceScale) updateCursor('ns-resize');
-    else if (isOnTimeScale) updateCursor('crosshair');
-    else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
-
-    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
-      const price = manager.yToPrice(mouseY);
-      orderPreviewRef.current = { price, type: shiftPressed ? 'long' : 'short' };
-      manager.markDirty('overlays');
-    } else if (orderPreviewRef.current !== null) {
-      orderPreviewRef.current = null;
-      manager.markDirty('overlays');
-    }
-
-    pendingMouseEventRef.current = { x: mouseX, y: mouseY, rect };
-    if (mouseMoveRafRef.current === null) {
-      mouseMoveRafRef.current = requestAnimationFrame(() => {
-        mouseMoveRafRef.current = null;
-        const pending = pendingMouseEventRef.current;
-        if (pending) {
-          processMouseMoveTooltip(pending.x, pending.y, pending.rect);
-        }
-      });
-    }
-  };
-
-  const handleCanvasMouseLeave = (): void => {
-    handleMouseLeave();
-    mousePositionRef.current = null;
-    orderPreviewRef.current = null;
-    hoveredOrderIdRef.current = null;
-    lastHoveredOrderRef.current = null;
-    lastTooltipOrderRef.current = null;
-    setIsMeasuring(false);
-    setMeasurementArea(null);
-    setTooltipData({
-      kline: null,
-      x: 0,
-      y: 0,
-      visible: false,
-    });
-    if (manager) {
-      manager.markDirty('overlays');
-    }
-  };
-
-  const startInteraction = (): void => {
-    if (interactionTimeoutRef.current) {
-      clearTimeout(interactionTimeoutRef.current);
-      interactionTimeoutRef.current = null;
-    }
-  };
-
-  const endInteraction = (): void => {
-    if (interactionTimeoutRef.current) {
-      clearTimeout(interactionTimeoutRef.current);
-    }
-    interactionTimeoutRef.current = setTimeout(() => {
-      interactionTimeoutRef.current = null;
-    }, 300);
-  };
-
-  const handleCanvasMouseDown = (event: React.MouseEvent<HTMLCanvasElement>): void => {
-    if (!manager || !canvasRef.current) return;
-
-    if (event.button === RIGHT_MOUSE_BUTTON) {
-      return;
-    }
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    const sltpAtPosition = getSLTPAtPosition(mouseX, mouseY);
-
-    const clickedOrderId = getClickedOrderId(mouseX, mouseY);
-    if (clickedOrderId) {
-      setOrderToClose(clickedOrderId);
-      return;
-    }
-
-    if (sltpAtPosition) {
-      if (orderDragHandler.handleSLTPMouseDown(mouseX, mouseY, sltpAtPosition)) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-    }
-
-    if (!shiftPressed && !altPressed && orderDragHandler.handleMouseDown(mouseX, mouseY)) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-
-    if ((showMeasurementRuler || showMeasurementArea) && manager && canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouseX = event.clientX - rect.left;
-      const mouseY = event.clientY - rect.top;
-
-      const dimensions = manager.getDimensions();
-      if (!dimensions) return;
-
-      const timeScaleTop = dimensions.height - 40;
-      const priceScaleLeft = dimensions.width - (advancedConfig?.rightMargin ?? 72);
-
-      if (mouseX < priceScaleLeft && mouseY < timeScaleTop) {
-        const viewport = manager.getViewport();
-        const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start));
-
-        setIsMeasuring(true);
-        setMeasurementArea({
-          startX: mouseX,
-          startY: mouseY,
-          endX: mouseX,
-          endY: mouseY,
-          startIndex: hoveredIndex,
-          endIndex: hoveredIndex,
-        });
-        manager.markDirty('overlays');
-        return;
-      }
-    }
-
-    handleMouseDown(event);
-    startInteraction();
-  };
-
-  const handleCanvasMouseUp = (): void => {
-    if (orderDragHandler.isDragging) {
-      orderDragHandler.handleMouseUp();
-      return;
-    }
-
-    if (isMeasuring) {
-      setIsMeasuring(false);
-      setMeasurementArea(null);
-      if (manager) {
-        manager.markDirty('overlays');
-      }
-      return;
-    }
-
-    handleMouseUp();
-    endInteraction();
-  };
-
-  const handleWheel = (): void => {
-    startInteraction();
-    endInteraction();
-  };
+  const {
+    handleCanvasMouseMove,
+    handleCanvasMouseDown,
+    handleCanvasMouseUp,
+    handleCanvasMouseLeave,
+    handleWheel,
+  } = useChartInteraction({
+    manager,
+    canvasRef,
+    klines,
+    movingAverages,
+    maValuesCache,
+    advancedConfig,
+    showVolume,
+    showEventRow,
+    showMeasurementRuler,
+    showMeasurementArea,
+    isPanning,
+    isMeasuring,
+    measurementArea,
+    shiftPressed,
+    altPressed,
+    hasTradingEnabled,
+    isAutoTradingActive,
+    tooltipEnabledRef,
+    mousePositionRef,
+    orderPreviewRef,
+    hoveredMAIndexRef,
+    hoveredOrderIdRef,
+    lastHoveredOrderRef,
+    lastTooltipOrderRef,
+    setTooltipData,
+    setIsMeasuring,
+    setMeasurementArea,
+    setOrderToClose,
+    getHoveredMATag,
+    getHoveredOrder,
+    getEventAtPosition,
+    getClickedOrderId,
+    getSLTPAtPosition,
+    orderDragHandler,
+    cursorManager,
+    handleMouseMove,
+    handleMouseDown,
+    handleMouseUp,
+    handleMouseLeave,
+  });
 
   const handleResetView = (): void => {
     if (manager) {
@@ -1365,19 +581,6 @@ export const ChartCanvas = ({
       manager.panToNextKline();
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (interactionTimeoutRef.current) {
-        clearTimeout(interactionTimeoutRef.current);
-        interactionTimeoutRef.current = null;
-      }
-      if (mouseMoveRafRef.current !== null) {
-        cancelAnimationFrame(mouseMoveRafRef.current);
-        mouseMoveRafRef.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!showStochastic || klines.length === 0) {
@@ -1398,44 +601,14 @@ export const ChartCanvas = ({
     calculate();
   }, [showStochastic, klines, calculateStochastic]);
 
-  useEffect(() => {
-    if (!manager || !advancedConfig) return;
-
-    if (advancedConfig.rightMargin !== undefined) {
-      manager.setRightMargin(advancedConfig.rightMargin);
-    }
-  }, [manager, advancedConfig]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0;
-    manager.setStochasticPanelHeight(height);
-  }, [manager, showStochastic]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setRSIPanelHeight(height);
-  }, [manager, showRSI]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const panelIndicators = [
-      'obv', 'cmf', 'stochRsi', 'macd', 'adx', 'williamsR', 'cci',
-      'klinger', 'elderRay', 'aroon', 'vortex', 'mfi', 'roc', 'ao',
-      'tsi', 'ppo', 'cmo', 'ultimateOsc'
-    ] as const;
-    for (const indicator of panelIndicators) {
-      const height = isIndicatorActive(indicator) ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-      manager.setPanelHeight(indicator, height);
-    }
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = showEventRow ? CHART_CONFIG.EVENT_ROW_HEIGHT : 0;
-    manager.setEventRowHeight(height);
-  }, [manager, showEventRow]);
+  useChartPanelHeights({
+    manager,
+    showStochastic,
+    showRSI,
+    showEventRow,
+    activeIndicators: activeIndicators as IndicatorId[],
+    advancedConfig,
+  });
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {

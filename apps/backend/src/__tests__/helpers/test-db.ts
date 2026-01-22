@@ -1,4 +1,3 @@
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
@@ -7,12 +6,12 @@ import * as schema from '../../db/schema';
 
 const { Pool } = pg;
 
-let container: StartedPostgreSqlContainer | null = null;
 let pool: pg.Pool | null = null;
 
 export type TestDatabase = ReturnType<typeof drizzle<typeof schema>>;
 
 let testDb: TestDatabase | null = null;
+let tablesCreated = false;
 
 const createTablesSQL = `
 CREATE TABLE IF NOT EXISTS users (
@@ -359,19 +358,36 @@ CREATE TABLE IF NOT EXISTS price_cache (
   timestamp TIMESTAMP NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS pyramid_entries (
+  id VARCHAR(255) PRIMARY KEY,
+  execution_id VARCHAR(255) NOT NULL REFERENCES trade_executions(id) ON DELETE CASCADE,
+  entry_number INTEGER NOT NULL,
+  entry_price NUMERIC(20, 8) NOT NULL,
+  quantity NUMERIC(20, 8) NOT NULL,
+  entry_time TIMESTAMP NOT NULL,
+  profit_at_entry NUMERIC(10, 4),
+  atr_at_entry NUMERIC(20, 8),
+  adx_at_entry NUMERIC(10, 2),
+  rsi_at_entry NUMERIC(10, 2),
+  order_id BIGINT,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  UNIQUE(execution_id, entry_number)
+);
 `;
 
 export const setupTestDatabase = async (): Promise<TestDatabase> => {
   if (testDb) return testDb;
 
-  container = await new PostgreSqlContainer('timescale/timescaledb:latest-pg17')
-    .withDatabase('marketmind_test')
-    .withUsername('test')
-    .withPassword('test')
-    .start();
+  const databaseUrl = process.env.TEST_DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error(
+      'TEST_DATABASE_URL not set. Make sure globalSetup is configured in vitest.config.ts'
+    );
+  }
 
   pool = new Pool({
-    connectionString: container.getConnectionUri(),
+    connectionString: databaseUrl,
     max: 5,
   });
 
@@ -379,7 +395,10 @@ export const setupTestDatabase = async (): Promise<TestDatabase> => {
 
   setTestDatabase(testDb as unknown as DatabaseType);
 
-  await testDb.execute(sql.raw(createTablesSQL));
+  if (!tablesCreated) {
+    await testDb.execute(sql.raw(createTablesSQL));
+    tablesCreated = true;
+  }
 
   return testDb;
 };
@@ -390,10 +409,6 @@ export const teardownTestDatabase = async (): Promise<void> => {
   if (pool) {
     await pool.end();
     pool = null;
-  }
-  if (container) {
-    await container.stop();
-    container = null;
   }
   testDb = null;
 };
@@ -407,6 +422,7 @@ export const getTestDatabase = (): TestDatabase => {
 
 export const cleanupTables = async (): Promise<void> => {
   const db = getTestDatabase();
+  await db.execute(sql`SET session_replication_role = 'replica'`);
   await db.delete(schema.priceCache);
   await db.delete(schema.klines);
   await db.delete(schema.tradeCooldowns);
@@ -423,4 +439,5 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.sessions);
   await db.delete(schema.wallets);
   await db.delete(schema.users);
+  await db.execute(sql`SET session_replication_role = 'origin'`);
 };
