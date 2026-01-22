@@ -16,7 +16,7 @@ import { Toolbar } from '../components/Layout/Toolbar';
 import { TrpcProvider } from '../components/TrpcProvider';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { REQUIRED_KLINES } from '../constants/defaults';
+import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, REQUIRED_KLINES } from '../constants/defaults';
 import { ChartProvider } from '../context/ChartContext';
 import { useBackendKlines, useKlineStream } from '../hooks/useBackendKlines';
 import { useDebounce } from '../hooks/useDebounce';
@@ -26,50 +26,7 @@ import { useSetupStore } from '../store/setupStore';
 import { system } from '../theme';
 import { toaster } from '../utils/toaster';
 
-const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
-  {
-    period: 9,
-    type: 'EMA',
-    color: '#ff9800',
-    lineWidth: 2,
-    visible: true,
-  },
-  {
-    period: 21,
-    type: 'EMA',
-    color: '#2196f3',
-    lineWidth: 2,
-    visible: true,
-  },
-  {
-    period: 50,
-    type: 'EMA',
-    color: '#4caf50',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 70,
-    type: 'EMA',
-    color: '#00bcd4',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 100,
-    type: 'EMA',
-    color: '#9c27b0',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 200,
-    type: 'EMA',
-    color: '#f44336',
-    lineWidth: 2,
-    visible: false,
-  },
-];
+const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = SHARED_DEFAULT_MAS;
 
 interface ChartWindowContentProps {
   initialSymbol?: string;

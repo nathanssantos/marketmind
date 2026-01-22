@@ -2,70 +2,29 @@ import { INTERVAL_MS } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import type { AdvancedControlsConfig } from '../components/Chart/AdvancedControls';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+import { getChartColors } from '../theme';
 
 export { INTERVAL_MS };
 export const INTERVAL_MS_MAP = INTERVAL_MS;
 
 export const REQUIRED_KLINES = 40_000;
 
-export const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = [
-  {
-    period: 9,
-    type: 'EMA',
-    color: '#ff9800',
-    lineWidth: 2,
-    visible: true,
-  },
-  {
-    period: 10,
-    type: 'EMA',
-    color: '#ffeb3b',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 20,
-    type: 'EMA',
-    color: '#009688',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 21,
-    type: 'EMA',
-    color: '#2196f3',
-    lineWidth: 2,
-    visible: true,
-  },
-  {
-    period: 50,
-    type: 'EMA',
-    color: '#4caf50',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 70,
-    type: 'EMA',
-    color: '#00bcd4',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 100,
-    type: 'EMA',
-    color: '#9c27b0',
-    lineWidth: 2,
-    visible: false,
-  },
-  {
-    period: 200,
-    type: 'EMA',
-    color: '#f44336',
-    lineWidth: 2,
-    visible: false,
-  },
-];
+export const getDefaultMovingAverages = (colorMode: 'light' | 'dark'): MovingAverageConfig[] => {
+  const colors = getChartColors(colorMode);
+  const ma = colors.ma;
+  return [
+    { period: 9, type: 'EMA', color: ma[1] ?? '#ff9800', lineWidth: 2, visible: true },
+    { period: 10, type: 'EMA', color: ma[3] ?? '#14b8a6', lineWidth: 2, visible: false },
+    { period: 20, type: 'EMA', color: ma[4] ?? '#ec4899', lineWidth: 2, visible: false },
+    { period: 21, type: 'EMA', color: ma[0] ?? '#2196f3', lineWidth: 2, visible: true },
+    { period: 50, type: 'EMA', color: ma[7] ?? '#10b981', lineWidth: 2, visible: false },
+    { period: 70, type: 'EMA', color: ma[5] ?? '#eab308', lineWidth: 2, visible: false },
+    { period: 100, type: 'EMA', color: ma[2] ?? '#9c27b0', lineWidth: 2, visible: false },
+    { period: 200, type: 'EMA', color: colors.bearish, lineWidth: 2, visible: false },
+  ];
+};
+
+export const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = getDefaultMovingAverages('dark');
 
 export const DEFAULT_ADVANCED_CONFIG: AdvancedControlsConfig = {
   rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,

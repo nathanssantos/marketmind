@@ -406,10 +406,448 @@ const customConfig = defineConfig({
             _dark: '#ff9800',
           },
         },
+        'chart.klinger.kvoLine': {
+          value: {
+            base: '#1e40af',
+            _dark: '#2962ff',
+          },
+        },
+        'chart.klinger.signalLine': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff6d00',
+          },
+        },
+        'chart.klinger.zeroLine': {
+          value: {
+            base: '#9ca3af',
+            _dark: '#6b7280',
+          },
+        },
+        'chart.elderRay.bullPower': {
+          value: {
+            base: '#16a34a',
+            _dark: '#26a69a',
+          },
+        },
+        'chart.elderRay.bearPower': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef5350',
+          },
+        },
+        'chart.aroon.upLine': {
+          value: {
+            base: '#16a34a',
+            _dark: '#26a69a',
+          },
+        },
+        'chart.aroon.downLine': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef5350',
+          },
+        },
+        'chart.aroon.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.3)',
+            _dark: 'rgba(128, 128, 128, 0.3)',
+          },
+        },
+        'chart.vortex.viPlusLine': {
+          value: {
+            base: '#16a34a',
+            _dark: '#26a69a',
+          },
+        },
+        'chart.vortex.viMinusLine': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef5350',
+          },
+        },
+        'chart.mfi.line': {
+          value: {
+            base: '#7e22ce',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.mfi.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.3)',
+            _dark: 'rgba(128, 128, 128, 0.3)',
+          },
+        },
+        'chart.roc.line': {
+          value: {
+            base: '#0891b2',
+            _dark: '#00bcd4',
+          },
+        },
+        'chart.ao.positive': {
+          value: {
+            base: '#16a34a',
+            _dark: '#26a69a',
+          },
+        },
+        'chart.ao.negative': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef5350',
+          },
+        },
+        'chart.tsi.tsiLine': {
+          value: {
+            base: '#1e40af',
+            _dark: '#2962ff',
+          },
+        },
+        'chart.tsi.signalLine': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff6d00',
+          },
+        },
+        'chart.ppo.ppoLine': {
+          value: {
+            base: '#1e40af',
+            _dark: '#2962ff',
+          },
+        },
+        'chart.ppo.signalLine': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff6d00',
+          },
+        },
+        'chart.ppo.histogramPositive': {
+          value: {
+            base: '#16a34a',
+            _dark: '#26a69a',
+          },
+        },
+        'chart.ppo.histogramNegative': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef5350',
+          },
+        },
+        'chart.ppo.zeroLine': {
+          value: {
+            base: '#9ca3af',
+            _dark: '#6b7280',
+          },
+        },
+        'chart.cmo.line': {
+          value: {
+            base: '#1d4ed8',
+            _dark: '#2196f3',
+          },
+        },
+        'chart.cmo.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.3)',
+            _dark: 'rgba(128, 128, 128, 0.3)',
+          },
+        },
+        'chart.ultimateOsc.line': {
+          value: {
+            base: '#6d28d9',
+            _dark: '#673ab7',
+          },
+        },
+        'chart.ultimateOsc.zone': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.3)',
+            _dark: 'rgba(128, 128, 128, 0.3)',
+          },
+        },
+        'chart.dema.line': {
+          value: {
+            base: '#ea580c',
+            _dark: '#ff9800',
+          },
+        },
+        'chart.tema.line': {
+          value: {
+            base: '#be185d',
+            _dark: '#e91e63',
+          },
+        },
+        'chart.wma.line': {
+          value: {
+            base: '#7e22ce',
+            _dark: '#9c27b0',
+          },
+        },
+        'chart.hma.line': {
+          value: {
+            base: '#0891b2',
+            _dark: '#00bcd4',
+          },
+        },
+        'chart.pivotPoints.pivot': {
+          value: {
+            base: '#1d4ed8',
+            _dark: '#2196f3',
+          },
+        },
+        'chart.pivotPoints.support': {
+          value: {
+            base: '#16a34a',
+            _dark: '#22c55e',
+          },
+        },
+        'chart.pivotPoints.resistance': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef4444',
+          },
+        },
+        'chart.fibonacci.level0': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.8)',
+            _dark: 'rgba(128, 128, 128, 0.8)',
+          },
+        },
+        'chart.fibonacci.level236': {
+          value: {
+            base: 'rgba(255, 82, 82, 0.6)',
+            _dark: 'rgba(255, 82, 82, 0.6)',
+          },
+        },
+        'chart.fibonacci.level382': {
+          value: {
+            base: 'rgba(255, 167, 38, 0.6)',
+            _dark: 'rgba(255, 167, 38, 0.6)',
+          },
+        },
+        'chart.fibonacci.level50': {
+          value: {
+            base: 'rgba(255, 235, 59, 0.6)',
+            _dark: 'rgba(255, 235, 59, 0.6)',
+          },
+        },
+        'chart.fibonacci.level618': {
+          value: {
+            base: 'rgba(76, 175, 80, 0.6)',
+            _dark: 'rgba(76, 175, 80, 0.6)',
+          },
+        },
+        'chart.fibonacci.level786': {
+          value: {
+            base: 'rgba(33, 150, 243, 0.6)',
+            _dark: 'rgba(33, 150, 243, 0.6)',
+          },
+        },
+        'chart.fibonacci.level100': {
+          value: {
+            base: 'rgba(156, 39, 176, 0.6)',
+            _dark: 'rgba(156, 39, 176, 0.6)',
+          },
+        },
+        'chart.fibonacci.level127': {
+          value: {
+            base: 'rgba(103, 58, 183, 0.5)',
+            _dark: 'rgba(103, 58, 183, 0.5)',
+          },
+        },
+        'chart.fibonacci.level161': {
+          value: {
+            base: 'rgba(63, 81, 181, 0.5)',
+            _dark: 'rgba(63, 81, 181, 0.5)',
+          },
+        },
+        'chart.fibonacci.level200': {
+          value: {
+            base: 'rgba(0, 150, 136, 0.5)',
+            _dark: 'rgba(0, 150, 136, 0.5)',
+          },
+        },
+        'chart.fvg.bullish': {
+          value: {
+            base: 'rgba(34, 197, 94, 0.2)',
+            _dark: 'rgba(34, 197, 94, 0.2)',
+          },
+        },
+        'chart.fvg.bearish': {
+          value: {
+            base: 'rgba(239, 68, 68, 0.2)',
+            _dark: 'rgba(239, 68, 68, 0.2)',
+          },
+        },
+        'chart.fvg.bullishBorder': {
+          value: {
+            base: 'rgba(34, 197, 94, 0.5)',
+            _dark: 'rgba(34, 197, 94, 0.5)',
+          },
+        },
+        'chart.fvg.bearishBorder': {
+          value: {
+            base: 'rgba(239, 68, 68, 0.5)',
+            _dark: 'rgba(239, 68, 68, 0.5)',
+          },
+        },
+        'chart.liquidityLevels.support': {
+          value: {
+            base: '#16a34a',
+            _dark: '#22c55e',
+          },
+        },
+        'chart.liquidityLevels.resistance': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef4444',
+          },
+        },
+        'chart.liquidityLevels.supportBg': {
+          value: {
+            base: 'rgba(34, 197, 94, 0.1)',
+            _dark: 'rgba(34, 197, 94, 0.1)',
+          },
+        },
+        'chart.liquidityLevels.resistanceBg': {
+          value: {
+            base: 'rgba(239, 68, 68, 0.1)',
+            _dark: 'rgba(239, 68, 68, 0.1)',
+          },
+        },
         'chart.indicator.zone': {
           value: {
             base: 'rgba(128, 128, 128, 0.7)',
             _dark: 'rgba(128, 128, 128, 0.7)',
+          },
+        },
+        'chart.ma.4': {
+          value: {
+            base: '#0d9488',
+            _dark: '#14b8a6',
+          },
+        },
+        'chart.ma.5': {
+          value: {
+            base: '#db2777',
+            _dark: '#ec4899',
+          },
+        },
+        'chart.ma.6': {
+          value: {
+            base: '#ca8a04',
+            _dark: '#eab308',
+          },
+        },
+        'chart.ma.7': {
+          value: {
+            base: '#4f46e5',
+            _dark: '#6366f1',
+          },
+        },
+        'chart.ma.8': {
+          value: {
+            base: '#059669',
+            _dark: '#10b981',
+          },
+        },
+        'trading.profit': {
+          value: {
+            base: '#16a34a',
+            _dark: '#22c55e',
+          },
+        },
+        'trading.loss': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef4444',
+          },
+        },
+        'trading.neutral': {
+          value: {
+            base: '#64748b',
+            _dark: '#94a3b8',
+          },
+        },
+        'trading.warning': {
+          value: {
+            base: '#f59e0b',
+            _dark: '#fbbf24',
+          },
+        },
+        'trading.info': {
+          value: {
+            base: '#2563eb',
+            _dark: '#3b82f6',
+          },
+        },
+        'trading.long': {
+          value: {
+            base: '#16a34a',
+            _dark: '#22c55e',
+          },
+        },
+        'trading.short': {
+          value: {
+            base: '#dc2626',
+            _dark: '#ef4444',
+          },
+        },
+        'bg.loading': {
+          value: {
+            base: '#f7fafc',
+            _dark: '#1a1a2e',
+          },
+        },
+        'bg.error': {
+          value: {
+            base: '#fef2f2',
+            _dark: '#1c1917',
+          },
+        },
+        'bg.success': {
+          value: {
+            base: '#f0fdf4',
+            _dark: '#14532d',
+          },
+        },
+        'bg.warning': {
+          value: {
+            base: '#fffbeb',
+            _dark: '#451a03',
+          },
+        },
+        'overlay.dark': {
+          value: 'rgba(0, 0, 0, 0.5)',
+        },
+        'overlay.light': {
+          value: 'rgba(255, 255, 255, 0.5)',
+        },
+        'canvas.text': {
+          value: {
+            base: '#ffffff',
+            _dark: '#ffffff',
+          },
+        },
+        'canvas.priceTag.bullish': {
+          value: {
+            base: 'rgba(34, 197, 94, 0.9)',
+            _dark: 'rgba(34, 197, 94, 0.9)',
+          },
+        },
+        'canvas.priceTag.bearish': {
+          value: {
+            base: 'rgba(239, 68, 68, 0.9)',
+            _dark: 'rgba(239, 68, 68, 0.9)',
+          },
+        },
+        'canvas.priceTag.info': {
+          value: {
+            base: 'rgba(59, 130, 246, 0.9)',
+            _dark: 'rgba(59, 130, 246, 0.9)',
+          },
+        },
+        'canvas.priceTag.neutral': {
+          value: {
+            base: 'rgba(100, 116, 139, 0.9)',
+            _dark: 'rgba(148, 163, 184, 0.9)',
           },
         },
       },
@@ -456,6 +894,11 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       resolveValue(tokens['chart.ma.1']),
       resolveValue(tokens['chart.ma.2']),
       resolveValue(tokens['chart.ma.3']),
+      resolveValue(tokens['chart.ma.4']),
+      resolveValue(tokens['chart.ma.5']),
+      resolveValue(tokens['chart.ma.6']),
+      resolveValue(tokens['chart.ma.7']),
+      resolveValue(tokens['chart.ma.8']),
     ],
     stochastic: {
       k: resolveValue(tokens['chart.stochastic.k']),
@@ -535,6 +978,153 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       k: resolveValue(tokens['chart.stochRsi.k']),
       d: resolveValue(tokens['chart.stochRsi.d']),
     },
+    klinger: {
+      kvoLine: resolveValue(tokens['chart.klinger.kvoLine']),
+      signalLine: resolveValue(tokens['chart.klinger.signalLine']),
+      zeroLine: resolveValue(tokens['chart.klinger.zeroLine']),
+    },
+    elderRay: {
+      bullPower: resolveValue(tokens['chart.elderRay.bullPower']),
+      bearPower: resolveValue(tokens['chart.elderRay.bearPower']),
+    },
+    aroon: {
+      upLine: resolveValue(tokens['chart.aroon.upLine']),
+      downLine: resolveValue(tokens['chart.aroon.downLine']),
+      zone: resolveValue(tokens['chart.aroon.zone']),
+    },
+    vortex: {
+      viPlusLine: resolveValue(tokens['chart.vortex.viPlusLine']),
+      viMinusLine: resolveValue(tokens['chart.vortex.viMinusLine']),
+    },
+    mfi: {
+      line: resolveValue(tokens['chart.mfi.line']),
+      zone: resolveValue(tokens['chart.mfi.zone']),
+    },
+    roc: {
+      line: resolveValue(tokens['chart.roc.line']),
+    },
+    ao: {
+      positive: resolveValue(tokens['chart.ao.positive']),
+      negative: resolveValue(tokens['chart.ao.negative']),
+    },
+    tsi: {
+      tsiLine: resolveValue(tokens['chart.tsi.tsiLine']),
+      signalLine: resolveValue(tokens['chart.tsi.signalLine']),
+    },
+    ppo: {
+      ppoLine: resolveValue(tokens['chart.ppo.ppoLine']),
+      signalLine: resolveValue(tokens['chart.ppo.signalLine']),
+      histogramPositive: resolveValue(tokens['chart.ppo.histogramPositive']),
+      histogramNegative: resolveValue(tokens['chart.ppo.histogramNegative']),
+      zeroLine: resolveValue(tokens['chart.ppo.zeroLine']),
+    },
+    cmo: {
+      line: resolveValue(tokens['chart.cmo.line']),
+      zone: resolveValue(tokens['chart.cmo.zone']),
+    },
+    ultimateOsc: {
+      line: resolveValue(tokens['chart.ultimateOsc.line']),
+      zone: resolveValue(tokens['chart.ultimateOsc.zone']),
+    },
+    dema: {
+      line: resolveValue(tokens['chart.dema.line']),
+    },
+    tema: {
+      line: resolveValue(tokens['chart.tema.line']),
+    },
+    wma: {
+      line: resolveValue(tokens['chart.wma.line']),
+    },
+    hma: {
+      line: resolveValue(tokens['chart.hma.line']),
+    },
+    pivotPoints: {
+      pivot: resolveValue(tokens['chart.pivotPoints.pivot']),
+      support: resolveValue(tokens['chart.pivotPoints.support']),
+      resistance: resolveValue(tokens['chart.pivotPoints.resistance']),
+    },
+    fibonacci: {
+      level0: resolveValue(tokens['chart.fibonacci.level0']),
+      level236: resolveValue(tokens['chart.fibonacci.level236']),
+      level382: resolveValue(tokens['chart.fibonacci.level382']),
+      level50: resolveValue(tokens['chart.fibonacci.level50']),
+      level618: resolveValue(tokens['chart.fibonacci.level618']),
+      level786: resolveValue(tokens['chart.fibonacci.level786']),
+      level100: resolveValue(tokens['chart.fibonacci.level100']),
+      level127: resolveValue(tokens['chart.fibonacci.level127']),
+      level161: resolveValue(tokens['chart.fibonacci.level161']),
+      level200: resolveValue(tokens['chart.fibonacci.level200']),
+    },
+    fvg: {
+      bullish: resolveValue(tokens['chart.fvg.bullish']),
+      bearish: resolveValue(tokens['chart.fvg.bearish']),
+      bullishBorder: resolveValue(tokens['chart.fvg.bullishBorder']),
+      bearishBorder: resolveValue(tokens['chart.fvg.bearishBorder']),
+    },
+    liquidityLevels: {
+      support: resolveValue(tokens['chart.liquidityLevels.support']),
+      resistance: resolveValue(tokens['chart.liquidityLevels.resistance']),
+      supportBg: resolveValue(tokens['chart.liquidityLevels.supportBg']),
+      resistanceBg: resolveValue(tokens['chart.liquidityLevels.resistanceBg']),
+    },
     indicatorZone: resolveValue(tokens['chart.indicator.zone']),
   };
+};
+
+export const getTradingColors = (colorMode: 'light' | 'dark') => {
+  const tokens = customConfig.theme?.semanticTokens?.colors || {};
+
+  const resolveValue = (token: unknown): string => {
+    if (!token || typeof token !== 'object' || !('value' in token)) return '';
+    const tokenValue = (token as { value: string | { base: string; _dark?: string } }).value;
+    if (typeof tokenValue === 'string') return tokenValue;
+    return colorMode === 'dark' ? (tokenValue._dark || tokenValue.base) : tokenValue.base;
+  };
+
+  return {
+    profit: resolveValue(tokens['trading.profit']),
+    loss: resolveValue(tokens['trading.loss']),
+    neutral: resolveValue(tokens['trading.neutral']),
+    warning: resolveValue(tokens['trading.warning']),
+    info: resolveValue(tokens['trading.info']),
+    long: resolveValue(tokens['trading.long']),
+    short: resolveValue(tokens['trading.short']),
+  };
+};
+
+export const getCanvasColors = (colorMode: 'light' | 'dark') => {
+  const tokens = customConfig.theme?.semanticTokens?.colors || {};
+
+  const resolveValue = (token: unknown): string => {
+    if (!token || typeof token !== 'object' || !('value' in token)) return '';
+    const tokenValue = (token as { value: string | { base: string; _dark?: string } }).value;
+    if (typeof tokenValue === 'string') return tokenValue;
+    return colorMode === 'dark' ? (tokenValue._dark || tokenValue.base) : tokenValue.base;
+  };
+
+  return {
+    text: resolveValue(tokens['canvas.text']),
+    priceTag: {
+      bullish: resolveValue(tokens['canvas.priceTag.bullish']),
+      bearish: resolveValue(tokens['canvas.priceTag.bearish']),
+      info: resolveValue(tokens['canvas.priceTag.info']),
+      neutral: resolveValue(tokens['canvas.priceTag.neutral']),
+    },
+    overlay: {
+      dark: resolveValue(tokens['overlay.dark']),
+      light: resolveValue(tokens['overlay.light']),
+    },
+  };
+};
+
+export const getPnLColor = (value: number, colorMode: 'light' | 'dark' = 'dark'): string => {
+  const colors = getTradingColors(colorMode);
+  if (value > 0) return colors.profit;
+  if (value < 0) return colors.loss;
+  return colors.neutral;
+};
+
+export const getSideColor = (side: 'LONG' | 'SHORT' | 'BUY' | 'SELL', colorMode: 'light' | 'dark' = 'dark'): string => {
+  const colors = getTradingColors(colorMode);
+  return side === 'LONG' || side === 'BUY' ? colors.long : colors.short;
 };

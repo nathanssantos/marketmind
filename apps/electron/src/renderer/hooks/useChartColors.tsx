@@ -14,7 +14,7 @@ export interface ChartThemeColors extends ChartColors {
     text: string;
   };
   lineDefault: string;
-  ma: [string, string, string];
+  ma: string[];
   stochastic: {
     k: string;
     d: string;
@@ -154,6 +154,7 @@ export interface ChartThemeColors extends ChartColors {
     line: string;
   };
   pivotPoints?: {
+    pivot: string;
     support: string;
     resistance: string;
   };

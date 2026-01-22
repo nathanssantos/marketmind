@@ -5,6 +5,7 @@ import { createPlatformAdapter } from './adapters/factory';
 import type { PlatformAdapter } from './adapters/types';
 import App from './App';
 import { ColorModeProvider } from './components/ui/color-mode';
+import { PRE_REACT_COLORS } from './constants/preReactColors';
 import { PlatformProvider } from './context/PlatformContext';
 import './global.d.ts';
 import './i18n';
@@ -51,8 +52,8 @@ const Root = () => {
 
   if (!adapter) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#1a1a2e' }}>
-        <div style={{ color: '#fff', fontFamily: 'system-ui' }}>Loading...</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: PRE_REACT_COLORS.bg.loading }}>
+        <div style={{ color: PRE_REACT_COLORS.fg.default, fontFamily: 'system-ui' }}>Loading...</div>
       </div>
     );
   }
@@ -83,29 +84,29 @@ const showFatalErrorScreen = (error: Error | string) => {
         align-items: center;
         justify-content: center;
         min-height: 100vh;
-        background: #1a1a2e;
-        color: #fff;
+        background: ${PRE_REACT_COLORS.bg.loading};
+        color: ${PRE_REACT_COLORS.fg.default};
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         padding: 20px;
         text-align: center;
       ">
-        <h1 style="color: #ff6b6b; margin-bottom: 16px;">Something went wrong</h1>
-        <p style="color: #a0a0a0; margin-bottom: 24px; max-width: 500px;">
+        <h1 style="color: ${PRE_REACT_COLORS.fg.error}; margin-bottom: 16px;">Something went wrong</h1>
+        <p style="color: ${PRE_REACT_COLORS.fg.muted}; margin-bottom: 24px; max-width: 500px;">
           The application encountered an unexpected error. This might be due to a temporary issue.
         </p>
         <pre style="
-          background: #0d0d1a;
+          background: ${PRE_REACT_COLORS.bg.error};
           padding: 16px;
           border-radius: 8px;
           max-width: 600px;
           overflow: auto;
           font-size: 12px;
-          color: #ff6b6b;
+          color: ${PRE_REACT_COLORS.fg.error};
           margin-bottom: 24px;
           text-align: left;
         ">${typeof error === 'string' ? error : error.message}</pre>
         <button onclick="window.location.reload()" style="
-          background: #4a90d9;
+          background: ${PRE_REACT_COLORS.button.primary};
           color: white;
           border: none;
           padding: 12px 24px;
