@@ -1,0 +1,26 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp up load"
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load"
+    - duration: 30
+      arrivalRate: 50
+      rampTo: 5
+      name: "Ramp down"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+  ensure:
+    maxErrorRate: 1
+    p95: 500
+    p99: 1000

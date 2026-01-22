@@ -3,6 +3,7 @@ import { httpBatchLink } from '@trpc/client';
 import { useState, useEffect } from 'react';
 import { BACKEND_TRPC_URL } from '@shared/constants/api';
 import { trpc } from '../utils/trpc';
+import { QUERY_CONFIGS } from '../services/queryConfig';
 
 const clearStaleCache = (client: QueryClient) => {
     client.invalidateQueries({ queryKey: ['kline'] });
@@ -21,8 +22,8 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
         }),
         defaultOptions: {
             queries: {
-                staleTime: 30000,
-                gcTime: 60000,
+                staleTime: QUERY_CONFIGS.default.staleTime,
+                gcTime: QUERY_CONFIGS.default.gcTime,
                 retry: (failureCount, error) => {
                     if (error instanceof Error) {
                         if (error.message.includes('UNAUTHORIZED')) return false;

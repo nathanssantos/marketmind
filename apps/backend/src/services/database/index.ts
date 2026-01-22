@@ -30,3 +30,14 @@ export {
   type PositionQueryOptions,
   type ListPositionsParams,
 } from './positionQueries';
+
+export {
+  klineQueries,
+  getKlineRange,
+  findKlineGaps,
+  countKlines,
+  type KlineRecord,
+  type KlineQueryParams,
+  type KlineGap,
+  type KlineRange,
+} from './klineQueries';

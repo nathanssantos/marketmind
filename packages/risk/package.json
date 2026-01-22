@@ -11,12 +11,18 @@
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:mutation": "stryker run",
+    "test:mutation:incremental": "stryker run --incremental"
   },
   "dependencies": {
     "@marketmind/types": "workspace:*"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.4.0",
+    "@stryker-mutator/typescript-checker": "^9.4.0",
+    "@stryker-mutator/vitest-runner": "^9.4.0",
+    "fast-check": "^4.5.3",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

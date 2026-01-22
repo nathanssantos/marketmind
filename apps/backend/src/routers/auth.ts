@@ -2,9 +2,18 @@ import { verify } from '@node-rs/argon2';
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { users } from '../db/schema';
 import { createSession, createUser, invalidateSession, validateSession } from '../services/auth';
+import {
+  checkLoginRateLimit,
+  checkRegisterRateLimit,
+  extractRequestMetadata,
+  logSecurityEvent,
+  recordLoginAttempt,
+  recordRegisterAttempt,
+  SecurityEvent,
+} from '../services/security';
 import { publicProcedure, router } from '../trpc';
 
 interface CookieReply {
@@ -41,6 +50,12 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const req = ctx.req as FastifyRequest;
+      const ip = req.ip ?? 'unknown';
+      const metadata = extractRequestMetadata(req);
+
+      checkRegisterRateLimit(ip, metadata);
+
       const [existingUser] = await ctx.db
         .select()
         .from(users)
@@ -48,6 +63,12 @@ export const authRouter = router({
         .limit(1);
 
       if (existingUser) {
+        recordRegisterAttempt(ip, false);
+        logSecurityEvent(SecurityEvent.REGISTER_FAILURE, null, {
+          ...metadata,
+          email: input.email,
+          reason: 'email_already_registered',
+        });
         throw new TRPCError({
           code: 'CONFLICT',
           message: 'Email already registered',
@@ -56,6 +77,12 @@ export const authRouter = router({
 
       const userId = await createUser(input.email, input.password);
       const { sessionId, expiresAt } = await createSession(userId);
+
+      recordRegisterAttempt(ip, true);
+      logSecurityEvent(SecurityEvent.REGISTER_SUCCESS, userId, {
+        ...metadata,
+        email: input.email,
+      });
 
       setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
 
@@ -74,6 +101,12 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const req = ctx.req as FastifyRequest;
+      const ip = req.ip ?? 'unknown';
+      const metadata = extractRequestMetadata(req);
+
+      checkLoginRateLimit(ip, input.email, metadata);
+
       const [user] = await ctx.db
         .select()
         .from(users)
@@ -81,6 +114,12 @@ export const authRouter = router({
         .limit(1);
 
       if (!user) {
+        recordLoginAttempt(ip, input.email, false);
+        logSecurityEvent(SecurityEvent.LOGIN_FAILURE, null, {
+          ...metadata,
+          email: input.email,
+          reason: 'user_not_found',
+        });
         throw new TRPCError({
           code: 'UNAUTHORIZED',
           message: 'Invalid credentials',
@@ -90,13 +129,25 @@ export const authRouter = router({
       const validPassword = await verify(user.passwordHash, input.password);
 
       if (!validPassword) {
+        recordLoginAttempt(ip, input.email, false);
+        logSecurityEvent(SecurityEvent.LOGIN_FAILURE, user.id, {
+          ...metadata,
+          email: input.email,
+          reason: 'invalid_password',
+        });
         throw new TRPCError({
           code: 'UNAUTHORIZED',
           message: 'Invalid credentials',
         });
       }
 
+      recordLoginAttempt(ip, input.email, true);
       const { sessionId, expiresAt } = await createSession(user.id);
+
+      logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, user.id, {
+        ...metadata,
+        email: input.email,
+      });
 
       setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
 
@@ -115,7 +166,13 @@ export const authRouter = router({
       });
     }
 
+    const req = ctx.req as FastifyRequest;
+    const metadata = extractRequestMetadata(req);
+    const userId = ctx.user?.id ?? null;
+
     await invalidateSession(ctx.sessionId);
+
+    logSecurityEvent(SecurityEvent.LOGOUT, userId, metadata);
 
     clearSessionCookie(ctx.res as FastifyReply);
 

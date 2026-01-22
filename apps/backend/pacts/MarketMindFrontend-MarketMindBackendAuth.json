@@ -1,0 +1,573 @@
+{
+  "consumer": {
+    "name": "MarketMindFrontend"
+  },
+  "interactions": [
+    {
+      "description": "a login request with invalid password",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user exists with email test@example.com"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "email": "test@example.com",
+            "password": "WrongPassword"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.password": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/trpc/auth.login"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "error": {
+              "code": "UNAUTHORIZED",
+              "message": "Invalid credentials"
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.error.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.error.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 401
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a login request with valid credentials",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user exists with email test@example.com"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "email": "test@example.com",
+            "password": "ValidPassword123!"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.password": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/trpc/auth.login"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": {
+                "email": "test@example.com",
+                "id": 1
+              }
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Set-Cookie": [
+            "session=abc123-def456; Path=/; HttpOnly; SameSite=Strict"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.result.data.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "Set-Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "session=[a-zA-Z0-9-]+.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a logout request",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user is authenticated"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Cookie": [
+            "session=valid-session-token"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/trpc/auth.logout"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": {
+                "success": true
+              }
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a registration request for new user",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "email newuser@example.com is not registered"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "email": "newuser@example.com",
+            "password": "SecurePassword123!"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.password": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/trpc/auth.register"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": {
+                "email": "newuser@example.com",
+                "id": 1
+              }
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Set-Cookie": [
+            "session=abc123-def456; Path=/; HttpOnly; SameSite=Strict"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.result.data.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "Set-Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "session=[a-zA-Z0-9-]+.*"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a registration request with existing email",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user exists with email existing@example.com"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "email": "existing@example.com",
+            "password": "SecurePassword123!"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.password": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/trpc/auth.register"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "error": {
+              "code": "CONFLICT",
+              "message": "Email already registered"
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.error.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.error.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 409
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a request to get current user",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user is authenticated"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Cookie": [
+            "session=valid-session-token"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "GET",
+        "path": "/trpc/auth.me"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": {
+                "email": "test@example.com",
+                "id": 1
+              }
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.result.data.email": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pactRust": {
+      "ffi": "0.4.28",
+      "models": "1.3.5"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "MarketMindBackendAuth"
+  }
+}

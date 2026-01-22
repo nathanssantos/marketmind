@@ -30,6 +30,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --exclude='**/routers/*.test.ts'",
+    "test:contract": "vitest run --include='**/contracts/*.contract.test.ts'",
+    "test:load": "artillery run load-tests/config.yml",
+    "test:load:health": "artillery run load-tests/health-check.yml",
+    "test:load:wallet": "artillery run load-tests/wallet-api.yml",
+    "test:load:trading": "artillery run load-tests/trading-api.yml",
+    "test:load:report": "artillery run load-tests/config.yml --output load-test-report.json && artillery report load-test-report.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
@@ -79,6 +85,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@pact-foundation/pact": "^16.0.4",
     "@testcontainers/postgresql": "^11.11.0",
     "@types/node": "^25.0.0",
     "@types/pg": "^8.16.0",
@@ -86,6 +93,7 @@
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
     "@vitest/coverage-v8": "^4.0.16",
+    "artillery": "^2.0.27",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",

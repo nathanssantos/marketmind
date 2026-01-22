@@ -1,0 +1,418 @@
+{
+  "consumer": {
+    "name": "MarketMindFrontend"
+  },
+  "interactions": [
+    {
+      "description": "a request to create a paper wallet",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user is authenticated"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "initialBalance": 10000,
+            "name": "Test Paper Wallet"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Cookie": [
+            "session=valid-session-token"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.initialBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/trpc/wallet.createPaper"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": {
+                "exchange": "paper",
+                "id": 1,
+                "initialBalance": 10000,
+                "isActive": true,
+                "name": "Test Paper Wallet",
+                "type": "paper"
+              }
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.result.data.exchange": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.result.data.initialBalance": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.result.data.isActive": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data.name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data.type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a request to list wallets",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user is authenticated"
+        },
+        {
+          "name": "user has wallets"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Cookie": [
+            "session=valid-session-token"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "GET",
+        "path": "/trpc/wallet.list"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": [
+                {
+                  "exchange": "binance",
+                  "id": 1,
+                  "isActive": true,
+                  "name": "Main Wallet",
+                  "type": "futures"
+                }
+              ]
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.result.data": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 1
+                }
+              ]
+            },
+            "$.result.data[*].exchange": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data[*].id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.result.data[*].isActive": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data[*].name": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.result.data[*].type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a request to list wallets when none exist",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user is authenticated"
+        },
+        {
+          "name": "user has no wallets"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Cookie": [
+            "session=valid-session-token"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Cookie": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "GET",
+        "path": "/trpc/wallet.list"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "result": {
+              "data": []
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a request without authentication",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "user is not authenticated"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/trpc/wallet.list"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "error": {
+              "code": "UNAUTHORIZED",
+              "message": "Unauthorized"
+            }
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.error.code": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.error.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          },
+          "header": {
+            "Content-Type": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 401
+      },
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pactRust": {
+      "ffi": "0.4.28",
+      "models": "1.3.5"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "MarketMindBackendWallet"
+  }
+}

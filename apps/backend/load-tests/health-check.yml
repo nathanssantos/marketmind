@@ -1,0 +1,24 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+      name: "Light load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Heavy load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+
+scenarios:
+  - name: "Health check endpoint"
+    flow:
+      - get:
+          url: "/trpc/health"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+            - hasProperty: "result.data.status"

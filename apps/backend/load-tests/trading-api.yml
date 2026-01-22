@@ -1,0 +1,53 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 90
+      arrivalRate: 30
+      name: "Sustained trading load"
+    - duration: 30
+      arrivalRate: 100
+      name: "Peak trading activity"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+  variables:
+    testSessionToken: "load-test-session-token"
+    testWalletId: "1"
+
+scenarios:
+  - name: "List trading profiles"
+    weight: 40
+    flow:
+      - get:
+          url: "/trpc/tradingProfiles.list?input={\"walletId\":\"{{ testWalletId }}\"}"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+
+  - name: "List orders"
+    weight: 30
+    flow:
+      - get:
+          url: "/trpc/trading.listOrders?input={\"walletId\":\"{{ testWalletId }}\"}"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+
+  - name: "List positions"
+    weight: 20
+    flow:
+      - get:
+          url: "/trpc/trading.listPositions?input={\"walletId\":\"{{ testWalletId }}\"}"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+
+  - name: "Get account balance"
+    weight: 10
+    flow:
+      - get:
+          url: "/trpc/trading.getAccountBalance?input={\"walletId\":\"{{ testWalletId }}\"}"
+          headers:
+            Cookie: "session={{ testSessionToken }}"

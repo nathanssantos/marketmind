@@ -1,0 +1,74 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 20
+      name: "Normal load"
+    - duration: 60
+      arrivalRate: 50
+      name: "Peak load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+  variables:
+    testSessionToken: "load-test-session-token"
+
+scenarios:
+  - name: "List wallets"
+    weight: 60
+    flow:
+      - get:
+          url: "/trpc/wallet.list"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+          capture:
+            - json: "$.result.data"
+              as: "wallets"
+
+  - name: "Get wallet by ID"
+    weight: 25
+    flow:
+      - get:
+          url: "/trpc/wallet.getById?input={\"id\":1}"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+
+  - name: "Create paper wallet"
+    weight: 10
+    flow:
+      - post:
+          url: "/trpc/wallet.createPaper"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+          json:
+            name: "Load Test Wallet {{ $randomNumber(1000, 9999) }}"
+            initialBalance: 10000
+          expect:
+            - statusCode: 200
+
+  - name: "Full wallet flow"
+    weight: 5
+    flow:
+      - post:
+          url: "/trpc/wallet.createPaper"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+          json:
+            name: "Flow Test Wallet {{ $randomNumber(1000, 9999) }}"
+            initialBalance: 5000
+          capture:
+            - json: "$.result.data.id"
+              as: "newWalletId"
+      - get:
+          url: "/trpc/wallet.getById?input={\"id\":{{ newWalletId }}}"
+          headers:
+            Cookie: "session={{ testSessionToken }}"
+      - get:
+          url: "/trpc/wallet.list"
+          headers:
+            Cookie: "session={{ testSessionToken }}"

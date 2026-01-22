@@ -288,6 +288,13 @@
       "when": 1768868997706,
       "tag": "0040_gorgeous_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1769000000000,
+      "tag": "0041_timescaledb_data_management",
+      "breakpoints": true
     }
   ]
 }
