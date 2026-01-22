@@ -2,17 +2,8 @@ import { Box, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
-import {
-  DialogBackdrop,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
-} from '@renderer/components/ui/dialog';
 import { Field } from '@renderer/components/ui/field';
+import { FormDialog } from '@renderer/components/ui/FormDialog';
 import { Select } from '@renderer/components/ui/select';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
@@ -105,160 +96,147 @@ export const AddWatcherDialog = ({
     })),
   ];
 
+  const submitLabel = isBulkMode
+    ? t('tradingProfiles.watchers.startBulk', 'Start {{count}} Watchers', { count: selectedSymbols.length })
+    : t('tradingProfiles.watchers.start');
+
   return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && handleClose()} size="md">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('tradingProfiles.watchers.addTitle')}</DialogTitle>
-          </DialogHeader>
+    <FormDialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('tradingProfiles.watchers.addTitle')}
+      size="md"
+      onSubmit={() => void handleSubmit()}
+      submitLabel={submitLabel}
+      submitColorPalette="green"
+      submitDisabled={!canSubmit}
+      isLoading={isLoading}
+    >
+      <Stack gap={5}>
+        <Group attached>
+          <Button
+            size="sm"
+            variant={!isBulkMode ? 'solid' : 'outline'}
+            onClick={() => setIsBulkMode(false)}
+            flex={1}
+          >
+            {t('tradingProfiles.watchers.singleMode', 'Single')}
+          </Button>
+          <Button
+            size="sm"
+            variant={isBulkMode ? 'solid' : 'outline'}
+            onClick={() => setIsBulkMode(true)}
+            flex={1}
+          >
+            {t('tradingProfiles.watchers.bulkMode', 'Bulk')}
+          </Button>
+        </Group>
 
-          <DialogBody>
-            <Stack gap={5}>
-              <Group attached>
-                <Button
-                  size="sm"
-                  variant={!isBulkMode ? 'solid' : 'outline'}
-                  onClick={() => setIsBulkMode(false)}
-                  flex={1}
-                >
-                  {t('tradingProfiles.watchers.singleMode', 'Single')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={isBulkMode ? 'solid' : 'outline'}
-                  onClick={() => setIsBulkMode(true)}
-                  flex={1}
-                >
-                  {t('tradingProfiles.watchers.bulkMode', 'Bulk')}
-                </Button>
-              </Group>
+        {!isBulkMode ? (
+          <HStack gap={4} align="flex-end">
+            <Field label={t('tradingProfiles.watchers.symbol')} required>
+              <SymbolSelector
+                value={symbol}
+                onChange={handleSymbolChange}
+                marketType={marketType}
+                onMarketTypeChange={setMarketType}
+                showMarketTypeToggle
+              />
+            </Field>
 
-              {!isBulkMode ? (
-                <HStack gap={4} align="flex-end">
-                  <Field label={t('tradingProfiles.watchers.symbol')} required>
-                    <SymbolSelector
-                      value={symbol}
-                      onChange={handleSymbolChange}
-                      marketType={marketType}
-                      onMarketTypeChange={setMarketType}
-                      showMarketTypeToggle
-                    />
-                  </Field>
+            <Field label={t('tradingProfiles.watchers.interval')}>
+              <TimeframeSelector
+                selectedTimeframe={interval}
+                onTimeframeChange={setInterval}
+              />
+            </Field>
+          </HStack>
+        ) : (
+          <Stack gap={4}>
+            <Field label={t('tradingProfiles.watchers.interval')}>
+              <TimeframeSelector
+                selectedTimeframe={interval}
+                onTimeframeChange={setInterval}
+              />
+            </Field>
 
-                  <Field label={t('tradingProfiles.watchers.interval')}>
-                    <TimeframeSelector
-                      selectedTimeframe={interval}
-                      onTimeframeChange={setInterval}
-                    />
-                  </Field>
-                </HStack>
-              ) : (
-                <Stack gap={4}>
-                  <Field label={t('tradingProfiles.watchers.interval')}>
-                    <TimeframeSelector
-                      selectedTimeframe={interval}
-                      onTimeframeChange={setInterval}
-                    />
-                  </Field>
+            <BulkSymbolSelector
+              selectedSymbols={selectedSymbols}
+              onSymbolsChange={setSelectedSymbols}
+              marketType={marketType}
+              onMarketTypeChange={handleMarketTypeChange}
+              limit={50}
+              showMarketTypeToggle
+              maxHeight="200px"
+            />
+          </Stack>
+        )}
 
-                  <BulkSymbolSelector
-                    selectedSymbols={selectedSymbols}
-                    onSymbolsChange={setSelectedSymbols}
-                    marketType={marketType}
-                    onMarketTypeChange={handleMarketTypeChange}
-                    limit={50}
-                    showMarketTypeToggle
-                    maxHeight="200px"
-                  />
-                </Stack>
-              )}
+        {marketType === 'FUTURES' && (
+          <Box
+            p={2}
+            borderRadius="sm"
+            bg="orange.50"
+            borderWidth="1px"
+            borderColor="orange.200"
+            _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
+          >
+            <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
+              {t('tradingProfiles.watchers.futuresWarning', 'Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.')}
+            </Text>
+          </Box>
+        )}
 
-              {marketType === 'FUTURES' && (
-                <Box
-                  p={2}
-                  borderRadius="sm"
-                  bg="orange.50"
-                  borderWidth="1px"
-                  borderColor="orange.200"
-                  _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
-                >
-                  <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
-                    {t('tradingProfiles.watchers.futuresWarning', 'Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.')}
-                  </Text>
-                </Box>
-              )}
+        <Box>
+          <HStack mb={3}>
+            <Checkbox
+              checked={useDefault}
+              onCheckedChange={setUseDefault}
+            />
+            <Text fontSize="sm">{t('tradingProfiles.watchers.useWalletDefault')}</Text>
+          </HStack>
 
-              <Box>
-                <HStack mb={3}>
-                  <Checkbox
-                    checked={useDefault}
-                    onCheckedChange={setUseDefault}
-                  />
-                  <Text fontSize="sm">{t('tradingProfiles.watchers.useWalletDefault')}</Text>
-                </HStack>
+          {!useDefault && (
+            <Field label={t('tradingProfiles.watchers.profile')}>
+              <Select
+                value={profileId ?? ''}
+                onChange={(value) => setProfileId(value || null)}
+                options={profileOptions}
+                usePortal={false}
+              />
+            </Field>
+          )}
 
-                {!useDefault && (
-                  <Field label={t('tradingProfiles.watchers.profile')}>
-                    <Select
-                      value={profileId ?? ''}
-                      onChange={(value) => setProfileId(value || null)}
-                      options={profileOptions}
-                      usePortal={false}
-                    />
-                  </Field>
-                )}
-
-                {!useDefault && profiles.length === 0 && (
-                  <Box
-                    p={3}
-                    mt={2}
-                    borderRadius="md"
-                    bg="orange.50"
-                    borderWidth="1px"
-                    borderColor="orange.200"
-                    _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
-                  >
-                    <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
-                      {t('tradingProfiles.watchers.noProfiles')}
-                    </Text>
-                  </Box>
-                )}
-              </Box>
-
-              <Box
-                p={3}
-                borderRadius="md"
-                bg="blue.50"
-                borderWidth="1px"
-                borderColor="blue.200"
-                _dark={{ bg: 'blue.950', borderColor: 'blue.800' }}
-              >
-                <Text fontSize="xs" color="blue.700" _dark={{ color: 'blue.300' }}>
-                  {t('tradingProfiles.watchers.info')}
-                </Text>
-              </Box>
-            </Stack>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={handleClose} disabled={isLoading}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              colorPalette="green"
-              onClick={() => void handleSubmit()}
-              loading={isLoading}
-              disabled={!canSubmit}
+          {!useDefault && profiles.length === 0 && (
+            <Box
+              p={3}
+              mt={2}
+              borderRadius="md"
+              bg="orange.50"
+              borderWidth="1px"
+              borderColor="orange.200"
+              _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
             >
-              {isBulkMode
-                ? t('tradingProfiles.watchers.startBulk', 'Start {{count}} Watchers', { count: selectedSymbols.length })
-                : t('tradingProfiles.watchers.start')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+              <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
+                {t('tradingProfiles.watchers.noProfiles')}
+              </Text>
+            </Box>
+          )}
+        </Box>
+
+        <Box
+          p={3}
+          borderRadius="md"
+          bg="blue.50"
+          borderWidth="1px"
+          borderColor="blue.200"
+          _dark={{ bg: 'blue.950', borderColor: 'blue.800' }}
+        >
+          <Text fontSize="xs" color="blue.700" _dark={{ color: 'blue.300' }}>
+            {t('tradingProfiles.watchers.info')}
+          </Text>
+        </Box>
+      </Stack>
+    </FormDialog>
   );
 };

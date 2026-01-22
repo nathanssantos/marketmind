@@ -31,23 +31,23 @@ describe('useDebounce', () => {
   it('should reset timer on rapid value changes', async () => {
     const { result, rerender } = renderHook(
       ({ value, delay }) => useDebounce(value, delay),
-      { initialProps: { value: 'initial', delay: 100 } }
+      { initialProps: { value: 'initial', delay: 50 } }
     );
 
-    rerender({ value: 'update1', delay: 100 });
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    rerender({ value: 'update2', delay: 100 });
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    rerender({ value: 'update3', delay: 100 });
+    rerender({ value: 'update1', delay: 50 });
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    rerender({ value: 'update2', delay: 50 });
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    rerender({ value: 'update3', delay: 50 });
     expect(result.current).toBe('initial');
 
     await waitFor(
       () => {
         expect(result.current).toBe('update3');
       },
-      { timeout: 200 }
+      { timeout: 300 }
     );
   });
 

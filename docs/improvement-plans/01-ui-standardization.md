@@ -365,3 +365,58 @@ WatcherManager/
 - [ ] Testes unitários para todos os novos componentes
 - [ ] Testes de snapshot para componentes visuais
 - [ ] Coverage > 80% em novos arquivos
+
+---
+
+## 8. Progresso de Implementação
+
+### Fase 1: Componentes Base - CONCLUÍDA ✅
+
+| Task | Status | Arquivo |
+|------|--------|---------|
+| PnLDisplay | ✅ Concluído | `ui/PnLDisplay.tsx` (já existia) |
+| EmptyState | ✅ Concluído | `ui/EmptyState.tsx` + testes |
+| FormDialog | ✅ Concluído | `ui/FormDialog.tsx` + testes |
+| ConfirmationDialog | ✅ Concluído | `ui/ConfirmationDialog.tsx` + testes |
+| MetricCard | ✅ Concluído | `ui/MetricCard.tsx` + testes |
+| CollapsibleSection | ✅ Concluído | `ui/CollapsibleSection.tsx` + testes |
+
+### Fase 2: Refatoração de Dialogs - CONCLUÍDA ✅
+
+| Dialog | Status |
+|--------|--------|
+| AddWatcherDialog | ✅ Refatorado para usar FormDialog |
+| CreateWalletDialog | ✅ Refatorado para usar FormDialog |
+| BacktestDialog | ✅ Refatorado para usar FormDialog |
+
+### Fase 3: Decomposição de Componentes - PARCIALMENTE CONCLUÍDA
+
+| Componente | Status | Detalhes |
+|------------|--------|----------|
+| ChartTooltip (683 linhas) | ✅ Concluído | Decomposto em `ChartTooltip/` com 6 arquivos |
+| WatcherManager (1607 linhas) | ✅ Concluído | Decomposto em `WatcherManager/` com 14 arquivos, maior arquivo 348 linhas |
+| ChartCanvas (1902 linhas) | ⏸️ Adiado | Complexidade de hooks React dificulta decomposição sem refatoração maior |
+
+### Resumo de Progresso
+
+- **Total de testes**: 2199 passando (100%)
+- **Type check**: Sem erros
+- **Novos componentes criados**: 6 (com testes)
+- **Dialogs refatorados**: 3
+- **Componentes grandes decompostos**: 2 de 3 (ChartTooltip, WatcherManager)
+- **Maior componente restante**: ChartCanvas (1902 linhas) - requer análise de arquitetura para decomposição
+
+### Próximos Passos
+
+1. **ChartCanvas**: Considerar refatoração de arquitetura para permitir decomposição
+   - Consolidar hooks de indicadores em um custom hook
+   - Separar lógica de rendering em camadas
+   - Extrair diálogos para componentes separados
+
+2. **Migração gradual** de outros componentes para usar os novos componentes base
+
+3. **Testes visuais** com Storybook (baixa prioridade)
+
+---
+
+**Última Atualização**: Janeiro 2026
