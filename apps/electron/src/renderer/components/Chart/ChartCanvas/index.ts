@@ -90,3 +90,15 @@ export type {
   UseRenderLoopProps,
   UseRenderLoopResult,
 } from './useRenderLoop';
+
+export { useTouchGestures, isTouchDevice } from './useTouchGestures';
+export type {
+  UseTouchGesturesProps,
+  UseTouchGesturesResult,
+} from './useTouchGestures';
+
+export { useKeyboardNavigation, KEYBOARD_SHORTCUTS } from './useKeyboardNavigation';
+export type {
+  UseKeyboardNavigationProps,
+  UseKeyboardNavigationResult,
+} from './useKeyboardNavigation';
