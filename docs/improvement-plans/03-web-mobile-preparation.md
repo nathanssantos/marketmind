@@ -1,6 +1,6 @@
 # Plano 3: Remover TODA Persistência Local - Migrar para Backend
 
-**Status:** ✅ Concluído (95%)
+**Status:** ✅ Concluído (100%)
 **Prioridade:** CRÍTICA
 **Risco:** Baixo (todas as preferências persistidas no backend)
 **Última atualização:** 2026-01-23
@@ -63,6 +63,20 @@
 ### Exceções aceitáveis:
 - `ErrorBoundary.tsx`: Mantém localStorage para logs de erro (fallback quando tRPC indisponível)
 - `WindowStateManager.ts`: Roda no main process do Electron (não renderer)
+
+### Configurações padrão atualizadas:
+
+| Configuração | Valor Padrão |
+|-------------|--------------|
+| Timeframe | 30m |
+| Tooltip do gráfico | Desligado |
+| Médias móveis | Todas desligadas |
+| Tipo de mercado | FUTURES |
+| Trading sidebar | Aberta |
+| Linguagem | Inglês |
+| Filtro de ordens | Fechadas (closed) |
+| Visualização ordens | Tabela |
+| Visualização portfólio | Tabela |
 
 ---
 
