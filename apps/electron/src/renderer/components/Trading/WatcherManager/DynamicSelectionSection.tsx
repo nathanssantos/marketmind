@@ -4,7 +4,7 @@ import { Button } from '@renderer/components/ui/button';
 import { Switch } from '@renderer/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuChevronDown, LuChevronUp, LuRefreshCw, LuZap } from 'react-icons/lu';
-import { QuickStartSection, type BtcTrendStatus } from './QuickStartSection';
+import { QuickStartSection, type BtcTrendInfo, type BtcTrendStatus } from './QuickStartSection';
 
 export interface RotationStatus {
   isActive: boolean;
@@ -31,6 +31,8 @@ export interface DynamicSelectionSectionProps {
   isLoadingFiltered: boolean;
   isStartingWatchersBulk: boolean;
   btcTrendStatus?: BtcTrendStatus;
+  btcTrendInfo?: BtcTrendInfo | null;
+  skippedTrendCount?: number;
   showBtcTrend: boolean;
   formatCapitalTooltip: () => string;
   onMarketTypeChange: (type: MarketType) => void;
@@ -61,6 +63,8 @@ export const DynamicSelectionSection = ({
   isLoadingFiltered,
   isStartingWatchersBulk,
   btcTrendStatus,
+  btcTrendInfo,
+  skippedTrendCount = 0,
   showBtcTrend,
   formatCapitalTooltip,
   onMarketTypeChange,
@@ -197,6 +201,8 @@ export const DynamicSelectionSection = ({
                   isLoadingFiltered={isLoadingFiltered}
                   isStarting={isStartingWatchersBulk}
                   btcTrendStatus={btcTrendStatus}
+                  btcTrendInfo={btcTrendInfo}
+                  skippedTrendCount={skippedTrendCount}
                   showBtcTrend={showBtcTrend}
                   formatCapitalTooltip={formatCapitalTooltip}
                   onMarketTypeChange={onMarketTypeChange}

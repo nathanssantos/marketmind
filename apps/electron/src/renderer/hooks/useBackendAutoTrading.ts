@@ -242,10 +242,11 @@ export const useFilteredSymbolsForQuickStart = (
   walletId: string,
   marketType: 'SPOT' | 'FUTURES',
   interval: string,
-  limit: number
+  limit: number,
+  useTrendFilter: boolean = true
 ) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getFilteredSymbolsForQuickStart.useQuery(
-    { walletId, marketType, interval, limit },
+    { walletId, marketType, interval, limit, useTrendFilter },
     { enabled: !!walletId, staleTime: 30 * 1000 }
   );
 
@@ -253,8 +254,10 @@ export const useFilteredSymbolsForQuickStart = (
     filteredSymbols: data?.symbols ?? [],
     skippedInsufficientCapital: data?.skippedInsufficientCapital ?? [],
     skippedInsufficientKlines: data?.skippedInsufficientKlines ?? [],
+    skippedTrend: data?.skippedTrend ?? [],
     capitalPerWatcher: data?.capitalPerWatcher ?? 0,
     maxAffordableWatchers: data?.maxAffordableWatchers ?? 0,
+    btcTrend: data?.btcTrend ?? null,
     isLoadingFiltered: isLoading,
     filteredError: error,
     refetchFiltered: refetch,

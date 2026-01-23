@@ -1,3 +1,4 @@
+import { analyzeTrend, checkTrendAlignment, type TrendInfo } from '@marketmind/indicators';
 import { colorize, createTable } from '@marketmind/logger';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, FIBONACCI_TARGET_LEVELS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
@@ -1216,6 +1217,7 @@ export const autoTradingRouter = router({
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         interval: z.string().default('30m'),
         limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX).default(10),
+        useTrendFilter: z.boolean().default(true),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -1264,9 +1266,34 @@ export const autoTradingRouter = router({
         ? scores.filter(s => filteredSymbolSet.has(s.symbol))
         : allSymbols.filter(s => filteredSymbolSet.has(s)).map(symbol => ({ symbol, score: 0 }));
 
+      let btcTrend: TrendInfo | null = null;
+      let btcKlinesData: ReturnType<typeof mapDbKlinesReversed> = [];
+
+      if (input.useTrendFilter) {
+        const btcDbKlines = await ctx.db.query.klines.findMany({
+          where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, '4h')),
+          orderBy: [desc(klines.openTime)],
+          limit: 100,
+        });
+
+        if (btcDbKlines.length >= 50) {
+          btcKlinesData = mapDbKlinesReversed(btcDbKlines);
+          btcTrend = analyzeTrend(btcKlinesData);
+          log('📊 BTC Trend Analysis', {
+            direction: btcTrend.direction,
+            isClearTrend: btcTrend.isClearTrend,
+            adx: btcTrend.adx.toFixed(1),
+            rsi: btcTrend.rsi.toFixed(1),
+          });
+        } else {
+          logger.warn({ count: btcDbKlines.length }, '[getFilteredSymbolsForQuickStart] Insufficient BTC klines for trend analysis');
+        }
+      }
+
       const eligibleSymbols: string[] = [];
       const skippedInsufficientKlines: string[] = [];
       const skippedInsufficientCapital = Array.from(excludedSymbols.keys());
+      const skippedTrend: { symbol: string; reason: string }[] = [];
 
       for (const score of filteredScores) {
         if (eligibleSymbols.length >= input.limit) break;
@@ -1278,12 +1305,37 @@ export const autoTradingRouter = router({
           true
         );
 
-        if (klineCheck.hasSufficient) {
-          eligibleSymbols.push(score.symbol);
-        } else {
+        if (!klineCheck.hasSufficient) {
           skippedInsufficientKlines.push(score.symbol);
+          continue;
         }
+
+        if (input.useTrendFilter && btcTrend && btcKlinesData.length > 0) {
+          const assetDbKlines = await ctx.db.query.klines.findMany({
+            where: and(
+              eq(klines.symbol, score.symbol),
+              eq(klines.interval, '4h'),
+              eq(klines.marketType, input.marketType)
+            ),
+            orderBy: [desc(klines.openTime)],
+            limit: 100,
+          });
+
+          if (assetDbKlines.length >= 50) {
+            const assetKlines = mapDbKlinesReversed(assetDbKlines);
+            const alignment = checkTrendAlignment(assetKlines, btcKlinesData);
+
+            if (alignment.recommendation === 'SKIP') {
+              skippedTrend.push({ symbol: score.symbol, reason: alignment.reason });
+              continue;
+            }
+          }
+        }
+
+        eligibleSymbols.push(score.symbol);
       }
+
+      const btcTrendEmoji = btcTrend?.direction === 'BULLISH' ? '🟢' : btcTrend?.direction === 'BEARISH' ? '🔴' : '⚪';
 
       logApiTable('getFilteredSymbolsForQuickStart', [
         ['Market Type', input.marketType],
@@ -1295,16 +1347,26 @@ export const autoTradingRouter = router({
         ['Eligible (Capital)', capitalEligible.length],
         ['Skipped (Capital)', skippedInsufficientCapital.length],
         ['Skipped (Klines)', skippedInsufficientKlines.length],
+        ['Skipped (Trend)', skippedTrend.length],
         ['Final Symbols', eligibleSymbols.length],
         ['Max Affordable', maxWatchers],
+        ['BTC Trend', btcTrend ? `${btcTrendEmoji} ${btcTrend.direction} (ADX: ${btcTrend.adx.toFixed(1)})` : 'N/A'],
       ]);
 
       return {
         symbols: eligibleSymbols,
         skippedInsufficientCapital,
         skippedInsufficientKlines,
+        skippedTrend,
         capitalPerWatcher,
         maxAffordableWatchers: maxWatchers,
+        btcTrend: btcTrend ? {
+          direction: btcTrend.direction,
+          isClearTrend: btcTrend.isClearTrend,
+          adx: btcTrend.adx,
+          strength: btcTrend.strength,
+          rsi: btcTrend.rsi,
+        } : null,
       };
     }),
 

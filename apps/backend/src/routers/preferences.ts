@@ -62,7 +62,8 @@ export const preferencesRouter = router({
 
       for (const pref of prefs) {
         if (!result[pref.category]) result[pref.category] = {};
-        result[pref.category][pref.key] = parseJsonValue(pref.value);
+        const category = result[pref.category]!;
+        category[pref.key] = parseJsonValue(pref.value);
       }
 
       return result;

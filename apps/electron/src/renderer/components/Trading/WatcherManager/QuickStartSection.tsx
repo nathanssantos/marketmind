@@ -11,6 +11,16 @@ export interface BtcTrendStatus {
   trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   canLong: boolean;
   canShort: boolean;
+  adx?: number;
+  isClearTrend?: boolean;
+}
+
+export interface BtcTrendInfo {
+  direction: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  isClearTrend: boolean;
+  adx: number;
+  strength: number;
+  rsi: number;
 }
 
 export interface QuickStartSectionProps {
@@ -23,6 +33,8 @@ export interface QuickStartSectionProps {
   isLoadingFiltered: boolean;
   isStarting: boolean;
   btcTrendStatus?: BtcTrendStatus;
+  btcTrendInfo?: BtcTrendInfo | null;
+  skippedTrendCount?: number;
   showBtcTrend: boolean;
   formatCapitalTooltip: () => string;
   onMarketTypeChange: (type: MarketType) => void;
@@ -41,6 +53,8 @@ export const QuickStartSection = ({
   isLoadingFiltered,
   isStarting,
   btcTrendStatus,
+  btcTrendInfo,
+  skippedTrendCount = 0,
   showBtcTrend,
   formatCapitalTooltip,
   onMarketTypeChange,
@@ -56,51 +70,61 @@ export const QuickStartSection = ({
         <Text fontSize="sm" fontWeight="medium">
           {t('tradingProfiles.dynamicSelection.quickStartTitle')}
         </Text>
-        {showBtcTrend && btcTrendStatus && (
-          <Box
-            px={2}
-            py={0.5}
-            bg={
-              btcTrendStatus.trend === 'BULLISH'
-                ? 'green.100'
-                : btcTrendStatus.trend === 'BEARISH'
-                  ? 'red.100'
-                  : 'gray.100'
-            }
-            borderRadius="md"
-            fontSize="xs"
-            _dark={{
-              bg:
-                btcTrendStatus.trend === 'BULLISH'
-                  ? 'green.900'
-                  : btcTrendStatus.trend === 'BEARISH'
-                    ? 'red.900'
-                    : 'gray.700',
-            }}
-          >
-            <Text
-              fontWeight="medium"
-              color={
-                btcTrendStatus.trend === 'BULLISH'
-                  ? 'green.700'
-                  : btcTrendStatus.trend === 'BEARISH'
-                    ? 'red.700'
-                    : 'gray.600'
+        {showBtcTrend && (btcTrendStatus || btcTrendInfo) && (
+          <Flex gap={2} align="center">
+            <Box
+              px={2}
+              py={0.5}
+              bg={
+                (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BULLISH'
+                  ? 'green.100'
+                  : (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BEARISH'
+                    ? 'red.100'
+                    : 'gray.100'
               }
+              borderRadius="md"
+              fontSize="xs"
               _dark={{
-                color:
-                  btcTrendStatus.trend === 'BULLISH'
-                    ? 'green.200'
-                    : btcTrendStatus.trend === 'BEARISH'
-                      ? 'red.200'
-                      : 'gray.300',
+                bg:
+                  (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BULLISH'
+                    ? 'green.900'
+                    : (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BEARISH'
+                      ? 'red.900'
+                      : 'gray.700',
               }}
             >
-              BTC: {btcTrendStatus.trend}
-              {!btcTrendStatus.canLong && ' (LONG blocked)'}
-              {!btcTrendStatus.canShort && ' (SHORT blocked)'}
-            </Text>
-          </Box>
+              <Text
+                fontWeight="medium"
+                color={
+                  (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BULLISH'
+                    ? 'green.700'
+                    : (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BEARISH'
+                      ? 'red.700'
+                      : 'gray.600'
+                }
+                _dark={{
+                  color:
+                    (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BULLISH'
+                      ? 'green.200'
+                      : (btcTrendInfo?.direction ?? btcTrendStatus?.trend) === 'BEARISH'
+                        ? 'red.200'
+                        : 'gray.300',
+                }}
+              >
+                BTC: {btcTrendInfo?.direction ?? btcTrendStatus?.trend}
+                {btcTrendInfo && ` (ADX: ${btcTrendInfo.adx.toFixed(0)})`}
+                {btcTrendStatus && !btcTrendStatus.canLong && ' (LONG blocked)'}
+                {btcTrendStatus && !btcTrendStatus.canShort && ' (SHORT blocked)'}
+              </Text>
+            </Box>
+            {skippedTrendCount > 0 && (
+              <Box px={2} py={0.5} bg="orange.100" borderRadius="md" fontSize="xs" _dark={{ bg: 'orange.900' }}>
+                <Text fontWeight="medium" color="orange.700" _dark={{ color: 'orange.200' }}>
+                  {skippedTrendCount} filtered
+                </Text>
+              </Box>
+            )}
+          </Flex>
         )}
       </Flex>
       <Stack gap={3}>

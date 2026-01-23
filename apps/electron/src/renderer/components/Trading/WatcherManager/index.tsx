@@ -70,11 +70,15 @@ export const WatcherManager = () => {
 
   const { capitalLimits, formatCapitalTooltip, isLoadingCapitalLimits } = useCapitalLimits(walletId, quickStartMarketType);
 
+  const useTrendFilter = config?.useTrendFilter ?? true;
+
   const {
     filteredSymbols: quickStartSymbols,
     maxAffordableWatchers: filteredMaxAffordable,
     isLoadingFiltered,
-  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, quickStartCount);
+    btcTrend,
+    skippedTrend,
+  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, quickStartCount, useTrendFilter);
 
   const maxAffordableWatchers = capitalLimits?.maxAffordableWatchers ?? filteredMaxAffordable ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
   const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
@@ -256,7 +260,9 @@ export const WatcherManager = () => {
         isLoadingFiltered={isLoadingFiltered}
         isStartingWatchersBulk={isStartingWatchersBulk}
         btcTrendStatus={btcTrendStatus}
-        showBtcTrend={config?.useBtcCorrelationFilter === true}
+        btcTrendInfo={btcTrend}
+        skippedTrendCount={skippedTrend.length}
+        showBtcTrend={useTrendFilter || config?.useBtcCorrelationFilter === true}
         formatCapitalTooltip={formatCapitalTooltip}
         onMarketTypeChange={setQuickStartMarketType}
         onTimeframeChange={setQuickStartTimeframe}
