@@ -2,7 +2,6 @@ import type { BrowserWindow as BrowserWindowType } from 'electron';
 import * as electron from 'electron';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { storageService } from './services/StorageService';
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
 
@@ -423,56 +422,7 @@ const setupUpdateIpcHandlers = (): void => {
   });
 };
 
-const createSuccessResponse = <T = undefined>(data?: T): { success: boolean; data?: T; error?: string } => ({ 
-  success: true, 
-  ...(data !== undefined && { data }) 
-});
-
-const createErrorResponse = <T = undefined>(error: unknown, defaultData?: T): { success: boolean; data?: T; error?: string } => ({
-  success: false,
-  error: error instanceof Error ? error.message : 'Unknown error',
-  ...(defaultData !== undefined && { data: defaultData }),
-});
-
-const handleStorageOperation = async <T>(
-  operation: () => T,
-  errorMessage: string,
-  options: { returnData?: boolean; defaultData?: unknown } = {}
-): Promise<{ success: boolean; data?: T | undefined; error?: string }> => {
-  try {
-    const result = operation();
-    return options.returnData ? createSuccessResponse<T>(result) : createSuccessResponse<T | undefined>(undefined);
-  } catch (error) {
-    console.error(errorMessage, error);
-    return createErrorResponse<T | undefined>(error, options.defaultData as T | undefined);
-  }
-};
-
 const setupIpcHandlers = (): void => {
-  ipcMain.handle('storage:isEncryptionAvailable', () => storageService.isEncryptionAvailable());
-
-  ipcMain.handle('storage:getTradingData', async () =>
-    handleStorageOperation(
-      () => storageService.getTradingData(),
-      'Failed to get trading data:',
-      { returnData: true, defaultData: null }
-    )
-  );
-
-  ipcMain.handle('storage:setTradingData', async (_event, data) =>
-    handleStorageOperation(
-      () => storageService.setTradingData(data),
-      'Failed to set trading data:'
-    )
-  );
-
-  ipcMain.handle('storage:clearTradingData', async () =>
-    handleStorageOperation(
-      () => storageService.clearTradingData(),
-      'Failed to clear trading data:'
-    )
-  );
-
   ipcMain.handle('http:fetch', async (_event, url, options = {}) => {
     try {
       debugLog('[Main] HTTP fetch request:', url);

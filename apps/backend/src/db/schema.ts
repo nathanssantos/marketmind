@@ -496,3 +496,21 @@ export const pairMaintenanceLog = pgTable('pair_maintenance_log', {
 
 export type PairMaintenanceLog = typeof pairMaintenanceLog.$inferSelect;
 export type NewPairMaintenanceLog = typeof pairMaintenanceLog.$inferInsert;
+
+export const userPreferences = pgTable('user_preferences', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  category: varchar({ length: 50 }).notNull(),
+  key: varchar({ length: 100 }).notNull(),
+  value: text().notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserCategoryKey: unique().on(table.userId, table.category, table.key),
+  userIdCategoryIdx: index('user_preferences_user_id_category_idx').on(table.userId, table.category),
+}));
+
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type NewUserPreference = typeof userPreferences.$inferInsert;

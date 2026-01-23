@@ -1,11 +1,4 @@
-import type { PlatformAdapter, StorageAdapter, UpdateAdapter, NotificationAdapter, WindowAdapter, HttpAdapter } from '../types';
-
-const createElectronStorageAdapter = (): StorageAdapter => ({
-  isEncryptionAvailable: () => window.electron.secureStorage.isEncryptionAvailable(),
-  getTradingData: () => window.electron.secureStorage.getTradingData(),
-  setTradingData: (data) => window.electron.secureStorage.setTradingData(data),
-  clearTradingData: () => window.electron.secureStorage.clearTradingData(),
-});
+import type { PlatformAdapter, UpdateAdapter, NotificationAdapter, WindowAdapter, HttpAdapter } from '../types';
 
 const createElectronUpdateAdapter = (): UpdateAdapter => ({
   isSupported: () => true,
@@ -38,7 +31,6 @@ const createElectronHttpAdapter = (): HttpAdapter => ({
 });
 
 export const createElectronAdapter = (): PlatformAdapter => ({
-  storage: createElectronStorageAdapter(),
   update: createElectronUpdateAdapter(),
   notification: createElectronNotificationAdapter(),
   window: createElectronWindowAdapter(),

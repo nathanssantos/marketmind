@@ -1,16 +1,3 @@
-import type { Order, TradingFees, Wallet } from '@marketmind/types';
-
-export interface TradingData {
-  wallets: Wallet[];
-  orders: Order[];
-  isSimulatorActive: boolean;
-  activeWalletId: string | null;
-  defaultQuantity: number;
-  defaultExpiration: 'gtc' | 'day' | 'custom';
-  quantityBySymbol?: Record<string, number>;
-  tradingFees?: TradingFees;
-}
-
 export interface UpdateInfo {
   version: string;
   releaseNotes?: string;
@@ -40,13 +27,6 @@ export interface HttpOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: unknown;
-}
-
-export interface StorageAdapter {
-  isEncryptionAvailable: () => Promise<boolean>;
-  getTradingData: () => Promise<{ success: boolean; data: TradingData | null; error?: string }>;
-  setTradingData: (data: TradingData) => Promise<{ success: boolean; error?: string }>;
-  clearTradingData: () => Promise<{ success: boolean; error?: string }>;
 }
 
 export interface UpdateAdapter {
@@ -80,7 +60,6 @@ export interface HttpAdapter {
 }
 
 export interface PlatformAdapter {
-  storage: StorageAdapter;
   update: UpdateAdapter;
   notification: NotificationAdapter;
   window: WindowAdapter;

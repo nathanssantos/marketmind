@@ -1,23 +1,4 @@
-import type { Order, TradingFees, Wallet } from '@marketmind/types';
 import { contextBridge, ipcRenderer } from 'electron';
-
-interface TradingData {
-  wallets: Wallet[];
-  orders: Order[];
-  isSimulatorActive: boolean;
-  activeWalletId: string | null;
-  defaultQuantity: number;
-  defaultExpiration: 'gtc' | 'day' | 'custom';
-  quantityBySymbol?: Record<string, number>;
-  tradingFees?: TradingFees;
-}
-
-interface SecureStorageAPI {
-  isEncryptionAvailable: () => Promise<boolean>;
-  getTradingData: () => Promise<{ success: boolean; data: TradingData | null; error?: string }>;
-  setTradingData: (data: TradingData) => Promise<{ success: boolean; error?: string }>;
-  clearTradingData: () => Promise<{ success: boolean; error?: string }>;
-}
 
 interface UpdateInfo {
   version: string;
@@ -81,24 +62,6 @@ const API = {
   invoke: async (channel: string, data?: unknown) => {
     return await ipcRenderer.invoke(channel, data);
   },
-
-  secureStorage: {
-    isEncryptionAvailable: async () => {
-      return await ipcRenderer.invoke('storage:isEncryptionAvailable');
-    },
-
-    getTradingData: async () => {
-      return await ipcRenderer.invoke('storage:getTradingData');
-    },
-
-    setTradingData: async (data: TradingData) => {
-      return await ipcRenderer.invoke('storage:setTradingData', data);
-    },
-
-    clearTradingData: async () => {
-      return await ipcRenderer.invoke('storage:clearTradingData');
-    },
-  } as SecureStorageAPI,
 
   update: {
     checkForUpdates: async () => {

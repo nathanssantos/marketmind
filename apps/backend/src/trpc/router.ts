@@ -8,6 +8,7 @@ import { futuresTradingRouter } from '../routers/futures-trading';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
 import { orderSyncRouter } from '../routers/order-sync';
+import { preferencesRouter } from '../routers/preferences';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { tradingRouter } from '../routers/trading';
@@ -33,6 +34,7 @@ export const appRouter = router({
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
   trade: nestedTradingRouter,
+  preferences: preferencesRouter,
 });
 
 export type AppRouter = typeof appRouter;

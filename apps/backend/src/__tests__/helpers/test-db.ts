@@ -374,6 +374,17 @@ CREATE TABLE IF NOT EXISTS pyramid_entries (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   UNIQUE(execution_id, entry_number)
 );
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category VARCHAR(50) NOT NULL,
+  key VARCHAR(100) NOT NULL,
+  value TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id, category, key)
+);
 `;
 
 export const setupTestDatabase = async (): Promise<TestDatabase> => {
@@ -435,6 +446,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.autoTradingConfig);
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);
+  await db.delete(schema.userPreferences);
   await db.delete(schema.tradingProfiles);
   await db.delete(schema.sessions);
   await db.delete(schema.wallets);
