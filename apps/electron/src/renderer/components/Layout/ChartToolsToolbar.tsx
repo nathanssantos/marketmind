@@ -1,10 +1,8 @@
-import { Box, Separator, HStack, IconButton } from '@chakra-ui/react';
+import { Box, IconButton, VStack } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuCalendarDays,
-  LuChartCandlestick,
-  LuChartLine,
   LuCrosshair,
   LuDollarSign,
   LuGrid3X3,
@@ -19,7 +17,6 @@ import { TooltipWrapper } from '../ui/Tooltip';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 export interface ChartToolsToolbarProps {
-  chartType: 'kline' | 'line';
   showGrid: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
@@ -36,7 +33,6 @@ export interface ChartToolsToolbarProps {
   showVWAP: boolean;
   showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
-  onChartTypeChange: (type: 'kline' | 'line') => void;
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
@@ -56,7 +52,6 @@ export interface ChartToolsToolbarProps {
 }
 
 export const ChartToolsToolbar = memo(({
-  chartType,
   showGrid,
   showCurrentPriceLine,
   showCrosshair,
@@ -73,7 +68,6 @@ export const ChartToolsToolbar = memo(({
   showVWAP,
   showEventRow,
   movingAverages,
-  onChartTypeChange,
   onShowGridChange,
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
@@ -113,30 +107,7 @@ export const ChartToolsToolbar = memo(({
       boxShadow="sm"
       p={1}
     >
-      <HStack gap={1}>
-        <TooltipWrapper label={t('chart.controls.klineChart')} showArrow placement="right">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.klineChart')}
-            onClick={() => onChartTypeChange('kline')}
-            colorPalette={chartType === 'kline' ? 'blue' : 'gray'}
-            variant={chartType === 'kline' ? 'solid' : 'ghost'}
-          >
-            <LuChartCandlestick />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.lineChart')} showArrow placement="right">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.lineChart')}
-            onClick={() => onChartTypeChange('line')}
-            colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-            variant={chartType === 'line' ? 'solid' : 'ghost'}
-          >
-            <LuChartLine />
-          </IconButton>
-        </TooltipWrapper>
-        <Separator orientation="vertical" height="16px" />
+      <VStack gap={1}>
         <IndicatorTogglePopover
           showVolume={showVolume}
           showStochastic={showStochastic}
@@ -252,7 +223,7 @@ export const ChartToolsToolbar = memo(({
             <LuCalendarDays />
           </IconButton>
         </TooltipWrapper>
-      </HStack>
+      </VStack>
     </Box>
   );
 });

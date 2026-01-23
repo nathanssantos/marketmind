@@ -22,7 +22,6 @@ interface MainLayoutProps {
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
-  chartType: 'kline' | 'line';
   showVolume: boolean;
   showGrid: boolean;
   showCurrentPriceLine: boolean;
@@ -42,7 +41,6 @@ interface MainLayoutProps {
   isBacktestOpen: boolean;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onChartTypeChange: (type: 'kline' | 'line') => void;
   onShowVolumeChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
@@ -78,7 +76,6 @@ export const MainLayout = ({
   marketType,
   onMarketTypeChange,
   timeframe,
-  chartType,
   showVolume,
   showGrid,
   showCurrentPriceLine,
@@ -98,7 +95,6 @@ export const MainLayout = ({
   isBacktestOpen,
   onSymbolChange,
   onTimeframeChange,
-  onChartTypeChange,
   onShowVolumeChange,
   onShowGridChange,
   onShowCurrentPriceLineChange,
@@ -196,7 +192,6 @@ export const MainLayout = ({
             transition="width 0.2s ease"
           >
             <ChartToolsToolbar
-              chartType={chartType}
               showGrid={showGrid}
               showCurrentPriceLine={showCurrentPriceLine}
               showCrosshair={showCrosshair}
@@ -213,7 +208,6 @@ export const MainLayout = ({
               showVWAP={showVWAP}
               showEventRow={showEventRow}
               movingAverages={movingAverages}
-              onChartTypeChange={onChartTypeChange}
               onShowGridChange={onShowGridChange}
               onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
               onShowCrosshairChange={onShowCrosshairChange}

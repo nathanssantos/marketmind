@@ -324,7 +324,6 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
       <Box flex="1" position="relative" overflow="hidden">
         <ChartToolsToolbar
-          chartType={chartType}
           showGrid={showGrid}
           showCurrentPriceLine={showCurrentPriceLine}
           showCrosshair={showCrosshair}
@@ -341,7 +340,6 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           showVWAP={showVWAP}
           showEventRow={showEventRow}
           movingAverages={movingAverages}
-          onChartTypeChange={setChartType}
           onShowGridChange={setShowGrid}
           onShowCurrentPriceLineChange={setShowCurrentPriceLine}
           onShowCrosshairChange={setShowCrosshair}

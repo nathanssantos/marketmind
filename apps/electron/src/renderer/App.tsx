@@ -443,7 +443,6 @@ function AppContent(): ReactElement {
         marketType={marketType}
         onMarketTypeChange={setMarketType}
         timeframe={timeframe}
-        chartType={chartType}
         showVolume={showVolume}
         showGrid={showGrid}
         showCurrentPriceLine={showCurrentPriceLine}
@@ -463,7 +462,6 @@ function AppContent(): ReactElement {
         isBacktestOpen={isBacktestOpen}
         onSymbolChange={handleSymbolChange}
         onTimeframeChange={setTimeframe}
-        onChartTypeChange={setChartType}
         onShowVolumeChange={setShowVolume}
         onShowGridChange={setShowGrid}
         onShowCurrentPriceLineChange={setShowCurrentPriceLine}
