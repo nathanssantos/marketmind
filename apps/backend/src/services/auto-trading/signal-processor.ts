@@ -425,7 +425,7 @@ export class SignalProcessor {
       const interpreter = new StrategyInterpreter({
         enabled: true,
         minConfidence: 50,
-        minRiskReward: 1.0,
+        minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
         strategy,
         silent: true,
       });

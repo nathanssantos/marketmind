@@ -6,6 +6,7 @@ import type {
   TriggerCandleSnapshot,
   TriggerIndicatorValues,
 } from '@marketmind/types';
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -189,7 +190,7 @@ export const setupDetectionRouter = router({
           const interpreter = new StrategyInterpreter({
             enabled: true,
             minConfidence,
-            minRiskReward: 1.0,
+            minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
             strategy,
           });
 

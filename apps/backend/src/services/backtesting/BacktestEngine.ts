@@ -11,7 +11,7 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { ABSOLUTE_MINIMUM_KLINES, BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
+import { ABSOLUTE_MINIMUM_KLINES, BACKTEST_DEFAULTS, BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
 import { db } from '../../db';
 import { klines as klinesTable } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
@@ -284,7 +284,7 @@ export class BacktestEngine {
       useFundingFilter: config.useFundingFilter ?? isFutures,
       useConfluenceScoring: config.useConfluenceScoring ?? true,
       confluenceMinScore: config.confluenceMinScore ?? 60,
-      minRiskRewardRatio: config.minRiskRewardRatio ?? 1.2,
+      minRiskRewardRatio: config.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
       exposureMultiplier: config.exposureMultiplier ?? 1.5,
       useStochasticFilter: config.useStochasticFilter ?? false,
       useAdxFilter: config.useAdxFilter ?? false,

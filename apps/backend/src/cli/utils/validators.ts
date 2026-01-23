@@ -1,3 +1,4 @@
+import { TRADING_DEFAULTS } from '@marketmind/types';
 import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -159,7 +160,7 @@ export function validatePercentage(
 export function validateRiskReward(
   stopLoss: number | undefined,
   takeProfit: number | undefined,
-  minRiskReward: number = 1.5
+  minRiskReward: number = TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO
 ): void {
   if (stopLoss === undefined || takeProfit === undefined) {
     return;

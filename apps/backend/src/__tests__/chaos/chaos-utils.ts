@@ -99,13 +99,9 @@ export class NetworkChaos {
 }
 
 export class ResourceChaos {
-  private memoryPressure: number;
-  private cpuPressure: number;
   private enabled: boolean;
 
   constructor() {
-    this.memoryPressure = 0;
-    this.cpuPressure = 0;
     this.enabled = false;
   }
 
