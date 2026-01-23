@@ -32,7 +32,15 @@
       "@shared/*": ["./src/shared/*"],
       "@renderer/*": ["./src/renderer/*"],
       "@main/*": ["./src/main/*"],
-      "@marketmind/backend/types": ["../backend/types.ts"]
+      "@marketmind/backend/types": ["../backend/types.ts"],
+      "@marketmind/types": ["../../packages/types/src"],
+      "@marketmind/types/*": ["../../packages/types/src/*"],
+      "@marketmind/indicators": ["../../packages/indicators/src"],
+      "@marketmind/indicators/*": ["../../packages/indicators/src/*"],
+      "@marketmind/fibonacci": ["../../packages/fibonacci/src"],
+      "@marketmind/fibonacci/*": ["../../packages/fibonacci/src/*"],
+      "@marketmind/utils": ["../../packages/utils/src"],
+      "@marketmind/utils/*": ["../../packages/utils/src/*"]
     }
   },
   "include": ["src"],

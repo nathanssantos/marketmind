@@ -1,5 +1,7 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
 
+const FIBONACCI_LINE_COLOR = 'rgba(128, 128, 128, 0.35)';
+
 const customConfig = defineConfig({
   theme: {
     semanticTokens: {
@@ -605,64 +607,40 @@ const customConfig = defineConfig({
           },
         },
         'chart.fibonacci.level0': {
-          value: {
-            base: 'rgba(128, 128, 128, 0.8)',
-            _dark: 'rgba(128, 128, 128, 0.8)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level236': {
-          value: {
-            base: 'rgba(255, 82, 82, 0.6)',
-            _dark: 'rgba(255, 82, 82, 0.6)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level382': {
-          value: {
-            base: 'rgba(255, 167, 38, 0.6)',
-            _dark: 'rgba(255, 167, 38, 0.6)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level50': {
-          value: {
-            base: 'rgba(255, 235, 59, 0.6)',
-            _dark: 'rgba(255, 235, 59, 0.6)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level618': {
-          value: {
-            base: 'rgba(76, 175, 80, 0.6)',
-            _dark: 'rgba(76, 175, 80, 0.6)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level786': {
-          value: {
-            base: 'rgba(33, 150, 243, 0.6)',
-            _dark: 'rgba(33, 150, 243, 0.6)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level100': {
-          value: {
-            base: 'rgba(156, 39, 176, 0.6)',
-            _dark: 'rgba(156, 39, 176, 0.6)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level127': {
-          value: {
-            base: 'rgba(103, 58, 183, 0.5)',
-            _dark: 'rgba(103, 58, 183, 0.5)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level161': {
-          value: {
-            base: 'rgba(63, 81, 181, 0.5)',
-            _dark: 'rgba(63, 81, 181, 0.5)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level200': {
-          value: {
-            base: 'rgba(0, 150, 136, 0.5)',
-            _dark: 'rgba(0, 150, 136, 0.5)',
-          },
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level261': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level886': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fvg.bullish': {
           value: {
@@ -1068,10 +1046,12 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       level50: resolveValue(tokens['chart.fibonacci.level50']),
       level618: resolveValue(tokens['chart.fibonacci.level618']),
       level786: resolveValue(tokens['chart.fibonacci.level786']),
+      level886: resolveValue(tokens['chart.fibonacci.level886']),
       level100: resolveValue(tokens['chart.fibonacci.level100']),
       level127: resolveValue(tokens['chart.fibonacci.level127']),
       level161: resolveValue(tokens['chart.fibonacci.level161']),
       level200: resolveValue(tokens['chart.fibonacci.level200']),
+      level261: resolveValue(tokens['chart.fibonacci.level261']),
     },
     fvg: {
       bullish: resolveValue(tokens['chart.fvg.bullish']),

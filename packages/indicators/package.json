@@ -17,6 +17,7 @@
     "test:mutation:incremental": "stryker run --incremental"
   },
   "dependencies": {
+    "@marketmind/fibonacci": "workspace:*",
     "@marketmind/types": "workspace:*"
   },
   "devDependencies": {

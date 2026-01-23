@@ -96,6 +96,8 @@ export default defineConfig(({ mode }) => {
         '@main': resolve(__dirname, './src/main'),
         '@marketmind/types': resolve(__dirname, '../../packages/types/src'),
         '@marketmind/indicators': resolve(__dirname, '../../packages/indicators/src'),
+        '@marketmind/fibonacci': resolve(__dirname, '../../packages/fibonacci/src'),
+        '@marketmind/utils': resolve(__dirname, '../../packages/utils/src'),
       },
     },
     define: {

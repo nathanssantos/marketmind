@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/renderer/components/ui/dialog';
 import { Box, Portal } from '@chakra-ui/react';
-import { calculateFibonacciProjection } from '@marketmind/indicators';
+import { calculateFibonacciProjection, calculateProjectionLevels } from '@marketmind/indicators';
 import type { Kline, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
@@ -354,7 +354,13 @@ export const ChartCanvas = ({
 
     if (activePosition) {
       if (activePosition.fibonacciProjection) {
-        return activePosition.fibonacciProjection;
+        const saved = activePosition.fibonacciProjection;
+        const direction = activePosition.side as 'LONG' | 'SHORT';
+        const levels = calculateProjectionLevels(saved.swingLow, saved.swingHigh, direction);
+        return {
+          ...saved,
+          levels,
+        };
       }
 
       if (manager) {
@@ -387,7 +393,16 @@ export const ChartCanvas = ({
     }
 
     const visibleSetup = detectedSetups.find(s => s.visible && s.fibonacciProjection);
-    return visibleSetup?.fibonacciProjection ?? null;
+    if (visibleSetup?.fibonacciProjection) {
+      const saved = visibleSetup.fibonacciProjection;
+      const direction = visibleSetup.direction === 'LONG' ? 'LONG' : 'SHORT';
+      const levels = calculateProjectionLevels(saved.swingLow, saved.swingHigh, direction);
+      return {
+        ...saved,
+        levels,
+      };
+    }
+    return null;
   }, [filteredBackendExecutions, detectedSetups, manager]);
 
   const {

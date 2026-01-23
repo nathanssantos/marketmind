@@ -1,0 +1,26 @@
+import type { Kline } from './kline';
+export declare const parseKlinePrice: (price: string) => number;
+export declare const parseKlineVolume: (volume: string) => number;
+export declare const getKlineOpen: (kline: Kline) => number;
+export declare const getKlineHigh: (kline: Kline) => number;
+export declare const getKlineLow: (kline: Kline) => number;
+export declare const getKlineClose: (kline: Kline) => number;
+export declare const getKlineVolume: (kline: Kline) => number;
+export declare const getKlineTimestamp: (kline: Kline) => number;
+export declare const getKlineCloseTime: (kline: Kline) => number;
+export declare const getKlineDuration: (kline: Kline) => number;
+export declare const isKlineBullish: (kline: Kline) => boolean;
+export declare const isKlineBearish: (kline: Kline) => boolean;
+export declare const getKlineBodySize: (kline: Kline) => number;
+export declare const getKlineUpperWick: (kline: Kline) => number;
+export declare const getKlineLowerWick: (kline: Kline) => number;
+export declare const getKlineQuoteVolume: (kline: Kline) => number;
+export declare const getKlineTrades: (kline: Kline) => number;
+export declare const getKlineTakerBuyBaseVolume: (kline: Kline) => number;
+export declare const getKlineTakerBuyQuoteVolume: (kline: Kline) => number;
+export declare const getKlineBuyPressure: (kline: Kline) => number;
+export declare const getKlineSellPressure: (kline: Kline) => number;
+export declare const getKlinePressureType: (kline: Kline) => "buy" | "sell" | "neutral";
+export declare const getKlineAverageTradeSize: (kline: Kline) => number;
+export declare const getKlineAverageTradeValue: (kline: Kline) => number;
+//# sourceMappingURL=klineUtils.d.ts.map

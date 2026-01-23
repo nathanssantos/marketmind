@@ -1,0 +1,29 @@
+{
+  "name": "@marketmind/fibonacci",
+  "version": "0.1.0",
+  "description": "Unified Fibonacci configuration and utilities for MarketMind",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@marketmind/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

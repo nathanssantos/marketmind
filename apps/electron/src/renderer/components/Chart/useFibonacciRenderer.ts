@@ -1,4 +1,5 @@
 import type { FibonacciResult } from '@marketmind/indicators';
+import { getLevelColor as getFibonacciLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useCallback } from 'react';
@@ -12,24 +13,9 @@ interface UseFibonacciRendererProps {
 
 const LINE_WIDTH = 1;
 const LEVEL_DASH = [4, 4] as const;
-const DEFAULT_LEVEL_COLOR = 'rgba(180, 180, 180, 0.7)';
 
 const getLevelColor = (level: number, colors: ChartThemeColors): string => {
-  const fibColors = colors.fibonacci;
-  if (!fibColors) return DEFAULT_LEVEL_COLOR;
-
-  if (level === 0) return fibColors.level0 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 0.236) return fibColors.level236 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 0.382) return fibColors.level382 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 0.5) return fibColors.level50 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 0.618) return fibColors.level618 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 0.786) return fibColors.level786 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 1) return fibColors.level100 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 1.27 || level === 1.272) return fibColors.level127 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 1.618) return fibColors.level161 ?? DEFAULT_LEVEL_COLOR;
-  if (level === 2) return fibColors.level200 ?? DEFAULT_LEVEL_COLOR;
-
-  return DEFAULT_LEVEL_COLOR;
+  return getFibonacciLevelColor(level, colors.fibonacci, FIBONACCI_DEFAULT_COLOR);
 };
 
 export const useFibonacciRenderer = ({

@@ -27,7 +27,7 @@ describe('calculateFibonacciRetracement', () => {
   it('should calculate retracement levels for uptrend', () => {
     const levels = calculateFibonacciRetracement(100, 0, 'up');
 
-    expect(levels.length).toBe(9);
+    expect(levels.length).toBe(8);
     expect(levels.find((l) => l.level === 0)?.price).toBe(100);
     expect(levels.find((l) => l.level === 0.5)?.price).toBe(50);
     expect(levels.find((l) => l.level === 1)?.price).toBe(0);
@@ -36,18 +36,18 @@ describe('calculateFibonacciRetracement', () => {
   it('should calculate retracement levels for downtrend', () => {
     const levels = calculateFibonacciRetracement(100, 0, 'down');
 
-    expect(levels.length).toBe(9);
+    expect(levels.length).toBe(8);
     expect(levels.find((l) => l.level === 0)?.price).toBe(0);
     expect(levels.find((l) => l.level === 0.5)?.price).toBe(50);
     expect(levels.find((l) => l.level === 1)?.price).toBe(100);
   });
 
-  it('should include extension levels', () => {
+  it('should include 0.886 level', () => {
     const levels = calculateFibonacciRetracement(100, 0, 'up');
 
-    const extensionLevel = levels.find((l) => l.level === 1.618);
-    expect(extensionLevel).toBeDefined();
-    expect(extensionLevel?.price).toBeCloseTo(-61.8, 1);
+    const level886 = levels.find((l) => l.level === 0.886);
+    expect(level886).toBeDefined();
+    expect(level886?.price).toBeCloseTo(11.4, 1);
   });
 
   it('should include correct labels', () => {
@@ -69,7 +69,7 @@ describe('calculateAutoFibonacci', () => {
     const result = calculateAutoFibonacci(klines, 50);
 
     expect(result).not.toBeNull();
-    expect(result?.levels.length).toBe(9);
+    expect(result?.levels.length).toBe(8);
     expect(result?.swingHigh).toBeGreaterThan(result?.swingLow as number);
   });
 
@@ -287,7 +287,7 @@ describe('calculateFibonacciProjection', () => {
     const level200 = result!.levels.find((l) => l.level === 2);
     expect(level200?.label).toBe('200.0%');
 
-    expect(result!.levels).toHaveLength(11);
+    expect(result!.levels).toHaveLength(12);
   });
 });
 

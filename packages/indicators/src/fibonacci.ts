@@ -1,20 +1,57 @@
 import type { Kline } from '@marketmind/types';
 import { FILTER_THRESHOLDS } from '@marketmind/types';
 import {
-    findSignificantSwingHigh,
-    findSignificantSwingLow,
-    findSwingHighAfter,
-    findSwingLowAfter,
-    validateSwingWithStructure,
-    findAdaptiveFractalHigh,
-    findAdaptiveFractalLow,
-    SWING_POINT_DEFAULTS,
+  FIBONACCI_ALL_LEVELS,
+  FIBONACCI_RETRACEMENT_LEVELS,
+  calculateFibonacciRetracement as fibCalcRetracement,
+  calculateProjectionLevels,
+  type FibonacciLevelSelectionContext,
+  type FibonacciLevelSelectionResult,
+  type SwingPointWithIndex,
+  type FibonacciProjectionResult,
+} from '@marketmind/fibonacci';
+import {
+  findSignificantSwingHigh,
+  findSignificantSwingLow,
+  findSwingHighAfter,
+  findSwingLowAfter,
+  validateSwingWithStructure,
+  findAdaptiveFractalHigh,
+  findAdaptiveFractalLow,
+  SWING_POINT_DEFAULTS,
 } from './swingPoints';
+
+export {
+  FIBONACCI_ALL_LEVELS,
+  FIBONACCI_RETRACEMENT_LEVELS,
+  FIBONACCI_TARGET_LEVELS,
+  FIBONACCI_PYRAMID_LEVELS,
+  FIBONACCI_LEVEL_TO_NAME,
+  FIBONACCI_PYRAMID_VALUES,
+  FIBONACCI_DEFAULT_COLOR,
+  FIBONACCI_LEVEL_COLORS,
+  formatFibonacciLabel,
+  getLevelColor,
+  getLevelName,
+  calculateFibonacciRetracement,
+  calculateFibonacciExtension,
+  calculateProjectionLevels,
+  type FibonacciLevelData,
+  type FibonacciColors,
+  type FibonacciRetracementLevel,
+  type FibonacciExtensionLevel,
+  type FibonacciPyramidLevel,
+  type FibonacciLevelSelectionContext,
+  type FibonacciLevelSelectionResult,
+  type SwingPointWithIndex,
+  type FibonacciProjectionResult,
+} from '@marketmind/fibonacci';
 
 const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
 const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
-export const FIBONACCI_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.618] as const;
+export const FIBONACCI_LEVELS = FIBONACCI_RETRACEMENT_LEVELS;
+export const FIBONACCI_EXTENSION_LEVELS = FIBONACCI_ALL_LEVELS;
 
 export interface FibonacciLevel {
   level: number;
@@ -28,25 +65,6 @@ export interface FibonacciResult {
   swingLow: number;
   direction: 'up' | 'down';
 }
-
-export const calculateFibonacciRetracement = (
-  swingHigh: number,
-  swingLow: number,
-  direction: 'up' | 'down' = 'up',
-): FibonacciLevel[] => {
-  const range = swingHigh - swingLow;
-
-  return FIBONACCI_LEVELS.map((level) => {
-    const price =
-      direction === 'up' ? swingHigh - range * level : swingLow + range * level;
-
-    return {
-      level,
-      price,
-      label: `${(level * 100).toFixed(1)}%`,
-    };
-  });
-};
 
 export const calculateAutoFibonacci = (
   klines: Kline[],
@@ -79,7 +97,7 @@ export const calculateAutoFibonacci = (
   }
 
   const direction = highestIndex > lowestIndex ? 'up' : 'down';
-  const levels = calculateFibonacciRetracement(highestValue, lowestValue, direction);
+  const levels = fibCalcRetracement(highestValue, lowestValue, direction);
 
   return {
     levels,
@@ -88,43 +106,6 @@ export const calculateAutoFibonacci = (
     direction,
   };
 };
-
-export const calculateFibonacciExtension = (
-  point1: number,
-  point2: number,
-  point3: number,
-): FibonacciLevel[] => {
-  const range = Math.abs(point2 - point1);
-  const direction = point2 > point1 ? 'up' : 'down';
-
-  const extensionLevels = [1, 1.272, 1.618, 2, 2.618, 3.618, 4.236];
-
-  return extensionLevels.map((level) => {
-    const price = direction === 'up' ? point3 + range * (level - 1) : point3 - range * (level - 1);
-
-    return {
-      level,
-      price,
-      label: `${(level * 100).toFixed(1)}%`,
-    };
-  });
-};
-
-export const FIBONACCI_EXTENSION_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.618, 2, 2.618] as const;
-
-export interface SwingPointWithIndex {
-  price: number;
-  index: number;
-  timestamp: number;
-}
-
-export interface FibonacciProjectionResult {
-  levels: FibonacciLevel[];
-  swingLow: SwingPointWithIndex;
-  swingHigh: SwingPointWithIndex;
-  direction: 'up' | 'down';
-  range: number;
-}
 
 export const calculateFibonacciProjection = (
   klines: Kline[],
@@ -199,27 +180,7 @@ export const calculateFibonacciProjection = (
 
   if (range <= 0) return null;
 
-  const levels: FibonacciLevel[] = FIBONACCI_EXTENSION_LEVELS.map((level) => {
-    let price: number;
-
-    if (level <= 1) {
-      price = direction === 'LONG'
-        ? swingLow.price + range * level
-        : swingHigh.price - range * level;
-    } else {
-      const extensionAmount = range * (level - 1);
-      price = direction === 'LONG'
-        ? swingHigh.price + extensionAmount
-        : swingLow.price - extensionAmount;
-    }
-
-    return {
-      level,
-      price,
-      label: `${(level * 100).toFixed(1)}%`,
-    };
-  });
-
+  const levels = calculateProjectionLevels(swingLow, swingHigh, direction);
   const fibDirection = swingHigh.index > swingLow.index ? 'up' : 'down';
 
   return {
@@ -230,19 +191,6 @@ export const calculateFibonacciProjection = (
     range,
   };
 };
-
-export type FibonacciTargetLevel = 'auto' | 1 | 1.272 | 1.618 | 2;
-
-export interface FibonacciLevelSelectionContext {
-  adx: number;
-  atrPercent: number;
-  volumeRatio?: number;
-}
-
-export interface FibonacciLevelSelectionResult {
-  level: 1.272 | 1.618 | 2 | 2.618;
-  reason: string;
-}
 
 export const selectDynamicFibonacciLevel = (
   context: FibonacciLevelSelectionContext

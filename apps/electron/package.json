@@ -37,6 +37,7 @@
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",
     "@emotion/react": "^11.14.0",
+    "@marketmind/fibonacci": "workspace:*",
     "@marketmind/indicators": "workspace:*",
     "@marketmind/types": "workspace:*",
     "@marketmind/utils": "workspace:*",
