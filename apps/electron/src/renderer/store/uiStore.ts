@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 'analytics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
@@ -9,13 +8,6 @@ export type PortfolioFilterOption = 'all' | 'long' | 'short' | 'profitable' | 'l
 export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' | 'size-desc' | 'size-asc' | 'symbol-asc' | 'symbol-desc' | 'exposure-desc' | 'exposure-asc';
 export type ViewMode = 'cards' | 'table';
 export type TableSortDirection = 'asc' | 'desc';
-
-const MIGRATION_VERSION_3 = 3;
-const MIGRATION_VERSION_4 = 4;
-const MIGRATION_VERSION_5 = 5;
-const MIGRATION_VERSION_6 = 6;
-const MIGRATION_VERSION_7 = 7;
-const MIGRATION_VERSION_8 = 8;
 
 interface UIState {
   tradingSidebarTab: TradingSidebarTab;
@@ -64,92 +56,49 @@ interface UIState {
   setEnableShiftAltOrderEntry: (enabled: boolean) => void;
 }
 
-export const useUIStore = create<UIState>()(
-  persist(
-    (set) => ({
-      tradingSidebarTab: 'orders',
-      setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
+export const useUIStore = create<UIState>()((set) => ({
+  tradingSidebarTab: 'orders',
+  setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
 
-      ordersSortBy: 'newest',
-      setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
+  ordersSortBy: 'newest',
+  setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
 
-      ordersFilterStatus: 'pending',
-      setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
+  ordersFilterStatus: 'pending',
+  setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
 
-      performancePeriod: 'all',
-      setPerformancePeriod: (period) => set({ performancePeriod: period }),
+  performancePeriod: 'all',
+  setPerformancePeriod: (period) => set({ performancePeriod: period }),
 
-      setupStatsPeriod: 'all',
-      setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
+  setupStatsPeriod: 'all',
+  setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
 
-      portfolioFilterOption: 'all',
-      setPortfolioFilterOption: (filter) => set({ portfolioFilterOption: filter }),
+  portfolioFilterOption: 'all',
+  setPortfolioFilterOption: (filter) => set({ portfolioFilterOption: filter }),
 
-      portfolioSortBy: 'newest',
-      setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
+  portfolioSortBy: 'newest',
+  setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
 
-      ordersViewMode: 'cards',
-      setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
+  ordersViewMode: 'cards',
+  setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
 
-      portfolioViewMode: 'cards',
-      setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
+  portfolioViewMode: 'cards',
+  setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
 
-      ordersTableSortKey: 'createdAt',
-      ordersTableSortDirection: 'desc',
-      setOrdersTableSort: (key, direction) => set({ ordersTableSortKey: key, ordersTableSortDirection: direction }),
+  ordersTableSortKey: 'createdAt',
+  ordersTableSortDirection: 'desc',
+  setOrdersTableSort: (key, direction) => set({ ordersTableSortKey: key, ordersTableSortDirection: direction }),
 
-      portfolioTableSortKey: 'pnl',
-      portfolioTableSortDirection: 'desc',
-      setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
+  portfolioTableSortKey: 'pnl',
+  portfolioTableSortDirection: 'desc',
+  setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
 
-      watchersTableSortKey: 'symbol',
-      watchersTableSortDirection: 'asc',
-      setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
+  watchersTableSortKey: 'symbol',
+  watchersTableSortDirection: 'asc',
+  setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
 
-      showEventRow: false,
-      setShowEventRow: (show) => set({ showEventRow: show }),
+  showEventRow: false,
+  setShowEventRow: (show) => set({ showEventRow: show }),
 
-      enableShiftAltOrderEntry: false,
-      setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
-    }),
-    {
-      name: 'ui-storage',
-      version: 8,
-      migrate: (persistedState: unknown, version: number) => {
-        const state = persistedState as UIState;
-
-        if (version < MIGRATION_VERSION_3) {
-          state.tradingSidebarTab = 'orders';
-        }
-
-        if (version < MIGRATION_VERSION_4) {
-          state.ordersFilterStatus = 'pending';
-          state.performancePeriod = 'all';
-          state.setupStatsPeriod = 'all';
-        }
-
-        if (version < MIGRATION_VERSION_5) {
-          state.ordersTableSortKey = 'createdAt';
-          state.ordersTableSortDirection = 'desc';
-          state.portfolioTableSortKey = 'pnl';
-          state.portfolioTableSortDirection = 'desc';
-        }
-
-        if (version < MIGRATION_VERSION_6) {
-          state.watchersTableSortKey = 'symbol';
-          state.watchersTableSortDirection = 'asc';
-        }
-
-        if (version < MIGRATION_VERSION_7) {
-          state.showEventRow = false;
-        }
-
-        if (version < MIGRATION_VERSION_8) {
-          state.enableShiftAltOrderEntry = false;
-        }
-
-        return state;
-      },
-    }
-  )
-);
+  enableShiftAltOrderEntry: false,
+  setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
+}));

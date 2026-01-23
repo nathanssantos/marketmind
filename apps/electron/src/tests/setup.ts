@@ -5,6 +5,32 @@ import { workerPool } from '../renderer/utils/WorkerPool';
 
 expect.extend(matchers);
 
+const createUseLocalStorageMock = () => {
+  const stores = new Map<string, unknown>();
+
+  return function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+    const React = require('react');
+    const storedValue = stores.has(key) ? stores.get(key) : initialValue;
+    const [value, setValueState] = React.useState<T>(storedValue as T);
+
+    const setValue = React.useCallback((newValue: T | ((prev: T) => T)) => {
+      setValueState((prev: T) => {
+        const computed = typeof newValue === 'function'
+          ? (newValue as (prev: T) => T)(prev)
+          : newValue;
+        stores.set(key, computed);
+        return computed;
+      });
+    }, [key]);
+
+    return [value, setValue];
+  };
+};
+
+vi.mock('@/renderer/hooks/useLocalStorage', () => ({
+  useLocalStorage: createUseLocalStorageMock(),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,

@@ -295,6 +295,13 @@
       "when": 1769000000000,
       "tag": "0041_timescaledb_data_management",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1769208995681,
+      "tag": "0042_oval_juggernaut",
+      "breakpoints": true
     }
   ]
 }

@@ -136,20 +136,6 @@ describe('uiStore', () => {
     });
   });
 
-  describe('State Persistence', () => {
-    it('should have persistence configured with correct name', () => {
-      expect(localStorage.getItem('ui-storage')).toBeDefined();
-    });
-
-    it('should maintain state through store access', () => {
-      const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('portfolio');
-
-      const newState = useUIStore.getState();
-      expect(newState.tradingSidebarTab).toBe('portfolio');
-    });
-  });
-
   describe('Store Function Existence', () => {
     it('should expose all setter functions', () => {
       const state = useUIStore.getState();

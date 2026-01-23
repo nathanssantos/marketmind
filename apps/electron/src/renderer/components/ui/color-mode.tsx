@@ -1,7 +1,19 @@
-import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 type ColorMode = 'light' | 'dark';
+
+const COLOR_MODE_KEY = 'chakra-ui-color-mode';
+
+const getInitialColorMode = (): ColorMode => {
+  if (typeof window === 'undefined') return 'dark';
+  try {
+    const stored = window.localStorage.getItem(COLOR_MODE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {
+    // Ignore localStorage errors
+  }
+  return 'dark';
+};
 
 interface ColorModeContextValue {
   colorMode: ColorMode;
@@ -24,7 +36,19 @@ interface ColorModeProviderProps {
 }
 
 export const ColorModeProvider = ({ children }: ColorModeProviderProps) => {
-  const [colorMode, setColorModeStorage] = useLocalStorage<ColorMode>('chakra-ui-color-mode', 'dark');
+  const [colorMode, setColorModeState] = useState<ColorMode>(getInitialColorMode);
+
+  const setColorModeStorage = useCallback((value: ColorMode | ((prev: ColorMode) => ColorMode)) => {
+    setColorModeState((prev) => {
+      const newMode = typeof value === 'function' ? value(prev) : value;
+      try {
+        window.localStorage.setItem(COLOR_MODE_KEY, newMode);
+      } catch {
+        // Ignore localStorage errors
+      }
+      return newMode;
+    });
+  }, []);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

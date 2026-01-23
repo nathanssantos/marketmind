@@ -1,13 +1,8 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { ColorModeProvider, useColorMode } from './color-mode';
-
-const mockUseLocalStorage = vi.fn();
-vi.mock('@/renderer/hooks/useLocalStorage', () => ({
-  useLocalStorage: (key: string, defaultValue: unknown) => mockUseLocalStorage(key, defaultValue),
-}));
 
 const TestConsumer = () => {
   const { colorMode, toggleColorMode, setColorMode } = useColorMode();
@@ -29,22 +24,15 @@ const renderWithProviders = (ui: ReactElement) =>
   );
 
 describe('ColorModeProvider', () => {
-  let setColorModeMock: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    vi.clearAllMocks();
-    setColorModeMock = vi.fn();
-
-    mockUseLocalStorage.mockImplementation((key: string, defaultValue: unknown) => {
-      if (key === 'chakra-ui-color-mode') {
-        return ['dark', setColorModeMock];
-      }
-      return [defaultValue, vi.fn()];
-    });
-
+    localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.colorScheme = '';
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it('should render children', () => {
@@ -57,7 +45,7 @@ describe('ColorModeProvider', () => {
     expect(screen.getByTestId('child')).toBeDefined();
   });
 
-  it('should provide color mode value', () => {
+  it('should default to dark mode when no localStorage value', () => {
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
@@ -67,13 +55,8 @@ describe('ColorModeProvider', () => {
     expect(screen.getByTestId('color-mode').textContent).toBe('dark');
   });
 
-  it('should toggle color mode', async () => {
-    mockUseLocalStorage.mockImplementation((key: string) => {
-      if (key === 'chakra-ui-color-mode') {
-        return ['light', setColorModeMock];
-      }
-      return ['light', vi.fn()];
-    });
+  it('should read initial value from localStorage', () => {
+    localStorage.setItem('chakra-ui-color-mode', 'light');
 
     renderWithProviders(
       <ColorModeProvider>
@@ -81,13 +64,47 @@ describe('ColorModeProvider', () => {
       </ColorModeProvider>
     );
 
+    expect(screen.getByTestId('color-mode').textContent).toBe('light');
+  });
+
+  it('should toggle color mode from dark to light', async () => {
+    renderWithProviders(
+      <ColorModeProvider>
+        <TestConsumer />
+      </ColorModeProvider>
+    );
+
+    expect(screen.getByTestId('color-mode').textContent).toBe('dark');
+
     const toggleButton = screen.getByTestId('toggle');
 
     await act(async () => {
       fireEvent.click(toggleButton);
     });
 
-    expect(setColorModeMock).toHaveBeenCalled();
+    expect(screen.getByTestId('color-mode').textContent).toBe('light');
+    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('light');
+  });
+
+  it('should toggle color mode from light to dark', async () => {
+    localStorage.setItem('chakra-ui-color-mode', 'light');
+
+    renderWithProviders(
+      <ColorModeProvider>
+        <TestConsumer />
+      </ColorModeProvider>
+    );
+
+    expect(screen.getByTestId('color-mode').textContent).toBe('light');
+
+    const toggleButton = screen.getByTestId('toggle');
+
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+
+    expect(screen.getByTestId('color-mode').textContent).toBe('dark');
+    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('dark');
   });
 
   it('should set color mode to light', async () => {
@@ -103,16 +120,12 @@ describe('ColorModeProvider', () => {
       fireEvent.click(setLightButton);
     });
 
-    expect(setColorModeMock).toHaveBeenCalledWith('light');
+    expect(screen.getByTestId('color-mode').textContent).toBe('light');
+    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('light');
   });
 
   it('should set color mode to dark', async () => {
-    mockUseLocalStorage.mockImplementation((key: string) => {
-      if (key === 'chakra-ui-color-mode') {
-        return ['light', setColorModeMock];
-      }
-      return ['light', vi.fn()];
-    });
+    localStorage.setItem('chakra-ui-color-mode', 'light');
 
     renderWithProviders(
       <ColorModeProvider>
@@ -126,73 +139,45 @@ describe('ColorModeProvider', () => {
       fireEvent.click(setDarkButton);
     });
 
-    expect(setColorModeMock).toHaveBeenCalledWith('dark');
+    expect(screen.getByTestId('color-mode').textContent).toBe('dark');
+    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('dark');
   });
 
-  it('should apply dark class to document', () => {
+  it('should apply dark class to document', async () => {
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
       </ColorModeProvider>
     );
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 
-  it('should apply light class when in light mode', () => {
-    mockUseLocalStorage.mockImplementation((key: string) => {
-      if (key === 'chakra-ui-color-mode') {
-        return ['light', setColorModeMock];
-      }
-      return ['light', vi.fn()];
-    });
+  it('should apply light class when in light mode', async () => {
+    localStorage.setItem('chakra-ui-color-mode', 'light');
 
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
       </ColorModeProvider>
     );
-
-    expect(document.documentElement.classList.contains('light')).toBe(true);
-  });
-
-  it('should toggle from light to dark', async () => {
-    let currentMode = 'light';
-    setColorModeMock.mockImplementation((updater) => {
-      if (typeof updater === 'function') {
-        currentMode = updater(currentMode);
-      } else {
-        currentMode = updater;
-      }
-    });
-
-    mockUseLocalStorage.mockImplementation((key: string) => {
-      if (key === 'chakra-ui-color-mode') {
-        return [currentMode, setColorModeMock];
-      }
-      return [currentMode, vi.fn()];
-    });
-
-    renderWithProviders(
-      <ColorModeProvider>
-        <TestConsumer />
-      </ColorModeProvider>
-    );
-
-    const toggleButton = screen.getByTestId('toggle');
 
     await act(async () => {
-      fireEvent.click(toggleButton);
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(setColorModeMock).toHaveBeenCalled();
+    expect(document.documentElement.classList.contains('light')).toBe(true);
   });
 });
 
 describe('useColorMode', () => {
   it('should throw error when used outside provider', () => {
     const consoleError = console.error;
-    console.error = vi.fn();
+    console.error = () => {};
 
     expect(() => {
       renderWithProviders(<TestConsumer />);
