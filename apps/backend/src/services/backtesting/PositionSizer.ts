@@ -1,4 +1,11 @@
-import { POSITION_SIZING } from '../../constants';
+import {
+  calculateKellyPercentage,
+  calculateOptimalKellyFraction as coreCalculateOptimalKellyFraction,
+  calculateAdaptiveSize as coreCalculateAdaptiveSize,
+  roundQuantity,
+  type AdaptiveConditions,
+} from '@marketmind/trading-core';
+import { POSITION_SIZING_CONFIG } from '@marketmind/types';
 
 const {
   DEFAULT_MIN_PERCENT,
@@ -12,38 +19,30 @@ const {
   DEFAULT_FIXED_PERCENT,
   DEFAULT_RISK_PERCENT,
   VOLATILITY_TARGET,
-  KELLY_BOUNDS,
-  KELLY_ADJUSTMENTS,
-  DRAWDOWN_THRESHOLDS,
   STRATEGY_EVALUATION,
-} = POSITION_SIZING;
+} = POSITION_SIZING_CONFIG;
 
 export interface PositionSizingConfig {
   method: 'risk-based' | 'kelly' | 'volatility' | 'fixed-fractional';
-  
-  riskPerTrade?: number; // % of equity to risk per trade (e.g., 1, 2, 3)
-  
-  winRate?: number; // Historical win rate (0-1)
-  avgWinPercent?: number; // Average win size as %
-  avgLossPercent?: number; // Average loss size as %
-  kellyFraction?: number; // Fraction of Kelly (0.25 = quarter Kelly, safer)
-  
-  atr?: number; // Current ATR value
-  atrMultiplier?: number; // Multiplier for volatility adjustment
-  
-  fixedPercent?: number; // Fixed % of equity per trade
-  
-  minPositionPercent?: number; // Minimum position size (default: 1%)
-  maxPositionPercent?: number; // Maximum position size (default: 100%)
+  riskPerTrade?: number;
+  winRate?: number;
+  avgWinPercent?: number;
+  avgLossPercent?: number;
+  kellyFraction?: number;
+  atr?: number;
+  atrMultiplier?: number;
+  fixedPercent?: number;
+  minPositionPercent?: number;
+  maxPositionPercent?: number;
 }
 
 export interface PositionSizingResult {
-  positionPercent: number; // % of equity to use
-  positionSize: number; // Actual quantity to trade
-  positionValue: number; // Dollar value of position
-  method: string; // Method used
-  riskAmount: number; // Dollar amount at risk
-  rationale?: string; // Explanation of sizing decision
+  positionPercent: number;
+  positionSize: number;
+  positionValue: number;
+  method: string;
+  riskAmount: number;
+  rationale?: string;
 }
 
 export class PositionSizer {
@@ -105,7 +104,7 @@ export class PositionSizer {
 
     return {
       positionPercent,
-      positionSize,
+      positionSize: roundQuantity(positionSize),
       positionValue,
       method: config.method,
       riskAmount,
@@ -145,14 +144,9 @@ export class PositionSizer {
     avgLossPercent: number,
     kellyFraction: number
   ): { positionPercent: number; rationale: string } {
-    const p = winRate;
-    const q = 1 - winRate;
-    const b = avgWinPercent / avgLossPercent; // Risk/reward ratio
-
-    const kellyPercent = ((p * b - q) / b) * 100;
-
+    const b = avgWinPercent / avgLossPercent;
+    const kellyPercent = calculateKellyPercentage(winRate, b);
     const adjustedPercent = kellyPercent * kellyFraction;
-
     const finalPercent = Math.max(DEFAULT_MIN_PERCENT, Math.min(DEFAULT_MAX_PERCENT, adjustedPercent));
 
     return {
@@ -175,7 +169,6 @@ export class PositionSizer {
     }
 
     const atrPercent = (atr / entryPrice) * 100;
-
     const { TARGET_ATR_PERCENT, BASELINE_POSITION } = VOLATILITY_TARGET;
     const positionPercent = (BASELINE_POSITION * TARGET_ATR_PERCENT) / atrPercent;
 
@@ -190,25 +183,7 @@ export class PositionSizer {
     profitFactor: number,
     maxDrawdownPercent: number
   ): number {
-    let kellyFraction = DEFAULT_KELLY_FRACTION;
-
-    if (winRate > DEFAULT_WIN_RATE) {
-      kellyFraction += KELLY_ADJUSTMENTS.SMALL;
-    }
-
-    if (profitFactor > 2.0) {
-      kellyFraction += KELLY_ADJUSTMENTS.MEDIUM;
-    } else if (profitFactor < 1.2) {
-      kellyFraction -= KELLY_ADJUSTMENTS.MEDIUM;
-    }
-
-    if (maxDrawdownPercent > DRAWDOWN_THRESHOLDS.MAX) {
-      kellyFraction -= KELLY_ADJUSTMENTS.LARGE;
-    } else if (maxDrawdownPercent < DRAWDOWN_THRESHOLDS.MIN) {
-      kellyFraction += KELLY_ADJUSTMENTS.SMALL;
-    }
-
-    return Math.max(KELLY_BOUNDS.MIN, Math.min(KELLY_BOUNDS.MAX, kellyFraction));
+    return coreCalculateOptimalKellyFraction(winRate, profitFactor, maxDrawdownPercent);
   }
 
   static recommendMethod(
@@ -225,83 +200,18 @@ export class PositionSizer {
       return 'kelly';
     }
 
-    if (hasStopLoss) {
-      return 'risk-based';
-    }
-
+    if (hasStopLoss) return 'risk-based';
     return 'fixed-fractional';
   }
 
   static calculateAdaptiveSize(
     basePositionPercent: number,
-    conditions: {
-      drawdownPercent: number;
-      volatilityLevel: 'low' | 'normal' | 'high' | 'extreme';
-      consecutiveLosses: number;
-      consecutiveWins: number;
-      recentWinRate?: number;
-    }
+    conditions: AdaptiveConditions
   ): { adjustedPercent: number; rationale: string } {
-    let multiplier = 1.0;
-    const adjustments: string[] = [];
-
-    if (conditions.drawdownPercent >= 20) {
-      multiplier *= 0.25;
-      adjustments.push(`DD≥20%: ×0.25`);
-    } else if (conditions.drawdownPercent >= 15) {
-      multiplier *= 0.50;
-      adjustments.push(`DD≥15%: ×0.50`);
-    } else if (conditions.drawdownPercent >= 10) {
-      multiplier *= 0.75;
-      adjustments.push(`DD≥10%: ×0.75`);
-    }
-
-    const volatilityMultipliers: Record<string, number> = {
-      low: 1.15,
-      normal: 1.0,
-      high: 0.75,
-      extreme: 0.50,
+    const result = coreCalculateAdaptiveSize(basePositionPercent, conditions);
+    return {
+      adjustedPercent: result.adjustedPercent,
+      rationale: result.rationale,
     };
-    const volMult = volatilityMultipliers[conditions.volatilityLevel] ?? 1.0;
-    if (volMult !== 1.0) {
-      multiplier *= volMult;
-      adjustments.push(`Vol=${conditions.volatilityLevel}: ×${volMult}`);
-    }
-
-    if (conditions.consecutiveLosses >= 4) {
-      multiplier *= 0.50;
-      adjustments.push(`LossStreak≥4: ×0.50`);
-    } else if (conditions.consecutiveLosses >= 3) {
-      multiplier *= 0.75;
-      adjustments.push(`LossStreak≥3: ×0.75`);
-    }
-
-    if (conditions.consecutiveWins >= 4 && conditions.drawdownPercent < 5) {
-      multiplier *= 1.1;
-      adjustments.push(`WinStreak≥4: ×1.10`);
-    }
-
-    if (conditions.recentWinRate !== undefined) {
-      if (conditions.recentWinRate < 0.35) {
-        multiplier *= 0.75;
-        adjustments.push(`WR<35%: ×0.75`);
-      } else if (conditions.recentWinRate > 0.65 && conditions.drawdownPercent < 10) {
-        multiplier *= 1.15;
-        adjustments.push(`WR>65%: ×1.15`);
-      }
-    }
-
-    const minMult = 0.25;
-    const maxMult = 1.5;
-    multiplier = Math.max(minMult, Math.min(maxMult, multiplier));
-
-    const adjustedPercent = basePositionPercent * multiplier;
-    const finalPercent = Math.max(DEFAULT_MIN_PERCENT, Math.min(DEFAULT_MAX_PERCENT, adjustedPercent));
-
-    const rationale = adjustments.length > 0
-      ? `Base: ${basePositionPercent.toFixed(1)}% | ${adjustments.join(' | ')} | Final: ${finalPercent.toFixed(1)}%`
-      : `No adjustments needed: ${basePositionPercent.toFixed(1)}%`;
-
-    return { adjustedPercent: finalPercent, rationale };
   }
 }

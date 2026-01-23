@@ -64,6 +64,7 @@
     "@marketmind/indicators": "workspace:*",
     "@marketmind/logger": "workspace:*",
     "@marketmind/risk": "workspace:*",
+    "@marketmind/trading-core": "workspace:*",
     "@marketmind/types": "workspace:*",
     "@marketmind/utils": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
