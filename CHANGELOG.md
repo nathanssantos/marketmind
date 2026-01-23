@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.49.0] - 2026-01-23
+
+### Added
+- **Chart Layer Architecture** - New optimized rendering system
+  - DataLayer, IndicatorLayer, and OverlayLayer with optimized rendering
+  - useLayerCache and useRenderLoop hooks for better performance
+  - Indicator caching and memoization hooks
+- **Keyboard and Touch Navigation**
+  - useKeyboardNavigation hook for keyboard interactions
+  - useTouchGestures hook for touch device support
+- **New UI Components**
+  - CollapsibleSection, ConfirmationDialog, EmptyState
+  - FormDialog and MetricCard components with tests
+- **Property-Based Tests** for indicators
+  - RSI, MACD, Bollinger Bands, and more
+  - Comprehensive validation of indicator calculations
+- **Positions Management** and trading execution features
+- **Strategy Definition Types** with visualization interfaces
+
+### Changed
+- **Fibonacci Projection** now recalculates levels from saved swing points
+  - Ensures new levels (like 88.6%) appear even for existing positions
+  - Levels are always calculated using current `FIBONACCI_ALL_LEVELS`
+- **Chart Toolbar** simplified and made vertical
+  - Removed chart type toggle buttons (now in settings modal)
+  - Tooltips aligned to the right
+- **Auto-Trading System** refactored
+  - Introduced WatcherManager and BtcStreamManager
+  - Cache manager and utility functions for auto-trading
+  - Market client factory for better abstraction
+- **Chart Renderers** refactored to use centralized color constants
+- **minRiskReward** settings now use default constants across components
+
+### Fixed
+- **Fibonacci 88.6% Level** now displays correctly on chart
+- **P&L calculations** in auto-trading tests
+- **Exposure calculations** refactored in tests
+- **Logging verbosity** reduced in various services
+
+---
+
 ## [0.48.0] - 2026-01-19
 
 ### Added
