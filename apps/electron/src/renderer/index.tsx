@@ -4,6 +4,8 @@ import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
 import { createPlatformAdapter } from './adapters/factory';
 import type { PlatformAdapter } from './adapters/types';
 import App from './App';
+import { LanguageSyncProvider } from './components/LanguageSyncProvider';
+import { TrpcProvider } from './components/TrpcProvider';
 import { ColorModeProvider } from './components/ui/color-mode';
 import { PRE_REACT_COLORS } from './constants/preReactColors';
 import { PlatformProvider } from './context/PlatformContext';
@@ -59,18 +61,22 @@ const Root = () => {
   }
 
   return (
-    <PlatformProvider adapter={adapter}>
-      <ColorModeProvider>
-        <RouterComponent platform={adapter.platform}>
-          <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/chart" element={<ChartWindow />} />
-            <Route path="/chart/:symbol" element={<ChartWindow />} />
-            <Route path="/chart/:symbol/:timeframe" element={<ChartWindow />} />
-          </Routes>
-        </RouterComponent>
-      </ColorModeProvider>
-    </PlatformProvider>
+    <TrpcProvider>
+      <PlatformProvider adapter={adapter}>
+        <ColorModeProvider>
+          <LanguageSyncProvider>
+            <RouterComponent platform={adapter.platform}>
+              <Routes>
+                <Route path="/" element={<App />} />
+                <Route path="/chart" element={<ChartWindow />} />
+                <Route path="/chart/:symbol" element={<ChartWindow />} />
+                <Route path="/chart/:symbol/:timeframe" element={<ChartWindow />} />
+              </Routes>
+            </RouterComponent>
+          </LanguageSyncProvider>
+        </ColorModeProvider>
+      </PlatformProvider>
+    </TrpcProvider>
   );
 };
 

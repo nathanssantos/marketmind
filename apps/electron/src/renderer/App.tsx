@@ -13,7 +13,6 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainLayout } from './components/Layout/MainLayout';
-import { TrpcProvider } from './components/TrpcProvider';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
@@ -51,64 +50,62 @@ function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
 function App(): ReactElement {
   return (
     <ErrorBoundary>
-      <TrpcProvider>
-        <ChakraProvider value={system}>
-          <AutoAuth>
-            <Toaster toaster={toaster}>
-              {(toast) => {
-                const { t } = useTranslation();
-                return (
-                  <Box
-                    key={toast.id}
-                    p={4}
-                    bg={
-                      toast.type === 'error'
-                        ? 'red.500'
-                        : toast.type === 'success'
-                          ? 'green.500'
-                          : toast.type === 'warning'
-                            ? 'orange.500'
-                            : 'blue.500'
-                    }
+      <ChakraProvider value={system}>
+        <AutoAuth>
+          <Toaster toaster={toaster}>
+            {(toast) => {
+              const { t } = useTranslation();
+              return (
+                <Box
+                  key={toast.id}
+                  p={4}
+                  bg={
+                    toast.type === 'error'
+                      ? 'red.500'
+                      : toast.type === 'success'
+                        ? 'green.500'
+                        : toast.type === 'warning'
+                          ? 'orange.500'
+                          : 'blue.500'
+                  }
+                  color="white"
+                  borderRadius="md"
+                  boxShadow="lg"
+                  maxW="400px"
+                  position="relative"
+                >
+                  <IconButton
+                    aria-label={t('common.close')}
+                    size="xs"
+                    position="absolute"
+                    top={2}
+                    right={2}
+                    onClick={() => toaster.dismiss(toast.id)}
+                    variant="ghost"
                     color="white"
-                    borderRadius="md"
-                    boxShadow="lg"
-                    maxW="400px"
-                    position="relative"
+                    _hover={{ bg: 'whiteAlpha.200' }}
                   >
-                    <IconButton
-                      aria-label={t('common.close')}
-                      size="xs"
-                      position="absolute"
-                      top={2}
-                      right={2}
-                      onClick={() => toaster.dismiss(toast.id)}
-                      variant="ghost"
-                      color="white"
-                      _hover={{ bg: 'whiteAlpha.200' }}
-                    >
-                      <LuX />
-                    </IconButton>
-                    <ChakraText fontWeight="bold" mb={1} pr={6}>
-                      {toast.title}
-                    </ChakraText>
-                    {toast.description && (
-                      <ChakraText fontSize="sm">{toast.description}</ChakraText>
-                    )}
-                  </Box>
-                );
-              }}
-            </Toaster>
-            <ChartProvider>
-              <PinnedControlsProvider>
-                <RealtimeSyncWrapper>
-                  <AppContent />
-                </RealtimeSyncWrapper>
-              </PinnedControlsProvider>
-            </ChartProvider>
-          </AutoAuth>
-        </ChakraProvider>
-      </TrpcProvider>
+                    <LuX />
+                  </IconButton>
+                  <ChakraText fontWeight="bold" mb={1} pr={6}>
+                    {toast.title}
+                  </ChakraText>
+                  {toast.description && (
+                    <ChakraText fontSize="sm">{toast.description}</ChakraText>
+                  )}
+                </Box>
+              );
+            }}
+          </Toaster>
+          <ChartProvider>
+            <PinnedControlsProvider>
+              <RealtimeSyncWrapper>
+                <AppContent />
+              </RealtimeSyncWrapper>
+            </PinnedControlsProvider>
+          </ChartProvider>
+        </AutoAuth>
+      </ChakraProvider>
     </ErrorBoundary>
   );
 }
@@ -116,7 +113,7 @@ function App(): ReactElement {
 function AppContent(): ReactElement {
   const { t } = useTranslation();
   const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
-  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:marketType', 'SPOT');
+  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:marketType', 'FUTURES');
 
   useCurrencyAutoRefresh();
   useOrderNotifications();
@@ -132,7 +129,7 @@ function AppContent(): ReactElement {
   );
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
-  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', true);
+  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', false);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', true);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
@@ -140,8 +137,8 @@ function AppContent(): ReactElement {
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const { showEventRow, setShowEventRow } = useUIStore();
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1d');
-  const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', false);
+  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '30m');
+  const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', true);
   const [isBacktestOpen, setIsBacktestOpen] = useState(false);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',

@@ -27,12 +27,12 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
+    lng: 'en',
     fallbackLng: 'en',
     supportedLngs: ['en', 'pt', 'es', 'fr'],
     detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'marketmind:language',
+      order: [],
+      caches: [],
     },
     interpolation: {
       escapeValue: false,

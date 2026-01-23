@@ -1,5 +1,7 @@
 import { Select } from '@/renderer/components/ui/select';
+import { useUIPreferences } from '@/renderer/hooks/useUserPreferences';
 import { Box, Stack, Text } from '@chakra-ui/react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LANGUAGES = [
@@ -9,11 +11,26 @@ const LANGUAGES = [
   { value: 'fr', label: 'Français', description: 'French' },
 ];
 
+const LANGUAGE_KEY = 'language';
+
 export const LanguageSelector = () => {
   const { i18n, t } = useTranslation();
+  const { preferences, set } = useUIPreferences();
+  const isHydratedRef = useRef(false);
 
-  const handleLanguageChange = (newLanguage: string) => {
+  useEffect(() => {
+    if (preferences && !isHydratedRef.current) {
+      const savedLanguage = preferences[LANGUAGE_KEY] as string | undefined;
+      if (savedLanguage && ['en', 'pt', 'es', 'fr'].includes(savedLanguage)) {
+        i18n.changeLanguage(savedLanguage);
+      }
+      isHydratedRef.current = true;
+    }
+  }, [preferences, i18n]);
+
+  const handleLanguageChange = async (newLanguage: string) => {
     i18n.changeLanguage(newLanguage);
+    await set(LANGUAGE_KEY, newLanguage);
   };
 
   return (

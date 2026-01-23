@@ -1,7 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { ColorModeProvider, useColorMode } from './color-mode';
 
 const TestConsumer = () => {
@@ -25,14 +25,9 @@ const renderWithProviders = (ui: ReactElement) =>
 
 describe('ColorModeProvider', () => {
   beforeEach(() => {
-    localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.colorScheme = '';
-  });
-
-  afterEach(() => {
-    localStorage.clear();
   });
 
   it('should render children', () => {
@@ -45,7 +40,7 @@ describe('ColorModeProvider', () => {
     expect(screen.getByTestId('child')).toBeDefined();
   });
 
-  it('should default to dark mode when no localStorage value', () => {
+  it('should default to dark mode', () => {
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
@@ -53,18 +48,6 @@ describe('ColorModeProvider', () => {
     );
 
     expect(screen.getByTestId('color-mode').textContent).toBe('dark');
-  });
-
-  it('should read initial value from localStorage', () => {
-    localStorage.setItem('chakra-ui-color-mode', 'light');
-
-    renderWithProviders(
-      <ColorModeProvider>
-        <TestConsumer />
-      </ColorModeProvider>
-    );
-
-    expect(screen.getByTestId('color-mode').textContent).toBe('light');
   });
 
   it('should toggle color mode from dark to light', async () => {
@@ -83,19 +66,14 @@ describe('ColorModeProvider', () => {
     });
 
     expect(screen.getByTestId('color-mode').textContent).toBe('light');
-    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('light');
   });
 
   it('should toggle color mode from light to dark', async () => {
-    localStorage.setItem('chakra-ui-color-mode', 'light');
-
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
       </ColorModeProvider>
     );
-
-    expect(screen.getByTestId('color-mode').textContent).toBe('light');
 
     const toggleButton = screen.getByTestId('toggle');
 
@@ -103,8 +81,13 @@ describe('ColorModeProvider', () => {
       fireEvent.click(toggleButton);
     });
 
+    expect(screen.getByTestId('color-mode').textContent).toBe('light');
+
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+
     expect(screen.getByTestId('color-mode').textContent).toBe('dark');
-    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('dark');
   });
 
   it('should set color mode to light', async () => {
@@ -121,17 +104,19 @@ describe('ColorModeProvider', () => {
     });
 
     expect(screen.getByTestId('color-mode').textContent).toBe('light');
-    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('light');
   });
 
   it('should set color mode to dark', async () => {
-    localStorage.setItem('chakra-ui-color-mode', 'light');
-
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
       </ColorModeProvider>
     );
+
+    const setLightButton = screen.getByTestId('set-light');
+    await act(async () => {
+      fireEvent.click(setLightButton);
+    });
 
     const setDarkButton = screen.getByTestId('set-dark');
 
@@ -140,7 +125,6 @@ describe('ColorModeProvider', () => {
     });
 
     expect(screen.getByTestId('color-mode').textContent).toBe('dark');
-    expect(localStorage.getItem('chakra-ui-color-mode')).toBe('dark');
   });
 
   it('should apply dark class to document', async () => {
@@ -158,15 +142,16 @@ describe('ColorModeProvider', () => {
   });
 
   it('should apply light class when in light mode', async () => {
-    localStorage.setItem('chakra-ui-color-mode', 'light');
-
     renderWithProviders(
       <ColorModeProvider>
         <TestConsumer />
       </ColorModeProvider>
     );
 
+    const setLightButton = screen.getByTestId('set-light');
+
     await act(async () => {
+      fireEvent.click(setLightButton);
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 

@@ -13,7 +13,6 @@ import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
 import { Toolbar } from '../components/Layout/Toolbar';
-import { TrpcProvider } from '../components/TrpcProvider';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, REQUIRED_KLINES } from '../constants/defaults';
@@ -37,7 +36,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const navigate = useNavigate();
   const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
   const [symbol, setSymbol] = useLocalStorage('marketmind:chartwindow:symbol', routeSymbol || initialSymbol || 'BTCUSDT');
-  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:chartwindow:marketType', 'SPOT');
+  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:chartwindow:marketType', 'FUTURES');
 
   useCurrencyAutoRefresh();
 
@@ -49,15 +48,15 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showFibonacciProjection, setShowFibonacciProjection] = useLocalStorage('marketmind:showFibonacciProjection', false);
   const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
-  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', true);
+  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', false);
   const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
   const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
   const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
   const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const [showEventRow, setShowEventRow] = useLocalStorage('marketmind:showEventRow', true);
-  const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '1d');
+  const [chartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
+  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '30m');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -409,59 +408,57 @@ export function ChartWindow({ initialSymbol }: ChartWindowProps): ReactElement {
   const { t } = useTranslation();
 
   return (
-    <TrpcProvider>
-      <ChakraProvider value={system}>
-        <Toaster toaster={toaster}>
-          {toast => {
-            if (!toast.title && !toast.description) return null;
+    <ChakraProvider value={system}>
+      <Toaster toaster={toaster}>
+        {toast => {
+          if (!toast.title && !toast.description) return null;
 
-            return (
-              <Box
-                bg={
-                  toast.type === 'success'
-                    ? 'green.500'
-                    : toast.type === 'error'
-                      ? 'red.500'
-                      : toast.type === 'info'
-                        ? 'blue.500'
-                        : 'orange.500'
-                }
+          return (
+            <Box
+              bg={
+                toast.type === 'success'
+                  ? 'green.500'
+                  : toast.type === 'error'
+                    ? 'red.500'
+                    : toast.type === 'info'
+                      ? 'blue.500'
+                      : 'orange.500'
+              }
+              color="white"
+              p={4}
+              borderRadius="md"
+              boxShadow="lg"
+              maxW="400px"
+              position="relative"
+            >
+              <IconButton
+                aria-label={t('common.close')}
+                size="xs"
+                position="absolute"
+                top={2}
+                right={2}
+                onClick={() => toaster.dismiss(toast.id)}
+                variant="ghost"
                 color="white"
-                p={4}
-                borderRadius="md"
-                boxShadow="lg"
-                maxW="400px"
-                position="relative"
+                _hover={{ bg: 'whiteAlpha.200' }}
               >
-                <IconButton
-                  aria-label={t('common.close')}
-                  size="xs"
-                  position="absolute"
-                  top={2}
-                  right={2}
-                  onClick={() => toaster.dismiss(toast.id)}
-                  variant="ghost"
-                  color="white"
-                  _hover={{ bg: 'whiteAlpha.200' }}
-                >
-                  <LuX />
-                </IconButton>
-                <ChakraText fontWeight="bold" mb={1} pr={6}>
-                  {toast.title}
-                </ChakraText>
-                {toast.description && (
-                  <ChakraText fontSize="sm">{toast.description}</ChakraText>
-                )}
-              </Box>
-            );
-          }}
-        </Toaster>
-        <ChartProvider>
-          <PinnedControlsProvider>
-            <ChartWindowContent initialSymbol={initialSymbol} />
-          </PinnedControlsProvider>
-        </ChartProvider>
-      </ChakraProvider>
-    </TrpcProvider>
+                <LuX />
+              </IconButton>
+              <ChakraText fontWeight="bold" mb={1} pr={6}>
+                {toast.title}
+              </ChakraText>
+              {toast.description && (
+                <ChakraText fontSize="sm">{toast.description}</ChakraText>
+              )}
+            </Box>
+          );
+        }}
+      </Toaster>
+      <ChartProvider>
+        <PinnedControlsProvider>
+          <ChartWindowContent initialSymbol={initialSymbol} />
+        </PinnedControlsProvider>
+      </ChartProvider>
+    </ChakraProvider>
   );
 }

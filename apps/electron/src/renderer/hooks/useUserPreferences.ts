@@ -6,7 +6,6 @@ type PreferenceCategory = 'trading' | 'ui' | 'chart' | 'notifications' | 'recent
 
 export const useUserPreferences = <T = unknown>(category: PreferenceCategory) => {
   const utils = trpc.useUtils();
-  const queryKey = ['preferences', category];
 
   const { data: preferences, isLoading, error } = trpc.preferences.getByCategory.useQuery(
     { category },

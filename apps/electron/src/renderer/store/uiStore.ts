@@ -63,7 +63,7 @@ export const useUIStore = create<UIState>()((set) => ({
   ordersSortBy: 'newest',
   setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
 
-  ordersFilterStatus: 'pending',
+  ordersFilterStatus: 'closed',
   setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
 
   performancePeriod: 'all',
@@ -78,10 +78,10 @@ export const useUIStore = create<UIState>()((set) => ({
   portfolioSortBy: 'newest',
   setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
 
-  ordersViewMode: 'cards',
+  ordersViewMode: 'table',
   setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
 
-  portfolioViewMode: 'cards',
+  portfolioViewMode: 'table',
   setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
 
   ordersTableSortKey: 'createdAt',

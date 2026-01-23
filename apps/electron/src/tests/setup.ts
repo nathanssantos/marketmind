@@ -31,6 +31,108 @@ vi.mock('@/renderer/hooks/useLocalStorage', () => ({
   useLocalStorage: createUseLocalStorageMock(),
 }));
 
+const mockPreferences = new Map<string, Record<string, unknown>>();
+
+vi.mock('@/renderer/utils/trpc', () => {
+  const mockMutate = vi.fn().mockResolvedValue({ success: true });
+  const mockMutation = {
+    mutate: mockMutate,
+    mutateAsync: mockMutate,
+    isLoading: false,
+    isPending: false,
+    isError: false,
+    error: null,
+    data: null,
+    reset: vi.fn(),
+  };
+
+  return {
+    trpc: {
+      useUtils: () => ({
+        preferences: {
+          getByCategory: {
+            invalidate: vi.fn(),
+          },
+        },
+      }),
+      auth: {
+        me: {
+          useQuery: () => ({
+            data: { id: 'test-user', email: 'test@test.com' },
+            isLoading: false,
+            error: null,
+          }),
+        },
+      },
+      preferences: {
+        getByCategory: {
+          useQuery: (input: { category: string }) => ({
+            data: mockPreferences.get(input?.category) || {},
+            isLoading: false,
+            isSuccess: true,
+            error: null,
+          }),
+        },
+        set: {
+          useMutation: () => mockMutation,
+        },
+      },
+    },
+    setMockPreference: (category: string, key: string, value: unknown) => {
+      const current = mockPreferences.get(category) || {};
+      mockPreferences.set(category, { ...current, [key]: value });
+    },
+    clearMockPreferences: () => {
+      mockPreferences.clear();
+    },
+  };
+});
+
+vi.mock('@/renderer/hooks/useUserPreferences', () => ({
+  useUserPreferences: () => ({
+    preferences: {},
+    isLoading: false,
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn().mockResolvedValue({ success: true }),
+    bulkSet: vi.fn().mockResolvedValue({ success: true }),
+    invalidate: vi.fn(),
+  }),
+  useChartPreferences: () => ({
+    preferences: {},
+    isLoading: false,
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useUIPreferences: () => ({
+    preferences: {},
+    isLoading: false,
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useTradingPreferences: () => ({
+    preferences: {},
+    isLoading: false,
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useNotificationPreferences: () => ({
+    preferences: {},
+    isLoading: false,
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useRecentPreferences: () => ({
+    preferences: {},
+    isLoading: false,
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn().mockResolvedValue({ success: true }),
+  }),
+  useAllPreferences: () => ({
+    allPreferences: {},
+    isLoading: false,
+  }),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
