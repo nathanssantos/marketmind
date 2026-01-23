@@ -324,10 +324,11 @@ describe('shouldRerender helpers', () => {
     expect(shouldRerenderIndicators({ klines: false, viewport: false, all: true })).toBe(true);
   });
 
-  it('shouldRerenderOverlays always returns true', async () => {
+  it('shouldRerenderOverlays returns correct values', async () => {
     const { shouldRerenderOverlays } = await import('./useLayerCache');
-    expect(shouldRerenderOverlays({ overlays: false, all: false })).toBe(true);
+    expect(shouldRerenderOverlays({ overlays: false, all: false })).toBe(false);
     expect(shouldRerenderOverlays({ overlays: true, all: false })).toBe(true);
     expect(shouldRerenderOverlays({ overlays: false, all: true })).toBe(true);
+    expect(shouldRerenderOverlays({ overlays: true, all: true })).toBe(true);
   });
 });

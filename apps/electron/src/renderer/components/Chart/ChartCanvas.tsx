@@ -251,6 +251,8 @@ export const ChartCanvas = ({
     lastTooltipOrder: lastTooltipOrderRef,
     tooltipEnabled: tooltipEnabledRef,
     tooltipDebounce: tooltipDebounceRef,
+    measurementArea: measurementAreaRef,
+    measurementRaf: measurementRafRef,
   } = chartRefs;
 
   const cursorManager = useCursorManager(canvasRef);
@@ -535,6 +537,7 @@ export const ChartCanvas = ({
     yToPrice: (y) => manager?.yToPrice(y) ?? 0,
     enabled: hasTradingEnabled && draggableOrders.length > 0,
     getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
+    markDirty: (layer) => manager?.markDirty(layer),
   });
 
   const {
@@ -568,6 +571,8 @@ export const ChartCanvas = ({
     hoveredOrderIdRef,
     lastHoveredOrderRef,
     lastTooltipOrderRef,
+    measurementAreaRef,
+    measurementRafRef,
     setTooltipData,
     setIsMeasuring,
     setMeasurementArea,
@@ -836,11 +841,12 @@ export const ChartCanvas = ({
         ctx.restore();
       }
 
-      if (measurementArea && isMeasuring) {
+      const currentMeasurement = measurementAreaRef.current || measurementArea;
+      if (currentMeasurement && isMeasuring) {
         const ctx = manager.getContext();
         if (!ctx) return;
 
-        const { startX, startY, endX, endY } = measurementArea;
+        const { startX, startY, endX, endY } = currentMeasurement;
 
         const startPrice = manager.yToPrice(startY);
         const endPrice = manager.yToPrice(endY);

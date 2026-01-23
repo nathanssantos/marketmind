@@ -204,6 +204,6 @@ export const shouldRerenderIndicators = (dirtyFlags: { klines: boolean; viewport
   return dirtyFlags.klines || dirtyFlags.viewport || dirtyFlags.all;
 };
 
-export const shouldRerenderOverlays = (_dirtyFlags: { overlays: boolean; all: boolean }): boolean => {
-  return true;
+export const shouldRerenderOverlays = (dirtyFlags: { overlays: boolean; all: boolean }): boolean => {
+  return dirtyFlags.overlays || dirtyFlags.all;
 };

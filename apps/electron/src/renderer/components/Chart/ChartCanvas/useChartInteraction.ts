@@ -34,6 +34,8 @@ export interface UseChartInteractionProps {
   hoveredOrderIdRef: React.MutableRefObject<string | null>;
   lastHoveredOrderRef: React.MutableRefObject<string | null>;
   lastTooltipOrderRef: React.MutableRefObject<string | null>;
+  measurementAreaRef: React.MutableRefObject<MeasurementArea | null>;
+  measurementRafRef: React.MutableRefObject<number | null>;
   setTooltipData: (data: TooltipData) => void;
   setIsMeasuring: (value: boolean) => void;
   setMeasurementArea: (area: MeasurementArea | null) => void;
@@ -110,6 +112,8 @@ export const useChartInteraction = ({
   hoveredOrderIdRef,
   lastHoveredOrderRef,
   lastTooltipOrderRef,
+  measurementAreaRef,
+  measurementRafRef,
   setTooltipData,
   setIsMeasuring,
   setMeasurementArea,
@@ -345,30 +349,42 @@ export const useChartInteraction = ({
 
       const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start));
 
-      setMeasurementArea({
+      const updatedMeasurement = {
         ...measurementArea,
         endX: mouseX,
         endY: mouseY,
         endIndex: hoveredIndex,
-      });
+      };
+
+      measurementAreaRef.current = updatedMeasurement;
       manager.markDirty('overlays');
 
-      const startIndex = Math.min(measurementArea.startIndex, hoveredIndex);
-      const endIndex = Math.max(measurementArea.startIndex, hoveredIndex);
-      const klineCount = Math.abs(endIndex - startIndex);
+      mousePositionRef.current = { x: mouseX, y: mouseY };
 
-      const startPrice = manager.yToPrice(measurementArea.startY);
-      const endPrice = manager.yToPrice(mouseY);
-      const priceChange = endPrice - startPrice;
-      const percentChange = (priceChange / startPrice) * 100;
+      if (measurementRafRef.current) {
+        cancelAnimationFrame(measurementRafRef.current);
+      }
 
-      setTooltipData({
-        kline: null, x: mouseX, y: mouseY, visible: true,
-        containerWidth: rect.width, containerHeight: rect.height,
-        measurement: { klineCount, priceChange, percentChange, startPrice, endPrice },
+      measurementRafRef.current = requestAnimationFrame(() => {
+        measurementRafRef.current = null;
+
+        const startIndex = Math.min(measurementArea.startIndex, hoveredIndex);
+        const endIndex = Math.max(measurementArea.startIndex, hoveredIndex);
+        const klineCount = Math.abs(endIndex - startIndex);
+
+        const startPrice = manager.yToPrice(measurementArea.startY);
+        const endPrice = manager.yToPrice(mouseY);
+        const priceChange = endPrice - startPrice;
+        const percentChange = (priceChange / startPrice) * 100;
+
+        setMeasurementArea(updatedMeasurement);
+        setTooltipData({
+          kline: null, x: mouseX, y: mouseY, visible: true,
+          containerWidth: rect.width, containerHeight: rect.height,
+          measurement: { klineCount, priceChange, percentChange, startPrice, endPrice },
+        });
       });
 
-      mousePositionRef.current = { x: mouseX, y: mouseY };
       return;
     }
 
@@ -450,6 +466,7 @@ export const useChartInteraction = ({
     canvasRef, manager, klines, advancedConfig, isPanning, isMeasuring, measurementArea,
     shiftPressed, altPressed, hasTradingEnabled, isAutoTradingActive,
     mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef,
+    measurementAreaRef, measurementRafRef,
     setTooltipData, setMeasurementArea, getHoveredMATag, getHoveredOrder,
     getClickedOrderId, getSLTPAtPosition, orderDragHandler, cursorManager,
     handleMouseMove, updateCursor, processMouseMoveTooltip,
@@ -462,6 +479,11 @@ export const useChartInteraction = ({
     hoveredOrderIdRef.current = null;
     lastHoveredOrderRef.current = null;
     lastTooltipOrderRef.current = null;
+    measurementAreaRef.current = null;
+    if (measurementRafRef.current) {
+      cancelAnimationFrame(measurementRafRef.current);
+      measurementRafRef.current = null;
+    }
     setIsMeasuring(false);
     setMeasurementArea(null);
     setTooltipData({
@@ -473,7 +495,7 @@ export const useChartInteraction = ({
     if (manager) {
       manager.markDirty('overlays');
     }
-  }, [handleMouseLeave, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, setIsMeasuring, setMeasurementArea, setTooltipData, manager]);
+  }, [handleMouseLeave, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, measurementAreaRef, measurementRafRef, setIsMeasuring, setMeasurementArea, setTooltipData, manager]);
 
   const handleCanvasMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!manager || !canvasRef.current) return;
@@ -519,15 +541,18 @@ export const useChartInteraction = ({
         const viewport = manager.getViewport();
         const hoveredIndex = Math.floor(viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start));
 
-        setIsMeasuring(true);
-        setMeasurementArea({
+        const initialMeasurement = {
           startX: mouseX,
           startY: mouseY,
           endX: mouseX,
           endY: mouseY,
           startIndex: hoveredIndex,
           endIndex: hoveredIndex,
-        });
+        };
+
+        measurementAreaRef.current = initialMeasurement;
+        setIsMeasuring(true);
+        setMeasurementArea(initialMeasurement);
         manager.markDirty('overlays');
         return;
       }
@@ -535,7 +560,7 @@ export const useChartInteraction = ({
 
     handleMouseDown(event);
     startInteraction();
-  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, showMeasurementRuler, showMeasurementArea, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, setIsMeasuring, setMeasurementArea, handleMouseDown, startInteraction]);
+  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, showMeasurementRuler, showMeasurementArea, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, measurementAreaRef, setIsMeasuring, setMeasurementArea, handleMouseDown, startInteraction]);
 
   const handleCanvasMouseUp = useCallback((): void => {
     if (orderDragHandler.isDragging) {
@@ -544,6 +569,11 @@ export const useChartInteraction = ({
     }
 
     if (isMeasuring) {
+      if (measurementRafRef.current) {
+        cancelAnimationFrame(measurementRafRef.current);
+        measurementRafRef.current = null;
+      }
+      measurementAreaRef.current = null;
       setIsMeasuring(false);
       setMeasurementArea(null);
       if (manager) {
@@ -554,7 +584,7 @@ export const useChartInteraction = ({
 
     handleMouseUp();
     endInteraction();
-  }, [orderDragHandler, isMeasuring, setIsMeasuring, setMeasurementArea, manager, handleMouseUp, endInteraction]);
+  }, [orderDragHandler, isMeasuring, measurementAreaRef, measurementRafRef, setIsMeasuring, setMeasurementArea, manager, handleMouseUp, endInteraction]);
 
   const handleWheel = useCallback((): void => {
     startInteraction();
@@ -571,8 +601,12 @@ export const useChartInteraction = ({
         cancelAnimationFrame(mouseMoveRafRef.current);
         mouseMoveRafRef.current = null;
       }
+      if (measurementRafRef.current !== null) {
+        cancelAnimationFrame(measurementRafRef.current);
+        measurementRafRef.current = null;
+      }
     };
-  }, []);
+  }, [measurementRafRef]);
 
   return {
     handleCanvasMouseMove,

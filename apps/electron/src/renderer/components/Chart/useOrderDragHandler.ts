@@ -1,6 +1,6 @@
 import type { Order } from '@marketmind/types';
 import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending, isOrderShort } from '@shared/utils';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface OrderDragConfig {
   orders: Order[];
@@ -9,6 +9,7 @@ interface OrderDragConfig {
   yToPrice: (y: number) => number;
   enabled: boolean;
   getOrderAtPosition: (x: number, y: number) => Order | null;
+  markDirty?: (layer: string) => void;
 }
 
 export type DragType = 'entry' | 'stopLoss' | 'takeProfit';
@@ -16,7 +17,8 @@ export type DragType = 'entry' | 'stopLoss' | 'takeProfit';
 export const useOrderDragHandler = (config: OrderDragConfig) => {
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
   const [dragType, setDragType] = useState<DragType | null>(null);
-  const [previewPrice, setPreviewPrice] = useState<number | null>(null);
+  const previewPriceRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const handleSLTPMouseDown = useCallback(
     (
@@ -31,7 +33,8 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
       setDraggedOrder(order);
       setDragType(sltpInfo.type);
-      setPreviewPrice(config.yToPrice(y));
+      previewPriceRef.current = config.yToPrice(y);
+      config.markDirty?.('overlays');
       return true;
     },
     [config]
@@ -53,7 +56,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       if (isOrderActive(order)) {
         setDraggedOrder(order);
         setDragType(null);
-        setPreviewPrice(null);
+        previewPriceRef.current = null;
         return true;
       }
 
@@ -66,49 +69,66 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     (y: number): void => {
       if (!draggedOrder) return;
 
-      const currentPrice = config.yToPrice(y);
-
-      if (dragType === 'entry' && isOrderPending(draggedOrder)) {
-        setPreviewPrice(currentPrice);
-        return;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
 
-      if (dragType === 'stopLoss' || dragType === 'takeProfit') {
-        setPreviewPrice(currentPrice);
-        return;
-      }
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const currentPrice = config.yToPrice(y);
 
-      if (isOrderActive(draggedOrder) && dragType === null) {
-        const entryPrice = getOrderPrice(draggedOrder);
-        const entryY = config.priceToY(entryPrice);
-        const currentY = y;
+        if (dragType === 'entry' && isOrderPending(draggedOrder)) {
+          previewPriceRef.current = currentPrice;
+          config.markDirty?.('overlays');
+          return;
+        }
 
-        const isMovingUp = currentY < entryY;
+        if (dragType === 'stopLoss' || dragType === 'takeProfit') {
+          previewPriceRef.current = currentPrice;
+          config.markDirty?.('overlays');
+          return;
+        }
 
-        const isCreatingTakeProfit =
-          (isOrderLong(draggedOrder) && isMovingUp) ||
-          (isOrderShort(draggedOrder) && !isMovingUp);
+        if (isOrderActive(draggedOrder) && dragType === null) {
+          const entryPrice = getOrderPrice(draggedOrder);
+          const entryY = config.priceToY(entryPrice);
+          const currentY = y;
 
-        setDragType(isCreatingTakeProfit ? 'takeProfit' : 'stopLoss');
-        setPreviewPrice(currentPrice);
-        return;
-      }
+          const isMovingUp = currentY < entryY;
+
+          const isCreatingTakeProfit =
+            (isOrderLong(draggedOrder) && isMovingUp) ||
+            (isOrderShort(draggedOrder) && !isMovingUp);
+
+          setDragType(isCreatingTakeProfit ? 'takeProfit' : 'stopLoss');
+          previewPriceRef.current = currentPrice;
+          config.markDirty?.('overlays');
+          return;
+        }
+      });
     },
     [draggedOrder, dragType, config]
   );
 
   const handleMouseUp = useCallback((): void => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    const previewPrice = previewPriceRef.current;
+
     if (!draggedOrder || !dragType) {
       setDraggedOrder(null);
       setDragType(null);
-      setPreviewPrice(null);
+      previewPriceRef.current = null;
       return;
     }
 
     if (!previewPrice) {
       setDraggedOrder(null);
       setDragType(null);
-      setPreviewPrice(null);
+      previewPriceRef.current = null;
       return;
     }
 
@@ -119,7 +139,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
       setDraggedOrder(null);
       setDragType(null);
-      setPreviewPrice(null);
+      previewPriceRef.current = null;
       return;
     }
 
@@ -140,13 +160,25 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
     setDraggedOrder(null);
     setDragType(null);
-    setPreviewPrice(null);
-  }, [draggedOrder, dragType, previewPrice, config]);
+    previewPriceRef.current = null;
+  }, [draggedOrder, dragType, config]);
 
   const cancelDrag = useCallback((): void => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     setDraggedOrder(null);
     setDragType(null);
-    setPreviewPrice(null);
+    previewPriceRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   }, []);
 
   return {
@@ -158,6 +190,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     isDragging: !!draggedOrder,
     draggedOrder,
     dragType,
-    previewPrice,
+    previewPrice: previewPriceRef.current,
+    getPreviewPrice: () => previewPriceRef.current,
   };
 };

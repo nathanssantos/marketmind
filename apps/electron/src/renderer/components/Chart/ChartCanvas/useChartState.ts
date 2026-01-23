@@ -123,6 +123,8 @@ export interface UseChartStateResult {
     pendingMouseEvent: React.MutableRefObject<{ x: number; y: number; rect: DOMRect } | null>;
     tooltipEnabled: React.MutableRefObject<boolean>;
     tooltipDebounce: React.MutableRefObject<NodeJS.Timeout | null>;
+    measurementArea: React.MutableRefObject<MeasurementArea | null>;
+    measurementRaf: React.MutableRefObject<number | null>;
   };
 }
 
@@ -141,6 +143,8 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
   const pendingMouseEventRef = useRef<{ x: number; y: number; rect: DOMRect } | null>(null);
   const tooltipEnabledRef = useRef(true);
   const tooltipDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const measurementAreaRef = useRef<MeasurementArea | null>(null);
+  const measurementRafRef = useRef<number | null>(null);
 
   const actions = useMemo(
     () => ({
@@ -171,6 +175,8 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
       pendingMouseEvent: pendingMouseEventRef,
       tooltipEnabled: tooltipEnabledRef,
       tooltipDebounce: tooltipDebounceRef,
+      measurementArea: measurementAreaRef,
+      measurementRaf: measurementRafRef,
     }),
     []
   );
@@ -188,6 +194,10 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
       if (tooltipDebounceRef.current) {
         clearTimeout(tooltipDebounceRef.current);
         tooltipDebounceRef.current = null;
+      }
+      if (measurementRafRef.current !== null) {
+        cancelAnimationFrame(measurementRafRef.current);
+        measurementRafRef.current = null;
       }
     };
   }, []);

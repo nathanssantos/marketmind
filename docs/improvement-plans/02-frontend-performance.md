@@ -1,6 +1,6 @@
 # Plano 2: Performance do Frontend/Gráfico
 
-**Status:** Planejado
+**Status:** ✅ Concluído
 **Prioridade:** 1 (Impacto imediato na UX)
 **Risco:** Baixo
 **Arquivos estimados:** ~5
@@ -241,40 +241,42 @@ private getMeasurementHash(): string | null {
 
 ---
 
-### 5. Separar Render Effects
+### 5. ~~Separar Render Effects~~ (Não necessário)
+
+**Status:** Analisado - Arquitetura atual já é otimizada
 
 **Arquivo:** `ChartCanvas.tsx`
 
+**Análise:**
+O useEffect com ~54 dependências **apenas configura um render callback** no CanvasManager. Ele não causa re-renders diretos porque:
+
+1. O CanvasManager usa sistema de **dirty flags** para controlar quando renderizar
+2. **RAF scheduling** com throttle de 16ms já está implementado
+3. O render callback só é chamado quando `isDirty()` retorna true
+4. As funções de render são **memoizadas** pelos hooks que as criam
+
+**Por que separar não ajudaria:**
+- O useEffect atual NÃO renderiza diretamente - apenas registra o callback
+- Separar effects causaria múltiplas chamadas parciais de render (quebra a ordem de camadas)
+- O CanvasManager precisa de um único callback que desenha tudo na ordem correta
+
+**Arquitetura atual (já otimizada):**
 ```typescript
-// ANTES: 1 effect com 54 deps
-useEffect(() => { /* tudo */ }, [/* 54 deps */]);
-
-// DEPOIS: Effects separados por frequência de mudança
-
-// Effect 1: Setup inicial (roda uma vez)
+// ChartCanvas.tsx - Registra callback único
 useEffect(() => {
-  if (!manager) return;
-  // Initial setup
-}, [manager]);
+  manager.setRenderCallback(render); // Apenas registra
+  return () => manager.setRenderCallback(null);
+}, [/* deps */]);
 
-// Effect 2: Klines (muda com dados)
-useEffect(() => {
-  if (!manager) return;
-  renderKlines();
-}, [manager, klines, renderKlines]);
-
-// Effect 3: Overlays (muda frequentemente)
-useEffect(() => {
-  if (!manager) return;
-  renderOverlays();
-}, [manager, measurementArea, orders, renderOverlays]);
-
-// Effect 4: Grid/Watermark (muda raramente)
-useEffect(() => {
-  if (!manager) return;
-  renderGrid();
-  renderWatermark();
-}, [manager, theme, renderGrid, renderWatermark]);
+// CanvasManager.ts - Controla quando renderizar
+scheduleRender(): void {
+  if (this.isAnimating || !this.isDirty()) return;
+  requestAnimationFrame(() => {
+    if (this.renderCallback && this.isDirty()) {
+      this.renderCallback(); // Desenha tudo na ordem correta
+    }
+  });
+}
 ```
 
 ---
