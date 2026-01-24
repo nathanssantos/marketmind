@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
+import { parseArgs } from 'util';
 import {
   TRADING_DEFAULTS,
   EXIT_CALCULATOR_CONFIG,
@@ -13,8 +14,55 @@ const __dirname = dirname(__filename);
 
 dotenvConfig({ path: resolve(__dirname, '../.env') });
 
+const { values: cliArgs } = parseArgs({
+  options: {
+    'rr-long': { type: 'string', short: 'l' },
+    'rr-short': { type: 'string', short: 's' },
+    'fib-long': { type: 'string' },
+    'fib-short': { type: 'string' },
+    'entry-limit': { type: 'string', short: 'e' },
+    'symbol': { type: 'string' },
+    'leverage': { type: 'string' },
+    help: { type: 'boolean', short: 'h' },
+  },
+  strict: false,
+});
+
+if (cliArgs.help) {
+  console.log(`
+Usage: npx tsx scripts/run-multi-timeframe-backtest.ts [options]
+
+Options:
+  -l, --rr-long <value>      Min R:R ratio for LONG positions (default: ${BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG})
+  -s, --rr-short <value>     Min R:R ratio for SHORT positions (default: ${BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT})
+  --fib-long <value>         Fibonacci target level for LONG (1, 1.272, 1.618, 2, 2.618) (default: 2)
+  --fib-short <value>        Fibonacci target level for SHORT (default: 1.272)
+  -e, --entry-limit <value>  Max % progress in Fib range for entry (default: ${EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT})
+  --symbol <value>           Trading symbol (default: BTCUSDT)
+  --leverage <value>         Leverage multiplier (default: 1)
+  -h, --help                 Show this help message
+
+Examples:
+  npx tsx scripts/run-multi-timeframe-backtest.ts --rr-long 1.5 --rr-short 1.0
+  npx tsx scripts/run-multi-timeframe-backtest.ts -l 0.8 -s 0.5 --fib-short 1
+  npx tsx scripts/run-multi-timeframe-backtest.ts --entry-limit 50 --fib-long 1.618
+  npx tsx scripts/run-multi-timeframe-backtest.ts --symbol ETHUSDT --leverage 2
+`);
+  process.exit(0);
+}
+
 const { BacktestEngine } = await import('../src/services/backtesting/BacktestEngine.js');
 const { db } = await import('../src/db/index.js');
+
+const CLI_CONFIG = {
+  minRiskRewardRatioLong: cliArgs['rr-long'] ? parseFloat(cliArgs['rr-long']) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG,
+  minRiskRewardRatioShort: cliArgs['rr-short'] ? parseFloat(cliArgs['rr-short']) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT,
+  fibonacciTargetLevelLong: (cliArgs['fib-long'] ?? '2') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
+  fibonacciTargetLevelShort: (cliArgs['fib-short'] ?? '1.272') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
+  maxFibonacciEntryProgressPercent: cliArgs['entry-limit'] ? parseFloat(cliArgs['entry-limit']) : EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
+  symbol: cliArgs['symbol'] ?? 'BTCUSDT',
+  leverage: cliArgs['leverage'] ? parseInt(cliArgs['leverage']) : 1,
+};
 
 interface BacktestResult {
   interval: string;
@@ -46,22 +94,24 @@ const SETUPS = [
 ];
 
 const BASE_CONFIG = {
-  symbol: 'BTCUSDT',
+  symbol: CLI_CONFIG.symbol,
   startDate: '2023-01-23',
   endDate: '2026-01-23',
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
-  leverage: 1,
+  leverage: CLI_CONFIG.leverage,
   setupTypes: SETUPS,
   minConfidence: BACKTEST_DEFAULTS.MIN_CONFIDENCE,
   minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
+  minRiskRewardRatioLong: CLI_CONFIG.minRiskRewardRatioLong,
+  minRiskRewardRatioShort: CLI_CONFIG.minRiskRewardRatioShort,
   useAlgorithmicLevels: true,
   onlyWithTrend: true,
   tpCalculationMode: 'fibonacci' as const,
   fibonacciTargetLevel: '2' as const,
-  fibonacciTargetLevelLong: '2' as const,
-  fibonacciTargetLevelShort: '1.272' as const,
-  maxFibonacciEntryProgressPercent: EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
+  fibonacciTargetLevelLong: CLI_CONFIG.fibonacciTargetLevelLong,
+  fibonacciTargetLevelShort: CLI_CONFIG.fibonacciTargetLevelShort,
+  maxFibonacciEntryProgressPercent: CLI_CONFIG.maxFibonacciEntryProgressPercent,
   useStochasticFilter: false,
   useMomentumTimingFilter: true,
   useAdxFilter: false,
@@ -117,12 +167,13 @@ const formatNumber = (num: number, decimals = 2): string => {
 const printResults = (results: BacktestResult[]): void => {
   console.log('\n');
   console.log('='.repeat(130));
-  console.log('MULTI-TIMEFRAME BACKTEST - BTCUSDT FUTURES (3 years) - Fibonacci Targets: LONG=2, SHORT=1.272');
+  console.log(`MULTI-TIMEFRAME BACKTEST - ${BASE_CONFIG.symbol} FUTURES (3 years) - Fibonacci Targets: LONG=${BASE_CONFIG.fibonacciTargetLevelLong}, SHORT=${BASE_CONFIG.fibonacciTargetLevelShort}`);
   console.log('='.repeat(130));
   console.log(`Setups: ${SETUPS.join(', ')}`);
   console.log(`Period: ${BASE_CONFIG.startDate} to ${BASE_CONFIG.endDate}`);
   console.log(`Leverage: ${BASE_CONFIG.leverage}x | Initial Capital: $${BASE_CONFIG.initialCapital}`);
-  console.log(`Entry Limit: ${BASE_CONFIG.maxFibonacciEntryProgressPercent}% | Fib Target LONG: ${BASE_CONFIG.fibonacciTargetLevelLong} | Fib Target SHORT: ${BASE_CONFIG.fibonacciTargetLevelShort}`);
+  console.log(`Entry Limit: ${BASE_CONFIG.maxFibonacciEntryProgressPercent}% | Fib Target LONG: ${BASE_CONFIG.fibonacciTargetLevelLong} | Fib Target SHORT: ${BASE_CONFIG.fibonacciTargetLevelShort}`)
+  console.log(`Min R:R LONG: ${BASE_CONFIG.minRiskRewardRatioLong} | Min R:R SHORT: ${BASE_CONFIG.minRiskRewardRatioShort}`);
   console.log('='.repeat(130));
   console.log('');
 
@@ -188,9 +239,11 @@ const printResults = (results: BacktestResult[]): void => {
 
 const main = async (): Promise<void> => {
   console.log('Starting Multi-Timeframe Backtest');
-  console.log(`Symbol: ${BASE_CONFIG.symbol} | Market: ${BASE_CONFIG.marketType}`);
+  console.log(`Symbol: ${BASE_CONFIG.symbol} | Market: ${BASE_CONFIG.marketType} | Leverage: ${BASE_CONFIG.leverage}x`);
   console.log(`Testing timeframes: ${TIMEFRAMES.join(', ')}`);
-  console.log(`Fibonacci Target Levels: LONG=${BASE_CONFIG.fibonacciTargetLevelLong}, SHORT=${BASE_CONFIG.fibonacciTargetLevelShort} (direction-specific)`);
+  console.log(`Min R:R: LONG=${BASE_CONFIG.minRiskRewardRatioLong}, SHORT=${BASE_CONFIG.minRiskRewardRatioShort}`);
+  console.log(`Fibonacci Targets: LONG=${BASE_CONFIG.fibonacciTargetLevelLong}, SHORT=${BASE_CONFIG.fibonacciTargetLevelShort}`);
+  console.log(`Entry Limit: ${BASE_CONFIG.maxFibonacciEntryProgressPercent}% of Fibonacci range`);
 
   const results: BacktestResult[] = [];
 

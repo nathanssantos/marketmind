@@ -1,0 +1,2 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "min_risk_reward_ratio_long" numeric(4, 2) DEFAULT '1.00';--> statement-breakpoint
+ALTER TABLE "auto_trading_config" ADD COLUMN "min_risk_reward_ratio_short" numeric(4, 2) DEFAULT '0.80';

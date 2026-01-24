@@ -19,6 +19,8 @@ export interface TradeExecutorConfig {
   marketType?: MarketType;
   minProfitPercent?: number;
   minRiskRewardRatio?: number;
+  minRiskRewardRatioLong?: number;
+  minRiskRewardRatioShort?: number;
   stopLossPercent?: number;
   takeProfitPercent?: number;
   tpCalculationMode?: 'default' | 'fibonacci';
@@ -264,12 +266,16 @@ export class TradeExecutor {
     direction: 'LONG' | 'SHORT',
     tradesCount: number
   ): boolean {
+    const effectiveMinRR = direction === 'LONG'
+      ? (this.config.minRiskRewardRatioLong ?? this.config.minRiskRewardRatio)
+      : (this.config.minRiskRewardRatioShort ?? this.config.minRiskRewardRatio);
+
     const result = validateRiskReward({
       entryPrice,
       stopLoss,
       takeProfit,
       direction,
-      minRiskRewardRatio: this.config.minRiskRewardRatio,
+      minRiskRewardRatio: effectiveMinRR,
     });
 
     if (!result.isValid) {

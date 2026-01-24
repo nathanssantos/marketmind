@@ -3,8 +3,8 @@ import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types'
 import { getDefaultFee } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
+  BACKTEST_DEFAULTS,
   TIME_MS,
-  TRADING_CONFIG,
   UNIT_MS,
 } from '../../constants';
 import { db } from '../../db';
@@ -224,7 +224,7 @@ export class OrderExecutor {
       }
     }
 
-    const rrValidation = this.validateRiskReward(setup, effectiveTakeProfit, tpCalculationMode, logBuffer);
+    const rrValidation = this.validateRiskReward(setup, effectiveTakeProfit, tpCalculationMode, config, logBuffer);
     if (!rrValidation.valid) {
       return;
     }
@@ -461,6 +461,7 @@ export class OrderExecutor {
     setup: TradingSetup,
     effectiveTakeProfit: number | undefined,
     tpCalculationMode: string,
+    config: typeof autoTradingConfig.$inferSelect | null,
     logBuffer: WatcherLogBuffer
   ): { valid: boolean } {
     if (setup.stopLoss && effectiveTakeProfit) {
@@ -495,7 +496,15 @@ export class OrderExecutor {
 
       const riskRewardRatio = reward / risk;
 
-      if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
+      const minRRLong = config?.minRiskRewardRatioLong
+        ? parseFloat(config.minRiskRewardRatioLong)
+        : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG;
+      const minRRShort = config?.minRiskRewardRatioShort
+        ? parseFloat(config.minRiskRewardRatioShort)
+        : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT;
+      const minRequired = setup.direction === 'LONG' ? minRRLong : minRRShort;
+
+      if (riskRewardRatio < minRequired) {
         const usingFibonacci = tpCalculationMode === 'fibonacci' && effectiveTakeProfit !== setup.takeProfit;
         const reason = usingFibonacci ? 'Insufficient R:R (Fibonacci TP)' : 'Insufficient R:R ratio';
         logBuffer.addRejection({
@@ -504,7 +513,7 @@ export class OrderExecutor {
           reason,
           details: {
             riskReward: riskRewardRatio.toFixed(2),
-            minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+            minRequired,
             tpMode: tpCalculationMode,
             takeProfit: takeProfit.toFixed(4),
             entryPrice: entryPrice.toFixed(4),
@@ -513,13 +522,15 @@ export class OrderExecutor {
         logBuffer.warn('🚫', reason, {
           setup: setup.type,
           rr: riskRewardRatio.toFixed(2),
-          minRR: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+          minRR: minRequired,
         });
         return { valid: false };
       }
 
       logBuffer.log('✅', 'Risk/Reward ratio validated', {
         riskRewardRatio: riskRewardRatio.toFixed(2),
+        minRequired,
+        direction: setup.direction,
       });
     } else if (!setup.stopLoss) {
       logBuffer.addRejection({
@@ -692,14 +703,22 @@ export class OrderExecutor {
 
       const finalRiskRewardRatio = reward / risk;
 
-      if (finalRiskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
+      const minRRLong = config.minRiskRewardRatioLong
+        ? parseFloat(config.minRiskRewardRatioLong)
+        : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG;
+      const minRRShort = config.minRiskRewardRatioShort
+        ? parseFloat(config.minRiskRewardRatioShort)
+        : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT;
+      const minRequired = setup.direction === 'LONG' ? minRRLong : minRRShort;
+
+      if (finalRiskRewardRatio < minRequired) {
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: 'R:R too low after slippage',
           details: {
             finalRR: finalRiskRewardRatio.toFixed(2),
-            minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
+            minRequired,
           },
         });
         logBuffer.warn('🚫', 'R:R too low after slippage', { setup: setup.type, finalRR: finalRiskRewardRatio.toFixed(2) });

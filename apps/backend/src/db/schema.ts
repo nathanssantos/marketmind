@@ -231,6 +231,8 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   marginTopUpPercent: numeric('margin_top_up_percent', { precision: 5, scale: 2 }).default('10'),
   marginTopUpMaxCount: integer('margin_top_up_max_count').default(3),
   exposureMultiplier: numeric('exposure_multiplier', { precision: 4, scale: 2 }).default('1.50').notNull(),
+  minRiskRewardRatioLong: numeric('min_risk_reward_ratio_long', { precision: 4, scale: 2 }).default('1.00'),
+  minRiskRewardRatioShort: numeric('min_risk_reward_ratio_short', { precision: 4, scale: 2 }).default('0.80'),
   tpCalculationMode: varchar('tp_calculation_mode', { length: 20 }).$type<'default' | 'fibonacci'>().default('fibonacci').notNull(),
   fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.618' | '2' | '2.618'>().default('2').notNull(),
   fibonacciTargetLevelLong: varchar('fibonacci_target_level_long', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.618' | '2' | '2.618'>().default('2'),
