@@ -58,7 +58,7 @@ const CONFIGS: BacktestConfigVariation[] = [
   { name: 'breakout', rrLong: 1.0, rrShort: 1.0, fibLong: '2.618', fibShort: '2', entryLimit: 23.6 },
 ];
 
-const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
+const TIMEFRAMES = ['30m', '1h', '2h', '4h', '1d'];
 
 const SETUPS = [
   'chaikin-money-flow',
@@ -77,8 +77,8 @@ const SETUPS = [
 
 const BASE_CONFIG = {
   symbol: 'BTCUSDT',
-  startDate: '2023-01-23',
-  endDate: '2026-01-23',
+  startDate: '2025-01-24',
+  endDate: '2026-01-24',
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
   leverage: 1,
@@ -93,8 +93,8 @@ const BASE_CONFIG = {
   useMomentumTimingFilter: true,
   useAdxFilter: false,
   useTrendFilter: false,
-  useMtfFilter: true,
-  useBtcCorrelationFilter: true,
+  useMtfFilter: false,
+  useBtcCorrelationFilter: false,
   useMarketRegimeFilter: true,
   useVolumeFilter: false,
   useFundingFilter: true,
