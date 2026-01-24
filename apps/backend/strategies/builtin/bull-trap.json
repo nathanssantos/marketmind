@@ -69,6 +69,26 @@
     }
   },
   "entry": {
+    "long": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "low.prev",
+          "op": "<",
+          "right": "low.prev2"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "low.prev2"
+        },
+        {
+          "left": "close",
+          "op": ">",
+          "right": "ema"
+        }
+      ]
+    },
     "short": {
       "operator": "AND",
       "conditions": [

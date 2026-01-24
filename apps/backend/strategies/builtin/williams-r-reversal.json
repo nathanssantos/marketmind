@@ -119,6 +119,21 @@
           "right": "emaTrend"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "williamsR",
+          "op": ">",
+          "right": "$overboughtLevel"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "emaTrend"
+        }
+      ]
     }
   },
   "exit": {

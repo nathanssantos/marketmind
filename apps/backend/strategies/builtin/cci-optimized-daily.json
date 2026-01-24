@@ -110,6 +110,21 @@
           "right": "ema200"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "cci",
+          "op": ">",
+          "right": 50
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema200"
+        }
+      ]
     }
   },
   "exit": {

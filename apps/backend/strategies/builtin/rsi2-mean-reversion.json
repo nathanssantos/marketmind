@@ -119,6 +119,21 @@
           "right": "emaTrend"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi2",
+          "op": ">",
+          "right": 90
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "emaTrend"
+        }
+      ]
     }
   },
   "exit": {

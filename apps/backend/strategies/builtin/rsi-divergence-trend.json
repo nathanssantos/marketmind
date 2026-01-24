@@ -138,6 +138,21 @@
           "right": "emaTrend"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": "$rsiOverbought"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "emaTrend"
+        }
+      ]
     }
   },
   "exit": {

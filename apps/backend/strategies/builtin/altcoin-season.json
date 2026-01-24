@@ -102,6 +102,31 @@
           "right": "ema50"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "btcDominance.value",
+          "op": ">",
+          "right": "$dominanceThreshold"
+        },
+        {
+          "left": "btcDominance.change30d",
+          "op": ">",
+          "right": "$dominanceFalling"
+        },
+        {
+          "left": "relativeStrength",
+          "op": "<",
+          "right": 1
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "ema50"
+        }
+      ]
     }
   },
   "exit": {
@@ -128,6 +153,16 @@
           {
             "left": "btcDominance.change30d",
             "op": ">",
+            "right": 0
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "btcDominance.change30d",
+            "op": "<",
             "right": 0
           }
         ]

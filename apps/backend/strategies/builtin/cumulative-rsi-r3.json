@@ -117,6 +117,21 @@
           "right": "sma200"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "cumulativeRsi.cumulative",
+          "op": ">",
+          "right": 90
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "sma200"
+        }
+      ]
     }
   },
   "exit": {

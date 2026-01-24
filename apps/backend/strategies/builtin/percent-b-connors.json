@@ -114,6 +114,21 @@
           "right": "sma200"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "percentB",
+          "op": ">",
+          "right": "$percentBExit"
+        },
+        {
+          "left": "close",
+          "op": "<",
+          "right": "sma200"
+        }
+      ]
     }
   },
   "exit": {

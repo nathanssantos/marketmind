@@ -73,6 +73,18 @@
           }
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": ">",
+          "right": {
+            "calc": "ema50 * (1 + $gridSpacing / 100)"
+          }
+        }
+      ]
     }
   },
   "exit": {
@@ -87,6 +99,16 @@
           {
             "left": "close",
             "op": ">",
+            "right": "ema50"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": "<",
             "right": "ema50"
           }
         ]

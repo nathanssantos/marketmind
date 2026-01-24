@@ -108,6 +108,21 @@
           "right": "$adxThreshold"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "close",
+          "op": "<",
+          "right": "donchianLow.prev"
+        },
+        {
+          "left": "adx",
+          "op": "<",
+          "right": "$adxThreshold"
+        }
+      ]
     }
   },
   "exit": {
@@ -135,6 +150,16 @@
             "left": "close",
             "op": "<",
             "right": "donchianLow"
+          }
+        ]
+      },
+      "short": {
+        "operator": "OR",
+        "conditions": [
+          {
+            "left": "close",
+            "op": ">",
+            "right": "donchianHigh"
           }
         ]
       }

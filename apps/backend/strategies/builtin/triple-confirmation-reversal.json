@@ -142,6 +142,21 @@
           "right": "$mfiOversold"
         }
       ]
+    },
+    "short": {
+      "operator": "AND",
+      "conditions": [
+        {
+          "left": "rsi",
+          "op": ">",
+          "right": "$rsiOverbought"
+        },
+        {
+          "left": "mfi",
+          "op": ">",
+          "right": "$mfiOverbought"
+        }
+      ]
     }
   },
   "exit": {
