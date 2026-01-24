@@ -211,6 +211,11 @@ export class SignalProcessor {
   ): Promise<WatcherResult> {
     const watcherId = `${watcher.walletId}-${watcher.symbol}-${watcher.interval}-${watcher.marketType}`;
 
+    if (this.deps.isWalletPaused(watcher.walletId)) {
+      logBuffer.log('⏸️', 'Wallet paused (no free capital)');
+      return logBuffer.toResult('skipped', 'Wallet paused - no free capital');
+    }
+
     logBuffer.log('🔍', 'Processing watcher');
 
     const [walletWithConfig] = await db
@@ -228,12 +233,13 @@ export class SignalProcessor {
     const availableCapital = walletBalance * leverage;
 
     if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
-      logBuffer.log('💤', 'Insufficient capital', {
+      this.deps.pauseWatchersForWallet(watcher.walletId, '100% exposure - insufficient free capital');
+      logBuffer.log('⏸️', 'Insufficient capital - pausing watchers', {
         balance: walletBalance.toFixed(2),
         leverage,
         available: availableCapital.toFixed(2),
       });
-      return logBuffer.toResult('skipped', 'Insufficient capital');
+      return logBuffer.toResult('skipped', 'Insufficient capital - watchers paused');
     }
 
     const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });

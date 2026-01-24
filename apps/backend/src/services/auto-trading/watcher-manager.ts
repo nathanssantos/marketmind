@@ -17,12 +17,48 @@ import {
 import type { ActiveWatcher, WatcherManagerDeps } from './types';
 import { log, getPollingIntervalForTimeframe } from './utils';
 
+export interface WalletPauseInfo {
+  pausedAt: Date;
+  reason: string;
+}
+
 export class WatcherManager {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
   private configCache: Map<string, { data: typeof autoTradingConfig.$inferSelect; timestamp: number }> = new Map();
   private configCacheMetrics = { hits: 0, misses: 0, preloads: 0 };
+  private pausedWallets: Map<string, WalletPauseInfo> = new Map();
 
   constructor(private deps: WatcherManagerDeps) {}
+
+  pauseWatchersForWallet(walletId: string, reason: string): void {
+    if (this.pausedWallets.has(walletId)) {
+      log('⏸️ Wallet already paused', { walletId });
+      return;
+    }
+    this.pausedWallets.set(walletId, { pausedAt: new Date(), reason });
+    log('⏸️ Watchers paused for wallet', { walletId, reason });
+  }
+
+  resumeWatchersForWallet(walletId: string): void {
+    const pauseInfo = this.pausedWallets.get(walletId);
+    if (!pauseInfo) return;
+
+    this.pausedWallets.delete(walletId);
+    const pausedDuration = Date.now() - pauseInfo.pausedAt.getTime();
+    log('▶️ Watchers resumed for wallet', { walletId, wasReason: pauseInfo.reason, pausedDurationMs: pausedDuration });
+  }
+
+  isWalletPaused(walletId: string): boolean {
+    return this.pausedWallets.has(walletId);
+  }
+
+  getPausedWalletInfo(walletId: string): WalletPauseInfo | undefined {
+    return this.pausedWallets.get(walletId);
+  }
+
+  getPausedWallets(): Map<string, WalletPauseInfo> {
+    return new Map(this.pausedWallets);
+  }
 
   getActiveWatchersMap(): Map<string, ActiveWatcher> {
     return this.activeWatchers;

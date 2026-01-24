@@ -64,6 +64,7 @@ export interface SectionExpandedState {
   watchers: boolean;
   dynamicSelection: boolean;
   leverageSettings: boolean;
+  trailingStop: boolean;
   tpMode: boolean;
   filters: boolean;
   opportunityCost: boolean;

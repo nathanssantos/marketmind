@@ -246,8 +246,8 @@ export const useFilteredSymbolsForQuickStart = (
   useTrendFilter: boolean = true
 ) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getFilteredSymbolsForQuickStart.useQuery(
-    { walletId, marketType, interval, limit, useTrendFilter },
-    { enabled: !!walletId, staleTime: 30 * 1000 }
+    { walletId, marketType, interval, limit: Math.max(1, limit), useTrendFilter },
+    { enabled: !!walletId && limit >= 1, staleTime: 30 * 1000 }
   );
 
   return {

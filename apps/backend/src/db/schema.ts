@@ -238,6 +238,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   dynamicSymbolExcluded: text('dynamic_symbol_excluded'),
   enableAutoRotation: boolean('enable_auto_rotation').default(true).notNull(),
   trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>().default('local'),
+  trailingStopEnabled: boolean('trailing_stop_enabled').default(true).notNull(),
   pyramidingEnabled: boolean('pyramiding_enabled').default(false).notNull(),
   pyramidingMode: varchar('pyramiding_mode', { length: 20 }).$type<'static' | 'dynamic' | 'fibonacci'>().default('static').notNull(),
   maxPyramidEntries: integer('max_pyramid_entries').default(5).notNull(),

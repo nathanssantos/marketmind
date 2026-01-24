@@ -16,6 +16,7 @@ import { useWatcherState } from './hooks/useWatcherState';
 import { LeverageSettingsSection } from './LeverageSettingsSection';
 import { OpportunityCostSection } from './OpportunityCostSection';
 import { PyramidingSection } from './PyramidingSection';
+import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
 import { WatchersList } from './WatchersList';
 
@@ -285,6 +286,16 @@ export const WatcherManager = () => {
         marginType={config?.marginType ?? 'ISOLATED'}
         onLeverageChange={handleLeverageChange}
         onMarginTypeChange={handleMarginTypeChange}
+        isPending={updateConfig.isPending}
+      />
+
+      <Separator />
+
+      <TrailingStopSection
+        isExpanded={expandedSections.trailingStop}
+        onToggle={() => toggleSection('trailingStop')}
+        trailingStopEnabled={config?.trailingStopEnabled ?? true}
+        onTrailingStopEnabledChange={(enabled) => handleConfigUpdate({ trailingStopEnabled: enabled })}
         isPending={updateConfig.isPending}
       />
 

@@ -24,6 +24,7 @@ export const useWatcherState = (): UseWatcherStateReturn => {
     watchers: true,
     dynamicSelection: false,
     leverageSettings: false,
+    trailingStop: false,
     tpMode: false,
     filters: false,
     opportunityCost: false,

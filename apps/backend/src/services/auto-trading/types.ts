@@ -93,6 +93,9 @@ export interface SignalProcessorDeps {
   incrementBarsForOpenTrades: (symbol: string, interval: string, currentPrice: number) => Promise<void>;
   checkAllRotationsOnce: () => Promise<string[]>;
   getConfigCacheStats: () => { size: number; hits: number; misses: number; preloads: number; hitRate: number };
+  isWalletPaused: (walletId: string) => boolean;
+  pauseWatchersForWallet: (walletId: string, reason: string) => void;
+  resumeWatchersForWallet: (walletId: string) => void;
 }
 
 export interface RotationManagerDeps {

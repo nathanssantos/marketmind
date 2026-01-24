@@ -17,6 +17,12 @@ import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
 import { generateEntityId } from '../utils/id';
 
+let paperOrderCounter = 0;
+const generatePaperOrderId = (): number => {
+  paperOrderCounter = (paperOrderCounter + 1) % 10000;
+  return Date.now() * 10000 + paperOrderCounter;
+};
+
 export const tradingRouter = router({
   createOrder: protectedProcedure
     .input(
@@ -62,7 +68,7 @@ export const tradingRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          const simulatedOrderId = Date.now();
+          const simulatedOrderId = generatePaperOrderId();
           const price = input.price || '0';
           const quantity = input.quantity;
 

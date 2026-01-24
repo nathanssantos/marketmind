@@ -20,6 +20,7 @@ import { outputPendingOrdersCheckResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
 import { cancelAllProtectionOrders } from './protection-orders';
+import { autoTradingScheduler } from './auto-trading-scheduler';
 
 const LIQUIDATION_THRESHOLDS = {
   WARNING: AUTO_TRADING_LIQUIDATION.WARNING_THRESHOLD,
@@ -795,6 +796,11 @@ export class PositionMonitorService {
       }
 
       await strategyPerformanceService.updatePerformance(execution.id);
+
+      if (autoTradingScheduler.isWalletPaused(execution.walletId)) {
+        autoTradingScheduler.resumeWatchersForWallet(execution.walletId);
+        logger.info({ walletId: execution.walletId }, '[PositionMonitor] Resumed watchers after position exit');
+      }
     } catch (error) {
       logger.error({
         executionId: execution.id,

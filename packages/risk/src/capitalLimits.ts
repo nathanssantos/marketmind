@@ -51,7 +51,7 @@ export const calculateMaxAffordableWatchers = (
 ): number => {
   const requiredPerWatcher = minRequiredPerPosition * CAPITAL_RULES.SAFETY_MARGIN;
   const maxWatchers = Math.floor((availableCapital * exposureMultiplier) / requiredPerWatcher);
-  return Math.max(1, maxWatchers);
+  return maxWatchers;
 };
 
 export const calculateEffectiveMinRequired = (
@@ -73,7 +73,7 @@ export const calculateCapitalLimits = (input: CapitalLimitsInput): CapitalLimits
     effectiveMinRequired
   );
 
-  const effectiveWatchersCount = Math.max(1, maxAffordableWatchers);
+  const effectiveWatchersCount = maxAffordableWatchers > 0 ? maxAffordableWatchers : 1;
   const capitalPerWatcher = (availableCapital * exposureMultiplier) / effectiveWatchersCount;
 
   return {

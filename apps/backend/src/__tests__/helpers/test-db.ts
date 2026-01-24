@@ -167,6 +167,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   dynamic_symbol_excluded TEXT,
   enable_auto_rotation BOOLEAN DEFAULT true NOT NULL,
   trailing_stop_mode VARCHAR(10) DEFAULT 'local',
+  trailing_stop_enabled BOOLEAN DEFAULT true NOT NULL,
   pyramiding_enabled BOOLEAN DEFAULT false NOT NULL,
   pyramiding_mode VARCHAR(20) DEFAULT 'static' NOT NULL,
   max_pyramid_entries INTEGER DEFAULT 5 NOT NULL,

@@ -133,8 +133,14 @@ const getNextCandleCloseTime = (interval: string, timestamp: number = Date.now()
   return getCandleCloseTime(interval, timestamp) + getRotationIntervalMs(interval);
 };
 
+export interface WalletPauseInfo {
+  pausedAt: Date;
+  reason: string;
+}
+
 export class AutoTradingScheduler {
   private activeWatchers: Map<string, ActiveWatcher> = new Map();
+  private pausedWallets: Map<string, WalletPauseInfo> = new Map();
 
   private btcKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
   private htfKlinesCache: Map<string, CacheEntry<Kline[]>> = new Map();
@@ -181,9 +187,42 @@ export class AutoTradingScheduler {
           this.incrementBarsForOpenTrades(symbol, interval, currentPrice),
         checkAllRotationsOnce: () => this.checkAllRotationsOnce(),
         getConfigCacheStats: () => this.getConfigCacheStats(),
+        isWalletPaused: (walletId: string) => this.isWalletPaused(walletId),
+        pauseWatchersForWallet: (walletId: string, reason: string) => this.pauseWatchersForWallet(walletId, reason),
+        resumeWatchersForWallet: (walletId: string) => this.resumeWatchersForWallet(walletId),
       },
       { strategiesDir: STRATEGIES_DIR }
     );
+  }
+
+  pauseWatchersForWallet(walletId: string, reason: string): void {
+    if (this.pausedWallets.has(walletId)) {
+      log('⏸️ [Scheduler] Wallet already paused', { walletId });
+      return;
+    }
+    this.pausedWallets.set(walletId, { pausedAt: new Date(), reason });
+    log('⏸️ [Scheduler] Watchers paused for wallet', { walletId, reason });
+  }
+
+  resumeWatchersForWallet(walletId: string): void {
+    const pauseInfo = this.pausedWallets.get(walletId);
+    if (!pauseInfo) return;
+
+    this.pausedWallets.delete(walletId);
+    const pausedDurationMs = Date.now() - pauseInfo.pausedAt.getTime();
+    log('▶️ [Scheduler] Watchers resumed for wallet', { walletId, wasReason: pauseInfo.reason, pausedDurationMs });
+  }
+
+  isWalletPaused(walletId: string): boolean {
+    return this.pausedWallets.has(walletId);
+  }
+
+  getPausedWalletInfo(walletId: string): WalletPauseInfo | undefined {
+    return this.pausedWallets.get(walletId);
+  }
+
+  getPausedWallets(): Map<string, WalletPauseInfo> {
+    return new Map(this.pausedWallets);
   }
 
   private isCacheValid<T>(cache: CacheEntry<T> | undefined): cache is CacheEntry<T> {

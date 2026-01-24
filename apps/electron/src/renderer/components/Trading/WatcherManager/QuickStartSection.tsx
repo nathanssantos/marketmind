@@ -169,17 +169,19 @@ export const QuickStartSection = ({
             </Text>
           </Flex>
           <Text fontSize="sm" color="fg.muted" flex={1}>
-            {t('tradingProfiles.dynamicSelection.quickStartDescription')}
+            {effectiveMax === 0
+              ? t('tradingProfiles.dynamicSelection.insufficientCapital')
+              : t('tradingProfiles.dynamicSelection.quickStartDescription')}
           </Text>
           <Button
             size="sm"
             colorPalette="green"
             onClick={onQuickStart}
             loading={isStarting}
-            disabled={isLoadingFiltered || filteredSymbolsCount === 0}
+            disabled={isLoadingFiltered || filteredSymbolsCount === 0 || effectiveMax === 0}
           >
             <LuPlay />
-            {t('tradingProfiles.dynamicSelection.quickStartButton', { count: filteredSymbolsCount })}
+            {t('tradingProfiles.dynamicSelection.quickStartButton', { count: Math.min(count, effectiveMax) })}
           </Button>
         </Flex>
       </Stack>

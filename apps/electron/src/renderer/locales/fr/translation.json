@@ -1120,8 +1120,18 @@
       "keptCount": "{{count}} symboles conservés",
       "quickStartTitle": "Démarrage Rapide depuis le Classement",
       "quickStartDescription": "Démarrer les watchers pour les meilleurs symboles par score",
-      "quickStartButton": "Démarrer Top {{count}}"
+      "quickStartButton": "Démarrer Top {{count}}",
+      "insufficientCapital": "Capital insuffisant pour la taille minimale de transaction"
     }
+  },
+  "watcherManager": {
+    "trailingStop": {
+      "title": "Trailing Stop",
+      "description": "Ajuste automatiquement le stop loss lorsque le prix évolue en votre faveur",
+      "enabled": "Activer le Trailing Stop",
+      "enabledDescription": "Fonctionne indépendamment - continue pour les positions ouvertes même lorsque les watchers sont en pause"
+    },
+    "pausedDueToCapital": "Watchers en pause - pas de capital disponible pour de nouvelles entrées. Reprendra lorsqu'une position sera fermée."
   },
   "strategyInfo": {
     "noCandleData": "Données de chandelle non disponibles",

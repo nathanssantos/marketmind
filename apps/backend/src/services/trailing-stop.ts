@@ -1,7 +1,7 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
 import type { FibonacciProjectionData, Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
@@ -300,7 +300,13 @@ export class TrailingStopService {
       return updates;
     }
 
-    const executionGroups = this.groupExecutionsBySymbol(openExecutions);
+    const enabledExecutions = await this.filterByTrailingStopEnabled(openExecutions);
+
+    if (enabledExecutions.length === 0) {
+      return updates;
+    }
+
+    const executionGroups = this.groupExecutionsBySymbol(enabledExecutions);
 
     for (const [symbol, executions] of executionGroups) {
       try {
@@ -315,6 +321,39 @@ export class TrailingStopService {
     }
 
     return updates;
+  }
+
+  private async filterByTrailingStopEnabled(executions: TradeExecution[]): Promise<TradeExecution[]> {
+    const walletIds = [...new Set(executions.map(e => e.walletId))];
+
+    if (walletIds.length === 0) return executions;
+
+    const configs = await db
+      .select({ walletId: autoTradingConfig.walletId, trailingStopEnabled: autoTradingConfig.trailingStopEnabled })
+      .from(autoTradingConfig)
+      .where(inArray(autoTradingConfig.walletId, walletIds));
+
+    const enabledWallets = new Set<string>();
+    for (const config of configs) {
+      if (config.trailingStopEnabled !== false) {
+        enabledWallets.add(config.walletId);
+      }
+    }
+
+    for (const walletId of walletIds) {
+      if (!configs.some(c => c.walletId === walletId)) {
+        enabledWallets.add(walletId);
+      }
+    }
+
+    const filtered = executions.filter(e => enabledWallets.has(e.walletId));
+
+    if (filtered.length < executions.length) {
+      const disabledCount = executions.length - filtered.length;
+      logger.debug({ disabledCount }, '[TrailingStop] Skipped executions with trailing stop disabled');
+    }
+
+    return filtered;
   }
 
   private groupExecutionsBySymbol(executions: TradeExecution[]): Map<string, TradeExecution[]> {

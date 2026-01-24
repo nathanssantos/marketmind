@@ -440,7 +440,7 @@ export class MinNotionalFilterService {
       }
     }
 
-    maxWatchers = Math.max(1, Math.min(maxWatchers, eligibleSymbols.length));
+    maxWatchers = Math.min(maxWatchers, eligibleSymbols.length);
     const capitalPerWatcher = maxWatchers > 0 ? availableCapital / maxWatchers : availableCapital;
 
     logger.debug({

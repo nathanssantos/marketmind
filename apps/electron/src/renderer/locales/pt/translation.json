@@ -1109,8 +1109,18 @@
       "keptCount": "{{count}} símbolos mantidos",
       "quickStartTitle": "Início Rápido a partir do Ranking",
       "quickStartDescription": "Iniciar watchers para os melhores símbolos por score",
-      "quickStartButton": "Iniciar Top {{count}}"
+      "quickStartButton": "Iniciar Top {{count}}",
+      "insufficientCapital": "Capital insuficiente para o tamanho mínimo de operação"
     }
+  },
+  "watcherManager": {
+    "trailingStop": {
+      "title": "Trailing Stop",
+      "description": "Ajusta automaticamente o stop loss conforme o preço se move a seu favor",
+      "enabled": "Ativar Trailing Stop",
+      "enabledDescription": "Funciona independentemente - continua para posições abertas mesmo quando os watchers estão pausados"
+    },
+    "pausedDueToCapital": "Watchers pausados - sem capital livre para novas entradas. Será retomado quando uma posição for fechada."
   },
   "strategyInfo": {
     "noCandleData": "Dados de vela não disponíveis",
