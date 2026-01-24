@@ -1,14 +1,7 @@
 import type { ComputedIndicators, EvaluationContext, Kline, MarketType, StrategyDefinition } from '@marketmind/types';
 import type { ConditionEvaluator } from '../setup-detection/dynamic';
-import {
-  computeTrailingStopCore,
-  type TrailingStopCoreConfig,
-} from '../trailing-stop-core';
 
 export interface ExitConfig {
-  useTrailingStop?: boolean;
-  trailingATRMultiplier?: number;
-  breakEvenAfterR?: number;
   slippagePercent?: number;
   marketType?: MarketType;
   useBnbDiscount?: boolean;
@@ -20,88 +13,13 @@ export interface ExitResult {
   exitReason: 'STOP_LOSS' | 'TAKE_PROFIT' | 'EXIT_CONDITION' | 'MAX_BARS' | 'END_OF_PERIOD';
 }
 
-export interface TrailingStopState {
-  trailingStop: number | undefined;
-  highestHigh: number;
-  lowestLow: number;
-  feesCoveredReached: boolean;
-  takeProfit?: number;
-}
-
 export class ExitManager {
   private config: ExitConfig;
   private conditionEvaluator: ConditionEvaluator;
-  private coreConfig: TrailingStopCoreConfig;
 
   constructor(config: ExitConfig, conditionEvaluator: ConditionEvaluator) {
     this.config = config;
     this.conditionEvaluator = conditionEvaluator;
-    this.coreConfig = {
-      marketType: config.marketType ?? 'SPOT',
-      useBnbDiscount: config.useBnbDiscount ?? false,
-      atrMultiplier: config.trailingATRMultiplier ?? 2.0,
-    };
-  }
-
-  initializeTrailingStopState(entryPrice: number, stopLoss: number | undefined, takeProfit?: number): TrailingStopState {
-    return {
-      trailingStop: stopLoss,
-      highestHigh: entryPrice,
-      lowestLow: entryPrice,
-      feesCoveredReached: false,
-      takeProfit,
-    };
-  }
-
-  updateTrailingStop(
-    state: TrailingStopState,
-    direction: 'LONG' | 'SHORT',
-    entryPrice: number,
-    high: number,
-    low: number,
-    close: number,
-    atrAtEntry: number,
-    trailMultiplier: number,
-    barsInTrade: number,
-    useTrailingStop: boolean,
-    stopLoss: number | undefined
-  ): TrailingStopState {
-    if (!useTrailingStop || !stopLoss || barsInTrade <= 1) {
-      return state;
-    }
-
-    const newState = { ...state };
-    const isLong = direction === 'LONG';
-
-    if (isLong) {
-      if (high > newState.highestHigh) newState.highestHigh = high;
-    } else {
-      if (low < newState.lowestLow) newState.lowestLow = low;
-    }
-
-    const result = computeTrailingStopCore(
-      {
-        entryPrice,
-        currentPrice: close,
-        currentStopLoss: newState.trailingStop ?? null,
-        side: direction,
-        takeProfit: newState.takeProfit,
-        atr: atrAtEntry,
-        highestPrice: isLong ? newState.highestHigh : undefined,
-        lowestPrice: isLong ? undefined : newState.lowestLow,
-      },
-      {
-        ...this.coreConfig,
-        atrMultiplier: trailMultiplier,
-      }
-    );
-
-    if (result) {
-      newState.trailingStop = result.newStopLoss;
-      newState.feesCoveredReached = true;
-    }
-
-    return newState;
   }
 
   checkExitCondition(
@@ -129,19 +47,17 @@ export class ExitManager {
     low: number,
     open: number,
     close: number,
-    effectiveSL: number | undefined,
-    effectiveTP: number | undefined,
-    useTrailingStop: boolean
+    stopLoss: number | undefined,
+    takeProfit: number | undefined
   ): { hit: 'SL' | 'TP' | 'BOTH' | null; price: number | undefined } {
-    const slHit = effectiveSL && (
-      (direction === 'LONG' && low <= effectiveSL) ||
-      (direction === 'SHORT' && high >= effectiveSL)
+    const slHit = stopLoss && (
+      (direction === 'LONG' && low <= stopLoss) ||
+      (direction === 'SHORT' && high >= stopLoss)
     );
 
-    const tpToCheck = useTrailingStop ? undefined : effectiveTP;
-    const tpHit = tpToCheck && (
-      (direction === 'LONG' && high >= tpToCheck) ||
-      (direction === 'SHORT' && low <= tpToCheck)
+    const tpHit = takeProfit && (
+      (direction === 'LONG' && high >= takeProfit) ||
+      (direction === 'SHORT' && low <= takeProfit)
     );
 
     if (slHit && tpHit) {
@@ -149,18 +65,18 @@ export class ExitManager {
       if (direction === 'LONG') {
         return {
           hit: isBullishCandle ? 'TP' : 'SL',
-          price: isBullishCandle ? tpToCheck : effectiveSL,
+          price: isBullishCandle ? takeProfit : stopLoss,
         };
       } else {
         return {
           hit: isBullishCandle ? 'SL' : 'TP',
-          price: isBullishCandle ? effectiveSL : tpToCheck,
+          price: isBullishCandle ? stopLoss : takeProfit,
         };
       }
     } else if (slHit) {
-      return { hit: 'SL', price: effectiveSL };
+      return { hit: 'SL', price: stopLoss };
     } else if (tpHit) {
-      return { hit: 'TP', price: tpToCheck };
+      return { hit: 'TP', price: takeProfit };
     }
 
     return { hit: null, price: undefined };
@@ -193,7 +109,6 @@ export class ExitManager {
     setup: any,
     klines: Kline[],
     actualEntryKlineIndex: number,
-    entryPrice: number,
     stopLoss: number | undefined,
     takeProfit: number | undefined,
     strategy: StrategyDefinition | undefined,
@@ -206,12 +121,6 @@ export class ExitManager {
       ? exitConditions?.long
       : exitConditions?.short;
 
-    const trailingStopConfig = strategy?.exit?.trailingStop;
-    const useTrailingStop = trailingStopConfig?.enabled ?? this.config.useTrailingStop ?? false;
-    const trailMultiplier = this.config.trailingATRMultiplier ?? trailingStopConfig?.trailMultiplier ?? 2;
-    const atrAtEntry = setup.atr ?? (stopLoss ? Math.abs(entryPrice - stopLoss) / 1.5 : entryPrice * 0.02);
-
-    let trailingState = this.initializeTrailingStopState(entryPrice, stopLoss, takeProfit);
     let barsInTrade = 0;
 
     const actualEntryKline = klines[actualEntryKlineIndex];
@@ -226,20 +135,6 @@ export class ExitManager {
       const low = parseFloat(String(futureKline.low));
       const open = parseFloat(String(futureKline.open));
       const close = parseFloat(String(futureKline.close));
-
-      trailingState = this.updateTrailingStop(
-        trailingState,
-        setup.direction,
-        entryPrice,
-        high,
-        low,
-        close,
-        atrAtEntry,
-        trailMultiplier,
-        barsInTrade,
-        useTrailingStop,
-        stopLoss
-      );
 
       if (exitConditionForDirection && computedIndicators && futureIndex >= 0) {
         const exitConditionMet = this.checkExitCondition(
@@ -267,18 +162,14 @@ export class ExitManager {
         };
       }
 
-      const effectiveSL = useTrailingStop ? trailingState.trailingStop : stopLoss;
-      const effectiveTP = useTrailingStop ? undefined : takeProfit;
-
       const slTpResult = this.checkStopLossAndTakeProfit(
         setup.direction,
         high,
         low,
         open,
         close,
-        effectiveSL,
-        effectiveTP,
-        useTrailingStop
+        stopLoss,
+        takeProfit
       );
 
       if (slTpResult.hit && slTpResult.price !== undefined) {

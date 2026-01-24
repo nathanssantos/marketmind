@@ -39,12 +39,6 @@ export interface BacktestConfig {
 
   strategyParams?: Record<string, number>;
 
-  useTrailingStop?: boolean; // Enable ATR-based trailing stop
-  trailingStopATRMultiplier?: number; // ATR multiplier for initial stop (default 2.0)
-  trailingATRMultiplier?: number; // ATR multiplier for trailing (default 1.5)
-  breakEvenAfterR?: number; // Move to break-even after this R-multiple (default 1.0)
-  breakEvenBuffer?: number; // Buffer above/below entry for break-even (default 0.1%)
-
   usePartialExits?: boolean; // Enable scaled exits at profit targets
   partialExitLevels?: Array<{ percentage: number; rMultiple: number }>; // Exit levels
   lockProfitsAfterFirstExit?: boolean; // Move stop to break-even after first partial exit
@@ -298,7 +292,6 @@ export interface MultiWatcherBacktestConfig extends Omit<BacktestConfig, 'symbol
   watchers: WatcherConfig[];
   exposureMultiplier?: number;
   useSharedExposure?: boolean;
-  trailingStopSimulationInterval?: import('./kline').Interval;
 }
 
 export interface WatcherStats {

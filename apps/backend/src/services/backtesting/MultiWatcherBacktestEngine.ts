@@ -14,11 +14,9 @@ import type {
   WatcherConfig,
   WatcherStats,
 } from '@marketmind/types';
-import { calculateTotalFees, getRoundTripFee } from '@marketmind/types';
+import { calculateTotalFees } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
-import { calculateATR } from '@marketmind/indicators';
 import { BACKTEST_DEFAULTS } from '../../constants';
-import { computeTrailingStopCore, type TrailingStopCoreConfig } from '../trailing-stop-core';
 import {
   ADX_FILTER,
   checkAdxCondition,
@@ -54,7 +52,6 @@ const __dirname = dirname(__filename);
 interface WatcherState {
   config: WatcherConfig;
   klines: Kline[];
-  simulationKlines?: Kline[];
   detectedSetups: TradingSetup[];
   strategies: StrategyDefinition[];
   stats: WatcherStats;
@@ -77,24 +74,10 @@ export class MultiWatcherBacktestEngine {
     resolvedBy: {},
     conflictsPerWatcher: {},
   };
-  private trailingStopConfig: TrailingStopCoreConfig;
   private btcKlinesCache: Map<string, Kline[]> = new Map();
   private htfKlinesCache: Map<string, Kline[]> = new Map();
 
-  constructor(private config: MultiWatcherBacktestConfig) {
-    const marketType = config.marketType ?? 'SPOT';
-    const useBnbDiscount = config.useBnbDiscount ?? false;
-    const vipLevel = config.vipLevel ?? 0;
-
-    this.trailingStopConfig = {
-      marketType,
-      useBnbDiscount,
-      feePercent: getRoundTripFee({ marketType, useBnbDiscount, vipLevel }),
-      atrMultiplier: config.trailingATRMultiplier ?? 2.0,
-      minTrailingDistancePercent: 0.002,
-      trailingDistancePercent: 0.25,
-    };
-  }
+  constructor(private config: MultiWatcherBacktestConfig) {}
 
   async run(): Promise<MultiWatcherBacktestResult> {
     const backtestId = generateEntityId();
@@ -199,14 +182,6 @@ export class MultiWatcherBacktestEngine {
     const loader = new StrategyLoader([strategiesDir]);
     const allStrategies = await loader.loadAll({ includeUnprofitable: true });
 
-    const useTrailingStop = this.config.useTrailingStop ?? false;
-    const simulationInterval = this.config.trailingStopSimulationInterval;
-    const needSimulationKlines = useTrailingStop && simulationInterval;
-
-    if (needSimulationKlines) {
-      console.log(`[MultiWatcherBacktest] Trailing stop simulation enabled with ${simulationInterval} interval`);
-    }
-
     const intervalsNeeded = new Set(this.config.watchers.map((w) => w.interval));
     const marketType = this.config.marketType ?? 'FUTURES';
 
@@ -250,12 +225,6 @@ export class MultiWatcherBacktestEngine {
       const klines = await this.fetchKlines(watcherConfig);
       console.log(`[MultiWatcherBacktest] Fetched ${klines.length} klines for ${watcherId}`);
 
-      let simulationKlines: Kline[] | undefined;
-      if (needSimulationKlines) {
-        simulationKlines = await this.fetchSimulationKlines(watcherConfig, simulationInterval);
-        console.log(`[MultiWatcherBacktest] Fetched ${simulationKlines.length} simulation klines (${simulationInterval}) for ${watcherId}`);
-      }
-
       if (this.config.useMtfFilter) {
         const htfInterval = getHigherTimeframe(watcherConfig.interval);
         if (htfInterval && !this.htfKlinesCache.has(`${watcherId}-htf`)) {
@@ -280,7 +249,6 @@ export class MultiWatcherBacktestEngine {
       this.watchers.set(watcherId, {
         config: watcherConfig,
         klines,
-        simulationKlines,
         detectedSetups: setups,
         strategies: watcherStrategies,
         stats: this.initWatcherStats(watcherConfig),
@@ -298,20 +266,6 @@ export class MultiWatcherBacktestEngine {
     return this.fetchKlinesFromDbWithBackfill(
       watcherConfig.symbol,
       watcherConfig.interval as Interval,
-      marketType,
-      startTime,
-      endTime
-    );
-  }
-
-  private async fetchSimulationKlines(watcherConfig: WatcherConfig, simulationInterval: Interval): Promise<Kline[]> {
-    const marketType = watcherConfig.marketType ?? 'FUTURES';
-    const startTime = new Date(this.config.startDate);
-    const endTime = new Date(this.config.endDate);
-
-    return this.fetchKlinesFromDbWithBackfill(
-      watcherConfig.symbol,
-      simulationInterval,
       marketType,
       startTime,
       endTime
@@ -616,17 +570,9 @@ export class MultiWatcherBacktestEngine {
 
     const effectiveTakeProfit = effectiveTakeProfitResult.takeProfit;
 
-    let atr: number | undefined;
-    if (this.config.useTrailingStop && event.klineIndex > 14) {
-      const klinesForAtr = watcher.klines.slice(Math.max(0, event.klineIndex - 14), event.klineIndex + 1);
-      const atrValues = calculateATR(klinesForAtr, 14);
-      atr = atrValues.length > 0 ? atrValues[atrValues.length - 1] : undefined;
-    }
-
     const setupWithEffectiveTP: TradingSetup = {
       ...event.setup,
       takeProfit: effectiveTakeProfit ?? event.setup.takeProfit,
-      atr,
     };
 
     const position = this.portfolio.openPosition(
@@ -657,8 +603,6 @@ export class MultiWatcherBacktestEngine {
 
   private checkAndClosePositions(currentTime: number, _klines: Kline[], currentIndex: number): void {
     const openPositions = this.portfolio.getOpenPositions();
-    const useTrailingStop = this.config.useTrailingStop ?? false;
-    const hasSimulation = Boolean(this.config.trailingStopSimulationInterval);
 
     for (const position of openPositions) {
       const watcherId = `${position.watcherSymbol}-${position.watcherInterval}`;
@@ -675,120 +619,19 @@ export class MultiWatcherBacktestEngine {
 
         this.portfolio.incrementBarsInTrade(position.id);
 
-        if (useTrailingStop && hasSimulation && watcher.simulationKlines) {
-          const exitResult = this.simulateTrailingStopWithinCandle(
-            position,
-            kline,
-            watcher.simulationKlines
-          );
+        const high = parseFloat(String(kline.high));
+        const low = parseFloat(String(kline.low));
 
-          if (exitResult) {
-            this.closePositionWithResult(position, exitResult, kline.closeTime);
-            break;
-          }
-        } else {
-          const high = parseFloat(String(kline.high));
-          const low = parseFloat(String(kline.low));
-          const close = parseFloat(String(kline.close));
+        const exitResult = this.checkExit(position, kline);
 
-          const exitResult = this.checkExit(position, kline);
-
-          if (exitResult) {
-            this.closePositionWithResult(position, exitResult, kline.closeTime);
-            break;
-          }
-
-          if (useTrailingStop && position.barsInTrade > 0) {
-            const trailingResult = this.computeTrailingStop(position, close, high, low);
-            this.portfolio.updatePositionPriceExtremes(
-              position.id,
-              high,
-              low,
-              trailingResult?.newStopLoss
-            );
-          } else {
-            this.portfolio.updatePositionPriceExtremes(position.id, high, low);
-          }
+        if (exitResult) {
+          this.closePositionWithResult(position, exitResult, kline.closeTime);
+          break;
         }
+
+        this.portfolio.updatePositionPriceExtremes(position.id, high, low);
       }
     }
-  }
-
-  private binarySearchKlineIndex(klines: Kline[], targetTime: number): number {
-    let left = 0;
-    let right = klines.length;
-
-    while (left < right) {
-      const mid = Math.floor((left + right) / 2);
-      const klineTime = klines[mid]!.openTime;
-
-      if (klineTime < targetTime) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    }
-
-    return left;
-  }
-
-  private simulateTrailingStopWithinCandle(
-    position: ReturnType<typeof this.portfolio.getOpenPositions>[0],
-    mainKline: Kline,
-    simulationKlines: Kline[]
-  ): { exitPrice: number; reason: string; exitTime: number } | null {
-    const startIndex = this.binarySearchKlineIndex(simulationKlines, mainKline.openTime);
-    const endIndex = this.binarySearchKlineIndex(simulationKlines, mainKline.closeTime);
-
-    const relevantKlines = startIndex < endIndex
-      ? simulationKlines.slice(startIndex, endIndex)
-      : [];
-
-    if (relevantKlines.length === 0) {
-      const high = parseFloat(String(mainKline.high));
-      const low = parseFloat(String(mainKline.low));
-      const close = parseFloat(String(mainKline.close));
-
-      const exitResult = this.checkExit(position, mainKline);
-      if (exitResult) {
-        return { ...exitResult, exitTime: mainKline.closeTime };
-      }
-
-      if (position.barsInTrade > 0) {
-        const trailingResult = this.computeTrailingStop(position, close, high, low);
-        this.portfolio.updatePositionPriceExtremes(
-          position.id,
-          high,
-          low,
-          trailingResult?.newStopLoss
-        );
-      }
-
-      return null;
-    }
-
-    for (const simKline of relevantKlines) {
-      const high = parseFloat(String(simKline.high));
-      const low = parseFloat(String(simKline.low));
-      const close = parseFloat(String(simKline.close));
-
-      const exitResult = this.checkExit(position, simKline);
-      if (exitResult) {
-        return { ...exitResult, exitTime: simKline.closeTime };
-      }
-
-      if (position.barsInTrade > 0) {
-        const trailingResult = this.computeTrailingStop(position, close, high, low);
-        this.portfolio.updatePositionPriceExtremes(
-          position.id,
-          high,
-          low,
-          trailingResult?.newStopLoss
-        );
-      }
-    }
-
-    return null;
   }
 
   private closePositionWithResult(
@@ -832,42 +675,6 @@ export class MultiWatcherBacktestEngine {
     }
   }
 
-  private computeTrailingStop(
-    position: {
-      side: 'LONG' | 'SHORT';
-      entryPrice: number;
-      stopLoss?: number;
-      takeProfit?: number;
-      atr?: number;
-      highestHigh: number;
-      lowestLow: number;
-    },
-    currentPrice: number,
-    high: number,
-    low: number
-  ): { newStopLoss: number } | null {
-    const isLong = position.side === 'LONG';
-
-    const highestPrice = isLong ? Math.max(position.highestHigh, high) : undefined;
-    const lowestPrice = !isLong ? Math.min(position.lowestLow, low) : undefined;
-
-    const result = computeTrailingStopCore(
-      {
-        entryPrice: position.entryPrice,
-        currentPrice,
-        currentStopLoss: position.stopLoss ?? null,
-        side: position.side,
-        takeProfit: position.takeProfit,
-        atr: position.atr,
-        highestPrice,
-        lowestPrice,
-      },
-      this.trailingStopConfig
-    );
-
-    return result;
-  }
-
   private checkExit(
     position: {
       side: 'LONG' | 'SHORT';
@@ -875,8 +682,7 @@ export class MultiWatcherBacktestEngine {
       stopLoss?: number;
       takeProfit?: number;
     },
-    kline: Kline,
-    _useTrailingStop: boolean = false
+    kline: Kline
   ): { exitPrice: number; reason: string } | null {
     const high = parseFloat(String(kline.high));
     const low = parseFloat(String(kline.low));

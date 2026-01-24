@@ -86,8 +86,6 @@ export class BacktestEngine {
       });
 
       const exitManager = new ExitManager({
-        useTrailingStop: effectiveConfig.useTrailingStop,
-        trailingATRMultiplier: effectiveConfig.trailingATRMultiplier,
         slippagePercent: effectiveConfig.slippagePercent,
         marketType: config.marketType,
         useBnbDiscount: config.useBnbDiscount,
@@ -274,7 +272,6 @@ export class BacktestEngine {
     return {
       ...config,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
-      useTrailingStop: config.useTrailingStop ?? false,
       onlyWithTrend: config.onlyWithTrend ?? false,
       commission: config.commission ?? getDefaultFee(config.marketType ?? 'SPOT'),
       useMtfFilter: config.useMtfFilter ?? true,
@@ -525,7 +522,6 @@ export class BacktestEngine {
         setup,
         historicalKlines as Kline[],
         actualEntryKlineIndex,
-        entryPrice,
         stopLoss,
         takeProfit,
         setupStrategy,

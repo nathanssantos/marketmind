@@ -9,7 +9,7 @@ vi.mock('../../setup-detection/dynamic', () => ({
   },
 }));
 
-import { ExitManager, type TrailingStopState } from '../ExitManager';
+import { ExitManager } from '../ExitManager';
 import { ConditionEvaluator } from '../../setup-detection/dynamic';
 
 const createMockKline = (options: {
@@ -32,13 +32,12 @@ const createMockKline = (options: {
   takerBuyQuoteVolume: '25000000',
 });
 
-const createMockSetup = (direction: 'LONG' | 'SHORT', entryPrice: number, atr?: number) => ({
+const createMockSetup = (direction: 'LONG' | 'SHORT', entryPrice: number) => ({
   type: 'test-setup',
   direction,
   entryPrice,
   stopLoss: direction === 'LONG' ? entryPrice * 0.98 : entryPrice * 1.02,
   takeProfit: direction === 'LONG' ? entryPrice * 1.04 : entryPrice * 0.96,
-  atr,
   openTime: Date.now(),
 });
 
@@ -70,143 +69,6 @@ describe('ExitManager', () => {
     it('should apply BNB discount when configured', () => {
       const manager = new ExitManager({ useBnbDiscount: true }, conditionEvaluator);
       expect(manager).toBeDefined();
-    });
-  });
-
-  describe('initializeTrailingStopState', () => {
-    it('should initialize state with entry price and stop loss', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const state = manager.initializeTrailingStopState(50000, 49000);
-
-      expect(state.trailingStop).toBe(49000);
-      expect(state.highestHigh).toBe(50000);
-      expect(state.lowestLow).toBe(50000);
-      expect(state.feesCoveredReached).toBe(false);
-    });
-
-    it('should handle undefined stop loss', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const state = manager.initializeTrailingStopState(50000, undefined);
-
-      expect(state.trailingStop).toBeUndefined();
-      expect(state.highestHigh).toBe(50000);
-      expect(state.lowestLow).toBe(50000);
-    });
-  });
-
-  describe('updateTrailingStop', () => {
-    it('should not update when trailing stop disabled', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: 49000,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'LONG', 50000, 52000, 49500, 51000, 500, 2, 5, false, 49000
-      );
-
-      expect(result).toEqual(initialState);
-    });
-
-    it('should not update when no stop loss', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: undefined,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'LONG', 50000, 52000, 49500, 51000, 500, 2, 5, true, undefined
-      );
-
-      expect(result).toEqual(initialState);
-    });
-
-    it('should not update on first bar in trade', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: 49000,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'LONG', 50000, 52000, 49500, 51000, 500, 2, 1, true, 49000
-      );
-
-      expect(result).toEqual(initialState);
-    });
-
-    it('should update highest high for LONG position', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: 49000,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'LONG', 50000, 52000, 49500, 51000, 500, 2, 5, true, 49000
-      );
-
-      expect(result.highestHigh).toBe(52000);
-    });
-
-    it('should update lowest low for SHORT position', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: 51000,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'SHORT', 50000, 50500, 48000, 49000, 500, 2, 5, true, 51000
-      );
-
-      expect(result.lowestLow).toBe(48000);
-    });
-
-    it('should set breakeven and calculate trailing for LONG when profit threshold reached', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: 49000,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'LONG', 50000, 51000, 50000, 50600, 500, 2, 5, true, 49000
-      );
-
-      expect(result.feesCoveredReached).toBe(true);
-      expect(result.trailingStop).toBeGreaterThanOrEqual(50000);
-    });
-
-    it('should set breakeven and calculate trailing for SHORT when profit threshold reached', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-      const initialState: TrailingStopState = {
-        trailingStop: 51000,
-        highestHigh: 50000,
-        lowestLow: 50000,
-        feesCoveredReached: false,
-      };
-
-      const result = manager.updateTrailingStop(
-        initialState, 'SHORT', 50000, 50000, 49000, 49400, 500, 2, 5, true, 51000
-      );
-
-      expect(result.feesCoveredReached).toBe(true);
-      expect(result.trailingStop).toBeLessThanOrEqual(50000);
     });
   });
 
@@ -248,7 +110,7 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'LONG', 50500, 48500, 50000, 49000, 49000, 52000, false
+        'LONG', 50500, 48500, 50000, 49000, 49000, 52000
       );
 
       expect(result.hit).toBe('SL');
@@ -259,7 +121,7 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'SHORT', 51500, 50000, 50500, 51000, 51000, 48000, false
+        'SHORT', 51500, 50000, 50500, 51000, 51000, 48000
       );
 
       expect(result.hit).toBe('SL');
@@ -270,7 +132,7 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'LONG', 52500, 50500, 50500, 52000, 49000, 52000, false
+        'LONG', 52500, 50500, 50500, 52000, 49000, 52000
       );
 
       expect(result.hit).toBe('TP');
@@ -281,7 +143,7 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'SHORT', 50000, 47500, 49500, 48000, 51000, 48000, false
+        'SHORT', 50000, 47500, 49500, 48000, 51000, 48000
       );
 
       expect(result.hit).toBe('TP');
@@ -292,7 +154,7 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'LONG', 51000, 49500, 50000, 50500, 49000, 52000, false
+        'LONG', 51000, 49500, 50000, 50500, 49000, 52000
       );
 
       expect(result.hit).toBeNull();
@@ -303,7 +165,7 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'LONG', 53000, 48000, 49000, 52000, 49000, 52000, false
+        'LONG', 53000, 48000, 49000, 52000, 49000, 52000
       );
 
       expect(result.hit).toBe('TP');
@@ -314,21 +176,11 @@ describe('ExitManager', () => {
       const manager = new ExitManager({}, conditionEvaluator);
 
       const result = manager.checkStopLossAndTakeProfit(
-        'LONG', 53000, 48000, 52000, 48500, 49000, 52000, false
+        'LONG', 53000, 48000, 52000, 48500, 49000, 52000
       );
 
       expect(result.hit).toBe('SL');
       expect(result.price).toBe(49000);
-    });
-
-    it('should ignore TP when trailing stop is enabled', () => {
-      const manager = new ExitManager({}, conditionEvaluator);
-
-      const result = manager.checkStopLossAndTakeProfit(
-        'LONG', 53000, 50500, 50500, 52000, 49000, 52000, true
-      );
-
-      expect(result.hit).toBeNull();
     });
   });
 
@@ -388,7 +240,7 @@ describe('ExitManager', () => {
       const setup = createMockSetup('LONG', 50000);
 
       const result = manager.findExit(
-        setup, [], 0, 50000, 49000, 52000, undefined, null, {}
+        setup, [], 0, 49000, 52000, undefined, null, {}
       );
 
       expect(result).toBeNull();
@@ -404,7 +256,7 @@ describe('ExitManager', () => {
       ];
 
       const result = manager.findExit(
-        setup, klines, 0, 50000, 49000, 52000, undefined, null, {}
+        setup, klines, 0, 49000, 52000, undefined, null, {}
       );
 
       expect(result).not.toBeNull();
@@ -421,7 +273,7 @@ describe('ExitManager', () => {
       ];
 
       const result = manager.findExit(
-        setup, klines, 0, 50000, 49000, 52000, undefined, null, {}
+        setup, klines, 0, 49000, 52000, undefined, null, {}
       );
 
       expect(result).not.toBeNull();
@@ -454,7 +306,7 @@ describe('ExitManager', () => {
       };
 
       const result = manager.findExit(
-        setup, klines, 0, 50000, 49000, 52000, strategy, {}, {}
+        setup, klines, 0, 49000, 52000, strategy, {}, {}
       );
 
       expect(result).not.toBeNull();
@@ -487,7 +339,7 @@ describe('ExitManager', () => {
       };
 
       const result = manager.findExit(
-        setup, klines, 0, 50000, 48000, 54000, strategy, null, {}
+        setup, klines, 0, 48000, 54000, strategy, null, {}
       );
 
       expect(result).not.toBeNull();
@@ -504,29 +356,12 @@ describe('ExitManager', () => {
       ];
 
       const result = manager.findExit(
-        setup, klines, 0, 50000, 48000, 54000, undefined, null, {}
+        setup, klines, 0, 48000, 54000, undefined, null, {}
       );
 
       expect(result).not.toBeNull();
       expect(result!.exitReason).toBe('END_OF_PERIOD');
       expect(result!.exitPrice).toBe(50300);
-    });
-
-    it('should use trailing stop when enabled', () => {
-      const manager = new ExitManager({ useTrailingStop: true }, conditionEvaluator);
-      const setup = createMockSetup('LONG', 50000, 500);
-      const baseTime = Date.now();
-      const klines = [
-        createMockKline({ openTime: baseTime, open: '50000', high: '50500', low: '50000', close: '50200' }),
-        createMockKline({ openTime: baseTime + 3600000, open: '50200', high: '51500', low: '50100', close: '51000' }),
-        createMockKline({ openTime: baseTime + 7200000, open: '51000', high: '51200', low: '49000', close: '49500' }),
-      ];
-
-      const result = manager.findExit(
-        setup, klines, 0, 50000, 49000, 54000, undefined, null, {}
-      );
-
-      expect(result).not.toBeNull();
     });
   });
 

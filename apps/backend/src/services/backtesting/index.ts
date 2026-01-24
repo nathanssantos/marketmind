@@ -1,6 +1,6 @@
 export { BacktestEngine } from './BacktestEngine';
 export { BacktestOptimizer, type OptimizationConfig, type OptimizationResult } from './BacktestOptimizer';
-export { ExitManager, type ExitConfig, type ExitResult, type TrailingStopState } from './ExitManager';
+export { ExitManager, type ExitConfig, type ExitResult } from './ExitManager';
 export { FilterManager, type FilterConfig, type FilterStats } from './FilterManager';
 export { FuturesBacktestEngine } from './FuturesBacktestEngine';
 export { FullSystemOptimizer } from './FullSystemOptimizer';
