@@ -23,6 +23,10 @@ const { values: cliArgs } = parseArgs({
     'entry-limit': { type: 'string', short: 'e' },
     'symbol': { type: 'string' },
     'leverage': { type: 'string' },
+    'timeframes': { type: 'string', short: 't' },
+    'start-date': { type: 'string' },
+    'end-date': { type: 'string' },
+    'capital': { type: 'string', short: 'c' },
     help: { type: 'boolean', short: 'h' },
   },
   strict: false,
@@ -30,7 +34,7 @@ const { values: cliArgs } = parseArgs({
 
 if (cliArgs.help) {
   console.log(`
-Usage: npx tsx scripts/run-multi-timeframe-backtest.ts [options]
+Usage: pnpm backtest:multi [options]
 
 Options:
   -l, --rr-long <value>      Min R:R ratio for LONG positions (default: ${BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG})
@@ -40,13 +44,19 @@ Options:
   -e, --entry-limit <value>  Max % progress in Fib range for entry (default: ${EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT})
   --symbol <value>           Trading symbol (default: BTCUSDT)
   --leverage <value>         Leverage multiplier (default: 1)
+  -t, --timeframes <value>   Comma-separated timeframes to test (default: 15m,30m,1h,2h,4h,6h,8h,12h,1d)
+  --start-date <value>       Backtest start date YYYY-MM-DD (default: 2023-01-23)
+  --end-date <value>         Backtest end date YYYY-MM-DD (default: 2026-01-23)
+  -c, --capital <value>      Initial capital in USD (default: ${TRADING_DEFAULTS.INITIAL_CAPITAL})
   -h, --help                 Show this help message
 
 Examples:
-  npx tsx scripts/run-multi-timeframe-backtest.ts --rr-long 1.5 --rr-short 1.0
-  npx tsx scripts/run-multi-timeframe-backtest.ts -l 0.8 -s 0.5 --fib-short 1
-  npx tsx scripts/run-multi-timeframe-backtest.ts --entry-limit 50 --fib-long 1.618
-  npx tsx scripts/run-multi-timeframe-backtest.ts --symbol ETHUSDT --leverage 2
+  pnpm backtest:multi --rr-long 1.5 --rr-short 1.0
+  pnpm backtest:multi -l 0.8 -s 0.5 --fib-short 1
+  pnpm backtest:multi --entry-limit 50 --fib-long 1.618
+  pnpm backtest:multi --symbol ETHUSDT --leverage 2
+  pnpm backtest:multi -t "1h,4h,1d" --start-date 2024-01-01 --end-date 2025-01-01
+  pnpm backtest:multi -c 50000 --leverage 3
 `);
   process.exit(0);
 }
@@ -54,14 +64,21 @@ Examples:
 const { BacktestEngine } = await import('../src/services/backtesting/BacktestEngine.js');
 const { db } = await import('../src/db/index.js');
 
+const getStringArg = (value: string | boolean | undefined): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
 const CLI_CONFIG = {
-  minRiskRewardRatioLong: cliArgs['rr-long'] ? parseFloat(cliArgs['rr-long']) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG,
-  minRiskRewardRatioShort: cliArgs['rr-short'] ? parseFloat(cliArgs['rr-short']) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT,
-  fibonacciTargetLevelLong: (cliArgs['fib-long'] ?? '2') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
-  fibonacciTargetLevelShort: (cliArgs['fib-short'] ?? '1.272') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
-  maxFibonacciEntryProgressPercent: cliArgs['entry-limit'] ? parseFloat(cliArgs['entry-limit']) : EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
-  symbol: cliArgs['symbol'] ?? 'BTCUSDT',
-  leverage: cliArgs['leverage'] ? parseInt(cliArgs['leverage']) : 1,
+  minRiskRewardRatioLong: getStringArg(cliArgs['rr-long']) ? parseFloat(getStringArg(cliArgs['rr-long'])!) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG,
+  minRiskRewardRatioShort: getStringArg(cliArgs['rr-short']) ? parseFloat(getStringArg(cliArgs['rr-short'])!) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT,
+  fibonacciTargetLevelLong: (getStringArg(cliArgs['fib-long']) ?? '2') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
+  fibonacciTargetLevelShort: (getStringArg(cliArgs['fib-short']) ?? '1.272') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
+  maxFibonacciEntryProgressPercent: getStringArg(cliArgs['entry-limit']) ? parseFloat(getStringArg(cliArgs['entry-limit'])!) : EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
+  symbol: getStringArg(cliArgs['symbol']) ?? 'BTCUSDT',
+  leverage: getStringArg(cliArgs['leverage']) ? parseInt(getStringArg(cliArgs['leverage'])!) : 1,
+  timeframes: getStringArg(cliArgs['timeframes'])?.split(',').map((t) => t.trim()) ?? null,
+  startDate: getStringArg(cliArgs['start-date']) ?? '2023-01-23',
+  endDate: getStringArg(cliArgs['end-date']) ?? '2026-01-23',
+  initialCapital: getStringArg(cliArgs['capital']) ? parseInt(getStringArg(cliArgs['capital'])!) : TRADING_DEFAULTS.INITIAL_CAPITAL,
 };
 
 interface BacktestResult {
@@ -76,7 +93,8 @@ interface BacktestResult {
   avgLoss: number;
 }
 
-const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'] as const;
+const DEFAULT_TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
+const TIMEFRAMES = CLI_CONFIG.timeframes ?? DEFAULT_TIMEFRAMES;
 
 const SETUPS = [
   'chaikin-money-flow',
@@ -95,9 +113,9 @@ const SETUPS = [
 
 const BASE_CONFIG = {
   symbol: CLI_CONFIG.symbol,
-  startDate: '2023-01-23',
-  endDate: '2026-01-23',
-  initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
+  startDate: CLI_CONFIG.startDate,
+  endDate: CLI_CONFIG.endDate,
+  initialCapital: CLI_CONFIG.initialCapital,
   marketType: 'FUTURES' as const,
   leverage: CLI_CONFIG.leverage,
   setupTypes: SETUPS,

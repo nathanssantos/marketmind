@@ -47,6 +47,8 @@
     "backtest:sensitivity": "tsx src/cli/backtest-runner.ts sensitivity",
     "backtest:compare": "tsx src/cli/backtest-runner.ts compare",
     "backtest:export": "tsx src/cli/backtest-runner.ts export",
+    "backtest:multi": "tsx scripts/run-multi-timeframe-backtest.ts",
+    "backtest:batch": "bash scripts/batch-backtest-comparison.sh",
     "backtest:fib-entry": "tsx scripts/run-fib-entry-comparison.ts",
     "backtest:fib-target": "tsx scripts/run-fib-target-comparison.ts",
     "validate:all": "tsx validate-strategies.mts",
