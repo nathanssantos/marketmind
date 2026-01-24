@@ -28,7 +28,7 @@ interface BacktestResult {
   avgLoss: number;
 }
 
-const TIMEFRAMES = ['30m'] as const;
+const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'] as const;
 
 const SETUPS = [
   'chaikin-money-flow',
@@ -47,8 +47,8 @@ const SETUPS = [
 
 const BASE_CONFIG = {
   symbol: 'BTCUSDT',
-  startDate: '2024-01-17',
-  endDate: '2026-01-17',
+  startDate: '2023-01-23',
+  endDate: '2026-01-23',
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
   leverage: 1,
@@ -57,19 +57,20 @@ const BASE_CONFIG = {
   minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
   useAlgorithmicLevels: true,
   onlyWithTrend: true,
-  useTrendFilter: true,
-  useTrailingStop: true,
-  trailingStopATRMultiplier: BACKTEST_DEFAULTS.TRAILING_STOP_ATR_MULTIPLIER,
   tpCalculationMode: 'fibonacci' as const,
   fibonacciTargetLevel: '2' as const,
   maxFibonacciEntryProgressPercent: EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
-  useMtfFilter: true,
+  useStochasticFilter: false,
   useMomentumTimingFilter: true,
   useAdxFilter: false,
-  useStochasticFilter: false,
-  useBtcCorrelationFilter: false,
+  useTrendFilter: false,
+  useMtfFilter: true,
+  useBtcCorrelationFilter: true,
   useMarketRegimeFilter: true,
+  useVolumeFilter: false,
   useFundingFilter: true,
+  useConfluenceScoring: true,
+  confluenceMinScore: 60,
   simulateFundingRates: true,
   simulateLiquidation: true,
   useCooldown: true,
@@ -114,7 +115,7 @@ const formatNumber = (num: number, decimals = 2): string => {
 const printResults = (results: BacktestResult[]): void => {
   console.log('\n');
   console.log('='.repeat(130));
-  console.log('MULTI-TIMEFRAME BACKTEST - BTCUSDT FUTURES (2 years) - Fibonacci Target Level 2');
+  console.log('MULTI-TIMEFRAME BACKTEST - BTCUSDT FUTURES (3 years) - Fibonacci Target Level 2');
   console.log('='.repeat(130));
   console.log(`Setups: ${SETUPS.join(', ')}`);
   console.log(`Period: ${BASE_CONFIG.startDate} to ${BASE_CONFIG.endDate}`);
