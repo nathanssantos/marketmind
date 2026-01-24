@@ -1,7 +1,13 @@
-import { calculateATR } from '@marketmind/indicators';
 import type { Kline, MarketType } from '@marketmind/types';
-import { getDefaultFee, TRADING_DEFAULTS } from '@marketmind/types';
+import { getDefaultFee } from '@marketmind/types';
 import { generateShortId } from '../../utils/id';
+import {
+  calculateVolatilityAdjustment,
+  resolveFibonacciTarget,
+  validateMinNotional,
+  validateMinProfit,
+  validateRiskReward,
+} from '../../utils/trade-validation';
 import { PositionSizer } from './PositionSizer';
 
 export interface TradeExecutorConfig {
@@ -52,9 +58,6 @@ export interface PositionSizeResult {
   positionValue: number;
   rationale?: string;
 }
-
-const HIGH_VOLATILITY_THRESHOLD = 3.0;
-const VOLATILITY_REDUCTION_FACTOR = 0.7;
 
 export class TradeExecutor {
   private config: TradeExecutorConfig;
@@ -117,16 +120,10 @@ export class TradeExecutor {
     let tpSource = setup.takeProfit ? 'setup-ATR' : 'config-fixed';
 
     if (this.config.tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
-      const fibTarget = this.getFibonacciTargetPrice(setup);
+      const fibTarget = this.getFibonacciTargetPrice(setup, entryPrice);
       if (fibTarget !== null) {
-        const isValidTarget = setup.direction === 'LONG'
-          ? fibTarget > entryPrice
-          : fibTarget < entryPrice;
-
-        if (isValidTarget) {
-          takeProfit = fibTarget;
-          tpSource = 'fibonacci';
-        }
+        takeProfit = fibTarget;
+        tpSource = 'fibonacci';
       }
     }
 
@@ -141,26 +138,14 @@ export class TradeExecutor {
     return { stopLoss, takeProfit };
   }
 
-  private getFibonacciTargetPrice(setup: any): number | null {
-    const fib = setup.fibonacciProjection;
-    if (!fib || !fib.levels || fib.levels.length === 0) return null;
-
-    const configLevel = this.config.fibonacciTargetLevel ?? 'auto';
-    const targetLevel = configLevel === 'auto'
-      ? fib.primaryLevel
-      : parseFloat(configLevel);
-
-    const targetLevelData = fib.levels.find(
-      (l: { level: number; price: number }) => Math.abs(l.level - targetLevel) < 0.001
-    );
-
-    if (targetLevelData) return targetLevelData.price;
-
-    const level1618 = fib.levels.find(
-      (l: { level: number; price: number }) => Math.abs(l.level - 1.618) < 0.001
-    );
-
-    return level1618?.price ?? null;
+  private getFibonacciTargetPrice(setup: any, entryPrice: number): number | null {
+    const result = resolveFibonacciTarget({
+      fibonacciProjection: setup.fibonacciProjection,
+      entryPrice,
+      direction: setup.direction,
+      targetLevel: this.config.fibonacciTargetLevel,
+    });
+    return result.price;
   }
 
   calculatePositionSize(
@@ -217,30 +202,17 @@ export class TradeExecutor {
     setupIndex: number,
     tradesCount: number
   ): { positionSize: number; positionValue: number } {
-    if (setupIndex < 14) {
-      return { positionSize, positionValue: positionSize * entryPrice };
-    }
+    const result = calculateVolatilityAdjustment({
+      klines,
+      entryPrice,
+      klineIndex: setupIndex,
+    });
 
-    const recentKlines = klines.slice(setupIndex - 13, setupIndex + 1);
-    const atrValues = calculateATR(recentKlines, 14);
-
-    if (atrValues.length === 0) {
-      return { positionSize, positionValue: positionSize * entryPrice };
-    }
-
-    const currentATR = atrValues[atrValues.length - 1];
-    if (currentATR === null || currentATR === undefined) {
-      return { positionSize, positionValue: positionSize * entryPrice };
-    }
-
-    const atrPercent = (currentATR / entryPrice) * 100;
-
-    if (atrPercent > HIGH_VOLATILITY_THRESHOLD) {
-      const originalSize = positionSize;
-      const adjustedSize = positionSize * VOLATILITY_REDUCTION_FACTOR;
+    if (result.isHighVolatility) {
+      const adjustedSize = positionSize * result.factor;
 
       if (tradesCount < 3) {
-        console.log(`[TradeExecutor] High volatility adjustment: ATR=${atrPercent.toFixed(2)}% > ${HIGH_VOLATILITY_THRESHOLD}%, size reduced from ${originalSize.toFixed(6)} to ${adjustedSize.toFixed(6)}`);
+        console.log(`[TradeExecutor] ${result.rationale}`);
       }
 
       return { positionSize: adjustedSize, positionValue: adjustedSize * entryPrice };
@@ -250,8 +222,9 @@ export class TradeExecutor {
   }
 
   checkMinNotional(positionValue: number): boolean {
-    if (positionValue < TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
-      console.warn('[TradeExecutor] Position value', positionValue.toFixed(2), 'below MIN_TRADE_VALUE_USD (', TRADING_DEFAULTS.MIN_TRADE_VALUE_USD, '), skipping trade');
+    const result = validateMinNotional({ positionValue });
+    if (!result.isValid) {
+      console.warn(`[TradeExecutor] ${result.reason}`);
       return false;
     }
     return true;
@@ -264,21 +237,16 @@ export class TradeExecutor {
     minProfitPercent: number | undefined,
     commission: number
   ): boolean {
-    if (!minProfitPercent || !takeProfit) return true;
+    const result = validateMinProfit({
+      entryPrice,
+      takeProfit,
+      direction,
+      minProfitPercent,
+      commissionRate: commission,
+    });
 
-    const expectedProfitPercent = direction === 'LONG'
-      ? ((takeProfit - entryPrice) / entryPrice) * 100
-      : ((entryPrice - takeProfit) / entryPrice) * 100;
-
-    const profitAfterFees = expectedProfitPercent - (commission * 200);
-
-    if (profitAfterFees < minProfitPercent) {
-      console.warn(
-        '[TradeExecutor] Skipping setup - expected profit after fees',
-        `${profitAfterFees.toFixed(2)}%`,
-        'is below minimum',
-        `${minProfitPercent}%`
-      );
+    if (!result.isValid) {
+      console.warn(`[TradeExecutor] ${result.reason}`);
       return false;
     }
 
@@ -292,30 +260,17 @@ export class TradeExecutor {
     direction: 'LONG' | 'SHORT',
     tradesCount: number
   ): boolean {
-    const minRiskRewardRatio = this.config.minRiskRewardRatio ?? 1.0;
+    const result = validateRiskReward({
+      entryPrice,
+      stopLoss,
+      takeProfit,
+      direction,
+      minRiskRewardRatio: this.config.minRiskRewardRatio,
+    });
 
-    if (!stopLoss || !takeProfit) return true;
-
-    let risk: number;
-    let reward: number;
-
-    if (direction === 'LONG') {
-      risk = entryPrice - stopLoss;
-      reward = takeProfit - entryPrice;
-    } else {
-      risk = stopLoss - entryPrice;
-      reward = entryPrice - takeProfit;
-    }
-
-    if (risk <= 0) return true;
-
-    const riskRewardRatio = reward / risk;
-
-    if (riskRewardRatio < minRiskRewardRatio) {
+    if (!result.isValid) {
       if (tradesCount < 3) {
-        console.warn(
-          `[TradeExecutor] Skipping setup - R:R ${riskRewardRatio.toFixed(2)}:1 below minimum ${minRiskRewardRatio}:1`
-        );
+        console.warn(`[TradeExecutor] ${result.reason}`);
       }
       return false;
     }

@@ -1,14 +1,18 @@
-import { calculateATR } from '@marketmind/indicators';
 import type { MarketType } from '@marketmind/types';
-import { getRoundTripFee, TRADING_DEFAULTS } from '@marketmind/types';
+import { getRoundTripFee } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
-import { AUTO_TRADING_KELLY, AUTO_TRADING_ORDER, AUTO_TRADING_VOLATILITY, VOLATILITY } from '../constants';
+import { AUTO_TRADING_KELLY, AUTO_TRADING_ORDER } from '../constants';
 import { db } from '../db';
 import type { AutoTradingConfig, SetupDetection, Wallet } from '../db/schema';
 import { klines, tradeExecutions } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
+import {
+  calculateVolatilityAdjustment as calculateVolatilityAdjustmentCore,
+  validateMinNotional,
+  VOLATILITY_DEFAULTS,
+} from '../utils/trade-validation';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
@@ -155,31 +159,25 @@ export class AutoTradingService {
         .orderBy(sql`${klines.openTime} DESC`)
         .limit(50);
 
-      if (recentKlines.length < 14) return 1.0;
+      if (recentKlines.length < VOLATILITY_DEFAULTS.ATR_PERIOD) return 1.0;
 
       const mappedKlines = mapDbKlinesReversed(recentKlines);
 
-      const atrValues = calculateATR(mappedKlines, 14);
-      if (atrValues.length === 0) return 1.0;
+      const result = calculateVolatilityAdjustmentCore({
+        klines: mappedKlines,
+        entryPrice: currentPrice,
+      });
 
-      const lastATR = atrValues[atrValues.length - 1];
-      if (!lastATR) return 1.0;
-      
-      const atrPercent = (lastATR / currentPrice) * 100;
-
-      const REDUCTION_FACTOR = AUTO_TRADING_VOLATILITY.HIGH_VOLATILITY_REDUCTION_FACTOR;
-
-      if (atrPercent > VOLATILITY.HIGH_THRESHOLD) {
+      if (result.isHighVolatility) {
         logger.info({
           symbol,
           interval,
-          atrPercent: atrPercent.toFixed(2),
-          reduction: `${((1 - REDUCTION_FACTOR) * 100).toFixed(0)}%`,
+          atrPercent: result.atrPercent?.toFixed(2),
+          reduction: `${((1 - result.factor) * 100).toFixed(0)}%`,
         }, 'High volatility detected - reducing position size');
-        return REDUCTION_FACTOR;
       }
 
-      return 1.0;
+      return result.factor;
     } catch (error) {
       logger.error({
         error: serializeError(error),
@@ -295,10 +293,11 @@ export class AutoTradingService {
     dailyPnL: number,
     positionSize: PositionSizeCalculation
   ): RiskValidationResult {
-    if (positionSize.notionalValue < TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
+    const minNotionalResult = validateMinNotional({ positionValue: positionSize.notionalValue });
+    if (!minNotionalResult.isValid) {
       return {
         isValid: false,
-        reason: `Position value ${positionSize.notionalValue.toFixed(2)} below minimum ${TRADING_DEFAULTS.MIN_TRADE_VALUE_USD} USD`,
+        reason: minNotionalResult.reason,
       };
     }
 
