@@ -4,7 +4,7 @@ import { useUIStore } from './uiStore';
 describe('uiStore', () => {
   beforeEach(() => {
     useUIStore.setState({
-      tradingSidebarTab: 'orders',
+      tradingSidebarTab: 'portfolio',
       ordersFilterStatus: 'pending',
       ordersSortBy: 'newest',
       performancePeriod: 'all',
@@ -13,9 +13,9 @@ describe('uiStore', () => {
   });
 
   describe('tradingSidebarTab', () => {
-    it('should initialize with orders tab', () => {
+    it('should initialize with portfolio tab', () => {
       const state = useUIStore.getState();
-      expect(state.tradingSidebarTab).toBe('orders');
+      expect(state.tradingSidebarTab).toBe('portfolio');
     });
 
     it('should update to ticket tab', () => {

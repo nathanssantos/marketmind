@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 'analytics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
@@ -56,49 +57,76 @@ interface UIState {
   setEnableShiftAltOrderEntry: (enabled: boolean) => void;
 }
 
-export const useUIStore = create<UIState>()((set) => ({
-  tradingSidebarTab: 'orders',
-  setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
+export const useUIStore = create<UIState>()(
+  persist(
+    (set) => ({
+      tradingSidebarTab: 'portfolio',
+      setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
 
-  ordersSortBy: 'newest',
-  setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
+      ordersSortBy: 'newest',
+      setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
 
-  ordersFilterStatus: 'closed',
-  setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
+      ordersFilterStatus: 'closed',
+      setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
 
-  performancePeriod: 'all',
-  setPerformancePeriod: (period) => set({ performancePeriod: period }),
+      performancePeriod: 'all',
+      setPerformancePeriod: (period) => set({ performancePeriod: period }),
 
-  setupStatsPeriod: 'all',
-  setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
+      setupStatsPeriod: 'all',
+      setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
 
-  portfolioFilterOption: 'all',
-  setPortfolioFilterOption: (filter) => set({ portfolioFilterOption: filter }),
+      portfolioFilterOption: 'all',
+      setPortfolioFilterOption: (filter) => set({ portfolioFilterOption: filter }),
 
-  portfolioSortBy: 'newest',
-  setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
+      portfolioSortBy: 'newest',
+      setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
 
-  ordersViewMode: 'table',
-  setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
+      ordersViewMode: 'table',
+      setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
 
-  portfolioViewMode: 'table',
-  setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
+      portfolioViewMode: 'table',
+      setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
 
-  ordersTableSortKey: 'createdAt',
-  ordersTableSortDirection: 'desc',
-  setOrdersTableSort: (key, direction) => set({ ordersTableSortKey: key, ordersTableSortDirection: direction }),
+      ordersTableSortKey: 'createdAt',
+      ordersTableSortDirection: 'desc',
+      setOrdersTableSort: (key, direction) => set({ ordersTableSortKey: key, ordersTableSortDirection: direction }),
 
-  portfolioTableSortKey: 'pnl',
-  portfolioTableSortDirection: 'desc',
-  setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
+      portfolioTableSortKey: 'pnl',
+      portfolioTableSortDirection: 'desc',
+      setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
 
-  watchersTableSortKey: 'symbol',
-  watchersTableSortDirection: 'asc',
-  setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
+      watchersTableSortKey: 'symbol',
+      watchersTableSortDirection: 'asc',
+      setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
 
-  showEventRow: false,
-  setShowEventRow: (show) => set({ showEventRow: show }),
+      showEventRow: false,
+      setShowEventRow: (show) => set({ showEventRow: show }),
 
-  enableShiftAltOrderEntry: false,
-  setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
-}));
+      enableShiftAltOrderEntry: false,
+      setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
+    }),
+    {
+      name: 'ui-storage',
+      version: 1,
+      partialize: (state) => ({
+        tradingSidebarTab: state.tradingSidebarTab,
+        ordersFilterStatus: state.ordersFilterStatus,
+        ordersSortBy: state.ordersSortBy,
+        performancePeriod: state.performancePeriod,
+        setupStatsPeriod: state.setupStatsPeriod,
+        portfolioFilterOption: state.portfolioFilterOption,
+        portfolioSortBy: state.portfolioSortBy,
+        ordersViewMode: state.ordersViewMode,
+        portfolioViewMode: state.portfolioViewMode,
+        ordersTableSortKey: state.ordersTableSortKey,
+        ordersTableSortDirection: state.ordersTableSortDirection,
+        portfolioTableSortKey: state.portfolioTableSortKey,
+        portfolioTableSortDirection: state.portfolioTableSortDirection,
+        watchersTableSortKey: state.watchersTableSortKey,
+        watchersTableSortDirection: state.watchersTableSortDirection,
+        showEventRow: state.showEventRow,
+        enableShiftAltOrderEntry: state.enableShiftAltOrderEntry,
+      }),
+    }
+  )
+);
