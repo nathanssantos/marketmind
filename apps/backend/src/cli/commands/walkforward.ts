@@ -113,7 +113,7 @@ export async function walkforwardCommand(options: WalkForwardOptions) {
       setupTypes: [options.strategy],
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.withTrend,
+      useTrendFilter: options.withTrend,
     };
 
     if (minConfidence !== undefined) {

@@ -139,7 +139,7 @@ export function createMockBacktestConfig(overrides?: Record<string, unknown>) {
     maxPositionSize: 10,
     commission: 0.001,
     useAlgorithmicLevels: false,
-    onlyWithTrend: false,
+    useTrendFilter: false,
     stopLossPercent: 2,
     takeProfitPercent: 6,
     minConfidence: 50,

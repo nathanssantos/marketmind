@@ -132,7 +132,7 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
       minConfidence,
       maxPositionSize,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.withTrend,
+      useTrendFilter: options.withTrend,
     };
 
     const engine = new BacktestEngine();

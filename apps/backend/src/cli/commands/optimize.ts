@@ -168,8 +168,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
       takeProfitPercent: takeProfit,
       commission: commission !== undefined ? commission / 100 : undefined,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.withTrend ?? false,
-      useTrailingStop: options.trailingStop ?? false,
+      useTrendFilter: options.withTrend ?? false,
     };
 
     if (minConfidence !== undefined) {

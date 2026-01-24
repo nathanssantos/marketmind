@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
+import { FILTER_DEFAULTS } from '@marketmind/types';
 import { BACKTEST_DEFAULTS } from '../../constants';
 import { db } from '../../db';
 import { autoTradingConfig, activeWatchers, tradingProfiles } from '../../db/schema';
@@ -13,7 +14,6 @@ interface DateRangeOptions {
 interface ConfigOverrides {
   tpCalculationMode?: 'default' | 'fibonacci';
   fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
-  useTrailingStop?: boolean;
   useMtfFilter?: boolean;
   useBtcCorrelationFilter?: boolean;
   useMarketRegimeFilter?: boolean;
@@ -87,7 +87,6 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
 
     useStochasticFilter: overrides?.useStochasticFilter ?? config.useStochasticFilter,
     useAdxFilter: overrides?.useAdxFilter ?? config.useAdxFilter,
-    onlyWithTrend: overrides?.useTrendFilter ?? config.useTrendFilter,
 
     useMtfFilter: overrides?.useMtfFilter ?? config.useMtfFilter,
     useBtcCorrelationFilter: overrides?.useBtcCorrelationFilter ?? config.useBtcCorrelationFilter,
@@ -98,9 +97,7 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
     confluenceMinScore: overrides?.confluenceMinScore ?? config.confluenceMinScore,
     useMomentumTimingFilter: overrides?.useMomentumTimingFilter ?? config.useMomentumTimingFilter,
     useTrendFilter: overrides?.useTrendFilter ?? config.useTrendFilter,
-    trendFilterPeriod: 21,
-
-    useTrailingStop: overrides?.useTrailingStop ?? false,
+    trendFilterPeriod: FILTER_DEFAULTS.trendFilterPeriod,
 
     setupTypes: JSON.parse(config.enabledSetupTypes),
     useSharedExposure: true,
@@ -120,8 +117,8 @@ export const buildMultiWatcherConfigFromWatchers = (
     exposureMultiplier?: number;
     useStochasticFilter?: boolean;
     useAdxFilter?: boolean;
-    onlyWithTrend?: boolean;
     minRiskRewardRatio?: number;
+    useCooldown?: boolean;
     cooldownMinutes?: number;
     marketType?: 'SPOT' | 'FUTURES';
     leverage?: number;
@@ -136,7 +133,6 @@ export const buildMultiWatcherConfigFromWatchers = (
     useMomentumTimingFilter?: boolean;
     useTrendFilter?: boolean;
     trendFilterPeriod?: number;
-    useTrailingStop?: boolean;
     fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
   }
 ): MultiWatcherBacktestConfig => {
@@ -155,26 +151,24 @@ export const buildMultiWatcherConfigFromWatchers = (
     endDate: options.endDate,
     initialCapital: options.initialCapital,
 
-    exposureMultiplier: options.exposureMultiplier ?? BACKTEST_DEFAULTS.EXPOSURE_MULTIPLIER,
+    exposureMultiplier: options.exposureMultiplier ?? FILTER_DEFAULTS.exposureMultiplier,
 
-    useStochasticFilter: options.useStochasticFilter ?? false,
-    useAdxFilter: options.useAdxFilter ?? false,
-    onlyWithTrend: options.onlyWithTrend ?? false,
+    useStochasticFilter: options.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
+    useAdxFilter: options.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
     minRiskRewardRatio: options.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
-    useCooldown: true,
-    cooldownMinutes: options.cooldownMinutes ?? 15,
+    useCooldown: options.useCooldown ?? FILTER_DEFAULTS.useCooldown,
+    cooldownMinutes: options.cooldownMinutes ?? FILTER_DEFAULTS.cooldownMinutes,
 
-    useMtfFilter: options.useMtfFilter ?? true,
-    useBtcCorrelationFilter: options.useBtcCorrelationFilter ?? true,
-    useMarketRegimeFilter: options.useMarketRegimeFilter ?? true,
-    useVolumeFilter: options.useVolumeFilter ?? false,
-    useFundingFilter: options.useFundingFilter ?? true,
-    useConfluenceScoring: options.useConfluenceScoring ?? true,
-    confluenceMinScore: options.confluenceMinScore ?? 60,
-    useMomentumTimingFilter: options.useMomentumTimingFilter ?? true,
-    useTrendFilter: options.useTrendFilter ?? false,
-    trendFilterPeriod: options.trendFilterPeriod ?? 21,
-    useTrailingStop: options.useTrailingStop ?? false,
+    useMtfFilter: options.useMtfFilter ?? FILTER_DEFAULTS.useMtfFilter,
+    useBtcCorrelationFilter: options.useBtcCorrelationFilter ?? FILTER_DEFAULTS.useBtcCorrelationFilter,
+    useMarketRegimeFilter: options.useMarketRegimeFilter ?? FILTER_DEFAULTS.useMarketRegimeFilter,
+    useVolumeFilter: options.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
+    useFundingFilter: options.useFundingFilter ?? FILTER_DEFAULTS.useFundingFilter,
+    useConfluenceScoring: options.useConfluenceScoring ?? FILTER_DEFAULTS.useConfluenceScoring,
+    confluenceMinScore: options.confluenceMinScore ?? FILTER_DEFAULTS.confluenceMinScore,
+    useMomentumTimingFilter: options.useMomentumTimingFilter ?? FILTER_DEFAULTS.useMomentumTimingFilter,
+    useTrendFilter: options.useTrendFilter ?? FILTER_DEFAULTS.useTrendFilter,
+    trendFilterPeriod: options.trendFilterPeriod ?? FILTER_DEFAULTS.trendFilterPeriod,
 
     setupTypes: Array.from(allSetupTypes),
     useSharedExposure: true,

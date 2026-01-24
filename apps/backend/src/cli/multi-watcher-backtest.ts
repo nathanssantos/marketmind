@@ -4,7 +4,7 @@ import { TRADING_DEFAULTS } from '@marketmind/types';
 import { db } from '../db';
 import { activeWatchers, autoTradingConfig, tradingProfiles } from '../db/schema';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
-import type { Interval, MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
+import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
 
 const formatCurrency = (value: number): string => {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -99,12 +99,6 @@ async function runMultiWatcherBacktest() {
   };
   const fibonacciTargetLevelNum = fibLevelMap[fibonacciTargetLevelStr];
 
-  const useTrailingStop = process.argv.includes('--trailing-stop');
-  const tsIntervalArg = process.argv.find(arg => arg.startsWith('--ts-interval='));
-  const trailingStopSimulationInterval = tsIntervalArg
-    ? (tsIntervalArg.split('=')[1] as Interval)
-    : useTrailingStop ? '5m' as Interval : undefined;
-
   const tpModeArg = process.argv.find(arg => arg.startsWith('--tp-mode='));
   const tpMode = tpModeArg ? (tpModeArg.split('=')[1] as 'default' | 'fibonacci') : config.tpCalculationMode ?? 'default';
 
@@ -121,9 +115,6 @@ async function runMultiWatcherBacktest() {
     const level = fibonacciTpLevel ?? fibonacciTargetLevelNum;
     if (level) console.log(`   Fibonacci TP Level: ${(level * 100).toFixed(1)}%`);
   }
-  if (useTrailingStop) {
-    console.log(`📈 Trailing Stop: ENABLED (simulation interval: ${trailingStopSimulationInterval})`);
-  }
   console.log();
 
   const backtestConfig: MultiWatcherBacktestConfig = {
@@ -136,7 +127,7 @@ async function runMultiWatcherBacktest() {
 
     useStochasticFilter: config.useStochasticFilter,
     useAdxFilter: config.useAdxFilter,
-    onlyWithTrend: config.useTrendFilter,
+    useTrendFilter: config.useTrendFilter,
     minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
     useCooldown: true,
     cooldownMinutes: 15,
@@ -157,8 +148,6 @@ async function runMultiWatcherBacktest() {
     leverage: config.leverage ?? 1,
     tpCalculationMode: tpMode,
     fibonacciTpLevel: fibonacciTpLevel ?? fibonacciTargetLevelNum,
-    useTrailingStop: useTrailingStop ?? false,
-    trailingStopSimulationInterval,
   };
 
   console.log('⏳ Running backtest... (this may take a few minutes)\n');

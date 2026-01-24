@@ -1,0 +1,19 @@
+export interface UnifiedFilterConfig {
+  useTrendFilter?: boolean;
+  trendFilterPeriod?: number;
+  useStochasticFilter?: boolean;
+  useMomentumTimingFilter?: boolean;
+  useAdxFilter?: boolean;
+
+  useMtfFilter?: boolean;
+  useBtcCorrelationFilter?: boolean;
+  useMarketRegimeFilter?: boolean;
+  useVolumeFilter?: boolean;
+  useFundingFilter?: boolean;
+
+  useConfluenceScoring?: boolean;
+  confluenceMinScore?: number;
+
+  useCooldown?: boolean;
+  cooldownMinutes?: number;
+}

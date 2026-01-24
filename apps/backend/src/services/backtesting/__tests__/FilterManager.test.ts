@@ -59,7 +59,7 @@ describe('FilterManager', () => {
     it('should create with custom config', () => {
       const config: FilterConfig = {
         onlyLong: true,
-        onlyWithTrend: true,
+        useTrendFilter: true,
         trendFilterPeriod: 100,
         useCooldown: true,
         cooldownMinutes: 30,

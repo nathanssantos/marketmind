@@ -77,7 +77,7 @@ export async function montecarloCommand(options: MonteCarloOptions) {
       setupTypes: [options.strategy],
       commission: commission / 100,
       useAlgorithmicLevels: options.useAlgorithmicLevels,
-      onlyWithTrend: options.withTrend,
+      useTrendFilter: options.withTrend,
     };
 
     if (minConfidence !== undefined) {

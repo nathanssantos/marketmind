@@ -142,7 +142,7 @@ describe('Backtest Router', () => {
         initialCapital: 50000,
         setupTypes: ['setup91', 'setup92'],
         minConfidence: 70,
-        onlyWithTrend: true,
+        useTrendFilter: true,
         useAlgorithmicLevels: true,
         stopLossPercent: 2,
         takeProfitPercent: 6,

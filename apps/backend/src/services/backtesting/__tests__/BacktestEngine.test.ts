@@ -244,10 +244,10 @@ describe('BacktestEngine', () => {
       expect(result.status).toBe('COMPLETED');
     });
 
-    it('should filter by trend when onlyWithTrend is enabled', async () => {
+    it('should filter by trend when useTrendFilter is enabled', async () => {
       const klines = generateTrendingKlines(200, 50000, 'up', 0.002, '1h');
       const config = createMockBacktestConfig({
-        onlyWithTrend: true,
+        useTrendFilter: true,
       });
 
       const result = await engine.run(config, klines);

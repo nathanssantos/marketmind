@@ -100,7 +100,6 @@ export async function optimizeFullSystemCommand(options: OptimizeFullSystemOptio
       initialCapital: capital,
       setupTypes: [options.strategy],
       useAlgorithmicLevels: true,
-      useTrailingStop: true,
     };
 
     const progressBar = new cliProgress.SingleBar({

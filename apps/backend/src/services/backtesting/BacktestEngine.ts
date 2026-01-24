@@ -6,7 +6,7 @@ import type {
   Kline,
   StrategyDefinition,
 } from '@marketmind/types';
-import { getDefaultFee } from '@marketmind/types';
+import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { dirname, resolve } from 'path';
@@ -59,7 +59,7 @@ export class BacktestEngine {
 
       const filterManager = new FilterManager({
         onlyLong: effectiveConfig.onlyLong,
-        onlyWithTrend: effectiveConfig.onlyWithTrend,
+        useTrendFilter: effectiveConfig.useTrendFilter,
         trendFilterPeriod: effectiveConfig.trendFilterPeriod,
         useStochasticFilter: effectiveConfig.useStochasticFilter,
         useAdxFilter: effectiveConfig.useAdxFilter,
@@ -276,25 +276,24 @@ export class BacktestEngine {
     return {
       ...config,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
-      onlyWithTrend: config.onlyWithTrend ?? false,
       commission: config.commission ?? getDefaultFee(config.marketType ?? 'SPOT'),
-      useMtfFilter: config.useMtfFilter ?? true,
-      useMomentumTimingFilter: config.useMomentumTimingFilter ?? true,
-      useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
-      useMarketRegimeFilter: config.useMarketRegimeFilter ?? true,
-      useFundingFilter: config.useFundingFilter ?? isFutures,
-      useConfluenceScoring: config.useConfluenceScoring ?? true,
-      confluenceMinScore: config.confluenceMinScore ?? 60,
+      useMtfFilter: config.useMtfFilter ?? FILTER_DEFAULTS.useMtfFilter,
+      useMomentumTimingFilter: config.useMomentumTimingFilter ?? FILTER_DEFAULTS.useMomentumTimingFilter,
+      useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? FILTER_DEFAULTS.useBtcCorrelationFilter,
+      useMarketRegimeFilter: config.useMarketRegimeFilter ?? FILTER_DEFAULTS.useMarketRegimeFilter,
+      useFundingFilter: config.useFundingFilter ?? (isFutures && FILTER_DEFAULTS.useFundingFilter),
+      useConfluenceScoring: config.useConfluenceScoring ?? FILTER_DEFAULTS.useConfluenceScoring,
+      confluenceMinScore: config.confluenceMinScore ?? FILTER_DEFAULTS.confluenceMinScore,
       minRiskRewardRatio: config.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
-      minRiskRewardRatioLong: config.minRiskRewardRatioLong ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG,
-      minRiskRewardRatioShort: config.minRiskRewardRatioShort ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT,
-      exposureMultiplier: config.exposureMultiplier ?? 1.5,
-      useStochasticFilter: config.useStochasticFilter ?? false,
-      useAdxFilter: config.useAdxFilter ?? false,
-      useVolumeFilter: config.useVolumeFilter ?? false,
-      useTrendFilter: config.useTrendFilter ?? false,
-      useCooldown: config.useCooldown ?? false,
-      cooldownMinutes: config.cooldownMinutes ?? 15,
+      minRiskRewardRatioLong: config.minRiskRewardRatioLong ?? FILTER_DEFAULTS.minRiskRewardRatioLong,
+      minRiskRewardRatioShort: config.minRiskRewardRatioShort ?? FILTER_DEFAULTS.minRiskRewardRatioShort,
+      exposureMultiplier: config.exposureMultiplier ?? FILTER_DEFAULTS.exposureMultiplier,
+      useStochasticFilter: config.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
+      useAdxFilter: config.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
+      useVolumeFilter: config.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
+      useTrendFilter: config.useTrendFilter ?? FILTER_DEFAULTS.useTrendFilter,
+      useCooldown: config.useCooldown ?? FILTER_DEFAULTS.useCooldown,
+      cooldownMinutes: config.cooldownMinutes ?? FILTER_DEFAULTS.cooldownMinutes,
       leverage: config.leverage ?? 1,
       tpCalculationMode: config.tpCalculationMode ?? 'default',
       fibonacciTargetLevel: config.fibonacciTargetLevel ?? 'auto',
@@ -423,11 +422,11 @@ export class BacktestEngine {
       const { entryPrice, actualEntryKlineIndex } = entryResult;
 
       const setupStrategy = strategyMap.get(setup.type);
-      const globalTrendFilterEnabled = effectiveConfig.onlyWithTrend === true;
+      const globalTrendFilterEnabled = effectiveConfig.useTrendFilter === true;
       const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
-      const useTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
+      const shouldUseTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
 
-      if (!filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, useTrendFilter, trades.length)) continue;
+      if (!filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, shouldUseTrendFilter, trades.length)) continue;
 
       const { stopLoss, takeProfit } = tradeExecutor.resolveStopLossAndTakeProfit(setup, entryPrice, trades.length);
 

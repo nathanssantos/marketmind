@@ -25,7 +25,6 @@ import { calculateConfluenceScore, type FilterResults } from '../../utils/conflu
 
 export interface FilterConfig {
   onlyLong?: boolean;
-  onlyWithTrend?: boolean;
   useTrendFilter?: boolean;
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;

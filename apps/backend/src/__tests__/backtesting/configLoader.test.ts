@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TRADING_DEFAULTS } from '@marketmind/types';
+import { FILTER_DEFAULTS, TRADING_DEFAULTS } from '@marketmind/types';
 import { buildMultiWatcherConfigFromWatchers } from '../../services/backtesting/configLoader';
 import type { WatcherConfig } from '@marketmind/types';
 
@@ -52,10 +52,10 @@ describe('configLoader', () => {
         initialCapital: 10000,
       });
 
-      expect(config.exposureMultiplier).toBe(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER);
+      expect(config.exposureMultiplier).toBe(FILTER_DEFAULTS.exposureMultiplier);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
-      expect(config.onlyWithTrend).toBe(false);
+      expect(config.useTrendFilter).toBe(false);
       expect(config.minRiskRewardRatio).toBe(TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO);
       expect(config.cooldownMinutes).toBe(15);
       expect(config.useSharedExposure).toBe(true);
@@ -76,7 +76,7 @@ describe('configLoader', () => {
         exposureMultiplier: 2.0,
         useStochasticFilter: false,
         useAdxFilter: false,
-        onlyWithTrend: false,
+        useTrendFilter: false,
         minRiskRewardRatio: 2.0,
         cooldownMinutes: 30,
         marketType: 'FUTURES',
@@ -87,7 +87,7 @@ describe('configLoader', () => {
       expect(config.exposureMultiplier).toBe(2.0);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
-      expect(config.onlyWithTrend).toBe(false);
+      expect(config.useTrendFilter).toBe(false);
       expect(config.minRiskRewardRatio).toBe(2.0);
       expect(config.cooldownMinutes).toBe(30);
       expect(config.marketType).toBe('FUTURES');

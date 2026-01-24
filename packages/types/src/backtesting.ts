@@ -11,7 +11,6 @@ export interface BacktestConfig {
   minRiskRewardRatioShort?: number; // Min R:R for SHORT positions (default: 0.8, lower due to shorter targets)
   setupTypes?: string[]; // Which setups to trade (empty = all)
   minConfidence?: number; // Minimum confidence to enter trade
-  onlyWithTrend?: boolean; // Only trade setups aligned with higher timeframe trend
   useAlgorithmicLevels?: boolean; // Use setup's calculated SL/TP instead of fixed percentages
   stopLossPercent?: number; // SL as % of entry (ignored if useAlgorithmicLevels = true)
   takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)

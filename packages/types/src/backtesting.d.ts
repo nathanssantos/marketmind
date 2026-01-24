@@ -8,7 +8,6 @@ export interface BacktestConfig {
     minRiskRewardRatio?: number;
     setupTypes?: string[];
     minConfidence?: number;
-    onlyWithTrend?: boolean;
     useAlgorithmicLevels?: boolean;
     stopLossPercent?: number;
     takeProfitPercent?: number;

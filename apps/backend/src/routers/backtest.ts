@@ -55,7 +55,7 @@ export const backtestRouter = router({
         minProfitPercent: z.number().min(0).optional(),
         setupTypes: z.array(z.string()).optional(),
         minConfidence: z.number().min(0).max(100).optional(),
-        onlyWithTrend: z.boolean().optional(),
+        useTrendFilter: z.boolean().optional(),
         useAlgorithmicLevels: z.boolean().optional().default(false),
         stopLossPercent: z.number().positive().optional(),
         takeProfitPercent: z.number().positive().optional(),
@@ -72,9 +72,7 @@ export const backtestRouter = router({
         useConfluenceScoring: z.boolean().optional(),
         confluenceMinScore: z.number().min(0).max(100).optional(),
         useMomentumTimingFilter: z.boolean().optional(),
-        useTrendFilter: z.boolean().optional(),
         trendFilterPeriod: z.number().min(1).optional(),
-        useTrailingStop: z.boolean().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         exposureMultiplier: z.number().min(0.1).max(10).optional(),
@@ -114,7 +112,7 @@ export const backtestRouter = router({
             'larry-williams-9-1', 'larry-williams-9-2', 'larry-williams-9-3', 'larry-williams-9-4',
           ],
           minConfidence: input.minConfidence,
-          onlyWithTrend: input.onlyWithTrend,
+          useTrendFilter: input.useTrendFilter,
           useAlgorithmicLevels: input.useAlgorithmicLevels,
           stopLossPercent: input.stopLossPercent,
           takeProfitPercent: input.takeProfitPercent,
@@ -131,9 +129,7 @@ export const backtestRouter = router({
           useConfluenceScoring: input.useConfluenceScoring,
           confluenceMinScore: input.confluenceMinScore,
           useMomentumTimingFilter: input.useMomentumTimingFilter,
-          useTrendFilter: input.useTrendFilter,
           trendFilterPeriod: input.trendFilterPeriod,
-          useTrailingStop: input.useTrailingStop,
           tpCalculationMode: input.tpCalculationMode,
           fibonacciTargetLevel: input.fibonacciTargetLevel,
           exposureMultiplier: input.exposureMultiplier,
@@ -276,7 +272,6 @@ export const backtestRouter = router({
         exposureMultiplier: z.number().min(0.1).max(10).optional(),
         useStochasticFilter: z.boolean().optional(),
         useAdxFilter: z.boolean().optional(),
-        onlyWithTrend: z.boolean().optional(),
         minRiskRewardRatio: z.number().min(0).optional(),
         cooldownMinutes: z.number().min(0).optional(),
         marketType: z.enum(['SPOT', 'FUTURES']).optional(),
@@ -293,7 +288,6 @@ export const backtestRouter = router({
         useMomentumTimingFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
         trendFilterPeriod: z.number().min(1).optional(),
-        useTrailingStop: z.boolean().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -313,7 +307,6 @@ export const backtestRouter = router({
             {
               tpCalculationMode: input.tpCalculationMode,
               fibonacciTargetLevel: input.fibonacciTargetLevel,
-              useTrailingStop: input.useTrailingStop,
               useMtfFilter: input.useMtfFilter,
               useBtcCorrelationFilter: input.useBtcCorrelationFilter,
               useMarketRegimeFilter: input.useMarketRegimeFilter,
@@ -335,7 +328,7 @@ export const backtestRouter = router({
             exposureMultiplier: input.exposureMultiplier,
             useStochasticFilter: input.useStochasticFilter,
             useAdxFilter: input.useAdxFilter,
-            onlyWithTrend: input.onlyWithTrend,
+            useTrendFilter: input.useTrendFilter,
             minRiskRewardRatio: input.minRiskRewardRatio,
             cooldownMinutes: input.cooldownMinutes,
             marketType: input.marketType,
@@ -350,9 +343,7 @@ export const backtestRouter = router({
             useConfluenceScoring: input.useConfluenceScoring,
             confluenceMinScore: input.confluenceMinScore,
             useMomentumTimingFilter: input.useMomentumTimingFilter,
-            useTrendFilter: input.useTrendFilter,
             trendFilterPeriod: input.trendFilterPeriod,
-            useTrailingStop: input.useTrailingStop,
           });
         } else {
           throw new TRPCError({

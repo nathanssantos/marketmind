@@ -45,6 +45,7 @@ vi.mock('@marketmind/types', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@marketmind/types')>();
   return {
     ...actual,
+    FILTER_DEFAULTS: actual.FILTER_DEFAULTS,
     calculateFundingPayment: vi.fn((positionValue: number, fundingRatePercent: number, side: string) => {
       const payment = positionValue * (fundingRatePercent / 100);
       return side === 'LONG' ? -payment : payment;

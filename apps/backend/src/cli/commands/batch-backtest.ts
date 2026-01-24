@@ -70,8 +70,6 @@ const runSingleBacktest = async (
       initialCapital: capital,
       setupTypes: [strategy],
       useAlgorithmicLevels: true,
-      useTrailingStop: true,
-      onlyWithTrend: false,
       slippagePercent: 0.1,
       minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
       marketType: options.marketType,

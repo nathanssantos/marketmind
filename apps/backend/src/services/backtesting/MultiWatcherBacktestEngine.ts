@@ -97,7 +97,7 @@ export class MultiWatcherBacktestEngine {
       useStochasticFilter: this.config.useStochasticFilter ?? false,
       useMomentumTimingFilter: this.config.useMomentumTimingFilter ?? false,
       useAdxFilter: this.config.useAdxFilter ?? false,
-      useTrendFilter: this.config.onlyWithTrend ?? false,
+      useTrendFilter: this.config.useTrendFilter ?? false,
       minRiskRewardRatio: this.config.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
       useMtfFilter: this.config.useMtfFilter ?? false,
       useBtcCorrelationFilter: this.config.useBtcCorrelationFilter ?? false,
@@ -460,7 +460,7 @@ export class MultiWatcherBacktestEngine {
       }
     }
 
-    const globalTrendEnabled = this.config.onlyWithTrend === true;
+    const globalTrendEnabled = this.config.useTrendFilter === true;
     const strategyTrendEnabled = strategy?.filters?.trendFilter?.enabled === true;
     const shouldApplyTrend = globalTrendEnabled || strategyTrendEnabled;
 

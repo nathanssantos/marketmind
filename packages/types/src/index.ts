@@ -1,5 +1,7 @@
 export * from './backtesting';
 export * from './binance';
+export * from './filter-config';
+export * from './filter-defaults';
 export * from './events';
 export * from './filters';
 export * from './chart';
