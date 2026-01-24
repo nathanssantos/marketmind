@@ -23,6 +23,8 @@ export interface TradeExecutorConfig {
   takeProfitPercent?: number;
   tpCalculationMode?: 'default' | 'fibonacci';
   fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+  fibonacciTargetLevelLong?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+  fibonacciTargetLevelShort?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
 }
 
 export interface TradeStats {
@@ -144,6 +146,8 @@ export class TradeExecutor {
       entryPrice,
       direction: setup.direction,
       targetLevel: this.config.fibonacciTargetLevel,
+      targetLevelLong: this.config.fibonacciTargetLevelLong,
+      targetLevelShort: this.config.fibonacciTargetLevelShort,
     });
     return result.price;
   }

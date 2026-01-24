@@ -4,7 +4,7 @@ const LEVEL_TOLERANCE = 0.001;
 const FALLBACK_LEVEL = 1.618;
 
 export const resolveFibonacciTarget = (input: FibonacciResolverInput): FibonacciResolverResult => {
-  const { fibonacciProjection, entryPrice, direction, targetLevel = 'auto' } = input;
+  const { fibonacciProjection, entryPrice, direction, targetLevel, targetLevelLong, targetLevelShort } = input;
 
   if (!fibonacciProjection || !fibonacciProjection.levels || fibonacciProjection.levels.length === 0) {
     return {
@@ -16,9 +16,12 @@ export const resolveFibonacciTarget = (input: FibonacciResolverInput): Fibonacci
 
   const { levels, primaryLevel } = fibonacciProjection;
 
-  const effectiveTargetLevel = targetLevel === 'auto'
+  const directionSpecificLevel = direction === 'LONG' ? targetLevelLong : targetLevelShort;
+  const resolvedLevel = directionSpecificLevel ?? targetLevel ?? 'auto';
+
+  const effectiveTargetLevel = resolvedLevel === 'auto'
     ? primaryLevel
-    : parseFloat(targetLevel);
+    : parseFloat(resolvedLevel);
 
   const targetLevelData = levels.find(
     (l) => Math.abs(l.level - effectiveTargetLevel) < LEVEL_TOLERANCE

@@ -59,6 +59,8 @@ const BASE_CONFIG = {
   onlyWithTrend: true,
   tpCalculationMode: 'fibonacci' as const,
   fibonacciTargetLevel: '2' as const,
+  fibonacciTargetLevelLong: '2' as const,
+  fibonacciTargetLevelShort: '1.272' as const,
   maxFibonacciEntryProgressPercent: EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
   useStochasticFilter: false,
   useMomentumTimingFilter: true,
@@ -115,12 +117,12 @@ const formatNumber = (num: number, decimals = 2): string => {
 const printResults = (results: BacktestResult[]): void => {
   console.log('\n');
   console.log('='.repeat(130));
-  console.log('MULTI-TIMEFRAME BACKTEST - BTCUSDT FUTURES (3 years) - Fibonacci Target Level 2');
+  console.log('MULTI-TIMEFRAME BACKTEST - BTCUSDT FUTURES (3 years) - Fibonacci Targets: LONG=2, SHORT=1.272');
   console.log('='.repeat(130));
   console.log(`Setups: ${SETUPS.join(', ')}`);
   console.log(`Period: ${BASE_CONFIG.startDate} to ${BASE_CONFIG.endDate}`);
   console.log(`Leverage: ${BASE_CONFIG.leverage}x | Initial Capital: $${BASE_CONFIG.initialCapital}`);
-  console.log(`Entry Limit: ${BASE_CONFIG.maxFibonacciEntryProgressPercent}% | Fib Target: ${BASE_CONFIG.fibonacciTargetLevel}`);
+  console.log(`Entry Limit: ${BASE_CONFIG.maxFibonacciEntryProgressPercent}% | Fib Target LONG: ${BASE_CONFIG.fibonacciTargetLevelLong} | Fib Target SHORT: ${BASE_CONFIG.fibonacciTargetLevelShort}`);
   console.log('='.repeat(130));
   console.log('');
 
@@ -188,7 +190,7 @@ const main = async (): Promise<void> => {
   console.log('Starting Multi-Timeframe Backtest');
   console.log(`Symbol: ${BASE_CONFIG.symbol} | Market: ${BASE_CONFIG.marketType}`);
   console.log(`Testing timeframes: ${TIMEFRAMES.join(', ')}`);
-  console.log(`Fibonacci Target Level: ${BASE_CONFIG.fibonacciTargetLevel} (optimized)`);
+  console.log(`Fibonacci Target Levels: LONG=${BASE_CONFIG.fibonacciTargetLevelLong}, SHORT=${BASE_CONFIG.fibonacciTargetLevelShort} (direction-specific)`);
 
   const results: BacktestResult[] = [];
 

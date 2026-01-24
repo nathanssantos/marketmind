@@ -153,11 +153,15 @@ export class OrderExecutor {
     const config = await this.deps.getCachedConfig(watcher.walletId, watcher.userId);
 
     const tpCalculationMode = config?.tpCalculationMode ?? 'default';
-    const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
+    const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
+    const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
+    const effectiveFibLevel = setup.direction === 'LONG' ? fibonacciTargetLevelLong : fibonacciTargetLevelShort;
 
     logBuffer.log('🎯', 'TP calculation config', {
       tpCalculationMode,
-      fibonacciTargetLevel,
+      fibonacciTargetLevel: effectiveFibLevel,
+      fibonacciTargetLevelLong,
+      fibonacciTargetLevelShort,
       originalTP: setup.takeProfit?.toFixed(6),
     });
 
@@ -168,7 +172,7 @@ export class OrderExecutor {
         cycleKlines,
         setup.entryPrice,
         setup.direction,
-        fibonacciTargetLevel,
+        effectiveFibLevel,
         watcher.interval
       );
 
@@ -181,7 +185,7 @@ export class OrderExecutor {
           logBuffer.log('📐', 'Using Fibonacci projection for take profit', {
             originalTP: setup.takeProfit?.toFixed(6),
             fibonacciTP: fibTarget.toFixed(6),
-            configLevel: fibonacciTargetLevel,
+            configLevel: effectiveFibLevel,
             direction: setup.direction,
           });
           effectiveTakeProfit = fibTarget;
@@ -209,12 +213,12 @@ export class OrderExecutor {
           details: {
             klinesCount: cycleKlines.length,
             interval: watcher.interval,
-            fibLevel: fibonacciTargetLevel,
+            fibLevel: effectiveFibLevel,
           },
         });
         logBuffer.warn('🚫', 'No clear trend structure (ranging market)', {
           setup: setup.type,
-          fibLevel: fibonacciTargetLevel,
+          fibLevel: effectiveFibLevel,
         });
         return;
       }

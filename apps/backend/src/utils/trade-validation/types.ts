@@ -53,11 +53,15 @@ export interface FibonacciProjectionData {
   primaryLevel: number;
 }
 
+export type FibonacciTargetLevel = 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+
 export interface FibonacciResolverInput {
   fibonacciProjection: FibonacciProjectionData | null | undefined;
   entryPrice: number;
   direction: 'LONG' | 'SHORT';
-  targetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+  targetLevel?: FibonacciTargetLevel;
+  targetLevelLong?: FibonacciTargetLevel;
+  targetLevelShort?: FibonacciTargetLevel;
 }
 
 export interface FibonacciResolverResult {

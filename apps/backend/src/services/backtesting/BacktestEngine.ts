@@ -83,6 +83,8 @@ export class BacktestEngine {
         takeProfitPercent: effectiveConfig.takeProfitPercent,
         tpCalculationMode: effectiveConfig.tpCalculationMode,
         fibonacciTargetLevel: effectiveConfig.fibonacciTargetLevel,
+        fibonacciTargetLevelLong: effectiveConfig.fibonacciTargetLevelLong,
+        fibonacciTargetLevelShort: effectiveConfig.fibonacciTargetLevelShort,
       });
 
       const exitManager = new ExitManager({
