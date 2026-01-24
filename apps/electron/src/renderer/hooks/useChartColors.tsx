@@ -1,9 +1,12 @@
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { getChartColors } from '@/renderer/theme';
-import type { ChartColors } from '@marketmind/types';
+import type { ChartColors as BaseChartColors } from '@marketmind/types';
 import { useMemo } from 'react';
 
-export interface ChartThemeColors extends ChartColors {
+export interface ChartThemeColors extends BaseChartColors {
+  watermark: string;
+  highlighted: string;
+  line: string;
   text: string;
   axisLabel: string;
   axisLine: string;
@@ -186,6 +189,8 @@ export interface ChartThemeColors extends ChartColors {
   };
   indicatorZone?: string;
 }
+
+export type ChartColors = ChartThemeColors;
 
 export const useChartColors = (): ChartThemeColors => {
   const { colorMode } = useColorMode();

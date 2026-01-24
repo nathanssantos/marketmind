@@ -1,4 +1,5 @@
 import type { Order } from '@marketmind/types';
+import type { DirtyFlags } from '@renderer/utils/canvas/CanvasManager';
 import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending, isOrderShort } from '@shared/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -9,7 +10,7 @@ interface OrderDragConfig {
   yToPrice: (y: number) => number;
   enabled: boolean;
   getOrderAtPosition: (x: number, y: number) => Order | null;
-  markDirty?: (layer: string) => void;
+  markDirty?: (layer: keyof DirtyFlags) => void;
 }
 
 export type DragType = 'entry' | 'stopLoss' | 'takeProfit';

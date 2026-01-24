@@ -229,35 +229,35 @@ describe('uiStore', () => {
   });
 
   describe('ordersViewMode', () => {
-    it('should initialize with cards', () => {
+    it('should initialize with table', () => {
       const state = useUIStore.getState();
-      expect(state.ordersViewMode).toBe('cards');
+      expect(state.ordersViewMode).toBe('table');
     });
 
-    it('should update to table', () => {
+    it('should update to cards', () => {
       const { setOrdersViewMode } = useUIStore.getState();
-      setOrdersViewMode('table');
-      expect(useUIStore.getState().ordersViewMode).toBe('table');
-    });
-
-    it('should update back to cards', () => {
-      const { setOrdersViewMode } = useUIStore.getState();
-      setOrdersViewMode('table');
       setOrdersViewMode('cards');
       expect(useUIStore.getState().ordersViewMode).toBe('cards');
+    });
+
+    it('should update back to table', () => {
+      const { setOrdersViewMode } = useUIStore.getState();
+      setOrdersViewMode('cards');
+      setOrdersViewMode('table');
+      expect(useUIStore.getState().ordersViewMode).toBe('table');
     });
   });
 
   describe('portfolioViewMode', () => {
-    it('should initialize with cards', () => {
+    it('should initialize with table', () => {
       const state = useUIStore.getState();
-      expect(state.portfolioViewMode).toBe('cards');
+      expect(state.portfolioViewMode).toBe('table');
     });
 
-    it('should update to table', () => {
+    it('should update to cards', () => {
       const { setPortfolioViewMode } = useUIStore.getState();
-      setPortfolioViewMode('table');
-      expect(useUIStore.getState().portfolioViewMode).toBe('table');
+      setPortfolioViewMode('cards');
+      expect(useUIStore.getState().portfolioViewMode).toBe('cards');
     });
   });
 

@@ -90,15 +90,14 @@ export const useKeyboardNavigation = ({
 
       case 'End':
         event.preventDefault();
-        const viewport = manager.getViewport();
-        const visibleRange = viewport.end - viewport.start;
-        const bounds = manager.getBounds();
-        if (bounds) {
-          const maxEnd = bounds.maxIndex ?? 0;
+        const endViewport = manager.getViewport();
+        const endVisibleRange = endViewport.end - endViewport.start;
+        const klineCount = manager.getKlineCount();
+        if (klineCount > 0) {
           manager.setViewport({
-            ...viewport,
-            start: Math.max(0, maxEnd - visibleRange),
-            end: maxEnd,
+            ...endViewport,
+            start: Math.max(0, klineCount - endVisibleRange),
+            end: klineCount,
           });
           onViewportChangeRef.current?.();
         }

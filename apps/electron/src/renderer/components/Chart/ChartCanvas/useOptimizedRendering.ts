@@ -72,7 +72,7 @@ export const useOptimizedRendering = ({
   const lastViewportRef = useRef<Viewport | null>(null);
 
   const viewport = useMemo((): Viewport => {
-    if (!manager) return { start: 0, end: 100, klineWidth: 10 };
+    if (!manager) return { start: 0, end: 100, klineWidth: 10, klineSpacing: 2, width: 800, height: 600, priceMin: 0, priceMax: 100 };
     return manager.getViewport();
   }, [manager]);
 
@@ -212,16 +212,12 @@ export const useOptimizedRendering = ({
   useEffect(() => {
     if (!manager) return;
 
-    const originalCallback = manager.getRenderCallback?.();
-
     manager.setRenderCallback(() => {
       requestRender();
     });
 
     return () => {
-      if (originalCallback) {
-        manager.setRenderCallback(originalCallback);
-      }
+      manager.setRenderCallback(null);
     };
   }, [manager, requestRender]);
 

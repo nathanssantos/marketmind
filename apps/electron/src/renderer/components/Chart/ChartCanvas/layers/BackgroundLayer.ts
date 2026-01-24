@@ -27,7 +27,6 @@ export const createBackgroundLayer = ({
     if (!manager || !showGrid) return;
 
     const dimensions = manager.getDimensions();
-    const viewport = manager.getViewport();
     if (!dimensions) return;
 
     ctx.save();

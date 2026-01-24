@@ -886,6 +886,9 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       text: resolveValue(tokens['chart.currentPrice.label.text']),
     },
     lineDefault: resolveValue(tokens['chart.line.default']),
+    watermark: colorMode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
+    highlighted: colorMode === 'dark' ? '#ffeb3b' : '#ffc107',
+    line: resolveValue(tokens['chart.line.default']),
     ma: [
       resolveValue(tokens['chart.ma.1']),
       resolveValue(tokens['chart.ma.2']),

@@ -66,8 +66,8 @@ export const createDataLayer = ({
       const globalIndex = startIdx + i;
       const x = manager.indexToX(globalIndex);
       const barWidth = Math.max(1, viewport.klineWidth * 0.8);
-      const barHeight = (kline.volume / bounds.maxVolume) * volumeHeight;
-      const isBullish = kline.close >= kline.open;
+      const barHeight = (parseFloat(kline.volume) / bounds.maxVolume) * volumeHeight;
+      const isBullish = parseFloat(kline.close) >= parseFloat(kline.open);
 
       ctx.fillStyle = isBullish ? colors.bullish : colors.bearish;
       ctx.fillRect(
@@ -95,12 +95,16 @@ export const createDataLayer = ({
     visible.forEach((kline, i) => {
       const globalIndex = startIdx + i;
       const x = manager.indexToX(globalIndex);
-      const openY = manager.priceToY(kline.open);
-      const closeY = manager.priceToY(kline.close);
-      const highY = manager.priceToY(kline.high);
-      const lowY = manager.priceToY(kline.low);
+      const open = parseFloat(kline.open);
+      const close = parseFloat(kline.close);
+      const high = parseFloat(kline.high);
+      const low = parseFloat(kline.low);
+      const openY = manager.priceToY(open);
+      const closeY = manager.priceToY(close);
+      const highY = manager.priceToY(high);
+      const lowY = manager.priceToY(low);
 
-      const isBullish = kline.close >= kline.open;
+      const isBullish = close >= open;
       const isHighlighted = highlightedCandles?.has(globalIndex);
 
       if (isHighlighted) {
@@ -148,7 +152,7 @@ export const createDataLayer = ({
     visible.forEach((kline, i) => {
       const globalIndex = startIdx + i;
       const x = manager.indexToX(globalIndex);
-      const y = manager.priceToY(kline.close);
+      const y = manager.priceToY(parseFloat(kline.close));
 
       if (i === 0) {
         ctx.moveTo(x, y);

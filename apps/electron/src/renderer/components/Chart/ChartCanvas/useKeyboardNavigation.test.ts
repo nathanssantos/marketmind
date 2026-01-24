@@ -9,7 +9,8 @@ const createMockManager = () => ({
   resetVerticalZoom: vi.fn(),
   getViewport: vi.fn(() => ({ start: 0, end: 100, klineWidth: 10 })),
   setViewport: vi.fn(),
-  getBounds: vi.fn(() => ({ maxIndex: 1000, minPrice: 100, maxPrice: 200, maxVolume: 1000 })),
+  getBounds: vi.fn(() => ({ minPrice: 100, maxPrice: 200, minVolume: 0, maxVolume: 1000 })),
+  getKlineCount: vi.fn(() => 1000),
 });
 
 const createMockCanvas = () => {
