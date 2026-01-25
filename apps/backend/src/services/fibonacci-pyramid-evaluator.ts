@@ -1,6 +1,10 @@
+import {
+  FIBONACCI_TARGET_VALUES,
+  type FibonacciTargetLevelNumeric,
+} from '@marketmind/fibonacci';
 import { logger } from './logger';
 
-export type FiboLevel = '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
+export type FiboLevel = FibonacciTargetLevelNumeric;
 
 export interface FiboPyramidConfig {
   enabledLevels: FiboLevel[];
@@ -25,16 +29,7 @@ export interface TriggeredFiboState {
   triggeredLevels: Set<FiboLevel>;
 }
 
-const FIBO_LEVEL_VALUES: Record<FiboLevel, number> = {
-  '1': 1.0,
-  '1.272': 1.272,
-  '1.382': 1.382,
-  '1.5': 1.5,
-  '1.618': 1.618,
-  '2': 2.0,
-  '2.272': 2.272,
-  '2.618': 2.618,
-};
+const FIBO_LEVEL_VALUES = FIBONACCI_TARGET_VALUES;
 
 const triggeredFiboStateMap = new Map<string, TriggeredFiboState>();
 

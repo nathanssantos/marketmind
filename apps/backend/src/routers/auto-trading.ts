@@ -1,4 +1,4 @@
-import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
+import { FIBONACCI_PYRAMID_LEVELS, FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { analyzeTrend, checkTrendAlignment, type TrendInfo } from '@marketmind/indicators';
 import { colorize, createTable } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
@@ -37,8 +37,6 @@ import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { parseEnabledSetupTypes, stringifyDynamicSymbolExcluded, stringifyEnabledSetupTypes, transformAutoTradingConfig } from '../utils/profile-transformers';
-
-const PYRAMID_FIBO_LEVELS = ['1', '1.272', '1.618', '2', '2.618'] as const;
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   if (data) {
@@ -157,7 +155,7 @@ export const autoTradingRouter = router({
         pyramidAdxThreshold: z.number().min(AUTO_TRADING_CONFIG.ADX_THRESHOLD.MIN).max(AUTO_TRADING_CONFIG.ADX_THRESHOLD.MAX).optional(),
         pyramidRsiLowerBound: z.number().min(AUTO_TRADING_CONFIG.RSI_BOUNDS.LOWER.MIN).max(AUTO_TRADING_CONFIG.RSI_BOUNDS.LOWER.MAX).optional(),
         pyramidRsiUpperBound: z.number().min(AUTO_TRADING_CONFIG.RSI_BOUNDS.UPPER.MIN).max(AUTO_TRADING_CONFIG.RSI_BOUNDS.UPPER.MAX).optional(),
-        pyramidFiboLevels: z.array(z.enum(PYRAMID_FIBO_LEVELS)).optional(),
+        pyramidFiboLevels: z.array(z.enum(FIBONACCI_PYRAMID_LEVELS)).optional(),
         leverageAwarePyramid: z.boolean().optional(),
       })
     )

@@ -1,6 +1,7 @@
 import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
+import { FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 
-const FIBONACCI_LINE_COLOR = 'rgba(128, 128, 128, 0.35)';
+const FIBONACCI_LINE_COLOR = FIBONACCI_DEFAULT_COLOR;
 
 const customConfig = defineConfig({
   theme: {
@@ -630,10 +631,19 @@ const customConfig = defineConfig({
         'chart.fibonacci.level127': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
+        'chart.fibonacci.level138': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level150': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
         'chart.fibonacci.level161': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level200': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level227': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level261': {
@@ -1052,8 +1062,11 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       level886: resolveValue(tokens['chart.fibonacci.level886']),
       level100: resolveValue(tokens['chart.fibonacci.level100']),
       level127: resolveValue(tokens['chart.fibonacci.level127']),
+      level138: resolveValue(tokens['chart.fibonacci.level138']),
+      level150: resolveValue(tokens['chart.fibonacci.level150']),
       level161: resolveValue(tokens['chart.fibonacci.level161']),
       level200: resolveValue(tokens['chart.fibonacci.level200']),
+      level227: resolveValue(tokens['chart.fibonacci.level227']),
       level261: resolveValue(tokens['chart.fibonacci.level261']),
     },
     fvg: {

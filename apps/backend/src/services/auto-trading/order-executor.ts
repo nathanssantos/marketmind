@@ -98,7 +98,7 @@ export class OrderExecutor {
     return parseInt(match[1]) * unitMs;
   }
 
-  private getAdxBasedFibonacciLevel(klines: Kline[], direction: 'LONG' | 'SHORT'): number {
+  private getAdxBasedFibonacciLevel(klines: Kline[], _direction: 'LONG' | 'SHORT'): number {
     const { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG } = FILTER_THRESHOLDS;
     const MIN_KLINES_FOR_ADX = 35;
 
@@ -107,7 +107,7 @@ export class OrderExecutor {
         klinesCount: klines.length,
         required: MIN_KLINES_FOR_ADX,
       });
-      return direction === 'LONG' ? 1.618 : 1.272;
+      return 1.272;
     }
 
     const adxResult = calculateADX(klines, 14);
@@ -115,26 +115,18 @@ export class OrderExecutor {
 
     if (adx == null) {
       log('⚠️ ADX calculation returned null, using default level');
-      return direction === 'LONG' ? 1.618 : 1.272;
+      return 1.272;
     }
 
     let targetLevel: number;
 
-    if (direction === 'LONG') {
-      if (adx >= ADX_VERY_STRONG) targetLevel = 2.0;
-      else if (adx >= ADX_STRONG) targetLevel = 1.618;
-      else if (adx >= ADX_MIN) targetLevel = 1.382;
-      else targetLevel = 1.0;
-    } else {
-      if (adx >= ADX_VERY_STRONG) targetLevel = 1.618;
-      else if (adx >= ADX_STRONG) targetLevel = 1.5;
-      else if (adx >= ADX_MIN) targetLevel = 1.382;
-      else targetLevel = 1.272;
-    }
+    if (adx >= ADX_VERY_STRONG) targetLevel = 2.0;
+    else if (adx >= ADX_STRONG) targetLevel = 1.618;
+    else if (adx >= ADX_MIN) targetLevel = 1.382;
+    else targetLevel = 1.272;
 
     log('📊 ADX-based Fibonacci level selected', {
       adx: adx.toFixed(2),
-      direction,
       targetLevel,
       thresholds: { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG },
     });

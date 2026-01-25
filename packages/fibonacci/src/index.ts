@@ -6,12 +6,15 @@ export {
   FIBONACCI_PYRAMID_LEVELS,
   FIBONACCI_LEVEL_TO_NAME,
   FIBONACCI_PYRAMID_VALUES,
+  FIBONACCI_TARGET_VALUES,
   formatFibonacciLabel,
   getLevelName,
+  parseFibonacciLevel,
   type FibonacciRetracementLevel,
   type FibonacciExtensionLevel,
   type FibonacciLevel,
   type FibonacciTargetLevel,
+  type FibonacciTargetLevelNumeric,
   type FibonacciPyramidLevel,
 } from './levels';
 
