@@ -219,7 +219,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   useAdxFilter: boolean('use_adx_filter').default(false).notNull(),
   useTrendFilter: boolean('use_trend_filter').default(true).notNull(),
   useMtfFilter: boolean('use_mtf_filter').default(false).notNull(),
-  useBtcCorrelationFilter: boolean('use_btc_correlation_filter').default(false).notNull(),
+  useBtcCorrelationFilter: boolean('use_btc_correlation_filter').default(true).notNull(),
   useMarketRegimeFilter: boolean('use_market_regime_filter').default(false).notNull(),
   useDirectionFilter: boolean('use_direction_filter').default(false).notNull(),
   enableLongInBearMarket: boolean('enable_long_in_bear_market').default(false).notNull(),

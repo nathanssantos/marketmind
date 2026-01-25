@@ -6,7 +6,7 @@ export const FILTER_DEFAULTS = {
   useAdxFilter: false,
 
   useMtfFilter: false,
-  useBtcCorrelationFilter: false,
+  useBtcCorrelationFilter: true,
   useMarketRegimeFilter: false,
   useVolumeFilter: false,
   volumeFilterObvLookbackLong: 7,

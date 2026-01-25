@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   use_adx_filter BOOLEAN DEFAULT false NOT NULL,
   use_trend_filter BOOLEAN DEFAULT true NOT NULL,
   use_mtf_filter BOOLEAN DEFAULT false NOT NULL,
-  use_btc_correlation_filter BOOLEAN DEFAULT false NOT NULL,
+  use_btc_correlation_filter BOOLEAN DEFAULT true NOT NULL,
   use_market_regime_filter BOOLEAN DEFAULT false NOT NULL,
   use_direction_filter BOOLEAN DEFAULT false NOT NULL,
   enable_long_in_bear_market BOOLEAN DEFAULT false NOT NULL,
