@@ -1,6 +1,7 @@
 import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { analyzeTrend, checkTrendAlignment, type TrendInfo } from '@marketmind/indicators';
 import { colorize, createTable } from '@marketmind/logger';
+import { calculateCapitalLimits } from '@marketmind/risk';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -12,7 +13,6 @@ import {
     klines,
     setupDetections,
     tradeExecutions,
-    wallets,
 } from '../db/schema';
 import { autoTradingService } from '../services/auto-trading';
 import { positionMonitorService } from '../services/position-monitor';
@@ -1397,86 +1397,43 @@ export const autoTradingRouter = router({
         )
         .limit(1);
 
-      let walletBalance = parseFloat(wallet.currentBalance ?? '0');
-
-      if (!isPaperWallet(wallet) && input.marketType === 'FUTURES') {
-        try {
-          const client = createBinanceFuturesClient(wallet);
-          const accountInfo = await client.getAccountInformation();
-          const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
-          const marginBalance = usdtAsset?.marginBalance
-            ? parseFloat(String(usdtAsset.marginBalance))
-            : 0;
-          const availableBalance = usdtAsset?.availableBalance
-            ? parseFloat(String(usdtAsset.availableBalance))
-            : marginBalance;
-
-          walletBalance = availableBalance;
-
-          if (marginBalance !== parseFloat(wallet.currentBalance ?? '0')) {
-            await ctx.db
-              .update(wallets)
-              .set({
-                currentBalance: marginBalance.toString(),
-                updatedAt: new Date(),
-              })
-              .where(eq(wallets.id, wallet.id));
-          }
-        } catch (error) {
-          logger.error({ walletId: wallet.id, error }, '[getCapitalLimits] Failed to fetch live balance, using stored value');
-        }
-      }
-
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
       const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
 
-      const scoringService = getOpportunityScoringService();
+      const limits = calculateCapitalLimits({
+        walletBalance,
+        leverage,
+        exposureMultiplier,
+        marketType: input.marketType,
+      });
+
       const minNotionalFilter = getMinNotionalFilterService();
-
-      let rankingSymbols: string[] = [];
-      const scores = await scoringService.getSymbolScores(input.marketType, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * 2);
-
-      if (scores.length > 0) {
-        rankingSymbols = scores.map(s => s.symbol);
-      } else {
-        const topByVolume = await getTopSymbolsByVolume(input.marketType, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX * 2);
-        rankingSymbols = topByVolume;
-        logger.info({ count: rankingSymbols.length }, '[getCapitalLimits] Using Binance volume fallback');
-      }
-
-      const { maxWatchers, capitalPerWatcher, eligibleSymbols, excludedSymbols } =
-        await minNotionalFilter.calculateMaxWatchersFromSymbols(
-          rankingSymbols,
-          walletBalance,
-          leverage,
-          exposureMultiplier,
-          input.marketType
-        );
-
-      const availableCapital = walletBalance * leverage * exposureMultiplier;
-      const maxCapitalPerPosition = availableCapital / CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO;
+      const capitalPerWatcher = minNotionalFilter.getCapitalPerWatcher(
+        limits.availableCapital,
+        limits.maxAffordableWatchers,
+        exposureMultiplier
+      );
 
       logApiTable('getCapitalLimits', [
         ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
         ['Leverage', `${leverage}x`],
         ['Exposure Multiplier', `${exposureMultiplier}x`],
-        ['Available Capital', `$${availableCapital.toFixed(2)}`],
-        [`Max Capital/Position (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO})`, `$${maxCapitalPerPosition.toFixed(2)}`],
-        ['Ranking Symbols', rankingSymbols.length],
-        ['Eligible Symbols', eligibleSymbols.length],
-        ['Excluded Symbols', excludedSymbols.size],
+        ['Available Capital', `$${limits.availableCapital.toFixed(2)}`],
+        [`Max Capital/Position (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO})`, `$${limits.maxCapitalPerPosition.toFixed(2)}`],
+        ['Effective Min Required', `$${limits.effectiveMinRequired.toFixed(2)}`],
         ['Capital Per Watcher', `$${capitalPerWatcher.toFixed(2)}`],
-        ['Max Affordable Watchers', maxWatchers],
+        ['Max Affordable Watchers', limits.maxAffordableWatchers],
       ]);
 
       return {
         walletBalance,
         leverage,
         exposureMultiplier,
-        availableCapital,
-        maxAffordableWatchers: maxWatchers,
+        availableCapital: limits.availableCapital,
+        maxAffordableWatchers: limits.maxAffordableWatchers,
         capitalPerWatcher,
-        maxCapitalPerPosition,
+        maxCapitalPerPosition: limits.maxCapitalPerPosition,
       };
     }),
 

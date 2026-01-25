@@ -51,6 +51,7 @@ export class SignalProcessor {
   private pendingCycleId: number | null = null;
   private pendingCycleStartTime: Date | null = null;
   private strategyLoader: StrategyLoader;
+  private walletEconomyMode: Map<string, boolean> = new Map();
 
   constructor(
     private deps: SignalProcessorDeps,
@@ -231,15 +232,25 @@ export class SignalProcessor {
     const walletBalance = parseFloat(walletWithConfig?.currentBalance ?? '0');
     const leverage = walletWithConfig?.leverage ?? 1;
     const availableCapital = walletBalance * leverage;
+    const wasInEconomyMode = this.walletEconomyMode.get(watcher.walletId) ?? false;
 
     if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
-      this.deps.pauseWatchersForWallet(watcher.walletId, '100% exposure - insufficient free capital');
-      logBuffer.log('⏸️', 'Insufficient capital - pausing watchers', {
+      this.walletEconomyMode.set(watcher.walletId, true);
+      logBuffer.log('💤', 'Economy mode - no available capital', {
         balance: walletBalance.toFixed(2),
         leverage,
         available: availableCapital.toFixed(2),
       });
-      return logBuffer.toResult('skipped', 'Insufficient capital - watchers paused');
+      return logBuffer.toResult('skipped', 'Economy mode - waiting for capital');
+    }
+
+    if (wasInEconomyMode) {
+      this.walletEconomyMode.set(watcher.walletId, false);
+      logBuffer.log('🌅', 'Waking up from economy mode', {
+        balance: walletBalance.toFixed(2),
+        available: availableCapital.toFixed(2),
+      });
+      await this.deps.checkAllRotationsOnce();
     }
 
     const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
