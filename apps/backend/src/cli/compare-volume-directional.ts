@@ -152,10 +152,18 @@ async function runDirectionalComparison() {
   const interval = intervalArg ? intervalArg.split('=')[1]! : '15m';
 
   const defaultSetupTypes = [
-    'larry-williams-9.1',
-    'larry-williams-9.2',
-    'larry-williams-9.3',
-    'larry-williams-9.4',
+    '7day-momentum-crypto',
+    'chande-momentum-crypto',
+    'donchian-breakout',
+    'golden-cross-sma',
+    'keltner-breakout-optimized',
+    'momentum-breakout-2025',
+    'momentum-rotation',
+    'nr7-breakout',
+    'rsi-sma-filter',
+    'rsi2-mean-reversion',
+    'triple-ema-confluence',
+    'vwap-ema-cross',
   ];
 
   const watchers: WatcherConfig[] = [
