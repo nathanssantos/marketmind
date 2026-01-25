@@ -8,7 +8,7 @@ export const FILTER_DEFAULTS = {
   useMtfFilter: true,
   useBtcCorrelationFilter: true,
   useMarketRegimeFilter: true,
-  useVolumeFilter: false,
+  useVolumeFilter: true,
   useFundingFilter: true,
 
   useConfluenceScoring: true,
