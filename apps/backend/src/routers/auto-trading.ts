@@ -134,6 +134,10 @@ export const autoTradingRouter = router({
         enableAutoRotation: z.boolean().optional(),
         trailingStopMode: z.enum(['local', 'binance']).optional(),
         trailingStopEnabled: z.boolean().optional(),
+        trailingActivationPercentLong: z.string().optional(),
+        trailingActivationPercentShort: z.string().optional(),
+        trailingDistancePercent: z.string().optional(),
+        useAdaptiveTrailing: z.boolean().optional(),
         leverage: z.number().min(AUTO_TRADING_CONFIG.LEVERAGE.MIN).max(AUTO_TRADING_CONFIG.LEVERAGE.MAX).optional(),
         marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
         opportunityCostEnabled: z.boolean().optional(),
@@ -226,6 +230,14 @@ export const autoTradingRouter = router({
         {updateData.trailingStopMode = input.trailingStopMode;}
       if (input.trailingStopEnabled !== undefined)
         {updateData.trailingStopEnabled = input.trailingStopEnabled;}
+      if (input.trailingActivationPercentLong !== undefined)
+        {updateData.trailingActivationPercentLong = input.trailingActivationPercentLong;}
+      if (input.trailingActivationPercentShort !== undefined)
+        {updateData.trailingActivationPercentShort = input.trailingActivationPercentShort;}
+      if (input.trailingDistancePercent !== undefined)
+        {updateData.trailingDistancePercent = input.trailingDistancePercent;}
+      if (input.useAdaptiveTrailing !== undefined)
+        {updateData.useAdaptiveTrailing = input.useAdaptiveTrailing;}
       if (input.leverage !== undefined)
         {updateData.leverage = input.leverage;}
       if (input.marginType !== undefined)

@@ -1148,7 +1148,15 @@
       "title": "Trailing Stop",
       "description": "Ajusta automáticamente el stop loss mientras el precio se mueve a tu favor",
       "enabled": "Activar Trailing Stop",
-      "enabledDescription": "Funciona independientemente - continúa para posiciones abiertas incluso cuando los watchers están pausados"
+      "enabledDescription": "Funciona independientemente - continúa para posiciones abiertas incluso cuando los watchers están pausados",
+      "activationLong": "Activación LONG",
+      "activationLongDescription": "Progreso del TP requerido para activar trailing stop en posiciones LONG",
+      "activationShort": "Activación SHORT",
+      "activationShortDescription": "Progreso del TP requerido para activar trailing stop en posiciones SHORT",
+      "trailingDistance": "Distancia de Trailing",
+      "trailingDistanceDescription": "Porcentaje del beneficio máximo a asegurar en el trailing",
+      "adaptiveMode": "Modo Adaptativo",
+      "adaptiveModeDescription": "Ajusta automáticamente basado en la volatilidad del mercado"
     },
     "pausedDueToCapital": "Watchers pausados - sin capital libre para nuevas entradas. Se reanudará cuando se cierre una posición."
   },

@@ -306,6 +306,14 @@ export const WatcherManager = () => {
         onToggle={() => toggleSection('trailingStop')}
         trailingStopEnabled={config?.trailingStopEnabled ?? true}
         onTrailingStopEnabledChange={(enabled) => handleConfigUpdate({ trailingStopEnabled: enabled })}
+        trailingActivationPercentLong={Number(config?.trailingActivationPercentLong ?? 1.0)}
+        onTrailingActivationPercentLongChange={(value) => handleConfigUpdate({ trailingActivationPercentLong: value.toString() })}
+        trailingActivationPercentShort={Number(config?.trailingActivationPercentShort ?? 0.886)}
+        onTrailingActivationPercentShortChange={(value) => handleConfigUpdate({ trailingActivationPercentShort: value.toString() })}
+        trailingDistancePercent={Number(config?.trailingDistancePercent ?? 0.4)}
+        onTrailingDistancePercentChange={(value) => handleConfigUpdate({ trailingDistancePercent: value.toString() })}
+        useAdaptiveTrailing={config?.useAdaptiveTrailing ?? true}
+        onUseAdaptiveTrailingChange={(enabled) => handleConfigUpdate({ useAdaptiveTrailing: enabled })}
         isPending={updateConfig.isPending}
       />
 

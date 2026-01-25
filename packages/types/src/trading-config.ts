@@ -41,6 +41,20 @@ export const TRAILING_STOP_CONFIG = {
   TP_PROGRESS_THRESHOLD_SHORT: 0.886,
 } as const;
 
+export interface TrailingStopUserConfig {
+  trailingActivationPercentLong: number;
+  trailingActivationPercentShort: number;
+  trailingDistancePercent: number;
+  useAdaptiveTrailing: boolean;
+}
+
+export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
+  trailingActivationPercentLong: 1.0,
+  trailingActivationPercentShort: 0.886,
+  trailingDistancePercent: 0.4,
+  useAdaptiveTrailing: true,
+};
+
 export const OPPORTUNITY_COST_CONFIG = {
   DEFAULT_MAX_HOLDING_PERIOD_BARS: 20,
   DEFAULT_STALE_THRESHOLD_PERCENT: 0.5,

@@ -140,6 +140,13 @@ export const DEFAULT_PYRAMID_CONFIG = {
   enableShortInBullMarket: false,
 };
 
+export const DEFAULT_TRAILING_STOP_USER_CONFIG = {
+  trailingActivationPercentLong: '1.0',
+  trailingActivationPercentShort: '0.886',
+  trailingDistancePercent: '0.4',
+  useAdaptiveTrailing: true,
+};
+
 const hashPassword = async (password: string): Promise<string> => {
   return hash(password, {
     memoryCost: 19456,

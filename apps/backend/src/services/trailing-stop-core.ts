@@ -11,6 +11,8 @@ export interface TrailingStopCoreConfig {
   trailingDistancePercent?: number;
   vipLevel?: number;
   useFibonacciThresholds?: boolean;
+  activationPercentLong?: number;
+  activationPercentShort?: number;
 }
 
 export interface TrailingStopCoreInput {
@@ -205,11 +207,15 @@ export const hasReachedTPProgressThreshold = (
   currentPrice: number,
   takeProfit: number | null | undefined,
   fibonacciProjection: FibonacciProjectionData | null | undefined,
-  isLong: boolean
+  isLong: boolean,
+  activationPercentLong?: number,
+  activationPercentShort?: number
 ): boolean => {
   const effectiveTP = takeProfit ?? getImpliedTakeProfit(fibonacciProjection, isLong);
   if (!effectiveTP) return false;
-  const threshold = isLong ? TP_PROGRESS_THRESHOLD_LONG : TP_PROGRESS_THRESHOLD_SHORT;
+  const threshold = isLong
+    ? (activationPercentLong ?? TP_PROGRESS_THRESHOLD_LONG)
+    : (activationPercentShort ?? TP_PROGRESS_THRESHOLD_SHORT);
   const progress = calculateTPProgress(entryPrice, currentPrice, effectiveTP, isLong);
   return progress >= threshold;
 };
@@ -264,6 +270,8 @@ export const computeTrailingStopCore = (
   const atrMultiplier = config.atrMultiplier ?? 2.0;
   const trailingDistancePercent = config.trailingDistancePercent ?? DEFAULT_TRAILING_DISTANCE_PERCENT;
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
+  const activationPercentLong = config.activationPercentLong;
+  const activationPercentShort = config.activationPercentShort;
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
   const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
@@ -276,7 +284,9 @@ export const computeTrailingStopCore = (
       currentPrice,
       takeProfit,
       fibonacciProjection,
-      isLong
+      isLong,
+      activationPercentLong,
+      activationPercentShort
     );
 
     if (!reachedThreshold) return null;

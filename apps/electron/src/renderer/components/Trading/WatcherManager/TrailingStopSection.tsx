@@ -1,5 +1,6 @@
+import { Slider } from '@/renderer/components/ui/slider';
 import { Switch } from '@/renderer/components/ui/switch';
-import { Box, Collapsible, Flex, HStack, Text } from '@chakra-ui/react';
+import { Box, Collapsible, Flex, HStack, Text, VStack } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
@@ -8,6 +9,14 @@ export interface TrailingStopSectionProps {
   onToggle: () => void;
   trailingStopEnabled: boolean;
   onTrailingStopEnabledChange: (enabled: boolean) => void;
+  trailingActivationPercentLong: number;
+  onTrailingActivationPercentLongChange: (value: number) => void;
+  trailingActivationPercentShort: number;
+  onTrailingActivationPercentShortChange: (value: number) => void;
+  trailingDistancePercent: number;
+  onTrailingDistancePercentChange: (value: number) => void;
+  useAdaptiveTrailing: boolean;
+  onUseAdaptiveTrailingChange: (enabled: boolean) => void;
   isPending: boolean;
 }
 
@@ -16,6 +25,14 @@ export const TrailingStopSection = ({
   onToggle,
   trailingStopEnabled,
   onTrailingStopEnabledChange,
+  trailingActivationPercentLong,
+  onTrailingActivationPercentLongChange,
+  trailingActivationPercentShort,
+  onTrailingActivationPercentShortChange,
+  trailingDistancePercent,
+  onTrailingDistancePercentChange,
+  useAdaptiveTrailing,
+  onUseAdaptiveTrailingChange,
   isPending,
 }: TrailingStopSectionProps) => {
   const { t } = useTranslation();
@@ -45,21 +62,112 @@ export const TrailingStopSection = ({
 
       <Collapsible.Root open={isExpanded}>
         <Collapsible.Content>
-          <HStack justify="space-between" mt={4} p={3} bg="bg.subtle" borderRadius="md">
-            <Box>
-              <Text fontSize="sm" fontWeight="medium">
-                {t('watcherManager.trailingStop.enabled')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {t('watcherManager.trailingStop.enabledDescription')}
-              </Text>
-            </Box>
-            <Switch
-              checked={trailingStopEnabled}
-              onCheckedChange={onTrailingStopEnabledChange}
-              disabled={isPending}
-            />
-          </HStack>
+          <VStack gap={4} mt={4} align="stretch">
+            <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
+              <Box>
+                <Text fontSize="sm" fontWeight="medium">
+                  {t('watcherManager.trailingStop.enabled')}
+                </Text>
+                <Text fontSize="xs" color="fg.muted">
+                  {t('watcherManager.trailingStop.enabledDescription')}
+                </Text>
+              </Box>
+              <Switch
+                checked={trailingStopEnabled}
+                onCheckedChange={onTrailingStopEnabledChange}
+                disabled={isPending}
+              />
+            </HStack>
+
+            {trailingStopEnabled && (
+              <>
+                <Box p={3} bg="bg.subtle" borderRadius="md">
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {t('watcherManager.trailingStop.activationLong')}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('watcherManager.trailingStop.activationLongDescription')}
+                      </Text>
+                    </Box>
+                    <Text fontSize="sm" fontWeight="bold" color="green.500">
+                      {(trailingActivationPercentLong * 100).toFixed(0)}%
+                    </Text>
+                  </Flex>
+                  <Slider
+                    value={[trailingActivationPercentLong * 100]}
+                    onValueChange={(values) => onTrailingActivationPercentLongChange(values[0]! / 100)}
+                    min={50}
+                    max={200}
+                    step={1}
+                  />
+                </Box>
+
+                <Box p={3} bg="bg.subtle" borderRadius="md">
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {t('watcherManager.trailingStop.activationShort')}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('watcherManager.trailingStop.activationShortDescription')}
+                      </Text>
+                    </Box>
+                    <Text fontSize="sm" fontWeight="bold" color="red.500">
+                      {(trailingActivationPercentShort * 100).toFixed(1)}%
+                    </Text>
+                  </Flex>
+                  <Slider
+                    value={[trailingActivationPercentShort * 100]}
+                    onValueChange={(values) => onTrailingActivationPercentShortChange(values[0]! / 100)}
+                    min={50}
+                    max={200}
+                    step={0.1}
+                  />
+                </Box>
+
+                <Box p={3} bg="bg.subtle" borderRadius="md">
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {t('watcherManager.trailingStop.trailingDistance')}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('watcherManager.trailingStop.trailingDistanceDescription')}
+                      </Text>
+                    </Box>
+                    <Text fontSize="sm" fontWeight="bold" color="blue.500">
+                      {(trailingDistancePercent * 100).toFixed(0)}%
+                    </Text>
+                  </Flex>
+                  <Slider
+                    value={[trailingDistancePercent * 100]}
+                    onValueChange={(values) => onTrailingDistancePercentChange(values[0]! / 100)}
+                    min={10}
+                    max={80}
+                    step={5}
+                  />
+                </Box>
+
+                <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium">
+                      {t('watcherManager.trailingStop.adaptiveMode')}
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted">
+                      {t('watcherManager.trailingStop.adaptiveModeDescription')}
+                    </Text>
+                  </Box>
+                  <Switch
+                    checked={useAdaptiveTrailing}
+                    onCheckedChange={onUseAdaptiveTrailingChange}
+                    disabled={isPending}
+                  />
+                </HStack>
+              </>
+            )}
+          </VStack>
         </Collapsible.Content>
       </Collapsible.Root>
     </Box>

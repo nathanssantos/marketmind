@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import * as schema from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 import { getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestTradingProfile, createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG } from '../helpers/test-fixtures';
+import { createTestTradingProfile, createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG, DEFAULT_TRAILING_STOP_USER_CONFIG } from '../helpers/test-fixtures';
 
 vi.mock('../../services/binance-kline-stream', () => ({
   binanceKlineStreamService: {
@@ -196,6 +196,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',
@@ -270,6 +271,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',

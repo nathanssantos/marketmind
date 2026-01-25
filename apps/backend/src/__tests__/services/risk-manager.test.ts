@@ -13,7 +13,7 @@ import {
     type PositionLike,
 } from '../../services/risk-manager';
 import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG } from '../helpers/test-fixtures';
+import { createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG, DEFAULT_TRAILING_STOP_USER_CONFIG } from '../helpers/test-fixtures';
 
 describe('Risk Manager - Pure Utility Functions', () => {
   describe('calculatePositionExposure', () => {
@@ -186,6 +186,7 @@ describe('RiskManagerService', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',
@@ -292,6 +293,7 @@ describe('RiskManagerService', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',
@@ -361,6 +363,7 @@ describe('RiskManagerService', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',
@@ -430,6 +433,7 @@ describe('RiskManagerService', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',
@@ -524,6 +528,7 @@ describe('RiskManagerService', () => {
         enableAutoRotation: true,
         trailingStopMode: 'local' as const,
         trailingStopEnabled: true,
+        ...DEFAULT_TRAILING_STOP_USER_CONFIG,
         opportunityCostEnabled: false,
         maxHoldingPeriodBars: 20,
         stalePriceThresholdPercent: '0.5',
