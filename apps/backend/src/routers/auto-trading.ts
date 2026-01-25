@@ -124,6 +124,8 @@ export const autoTradingRouter = router({
         useAdxFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
         useVolumeFilter: z.boolean().optional(),
+        volumeFilterObvLookbackLong: z.number().min(1).max(20).optional(),
+        volumeFilterObvLookbackShort: z.number().min(1).max(20).optional(),
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
@@ -211,6 +213,10 @@ export const autoTradingRouter = router({
         {updateData.useTrendFilter = input.useTrendFilter;}
       if (input.useVolumeFilter !== undefined)
         {updateData.useVolumeFilter = input.useVolumeFilter;}
+      if (input.volumeFilterObvLookbackLong !== undefined)
+        {updateData.volumeFilterObvLookbackLong = input.volumeFilterObvLookbackLong;}
+      if (input.volumeFilterObvLookbackShort !== undefined)
+        {updateData.volumeFilterObvLookbackShort = input.volumeFilterObvLookbackShort;}
       if (input.exposureMultiplier !== undefined)
         {updateData.exposureMultiplier = input.exposureMultiplier;}
       if (input.tpCalculationMode !== undefined)

@@ -9,6 +9,8 @@ export const FILTER_DEFAULTS = {
   useBtcCorrelationFilter: true,
   useMarketRegimeFilter: true,
   useVolumeFilter: true,
+  volumeFilterObvLookbackLong: 7,
+  volumeFilterObvLookbackShort: 5,
   useFundingFilter: true,
 
   useConfluenceScoring: true,

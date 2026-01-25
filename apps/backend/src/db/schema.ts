@@ -225,6 +225,8 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   enableLongInBearMarket: boolean('enable_long_in_bear_market').default(false).notNull(),
   enableShortInBullMarket: boolean('enable_short_in_bull_market').default(false).notNull(),
   useVolumeFilter: boolean('use_volume_filter').default(false).notNull(),
+  volumeFilterObvLookbackLong: integer('volume_filter_obv_lookback_long').default(7),
+  volumeFilterObvLookbackShort: integer('volume_filter_obv_lookback_short').default(5),
   useFundingFilter: boolean('use_funding_filter').default(true).notNull(),
   useConfluenceScoring: boolean('use_confluence_scoring').default(true).notNull(),
   confluenceMinScore: integer('confluence_min_score').default(60).notNull(),

@@ -154,6 +154,8 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   enable_long_in_bear_market BOOLEAN DEFAULT false NOT NULL,
   enable_short_in_bull_market BOOLEAN DEFAULT false NOT NULL,
   use_volume_filter BOOLEAN DEFAULT false NOT NULL,
+  volume_filter_obv_lookback_long INTEGER DEFAULT 7,
+  volume_filter_obv_lookback_short INTEGER DEFAULT 5,
   use_funding_filter BOOLEAN DEFAULT true NOT NULL,
   use_confluence_scoring BOOLEAN DEFAULT true NOT NULL,
   confluence_min_score INTEGER DEFAULT 60 NOT NULL,

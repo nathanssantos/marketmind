@@ -337,6 +337,13 @@
       "when": 1769356202514,
       "tag": "0047_certain_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1769364026052,
+      "tag": "0048_fancy_doomsday",
+      "breakpoints": true
     }
   ]
 }

@@ -147,6 +147,17 @@ export const DEFAULT_TRAILING_STOP_USER_CONFIG = {
   useAdaptiveTrailing: true,
 };
 
+export const DEFAULT_VOLUME_FILTER_CONFIG = {
+  volumeFilterObvLookbackLong: 7,
+  volumeFilterObvLookbackShort: 5,
+};
+
+export const DEFAULT_AUTO_TRADING_CONFIG_EXTRAS = {
+  ...DEFAULT_PYRAMID_CONFIG,
+  ...DEFAULT_TRAILING_STOP_USER_CONFIG,
+  ...DEFAULT_VOLUME_FILTER_CONFIG,
+};
+
 const hashPassword = async (password: string): Promise<string> => {
   return hash(password, {
     memoryCost: 19456,
