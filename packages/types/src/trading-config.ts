@@ -253,8 +253,7 @@ export type AutoTradingConfigConstants = typeof AUTO_TRADING_CONFIG;
 
 export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'] as const;
 
-export const FIBONACCI_TARGET_LEVELS = ['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const;
-export type FibonacciTargetLevel = (typeof FIBONACCI_TARGET_LEVELS)[number];
+export { FIBONACCI_TARGET_LEVELS, type FibonacciTargetLevel } from '@marketmind/fibonacci';
 
 export const BACKTEST_DEFAULTS = {
   LEVERAGE: 2,

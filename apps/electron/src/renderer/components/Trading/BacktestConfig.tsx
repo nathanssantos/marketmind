@@ -1,5 +1,6 @@
 import { Badge, Box, Flex, Group, HStack, Icon, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import type { BacktestConfig as BacktestConfigType, MarketType } from '@marketmind/types';
 import { BINANCE_DEFAULT_FEES } from '@marketmind/types';
 import { TimeframeSelector, type Timeframe } from '@renderer/components/Chart/TimeframeSelector';
@@ -64,7 +65,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [initialCapital, setInitialCapital] = useState('10000');
 
   const [minProfitPercent, setMinProfitPercent] = useState('0');
-  const [onlyWithTrend, setOnlyWithTrend] = useState(false);
+  const [useTrendFilter, setUseTrendFilter] = useState(false);
   const [useAlgorithmicLevels, setUseAlgorithmicLevels] = useState(true);
   const [stopLossPercent, setStopLossPercent] = useState('2');
   const [takeProfitPercent, setTakeProfitPercent] = useState('4');
@@ -81,14 +82,14 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [useConfluenceScoring, setUseConfluenceScoring] = useState(true);
   const [confluenceMinScore, setConfluenceMinScore] = useState('60');
   const [tpCalculationMode, setTpCalculationMode] = useState<'default' | 'fibonacci'>('default');
-  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618'>('auto');
+  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<FibonacciTargetLevel>('auto');
 
   const loadFromAutoTrading = useCallback(() => {
     if (!autoTradingConfig) return;
 
     setUseAutoTradingSettings(true);
 
-    setOnlyWithTrend(autoTradingConfig.useTrendFilter ?? false);
+    setUseTrendFilter(autoTradingConfig.useTrendFilter ?? false);
     setUseStochasticFilter(autoTradingConfig.useStochasticFilter ?? false);
     setUseAdxFilter(autoTradingConfig.useAdxFilter ?? false);
     setUseMtfFilter(autoTradingConfig.useMtfFilter ?? true);
@@ -124,7 +125,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
     const filterSettings = useAutoTradingSettings ? {
       useStochasticFilter,
       useAdxFilter,
-      useTrendFilter: onlyWithTrend,
+      useTrendFilter,
       useMtfFilter,
       useBtcCorrelationFilter,
       useMarketRegimeFilter,
@@ -152,8 +153,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
           endDate,
           initialCapital: Number(initialCapital),
           marketType,
-          onlyWithTrend: useAutoTradingSettings ? onlyWithTrend : undefined,
-          useTrailingStop: false,
+          useTrendFilter: useAutoTradingSettings ? useTrendFilter : undefined,
           ...filterSettings,
         });
 
@@ -168,14 +168,13 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
           endDate,
           initialCapital: Number(initialCapital),
           minProfitPercent: Number(minProfitPercent),
-          onlyWithTrend,
+          useTrendFilter,
           useAlgorithmicLevels,
           stopLossPercent: useAlgorithmicLevels ? undefined : Number(stopLossPercent),
           takeProfitPercent: useAlgorithmicLevels ? undefined : Number(takeProfitPercent),
           commission: Number(commission) / 100,
           minConfidence: Number(minConfidence),
           setupTypes: enabledSetups.length > 0 ? enabledSetups : undefined,
-          useTrailingStop: false,
           ...filterSettings,
         };
 
@@ -359,8 +358,8 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
 
         <Box p={3} bg="blue.50" _dark={{ bg: "blue.950" }} borderRadius="md" borderWidth="2px" borderColor="blue.500">
           <Checkbox
-            checked={onlyWithTrend}
-            onCheckedChange={setOnlyWithTrend}
+            checked={useTrendFilter}
+            onCheckedChange={setUseTrendFilter}
           >
             <Text fontSize="xs" fontWeight="medium">Only Trade With Trend</Text>
           </Checkbox>
@@ -504,7 +503,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
               </HStack>
               {tpCalculationMode === 'fibonacci' && (
                 <HStack gap={1} flexWrap="wrap">
-                  {(['auto', '1.272', '1.618', '2', '2.618'] as const).map((level) => (
+                  {(['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const).map((level) => (
                     <Button
                       key={level}
                       size="2xs"

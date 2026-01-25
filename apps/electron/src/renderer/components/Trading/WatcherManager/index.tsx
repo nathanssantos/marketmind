@@ -1,4 +1,5 @@
 import { Box, Separator, Stack, Text } from '@chakra-ui/react';
+import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -127,7 +128,7 @@ export const WatcherManager = () => {
     if (!walletId) return;
     updateConfig.mutate({
       walletId,
-      fibonacciTargetLevel: details.value as 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618',
+      fibonacciTargetLevel: details.value as FibonacciTargetLevel,
     });
   };
 

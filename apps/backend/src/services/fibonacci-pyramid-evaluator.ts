@@ -28,8 +28,11 @@ export interface TriggeredFiboState {
 const FIBO_LEVEL_VALUES: Record<FiboLevel, number> = {
   '1': 1.0,
   '1.272': 1.272,
+  '1.382': 1.382,
+  '1.5': 1.5,
   '1.618': 1.618,
   '2': 2.0,
+  '2.272': 2.272,
   '2.618': 2.618,
 };
 

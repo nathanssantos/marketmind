@@ -11,6 +11,9 @@
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit"
   },
+  "dependencies": {
+    "@marketmind/fibonacci": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.9.3"
   }

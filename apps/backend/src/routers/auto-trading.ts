@@ -1,6 +1,7 @@
+import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { analyzeTrend, checkTrendAlignment, type TrendInfo } from '@marketmind/indicators';
 import { colorize, createTable } from '@marketmind/logger';
-import { AUTO_TRADING_CONFIG, CAPITAL_RULES, FIBONACCI_TARGET_LEVELS, TRADING_DEFAULTS } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG, CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';

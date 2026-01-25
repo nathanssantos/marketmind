@@ -1,5 +1,6 @@
 import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, Collapsible, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
@@ -7,7 +8,7 @@ export interface TpModeSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   tpCalculationMode: 'default' | 'fibonacci';
-  fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
+  fibonacciTargetLevel: FibonacciTargetLevel;
   onTpModeChange: (details: { value: string }) => void;
   onFibonacciLevelChange: (details: { value: string }) => void;
   isPending: boolean;
