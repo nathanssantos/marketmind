@@ -1,9 +1,6 @@
 import 'dotenv/config';
-import { eq } from 'drizzle-orm';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import type { VolumeFilterConfig } from '@marketmind/types';
-import { db } from '../db';
-import { activeWatchers, autoTradingConfig, tradingProfiles } from '../db/schema';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
 
@@ -149,44 +146,28 @@ async function runDirectionalComparison() {
   console.log('🔬 Directional Volume Filter Comparison');
   console.log('========================================\n');
 
-  const [config] = await db.select().from(autoTradingConfig).limit(1);
-  if (!config) {
-    console.error('❌ No auto-trading config found');
-    process.exit(1);
-  }
+  const symbolArg = process.argv.find(arg => arg.startsWith('--symbol='));
+  const intervalArg = process.argv.find(arg => arg.startsWith('--interval='));
+  const symbol = symbolArg ? symbolArg.split('=')[1]! : 'BTCUSDT';
+  const interval = intervalArg ? intervalArg.split('=')[1]! : '15m';
 
-  const watcherRows = await db
-    .select()
-    .from(activeWatchers)
-    .where(eq(activeWatchers.walletId, config.walletId));
+  const defaultSetupTypes = [
+    'larry-williams-9.1',
+    'larry-williams-9.2',
+    'larry-williams-9.3',
+    'larry-williams-9.4',
+  ];
 
-  if (watcherRows.length === 0) {
-    console.error('❌ No active watchers found');
-    process.exit(1);
-  }
+  const watchers: WatcherConfig[] = [
+    {
+      symbol,
+      interval,
+      marketType: 'FUTURES',
+      setupTypes: defaultSetupTypes,
+    },
+  ];
 
-  const watchers: WatcherConfig[] = await Promise.all(
-    watcherRows.map(async (w) => {
-      let setupTypes: string[] | undefined;
-      if (w.profileId) {
-        const [profile] = await db
-          .select()
-          .from(tradingProfiles)
-          .where(eq(tradingProfiles.id, w.profileId))
-          .limit(1);
-        if (profile) setupTypes = JSON.parse(profile.enabledSetupTypes);
-      }
-      return {
-        symbol: w.symbol,
-        interval: w.interval,
-        marketType: w.marketType as 'SPOT' | 'FUTURES',
-        setupTypes: setupTypes ?? JSON.parse(config.enabledSetupTypes),
-        profileId: w.profileId ?? undefined,
-      };
-    })
-  );
-
-  console.log(`📊 Watchers: ${watchers.map(w => `${w.symbol}@${w.interval}`).join(', ')}`);
+  console.log(`📊 Symbol: ${symbol}@${interval} (FUTURES)`);
 
   const startDateArg = process.argv.find(arg => arg.startsWith('--start='));
   const endDateArg = process.argv.find(arg => arg.startsWith('--end='));
@@ -202,10 +183,10 @@ async function runDirectionalComparison() {
     startDate,
     endDate,
     initialCapital,
-    exposureMultiplier: parseFloat(config.exposureMultiplier),
-    useStochasticFilter: config.useStochasticFilter,
-    useAdxFilter: config.useAdxFilter,
-    useTrendFilter: config.useTrendFilter,
+    exposureMultiplier: 1.5,
+    useStochasticFilter: false,
+    useAdxFilter: false,
+    useTrendFilter: false,
     minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
     useCooldown: true,
     cooldownMinutes: 15,
@@ -216,11 +197,11 @@ async function runDirectionalComparison() {
     useConfluenceScoring: false,
     useMomentumTimingFilter: false,
     trendFilterPeriod: 21,
-    setupTypes: JSON.parse(config.enabledSetupTypes),
+    setupTypes: defaultSetupTypes,
     useSharedExposure: true,
-    marketType: watchers[0]?.marketType ?? 'FUTURES',
-    leverage: config.leverage ?? 1,
-    tpCalculationMode: config.tpCalculationMode ?? 'default',
+    marketType: 'FUTURES',
+    leverage: 10,
+    tpCalculationMode: 'default',
   };
 
   const results: Array<{
