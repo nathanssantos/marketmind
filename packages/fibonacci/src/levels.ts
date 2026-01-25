@@ -6,7 +6,7 @@ export const FIBONACCI_ALL_LEVELS = [
   0, 0.236, 0.382, 0.5, 0.618, 0.786, 0.886, 1, 1.272, 1.618, 2, 2.618,
 ] as const;
 
-export const FIBONACCI_TARGET_LEVELS = ['auto', '1', '1.272', '1.618', '2', '2.618'] as const;
+export const FIBONACCI_TARGET_LEVELS = ['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const;
 
 export const FIBONACCI_PYRAMID_LEVELS = ['1', '1.272', '1.618', '2', '2.618'] as const;
 

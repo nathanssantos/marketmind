@@ -54,7 +54,7 @@ export const PyramidingSection = ({
 
   const handleFiboLevelsChange = (value: string): void => {
     if (!walletId) return;
-    let levels: ('1' | '1.272' | '1.618' | '2' | '2.618')[];
+    let levels: ('1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618')[];
     switch (value) {
       case '1.618':
         levels = ['1.618'];

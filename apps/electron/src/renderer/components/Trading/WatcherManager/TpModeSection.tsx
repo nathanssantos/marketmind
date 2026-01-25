@@ -7,7 +7,7 @@ export interface TpModeSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   tpCalculationMode: 'default' | 'fibonacci';
-  fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+  fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
   onTpModeChange: (details: { value: string }) => void;
   onFibonacciLevelChange: (details: { value: string }) => void;
   isPending: boolean;
@@ -113,6 +113,22 @@ export const TpModeSection = ({
                       </Text>
                     </Box>
                   </Radio>
+                  <Radio value="1.382">
+                    <Box>
+                      <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderateAggressive')}</Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderateAggressiveDescription')}
+                      </Text>
+                    </Box>
+                  </Radio>
+                  <Radio value="1.5">
+                    <Box>
+                      <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.balanced')}</Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.balancedDescription')}
+                      </Text>
+                    </Box>
+                  </Radio>
                   <Radio value="1.618">
                     <Box>
                       <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressive')}</Text>
@@ -126,6 +142,14 @@ export const TpModeSection = ({
                       <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extended')}</Text>
                       <Text fontSize="xs" color="fg.muted">
                         {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extendedDescription')}
+                      </Text>
+                    </Box>
+                  </Radio>
+                  <Radio value="2.272">
+                    <Box>
+                      <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.veryExtended')}</Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.veryExtendedDescription')}
                       </Text>
                     </Box>
                   </Radio>

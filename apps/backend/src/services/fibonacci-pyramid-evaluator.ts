@@ -1,6 +1,6 @@
 import { logger } from './logger';
 
-export type FiboLevel = '1' | '1.272' | '1.618' | '2' | '2.618';
+export type FiboLevel = '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
 
 export interface FiboPyramidConfig {
   enabledLevels: FiboLevel[];

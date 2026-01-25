@@ -219,10 +219,16 @@
           "conservativeDescription": "Alvo conservador - ideal para mercados laterais ou tendências fracas (ADX < 20)",
           "moderate": "127.2% (1.272)",
           "moderateDescription": "Extensão moderada - ideal para condições normais de tendência (ADX 20-30)",
+          "moderateAggressive": "138.2% (1.382)",
+          "moderateAggressiveDescription": "Levemente agressivo - bom para mercados em tendência com momentum moderado",
+          "balanced": "150% (1.5)",
+          "balancedDescription": "Alvo equilibrado - meio-termo entre retração e proporção áurea",
           "aggressive": "161.8% (1.618)",
           "aggressiveDescription": "Proporção áurea - ideal para tendências fortes com confirmação de volume (ADX > 30)",
           "extended": "200% (2.0)",
           "extendedDescription": "Extensão dupla - para rompimentos muito fortes e movimentos de momentum",
+          "veryExtended": "227.2% (2.272)",
+          "veryExtendedDescription": "Muito estendido - para tendências excepcionalmente fortes com momentum sustentado",
           "superExtended": "261.8% (2.618)",
           "superExtendedDescription": "Extensão máxima de Fibonacci - para movimentos parabólicos e momentum excepcional"
         }

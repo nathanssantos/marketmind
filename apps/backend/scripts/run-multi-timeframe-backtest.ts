@@ -70,8 +70,8 @@ const getStringArg = (value: string | boolean | undefined): string | undefined =
 const CLI_CONFIG = {
   minRiskRewardRatioLong: getStringArg(cliArgs['rr-long']) ? parseFloat(getStringArg(cliArgs['rr-long'])!) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_LONG,
   minRiskRewardRatioShort: getStringArg(cliArgs['rr-short']) ? parseFloat(getStringArg(cliArgs['rr-short'])!) : BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO_SHORT,
-  fibonacciTargetLevelLong: (getStringArg(cliArgs['fib-long']) ?? '2') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
-  fibonacciTargetLevelShort: (getStringArg(cliArgs['fib-short']) ?? '1.272') as 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618',
+  fibonacciTargetLevelLong: (getStringArg(cliArgs['fib-long']) ?? '2') as 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618',
+  fibonacciTargetLevelShort: (getStringArg(cliArgs['fib-short']) ?? '1.272') as 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618',
   maxFibonacciEntryProgressPercent: getStringArg(cliArgs['entry-limit']) ? parseFloat(getStringArg(cliArgs['entry-limit'])!) : EXIT_CALCULATOR_CONFIG.MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT,
   symbol: getStringArg(cliArgs['symbol']) ?? 'BTCUSDT',
   leverage: getStringArg(cliArgs['leverage']) ? parseInt(getStringArg(cliArgs['leverage'])!) : 1,

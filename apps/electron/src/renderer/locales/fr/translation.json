@@ -219,10 +219,16 @@
           "conservativeDescription": "Objectif conservateur - idéal pour les marchés latéraux ou tendances faibles (ADX < 20)",
           "moderate": "127.2% (1.272)",
           "moderateDescription": "Extension modérée - idéal pour des conditions de tendance normales (ADX 20-30)",
+          "moderateAggressive": "138.2% (1.382)",
+          "moderateAggressiveDescription": "Légèrement agressif - bon pour les marchés en tendance avec momentum modéré",
+          "balanced": "150% (1.5)",
+          "balancedDescription": "Objectif équilibré - à mi-chemin entre retracement et nombre d'or",
           "aggressive": "161.8% (1.618)",
           "aggressiveDescription": "Nombre d'or - idéal pour les tendances fortes avec confirmation de volume (ADX > 30)",
           "extended": "200% (2.0)",
           "extendedDescription": "Double extension - pour les cassures très fortes et mouvements de momentum",
+          "veryExtended": "227.2% (2.272)",
+          "veryExtendedDescription": "Très étendu - pour les tendances exceptionnellement fortes avec momentum soutenu",
           "superExtended": "261.8% (2.618)",
           "superExtendedDescription": "Extension maximale de Fibonacci - pour les mouvements paraboliques et momentum exceptionnel"
         }

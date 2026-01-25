@@ -24,9 +24,9 @@ export interface TradeExecutorConfig {
   stopLossPercent?: number;
   takeProfitPercent?: number;
   tpCalculationMode?: 'default' | 'fibonacci';
-  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
-  fibonacciTargetLevelLong?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
-  fibonacciTargetLevelShort?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
+  fibonacciTargetLevelLong?: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
+  fibonacciTargetLevelShort?: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
 }
 
 export interface TradeStats {

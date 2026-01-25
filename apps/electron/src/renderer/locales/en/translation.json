@@ -193,10 +193,16 @@
           "conservativeDescription": "Conservative target - best for ranging markets or weak trends (ADX < 20)",
           "moderate": "127.2% (1.272)",
           "moderateDescription": "Moderate extension - best for normal trend conditions (ADX 20-30)",
+          "moderateAggressive": "138.2% (1.382)",
+          "moderateAggressiveDescription": "Slightly aggressive - good for trending markets with moderate momentum",
+          "balanced": "150% (1.5)",
+          "balancedDescription": "Balanced target - halfway between retracement and golden ratio",
           "aggressive": "161.8% (1.618)",
           "aggressiveDescription": "Golden ratio - best for strong trends with volume confirmation (ADX > 30)",
           "extended": "200% (2.0)",
           "extendedDescription": "Double extension - for very strong breakouts and momentum moves",
+          "veryExtended": "227.2% (2.272)",
+          "veryExtendedDescription": "Very extended - for exceptionally strong trends with sustained momentum",
           "superExtended": "261.8% (2.618)",
           "superExtendedDescription": "Maximum Fibonacci extension - for parabolic moves and exceptional momentum"
         }

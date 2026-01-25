@@ -2,7 +2,7 @@ import type { MarketType, TimeInterval, TradingProfile } from '@marketmind/types
 
 export interface WatcherConfig {
   tpCalculationMode?: 'default' | 'fibonacci' | null;
-  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618' | null;
+  fibonacciTargetLevel?: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618' | null;
   useDynamicSymbolSelection?: boolean | null;
   enableAutoRotation?: boolean | null;
   leverage?: number | null;

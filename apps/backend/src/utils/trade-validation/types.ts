@@ -53,7 +53,7 @@ export interface FibonacciProjectionData {
   primaryLevel: number;
 }
 
-export type FibonacciTargetLevel = 'auto' | '1' | '1.272' | '1.618' | '2' | '2.618';
+export type FibonacciTargetLevel = 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
 
 export interface FibonacciResolverInput {
   fibonacciProjection: FibonacciProjectionData | null | undefined;

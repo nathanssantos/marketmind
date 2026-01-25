@@ -18,6 +18,10 @@ export const FILTER_DEFAULTS = {
   minRiskRewardRatioLong: 1.0,
   minRiskRewardRatioShort: 0.8,
 
+  fibonacciTargetLevelLong: '2' as const,
+  fibonacciTargetLevelShort: '1.272' as const,
+  maxFibonacciEntryProgressPercent: 61.8,
+
   useCooldown: true,
   cooldownMinutes: 15,
 } as const;
