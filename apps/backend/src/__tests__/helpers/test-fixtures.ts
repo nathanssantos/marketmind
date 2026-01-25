@@ -1,4 +1,5 @@
 import { hash } from '@node-rs/argon2';
+import { FILTER_DEFAULTS } from '@marketmind/types';
 import * as schema from '../../db/schema';
 import { generateEntityId, generateSessionId } from '../../utils/id';
 import { getTestDatabase } from './test-db';
@@ -148,8 +149,10 @@ export const DEFAULT_TRAILING_STOP_USER_CONFIG = {
 };
 
 export const DEFAULT_VOLUME_FILTER_CONFIG = {
-  volumeFilterObvLookbackLong: 7,
-  volumeFilterObvLookbackShort: 5,
+  volumeFilterObvLookbackLong: FILTER_DEFAULTS.volumeFilterObvLookbackLong,
+  volumeFilterObvLookbackShort: FILTER_DEFAULTS.volumeFilterObvLookbackShort,
+  useObvCheckLong: FILTER_DEFAULTS.useObvCheckLong,
+  useObvCheckShort: FILTER_DEFAULTS.useObvCheckShort,
 };
 
 export const DEFAULT_AUTO_TRADING_CONFIG_EXTRAS = {

@@ -11,6 +11,8 @@ export const FILTER_DEFAULTS = {
   useVolumeFilter: true,
   volumeFilterObvLookbackLong: 7,
   volumeFilterObvLookbackShort: 5,
+  useObvCheckLong: false,
+  useObvCheckShort: true,
   useFundingFilter: true,
 
   useConfluenceScoring: true,

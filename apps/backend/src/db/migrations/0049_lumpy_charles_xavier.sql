@@ -1,0 +1,2 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "use_obv_check_long" boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE "auto_trading_config" ADD COLUMN "use_obv_check_short" boolean DEFAULT true;

@@ -227,6 +227,8 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   useVolumeFilter: boolean('use_volume_filter').default(false).notNull(),
   volumeFilterObvLookbackLong: integer('volume_filter_obv_lookback_long').default(7),
   volumeFilterObvLookbackShort: integer('volume_filter_obv_lookback_short').default(5),
+  useObvCheckLong: boolean('use_obv_check_long').default(false),
+  useObvCheckShort: boolean('use_obv_check_short').default(true),
   useFundingFilter: boolean('use_funding_filter').default(true).notNull(),
   useConfluenceScoring: boolean('use_confluence_scoring').default(true).notNull(),
   confluenceMinScore: integer('confluence_min_score').default(60).notNull(),
