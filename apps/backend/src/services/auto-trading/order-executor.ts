@@ -120,7 +120,9 @@ export class OrderExecutor {
       return null;
     }
 
-    const targetLevel = fibonacciTargetLevel === 'auto' ? 2 : parseFloat(fibonacciTargetLevel);
+    const targetLevel = fibonacciTargetLevel === 'auto'
+      ? (direction === 'LONG' ? 1.618 : 1.272)
+      : parseFloat(fibonacciTargetLevel);
 
     const targetLevelData = projection.levels.find(
       (l) => Math.abs(l.level - targetLevel) < 0.001

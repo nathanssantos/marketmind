@@ -33,6 +33,8 @@ export declare const TRAILING_STOP_CONFIG: {
     readonly NEAR_BREAKEVEN_THRESHOLD: 0.995;
     readonly FIBO_BREAKEVEN_LEVEL: 1.272;
     readonly FIBO_PROGRESSIVE_LEVEL: 1.272;
+    readonly TP_PROGRESS_THRESHOLD_LONG: 1.0;
+    readonly TP_PROGRESS_THRESHOLD_SHORT: 0.886;
 };
 export declare const OPPORTUNITY_COST_CONFIG: {
     readonly DEFAULT_MAX_HOLDING_PERIOD_BARS: 20;

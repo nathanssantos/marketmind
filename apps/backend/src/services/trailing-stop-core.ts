@@ -148,6 +148,8 @@ export const findBestSwingStop = (
 
 const FIBO_BREAKEVEN_LEVEL = TRAILING_STOP.FIBO_BREAKEVEN_LEVEL;
 const FIBO_PROGRESSIVE_LEVEL = TRAILING_STOP.FIBO_PROGRESSIVE_LEVEL;
+const TP_PROGRESS_THRESHOLD_LONG = TRAILING_STOP.TP_PROGRESS_THRESHOLD_LONG;
+const TP_PROGRESS_THRESHOLD_SHORT = TRAILING_STOP.TP_PROGRESS_THRESHOLD_SHORT;
 
 export const getFibonacciLevelPrice = (
   fibonacciProjection: FibonacciProjectionData | null | undefined,
@@ -169,6 +171,49 @@ export const hasReachedFibonacciLevel = (
   const levelPrice = getFibonacciLevelPrice(fibonacciProjection, level);
   if (levelPrice === null) return false;
   return isLong ? currentPrice >= levelPrice : currentPrice <= levelPrice;
+};
+
+export const calculateTPProgress = (
+  entryPrice: number,
+  currentPrice: number,
+  takeProfit: number,
+  isLong: boolean
+): number => {
+  const totalDistance = Math.abs(takeProfit - entryPrice);
+  if (totalDistance === 0) return 0;
+  const currentDistance = isLong
+    ? currentPrice - entryPrice
+    : entryPrice - currentPrice;
+  return Math.max(0, currentDistance / totalDistance);
+};
+
+const DEFAULT_FIB_TARGET_LONG = 1.618;
+const DEFAULT_FIB_TARGET_SHORT = 1.272;
+
+export const getImpliedTakeProfit = (
+  fibonacciProjection: FibonacciProjectionData | null | undefined,
+  isLong: boolean
+): number | null => {
+  if (!fibonacciProjection?.levels?.length) return null;
+  const defaultLevel = isLong ? DEFAULT_FIB_TARGET_LONG : DEFAULT_FIB_TARGET_SHORT;
+  const levelData = fibonacciProjection.levels.find(
+    (l) => Math.abs(l.level - defaultLevel) < 0.001
+  );
+  return levelData?.price ?? null;
+};
+
+export const hasReachedTPProgressThreshold = (
+  entryPrice: number,
+  currentPrice: number,
+  takeProfit: number | null | undefined,
+  fibonacciProjection: FibonacciProjectionData | null | undefined,
+  isLong: boolean
+): boolean => {
+  const effectiveTP = takeProfit ?? getImpliedTakeProfit(fibonacciProjection, isLong);
+  if (!effectiveTP) return false;
+  const threshold = isLong ? TP_PROGRESS_THRESHOLD_LONG : TP_PROGRESS_THRESHOLD_SHORT;
+  const progress = calculateTPProgress(entryPrice, currentPrice, effectiveTP, isLong);
+  return progress >= threshold;
 };
 
 export const shouldUpdateStopLoss = (
@@ -228,26 +273,15 @@ export const computeTrailingStopCore = (
   const canUseFibonacciThresholds = useFibonacciThresholds && fibonacciProjection?.levels?.length;
 
   if (canUseFibonacciThresholds) {
-    const reachedBreakevenLevel = hasReachedFibonacciLevel(
+    const reachedThreshold = hasReachedTPProgressThreshold(
+      entryPrice,
       currentPrice,
+      takeProfit,
       fibonacciProjection,
-      FIBO_BREAKEVEN_LEVEL,
       isLong
     );
 
-    if (!reachedBreakevenLevel) return null;
-
-    const reachedProgressiveLevel = hasReachedFibonacciLevel(
-      currentPrice,
-      fibonacciProjection,
-      FIBO_PROGRESSIVE_LEVEL,
-      isLong
-    );
-
-    if (!reachedProgressiveLevel) {
-      if (!shouldUpdateStopLoss(feesCoveredPrice, currentStopLoss, isLong)) return null;
-      return { newStopLoss: feesCoveredPrice, reason: 'fees_covered' };
-    }
+    if (!reachedThreshold) return null;
 
     const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
       { price: feesCoveredPrice, reason: 'fees_covered' },

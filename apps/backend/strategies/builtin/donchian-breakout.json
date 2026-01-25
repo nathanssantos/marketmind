@@ -11,6 +11,7 @@
     "adx"
   ],
   "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "profitFactor": 1.8,
     "winRate": 41.4,

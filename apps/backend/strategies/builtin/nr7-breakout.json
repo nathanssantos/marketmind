@@ -12,6 +12,7 @@
     "classic"
   ],
   "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "profitFactor": 1.7,
     "winRate": 53.7,

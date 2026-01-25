@@ -1054,31 +1054,6 @@ describe('TrailingStopService', () => {
         expect(result).toBeNull();
       });
 
-      it('should enter progressive mode when price reaches 161.8% Fibo', () => {
-        const fib = createFibonacciProjection(90, 100);
-        const config: TrailingStopOptimizationConfig = {
-          ...DEFAULT_TRAILING_STOP_CONFIG,
-          useFibonacciThresholds: true,
-          feePercent: 0.002,
-          trailingDistancePercent: 0.4,
-        };
-
-        const input: TrailingStopInput = {
-          entryPrice: 92,
-          currentPrice: 107,
-          currentStopLoss: 92.184,
-          side: 'LONG',
-          swingPoints: [],
-          highestPrice: 107,
-          fibonacciProjection: fib,
-        };
-
-        const result = computeTrailingStop(input, config);
-        expect(result).not.toBeNull();
-        expect(['fees_covered', 'progressive_trail']).toContain(result!.reason);
-        expect(result!.newStopLoss).toBeGreaterThan(92);
-      });
-
       it('should fall back to percentage thresholds when Fibonacci data missing', () => {
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,

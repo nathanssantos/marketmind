@@ -12,6 +12,7 @@
     "proven"
   ],
   "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "profitFactor": 0.86,
     "winRate": 33.33,

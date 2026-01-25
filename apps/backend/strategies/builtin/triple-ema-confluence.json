@@ -12,6 +12,7 @@
     "2025"
   ],
   "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "profitFactor": 2.05,
     "winRate": 44.8,

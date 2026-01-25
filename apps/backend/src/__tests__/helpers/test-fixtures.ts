@@ -135,7 +135,7 @@ export const DEFAULT_PYRAMID_CONFIG = {
   pyramidRsiUpperBound: 70,
   pyramidFiboLevels: '["1","1.618"]',
   leverageAwarePyramid: true,
-  useDirectionFilter: true,
+  useDirectionFilter: false,
   enableLongInBearMarket: false,
   enableShortInBullMarket: false,
 };

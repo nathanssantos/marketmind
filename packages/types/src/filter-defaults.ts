@@ -16,7 +16,7 @@ export const FILTER_DEFAULTS = {
 
   exposureMultiplier: 1.5,
   minRiskRewardRatioLong: 1.0,
-  minRiskRewardRatioShort: 0.8,
+  minRiskRewardRatioShort: 1.0,
 
   fibonacciTargetLevelLong: '1' as const,
   fibonacciTargetLevelShort: '1.272' as const,
@@ -25,7 +25,7 @@ export const FILTER_DEFAULTS = {
   useCooldown: true,
   cooldownMinutes: 15,
 
-  useDirectionFilter: true,
+  useDirectionFilter: false,
   enableLongInBearMarket: false,
   enableShortInBullMarket: false,
 } as const;
