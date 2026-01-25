@@ -254,6 +254,27 @@
         "confluence": {
           "title": "Confluence Scoring",
           "description": "Calculate a confluence score from all filters. Only trade when score exceeds minimum threshold."
+        },
+        "volatilityFilters": "Volatility & Session Filters",
+        "choppiness": {
+          "title": "Choppiness Index",
+          "description": "Skip trades when market is choppy (CHOP > 61.8). Only trade when trending (CHOP < 38.2)."
+        },
+        "session": {
+          "title": "Session Filter",
+          "description": "Trade only during high-volume hours (13:00-16:00 UTC, EU-US overlap)."
+        },
+        "bollingerSqueeze": {
+          "title": "Bollinger Squeeze",
+          "description": "Wait for volatility contraction (tight bands) before entry to catch breakouts."
+        },
+        "vwap": {
+          "title": "VWAP Filter",
+          "description": "LONG only above VWAP, SHORT only below VWAP. Aligns with institutional order flow."
+        },
+        "supertrend": {
+          "title": "SuperTrend Filter",
+          "description": "Only trade in the direction of SuperTrend indicator (ATR-based trend detection)."
         }
       },
       "opportunityCost": {

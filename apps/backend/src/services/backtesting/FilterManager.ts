@@ -1,4 +1,4 @@
-import { calculateEMA } from '@marketmind/indicators';
+import { calculateEMA, CHOPPINESS_FILTER } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import {
   ADX_FILTER,
@@ -11,6 +11,11 @@ import {
   checkStochasticCondition,
   checkTrendCondition,
   checkVolumeCondition,
+  checkChoppinessCondition,
+  checkSessionCondition,
+  checkBollingerSqueezeCondition,
+  checkVwapCondition,
+  checkSupertrendCondition,
   getHigherTimeframe,
   MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
@@ -21,6 +26,11 @@ import {
   type MtfFilterResult,
   type VolumeFilterConfig,
   type VolumeFilterResult,
+  type ChoppinessFilterResult,
+  type SessionFilterResult,
+  type BollingerSqueezeFilterResult,
+  type VwapFilterResult,
+  type SupertrendFilterResult,
 } from '../../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 
@@ -45,6 +55,21 @@ export interface FilterConfig {
   useConfluenceScoring?: boolean;
   confluenceMinScore?: number;
   maxPositionsPerStrategy?: number;
+  useChoppinessFilter?: boolean;
+  choppinessThresholdHigh?: number;
+  choppinessThresholdLow?: number;
+  choppinessPeriod?: number;
+  useSessionFilter?: boolean;
+  sessionStartUtc?: number;
+  sessionEndUtc?: number;
+  useBollingerSqueezeFilter?: boolean;
+  bollingerSqueezeThreshold?: number;
+  bollingerSqueezePeriod?: number;
+  bollingerSqueezeStdDev?: number;
+  useVwapFilter?: boolean;
+  useSuperTrendFilter?: boolean;
+  superTrendPeriod?: number;
+  superTrendMultiplier?: number;
 }
 
 export interface FilterStats {
@@ -71,6 +96,11 @@ export interface FilterStats {
   skippedPositionConflict: number;
   skippedPyramid: number;
   pyramidEntries: number;
+  skippedChoppiness: number;
+  skippedSession: number;
+  skippedBollingerSqueeze: number;
+  skippedVwap: number;
+  skippedSupertrend: number;
 }
 
 export interface FilterContext {
@@ -119,6 +149,11 @@ export class FilterManager {
     skippedPositionConflict: 0,
     skippedPyramid: 0,
     pyramidEntries: 0,
+    skippedChoppiness: 0,
+    skippedSession: 0,
+    skippedBollingerSqueeze: 0,
+    skippedVwap: 0,
+    skippedSupertrend: 0,
   };
 
   constructor(config: FilterConfig) {
@@ -583,5 +618,158 @@ export class FilterManager {
 
   incrementPyramidEntries(): void {
     this.stats.pyramidEntries++;
+  }
+
+  checkChoppinessFilter(
+    klines: Kline[],
+    setupIndex: number,
+    tradesCount: number
+  ): { passed: boolean; result: ChoppinessFilterResult | null } {
+    if (!this.config.useChoppinessFilter) {
+      return { passed: true, result: null };
+    }
+
+    const period = this.config.choppinessPeriod ?? CHOPPINESS_FILTER.DEFAULT_PERIOD;
+    if (setupIndex < period + 1) {
+      return { passed: true, result: null };
+    }
+
+    const choppinessKlines = klines.slice(Math.max(0, setupIndex - period - 10), setupIndex + 1);
+    const result = checkChoppinessCondition(
+      choppinessKlines,
+      this.config.choppinessThresholdHigh ?? CHOPPINESS_FILTER.HIGH_THRESHOLD,
+      this.config.choppinessThresholdLow ?? CHOPPINESS_FILTER.LOW_THRESHOLD,
+      period
+    );
+
+    if (!result.isAllowed) {
+      this.stats.skippedChoppiness++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Choppiness filter blocked trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkSessionFilter(
+    setupTime: number,
+    tradesCount: number
+  ): { passed: boolean; result: SessionFilterResult | null } {
+    if (!this.config.useSessionFilter) {
+      return { passed: true, result: null };
+    }
+
+    const result = checkSessionCondition(
+      setupTime,
+      this.config.sessionStartUtc ?? 13,
+      this.config.sessionEndUtc ?? 16
+    );
+
+    if (!result.isAllowed) {
+      this.stats.skippedSession++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Session filter blocked trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkBollingerSqueezeFilter(
+    klines: Kline[],
+    setupIndex: number,
+    tradesCount: number
+  ): { passed: boolean; result: BollingerSqueezeFilterResult | null } {
+    if (!this.config.useBollingerSqueezeFilter) {
+      return { passed: true, result: null };
+    }
+
+    const period = this.config.bollingerSqueezePeriod ?? 20;
+    if (setupIndex < period) {
+      return { passed: true, result: null };
+    }
+
+    const bbKlines = klines.slice(Math.max(0, setupIndex - period - 5), setupIndex + 1);
+    const result = checkBollingerSqueezeCondition(
+      bbKlines,
+      this.config.bollingerSqueezeThreshold ?? 0.1,
+      period,
+      this.config.bollingerSqueezeStdDev ?? 2.0
+    );
+
+    if (!result.isAllowed) {
+      this.stats.skippedBollingerSqueeze++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] Bollinger Squeeze filter blocked trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkVwapFilter(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): { passed: boolean; result: VwapFilterResult | null } {
+    if (!this.config.useVwapFilter) {
+      return { passed: true, result: null };
+    }
+
+    if (setupIndex < 10) {
+      return { passed: true, result: null };
+    }
+
+    const vwapKlines = klines.slice(Math.max(0, setupIndex - 50), setupIndex + 1);
+    const result = checkVwapCondition(vwapKlines, direction);
+
+    if (!result.isAllowed) {
+      this.stats.skippedVwap++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] VWAP filter blocked ${direction} trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
+  }
+
+  checkSupertrendFilter(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): { passed: boolean; result: SupertrendFilterResult | null } {
+    if (!this.config.useSuperTrendFilter) {
+      return { passed: true, result: null };
+    }
+
+    const period = this.config.superTrendPeriod ?? 10;
+    if (setupIndex < period + 1) {
+      return { passed: true, result: null };
+    }
+
+    const stKlines = klines.slice(Math.max(0, setupIndex - period - 10), setupIndex + 1);
+    const result = checkSupertrendCondition(
+      stKlines,
+      direction,
+      period,
+      this.config.superTrendMultiplier ?? 3.0
+    );
+
+    if (!result.isAllowed) {
+      this.stats.skippedSupertrend++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] SuperTrend filter blocked ${direction} trade - ${result.reason}`);
+      }
+      return { passed: false, result };
+    }
+
+    return { passed: true, result };
   }
 }

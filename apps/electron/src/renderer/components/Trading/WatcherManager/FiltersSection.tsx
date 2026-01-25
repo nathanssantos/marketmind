@@ -138,6 +138,49 @@ export const FiltersSection = ({
                 disabled={isPending}
               />
             </Grid>
+
+            <Separator />
+
+            <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
+              {t('settings.algorithmicAutoTrading.filters.volatilityFilters')}
+            </Text>
+            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.choppiness.title')}
+                description={t('settings.algorithmicAutoTrading.filters.choppiness.description')}
+                checked={config?.useChoppinessFilter ?? false}
+                onChange={(value) => onFilterToggle('useChoppinessFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.session.title')}
+                description={t('settings.algorithmicAutoTrading.filters.session.description')}
+                checked={config?.useSessionFilter ?? false}
+                onChange={(value) => onFilterToggle('useSessionFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.bollingerSqueeze.title')}
+                description={t('settings.algorithmicAutoTrading.filters.bollingerSqueeze.description')}
+                checked={config?.useBollingerSqueezeFilter ?? false}
+                onChange={(value) => onFilterToggle('useBollingerSqueezeFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.vwap.title')}
+                description={t('settings.algorithmicAutoTrading.filters.vwap.description')}
+                checked={config?.useVwapFilter ?? false}
+                onChange={(value) => onFilterToggle('useVwapFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.supertrend.title')}
+                description={t('settings.algorithmicAutoTrading.filters.supertrend.description')}
+                checked={config?.useSuperTrendFilter ?? false}
+                onChange={(value) => onFilterToggle('useSuperTrendFilter', value)}
+                disabled={isPending}
+              />
+            </Grid>
           </Stack>
         </Collapsible.Content>
       </Collapsible.Root>

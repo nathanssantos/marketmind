@@ -281,6 +281,27 @@
           "title": "Score de Confluência",
           "description": "Calcula um score de confluência de todos os filtros. Só opera quando score excede o mínimo."
         },
+        "volatilityFilters": "Filtros de Volatilidade e Sessão",
+        "choppiness": {
+          "title": "Índice de Choppiness",
+          "description": "Pula trades quando mercado está lateral (CHOP > 61.8). Só opera quando em tendência (CHOP < 38.2)."
+        },
+        "session": {
+          "title": "Filtro de Sessão",
+          "description": "Opera apenas durante horários de alto volume (13:00-16:00 UTC, sobreposição EU-US)."
+        },
+        "bollingerSqueeze": {
+          "title": "Bollinger Squeeze",
+          "description": "Aguarda contração de volatilidade (bandas apertadas) antes de entrar para pegar breakouts."
+        },
+        "vwap": {
+          "title": "Filtro VWAP",
+          "description": "LONG apenas acima do VWAP, SHORT apenas abaixo do VWAP. Alinha com fluxo institucional."
+        },
+        "supertrend": {
+          "title": "Filtro SuperTrend",
+          "description": "Só opera na direção do indicador SuperTrend (detecção de tendência baseada em ATR)."
+        },
         "opportunityCost": {
           "title": "Gestão de Custo de Oportunidade",
           "description": "Gerenciar trades que prendem capital sem progresso.",

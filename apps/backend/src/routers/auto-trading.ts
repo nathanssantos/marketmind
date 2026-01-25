@@ -166,6 +166,21 @@ export const autoTradingRouter = router({
         pyramidRsiUpperBound: z.number().min(AUTO_TRADING_CONFIG.RSI_BOUNDS.UPPER.MIN).max(AUTO_TRADING_CONFIG.RSI_BOUNDS.UPPER.MAX).optional(),
         pyramidFiboLevels: z.array(z.enum(FIBONACCI_PYRAMID_LEVELS)).optional(),
         leverageAwarePyramid: z.boolean().optional(),
+        useChoppinessFilter: z.boolean().optional(),
+        choppinessThresholdHigh: z.string().optional(),
+        choppinessThresholdLow: z.string().optional(),
+        choppinessPeriod: z.number().min(5).max(50).optional(),
+        useSessionFilter: z.boolean().optional(),
+        sessionStartUtc: z.number().min(0).max(23).optional(),
+        sessionEndUtc: z.number().min(0).max(23).optional(),
+        useBollingerSqueezeFilter: z.boolean().optional(),
+        bollingerSqueezeThreshold: z.string().optional(),
+        bollingerSqueezePeriod: z.number().min(5).max(50).optional(),
+        bollingerSqueezeStdDev: z.string().optional(),
+        useVwapFilter: z.boolean().optional(),
+        useSuperTrendFilter: z.boolean().optional(),
+        superTrendPeriod: z.number().min(5).max(50).optional(),
+        superTrendMultiplier: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -299,6 +314,36 @@ export const autoTradingRouter = router({
         {updateData.pyramidFiboLevels = JSON.stringify(input.pyramidFiboLevels);}
       if (input.leverageAwarePyramid !== undefined)
         {updateData.leverageAwarePyramid = input.leverageAwarePyramid;}
+      if (input.useChoppinessFilter !== undefined)
+        {updateData.useChoppinessFilter = input.useChoppinessFilter;}
+      if (input.choppinessThresholdHigh !== undefined)
+        {updateData.choppinessThresholdHigh = input.choppinessThresholdHigh;}
+      if (input.choppinessThresholdLow !== undefined)
+        {updateData.choppinessThresholdLow = input.choppinessThresholdLow;}
+      if (input.choppinessPeriod !== undefined)
+        {updateData.choppinessPeriod = input.choppinessPeriod;}
+      if (input.useSessionFilter !== undefined)
+        {updateData.useSessionFilter = input.useSessionFilter;}
+      if (input.sessionStartUtc !== undefined)
+        {updateData.sessionStartUtc = input.sessionStartUtc;}
+      if (input.sessionEndUtc !== undefined)
+        {updateData.sessionEndUtc = input.sessionEndUtc;}
+      if (input.useBollingerSqueezeFilter !== undefined)
+        {updateData.useBollingerSqueezeFilter = input.useBollingerSqueezeFilter;}
+      if (input.bollingerSqueezeThreshold !== undefined)
+        {updateData.bollingerSqueezeThreshold = input.bollingerSqueezeThreshold;}
+      if (input.bollingerSqueezePeriod !== undefined)
+        {updateData.bollingerSqueezePeriod = input.bollingerSqueezePeriod;}
+      if (input.bollingerSqueezeStdDev !== undefined)
+        {updateData.bollingerSqueezeStdDev = input.bollingerSqueezeStdDev;}
+      if (input.useVwapFilter !== undefined)
+        {updateData.useVwapFilter = input.useVwapFilter;}
+      if (input.useSuperTrendFilter !== undefined)
+        {updateData.useSuperTrendFilter = input.useSuperTrendFilter;}
+      if (input.superTrendPeriod !== undefined)
+        {updateData.superTrendPeriod = input.superTrendPeriod;}
+      if (input.superTrendMultiplier !== undefined)
+        {updateData.superTrendMultiplier = input.superTrendMultiplier;}
 
       await ctx.db
         .update(autoTradingConfig)

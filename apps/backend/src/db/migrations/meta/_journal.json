@@ -351,6 +351,13 @@
       "when": 1769369352587,
       "tag": "0049_lumpy_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1769374728436,
+      "tag": "0050_chubby_proteus",
+      "breakpoints": true
     }
   ]
 }

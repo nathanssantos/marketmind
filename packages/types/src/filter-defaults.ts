@@ -32,6 +32,26 @@ export const FILTER_DEFAULTS = {
   useDirectionFilter: false,
   enableLongInBearMarket: false,
   enableShortInBullMarket: false,
+
+  useChoppinessFilter: false,
+  choppinessThresholdHigh: 61.8,
+  choppinessThresholdLow: 38.2,
+  choppinessPeriod: 14,
+
+  useSessionFilter: false,
+  sessionStartUtc: 13,
+  sessionEndUtc: 16,
+
+  useBollingerSqueezeFilter: false,
+  bollingerSqueezeThreshold: 0.1,
+  bollingerSqueezePeriod: 20,
+  bollingerSqueezeStdDev: 2.0,
+
+  useVwapFilter: false,
+
+  useSuperTrendFilter: false,
+  superTrendPeriod: 10,
+  superTrendMultiplier: 3.0,
 } as const;
 
 export type FilterDefaults = typeof FILTER_DEFAULTS;

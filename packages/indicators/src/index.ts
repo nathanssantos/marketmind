@@ -3,6 +3,7 @@ export * from './ao';
 export * from './aroon';
 export * from './atr';
 export * from './bollingerBands';
+export * from './choppiness';
 export * from './btcDominance';
 export * from './cci';
 export * from './cmf';

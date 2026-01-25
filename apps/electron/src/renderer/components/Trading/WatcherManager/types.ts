@@ -18,6 +18,11 @@ export interface WatcherConfig {
   useVolumeFilter?: boolean | null;
   useFundingFilter?: boolean | null;
   useConfluenceScoring?: boolean | null;
+  useChoppinessFilter?: boolean | null;
+  useSessionFilter?: boolean | null;
+  useBollingerSqueezeFilter?: boolean | null;
+  useVwapFilter?: boolean | null;
+  useSuperTrendFilter?: boolean | null;
   opportunityCostEnabled?: boolean | null;
   maxHoldingPeriodBars?: number | null;
   stalePriceThresholdPercent?: string | null;

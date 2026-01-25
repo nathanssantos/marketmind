@@ -8,3 +8,8 @@ export * from './momentum-timing-filter';
 export * from './adx-filter';
 export * from './trend-filter';
 export * from './direction-filter';
+export * from './choppiness-filter';
+export * from './session-filter';
+export * from './bollinger-squeeze-filter';
+export * from './vwap-filter';
+export * from './supertrend-filter';
