@@ -5,15 +5,16 @@ import { db } from '../db';
 import { activeWatchers, autoTradingConfig, tradingProfiles } from '../db/schema';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
-
-const formatCurrency = (value: number): string =>
-  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const formatPercent = (value: number): string => value.toFixed(2) + '%';
+import {
+  formatCurrency,
+  formatPercent,
+  parseCliArgs,
+} from './shared-backtest-config';
 
 async function runComparison() {
-  console.log('🔬 Volume Filter Comparison Backtest');
-  console.log('=====================================\n');
+  console.log('🔬 Volume Filter Comparison Backtest (DB Config)');
+  console.log('=================================================\n');
+  console.log('⚠️  This script uses config from DATABASE, not shared-backtest-config.\n');
 
   const [config] = await db.select().from(autoTradingConfig).limit(1);
   if (!config) {
@@ -54,10 +55,7 @@ async function runComparison() {
 
   console.log(`📊 Watchers: ${watchers.map(w => `${w.symbol}@${w.interval}`).join(', ')}`);
 
-  const startDateArg = process.argv.find(arg => arg.startsWith('--start='));
-  const endDateArg = process.argv.find(arg => arg.startsWith('--end='));
-  const startDate = startDateArg ? startDateArg.split('=')[1]! : '2024-06-01';
-  const endDate = endDateArg ? endDateArg.split('=')[1]! : '2025-01-01';
+  const { startDate, endDate } = parseCliArgs();
   const initialCapital = 10000;
 
   console.log(`📅 Period: ${startDate} to ${endDate}`);
@@ -77,16 +75,19 @@ async function runComparison() {
     cooldownMinutes: 15,
     useMtfFilter: false,
     useBtcCorrelationFilter: false,
-    useMarketRegimeFilter: false,
+    useMarketRegimeFilter: config.useMarketRegimeFilter ?? false,
     useFundingFilter: false,
     useConfluenceScoring: false,
-    useMomentumTimingFilter: false,
+    useMomentumTimingFilter: config.useMomentumTimingFilter ?? false,
     trendFilterPeriod: 21,
     setupTypes: JSON.parse(config.enabledSetupTypes),
     useSharedExposure: true,
     marketType: watchers[0]?.marketType ?? 'FUTURES',
     leverage: config.leverage ?? 1,
     tpCalculationMode: config.tpCalculationMode ?? 'default',
+    fibonacciTargetLevel: config.fibonacciTargetLevel ?? 'auto',
+    fibonacciTargetLevelLong: config.fibonacciTargetLevelLong ?? undefined,
+    fibonacciTargetLevelShort: config.fibonacciTargetLevelShort ?? undefined,
   };
 
   console.log('⏳ Running backtest WITHOUT volume filter...\n');

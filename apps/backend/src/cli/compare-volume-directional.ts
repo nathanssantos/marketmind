@@ -1,13 +1,17 @@
 import 'dotenv/config';
-import { TRADING_DEFAULTS } from '@marketmind/types';
 import type { VolumeFilterConfig } from '@marketmind/types';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
-import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
-
-const formatCurrency = (value: number): string =>
-  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const formatPercent = (value: number): string => value.toFixed(2) + '%';
+import type { WatcherConfig } from '@marketmind/types';
+import {
+  ENABLED_SETUPS,
+  createBaseConfig,
+  parseCliArgs,
+  formatCurrency,
+  formatPercent,
+  printConfig,
+  calculateDirectionalMetrics,
+  type DirectionalMetrics,
+} from './shared-backtest-config';
 
 interface DirectionalVolumeVariation {
   name: string;
@@ -111,106 +115,26 @@ const DIRECTIONAL_VARIATIONS: DirectionalVolumeVariation[] = [
   },
 ];
 
-interface DirectionalMetrics {
-  pnl: number;
-  trades: number;
-  winRate: number;
-  profitFactor: number;
-  avgWin: number;
-  avgLoss: number;
-}
-
-const calculateDirectionalMetrics = (trades: Array<{ side: 'LONG' | 'SHORT'; pnl?: number }>): DirectionalMetrics => {
-  if (trades.length === 0) return { pnl: 0, trades: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0 };
-
-  const completedTrades = trades.filter(t => t.pnl !== undefined);
-  if (completedTrades.length === 0) return { pnl: 0, trades: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0 };
-
-  const wins = completedTrades.filter(t => t.pnl! > 0);
-  const losses = completedTrades.filter(t => t.pnl! <= 0);
-  const totalPnl = completedTrades.reduce((sum, t) => sum + t.pnl!, 0);
-  const totalWins = wins.reduce((sum, t) => sum + t.pnl!, 0);
-  const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.pnl!, 0));
-
-  return {
-    pnl: totalPnl,
-    trades: completedTrades.length,
-    winRate: (wins.length / completedTrades.length) * 100,
-    profitFactor: totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0,
-    avgWin: wins.length > 0 ? totalWins / wins.length : 0,
-    avgLoss: losses.length > 0 ? totalLosses / losses.length : 0,
-  };
-};
-
 async function runDirectionalComparison() {
   console.log('🔬 Directional Volume Filter Comparison');
   console.log('========================================\n');
 
-  const symbolArg = process.argv.find(arg => arg.startsWith('--symbol='));
-  const intervalArg = process.argv.find(arg => arg.startsWith('--interval='));
-  const symbol = symbolArg ? symbolArg.split('=')[1]! : 'BTCUSDT';
-  const interval = intervalArg ? intervalArg.split('=')[1]! : '15m';
-
-  const defaultSetupTypes = [
-    '7day-momentum-crypto',
-    'chande-momentum-crypto',
-    'donchian-breakout',
-    'golden-cross-sma',
-    'keltner-breakout-optimized',
-    'momentum-breakout-2025',
-    'momentum-rotation',
-    'nr7-breakout',
-    'rsi-sma-filter',
-    'rsi2-mean-reversion',
-    'triple-ema-confluence',
-    'vwap-ema-cross',
-  ];
+  const { symbol, interval, startDate, endDate } = parseCliArgs();
+  const baseConfig = createBaseConfig();
 
   const watchers: WatcherConfig[] = [
     {
       symbol,
       interval,
       marketType: 'FUTURES',
-      setupTypes: defaultSetupTypes,
+      setupTypes: [...ENABLED_SETUPS],
     },
   ];
 
   console.log(`📊 Symbol: ${symbol}@${interval} (FUTURES)`);
+  console.log(`📅 Period: ${startDate} to ${endDate}\n`);
 
-  const startDateArg = process.argv.find(arg => arg.startsWith('--start='));
-  const endDateArg = process.argv.find(arg => arg.startsWith('--end='));
-  const startDate = startDateArg ? startDateArg.split('=')[1]! : '2024-06-01';
-  const endDate = endDateArg ? endDateArg.split('=')[1]! : '2025-01-01';
-  const initialCapital = 10000;
-
-  console.log(`📅 Period: ${startDate} to ${endDate}`);
-  console.log(`💰 Initial Capital: $${formatCurrency(initialCapital)}\n`);
-
-  const baseConfig: Omit<MultiWatcherBacktestConfig, 'useVolumeFilter' | 'volumeFilterConfig'> = {
-    watchers,
-    startDate,
-    endDate,
-    initialCapital,
-    exposureMultiplier: 1.5,
-    useStochasticFilter: false,
-    useAdxFilter: false,
-    useTrendFilter: false,
-    minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
-    useCooldown: true,
-    cooldownMinutes: 15,
-    useMtfFilter: false,
-    useBtcCorrelationFilter: false,
-    useMarketRegimeFilter: false,
-    useFundingFilter: false,
-    useConfluenceScoring: false,
-    useMomentumTimingFilter: false,
-    trendFilterPeriod: 21,
-    setupTypes: defaultSetupTypes,
-    useSharedExposure: true,
-    marketType: 'FUTURES',
-    leverage: 10,
-    tpCalculationMode: 'default',
-  };
+  printConfig();
 
   const results: Array<{
     name: string;
@@ -229,6 +153,9 @@ async function runDirectionalComparison() {
 
     const engine = new MultiWatcherBacktestEngine({
       ...baseConfig,
+      watchers,
+      startDate,
+      endDate,
       useVolumeFilter: true,
       volumeFilterConfig: variation.config,
     });
