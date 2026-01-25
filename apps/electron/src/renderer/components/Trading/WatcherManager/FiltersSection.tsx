@@ -111,7 +111,7 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.volume.title')}
                 description={t('settings.algorithmicAutoTrading.filters.volume.description')}
-                checked={config?.useVolumeFilter ?? false}
+                checked={config?.useVolumeFilter ?? true}
                 onChange={(value) => onFilterToggle('useVolumeFilter', value)}
                 disabled={isPending}
               />

@@ -123,6 +123,7 @@ export const autoTradingRouter = router({
         useStochasticFilter: z.boolean().optional(),
         useAdxFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
+        useVolumeFilter: z.boolean().optional(),
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
@@ -208,6 +209,8 @@ export const autoTradingRouter = router({
         {updateData.useAdxFilter = input.useAdxFilter;}
       if (input.useTrendFilter !== undefined)
         {updateData.useTrendFilter = input.useTrendFilter;}
+      if (input.useVolumeFilter !== undefined)
+        {updateData.useVolumeFilter = input.useVolumeFilter;}
       if (input.exposureMultiplier !== undefined)
         {updateData.exposureMultiplier = input.exposureMultiplier;}
       if (input.tpCalculationMode !== undefined)

@@ -11,6 +11,37 @@ const formatCurrency = (value: number): string =>
 
 const formatPercent = (value: number): string => value.toFixed(2) + '%';
 
+interface DirectionalMetrics {
+  pnl: number;
+  trades: number;
+  winRate: number;
+  profitFactor: number;
+  avgWin: number;
+  avgLoss: number;
+}
+
+const calculateDirectionalMetrics = (trades: Array<{ side: 'LONG' | 'SHORT'; pnl?: number }>): DirectionalMetrics => {
+  if (trades.length === 0) return { pnl: 0, trades: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0 };
+
+  const completedTrades = trades.filter(t => t.pnl !== undefined);
+  if (completedTrades.length === 0) return { pnl: 0, trades: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0 };
+
+  const wins = completedTrades.filter(t => t.pnl! > 0);
+  const losses = completedTrades.filter(t => t.pnl! <= 0);
+  const totalPnl = completedTrades.reduce((sum, t) => sum + t.pnl!, 0);
+  const totalWins = wins.reduce((sum, t) => sum + t.pnl!, 0);
+  const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.pnl!, 0));
+
+  return {
+    pnl: totalPnl,
+    trades: completedTrades.length,
+    winRate: (wins.length / completedTrades.length) * 100,
+    profitFactor: totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0,
+    avgWin: wins.length > 0 ? totalWins / wins.length : 0,
+    avgLoss: losses.length > 0 ? totalLosses / losses.length : 0,
+  };
+};
+
 interface VolumeVariation {
   name: string;
   useVolumeFilter: boolean;
@@ -117,6 +148,8 @@ async function runComparison() {
     winRate: number;
     profitFactor: number;
     maxDrawdown: number;
+    long: DirectionalMetrics;
+    short: DirectionalMetrics;
   }> = [];
 
   for (const variation of VARIATIONS) {
@@ -130,6 +163,11 @@ async function runComparison() {
 
     const result = await engine.run();
 
+    const longTrades = result.trades.filter(t => t.side === 'LONG');
+    const shortTrades = result.trades.filter(t => t.side === 'SHORT');
+    const longMetrics = calculateDirectionalMetrics(longTrades);
+    const shortMetrics = calculateDirectionalMetrics(shortTrades);
+
     results.push({
       name: variation.name,
       pnl: result.metrics.totalPnl,
@@ -138,13 +176,18 @@ async function runComparison() {
       winRate: result.metrics.winRate,
       profitFactor: result.metrics.profitFactor,
       maxDrawdown: result.metrics.maxDrawdownPercent,
+      long: longMetrics,
+      short: shortMetrics,
     });
 
     console.log(`   ✓ P&L: $${formatCurrency(result.metrics.totalPnl)} | WR: ${formatPercent(result.metrics.winRate)} | Trades: ${result.metrics.totalTrades}`);
+    console.log(`     LONG:  P&L: $${formatCurrency(longMetrics.pnl)} | WR: ${formatPercent(longMetrics.winRate)} | Trades: ${longMetrics.trades}`);
+    console.log(`     SHORT: P&L: $${formatCurrency(shortMetrics.pnl)} | WR: ${formatPercent(shortMetrics.winRate)} | Trades: ${shortMetrics.trades}`);
   }
 
-  console.log('\n📊 COMPARISON RESULTS');
-  console.log('=====================\n');
+  console.log('\n' + '═'.repeat(100));
+  console.log('📊 COMBINED RESULTS (LONG + SHORT)');
+  console.log('═'.repeat(100) + '\n');
 
   console.log('Variação                       P&L         P&L%    Trades   WinRate   PF    MaxDD');
   console.log('─'.repeat(90));
@@ -167,23 +210,89 @@ async function runComparison() {
 
   console.log('─'.repeat(90));
 
-  const best = sortedResults[0]!;
-  const baseline = results.find(r => r.name === 'Sem filtro')!;
+  console.log('\n' + '═'.repeat(100));
+  console.log('📈 LONG ONLY RESULTS');
+  console.log('═'.repeat(100) + '\n');
 
-  console.log(`\n📈 ANÁLISE:`);
-  console.log(`   🏆 Melhor resultado: ${best.name}`);
-  console.log(`      P&L: $${formatCurrency(best.pnl)} (${formatPercent(best.pnlPct)})`);
+  console.log('Variação                       P&L       Trades   WinRate   PF      AvgWin    AvgLoss');
+  console.log('─'.repeat(90));
 
-  if (best.name !== 'Sem filtro') {
-    const improvement = best.pnl - baseline.pnl;
-    console.log(`      vs Sem filtro: ${improvement >= 0 ? '+' : ''}$${formatCurrency(improvement)}`);
+  const sortedByLong = [...results].sort((a, b) => b.long.pnl - a.long.pnl);
+
+  for (const r of sortedByLong) {
+    const pnlStr = `$${formatCurrency(r.long.pnl)}`.padStart(12);
+    const tradesStr = String(r.long.trades).padStart(6);
+    const wrStr = formatPercent(r.long.winRate).padStart(8);
+    const pfStr = r.long.profitFactor === Infinity ? '  ∞' : r.long.profitFactor.toFixed(2).padStart(5);
+    const avgWinStr = `$${formatCurrency(r.long.avgWin)}`.padStart(10);
+    const avgLossStr = `$${formatCurrency(r.long.avgLoss)}`.padStart(10);
+
+    const isBest = r === sortedByLong[0];
+    const marker = isBest ? '🏆' : '  ';
+
+    console.log(`${marker} ${r.name.padEnd(26)} ${pnlStr} ${tradesStr} ${wrStr} ${pfStr} ${avgWinStr} ${avgLossStr}`);
   }
 
-  const bestWinRate = sortedResults.reduce((a, b) => a.winRate > b.winRate ? a : b);
-  const lowestDrawdown = sortedResults.reduce((a, b) => a.maxDrawdown < b.maxDrawdown ? a : b);
+  console.log('─'.repeat(90));
 
-  console.log(`\n   📊 Melhor Win Rate: ${bestWinRate.name} (${formatPercent(bestWinRate.winRate)})`);
-  console.log(`   📉 Menor Drawdown: ${lowestDrawdown.name} (${formatPercent(lowestDrawdown.maxDrawdown)})`);
+  console.log('\n' + '═'.repeat(100));
+  console.log('📉 SHORT ONLY RESULTS');
+  console.log('═'.repeat(100) + '\n');
+
+  console.log('Variação                       P&L       Trades   WinRate   PF      AvgWin    AvgLoss');
+  console.log('─'.repeat(90));
+
+  const sortedByShort = [...results].sort((a, b) => b.short.pnl - a.short.pnl);
+
+  for (const r of sortedByShort) {
+    const pnlStr = `$${formatCurrency(r.short.pnl)}`.padStart(12);
+    const tradesStr = String(r.short.trades).padStart(6);
+    const wrStr = formatPercent(r.short.winRate).padStart(8);
+    const pfStr = r.short.profitFactor === Infinity ? '  ∞' : r.short.profitFactor.toFixed(2).padStart(5);
+    const avgWinStr = `$${formatCurrency(r.short.avgWin)}`.padStart(10);
+    const avgLossStr = `$${formatCurrency(r.short.avgLoss)}`.padStart(10);
+
+    const isBest = r === sortedByShort[0];
+    const marker = isBest ? '🏆' : '  ';
+
+    console.log(`${marker} ${r.name.padEnd(26)} ${pnlStr} ${tradesStr} ${wrStr} ${pfStr} ${avgWinStr} ${avgLossStr}`);
+  }
+
+  console.log('─'.repeat(90));
+
+  const best = sortedResults[0]!;
+  const baseline = results.find(r => r.name === 'Sem filtro')!;
+  const bestLong = sortedByLong[0]!;
+  const bestShort = sortedByShort[0]!;
+
+  console.log('\n' + '═'.repeat(100));
+  console.log('📊 ANALYSIS SUMMARY');
+  console.log('═'.repeat(100) + '\n');
+
+  console.log(`🏆 Best COMBINED: ${best.name}`);
+  console.log(`   P&L: $${formatCurrency(best.pnl)} (${formatPercent(best.pnlPct)})`);
+  if (best.name !== 'Sem filtro') {
+    const improvement = best.pnl - baseline.pnl;
+    console.log(`   vs No Filter: ${improvement >= 0 ? '+' : ''}$${formatCurrency(improvement)}`);
+  }
+
+  console.log(`\n📈 Best LONG: ${bestLong.name}`);
+  console.log(`   P&L: $${formatCurrency(bestLong.long.pnl)} | WR: ${formatPercent(bestLong.long.winRate)} | Trades: ${bestLong.long.trades}`);
+
+  console.log(`\n📉 Best SHORT: ${bestShort.name}`);
+  console.log(`   P&L: $${formatCurrency(bestShort.short.pnl)} | WR: ${formatPercent(bestShort.short.winRate)} | Trades: ${bestShort.short.trades}`);
+
+  const longProfitable = results.filter(r => r.long.pnl > 0);
+  const shortProfitable = results.filter(r => r.short.pnl > 0);
+
+  console.log(`\n📌 INSIGHTS:`);
+  console.log(`   • ${longProfitable.length}/${results.length} variations profitable for LONG`);
+  console.log(`   • ${shortProfitable.length}/${results.length} variations profitable for SHORT`);
+
+  if (bestLong.name !== bestShort.name) {
+    console.log(`\n⚠️  LONG and SHORT have DIFFERENT optimal configurations!`);
+    console.log(`   Consider using direction-specific volume filter settings.`);
+  }
 
   process.exit(0);
 }

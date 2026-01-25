@@ -1,5 +1,5 @@
 import { calculateOBV } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, VolumeFilterConfig } from '@marketmind/types';
 
 const VOLUME_AVG_PERIOD = 20;
 const BREAKOUT_MULTIPLIER = 1.5;
@@ -28,12 +28,21 @@ export interface VolumeFilterResult {
   reason: string;
 }
 
-export interface VolumeFilterConfig {
-  breakoutMultiplier?: number;
-  pullbackMultiplier?: number;
-  useObvCheck?: boolean;
-  obvLookback?: number;
-}
+export { VolumeFilterConfig };
+
+const getDirectionalConfig = (
+  direction: 'LONG' | 'SHORT',
+  config?: VolumeFilterConfig
+): { breakoutMult: number; pullbackMult: number; useObv: boolean; obvLookback: number } => {
+  const directionalConfig = direction === 'LONG' ? config?.longConfig : config?.shortConfig;
+
+  return {
+    breakoutMult: directionalConfig?.breakoutMultiplier ?? config?.breakoutMultiplier ?? BREAKOUT_MULTIPLIER,
+    pullbackMult: directionalConfig?.pullbackMultiplier ?? config?.pullbackMultiplier ?? PULLBACK_MULTIPLIER,
+    useObv: directionalConfig?.useObvCheck ?? config?.useObvCheck ?? true,
+    obvLookback: directionalConfig?.obvLookback ?? config?.obvLookback ?? OBV_LOOKBACK,
+  };
+};
 
 const SETUP_VOLUME_TYPE: Record<string, SetupVolumeType> = {
   'breakout-long': 'BREAKOUT',
@@ -100,10 +109,7 @@ export const checkVolumeCondition = (
   setupType: string,
   config?: VolumeFilterConfig
 ): VolumeFilterResult => {
-  const breakoutMult = config?.breakoutMultiplier ?? BREAKOUT_MULTIPLIER;
-  const pullbackMult = config?.pullbackMultiplier ?? PULLBACK_MULTIPLIER;
-  const useObv = config?.useObvCheck ?? true;
-  const obvLookback = config?.obvLookback ?? OBV_LOOKBACK;
+  const { breakoutMult, pullbackMult, useObv, obvLookback } = getDirectionalConfig(direction, config);
 
   if (klines.length < MIN_KLINES_REQUIRED) {
     return {
