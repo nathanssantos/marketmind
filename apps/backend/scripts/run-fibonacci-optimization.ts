@@ -107,8 +107,8 @@ const runFibBacktest = async (
     const metrics = result.metrics;
     const trades = result.trades || [];
 
-    const longTrades = trades.filter((t) => t.direction === 'LONG');
-    const shortTrades = trades.filter((t) => t.direction === 'SHORT');
+    const longTrades = trades.filter((t) => t.side === 'LONG');
+    const shortTrades = trades.filter((t) => t.side === 'SHORT');
 
     const longWins = longTrades.filter((t) => (t.pnlPercent ?? 0) > 0).length;
     const shortWins = shortTrades.filter((t) => (t.pnlPercent ?? 0) > 0).length;
