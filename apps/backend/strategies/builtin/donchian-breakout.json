@@ -145,7 +145,7 @@
       "multiplier": "$rrMultiplier"
     },
     "trailingStop": {
-      "enabled": false,
+      "enabled": true,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

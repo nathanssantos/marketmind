@@ -68,10 +68,18 @@ export const BACKTEST_DEFAULTS = {
 } as const;
 
 export const DEFAULT_ENABLED_SETUPS = [
-  'larry-williams-9-1',
-  'larry-williams-9-2',
-  'larry-williams-9-3',
-  'larry-williams-9-4',
+  '7day-momentum-crypto',
+  'momentum-breakout-2025',
+  'nr7-breakout',
+  'rsi2-mean-reversion',
+  'donchian-breakout',
+  'vwap-ema-cross',
+  'triple-ema-confluence',
+  'keltner-breakout-optimized',
+  'golden-cross-sma',
+  'rsi-sma-filter',
+  'momentum-rotation',
+  'chande-momentum-crypto',
 ] as const;
 
 export const SESSION_DURATION_DAYS = 30;
