@@ -213,6 +213,8 @@
         "fibonacciDescription": "Utilise les niveaux d'extension Fibonacci (100%, 127.2%, 161.8%)",
         "fibonacciLevel": {
           "title": "Niveau de l'Objectif Fibonacci",
+          "titleLong": "Niveau de l'Objectif LONG",
+          "titleShort": "Niveau de l'Objectif SHORT",
           "auto": "Automatique (basé sur ADX)",
           "autoDescription": "Sélectionne dynamiquement le niveau basé sur la force de la tendance (ADX), volatilité (ATR) et volume",
           "conservative": "100% (1.0)",

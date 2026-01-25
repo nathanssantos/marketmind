@@ -82,7 +82,8 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [useConfluenceScoring, setUseConfluenceScoring] = useState(true);
   const [confluenceMinScore, setConfluenceMinScore] = useState('60');
   const [tpCalculationMode, setTpCalculationMode] = useState<'default' | 'fibonacci'>('default');
-  const [fibonacciTargetLevel, setFibonacciTargetLevel] = useState<FibonacciTargetLevel>('auto');
+  const [fibonacciTargetLevelLong, setFibonacciTargetLevelLong] = useState<FibonacciTargetLevel>('2');
+  const [fibonacciTargetLevelShort, setFibonacciTargetLevelShort] = useState<FibonacciTargetLevel>('1.272');
 
   const loadFromAutoTrading = useCallback(() => {
     if (!autoTradingConfig) return;
@@ -100,7 +101,8 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
     setUseConfluenceScoring(autoTradingConfig.useConfluenceScoring ?? true);
     setConfluenceMinScore(String(autoTradingConfig.confluenceMinScore ?? 60));
     setTpCalculationMode(autoTradingConfig.tpCalculationMode ?? 'default');
-    setFibonacciTargetLevel(autoTradingConfig.fibonacciTargetLevel ?? 'auto');
+    setFibonacciTargetLevelLong(autoTradingConfig.fibonacciTargetLevelLong ?? autoTradingConfig.fibonacciTargetLevel ?? '2');
+    setFibonacciTargetLevelShort(autoTradingConfig.fibonacciTargetLevelShort ?? autoTradingConfig.fibonacciTargetLevel ?? '1.272');
 
     const lastYearRange = getLastYearRange();
     setStartDate(lastYearRange.start);
@@ -134,7 +136,8 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
       useConfluenceScoring,
       confluenceMinScore: Number(confluenceMinScore),
       tpCalculationMode,
-      fibonacciTargetLevel: tpCalculationMode === 'fibonacci' ? fibonacciTargetLevel : undefined,
+      fibonacciTargetLevelLong: tpCalculationMode === 'fibonacci' ? fibonacciTargetLevelLong : undefined,
+      fibonacciTargetLevelShort: tpCalculationMode === 'fibonacci' ? fibonacciTargetLevelShort : undefined,
       trendFilterPeriod: 21,
     } : {};
 
@@ -502,18 +505,44 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
                 </Button>
               </HStack>
               {tpCalculationMode === 'fibonacci' && (
-                <HStack gap={1} flexWrap="wrap">
-                  {(['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const).map((level) => (
-                    <Button
-                      key={level}
-                      size="2xs"
-                      variant={fibonacciTargetLevel === level ? 'solid' : 'ghost'}
-                      onClick={() => setFibonacciTargetLevel(level)}
-                    >
-                      {level === 'auto' ? 'Auto' : `${(parseFloat(level) * 100).toFixed(1)}%`}
-                    </Button>
-                  ))}
-                </HStack>
+                <Stack gap={3}>
+                  <Box>
+                    <Text fontSize="xs" fontWeight="medium" mb={1} color="green.600" _dark={{ color: 'green.400' }}>
+                      LONG Target
+                    </Text>
+                    <HStack gap={1} flexWrap="wrap">
+                      {(['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const).map((level) => (
+                        <Button
+                          key={level}
+                          size="2xs"
+                          variant={fibonacciTargetLevelLong === level ? 'solid' : 'ghost'}
+                          colorPalette={fibonacciTargetLevelLong === level ? 'green' : undefined}
+                          onClick={() => setFibonacciTargetLevelLong(level)}
+                        >
+                          {level === 'auto' ? 'Auto' : `${(parseFloat(level) * 100).toFixed(1)}%`}
+                        </Button>
+                      ))}
+                    </HStack>
+                  </Box>
+                  <Box>
+                    <Text fontSize="xs" fontWeight="medium" mb={1} color="red.600" _dark={{ color: 'red.400' }}>
+                      SHORT Target
+                    </Text>
+                    <HStack gap={1} flexWrap="wrap">
+                      {(['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const).map((level) => (
+                        <Button
+                          key={level}
+                          size="2xs"
+                          variant={fibonacciTargetLevelShort === level ? 'solid' : 'ghost'}
+                          colorPalette={fibonacciTargetLevelShort === level ? 'red' : undefined}
+                          onClick={() => setFibonacciTargetLevelShort(level)}
+                        >
+                          {level === 'auto' ? 'Auto' : `${(parseFloat(level) * 100).toFixed(1)}%`}
+                        </Button>
+                      ))}
+                    </HStack>
+                  </Box>
+                </Stack>
               )}
             </Box>
           </>

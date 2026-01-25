@@ -114,7 +114,8 @@ export const WatcherManager = () => {
   }, [quickStartSymbols, fundingRates, config?.useFundingFilter, quickStartMarketType]);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
-  const fibonacciTargetLevel = config?.fibonacciTargetLevel ?? 'auto';
+  const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
+  const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
 
   const handleTpModeChange = (details: { value: string }): void => {
     if (!walletId) return;
@@ -124,11 +125,19 @@ export const WatcherManager = () => {
     });
   };
 
-  const handleFibonacciLevelChange = (details: { value: string }): void => {
+  const handleFibonacciLevelLongChange = (details: { value: string }): void => {
     if (!walletId) return;
     updateConfig.mutate({
       walletId,
-      fibonacciTargetLevel: details.value as FibonacciTargetLevel,
+      fibonacciTargetLevelLong: details.value as FibonacciTargetLevel,
+    });
+  };
+
+  const handleFibonacciLevelShortChange = (details: { value: string }): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      fibonacciTargetLevelShort: details.value as FibonacciTargetLevel,
     });
   };
 
@@ -306,9 +315,11 @@ export const WatcherManager = () => {
         isExpanded={expandedSections.tpMode}
         onToggle={() => toggleSection('tpMode')}
         tpCalculationMode={tpCalculationMode}
-        fibonacciTargetLevel={fibonacciTargetLevel}
+        fibonacciTargetLevelLong={fibonacciTargetLevelLong}
+        fibonacciTargetLevelShort={fibonacciTargetLevelShort}
         onTpModeChange={handleTpModeChange}
-        onFibonacciLevelChange={handleFibonacciLevelChange}
+        onFibonacciLevelLongChange={handleFibonacciLevelLongChange}
+        onFibonacciLevelShortChange={handleFibonacciLevelShortChange}
         isPending={updateConfig.isPending}
       />
 

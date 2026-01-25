@@ -187,6 +187,8 @@
         "fibonacciDescription": "Uses Fibonacci extension levels (100%, 127.2%, 161.8%)",
         "fibonacciLevel": {
           "title": "Fibonacci Target Level",
+          "titleLong": "LONG Target Level",
+          "titleShort": "SHORT Target Level",
           "auto": "Automatic (ADX-based)",
           "autoDescription": "Dynamically selects level based on trend strength (ADX), volatility (ATR) and volume",
           "conservative": "100% (1.0)",

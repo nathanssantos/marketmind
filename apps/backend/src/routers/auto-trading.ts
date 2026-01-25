@@ -128,6 +128,8 @@ export const autoTradingRouter = router({
         exposureMultiplier: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
+        fibonacciTargetLevelLong: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
+        fibonacciTargetLevelShort: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
