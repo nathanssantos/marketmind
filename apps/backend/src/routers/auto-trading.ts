@@ -210,6 +210,10 @@ export const autoTradingRouter = router({
         {updateData.tpCalculationMode = input.tpCalculationMode;}
       if (input.fibonacciTargetLevel !== undefined)
         {updateData.fibonacciTargetLevel = input.fibonacciTargetLevel;}
+      if (input.fibonacciTargetLevelLong !== undefined)
+        {updateData.fibonacciTargetLevelLong = input.fibonacciTargetLevelLong;}
+      if (input.fibonacciTargetLevelShort !== undefined)
+        {updateData.fibonacciTargetLevelShort = input.fibonacciTargetLevelShort;}
       if (input.useDynamicSymbolSelection !== undefined)
         {updateData.useDynamicSymbolSelection = input.useDynamicSymbolSelection;}
       if (input.dynamicSymbolRotationInterval !== undefined)

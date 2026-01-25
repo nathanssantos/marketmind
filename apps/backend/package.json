@@ -52,6 +52,8 @@
     "backtest:batch": "bash scripts/batch-backtest-comparison.sh",
     "backtest:fib-entry": "tsx scripts/run-fib-entry-comparison.ts",
     "backtest:fib-target": "tsx scripts/run-fib-target-comparison.ts",
+    "backtest:mw": "tsx src/cli/multi-watcher-backtest.ts",
+    "backtest:volume": "tsx src/cli/compare-volume-filter.ts",
     "validate:all": "tsx validate-strategies.mts",
     "optimize:all": "node batch-optimize.mjs",
     "test:all": "tsx validate-strategies.mts && node batch-optimize.mjs",
