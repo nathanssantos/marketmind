@@ -34,9 +34,11 @@ export const Radio = (props: RadioProps): ReactElement => {
     const { value, children, disabled = false } = props;
 
     return (
-        <ChakraRadioGroup.Item value={value} disabled={disabled}>
+        <ChakraRadioGroup.Item value={value} disabled={disabled} cursor="pointer">
             <ChakraRadioGroup.ItemHiddenInput />
-            <ChakraRadioGroup.ItemIndicator />
+            <ChakraRadioGroup.ItemControl>
+                <ChakraRadioGroup.ItemIndicator />
+            </ChakraRadioGroup.ItemControl>
             {children && <ChakraRadioGroup.ItemText>{children}</ChakraRadioGroup.ItemText>}
         </ChakraRadioGroup.Item>
     );

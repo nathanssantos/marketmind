@@ -1,6 +1,6 @@
-import { calculateFibonacciProjection } from '@marketmind/indicators';
+import { calculateADX, calculateFibonacciProjection } from '@marketmind/indicators';
 import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
-import { getDefaultFee } from '@marketmind/types';
+import { FILTER_THRESHOLDS, getDefaultFee } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
   BACKTEST_DEFAULTS,
@@ -98,6 +98,50 @@ export class OrderExecutor {
     return parseInt(match[1]) * unitMs;
   }
 
+  private getAdxBasedFibonacciLevel(klines: Kline[], direction: 'LONG' | 'SHORT'): number {
+    const { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG } = FILTER_THRESHOLDS;
+    const MIN_KLINES_FOR_ADX = 35;
+
+    if (klines.length < MIN_KLINES_FOR_ADX) {
+      log('⚠️ Insufficient klines for ADX calculation, using default level', {
+        klinesCount: klines.length,
+        required: MIN_KLINES_FOR_ADX,
+      });
+      return direction === 'LONG' ? 1.618 : 1.272;
+    }
+
+    const adxResult = calculateADX(klines, 14);
+    const adx = adxResult.adx[adxResult.adx.length - 1];
+
+    if (adx == null) {
+      log('⚠️ ADX calculation returned null, using default level');
+      return direction === 'LONG' ? 1.618 : 1.272;
+    }
+
+    let targetLevel: number;
+
+    if (direction === 'LONG') {
+      if (adx >= ADX_VERY_STRONG) targetLevel = 2.0;
+      else if (adx >= ADX_STRONG) targetLevel = 1.618;
+      else if (adx >= ADX_MIN) targetLevel = 1.382;
+      else targetLevel = 1.0;
+    } else {
+      if (adx >= ADX_VERY_STRONG) targetLevel = 1.618;
+      else if (adx >= ADX_STRONG) targetLevel = 1.5;
+      else if (adx >= ADX_MIN) targetLevel = 1.382;
+      else targetLevel = 1.272;
+    }
+
+    log('📊 ADX-based Fibonacci level selected', {
+      adx: adx.toFixed(2),
+      direction,
+      targetLevel,
+      thresholds: { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG },
+    });
+
+    return targetLevel;
+  }
+
   calculateFibonacciTakeProfit(
     klines: Kline[],
     _entryPrice: number,
@@ -121,7 +165,7 @@ export class OrderExecutor {
     }
 
     const targetLevel = fibonacciTargetLevel === 'auto'
-      ? (direction === 'LONG' ? 1.618 : 1.272)
+      ? this.getAdxBasedFibonacciLevel(klines, direction)
       : parseFloat(fibonacciTargetLevel);
 
     const targetLevelData = projection.levels.find(
