@@ -27,6 +27,12 @@ export interface BacktestConfig {
   enableLongInBearMarket?: boolean; // Allow LONG trades in bear market (price below EMA200)
   enableShortInBullMarket?: boolean; // Allow SHORT trades in bull market (price above EMA200)
   useVolumeFilter?: boolean; // Require volume confirmation
+  volumeFilterConfig?: {
+    breakoutMultiplier?: number; // Volume ratio required for breakout setups (default: 1.5)
+    pullbackMultiplier?: number; // Volume ratio required for pullback setups (default: 1.0)
+    useObvCheck?: boolean; // Check OBV trend alignment (default: true)
+    obvLookback?: number; // OBV trend lookback period (default: 5)
+  };
   useFundingFilter?: boolean; // Block trades with extreme funding rates
   useConfluenceScoring?: boolean; // Use confluence scoring system
   confluenceMinScore?: number; // Minimum confluence score to allow trade (default: 60)

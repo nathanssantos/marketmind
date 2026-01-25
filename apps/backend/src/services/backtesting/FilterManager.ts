@@ -19,6 +19,7 @@ import {
   type FundingFilterResult,
   type MarketRegimeResult,
   type MtfFilterResult,
+  type VolumeFilterConfig,
   type VolumeFilterResult,
 } from '../../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
@@ -39,6 +40,7 @@ export interface FilterConfig {
   useBtcCorrelationFilter?: boolean;
   useMarketRegimeFilter?: boolean;
   useVolumeFilter?: boolean;
+  volumeFilterConfig?: VolumeFilterConfig;
   useFundingFilter?: boolean;
   useConfluenceScoring?: boolean;
   confluenceMinScore?: number;
@@ -458,7 +460,7 @@ export class FilterManager {
     }
 
     const volumeKlines = klines.slice(Math.max(0, setupIndex - 30), setupIndex + 1);
-    const result = checkVolumeCondition(volumeKlines, direction, setupType);
+    const result = checkVolumeCondition(volumeKlines, direction, setupType, this.config.volumeFilterConfig);
 
     if (!result.isAllowed) {
       this.stats.skippedVolume++;

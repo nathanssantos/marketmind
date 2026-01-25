@@ -413,7 +413,7 @@ export class MultiWatcherBacktestEngine {
 
     if (this.config.useVolumeFilter && klines.length >= 21 && context?.setupType) {
       const volumeKlines = klines.slice(-30);
-      const volumeResult = checkVolumeCondition(volumeKlines, direction, context.setupType);
+      const volumeResult = checkVolumeCondition(volumeKlines, direction, context.setupType, this.config.volumeFilterConfig);
       filterResults.volume = volumeResult;
       if (!volumeResult.isAllowed) {
         stats.tradesSkipped++;

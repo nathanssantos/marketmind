@@ -28,6 +28,13 @@ export interface VolumeFilterResult {
   reason: string;
 }
 
+export interface VolumeFilterConfig {
+  breakoutMultiplier?: number;
+  pullbackMultiplier?: number;
+  useObvCheck?: boolean;
+  obvLookback?: number;
+}
+
 const SETUP_VOLUME_TYPE: Record<string, SetupVolumeType> = {
   'breakout-long': 'BREAKOUT',
   'breakout-short': 'BREAKOUT',
@@ -90,8 +97,14 @@ const getObvTrend = (obvValues: number[], lookback: number): ObvTrend => {
 export const checkVolumeCondition = (
   klines: Kline[],
   direction: 'LONG' | 'SHORT',
-  setupType: string
+  setupType: string,
+  config?: VolumeFilterConfig
 ): VolumeFilterResult => {
+  const breakoutMult = config?.breakoutMultiplier ?? BREAKOUT_MULTIPLIER;
+  const pullbackMult = config?.pullbackMultiplier ?? PULLBACK_MULTIPLIER;
+  const useObv = config?.useObvCheck ?? true;
+  const obvLookback = config?.obvLookback ?? OBV_LOOKBACK;
+
   if (klines.length < MIN_KLINES_REQUIRED) {
     return {
       isAllowed: true,
@@ -105,8 +118,7 @@ export const checkVolumeCondition = (
   }
 
   const volumeType = getSetupVolumeType(setupType);
-  const requiredMultiplier =
-    volumeType === 'BREAKOUT' ? BREAKOUT_MULTIPLIER : PULLBACK_MULTIPLIER;
+  const requiredMultiplier = volumeType === 'BREAKOUT' ? breakoutMult : pullbackMult;
 
   const lastKline = klines[klines.length - 1];
   if (!lastKline) {
@@ -137,16 +149,17 @@ export const checkVolumeCondition = (
   }
 
   const volumeRatio = currentVolume / averageVolume;
-  const isVolumeSpike = volumeRatio >= requiredMultiplier;
+  const isVolumeSpike = requiredMultiplier > 0 ? volumeRatio >= requiredMultiplier : true;
 
   const obvResult = calculateOBV(klines);
-  const obvTrend = getObvTrend(obvResult.values, OBV_LOOKBACK);
+  const obvTrend = getObvTrend(obvResult.values, obvLookback);
 
-  const obvAligned =
+  const obvAligned = !useObv || (
     (direction === 'LONG' && obvTrend !== 'FALLING') ||
-    (direction === 'SHORT' && obvTrend !== 'RISING');
+    (direction === 'SHORT' && obvTrend !== 'RISING')
+  );
 
-  if (volumeType === 'BREAKOUT' && !isVolumeSpike) {
+  if (volumeType === 'BREAKOUT' && requiredMultiplier > 0 && !isVolumeSpike) {
     return {
       isAllowed: false,
       currentVolume,
@@ -158,7 +171,7 @@ export const checkVolumeCondition = (
     };
   }
 
-  if (!obvAligned) {
+  if (useObv && !obvAligned) {
     return {
       isAllowed: false,
       currentVolume,
@@ -177,6 +190,6 @@ export const checkVolumeCondition = (
     volumeRatio,
     isVolumeSpike,
     obvTrend,
-    reason: `Volume confirmed: ratio ${volumeRatio.toFixed(2)}x, OBV ${obvTrend}`,
+    reason: `Volume confirmed: ratio ${volumeRatio.toFixed(2)}x, OBV ${obvTrend}${!useObv ? ' (OBV check disabled)' : ''}`,
   };
 };
