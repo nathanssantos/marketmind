@@ -7,3 +7,4 @@ export * from './stochastic-filter';
 export * from './momentum-timing-filter';
 export * from './adx-filter';
 export * from './trend-filter';
+export * from './direction-filter';

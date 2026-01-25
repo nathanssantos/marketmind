@@ -10,7 +10,7 @@
     "crossover",
     "trend"
   ],
-  "status": "active",
+  "status": "unprofitable",
   "backtestSummary": {
     "profitFactor": 0.84,
     "winRate": 32.73,

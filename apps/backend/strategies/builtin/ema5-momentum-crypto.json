@@ -11,7 +11,7 @@
     "crypto-optimized"
   ],
   "source": "QuantifiedStrategies.com - Trend Following on Bitcoin",
-  "status": "active",
+  "status": "unprofitable",
   "backtestSummary": {
     "referenceCAGR": 145,
     "referenceMaxDrawdown": 39,

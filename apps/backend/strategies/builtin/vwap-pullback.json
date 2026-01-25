@@ -11,7 +11,7 @@
     "trend-following",
     "2025"
   ],
-  "status": "active",
+  "status": "unprofitable",
   "backtestSummary": {
     "profitFactor": 0.92,
     "winRate": 36,

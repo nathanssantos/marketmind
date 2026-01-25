@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "id": "fibonacci-retracement",
   "name": "Fibonacci Retracement",
   "version": "1.0.0",
@@ -121,7 +121,7 @@
       "multiplier": 2.5
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 2.5,

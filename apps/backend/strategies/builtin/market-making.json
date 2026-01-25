@@ -10,7 +10,7 @@
     "mean-reversion",
     "spread"
   ],
-  "status": "active",
+  "status": "unprofitable",
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [

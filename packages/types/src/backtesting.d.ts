@@ -19,6 +19,9 @@ export interface BacktestConfig {
     useMtfFilter?: boolean;
     useBtcCorrelationFilter?: boolean;
     useMarketRegimeFilter?: boolean;
+    useDirectionFilter?: boolean;
+    enableLongInBearMarket?: boolean;
+    enableShortInBullMarket?: boolean;
     useVolumeFilter?: boolean;
     useFundingFilter?: boolean;
     useConfluenceScoring?: boolean;

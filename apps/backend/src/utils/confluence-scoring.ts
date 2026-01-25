@@ -1,5 +1,6 @@
 import type {
   BtcCorrelationResult,
+  DirectionFilterResult,
   FundingFilterResult,
   MarketRegimeResult,
   MtfFilterResult,
@@ -48,6 +49,7 @@ export interface FilterResults {
   marketRegime?: MarketRegimeResult | null;
   volume?: VolumeFilterResult | null;
   fundingRate?: FundingFilterResult | null;
+  direction?: DirectionFilterResult | null;
   trendAllowed?: boolean;
   adxValue?: number | null;
 }

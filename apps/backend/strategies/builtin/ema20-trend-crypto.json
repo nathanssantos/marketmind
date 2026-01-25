@@ -11,7 +11,7 @@
     "crypto-optimized"
   ],
   "source": "QuantifiedStrategies.com - 20 EMA Trading Strategy",
-  "status": "active",
+  "status": "unprofitable",
   "backtestSummary": {
     "referenceCAGR": 126,
     "referenceMaxDrawdown": 39,

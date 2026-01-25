@@ -10,7 +10,7 @@
     "oscillator",
     "quick-trades"
   ],
-  "status": "active",
+  "status": "unprofitable",
   "enabled": false,
   "group": "momentum",
   "backtestSummary": {

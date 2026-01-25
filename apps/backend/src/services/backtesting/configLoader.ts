@@ -17,6 +17,9 @@ interface ConfigOverrides {
   useMtfFilter?: boolean;
   useBtcCorrelationFilter?: boolean;
   useMarketRegimeFilter?: boolean;
+  useDirectionFilter?: boolean;
+  enableLongInBearMarket?: boolean;
+  enableShortInBullMarket?: boolean;
   useVolumeFilter?: boolean;
   useFundingFilter?: boolean;
   useConfluenceScoring?: boolean;
@@ -91,6 +94,9 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
     useMtfFilter: overrides?.useMtfFilter ?? config.useMtfFilter,
     useBtcCorrelationFilter: overrides?.useBtcCorrelationFilter ?? config.useBtcCorrelationFilter,
     useMarketRegimeFilter: overrides?.useMarketRegimeFilter ?? config.useMarketRegimeFilter,
+    useDirectionFilter: overrides?.useDirectionFilter ?? config.useDirectionFilter,
+    enableLongInBearMarket: overrides?.enableLongInBearMarket ?? config.enableLongInBearMarket,
+    enableShortInBullMarket: overrides?.enableShortInBullMarket ?? config.enableShortInBullMarket,
     useVolumeFilter: overrides?.useVolumeFilter ?? config.useVolumeFilter,
     useFundingFilter: overrides?.useFundingFilter ?? config.useFundingFilter,
     useConfluenceScoring: overrides?.useConfluenceScoring ?? config.useConfluenceScoring,
@@ -126,6 +132,9 @@ export const buildMultiWatcherConfigFromWatchers = (
     useMtfFilter?: boolean;
     useBtcCorrelationFilter?: boolean;
     useMarketRegimeFilter?: boolean;
+    useDirectionFilter?: boolean;
+    enableLongInBearMarket?: boolean;
+    enableShortInBullMarket?: boolean;
     useVolumeFilter?: boolean;
     useFundingFilter?: boolean;
     useConfluenceScoring?: boolean;
@@ -162,6 +171,9 @@ export const buildMultiWatcherConfigFromWatchers = (
     useMtfFilter: options.useMtfFilter ?? FILTER_DEFAULTS.useMtfFilter,
     useBtcCorrelationFilter: options.useBtcCorrelationFilter ?? FILTER_DEFAULTS.useBtcCorrelationFilter,
     useMarketRegimeFilter: options.useMarketRegimeFilter ?? FILTER_DEFAULTS.useMarketRegimeFilter,
+    useDirectionFilter: options.useDirectionFilter ?? FILTER_DEFAULTS.useDirectionFilter,
+    enableLongInBearMarket: options.enableLongInBearMarket ?? FILTER_DEFAULTS.enableLongInBearMarket,
+    enableShortInBullMarket: options.enableShortInBullMarket ?? FILTER_DEFAULTS.enableShortInBullMarket,
     useVolumeFilter: options.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
     useFundingFilter: options.useFundingFilter ?? FILTER_DEFAULTS.useFundingFilter,
     useConfluenceScoring: options.useConfluenceScoring ?? FILTER_DEFAULTS.useConfluenceScoring,

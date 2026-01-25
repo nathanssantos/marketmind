@@ -3,6 +3,7 @@ import {
   ADX_FILTER,
   checkAdxCondition,
   checkBtcCorrelation,
+  checkDirectionFilter,
   checkFundingRate,
   checkMarketRegime,
   checkMomentumTiming,
@@ -10,6 +11,7 @@ import {
   checkStochasticCondition,
   checkTrendCondition,
   checkVolumeCondition,
+  DIRECTION_FILTER,
   getHigherTimeframe,
   MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
@@ -29,6 +31,9 @@ export interface FilterOrchestrationConfig {
   useFundingFilter?: boolean;
   useConfluenceScoring?: boolean;
   confluenceMinScore?: number;
+  useDirectionFilter?: boolean;
+  enableLongInBearMarket?: boolean;
+  enableShortInBullMarket?: boolean;
 }
 
 export interface FilterExternalData {
@@ -178,6 +183,34 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
 
     filterResults.marketRegime = regimeResult;
     filterResults.adxValue = regimeResult.adx;
+  }
+
+  if (config.useDirectionFilter && klines.length >= DIRECTION_FILTER.MIN_KLINES_REQUIRED) {
+    const directionResult = checkDirectionFilter(klines, direction, {
+      enableLongInBearMarket: config.enableLongInBearMarket,
+      enableShortInBullMarket: config.enableShortInBullMarket,
+    });
+
+    checkResults.push({
+      filter: 'Direction',
+      passed: directionResult.isAllowed,
+      reason: directionResult.reason,
+      details: {
+        marketDirection: directionResult.direction,
+        priceVsEma200: directionResult.priceVsEma200Percent?.toFixed(1),
+      },
+    });
+
+    if (!directionResult.isAllowed) {
+      return {
+        passed: false,
+        filterResults,
+        rejectionReason: 'Direction filter failed',
+        checkResults,
+      };
+    }
+
+    filterResults.direction = directionResult;
   }
 
   if (config.useVolumeFilter && klines.length >= 21) {

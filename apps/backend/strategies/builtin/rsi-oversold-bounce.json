@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "id": "rsi-oversold-bounce",
   "name": "RSI Oversold Bounce",
   "version": "1.0.0",
@@ -167,7 +167,7 @@
     },
     "maxBarsInTrade": 10,
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

@@ -10,7 +10,7 @@
     "macd",
     "reversal"
   ],
-  "status": "active",
+  "status": "unprofitable",
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [

@@ -23,6 +23,9 @@ export interface BacktestConfig {
   useMtfFilter?: boolean; // Use Multi-Timeframe filter (HTF EMA50/EMA200)
   useBtcCorrelationFilter?: boolean; // Block altcoin trades against BTC trend
   useMarketRegimeFilter?: boolean; // Block trades in wrong market regime
+  useDirectionFilter?: boolean; // Block trades against market direction (bull/bear)
+  enableLongInBearMarket?: boolean; // Allow LONG trades in bear market (price below EMA200)
+  enableShortInBullMarket?: boolean; // Allow SHORT trades in bull market (price above EMA200)
   useVolumeFilter?: boolean; // Require volume confirmation
   useFundingFilter?: boolean; // Block trades with extreme funding rates
   useConfluenceScoring?: boolean; // Use confluence scoring system

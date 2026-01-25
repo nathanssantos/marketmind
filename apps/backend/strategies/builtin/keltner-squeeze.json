@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "id": "keltner-squeeze",
   "name": "Keltner Squeeze Breakout",
   "version": "1.0.0",
@@ -161,7 +161,7 @@
       "multiplier": "$rrMultiplier"
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

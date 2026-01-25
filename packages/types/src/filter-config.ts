@@ -16,4 +16,8 @@ export interface UnifiedFilterConfig {
 
   useCooldown?: boolean;
   cooldownMinutes?: number;
+
+  useDirectionFilter?: boolean;
+  enableLongInBearMarket?: boolean;
+  enableShortInBullMarket?: boolean;
 }

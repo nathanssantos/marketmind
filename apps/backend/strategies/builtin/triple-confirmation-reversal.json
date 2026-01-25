@@ -11,7 +11,7 @@
     "bollinger",
     "reversal"
   ],
-  "status": "active",
+  "status": "unprofitable",
   "enabled": false,
   "group": "reversal",
   "backtestSummary": {
