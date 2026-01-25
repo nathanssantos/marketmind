@@ -47,6 +47,26 @@ All filter defaults are centralized in `@marketmind/types/filter-defaults.ts` to
 | `useConfluenceScoring` | `true` | Enable multi-factor confluence scoring |
 | `confluenceMinScore` | `60` | Minimum score required (0-100) |
 
+### Volatility & Session Filters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `useChoppinessFilter` | `false` | Skip trades when Choppiness Index > threshold (choppy market) |
+| `choppinessThresholdHigh` | `61.8` | Upper threshold - above this = choppy, skip trade |
+| `choppinessThresholdLow` | `38.2` | Lower threshold - below this = trending, allow trade |
+| `choppinessPeriod` | `14` | Choppiness Index calculation period |
+| `useSessionFilter` | `false` | Trade only during high-volume hours (EU-US overlap) |
+| `sessionStartUtc` | `13` | Session start hour (UTC) |
+| `sessionEndUtc` | `16` | Session end hour (UTC) |
+| `useBollingerSqueezeFilter` | `false` | Wait for Bollinger Band squeeze before entry |
+| `bollingerSqueezeThreshold` | `0.1` | Squeeze threshold (bandwidth ratio) |
+| `bollingerSqueezePeriod` | `20` | Bollinger Band period |
+| `bollingerSqueezeStdDev` | `2.0` | Standard deviation multiplier |
+| `useVwapFilter` | `false` | LONG above VWAP only, SHORT below VWAP only |
+| `useSuperTrendFilter` | `false` | Trade only in SuperTrend direction |
+| `superTrendPeriod` | `10` | SuperTrend calculation period |
+| `superTrendMultiplier` | `3.0` | ATR multiplier for SuperTrend |
+
 ### Risk Management
 
 | Parameter | Default | Description |
@@ -63,6 +83,32 @@ All filter defaults are centralized in `@marketmind/types/filter-defaults.ts` to
 | `cooldownMinutes` | `15` | Minutes between trades on same symbol |
 
 ## Usage
+
+### Filter Optimization Script
+
+Find the best filter combinations for your strategy:
+
+```bash
+cd apps/backend
+npx tsx src/cli/optimize-complete.ts \
+  --start=2025-01-01 \
+  --end=2026-01-01 \
+  --timeframes=4h
+```
+
+Options:
+- `--symbol`: Symbol to test (default: BTCUSDT)
+- `--start`: Start date (YYYY-MM-DD)
+- `--end`: End date (YYYY-MM-DD)
+- `--timeframes`: Comma-separated timeframes (e.g., 30m,1h,4h,1d)
+- `--capital`: Initial capital (default: 10000)
+- `--leverage`: Leverage multiplier (default: 10)
+
+The script tests 32 filter combinations and outputs:
+- Top 20 configurations ranked by P&L
+- Best configuration per timeframe
+- LONG vs SHORT performance analysis
+- Recommended production configuration
 
 ### CLI Script
 
@@ -204,3 +250,35 @@ This ensures consistency between:
 - configLoader
 - Auto-trading configuration
 - Database schema defaults
+
+## Filter Descriptions
+
+### Choppiness Index Filter
+The Choppiness Index measures market "choppiness" (sideways/ranging vs trending):
+- **CHOP > 61.8**: Market is choppy/ranging → Skip trade
+- **CHOP < 38.2**: Market is trending → Allow trade
+- Formula: `100 × LOG10(Σ ATR(14)) / (MAX(high,14) - MIN(low,14))`
+
+### Session Filter
+Trades only during the EU-US market overlap (highest volume period):
+- Default: 13:00-16:00 UTC
+- This period has ~31% higher volume than average
+- Avoid Monday 08:00-10:00 UTC (lowest volatility)
+
+### Bollinger Squeeze Filter
+Detects low volatility "squeeze" conditions before breakouts:
+- Squeeze = Bollinger Band width is very narrow
+- Wait for squeeze expansion to confirm entry direction
+- Combines well with volume confirmation
+
+### VWAP Filter
+Volume-Weighted Average Price alignment:
+- LONG: Only if price is above VWAP (institutional buying pressure)
+- SHORT: Only if price is below VWAP (institutional selling pressure)
+
+### SuperTrend Filter
+ATR-based trend following indicator:
+- Provides clear trend direction (up/down)
+- LONG: Only if SuperTrend is bullish
+- SHORT: Only if SuperTrend is bearish
+- Default: Period=10, Multiplier=3.0

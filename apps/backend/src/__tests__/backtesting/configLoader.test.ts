@@ -55,7 +55,7 @@ describe('configLoader', () => {
       expect(config.exposureMultiplier).toBe(FILTER_DEFAULTS.exposureMultiplier);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
-      expect(config.useTrendFilter).toBe(false);
+      expect(config.useTrendFilter).toBe(true);
       expect(config.minRiskRewardRatio).toBe(TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO);
       expect(config.cooldownMinutes).toBe(15);
       expect(config.useSharedExposure).toBe(true);
