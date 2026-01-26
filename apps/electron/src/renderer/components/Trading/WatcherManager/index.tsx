@@ -149,14 +149,6 @@ export const WatcherManager = () => {
     });
   };
 
-  const handleDynamicSelectionToggle = (value: boolean): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      useDynamicSymbolSelection: value,
-    });
-  };
-
   const handleAutoRotationToggle = (value: boolean): void => {
     if (!walletId) return;
     updateConfig.mutate({
@@ -254,8 +246,6 @@ export const WatcherManager = () => {
       <DynamicSelectionSection
         isExpanded={expandedSections.dynamicSelection}
         onToggle={() => toggleSection('dynamicSelection')}
-        isDynamicSelectionEnabled={config?.useDynamicSymbolSelection ?? false}
-        onDynamicSelectionToggle={handleDynamicSelectionToggle}
         isAutoRotationEnabled={config?.enableAutoRotation ?? true}
         onAutoRotationToggle={handleAutoRotationToggle}
         rotationStatus={rotationStatus}

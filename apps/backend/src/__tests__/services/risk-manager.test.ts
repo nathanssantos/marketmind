@@ -13,7 +13,7 @@ import {
     type PositionLike,
 } from '../../services/risk-manager';
 import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG, DEFAULT_TRAILING_STOP_USER_CONFIG, DEFAULT_VOLUME_FILTER_CONFIG } from '../helpers/test-fixtures';
+import { createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG, DEFAULT_TRAILING_STOP_USER_CONFIG, DEFAULT_VOLUME_FILTER_CONFIG, DEFAULT_ADDITIONAL_FILTERS_CONFIG } from '../helpers/test-fixtures';
 
 describe('Risk Manager - Pure Utility Functions', () => {
   describe('calculatePositionExposure', () => {
@@ -196,6 +196,7 @@ describe('RiskManagerService', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -304,6 +305,7 @@ describe('RiskManagerService', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -375,6 +377,7 @@ describe('RiskManagerService', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -446,6 +449,7 @@ describe('RiskManagerService', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -542,6 +546,7 @@ describe('RiskManagerService', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

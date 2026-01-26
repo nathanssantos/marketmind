@@ -33,7 +33,7 @@ export const checkSupertrendCondition = (
 
   const result = calculateSupertrend(klines, period, multiplier);
   const lastIndex = result.trend.length - 1;
-  const trend = result.trend[lastIndex];
+  const trend = result.trend[lastIndex] ?? null;
   const value = result.value[lastIndex];
 
   if (trend === null) {

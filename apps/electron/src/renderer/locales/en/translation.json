@@ -1052,8 +1052,6 @@
     "dynamicSelection": {
       "title": "Dynamic Symbol Selection",
       "description": "Automatically select and rotate symbols based on opportunity scores",
-      "enable": "Enable Dynamic Selection",
-      "enableDescription": "Automatically select top-performing symbols based on market cap and opportunity scores",
       "symbolLimit": "Symbol Limit",
       "symbolLimitDescription": "Maximum number of symbols to monitor (1-100)",
       "rotationInterval": "Rotation Interval",

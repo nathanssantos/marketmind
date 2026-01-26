@@ -14,8 +14,6 @@ export interface RotationStatus {
 export interface DynamicSelectionSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
-  isDynamicSelectionEnabled: boolean;
-  onDynamicSelectionToggle: (value: boolean) => void;
   isAutoRotationEnabled: boolean;
   onAutoRotationToggle: (value: boolean) => void;
   rotationStatus?: RotationStatus;
@@ -46,8 +44,6 @@ export interface DynamicSelectionSectionProps {
 export const DynamicSelectionSection = ({
   isExpanded,
   onToggle,
-  isDynamicSelectionEnabled,
-  onDynamicSelectionToggle,
   isAutoRotationEnabled,
   onAutoRotationToggle,
   rotationStatus,
@@ -93,7 +89,7 @@ export const DynamicSelectionSection = ({
             <Text fontSize="lg" fontWeight="bold">
               {t('tradingProfiles.dynamicSelection.title')}
             </Text>
-            {isDynamicSelectionEnabled && (
+            {isAutoRotationEnabled && (
               <Box
                 px={2}
                 py={0.5}
@@ -106,7 +102,7 @@ export const DynamicSelectionSection = ({
               >
                 <Flex align="center" gap={1}>
                   <LuZap size={10} />
-                  {t('common.active')}
+                  {t('tradingProfiles.dynamicSelection.autoRotation')}
                 </Flex>
               </Box>
             )}
@@ -121,117 +117,99 @@ export const DynamicSelectionSection = ({
       <Collapsible.Root open={isExpanded}>
         <Collapsible.Content>
           <Stack gap={4} mt={4}>
-            <Flex justify="space-between" align="center" p={3} bg="bg.muted" borderRadius="md">
-              <Box>
-                <Text fontSize="sm" fontWeight="medium">
-                  {t('tradingProfiles.dynamicSelection.enable')}
-                </Text>
-                <Text fontSize="xs" color="fg.muted">
-                  {t('tradingProfiles.dynamicSelection.enableDescription')}
-                </Text>
-              </Box>
-              <Switch
-                checked={isDynamicSelectionEnabled}
-                onCheckedChange={onDynamicSelectionToggle}
-                disabled={isPending}
-              />
-            </Flex>
+            <QuickStartSection
+              marketType={quickStartMarketType}
+              timeframe={quickStartTimeframe}
+              count={quickStartCount}
+              effectiveMax={effectiveMax}
+              isLoadingMax={isLoadingMax}
+              filteredSymbolsCount={filteredSymbolsCount}
+              isLoadingFiltered={isLoadingFiltered}
+              isStarting={isStartingWatchersBulk}
+              btcTrendStatus={btcTrendStatus}
+              btcTrendInfo={btcTrendInfo}
+              skippedTrendCount={skippedTrendCount}
+              showBtcTrend={showBtcTrend}
+              formatCapitalTooltip={formatCapitalTooltip}
+              onMarketTypeChange={onMarketTypeChange}
+              onTimeframeChange={onTimeframeChange}
+              onCountChange={onCountChange}
+              onQuickStart={onQuickStart}
+            />
 
-            {isDynamicSelectionEnabled && (
-              <>
-                <Box p={4} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
-                  <Flex justify="space-between" align="center">
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {t('tradingProfiles.dynamicSelection.rotationStatus')}
-                      </Text>
-                      {isLoadingRotationStatus ? (
-                        <Text fontSize="xs" color="fg.muted">
-                          {t('common.loading')}
-                        </Text>
-                      ) : rotationStatus?.isActive ? (
-                        <Text fontSize="xs" color="green.500">
-                          {t('tradingProfiles.dynamicSelection.nextRotation', {
-                            time: rotationStatus.nextRotation
-                              ? new Date(rotationStatus.nextRotation).toLocaleTimeString()
-                              : '-',
-                          })}
-                        </Text>
-                      ) : (
-                        <Text fontSize="xs" color="fg.muted">
-                          {t('tradingProfiles.dynamicSelection.rotationInactive')}
-                        </Text>
-                      )}
-                    </Box>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onTriggerRotation}
-                      loading={isTriggeringRotation}
-                      disabled={isPending}
-                    >
-                      <LuRefreshCw />
-                      {t('tradingProfiles.dynamicSelection.triggerNow')}
-                    </Button>
-                  </Flex>
-                  <Flex justify="space-between" align="center" mt={3} pt={3} borderTopWidth="1px" borderColor="border">
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {t('tradingProfiles.dynamicSelection.autoRotation')}
-                      </Text>
-                      <Text fontSize="xs" color="fg.muted">
-                        {t('tradingProfiles.dynamicSelection.autoRotationDescription')}
-                      </Text>
-                    </Box>
-                    <Switch
-                      checked={isAutoRotationEnabled}
-                      onCheckedChange={onAutoRotationToggle}
-                      disabled={isPending}
-                    />
-                  </Flex>
+            <Box p={4} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+              <Flex justify="space-between" align="center">
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium">
+                    {t('tradingProfiles.dynamicSelection.autoRotation')}
+                  </Text>
+                  <Text fontSize="xs" color="fg.muted">
+                    {t('tradingProfiles.dynamicSelection.autoRotationDescription')}
+                  </Text>
                 </Box>
-
-                <QuickStartSection
-                  marketType={quickStartMarketType}
-                  timeframe={quickStartTimeframe}
-                  count={quickStartCount}
-                  effectiveMax={effectiveMax}
-                  isLoadingMax={isLoadingMax}
-                  filteredSymbolsCount={filteredSymbolsCount}
-                  isLoadingFiltered={isLoadingFiltered}
-                  isStarting={isStartingWatchersBulk}
-                  btcTrendStatus={btcTrendStatus}
-                  btcTrendInfo={btcTrendInfo}
-                  skippedTrendCount={skippedTrendCount}
-                  showBtcTrend={showBtcTrend}
-                  formatCapitalTooltip={formatCapitalTooltip}
-                  onMarketTypeChange={onMarketTypeChange}
-                  onTimeframeChange={onTimeframeChange}
-                  onCountChange={onCountChange}
-                  onQuickStart={onQuickStart}
+                <Switch
+                  checked={isAutoRotationEnabled}
+                  onCheckedChange={onAutoRotationToggle}
+                  disabled={isPending}
                 />
-
-                <Flex justify="space-between" align="center">
-                  <Box p={3} bg="blue.50" borderRadius="md" _dark={{ bg: 'blue.900/20' }} flex={1}>
-                    <Flex gap={2} align="flex-start">
-                      <LuZap size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+              </Flex>
+              {isAutoRotationEnabled && (
+                <Flex justify="space-between" align="center" mt={3} pt={3} borderTopWidth="1px" borderColor="border">
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium">
+                      {t('tradingProfiles.dynamicSelection.rotationStatus')}
+                    </Text>
+                    {isLoadingRotationStatus ? (
                       <Text fontSize="xs" color="fg.muted">
-                        {t('tradingProfiles.dynamicSelection.infoText')}
+                        {t('common.loading')}
                       </Text>
-                    </Flex>
+                    ) : rotationStatus?.isActive ? (
+                      <Text fontSize="xs" color="green.500">
+                        {t('tradingProfiles.dynamicSelection.nextRotation', {
+                          time: rotationStatus.nextRotation
+                            ? new Date(rotationStatus.nextRotation).toLocaleTimeString()
+                            : '-',
+                        })}
+                      </Text>
+                    ) : (
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('tradingProfiles.dynamicSelection.rotationInactive')}
+                      </Text>
+                    )}
                   </Box>
                   <Button
                     size="sm"
-                    variant="ghost"
-                    onClick={onViewRankings}
-                    ml={2}
+                    variant="outline"
+                    onClick={onTriggerRotation}
+                    loading={isTriggeringRotation}
+                    disabled={isPending}
                   >
-                    <LuChartBar />
-                    {t('tradingProfiles.dynamicSelection.viewRankings')}
+                    <LuRefreshCw />
+                    {t('tradingProfiles.dynamicSelection.triggerNow')}
                   </Button>
                 </Flex>
-              </>
-            )}
+              )}
+            </Box>
+
+            <Flex justify="space-between" align="center">
+              <Box p={3} bg="blue.50" borderRadius="md" _dark={{ bg: 'blue.900/20' }} flex={1}>
+                <Flex gap={2} align="flex-start">
+                  <LuZap size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+                  <Text fontSize="xs" color="fg.muted">
+                    {t('tradingProfiles.dynamicSelection.infoText')}
+                  </Text>
+                </Flex>
+              </Box>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onViewRankings}
+                ml={2}
+              >
+                <LuChartBar />
+                {t('tradingProfiles.dynamicSelection.viewRankings')}
+              </Button>
+            </Flex>
           </Stack>
         </Collapsible.Content>
       </Collapsible.Root>

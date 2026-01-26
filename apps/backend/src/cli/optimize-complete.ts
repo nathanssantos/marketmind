@@ -44,11 +44,6 @@ const FILTER_COMBINATIONS: FilterCombination[] = [
     useAdxFilter: false,
     useFundingFilter: false,
     useConfluenceScoring: false,
-    useChoppinessFilter: false,
-    useSessionFilter: false,
-    useBollingerSqueezeFilter: false,
-    useVwapFilter: false,
-    useSuperTrendFilter: false,
   }},
   { name: 'TrendEMA only', filters: { useTrendFilter: true, trendFilterPeriod: 21 }},
   { name: 'MTF only', filters: { useMtfFilter: true }},
@@ -58,15 +53,9 @@ const FILTER_COMBINATIONS: FilterCombination[] = [
   { name: 'Stochastic only', filters: { useStochasticFilter: true }},
   { name: 'ADX only', filters: { useAdxFilter: true }},
   { name: 'Funding only', filters: { useFundingFilter: true }},
-  { name: 'Choppiness only', filters: { useChoppinessFilter: true, choppinessThresholdHigh: 61.8, choppinessThresholdLow: 38.2 }},
-  { name: 'Session only (13-16 UTC)', filters: { useSessionFilter: true, sessionStartUtc: 13, sessionEndUtc: 16 }},
-  { name: 'BollingerSqueeze only', filters: { useBollingerSqueezeFilter: true }},
-  { name: 'VWAP only', filters: { useVwapFilter: true }},
-  { name: 'SuperTrend only', filters: { useSuperTrendFilter: true }},
   { name: 'TrendEMA + MTF', filters: { useTrendFilter: true, useMtfFilter: true }},
   { name: 'TrendEMA + MarketRegime', filters: { useTrendFilter: true, useMarketRegimeFilter: true }},
   { name: 'TrendEMA + Volume', filters: { useTrendFilter: true, useVolumeFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
-  { name: 'TrendEMA + Choppiness', filters: { useTrendFilter: true, useChoppinessFilter: true }},
   { name: 'MTF + MarketRegime', filters: { useMtfFilter: true, useMarketRegimeFilter: true }},
   { name: 'MTF + Volume', filters: { useMtfFilter: true, useVolumeFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
   { name: 'MTF + MomentumTiming', filters: { useMtfFilter: true, useMomentumTimingFilter: true }},
@@ -76,11 +65,6 @@ const FILTER_COMBINATIONS: FilterCombination[] = [
   { name: 'TrendEMA + MarketRegime + Volume', filters: { useTrendFilter: true, useMarketRegimeFilter: true, useVolumeFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
   { name: 'MTF + MarketRegime + Volume', filters: { useMtfFilter: true, useMarketRegimeFilter: true, useVolumeFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
   { name: 'All Basic Filters', filters: { useTrendFilter: true, useMtfFilter: true, useMarketRegimeFilter: true, useVolumeFilter: true, useMomentumTimingFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
-  { name: 'Choppiness + VWAP', filters: { useChoppinessFilter: true, useVwapFilter: true }},
-  { name: 'SuperTrend + Volume', filters: { useSuperTrendFilter: true, useVolumeFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
-  { name: 'Session + Choppiness', filters: { useSessionFilter: true, useChoppinessFilter: true }},
-  { name: 'TrendEMA + Choppiness + Volume', filters: { useTrendFilter: true, useChoppinessFilter: true, useVolumeFilter: true, volumeFilterConfig: VOLUME_FILTER_CONFIG }},
-  { name: 'SuperTrend + Choppiness', filters: { useSuperTrendFilter: true, useChoppinessFilter: true }},
 ];
 
 const parseCliArgs = () => {
@@ -124,19 +108,6 @@ const createBaseConfig = (): Omit<MultiWatcherBacktestConfig, 'watchers' | 'star
   fibonacciTargetLevel: 'auto',
   fibonacciTargetLevelLong: '2',
   fibonacciTargetLevelShort: '1.272',
-  useChoppinessFilter: false,
-  choppinessThresholdHigh: 61.8,
-  choppinessThresholdLow: 38.2,
-  choppinessPeriod: 14,
-  useSessionFilter: false,
-  sessionStartUtc: 13,
-  sessionEndUtc: 16,
-  useBollingerSqueezeFilter: false,
-  bollingerSqueezeThreshold: 0.1,
-  useSuperTrendFilter: false,
-  superTrendPeriod: 10,
-  superTrendMultiplier: 3.0,
-  useVwapFilter: false,
 });
 
 const logSection = (title: string) => {
@@ -253,11 +224,6 @@ function getEnabledFiltersString(config: MultiWatcherBacktestConfig): string {
   if (config.useAdxFilter) enabled.push('ADX');
   if (config.useFundingFilter) enabled.push('Funding');
   if (config.useConfluenceScoring) enabled.push('Confluence');
-  if (config.useChoppinessFilter) enabled.push('Choppiness');
-  if (config.useSessionFilter) enabled.push('Session');
-  if (config.useBollingerSqueezeFilter) enabled.push('BollingerSqueeze');
-  if (config.useVwapFilter) enabled.push('VWAP');
-  if (config.useSuperTrendFilter) enabled.push('SuperTrend');
   return enabled.length > 0 ? enabled.join(', ') : 'none';
 }
 
@@ -388,11 +354,6 @@ function getFilterConfigFromName(name: string): string[] {
   if (filters.useAdxFilter) lines.push('useAdxFilter: true,');
   if (filters.useFundingFilter) lines.push('useFundingFilter: true,');
   if (filters.useConfluenceScoring) lines.push('useConfluenceScoring: true,');
-  if (filters.useChoppinessFilter) lines.push('useChoppinessFilter: true,');
-  if (filters.useSessionFilter) lines.push('useSessionFilter: true,');
-  if (filters.useBollingerSqueezeFilter) lines.push('useBollingerSqueezeFilter: true,');
-  if (filters.useVwapFilter) lines.push('useVwapFilter: true,');
-  if (filters.useSuperTrendFilter) lines.push('useSuperTrendFilter: true,');
 
   if (lines.length === 0) {
     lines.push('// All filters disabled (baseline)');

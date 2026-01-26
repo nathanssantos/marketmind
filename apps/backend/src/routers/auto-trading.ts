@@ -1098,7 +1098,7 @@ export const autoTradingRouter = router({
 
       await ctx.db
         .update(autoTradingConfig)
-        .set({ isEnabled: true, updatedAt: new Date() })
+        .set({ isEnabled: true, useDynamicSymbolSelection: true, updatedAt: new Date() })
         .where(
           and(
             eq(autoTradingConfig.walletId, input.walletId),

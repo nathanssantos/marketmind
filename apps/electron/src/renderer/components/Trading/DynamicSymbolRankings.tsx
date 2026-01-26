@@ -266,7 +266,6 @@ interface RotationResult {
   added: string[];
   removed: string[];
   kept: string[];
-  skippedWithPositions: string[];
   timestamp: string;
 }
 
@@ -356,28 +355,6 @@ const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
               </Box>
             )}
 
-            {rotation.skippedWithPositions.length > 0 && (
-              <Box>
-                <Text fontSize="xs" color="orange.500" fontWeight="medium" mb={1}>
-                  {t('tradingProfiles.dynamicSelection.skipped')} ({rotation.skippedWithPositions.length})
-                </Text>
-                <HStack flexWrap="wrap" gap={1}>
-                  {rotation.skippedWithPositions.map((symbol) => (
-                    <Box
-                      key={symbol}
-                      px={2}
-                      py={0.5}
-                      bg="orange.100"
-                      _dark={{ bg: 'orange.900' }}
-                      borderRadius="sm"
-                      fontSize="xs"
-                    >
-                      {symbol}
-                    </Box>
-                  ))}
-                </HStack>
-              </Box>
-            )}
           </Flex>
 
           <Text fontSize="xs" color="fg.muted" mt={2}>

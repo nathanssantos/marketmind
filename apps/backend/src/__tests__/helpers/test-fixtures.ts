@@ -155,10 +155,29 @@ export const DEFAULT_VOLUME_FILTER_CONFIG = {
   useObvCheckShort: FILTER_DEFAULTS.useObvCheckShort,
 };
 
+export const DEFAULT_ADDITIONAL_FILTERS_CONFIG = {
+  useChoppinessFilter: false,
+  choppinessThresholdHigh: '61.80',
+  choppinessThresholdLow: '38.20',
+  choppinessPeriod: 14,
+  useSessionFilter: false,
+  sessionStartUtc: 13,
+  sessionEndUtc: 16,
+  useBollingerSqueezeFilter: false,
+  bollingerSqueezeThreshold: '0.100',
+  bollingerSqueezePeriod: 20,
+  bollingerSqueezeStdDev: '2.00',
+  useVwapFilter: false,
+  useSuperTrendFilter: false,
+  superTrendPeriod: 10,
+  superTrendMultiplier: '3.00',
+};
+
 export const DEFAULT_AUTO_TRADING_CONFIG_EXTRAS = {
   ...DEFAULT_PYRAMID_CONFIG,
   ...DEFAULT_TRAILING_STOP_USER_CONFIG,
   ...DEFAULT_VOLUME_FILTER_CONFIG,
+  ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
 };
 
 const hashPassword = async (password: string): Promise<string> => {

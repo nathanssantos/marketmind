@@ -1,11 +1,6 @@
 import 'dotenv/config';
 import {
-  detectTrendByEMA,
-  detectTrendByADX,
-  detectTrendBySuperTrend,
-  detectTrendCombined,
   type TrendMethod,
-  type TrendDetectionResult,
 } from '@marketmind/indicators';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig, MultiWatcherBacktestConfig } from '@marketmind/types';

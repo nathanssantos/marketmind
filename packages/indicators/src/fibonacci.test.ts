@@ -287,7 +287,7 @@ describe('calculateFibonacciProjection', () => {
     const level200 = result!.levels.find((l) => l.level === 2);
     expect(level200?.label).toBe('200.0%');
 
-    expect(result!.levels).toHaveLength(12);
+    expect(result!.levels).toHaveLength(15);
   });
 });
 

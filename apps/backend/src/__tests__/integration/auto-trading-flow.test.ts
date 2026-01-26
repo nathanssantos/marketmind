@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import * as schema from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 import { getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
-import { createTestTradingProfile, createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG, DEFAULT_TRAILING_STOP_USER_CONFIG, DEFAULT_VOLUME_FILTER_CONFIG } from '../helpers/test-fixtures';
+import { createTestTradingProfile, createTestUser, createTestWallet, DEFAULT_PYRAMID_CONFIG, DEFAULT_TRAILING_STOP_USER_CONFIG, DEFAULT_VOLUME_FILTER_CONFIG, DEFAULT_ADDITIONAL_FILTERS_CONFIG } from '../helpers/test-fixtures';
 
 vi.mock('../../services/binance-kline-stream', () => ({
   binanceKlineStreamService: {
@@ -206,6 +206,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -282,6 +283,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         timeTightenPercentPerBar: '5',
         ...DEFAULT_PYRAMID_CONFIG,
         ...DEFAULT_VOLUME_FILTER_CONFIG,
+        ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
