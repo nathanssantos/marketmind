@@ -146,7 +146,6 @@ export interface RotationResult {
   added: string[];
   removed: string[];
   kept: number;
-  skippedWithPositions: string[];
   skippedInsufficientKlines: string[];
   skippedInsufficientCapital: string[];
   klineValidations: KlineValidationEntry[];

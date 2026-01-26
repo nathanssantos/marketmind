@@ -2,7 +2,7 @@ import type { MarketType } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { INTERVAL_MS, TIME_MS } from '../constants';
 import { db } from '../db';
-import { activeWatchers, tradeExecutions } from '../db/schema';
+import { activeWatchers } from '../db/schema';
 import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
 import { getMinNotionalFilterService, type CapitalRequirement } from './min-notional-filter';
@@ -32,7 +32,6 @@ export interface RotationResult {
   added: string[];
   removed: string[];
   kept: string[];
-  skippedWithPositions: string[];
   skippedInsufficientKlines: string[];
   skippedInsufficientCapital: string[];
   timestamp: Date;
@@ -93,8 +92,6 @@ export class DynamicSymbolRotationService {
 
       const currentSymbols = new Set(currentWatchers.map((w) => w.symbol));
 
-      const symbolsWithOpenPositions = await this.getSymbolsWithOpenPositions(walletId);
-
       const walletPreviousRankings = this.previousRankings.get(walletId) ?? new Map();
       const currentRankings = new Map(
         filteredScores.map((s, i) => [s.symbol, i + 1])
@@ -103,18 +100,11 @@ export class DynamicSymbolRotationService {
       const toRemove: string[] = [];
       const toAdd: string[] = [];
       const kept: string[] = [];
-      const skippedWithPositions: string[] = [];
       const skippedInsufficientKlines: string[] = [];
 
       for (const symbol of currentSymbols) {
         const currentRank = currentRankings.get(symbol);
         const previousRank = walletPreviousRankings.get(symbol);
-
-        if (symbolsWithOpenPositions.has(symbol)) {
-          skippedWithPositions.push(symbol);
-          kept.push(symbol);
-          continue;
-        }
 
         if (!currentRank || currentRank > config.limit) {
           if (previousRank && currentRank) {
@@ -181,7 +171,6 @@ export class DynamicSymbolRotationService {
         added: toAdd,
         removed: toRemove,
         kept,
-        skippedWithPositions,
         skippedInsufficientKlines,
         skippedInsufficientCapital,
         timestamp: new Date(),
@@ -201,7 +190,6 @@ export class DynamicSymbolRotationService {
         added: toAdd,
         removed: toRemove,
         kept: kept.length,
-        skippedWithPositions,
         skippedInsufficientKlines,
         skippedInsufficientCapital,
       });
@@ -215,26 +203,11 @@ export class DynamicSymbolRotationService {
         added: [],
         removed: [],
         kept: [],
-        skippedWithPositions: [],
         skippedInsufficientKlines: [],
         skippedInsufficientCapital: [],
         timestamp: new Date(),
       };
     }
-  }
-
-  private async getSymbolsWithOpenPositions(walletId: string): Promise<Set<string>> {
-    const openExecutions = await db
-      .select({ symbol: tradeExecutions.symbol })
-      .from(tradeExecutions)
-      .where(
-        and(
-          eq(tradeExecutions.walletId, walletId),
-          eq(tradeExecutions.status, 'open')
-        )
-      );
-
-    return new Set(openExecutions.map((e) => e.symbol));
   }
 
   private addToHistory(walletId: string, result: RotationResult): void {

@@ -695,10 +695,6 @@ export const formatRotationResults = (result: RotationResult): string => {
     colorize(`- ${result.removed.length} removed`, 'red'),
   ];
 
-  if (result.skippedWithPositions.length > 0) {
-    summaryParts.push(colorize(`@ ${result.skippedWithPositions.length} with positions`, 'yellow'));
-  }
-
   if (result.skippedInsufficientKlines.length > 0) {
     summaryParts.push(colorize(`~ ${result.skippedInsufficientKlines.length} insufficient data`, 'dim'));
   }
@@ -715,10 +711,6 @@ export const formatRotationResults = (result: RotationResult): string => {
 
   if (result.skippedInsufficientCapital.length > 0) {
     lines.push(`  ${colorize('$ Skipped (capital < minNotional):', 'dim')} ${result.skippedInsufficientCapital.join(', ')}`);
-  }
-
-  if (result.skippedWithPositions.length > 0) {
-    lines.push(`  ${colorize('@ Protected (open positions):', 'yellow')} ${result.skippedWithPositions.join(', ')}`);
   }
 
   lines.push('');
@@ -742,10 +734,6 @@ export const formatRotationNoChanges = (result: RotationResult): string => {
     colorize(`${ICONS.SUCCESS}  No changes`, 'green'),
     colorize(`# ${result.kept} symbols`, 'cyan'),
   ];
-
-  if (result.skippedWithPositions.length > 0) {
-    summaryParts.push(colorize(`@ ${result.skippedWithPositions.length} protected`, 'yellow'));
-  }
 
   if (result.skippedInsufficientKlines.length > 0) {
     summaryParts.push(colorize(`~ ${result.skippedInsufficientKlines.length} no data`, 'dim'));

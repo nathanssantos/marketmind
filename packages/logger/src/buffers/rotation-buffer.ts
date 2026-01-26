@@ -11,7 +11,6 @@ export class RotationLogBuffer {
   private _added: string[] = [];
   private _removed: string[] = [];
   private _kept = 0;
-  private _skippedWithPositions: string[] = [];
   private _skippedInsufficientKlines: string[] = [];
   private _skippedInsufficientCapital: string[] = [];
   private _klineValidations: KlineValidationEntry[] = [];
@@ -50,14 +49,12 @@ export class RotationLogBuffer {
     added: string[];
     removed: string[];
     kept: number;
-    skippedWithPositions: string[];
     skippedInsufficientKlines: string[];
     skippedInsufficientCapital: string[];
   }): void {
     this._added = result.added;
     this._removed = result.removed;
     this._kept = result.kept;
-    this._skippedWithPositions = result.skippedWithPositions;
     this._skippedInsufficientKlines = result.skippedInsufficientKlines;
     this._skippedInsufficientCapital = result.skippedInsufficientCapital;
   }
@@ -81,7 +78,6 @@ export class RotationLogBuffer {
       added: this._added,
       removed: this._removed,
       kept: this._kept,
-      skippedWithPositions: this._skippedWithPositions,
       skippedInsufficientKlines: this._skippedInsufficientKlines,
       skippedInsufficientCapital: this._skippedInsufficientCapital,
       klineValidations: this._klineValidations,

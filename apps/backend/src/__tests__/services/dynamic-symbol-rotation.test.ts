@@ -64,27 +64,20 @@ vi.mock('../../services/watcher-batch-logger', () => {
   };
 });
 
-const mockSelectQuery = (activeWatcherSymbols: string[], openPositionSymbols: string[] = []) => {
+const mockSelectQuery = (activeWatcherSymbols: string[]) => {
   const mockDbSelect = db.select as unknown as MockedFunction<() => unknown>;
 
-  let callCount = 0;
   mockDbSelect.mockImplementation(() => {
     const result = {
       from: vi.fn().mockImplementation(() => ({
         where: vi.fn().mockImplementation(() => {
-          callCount++;
-          if (callCount === 1) {
-            return Promise.resolve(
-              activeWatcherSymbols.map(symbol => ({
-                id: `watcher-${symbol}`,
-                symbol,
-                isManual: false,
-                walletId: 'test-wallet',
-              }))
-            );
-          }
           return Promise.resolve(
-            openPositionSymbols.map(symbol => ({ symbol }))
+            activeWatcherSymbols.map(symbol => ({
+              id: `watcher-${symbol}`,
+              symbol,
+              isManual: false,
+              walletId: 'test-wallet',
+            }))
           );
         }),
       })),
@@ -221,22 +214,6 @@ describe('DynamicSymbolRotationService', () => {
       expect(result.kept.length + result.added.length).toBe(5);
     });
 
-    it('should not remove symbols with open positions', async () => {
-      mockSelectQuery(
-        ['BTCUSDT', 'ETHUSDT', 'OLDCOIN1USDT'],
-        ['OLDCOIN1USDT']
-      );
-
-      const result = await rotationService.executeRotation(
-        'test-wallet',
-        'test-user',
-        { ...baseConfig, limit: 20 }
-      );
-
-      expect(result.removed).not.toContain('OLDCOIN1USDT');
-      expect(result.skippedWithPositions).toContain('OLDCOIN1USDT');
-      expect(result.kept).toContain('OLDCOIN1USDT');
-    });
   });
 
   describe('cleanupWallet', () => {
