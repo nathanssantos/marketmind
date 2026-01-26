@@ -18,7 +18,7 @@ export const ENABLED_SETUPS = [
 
 export const DEFAULT_BACKTEST_PARAMS = {
   initialCapital: 10000,
-  leverage: 10,
+  leverage: 1,
   exposureMultiplier: 1.5,
   cooldownMinutes: 15,
   marketType: 'FUTURES' as const,
@@ -52,15 +52,15 @@ export const createBaseConfig = (): BaseBacktestConfig => ({
   useVolumeFilter: true,
   volumeFilterConfig: VOLUME_FILTER_CONFIG,
 
-  useMomentumTimingFilter: true,
+  useMomentumTimingFilter: false,
   useMtfFilter: false,
-  useMarketRegimeFilter: true,
+  useMarketRegimeFilter: false,
 
   useStochasticFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,
   useFundingFilter: false,
-  useBtcCorrelationFilter: false,
+  useBtcCorrelationFilter: true,
   useConfluenceScoring: false,
   trendFilterPeriod: 21,
 

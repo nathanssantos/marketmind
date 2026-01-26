@@ -897,7 +897,7 @@
     "trendFilter": {
       "title": "Filtro de Tendencia",
       "enable": "Activar Filtro de Tendencia",
-      "enableDescription": "Usa EMA 200 para identificar la tendencia mayor y filtrar configuraciones",
+      "enableDescription": "Usa EMA 21 para filtrar configuraciones por la dirección de la tendencia de corto plazo",
       "allowCounter": "Permitir Operaciones Contra-Tendencia",
       "allowCounterDescription": "Cuando está desactivado, solo se permiten operaciones alineadas con la tendencia mayor"
     },

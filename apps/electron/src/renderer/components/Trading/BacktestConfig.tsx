@@ -59,7 +59,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [marketType, setMarketType] = useState<MarketType>('SPOT');
 
   const [symbol, setSymbol] = useState(chartData?.symbol || 'BTCUSDT');
-  const [interval, setInterval] = useState<Timeframe>('4h');
+  const [interval, setInterval] = useState<Timeframe>('1h');
   const [startDate, setStartDate] = useState(lastMonthRange.start);
   const [endDate, setEndDate] = useState(lastMonthRange.end);
   const [initialCapital, setInitialCapital] = useState('10000');
@@ -74,12 +74,12 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
 
   const [useStochasticFilter, setUseStochasticFilter] = useState(false);
   const [useAdxFilter, setUseAdxFilter] = useState(false);
-  const [useMtfFilter, setUseMtfFilter] = useState(true);
+  const [useMtfFilter, setUseMtfFilter] = useState(false);
   const [useBtcCorrelationFilter, setUseBtcCorrelationFilter] = useState(true);
-  const [useMarketRegimeFilter, setUseMarketRegimeFilter] = useState(true);
-  const [useVolumeFilter, setUseVolumeFilter] = useState(false);
-  const [useMomentumTimingFilter, setUseMomentumTimingFilter] = useState(true);
-  const [useConfluenceScoring, setUseConfluenceScoring] = useState(true);
+  const [useMarketRegimeFilter, setUseMarketRegimeFilter] = useState(false);
+  const [useVolumeFilter, setUseVolumeFilter] = useState(true);
+  const [useMomentumTimingFilter, setUseMomentumTimingFilter] = useState(false);
+  const [useConfluenceScoring, setUseConfluenceScoring] = useState(false);
   const [confluenceMinScore, setConfluenceMinScore] = useState('60');
   const [tpCalculationMode, setTpCalculationMode] = useState<'default' | 'fibonacci'>('default');
   const [fibonacciTargetLevelLong, setFibonacciTargetLevelLong] = useState<FibonacciTargetLevel>('2');
@@ -93,12 +93,12 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
     setUseTrendFilter(autoTradingConfig.useTrendFilter ?? false);
     setUseStochasticFilter(autoTradingConfig.useStochasticFilter ?? false);
     setUseAdxFilter(autoTradingConfig.useAdxFilter ?? false);
-    setUseMtfFilter(autoTradingConfig.useMtfFilter ?? true);
+    setUseMtfFilter(autoTradingConfig.useMtfFilter ?? false);
     setUseBtcCorrelationFilter(autoTradingConfig.useBtcCorrelationFilter ?? true);
-    setUseMarketRegimeFilter(autoTradingConfig.useMarketRegimeFilter ?? true);
-    setUseVolumeFilter(autoTradingConfig.useVolumeFilter ?? false);
-    setUseMomentumTimingFilter(autoTradingConfig.useMomentumTimingFilter ?? true);
-    setUseConfluenceScoring(autoTradingConfig.useConfluenceScoring ?? true);
+    setUseMarketRegimeFilter(autoTradingConfig.useMarketRegimeFilter ?? false);
+    setUseVolumeFilter(autoTradingConfig.useVolumeFilter ?? true);
+    setUseMomentumTimingFilter(autoTradingConfig.useMomentumTimingFilter ?? false);
+    setUseConfluenceScoring(autoTradingConfig.useConfluenceScoring ?? false);
     setConfluenceMinScore(String(autoTradingConfig.confluenceMinScore ?? 60));
     setTpCalculationMode(autoTradingConfig.tpCalculationMode ?? 'default');
     setFibonacciTargetLevelLong(autoTradingConfig.fibonacciTargetLevelLong ?? autoTradingConfig.fibonacciTargetLevel ?? '2');

@@ -112,7 +112,7 @@ export const ChartCanvas = ({
   advancedConfig,
   onToggleSetupsVisibility: _onToggleSetupsVisibility,
   setupsVisible: _setupsVisible = true,
-  timeframe = '4h',
+  timeframe = '1h',
 }: ChartCanvasProps): ReactElement => {
   const { t } = useTranslation();
   const { warning } = useToast();

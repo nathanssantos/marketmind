@@ -819,7 +819,7 @@
     "trendFilter": {
       "title": "Trend Filter",
       "enable": "Enable Trend Filter",
-      "enableDescription": "Use EMA 200 to identify the major trend and filter setups",
+      "enableDescription": "Use EMA 21 to filter setups by short-term trend direction",
       "allowCounter": "Allow Counter-Trend Trades",
       "allowCounterDescription": "When disabled, only trades aligned with the major trend are allowed"
     },

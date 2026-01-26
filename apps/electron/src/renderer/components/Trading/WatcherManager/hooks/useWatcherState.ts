@@ -32,7 +32,7 @@ export const useWatcherState = (): UseWatcherStateReturn => {
   });
 
   const [quickStartCount, setQuickStartCount] = useState(10);
-  const [quickStartTimeframe, setQuickStartTimeframe] = useState<TimeInterval>('30m');
+  const [quickStartTimeframe, setQuickStartTimeframe] = useState<TimeInterval>('1h');
   const [quickStartMarketType, setQuickStartMarketType] = useState<MarketType>('FUTURES');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showRankingsDialog, setShowRankingsDialog] = useState(false);

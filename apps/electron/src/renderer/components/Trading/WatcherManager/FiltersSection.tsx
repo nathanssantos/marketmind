@@ -68,7 +68,7 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.marketRegime.title')}
                 description={t('settings.algorithmicAutoTrading.filters.marketRegime.description')}
-                checked={config?.useMarketRegimeFilter ?? true}
+                checked={config?.useMarketRegimeFilter ?? false}
                 onChange={(value) => onFilterToggle('useMarketRegimeFilter', value)}
                 disabled={isPending}
               />
@@ -90,7 +90,7 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.momentumTiming.title')}
                 description={t('settings.algorithmicAutoTrading.filters.momentumTiming.description')}
-                checked={config?.useMomentumTimingFilter ?? true}
+                checked={config?.useMomentumTimingFilter ?? false}
                 onChange={(value) => onFilterToggle('useMomentumTimingFilter', value)}
                 disabled={isPending}
               />

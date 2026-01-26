@@ -137,7 +137,7 @@ function AppContent(): ReactElement {
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const { showEventRow, setShowEventRow } = useUIStore();
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '4h');
+  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1h');
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', true);
   const [isBacktestOpen, setIsBacktestOpen] = useState(false);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
