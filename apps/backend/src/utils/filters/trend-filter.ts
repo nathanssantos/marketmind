@@ -1,10 +1,10 @@
-import { calculateEMA } from '@marketmind/indicators';
+import { detectTrendByEMA, type TrendDetectionResult } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-const EMA_PERIOD = 21;
+const DEFAULT_EMA_PERIOD = 21;
 
 export const TREND_FILTER = {
-  EMA_PERIOD,
+  EMA_PERIOD: DEFAULT_EMA_PERIOD,
 } as const;
 
 export interface TrendFilterResult {
@@ -14,11 +14,13 @@ export interface TrendFilterResult {
   isBullish: boolean;
   isBearish: boolean;
   reason: string;
+  trendResult?: TrendDetectionResult;
 }
 
 export const checkTrendCondition = (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT'
+  direction: 'LONG' | 'SHORT',
+  emaPeriod: number = TREND_FILTER.EMA_PERIOD,
 ): TrendFilterResult => {
   if (klines.length < 2) {
     return {
@@ -31,9 +33,7 @@ export const checkTrendCondition = (
     };
   }
 
-  const ema21Values = calculateEMA(klines, TREND_FILTER.EMA_PERIOD);
   const confirmationIndex = klines.length - 2;
-  const ema21 = ema21Values[confirmationIndex];
   const confirmationKline = klines[confirmationIndex];
 
   if (!confirmationKline) {
@@ -47,70 +47,51 @@ export const checkTrendCondition = (
     };
   }
 
-  const price = parseFloat(String(confirmationKline.close));
+  const trendResult = detectTrendByEMA(klines.slice(0, confirmationIndex + 1), emaPeriod, 1);
 
-  if (ema21 === null || ema21 === undefined) {
+  const ema21 = trendResult.details.ema?.value ?? null;
+  const price = parseFloat(String(confirmationKline.close));
+  const isBullish = ema21 !== null && price > ema21;
+  const isBearish = ema21 !== null && price < ema21;
+
+  if (ema21 === null) {
     return {
       isAllowed: false,
-      ema21: ema21 ?? null,
+      ema21: null,
       price,
       isBullish: false,
       isBearish: false,
       reason: 'EMA calculation returned null - blocking trade for safety',
+      trendResult,
     };
   }
 
-  const isBullish = price > ema21;
-  const isBearish = price < ema21;
+  const formatPrice = (p: number) => p.toFixed(2);
+  let isAllowed: boolean;
+  let reason: string;
 
   if (direction === 'LONG') {
-    if (!isBullish) {
-      return {
-        isAllowed: false,
-        ema21,
-        price,
-        isBullish,
-        isBearish,
-        reason: `LONG blocked: price (${price.toFixed(2)}) below EMA21 (${ema21.toFixed(2)}) - bearish trend`,
-      };
-    }
-    return {
-      isAllowed: true,
-      ema21,
-      price,
-      isBullish,
-      isBearish,
-      reason: `LONG allowed: price (${price.toFixed(2)}) above EMA21 (${ema21.toFixed(2)}) - bullish trend`,
-    };
-  }
-
-  if (direction === 'SHORT') {
-    if (!isBearish) {
-      return {
-        isAllowed: false,
-        ema21,
-        price,
-        isBullish,
-        isBearish,
-        reason: `SHORT blocked: price (${price.toFixed(2)}) above EMA21 (${ema21.toFixed(2)}) - bullish trend`,
-      };
-    }
-    return {
-      isAllowed: true,
-      ema21,
-      price,
-      isBullish,
-      isBearish,
-      reason: `SHORT allowed: price (${price.toFixed(2)}) below EMA21 (${ema21.toFixed(2)}) - bearish trend`,
-    };
+    isAllowed = isBullish;
+    reason = isAllowed
+      ? `LONG allowed: price (${formatPrice(price)}) above EMA${emaPeriod} (${formatPrice(ema21)}) - bullish trend`
+      : `LONG blocked: price (${formatPrice(price)}) below EMA${emaPeriod} (${formatPrice(ema21)}) - bearish trend`;
+  } else if (direction === 'SHORT') {
+    isAllowed = isBearish;
+    reason = isAllowed
+      ? `SHORT allowed: price (${formatPrice(price)}) below EMA${emaPeriod} (${formatPrice(ema21)}) - bearish trend`
+      : `SHORT blocked: price (${formatPrice(price)}) above EMA${emaPeriod} (${formatPrice(ema21)}) - bullish trend`;
+  } else {
+    isAllowed = true;
+    reason = 'Unknown direction';
   }
 
   return {
-    isAllowed: true,
+    isAllowed,
     ema21,
     price,
     isBullish,
     isBearish,
-    reason: 'Unknown direction',
+    reason,
+    trendResult,
   };
 };

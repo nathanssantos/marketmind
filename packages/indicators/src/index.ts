@@ -56,5 +56,6 @@ export * from './williamsR';
 export * from './wma';
 export * from './validation';
 export * from './trendAlignment';
+export * from './trendCore';
 export * from './marketStructure';
 

@@ -3,6 +3,13 @@ import type { Kline } from '@marketmind/types';
 
 vi.mock('@marketmind/indicators', () => ({
   calculateEMA: vi.fn(() => [50000, 50100, 50200, 50300, 50400]),
+  detectTrendByEMA: vi.fn(() => ({
+    direction: 'BULLISH',
+    isClearTrend: true,
+    strength: 50,
+    method: 'ema',
+    details: { price: 51000, ema: { value: 50000, period: 21, pricePosition: 'above' } },
+  })),
 }));
 
 vi.mock('../../../utils/filters', async (importOriginal) => {
