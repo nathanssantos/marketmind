@@ -1,0 +1,71 @@
+# MarketMind - Claude Ignore
+# Directories and files to exclude from Claude indexing
+
+# Large data directories (backtest results, ML models)
+apps/backend/results/
+apps/backend/backtest-results/
+apps/backend/models/
+apps/backend/logs/
+results/
+logs/
+
+# Build outputs
+dist/
+dist-electron/
+dist-web/
+out/
+*.app
+*.dmg
+*.exe
+*.zip
+*.tar.gz
+*.asar
+*.blockmap
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Git
+.git/
+
+# Coverage and test artifacts
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vite/
+.webpack/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Binary and large files
+*.wasm
+*.so
+*.dylib
+*.dll
+*.framework
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.*
+
+# macOS
+.DS_Store
+._*
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
