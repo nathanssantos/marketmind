@@ -92,7 +92,7 @@ export const TrailingStopSection = ({
                       </Text>
                     </Box>
                     <Text fontSize="sm" fontWeight="bold" color="green.500">
-                      {(trailingActivationPercentLong * 100).toFixed(0)}%
+                      {(trailingActivationPercentLong * 100).toFixed(1)}%
                     </Text>
                   </Flex>
                   <Slider
@@ -100,7 +100,7 @@ export const TrailingStopSection = ({
                     onValueChange={(values) => onTrailingActivationPercentLongChange(values[0]! / 100)}
                     min={50}
                     max={200}
-                    step={1}
+                    step={0.1}
                   />
                 </Box>
 
