@@ -1351,7 +1351,7 @@ export const autoTradingRouter = router({
 
       if (input.useTrendFilter) {
         const btcDbKlines = await ctx.db.query.klines.findMany({
-          where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, '4h')),
+          where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, input.interval)),
           orderBy: [desc(klines.openTime)],
           limit: 100,
         });
@@ -1394,7 +1394,7 @@ export const autoTradingRouter = router({
           const assetDbKlines = await ctx.db.query.klines.findMany({
             where: and(
               eq(klines.symbol, score.symbol),
-              eq(klines.interval, '4h'),
+              eq(klines.interval, input.interval),
               eq(klines.marketType, input.marketType)
             ),
             orderBy: [desc(klines.openTime)],
@@ -1552,6 +1552,14 @@ export const autoTradingRouter = router({
       const activeCount = autoTradingScheduler.getDynamicWatcherCount(input.walletId);
       const targetCount = activeCount > 0 ? activeCount : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
 
+      const rotationConfig = autoTradingScheduler.getRotationConfig(input.walletId);
+      if (!rotationConfig) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No active rotation found. Start watchers first.',
+        });
+      }
+
       const result = await autoTradingScheduler.triggerManualRotation(
         input.walletId,
         ctx.user.id,
@@ -1559,7 +1567,7 @@ export const autoTradingRouter = router({
           targetWatcherCount: targetCount,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
           marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
-          interval: config.dynamicSymbolRotationInterval,
+          interval: rotationConfig.interval,
           profileId: undefined,
           leverage: config.leverage ?? 1,
           exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
