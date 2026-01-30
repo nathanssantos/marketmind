@@ -95,8 +95,8 @@ const printProgress = (current: number, total: number, startTime: number) => {
 };
 
 async function runPhase1(
-  symbol: string,
-  interval: string,
+  _symbol: string,
+  _interval: string,
   startDate: string,
   endDate: string,
   baseConfig: ReturnType<typeof createBaseConfig>,
@@ -154,8 +154,8 @@ async function runPhase1(
 }
 
 async function runPhase2(
-  symbol: string,
-  interval: string,
+  _symbol: string,
+  _interval: string,
   startDate: string,
   endDate: string,
   baseConfig: ReturnType<typeof createBaseConfig>,
@@ -213,8 +213,8 @@ async function runPhase2(
 }
 
 async function runPhase3(
-  symbol: string,
-  interval: string,
+  _symbol: string,
+  _interval: string,
   startDate: string,
   endDate: string,
   baseConfig: ReturnType<typeof createBaseConfig>,

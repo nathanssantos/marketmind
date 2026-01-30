@@ -47,6 +47,8 @@ export interface TrailingStopUpdate {
   oldStopLoss: number | null;
   newStopLoss: number;
   reason: TrailingStopReason;
+  isFirstActivation?: boolean;
+  currentExtremePrice?: number;
 }
 
 export interface TrailingStopInput {
@@ -470,10 +472,9 @@ export class TrailingStopService {
         const walletConfig = await db.query.autoTradingConfig.findFirst({
           where: eq(autoTradingConfig.walletId, execution.walletId),
         });
-        const useFibonacciThresholds = walletConfig?.tpCalculationMode === 'fibonacci';
 
         let fibonacciProjection: FibonacciProjectionData | null = null;
-        if (useFibonacciThresholds && execution.fibonacciProjection) {
+        if (execution.fibonacciProjection) {
           try {
             fibonacciProjection = JSON.parse(execution.fibonacciProjection) as FibonacciProjectionData;
           } catch {
@@ -481,10 +482,34 @@ export class TrailingStopService {
           }
         }
 
+        // Enable Fibonacci thresholds when we have a fibonacciProjection available,
+        // regardless of tpCalculationMode. This allows trailing activation percentages
+        // (e.g., 88.6% for SHORT) to work whenever Fibonacci data is present.
+        const useFibonacciThresholds = !!fibonacciProjection?.levels?.length;
+
         const executionConfig: TrailingStopOptimizationConfig = {
           ...effectiveConfig,
           useFibonacciThresholds,
+          activationPercentLong: walletConfig?.trailingActivationPercentLong
+            ? parseFloat(walletConfig.trailingActivationPercentLong)
+            : undefined,
+          activationPercentShort: walletConfig?.trailingActivationPercentShort
+            ? parseFloat(walletConfig.trailingActivationPercentShort)
+            : undefined,
+          trailingDistancePercent: walletConfig?.trailingDistancePercent
+            ? parseFloat(walletConfig.trailingDistancePercent)
+            : effectiveConfig.trailingDistancePercent,
         };
+
+        logger.debug({
+          executionId: execution.id,
+          symbol: execution.symbol,
+          side: execution.side,
+          useFibonacciThresholds,
+          activationPercentLong: executionConfig.activationPercentLong,
+          activationPercentShort: executionConfig.activationPercentShort,
+          trailingDistancePercent: executionConfig.trailingDistancePercent,
+        }, '[TrailingStop] Using wallet config for activation thresholds');
 
         const update = this.calculateTrailingStopWithConfig(
           execution,
@@ -497,7 +522,7 @@ export class TrailingStopService {
         );
 
         if (update) {
-          await this.applyStopLossUpdate(execution, update.newStopLoss, update.oldStopLoss);
+          await this.applyStopLossUpdate(execution, update.newStopLoss, update.oldStopLoss, update.isFirstActivation, update.currentExtremePrice);
           updates.push(update);
         }
       }
@@ -547,13 +572,28 @@ export class TrailingStopService {
       firstKlineAfterTrailingStarts ? sp.timestamp >= firstKlineAfterTrailingStarts.openTime : sp.timestamp >= entryCandle.closeTime
     );
 
+    // Use extremes since trailing activation, not since entry
+    // If trailing hasn't been activated yet, these will be undefined
     let highestPrice: number | undefined;
     let lowestPrice: number | undefined;
 
-    if (klinesForTrailing.length > 0) {
-      highestPrice = Math.max(...klinesForTrailing.map(k => parseFloat(k.high)));
-      lowestPrice = Math.min(...klinesForTrailing.map(k => parseFloat(k.low)));
+    if (execution.trailingActivatedAt) {
+      // Trailing already activated - use stored extremes since activation
+      highestPrice = execution.highestPriceSinceTrailingActivation
+        ? parseFloat(execution.highestPriceSinceTrailingActivation)
+        : currentPrice;
+      lowestPrice = execution.lowestPriceSinceTrailingActivation
+        ? parseFloat(execution.lowestPriceSinceTrailingActivation)
+        : currentPrice;
+
+      // Update with current price if it's a new extreme
+      if (isLong && currentPrice > highestPrice) {
+        highestPrice = currentPrice;
+      } else if (!isLong && currentPrice < lowestPrice) {
+        lowestPrice = currentPrice;
+      }
     } else {
+      // Trailing not yet activated - use current price as initial extreme
       highestPrice = currentPrice;
       lowestPrice = currentPrice;
     }
@@ -577,6 +617,9 @@ export class TrailingStopService {
 
     if (!result) return null;
 
+    // If trailing activates for the first time, mark it
+    const isFirstActivation = !execution.trailingActivatedAt;
+
     const profitPercent = calculateProfitPercent(entryPrice, currentPrice, execution.side === 'LONG');
 
     logger.info({
@@ -589,6 +632,7 @@ export class TrailingStopService {
       oldStopLoss: currentStopLoss,
       newStopLoss: result.newStopLoss,
       reason: result.reason,
+      isFirstActivation,
     }, 'Trailing stop updated');
 
     return {
@@ -596,20 +640,24 @@ export class TrailingStopService {
       oldStopLoss: currentStopLoss,
       newStopLoss: result.newStopLoss,
       reason: result.reason,
+      isFirstActivation,
+      currentExtremePrice: isLong ? highestPrice : lowestPrice,
     };
   }
 
   private async applyStopLossUpdate(
     execution: TradeExecution,
     newStopLoss: number,
-    oldStopLoss: number | null
+    oldStopLoss: number | null,
+    isFirstActivation?: boolean,
+    currentExtremePrice?: number
   ): Promise<void> {
     let newAlgoId: number | null = null;
 
     if (execution.marketType === 'FUTURES' && execution.stopLossAlgoId && execution.stopLossIsAlgo) {
       try {
         const [wallet] = await db.select().from(wallets).where(eq(wallets.id, execution.walletId)).limit(1);
-        
+
         if (wallet && wallet.walletType === 'live') {
           const result = await updateStopLossOrder({
             wallet,
@@ -628,13 +676,48 @@ export class TrailingStopService {
       }
     }
 
+    const isLong = execution.side === 'LONG';
+
+    // Build update object
+    const updateData: Record<string, unknown> = {
+      stopLoss: newStopLoss.toString(),
+      ...(newAlgoId && { stopLossAlgoId: newAlgoId }),
+      updatedAt: new Date(),
+    };
+
+    // If this is the first trailing activation, save activation timestamp and initial extreme
+    if (isFirstActivation) {
+      updateData.trailingActivatedAt = new Date();
+      if (currentExtremePrice !== undefined) {
+        if (isLong) {
+          updateData.highestPriceSinceTrailingActivation = currentExtremePrice.toString();
+        } else {
+          updateData.lowestPriceSinceTrailingActivation = currentExtremePrice.toString();
+        }
+      }
+      logger.info({ executionId: execution.id, currentExtremePrice }, '[TrailingStop] First activation - saving activation data');
+    } else if (currentExtremePrice !== undefined) {
+      // Update extreme price if it's a new extreme
+      if (isLong) {
+        const currentHighest = execution.highestPriceSinceTrailingActivation
+          ? parseFloat(execution.highestPriceSinceTrailingActivation)
+          : 0;
+        if (currentExtremePrice > currentHighest) {
+          updateData.highestPriceSinceTrailingActivation = currentExtremePrice.toString();
+        }
+      } else {
+        const currentLowest = execution.lowestPriceSinceTrailingActivation
+          ? parseFloat(execution.lowestPriceSinceTrailingActivation)
+          : Infinity;
+        if (currentExtremePrice < currentLowest) {
+          updateData.lowestPriceSinceTrailingActivation = currentExtremePrice.toString();
+        }
+      }
+    }
+
     await db
       .update(tradeExecutions)
-      .set({
-        stopLoss: newStopLoss.toString(),
-        ...(newAlgoId && { stopLossAlgoId: newAlgoId }),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(tradeExecutions.id, execution.id));
 
     const wsService = getWebSocketService();

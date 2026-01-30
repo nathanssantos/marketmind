@@ -232,6 +232,8 @@ export interface TrailingStopOptimizationConfig {
   marketType?: 'SPOT' | 'FUTURES';
   useBnbDiscount?: boolean;
   useFibonacciThresholds?: boolean;
+  activationPercentLong?: number;
+  activationPercentShort?: number;
 }
 
 export interface TimeframeThreshold {

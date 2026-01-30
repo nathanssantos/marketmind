@@ -158,8 +158,8 @@ export const QuickStartSection = ({
               <NumberInput
                 min={AUTO_TRADING_CONFIG.TARGET_COUNT.MIN}
                 max={effectiveMax}
-                value={Math.min(count, effectiveMax)}
-                onChange={(e) => onCountChange(Math.min(parseInt(e.target.value, 10) || 10, effectiveMax))}
+                value={count}
+                onChange={(e) => onCountChange(parseInt(e.target.value, 10) || 1)}
                 size="sm"
                 px={3}
               />

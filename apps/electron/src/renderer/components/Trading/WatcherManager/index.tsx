@@ -5,7 +5,8 @@ import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStar
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useDebounce } from '@renderer/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
 import { AddWatcherDialog } from '../AddWatcherDialog';
 import { DynamicSymbolRankings } from '../DynamicSymbolRankings';
@@ -70,9 +71,12 @@ export const WatcherManager = () => {
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
 
-  const { capitalLimits, formatCapitalTooltip, isLoadingCapitalLimits } = useCapitalLimits(walletId, quickStartMarketType);
+  const { formatCapitalTooltip } = useCapitalLimits(walletId, quickStartMarketType);
 
   const useTrendFilter = config?.useTrendFilter ?? true;
+
+  // Debounce o count para não refazer query a cada digitação
+  const debouncedQuickStartCount = useDebounce(quickStartCount, 500);
 
   const {
     filteredSymbols: quickStartSymbols,
@@ -80,15 +84,12 @@ export const WatcherManager = () => {
     isLoadingFiltered,
     btcTrend,
     skippedTrend,
-  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, quickStartCount, useTrendFilter);
+  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, debouncedQuickStartCount, useTrendFilter);
 
-  const maxAffordableWatchers = capitalLimits?.maxAffordableWatchers ?? filteredMaxAffordable ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
+  // Usar filteredMaxAffordable como fonte (calculado com minNotional real de cada símbolo)
+  const maxAffordableWatchers = filteredMaxAffordable ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
   const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
-  const isLoadingMax = isLoadingCapitalLimits || isLoadingFiltered;
-
-  useEffect(() => {
-    if (maxAffordableWatchers > 0) setQuickStartCount(Math.min(effectiveMax, quickStartCount || effectiveMax));
-  }, [maxAffordableWatchers, effectiveMax]);
+  const isLoadingMax = isLoadingFiltered;
 
   const { data: btcTrendStatus } = trpc.autoTrading.getBtcTrendStatus.useQuery(undefined, {
     enabled: config?.useBtcCorrelationFilter === true,

@@ -203,21 +203,21 @@ export const getImpliedTakeProfit = (
 };
 
 export const hasReachedTPProgressThreshold = (
-  entryPrice: number,
+  _entryPrice: number,
   currentPrice: number,
-  takeProfit: number | null | undefined,
+  _takeProfit: number | null | undefined,
   fibonacciProjection: FibonacciProjectionData | null | undefined,
   isLong: boolean,
   activationPercentLong?: number,
   activationPercentShort?: number
 ): boolean => {
-  const effectiveTP = takeProfit ?? getImpliedTakeProfit(fibonacciProjection, isLong);
-  if (!effectiveTP) return false;
-  const threshold = isLong
+  // The activation threshold represents a Fibonacci LEVEL (e.g., 0.886 = 88.6% Fibo level),
+  // not a percentage of the path to TP. We check if price has reached that Fibo level.
+  const activationLevel = isLong
     ? (activationPercentLong ?? TP_PROGRESS_THRESHOLD_LONG)
     : (activationPercentShort ?? TP_PROGRESS_THRESHOLD_SHORT);
-  const progress = calculateTPProgress(entryPrice, currentPrice, effectiveTP, isLong);
-  return progress >= threshold;
+
+  return hasReachedFibonacciLevel(currentPrice, fibonacciProjection, activationLevel, isLong);
 };
 
 export const shouldUpdateStopLoss = (

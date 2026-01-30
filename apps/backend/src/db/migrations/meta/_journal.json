@@ -379,6 +379,13 @@
       "when": 1769426777220,
       "tag": "0053_busy_joystick",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1769744552677,
+      "tag": "0054_lively_king_cobra",
+      "breakpoints": true
     }
   ]
 }

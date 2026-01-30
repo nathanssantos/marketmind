@@ -1,5 +1,6 @@
 import { CAPITAL_RULES } from '@marketmind/types';
 import { QUERY_CONFIG } from '@shared/constants';
+import { keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
 
@@ -247,7 +248,7 @@ export const useFilteredSymbolsForQuickStart = (
 ) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getFilteredSymbolsForQuickStart.useQuery(
     { walletId, marketType, interval, limit: Math.max(1, limit), useTrendFilter },
-    { enabled: !!walletId && limit >= 1, staleTime: 30 * 1000 }
+    { enabled: !!walletId && limit >= 1, staleTime: 30 * 1000, placeholderData: keepPreviousData }
   );
 
   return {
@@ -256,7 +257,7 @@ export const useFilteredSymbolsForQuickStart = (
     skippedInsufficientKlines: data?.skippedInsufficientKlines ?? [],
     skippedTrend: data?.skippedTrend ?? [],
     capitalPerWatcher: data?.capitalPerWatcher ?? 0,
-    maxAffordableWatchers: data?.maxAffordableWatchers ?? 0,
+    maxAffordableWatchers: data?.maxAffordableWatchers,
     btcTrend: data?.btcTrend ?? null,
     isLoadingFiltered: isLoading,
     filteredError: error,
