@@ -254,8 +254,12 @@
           "description": "Utilise ADX pour identifier un marché en tendance vs latéral. Bloque les setups trend-following en consolidation."
         },
         "trend": {
-          "title": "Filtre de Tendance EMA",
-          "description": "N'opère que lorsque le prix est au-dessus/en-dessous de EMA21 pour la direction correspondante."
+          "title": "Tendance Court Terme (EMA21)",
+          "description": "Filtre court terme: LONGs uniquement quand prix > EMA21, SHORTs uniquement quand prix < EMA21."
+        },
+        "direction": {
+          "title": "Tendance Long Terme (EMA200)",
+          "description": "Filtre long terme: LONGs bloqués en bear market (prix < EMA200), SHORTs bloqués en bull market (prix > EMA200)."
         },
         "momentumTiming": {
           "title": "Timing de Momentum (RSI+MFI)",

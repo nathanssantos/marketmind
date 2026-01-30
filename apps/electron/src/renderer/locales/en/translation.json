@@ -228,8 +228,12 @@
           "description": "Use ADX to identify trending vs ranging markets. Block trend-following setups in ranging conditions."
         },
         "trend": {
-          "title": "EMA Trend Filter",
-          "description": "Only trade when price is above/below EMA21 for the corresponding direction."
+          "title": "Short-term Trend (EMA21)",
+          "description": "Short-term filter: LONGs only when price > EMA21, SHORTs only when price < EMA21."
+        },
+        "direction": {
+          "title": "Long-term Trend (EMA200)",
+          "description": "Long-term filter: LONGs blocked in bear markets (price < EMA200), SHORTs blocked in bull markets (price > EMA200)."
         },
         "momentumTiming": {
           "title": "Momentum Timing (RSI+MFI)",

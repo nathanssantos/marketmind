@@ -79,6 +79,13 @@ export const FiltersSection = ({
                 onChange={(value) => onFilterToggle('useTrendFilter', value)}
                 disabled={isPending}
               />
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.direction.title')}
+                description={t('settings.algorithmicAutoTrading.filters.direction.description')}
+                checked={config?.useDirectionFilter ?? false}
+                onChange={(value) => onFilterToggle('useDirectionFilter', value)}
+                disabled={isPending}
+              />
             </Grid>
 
             <Separator />
