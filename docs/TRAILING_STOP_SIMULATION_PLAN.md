@@ -1,9 +1,57 @@
 # Plano de Implementação: Simulação de Trailing Stop no Backtesting
 
 **Status:** 🟢 Em Implementação
-**Versão:** 1.3.0
+**Versão:** 1.7.0
 **Última Atualização:** 2026-01-31
 **Autor:** Claude Opus 4.5 + Nathan
+
+---
+
+## 🚀 RESUMO EXECUTIVO (Para Novos Chats)
+
+### Estado Atual
+- **Otimização de 3 anos rodando** em background (~82,944 combinações)
+- **Script principal:** `apps/backend/src/cli/optimize-trailing-stop.ts`
+- **Período:** 2023-01-01 a 2026-01-31 | **Ativo:** BTCUSDT | **Timeframe:** 2h
+- **Capital:** $1,000 | **Posição:** 100% | **Alavancagem:** 5x
+
+### O Que Já Existe (Pronto para Uso)
+| Componente | Localização | Status |
+|------------|-------------|--------|
+| `MultiWatcherBacktestEngine` | `services/backtesting/` | ✅ Operacional |
+| `WalkForwardOptimizer` | `services/backtesting/` | ✅ Pronto |
+| `MonteCarloSimulator` | `services/backtesting/` | ✅ Pronto |
+| `GranularPriceIndex` | `services/backtesting/trailing-stop-backtest.ts` | ✅ Pronto |
+| CLI Runner | `cli/backtest-runner.ts` | ✅ Pronto |
+
+### Scripts CLI Ativos
+```
+cli/
+├── optimize-trailing-stop.ts     # PRINCIPAL - Trailing stop params
+├── optimize-complete.ts          # Timeframes × Filtros
+├── optimize-fibonacci-targets.ts # Níveis de TP
+├── optimize-all-pairs.ts         # Sinergia de filtros
+├── optimize-trend-ema.ts         # Período EMA
+├── compare-timeframes.ts         # Comparação de timeframes
+├── validate-trailing-backtest.ts # Validação rápida
+├── shared-backtest-config.ts     # Config compartilhada
+├── optimization-config.ts        # Config unificada
+└── backtest-runner.ts            # CLI principal com subcomandos
+```
+
+### Próximos Passos Após Otimização
+1. Analisar top 10 configurações
+2. Rodar Walk-Forward validation
+3. Rodar Monte Carlo (1000 iterações)
+4. Aplicar melhor config como default do sistema
+5. Atualizar configs no banco de dados
+
+### Limpeza Realizada (v1.7.0)
+**Scripts Removidos:**
+- `optimize-master.ts`, `optimize-volume-filter.ts` (obsoletos)
+- `debug-compare.ts`, `debug-short-filter.ts`, `debug-sol-shorts.ts`
+- `compare-volume-*.ts`, `compare-trend-methods.ts`
+- `run-fib-*.ts`, `run-fibonacci-*.ts`, `run-multi-timeframe-backtest.ts`
 
 ---
 
@@ -1056,7 +1104,92 @@ CompositeScore = (
 
 ---
 
-## 11. Aplicação dos Resultados Ótimos
+## 11. Consolidação de Scripts de Otimização
+
+### 11.1 Sistema Principal
+
+O sistema de otimização foi consolidado em scripts focados:
+
+| Script | Status | Propósito |
+|--------|--------|-----------|
+| `optimize-trailing-stop.ts` | **PRINCIPAL** | Trailing stop params (LONG/SHORT) |
+| `optimize-complete.ts` | MANTER | Timeframes × Filtros |
+| `optimize-fibonacci-targets.ts` | MANTER | Níveis de TP Fibonacci |
+| `optimize-all-pairs.ts` | MANTER | Descoberta de sinergias |
+| `optimize-trend-ema.ts` | MANTER | Período EMA |
+
+### 11.2 Scripts Removidos
+
+| Script | Status | Motivo |
+|--------|--------|--------|
+| `optimize-filter-combinations.ts` | ✅ Removido | Duplicava optimize-master.ts |
+| `optimize-master.ts` | ✅ Removido | Coberto por optimize-complete.ts |
+| `optimize-volume-filter.ts` | ✅ Removido | Volume já testado em complete.ts |
+
+### 11.3 Estrutura Recomendada
+
+```
+cli/
+├── optimize-trailing-stop.ts     # Trailing stop (CORE)
+├── optimize-complete.ts          # Timeframes × Filtros
+├── optimize-fibonacci-targets.ts # TP levels
+├── optimize-all-pairs.ts         # Filter synergies
+├── optimize-trend-ema.ts         # EMA period
+├── validate-trailing-backtest.ts # Validação
+└── README-OPTIMIZATION.md        # Documentação
+```
+
+### 11.4 Config Unificada
+
+Arquivo: `apps/backend/src/cli/optimization-config.ts`
+
+```typescript
+export const OPTIMIZATION_DEFAULTS = {
+  symbol: 'BTCUSDT',
+  marketType: 'FUTURES',
+  initialCapital: 1000,
+  capitalPerTrade: 1.0,
+  leverage: 5,
+  mainInterval: '2h',
+  granularInterval: '5m',
+  startDate: '2023-01-01',
+  endDate: '2026-01-31',
+};
+
+export const TRAILING_STOP_PARAM_RANGES = {
+  quick: { ... },   // 27 combinações
+  medium: { ... },  // ~82,944 combinações
+  full: { ... },    // ~25M combinações
+};
+
+export const SCORE_WEIGHTS = {
+  pnl: 0.4,
+  sharpe: 0.4,
+  maxDrawdown: 0.2,
+};
+```
+
+### 11.5 Performance Atual
+
+| Métrica | 6 Meses | 3 Anos |
+|---------|---------|--------|
+| Klines 5m | 51,876 | 324,324 |
+| Trades | 178 | 735 |
+| Combinações | 82,944 | 82,944 |
+| Tempo | ~20 min | ~80 min |
+| Memória | ~500MB | ~2GB |
+
+### 11.6 Otimizações de Performance (TODO)
+
+- [ ] **Paralelização:** Worker threads para processar combinações
+- [ ] **Cache:** Memoizar cálculos de indicadores
+- [ ] **Early Exit:** Pular combinações claramente ruins
+- [ ] **Streaming:** Processar klines em chunks
+- [ ] **GPU:** Considerar CUDA/WebGPU para cálculos massivos
+
+---
+
+## 12. Aplicação dos Resultados Ótimos
 
 ### 11.1 Objetivo Final
 
@@ -1127,7 +1260,268 @@ pnpm tsx apps/backend/src/cli/apply-optimal-config.ts \
 
 ---
 
-## 12. Atualizações do Plano
+## 13. Melhores Práticas de Backtesting (Pesquisa 2026)
+
+### 13.1 Walk-Forward Optimization (WFO)
+
+**Por quê:** Previne overfitting ao testar parâmetros em dados que não foram usados na otimização.
+
+**Implementação:**
+```
+│ 3 Anos de Dados │
+├─────────────────┼─────────────────┼─────────────────┤
+│   In-Sample 1   │  Out-Sample 1   │                 │
+│   (Otimiza)     │  (Valida)       │                 │
+├─────────────────┼─────────────────┼─────────────────┤
+│                 │   In-Sample 2   │  Out-Sample 2   │
+│                 │   (Otimiza)     │  (Valida)       │
+└─────────────────┴─────────────────┴─────────────────┘
+
+Janela: 6 meses in-sample → 2 meses out-of-sample → Rola
+```
+
+**Benefícios:**
+- Testa robustez em diferentes condições de mercado
+- Detecta quando estratégia para de funcionar
+- Simula cenário real de re-otimização periódica
+
+**TODO:**
+- [ ] Implementar `WalkForwardOptimizer` com janelas configuráveis
+- [ ] Adicionar flag `--walk-forward` ao CLI
+- [ ] Gerar relatório de consistência entre janelas
+
+### 13.2 Monte Carlo Simulation
+
+**Por quê:** Testa se os resultados são estatisticamente significativos ou apenas sorte.
+
+**Técnicas:**
+1. **Trade Shuffling** - Embaralha ordem dos trades e recalcula métricas
+2. **Bootstrap Sampling** - Amostra trades com reposição
+3. **Noise Injection** - Adiciona variação aleatória aos preços de entrada/saída
+
+**Implementação:**
+```typescript
+interface MonteCarloConfig {
+  iterations: number;      // 1000-10000
+  method: 'shuffle' | 'bootstrap' | 'noise';
+  noisePercent?: number;   // 0.1% - 0.5%
+  confidenceLevel: number; // 0.95 (95%)
+}
+
+interface MonteCarloResult {
+  original: BacktestMetrics;
+  percentiles: {
+    p5: BacktestMetrics;   // Worst case (5%)
+    p50: BacktestMetrics;  // Median
+    p95: BacktestMetrics;  // Best case (95%)
+  };
+  significanceTest: {
+    profitable: number;    // % das simulações lucrativas
+    exceedsBaseline: number; // % > buy-and-hold
+  };
+}
+```
+
+**TODO:**
+- [ ] Implementar `MonteCarloSimulator`
+- [ ] Adicionar ao relatório final com intervalos de confiança
+- [ ] Rejeitar configs onde p5 é negativo
+
+### 13.3 Bayesian Optimization (Otimização Eficiente)
+
+**Por quê:** Grid search é exponencial. Bayesian encontra ótimo com menos iterações.
+
+**Comparação:**
+| Método | 10 Params | Eficiência |
+|--------|-----------|------------|
+| Grid Search | 10^10 combinações | Baixa |
+| Random Search | ~60% do ótimo com 1% das amostras | Média |
+| Bayesian Opt | ~95% do ótimo com 0.1% das amostras | Alta |
+
+**Quando usar:**
+- Grid Search: < 10K combinações (atual)
+- Bayesian: > 100K combinações (full mode)
+
+**TODO:**
+- [ ] Pesquisar libs: `hyperopt`, `optuna` (Python) ou equivalente TS
+- [ ] Implementar modo `--optimization=bayesian` para full search
+- [ ] Comparar resultados Bayesian vs Grid em subset
+
+### 13.4 Market Regime Detection
+
+**Por quê:** Diferentes regimes (bull/bear/ranging) requerem diferentes configs.
+
+**Regimes:**
+| Regime | Características | Config Ideal |
+|--------|-----------------|--------------|
+| Bull Trend | ADX > 25, Price > EMA200 | Trailing largo, TP extensão 2.0+ |
+| Bear Trend | ADX > 25, Price < EMA200 | Trailing apertado, TP conservador |
+| Ranging/Chop | ADX < 20, Choppiness > 60 | Filtrar (não operar) ou scalp |
+| High Volatility | ATR > 2× média | Stops maiores, position menor |
+
+**Implementação:**
+```typescript
+type MarketRegime = 'BULL_TREND' | 'BEAR_TREND' | 'RANGING' | 'HIGH_VOLATILITY';
+
+interface RegimeAwareConfig {
+  [regime: MarketRegime]: TrailingStopConfig;
+}
+
+// Otimização por regime
+const optimalConfigs = {
+  BULL_TREND: { activationLong: 120, distanceLong: 40, ... },
+  BEAR_TREND: { activationShort: 80, distanceShort: 30, ... },
+  RANGING: null, // Skip trades
+};
+```
+
+**TODO:**
+- [ ] Implementar `MarketRegimeDetector`
+- [ ] Otimizar configs separadamente por regime
+- [ ] Adicionar flag `--regime-aware` ao optimizer
+
+### 13.5 Custos Realistas de Transação
+
+**Por quê:** Ignorar custos leva a estratégias que não funcionam em produção.
+
+**Custos a considerar:**
+| Custo | Valor Típico | Impact |
+|-------|--------------|--------|
+| Trading Fee (maker) | 0.02% | Baixo |
+| Trading Fee (taker) | 0.04% | Médio |
+| Slippage | 0.05% - 0.20% | Alto |
+| Funding Rate | ±0.01%/8h | Médio (shorts) |
+| Spread | 0.01% - 0.05% | Baixo |
+
+**Implementação atual:** ✅ Fees incluídos
+**TODO:**
+- [ ] Adicionar slippage configurável (0.1% default)
+- [ ] Simular funding rates para posições overnight
+- [ ] Considerar spread em entradas/saídas
+
+### 13.6 Métricas Adicionais Recomendadas
+
+| Métrica | Fórmula | Target |
+|---------|---------|--------|
+| Sortino Ratio | Return / Downside Dev | > 2.0 |
+| Calmar Ratio | CAGR / Max DD | > 1.0 |
+| Ulcer Index | Sqrt(Mean(DD²)) | < 10 |
+| Recovery Factor | Total Return / Max DD | > 3.0 |
+| Expectancy | (WR × AvgWin) - ((1-WR) × AvgLoss) | > 0.3R |
+
+**TODO:**
+- [ ] Adicionar Sortino, Calmar, Ulcer Index ao relatório
+- [ ] Incluir Expectancy por trade
+
+---
+
+## 14. Arquitetura de Backtesting (Existente)
+
+### 14.1 Estrutura Atual
+
+O sistema de backtesting já está implementado em `apps/backend/src/services/backtesting/`:
+
+```
+apps/backend/src/services/backtesting/
+├── index.ts                     # Exports públicos
+├── BacktestEngine.ts            # Engine base
+├── MultiWatcherBacktestEngine.ts # Engine principal (multi-watcher)
+├── FuturesBacktestEngine.ts     # Especializado para futures
+├── WalkForwardOptimizer.ts      # ✅ Implementado
+├── MonteCarloSimulator.ts       # ✅ Implementado
+├── BacktestOptimizer.ts         # Grid search
+├── FullSystemOptimizer.ts       # Otimização completa
+├── ParameterGenerator.ts        # Gerador de combinações
+├── ParameterSensitivityAnalyzer.ts # Análise de sensibilidade
+├── PermutationTest.ts           # Teste estatístico
+├── IndicatorCache.ts            # Cache de indicadores
+├── ResultManager.ts             # Gerenciamento de resultados
+├── FilterManager.ts             # Gerenciamento de filtros
+├── ExitManager.ts               # Lógica de saída
+├── TradeExecutor.ts             # Execução de trades
+├── PositionSizer.ts             # Dimensionamento de posição
+├── SharedPortfolioManager.ts    # Portfolio compartilhado
+└── configLoader.ts              # Carregamento de configs
+```
+
+### 14.2 Componentes de Validação (Prontos para Uso)
+
+| Componente | Status | Descrição |
+|------------|--------|-----------|
+| `WalkForwardOptimizer` | ✅ Pronto | Previne overfitting com janelas IS/OS |
+| `MonteCarloSimulator` | ✅ Pronto | Validação estatística (shuffle trades) |
+| `ParameterSensitivityAnalyzer` | ✅ Pronto | Análise de impacto de parâmetros |
+| `PermutationTest` | ✅ Pronto | Teste de significância estatística |
+
+### 14.3 Integração com CLI (TODO)
+
+**Próximo passo:** Integrar os componentes de validação com o CLI de otimização:
+
+```bash
+# Após otimização grid search
+pnpm tsx apps/backend/src/cli/validate-optimization.ts \
+  --results results/optimization-2026-01-31.json \
+  --walk-forward \
+  --monte-carlo 1000 \
+  --sensitivity
+```
+
+**TODO:**
+- [ ] Criar CLI `validate-optimization.ts`
+- [ ] Integrar WalkForwardOptimizer com resultados da otimização
+- [ ] Gerar relatório de robustez (markdown ou HTML)
+
+---
+
+## 15. Atualizações do Plano
+
+### v1.7.0 (2026-01-31)
+- **Limpeza massiva de código obsoleto:**
+  - Removido 7 scripts de debug/compare: `debug-*.ts`, `compare-volume-*.ts`, `compare-trend-methods.ts`
+  - Removido 5 scripts de fibonacci duplicados: `run-fib-*.ts`, `run-fibonacci-*.ts`
+  - Removido `run-multi-timeframe-backtest.ts` (coberto por compare-timeframes.ts)
+  - Total: 14 arquivos obsoletos removidos
+- **Resumo executivo adicionado** no início do documento para novos chats
+- **Documentação da estrutura de CLI** atualizada com scripts ativos
+
+### v1.6.0 (2026-01-31)
+- **Pesquisa de melhores práticas adicionada (Seção 13):**
+  - Walk-Forward Optimization para prevenir overfitting
+  - Monte Carlo Simulation para validação estatística
+  - Bayesian Optimization para searches eficientes (>100K combos)
+  - Market Regime Detection para configs adaptativas
+  - Custos realistas (slippage, funding rates)
+  - Métricas adicionais (Sortino, Calmar, Ulcer Index)
+- **Auditoria de código existente (Seção 14):**
+  - Descoberto que WalkForwardOptimizer já existe e está pronto
+  - Descoberto que MonteCarloSimulator já existe e está pronto
+  - ParameterSensitivityAnalyzer e PermutationTest também disponíveis
+  - NÃO criar pacote separado - código já organizado no backend
+- **Limpeza de código:**
+  - Removido `optimize-master.ts` (obsoleto)
+  - Removido `optimize-volume-filter.ts` (obsoleto)
+- **TODOs priorizados:**
+  - Integrar WalkForward e MonteCarlo com CLI (alta prioridade)
+  - Criar CLI de validação de resultados (alta prioridade)
+  - Bayesian Optimization (baixa prioridade - só se precisar full mode)
+
+### v1.5.0 (2026-01-31)
+- **Sistema de otimização principal definido:** `optimize-trailing-stop.ts`
+  - Este é o único sistema de otimização oficial do projeto
+  - Scripts obsoletos serão removidos para evitar confusão
+- **README.md criado** para documentar o sistema
+- **Performance otimizada:**
+  - 82,944 combinações em ~80 minutos (3 anos de dados)
+  - 735 trades reais (vs 178 anterior)
+  - 324K 5m klines processados
+- **Configs unificadas:**
+  - Parâmetros em arquivo centralizado
+  - Modos: quick, medium, full
+  - Fácil extensão para novos parâmetros
+- **Próximos passos de performance:**
+  - Paralelização com worker threads
+  - Cache de indicadores
+  - Early exit para combinações ruins
 
 ### v1.4.0 (2026-01-31)
 - **Capital atualizado:**
@@ -1178,20 +1572,38 @@ pnpm tsx apps/backend/src/cli/apply-optimal-config.ts \
 
 ## Próximos Passos Imediatos
 
-1. **Revisar e aprovar este plano**
-2. **Criar branch** `feature/trailing-stop-backtest-simulation`
-3. **Implementar infraestrutura básica:**
-   - KlineDownloaderService
-   - GranularPriceIndex
-   - SafeLogger
-4. **Baixar dados de validação** (Jan/2025 - 1 mês)
-5. **Implementar TrailingStopSimulator** (versão básica)
-6. **🔴 VALIDAÇÃO OBRIGATÓRIA:**
-   - Rodar 1 mês com 5 combinações fixas
-   - Verificar output não trava
-   - Verificar cálculos corretos
-   - Aprovar antes de prosseguir
-7. **Após validação:** Baixar 3 anos e rodar otimização completa
+### Fase Atual: Otimização 3 Anos (Em Execução)
+- [x] Sistema de otimização principal criado (`optimize-trailing-stop.ts`)
+- [x] Download automático de klines implementado
+- [x] Validação aprovada (quick test passou)
+- [🔄] Otimização 3 anos rodando (82,944 combinações)
+
+### Próxima Fase: Validação de Robustez
+1. **Após otimização completar:**
+   - [ ] Analisar top 10 configurações
+   - [ ] Verificar se há overfitting (configs muito específicas)
+   - [ ] Comparar LONG vs SHORT performance
+
+2. **Implementar Walk-Forward Optimization:**
+   - [ ] Dividir dados em janelas (6 meses in-sample, 2 meses out-of-sample)
+   - [ ] Re-otimizar em cada janela
+   - [ ] Verificar consistência das configs ótimas
+
+3. **Implementar Monte Carlo Validation:**
+   - [ ] Rodar 1000 simulações com trade shuffling
+   - [ ] Calcular intervalos de confiança (95%)
+   - [ ] Rejeitar configs onde P5 é negativo
+
+### Fase Final: Aplicação dos Resultados
+4. **Aplicar configuração ótima:**
+   - [ ] Atualizar defaults no código
+   - [ ] Atualizar configs no banco de dados
+   - [ ] Testar em paper trading
+
+5. **Arquitetura (Médio Prazo):**
+   - [ ] Criar pacote `@marketmind/backtesting`
+   - [ ] Migrar engine e otimizadores
+   - [ ] Desacoplar de dependências do backend
 
 ---
 
