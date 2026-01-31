@@ -1,7 +1,7 @@
 # Plano de Implementação: Simulação de Trailing Stop no Backtesting
 
 **Status:** 🟢 Em Implementação
-**Versão:** 1.7.0
+**Versão:** 1.9.0
 **Última Atualização:** 2026-01-31
 **Autor:** Claude Opus 4.5 + Nathan
 
@@ -40,11 +40,25 @@ cli/
 ```
 
 ### Próximos Passos Após Otimização
-1. Analisar top 10 configurações
+1. Analisar top 10 configurações de trailing stop
 2. Rodar Walk-Forward validation
 3. Rodar Monte Carlo (1000 iterações)
-4. Aplicar melhor config como default do sistema
-5. Atualizar configs no banco de dados
+4. **Testar todas as 106 estratégias** com a config ótima
+5. **Eleger as melhores estratégias** (top 10-20)
+6. **Otimizar as estratégias eleitas** individualmente
+7. **Melhorar Rotation/QuickStart** com screening inteligente
+8. Aplicar melhor config como default do sistema
+9. Atualizar configs no banco de dados
+
+### Estratégias (106 Total)
+- **Localização:** `apps/backend/strategies/builtin/*.json`
+- **Loader:** `services/setup-detection/dynamic/StrategyLoader.ts`
+- **CLI para teste:** `cli/backtest-runner.ts validate --strategy <name>`
+
+### Rotation/QuickStart (Melhoria Planejada)
+- **Já existe:** BTC EMA21 trend filter, capital filter, hysteresis, opportunity scoring
+- **Falta:** SetupPreScanner (detectar setups pendentes), FilterPreValidator (simular filtros)
+- **Objetivo:** Rotacionar para ativos que já têm setup prestes a acionar E que passaria nos filtros
 
 ### Limpeza Realizada (v1.7.0)
 **Scripts Removidos:**
@@ -1260,7 +1274,208 @@ pnpm tsx apps/backend/src/cli/apply-optimal-config.ts \
 
 ---
 
-## 13. Melhores Práticas de Backtesting (Pesquisa 2026)
+## 13. Melhoria do Sistema de Rotation e QuickStart
+
+### 13.1 O Que Já Existe (Funcional)
+
+O sistema atual em `dynamic-symbol-rotation.ts` **já possui**:
+
+| Feature | Status | Descrição |
+|---------|--------|-----------|
+| **BTC EMA21 Trend Filter** | ✅ | Alinha ativos com tendência BTC (linhas 109-176) |
+| **Capital/Notional Filter** | ✅ | Valida capital suficiente (linhas 79-100) |
+| **Hysteresis (10 pts)** | ✅ | Evita churn excessivo (linha 14) |
+| **Misaligned Removal** | ✅ | Remove watchers contra BTC trend (linhas 205-234) |
+| **Kline Availability** | ✅ | Verifica dados suficientes (linhas 298-309) |
+| **Opportunity Scoring** | ✅ | Ranking por marketCap, volume, volatilidade |
+
+### 13.2 O Que Falta (Melhorias Propostas)
+
+| Feature | Status | Benefício Esperado |
+|---------|--------|-------------------|
+| **Setup Pre-Scanner** | ❌ | Detectar setups pendentes antes de rotacionar |
+| **Filter Pre-Validator** | ❌ | Validar se setup passaria nos filtros |
+| **BTC Dominance Check** | ❌ | Reduzir alts quando BTC.D > 60% |
+| **ADX Trend Strength** | ❌ | Evitar rotação em mercados choppy |
+| **Historical Win Rate** | ❌ | Priorizar símbolos com melhor histórico |
+| **Altcoin Season Index** | ❌ | Timing para rotação de alts |
+
+### 13.3 Arquitetura Proposta (Incremental)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 Enhanced Rotation System v2                      │
+├─────────────────────────────────────────────────────────────────┤
+│  EXISTENTE                    │  NOVO (a implementar)           │
+│  ┌──────────────────────────┐ │  ┌──────────────────────────┐   │
+│  │ BTC EMA21 Trend ✅       │ │  │ Setup Pre-Scanner ❌     │   │
+│  │ Capital Filter ✅        │ │  │ Filter Pre-Validator ❌  │   │
+│  │ Hysteresis ✅            │ │  │ BTC Dominance Check ❌   │   │
+│  │ Opportunity Score ✅     │ │  │ ADX Trend Strength ❌    │   │
+│  └──────────────────────────┘ │  └──────────────────────────┘   │
+│              │                │              │                   │
+│              ▼                │              ▼                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                  Opportunity Scorer v2                      │ │
+│  │  Atual: marketCap×0.15 + volume×0.20 + volatility×0.15 +   │ │
+│  │         priceChange×0.10 + setupFreq×0.20 + winRate×0.10 + │ │
+│  │         profitFactor×0.10                                   │ │
+│  │                                                             │ │
+│  │  Proposto: + SetupPending×0.20 + FilterPassRate×0.15       │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 13.4 Componentes a Adicionar
+
+#### 13.4.1 Setup Pre-Scanner
+```typescript
+interface SetupScanResult {
+  symbol: string;
+  hasPendingSetup: boolean;
+  pendingSetups: Array<{
+    type: string;
+    side: 'LONG' | 'SHORT';
+    confidence: number;
+  }>;
+  alignedWithBTC: boolean;  // Já calculado pelo sistema atual
+}
+```
+
+**Benefício:** Priorizar ativos que têm setups **prestes a acionar** ao invés de esperar rotacionar e depois esperar setup.
+
+#### 13.4.2 Filter Pre-Validator
+```typescript
+interface FilterValidationResult {
+  symbol: string;
+  wouldPassFilters: boolean;
+  confluenceScore: number;
+  failingFilters: string[];
+}
+```
+
+**Benefício:** Não rotacionar para ativo cujo setup não passaria nos filtros de qualquer forma.
+
+### 13.5 Ajustes de Parâmetros
+
+| Parâmetro | Atual | Proposto | Motivo |
+|-----------|-------|----------|--------|
+| `HYSTERESIS_THRESHOLD` | 10 | 15-20 | Menos rotações = menos oportunidades perdidas |
+| Antecipação rotation | 5 min | 10-15 min | Mais tempo para pre-scan |
+| Min rotação | cada candle | cada 2 candles | Qualidade > quantidade |
+
+### 13.6 TODO (Priorizado)
+
+**Alta Prioridade:**
+- [ ] Implementar `SetupPreScanner` - detectar setups pendentes
+- [ ] Implementar `FilterPreValidator` - simular confluenceScore
+- [ ] Adicionar ao scoring: `hasPendingSetup` weight
+
+**Média Prioridade:**
+- [ ] Adicionar BTC Dominance check (API CoinGecko/CMC)
+- [ ] Aumentar `HYSTERESIS_THRESHOLD` para 15-20
+- [ ] Criar métricas de qualidade de rotação
+
+**Baixa Prioridade:**
+- [ ] Integrar Altcoin Season Index
+- [ ] ADX check no rotation (não só no trade filter)
+
+### 13.7 Pesquisa de Mercado (2025-2026)
+
+- **BTC Dominance** em ~59.4% limita momentum de alts
+- **Correlação BTC-Alts** > 0.8 em crashes - sistema já considera EMA21
+- **Volume confirma breakouts** - já está no scoring atual
+- **Mercados de alta favorecem momentum** - sistema já usa momentum metrics
+
+**Fontes:**
+- [Bitcoin Momentum and Altcoin Rotation](https://www.ainvest.com/news/bitcoin-momentum-altcoin-rotation-signal-bullish-phase-2026-2601/)
+- [Momentum Trading Strategy Guide](https://stoic.ai/blog/momentum-trading-indicators-strategy-expert-crypto-trading-guide/)
+
+---
+
+## 14. Teste e Otimização das 106 Estratégias
+
+### 13.1 Visão Geral
+
+O sistema possui **106 estratégias** definidas em JSON em `apps/backend/strategies/builtin/`. Com o backtesting completo funcionando (incluindo trailing stop), o próximo passo é:
+
+1. **Testar todas as 106** com a config ótima de trailing stop
+2. **Eleger as melhores** (top 10-20 por métricas)
+3. **Otimizar individualmente** as estratégias eleitas
+
+### 13.2 Categorias de Estratégias
+
+| Categoria | Exemplos | Quantidade |
+|-----------|----------|------------|
+| Larry Williams | 9.1, 9.2, 9.3, 9.4 | 4 |
+| Momentum | momentum-breakout-2025, momentum-rotation | ~15 |
+| Mean Reversion | rsi-oversold-bounce, mean-reversion-bb-rsi | ~12 |
+| Trend Following | ema-crossover, supertrend-follow, golden-cross-sma | ~20 |
+| Breakout | breakout-retest, range-breakout, keltner-breakout | ~15 |
+| Pattern | engulfing-pattern, three-bar-reversal, pattern-123 | ~10 |
+| Divergence | rsi-divergence, macd-divergence, obv-divergence | ~8 |
+| Volume/Order Flow | whale-accumulation, liquidity-sweep, order-block-fvg | ~10 |
+| Outros | scalping, grid-trading, arbitrage | ~12 |
+
+### 13.3 Processo de Seleção
+
+```
+Fase 1: Screening (106 → ~30)
+├── Testar todas com config padrão
+├── Filtrar por: PnL > 0, Trades > 50, WinRate > 40%
+└── Excluir: Drawdown > 40%, ProfitFactor < 1.2
+
+Fase 2: Ranking (30 → 15)
+├── Score = PnL×0.3 + Sharpe×0.4 + (1-DD)×0.3
+├── Considerar consistência entre timeframes
+└── Validar com Walk-Forward
+
+Fase 3: Otimização (15 estratégias)
+├── Otimizar parâmetros específicos de cada estratégia
+├── Testar combinações de filtros
+└── Validar com Monte Carlo
+```
+
+### 13.4 CLI para Teste em Massa
+
+```bash
+# Testar todas as estratégias com config padrão
+pnpm tsx apps/backend/src/cli/test-all-strategies.ts \
+  --symbol BTCUSDT \
+  --interval 2h \
+  --start 2023-01-01 \
+  --end 2026-01-31 \
+  --output results/strategy-ranking-$(date +%Y%m%d).json
+
+# Otimizar uma estratégia específica
+pnpm tsx apps/backend/src/cli/optimize-strategy.ts \
+  --strategy momentum-breakout-2025 \
+  --symbol BTCUSDT \
+  --interval 2h
+```
+
+### 13.5 Métricas de Avaliação
+
+| Métrica | Peso | Threshold Mínimo |
+|---------|------|------------------|
+| PnL Total | 30% | > 0 |
+| Sharpe Ratio | 40% | > 1.0 |
+| Max Drawdown | 30% | < 30% |
+| Win Rate | - | > 40% |
+| Profit Factor | - | > 1.2 |
+| Total Trades | - | > 50 |
+
+### 13.6 TODO
+
+- [ ] Criar `test-all-strategies.ts` para screening em massa
+- [ ] Criar `optimize-strategy.ts` para otimização individual
+- [ ] Implementar ranking automático com Score
+- [ ] Gerar relatório comparativo (CSV/HTML)
+- [ ] Integrar com Walk-Forward e Monte Carlo
+
+---
+
+## 14. Melhores Práticas de Backtesting (Pesquisa 2026)
 
 ### 13.1 Walk-Forward Optimization (WFO)
 
@@ -1474,6 +1689,22 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 ---
 
 ## 15. Atualizações do Plano
+
+### v1.9.0 (2026-01-31)
+- **Seção 13 revisada:** Melhoria do Sistema de Rotation e QuickStart
+  - Documentado o que **já existe**: BTC EMA21 trend, capital filter, hysteresis, scoring
+  - Identificado o que **falta**: SetupPreScanner, FilterPreValidator
+  - Proposta incremental (adicionar ao existente, não reescrever)
+  - TODOs priorizados por impacto
+  - Pesquisa de mercado 2025-2026 incorporada
+
+### v1.8.0 (2026-01-31)
+- **Seção 14 adicionada:** Teste e Otimização das 106 Estratégias
+  - Workflow de screening, ranking e otimização
+  - Categorização das estratégias
+  - Métricas de avaliação
+  - CLI TODO: `test-all-strategies.ts`, `optimize-strategy.ts`
+- **README-OPTIMIZATION.md atualizado** com workflow de estratégias
 
 ### v1.7.0 (2026-01-31)
 - **Limpeza massiva de código obsoleto:**

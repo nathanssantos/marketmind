@@ -133,9 +133,68 @@ apps/backend/src/
 }
 ```
 
+## Teste das 106 Estratégias
+
+O sistema possui **106 estratégias** em `strategies/builtin/*.json`. Após encontrar a config ótima de trailing stop:
+
+### Workflow
+
+```
+1. Otimização Trailing Stop (atual)
+   └── Encontrar melhor config LONG/SHORT
+
+2. Screening de Estratégias
+   └── Testar todas 106 com config ótima
+   └── Filtrar: PnL > 0, Trades > 50, WinRate > 40%
+   └── Resultado: ~30 estratégias
+
+3. Ranking
+   └── Score = PnL×0.3 + Sharpe×0.4 + (1-DD)×0.3
+   └── Validar com Walk-Forward
+   └── Resultado: Top 15 estratégias
+
+4. Otimização Individual
+   └── Otimizar params específicos de cada estratégia
+   └── Testar combinações de filtros
+   └── Validar com Monte Carlo
+```
+
+### CLI (TODO)
+
+```bash
+# Testar todas as estratégias
+pnpm tsx src/cli/test-all-strategies.ts \
+  --symbol BTCUSDT \
+  --interval 2h \
+  --start 2023-01-01 \
+  --end 2026-01-31
+
+# Otimizar estratégia específica
+pnpm tsx src/cli/optimize-strategy.ts \
+  --strategy momentum-breakout-2025 \
+  --symbol BTCUSDT
+```
+
+### Categorias
+
+| Categoria | Exemplos | ~Qtd |
+|-----------|----------|------|
+| Larry Williams | 9.1, 9.2, 9.3, 9.4 | 4 |
+| Momentum | momentum-breakout-2025 | 15 |
+| Mean Reversion | rsi-oversold-bounce | 12 |
+| Trend Following | ema-crossover, supertrend | 20 |
+| Breakout | range-breakout, keltner | 15 |
+| Pattern | engulfing, three-bar | 10 |
+| Divergence | rsi-divergence, macd | 8 |
+| Volume/Order Flow | whale-accumulation | 10 |
+| Outros | scalping, grid-trading | 12 |
+
+---
+
 ## Próximos Passos
 
-1. Integrar com MultiWatcherBacktestEngine (setups reais)
-2. Adicionar otimização de filtros
-3. Adicionar otimização de Fibonacci targets
-4. Aplicar melhor config como default do sistema
+1. ✅ Otimização trailing stop (em execução)
+2. [ ] Testar 106 estratégias com config ótima
+3. [ ] Eleger top 15-20 estratégias
+4. [ ] Otimizar estratégias eleitas individualmente
+5. [ ] Aplicar melhor config como default do sistema
