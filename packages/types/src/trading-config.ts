@@ -44,14 +44,16 @@ export const TRAILING_STOP_CONFIG = {
 export interface TrailingStopUserConfig {
   trailingActivationPercentLong: number;
   trailingActivationPercentShort: number;
-  trailingDistancePercent: number;
+  trailingDistancePercentLong: number;
+  trailingDistancePercentShort: number;
   useAdaptiveTrailing: boolean;
 }
 
 export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
-  trailingActivationPercentLong: 1.0,
-  trailingActivationPercentShort: 0.886,
-  trailingDistancePercent: 0.4,
+  trailingActivationPercentLong: 0.9,
+  trailingActivationPercentShort: 0.8,
+  trailingDistancePercentLong: 0.4,
+  trailingDistancePercentShort: 0.3,
   useAdaptiveTrailing: true,
 };
 
@@ -141,7 +143,7 @@ export const EXIT_CALCULATOR_CONFIG = {
   DEFAULT_MAX_CONFIDENCE: 100,
   MAX_LIMIT_ENTRY_DISTANCE_PERCENT: 0.5,
   DEFAULT_ENTRY_BUFFER_ATR: 0.3,
-  MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT: 61.8,
+  MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT: 100,
 } as const;
 
 export const VOLATILITY_CONFIG = {

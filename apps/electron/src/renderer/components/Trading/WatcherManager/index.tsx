@@ -300,12 +300,14 @@ export const WatcherManager = () => {
         onToggle={() => toggleSection('trailingStop')}
         trailingStopEnabled={config?.trailingStopEnabled ?? true}
         onTrailingStopEnabledChange={(enabled) => handleConfigUpdate({ trailingStopEnabled: enabled })}
-        trailingActivationPercentLong={Number(config?.trailingActivationPercentLong ?? 1.0)}
+        trailingActivationPercentLong={Number(config?.trailingActivationPercentLong ?? 0.9)}
         onTrailingActivationPercentLongChange={(value) => handleConfigUpdate({ trailingActivationPercentLong: value.toString() })}
-        trailingActivationPercentShort={Number(config?.trailingActivationPercentShort ?? 0.886)}
+        trailingActivationPercentShort={Number(config?.trailingActivationPercentShort ?? 0.8)}
         onTrailingActivationPercentShortChange={(value) => handleConfigUpdate({ trailingActivationPercentShort: value.toString() })}
-        trailingDistancePercent={Number(config?.trailingDistancePercent ?? 0.4)}
-        onTrailingDistancePercentChange={(value) => handleConfigUpdate({ trailingDistancePercent: value.toString() })}
+        trailingDistancePercentLong={Number(config?.trailingDistancePercentLong ?? 0.4)}
+        onTrailingDistancePercentLongChange={(value) => handleConfigUpdate({ trailingDistancePercentLong: value.toString() })}
+        trailingDistancePercentShort={Number(config?.trailingDistancePercentShort ?? 0.3)}
+        onTrailingDistancePercentShortChange={(value) => handleConfigUpdate({ trailingDistancePercentShort: value.toString() })}
         useAdaptiveTrailing={config?.useAdaptiveTrailing ?? true}
         onUseAdaptiveTrailingChange={(enabled) => handleConfigUpdate({ useAdaptiveTrailing: enabled })}
         isPending={updateConfig.isPending}

@@ -487,6 +487,10 @@ export class TrailingStopService {
         // (e.g., 88.6% for SHORT) to work whenever Fibonacci data is present.
         const useFibonacciThresholds = !!fibonacciProjection?.levels?.length;
 
+        const trailingDistancePercent = execution.side === 'LONG'
+          ? (walletConfig?.trailingDistancePercentLong ? parseFloat(walletConfig.trailingDistancePercentLong) : effectiveConfig.trailingDistancePercent)
+          : (walletConfig?.trailingDistancePercentShort ? parseFloat(walletConfig.trailingDistancePercentShort) : effectiveConfig.trailingDistancePercent);
+
         const executionConfig: TrailingStopOptimizationConfig = {
           ...effectiveConfig,
           useFibonacciThresholds,
@@ -496,9 +500,7 @@ export class TrailingStopService {
           activationPercentShort: walletConfig?.trailingActivationPercentShort
             ? parseFloat(walletConfig.trailingActivationPercentShort)
             : undefined,
-          trailingDistancePercent: walletConfig?.trailingDistancePercent
-            ? parseFloat(walletConfig.trailingDistancePercent)
-            : effectiveConfig.trailingDistancePercent,
+          trailingDistancePercent,
         };
 
         logger.debug({
@@ -687,12 +689,12 @@ export class TrailingStopService {
 
     // If this is the first trailing activation, save activation timestamp and initial extreme
     if (isFirstActivation) {
-      updateData.trailingActivatedAt = new Date();
+      updateData['trailingActivatedAt'] = new Date();
       if (currentExtremePrice !== undefined) {
         if (isLong) {
-          updateData.highestPriceSinceTrailingActivation = currentExtremePrice.toString();
+          updateData['highestPriceSinceTrailingActivation'] = currentExtremePrice.toString();
         } else {
-          updateData.lowestPriceSinceTrailingActivation = currentExtremePrice.toString();
+          updateData['lowestPriceSinceTrailingActivation'] = currentExtremePrice.toString();
         }
       }
       logger.info({ executionId: execution.id, currentExtremePrice }, '[TrailingStop] First activation - saving activation data');
@@ -703,14 +705,14 @@ export class TrailingStopService {
           ? parseFloat(execution.highestPriceSinceTrailingActivation)
           : 0;
         if (currentExtremePrice > currentHighest) {
-          updateData.highestPriceSinceTrailingActivation = currentExtremePrice.toString();
+          updateData['highestPriceSinceTrailingActivation'] = currentExtremePrice.toString();
         }
       } else {
         const currentLowest = execution.lowestPriceSinceTrailingActivation
           ? parseFloat(execution.lowestPriceSinceTrailingActivation)
           : Infinity;
         if (currentExtremePrice < currentLowest) {
-          updateData.lowestPriceSinceTrailingActivation = currentExtremePrice.toString();
+          updateData['lowestPriceSinceTrailingActivation'] = currentExtremePrice.toString();
         }
       }
     }

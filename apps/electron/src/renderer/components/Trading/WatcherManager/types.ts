@@ -12,6 +12,7 @@ export interface WatcherConfig {
   useBtcCorrelationFilter?: boolean | null;
   useMarketRegimeFilter?: boolean | null;
   useTrendFilter?: boolean | null;
+  useDirectionFilter?: boolean | null;
   useMomentumTimingFilter?: boolean | null;
   useStochasticFilter?: boolean | null;
   useAdxFilter?: boolean | null;

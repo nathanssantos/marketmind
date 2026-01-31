@@ -1,8 +1,8 @@
 export const FILTER_DEFAULTS = {
-  useTrendFilter: true,
+  useTrendFilter: false,
   trendFilterPeriod: 21,
   useStochasticFilter: false,
-  useMomentumTimingFilter: false,
+  useMomentumTimingFilter: true,
   useAdxFilter: false,
 
   useMtfFilter: false,
@@ -24,7 +24,7 @@ export const FILTER_DEFAULTS = {
 
   fibonacciTargetLevelLong: '1' as const,
   fibonacciTargetLevelShort: '1.272' as const,
-  maxFibonacciEntryProgressPercent: 61.8,
+  maxFibonacciEntryProgressPercent: 100,
 
   useCooldown: true,
   cooldownMinutes: 15,

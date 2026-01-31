@@ -1103,8 +1103,10 @@
       "activationLongDescription": "TP progress required to activate trailing stop for LONG positions",
       "activationShort": "SHORT Activation",
       "activationShortDescription": "TP progress required to activate trailing stop for SHORT positions",
-      "trailingDistance": "Trailing Distance",
-      "trailingDistanceDescription": "Percentage of peak profit to lock in when trailing",
+      "trailingDistanceLong": "LONG Distance",
+      "trailingDistanceLongDescription": "Percentage of peak profit to lock in for LONG positions",
+      "trailingDistanceShort": "SHORT Distance",
+      "trailingDistanceShortDescription": "Percentage of peak profit to lock in for SHORT positions",
       "adaptiveMode": "Adaptive Mode",
       "adaptiveModeDescription": "Automatically adjusts based on market volatility"
     },

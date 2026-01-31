@@ -142,9 +142,10 @@ export const DEFAULT_PYRAMID_CONFIG = {
 };
 
 export const DEFAULT_TRAILING_STOP_USER_CONFIG = {
-  trailingActivationPercentLong: '1.0',
-  trailingActivationPercentShort: '0.886',
-  trailingDistancePercent: '0.4',
+  trailingActivationPercentLong: '0.9',
+  trailingActivationPercentShort: '0.8',
+  trailingDistancePercentLong: '0.4',
+  trailingDistancePercentShort: '0.3',
   useAdaptiveTrailing: true,
 };
 

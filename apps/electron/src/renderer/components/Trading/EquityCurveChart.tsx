@@ -90,8 +90,8 @@ export const EquityCurveChart = ({
   }
 
   return (
-    <Box h="300px">
-      <ResponsiveContainer width="100%" height="100%">
+    <Box h="300px" minW={0}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
         <AreaChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
           <XAxis dataKey="time" style={{ fontSize: '10px', fill: chartTextMuted }} />

@@ -194,8 +194,8 @@ export const WalletPerformanceModal = ({
                     {t('trading.wallets.equityCurve')}
                   </Text>
                   {chartData.length > 1 ? (
-                    <Box h="280px">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <Box h="280px" minW={0}>
+                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <AreaChart data={chartData}>
                           <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
                           <XAxis

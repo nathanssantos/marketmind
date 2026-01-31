@@ -1,10 +1,27 @@
 import { Badge, Box, Flex, Skeleton, Stack, Text } from '@chakra-ui/react';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { trpc } from '@renderer/utils/trpc';
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowDown, LuArrowUp, LuMinus, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+
+const useContainerWidth = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [hasWidth, setHasWidth] = useState(false);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      setHasWidth(width > 10);
+    });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, hasWidth };
+};
 
 const POPULAR_FUNDING_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'];
 const REFRESH_INTERVALS = {
@@ -135,6 +152,7 @@ const MiniLineChart = memo(({ data, lines, height = 80, formatter }: MiniLineCha
 
 const MarketIndicatorsTabComponent = () => {
   const { t } = useTranslation();
+  const { ref: containerRef, hasWidth } = useContainerWidth();
 
   const { data: btcTrendStatus, isLoading: isBtcTrendLoading } = trpc.autoTrading.getBtcTrendStatus.useQuery(
     { interval: '1d' },
@@ -170,7 +188,7 @@ const MarketIndicatorsTabComponent = () => {
   const TrendIcon = btcTrendStatus?.trend === 'BULLISH' ? LuTrendingUp : btcTrendStatus?.trend === 'BEARISH' ? LuTrendingDown : LuMinus;
 
   return (
-    <Stack gap={3} p={4}>
+    <Stack gap={3} p={4} ref={containerRef}>
       <Flex align="center" gap={2}>
         <Text fontSize="sm" fontWeight="bold">
           {t('marketSidebar.indicators.title')}
@@ -188,7 +206,7 @@ const MarketIndicatorsTabComponent = () => {
           </Flex>
         )}
 
-        {isFearGreedLoading ? (
+        {isFearGreedLoading || !hasWidth ? (
           <Skeleton height="80px" />
         ) : fearGreed?.history && fearGreed.history.length > 0 ? (
           <Box h="80px" mx={-2}>
@@ -234,7 +252,7 @@ const MarketIndicatorsTabComponent = () => {
             )}
           </Flex>
         )}
-        {isBtcDominanceLoading ? (
+        {isBtcDominanceLoading || !hasWidth ? (
           <Skeleton height="60px" />
         ) : btcDominance?.history && btcDominance.history.length > 0 ? (
           <MiniAreaChart
@@ -262,7 +280,7 @@ const MarketIndicatorsTabComponent = () => {
             )}
           </Flex>
         )}
-        {isOpenInterestLoading ? (
+        {isOpenInterestLoading || !hasWidth ? (
           <Skeleton height="60px" />
         ) : openInterest?.history && openInterest.history.length > 0 ? (
           <MiniAreaChart
@@ -286,7 +304,7 @@ const MarketIndicatorsTabComponent = () => {
             <Badge size="xs" px={2} colorPalette="red">Short: {(longShortRatio.global.shortAccount * 100).toFixed(0)}%</Badge>
           </Flex>
         )}
-        {isLongShortLoading ? (
+        {isLongShortLoading || !hasWidth ? (
           <Skeleton height="60px" />
         ) : longShortRatio?.globalHistory && longShortRatio.globalHistory.length > 0 ? (
           <MiniAreaChart
@@ -327,7 +345,7 @@ const MarketIndicatorsTabComponent = () => {
           </Flex>
         )}
 
-        {isBtcTrendLoading ? (
+        {isBtcTrendLoading || !hasWidth ? (
           <Skeleton height="80px" />
         ) : btcTrendStatus?.history && btcTrendStatus.history.length > 0 ? (
           <MiniLineChart

@@ -13,8 +13,10 @@ export interface TrailingStopSectionProps {
   onTrailingActivationPercentLongChange: (value: number) => void;
   trailingActivationPercentShort: number;
   onTrailingActivationPercentShortChange: (value: number) => void;
-  trailingDistancePercent: number;
-  onTrailingDistancePercentChange: (value: number) => void;
+  trailingDistancePercentLong: number;
+  onTrailingDistancePercentLongChange: (value: number) => void;
+  trailingDistancePercentShort: number;
+  onTrailingDistancePercentShortChange: (value: number) => void;
   useAdaptiveTrailing: boolean;
   onUseAdaptiveTrailingChange: (enabled: boolean) => void;
   isPending: boolean;
@@ -29,8 +31,10 @@ export const TrailingStopSection = ({
   onTrailingActivationPercentLongChange,
   trailingActivationPercentShort,
   onTrailingActivationPercentShortChange,
-  trailingDistancePercent,
-  onTrailingDistancePercentChange,
+  trailingDistancePercentLong,
+  onTrailingDistancePercentLongChange,
+  trailingDistancePercentShort,
+  onTrailingDistancePercentShortChange,
   useAdaptiveTrailing,
   onUseAdaptiveTrailingChange,
   isPending,
@@ -131,19 +135,42 @@ export const TrailingStopSection = ({
                   <Flex justify="space-between" align="center" mb={2}>
                     <Box>
                       <Text fontSize="sm" fontWeight="medium">
-                        {t('watcherManager.trailingStop.trailingDistance')}
+                        {t('watcherManager.trailingStop.trailingDistanceLong')}
                       </Text>
                       <Text fontSize="xs" color="fg.muted">
-                        {t('watcherManager.trailingStop.trailingDistanceDescription')}
+                        {t('watcherManager.trailingStop.trailingDistanceLongDescription')}
                       </Text>
                     </Box>
-                    <Text fontSize="sm" fontWeight="bold" color="blue.500">
-                      {(trailingDistancePercent * 100).toFixed(0)}%
+                    <Text fontSize="sm" fontWeight="bold" color="green.500">
+                      {(trailingDistancePercentLong * 100).toFixed(0)}%
                     </Text>
                   </Flex>
                   <Slider
-                    value={[trailingDistancePercent * 100]}
-                    onValueChange={(values) => onTrailingDistancePercentChange(values[0]! / 100)}
+                    value={[trailingDistancePercentLong * 100]}
+                    onValueChange={(values) => onTrailingDistancePercentLongChange(values[0]! / 100)}
+                    min={10}
+                    max={80}
+                    step={5}
+                  />
+                </Box>
+
+                <Box p={3} bg="bg.subtle" borderRadius="md">
+                  <Flex justify="space-between" align="center" mb={2}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium">
+                        {t('watcherManager.trailingStop.trailingDistanceShort')}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted">
+                        {t('watcherManager.trailingStop.trailingDistanceShortDescription')}
+                      </Text>
+                    </Box>
+                    <Text fontSize="sm" fontWeight="bold" color="red.500">
+                      {(trailingDistancePercentShort * 100).toFixed(0)}%
+                    </Text>
+                  </Flex>
+                  <Slider
+                    value={[trailingDistancePercentShort * 100]}
+                    onValueChange={(values) => onTrailingDistancePercentShortChange(values[0]! / 100)}
                     min={10}
                     max={80}
                     step={5}

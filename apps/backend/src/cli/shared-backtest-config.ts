@@ -59,7 +59,7 @@ export const createBaseConfig = (): BaseBacktestConfig => ({
   useVolumeFilter: true,
   volumeFilterConfig: VOLUME_FILTER_CONFIG,
 
-  useMomentumTimingFilter: false,
+  useMomentumTimingFilter: true,
   useMtfFilter: false,
   useMarketRegimeFilter: false,
 
@@ -107,10 +107,11 @@ export const printConfig = () => {
   console.log(`   • Capital: $${formatCurrency(DEFAULT_BACKTEST_PARAMS.initialCapital)}`);
   console.log(`   • Leverage: ${DEFAULT_BACKTEST_PARAMS.leverage}x`);
   console.log(`   • Setups: ${ENABLED_SETUPS.length} estratégias`);
+  console.log('   • BTC Correlation Filter: ON');
   console.log('   • Volume Filter: ON (OBV LONG=off, SHORT=on)');
-  console.log('   • Momentum Timing: ON');
-  console.log('   • MTF Filter: OFF');
-  console.log('   • Market Regime: ON');
+  console.log('   • Momentum Timing Filter: ON');
+  console.log('   • EMA Trend Filter: OFF');
+  console.log('   • ADX Filter: OFF');
   console.log('   • TP Mode: Fibonacci (auto)');
   console.log(`   • Cooldown: ${DEFAULT_BACKTEST_PARAMS.cooldownMinutes} min\n`);
 };

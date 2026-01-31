@@ -1173,8 +1173,10 @@
       "activationLongDescription": "Progreso del TP requerido para activar trailing stop en posiciones LONG",
       "activationShort": "Activación SHORT",
       "activationShortDescription": "Progreso del TP requerido para activar trailing stop en posiciones SHORT",
-      "trailingDistance": "Distancia de Trailing",
-      "trailingDistanceDescription": "Porcentaje del beneficio máximo a asegurar en el trailing",
+      "trailingDistanceLong": "Distancia LONG",
+      "trailingDistanceLongDescription": "Porcentaje del beneficio máximo a asegurar en posiciones LONG",
+      "trailingDistanceShort": "Distancia SHORT",
+      "trailingDistanceShortDescription": "Porcentaje del beneficio máximo a asegurar en posiciones SHORT",
       "adaptiveMode": "Modo Adaptativo",
       "adaptiveModeDescription": "Ajusta automáticamente basado en la volatilidad del mercado"
     },
