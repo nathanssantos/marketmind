@@ -1,5 +1,5 @@
 import { calculateSupertrend } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, SupertrendFilterResult, SupertrendTrend } from '@marketmind/types';
 
 const DEFAULT_PERIOD = 10;
 const DEFAULT_MULTIPLIER = 3;
@@ -9,12 +9,7 @@ export const SUPERTREND_FILTER = {
   DEFAULT_MULTIPLIER,
 } as const;
 
-export interface SupertrendFilterResult {
-  isAllowed: boolean;
-  trend: 'up' | 'down' | null;
-  value: number | null;
-  reason: string;
-}
+export type { SupertrendFilterResult, SupertrendTrend };
 
 export const checkSupertrendCondition = (
   klines: Kline[],

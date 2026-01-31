@@ -91,10 +91,13 @@ export const WatcherManager = () => {
   const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
   const isLoadingMax = isLoadingFiltered;
 
-  const { data: btcTrendStatus } = trpc.autoTrading.getBtcTrendStatus.useQuery(undefined, {
-    enabled: config?.useBtcCorrelationFilter === true,
-    staleTime: 60000,
-  });
+  const { data: btcTrendStatus } = trpc.autoTrading.getBtcTrendStatus.useQuery(
+    { interval: quickStartTimeframe },
+    {
+      enabled: config?.useBtcCorrelationFilter === true,
+      staleTime: 60000,
+    }
+  );
 
   const { data: fundingRates } = trpc.autoTrading.getBatchFundingRates.useQuery(
     { symbols: quickStartSymbols },

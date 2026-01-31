@@ -1,5 +1,5 @@
 import { calculateBollingerBands, calculateBBWidth } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { BollingerSqueezeFilterResult, Kline } from '@marketmind/types';
 
 const DEFAULT_BB_PERIOD = 20;
 const DEFAULT_BB_STD_DEV = 2;
@@ -11,12 +11,7 @@ export const BOLLINGER_SQUEEZE_FILTER = {
   DEFAULT_THRESHOLD: DEFAULT_SQUEEZE_THRESHOLD,
 } as const;
 
-export interface BollingerSqueezeFilterResult {
-  isAllowed: boolean;
-  bbWidth: number | null;
-  isSqueezing: boolean;
-  reason: string;
-}
+export type { BollingerSqueezeFilterResult };
 
 export const checkBollingerSqueezeCondition = (
   klines: Kline[],

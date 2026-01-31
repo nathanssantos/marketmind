@@ -1,4 +1,4 @@
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { Kline, TimeInterval, TradingSetup } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import {
@@ -168,6 +168,7 @@ export class SignalProcessor {
         filterChecks: [],
         rejections: [],
         tradeExecutions: [],
+        setupValidations: [],
         tradesExecuted: 0,
         durationMs: 0,
         logs: [],
@@ -445,21 +446,48 @@ export class SignalProcessor {
         minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
         strategy,
         silent: true,
+        interval: watcher.interval as TimeInterval,
       });
 
       const result = interpreter.detect(closedKlines, currentIndex);
 
       if (result.rejection) {
         const rejectionDirection = result.rejection.details?.['direction'] as string | undefined;
+        const entryPrice = result.rejection.details?.['entryPrice'] as number | undefined;
+
+        if (rejectionDirection && rejectionDirection !== '-') {
+          const lastKline = closedKlines[closedKlines.length - 1];
+          const currentPrice = lastKline ? parseFloat(lastKline.close) : 0;
+
+          logBuffer.startSetupValidation({
+            type: strategy.name,
+            direction: rejectionDirection as 'LONG' | 'SHORT',
+            entryPrice: entryPrice ?? currentPrice,
+            confidence: result.confidence ?? 0,
+          });
+
+          const reasonKey = result.rejection.reason.split(':')[0]?.trim() ?? result.rejection.reason;
+          const detailValues = result.rejection.details
+            ? Object.entries(result.rejection.details)
+                .filter(([k]) => k !== 'direction' && k !== 'entryPrice')
+                .map(([k, v]) => `${k}=${v}`)
+                .join(', ')
+            : '';
+
+          logBuffer.addValidationCheck({
+            name: reasonKey,
+            passed: false,
+            reason: detailValues || result.rejection.reason,
+          });
+
+          logBuffer.completeSetupValidation('blocked', result.rejection.reason);
+        }
+
         logBuffer.addRejection({
           setupType: strategy.name,
           direction: rejectionDirection ?? '-',
           reason: result.rejection.reason,
           details: result.rejection.details,
-        });
-        logBuffer.warn('🚫', `Setup rejected: ${result.rejection.reason}`, {
-          setup: strategy.name,
-          direction: rejectionDirection ?? '-',
         });
       }
 

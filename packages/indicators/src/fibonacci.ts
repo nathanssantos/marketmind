@@ -1,5 +1,5 @@
-import type { Kline } from '@marketmind/types';
-import { FILTER_THRESHOLDS } from '@marketmind/types';
+import type { Kline, TimeInterval } from '@marketmind/types';
+import { FILTER_THRESHOLDS, INTERVAL_MS, TIME_MS } from '@marketmind/types';
 import {
   FIBONACCI_ALL_LEVELS,
   FIBONACCI_RETRACEMENT_LEVELS,
@@ -20,6 +20,18 @@ import {
   findAdaptiveFractalLow,
   SWING_POINT_DEFAULTS,
 } from './swingPoints';
+
+const DEFAULT_LOOKBACK_PERIOD_MS = 14 * TIME_MS.DAY;
+const MIN_LOOKBACK_CANDLES = 50;
+const MAX_LOOKBACK_CANDLES = 400;
+
+export const calculateTimeframeLookback = (interval: TimeInterval): number => {
+  const intervalMs = INTERVAL_MS[interval];
+  if (!intervalMs) return 100;
+
+  const calculatedLookback = Math.floor(DEFAULT_LOOKBACK_PERIOD_MS / intervalMs);
+  return Math.max(MIN_LOOKBACK_CANDLES, Math.min(MAX_LOOKBACK_CANDLES, calculatedLookback));
+};
 
 export {
   FIBONACCI_ALL_LEVELS,
@@ -110,10 +122,14 @@ export const calculateAutoFibonacci = (
 export const calculateFibonacciProjection = (
   klines: Kline[],
   currentIndex: number,
-  lookback: number = 100,
+  lookback: number | TimeInterval = 100,
   direction: 'LONG' | 'SHORT',
 ): FibonacciProjectionResult | null => {
-  const startIndex = Math.max(0, currentIndex - lookback);
+  const effectiveLookback = typeof lookback === 'string'
+    ? calculateTimeframeLookback(lookback)
+    : lookback;
+
+  const startIndex = Math.max(0, currentIndex - effectiveLookback);
   const endIndex = currentIndex;
 
   if (endIndex - startIndex < 20) return null;
@@ -127,15 +143,15 @@ export const calculateFibonacciProjection = (
   let swingHighResult: { price: number; index: number; timestamp: number } | null = null;
 
   if (direction === 'LONG') {
-    let lowResult = findSignificantSwingLow(klines, endIndex, lookback, atrMultiplier, percentThreshold, useATR);
+    let lowResult = findSignificantSwingLow(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
 
     if (lowResult) {
-      const validation = validateSwingWithStructure(klines, lowResult, lookback);
+      const validation = validateSwingWithStructure(klines, lowResult, effectiveLookback);
       if (!validation.valid) {
-        lowResult = findAdaptiveFractalLow(klines, endIndex, lookback);
+        lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
       }
     } else {
-      lowResult = findAdaptiveFractalLow(klines, endIndex, lookback);
+      lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
     }
 
     if (!lowResult) return null;
@@ -145,15 +161,15 @@ export const calculateFibonacciProjection = (
     if (!highResult) return null;
     swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
   } else {
-    let highResult = findSignificantSwingHigh(klines, endIndex, lookback, atrMultiplier, percentThreshold, useATR);
+    let highResult = findSignificantSwingHigh(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
 
     if (highResult) {
-      const validation = validateSwingWithStructure(klines, highResult, lookback);
+      const validation = validateSwingWithStructure(klines, highResult, effectiveLookback);
       if (!validation.valid) {
-        highResult = findAdaptiveFractalHigh(klines, endIndex, lookback);
+        highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
       }
     } else {
-      highResult = findAdaptiveFractalHigh(klines, endIndex, lookback);
+      highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
     }
 
     if (!highResult) return null;

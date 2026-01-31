@@ -41,6 +41,33 @@ export interface TradeExecutionEntry {
   status: 'executed' | 'pending' | 'failed';
 }
 
+export interface ValidationCheck {
+  name: string;
+  passed: boolean;
+  value?: string;
+  expected?: string;
+  reason?: string;
+}
+
+export type SetupOutcome = 'executed' | 'blocked' | 'pending' | 'failed';
+
+export interface SetupValidationEntry {
+  setupType: string;
+  direction: 'LONG' | 'SHORT';
+  entryPrice: string;
+  stopLoss?: string;
+  takeProfit?: string;
+  confidence: number;
+  riskReward?: string;
+  checks: ValidationCheck[];
+  outcome: SetupOutcome;
+  outcomeReason?: string;
+  execution?: {
+    quantity: string;
+    orderType: string;
+  };
+}
+
 export interface WatcherResult {
   watcherId: string;
   symbol: string;
@@ -54,6 +81,7 @@ export interface WatcherResult {
   filterChecks: FilterCheckEntry[];
   rejections: RejectionEntry[];
   tradeExecutions: TradeExecutionEntry[];
+  setupValidations: SetupValidationEntry[];
   tradesExecuted: number;
   durationMs: number;
   logs: LogEntry[];

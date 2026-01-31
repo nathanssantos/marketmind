@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { FILTER_DEFAULTS } from '@marketmind/types';
+import { BACKTEST_TIMEFRAMES, FILTER_DEFAULTS } from '@marketmind/types';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig, MultiWatcherBacktestConfig } from '@marketmind/types';
 import {
@@ -31,7 +31,7 @@ interface OptimizationResult {
   filteredStats: Record<string, number>;
 }
 
-const TIMEFRAMES = ['30m', '1h', '2h', '4h', '6h', '8h'];
+const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['30m', '1h', '2h', '4h', '6h', '8h'].includes(tf));
 
 const FILTER_COMBINATIONS: FilterCombination[] = [
   { name: 'Baseline (none)', filters: {

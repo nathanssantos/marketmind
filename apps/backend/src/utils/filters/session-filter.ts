@@ -1,3 +1,5 @@
+import type { SessionFilterResult } from '@marketmind/types';
+
 const DEFAULT_SESSION_START_UTC = 13;
 const DEFAULT_SESSION_END_UTC = 16;
 
@@ -6,12 +8,7 @@ export const SESSION_FILTER = {
   DEFAULT_END_UTC: DEFAULT_SESSION_END_UTC,
 } as const;
 
-export interface SessionFilterResult {
-  isAllowed: boolean;
-  currentHourUtc: number;
-  isInSession: boolean;
-  reason: string;
-}
+export type { SessionFilterResult };
 
 export const checkSessionCondition = (
   timestamp: number,

@@ -7,6 +7,7 @@ import type {
   Kline,
   SetupDirection,
   StrategyDefinition,
+  TimeInterval,
   TriggerCandleSnapshot,
   TriggerIndicatorValues,
 } from '@marketmind/types';
@@ -23,7 +24,7 @@ import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
 
-const FIBONACCI_LOOKBACK = 100;
+const DEFAULT_FIBONACCI_LOOKBACK = 100;
 const DEFAULT_FIBONACCI_LEVEL = 1.618;
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT, MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT } = EXIT_CALCULATOR;
@@ -33,6 +34,7 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   parameterOverrides?: Record<string, number>;
   silent?: boolean;
   maxFibonacciEntryProgressPercent?: number;
+  interval?: TimeInterval;
 }
 
 export class StrategyInterpreter extends BaseSetupDetector {
@@ -43,6 +45,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private exitCalculator: ExitCalculator;
   private silent: boolean;
   private maxFibEntryProgress: number;
+  private interval: TimeInterval | undefined;
 
   constructor(config: StrategyInterpreterConfig) {
     super({
@@ -58,6 +61,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
     this.silent = config.silent ?? false;
     this.maxFibEntryProgress = config.maxFibonacciEntryProgressPercent ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
+    this.interval = config.interval;
   }
 
   detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
@@ -137,7 +141,18 @@ export class StrategyInterpreter extends BaseSetupDetector {
             minRequired: MIN_ENTRY_STOP_SEPARATION_PERCENT,
           }, '⚠️ Entry and stop are too close - setup rejected');
         }
-        return { setup: null, confidence: 0 };
+        return {
+          setup: null,
+          confidence: 0,
+          rejection: {
+            reason: 'Entry and stop too close',
+            details: {
+              separation: `${entryStopSeparation.toFixed(3)}%`,
+              minRequired: `${MIN_ENTRY_STOP_SEPARATION_PERCENT}%`,
+              direction,
+            },
+          },
+        };
       }
     }
 
@@ -159,12 +174,28 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     const hasIndicatorBasedExit = !!this.strategy.exit.conditions;
     const effectiveRiskReward = hasIndicatorBasedExit ? this.config.minRiskReward : riskReward;
-    if (!this.meetsMinimumRequirements(confidence, effectiveRiskReward)) {
-      return { setup: null, confidence };
+    const requirementsCheck = this.checkMinimumRequirements(confidence, effectiveRiskReward);
+    if (!requirementsCheck.passed) {
+      return {
+        setup: null,
+        confidence,
+        rejection: {
+          reason: requirementsCheck.reason,
+          details: requirementsCheck.details,
+        },
+      };
     }
 
-    if (!this.passesFilters(confidence, riskReward)) {
-      return { setup: null, confidence };
+    const filtersCheck = this.checkStrategyFilters(confidence, riskReward, hasIndicatorBasedExit);
+    if (!filtersCheck.passed) {
+      return {
+        setup: null,
+        confidence,
+        rejection: {
+          reason: filtersCheck.reason,
+          details: filtersCheck.details,
+        },
+      };
     }
 
     const indicatorConfluence = this.calculateIndicatorConfluence(
@@ -240,7 +271,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
     direction: SetupDirection,
     indicators: ComputedIndicators
   ): FibonacciProjectionData | undefined {
-    const projection = calculateFibonacciProjection(klines, currentIndex, FIBONACCI_LOOKBACK, direction);
+    const lookback = this.interval ?? DEFAULT_FIBONACCI_LOOKBACK;
+    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction);
     if (!projection) return undefined;
 
     const primaryLevel = this.selectPrimaryFibonacciLevel(klines, currentIndex, indicators);
@@ -405,25 +437,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
     return { direction: null, triggered: false };
   }
 
-  private passesFilters(confidence: number, riskReward: number): boolean {
-    const { filters, exit } = this.strategy;
-
-    if (!filters) {
-      return true;
-    }
-
-    if (filters.minConfidence && confidence < filters.minConfidence) {
-      return false;
-    }
-
-    const hasIndicatorBasedExit = !!exit.conditions;
-    if (filters.minRiskReward && riskReward < filters.minRiskReward && !hasIndicatorBasedExit) {
-      return false;
-    }
-
-    return true;
-  }
-
   private calculateIndicatorConfluence(
     indicators: ComputedIndicators,
     currentIndex: number
@@ -528,6 +541,72 @@ export class StrategyInterpreter extends BaseSetupDetector {
     }
 
     return ranges;
+  }
+
+  private checkMinimumRequirements(
+    confidence: number,
+    riskReward: number
+  ): { passed: boolean; reason: string; details: Record<string, string | number> } {
+    if (confidence < this.config.minConfidence) {
+      return {
+        passed: false,
+        reason: 'Confidence below minimum',
+        details: {
+          confidence,
+          minRequired: this.config.minConfidence,
+        },
+      };
+    }
+
+    if (riskReward < this.config.minRiskReward) {
+      return {
+        passed: false,
+        reason: 'Risk/reward below minimum',
+        details: {
+          riskReward: parseFloat(riskReward.toFixed(2)),
+          minRequired: this.config.minRiskReward,
+        },
+      };
+    }
+
+    return { passed: true, reason: '', details: {} };
+  }
+
+  private checkStrategyFilters(
+    confidence: number,
+    riskReward: number,
+    hasIndicatorBasedExit: boolean
+  ): { passed: boolean; reason: string; details: Record<string, string | number> } {
+    const { filters, exit } = this.strategy;
+
+    if (!filters) {
+      return { passed: true, reason: '', details: {} };
+    }
+
+    if (filters.minConfidence && confidence < filters.minConfidence) {
+      return {
+        passed: false,
+        reason: 'Strategy filter: confidence below minimum',
+        details: {
+          confidence,
+          strategyMinConfidence: filters.minConfidence,
+        },
+      };
+    }
+
+    const hasExitConditions = !!exit.conditions || hasIndicatorBasedExit;
+    if (filters.minRiskReward && riskReward < filters.minRiskReward && !hasExitConditions) {
+      return {
+        passed: false,
+        reason: 'Strategy filter: risk/reward below minimum',
+        details: {
+          riskReward: parseFloat(riskReward.toFixed(2)),
+          strategyMinRiskReward: filters.minRiskReward,
+        },
+      };
+    }
+
+    return { passed: true, reason: '', details: {} };
   }
 
   private validateFibonacciEntryProgress(

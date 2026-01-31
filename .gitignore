@@ -32,6 +32,11 @@ out/
 release/
 
 # ===========================
+# CLI Output (optimization results, backtests)
+# ===========================
+apps/backend/output/
+
+# ===========================
 # Electron specific
 # ===========================
 .webpack/

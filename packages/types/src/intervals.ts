@@ -108,6 +108,34 @@ export const BINANCE_NATIVE_INTERVALS: TimeInterval[] = [
   '1M',
 ];
 
+export const BACKTEST_TIMEFRAMES: TimeInterval[] = [
+  '30m',
+  '1h',
+  '2h',
+  '4h',
+  '6h',
+  '8h',
+  '12h',
+  '1d',
+];
+
+export const OPTIMIZATION_TIMEFRAMES: TimeInterval[] = [
+  '1h',
+  '2h',
+  '4h',
+];
+
+export const BATCH_BACKTEST_TIMEFRAMES: TimeInterval[] = [
+  '1m',
+  '5m',
+  '15m',
+  '30m',
+  '1h',
+  '4h',
+  '1d',
+  '1w',
+];
+
 export type TimeMsConstants = typeof TIME_MS;
 export type IntervalMsConstants = typeof INTERVAL_MS;
 export type IntervalMinutesConstants = typeof INTERVAL_MINUTES;

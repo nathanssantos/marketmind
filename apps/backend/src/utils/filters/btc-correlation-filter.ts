@@ -187,6 +187,118 @@ export const getBtcTrendInfo = (btcKlines: Kline[]): BtcTrendInfo => {
   };
 };
 
+export type Ema21Direction = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+
+export interface Ema21TrendResult {
+  direction: Ema21Direction;
+  price: number | null;
+  ema21: number | null;
+}
+
+export interface Ema21AlignmentResult {
+  isAligned: boolean;
+  btcDirection: Ema21Direction;
+  assetDirection: Ema21Direction;
+  reason: string;
+}
+
+export const getEma21Direction = (klines: Kline[]): Ema21TrendResult => {
+  if (klines.length < MIN_KLINES_REQUIRED) {
+    return { direction: 'NEUTRAL', price: null, ema21: null };
+  }
+
+  const ema21Values = calculateEMA(klines, EMA_PERIOD);
+  const lastIndex = klines.length - 1;
+  const ema21 = ema21Values[lastIndex];
+  const lastKline = klines[lastIndex];
+
+  if (!lastKline || ema21 === null || ema21 === undefined) {
+    return { direction: 'NEUTRAL', price: null, ema21: null };
+  }
+
+  const price = parseFloat(String(lastKline.close));
+  const direction: Ema21Direction = price > ema21 ? 'BULLISH' : 'BEARISH';
+
+  return { direction, price, ema21 };
+};
+
+export const checkEma21Alignment = (
+  btcKlines: Kline[],
+  assetKlines: Kline[]
+): Ema21AlignmentResult => {
+  const btcTrend = getEma21Direction(btcKlines);
+  const assetTrend = getEma21Direction(assetKlines);
+
+  if (btcTrend.direction === 'NEUTRAL' || assetTrend.direction === 'NEUTRAL') {
+    return {
+      isAligned: true,
+      btcDirection: btcTrend.direction,
+      assetDirection: assetTrend.direction,
+      reason: 'Insufficient data - allowing',
+    };
+  }
+
+  const isAligned = btcTrend.direction === assetTrend.direction;
+
+  return {
+    isAligned,
+    btcDirection: btcTrend.direction,
+    assetDirection: assetTrend.direction,
+    reason: isAligned
+      ? `Aligned: both ${btcTrend.direction}`
+      : `Misaligned: BTC ${btcTrend.direction}, Asset ${assetTrend.direction}`,
+  };
+};
+
+export const getBtcTrendEmaInfo = (btcKlines: Kline[]): BtcTrendInfo => {
+  if (btcKlines.length < MIN_KLINES_REQUIRED) {
+    return {
+      trend: 'NEUTRAL',
+      strength: 'WEAK',
+      score: 50,
+      canLong: true,
+      canShort: true,
+      btcPrice: null,
+      btcEma21: null,
+    };
+  }
+
+  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
+  const lastIndex = btcKlines.length - 1;
+  const btcEma21 = ema21Values[lastIndex];
+  const lastKline = btcKlines[lastIndex];
+
+  if (!lastKline || btcEma21 === null || btcEma21 === undefined) {
+    return {
+      trend: 'NEUTRAL',
+      strength: 'WEAK',
+      score: 50,
+      canLong: true,
+      canShort: true,
+      btcPrice: lastKline ? parseFloat(String(lastKline.close)) : null,
+      btcEma21: btcEma21 ?? null,
+    };
+  }
+
+  const btcPrice = parseFloat(String(lastKline.close));
+  const priceAboveEma = btcPrice > btcEma21;
+  const emaDiff = Math.abs(btcPrice - btcEma21) / btcEma21 * 100;
+
+  const trend: BtcTrend = priceAboveEma ? 'BULLISH' : 'BEARISH';
+  const strength: BtcStrength = emaDiff >= 3 ? 'STRONG' : emaDiff >= 1 ? 'MODERATE' : 'WEAK';
+  const score = priceAboveEma ? Math.min(100, 50 + emaDiff * 10) : Math.max(0, 50 - emaDiff * 10);
+
+  return {
+    trend,
+    strength,
+    score: Math.round(score),
+    canLong: priceAboveEma,
+    canShort: !priceAboveEma,
+    btcPrice,
+    btcEma21,
+  };
+};
+
 export const checkBtcCorrelation = (
   btcKlines: Kline[],
   direction: 'LONG' | 'SHORT',

@@ -132,6 +132,7 @@ async function runPhase1(
       endDate,
       useVolumeFilter: true,
       volumeFilterConfig,
+      silent: true,
     });
 
     const result = await engine.run();
@@ -191,6 +192,7 @@ async function runPhase2(
       endDate,
       useVolumeFilter: true,
       volumeFilterConfig,
+      silent: true,
     });
 
     const result = await engine.run();
@@ -260,6 +262,7 @@ async function runPhase3(
         endDate,
         useVolumeFilter: true,
         volumeFilterConfig,
+        silent: true,
       });
 
       const result = await engine.run();
@@ -374,7 +377,9 @@ async function runOptimization() {
   console.log(`Max Drawdown: ${formatPercent(best.maxDrawdown)}`);
   console.log(`Total Trades: ${best.totalTrades} (LONG: ${best.longMetrics.trades}, SHORT: ${best.shortMetrics.trades})`);
 
-  const outputFile = `./volume-optimization-${symbol}-${interval}-${new Date().toISOString().split('T')[0]}.json`;
+  const outputDir = './output';
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  const outputFile = `${outputDir}/volume-optimization-${symbol}-${interval}-${new Date().toISOString().split('T')[0]}.json`;
   const outputData = {
     symbol,
     interval,

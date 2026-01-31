@@ -1,39 +1,62 @@
 import { calculateRSI, calculateMFI } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, MomentumTimingResult } from '@marketmind/types';
 
-export interface MomentumTimingResult {
-  isAllowed: boolean;
-  rsiValue: number | null;
-  rsiPrevValue: number | null;
-  rsiMomentum: 'RISING' | 'FALLING' | 'NEUTRAL';
-  mfiValue: number | null;
-  mfiConfirmation: boolean;
-  reason: string;
-}
+export type { MomentumTimingResult };
+
+export type SetupMomentumType = 'PULLBACK' | 'BREAKOUT' | 'REVERSAL' | 'ANY';
 
 export const MOMENTUM_TIMING_FILTER = {
   RSI_PERIOD: 14,
   MFI_PERIOD: 14,
   RSI_LONG_MIN: 40,
   RSI_SHORT_MAX: 60,
+  RSI_PULLBACK_LONG_MIN: 30,
+  RSI_PULLBACK_SHORT_MAX: 70,
   MFI_LONG_MIN: 30,
   MFI_SHORT_MAX: 70,
   MIN_KLINES_REQUIRED: 20,
 } as const;
 
+const SETUP_MOMENTUM_TYPE: Record<string, SetupMomentumType> = {
+  'breakout-long': 'BREAKOUT',
+  'breakout-short': 'BREAKOUT',
+  'ema9-pullback': 'PULLBACK',
+  'ema9-double-pullback': 'PULLBACK',
+  'ema9-continuation': 'PULLBACK',
+  'larry-williams-9.1': 'PULLBACK',
+  'larry-williams-9.2': 'PULLBACK',
+  'larry-williams-9.3': 'PULLBACK',
+  'larry-williams-9.4': 'PULLBACK',
+  'oversold-bounce': 'REVERSAL',
+  'overbought-fade': 'REVERSAL',
+  'support-bounce': 'REVERSAL',
+  'resistance-fade': 'REVERSAL',
+  'trend-continuation': 'PULLBACK',
+};
+
+export const getSetupMomentumType = (setupType: string): SetupMomentumType => {
+  return SETUP_MOMENTUM_TYPE[setupType] ?? 'ANY';
+};
+
 export const checkMomentumTiming = (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT'
+  direction: 'LONG' | 'SHORT',
+  setupType?: string
 ): MomentumTimingResult => {
   const {
     RSI_PERIOD,
     MFI_PERIOD,
     RSI_LONG_MIN,
     RSI_SHORT_MAX,
+    RSI_PULLBACK_LONG_MIN,
+    RSI_PULLBACK_SHORT_MAX,
     MFI_LONG_MIN,
     MFI_SHORT_MAX,
     MIN_KLINES_REQUIRED,
   } = MOMENTUM_TIMING_FILTER;
+
+  const momentumType = setupType ? getSetupMomentumType(setupType) : 'ANY';
+  const isPullback = momentumType === 'PULLBACK';
 
   if (klines.length < MIN_KLINES_REQUIRED) {
     return {
@@ -82,22 +105,27 @@ export const checkMomentumTiming = (
   let reason = '';
 
   if (direction === 'LONG') {
-    const rsiCondition = rsiValue > RSI_LONG_MIN && rsiMomentum !== 'FALLING';
+    const rsiMinThreshold = isPullback ? RSI_PULLBACK_LONG_MIN : RSI_LONG_MIN;
+    const rsiCondition = isPullback
+      ? rsiValue > rsiMinThreshold
+      : rsiValue > rsiMinThreshold && rsiMomentum !== 'FALLING';
     mfiConfirmation = mfiValue === null || mfiValue > MFI_LONG_MIN;
 
     isAllowed = rsiCondition && mfiConfirmation;
 
     if (isAllowed) {
-      reason = `LONG allowed: RSI (${rsiValue.toFixed(2)}) > ${RSI_LONG_MIN} with ${rsiMomentum} momentum`;
+      reason = isPullback
+        ? `LONG allowed (pullback): RSI (${rsiValue.toFixed(2)}) > ${rsiMinThreshold}`
+        : `LONG allowed: RSI (${rsiValue.toFixed(2)}) > ${rsiMinThreshold} with ${rsiMomentum} momentum`;
       if (mfiValue !== null) {
         reason += `, MFI (${mfiValue.toFixed(2)}) > ${MFI_LONG_MIN} confirms buying pressure`;
       }
     } else {
       const issues: string[] = [];
-      if (rsiValue <= RSI_LONG_MIN) {
-        issues.push(`RSI (${rsiValue.toFixed(2)}) ≤ ${RSI_LONG_MIN}`);
+      if (rsiValue <= rsiMinThreshold) {
+        issues.push(`RSI (${rsiValue.toFixed(2)}) ≤ ${rsiMinThreshold}`);
       }
-      if (rsiMomentum === 'FALLING') {
+      if (!isPullback && rsiMomentum === 'FALLING') {
         issues.push(`RSI momentum is FALLING`);
       }
       if (mfiValue !== null && mfiValue <= MFI_LONG_MIN) {
@@ -106,22 +134,27 @@ export const checkMomentumTiming = (
       reason = `LONG blocked: ${issues.join(', ')}`;
     }
   } else {
-    const rsiCondition = rsiValue < RSI_SHORT_MAX && rsiMomentum !== 'RISING';
+    const rsiMaxThreshold = isPullback ? RSI_PULLBACK_SHORT_MAX : RSI_SHORT_MAX;
+    const rsiCondition = isPullback
+      ? rsiValue < rsiMaxThreshold
+      : rsiValue < rsiMaxThreshold && rsiMomentum !== 'RISING';
     mfiConfirmation = mfiValue === null || mfiValue < MFI_SHORT_MAX;
 
     isAllowed = rsiCondition && mfiConfirmation;
 
     if (isAllowed) {
-      reason = `SHORT allowed: RSI (${rsiValue.toFixed(2)}) < ${RSI_SHORT_MAX} with ${rsiMomentum} momentum`;
+      reason = isPullback
+        ? `SHORT allowed (pullback): RSI (${rsiValue.toFixed(2)}) < ${rsiMaxThreshold}`
+        : `SHORT allowed: RSI (${rsiValue.toFixed(2)}) < ${rsiMaxThreshold} with ${rsiMomentum} momentum`;
       if (mfiValue !== null) {
         reason += `, MFI (${mfiValue.toFixed(2)}) < ${MFI_SHORT_MAX} confirms selling pressure`;
       }
     } else {
       const issues: string[] = [];
-      if (rsiValue >= RSI_SHORT_MAX) {
-        issues.push(`RSI (${rsiValue.toFixed(2)}) ≥ ${RSI_SHORT_MAX}`);
+      if (rsiValue >= rsiMaxThreshold) {
+        issues.push(`RSI (${rsiValue.toFixed(2)}) ≥ ${rsiMaxThreshold}`);
       }
-      if (rsiMomentum === 'RISING') {
+      if (!isPullback && rsiMomentum === 'RISING') {
         issues.push(`RSI momentum is RISING`);
       }
       if (mfiValue !== null && mfiValue >= MFI_SHORT_MAX) {

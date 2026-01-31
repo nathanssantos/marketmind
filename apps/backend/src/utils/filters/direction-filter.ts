@@ -1,5 +1,10 @@
 import { calculateEMA } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type {
+  DirectionFilterConfig,
+  DirectionFilterResult,
+  Kline,
+  MarketDirection,
+} from '@marketmind/types';
 
 const EMA_PERIOD = 200;
 const MIN_KLINES_REQUIRED = 210;
@@ -13,22 +18,7 @@ export const DIRECTION_FILTER = {
   SLOPE_THRESHOLD,
 } as const;
 
-export type MarketDirection = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-
-export interface DirectionFilterResult {
-  isAllowed: boolean;
-  direction: MarketDirection;
-  ema200: number | null;
-  ema200Slope: number | null;
-  currentPrice: number;
-  priceVsEma200Percent: number | null;
-  reason: string;
-}
-
-export interface DirectionFilterConfig {
-  enableLongInBearMarket?: boolean;
-  enableShortInBullMarket?: boolean;
-}
+export type { DirectionFilterConfig, DirectionFilterResult, MarketDirection };
 
 const getKlineClose = (kline: Kline | undefined): number => {
   if (!kline) return 0;

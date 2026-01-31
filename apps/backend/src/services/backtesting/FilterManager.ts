@@ -275,7 +275,8 @@ export class FilterManager {
     klines: Kline[],
     setupIndex: number,
     direction: 'LONG' | 'SHORT',
-    tradesCount: number
+    tradesCount: number,
+    setupType?: string
   ): boolean {
     if (!this.config.useMomentumTimingFilter) return true;
 
@@ -283,7 +284,7 @@ export class FilterManager {
     if (setupIndex < MIN_KLINES_REQUIRED) return true;
 
     const momentumKlines = klines.slice(0, setupIndex + 1);
-    const result = checkMomentumTiming(momentumKlines, direction);
+    const result = checkMomentumTiming(momentumKlines, direction, setupType);
 
     if (!result.isAllowed) {
       this.stats.skippedMomentumTiming++;

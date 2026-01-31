@@ -1,4 +1,8 @@
 import 'dotenv/config';
+
+process.env.LOG_LEVEL = 'error';
+
+import * as fs from 'fs';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig, MultiWatcherBacktestConfig } from '@marketmind/types';
 import { TRADING_DEFAULTS, FILTER_DEFAULTS } from '@marketmind/types';
@@ -8,392 +12,172 @@ import {
   formatCurrency,
   formatPercent,
   calculateDirectionalMetrics,
+  parseCliArgs,
 } from './shared-backtest-config';
+
+interface FilterDef {
+  name: string;
+  key: keyof MultiWatcherBacktestConfig;
+  category: 'direction' | 'entry' | 'market';
+}
 
 interface FilterCombination {
   name: string;
   config: Partial<MultiWatcherBacktestConfig>;
+  filters: string[];
 }
+
+interface TestResult {
+  name: string;
+  pnl: number;
+  pnlPct: number;
+  trades: number;
+  winRate: number;
+  profitFactor: number;
+  maxDrawdown: number;
+  longPnl: number;
+  longTrades: number;
+  longWinRate: number;
+  shortPnl: number;
+  shortTrades: number;
+  shortWinRate: number;
+  filters: string[];
+  filterCount: number;
+}
+
+const ALL_FILTERS: FilterDef[] = [
+  { name: 'MTF', key: 'useMtfFilter', category: 'direction' },
+  { name: 'MarketRegime', key: 'useMarketRegimeFilter', category: 'direction' },
+  { name: 'TrendEMA', key: 'useTrendFilter', category: 'direction' },
+  { name: 'Direction', key: 'useDirectionFilter', category: 'direction' },
+  { name: 'MomentumTiming', key: 'useMomentumTimingFilter', category: 'entry' },
+  { name: 'Stochastic', key: 'useStochasticFilter', category: 'entry' },
+  { name: 'ADX', key: 'useAdxFilter', category: 'entry' },
+  { name: 'Volume', key: 'useVolumeFilter', category: 'entry' },
+  { name: 'Funding', key: 'useFundingFilter', category: 'market' },
+  { name: 'BtcCorrelation', key: 'useBtcCorrelationFilter', category: 'market' },
+];
+
+const createBaseFilterConfig = (): Partial<MultiWatcherBacktestConfig> => {
+  const config: Partial<MultiWatcherBacktestConfig> = {};
+  for (const filter of ALL_FILTERS) {
+    (config as Record<string, boolean>)[filter.key] = false;
+  }
+  return config;
+};
 
 const generateFilterCombinations = (): FilterCombination[] => {
   const combinations: FilterCombination[] = [];
-
-  const directionFilters = [
-    { name: 'MTF', key: 'useMtfFilter' },
-    { name: 'MarketRegime', key: 'useMarketRegimeFilter' },
-    { name: 'TrendEMA', key: 'useTrendFilter' },
-  ];
-
-  const entryFilters = [
-    { name: 'MomentumTiming', key: 'useMomentumTimingFilter' },
-    { name: 'Stochastic', key: 'useStochasticFilter' },
-    { name: 'ADX', key: 'useAdxFilter' },
-    { name: 'Volume', key: 'useVolumeFilter' },
-  ];
-
-  const marketFilters = [
-    { name: 'Funding', key: 'useFundingFilter' },
-  ];
+  const baseConfig = createBaseFilterConfig();
 
   combinations.push({
     name: 'Baseline (no filters)',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
+    config: { ...baseConfig },
+    filters: [],
   });
 
-  combinations.push({
-    name: 'All filters ON',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: true,
-      useTrendFilter: true,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: true,
-      useAdxFilter: true,
-      useVolumeFilter: true,
-      useFundingFilter: true,
-    },
-  });
-
-  for (const filter of [...directionFilters, ...entryFilters, ...marketFilters]) {
+  for (const filter of ALL_FILTERS) {
     combinations.push({
       name: `Only ${filter.name}`,
-      config: {
-        useMtfFilter: false,
-        useMarketRegimeFilter: false,
-        useTrendFilter: false,
-        useMomentumTimingFilter: false,
-        useStochasticFilter: false,
-        useAdxFilter: false,
-        useVolumeFilter: false,
-        useFundingFilter: false,
-        [filter.key]: true,
-      },
+      config: { ...baseConfig, [filter.key]: true },
+      filters: [filter.name],
     });
   }
 
+  const allFiltersConfig = { ...baseConfig };
+  for (const filter of ALL_FILTERS) {
+    (allFiltersConfig as Record<string, boolean>)[filter.key] = true;
+  }
   combinations.push({
-    name: 'MomentumTiming + Volume',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
+    name: 'All filters ON',
+    config: allFiltersConfig,
+    filters: ALL_FILTERS.map(f => f.name),
   });
 
-  combinations.push({
-    name: 'MomentumTiming + MarketRegime',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
+  const keyPairs: [FilterDef, FilterDef][] = [
+    [ALL_FILTERS[4]!, ALL_FILTERS[7]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[1]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[6]!],
+    [ALL_FILTERS[0]!, ALL_FILTERS[4]!],
+    [ALL_FILTERS[0]!, ALL_FILTERS[7]!],
+    [ALL_FILTERS[0]!, ALL_FILTERS[1]!],
+    [ALL_FILTERS[2]!, ALL_FILTERS[4]!],
+    [ALL_FILTERS[2]!, ALL_FILTERS[7]!],
+    [ALL_FILTERS[6]!, ALL_FILTERS[4]!],
+    [ALL_FILTERS[5]!, ALL_FILTERS[4]!],
+    [ALL_FILTERS[8]!, ALL_FILTERS[7]!],
+    [ALL_FILTERS[8]!, ALL_FILTERS[4]!],
+    [ALL_FILTERS[9]!, ALL_FILTERS[4]!],
+    [ALL_FILTERS[9]!, ALL_FILTERS[7]!],
+  ];
 
-  combinations.push({
-    name: 'MomentumTiming + Volume + MarketRegime',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
-  });
+  for (const [f1, f2] of keyPairs) {
+    if (f1 && f2) {
+      combinations.push({
+        name: `${f1.name} + ${f2.name}`,
+        config: { ...baseConfig, [f1.key]: true, [f2.key]: true },
+        filters: [f1.name, f2.name],
+      });
+    }
+  }
 
-  combinations.push({
-    name: 'MTF + MomentumTiming',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
+  const keyTriples: [FilterDef, FilterDef, FilterDef][] = [
+    [ALL_FILTERS[0]!, ALL_FILTERS[4]!, ALL_FILTERS[7]!],
+    [ALL_FILTERS[0]!, ALL_FILTERS[4]!, ALL_FILTERS[1]!],
+    [ALL_FILTERS[0]!, ALL_FILTERS[7]!, ALL_FILTERS[1]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[7]!, ALL_FILTERS[1]!],
+    [ALL_FILTERS[2]!, ALL_FILTERS[4]!, ALL_FILTERS[7]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[7]!, ALL_FILTERS[8]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[7]!, ALL_FILTERS[9]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[1]!, ALL_FILTERS[8]!],
+  ];
 
-  combinations.push({
-    name: 'MTF + Volume',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
-  });
+  for (const [f1, f2, f3] of keyTriples) {
+    if (f1 && f2 && f3) {
+      combinations.push({
+        name: `${f1.name} + ${f2.name} + ${f3.name}`,
+        config: { ...baseConfig, [f1.key]: true, [f2.key]: true, [f3.key]: true },
+        filters: [f1.name, f2.name, f3.name],
+      });
+    }
+  }
 
-  combinations.push({
-    name: 'MTF + MarketRegime',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
+  const keyQuads: FilterDef[][] = [
+    [ALL_FILTERS[0]!, ALL_FILTERS[4]!, ALL_FILTERS[7]!, ALL_FILTERS[1]!],
+    [ALL_FILTERS[4]!, ALL_FILTERS[7]!, ALL_FILTERS[1]!, ALL_FILTERS[8]!],
+    [ALL_FILTERS[0]!, ALL_FILTERS[4]!, ALL_FILTERS[7]!, ALL_FILTERS[9]!],
+  ];
 
-  combinations.push({
-    name: 'MTF + MomentumTiming + Volume',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'MTF + MomentumTiming + MarketRegime',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'MTF + Volume + MarketRegime',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'MTF + MomentumTiming + Volume + MarketRegime',
-    config: {
-      useMtfFilter: true,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'ADX + MomentumTiming',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: true,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'Stochastic + MomentumTiming',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: true,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'TrendEMA + MomentumTiming',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: true,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'TrendEMA + Volume',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: true,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'TrendEMA + MarketRegime',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: true,
-      useTrendFilter: true,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: false,
-    },
-  });
-
-  combinations.push({
-    name: 'Funding + Volume',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: true,
-    },
-  });
-
-  combinations.push({
-    name: 'Funding + MomentumTiming',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: true,
-    },
-  });
-
-  combinations.push({
-    name: 'Volume + MarketRegime + Funding',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: false,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: true,
-    },
-  });
-
-  combinations.push({
-    name: 'MomentumTiming + Volume + Funding',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: false,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: true,
-    },
-  });
-
-  combinations.push({
-    name: 'MomentumTiming + MarketRegime + Funding',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: false,
-      useFundingFilter: true,
-    },
-  });
-
-  combinations.push({
-    name: 'MomentumTiming + Volume + MarketRegime + Funding',
-    config: {
-      useMtfFilter: false,
-      useMarketRegimeFilter: true,
-      useTrendFilter: false,
-      useMomentumTimingFilter: true,
-      useStochasticFilter: false,
-      useAdxFilter: false,
-      useVolumeFilter: true,
-      useFundingFilter: true,
-    },
-  });
+  for (const filters of keyQuads) {
+    if (filters.every(f => f)) {
+      const config = { ...baseConfig };
+      for (const f of filters) {
+        (config as Record<string, boolean>)[f.key] = true;
+      }
+      combinations.push({
+        name: filters.map(f => f.name).join(' + '),
+        config,
+        filters: filters.map(f => f.name),
+      });
+    }
+  }
 
   return combinations;
 };
 
-const parseCliArgs = () => {
-  const symbolArg = process.argv.find(arg => arg.startsWith('--symbol='));
-  const intervalArg = process.argv.find(arg => arg.startsWith('--interval='));
-  const startDateArg = process.argv.find(arg => arg.startsWith('--start='));
-  const endDateArg = process.argv.find(arg => arg.startsWith('--end='));
-
-  return {
-    symbol: symbolArg ? symbolArg.split('=')[1]! : 'BTCUSDT',
-    interval: intervalArg ? intervalArg.split('=')[1]! : '4h',
-    startDate: startDateArg ? startDateArg.split('=')[1]! : '2025-01-01',
-    endDate: endDateArg ? endDateArg.split('=')[1]! : '2026-01-01',
-  };
+const printProgress = (current: number, total: number, startTime: number) => {
+  const percent = (current / total) * 100;
+  const elapsed = (Date.now() - startTime) / 1000;
+  const eta = current > 0 ? ((elapsed / current) * (total - current)) : 0;
+  const barLength = 30;
+  const filled = Math.round((current / total) * barLength);
+  const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
+  process.stdout.write(`\r⏳ [${bar}] ${current}/${total} (${percent.toFixed(0)}%) ETA: ${eta.toFixed(0)}s    `);
 };
 
 async function runOptimization() {
-  console.log('🔬 Filter Combination Optimization');
-  console.log('===================================\n');
+  console.log('🔬 Filter Combination Optimization v2');
+  console.log('=====================================\n');
 
   const { symbol, interval, startDate, endDate } = parseCliArgs();
   const combinations = generateFilterCombinations();
@@ -409,16 +193,9 @@ async function runOptimization() {
 
   console.log(`📊 Symbol: ${symbol}@${interval} (FUTURES)`);
   console.log(`📅 Period: ${startDate} to ${endDate}`);
-  console.log(`🎯 Fibonacci Targets: LONG=1.618 (161.8%), SHORT=1.272 (127.2%)`);
-  console.log(`📋 Testing ${combinations.length} filter combinations\n`);
-
-  console.log('📋 CONFIGURAÇÃO BASE:');
-  console.log(`   • Capital: $${formatCurrency(DEFAULT_BACKTEST_PARAMS.initialCapital)}`);
-  console.log(`   • Leverage: ${DEFAULT_BACKTEST_PARAMS.leverage}x`);
-  console.log(`   • Setups: ${ENABLED_SETUPS.length} estratégias`);
-  console.log(`   • TP Mode: Fibonacci`);
-  console.log(`   • Cooldown: ${DEFAULT_BACKTEST_PARAMS.cooldownMinutes} min`);
-  console.log(`   • Volume Filter Config: OBV LONG=off, SHORT=on\n`);
+  console.log(`🎯 Fibonacci Targets: LONG=1.618, SHORT=1.272`);
+  console.log(`🔍 Filters to test: ${ALL_FILTERS.length}`);
+  console.log(`📋 Combinations to test: ${combinations.length}\n`);
 
   const baseConfig: Omit<MultiWatcherBacktestConfig, 'watchers' | 'startDate' | 'endDate'> = {
     initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
@@ -430,8 +207,6 @@ async function runOptimization() {
     leverage: DEFAULT_BACKTEST_PARAMS.leverage,
     useCooldown: true,
     cooldownMinutes: DEFAULT_BACKTEST_PARAMS.cooldownMinutes,
-    useBtcCorrelationFilter: false,
-    useConfluenceScoring: false,
     trendFilterPeriod: 21,
     tpCalculationMode: 'fibonacci',
     fibonacciTargetLevel: 'auto',
@@ -449,22 +224,12 @@ async function runOptimization() {
     },
   };
 
-  const results: Array<{
-    name: string;
-    pnl: number;
-    pnlPct: number;
-    trades: number;
-    winRate: number;
-    profitFactor: number;
-    maxDrawdown: number;
-    longPnl: number;
-    shortPnl: number;
-    filters: string;
-  }> = [];
+  const results: TestResult[] = [];
+  const startTime = Date.now();
 
   for (let i = 0; i < combinations.length; i++) {
     const combination = combinations[i]!;
-    console.log(`⏳ [${i + 1}/${combinations.length}] Testing: ${combination.name}...`);
+    printProgress(i, combinations.length, startTime);
 
     const engine = new MultiWatcherBacktestEngine({
       ...baseConfig,
@@ -472,6 +237,7 @@ async function runOptimization() {
       watchers,
       startDate,
       endDate,
+      silent: true,
     });
 
     const result = await engine.run();
@@ -480,16 +246,6 @@ async function runOptimization() {
     const shortTrades = result.trades.filter(t => t.side === 'SHORT');
     const longMetrics = calculateDirectionalMetrics(longTrades);
     const shortMetrics = calculateDirectionalMetrics(shortTrades);
-
-    const activeFilters: string[] = [];
-    if (combination.config.useMtfFilter) activeFilters.push('MTF');
-    if (combination.config.useMarketRegimeFilter) activeFilters.push('Regime');
-    if (combination.config.useTrendFilter) activeFilters.push('Trend');
-    if (combination.config.useMomentumTimingFilter) activeFilters.push('Momentum');
-    if (combination.config.useStochasticFilter) activeFilters.push('Stoch');
-    if (combination.config.useAdxFilter) activeFilters.push('ADX');
-    if (combination.config.useVolumeFilter) activeFilters.push('Volume');
-    if (combination.config.useFundingFilter) activeFilters.push('Funding');
 
     results.push({
       name: combination.name,
@@ -500,26 +256,33 @@ async function runOptimization() {
       profitFactor: result.metrics.profitFactor,
       maxDrawdown: result.metrics.maxDrawdownPercent,
       longPnl: longMetrics.pnl,
+      longTrades: longMetrics.trades,
+      longWinRate: longMetrics.winRate,
       shortPnl: shortMetrics.pnl,
-      filters: activeFilters.length > 0 ? activeFilters.join('+') : 'NONE',
+      shortTrades: shortMetrics.trades,
+      shortWinRate: shortMetrics.winRate,
+      filters: combination.filters,
+      filterCount: combination.filters.length,
     });
-
-    console.log(`   ✓ P&L: $${formatCurrency(result.metrics.totalPnl)} | WR: ${formatPercent(result.metrics.winRate)} | Trades: ${result.metrics.totalTrades}`);
   }
 
-  console.log('\n' + '═'.repeat(130));
-  console.log('📊 RESULTS SORTED BY P&L');
-  console.log('═'.repeat(130) + '\n');
+  printProgress(combinations.length, combinations.length, startTime);
+  console.log('\n');
 
-  console.log('Rank  Combination                                    P&L          P&L%    Trades   WinRate    PF    MaxDD    LONG P&L    SHORT P&L');
-  console.log('─'.repeat(130));
+  console.log('═'.repeat(140));
+  console.log('📊 RESULTS SORTED BY P&L');
+  console.log('═'.repeat(140) + '\n');
+
+  console.log('Rank  Combination                                         P&L          P&L%    Trades   WinRate    PF    MaxDD    LONG P&L    SHORT P&L   #Filters');
+  console.log('─'.repeat(140));
 
   const sortedResults = [...results].sort((a, b) => b.pnl - a.pnl);
+  const baseline = results.find(r => r.name === 'Baseline (no filters)')!;
 
   for (let i = 0; i < sortedResults.length; i++) {
     const r = sortedResults[i]!;
     const rank = `#${i + 1}`.padEnd(5);
-    const nameStr = r.name.padEnd(45);
+    const nameStr = r.name.substring(0, 50).padEnd(50);
     const pnlStr = `$${formatCurrency(r.pnl)}`.padStart(12);
     const pnlPctStr = formatPercent(r.pnlPct).padStart(8);
     const tradesStr = String(r.trades).padStart(6);
@@ -528,84 +291,111 @@ async function runOptimization() {
     const ddStr = formatPercent(r.maxDrawdown).padStart(7);
     const longPnlStr = `$${formatCurrency(r.longPnl)}`.padStart(11);
     const shortPnlStr = `$${formatCurrency(r.shortPnl)}`.padStart(11);
+    const filterCountStr = String(r.filterCount).padStart(8);
 
     const marker = i === 0 ? '🏆' : i < 3 ? '🥈' : i < 5 ? '🥉' : '  ';
 
-    console.log(`${marker}${rank}${nameStr} ${pnlStr} ${pnlPctStr} ${tradesStr} ${wrStr} ${pfStr} ${ddStr} ${longPnlStr} ${shortPnlStr}`);
+    console.log(`${marker}${rank}${nameStr} ${pnlStr} ${pnlPctStr} ${tradesStr} ${wrStr} ${pfStr} ${ddStr} ${longPnlStr} ${shortPnlStr} ${filterCountStr}`);
   }
 
-  console.log('─'.repeat(130));
+  console.log('─'.repeat(140));
 
-  console.log('\n' + '═'.repeat(130));
-  console.log('📈 TOP 5 BY PROFIT FACTOR (min 10 trades)');
-  console.log('═'.repeat(130) + '\n');
+  console.log('\n' + '═'.repeat(140));
+  console.log('📈 INDIVIDUAL FILTER VALUE (vs Baseline)');
+  console.log('═'.repeat(140) + '\n');
 
-  const sortedByPF = [...results]
-    .filter(r => r.trades >= 10 && r.profitFactor !== Infinity)
-    .sort((a, b) => b.profitFactor - a.profitFactor)
-    .slice(0, 5);
+  const singleFilterResults = results.filter(r => r.filterCount === 1);
+  const sortedSingleFilters = [...singleFilterResults].sort((a, b) => b.pnl - a.pnl);
 
-  for (const r of sortedByPF) {
-    console.log(`   ${r.name}: PF=${r.profitFactor.toFixed(2)} | P&L=$${formatCurrency(r.pnl)} | WR=${formatPercent(r.winRate)} | Trades=${r.trades}`);
+  console.log('Filter           P&L        vs Baseline    Trades   WinRate    PF    MaxDD    Value Added?');
+  console.log('─'.repeat(100));
+
+  for (const r of sortedSingleFilters) {
+    const filterName = r.filters[0]?.padEnd(16) ?? 'Unknown';
+    const pnlStr = `$${formatCurrency(r.pnl)}`.padStart(10);
+    const diffPnl = r.pnl - baseline.pnl;
+    const diffStr = `${diffPnl >= 0 ? '+' : ''}$${formatCurrency(diffPnl)}`.padStart(14);
+    const tradesStr = String(r.trades).padStart(6);
+    const wrStr = formatPercent(r.winRate).padStart(8);
+    const pfStr = r.profitFactor === Infinity ? '    ∞' : r.profitFactor.toFixed(2).padStart(5);
+    const ddStr = formatPercent(r.maxDrawdown).padStart(7);
+
+    const valueAdded = diffPnl > 0 && r.maxDrawdown <= baseline.maxDrawdown * 1.1 ? '✅ YES' :
+                       diffPnl > 0 ? '⚠️ MAYBE' : '❌ NO';
+
+    console.log(`${filterName} ${pnlStr} ${diffStr} ${tradesStr} ${wrStr} ${pfStr} ${ddStr}    ${valueAdded}`);
   }
 
-  console.log('\n' + '═'.repeat(130));
-  console.log('📉 TOP 5 BY LOWEST MAX DRAWDOWN (min 10 trades)');
-  console.log('═'.repeat(130) + '\n');
+  console.log('─'.repeat(100));
 
-  const sortedByDD = [...results]
-    .filter(r => r.trades >= 10)
-    .sort((a, b) => a.maxDrawdown - b.maxDrawdown)
-    .slice(0, 5);
+  console.log('\n' + '═'.repeat(140));
+  console.log('📉 BEST BY RISK-ADJUSTED METRICS (min 10 trades)');
+  console.log('═'.repeat(140) + '\n');
 
-  for (const r of sortedByDD) {
-    console.log(`   ${r.name}: MaxDD=${formatPercent(r.maxDrawdown)} | P&L=$${formatCurrency(r.pnl)} | WR=${formatPercent(r.winRate)} | Trades=${r.trades}`);
+  const qualifiedResults = results.filter(r => r.trades >= 10 && r.profitFactor !== Infinity);
+
+  console.log('Best Profit Factor:');
+  const byPF = [...qualifiedResults].sort((a, b) => b.profitFactor - a.profitFactor).slice(0, 3);
+  for (const r of byPF) {
+    console.log(`   ${r.name}: PF=${r.profitFactor.toFixed(2)} | P&L=$${formatCurrency(r.pnl)} | MaxDD=${formatPercent(r.maxDrawdown)}`);
   }
 
-  console.log('\n' + '═'.repeat(130));
-  console.log('🏆 OPTIMIZATION SUMMARY');
-  console.log('═'.repeat(130) + '\n');
+  console.log('\nLowest Max Drawdown:');
+  const byDD = [...qualifiedResults].sort((a, b) => a.maxDrawdown - b.maxDrawdown).slice(0, 3);
+  for (const r of byDD) {
+    console.log(`   ${r.name}: MaxDD=${formatPercent(r.maxDrawdown)} | P&L=$${formatCurrency(r.pnl)} | PF=${r.profitFactor.toFixed(2)}`);
+  }
+
+  console.log('\nBest Sharpe-like (P&L / MaxDD):');
+  const bySharpe = [...qualifiedResults]
+    .map(r => ({ ...r, sharpe: r.pnl / (r.maxDrawdown || 1) }))
+    .sort((a, b) => b.sharpe - a.sharpe)
+    .slice(0, 3);
+  for (const r of bySharpe) {
+    console.log(`   ${r.name}: Ratio=${r.sharpe.toFixed(2)} | P&L=$${formatCurrency(r.pnl)} | MaxDD=${formatPercent(r.maxDrawdown)}`);
+  }
+
+  console.log('\n' + '═'.repeat(140));
+  console.log('🏆 SUMMARY');
+  console.log('═'.repeat(140) + '\n');
 
   const best = sortedResults[0]!;
-  const baseline = results.find(r => r.name === 'Baseline (no filters)')!;
-
-  console.log(`🥇 BEST COMBINATION: ${best.name}`);
-  console.log(`   P&L: $${formatCurrency(best.pnl)} (${formatPercent(best.pnlPct)})`);
-  console.log(`   Win Rate: ${formatPercent(best.winRate)} | Profit Factor: ${best.profitFactor.toFixed(2)}`);
-  console.log(`   Max Drawdown: ${formatPercent(best.maxDrawdown)} | Trades: ${best.trades}`);
-  console.log(`   LONG: $${formatCurrency(best.longPnl)} | SHORT: $${formatCurrency(best.shortPnl)}`);
-
-  if (best.name !== 'Baseline (no filters)') {
-    const improvement = best.pnl - baseline.pnl;
-    console.log(`   vs Baseline: ${improvement >= 0 ? '+' : ''}$${formatCurrency(improvement)}`);
-  }
-
   const profitable = results.filter(r => r.pnl > 0).length;
-  console.log(`\n📌 STATISTICS:`);
-  console.log(`   • Profitable combinations: ${profitable}/${results.length}`);
+
+  console.log(`📌 Baseline (no filters): P&L=$${formatCurrency(baseline.pnl)} | WR=${formatPercent(baseline.winRate)} | MaxDD=${formatPercent(baseline.maxDrawdown)}`);
+  console.log(`🏆 Best combination: ${best.name}`);
+  console.log(`   P&L: $${formatCurrency(best.pnl)} (${formatPercent(best.pnlPct)}) | vs Baseline: ${best.pnl - baseline.pnl >= 0 ? '+' : ''}$${formatCurrency(best.pnl - baseline.pnl)}`);
+  console.log(`   WR: ${formatPercent(best.winRate)} | PF: ${best.profitFactor.toFixed(2)} | MaxDD: ${formatPercent(best.maxDrawdown)}`);
+  console.log(`   LONG: $${formatCurrency(best.longPnl)} (${best.longTrades} trades) | SHORT: $${formatCurrency(best.shortPnl)} (${best.shortTrades} trades)`);
+
+  console.log(`\n📊 Statistics:`);
+  console.log(`   • Profitable combinations: ${profitable}/${results.length} (${formatPercent((profitable / results.length) * 100)})`);
   console.log(`   • Average P&L: $${formatCurrency(results.reduce((sum, r) => sum + r.pnl, 0) / results.length)}`);
 
-  const filterEffectiveness: Record<string, { total: number; profitable: number; avgPnl: number }> = {};
-
-  for (const r of results) {
-    const filters = r.filters.split('+');
-    for (const f of filters) {
-      if (!filterEffectiveness[f]) {
-        filterEffectiveness[f] = { total: 0, profitable: 0, avgPnl: 0 };
-      }
-      filterEffectiveness[f].total++;
-      if (r.pnl > 0) filterEffectiveness[f].profitable++;
-      filterEffectiveness[f].avgPnl += r.pnl;
-    }
+  const filtersWithValue = sortedSingleFilters.filter(r => r.pnl > baseline.pnl);
+  console.log(`   • Filters that add value: ${filtersWithValue.length}/${ALL_FILTERS.length}`);
+  if (filtersWithValue.length > 0) {
+    console.log(`     ${filtersWithValue.map(r => r.filters[0]).join(', ')}`);
   }
 
-  console.log(`\n📊 FILTER EFFECTIVENESS (when active):`);
-  for (const [filter, stats] of Object.entries(filterEffectiveness)) {
-    if (filter !== 'NONE') {
-      const avgPnl = stats.avgPnl / stats.total;
-      console.log(`   • ${filter}: ${stats.profitable}/${stats.total} profitable (${formatPercent((stats.profitable / stats.total) * 100)}), Avg P&L: $${formatCurrency(avgPnl)}`);
-    }
-  }
+  const outputDir = './output';
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+  const outputFile = `${outputDir}/filter-optimization-${symbol}-${interval}-${new Date().toISOString().split('T')[0]}.json`;
+  const outputData = {
+    config: { symbol, interval, startDate, endDate },
+    baseline: baseline,
+    best: best,
+    allResults: sortedResults,
+    filterAnalysis: {
+      filtersWithValue: filtersWithValue.map(r => ({ filter: r.filters[0], pnl: r.pnl, improvement: r.pnl - baseline.pnl })),
+      filtersWithoutValue: sortedSingleFilters.filter(r => r.pnl <= baseline.pnl).map(r => ({ filter: r.filters[0], pnl: r.pnl, degradation: baseline.pnl - r.pnl })),
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  fs.writeFileSync(outputFile, JSON.stringify(outputData, null, 2));
+  console.log(`\n💾 Results saved to: ${outputFile}`);
 
   process.exit(0);
 }

@@ -1,15 +1,9 @@
 import { calculateChoppiness, CHOPPINESS_FILTER } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { ChoppinessFilterResult, Kline } from '@marketmind/types';
 
 export { CHOPPINESS_FILTER };
 
-export interface ChoppinessFilterResult {
-  isAllowed: boolean;
-  choppinessValue: number | null;
-  isChoppy: boolean;
-  isTrending: boolean;
-  reason: string;
-}
+export type { ChoppinessFilterResult };
 
 export const checkChoppinessCondition = (
   klines: Kline[],

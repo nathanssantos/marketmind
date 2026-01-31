@@ -1,5 +1,5 @@
 import { calculateEMA } from '@marketmind/indicators';
-import type { Interval, Kline } from '@marketmind/types';
+import type { HtfTrend, Interval, Kline, MtfFilterResult } from '@marketmind/types';
 
 const EMA_SHORT_PERIOD = 50;
 const EMA_LONG_PERIOD = 200;
@@ -11,21 +11,7 @@ export const MTF_FILTER = {
   MIN_KLINES_FOR_EMA200,
 } as const;
 
-export type HtfTrend = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-
-export interface MtfFilterResult {
-  isAllowed: boolean;
-  htfTrend: HtfTrend;
-  htfInterval: string | null;
-  ema50: number | null;
-  ema200: number | null;
-  price: number | null;
-  goldenCross: boolean;
-  deathCross: boolean;
-  priceAboveEma50: boolean;
-  priceAboveEma200: boolean;
-  reason: string;
-}
+export type { HtfTrend, MtfFilterResult };
 
 const HTF_MAPPING: Record<string, Interval> = {
   '1m': '15m',

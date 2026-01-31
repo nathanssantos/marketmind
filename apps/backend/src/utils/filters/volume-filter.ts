@@ -1,5 +1,11 @@
 import { calculateOBV } from '@marketmind/indicators';
-import type { Kline, VolumeFilterConfig } from '@marketmind/types';
+import type {
+  Kline,
+  ObvTrend,
+  SetupVolumeType,
+  VolumeFilterConfig,
+  VolumeFilterResult,
+} from '@marketmind/types';
 
 const VOLUME_AVG_PERIOD = 20;
 const BREAKOUT_MULTIPLIER = 1.5;
@@ -15,20 +21,7 @@ export const VOLUME_FILTER = {
   MIN_KLINES_REQUIRED,
 } as const;
 
-export type SetupVolumeType = 'BREAKOUT' | 'PULLBACK' | 'REVERSAL' | 'ANY';
-export type ObvTrend = 'RISING' | 'FALLING' | 'FLAT';
-
-export interface VolumeFilterResult {
-  isAllowed: boolean;
-  currentVolume: number | null;
-  averageVolume: number | null;
-  volumeRatio: number | null;
-  isVolumeSpike: boolean;
-  obvTrend: ObvTrend;
-  reason: string;
-}
-
-export { VolumeFilterConfig };
+export type { ObvTrend, SetupVolumeType, VolumeFilterConfig, VolumeFilterResult };
 
 const getDirectionalConfig = (
   direction: 'LONG' | 'SHORT',

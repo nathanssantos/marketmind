@@ -5,15 +5,22 @@ export const ENABLED_SETUPS = [
   '7day-momentum-crypto',
   'chande-momentum-crypto',
   'donchian-breakout',
+  'ema9-21-rsi-confirmation',
   'golden-cross-sma',
   'keltner-breakout-optimized',
+  'larry-williams-9-1',
+  'larry-williams-9-2',
+  'larry-williams-9-3',
+  'larry-williams-9-4',
   'momentum-breakout-2025',
   'momentum-rotation',
   'nr7-breakout',
   'rsi-sma-filter',
   'rsi2-mean-reversion',
+  'trend-pullback-2025',
   'triple-ema-confluence',
   'vwap-ema-cross',
+  'vwap-pullback',
 ] as const;
 
 export const DEFAULT_BACKTEST_PARAMS = {

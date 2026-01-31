@@ -4,6 +4,7 @@ import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
 import { writeFileSync, mkdirSync, appendFileSync } from 'fs';
 import {
+  BACKTEST_TIMEFRAMES,
   TRADING_DEFAULTS,
   BACKTEST_DEFAULTS,
 } from '@marketmind/types';
@@ -58,7 +59,7 @@ const CONFIGS: BacktestConfigVariation[] = [
   { name: 'breakout', rrLong: 1.0, rrShort: 1.0, fibLong: '2.618', fibShort: '2', entryLimit: 23.6 },
 ];
 
-const TIMEFRAMES = ['30m', '1h', '2h', '4h', '1d'];
+const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['30m', '1h', '2h', '4h', '1d'].includes(tf));
 
 const SETUPS = [
   'chaikin-money-flow',

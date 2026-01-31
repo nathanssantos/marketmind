@@ -1,14 +1,7 @@
 import { calculateStochastic } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, StochasticFilterResult } from '@marketmind/types';
 
-export interface StochasticFilterResult {
-  isAllowed: boolean;
-  currentK: number | null;
-  currentD: number | null;
-  isOversold: boolean;
-  isOverbought: boolean;
-  reason: string;
-}
+export type { StochasticFilterResult };
 
 export const STOCHASTIC_FILTER = {
   K_PERIOD: 14,

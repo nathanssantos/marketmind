@@ -62,6 +62,12 @@ export class FilterValidator {
     if (config.useBtcCorrelationFilter) {
       const result = await this.checkBtcCorrelationFilter(watcher, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'BTC Correlation',
+          passed: false,
+          value: result.filterResult?.btcTrend ?? 'unknown',
+          reason: result.filterResult?.reason ?? 'Not aligned',
+        });
         return {
           passed: false,
           filterResults,
@@ -70,12 +76,23 @@ export class FilterValidator {
       }
       if (result.filterResult) {
         filterResults.btcCorrelation = result.filterResult;
+        logBuffer.addValidationCheck({
+          name: 'BTC Correlation',
+          passed: true,
+          value: result.filterResult.btcTrend ?? 'aligned',
+        });
       }
     }
 
     if (config.useFundingFilter && watcher.marketType === 'FUTURES') {
       const result = await this.checkFundingFilter(watcher, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Funding Rate',
+          passed: false,
+          value: result.filterResult?.currentRate?.toFixed(4) ?? 'N/A',
+          reason: result.filterResult?.reason ?? 'Unfavorable',
+        });
         return {
           passed: false,
           filterResults,
@@ -84,12 +101,23 @@ export class FilterValidator {
       }
       if (result.filterResult) {
         filterResults.fundingRate = result.filterResult;
+        logBuffer.addValidationCheck({
+          name: 'Funding Rate',
+          passed: true,
+          value: `${(result.filterResult.currentRate ?? 0).toFixed(4)}%`,
+        });
       }
     }
 
     if (config.useMtfFilter) {
       const result = await this.checkMtfFilter(watcher, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'MTF Trend',
+          passed: false,
+          value: result.filterResult?.htfTrend ?? 'unknown',
+          reason: result.filterResult?.reason ?? 'Not aligned',
+        });
         return {
           passed: false,
           filterResults,
@@ -98,12 +126,23 @@ export class FilterValidator {
       }
       if (result.filterResult) {
         filterResults.mtf = result.filterResult;
+        logBuffer.addValidationCheck({
+          name: 'MTF Trend',
+          passed: true,
+          value: result.filterResult.htfTrend ?? 'aligned',
+        });
       }
     }
 
     if (config.useMarketRegimeFilter) {
       const result = this.checkMarketRegimeFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Market Regime',
+          passed: false,
+          value: result.filterResult?.regime ?? 'unknown',
+          reason: result.filterResult?.reason ?? 'Incompatible',
+        });
         return {
           passed: false,
           filterResults,
@@ -113,12 +152,23 @@ export class FilterValidator {
       if (result.filterResult) {
         filterResults.marketRegime = result.filterResult;
         filterResults.adxValue = result.filterResult.adx ?? undefined;
+        logBuffer.addValidationCheck({
+          name: 'Market Regime',
+          passed: true,
+          value: `${result.filterResult.regime} (ADX ${result.filterResult.adx?.toFixed(1) ?? 'N/A'})`,
+        });
       }
     }
 
     if (config.useVolumeFilter) {
       const result = this.checkVolumeFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Volume',
+          passed: false,
+          value: `${result.filterResult?.volumeRatio?.toFixed(2) ?? 'N/A'}x`,
+          reason: result.filterResult?.reason ?? 'Insufficient',
+        });
         return {
           passed: false,
           filterResults,
@@ -127,45 +177,78 @@ export class FilterValidator {
       }
       if (result.filterResult) {
         filterResults.volume = result.filterResult;
+        logBuffer.addValidationCheck({
+          name: 'Volume',
+          passed: true,
+          value: `${result.filterResult.volumeRatio?.toFixed(2) ?? 'N/A'}x`,
+        });
       }
     }
 
     if (config.useConfluenceScoring) {
       const result = this.checkConfluenceFilter(filterResults, config.confluenceMinScore, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Confluence',
+          passed: false,
+          expected: `>= ${config.confluenceMinScore}%`,
+          reason: 'Score too low',
+        });
         return {
           passed: false,
           filterResults,
           rejectionReason: 'Confluence score too low',
         };
       }
+      logBuffer.addValidationCheck({
+        name: 'Confluence',
+        passed: true,
+        reason: 'Score sufficient',
+      });
     }
 
     if (config.useStochasticFilter) {
       const result = this.checkStochasticFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Stochastic',
+          passed: false,
+          reason: 'Unfavorable zone',
+        });
         return {
           passed: false,
           filterResults,
           rejectionReason: 'Stochastic filter failed',
         };
       }
+      logBuffer.addValidationCheck({ name: 'Stochastic', passed: true });
     }
 
     if (config.useMomentumTimingFilter) {
       const result = this.checkMomentumFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Momentum',
+          passed: false,
+          reason: 'Weak momentum',
+        });
         return {
           passed: false,
           filterResults,
           rejectionReason: 'Momentum filter failed',
         };
       }
+      logBuffer.addValidationCheck({ name: 'Momentum', passed: true });
     }
 
     if (config.useAdxFilter) {
       const result = this.checkAdxFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'ADX',
+          passed: false,
+          reason: result.reason ?? 'Weak trend',
+        });
         return {
           passed: false,
           filterResults,
@@ -173,12 +256,18 @@ export class FilterValidator {
           rejectionDetails: result.details,
         };
       }
+      logBuffer.addValidationCheck({ name: 'ADX', passed: true });
     }
 
     const shouldApplyTrendFilter = this.shouldApplyTrendFilter(config, setup, strategies);
     if (shouldApplyTrendFilter) {
       const result = this.checkTrendFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Trend (EMA21)',
+          passed: false,
+          reason: result.reason ?? 'Against trend',
+        });
         return {
           passed: false,
           filterResults,
@@ -186,6 +275,7 @@ export class FilterValidator {
           rejectionDetails: result.details,
         };
       }
+      logBuffer.addValidationCheck({ name: 'Trend (EMA21)', passed: true });
     }
 
     return { passed: true, filterResults };
@@ -394,7 +484,7 @@ export class FilterValidator {
     const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
 
     if (cycleKlines.length >= MIN_KLINES_REQUIRED) {
-      const momentumResult = checkMomentumTiming(cycleKlines, setup.direction);
+      const momentumResult = checkMomentumTiming(cycleKlines, setup.direction, setup.type);
 
       logBuffer.addFilterCheck({
         filterName: 'Momentum',

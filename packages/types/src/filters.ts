@@ -120,6 +120,52 @@ export interface ConfluenceResult extends BaseFilterResult {
   recommendation: RecommendationLevel;
 }
 
+export interface ChoppinessFilterResult extends BaseFilterResult {
+  choppinessValue: number | null;
+  isChoppy: boolean;
+  isTrending: boolean;
+}
+
+export interface SessionFilterResult extends BaseFilterResult {
+  currentHourUtc: number;
+  isInSession: boolean;
+}
+
+export interface BollingerSqueezeFilterResult extends BaseFilterResult {
+  bbWidth: number | null;
+  isSqueezing: boolean;
+}
+
+export type PriceVsVwap = 'ABOVE' | 'BELOW' | 'AT';
+
+export interface VwapFilterResult extends BaseFilterResult {
+  vwap: number | null;
+  currentPrice: number | null;
+  priceVsVwap: PriceVsVwap | null;
+}
+
+export type SupertrendTrend = 'up' | 'down';
+
+export interface SupertrendFilterResult extends BaseFilterResult {
+  trend: SupertrendTrend | null;
+  value: number | null;
+}
+
+export type MarketDirection = 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+
+export interface DirectionFilterResult extends BaseFilterResult {
+  direction: MarketDirection;
+  ema200: number | null;
+  ema200Slope: number | null;
+  currentPrice: number;
+  priceVsEma200Percent: number | null;
+}
+
+export interface DirectionFilterConfig {
+  enableLongInBearMarket?: boolean;
+  enableShortInBullMarket?: boolean;
+}
+
 export interface FilterResults {
   mtf?: MtfFilterResult | null;
   btcCorrelation?: BtcCorrelationResult | null;
@@ -130,6 +176,12 @@ export interface FilterResults {
   momentumTiming?: MomentumTimingResult | null;
   adx?: AdxFilterResult | null;
   trend?: TrendFilterResult | null;
+  direction?: DirectionFilterResult | null;
+  choppiness?: ChoppinessFilterResult | null;
+  session?: SessionFilterResult | null;
+  bollingerSqueeze?: BollingerSqueezeFilterResult | null;
+  vwap?: VwapFilterResult | null;
+  supertrend?: SupertrendFilterResult | null;
   trendAllowed?: boolean;
   adxValue?: number | null;
 }

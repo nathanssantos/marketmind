@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig } from '@marketmind/types';
+import { BACKTEST_TIMEFRAMES } from '@marketmind/types';
 import {
   ENABLED_SETUPS,
   createBaseConfig,
@@ -12,7 +13,7 @@ import {
   calculateDirectionalMetrics,
 } from './shared-backtest-config';
 
-const TIMEFRAMES = ['30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
+const TIMEFRAMES = BACKTEST_TIMEFRAMES;
 
 async function runTimeframeComparison() {
   console.log('🕐 Comparação de Timeframes - BTC FUTURES');

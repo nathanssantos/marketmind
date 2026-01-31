@@ -12,6 +12,7 @@ export interface SetupDetectionConfig {
   minConfidence?: number;
   minRiskReward?: number;
   maxFibonacciEntryProgressPercent?: number;
+  silent?: boolean;
 }
 
 const DEBUG_ENABLED = process.env['DEBUG_SETUPS'] === 'true';
@@ -45,6 +46,7 @@ export class SetupDetectionService {
       minConfidence: config?.minConfidence ?? DEFAULT_MIN_CONFIDENCE,
       minRiskReward: config?.minRiskReward ?? DEFAULT_MIN_RISK_REWARD,
       maxFibonacciEntryProgressPercent: config?.maxFibonacciEntryProgressPercent,
+      silent: config?.silent,
     };
 
     if (this.config.dynamicStrategies) {
@@ -73,6 +75,7 @@ export class SetupDetectionService {
       strategy: definition,
       parameterOverrides: params,
       maxFibonacciEntryProgressPercent: this.config.maxFibonacciEntryProgressPercent,
+      silent: this.config.silent,
     });
 
     this.dynamicInterpreters.set(definition.id, interpreter);

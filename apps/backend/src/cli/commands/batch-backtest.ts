@@ -2,14 +2,14 @@ import chalk from 'chalk';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { TRADING_DEFAULTS } from '@marketmind/types';
+import { BATCH_BACKTEST_TIMEFRAMES, TRADING_DEFAULTS } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { StrategyLoader } from '../../services/setup-detection/dynamic';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
+const TIMEFRAMES = BATCH_BACKTEST_TIMEFRAMES;
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'];
 
 interface BatchResult {

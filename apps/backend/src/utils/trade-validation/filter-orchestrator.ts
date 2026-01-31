@@ -285,7 +285,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
     const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
 
     if (klines.length >= MIN_KLINES_REQUIRED) {
-      const momentumResult = checkMomentumTiming(klines, direction);
+      const momentumResult = checkMomentumTiming(klines, direction, setup.type);
 
       checkResults.push({
         filter: 'Momentum',

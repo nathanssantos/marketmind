@@ -20,7 +20,9 @@ import {
     type RestoredWatcherInfo,
     type RotationResult,
     type SetupLogEntry,
+    type SetupValidationEntry,
     type TradeExecutionEntry,
+    type ValidationCheck,
     type WatcherResult,
 } from '@marketmind/logger';
 import fs from 'fs';
@@ -155,6 +157,86 @@ const getStatusDisplay = (status: string): string => {
   }
 };
 
+const formatValidationCheck = (check: ValidationCheck): string => {
+  const icon = check.passed ? colorize('✓', 'green') : colorize('✗', 'red');
+  const name = check.name.padEnd(20);
+  let detail = '';
+  if (check.value !== undefined && check.expected !== undefined) {
+    detail = check.passed
+      ? colorize(check.value, 'dim')
+      : `${colorize(check.value, 'yellow')} (need ${check.expected})`;
+  } else if (check.reason) {
+    detail = check.passed ? colorize(check.reason, 'dim') : colorize(check.reason, 'yellow');
+  }
+  return `  ${icon} ${name} ${detail}`;
+};
+
+const formatSetupValidation = (v: SetupValidationEntry, _symbol: string): string[] => {
+  const lines: string[] = [];
+  const dirColor = v.direction === 'LONG' ? 'green' : 'red';
+  const dirIcon = v.direction === 'LONG' ? '▲' : '▼';
+
+  const header = `  ${colorize(dirIcon, dirColor)} ${colorize(v.setupType, 'bright')} (${colorize(v.direction, dirColor)}) @ ${v.entryPrice}`;
+  lines.push(header);
+
+  for (const check of v.checks) {
+    lines.push(formatValidationCheck(check));
+  }
+
+  let outcomeIcon: string;
+  let outcomeColor: ColorName;
+  let outcomeText: string;
+
+  switch (v.outcome) {
+    case 'executed':
+      outcomeIcon = '✅';
+      outcomeColor = 'green';
+      outcomeText = v.execution ? `EXECUTED qty=${v.execution.quantity}` : 'EXECUTED';
+      break;
+    case 'blocked':
+      outcomeIcon = '⛔';
+      outcomeColor = 'red';
+      outcomeText = `BLOCKED${v.outcomeReason ? `: ${v.outcomeReason}` : ''}`;
+      break;
+    case 'failed':
+      outcomeIcon = '❌';
+      outcomeColor = 'red';
+      outcomeText = `FAILED${v.outcomeReason ? `: ${v.outcomeReason}` : ''}`;
+      break;
+    default:
+      outcomeIcon = '⏳';
+      outcomeColor = 'yellow';
+      outcomeText = 'PENDING';
+  }
+
+  lines.push(`  └─ ${outcomeIcon} ${colorize(outcomeText, outcomeColor)}`);
+  lines.push('');
+
+  return lines;
+};
+
+const formatUnifiedSetupValidations = (results: WatcherResult[]): string[] => {
+  const lines: string[] = [];
+  const watchersWithValidations = results.filter(r => r.setupValidations && r.setupValidations.length > 0);
+
+  if (watchersWithValidations.length === 0) return lines;
+
+  lines.push(...createSectionHeader(SECTION_ICON, 'SETUP ANALYSIS', 'cyan'));
+
+  for (const result of watchersWithValidations) {
+    const symbolHeader = `┌─ ${colorize(result.symbol, 'bright')}@${result.interval} (${result.marketType}) ${'─'.repeat(50)}`;
+    lines.push(symbolHeader);
+
+    for (const validation of result.setupValidations) {
+      lines.push(...formatSetupValidation(validation, result.symbol));
+    }
+
+    lines.push(`└${'─'.repeat(70)}`);
+  }
+
+  return lines;
+};
+
 export const formatBatchResults = (batch: BatchResult): string => {
   const lines: string[] = [];
   const durationMs = batch.endTime.getTime() - batch.startTime.getTime();
@@ -168,10 +250,38 @@ export const formatBatchResults = (batch: BatchResult): string => {
     colorize(`${ICONS.SKIP} ${batch.skippedCount}`, 'dim'),
     colorize(`${ICONS.ERROR} ${batch.errorCount}`, 'red'),
   ];
+  const allRejections = batch.watcherResults.flatMap(r => r.rejections);
+  const allFilterBlocks = batch.watcherResults.flatMap(r => r.filterChecks.filter(f => !f.passed));
+
+  let rejectionSummary = '';
+  if (allRejections.length > 0 || allFilterBlocks.length > 0) {
+    const reasonCounts = new Map<string, number>();
+
+    for (const rejection of allRejections) {
+      const key = rejection.reason.split(':')[0]?.trim() ?? rejection.reason;
+      reasonCounts.set(key, (reasonCounts.get(key) ?? 0) + 1);
+    }
+
+    for (const filter of allFilterBlocks) {
+      const key = `${filter.filterName}`;
+      reasonCounts.set(key, (reasonCounts.get(key) ?? 0) + 1);
+    }
+
+    rejectionSummary = Array.from(reasonCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([reason, count]) => `${count}x ${reason}`)
+      .join(', ');
+  }
+
+  const totalRejected = batch.totalRejections + batch.totalFilterBlocks;
+  const rejectionInfo = totalRejected > 0
+    ? colorize(`! ${totalRejected} rejected`, 'yellow') + (rejectionSummary ? colorize(` (${rejectionSummary})`, 'dim') : '')
+    : '';
+
   const detailParts = [
     colorize(`# ${batch.totalSetupsDetected} setups`, 'magenta'),
-    batch.totalRejections > 0 ? colorize(`! ${batch.totalRejections} rejected`, 'yellow') : '',
-    batch.totalFilterBlocks > 0 ? colorize(`@ ${batch.totalFilterBlocks} blocked`, 'red') : '',
+    rejectionInfo,
     batch.totalTradesExecuted > 0 ? colorize(`$ ${batch.totalTradesExecuted} trades`, 'green') : '',
   ].filter(Boolean);
   lines.push(createSummaryLine('#', summaryParts));
@@ -256,59 +366,7 @@ export const formatBatchResults = (batch: BatchResult): string => {
     lines.push(errorTable.toString());
   }
 
-  const rejectionResults = batch.watcherResults.filter(r => r.rejections.length > 0);
-  if (rejectionResults.length > 0) {
-    lines.push(...createSectionHeader(SECTION_ICON, 'SETUP REJECTIONS', 'yellow'));
-
-    const rejectionTable = createLogTable(
-      ['Symbol', 'Setup', 'Dir', 'Reason', 'Details'],
-      'yellow'
-    );
-
-    for (const result of rejectionResults) {
-      for (const rejection of result.rejections) {
-        const dirColor = rejection.direction === DIRECTION.LONG ? COLORS.SUCCESS : COLORS.ERROR;
-        const detailStr = rejection.details
-          ? Object.entries(rejection.details).filter(([k]) => k !== 'direction').map(([k, v]) => `${k}:${v}`).join(' ')
-          : '-';
-        rejectionTable.push([
-          colorize(result.symbol, 'bright'),
-          rejection.setupType,
-          colorize(rejection.direction, dirColor),
-          colorize(rejection.reason, 'yellow'),
-          detailStr,
-        ]);
-      }
-    }
-
-    lines.push(rejectionTable.toString());
-  }
-
-  const filterBlockResults = batch.watcherResults.filter(r => r.filterChecks.some(f => !f.passed));
-  if (filterBlockResults.length > 0) {
-    lines.push(...createSectionHeader(SECTION_ICON, 'FILTER BLOCKS', 'red'));
-
-    const filterTable = createLogTable(
-      ['Symbol', 'Filter', 'Reason', 'Details'],
-      'red'
-    );
-
-    for (const result of filterBlockResults) {
-      for (const filter of result.filterChecks.filter(f => !f.passed)) {
-        const detailStr = filter.details
-          ? Object.entries(filter.details).map(([k, v]) => `${k}:${v}`).join(' ')
-          : '-';
-        filterTable.push([
-          colorize(result.symbol, 'bright'),
-          colorize(filter.filterName, 'red'),
-          filter.reason,
-          detailStr,
-        ]);
-      }
-    }
-
-    lines.push(filterTable.toString());
-  }
+  lines.push(...formatUnifiedSetupValidations(batch.watcherResults));
 
   const tradeResults = batch.watcherResults.filter(r => r.tradeExecutions.length > 0);
   if (tradeResults.length > 0) {

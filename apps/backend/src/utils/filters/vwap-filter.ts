@@ -1,5 +1,5 @@
 import { calculateIntradayVWAP } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PriceVsVwap, VwapFilterResult } from '@marketmind/types';
 
 const MIN_KLINES_REQUIRED = 5;
 
@@ -7,13 +7,7 @@ export const VWAP_FILTER = {
   MIN_KLINES_REQUIRED,
 } as const;
 
-export interface VwapFilterResult {
-  isAllowed: boolean;
-  vwap: number | null;
-  currentPrice: number | null;
-  priceVsVwap: 'ABOVE' | 'BELOW' | 'AT' | null;
-  reason: string;
-}
+export type { PriceVsVwap, VwapFilterResult };
 
 export const checkVwapCondition = (
   klines: Kline[],

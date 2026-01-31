@@ -1,11 +1,9 @@
 import type {
-  BtcCorrelationResult,
-  DirectionFilterResult,
-  FundingFilterResult,
-  MarketRegimeResult,
-  MtfFilterResult,
-  VolumeFilterResult,
-} from './filters';
+  ConfluenceResult,
+  FilterContribution,
+  FilterResults,
+  RecommendationLevel,
+} from '@marketmind/types';
 
 export const CONFLUENCE_WEIGHTS = {
   mtfFilter: 25,
@@ -22,37 +20,7 @@ export const CONFLUENCE_CONFIG = {
   ALIGNMENT_BONUS: 10,
 } as const;
 
-export type RecommendationLevel = 'STRONG_ENTRY' | 'MODERATE_ENTRY' | 'WEAK_ENTRY' | 'NO_ENTRY';
-
-export interface FilterContribution {
-  filterName: string;
-  passed: boolean;
-  score: number;
-  maxScore: number;
-  reason: string;
-}
-
-export interface ConfluenceResult {
-  isAllowed: boolean;
-  totalScore: number;
-  maxPossibleScore: number;
-  scorePercent: number;
-  contributions: FilterContribution[];
-  alignmentBonus: number;
-  recommendation: RecommendationLevel;
-  reason: string;
-}
-
-export interface FilterResults {
-  mtf?: MtfFilterResult | null;
-  btcCorrelation?: BtcCorrelationResult | null;
-  marketRegime?: MarketRegimeResult | null;
-  volume?: VolumeFilterResult | null;
-  fundingRate?: FundingFilterResult | null;
-  direction?: DirectionFilterResult | null;
-  trendAllowed?: boolean;
-  adxValue?: number | null;
-}
+export type { ConfluenceResult, FilterContribution, FilterResults, RecommendationLevel };
 
 const getRecommendation = (scorePercent: number): RecommendationLevel => {
   if (scorePercent >= 80) return 'STRONG_ENTRY';

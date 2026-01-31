@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
 import { writeFileSync, mkdirSync, appendFileSync, readdirSync, readFileSync, existsSync } from 'fs';
-import { TRADING_DEFAULTS, BACKTEST_DEFAULTS } from '@marketmind/types';
+import { BACKTEST_TIMEFRAMES, TRADING_DEFAULTS, BACKTEST_DEFAULTS } from '@marketmind/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,7 +32,7 @@ const TOP_CONFIGS: ConfigVariation[] = [
   { name: 'scalper', rrLong: 0.5, rrShort: 0.5, fibLong: '1.618', fibShort: '1', entryLimit: 50.0 },
 ];
 
-const TIMEFRAMES = ['30m', '1h', '2h', '4h', '1d'];
+const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['30m', '1h', '2h', '4h', '1d'].includes(tf));
 
 const STRATEGIES_DIR = resolve(__dirname, '../strategies/builtin');
 

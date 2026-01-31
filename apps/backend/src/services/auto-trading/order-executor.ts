@@ -188,6 +188,16 @@ export class OrderExecutor {
       entryPrice: setup.entryPrice,
     });
 
+    logBuffer.startSetupValidation({
+      type: setup.type,
+      direction: setup.direction,
+      entryPrice: setup.entryPrice,
+      stopLoss: setup.stopLoss ?? undefined,
+      takeProfit: setup.takeProfit ?? undefined,
+      confidence: setup.confidence ?? 0,
+      riskReward: setup.riskRewardRatio ?? undefined,
+    });
+
     const config = await this.deps.getCachedConfig(watcher.walletId, watcher.userId);
 
     const tpCalculationMode = config?.tpCalculationMode ?? 'default';
@@ -228,6 +238,13 @@ export class OrderExecutor {
           });
           effectiveTakeProfit = fibTarget;
         } else {
+          logBuffer.addValidationCheck({
+            name: 'Fibonacci Target',
+            passed: false,
+            value: fibTarget.toFixed(2),
+            expected: setup.direction === 'LONG' ? '> entry' : '< entry',
+            reason: 'Target invalid for direction',
+          });
           logBuffer.addRejection({
             setupType: setup.type,
             direction: setup.direction,
@@ -237,13 +254,15 @@ export class OrderExecutor {
               entryPrice: setup.entryPrice.toFixed(6),
             },
           });
-          logBuffer.warn('🚫', 'Fibonacci target invalid for direction', {
-            setup: setup.type,
-            direction: setup.direction,
-          });
+          logBuffer.completeSetupValidation('blocked', 'Fibonacci target invalid');
           return;
         }
       } else {
+        logBuffer.addValidationCheck({
+          name: 'Trend Structure',
+          passed: false,
+          reason: 'No clear trend (ranging market)',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
@@ -254,10 +273,7 @@ export class OrderExecutor {
             fibLevel: effectiveFibLevel,
           },
         });
-        logBuffer.warn('🚫', 'No clear trend structure (ranging market)', {
-          setup: setup.type,
-          fibLevel: effectiveFibLevel,
-        });
+        logBuffer.completeSetupValidation('blocked', 'Ranging market');
         return;
       }
     }
@@ -313,15 +329,22 @@ export class OrderExecutor {
           ? cooldownCheck.cooldownUntil.getTime() - Date.now()
           : 0;
         const remainingMinutes = Math.ceil(remainingMs / 60000);
+        logBuffer.addValidationCheck({
+          name: 'Cooldown',
+          passed: false,
+          value: `${remainingMinutes}m remaining`,
+          reason: cooldownCheck.reason ?? 'Active',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: 'Cooldown active',
           details: { remainingMinutes, cooldownReason: cooldownCheck.reason ?? 'N/A' },
         });
-        logBuffer.warn('🚫', 'Cooldown active', { setup: setup.type, remainingMinutes });
+        logBuffer.completeSetupValidation('blocked', 'Cooldown active');
         return;
       }
+      logBuffer.addValidationCheck({ name: 'Cooldown', passed: true, reason: 'OK' });
 
       const filterConfig: FilterValidatorConfig = {
         useBtcCorrelationFilter: config.useBtcCorrelationFilter,
@@ -347,29 +370,43 @@ export class OrderExecutor {
       );
 
       if (!filterValidation.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Filters',
+          passed: false,
+          reason: filterValidation.rejectionReason ?? 'Failed',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: filterValidation.rejectionReason ?? 'Filter validation failed',
           details: filterValidation.rejectionDetails as Record<string, string | number | boolean | null> | undefined,
         });
+        logBuffer.completeSetupValidation('blocked', filterValidation.rejectionReason ?? 'Filter failed');
         return;
       }
+      logBuffer.addValidationCheck({ name: 'Filters', passed: true, reason: 'All passed' });
 
       const oppositeDirectionPosition = openPositions.find(
         (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
       );
 
       if (oppositeDirectionPosition) {
+        logBuffer.addValidationCheck({
+          name: 'Position Conflict',
+          passed: false,
+          value: oppositeDirectionPosition.side,
+          reason: 'Opposite position exists',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: 'Opposite position exists',
           details: { existingDirection: oppositeDirectionPosition.side },
         });
-        logBuffer.warn('🚫', 'Opposite position exists', { setup: setup.type, existingDirection: oppositeDirectionPosition.side });
+        logBuffer.completeSetupValidation('blocked', 'Opposite position exists');
         return;
       }
+      logBuffer.addValidationCheck({ name: 'Position Conflict', passed: true, reason: 'No conflict' });
 
       const sameDirectionPositions = openPositions.filter(
         (pos) => pos.symbol === watcher.symbol && pos.side === setup.direction
@@ -377,13 +414,19 @@ export class OrderExecutor {
 
       if (sameDirectionPositions.length > 0) {
         if (!config.pyramidingEnabled) {
+          logBuffer.addValidationCheck({
+            name: 'Pyramiding',
+            passed: false,
+            value: `${sameDirectionPositions.length} positions`,
+            reason: 'Pyramiding disabled',
+          });
           logBuffer.addRejection({
             setupType: setup.type,
             direction: setup.direction,
             reason: 'Pyramiding disabled',
             details: { existingPositions: sameDirectionPositions.length },
           });
-          logBuffer.warn('🚫', 'Pyramiding disabled', { setup: setup.type, existingPositions: sameDirectionPositions.length });
+          logBuffer.completeSetupValidation('blocked', 'Pyramiding disabled');
           return;
         }
 
@@ -400,6 +443,12 @@ export class OrderExecutor {
         );
 
         if (!pyramidEval.canPyramid) {
+          logBuffer.addValidationCheck({
+            name: 'Pyramiding',
+            passed: false,
+            value: `${pyramidEval.currentEntries}/${pyramidEval.maxEntries}`,
+            reason: pyramidEval.reason ?? 'Cannot pyramid',
+          });
           logBuffer.addRejection({
             setupType: setup.type,
             direction: setup.direction,
@@ -411,10 +460,16 @@ export class OrderExecutor {
               adxValue: pyramidEval.adxValue ?? null,
             },
           });
-          logBuffer.warn('🚫', pyramidEval.reason ?? 'Cannot pyramid', { setup: setup.type, currentEntries: pyramidEval.currentEntries });
+          logBuffer.completeSetupValidation('blocked', pyramidEval.reason ?? 'Cannot pyramid');
           return;
         }
 
+        logBuffer.addValidationCheck({
+          name: 'Pyramiding',
+          passed: true,
+          value: `${pyramidEval.currentEntries}/${pyramidEval.maxEntries}`,
+          reason: 'Allowed',
+        });
         logBuffer.log('📈', 'Pyramiding opportunity', {
           currentEntries: pyramidEval.currentEntries,
           suggestedSize: pyramidEval.suggestedSize,
@@ -441,15 +496,26 @@ export class OrderExecutor {
       );
 
       if (dynamicSize.quantity <= 0) {
+        logBuffer.addValidationCheck({
+          name: 'Position Sizing',
+          passed: false,
+          reason: dynamicSize.reason ?? 'Zero quantity',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: 'Zero quantity from sizing',
           details: { reason: dynamicSize.reason },
         });
-        logBuffer.warn('🚫', 'Zero quantity from sizing', { setup: setup.type, reason: dynamicSize.reason });
+        logBuffer.completeSetupValidation('blocked', 'Zero quantity');
         return;
       }
+      logBuffer.addValidationCheck({
+        name: 'Position Sizing',
+        passed: true,
+        value: dynamicSize.quantity.toFixed(4),
+        reason: 'OK',
+      });
 
       const positionValue = dynamicSize.quantity * setup.entryPrice;
 
@@ -467,15 +533,21 @@ export class OrderExecutor {
       );
 
       if (!riskValidation.isValid) {
+        logBuffer.addValidationCheck({
+          name: 'Risk Management',
+          passed: false,
+          reason: riskValidation.reason ?? 'Failed',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: 'Risk validation failed',
           details: { reason: riskValidation.reason ?? 'Unknown' },
         });
-        logBuffer.warn('🚫', 'Risk validation failed', { setup: setup.type, reason: riskValidation.reason ?? 'Unknown' });
+        logBuffer.completeSetupValidation('blocked', riskValidation.reason ?? 'Risk validation failed');
         return;
       }
+      logBuffer.addValidationCheck({ name: 'Risk Management', passed: true, reason: 'OK' });
 
       await this.createAndExecuteTrade(
         watcher,
@@ -487,11 +559,17 @@ export class OrderExecutor {
         isLiveExecution,
         logBuffer
       );
+
+      logBuffer.completeSetupValidation('executed', undefined, {
+        quantity: dynamicSize.quantity.toFixed(4),
+        orderType: 'MARKET',
+      });
     } catch (error) {
       logBuffer.error('❌', 'Error executing setup', {
         type: setup.type,
         error: serializeError(error),
       });
+      logBuffer.completeSetupValidation('failed', 'Execution error');
     }
   }
 
@@ -519,16 +597,18 @@ export class OrderExecutor {
       }
 
       if (risk <= 0) {
+        logBuffer.addValidationCheck({
+          name: 'Risk/Reward',
+          passed: false,
+          reason: 'Invalid stop loss - no risk',
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
           reason: 'Invalid stop loss - no risk',
           details: { entryPrice, stopLoss },
         });
-        logBuffer.warn('🚫', 'Invalid stop loss - no risk', {
-          setup: setup.type,
-          direction: setup.direction,
-        });
+        logBuffer.completeSetupValidation('blocked', 'Invalid stop loss');
         return { valid: false };
       }
 
@@ -545,6 +625,13 @@ export class OrderExecutor {
       if (riskRewardRatio < minRequired) {
         const usingFibonacci = tpCalculationMode === 'fibonacci' && effectiveTakeProfit !== setup.takeProfit;
         const reason = usingFibonacci ? 'Insufficient R:R (Fibonacci TP)' : 'Insufficient R:R ratio';
+        logBuffer.addValidationCheck({
+          name: 'Risk/Reward',
+          passed: false,
+          value: riskRewardRatio.toFixed(2),
+          expected: `>= ${minRequired}`,
+          reason,
+        });
         logBuffer.addRejection({
           setupType: setup.type,
           direction: setup.direction,
@@ -557,14 +644,16 @@ export class OrderExecutor {
             entryPrice: entryPrice.toFixed(4),
           },
         });
-        logBuffer.warn('🚫', reason, {
-          setup: setup.type,
-          rr: riskRewardRatio.toFixed(2),
-          minRR: minRequired,
-        });
+        logBuffer.completeSetupValidation('blocked', reason);
         return { valid: false };
       }
 
+      logBuffer.addValidationCheck({
+        name: 'Risk/Reward',
+        passed: true,
+        value: riskRewardRatio.toFixed(2),
+        expected: `>= ${minRequired}`,
+      });
       logBuffer.log('✅', 'Risk/Reward ratio validated', {
         riskRewardRatio: riskRewardRatio.toFixed(2),
         minRequired,

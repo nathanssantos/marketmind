@@ -322,7 +322,9 @@ export class MultiWatcherBacktestEngine {
   ): Promise<TradingSetup[]> {
     if (strategies.length === 0) return [];
 
-    const setupDetectionService = new SetupDetectionService({});
+    const setupDetectionService = new SetupDetectionService({
+      silent: this.config.silent,
+    });
     const strategyOverrides = this.config.strategyParams || {};
 
     for (const strategy of strategies) {
@@ -439,7 +441,7 @@ export class MultiWatcherBacktestEngine {
     if (globalMomentumTimingEnabled) {
       const requiredKlines = MOMENTUM_TIMING_FILTER.MIN_KLINES_REQUIRED;
       if (klines.length >= requiredKlines) {
-        const momentumResult = checkMomentumTiming(klines, direction);
+        const momentumResult = checkMomentumTiming(klines, direction, context?.setupType);
         if (!momentumResult.isAllowed) {
           stats.tradesSkipped++;
           stats.skippedReasons['momentumTiming'] = (stats.skippedReasons['momentumTiming'] ?? 0) + 1;
@@ -466,7 +468,7 @@ export class MultiWatcherBacktestEngine {
 
     if (shouldApplyTrend) {
       if (klines.length >= 2) {
-        const trendResult = checkTrendCondition(klines, direction);
+        const trendResult = checkTrendCondition(klines, direction, this.config.trendFilterPeriod);
         filterResults.trendAllowed = trendResult.isAllowed;
         if (!trendResult.isAllowed) {
           stats.tradesSkipped++;
