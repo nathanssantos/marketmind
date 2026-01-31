@@ -1,5 +1,5 @@
-import { Box, IconButton, VStack } from '@chakra-ui/react';
-import { memo } from 'react';
+import { Box, HStack, IconButton } from '@chakra-ui/react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuCalendarDays,
@@ -87,18 +87,29 @@ export const ChartToolsToolbar = memo(({
 }: ChartToolsToolbarProps) => {
   const { t } = useTranslation();
 
-  const toggleMA = (index: number): void => {
+  const toggleMA = useCallback((index: number): void => {
     const updated = movingAverages.map((ma, i) =>
-      i === index ? { ...ma, visible: ma.visible === false ? true : false } : ma
+      i === index ? { ...ma, visible: !ma.visible } : ma
     );
     onMovingAveragesChange(updated);
-  };
+  }, [movingAverages, onMovingAveragesChange]);
+
+  const handleGridToggle = useCallback(() => onShowGridChange(!showGrid), [showGrid, onShowGridChange]);
+  const handlePriceLineToggle = useCallback(() => onShowCurrentPriceLineChange(!showCurrentPriceLine), [showCurrentPriceLine, onShowCurrentPriceLineChange]);
+  const handleCrosshairToggle = useCallback(() => onShowCrosshairChange(!showCrosshair), [showCrosshair, onShowCrosshairChange]);
+  const handleProfitLossToggle = useCallback(() => onShowProfitLossAreasChange(!showProfitLossAreas), [showProfitLossAreas, onShowProfitLossAreasChange]);
+  const handleFibToggle = useCallback(() => onShowFibonacciProjectionChange(!showFibonacciProjection), [showFibonacciProjection, onShowFibonacciProjectionChange]);
+  const handleRulerToggle = useCallback(() => onShowMeasurementRulerChange(!showMeasurementRuler), [showMeasurementRuler, onShowMeasurementRulerChange]);
+  const handleAreaToggle = useCallback(() => onShowMeasurementAreaChange(!showMeasurementArea), [showMeasurementArea, onShowMeasurementAreaChange]);
+  const handleTooltipToggle = useCallback(() => onShowTooltipChange(!showTooltip), [showTooltip, onShowTooltipChange]);
+  const handleEventRowToggle = useCallback(() => onShowEventRowChange(!showEventRow), [showEventRow, onShowEventRowChange]);
 
   return (
     <Box
       position="absolute"
       top={2}
-      left={2}
+      left="50%"
+      transform="translateX(-50%)"
       zIndex={10}
       bg="bg.panel"
       borderRadius="md"
@@ -107,7 +118,7 @@ export const ChartToolsToolbar = memo(({
       boxShadow="sm"
       p={1}
     >
-      <VStack gap={1}>
+      <HStack gap={1}>
         <IndicatorTogglePopover
           showVolume={showVolume}
           showStochastic={showStochastic}
@@ -124,106 +135,106 @@ export const ChartToolsToolbar = memo(({
           onShowVWAPChange={onShowVWAPChange}
           onMovingAverageToggle={toggleMA}
         />
-        <TooltipWrapper label={t('chart.controls.grid')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.grid')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.grid')}
-            onClick={() => onShowGridChange(!showGrid)}
+            onClick={handleGridToggle}
             colorPalette={showGrid ? 'blue' : 'gray'}
             variant={showGrid ? 'solid' : 'ghost'}
           >
             <LuGrid3X3 />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.currentPrice')}
-            onClick={() => onShowCurrentPriceLineChange(!showCurrentPriceLine)}
+            onClick={handlePriceLineToggle}
             colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
             variant={showCurrentPriceLine ? 'solid' : 'ghost'}
           >
             <LuDollarSign />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.crosshair')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.crosshair')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.crosshair')}
-            onClick={() => onShowCrosshairChange(!showCrosshair)}
+            onClick={handleCrosshairToggle}
             colorPalette={showCrosshair ? 'blue' : 'gray'}
             variant={showCrosshair ? 'solid' : 'ghost'}
           >
             <LuCrosshair />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.profitLossAreas')}
-            onClick={() => onShowProfitLossAreasChange(!showProfitLossAreas)}
+            onClick={handleProfitLossToggle}
             colorPalette={showProfitLossAreas ? 'blue' : 'gray'}
             variant={showProfitLossAreas ? 'solid' : 'ghost'}
           >
             <LuRectangleHorizontal />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.fibonacciProjection')}
-            onClick={() => onShowFibonacciProjectionChange(!showFibonacciProjection)}
+            onClick={handleFibToggle}
             colorPalette={showFibonacciProjection ? 'blue' : 'gray'}
             variant={showFibonacciProjection ? 'solid' : 'ghost'}
           >
             <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.measurementRuler')}
-            onClick={() => onShowMeasurementRulerChange(!showMeasurementRuler)}
+            onClick={handleRulerToggle}
             colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
             variant={showMeasurementRuler ? 'solid' : 'ghost'}
           >
             <LuRuler />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.measurementArea')}
-            onClick={() => onShowMeasurementAreaChange(!showMeasurementArea)}
+            onClick={handleAreaToggle}
             colorPalette={showMeasurementArea ? 'blue' : 'gray'}
             variant={showMeasurementArea ? 'solid' : 'ghost'}
           >
             <LuScan />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.tooltip')}
-            onClick={() => onShowTooltipChange(!showTooltip)}
+            onClick={handleTooltipToggle}
             colorPalette={showTooltip ? 'blue' : 'gray'}
             variant={showTooltip ? 'solid' : 'ghost'}
           >
             <LuMessageSquare />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="bottom">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.marketEvents')}
-            onClick={() => onShowEventRowChange(!showEventRow)}
+            onClick={handleEventRowToggle}
             colorPalette={showEventRow ? 'blue' : 'gray'}
             variant={showEventRow ? 'solid' : 'ghost'}
           >
             <LuCalendarDays />
           </IconButton>
         </TooltipWrapper>
-      </VStack>
+      </HStack>
     </Box>
   );
 });

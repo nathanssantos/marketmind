@@ -51,16 +51,50 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 3. Apenas 7.8% dos exits são por trailing → maioria sai por SL/TP antes
 
 #### ✅ Market Indicators Sidebar COMPLETA
-- Fear & Greed Index (Alternative.me API)
-- BTC Dominance (CoinGecko API)
-- Open Interest + Long/Short Ratio (Binance Futures)
-- BTC EMA21 Trend + Funding Rates
+- Fear & Greed Index (Alternative.me API) + gráfico histórico 31d
+- BTC Dominance (CoinGecko API) + gráfico histórico 31d
+- Open Interest + Long/Short Ratio (Binance Futures) + gráficos históricos
+- BTC EMA21 Trend (LineChart com EMA + Price) + Funding Rates
+- **Componentes reutilizáveis:** `MiniAreaChart`, `MiniLineChart`
+- **Tooltips padronizados** com datas em todos os gráficos
+- **Layout padronizado:** badges abaixo dos títulos
+- **Caching otimizado:** refresh intervals inteligentes (5-30min)
+
+#### ✅ Comparação de Timeframes COMPLETA (2026-01-31)
+- **Período:** 2023-01-01 a 2026-01-01 (3 anos)
+- **Timeframes:** 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d
+- **Config:** 19 estratégias, Volume Filter ON, Momentum Timing ON
+
+**📊 RESULTADOS POR P&L:**
+| Timeframe | P&L | P&L% | Trades | WinRate | PF | MaxDD | LONG P&L | SHORT P&L |
+|-----------|-----|------|--------|---------|-----|-------|----------|-----------|
+| **🏆 12h** | **+$117** | **+11.75%** | 22 | 36.36% | 1.09 | 46.03% | +$663 | -$522 |
+| 6h | -$161 | -16.13% | 13 | 23.08% | 0.71 | 38.40% | +$69 | -$222 |
+| 1d | -$196 | -19.61% | 17 | 29.41% | 0.88 | 63.65% | +$847 | -$1028 |
+| 8h | -$226 | -22.57% | 17 | 23.53% | 0.76 | 35.08% | -$14 | -$200 |
+| 2h | -$423 | -42.32% | 41 | 26.83% | 0.56 | 54.79% | -$130 | -$273 |
+| 1h | -$424 | -42.43% | 170 | 21.76% | 0.87 | 78.24% | +$375 | -$704 |
+| 4h | -$522 | -52.18% | 41 | 24.39% | 0.68 | 69.36% | -$174 | -$317 |
+| 30m | -$538 | -53.78% | 266 | 24.81% | 0.87 | 76.27% | -$10 | -$371 |
+
+**🔍 INSIGHTS IMPORTANTES:**
+1. **ÚNICO timeframe lucrativo:** 12h (+11.75% em 3 anos)
+2. **LONGs sempre melhores que SHORTs** - Em 6/8 timeframes, LONG > SHORT
+3. **Timeframes curtos (30m, 1h) têm drawdowns extremos** (76-78%)
+4. **8h tem menor drawdown** (35.08%) mas P&L negativo
+5. **Quanto menor o timeframe, mais trades = mais perdas**
+
+**📌 DECISÕES BASEADAS NOS DADOS:**
+1. ✅ **Focar otimização no 12h** - Único lucrativo
+2. ✅ **Considerar LONG-only** - SHORTs consistentemente negativos
+3. ❌ **Evitar 30m/1h para produção** - Drawdowns inaceitáveis
+4. 🟡 **8h como alternativa conservadora** - Baixo drawdown, poucos trades
 
 #### 🟡 Próximos Passos
-1. **Analisar resultados** - Decidir se trailing stop vale a pena (7.8% exits)
-2. **Walk-Forward Validation** - Validar top configs com dados out-of-sample
-3. **Testar outros timeframes** - 1h, 4h para comparar
-4. **Entry Levels optimization** - Fibonacci entry, R:R mínimo
+1. **Entry Levels optimization (12h)** - Fibonacci entry, R:R mínimo (Seção 13)
+2. **LONG-only backtest** - Confirmar se remove SHORTs melhora resultados
+3. **Walk-Forward Validation** - Validar configs com dados out-of-sample
+4. **Decisão sobre trailing stop** - Testar no 12h especificamente
 
 ### O Que Já Existe (Pronto para Uso)
 | Componente | Localização | Status |
@@ -386,11 +420,14 @@ components/Settings/                # Já existente
 - [x] Atualizar imports em todo o app
 - [x] Executar `pnpm type-check` para validar tipos (apenas erros pré-existentes)
 
-**Fase 7: Unificação e Reutilização** 🟡 PARCIAL
+**Fase 7: Unificação e Reutilização** ✅ CONCLUÍDA
 - [x] `WatchersTable` reutilizado em WatchersTab
-- [ ] Extrair `LogLine` para componente compartilhado
-- [ ] Unificar hooks de logs (`useAutoTradingLogs`)
-- [ ] Revisar e remover duplicações restantes
+- [x] `MiniAreaChart` componente reutilizável para gráficos de área
+- [x] `MiniLineChart` componente reutilizável para gráficos de linha
+- [x] `formatTooltipDate` função compartilhada para tooltips
+- [x] `CHART_MARGIN`, `TOOLTIP_STYLE` constantes extraídas
+- [ ] Extrair `LogLine` para componente compartilhado (futuro)
+- [ ] Unificar hooks de logs (`useAutoTradingLogs`) (futuro)
 
 **Fase 8: Testes e Polish** 🟡 PENDENTE
 - [ ] Testar responsividade
@@ -2029,6 +2066,21 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 ---
 
 ## 15. Atualizações do Plano
+
+### v2.0.6 (2026-01-31 20:30)
+- **Trailing Stop Optimization COMPLETA:**
+  - 82,944 combinações testadas em ~87 minutos
+  - Melhor config: LONG(Act=90%, Dist=40%, ATR=1.5), SHORT(Act=80%, Dist=30%)
+  - Resultados: PnL +$428 (42.9%), Sharpe 0.535, Max DD 30.5%
+  - **Observação crítica:** Apenas 7.8% dos trades saíram via trailing
+- **Market Indicators Sidebar COMPLETA:**
+  - Fear & Greed Index (Alternative.me API)
+  - BTC Dominance (CoinGecko API)
+  - Open Interest + Long/Short Ratio (Binance Futures)
+  - BTC EMA21 Trend + Funding Rates
+  - Badges com `px={2}` corrigidos
+  - Cards de Dominance/OI com `wrap="wrap"` para sidebars estreitas
+- **Compare Timeframes iniciado:** 8 timeframes sendo testados
 
 ### v2.0.5 (2026-01-31)
 - **Requisitos Adicionais:**

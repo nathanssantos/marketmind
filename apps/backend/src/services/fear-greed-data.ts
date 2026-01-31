@@ -12,6 +12,7 @@ export interface FearGreedResult {
   yesterday: FearGreedData | null;
   lastWeek: FearGreedData | null;
   lastMonth: FearGreedData | null;
+  history: FearGreedData[];
 }
 
 const ALTERNATIVE_ME_URL = 'https://api.alternative.me/fng/';
@@ -48,11 +49,14 @@ export class FearGreedDataService {
         timeUntilUpdate: entry.time_until_update ?? '',
       });
 
+      const history: FearGreedData[] = json.data.map(mapEntry).reverse();
+
       const result: FearGreedResult = {
         current: json.data[0] ? mapEntry(json.data[0]) : null,
         yesterday: json.data[1] ? mapEntry(json.data[1]) : null,
         lastWeek: json.data[7] ? mapEntry(json.data[7]) : null,
         lastMonth: json.data[30] ? mapEntry(json.data[30]) : null,
+        history,
       };
 
       this.setCache(result);
@@ -69,6 +73,7 @@ export class FearGreedDataService {
       yesterday: null,
       lastWeek: null,
       lastMonth: null,
+      history: [],
     };
   }
 

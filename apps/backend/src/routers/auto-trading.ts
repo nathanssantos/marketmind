@@ -33,7 +33,7 @@ import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { riskManagerService } from '../services/risk-manager';
 import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
-import { getBtcTrendEmaInfo, getEma21Direction, type Ema21TrendResult } from '../utils/filters/btc-correlation-filter';
+import { getBtcTrendEmaInfoWithHistory, getEma21Direction, type Ema21TrendResult } from '../utils/filters/btc-correlation-filter';
 import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { calculatePnl } from '../utils/pnl-calculator';
@@ -1658,12 +1658,13 @@ export const autoTradingRouter = router({
       });
 
       const mappedKlines = mapDbKlinesReversed(btcKlinesData);
-      const trendInfo = getBtcTrendEmaInfo(mappedKlines);
+      const trendInfo = getBtcTrendEmaInfoWithHistory(mappedKlines);
       const trendEmoji = trendInfo.trend === 'BULLISH' ? '🟢' : trendInfo.trend === 'BEARISH' ? '🔴' : '⚪';
       logApiTable('getBtcTrendStatus', [
         ['Interval', interval],
         ['Trend', `${trendEmoji} ${trendInfo.trend}`],
         ['EMA21 Filter', `canLong: ${trendInfo.canLong}, canShort: ${trendInfo.canShort}`],
+        ['History Points', trendInfo.history.length],
       ]);
 
       return trendInfo;

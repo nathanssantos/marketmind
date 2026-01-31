@@ -250,6 +250,41 @@ export const checkEma21Alignment = (
   };
 };
 
+export interface BtcTrendHistoryPoint {
+  timestamp: number;
+  price: number;
+  ema21: number;
+}
+
+export interface BtcTrendInfoWithHistory extends BtcTrendInfo {
+  history: BtcTrendHistoryPoint[];
+}
+
+export const getBtcTrendEmaInfoWithHistory = (btcKlines: Kline[]): BtcTrendInfoWithHistory => {
+  const baseInfo = getBtcTrendEmaInfo(btcKlines);
+
+  if (btcKlines.length < MIN_KLINES_REQUIRED) {
+    return { ...baseInfo, history: [] };
+  }
+
+  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
+  const history: BtcTrendHistoryPoint[] = [];
+
+  for (let i = Math.max(0, btcKlines.length - 31); i < btcKlines.length; i++) {
+    const kline = btcKlines[i];
+    const ema21 = ema21Values[i];
+    if (kline && ema21 !== null && ema21 !== undefined) {
+      history.push({
+        timestamp: kline.openTime,
+        price: parseFloat(String(kline.close)),
+        ema21,
+      });
+    }
+  }
+
+  return { ...baseInfo, history };
+};
+
 export const getBtcTrendEmaInfo = (btcKlines: Kline[]): BtcTrendInfo => {
   if (btcKlines.length < MIN_KLINES_REQUIRED) {
     return {

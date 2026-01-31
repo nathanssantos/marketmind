@@ -530,14 +530,19 @@ export const ChartCanvas = ({
     }
   }, [updateExecutionSLTP]);
 
+  const memoizedPriceToY = useCallback((price: number) => manager?.priceToY(price) ?? 0, [manager]);
+  const memoizedYToPrice = useCallback((y: number) => manager?.yToPrice(y) ?? 0, [manager]);
+  const memoizedGetOrderAtPosition = useCallback((x: number, y: number) => getOrderAtPosition(x, y), [getOrderAtPosition]);
+  const memoizedMarkDirty = useCallback((layer: 'klines' | 'viewport' | 'dimensions' | 'overlays' | 'all') => manager?.markDirty(layer), [manager]);
+
   const orderDragHandler = useOrderDragHandler({
     orders: draggableOrders,
     updateOrder: handleUpdateOrder,
-    priceToY: (price) => manager?.priceToY(price) ?? 0,
-    yToPrice: (y) => manager?.yToPrice(y) ?? 0,
+    priceToY: memoizedPriceToY,
+    yToPrice: memoizedYToPrice,
     enabled: hasTradingEnabled && draggableOrders.length > 0,
-    getOrderAtPosition: (x, y) => getOrderAtPosition(x, y),
-    markDirty: (layer) => manager?.markDirty(layer),
+    getOrderAtPosition: memoizedGetOrderAtPosition,
+    markDirty: memoizedMarkDirty,
   });
 
   const {

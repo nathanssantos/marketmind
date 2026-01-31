@@ -1,5 +1,5 @@
 import { Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuChartBar,
@@ -57,14 +57,12 @@ export const ChartControls = ({
   const { t } = useTranslation();
   const { pinnedControls } = usePinnedControls();
 
-  const toggleMA = (index: number): void => {
+  const toggleMA = useCallback((index: number): void => {
     const updated = movingAverages.map((ma, i) =>
-      i === index
-        ? { ...ma, visible: ma.visible === false ? true : false }
-        : ma
+      i === index ? { ...ma, visible: !ma.visible } : ma
     );
     onMovingAveragesChange(updated);
-  };
+  }, [movingAverages, onMovingAveragesChange]);
 
   const handleAdvancedChange = (key: keyof AdvancedControlsConfig, value: number): void => {
     if (advancedConfig && onAdvancedConfigChange) {

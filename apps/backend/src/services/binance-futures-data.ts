@@ -142,6 +142,10 @@ export class BinanceFuturesDataService {
     openInterest: number;
     timestamp: number;
   } | null> {
+    const cacheKey = `oi-current:${symbol}`;
+    const cached = this.getFromCache<{ openInterest: number; timestamp: number }>(cacheKey);
+    if (cached) return cached;
+
     try {
       const response = await fetchWithRetry(
         `${FUTURES_BASE_URL}/fapi/v1/openInterest?symbol=${symbol}`
@@ -151,10 +155,13 @@ export class BinanceFuturesDataService {
 
       const data: BinanceOpenInterestResponse = await response.json();
 
-      return {
+      const result = {
         openInterest: parseFloat(data.openInterest),
         timestamp: data.time,
       };
+
+      this.setCache(cacheKey, result);
+      return result;
     } catch (error) {
       logger.error({ error: serializeError(error), symbol }, 'Error fetching current open interest');
       return null;

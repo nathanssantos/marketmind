@@ -9,10 +9,16 @@ export interface BTCDominanceData {
   btcMarketCap?: number;
 }
 
+export interface BTCDominanceHistoryPoint {
+  timestamp: number;
+  dominance: number;
+}
+
 export interface BTCDominanceResult {
   current: number | null;
   change24h: number | null;
   trend: 'increasing' | 'decreasing' | 'stable';
+  history: BTCDominanceHistoryPoint[];
 }
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
@@ -21,8 +27,10 @@ const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
 export class BTCDominanceDataService {
   private cache: { data: BTCDominanceData | null; timestamp: number } = { data: null, timestamp: 0 };
   private cacheTTL: number = 120000;
-  private history: Array<{ dominance: number; timestamp: number }> = [];
-  private readonly HISTORY_TTL_MS = TIME_MS.DAY;
+  private history: BTCDominanceHistoryPoint[] = [];
+  private historyCache: { data: BTCDominanceHistoryPoint[]; timestamp: number } = { data: [], timestamp: 0 };
+  private readonly HISTORY_TTL_MS = TIME_MS.DAY * 31;
+  private readonly HISTORY_CACHE_TTL = TIME_MS.HOUR * 6;
   private cmcApiKey: string | null = null;
   private previousDominance: number | null = null;
 
@@ -58,6 +66,7 @@ export class BTCDominanceDataService {
         current: null,
         change24h: null,
         trend: 'stable',
+        history: [],
       };
     }
 
@@ -65,9 +74,12 @@ export class BTCDominanceDataService {
     this.history.push({ dominance: data.btcDominance, timestamp: now });
     this.history = this.history.filter(h => now - h.timestamp < this.HISTORY_TTL_MS);
 
+    const historicalData = await this.fetchHistoricalDominance();
+    const combinedHistory = this.mergeHistory(historicalData, this.history);
+
     let change24h: number | null = null;
     const day24hAgo = now - TIME_MS.DAY;
-    const oldestEntry = this.history.find(h => h.timestamp >= day24hAgo - 600000);
+    const oldestEntry = combinedHistory.find(h => h.timestamp >= day24hAgo - 600000);
 
     if (oldestEntry) {
       change24h = data.btcDominance - oldestEntry.dominance;
@@ -86,7 +98,62 @@ export class BTCDominanceDataService {
       current: data.btcDominance,
       change24h,
       trend,
+      history: combinedHistory.slice(-31),
     };
+  }
+
+  private async fetchHistoricalDominance(): Promise<BTCDominanceHistoryPoint[]> {
+    const now = Date.now();
+    if (this.historyCache.data.length > 0 && now - this.historyCache.timestamp < this.HISTORY_CACHE_TTL) {
+      return this.historyCache.data;
+    }
+
+    try {
+      const [btcResponse, globalResponse] = await Promise.all([
+        fetch(`${COINGECKO_BASE_URL}/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily`),
+        fetch(`${COINGECKO_BASE_URL}/global`),
+      ]);
+
+      if (!btcResponse.ok || !globalResponse.ok) {
+        return this.historyCache.data;
+      }
+
+      const btcData = await btcResponse.json();
+      const globalData = await globalResponse.json();
+
+      if (!btcData.market_caps || !globalData.data?.total_market_cap?.usd) {
+        return this.historyCache.data;
+      }
+
+      const totalMarketCap = globalData.data.total_market_cap.usd;
+      const history: BTCDominanceHistoryPoint[] = btcData.market_caps.map((item: [number, number]) => {
+        const [timestamp, btcMarketCap] = item;
+        const dominance = (btcMarketCap / totalMarketCap) * 100;
+        return { timestamp, dominance };
+      });
+
+      this.historyCache = { data: history, timestamp: now };
+      return history;
+    } catch (error) {
+      logger.warn({ error }, 'Failed to fetch historical dominance data');
+      return this.historyCache.data;
+    }
+  }
+
+  private mergeHistory(historical: BTCDominanceHistoryPoint[], realtime: BTCDominanceHistoryPoint[]): BTCDominanceHistoryPoint[] {
+    const map = new Map<number, BTCDominanceHistoryPoint>();
+
+    for (const h of historical) {
+      const dayKey = Math.floor(h.timestamp / TIME_MS.DAY);
+      map.set(dayKey, h);
+    }
+
+    for (const h of realtime) {
+      const dayKey = Math.floor(h.timestamp / TIME_MS.DAY);
+      map.set(dayKey, h);
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.timestamp - b.timestamp);
   }
 
   private async fetchFromCoinGecko(): Promise<BTCDominanceData | null> {
