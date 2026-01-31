@@ -24,7 +24,7 @@ export const ENABLED_SETUPS = [
 ] as const;
 
 export const DEFAULT_BACKTEST_PARAMS = {
-  initialCapital: 10000,
+  initialCapital: 1000,
   leverage: 1,
   exposureMultiplier: 1.5,
   cooldownMinutes: 15,
