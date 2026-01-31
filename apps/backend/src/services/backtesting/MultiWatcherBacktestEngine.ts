@@ -324,6 +324,7 @@ export class MultiWatcherBacktestEngine {
 
     const setupDetectionService = new SetupDetectionService({
       silent: this.config.silent,
+      maxFibonacciEntryProgressPercent: this.config.maxFibonacciEntryProgressPercent,
     });
     const strategyOverrides = this.config.strategyParams || {};
 

@@ -90,11 +90,42 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 3. ❌ **Evitar 30m/1h para produção** - Drawdowns inaceitáveis
 4. 🟡 **8h como alternativa conservadora** - Baixo drawdown, poucos trades
 
+#### ✅ Entry Levels & R:R Optimization IMPLEMENTADO (2026-01-31 21:30)
+- **Script:** `apps/backend/src/cli/optimize-entry-levels.ts`
+- **Timeframe:** 12h (único lucrativo)
+- **Parâmetros testados:**
+  - Entry Levels: 0%, 38.2%, 50%, 61.8%, 78.6%, 100% (breakout)
+  - R:R Mínimo: 0.5, 0.75, 1.0, 1.5, 2.0
+
+**📊 RESULTADOS QUICK-TEST (12 combinações):**
+| Entry Level | P&L | P&L% | WinRate | Trades | Score |
+|-------------|-----|------|---------|--------|-------|
+| **🏆 100%** | **$2,572** | **+257%** | 66.67% | 9 | 716.8 |
+| 78.6% | $1,379 | +138% | 63.64% | 11 | 466.1 |
+| 61.8% (atual) | $335 | +33.5% | 36.00% | 25 | 36.1 |
+
+**🔍 INSIGHTS IMPORTANTES:**
+1. **Entry 100% (breakout) é 7.7x melhor** que o atual (61.8%)
+2. **LONGs dominam:** +$18,260 vs SHORTs: -$855
+3. **Menos trades = mais qualidade:** 9 trades vs 25
+4. **R:R não faz diferença significativa** nos ranges testados
+
+**📌 CONFIGURAÇÃO RECOMENDADA:**
+```json
+{
+  "maxFibonacciEntryProgressPercent": 100,
+  "minRiskRewardRatioLong": 0.75,
+  "minRiskRewardRatioShort": 0.75
+}
+```
+
+**⚠️ PRÓXIMO PASSO:** Rodar otimização FULL (180 combinações) para confirmar
+
 #### 🟡 Próximos Passos
-1. **Entry Levels optimization (12h)** - Fibonacci entry, R:R mínimo (Seção 13)
+1. **Entry Levels FULL optimization (12h)** - Rodar --mode=full com todas as combinações
 2. **LONG-only backtest** - Confirmar se remove SHORTs melhora resultados
 3. **Walk-Forward Validation** - Validar configs com dados out-of-sample
-4. **Decisão sobre trailing stop** - Testar no 12h especificamente
+4. **Trend Filter optimization (Seção 14)** - EMA simples vs Combinado vs ADX
 
 ### O Que Já Existe (Pronto para Uso)
 | Componente | Localização | Status |

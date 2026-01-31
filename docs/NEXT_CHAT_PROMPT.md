@@ -25,26 +25,37 @@ Estou trabalhando no MarketMind, um app Electron de trading. Siga as instruçõe
 - Caching otimizado (refresh 5-30min)
 - Layout padronizado: badges abaixo dos títulos
 
-## Próximos Passos (Seção 13-14 do Plano)
+### 4. Entry Levels & R:R Optimization Script IMPLEMENTADO
+- **Script:** `apps/backend/src/cli/optimize-entry-levels.ts`
+- **Quick-test (12 combinações):** Entry 100% (breakout) é 7.7x melhor que 61.8% atual
+- **Resultado:** +$2,572 (+257%) vs $335 (+33.5%) com Entry 61.8%
+- **LONGs dominam:** +$18,260 vs SHORTs: -$855
 
-### Prioridade 1: Entry Levels Optimization (12h)
-```bash
-# Localização do script a criar/modificar:
-apps/backend/src/cli/optimize-entry-levels.ts
-
-# Parâmetros a testar:
-- Fibonacci entry levels: 0%, 38.2%, 50%, 61.8%, 78.6%, 100% (breakout)
-- R:R mínimo: 0.5, 0.75, 1.0, 1.5, 2.0
-- Trailing activation para breakout: 0% (imediato), 30%, 50%, 70%
+**Melhor configuração encontrada:**
+```json
+{
+  "maxFibonacciEntryProgressPercent": 100,
+  "minRiskRewardRatioLong": 0.75,
+  "minRiskRewardRatioShort": 0.75
+}
 ```
 
-### Prioridade 2: LONG-only Backtest
-Confirmar se remover SHORTs melhora os resultados no 12h.
+## Próximos Passos
 
-### Prioridade 3: Walk-Forward Validation
+### Prioridade 1: Entry Levels FULL Optimization (12h)
+```bash
+# Rodar otimização completa (180 combinações)
+cd apps/backend
+pnpm tsx src/cli/optimize-entry-levels.ts --mode=full
+
+# Ou testar LONG-only
+pnpm tsx src/cli/optimize-entry-levels.ts --mode=full --long-only
+```
+
+### Prioridade 2: Walk-Forward Validation
 Validar as configs com dados out-of-sample (70/30 split).
 
-### Prioridade 4: Trend Filter Optimization (Seção 14)
+### Prioridade 3: Trend Filter Optimization (Seção 14)
 ```bash
 # Métodos a testar:
 - EMA simples (período único)
@@ -55,25 +66,31 @@ Validar as configs com dados out-of-sample (70/30 split).
 - EMA9, EMA21, EMA50, EMA200
 ```
 
+### Prioridade 4: Aplicar Defaults Ótimos (Seção 15)
+Aplicar as melhores configs encontradas como defaults do sistema.
+
 ## Arquivos Importantes
 
 ```
-docs/OPTIMIZATION_MASTER_PLAN.md     # Plano completo (leia a Seção 13-14)
+docs/OPTIMIZATION_MASTER_PLAN.md     # Plano completo atualizado
 apps/backend/src/cli/                # Scripts de otimização
+├── optimize-entry-levels.ts         # ✅ NOVO - Entry Levels & R:R
+├── optimize-trailing-stop.ts        # Trailing Stop
+├── compare-timeframes.ts            # Comparação de timeframes
 apps/backend/src/services/backtesting/
-├── MultiWatcherBacktestEngine.ts    # Engine principal
+├── MultiWatcherBacktestEngine.ts    # Engine principal (atualizado)
 ├── WalkForwardOptimizer.ts          # Walk-forward validation
-├── MonteCarloSimulator.ts           # Monte Carlo simulation
-└── trailing-stop-backtest.ts        # GranularPriceIndex
+└── MonteCarloSimulator.ts           # Monte Carlo simulation
 ```
 
 ## Regra Obrigatória
 
 **SEMPRE** rodar teste rápido antes de otimização completa:
 ```bash
+cd apps/backend
 pnpm tsx src/cli/[script].ts --quick-test --verbose
 ```
 
 ## Tarefa
 
-Leia a Seção 13 (Entry Levels & R:R) do `OPTIMIZATION_MASTER_PLAN.md` e implemente o script de otimização para testar os diferentes níveis de entrada Fibonacci e R:R mínimo no timeframe de 12h.
+Rodar a otimização FULL de Entry Levels com `--mode=full` e `--long-only` para confirmar os resultados do quick-test e validar se LONG-only melhora os resultados.
