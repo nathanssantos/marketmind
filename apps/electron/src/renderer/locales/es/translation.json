@@ -75,6 +75,8 @@
     "tabs": {
       "general": "General",
       "chart": "Gráfico",
+      "autoTrading": "Auto-Trading",
+      "backtesting": "Backtesting",
       "aiTrading": "Auto-Trading IA",
       "context": "Contexto",
       "algorithmicAutoTrading": "Auto-Trading Algorítmico",
@@ -1376,6 +1378,43 @@
       "clear": "Limpiar logs",
       "increaseFont": "Aumentar fuente",
       "decreaseFont": "Disminuir fuente",
+      "waiting": "Esperando logs..."
+    }
+  },
+  "marketSidebar": {
+    "title": "Mercado & Watchers",
+    "close": "Cerrar sidebar de mercado",
+    "tabs": {
+      "indicators": "Mercado",
+      "watchers": "Watchers",
+      "logs": "Logs"
+    },
+    "indicators": {
+      "title": "Indicadores de Mercado",
+      "fearGreed": "Índice de Miedo y Codicia",
+      "btcDominance": "Dominancia BTC",
+      "fundingRates": "Tasas de Funding",
+      "openInterest": "Open Interest",
+      "liquidations": "Liquidaciones",
+      "longShortRatio": "Ratio Long/Short",
+      "topTraders": "Top Traders",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "lastWeek": "Hace 7d"
+    },
+    "watchers": {
+      "title": "Watchers Activos",
+      "empty": "No hay watchers activos",
+      "startWatchers": "Iniciar Watchers",
+      "stopAll": "Detener Todos",
+      "symbol": "Símbolo",
+      "interval": "Intervalo",
+      "profile": "Perfil",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "logs": {
+      "title": "Logs",
       "waiting": "Esperando logs..."
     }
   }

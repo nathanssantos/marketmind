@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 'analytics';
+export type MarketSidebarTab = 'indicators' | 'watchers' | 'logs';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
@@ -13,6 +14,13 @@ export type TableSortDirection = 'asc' | 'desc';
 interface UIState {
   tradingSidebarTab: TradingSidebarTab;
   setTradingSidebarTab: (tab: TradingSidebarTab) => void;
+
+  marketSidebarOpen: boolean;
+  setMarketSidebarOpen: (open: boolean) => void;
+  toggleMarketSidebar: () => void;
+
+  marketSidebarTab: MarketSidebarTab;
+  setMarketSidebarTab: (tab: MarketSidebarTab) => void;
 
   ordersFilterStatus: OrdersFilterOption;
   setOrdersFilterStatus: (filter: OrdersFilterOption) => void;
@@ -63,6 +71,13 @@ export const useUIStore = create<UIState>()(
       tradingSidebarTab: 'portfolio',
       setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
 
+      marketSidebarOpen: false,
+      setMarketSidebarOpen: (open) => set({ marketSidebarOpen: open }),
+      toggleMarketSidebar: () => set((state) => ({ marketSidebarOpen: !state.marketSidebarOpen })),
+
+      marketSidebarTab: 'indicators',
+      setMarketSidebarTab: (tab) => set({ marketSidebarTab: tab }),
+
       ordersSortBy: 'newest',
       setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
 
@@ -110,6 +125,8 @@ export const useUIStore = create<UIState>()(
       version: 1,
       partialize: (state) => ({
         tradingSidebarTab: state.tradingSidebarTab,
+        marketSidebarOpen: state.marketSidebarOpen,
+        marketSidebarTab: state.marketSidebarTab,
         ordersFilterStatus: state.ordersFilterStatus,
         ordersSortBy: state.ordersSortBy,
         performancePeriod: state.performancePeriod,

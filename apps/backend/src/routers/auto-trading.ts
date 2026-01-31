@@ -20,6 +20,8 @@ import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
+import { getBTCDominanceDataService } from '../services/btc-dominance-data';
+import { getFearGreedDataService } from '../services/fear-greed-data';
 import { walletQueries } from '../services/database/walletQueries';
 import { getCurrentIndicatorValues } from '../services/dynamic-pyramid-evaluator';
 import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
@@ -2070,6 +2072,99 @@ export const autoTradingRouter = router({
         stopLoss,
         algoId,
         orderId,
+      };
+    }),
+
+  getFearGreedIndex: protectedProcedure.query(async () => {
+    const service = getFearGreedDataService();
+    const result = await service.getFearGreedIndex();
+    if (result.current) {
+      logApiTable('getFearGreedIndex', [
+        ['Value', result.current.value],
+        ['Classification', result.current.valueClassification],
+      ]);
+    }
+    return result;
+  }),
+
+  getBtcDominance: protectedProcedure.query(async () => {
+    const service = getBTCDominanceDataService();
+    const result = await service.getBTCDominanceResult();
+    const trendEmoji = result.trend === 'increasing' ? '📈' : result.trend === 'decreasing' ? '📉' : '➡️';
+    logApiTable('getBtcDominance', [
+      ['Current', result.current !== null ? `${result.current.toFixed(2)}%` : 'N/A'],
+      ['Change 24h', result.change24h !== null ? `${result.change24h >= 0 ? '+' : ''}${result.change24h.toFixed(2)}%` : 'N/A'],
+      ['Trend', `${trendEmoji} ${result.trend}`],
+    ]);
+    return result;
+  }),
+
+  getOpenInterest: protectedProcedure
+    .input(z.object({ symbol: z.string().default('BTCUSDT') }))
+    .query(async ({ input }) => {
+      const service = getBinanceFuturesDataService();
+      const current = await service.getCurrentOpenInterest(input.symbol);
+      const history = await service.getOpenInterest(input.symbol);
+
+      let change24h: number | null = null;
+      if (history.length > 0 && current) {
+        const oldest = history[0];
+        if (oldest) {
+          change24h = ((current.openInterest - oldest.value) / oldest.value) * 100;
+        }
+      }
+
+      logApiTable('getOpenInterest', [
+        ['Symbol', input.symbol],
+        ['Current OI', current ? `${(current.openInterest / 1000).toFixed(2)}K` : 'N/A'],
+        ['Change 24h', change24h !== null ? `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%` : 'N/A'],
+      ]);
+
+      return {
+        symbol: input.symbol,
+        current: current?.openInterest ?? null,
+        change24h,
+        history: history.slice(-24),
+      };
+    }),
+
+  getLongShortRatio: protectedProcedure
+    .input(z.object({
+      symbol: z.string().default('BTCUSDT'),
+      period: z.enum(['5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d']).default('1h'),
+    }))
+    .query(async ({ input }) => {
+      const service = getBinanceFuturesDataService();
+      const [globalRatio, topTraderRatio] = await Promise.all([
+        service.getLongShortRatio(input.symbol, input.period),
+        service.getTopTraderLongShortRatio(input.symbol, input.period),
+      ]);
+
+      const latestGlobal = globalRatio[globalRatio.length - 1];
+      const latestTopTrader = topTraderRatio[topTraderRatio.length - 1];
+
+      logApiTable('getLongShortRatio', [
+        ['Symbol', input.symbol],
+        ['Period', input.period],
+        ['Global L/S', latestGlobal ? `${(latestGlobal.longAccount * 100).toFixed(1)}% / ${(latestGlobal.shortAccount * 100).toFixed(1)}%` : 'N/A'],
+        ['Top Traders L/S', latestTopTrader ? `${(latestTopTrader.longAccount * 100).toFixed(1)}% / ${(latestTopTrader.shortAccount * 100).toFixed(1)}%` : 'N/A'],
+      ]);
+
+      return {
+        symbol: input.symbol,
+        period: input.period,
+        global: latestGlobal ? {
+          longAccount: latestGlobal.longAccount,
+          shortAccount: latestGlobal.shortAccount,
+          ratio: latestGlobal.longShortRatio,
+        } : null,
+        topTraders: latestTopTrader ? {
+          longAccount: latestTopTrader.longAccount,
+          shortAccount: latestTopTrader.shortAccount,
+          ratio: latestTopTrader.longShortRatio,
+        } : null,
+        globalHistory: globalRatio.slice(-24),
+        topTraderHistory: topTraderRatio.slice(-24),
       };
     }),
 });

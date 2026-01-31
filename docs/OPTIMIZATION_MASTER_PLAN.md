@@ -1,7 +1,7 @@
-# Plano de Implementação: Simulação de Trailing Stop no Backtesting
+# Plano Mestre de Otimização do Sistema de Trading
 
 **Status:** 🟢 Em Implementação
-**Versão:** 1.9.0
+**Versão:** 2.0.0
 **Última Atualização:** 2026-01-31
 **Autor:** Claude Opus 4.5 + Nathan
 
@@ -9,11 +9,58 @@
 
 ## 🚀 RESUMO EXECUTIVO (Para Novos Chats)
 
-### Estado Atual
-- **Otimização de 3 anos rodando** em background (~82,944 combinações)
-- **Script principal:** `apps/backend/src/cli/optimize-trailing-stop.ts`
-- **Período:** 2023-01-01 a 2026-01-31 | **Ativo:** BTCUSDT | **Timeframe:** 2h
-- **Capital:** $1,000 | **Posição:** 100% | **Alavancagem:** 5x
+### Visão Geral
+Este plano cobre a **otimização completa do sistema de trading** do MarketMind:
+1. **Trailing Stop** - Parâmetros ótimos LONG/SHORT
+2. **Entry Levels & R:R** - Fibonacci entry, breakout vs pullback, R:R mínimo (Seção 13)
+3. **Filtro de Tendência** - EMA simples vs Combinado vs ADX (Seção 14)
+4. **106 Estratégias** - Teste, eleição e otimização das melhores
+5. **Rotation/QuickStart** - Screening inteligente de ativos
+6. **Walk-Forward + Monte Carlo** - Validação estatística
+7. **Market & Watchers Sidebar** - 3 tabs: Indicadores, Watchers ativos, Logs
+8. **Aplicação dos Defaults** - Aplicar configs ótimas em TODO o sistema (Seção 15)
+9. **Auditoria e Documentação** - Atualizar docs, READMEs e remover obsoletos (Seção 12)
+10. **Order Book Integration** - Imbalance, Liquidity Walls, Order Flow (Seção 16)
+
+### Estado Atual (2026-01-31 20:15)
+
+#### ✅ Otimização Trailing Stop COMPLETA
+- **Combinações testadas:** 82,944/82,944 (100%)
+- **Tempo total:** ~87 minutos (15:42 → 20:10)
+- **Log:** `/tmp/trailing-optimization-20260131-154244.log`
+
+**Melhores Resultados (Top 1):**
+| Parâmetro | LONG | SHORT |
+|-----------|------|-------|
+| Activation | 90% | 80% |
+| Distance | 40% | 30% |
+| ATR Multiplier | 1.5 | 1.5-3.0 (insensível) |
+| Breakeven | 0.5% | 0.5-1.5% (insensível) |
+
+**Métricas:**
+- PnL: **$428.68** (+42.9% em 3 anos)
+- Win Rate: **37.6%**
+- Sharpe Ratio: **0.535**
+- Max Drawdown: **30.5%**
+- Trailing activations: **194/735** (26.4% dos trades)
+- Trailing exits: **7.8%** dos trades
+
+**Observações Importantes:**
+1. SHORT é insensível a ATR (1.5-3.0) e BE (0.5-1.5%) → trailing ativa pouco em shorts
+2. LONG precisa de activation alta (90%) e distance larga (40%)
+3. Apenas 7.8% dos exits são por trailing → maioria sai por SL/TP antes
+
+#### ✅ Market Indicators Sidebar COMPLETA
+- Fear & Greed Index (Alternative.me API)
+- BTC Dominance (CoinGecko API)
+- Open Interest + Long/Short Ratio (Binance Futures)
+- BTC EMA21 Trend + Funding Rates
+
+#### 🟡 Próximos Passos
+1. **Analisar resultados** - Decidir se trailing stop vale a pena (7.8% exits)
+2. **Walk-Forward Validation** - Validar top configs com dados out-of-sample
+3. **Testar outros timeframes** - 1h, 4h para comparar
+4. **Entry Levels optimization** - Fibonacci entry, R:R mínimo
 
 ### O Que Já Existe (Pronto para Uso)
 | Componente | Localização | Status |
@@ -39,16 +86,68 @@ cli/
 └── backtest-runner.ts            # CLI principal com subcomandos
 ```
 
-### Próximos Passos Após Otimização
+### ⚠️ IMPORTANTE: Nenhuma Config é Otimizada
+> **Nunca simulamos trailing stop no backtesting antes.** Portanto, TODAS as configs atuais
+> (filtros, EMAs, thresholds) são baseadas em suposições, não em dados reais. Este plano
+> vai testar o sistema como ele realmente funciona e descobrir as configs ótimas de verdade.
+
+### 🔒 REGRA OBRIGATÓRIA: Validação Antes de Otimização
+> **SEMPRE** rodar um teste pequeno com logs ANTES de qualquer otimização grande.
+> Isso evita esperar horas por algo que vai falhar ou dar resultado impreciso.
+
+```bash
+# SEMPRE fazer isso primeiro:
+pnpm tsx src/cli/[script].ts --quick-test --verbose
+
+# Verificar:
+# ✅ Trades sendo gerados corretamente
+# ✅ Trailing stop simulando corretamente
+# ✅ Métricas calculando corretamente
+# ✅ Sem erros ou warnings
+
+# SÓ DEPOIS rodar o completo:
+pnpm tsx src/cli/[script].ts --mode=medium  # ou --mode=full
+```
+
+### 📊 MELHORES PRÁTICAS (Pesquisa 2026)
+
+| Prática | Recomendação | Fonte |
+|---------|--------------|-------|
+| Walk-Forward Ratio | 70% in-sample, 30% out-of-sample | StrategyQuant |
+| WFE Mínimo | Walk Forward Efficiency > 50-60% | Unger Academy |
+| Ordem de Otimização | Exits (trailing) antes de Entries | Medium/Quantitative |
+| Overfitting Prevention | Testar robustez a pequenas mudanças | QuantInsti |
+| Simplicidade | Regras simples generalizam melhor | Quantified Strategies |
+
+**Ordem Correta:** Trailing Stop → Entry Levels → Trend Filter → Estratégias
+
+### Próximos Passos Após Otimização Trailing
 1. Analisar top 10 configurações de trailing stop
 2. Rodar Walk-Forward validation
 3. Rodar Monte Carlo (1000 iterações)
-4. **Testar todas as 106 estratégias** com a config ótima
-5. **Eleger as melhores estratégias** (top 10-20)
-6. **Otimizar as estratégias eleitas** individualmente
-7. **Melhorar Rotation/QuickStart** com screening inteligente
-8. Aplicar melhor config como default do sistema
-9. Atualizar configs no banco de dados
+4. **Otimizar Entry Levels & R:R** (Seção 13)
+   - Testar níveis Fib de entrada: 0%, 38.2%, 50%, 61.8%, 78.6%, 100% (breakout)
+   - Testar R:R mínimo: 0.5, 0.75, 1.0, 1.5, 2.0
+   - Testar ativação trailing para breakout: 0% (imediato), 30%, 50%, 70%
+5. **Otimizar Filtro de Tendência** (Seção 14)
+   - Testar métodos: EMA simples vs Combinado (EMA+MACD+RSI) vs ADX
+   - Testar períodos: EMA9, EMA21, EMA50, EMA200
+   - Encontrar melhor método para filtrar tendência BTC
+6. **Testar todas as 106 estratégias** com configs ótimas
+6. **Eleger as melhores estratégias** (top 10-20)
+7. **Otimizar as estratégias eleitas** individualmente
+8. **Melhorar Rotation/QuickStart** com screening inteligente
+9. Aplicar melhor config como default do sistema
+10. Atualizar configs no banco de dados
+11. **Implementar Market Indicators Sidebar** (à esquerda do gráfico)
+    - BTC Trend Indicator (método otimizado)
+    - Fear & Greed Index
+    - BTC Dominance
+    - Funding Rate & Open Interest
+12. **Auditoria e Documentação Final** (Seção 12)
+    - Auditar todos os apps e packages
+    - Atualizar CLAUDE.md e READMEs
+    - Remover documentação obsoleta
 
 ### Estratégias (106 Total)
 - **Localização:** `apps/backend/strategies/builtin/*.json`
@@ -59,6 +158,247 @@ cli/
 - **Já existe:** BTC EMA21 trend filter, capital filter, hysteresis, opportunity scoring
 - **Falta:** SetupPreScanner (detectar setups pendentes), FilterPreValidator (simular filtros)
 - **Objetivo:** Rotacionar para ativos que já têm setup prestes a acionar E que passaria nos filtros
+
+### Market & Watchers Sidebar (Nova Feature)
+
+> **Reestruturação de UI:** Esta sidebar substitui e consolida funcionalidades
+> que hoje estão espalhadas entre TradingSidebar (aba Portfolio) e AutoTradeModal.
+
+- **Localização:** `apps/electron/src/renderer/components/MarketSidebar/`
+- **Posição:** À esquerda do gráfico (oposta à TradingSidebar)
+- **Biblioteca:** Recharts 3.5.1 (já instalado)
+- **Estilo:** Seguir padrão do `SidebarContainer` com `position="left"`
+
+**Botão de Toggle (UI):**
+- **Posição:** Ao lado do botão que abre a TradingSidebar (canto superior direito)
+- **Ícone:** `TbChartAreaLine` ou `TbActivity` (Tabler Icons)
+- **Tooltip:** "Market & Watchers"
+- **Comportamento:** Toggle show/hide
+- **Estado:** Salvar preferência em localStorage/settings
+
+---
+
+#### Estrutura de Tabs
+
+```
+┌─────────────────────────────────────────────────┐
+│  [📊 Market]  [👁 Watchers]  [📜 Logs]          │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│   (conteúdo da tab ativa)                       │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+**Tab 1: Market Indicators (📊)**
+| Indicador | Tipo de Gráfico | Fonte de Dados |
+|-----------|-----------------|----------------|
+| **BTC EMA21 Trend** | Indicator (↑/↓) | `getEma21Direction()` - Backend |
+| Fear & Greed Index | AreaChart com gradient | Alternative.me API |
+| BTC Dominance | LineChart | CoinGecko/Binance |
+| Total Market Cap | AreaChart | CoinGecko API |
+| ETH/BTC Ratio | LineChart | Binance |
+| Open Interest | BarChart | Binance Futures |
+| Funding Rate | LineChart | Binance Futures |
+| Long/Short Ratio | AreaChart stacked | Binance Futures |
+
+**Tab 2: Watchers (👁)** - Migrado de Portfolio + AutoTradeModal
+| Componente | Origem Atual | Descrição |
+|------------|--------------|-----------|
+| **Active Watchers List** | TradingSidebar > Portfolio | Lista de watchers ativos com status |
+| **QuickStart** | AutoTradeModal | Iniciar watchers rapidamente |
+| **Rotation Controls** | AutoTradeModal | Controles de rotação de símbolos |
+| **Emergency Stop** | AutoTradeModal | Parar todos os watchers |
+| **Watcher Actions** | AutoTradeModal | Start/Stop/Pause individual |
+
+**Tab 3: Logs (📜)** - Migrado de Portfolio
+| Componente | Origem Atual | Descrição |
+|------------|--------------|-----------|
+| **Watcher Logs** | TradingSidebar > Portfolio | Logs de atividade dos watchers |
+| **Filtros** | Novo | Filtrar por símbolo, tipo, data |
+| **Export** | Novo | Exportar logs para CSV/JSON |
+
+---
+
+#### Migração de Componentes
+
+**O QUE SAI da TradingSidebar (aba Portfolio):**
+```
+❌ WatchersList.tsx → vai para Tab Watchers
+❌ WatcherLogs.tsx → vai para Tab Logs
+✅ PortfolioSummary.tsx → permanece (balanço, PnL)
+✅ OpenPositions.tsx → permanece
+✅ OrderHistory.tsx → permanece
+```
+
+**O QUE SAI da AutoTradeModal:**
+```
+❌ QuickStart section → vai para Tab Watchers
+❌ Rotation controls → vai para Tab Watchers
+❌ Emergency Stop → vai para Tab Watchers
+❌ Watcher management → vai para Tab Watchers
+✅ Trading configs → vai para Global Config Modal (nova aba)
+```
+
+**O QUE É REMOVIDO:**
+```
+❌ AutoTradeModal.tsx → DELETAR
+❌ AutoTradeButton.tsx → DELETAR (botão que abre a modal)
+❌ Referências no Header/Toolbar → REMOVER
+```
+
+---
+
+#### Nova Aba no Global Config Modal
+
+As configurações de auto-trading que não são relacionadas a watchers
+vão para uma nova aba "Auto Trading" na modal de configuração global:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Global Settings                                          [X]  │
+├─────────────────────────────────────────────────────────────────┤
+│  [General] [Trading] [Auto Trading] [Appearance] [Advanced]    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Auto Trading Settings:                                         │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Default Position Size: [____] %                         │   │
+│  │ Default Leverage: [____] x                              │   │
+│  │ Max Concurrent Positions: [____]                        │   │
+│  │ Risk per Trade: [____] %                                │   │
+│  │ ☑ Use Trailing Stop                                     │   │
+│  │ ☑ Auto Breakeven                                        │   │
+│  │ Trailing Activation: [____] %                           │   │
+│  │ Trailing Distance: [____] %                             │   │
+│  │ ...                                                      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│                                        [Cancel] [Save]          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### Estrutura de Arquivos
+
+```
+components/MarketSidebar/
+├── MarketSidebar.tsx              # Container principal
+├── MarketSidebarTabs.tsx          # Navegação de tabs
+├── tabs/
+│   ├── MarketIndicatorsTab.tsx    # Tab 1: Indicadores de mercado
+│   ├── WatchersTab.tsx            # Tab 2: Watchers + controles
+│   └── LogsTab.tsx                # Tab 3: Logs dos watchers
+├── indicators/
+│   ├── BtcEma21Indicator.tsx
+│   ├── FearGreedChart.tsx
+│   ├── BtcDominanceChart.tsx
+│   ├── FundingRateChart.tsx
+│   ├── OpenInterestChart.tsx
+│   └── LongShortRatioChart.tsx
+├── watchers/
+│   ├── ActiveWatchersList.tsx     # Migrado de TradingSidebar
+│   ├── QuickStartPanel.tsx        # Migrado de AutoTradeModal
+│   ├── RotationControls.tsx       # Migrado de AutoTradeModal
+│   └── EmergencyStopButton.tsx    # Migrado de AutoTradeModal
+├── logs/
+│   ├── WatcherLogsViewer.tsx      # Migrado de TradingSidebar
+│   ├── LogFilters.tsx             # Novo
+│   └── LogExport.tsx              # Novo
+├── hooks/
+│   ├── useBtcEma21Trend.ts
+│   ├── useFearGreedIndex.ts
+│   ├── useBtcDominance.ts
+│   └── useMarketMetrics.ts
+└── index.ts
+
+components/Settings/                # Já existente
+├── SettingsDialog.tsx             # Modal existente (renomear internamente)
+├── GeneralTab.tsx                 # Já existe
+├── ChartSettingsTab.tsx           # Já existe
+├── AboutTab.tsx                   # Já existe
+├── AutoTradingTab.tsx             # NOVA: Configs de auto-trading
+└── BacktestingTab.tsx             # NOVA: Configurações de backtesting
+```
+
+---
+
+#### BTC Trend Indicator (Destaque)
+
+- **Mesma lógica do sistema:** `getEma21Direction()` de `btc-correlation-filter.ts`
+- **Cálculo:** `price > EMA21 = BULLISH` | `price < EMA21 = BEARISH`
+- Componente visual simples e claro:
+  - Ícone de seta (↑ verde / ↓ vermelho)
+  - Label: "BULLISH" ou "BEARISH"
+  - Valores: Preço atual e EMA21
+  - Distância percentual do preço à EMA21
+- Atualização: A cada novo kline do timeframe selecionado
+
+---
+
+#### Checklist de Implementação
+
+**Fase 1: Criar Nova Sidebar** ✅ CONCLUÍDA
+- [x] Criar `MarketSidebar.tsx` com `SidebarContainer position="left"`
+- [x] Implementar sistema de tabs (Chakra Tabs)
+- [x] Criar botão toggle ao lado do botão da TradingSidebar
+- [x] Adicionar toggle state ao Zustand/localStorage
+
+**Fase 2: Tab Market Indicators** ✅ CONCLUÍDA
+- [x] Criar `MarketIndicatorsTab.tsx` com indicadores funcionais
+- [x] BTC EMA21 Trend (reutiliza `getBtcTrendEmaInfo()`)
+- [x] Fear & Greed Index (Alternative.me API via `FearGreedDataService`)
+- [x] BTC Dominance (CoinGecko API via `BTCDominanceDataService`)
+- [x] Open Interest (Binance Futures via `BinanceFuturesDataService`)
+- [x] Long/Short Ratio (global + top traders)
+- [x] Funding Rates (top 5 symbols)
+- [x] Traduções EN/PT/ES/FR adicionadas
+
+**Fase 3: Migrar Watchers** ✅ CONCLUÍDA
+- [x] Criar `WatchersTab.tsx` com lista de watchers ativos
+- [x] Criar `StartWatchersModal.tsx` (QuickStart simplificado)
+- [x] Stop All watchers button
+- [x] Navegação para símbolo (click no watcher)
+- [x] Tabela ordenável por símbolo/interval/type/profile
+
+**Fase 4: Migrar Logs** ✅ CONCLUÍDA
+- [x] Criar `LogsTab.tsx` com logs de watchers
+- [x] Controles de font size (+/-)
+- [x] Auto-scroll com detecção de scroll manual
+- [x] Clear logs button
+- [ ] Criar `LogFilters.tsx` (símbolo, tipo, data) - futuro
+- [ ] Criar `LogExport.tsx` (CSV/JSON) - futuro
+
+**Fase 5: Migrar Configs para SettingsDialog** ✅ CONCLUÍDA
+- [x] Adicionar aba `Auto-Trading` no SettingsDialog (usa TradingProfilesTab)
+- [x] Adicionar aba `Backtesting` no SettingsDialog (usa BacktestingPanel)
+- [x] Remover botões de Backtest e TradingProfiles da Toolbar
+- [x] Traduções EN/PT/ES/FR adicionadas
+
+**Fase 6: Limpeza de Código Obsoleto** ✅ CONCLUÍDA
+> **IMPORTANTE:** Todo código obsoleto após as alterações DEVE ser removido.
+
+- [x] Remover `WatchersSection` e `WatchersTable` de Portfolio.tsx
+- [x] Remover `AutoTradeConsole` de Portfolio.tsx
+- [x] Remover `BacktestDialog.tsx`
+- [x] Remover botões de Backtest (LuHistory) e TradingProfiles (LuBot) da Toolbar
+- [x] Atualizar imports em todo o app
+- [x] Executar `pnpm type-check` para validar tipos (apenas erros pré-existentes)
+
+**Fase 7: Unificação e Reutilização** 🟡 PARCIAL
+- [x] `WatchersTable` reutilizado em WatchersTab
+- [ ] Extrair `LogLine` para componente compartilhado
+- [ ] Unificar hooks de logs (`useAutoTradingLogs`)
+- [ ] Revisar e remover duplicações restantes
+
+**Fase 8: Testes e Polish** 🟡 PENDENTE
+- [ ] Testar responsividade
+- [ ] Testar tema dark/light
+- [ ] Testar persistência de estado
+- [ ] Testar todos os fluxos de watcher
+- [ ] Performance profiling
+- [ ] Rodar `pnpm test` para validar testes
 
 ### Limpeza Realizada (v1.7.0)
 **Scripts Removidos:**
@@ -1690,6 +2030,49 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 
 ## 15. Atualizações do Plano
 
+### v2.0.5 (2026-01-31)
+- **Requisitos Adicionais:**
+  - BacktestDialog → nova aba "Backtesting" no SettingsDialog
+  - Remoção de BacktestDialog e botões da toolbar
+  - Todo código obsoleto DEVE ser removido
+  - Todo código reutilizável DEVE ser unificado
+  - Fase 7 adicionada: Unificação e Reutilização
+  - Fase 8: Testes e validação
+
+### v2.0.4 (2026-01-31)
+- **Market & Watchers Sidebar:** Reestruturação completa da UI
+  - Nova sidebar com 3 tabs: Market, Watchers, Logs
+  - Migração de WatchersList e WatcherLogs de TradingSidebar > Portfolio
+  - Migração de QuickStart, Rotation, Emergency Stop de AutoTradeModal
+  - Nova aba "Auto Trading" no SettingsDialog
+  - Nova aba "Backtesting" no SettingsDialog
+  - Remoção de AutoTradeModal e BacktestDialog
+  - Checklist de implementação em 8 fases
+
+### v2.0.3 (2026-01-31)
+- **Seção 16 expandida:** Visualização no Canvas + Performance
+  - Liquidity Walls como linhas horizontais no gráfico
+  - Imbalance Histogram lateral
+  - Toggle no IndicatorTogglePopover (todos desativados por padrão)
+  - Estratégias de performance: throttling, memoização, lazy connection
+  - OffscreenCanvas para histograma
+  - Limites de recursos (4 updates/s, 20 níveis, 5 walls max)
+
+### v2.0.2 (2026-01-31)
+- **Seção 16 adicionada:** Order Book Integration (Feature Futura)
+  - Dados disponíveis: depth, bookTicker, aggTrades
+  - Indicadores: Imbalance Ratio, Liquidity Walls, Order Book Velocity
+  - Novo filtro: `useOrderBookFilter`
+  - Integração com Market Indicators Sidebar
+  - Implementação em 4 fases
+
+### v2.0.1 (2026-01-31)
+- **Market Indicators Sidebar:** Adicionado requisito de botão toggle
+  - Botão ao lado do toggle da TradingSidebar (canto superior direito)
+  - Ícone: `TbChartAreaLine` ou `TbChartBar`
+  - Tooltip: "Market Indicators"
+  - Salvar preferência do usuário
+
 ### v1.9.0 (2026-01-31)
 - **Seção 13 revisada:** Melhoria do Sistema de Rotation e QuickStart
   - Documentado o que **já existe**: BTC EMA21 trend, capital filter, hysteresis, scoring
@@ -1835,6 +2218,942 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
    - [ ] Criar pacote `@marketmind/backtesting`
    - [ ] Migrar engine e otimizadores
    - [ ] Desacoplar de dependências do backend
+
+---
+
+## 12. Fase Final: Auditoria e Documentação do Sistema
+
+> **Objetivo:** Após completar TODAS as fases do plano, realizar uma auditoria completa do sistema, atualizando toda a documentação e removendo qualquer conteúdo obsoleto.
+
+### 12.1 Escopo da Auditoria
+
+**Apps a Auditar:**
+| App | Localização | Itens a Documentar |
+|-----|-------------|-------------------|
+| `electron` | `apps/electron/` | Componentes, hooks, stores, features |
+| `backend` | `apps/backend/` | Routers, services, CLI scripts, utils |
+
+**Pacotes a Auditar:**
+| Pacote | Localização | Itens a Documentar |
+|--------|-------------|-------------------|
+| `@marketmind/types` | `packages/types/` | Tipos exportados, interfaces principais |
+| `@marketmind/indicators` | `packages/indicators/` | Funções de indicadores, uso |
+| `@marketmind/logger` | `packages/logger/` | Sistema de logging, buffers |
+
+### 12.2 Documentação a Atualizar
+
+**Documentos Principais:**
+```
+docs/
+├── CLAUDE.md                      # Instruções para AI - ATUALIZAR
+├── OPTIMIZATION_MASTER_PLAN.md    # Este plano - MANTER ATUALIZADO
+├── IMPLEMENTATION_PLAN.md         # Roadmap geral - REVISAR/ATUALIZAR
+├── BACKEND_QUICKSTART.md          # Guia backend - REVISAR
+├── BACKEND_INTEGRATION_STATUS.md  # Status integração - ATUALIZAR
+└── [outros]                       # AVALIAR obsolescência
+```
+
+**READMEs por Módulo:**
+```
+apps/
+├── electron/README.md             # Frontend - ATUALIZAR
+├── backend/README.md              # Backend - ATUALIZAR
+└── backend/src/cli/README-OPTIMIZATION.md  # CLI otimização - ATUALIZAR
+
+packages/
+├── types/README.md                # Tipos - ATUALIZAR/CRIAR
+├── indicators/README.md           # Indicadores - ATUALIZAR/CRIAR
+└── logger/README.md               # Logger - ATUALIZAR/CRIAR
+```
+
+### 12.3 Checklist de Auditoria por Módulo
+
+#### Apps/Electron (Frontend)
+- [ ] Listar todos os componentes e suas responsabilidades
+- [ ] Documentar hooks customizados (useBackend*, useChart*, etc.)
+- [ ] Documentar stores Zustand (uiStore, chartStore, etc.)
+- [ ] Documentar integração com backend (tRPC client)
+- [ ] Atualizar CLAUDE.md com padrões atuais do frontend
+- [ ] Verificar se todos os componentes têm traduções (i18n)
+
+#### Apps/Backend (Backend)
+- [ ] Listar todos os routers tRPC e endpoints
+- [ ] Documentar services principais (auto-trading, backtesting, etc.)
+- [ ] Documentar CLI scripts ativos e seus usos
+- [ ] Documentar schema do banco (Drizzle)
+- [ ] Documentar utils e helpers
+- [ ] Atualizar CLAUDE.md com padrões atuais do backend
+
+#### Packages/Types
+- [ ] Listar todos os tipos exportados
+- [ ] Documentar interfaces principais (Kline, Trade, Setup, etc.)
+- [ ] Verificar se há tipos não utilizados (remover)
+- [ ] Garantir que tipos estão bem organizados por domínio
+
+#### Packages/Indicators
+- [ ] Listar todos os indicadores disponíveis
+- [ ] Documentar parâmetros e retornos de cada função
+- [ ] Exemplos de uso
+- [ ] Verificar se há código duplicado (consolidar)
+
+#### Packages/Logger
+- [ ] Documentar sistema de logging
+- [ ] Documentar buffers (watcher-buffer, etc.)
+- [ ] Documentar níveis de log e configurações
+
+### 12.4 Remoção de Documentação Obsoleta
+
+**Critérios para Remoção:**
+1. Documento descreve feature que não existe mais
+2. Documento descreve processo que foi substituído
+3. Documento contém informações desatualizadas que podem confundir
+4. README de módulo removido ou consolidado
+
+**Processo de Remoção:**
+```bash
+# 1. Listar todos os docs
+find docs/ -name "*.md" -type f
+
+# 2. Para cada doc, verificar:
+#    - Última atualização (git log)
+#    - Se referencia código que ainda existe
+#    - Se está linkado em outros docs
+
+# 3. Docs obsoletos:
+#    - Remover do git
+#    - Atualizar links em outros docs
+#    - Commitar com mensagem clara
+```
+
+**Documentos Candidatos a Remoção (avaliar após plano):**
+- [ ] Docs de features removidas
+- [ ] Docs de scripts deletados
+- [ ] Docs de processos antigos
+- [ ] READMEs de diretórios vazios
+
+### 12.5 Atualização do CLAUDE.md
+
+**Seções a Revisar:**
+1. **Tech Stack** - Atualizar versões e novas dependências
+2. **Project Structure** - Refletir estrutura atual
+3. **Backend Integration** - Atualizar status e padrões
+4. **Testing Approach** - Atualizar com novos padrões de teste
+5. **Current Development Phase** - Atualizar progresso
+6. **Quick Reference** - Revisar convenções
+
+**Novas Seções a Adicionar:**
+- [ ] Backtesting System - Como usar o sistema de backtest
+- [ ] Optimization CLI - Comandos disponíveis
+- [ ] Market Indicators - Nova sidebar, toggle button e indicadores (Fear & Greed, BTC.D, etc.)
+- [ ] Strategy System - 106 estratégias e como testar
+
+### 12.6 Entregáveis da Fase de Documentação
+
+| Entregável | Descrição | Status |
+|------------|-----------|--------|
+| CLAUDE.md atualizado | Instruções AI completas e atuais | [ ] |
+| READMEs por módulo | Cada app/package com README atualizado | [ ] |
+| Docs obsoletos removidos | Nenhum doc desatualizado no repo | [ ] |
+| Changelog atualizado | CHANGELOG.md com todas as mudanças | [ ] |
+| API Documentation | Endpoints tRPC documentados | [ ] |
+| CLI Documentation | Scripts de otimização documentados | [ ] |
+
+### 12.7 Timeline Estimada
+
+| Tarefa | Duração Estimada |
+|--------|------------------|
+| Auditoria Apps | 2-3 horas |
+| Auditoria Packages | 1-2 horas |
+| Atualização READMEs | 2-3 horas |
+| Atualização CLAUDE.md | 1-2 horas |
+| Remoção docs obsoletos | 1 hora |
+| Revisão final | 1 hora |
+| **Total** | **8-12 horas** |
+
+---
+
+## 13. Otimização de Entry Levels e Risk:Reward
+
+> **Contexto:** Com trailing stop funcionando, podemos reconsiderar as regras de entrada.
+> A regra atual de 61.8% de recuo mínimo impede trades de rompimento (breakout).
+> Talvez possamos entrar mais cedo e deixar o trailing stop proteger os lucros.
+
+### 13.1 Configurações Atuais
+
+```typescript
+// packages/types/src/trading-config.ts
+MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT: 61.8,  // Máximo progresso permitido para entry
+
+// packages/types/src/trading-config.ts
+MIN_RISK_REWARD_RATIO: 1.0,       // R:R mínimo geral
+MIN_RISK_REWARD_RATIO_LONG: 1.0,  // R:R mínimo para LONG
+MIN_RISK_REWARD_RATIO_SHORT: 1.0, // R:R mínimo para SHORT
+
+// packages/types/src/filter-defaults.ts
+fibonacciTargetLevelLong: '1',      // TP em 100% extensão para LONG
+fibonacciTargetLevelShort: '1.272', // TP em 127.2% extensão para SHORT
+```
+
+### 13.2 Problema Atual
+
+```
+Cenário: Setup de rompimento (breakout)
+
+Preço atual: $100 (já rompeu o swing high de $98)
+Swing Low: $90
+Nível 61.8%: $95.05
+
+Regra atual: Preço $100 > Nível 61.8% $95.05 → ENTRY BLOQUEADO ❌
+Resultado: Perdemos o trade de rompimento
+
+Com trailing stop, poderíamos:
+- Entrar em $100 (breakout)
+- SL em $95 (abaixo do último swing)
+- Ativar trailing desde o início
+- Se continuar subindo, trailing protege
+- Se reverter, SL limita perda
+```
+
+### 13.3 Parâmetros a Otimizar
+
+| Parâmetro | Atual | Ranges a Testar |
+|-----------|-------|-----------------|
+| `maxFibEntryProgress` | 61.8% | 0%, 38.2%, 50%, 61.8%, 78.6%, 100% (breakout) |
+| `minRiskRewardLong` | 1.0 | 0.5, 0.75, 1.0, 1.5, 2.0 |
+| `minRiskRewardShort` | 1.0 | 0.5, 0.75, 1.0, 1.5, 2.0 |
+| `fibTargetLevelLong` | 1.0 | 1.0, 1.272, 1.618, 2.0 |
+| `fibTargetLevelShort` | 1.272 | 1.0, 1.272, 1.618, 2.0 |
+| `trailingActivationLong` | [a definir] | 0% (imediato), 30%, 50%, 70% |
+| `trailingActivationShort` | [a definir] | 0% (imediato), 30%, 50%, 70% |
+
+### 13.4 Cenários de Teste
+
+#### Cenário A: Pullback Tradicional (atual)
+```
+Entry: Espera recuo até 61.8%
+R:R: Mínimo 1.0
+Trailing: Ativa em 70-80% do TP
+Resultado esperado: Menos trades, maior win rate
+```
+
+#### Cenário B: Breakout com Trailing Imediato
+```
+Entry: Permite até 100% (breakout)
+R:R: Mínimo 0.5 (aceita R:R pior)
+Trailing: Ativa imediatamente (0%)
+Resultado esperado: Mais trades, trailing compensa R:R ruim
+```
+
+#### Cenário C: Híbrido
+```
+Entry: Permite até 78.6%
+R:R: Mínimo 0.75
+Trailing: Ativa em 30% do TP
+Resultado esperado: Balanceado
+```
+
+### 13.5 Métricas de Comparação
+
+Para cada combinação, medir:
+1. **Total Trades** - Quantos trades são gerados
+2. **Win Rate** - % de vencedores
+3. **Avg Win / Avg Loss** - Tamanho médio dos ganhos vs perdas
+4. **PnL Total** - Lucro absoluto
+5. **Sharpe Ratio** - Retorno ajustado ao risco
+6. **Max Drawdown** - Perda máxima
+7. **Recovery Time** - Tempo para recuperar drawdowns
+8. **Trailing Exits** - % de trades que saíram por trailing (não TP/SL)
+
+### 13.6 CLI para Otimização
+
+**Arquivo:** `apps/backend/src/cli/optimize-entry-levels.ts`
+
+```bash
+# Testar diferentes níveis de entry
+pnpm tsx src/cli/optimize-entry-levels.ts \
+  --entry-levels=0,38.2,50,61.8,78.6,100 \
+  --rr-min=0.5,0.75,1.0,1.5 \
+  --trailing-activation=0,30,50,70
+
+# Quick test
+pnpm tsx src/cli/optimize-entry-levels.ts --quick-test
+
+# Comparar breakout vs pullback
+pnpm tsx src/cli/optimize-entry-levels.ts --compare-strategies
+```
+
+### 13.7 Hipóteses a Validar
+
+| Hipótese | Teste |
+|----------|-------|
+| Breakout + trailing imediato > Pullback tradicional | Comparar PnL e Sharpe |
+| R:R 0.5 com trailing > R:R 2.0 sem trailing | Comparar Sharpe |
+| Ativação imediata de trailing é melhor para breakouts | Testar activation 0% vs 70% |
+| LONG e SHORT precisam configs diferentes | Otimizar separadamente |
+
+---
+
+## 14. Otimização do Filtro de Tendência (antiga Seção 13)
+
+> **Contexto:** Atualmente usamos EMA21 simples para determinar tendência do BTC.
+> Nas versões anteriores, usávamos uma combinação de EMA21 + MACD + RSI com scoring ponderado.
+> Precisamos testar qual método realmente funciona melhor com o sistema completo (incluindo trailing stop).
+
+### 13.1 Métodos a Testar
+
+#### Método 1: EMA Simples (Atual)
+```typescript
+// btc-correlation-filter.ts - getEma21Direction()
+const direction = price > ema21 ? 'BULLISH' : 'BEARISH';
+```
+- **Prós:** Simples, rápido, fácil de entender
+- **Contras:** Pode gerar muitos falsos sinais em consolidação
+
+#### Método 2: Combinado EMA + MACD + RSI (Versão Anterior)
+```typescript
+// Scoring ponderado:
+const SCORE_WEIGHTS = {
+  emaPosition: 40,    // Preço acima/abaixo EMA21
+  macdMomentum: 30,   // MACD histogram bullish/bearish
+  rsiMomentum: 20,    // RSI subindo/descendo
+  rsiLevel: 10,       // RSI acima/abaixo de 50
+};
+
+// Thresholds assimétricos:
+LONG_BLOCK_SCORE: 35,   // Bloqueia LONG se score < 35
+SHORT_BLOCK_SCORE: 65,  // Bloqueia SHORT se score > 65
+```
+- **Prós:** Mais robusto, considera momentum
+- **Contras:** Mais complexo, mais parâmetros para otimizar
+
+#### Método 3: ADX + Trend Direction
+```typescript
+// ADX mede força da tendência, não direção
+const adx = calculateADX(klines, 14);
+const plusDI = calculatePlusDI(klines, 14);
+const minusDI = calculateMinusDI(klines, 14);
+
+const isTrending = adx > 25;
+const direction = plusDI > minusDI ? 'BULLISH' : 'BEARISH';
+```
+- **Prós:** Bom para filtrar consolidações
+- **Contras:** Pode ser lento para reagir a reversões
+
+#### Método 4: EMAs Múltiplas
+```typescript
+// Usar stack de EMAs
+const ema9 = calculateEMA(klines, 9);
+const ema21 = calculateEMA(klines, 21);
+const ema50 = calculateEMA(klines, 50);
+
+// Bullish: price > ema9 > ema21 > ema50
+// Bearish: price < ema9 < ema21 < ema50
+```
+- **Prós:** Confirma tendência forte
+- **Contras:** Muito conservador, pode perder oportunidades
+
+### 13.2 Parâmetros a Otimizar
+
+| Método | Parâmetros | Ranges de Teste |
+|--------|-----------|-----------------|
+| EMA Simples | período | 9, 13, 21, 34, 50, 100, 200 |
+| Combinado | weights, thresholds | Grid search nos 4 weights + 2 thresholds |
+| ADX | período, threshold | período: 10-20, threshold: 20-30 |
+| EMAs Múltiplas | períodos | (9,21,50), (13,34,89), (20,50,200) |
+
+### 13.3 Métricas de Avaliação
+
+Para cada método, medir:
+1. **Win Rate por Direção** - % de trades vencedores LONG vs SHORT
+2. **PnL por Direção** - Lucro total LONG vs SHORT
+3. **Trades Bloqueados Corretamente** - Trades que seriam perdedores
+4. **Trades Bloqueados Incorretamente** - Trades que seriam vencedores
+5. **Sharpe Ratio Geral** - Retorno ajustado ao risco
+
+### 13.4 Processo de Otimização
+
+```
+1. BASELINE (Sem Filtro de Tendência)
+   └── Rodar backtest com trailing otimizado, SEM filtro de tendência
+   └── Medir PnL, Sharpe, WinRate base
+
+2. TESTAR CADA MÉTODO
+   Para cada método (EMA, Combinado, ADX, Multi-EMA):
+   ├── Para cada combinação de parâmetros:
+   │   ├── Rodar backtest completo
+   │   ├── Comparar com baseline
+   │   └── Registrar melhoria/piora
+   └── Eleger melhor config do método
+
+3. COMPARAR MÉTODOS
+   └── Ranking dos 4 métodos com suas melhores configs
+   └── Eleger método vencedor
+
+4. VALIDAÇÃO
+   └── Walk-Forward no método vencedor
+   └── Monte Carlo no método vencedor
+   └── Se passar, adotar como padrão do sistema
+```
+
+### 13.5 CLI para Otimização de Trend Filter
+
+**Arquivo:** `apps/backend/src/cli/optimize-trend-filter.ts`
+
+```bash
+# Testar método EMA simples com vários períodos
+pnpm tsx src/cli/optimize-trend-filter.ts --method=ema --periods=9,21,50
+
+# Testar método combinado
+pnpm tsx src/cli/optimize-trend-filter.ts --method=combined
+
+# Testar ADX
+pnpm tsx src/cli/optimize-trend-filter.ts --method=adx
+
+# Comparar todos os métodos
+pnpm tsx src/cli/optimize-trend-filter.ts --compare-all
+```
+
+---
+
+## 15. Aplicação das Configs Ótimas como Default do Sistema
+
+> **Objetivo:** Após descobrir as melhores configurações para TUDO (trailing stop, filtro de tendência,
+> timeframe, estratégias), aplicar automaticamente como defaults em TODOS os lugares do sistema.
+
+### 14.1 Configs a Aplicar
+
+| Config | Origem | Destinos |
+|--------|--------|----------|
+| **Trailing Stop LONG** | Seção 5 otimização | `trailing-stop-core.ts`, DB `trading_profiles`, UI defaults |
+| **Trailing Stop SHORT** | Seção 5 otimização | `trailing-stop-core.ts`, DB `trading_profiles`, UI defaults |
+| **Filtro de Tendência** | Seção 13 otimização | `btc-correlation-filter.ts`, `direction-filter.ts` |
+| **Timeframe Ótimo** | Backtests comparativos | `shared-backtest-config.ts`, UI defaults |
+| **Estratégias Eleitas** | Seção 6 screening | `enabled-strategies` defaults, UI |
+| **Filtros Habilitados** | Backtests de filtros | `filter-orchestrator.ts` defaults |
+
+### 14.2 Locais de Configuração no Sistema
+
+```
+apps/backend/
+├── src/
+│   ├── constants/
+│   │   └── defaults.ts                    # ⭐ NOVO: Defaults centralizados
+│   ├── services/
+│   │   ├── trailing-stop-core.ts          # Params trailing
+│   │   └── auto-trading/
+│   │       └── filter-validator.ts        # Quais filtros habilitados
+│   ├── utils/filters/
+│   │   ├── btc-correlation-filter.ts      # Método de tendência
+│   │   └── direction-filter.ts            # EMA period
+│   └── db/
+│       └── seeds/                         # ⭐ Seed com defaults ótimos
+
+apps/electron/
+├── src/renderer/
+│   ├── constants/
+│   │   └── trading-defaults.ts            # Defaults UI
+│   └── components/Trading/
+│       └── [forms com defaults]
+
+packages/types/
+└── src/
+    └── defaults.ts                        # ⭐ Tipos dos defaults
+```
+
+### 14.3 Script de Aplicação Automática
+
+**Arquivo:** `apps/backend/src/cli/apply-optimized-configs.ts`
+
+```bash
+# Ver configs ótimas encontradas (dry-run)
+pnpm tsx src/cli/apply-optimized-configs.ts --dry-run
+
+# Aplicar em arquivos de código
+pnpm tsx src/cli/apply-optimized-configs.ts --apply-code
+
+# Aplicar no banco de dados
+pnpm tsx src/cli/apply-optimized-configs.ts --apply-db
+
+# Aplicar tudo
+pnpm tsx src/cli/apply-optimized-configs.ts --apply-all
+```
+
+### 14.4 Arquivo de Resultados Ótimos
+
+**Arquivo:** `apps/backend/optimization-results/optimal-config.json`
+
+```json
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-XX",
+  "validationPassed": true,
+
+  "trailingStop": {
+    "long": {
+      "activationPercent": 80,
+      "distancePercent": 35,
+      "atrMultiplier": 1.5,
+      "breakevenProfitThreshold": 0.5
+    },
+    "short": {
+      "activationPercent": 70,
+      "distancePercent": 30,
+      "atrMultiplier": 1.5,
+      "breakevenProfitThreshold": 0.5
+    }
+  },
+
+  "trendFilter": {
+    "method": "combined",
+    "params": {
+      "emaPeriod": 21,
+      "weights": { "emaPosition": 40, "macdMomentum": 30, "rsiMomentum": 20, "rsiLevel": 10 },
+      "thresholds": { "longBlock": 35, "shortBlock": 65 }
+    }
+  },
+
+  "timeframe": "2h",
+
+  "enabledFilters": [
+    "btc-correlation",
+    "volume",
+    "momentum-timing",
+    "choppiness"
+  ],
+
+  "electedStrategies": [
+    "larry-williams-9.1",
+    "larry-williams-9.2",
+    "momentum-breakout-2025",
+    "..."
+  ]
+}
+```
+
+### 14.5 Checklist de Aplicação
+
+- [ ] Gerar `optimal-config.json` com resultados da otimização
+- [ ] Atualizar `trailing-stop-core.ts` com params ótimos
+- [ ] Atualizar `btc-correlation-filter.ts` com método ótimo
+- [ ] Atualizar `direction-filter.ts` com EMA period ótimo
+- [ ] Atualizar defaults no banco (trading_profiles)
+- [ ] Atualizar defaults na UI (trading-defaults.ts)
+- [ ] Atualizar `shared-backtest-config.ts` com timeframe ótimo
+- [ ] Commitar tudo com mensagem clara
+- [ ] Criar tag de release com versão otimizada
+
+---
+
+## 16. Order Book Integration (Feature Futura)
+
+> **Contexto:** A Binance oferece dados de order book (bids/asks) que podem ser usados
+> para criar indicadores de pressão compradora/vendedora e validar entradas.
+
+### 16.1 Dados Disponíveis na Binance API
+
+| Endpoint | Descrição | Rate Limit |
+|----------|-----------|------------|
+| `GET /fapi/v1/depth` | Order book snapshot | 5-50 req/min |
+| `@depth` WebSocket | Updates em tempo real | Ilimitado |
+| `@bookTicker` WebSocket | Melhor bid/ask | Ilimitado |
+| `GET /fapi/v1/aggTrades` | Trades agregados | 20 req/min |
+
+### 16.2 O Que Já Usamos (Relacionado)
+
+| Indicador | Status | Arquivo |
+|-----------|--------|---------|
+| Funding Rate | ✅ | `funding-rate-service.ts` |
+| Open Interest | ✅ | `binance-futures-data.ts` |
+| Liquidations | ✅ | `IndicatorEngine.ts` |
+| Long/Short Ratio | ✅ | `binance-futures-data.ts` |
+| Delta Volume | ✅ | `calculateDeltaVolume()` |
+
+### 16.3 Novos Indicadores Propostos
+
+#### Imbalance Ratio (Desequilíbrio de Ordens)
+```typescript
+interface OrderBookImbalance {
+  ratio: number;        // -1 a 1 (negativo = pressão vendedora)
+  bidVolume: number;    // Volume total de bids
+  askVolume: number;    // Volume total de asks
+  spreadPercent: number; // Bid-ask spread em %
+}
+
+const calculateImbalance = (bids: Order[], asks: Order[]): number => {
+  const bidVol = bids.reduce((sum, b) => sum + b.quantity, 0);
+  const askVol = asks.reduce((sum, a) => sum + a.quantity, 0);
+  return (bidVol - askVol) / (bidVol + askVol);
+};
+
+// Interpretação:
+// > 0.3: Forte pressão compradora → Favorece LONG
+// < -0.3: Forte pressão vendedora → Favorece SHORT
+// Entre -0.3 e 0.3: Neutro
+```
+
+#### Liquidity Walls (Muros de Liquidez)
+```typescript
+interface LiquidityWall {
+  price: number;
+  volume: number;
+  type: 'BID' | 'ASK';
+  distancePercent: number; // Distância do preço atual
+}
+
+// Detectar ordens grandes (> 2x média)
+const detectWalls = (orders: Order[], avgSize: number): LiquidityWall[] => {
+  return orders
+    .filter(o => o.quantity > avgSize * 2)
+    .map(o => ({ ...o, distancePercent: (o.price - currentPrice) / currentPrice * 100 }));
+};
+
+// Uso: Validar SL/TP próximos a muros
+```
+
+#### Order Book Velocity
+```typescript
+interface OrderBookVelocity {
+  bidAddRate: number;     // Ordens bid adicionadas/s
+  bidRemoveRate: number;  // Ordens bid removidas/s
+  askAddRate: number;
+  askRemoveRate: number;
+  netFlow: number;        // Fluxo líquido (positivo = mais bids)
+}
+
+// Alta velocidade + direção consistente = movimento iminente
+```
+
+### 16.4 Novo Filtro: `useOrderBookFilter`
+
+```typescript
+interface OrderBookFilterConfig {
+  enabled: boolean;
+  minImbalanceRatio: number;      // Default: 0.2
+  maxSpreadPercent: number;       // Default: 0.1%
+  minLiquidityScore: number;      // Default: 50
+  wallDetectionMultiplier: number; // Default: 2.0
+}
+
+// Condições para LONG aprovado:
+// 1. imbalanceRatio > minImbalanceRatio
+// 2. spreadPercent < maxSpreadPercent
+// 3. Sem askWall próximo (< 1% de distância)
+
+// Condições para SHORT aprovado:
+// 1. imbalanceRatio < -minImbalanceRatio
+// 2. spreadPercent < maxSpreadPercent
+// 3. Sem bidWall próximo (< 1% de distância)
+```
+
+### 16.5 Integração com Market Indicators Sidebar
+
+```typescript
+// Novo componente para sidebar
+components/MarketIndicators/charts/
+├── OrderFlowIndicator.tsx    // Gauge de pressão compradora/vendedora
+├── LiquidityHeatmap.tsx      // Heatmap de bids/asks por nível
+└── SpreadChart.tsx           // Histórico de spread
+
+// Hook para dados
+hooks/useOrderBookMetrics.ts
+```
+
+**Visualização Order Flow:**
+```
+┌─────────────────────────┐
+│   ORDER FLOW            │
+│   ████████░░░░  62%     │
+│   BUY PRESSURE          │
+│                         │
+│   Spread: 0.02%         │
+│   Bid Wall: -1.2%       │
+│   Ask Wall: +2.5%       │
+└─────────────────────────┘
+```
+
+### 16.6 Visualização no Canvas (Gráfico do Ativo)
+
+Alguns indicadores de Order Book podem ser visualizados diretamente no gráfico de preços:
+
+#### Indicadores para Canvas
+
+| Indicador | Tipo de Visualização | Descrição |
+|-----------|---------------------|-----------|
+| **Liquidity Walls** | Linhas horizontais | Níveis com alta liquidez (suporte/resistência) |
+| **Imbalance Histogram** | Barras laterais | Histograma de pressão compradora/vendedora |
+| **Spread Band** | Área sombreada | Visualização do bid-ask spread |
+| **Order Flow Delta** | Barras coloridas | CVD estilo footprint |
+
+#### Liquidity Walls no Canvas
+```typescript
+// Renderer: LiquidityWallsRenderer.ts
+interface LiquidityWallsRenderOptions {
+  showBidWalls: boolean;      // Linhas verdes (suporte)
+  showAskWalls: boolean;      // Linhas vermelhas (resistência)
+  minWallSize: number;        // Filtro de tamanho mínimo
+  maxWalls: number;           // Máximo de linhas (default: 5)
+  lineStyle: 'solid' | 'dashed';
+  showLabels: boolean;        // Mostrar volume no label
+  opacity: number;            // 0.3 - 0.8
+}
+
+// Visualização no canvas:
+// ═══════════════════════════ ASK WALL $105,200 (250 BTC) ═══════
+//          ┌──────────┐
+//          │  CANDLE  │
+//          └──────────┘
+// ═══════════════════════════ BID WALL $103,800 (180 BTC) ═══════
+```
+
+#### Imbalance Histogram (Lateral)
+```typescript
+// Renderer: ImbalanceHistogramRenderer.ts
+interface ImbalanceHistogramOptions {
+  position: 'left' | 'right';  // Lado do gráfico
+  width: number;               // Largura em pixels (default: 60)
+  colorBuy: string;            // Verde para pressão compradora
+  colorSell: string;           // Vermelho para pressão vendedora
+  levels: number;              // Níveis de preço (default: 20)
+}
+
+// Visualização no canvas:
+// ████████░░ 80% buy  | $105,500
+// ██████░░░░ 60% buy  | $105,400
+// ░░░░░░░░░░ neutral  | $105,300
+// ░░░░██████ 60% sell | $105,200
+// ░░████████ 80% sell | $105,100
+```
+
+#### Toggle no Seletor de Indicadores
+
+> **IMPORTANTE:** Todos os indicadores de Order Book vêm **DESATIVADOS por padrão**.
+> São indicadores avançados que consomem recursos (WebSocket) e devem ser ativados
+> manualmente pelo usuário quando necessário.
+
+```typescript
+// packages/types/src/indicator-config.ts
+interface IndicatorToggleConfig {
+  // ... indicadores existentes ...
+
+  // Order Book Indicators (novo grupo - TODOS desativados por padrão)
+  orderBook: {
+    liquidityWalls: boolean;      // Default: false ❌
+    imbalanceHistogram: boolean;  // Default: false ❌
+    spreadBand: boolean;          // Default: false ❌
+    orderFlowDelta: boolean;      // Default: false ❌
+  };
+}
+
+// Defaults explícitos
+const ORDER_BOOK_DEFAULTS: IndicatorToggleConfig['orderBook'] = {
+  liquidityWalls: false,
+  imbalanceHistogram: false,
+  spreadBand: false,
+  orderFlowDelta: false,
+};
+
+// UI: IndicatorTogglePopover.tsx
+// Adicionar nova seção "Order Book" com os toggles
+// Mostrar badge "Advanced" ou ícone de warning para indicar consumo de recursos
+```
+
+#### Estrutura de Arquivos (Canvas)
+
+```
+apps/electron/src/renderer/
+├── components/Chart/
+│   └── renderers/
+│       ├── LiquidityWallsRenderer.ts    # Linhas de muros
+│       ├── ImbalanceHistogramRenderer.ts # Histograma lateral
+│       ├── SpreadBandRenderer.ts        # Banda de spread
+│       └── OrderFlowDeltaRenderer.ts    # CVD footprint style
+├── hooks/
+│   └── useOrderBookCanvas.ts            # Hook para dados canvas
+└── store/
+    └── indicatorStore.ts                # Adicionar toggles orderBook
+```
+
+#### Exemplo Visual Completo
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ BTCUSDT 2h                                    [📊] [⚡] [📈]   │
+├────┬────────────────────────────────────────────────────────────┤
+│    │ ════════════════ ASK WALL $105,500 (320 BTC) ════════════ │
+│ 80%│              ┌──────┐                                      │
+│ 60%│          ┌───┤      │                                      │
+│ 40%│      ┌───┤   │      ├───┐                                  │
+│ 20%│  ┌───┤   │   │      │   ├───┐     ┌───┐                    │
+│  0%│──┴───┴───┴───┴──────┴───┴───┴─────┴───┴────────────────   │
+│-20%│                                        ├───┤               │
+│-40%│                                    ┌───┤   │               │
+│    │ ════════════════ BID WALL $103,200 (280 BTC) ════════════ │
+├────┴────────────────────────────────────────────────────────────┤
+│ Imbalance: +62% BUY | Spread: 0.02% | Walls: 2 bid, 1 ask       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Checklist de Implementação (Canvas)
+
+- [ ] Criar `LiquidityWallsRenderer.ts` com linhas horizontais
+- [ ] Criar `ImbalanceHistogramRenderer.ts` com barras laterais
+- [ ] Adicionar grupo "Order Book" no `IndicatorTogglePopover`
+- [ ] Adicionar toggles ao `indicatorStore` (Zustand)
+- [ ] Criar `useOrderBookCanvas.ts` para dados em tempo real
+- [ ] Integrar renderers no `ChartCanvas` principal
+- [ ] Adicionar opções de configuração (cores, opacidade, etc.)
+- [ ] Testar performance com updates frequentes
+
+#### Performance e Otimização (Canvas)
+
+> **CRÍTICO:** Order Book tem updates muito frequentes (100ms). Sem otimização
+> adequada, vai causar lag, re-renders excessivos e consumo de CPU/memória.
+
+**Estratégias de Performance:**
+
+```typescript
+// 1. THROTTLING DE UPDATES
+// Não re-renderizar a cada update do WebSocket
+const RENDER_THROTTLE_MS = 250; // Máximo 4 renders/segundo
+
+const useOrderBookCanvas = () => {
+  const [data, setData] = useState<OrderBookData | null>(null);
+  const lastRenderRef = useRef(0);
+
+  useEffect(() => {
+    const handleUpdate = (update: OrderBookUpdate) => {
+      const now = Date.now();
+      if (now - lastRenderRef.current < RENDER_THROTTLE_MS) return;
+
+      lastRenderRef.current = now;
+      setData(processUpdate(update));
+    };
+
+    return subscribe(handleUpdate);
+  }, []);
+
+  return data;
+};
+
+// 2. MEMOIZAÇÃO DE CÁLCULOS PESADOS
+const useLiquidityWalls = (orderBook: OrderBookData) => {
+  return useMemo(() => {
+    if (!orderBook) return [];
+    return detectLiquidityWalls(orderBook.bids, orderBook.asks);
+  }, [orderBook?.lastUpdateId]); // Só recalcula se updateId mudar
+};
+
+// 3. CACHE COM SHALLOW COMPARE
+// Evitar re-renders se dados não mudaram significativamente
+const areWallsEqual = (prev: LiquidityWall[], next: LiquidityWall[]) => {
+  if (prev.length !== next.length) return false;
+  return prev.every((wall, i) =>
+    Math.abs(wall.price - next[i].price) < 0.01 && // Tolera 0.01% de diferença
+    Math.abs(wall.volume - next[i].volume) < wall.volume * 0.05 // 5% de volume
+  );
+};
+
+// 4. LAZY CONNECTION
+// Só conectar WebSocket quando indicador estiver ativo
+const useOrderBookConnection = (enabled: boolean) => {
+  useEffect(() => {
+    if (!enabled) return;
+
+    const ws = connectOrderBookStream();
+    return () => ws.close();
+  }, [enabled]);
+};
+
+// 5. OFFSCREEN CANVAS (para histograma)
+// Renderizar em canvas separado e copiar para principal
+const renderHistogramOffscreen = (data: ImbalanceData) => {
+  const offscreen = new OffscreenCanvas(60, 400);
+  const ctx = offscreen.getContext('2d')!;
+  // ... render ...
+  return offscreen.transferToImageBitmap();
+};
+
+// 6. RAF (RequestAnimationFrame) BATCHING
+// Agrupar múltiplos renders em um único frame
+const useAnimationFrame = (callback: () => void, deps: unknown[]) => {
+  const rafRef = useRef<number>();
+
+  useEffect(() => {
+    const animate = () => {
+      callback();
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current!);
+  }, deps);
+};
+```
+
+**Limites de Recursos:**
+
+| Recurso | Limite | Motivo |
+|---------|--------|--------|
+| Updates/segundo | 4 max | Evitar CPU spike |
+| Níveis de preço | 20 max | Limitar memória |
+| Walls renderizados | 5 max | Evitar poluição visual |
+| WebSocket connections | 1 por símbolo | Rate limit |
+| Cache TTL | 500ms | Balance atualização/performance |
+
+**Checklist de Performance:**
+- [ ] Implementar throttle de 250ms nos updates
+- [ ] Usar `useMemo` para cálculos de walls
+- [ ] Implementar shallow compare para evitar re-renders
+- [ ] Lazy connection (só conectar se indicador ativo)
+- [ ] Usar OffscreenCanvas para histograma
+- [ ] Batch renders com RAF
+- [ ] Limitar a 20 níveis de preço
+- [ ] Desconectar WebSocket quando indicador desativado
+- [ ] Profile com React DevTools antes de deploy
+
+### 16.7 Considerações Técnicas
+
+| Aspecto | Solução |
+|---------|---------|
+| **Rate Limits** | Usar WebSocket para dados em tempo real |
+| **Latência** | Cache local com TTL de 100-500ms |
+| **Backtest** | Não é possível fazer backtest preciso (dados históricos caros) |
+| **Spoofing** | Filtrar ordens muito grandes (> 5x média) que podem ser fake |
+| **Memória** | Manter apenas top 20 níveis de cada lado |
+
+### 16.7 Implementação Incremental
+
+**Fase 1: Coleta de Dados**
+- [ ] Criar `OrderBookService` com WebSocket connection
+- [ ] Implementar cache local com merge de updates
+- [ ] Criar testes de integração
+
+**Fase 2: Indicadores**
+- [ ] Implementar `calculateImbalance()`
+- [ ] Implementar `detectLiquidityWalls()`
+- [ ] Adicionar ao `IndicatorEngine`
+
+**Fase 3: Filtro**
+- [ ] Criar `order-book-filter.ts`
+- [ ] Integrar com `FilterOrchestrator`
+- [ ] Adicionar ao confluence scoring
+
+**Fase 4: UI**
+- [ ] Criar `OrderFlowIndicator.tsx`
+- [ ] Adicionar à Market Indicators Sidebar
+- [ ] Criar toggle em settings
+
+### 16.8 Prioridade e Dependências
+
+| Prioridade | Motivo |
+|------------|--------|
+| **Média-Baixa** | Não afeta backtest, difícil validar historicamente |
+| **Depende de:** | Market Indicators Sidebar implementada |
+| **Benefício:** | Confirmação adicional para trades em tempo real |
+
+**Referências:**
+- [Binance Order Book API](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/websocket-api/Order-Book)
+- [CoinGlass Order Depth Delta](https://www.coinglass.com/pro/depth-delta)
+- [binance npm package](https://www.npmjs.com/package/binance)
 
 ---
 

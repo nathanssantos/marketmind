@@ -315,9 +315,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           showNewWindowButton={false}
           showSidebarButtons={false}
           isTradingOpen={false}
-          isBacktestOpen={false}
           onToggleTrading={() => { }}
-          onToggleBacktest={() => { }}
         />
       </Box>
 

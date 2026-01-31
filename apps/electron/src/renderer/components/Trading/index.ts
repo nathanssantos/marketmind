@@ -12,9 +12,9 @@ export { PerformancePanel } from './PerformancePanel';
 export { SetupStatsTable } from './SetupStatsTable';
 
 export { BacktestConfig } from './BacktestConfig';
-export { BacktestDialog } from './BacktestDialog';
 export { BacktestResults } from './BacktestResults';
 export { BacktestingPanel } from './BacktestingPanel';
+export { StartWatchersModal } from './StartWatchersModal';
 
 export { TradingProfilesManager } from './TradingProfilesManager';
 export { ProfileEditorDialog } from './ProfileEditorDialog';

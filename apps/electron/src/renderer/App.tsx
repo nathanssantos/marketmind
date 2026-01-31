@@ -2,7 +2,7 @@ import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@c
 import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
@@ -33,8 +33,6 @@ import { useSetupStore } from './store/setupStore';
 import { useUIStore } from './store/uiStore';
 import { system } from './theme';
 import { toaster } from './utils/toaster';
-
-const BacktestDialog = lazy(() => import('./components/Trading/BacktestDialog').then(m => ({ default: m.BacktestDialog })));
 
 function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
   const { wallets } = useBackendWallet();
@@ -139,7 +137,6 @@ function AppContent(): ReactElement {
   const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '1h');
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', true);
-  const [isBacktestOpen, setIsBacktestOpen] = useState(false);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -184,10 +181,6 @@ function AppContent(): ReactElement {
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);
   }, [setIsTradingOpen]);
-
-  const toggleBacktest = useCallback(() => {
-    setIsBacktestOpen((prev) => !prev);
-  }, []);
 
   const { useKlineList } = useBackendKlines();
   const backendKlinesQuery = useKlineList({
@@ -456,7 +449,6 @@ function AppContent(): ReactElement {
         showVWAP={showVWAP}
         showEventRow={showEventRow}
         movingAverages={movingAverages}
-        isBacktestOpen={isBacktestOpen}
         onSymbolChange={handleSymbolChange}
         onTimeframeChange={setTimeframe}
         onShowVolumeChange={setShowVolume}
@@ -475,7 +467,6 @@ function AppContent(): ReactElement {
         onShowVWAPChange={setShowVWAP}
         onShowEventRowChange={setShowEventRow}
         onMovingAveragesChange={setMovingAverages}
-        onToggleBacktest={toggleBacktest}
         onNavigateToSymbol={handleSymbolChange}
       >
         <AppContentWithKeyboardShortcuts
@@ -532,15 +523,6 @@ function AppContent(): ReactElement {
           />
         )}
       </MainLayout>
-
-      <Suspense fallback={null}>
-        {isBacktestOpen && (
-          <BacktestDialog
-            isOpen={isBacktestOpen}
-            onClose={toggleBacktest}
-          />
-        )}
-      </Suspense>
 
       <UpdateNotification />
     </>

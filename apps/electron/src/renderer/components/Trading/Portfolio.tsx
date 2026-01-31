@@ -4,7 +4,6 @@ import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
-import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
@@ -12,16 +11,14 @@ import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { TooltipWrapper } from '../ui/Tooltip';
-import { AutoTradeConsole } from './AutoTradeConsole';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 import { StrategyInfoPopover } from './StrategyInfoPopover';
-import { TradingProfilesModal } from './TradingProfilesModal';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from './TradingTable';
 
 interface PortfolioPosition {
@@ -53,7 +50,6 @@ const PortfolioComponent = () => {
   useOrderUpdates(activeWalletId ?? '');
   usePositionUpdates(activeWalletId || '');
   const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
-  const { watcherStatus, isLoadingWatcherStatus } = useBackendAutoTrading(activeWalletId || '');
 
   const {
     filterOption,
@@ -137,8 +133,6 @@ const PortfolioComponent = () => {
   const effectiveCapital = activeWallet
     ? activeWallet.initialBalance + activeWallet.totalDeposits - activeWallet.totalWithdrawals
     : 0;
-
-  const activeWatchers = watcherStatus?.activeWatchers ?? [];
 
   return (
     <Stack gap={3} p={4}>
@@ -268,166 +262,9 @@ const PortfolioComponent = () => {
           )}
         </>
       )}
-
-      {activeWatchers.length > 0 && (
-        <WatchersSection
-          watchers={activeWatchers}
-          isLoading={isLoadingWatcherStatus}
-          onNavigateToSymbol={globalActions?.navigateToSymbol}
-        />
-      )}
-
-      {activeWalletId && (
-        <AutoTradeConsole walletId={activeWalletId} hasActiveWatchers={activeWatchers.length > 0} />
-      )}
     </Stack>
   );
 };
-
-interface ActiveWatcher {
-  watcherId: string;
-  symbol: string;
-  interval: string;
-  marketType: 'SPOT' | 'FUTURES';
-  profileId?: string;
-  profileName?: string;
-}
-
-interface WatchersSectionProps {
-  watchers: ActiveWatcher[];
-  isLoading: boolean;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
-}
-
-const WatchersSection = memo(({ watchers, isLoading, onNavigateToSymbol }: WatchersSectionProps) => {
-  const { t } = useTranslation();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  if (isLoading) return null;
-
-  return (
-    <>
-      <Flex justify="space-between" align="center" mb={1}>
-        <Flex align="center" gap={2}>
-          <Text fontSize="sm" fontWeight="bold">
-            {t('tradingProfiles.watchers.title')}
-          </Text>
-          <Badge colorPalette="blue" size="xs" px={1}>{watchers.length}</Badge>
-        </Flex>
-        <TooltipWrapper label={t('tradingProfiles.modalTitle')} showArrow placement="top">
-          <IconButton
-            size="2xs"
-            aria-label={t('tradingProfiles.modalTitle')}
-            onClick={() => setIsModalOpen(true)}
-            colorPalette="blue"
-            variant="solid"
-          >
-            <LuBot />
-          </IconButton>
-        </TooltipWrapper>
-      </Flex>
-
-      <WatchersTable watchers={watchers} onNavigateToSymbol={onNavigateToSymbol} />
-
-      <TradingProfilesModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-    </>
-  );
-});
-
-WatchersSection.displayName = 'WatchersSection';
-
-interface WatchersTableProps {
-  watchers: ActiveWatcher[];
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
-}
-
-const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps) => {
-  const { t } = useTranslation();
-  const { sortKey, sortDirection, setWatchersTableSort } = useUIStore(useShallow((s) => ({
-    sortKey: s.watchersTableSortKey,
-    sortDirection: s.watchersTableSortDirection,
-    setWatchersTableSort: s.setWatchersTableSort,
-  })));
-
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setWatchersTableSort(key, sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setWatchersTableSort(key, 'asc');
-    }
-  };
-
-  const sortedWatchers = useMemo(() => {
-    return [...watchers].sort((a, b) => {
-      const dir = sortDirection === 'asc' ? 1 : -1;
-      switch (sortKey) {
-        case 'symbol':
-          return dir * a.symbol.localeCompare(b.symbol);
-        case 'interval':
-          return dir * a.interval.localeCompare(b.interval);
-        case 'type':
-          return dir * a.marketType.localeCompare(b.marketType);
-        case 'profile':
-          return dir * (a.profileName || '').localeCompare(b.profileName || '');
-        default:
-          return 0;
-      }
-    });
-  }, [watchers, sortKey, sortDirection]);
-
-  const columns: TradingTableColumn[] = [
-    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
-    { key: 'interval', header: t('tradingProfiles.watchers.interval'), minW: '80px' },
-    { key: 'type', header: t('trading.orders.type'), minW: '90px' },
-    { key: 'profile', header: t('tradingProfiles.watchers.profile'), minW: '150px' },
-  ];
-
-  return (
-    <TradingTable columns={columns} minW="450px" sortKey={sortKey} sortDirection={sortDirection} onSort={handleSort}>
-      {sortedWatchers.map((watcher) => (
-        <TradingTableRow key={watcher.watcherId}>
-          <TradingTableCell sticky>
-            <Flex align="center" gap={1}>
-              <CryptoIcon
-                symbol={watcher.symbol}
-                size={14}
-                onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
-                cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-              />
-              <Text
-                fontWeight="medium"
-                cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-                _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
-                onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
-              >
-                {watcher.symbol}
-              </Text>
-            </Flex>
-          </TradingTableCell>
-          <TradingTableCell>
-            <Badge colorPalette="blue" size="xs" px={1}>
-              {watcher.interval}
-            </Badge>
-          </TradingTableCell>
-          <TradingTableCell>
-            {watcher.marketType === 'FUTURES' ? (
-              <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
-            ) : (
-              <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
-            )}
-          </TradingTableCell>
-          <TradingTableCell>
-            <Text fontSize="xs" color="fg.muted">
-              {watcher.profileName || t('tradingProfiles.watchers.usingDefault')}
-            </Text>
-          </TradingTableCell>
-        </TradingTableRow>
-      ))}
-    </TradingTable>
-  );
-});
-
-WatchersTable.displayName = 'WatchersTable';
 
 interface PortfolioTableProps {
   positions: PortfolioPosition[];
