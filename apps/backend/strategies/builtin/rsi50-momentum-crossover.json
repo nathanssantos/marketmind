@@ -165,7 +165,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "QuantifiedStrategies.com - Bitcoin RSI Trading Strategy Research",
@@ -184,7 +187,11 @@
           "descriptionKey": "strategies.rsi50.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["rsi", "atr", "volume"]
+      "indicatorsToShow": [
+        "rsi",
+        "atr",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.rsi50.summary",

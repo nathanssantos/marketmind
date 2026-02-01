@@ -305,7 +305,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "ANY",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Kristjan Kullamägi (Qullamaggie) - 'If you could only trade one setup, it should be the HTF'",

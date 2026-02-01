@@ -182,11 +182,18 @@ export interface TrendFilter {
   allowCounterTrend: boolean;
 }
 
+import type { SetupVolumeType, SetupStrategyType, SetupMomentumType } from './filters';
+
+export type { SetupVolumeType, SetupStrategyType, SetupMomentumType };
+
 export interface StrategyFilters {
   minConfidence?: number;
   minRiskReward?: number;
   trendFilter?: TrendFilter;
   timeFilters?: TimeFilters;
+  volumeType?: SetupVolumeType;
+  strategyType?: SetupStrategyType;
+  momentumType?: SetupMomentumType;
 }
 
 export type StrategyStatus = 'active' | 'unprofitable' | 'experimental' | 'deprecated';

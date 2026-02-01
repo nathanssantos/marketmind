@@ -169,7 +169,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": true
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "John Bollinger - Bollinger on Bollinger Bands (2001)",

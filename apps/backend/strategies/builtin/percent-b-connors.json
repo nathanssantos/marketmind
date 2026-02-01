@@ -190,7 +190,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": true
-    }
+    },
+    "volumeType": "REVERSAL",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "Larry Connors - 'Short-Term Trading Strategies That Work' (2008)",

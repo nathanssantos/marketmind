@@ -209,7 +209,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": true
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "ANY",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Larry Williams - Williams %R oscillator (1973)",

@@ -156,7 +156,10 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "BREAKOUT",
+    "strategyType": "ANY",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Tushar Chande - Beyond Technical Analysis (1994)",

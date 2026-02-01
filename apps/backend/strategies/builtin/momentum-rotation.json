@@ -181,7 +181,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "ANY",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Gary Antonacci - 'Dual Momentum Investing' (2014)",

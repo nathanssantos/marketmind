@@ -267,7 +267,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": true
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "ANY",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Kristjan Kullamägi (Qullamaggie) - 'Episodic Pivots are my bread and butter'",

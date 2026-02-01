@@ -239,7 +239,7 @@ describe('Futures Trading Router', () => {
         type: 'MARKET',
         quantity: '1.0',
         setupId: 'setup-123',
-        setupType: 'larry-williams-9.1',
+        setupType: 'larry-williams-9-1',
       });
 
       const [order] = await db
@@ -249,7 +249,7 @@ describe('Futures Trading Router', () => {
         .limit(1);
 
       expect(order!.setupId).toBe('setup-123');
-      expect(order!.setupType).toBe('larry-williams-9.1');
+      expect(order!.setupType).toBe('larry-williams-9-1');
     });
   });
 

@@ -144,6 +144,9 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "REVERSAL",
+    "strategyType": "ANY",
+    "momentumType": "REVERSAL"
   }
 }

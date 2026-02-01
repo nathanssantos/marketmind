@@ -209,7 +209,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 0
+    "minRiskReward": 0,
+    "volumeType": "REVERSAL",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "J. Welles Wilder Jr. - New Concepts in Technical Trading Systems (1978)",

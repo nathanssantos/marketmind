@@ -171,7 +171,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "REVERSAL",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "Gerald Appel - MACD (Moving Average Convergence Divergence) Creator (1979)",
@@ -190,7 +193,12 @@
           "descriptionKey": "strategies.macd.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["macd", "atr", "ema50", "volume"]
+      "indicatorsToShow": [
+        "macd",
+        "atr",
+        "ema50",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.macd.summary",

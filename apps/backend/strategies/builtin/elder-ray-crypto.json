@@ -153,7 +153,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "ANY",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Dr. Alexander Elder - 'Trading for a Living' (1993)",

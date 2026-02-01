@@ -156,7 +156,10 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "REVERSAL",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "Gene Quong & Avrum Soudack - Money Flow Index (1989)",

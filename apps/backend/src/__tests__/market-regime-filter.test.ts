@@ -37,8 +37,8 @@ const createRangingKlines = (count: number): Kline[] => {
 describe('Market Regime Filter', () => {
   describe('getSetupStrategyType', () => {
     it('should return TREND_FOLLOWING for larry-williams setups', () => {
-      expect(getSetupStrategyType('larry-williams-9.1')).toBe('TREND_FOLLOWING');
-      expect(getSetupStrategyType('larry-williams-9.2')).toBe('TREND_FOLLOWING');
+      expect(getSetupStrategyType('larry-williams-9-1')).toBe('TREND_FOLLOWING');
+      expect(getSetupStrategyType('larry-williams-9-2')).toBe('TREND_FOLLOWING');
     });
 
     it('should return MEAN_REVERSION for bounce setups', () => {
@@ -55,7 +55,7 @@ describe('Market Regime Filter', () => {
     describe('trending market', () => {
       it('should identify trending market with high ADX', () => {
         const klines = createTrendingKlines(100);
-        const result = checkMarketRegime(klines, 'larry-williams-9.1');
+        const result = checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result.adx).not.toBeNull();
         expect(result).toHaveProperty('regime');
@@ -68,7 +68,7 @@ describe('Market Regime Filter', () => {
 
       it('should allow trend-following setups in trending market', () => {
         const klines = createTrendingKlines(100);
-        const result = checkMarketRegime(klines, 'larry-williams-9.1');
+        const result = checkMarketRegime(klines, 'larry-williams-9-1');
 
         if (result.regime === 'TRENDING') {
           expect(result.isAllowed).toBe(true);
@@ -79,7 +79,7 @@ describe('Market Regime Filter', () => {
     describe('ranging market', () => {
       it('should identify ranging market with low ADX', () => {
         const klines = createRangingKlines(50);
-        const result = checkMarketRegime(klines, 'larry-williams-9.1');
+        const result = checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result.adx).not.toBeNull();
         if (result.adx && result.adx < 20) {
@@ -92,7 +92,7 @@ describe('Market Regime Filter', () => {
     describe('edge cases', () => {
       it('should soft pass when insufficient klines', () => {
         const klines = createTrendingKlines(20);
-        const result = checkMarketRegime(klines, 'larry-williams-9.1');
+        const result = checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result.isAllowed).toBe(true);
         expect(result.reason).toContain('soft pass');
@@ -100,7 +100,7 @@ describe('Market Regime Filter', () => {
 
       it('should return all required fields', () => {
         const klines = createTrendingKlines(50);
-        const result = checkMarketRegime(klines, 'larry-williams-9.1');
+        const result = checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result).toHaveProperty('isAllowed');
         expect(result).toHaveProperty('regime');

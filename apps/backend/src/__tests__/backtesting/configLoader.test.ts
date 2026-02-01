@@ -7,7 +7,7 @@ describe('configLoader', () => {
   describe('buildMultiWatcherConfigFromWatchers', () => {
     it('should build config from watcher configs', () => {
       const watchers: WatcherConfig[] = [
-        { symbol: 'BTCUSDT', interval: '4h', setupTypes: ['larry-williams-9.1'] },
+        { symbol: 'BTCUSDT', interval: '4h', setupTypes: ['larry-williams-9-1'] },
         { symbol: 'ETHUSDT', interval: '1h', setupTypes: ['engulfing'] },
       ];
 
@@ -25,7 +25,7 @@ describe('configLoader', () => {
 
     it('should merge all setupTypes from watchers', () => {
       const watchers: WatcherConfig[] = [
-        { symbol: 'BTCUSDT', interval: '4h', setupTypes: ['larry-williams-9.1', 'engulfing'] },
+        { symbol: 'BTCUSDT', interval: '4h', setupTypes: ['larry-williams-9-1', 'engulfing'] },
         { symbol: 'ETHUSDT', interval: '1h', setupTypes: ['engulfing', 'hammer'] },
       ];
 
@@ -35,7 +35,7 @@ describe('configLoader', () => {
         initialCapital: 10000,
       });
 
-      expect(config.setupTypes).toContain('larry-williams-9.1');
+      expect(config.setupTypes).toContain('larry-williams-9-1');
       expect(config.setupTypes).toContain('engulfing');
       expect(config.setupTypes).toContain('hammer');
       expect(config.setupTypes).toHaveLength(3);

@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import * as fs from 'fs';
-import * as path from 'path';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig, TimeInterval } from '@marketmind/types';
 import { ENABLED_SETUPS, createBaseConfig, formatCurrency } from './shared-backtest-config';

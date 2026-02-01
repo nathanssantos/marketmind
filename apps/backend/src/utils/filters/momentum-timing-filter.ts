@@ -1,9 +1,8 @@
 import { calculateRSI, calculateMFI } from '@marketmind/indicators';
-import type { Kline, MomentumTimingResult } from '@marketmind/types';
+import type { Kline, MomentumTimingResult, SetupMomentumType } from '@marketmind/types';
+import { getStrategyMomentumType } from './strategy-filter-types';
 
-export type { MomentumTimingResult };
-
-export type SetupMomentumType = 'PULLBACK' | 'BREAKOUT' | 'REVERSAL' | 'ANY';
+export type { MomentumTimingResult, SetupMomentumType };
 
 export const MOMENTUM_TIMING_FILTER = {
   RSI_PERIOD: 14,
@@ -17,25 +16,8 @@ export const MOMENTUM_TIMING_FILTER = {
   MIN_KLINES_REQUIRED: 20,
 } as const;
 
-const SETUP_MOMENTUM_TYPE: Record<string, SetupMomentumType> = {
-  'breakout-long': 'BREAKOUT',
-  'breakout-short': 'BREAKOUT',
-  'ema9-pullback': 'PULLBACK',
-  'ema9-double-pullback': 'PULLBACK',
-  'ema9-continuation': 'PULLBACK',
-  'larry-williams-9.1': 'PULLBACK',
-  'larry-williams-9.2': 'PULLBACK',
-  'larry-williams-9.3': 'PULLBACK',
-  'larry-williams-9.4': 'PULLBACK',
-  'oversold-bounce': 'REVERSAL',
-  'overbought-fade': 'REVERSAL',
-  'support-bounce': 'REVERSAL',
-  'resistance-fade': 'REVERSAL',
-  'trend-continuation': 'PULLBACK',
-};
-
 export const getSetupMomentumType = (setupType: string): SetupMomentumType => {
-  return SETUP_MOMENTUM_TYPE[setupType] ?? 'ANY';
+  return getStrategyMomentumType(setupType);
 };
 
 export const checkMomentumTiming = (

@@ -184,7 +184,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Classic Price Action - Documented by Al Brooks and many technical analysts",
@@ -208,7 +211,12 @@
           "descriptionKey": "strategies.breakoutRetest.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["ema", "atr", "ema200", "volume"]
+      "indicatorsToShow": [
+        "ema",
+        "atr",
+        "ema200",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.breakoutRetest.summary",

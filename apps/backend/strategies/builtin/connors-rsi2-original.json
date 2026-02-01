@@ -214,7 +214,10 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "REVERSAL",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "Larry Connors & Cesar Alvarez - Short-Term Trading Strategies That Work (2008)",

@@ -6,6 +6,7 @@ import type {
   VolumeFilterConfig,
   VolumeFilterResult,
 } from '@marketmind/types';
+import { getStrategyVolumeType } from './strategy-filter-types';
 
 const VOLUME_AVG_PERIOD = 20;
 const BREAKOUT_MULTIPLIER = 1.5;
@@ -37,25 +38,8 @@ const getDirectionalConfig = (
   };
 };
 
-const SETUP_VOLUME_TYPE: Record<string, SetupVolumeType> = {
-  'breakout-long': 'BREAKOUT',
-  'breakout-short': 'BREAKOUT',
-  'ema9-pullback': 'PULLBACK',
-  'ema9-double-pullback': 'PULLBACK',
-  'ema9-continuation': 'PULLBACK',
-  'larry-williams-9.1': 'PULLBACK',
-  'larry-williams-9.2': 'PULLBACK',
-  'larry-williams-9.3': 'PULLBACK',
-  'larry-williams-9.4': 'PULLBACK',
-  'oversold-bounce': 'REVERSAL',
-  'overbought-fade': 'REVERSAL',
-  'support-bounce': 'REVERSAL',
-  'resistance-fade': 'REVERSAL',
-  'trend-continuation': 'PULLBACK',
-};
-
 export const getSetupVolumeType = (setupType: string): SetupVolumeType => {
-  return SETUP_VOLUME_TYPE[setupType] ?? 'ANY';
+  return getStrategyVolumeType(setupType);
 };
 
 const calculateVolumeAverage = (klines: Kline[], period: number): number | null => {

@@ -145,7 +145,10 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "PULLBACK",
+    "strategyType": "ANY",
+    "momentumType": "PULLBACK"
   },
   "education": {
     "origin": "Leonardo of Pisa (Fibonacci) - Liber Abaci (1202), modern trading adaptation",

@@ -177,6 +177,9 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "PULLBACK",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "PULLBACK"
   }
 }

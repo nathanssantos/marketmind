@@ -1,5 +1,6 @@
 import { calculateADX, calculateATR } from '@marketmind/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, SetupStrategyType } from '@marketmind/types';
+import { getStrategyStrategyType } from './strategy-filter-types';
 
 const ADX_PERIOD = 14;
 const ATR_PERIOD = 14;
@@ -18,7 +19,7 @@ export const MARKET_REGIME_FILTER = {
 } as const;
 
 export type MarketRegime = 'TRENDING' | 'WEAK_TREND' | 'RANGING' | 'VOLATILE';
-export type StrategyType = 'TREND_FOLLOWING' | 'MEAN_REVERSION' | 'ANY';
+export type StrategyType = SetupStrategyType;
 export type VolatilityLevel = 'LOW' | 'NORMAL' | 'HIGH' | 'EXTREME';
 
 export interface MarketRegimeResult {
@@ -34,25 +35,8 @@ export interface MarketRegimeResult {
   reason: string;
 }
 
-const SETUP_STRATEGY_MAP: Record<string, StrategyType> = {
-  'larry-williams-9.1': 'TREND_FOLLOWING',
-  'larry-williams-9.2': 'TREND_FOLLOWING',
-  'larry-williams-9.3': 'TREND_FOLLOWING',
-  'larry-williams-9.4': 'TREND_FOLLOWING',
-  'ema9-pullback': 'TREND_FOLLOWING',
-  'ema9-double-pullback': 'TREND_FOLLOWING',
-  'ema9-continuation': 'TREND_FOLLOWING',
-  'oversold-bounce': 'MEAN_REVERSION',
-  'overbought-fade': 'MEAN_REVERSION',
-  'support-bounce': 'MEAN_REVERSION',
-  'resistance-fade': 'MEAN_REVERSION',
-  'breakout-long': 'TREND_FOLLOWING',
-  'breakout-short': 'TREND_FOLLOWING',
-  'trend-continuation': 'TREND_FOLLOWING',
-};
-
 export const getSetupStrategyType = (setupType: string): StrategyType => {
-  return SETUP_STRATEGY_MAP[setupType] ?? 'ANY';
+  return getStrategyStrategyType(setupType);
 };
 
 const calculatePercentile = (value: number, sortedValues: number[]): number => {

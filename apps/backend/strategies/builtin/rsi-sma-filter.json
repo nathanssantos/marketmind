@@ -179,7 +179,10 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "REVERSAL",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "TradingView Community - RSI with trend filter adaptation (2010s)",

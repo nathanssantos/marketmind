@@ -42,7 +42,7 @@ describe('Volume Filter', () => {
 
     it('should return PULLBACK for pullback setups', () => {
       expect(getSetupVolumeType('ema9-pullback')).toBe('PULLBACK');
-      expect(getSetupVolumeType('larry-williams-9.1')).toBe('PULLBACK');
+      expect(getSetupVolumeType('larry-williams-9-1')).toBe('PULLBACK');
     });
 
     it('should return REVERSAL for reversal setups', () => {

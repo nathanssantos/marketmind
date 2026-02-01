@@ -36,6 +36,8 @@ export interface MtfFilterResult extends BaseFilterResult {
 
 export type MarketRegime = 'TRENDING' | 'WEAK_TREND' | 'RANGING' | 'VOLATILE';
 export type StrategyType = 'TREND_FOLLOWING' | 'MEAN_REVERSION' | 'ANY';
+export type SetupStrategyType = StrategyType;
+export type SetupMomentumType = 'BREAKOUT' | 'PULLBACK' | 'REVERSAL' | 'ANY';
 export type MarketVolatilityLevel = 'LOW' | 'NORMAL' | 'HIGH' | 'EXTREME';
 
 export interface MarketRegimeResult extends BaseFilterResult {

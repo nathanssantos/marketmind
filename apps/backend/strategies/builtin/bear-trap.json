@@ -156,7 +156,10 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "REVERSAL",
+    "strategyType": "MEAN_REVERSION",
+    "momentumType": "REVERSAL"
   },
   "education": {
     "origin": "Classic Market Microstructure - False breakout patterns",

@@ -203,7 +203,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "PULLBACK",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "PULLBACK"
   },
   "education": {
     "origin": "Larry Williams - 'Long-Term Secrets to Short-Term Trading' (1999)",

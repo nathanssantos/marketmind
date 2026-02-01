@@ -25,7 +25,7 @@ const createTestTradeExecution = async (options: {
     symbol = 'BTCUSDT',
     side = 'LONG',
     status = 'closed',
-    setupType = 'larry-williams-9.1',
+    setupType = 'larry-williams-9-1',
     pnl = '100',
     fees = '1',
     openedAt = new Date(),
@@ -318,7 +318,7 @@ describe('Analytics Router', () => {
         userId: user.id,
         walletId: wallet.id,
         status: 'closed',
-        setupType: 'larry-williams-9.1',
+        setupType: 'larry-williams-9-1',
         pnl: '100',
       });
 
@@ -326,7 +326,7 @@ describe('Analytics Router', () => {
         userId: user.id,
         walletId: wallet.id,
         status: 'closed',
-        setupType: 'larry-williams-9.1',
+        setupType: 'larry-williams-9-1',
         pnl: '150',
       });
 
@@ -334,7 +334,7 @@ describe('Analytics Router', () => {
         userId: user.id,
         walletId: wallet.id,
         status: 'closed',
-        setupType: 'larry-williams-9.2',
+        setupType: 'larry-williams-9-2',
         pnl: '-50',
       });
 
@@ -344,8 +344,8 @@ describe('Analytics Router', () => {
 
       expect(result.length).toBe(2);
 
-      const setup91 = result.find((s) => s.setupType === 'larry-williams-9.1');
-      const setup92 = result.find((s) => s.setupType === 'larry-williams-9.2');
+      const setup91 = result.find((s) => s.setupType === 'larry-williams-9-1');
+      const setup92 = result.find((s) => s.setupType === 'larry-williams-9-2');
 
       expect(setup91?.totalTrades).toBe(2);
       expect(setup91?.winningTrades).toBe(2);

@@ -23,7 +23,7 @@ const createPortfolioConfig = (overrides: Partial<PortfolioConfig> = {}): Portfo
 
 const createSetup = (overrides: Partial<TradingSetup> = {}): TradingSetup => ({
   id: 'setup-1',
-  type: 'larry-williams-9.1',
+  type: 'larry-williams-9-1',
   direction: 'LONG',
   entryPrice: 100,
   stopLoss: 95,
@@ -181,16 +181,16 @@ describe('SharedPortfolioManager', () => {
     });
 
     it('should pass cooldown check when no recent trades', () => {
-      const result = portfolio.checkCooldown('larry-williams-9.1', 'BTCUSDT', '4h', Date.now());
+      const result = portfolio.checkCooldown('larry-williams-9-1', 'BTCUSDT', '4h', Date.now());
       expect(result.passed).toBe(true);
     });
 
     it('should fail cooldown check when trade too recent', () => {
       const now = Date.now();
-      portfolio.setCooldown('larry-williams-9.1', 'BTCUSDT', '4h', now);
+      portfolio.setCooldown('larry-williams-9-1', 'BTCUSDT', '4h', now);
 
       const result = portfolio.checkCooldown(
-        'larry-williams-9.1',
+        'larry-williams-9-1',
         'BTCUSDT',
         '4h',
         now + 5 * 60 * 1000
@@ -202,10 +202,10 @@ describe('SharedPortfolioManager', () => {
 
     it('should pass cooldown check after cooldown period', () => {
       const now = Date.now();
-      portfolio.setCooldown('larry-williams-9.1', 'BTCUSDT', '4h', now);
+      portfolio.setCooldown('larry-williams-9-1', 'BTCUSDT', '4h', now);
 
       const result = portfolio.checkCooldown(
-        'larry-williams-9.1',
+        'larry-williams-9-1',
         'BTCUSDT',
         '4h',
         now + 20 * 60 * 1000

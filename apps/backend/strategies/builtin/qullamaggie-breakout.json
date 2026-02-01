@@ -291,7 +291,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Kristjan Kullamägi (Qullamaggie) - '3 Timeless Setups'",

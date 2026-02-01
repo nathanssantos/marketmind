@@ -164,7 +164,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "QuantifiedStrategies.com - Trend Following on Bitcoin Research",
@@ -183,7 +186,11 @@
           "descriptionKey": "strategies.ema5.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["ema", "atr", "volume"]
+      "indicatorsToShow": [
+        "ema",
+        "atr",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.ema5.summary",

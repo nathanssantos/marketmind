@@ -164,7 +164,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Tony Crabel - 'Day Trading with Short Term Price Patterns and Opening Range Breakout' (1990)",
@@ -183,7 +186,12 @@
           "descriptionKey": "strategies.nr7.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["nr7", "sma50", "atr", "volume"]
+      "indicatorsToShow": [
+        "nr7",
+        "sma50",
+        "atr",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.nr7.summary",

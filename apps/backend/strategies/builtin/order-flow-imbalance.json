@@ -153,6 +153,9 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "ANY",
+    "strategyType": "ANY",
+    "momentumType": "ANY"
   }
 }

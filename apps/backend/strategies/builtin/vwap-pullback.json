@@ -186,7 +186,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 1
+    "minRiskReward": 1,
+    "volumeType": "PULLBACK",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "PULLBACK"
   },
   "education": {
     "origin": "Institutional Trading - VWAP as institutional price benchmark",
@@ -205,7 +208,12 @@
           "descriptionKey": "strategies.vwap.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["vwap", "rsi", "emaTrend", "atr"]
+      "indicatorsToShow": [
+        "vwap",
+        "rsi",
+        "emaTrend",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.vwap.summary",

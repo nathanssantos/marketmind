@@ -209,7 +209,10 @@
   },
   "filters": {
     "minConfidence": 60,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   },
   "education": {
     "origin": "Academic Research - Crypto Momentum Studies (2017-2020)",
@@ -228,7 +231,12 @@
           "descriptionKey": "strategies.7dayMomentum.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["emaFast", "emaSlow", "rsi", "atr"]
+      "indicatorsToShow": [
+        "emaFast",
+        "emaSlow",
+        "rsi",
+        "atr"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.7dayMomentum.summary",

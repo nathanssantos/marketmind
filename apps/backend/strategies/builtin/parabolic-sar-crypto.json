@@ -172,7 +172,10 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
-    }
+    },
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "ANY"
   },
   "education": {
     "origin": "J. Welles Wilder - 'New Concepts in Technical Trading Systems' (1978)",

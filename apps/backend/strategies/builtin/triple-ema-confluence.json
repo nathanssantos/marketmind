@@ -194,7 +194,10 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "ANY"
   },
   "education": {
     "origin": "Classic Technical Analysis - Triple EMA alignment for trend confirmation",
@@ -213,7 +216,13 @@
           "descriptionKey": "strategies.tripleEma.candleTrigger"
         }
       ],
-      "indicatorsToShow": ["emaFast", "emaMid", "emaSlow", "atr", "volume"]
+      "indicatorsToShow": [
+        "emaFast",
+        "emaMid",
+        "emaSlow",
+        "atr",
+        "volume"
+      ]
     },
     "howItWorks": {
       "summaryKey": "strategies.tripleEma.summary",

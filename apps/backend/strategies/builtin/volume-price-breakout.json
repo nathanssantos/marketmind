@@ -141,6 +141,9 @@
   },
   "filters": {
     "minConfidence": 70,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "BREAKOUT"
   }
 }

@@ -203,6 +203,9 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "PULLBACK",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "PULLBACK"
   }
 }

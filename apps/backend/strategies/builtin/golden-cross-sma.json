@@ -156,7 +156,10 @@
   },
   "filters": {
     "minConfidence": 65,
-    "minRiskReward": 2
+    "minRiskReward": 2,
+    "volumeType": "BREAKOUT",
+    "strategyType": "TREND_FOLLOWING",
+    "momentumType": "ANY"
   },
   "education": {
     "origin": "Classic Technical Analysis - Moving average crossover strategy (1950s)",
