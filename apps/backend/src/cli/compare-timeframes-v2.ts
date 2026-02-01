@@ -1,10 +1,45 @@
 import 'dotenv/config';
+import * as fs from 'fs';
+import * as path from 'path';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig, TimeInterval } from '@marketmind/types';
 import { ENABLED_SETUPS, createBaseConfig, formatCurrency } from './shared-backtest-config';
 
+const LOCK_FILE = '/tmp/compare-timeframes-v2.lock';
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
 const TIMEFRAMES: TimeInterval[] = ['30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
+
+function acquireLock(): boolean {
+  try {
+    if (fs.existsSync(LOCK_FILE)) {
+      const pid = fs.readFileSync(LOCK_FILE, 'utf-8').trim();
+      try {
+        process.kill(parseInt(pid), 0);
+        console.error(`❌ Outro processo já está rodando (PID: ${pid})`);
+        console.error(`   Para forçar, delete: rm ${LOCK_FILE}`);
+        return false;
+      } catch {
+        console.log(`⚠️  Lock file órfão encontrado, removendo...`);
+        fs.unlinkSync(LOCK_FILE);
+      }
+    }
+    fs.writeFileSync(LOCK_FILE, process.pid.toString());
+    return true;
+  } catch (err) {
+    console.error('Erro ao adquirir lock:', err);
+    return false;
+  }
+}
+
+function releaseLock(): void {
+  try {
+    if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE);
+  } catch {}
+}
+
+process.on('exit', releaseLock);
+process.on('SIGINT', () => { releaseLock(); process.exit(1); });
+process.on('SIGTERM', () => { releaseLock(); process.exit(1); });
 
 interface TimeframeResult {
   timeframe: string;
@@ -66,9 +101,17 @@ async function testTimeframe(timeframe: TimeInterval): Promise<TimeframeResult> 
 }
 
 async function main() {
+  if (!acquireLock()) {
+    process.exit(1);
+  }
+
+  const startTime = Date.now();
   console.log('═'.repeat(80));
-  console.log('🕐 COMPARAÇÃO DE TIMEFRAMES - TOP 20 ESTRATÉGIAS');
+  console.log('🕐 COMPARAÇÃO DE TIMEFRAMES - TOP 21 ESTRATÉGIAS');
   console.log('═'.repeat(80));
+  console.log('');
+  console.log(`⏰ Iniciado: ${new Date().toISOString()}`);
+  console.log(`📍 PID: ${process.pid}`);
   console.log('');
   console.log('📋 CONFIGURAÇÃO:');
   console.log('   • Símbolos:', SYMBOLS.join(', '));
@@ -84,12 +127,22 @@ async function main() {
 
   const results: TimeframeResult[] = [];
 
-  for (const tf of TIMEFRAMES) {
-    console.log(`\n🔄 Testando timeframe: ${tf}...`);
-    const result = await testTimeframe(tf);
-    results.push(result);
-    console.log(`   ✅ ${tf}: P&L $${formatCurrency(result.totalPnl)} | ${result.totalTrades} trades | WR ${result.winRate.toFixed(1)}%`);
+  for (let i = 0; i < TIMEFRAMES.length; i++) {
+    const tf = TIMEFRAMES[i]!;
+    const tfStart = Date.now();
+    console.log(`\n🔄 [${i + 1}/${TIMEFRAMES.length}] Testando timeframe: ${tf}...`);
+    try {
+      const result = await testTimeframe(tf);
+      results.push(result);
+      const tfElapsed = ((Date.now() - tfStart) / 1000).toFixed(1);
+      console.log(`   ✅ ${tf}: P&L $${formatCurrency(result.totalPnl)} | ${result.totalTrades} trades | WR ${result.winRate.toFixed(1)}% | ⏱️ ${tfElapsed}s`);
+    } catch (err) {
+      console.error(`   ❌ Erro em ${tf}:`, err);
+    }
   }
+
+  const totalElapsed = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+  console.log(`\n⏱️ Tempo total: ${totalElapsed} minutos`);
 
   console.log('\n');
   console.log('═'.repeat(100));
