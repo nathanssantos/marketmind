@@ -1,8 +1,8 @@
 # Plano Mestre de Otimização do Sistema de Trading
 
-**Status:** ✅ 100% COMPLETO (Core + Auditoria)
-**Versão:** 2.2.0
-**Última Atualização:** 2026-02-01 11:10
+**Status:** ✅ 100% COMPLETO (Core + Auditoria + Rotation Melhorias)
+**Versão:** 2.3.0
+**Última Atualização:** 2026-02-01 11:20
 **Autor:** Claude Opus 4.5 + Nathan
 
 ---
@@ -20,7 +20,7 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 7. **Market Indicators Sidebar** - Fear & Greed, BTC Dominance, OI, L/S Ratio ✅
 8. **Aplicação dos Defaults** - Configs ótimas aplicadas ✅
 9. **Auditoria e Documentação** - Frontend, Backend routers, CLI scripts ✅
-10. **Melhorias Rotation** - Setup Pre-Scanner, Filter Pre-Validator ❌ PENDENTE
+10. **Melhorias Rotation** - Setup Pre-Scanner, Filter Pre-Validator, BTC Dominance Check ✅
 11. **Order Book Integration** - Imbalance, Liquidity Walls 🔮 FUTURO
 
 ### Progresso por Categoria
@@ -30,7 +30,7 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 | Validação Estatística | ✅ | 100% |
 | UI/UX Implementado | ✅ | 100% |
 | Auditoria/Docs | ✅ | 100% |
-| Rotation Melhorias | ❌ | 0% |
+| Rotation Melhorias | ✅ | 100% |
 | Order Book | 🔮 | Futuro |
 
 ### Estado Atual (2026-02-01 00:10) - CORE COMPLETO
@@ -1950,12 +1950,13 @@ O sistema atual em `dynamic-symbol-rotation.ts` **já possui**:
 
 | Feature | Status | Benefício Esperado |
 |---------|--------|-------------------|
-| **Setup Pre-Scanner** | ❌ | Detectar setups pendentes antes de rotacionar |
-| **Filter Pre-Validator** | ❌ | Validar se setup passaria nos filtros |
-| **BTC Dominance Check** | ❌ | Reduzir alts quando BTC.D > 60% |
-| **ADX Trend Strength** | ❌ | Evitar rotação em mercados choppy |
-| **Historical Win Rate** | ❌ | Priorizar símbolos com melhor histórico |
-| **Altcoin Season Index** | ❌ | Timing para rotação de alts |
+| **Setup Pre-Scanner** | ✅ | Detectar setups pendentes antes de rotacionar |
+| **Filter Pre-Validator** | ✅ | Validar se setup passaria nos filtros |
+| **BTC Dominance Check** | ✅ | Reduzir alts quando BTC.D > 60% |
+| **Opportunity Scorer v2** | ✅ | Integração com pendingSetup e filterPassRate |
+| **ADX Trend Strength** | 🔮 | Evitar rotação em mercados choppy (futuro) |
+| **Historical Win Rate** | ✅ | Priorizar símbolos com melhor histórico (já existia) |
+| **Altcoin Season Index** | 🔮 | Timing para rotação de alts (futuro) |
 
 ### 13.3 Arquitetura Proposta (Incremental)
 
@@ -1963,12 +1964,12 @@ O sistema atual em `dynamic-symbol-rotation.ts` **já possui**:
 ┌─────────────────────────────────────────────────────────────────┐
 │                 Enhanced Rotation System v2                      │
 ├─────────────────────────────────────────────────────────────────┤
-│  EXISTENTE                    │  NOVO (a implementar)           │
+│  EXISTENTE                    │  NOVO (implementado)            │
 │  ┌──────────────────────────┐ │  ┌──────────────────────────┐   │
-│  │ BTC EMA21 Trend ✅       │ │  │ Setup Pre-Scanner ❌     │   │
-│  │ Capital Filter ✅        │ │  │ Filter Pre-Validator ❌  │   │
-│  │ Hysteresis ✅            │ │  │ BTC Dominance Check ❌   │   │
-│  │ Opportunity Score ✅     │ │  │ ADX Trend Strength ❌    │   │
+│  │ BTC EMA21 Trend ✅       │ │  │ Setup Pre-Scanner ✅     │   │
+│  │ Capital Filter ✅        │ │  │ Filter Pre-Validator ✅  │   │
+│  │ Hysteresis ✅            │ │  │ BTC Dominance Check ✅   │   │
+│  │ Opportunity Score ✅     │ │  │ Opportunity Scorer v2 ✅ │   │
 │  └──────────────────────────┘ │  └──────────────────────────┘   │
 │              │                │              │                   │
 │              ▼                │              ▼                   │
@@ -2347,6 +2348,27 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 
 ## 15. Atualizações do Plano
 
+### v2.3.0 (2026-02-01 11:20)
+- **Rotation Melhorias (Seção 13) COMPLETAS:**
+  - **Setup Pre-Scanner** - Detecta setups pendentes antes de rotacionar símbolos
+  - **Filter Pre-Validator** - Valida se setups passariam nos filtros ativos
+  - **BTC Dominance Check** - Reduz exposição a alts quando BTC.D > 60%
+  - **Opportunity Scorer v2** - Integração com pendingSetup (15%) e filterPassRate (10%)
+- **Novos arquivos:**
+  - `apps/backend/src/services/setup-pre-scanner.ts`
+  - `apps/backend/src/services/filter-pre-validator.ts`
+- **Arquivos atualizados:**
+  - `apps/backend/src/services/dynamic-symbol-rotation.ts` - BTC Dominance Check
+  - `apps/backend/src/services/opportunity-scoring.ts` - Enhanced scoring method
+
+### v2.2.0 (2026-02-01 11:10)
+- **12h Timeframe como Padrão:**
+  - Atualizado `DEFAULT_TIMEFRAME` em `@marketmind/types`
+  - Atualizado seletores de timeframe no frontend
+  - Quick Start agora usa 12h por padrão
+- **Quick Start Count Padrão:**
+  - Alterado de 10 para 20 no Quick Start
+
 ### v2.1.0 (2026-02-01 00:10)
 - **BTC Correlation Filter Simplificado:**
   - Removido `useTrendFilter` (comparação EMA21 por ativo) do rotation/quick-start
@@ -2560,13 +2582,16 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 4. **Docs:** NEXT_CHAT_PROMPT.md atualizado, OPTIMIZATION_MASTER_PLAN.md em dia
 5. **Defaults:** Timeframe 12h, Quick Start count 20 aplicados em todos os seletores
 
+### ✅ Rotation Melhorias (Seção 13) - COMPLETO (2026-02-01)
+- **Setup Pre-Scanner** ✅ - `apps/backend/src/services/setup-pre-scanner.ts`
+- **Filter Pre-Validator** ✅ - `apps/backend/src/services/filter-pre-validator.ts`
+- **BTC Dominance Check** ✅ - Integrado em `dynamic-symbol-rotation.ts`
+- **Opportunity Scorer v2** ✅ - Novos weights: pendingSetup(0.15), filterPassRate(0.10)
+
 ### 🔮 Futuro (Baixa Prioridade)
-- **Melhorias Rotation (Seção 13):**
-  - Setup Pre-Scanner
-  - Filter Pre-Validator
-  - BTC Dominance Check
+- **Rotation Enhancements:**
   - ADX Trend Strength
-  - Historical Win Rate
+  - Altcoin Season Index
 
 - **Order Book Integration (Seção 16):**
   - Imbalance Ratio

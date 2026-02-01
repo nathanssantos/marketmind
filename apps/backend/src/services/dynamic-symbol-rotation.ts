@@ -5,6 +5,7 @@ import { db } from '../db';
 import { activeWatchers, klines } from '../db/schema';
 import { getEma21Direction } from '../utils/filters/btc-correlation-filter';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
+import { getBTCDominanceDataService } from './btc-dominance-data';
 import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
 import { getMinNotionalFilterService, type CapitalRequirement } from './min-notional-filter';
@@ -29,6 +30,8 @@ export interface RotationConfig {
   marketType: MarketType;
   capitalRequirement?: CapitalRequirement;
   useBtcCorrelationFilter?: boolean;
+  useBtcDominanceCheck?: boolean;
+  btcDominanceThreshold?: number;
 }
 
 export interface RotationResult {
@@ -38,7 +41,9 @@ export interface RotationResult {
   skippedInsufficientKlines: string[];
   skippedInsufficientCapital: string[];
   skippedTrend: string[];
+  skippedBtcDominance: string[];
   btcTrend?: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  btcDominance?: number;
   timestamp: Date;
 }
 
@@ -100,7 +105,9 @@ export class DynamicSymbolRotationService {
       }
 
       const skippedTrend: string[] = [];
+      const skippedBtcDominance: string[] = [];
       let btcTrend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
+      let btcDominance: number | undefined;
 
       const symbolsAfterCapitalFilter = filteredScores.length;
 
@@ -121,6 +128,32 @@ export class DynamicSymbolRotationService {
             btcPrice: btcEma21Trend.price?.toFixed(2),
             btcEma21: btcEma21Trend.ema21?.toFixed(2),
           }, '[DynamicRotation] BTC Correlation Filter - Trend');
+        }
+      }
+
+      if (config.useBtcDominanceCheck) {
+        const dominanceService = getBTCDominanceDataService();
+        const dominanceData = await dominanceService.getBTCDominance();
+        btcDominance = dominanceData?.btcDominance;
+        const threshold = config.btcDominanceThreshold ?? 60;
+
+        if (btcDominance && btcDominance > threshold) {
+          const btcSymbol = filteredScores.find(s => s.symbol === 'BTCUSDT');
+          if (btcSymbol) {
+            const nonBtcSymbols = filteredScores.filter(s => s.symbol !== 'BTCUSDT');
+            const reducedAltCount = Math.floor(nonBtcSymbols.length * 0.5);
+            const reducedAlts = nonBtcSymbols.slice(0, reducedAltCount);
+            const removed = nonBtcSymbols.slice(reducedAltCount).map(s => s.symbol);
+            skippedBtcDominance.push(...removed);
+            filteredScores = [btcSymbol, ...reducedAlts];
+
+            logger.info({
+              btcDominance: btcDominance.toFixed(1),
+              threshold,
+              reducedFrom: nonBtcSymbols.length,
+              reducedTo: reducedAltCount,
+            }, '[DynamicRotation] BTC Dominance high - reducing alt exposure');
+          }
         }
       }
 
@@ -226,7 +259,9 @@ export class DynamicSymbolRotationService {
         skippedInsufficientKlines,
         skippedInsufficientCapital,
         skippedTrend,
+        skippedBtcDominance,
         btcTrend,
+        btcDominance,
         timestamp: new Date(),
       };
 
@@ -260,6 +295,7 @@ export class DynamicSymbolRotationService {
         skippedInsufficientKlines: [],
         skippedInsufficientCapital: [],
         skippedTrend: [],
+        skippedBtcDominance: [],
         btcTrend: 'NEUTRAL',
         timestamp: new Date(),
       };
