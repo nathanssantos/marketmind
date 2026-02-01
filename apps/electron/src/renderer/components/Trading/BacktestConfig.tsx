@@ -511,7 +511,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
                       LONG Target
                     </Text>
                     <HStack gap={1} flexWrap="wrap">
-                      {(['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const).map((level) => (
+                      {(['auto', '1', '1.272', '1.382', '1.618', '2', '2.618', '3', '3.618', '4.236'] as const).map((level) => (
                         <Button
                           key={level}
                           size="2xs"
@@ -529,7 +529,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
                       SHORT Target
                     </Text>
                     <HStack gap={1} flexWrap="wrap">
-                      {(['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const).map((level) => (
+                      {(['auto', '1', '1.272', '1.382', '1.618', '2', '2.618', '3', '3.618', '4.236'] as const).map((level) => (
                         <Button
                           key={level}
                           size="2xs"

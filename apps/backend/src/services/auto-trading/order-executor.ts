@@ -138,7 +138,7 @@ export class OrderExecutor {
     klines: Kline[],
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
-    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618' = '2',
+    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236' = '2',
     _interval: string = '4h'
   ): number | null {
     const currentIndex = klines.length - 1;

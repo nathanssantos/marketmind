@@ -33,7 +33,7 @@ export const TRAILING_STOP_PARAM_RANGES = {
   },
 } as const;
 
-export const FIBONACCI_LEVELS = ['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'] as const;
+export const FIBONACCI_LEVELS = ['auto', '1', '1.272', '1.382', '1.618', '2', '2.618', '3', '3.618', '4.236'] as const;
 
 export const TREND_EMA_PERIODS = [9, 21, 50, 70, 100, 150, 200] as const;
 

@@ -171,9 +171,13 @@ export interface ChartThemeColors extends BaseChartColors {
     level886: string;
     level100: string;
     level127: string;
+    level138: string;
     level161: string;
     level200: string;
     level261: string;
+    level300: string;
+    level361: string;
+    level423: string;
   };
   fvg?: {
     bullish: string;

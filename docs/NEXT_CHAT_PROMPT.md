@@ -1,96 +1,69 @@
-# Prompt para Continuar o Plano de Otimização
+# Next Chat Prompt - MarketMind
 
-## Contexto
+## Context
 
-Estou trabalhando no MarketMind, um app Electron de trading. Siga as instruções em `CLAUDE.md`.
+The **OPTIMIZATION_MASTER_PLAN.md** is now **100% complete (v2.5.0)**.
 
-**Branch atual:** `feature/trailing-stop-backtest-simulation`
+## What's Been Completed
 
-## O Que Foi Concluído (100% Core)
+1. **Enhanced Opportunity Scoring** - SetupPreScanner + FilterPreValidator integration
+2. **ADX Trend Strength Filter** - BTC ADX check to skip choppy markets (ADX < 20)
+3. **Altcoin Season Index** - Detects ALT_SEASON/BTC_SEASON/NEUTRAL based on alt performance vs BTC
+4. **Order Book Integration** - Imbalance ratio, liquidity walls, pressure detection
+5. **Indicator History** - TimescaleDB hypertable with 31-day history and area charts
+6. **tRPC Endpoints** - `getAltcoinSeasonIndex`, `getBtcAdxTrendStrength`, `getOrderBookAnalysis`, `saveIndicatorSnapshot`
+7. **UI Display** - Market Indicators sidebar with area charts for ADX and Altcoin Season
+8. **12h Default Timeframe** - Now the default for Quick Start
+9. **All Tests Passing** - 4,792 tests (2,433 backend + 2,332 frontend + 27 browser)
 
-### 1. Trailing Stop Optimization (82,944 combinações testadas)
-- **Melhores params LONG:** Activation 90%, Distance 40%, ATR 1.5, BE 0.5%
-- **Melhores params SHORT:** Activation 80%, Distance 30%, ATR 1.5-3.0, BE 0.5-1.5%
-- **Resultado:** +$428.68 (+42.9%), Win Rate 37.6%, Sharpe 0.535
+## Key Files
 
-### 2. Comparação de Timeframes v2 (21 estratégias, 485 min)
-- **7/8 timeframes lucrativos** (vs apenas 1/8 na v1)
-- **12h é o melhor:** +$6,038 (+603.8%), PF 2.30, MaxDD 21%
-- **4h alternativa:** +$2,065 (+206.5%), MaxDD 20.5% (menor DD)
-- **Apenas 12h e 4h têm SHORT lucrativo**
-- **30m único negativo:** -$663 (overtrading)
+- `docs/OPTIMIZATION_MASTER_PLAN.md` - Completed master plan
+- `apps/backend/src/services/dynamic-symbol-rotation.ts` - Main rotation service with all filters
+- `apps/backend/src/services/order-book-analyzer.ts` - Order book analysis
+- `apps/backend/src/services/indicator-history.ts` - Historical indicator data storage
+- `apps/backend/src/services/altcoin-season-index.ts` - Altcoin season detection
+- `apps/backend/src/routers/auto-trading.ts` - tRPC endpoints
+- `apps/backend/src/db/schema.ts` - Database schema with indicator_history table
+- `apps/electron/src/renderer/components/MarketSidebar/tabs/MarketIndicatorsTab.tsx` - UI with charts
 
-### 3. Entry Levels & R:R Optimization
-- **Entry 100% (breakout) é 7.7x melhor** que 61.8%
-- **LONGs dominam:** +$180,604 vs SHORTs: -$3,139
+## Commands
 
-### 4. BTC Correlation Filter
-- **5.6x mais lucrativo** com filtro ($4,643 vs $830)
-- **Drawdown reduzido** em 17% (24.8% vs 41.8%)
+```bash
+# Run all tests
+pnpm test
 
-### 5. Monte Carlo Validation
-- **100% probabilidade lucrativa** (1000 simulações)
-- **CI95 Drawdown:** 27.1% (abaixo do limite 50%)
-- **Retorno mediano:** +490.4%
+# Run backend only
+pnpm --filter @marketmind/backend test
 
-### 6. Market Indicators Sidebar COMPLETA
-- Fear & Greed, BTC Dominance, OI, L/S Ratio
-- Gráficos históricos 31d com tooltips
+# Run frontend only
+pnpm --filter @marketmind/electron test
 
-### 7. Trailing Stop UI
-- Separação LONG/SHORT implementada
-- Toggle `useProfitLockDistance` adicionado
-
-## Configuração Final Otimizada
-
-```json
-{
-  "timeframe": "12h",
-  "maxFibonacciEntryProgressPercent": 100,
-  "minRiskRewardRatioLong": 0.75,
-  "minRiskRewardRatioShort": 0.75,
-  "trailingActivationPercentLong": 0.9,
-  "trailingDistancePercentLong": 0.4,
-  "trailingActivationPercentShort": 0.8,
-  "trailingDistancePercentShort": 0.3,
-  "useBtcCorrelationFilter": true,
-  "useVolumeFilter": true,
-  "useMomentumTimingFilter": true
-}
+# Type check
+pnpm --filter @marketmind/backend type-check
+pnpm --filter @marketmind/electron type-check
 ```
 
-## Fase Atual: Auditoria e Documentação
+## Performance Review Complete (v2.5.1)
 
-### Em Progresso
-1. **Documentação Frontend:** Listar componentes, hooks, stores
-2. **Documentação Backend:** Listar routers, services, CLI scripts
-3. **Limpeza:** Remover docs obsoletos
+Comprehensive performance review completed with the following improvements:
 
-### Futuro (Baixa Prioridade)
-- **Rotation Melhorias:** Setup Pre-Scanner, Filter Pre-Validator
-- **Order Book Integration:** Imbalance, Liquidity Walls
+1. **Reusable Cache Utilities** - Created `SimpleCache<T>` and `KeyedCache<T>` abstractions in `apps/backend/src/utils/cache.ts`
+2. **Centralized Indicator Constants** - Created `apps/backend/src/constants/indicators.ts` with:
+   - `INDICATOR_CACHE` - Cache TTLs for all indicator services
+   - `ALTCOIN_SEASON` - Thresholds, counts, and defaults
+   - `ORDER_BOOK` - Depth limits, wall thresholds, valid limits
+   - `ADX_TREND` - Trend strength thresholds
+   - `INDICATOR_HISTORY` - Days, record limits, retention
+   - `ROTATION_FILTERS` - All reduction percentages and thresholds
+   - `BTC_KLINE_QUERY` - Centralized BTC symbol and query limit
+3. **Consolidated BTC Kline Queries** - Dynamic symbol rotation now fetches BTC klines once and reuses for both correlation filter and ADX check
+4. **Refactored Services** - Updated `altcoin-season-index.ts`, `order-book-analyzer.ts`, `indicator-history.ts`, `indicator-scheduler.ts`, and `dynamic-symbol-rotation.ts` to use new utilities and constants
 
-## Arquivos Importantes
+## Next Steps
 
-```
-docs/OPTIMIZATION_MASTER_PLAN.md     # Plano completo atualizado
-apps/backend/src/cli/                # Scripts de otimização
-├── optimize-trailing-stop.ts        # Trailing Stop (82,944 combos)
-├── compare-timeframes-v2.ts         # Timeframes v2 (21 estratégias)
-├── optimize-entry-levels.ts         # Entry Levels & R:R
-├── compare-btc-filter.ts            # BTC Correlation
-├── compare-trend-filters.ts         # Trend Filters
-└── validate-robustness.ts           # Monte Carlo validation
-```
+Potential future enhancements:
 
-## Métricas do Sistema
-
-| Métrica | Valor |
-|---------|-------|
-| Testes | 2,419 passing |
-| Test Files | 111 |
-| Code Coverage | 92.15% |
-
-## Tarefa
-
-Continuar a fase de Auditoria e Documentação conforme definido no OPTIMIZATION_MASTER_PLAN.md seção 12.
+1. **Order Book Velocity** - Track rate of order book changes over time
+2. **WebSocket Order Book Stream** - Real-time order book updates via WebSocket
+3. **Multi-Symbol Order Book Analysis** - Batch analysis for portfolio overview

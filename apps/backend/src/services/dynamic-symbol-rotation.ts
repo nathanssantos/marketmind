@@ -1,18 +1,19 @@
 import type { MarketType } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
-import { INTERVAL_MS, TIME_MS } from '../constants';
+import { INTERVAL_MS, TIME_MS, ROTATION_FILTERS, BTC_KLINE_QUERY, ADX_TREND } from '../constants';
 import { db } from '../db';
 import { activeWatchers, klines } from '../db/schema';
+import { checkAdxCondition } from '../utils/filters/adx-filter';
 import { getEma21Direction } from '../utils/filters/btc-correlation-filter';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
+import { getAltcoinSeasonIndexService, type SeasonType } from './altcoin-season-index';
 import { getBTCDominanceDataService } from './btc-dominance-data';
 import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
 import { getMinNotionalFilterService, type CapitalRequirement } from './min-notional-filter';
 import { getOpportunityScoringService, type SymbolScore } from './opportunity-scoring';
+import { getOrderBookAnalyzerService, type OrderBookAnalysis } from './order-book-analyzer';
 import { outputRotationResults, RotationLogBuffer } from './watcher-batch-logger';
-
-const HYSTERESIS_THRESHOLD = 10;
 
 export const getIntervalMs = (interval: string): number => {
   const ms = INTERVAL_MS[interval as keyof typeof INTERVAL_MS];
@@ -20,6 +21,14 @@ export const getIntervalMs = (interval: string): number => {
     logger.warn({ interval }, '[DynamicRotation] Invalid interval, using 1h fallback');
   }
   return ms ?? TIME_MS.HOUR;
+};
+
+const fetchBtcKlines = async (interval: string) => {
+  return db.query.klines.findMany({
+    where: and(eq(klines.symbol, BTC_KLINE_QUERY.SYMBOL), eq(klines.interval, interval)),
+    orderBy: [desc(klines.openTime)],
+    limit: BTC_KLINE_QUERY.LIMIT,
+  });
 };
 
 export interface RotationConfig {
@@ -32,7 +41,14 @@ export interface RotationConfig {
   useBtcCorrelationFilter?: boolean;
   useBtcDominanceCheck?: boolean;
   btcDominanceThreshold?: number;
+  useAdxTrendStrength?: boolean;
+  adxMinThreshold?: number;
+  useAltcoinSeasonIndex?: boolean;
+  useOrderBookAnalysis?: boolean;
+  minImbalanceRatio?: number;
 }
+
+export type OrderBookPressure = 'BUYING' | 'SELLING' | 'NEUTRAL';
 
 export interface RotationResult {
   added: string[];
@@ -42,8 +58,16 @@ export interface RotationResult {
   skippedInsufficientCapital: string[];
   skippedTrend: string[];
   skippedBtcDominance: string[];
+  skippedChoppyMarket: string[];
+  skippedAltSeason: string[];
+  skippedOrderBook: string[];
   btcTrend?: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   btcDominance?: number;
+  btcAdx?: number;
+  isChoppyMarket?: boolean;
+  altcoinSeasonType?: SeasonType;
+  altcoinSeasonIndex?: number;
+  btcOrderBook?: OrderBookAnalysis;
   timestamp: Date;
 }
 
@@ -106,42 +130,51 @@ export class DynamicSymbolRotationService {
 
       const skippedTrend: string[] = [];
       const skippedBtcDominance: string[] = [];
+      const skippedChoppyMarket: string[] = [];
+      const skippedAltSeason: string[] = [];
+      const skippedOrderBook: string[] = [];
       let btcTrend: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = 'NEUTRAL';
       let btcDominance: number | undefined;
+      let btcAdx: number | undefined;
+      let isChoppyMarket = false;
+      let altcoinSeasonType: SeasonType | undefined;
+      let altcoinSeasonIndex: number | undefined;
+      let btcOrderBook: OrderBookAnalysis | undefined;
 
       const symbolsAfterCapitalFilter = filteredScores.length;
 
-      if (config.useBtcCorrelationFilter) {
-        const btcDbKlines = await db.query.klines.findMany({
-          where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, config.interval)),
-          orderBy: [desc(klines.openTime)],
-          limit: 100,
-        });
+      let btcKlinesData: ReturnType<typeof mapDbKlinesReversed> | null = null;
 
-        if (btcDbKlines.length >= 30) {
-          const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-          const btcEma21Trend = getEma21Direction(btcKlinesData);
-          btcTrend = btcEma21Trend.direction;
-
-          logger.info({
-            btcTrend,
-            btcPrice: btcEma21Trend.price?.toFixed(2),
-            btcEma21: btcEma21Trend.ema21?.toFixed(2),
-          }, '[DynamicRotation] BTC Correlation Filter - Trend');
+      const needsBtcKlines = config.useBtcCorrelationFilter || config.useAdxTrendStrength;
+      if (needsBtcKlines) {
+        const btcDbKlines = await fetchBtcKlines(config.interval);
+        if (btcDbKlines.length >= ROTATION_FILTERS.MIN_BTC_KLINES) {
+          btcKlinesData = mapDbKlinesReversed(btcDbKlines);
         }
+      }
+
+      if (config.useBtcCorrelationFilter && btcKlinesData) {
+        const btcEma21Trend = getEma21Direction(btcKlinesData);
+        btcTrend = btcEma21Trend.direction;
+
+        logger.info({
+          btcTrend,
+          btcPrice: btcEma21Trend.price?.toFixed(2),
+          btcEma21: btcEma21Trend.ema21?.toFixed(2),
+        }, '[DynamicRotation] BTC Correlation Filter - Trend');
       }
 
       if (config.useBtcDominanceCheck) {
         const dominanceService = getBTCDominanceDataService();
         const dominanceData = await dominanceService.getBTCDominance();
         btcDominance = dominanceData?.btcDominance;
-        const threshold = config.btcDominanceThreshold ?? 60;
+        const threshold = config.btcDominanceThreshold ?? ROTATION_FILTERS.BTC_DOMINANCE_THRESHOLD;
 
         if (btcDominance && btcDominance > threshold) {
-          const btcSymbol = filteredScores.find(s => s.symbol === 'BTCUSDT');
+          const btcSymbol = filteredScores.find(s => s.symbol === BTC_KLINE_QUERY.SYMBOL);
           if (btcSymbol) {
-            const nonBtcSymbols = filteredScores.filter(s => s.symbol !== 'BTCUSDT');
-            const reducedAltCount = Math.floor(nonBtcSymbols.length * 0.5);
+            const nonBtcSymbols = filteredScores.filter(s => s.symbol !== BTC_KLINE_QUERY.SYMBOL);
+            const reducedAltCount = Math.floor(nonBtcSymbols.length * ROTATION_FILTERS.BTC_DOMINANCE_ALT_REDUCTION);
             const reducedAlts = nonBtcSymbols.slice(0, reducedAltCount);
             const removed = nonBtcSymbols.slice(reducedAltCount).map(s => s.symbol);
             skippedBtcDominance.push(...removed);
@@ -154,6 +187,120 @@ export class DynamicSymbolRotationService {
               reducedTo: reducedAltCount,
             }, '[DynamicRotation] BTC Dominance high - reducing alt exposure');
           }
+        }
+      }
+
+      if (config.useAdxTrendStrength && btcKlinesData && btcKlinesData.length >= ADX_TREND.MIN_KLINES_REQUIRED) {
+        const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+        btcAdx = adxResult.adx ?? undefined;
+        const adxThreshold = config.adxMinThreshold ?? ADX_TREND.CHOPPY_MARKET_THRESHOLD;
+
+        if (btcAdx !== undefined && btcAdx < adxThreshold) {
+          isChoppyMarket = true;
+          const reducedCount = Math.floor(filteredScores.length * ROTATION_FILTERS.CHOPPY_MARKET_REDUCTION);
+          const removed = filteredScores.slice(reducedCount).map(s => s.symbol);
+          skippedChoppyMarket.push(...removed);
+          filteredScores = filteredScores.slice(0, reducedCount);
+
+          logger.info({
+            btcAdx: btcAdx.toFixed(2),
+            adxThreshold,
+            isChoppyMarket: true,
+            reducedFrom: filteredScores.length + removed.length,
+            reducedTo: filteredScores.length,
+          }, '[DynamicRotation] Market is choppy (low ADX) - reducing rotation');
+        } else {
+          logger.info({
+            btcAdx: btcAdx?.toFixed(2),
+            adxThreshold,
+            isChoppyMarket: false,
+          }, '[DynamicRotation] ADX Trend Strength check passed');
+        }
+      }
+
+      if (config.useAltcoinSeasonIndex) {
+        const altSeasonService = getAltcoinSeasonIndexService();
+        const seasonResult = await altSeasonService.getAltcoinSeasonIndex({
+          marketType: config.marketType,
+        });
+
+        altcoinSeasonType = seasonResult.seasonType;
+        altcoinSeasonIndex = seasonResult.altSeasonIndex;
+
+        if (seasonResult.seasonType === 'BTC_SEASON') {
+          const btcSymbol = filteredScores.find(s => s.symbol === BTC_KLINE_QUERY.SYMBOL);
+          if (btcSymbol) {
+            const nonBtcSymbols = filteredScores.filter(s => s.symbol !== BTC_KLINE_QUERY.SYMBOL);
+            const reducedAltCount = Math.floor(nonBtcSymbols.length * ROTATION_FILTERS.BTC_SEASON_ALT_REDUCTION);
+            const reducedAlts = nonBtcSymbols.slice(0, reducedAltCount);
+            const removed = nonBtcSymbols.slice(reducedAltCount).map(s => s.symbol);
+            skippedAltSeason.push(...removed);
+            filteredScores = [btcSymbol, ...reducedAlts];
+
+            logger.info({
+              seasonType: 'BTC_SEASON',
+              altSeasonIndex: altcoinSeasonIndex.toFixed(1),
+              reducedFrom: nonBtcSymbols.length,
+              reducedTo: reducedAltCount,
+            }, '[DynamicRotation] BTC Season - significantly reducing alt exposure');
+          }
+        } else if (seasonResult.seasonType === 'ALT_SEASON') {
+          const btcSymbol = filteredScores.find(s => s.symbol === BTC_KLINE_QUERY.SYMBOL);
+          if (btcSymbol) {
+            const btcIndex = filteredScores.indexOf(btcSymbol);
+            if (btcIndex > ROTATION_FILTERS.BTC_DEPRIORITIZE_RANK) {
+              filteredScores = filteredScores.filter(s => s.symbol !== BTC_KLINE_QUERY.SYMBOL);
+              logger.info({
+                seasonType: 'ALT_SEASON',
+                altSeasonIndex: altcoinSeasonIndex.toFixed(1),
+              }, '[DynamicRotation] Alt Season - deprioritizing BTC');
+            }
+          }
+        } else {
+          logger.info({
+            seasonType: 'NEUTRAL',
+            altSeasonIndex: altcoinSeasonIndex.toFixed(1),
+          }, '[DynamicRotation] Neutral season - no adjustments');
+        }
+      }
+
+      if (config.useOrderBookAnalysis) {
+        const orderBookService = getOrderBookAnalyzerService();
+        btcOrderBook = await orderBookService.getOrderBookAnalysis(BTC_KLINE_QUERY.SYMBOL, config.marketType);
+        const minRatio = config.minImbalanceRatio ?? ROTATION_FILTERS.MIN_ORDER_BOOK_IMBALANCE;
+
+        if (btcOrderBook.pressure === 'SELLING' && btcOrderBook.imbalanceRatio < minRatio) {
+          const reducedCount = Math.floor(filteredScores.length * ROTATION_FILTERS.SELLING_PRESSURE_REDUCTION);
+          const removed = filteredScores.slice(reducedCount).map(s => s.symbol);
+          skippedOrderBook.push(...removed);
+          filteredScores = filteredScores.slice(0, reducedCount);
+
+          logger.info({
+            pressure: btcOrderBook.pressure,
+            imbalanceRatio: btcOrderBook.imbalanceRatio.toFixed(2),
+            minRatio,
+            reducedFrom: filteredScores.length + removed.length,
+            reducedTo: filteredScores.length,
+          }, '[DynamicRotation] Strong selling pressure - reducing rotation');
+        } else if (btcOrderBook.askWalls.length > btcOrderBook.bidWalls.length * ROTATION_FILTERS.ASK_WALL_RATIO_THRESHOLD) {
+          const reducedCount = Math.floor(filteredScores.length * ROTATION_FILTERS.ASK_WALL_REDUCTION);
+          const removed = filteredScores.slice(reducedCount).map(s => s.symbol);
+          skippedOrderBook.push(...removed);
+          filteredScores = filteredScores.slice(0, reducedCount);
+
+          logger.info({
+            askWalls: btcOrderBook.askWalls.length,
+            bidWalls: btcOrderBook.bidWalls.length,
+            reducedFrom: filteredScores.length + removed.length,
+            reducedTo: filteredScores.length,
+          }, '[DynamicRotation] Significant ask walls detected - slightly reducing rotation');
+        } else {
+          logger.info({
+            pressure: btcOrderBook.pressure,
+            imbalanceRatio: btcOrderBook.imbalanceRatio.toFixed(2),
+            bidWalls: btcOrderBook.bidWalls.length,
+            askWalls: btcOrderBook.askWalls.length,
+          }, '[DynamicRotation] Order book analysis - no adjustments needed');
         }
       }
 
@@ -188,7 +335,7 @@ export class DynamicSymbolRotationService {
         if (!currentRank || currentRank > config.limit) {
           if (previousRank && currentRank) {
             const rankDrop = currentRank - previousRank;
-            if (rankDrop >= HYSTERESIS_THRESHOLD) {
+            if (rankDrop >= ROTATION_FILTERS.HYSTERESIS_THRESHOLD) {
               toRemove.push(symbol);
             } else {
               kept.push(symbol);
@@ -260,8 +407,16 @@ export class DynamicSymbolRotationService {
         skippedInsufficientCapital,
         skippedTrend,
         skippedBtcDominance,
+        skippedChoppyMarket,
+        skippedAltSeason,
+        skippedOrderBook,
         btcTrend,
         btcDominance,
+        btcAdx,
+        isChoppyMarket,
+        altcoinSeasonType,
+        altcoinSeasonIndex,
+        btcOrderBook,
         timestamp: new Date(),
       };
 
@@ -296,7 +451,11 @@ export class DynamicSymbolRotationService {
         skippedInsufficientCapital: [],
         skippedTrend: [],
         skippedBtcDominance: [],
+        skippedChoppyMarket: [],
+        skippedAltSeason: [],
+        skippedOrderBook: [],
         btcTrend: 'NEUTRAL',
+        isChoppyMarket: false,
         timestamp: new Date(),
       };
     }

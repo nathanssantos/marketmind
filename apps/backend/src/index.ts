@@ -133,6 +133,9 @@ const start = async (): Promise<void> => {
     const { incomeSyncService } = await import('./services/income-sync-service');
     incomeSyncService.start();
 
+    const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
+    await indicatorSchedulerService.start();
+
     fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
     fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`🔌 WebSocket server initialized`);
@@ -141,6 +144,7 @@ const start = async (): Promise<void> => {
     fastify.log.info(`📉 Binance kline stream service started (SPOT + FUTURES)`);
     fastify.log.info(`👤 Binance user stream service started`);
     fastify.log.info(`🔄 Kline gap filler service started`);
+    fastify.log.info(`📊 Indicator scheduler started (snapshots every 30min)`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

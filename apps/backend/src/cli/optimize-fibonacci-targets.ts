@@ -15,7 +15,7 @@ import {
   parseCliArgs,
 } from './shared-backtest-config';
 
-type FibonacciLevel = 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618';
+type FibonacciLevel = 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236';
 type TpMode = 'default' | 'fibonacci';
 
 interface FibonacciConfig {
@@ -45,7 +45,7 @@ interface TestResult {
   avgLoss: number;
 }
 
-const FIBONACCI_LEVELS: FibonacciLevel[] = ['auto', '1', '1.272', '1.382', '1.5', '1.618', '2', '2.272', '2.618'];
+const FIBONACCI_LEVELS: FibonacciLevel[] = ['auto', '1', '1.272', '1.382', '1.618', '2', '2.618', '3', '3.618', '4.236'];
 const TP_MODES: TpMode[] = ['default', 'fibonacci'];
 
 const generateFibonacciCombinations = (): FibonacciConfig[] => {

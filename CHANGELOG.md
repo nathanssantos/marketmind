@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.50.0] - 2026-02-01
+
+### Added
+- **Order Book Integration** for Dynamic Symbol Rotation
+  - `OrderBookAnalyzerService` with imbalance ratio and liquidity wall detection
+  - Buying/selling pressure detection based on bid/ask volume ratios
+  - Integration with Dynamic Symbol Rotation to filter symbols during high selling pressure
+  - New tRPC endpoint `getOrderBookAnalysis` for real-time order book data
+  - Order Book card in Market Indicators sidebar showing BTC pressure and imbalance
+  - 14 new tests for order book analyzer service
+- **Indicator History with Area Charts**
+  - `indicator_history` TimescaleDB hypertable for storing historical indicator values
+  - `IndicatorHistoryService` for saving and retrieving 31-day indicator history
+  - Area charts for ADX Trend Strength and Altcoin Season Index
+  - `saveIndicatorSnapshot` endpoint for manual/scheduled indicator snapshots
+  - 90-day retention policy with automatic compression after 7 days
+- **OPTIMIZATION_MASTER_PLAN completed** at 100% (v2.5.0)
+
+### Changed
+- Dynamic Symbol Rotation now considers order book conditions
+  - Reduces exposure during strong selling pressure (imbalance < 0.7)
+  - Detects significant ask walls and adjusts rotation accordingly
+- Market Indicators sidebar enhancements:
+  - ADX and Altcoin Season now show 24h change badges
+  - Historical area charts when data is available
+  - Order Book analysis card with pressure and imbalance
+
+---
+
 ## [0.49.0] - 2026-01-23
 
 ### Added

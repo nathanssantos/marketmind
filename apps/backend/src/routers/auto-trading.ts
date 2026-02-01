@@ -20,6 +20,7 @@ import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
+import { getAltcoinSeasonIndexService } from '../services/altcoin-season-index';
 import { getBTCDominanceDataService } from '../services/btc-dominance-data';
 import { getFearGreedDataService } from '../services/fear-greed-data';
 import { walletQueries } from '../services/database/walletQueries';
@@ -30,9 +31,12 @@ import { logger } from '../services/logger';
 import { getMarketCapDataService } from '../services/market-cap-data';
 import { getMinNotionalFilterService } from '../services/min-notional-filter';
 import { getOpportunityScoringService } from '../services/opportunity-scoring';
+import { getOrderBookAnalyzerService } from '../services/order-book-analyzer';
+import { getIndicatorHistoryService } from '../services/indicator-history';
 import { riskManagerService } from '../services/risk-manager';
 import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
+import { checkAdxCondition } from '../utils/filters/adx-filter';
 import { getBtcTrendEmaInfoWithHistory, getEma21Direction, type Ema21TrendResult } from '../utils/filters/btc-correlation-filter';
 import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
@@ -2061,6 +2065,107 @@ export const autoTradingRouter = router({
     return result;
   }),
 
+  getAltcoinSeasonIndex: protectedProcedure.query(async () => {
+    const service = getAltcoinSeasonIndexService();
+    const historyService = getIndicatorHistoryService();
+    const result = await service.getAltcoinSeasonIndex();
+    const history = await historyService.getIndicatorHistory('ALTCOIN_SEASON', 31);
+
+    const seasonEmoji = result.seasonType === 'ALT_SEASON' ? '🚀' : result.seasonType === 'BTC_SEASON' ? '🪙' : '⚖️';
+    logApiTable('getAltcoinSeasonIndex', [
+      ['Season', `${seasonEmoji} ${result.seasonType}`],
+      ['Index', `${result.altSeasonIndex.toFixed(1)}%`],
+      ['Alts > BTC', `${result.altsOutperformingBtc}/${result.totalAltsAnalyzed}`],
+      ['BTC 24h', `${result.btcPerformance24h >= 0 ? '+' : ''}${result.btcPerformance24h.toFixed(2)}%`],
+      ['Avg Alt 24h', `${result.avgAltPerformance24h >= 0 ? '+' : ''}${result.avgAltPerformance24h.toFixed(2)}%`],
+      ['History Points', history.history.length.toString()],
+    ]);
+
+    return {
+      ...result,
+      history: history.history,
+      change24h: history.change24h,
+    };
+  }),
+
+  getBtcAdxTrendStrength: protectedProcedure
+    .input(z.object({ interval: z.string().default('12h') }))
+    .query(async ({ input, ctx }) => {
+      const historyService = getIndicatorHistoryService();
+      const history = await historyService.getIndicatorHistory('ADX', 31);
+
+      const btcDbKlines = await ctx.db.query.klines.findMany({
+        where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, input.interval)),
+        orderBy: [desc(klines.openTime)],
+        limit: 100,
+      });
+
+      if (btcDbKlines.length < 50) {
+        return {
+          adx: null,
+          plusDI: null,
+          minusDI: null,
+          isStrongTrend: false,
+          isBullish: false,
+          isBearish: false,
+          isChoppy: true,
+          reason: 'Insufficient data',
+          history: history.history,
+          change24h: history.change24h,
+        };
+      }
+
+      const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
+      const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+      const isChoppy = adxResult.adx !== null && adxResult.adx < 20;
+
+      logApiTable('getBtcAdxTrendStrength', [
+        ['ADX', adxResult.adx !== null ? adxResult.adx.toFixed(2) : 'N/A'],
+        ['+DI', adxResult.plusDI !== null ? adxResult.plusDI.toFixed(2) : 'N/A'],
+        ['-DI', adxResult.minusDI !== null ? adxResult.minusDI.toFixed(2) : 'N/A'],
+        ['Strong Trend', adxResult.isStrongTrend ? '✅' : '❌'],
+        ['Choppy', isChoppy ? '⚠️ Yes' : 'No'],
+        ['History Points', history.history.length.toString()],
+      ]);
+
+      return {
+        adx: adxResult.adx,
+        plusDI: adxResult.plusDI,
+        minusDI: adxResult.minusDI,
+        isStrongTrend: adxResult.isStrongTrend,
+        isBullish: adxResult.isBullish,
+        isBearish: adxResult.isBearish,
+        isChoppy,
+        reason: adxResult.reason,
+        history: history.history,
+        change24h: history.change24h,
+      };
+    }),
+
+  getOrderBookAnalysis: protectedProcedure
+    .input(z.object({
+      symbol: z.string().default('BTCUSDT'),
+      marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+    }))
+    .query(async ({ input }) => {
+      const service = getOrderBookAnalyzerService();
+      const result = await service.getOrderBookAnalysis(input.symbol, input.marketType);
+
+      const pressureEmoji = result.pressure === 'BUYING' ? '📈' : result.pressure === 'SELLING' ? '📉' : '➡️';
+      logApiTable('getOrderBookAnalysis', [
+        ['Symbol', result.symbol],
+        ['Pressure', `${pressureEmoji} ${result.pressure}`],
+        ['Imbalance', result.imbalanceRatio.toFixed(2)],
+        ['Bid Volume', `$${(result.bidVolume / 1e6).toFixed(2)}M`],
+        ['Ask Volume', `$${(result.askVolume / 1e6).toFixed(2)}M`],
+        ['Spread', `${result.spreadPercent.toFixed(4)}%`],
+        ['Bid Walls', result.bidWalls.length.toString()],
+        ['Ask Walls', result.askWalls.length.toString()],
+      ]);
+
+      return result;
+    }),
+
   getOpenInterest: protectedProcedure
     .input(z.object({ symbol: z.string().default('BTCUSDT') }))
     .query(async ({ input }) => {
@@ -2129,4 +2234,106 @@ export const autoTradingRouter = router({
         topTraderHistory: topTraderRatio.slice(-24),
       };
     }),
+
+  saveIndicatorSnapshot: protectedProcedure.mutation(async ({ ctx }) => {
+    const historyService = getIndicatorHistoryService();
+    const altSeasonService = getAltcoinSeasonIndexService();
+    const orderBookService = getOrderBookAnalyzerService();
+
+    const btcDbKlines = await ctx.db.query.klines.findMany({
+      where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, '12h')),
+      orderBy: [desc(klines.openTime)],
+      limit: 100,
+    });
+
+    let adxSaved = false;
+    if (btcDbKlines.length >= 50) {
+      const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
+      const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+      if (adxResult.adx !== null) {
+        await historyService.saveIndicatorValue('ADX', adxResult.adx, {
+          plusDI: adxResult.plusDI,
+          minusDI: adxResult.minusDI,
+          isStrongTrend: adxResult.isStrongTrend,
+        });
+        adxSaved = true;
+      }
+    }
+
+    const altSeason = await altSeasonService.getAltcoinSeasonIndex();
+    await historyService.saveIndicatorValue('ALTCOIN_SEASON', altSeason.altSeasonIndex, {
+      seasonType: altSeason.seasonType,
+      altsOutperformingBtc: altSeason.altsOutperformingBtc,
+      totalAltsAnalyzed: altSeason.totalAltsAnalyzed,
+    });
+
+    const orderBook = await orderBookService.getOrderBookAnalysis('BTCUSDT', 'FUTURES');
+    await historyService.saveIndicatorValue('ORDER_BOOK_IMBALANCE', orderBook.imbalanceRatio, {
+      pressure: orderBook.pressure,
+      bidWalls: orderBook.bidWalls.length,
+      askWalls: orderBook.askWalls.length,
+    });
+
+    logApiTable('saveIndicatorSnapshot', [
+      ['ADX', adxSaved ? '✅' : '❌'],
+      ['Altcoin Season', '✅'],
+      ['Order Book', '✅'],
+    ]);
+
+    return { success: true, adxSaved, altSeasonSaved: true, orderBookSaved: true };
+  }),
+
+  getMinActiveWatcherInterval: protectedProcedure.query(async () => {
+    const activeWatchers = autoTradingScheduler.getActiveWatchers();
+
+    if (activeWatchers.length === 0) {
+      return {
+        hasActiveWatchers: false,
+        minInterval: '4h',
+        minIntervalMs: 4 * 60 * 60 * 1000,
+        halfIntervalMs: 2 * 60 * 60 * 1000,
+        activeWatcherCount: 0,
+      };
+    }
+
+    const intervalToMs: Record<string, number> = {
+      '1m': 60_000,
+      '3m': 180_000,
+      '5m': 300_000,
+      '15m': 900_000,
+      '30m': 1_800_000,
+      '1h': 3_600_000,
+      '2h': 7_200_000,
+      '4h': 14_400_000,
+      '6h': 21_600_000,
+      '8h': 28_800_000,
+      '12h': 43_200_000,
+      '1d': 86_400_000,
+      '3d': 259_200_000,
+      '1w': 604_800_000,
+    };
+
+    let minIntervalMs = Number.MAX_SAFE_INTEGER;
+    let minInterval = '4h';
+
+    for (const watcher of activeWatchers) {
+      const intervalMs = intervalToMs[watcher.interval] ?? 14_400_000;
+      if (intervalMs < minIntervalMs) {
+        minIntervalMs = intervalMs;
+        minInterval = watcher.interval;
+      }
+    }
+
+    const halfIntervalMs = Math.floor(minIntervalMs / 2);
+    const minHalfInterval = 5 * 60 * 1000;
+    const effectiveHalfInterval = Math.max(halfIntervalMs, minHalfInterval);
+
+    return {
+      hasActiveWatchers: true,
+      minInterval,
+      minIntervalMs,
+      halfIntervalMs: effectiveHalfInterval,
+      activeWatcherCount: activeWatchers.length,
+    };
+  }),
 });

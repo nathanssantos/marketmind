@@ -24,13 +24,20 @@ const useContainerWidth = () => {
 };
 
 const POPULAR_FUNDING_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'];
-const REFRESH_INTERVALS = {
-  fearGreed: 30 * 60 * 1000,
-  btcDominance: 10 * 60 * 1000,
-  openInterest: 5 * 60 * 1000,
-  longShortRatio: 5 * 60 * 1000,
-  fundingRates: 10 * 60 * 1000,
-} as const;
+
+const DEFAULT_HALF_INTERVAL = 2 * 60 * 60 * 1000;
+const MIN_REFRESH_INTERVAL = 5 * 60 * 1000;
+
+const getRefreshIntervals = (halfIntervalMs: number) => ({
+  fearGreed: Math.max(halfIntervalMs, 30 * 60 * 1000),
+  btcDominance: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  openInterest: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  longShortRatio: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  fundingRates: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  altcoinSeason: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  adxTrendStrength: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  orderBook: Math.max(Math.floor(halfIntervalMs / 4), 60 * 1000),
+});
 
 const TOOLTIP_STYLE = {
   backgroundColor: 'var(--chakra-colors-bg-muted)',
@@ -66,6 +73,25 @@ const getFearGreedColor = (value: number): string => {
   if (value <= 55) return 'gray';
   if (value <= 75) return 'green';
   return 'green';
+};
+
+const getAltSeasonColor = (seasonType: string): string => {
+  if (seasonType === 'ALT_SEASON') return 'green';
+  if (seasonType === 'BTC_SEASON') return 'orange';
+  return 'gray';
+};
+
+const getAdxColor = (adx: number | null): string => {
+  if (adx === null) return 'gray';
+  if (adx >= 25) return 'green';
+  if (adx >= 20) return 'yellow';
+  return 'red';
+};
+
+const getOrderBookPressureColor = (pressure: string): string => {
+  if (pressure === 'BUYING') return 'green';
+  if (pressure === 'SELLING') return 'red';
+  return 'gray';
 };
 
 const SectionTitle = ({ children, mb = 2 }: { children: React.ReactNode; mb?: number }) => (
@@ -115,6 +141,14 @@ const MarketIndicatorsTabComponent = () => {
   const { t } = useTranslation();
   const { ref: containerRef, hasWidth } = useContainerWidth();
 
+  const { data: watcherInterval } = trpc.autoTrading.getMinActiveWatcherInterval.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
+  const halfIntervalMs = watcherInterval?.halfIntervalMs ?? DEFAULT_HALF_INTERVAL;
+  const REFRESH_INTERVALS = getRefreshIntervals(halfIntervalMs);
+
   const { data: fundingRates, isLoading: isFundingLoading } = trpc.autoTrading.getBatchFundingRates.useQuery(
     { symbols: POPULAR_FUNDING_SYMBOLS },
     { staleTime: REFRESH_INTERVALS.fundingRates, refetchInterval: REFRESH_INTERVALS.fundingRates }
@@ -138,6 +172,21 @@ const MarketIndicatorsTabComponent = () => {
   const { data: longShortRatio, isLoading: isLongShortLoading } = trpc.autoTrading.getLongShortRatio.useQuery(
     { symbol: 'BTCUSDT', period: '1h' },
     { staleTime: REFRESH_INTERVALS.longShortRatio, refetchInterval: REFRESH_INTERVALS.longShortRatio }
+  );
+
+  const { data: altcoinSeason, isLoading: isAltcoinSeasonLoading } = trpc.autoTrading.getAltcoinSeasonIndex.useQuery(
+    undefined,
+    { staleTime: REFRESH_INTERVALS.altcoinSeason, refetchInterval: REFRESH_INTERVALS.altcoinSeason }
+  );
+
+  const { data: adxTrendStrength, isLoading: isAdxLoading } = trpc.autoTrading.getBtcAdxTrendStrength.useQuery(
+    { interval: '12h' },
+    { staleTime: REFRESH_INTERVALS.adxTrendStrength, refetchInterval: REFRESH_INTERVALS.adxTrendStrength }
+  );
+
+  const { data: orderBook, isLoading: isOrderBookLoading } = trpc.autoTrading.getOrderBookAnalysis.useQuery(
+    { symbol: 'BTCUSDT', marketType: 'FUTURES' },
+    { staleTime: REFRESH_INTERVALS.orderBook, refetchInterval: REFRESH_INTERVALS.orderBook }
   );
 
   return (
@@ -277,6 +326,130 @@ const MarketIndicatorsTabComponent = () => {
           <Text fontSize="2xs" color="fg.muted" mt={1}>
             {t('marketSidebar.indicators.topTraders')}: {(longShortRatio.topTraders.longAccount * 100).toFixed(1)}% / {(longShortRatio.topTraders.shortAccount * 100).toFixed(1)}%
           </Text>
+        )}
+      </Box>
+
+      <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+        <SectionTitle>Altcoin Season Index</SectionTitle>
+        {altcoinSeason && (
+          <Flex align="center" gap={2} mb={2} flexWrap="wrap">
+            <Badge colorPalette={getAltSeasonColor(altcoinSeason.seasonType)} size="xs" px={2}>
+              {altcoinSeason.seasonType === 'ALT_SEASON' ? '🚀 Alt Season' :
+               altcoinSeason.seasonType === 'BTC_SEASON' ? '🪙 BTC Season' : '⚖️ Neutral'}
+            </Badge>
+            <Badge colorPalette="gray" size="xs" px={2}>
+              Index: {altcoinSeason.altSeasonIndex.toFixed(0)}%
+            </Badge>
+            {altcoinSeason.change24h !== null && (
+              <Badge size="xs" px={2} colorPalette={altcoinSeason.change24h >= 0 ? 'green' : 'red'}>
+                24h: {altcoinSeason.change24h >= 0 ? '+' : ''}{altcoinSeason.change24h.toFixed(1)}
+              </Badge>
+            )}
+          </Flex>
+        )}
+        {isAltcoinSeasonLoading || !hasWidth ? (
+          <Skeleton height="60px" />
+        ) : altcoinSeason?.history && altcoinSeason.history.length > 0 ? (
+          <MiniAreaChart
+            data={altcoinSeason.history}
+            dataKey="value"
+            color={`var(--chakra-colors-${getAltSeasonColor(altcoinSeason.seasonType)}-500)`}
+            gradientId="altSeasonGradient"
+            formatter={(v) => `${v.toFixed(0)}%`}
+            label="Index"
+            yDomain={[0, 100]}
+            referenceLine={50}
+          />
+        ) : altcoinSeason ? (
+          <>
+            <Flex justify="space-between" fontSize="2xs" color="fg.muted">
+              <Text>Alts {">"} BTC: {altcoinSeason.altsOutperformingBtc}/{altcoinSeason.totalAltsAnalyzed}</Text>
+              <Text>BTC 24h: {altcoinSeason.btcPerformance24h >= 0 ? '+' : ''}{altcoinSeason.btcPerformance24h.toFixed(2)}%</Text>
+            </Flex>
+            {altcoinSeason.topPerformers.length > 0 && (
+              <Text fontSize="2xs" color="fg.muted" mt={1}>
+                Top: {altcoinSeason.topPerformers.slice(0, 3).map(p => `${p.symbol.replace('USDT', '')} +${p.performance.toFixed(1)}%`).join(', ')}
+              </Text>
+            )}
+          </>
+        ) : (
+          <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        )}
+      </Box>
+
+      <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+        <SectionTitle>ADX Trend Strength (BTC)</SectionTitle>
+        {adxTrendStrength && (
+          <Flex align="center" gap={2} mb={2} flexWrap="wrap">
+            <Badge colorPalette={getAdxColor(adxTrendStrength.adx)} size="xs" px={2}>
+              ADX: {adxTrendStrength.adx?.toFixed(1) ?? 'N/A'}
+            </Badge>
+            {adxTrendStrength.isChoppy ? (
+              <Badge colorPalette="red" size="xs" px={2}>⚠️ Choppy Market</Badge>
+            ) : adxTrendStrength.isStrongTrend ? (
+              <Badge colorPalette="green" size="xs" px={2}>✅ Strong Trend</Badge>
+            ) : (
+              <Badge colorPalette="yellow" size="xs" px={2}>Weak Trend</Badge>
+            )}
+            {adxTrendStrength.change24h !== null && (
+              <Badge size="xs" px={2} colorPalette={adxTrendStrength.change24h >= 0 ? 'green' : 'red'}>
+                24h: {adxTrendStrength.change24h >= 0 ? '+' : ''}{adxTrendStrength.change24h.toFixed(1)}
+              </Badge>
+            )}
+          </Flex>
+        )}
+        {isAdxLoading || !hasWidth ? (
+          <Skeleton height="60px" />
+        ) : adxTrendStrength?.history && adxTrendStrength.history.length > 0 ? (
+          <MiniAreaChart
+            data={adxTrendStrength.history}
+            dataKey="value"
+            color={`var(--chakra-colors-${getAdxColor(adxTrendStrength.adx)}-500)`}
+            gradientId="adxGradient"
+            formatter={(v) => v.toFixed(1)}
+            label="ADX"
+            yDomain={[0, 100]}
+            referenceLine={20}
+          />
+        ) : adxTrendStrength ? (
+          <Flex justify="space-between" fontSize="2xs" color="fg.muted">
+            <Text>+DI: {adxTrendStrength.plusDI?.toFixed(1) ?? 'N/A'}</Text>
+            <Text>-DI: {adxTrendStrength.minusDI?.toFixed(1) ?? 'N/A'}</Text>
+            <Text>{adxTrendStrength.isBullish ? '📈 Bullish' : adxTrendStrength.isBearish ? '📉 Bearish' : '➡️ Neutral'}</Text>
+          </Flex>
+        ) : (
+          <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        )}
+      </Box>
+
+      <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+        <SectionTitle>Order Book (BTC)</SectionTitle>
+        {isOrderBookLoading ? (
+          <Skeleton height="60px" />
+        ) : orderBook ? (
+          <>
+            <Flex align="center" gap={2} mb={2} flexWrap="wrap">
+              <Badge colorPalette={getOrderBookPressureColor(orderBook.pressure)} size="xs" px={2}>
+                {orderBook.pressure === 'BUYING' ? '📈 Buying Pressure' :
+                 orderBook.pressure === 'SELLING' ? '📉 Selling Pressure' : '➡️ Neutral'}
+              </Badge>
+              <Badge colorPalette="gray" size="xs" px={2}>
+                Ratio: {orderBook.imbalanceRatio.toFixed(2)}
+              </Badge>
+            </Flex>
+            <Flex justify="space-between" fontSize="2xs" color="fg.muted">
+              <Text>Bids: ${formatLargeNumber(orderBook.bidVolume)}</Text>
+              <Text>Asks: ${formatLargeNumber(orderBook.askVolume)}</Text>
+              <Text>Spread: {orderBook.spreadPercent.toFixed(4)}%</Text>
+            </Flex>
+            {(orderBook.bidWalls.length > 0 || orderBook.askWalls.length > 0) && (
+              <Text fontSize="2xs" color="fg.muted" mt={1}>
+                Walls: {orderBook.bidWalls.length} bid / {orderBook.askWalls.length} ask
+              </Text>
+            )}
+          </>
+        ) : (
+          <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
         )}
       </Box>
 

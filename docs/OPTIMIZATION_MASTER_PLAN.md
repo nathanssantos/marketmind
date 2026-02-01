@@ -1,8 +1,8 @@
 # Plano Mestre de Otimização do Sistema de Trading
 
-**Status:** ✅ 100% COMPLETO (Core + Auditoria + Rotation Melhorias)
-**Versão:** 2.3.0
-**Última Atualização:** 2026-02-01 11:20
+**Status:** ✅ 100% COMPLETO
+**Versão:** 2.5.0
+**Última Atualização:** 2026-02-01 11:50
 **Autor:** Claude Opus 4.5 + Nathan
 
 ---
@@ -17,11 +17,11 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 4. **Comparação de Timeframes** - 8 timeframes testados ✅
 5. **Rotation/QuickStart** - BTC Correlation Filter simplificado ✅
 6. **Walk-Forward + Monte Carlo** - Validação estatística ✅
-7. **Market Indicators Sidebar** - Fear & Greed, BTC Dominance, OI, L/S Ratio ✅
+7. **Market Indicators Sidebar** - Fear & Greed, BTC Dominance, OI, L/S Ratio, ADX, Altcoin Season ✅
 8. **Aplicação dos Defaults** - Configs ótimas aplicadas ✅
 9. **Auditoria e Documentação** - Frontend, Backend routers, CLI scripts ✅
-10. **Melhorias Rotation** - Setup Pre-Scanner, Filter Pre-Validator, BTC Dominance Check ✅
-11. **Order Book Integration** - Imbalance, Liquidity Walls 🔮 FUTURO
+10. **Melhorias Rotation** - Setup Pre-Scanner, Filter Pre-Validator, BTC Dominance, ADX, Altcoin Season ✅
+11. **Order Book Integration** - Imbalance Ratio, Liquidity Walls, Pressure Detection ✅
 
 ### Progresso por Categoria
 | Categoria | Status | % |
@@ -31,7 +31,7 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 | UI/UX Implementado | ✅ | 100% |
 | Auditoria/Docs | ✅ | 100% |
 | Rotation Melhorias | ✅ | 100% |
-| Order Book | 🔮 | Futuro |
+| Order Book | ✅ | 100% |
 
 ### Estado Atual (2026-02-01 00:10) - CORE COMPLETO
 
@@ -2347,6 +2347,26 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 ---
 
 ## 15. Atualizações do Plano
+
+### v2.4.0 (2026-02-01 11:35)
+- **ADX Trend Strength implementado:**
+  - Novo serviço integrado ao rotation para detectar mercados choppy
+  - Quando ADX < 20, reduz rotação em 50%
+  - Endpoint: `getBtcAdxTrendStrength` no auto-trading router
+  - UI: Novo card no Market Indicators com ADX, +DI, -DI
+- **Altcoin Season Index implementado:**
+  - Novo serviço: `apps/backend/src/services/altcoin-season-index.ts`
+  - Calcula se estamos em Alt Season (>75% alts > BTC) ou BTC Season (<25%)
+  - Integrado ao rotation: reduz alts em BTC Season, deprioritiza BTC em Alt Season
+  - Endpoint: `getAltcoinSeasonIndex` no auto-trading router
+  - UI: Novo card no Market Indicators com season type, index, top/worst performers
+- **Market Indicators UI atualizada:**
+  - Novos cards: ADX Trend Strength, Altcoin Season Index
+  - Mostra badges coloridos por estado (choppy/strong trend, alt/btc season)
+- **Validação realizada:**
+  - Script de teste: `src/cli/test-new-indicators.ts`
+  - ADX Filter funcionando corretamente
+  - Altcoin Season Index retornando dados reais (80% alts > BTC = ALT_SEASON)
 
 ### v2.3.0 (2026-02-01 11:20)
 - **Rotation Melhorias (Seção 13) COMPLETAS:**

@@ -634,22 +634,25 @@ const customConfig = defineConfig({
         'chart.fibonacci.level138': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
-        'chart.fibonacci.level150': {
-          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
-        },
         'chart.fibonacci.level161': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level200': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
-        'chart.fibonacci.level227': {
-          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
-        },
         'chart.fibonacci.level261': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fibonacci.level886': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level300': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level361': {
+          value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
+        },
+        'chart.fibonacci.level423': {
           value: { base: FIBONACCI_LINE_COLOR, _dark: FIBONACCI_LINE_COLOR },
         },
         'chart.fvg.bullish': {
@@ -1063,11 +1066,12 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       level100: resolveValue(tokens['chart.fibonacci.level100']),
       level127: resolveValue(tokens['chart.fibonacci.level127']),
       level138: resolveValue(tokens['chart.fibonacci.level138']),
-      level150: resolveValue(tokens['chart.fibonacci.level150']),
       level161: resolveValue(tokens['chart.fibonacci.level161']),
       level200: resolveValue(tokens['chart.fibonacci.level200']),
-      level227: resolveValue(tokens['chart.fibonacci.level227']),
       level261: resolveValue(tokens['chart.fibonacci.level261']),
+      level300: resolveValue(tokens['chart.fibonacci.level300']),
+      level361: resolveValue(tokens['chart.fibonacci.level361']),
+      level423: resolveValue(tokens['chart.fibonacci.level423']),
     },
     fvg: {
       bullish: resolveValue(tokens['chart.fvg.bullish']),

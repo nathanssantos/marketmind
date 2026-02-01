@@ -135,42 +135,12 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.moveTo).toHaveBeenCalledWith(0, expect.any(Number));
     });
 
-    it('should use solid line style by default', () => {
+    it('should always use dotted line style', () => {
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
           colors: mockColors,
           enabled: true,
-        })
-      );
-
-      result.current.renderLine();
-
-      expect(mockCtx.setLineDash).toHaveBeenCalledWith([]);
-    });
-
-    it('should use dashed line style when specified', () => {
-      const { result } = renderHook(() =>
-        useCurrentPriceLineRenderer({
-          manager: mockManager,
-          colors: mockColors,
-          enabled: true,
-          lineStyle: 'dashed',
-        })
-      );
-
-      result.current.renderLine();
-
-      expect(mockCtx.setLineDash).toHaveBeenCalledWith([8, 4]);
-    });
-
-    it('should use dotted line style when specified', () => {
-      const { result } = renderHook(() =>
-        useCurrentPriceLineRenderer({
-          manager: mockManager,
-          colors: mockColors,
-          enabled: true,
-          lineStyle: 'dotted',
         })
       );
 
@@ -333,7 +303,11 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.lineWidth).toBe(4);
     });
 
-    it('should apply globalAlpha for line transparency', () => {
+    it('should use bullish color when candle closes higher than open', () => {
+      mockManager.getKlines = vi.fn(() => [
+        { openTime: 1000, closeTime: 2000, open: '100', high: '105', low: '95', close: '105', volume: '1000', quoteVolume: '105000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '52500' },
+      ]);
+
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
@@ -344,26 +318,25 @@ describe('useCurrentPriceLineRenderer', () => {
 
       result.current.renderLine();
 
-      expect(mockCtx.globalAlpha).toBe(0.5);
+      expect(mockCtx.strokeStyle).toBe(mockColors.bullish);
     });
 
-    it('should use currentPriceLine color for current price line', () => {
-      const customColors = {
-        ...mockColors,
-        currentPriceLine: '#00FF00',
-      };
+    it('should use bearish color when candle closes lower than open', () => {
+      mockManager.getKlines = vi.fn(() => [
+        { openTime: 1000, closeTime: 2000, open: '105', high: '108', low: '95', close: '100', volume: '1000', quoteVolume: '100000', trades: 100, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '50000' },
+      ]);
 
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
-          colors: customColors,
+          colors: mockColors,
           enabled: true,
         })
       );
 
       result.current.renderLine();
 
-      expect(mockCtx.strokeStyle).toBe('#00FF00');
+      expect(mockCtx.strokeStyle).toBe(mockColors.bearish);
     });
 
     it('should calculate line end position based on rightMargin', () => {

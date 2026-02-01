@@ -87,7 +87,7 @@ async function runMultiWatcherBacktest() {
 
   const fibTargetArg = process.argv.find(arg => arg.startsWith('--fib-target='));
   const fibonacciTargetLevelStr = fibTargetArg
-    ? (fibTargetArg.split('=')[1] as 'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618')
+    ? (fibTargetArg.split('=')[1] as 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236')
     : config.fibonacciTargetLevel ?? 'auto';
 
   const fibLevelMap: Record<string, number | undefined> = {

@@ -257,9 +257,9 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   minRiskRewardRatioShort: numeric('min_risk_reward_ratio_short', { precision: 4, scale: 2 }).default('0.75'),
   maxFibonacciEntryProgressPercent: integer('max_fibonacci_entry_progress_percent').default(100).notNull(),
   tpCalculationMode: varchar('tp_calculation_mode', { length: 20 }).$type<'default' | 'fibonacci'>().default('fibonacci').notNull(),
-  fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618'>().default('2').notNull(),
-  fibonacciTargetLevelLong: varchar('fibonacci_target_level_long', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618'>().default('2'),
-  fibonacciTargetLevelShort: varchar('fibonacci_target_level_short', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.5' | '1.618' | '2' | '2.272' | '2.618'>().default('1.272'),
+  fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'>().default('2').notNull(),
+  fibonacciTargetLevelLong: varchar('fibonacci_target_level_long', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'>().default('2'),
+  fibonacciTargetLevelShort: varchar('fibonacci_target_level_short', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'>().default('1.272'),
   useDynamicSymbolSelection: boolean('use_dynamic_symbol_selection').default(false).notNull(),
   dynamicSymbolRotationInterval: varchar('dynamic_symbol_rotation_interval', { length: 10 }).$type<'1h' | '4h' | '1d'>().default('4h').notNull(),
   dynamicSymbolExcluded: text('dynamic_symbol_excluded'),
@@ -551,3 +551,17 @@ export const userPreferences = pgTable('user_preferences', {
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 export type NewUserPreference = typeof userPreferences.$inferInsert;
+
+export const indicatorHistory = pgTable('indicator_history', {
+  id: serial('id').primaryKey(),
+  indicatorType: varchar('indicator_type', { length: 50 }).notNull(),
+  value: numeric({ precision: 20, scale: 8 }).notNull(),
+  metadata: text(),
+  recordedAt: timestamp('recorded_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  typeTimeIdx: index('indicator_history_type_time_idx').on(table.indicatorType, table.recordedAt),
+  recordedAtIdx: index('indicator_history_recorded_at_idx').on(table.recordedAt),
+}));
+
+export type IndicatorHistory = typeof indicatorHistory.$inferSelect;
+export type NewIndicatorHistory = typeof indicatorHistory.$inferInsert;
