@@ -9,6 +9,8 @@ export interface TrailingStopCoreConfig {
   minTrailingDistancePercent?: number;
   atrMultiplier?: number;
   trailingDistancePercent?: number;
+  trailingDistancePercentLong?: number;
+  trailingDistancePercentShort?: number;
   vipLevel?: number;
   useFibonacciThresholds?: boolean;
   activationPercentLong?: number;
@@ -39,6 +41,8 @@ const FALLBACK_MIN_PROFIT_THRESHOLD = TRAILING_STOP.BREAKEVEN_THRESHOLD;
 const TP_THRESHOLD_FOR_BREAKEVEN = TRAILING_STOP.TP_THRESHOLD_FOR_BREAKEVEN;
 const TP_THRESHOLD_FOR_ADVANCED = TRAILING_STOP.TP_THRESHOLD_FOR_ADVANCED;
 const DEFAULT_TRAILING_DISTANCE_PERCENT = TRAILING_STOP.PEAK_PROFIT_FLOOR;
+const DEFAULT_TRAILING_DISTANCE_PERCENT_LONG = TRAILING_STOP.PEAK_PROFIT_FLOOR_LONG;
+const DEFAULT_TRAILING_DISTANCE_PERCENT_SHORT = TRAILING_STOP.PEAK_PROFIT_FLOOR_SHORT;
 
 export const getRoundTripFeePercent = (
   marketType: MarketType = 'SPOT',
@@ -268,7 +272,10 @@ export const computeTrailingStopCore = (
   const feePercent = config.feePercent ?? getRoundTripFeePercent(marketType, useBnbDiscount, vipLevel);
   const minTrailingDistancePercent = config.minTrailingDistancePercent ?? 0.002;
   const atrMultiplier = config.atrMultiplier ?? 2.0;
-  const trailingDistancePercent = config.trailingDistancePercent ?? DEFAULT_TRAILING_DISTANCE_PERCENT;
+  const defaultDistance = isLong ? DEFAULT_TRAILING_DISTANCE_PERCENT_LONG : DEFAULT_TRAILING_DISTANCE_PERCENT_SHORT;
+  const trailingDistancePercent = isLong
+    ? (config.trailingDistancePercentLong ?? config.trailingDistancePercent ?? defaultDistance)
+    : (config.trailingDistancePercentShort ?? config.trailingDistancePercent ?? defaultDistance);
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
   const activationPercentLong = config.activationPercentLong;
   const activationPercentShort = config.activationPercentShort;
@@ -291,9 +298,7 @@ export const computeTrailingStopCore = (
 
     if (!reachedThreshold) return null;
 
-    const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
-      { price: feesCoveredPrice, reason: 'fees_covered' },
-    ];
+    const candidates: Array<{ price: number; reason: TrailingStopReason }> = [];
 
     const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, minTrailingDistancePercent);
     if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
@@ -310,6 +315,8 @@ export const computeTrailingStopCore = (
 
     const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
     if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+
+    if (candidates.length === 0) return null;
 
     const bestCandidate = selectBestCandidate(candidates, isLong);
     if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
