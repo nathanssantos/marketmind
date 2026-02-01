@@ -147,6 +147,7 @@ export const DEFAULT_TRAILING_STOP_USER_CONFIG = {
   trailingDistancePercentLong: '0.4',
   trailingDistancePercentShort: '0.3',
   useAdaptiveTrailing: true,
+  useProfitLockDistance: false,
 };
 
 export const DEFAULT_VOLUME_FILTER_CONFIG = {

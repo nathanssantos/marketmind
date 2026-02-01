@@ -533,6 +533,7 @@ describe('TrailingStopService', () => {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
+          useProfitLockDistance: true,
         });
 
         expect(result).not.toBeNull();
@@ -555,6 +556,7 @@ describe('TrailingStopService', () => {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
+          useProfitLockDistance: true,
         });
 
         expect(result).not.toBeNull();
@@ -589,6 +591,7 @@ describe('TrailingStopService', () => {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
+          useProfitLockDistance: true,
         };
 
         const input1: TrailingStopInput = {

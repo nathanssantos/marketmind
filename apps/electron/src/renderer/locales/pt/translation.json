@@ -1174,6 +1174,8 @@
       "activationLongDescription": "Progresso do TP necessário para ativar trailing stop em posições LONG",
       "activationShort": "Ativação SHORT",
       "activationShortDescription": "Progresso do TP necessário para ativar trailing stop em posições SHORT",
+      "profitLock": "Trava de Lucro",
+      "profitLockDescription": "Trava uma porcentagem do lucro máximo (desative para usar apenas ATR e swing trails)",
       "trailingDistanceLong": "Distância LONG",
       "trailingDistanceLongDescription": "Porcentagem do lucro máximo a ser travado em posições LONG",
       "trailingDistanceShort": "Distância SHORT",

@@ -1122,6 +1122,8 @@
       "activationLongDescription": "TP progress required to activate trailing stop for LONG positions",
       "activationShort": "SHORT Activation",
       "activationShortDescription": "TP progress required to activate trailing stop for SHORT positions",
+      "profitLock": "Profit Lock Distance",
+      "profitLockDescription": "Lock in a percentage of peak profit (disable to use only ATR and swing trails)",
       "trailingDistanceLong": "LONG Distance",
       "trailingDistanceLongDescription": "Percentage of peak profit to lock in for LONG positions",
       "trailingDistanceShort": "SHORT Distance",

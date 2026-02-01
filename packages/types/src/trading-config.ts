@@ -49,6 +49,7 @@ export interface TrailingStopUserConfig {
   trailingDistancePercentLong: number;
   trailingDistancePercentShort: number;
   useAdaptiveTrailing: boolean;
+  useProfitLockDistance: boolean;
 }
 
 export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
@@ -57,6 +58,7 @@ export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
   trailingDistancePercentLong: 0.4,
   trailingDistancePercentShort: 0.3,
   useAdaptiveTrailing: true,
+  useProfitLockDistance: false,
 };
 
 export const OPPORTUNITY_COST_CONFIG = {

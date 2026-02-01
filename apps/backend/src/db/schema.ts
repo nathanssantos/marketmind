@@ -271,6 +271,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   trailingDistancePercentLong: numeric('trailing_distance_percent_long', { precision: 5, scale: 4 }).default('0.4').notNull(),
   trailingDistancePercentShort: numeric('trailing_distance_percent_short', { precision: 5, scale: 4 }).default('0.3').notNull(),
   useAdaptiveTrailing: boolean('use_adaptive_trailing').default(true).notNull(),
+  useProfitLockDistance: boolean('use_profit_lock_distance').default(false).notNull(),
   pyramidingEnabled: boolean('pyramiding_enabled').default(false).notNull(),
   pyramidingMode: varchar('pyramiding_mode', { length: 20 }).$type<'static' | 'dynamic' | 'fibonacci'>().default('static').notNull(),
   maxPyramidEntries: integer('max_pyramid_entries').default(5).notNull(),

@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   trailing_distance_percent_long NUMERIC(5, 4) DEFAULT '0.4' NOT NULL,
   trailing_distance_percent_short NUMERIC(5, 4) DEFAULT '0.3' NOT NULL,
   use_adaptive_trailing BOOLEAN DEFAULT true NOT NULL,
+  use_profit_lock_distance BOOLEAN DEFAULT false NOT NULL,
   pyramiding_enabled BOOLEAN DEFAULT false NOT NULL,
   pyramiding_mode VARCHAR(20) DEFAULT 'static' NOT NULL,
   max_pyramid_entries INTEGER DEFAULT 5 NOT NULL,

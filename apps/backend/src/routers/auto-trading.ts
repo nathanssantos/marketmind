@@ -145,6 +145,7 @@ export const autoTradingRouter = router({
         trailingDistancePercentLong: z.string().optional(),
         trailingDistancePercentShort: z.string().optional(),
         useAdaptiveTrailing: z.boolean().optional(),
+        useProfitLockDistance: z.boolean().optional(),
         leverage: z.number().min(AUTO_TRADING_CONFIG.LEVERAGE.MIN).max(AUTO_TRADING_CONFIG.LEVERAGE.MAX).optional(),
         marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
         opportunityCostEnabled: z.boolean().optional(),
@@ -272,6 +273,8 @@ export const autoTradingRouter = router({
         {updateData.trailingDistancePercentShort = input.trailingDistancePercentShort;}
       if (input.useAdaptiveTrailing !== undefined)
         {updateData.useAdaptiveTrailing = input.useAdaptiveTrailing;}
+      if (input.useProfitLockDistance !== undefined)
+        {updateData.useProfitLockDistance = input.useProfitLockDistance;}
       if (input.leverage !== undefined)
         {updateData.leverage = input.leverage;}
       if (input.marginType !== undefined)

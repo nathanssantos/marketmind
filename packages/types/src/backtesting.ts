@@ -236,6 +236,7 @@ export interface TrailingStopOptimizationConfig {
   useFibonacciThresholds?: boolean;
   activationPercentLong?: number;
   activationPercentShort?: number;
+  useProfitLockDistance?: boolean;
 }
 
 export interface TimeframeThreshold {

@@ -132,6 +132,7 @@ export const computeTrailingStop = (
       atrMultiplier: config.atrMultiplier,
       trailingDistancePercent: config.trailingDistancePercent,
       useFibonacciThresholds,
+      useProfitLockDistance: config.useProfitLockDistance,
     }
   );
 

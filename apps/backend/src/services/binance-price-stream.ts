@@ -211,8 +211,6 @@ export class BinancePriceStreamService {
         if (!this.subscribedSymbols.has(symbol)) {
           this.subscribe(symbol, 'usdm');
           newSubscriptions.push(`${symbol}:futures`);
-        } else {
-          this.subscribe(symbol, 'usdm');
         }
       }
 
@@ -241,7 +239,7 @@ export class BinancePriceStreamService {
       return;
     }
 
-    if (market === 'spot' && this.subscribedSymbols.has(symbol)) {
+    if (this.subscribedSymbols.has(symbol)) {
       return;
     }
 

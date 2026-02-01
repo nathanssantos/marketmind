@@ -15,6 +15,7 @@ export interface TrailingStopCoreConfig {
   useFibonacciThresholds?: boolean;
   activationPercentLong?: number;
   activationPercentShort?: number;
+  useProfitLockDistance?: boolean;
 }
 
 export interface TrailingStopCoreInput {
@@ -279,6 +280,7 @@ export const computeTrailingStopCore = (
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
   const activationPercentLong = config.activationPercentLong;
   const activationPercentShort = config.activationPercentShort;
+  const useProfitLockDistance = config.useProfitLockDistance ?? false;
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
   const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
@@ -313,8 +315,10 @@ export const computeTrailingStopCore = (
       }
     }
 
-    const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
-    if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+    if (useProfitLockDistance) {
+      const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+      if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+    }
 
     if (candidates.length === 0) return null;
 
@@ -361,8 +365,10 @@ export const computeTrailingStopCore = (
     }
   }
 
-  const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
-  if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+  if (useProfitLockDistance) {
+    const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+    if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+  }
 
   const bestCandidate = selectBestCandidate(candidates, isLong);
   if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
