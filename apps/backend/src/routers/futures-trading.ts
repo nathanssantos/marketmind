@@ -6,6 +6,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
 import { orders, positions } from '../db/schema';
+import { binanceApiCache } from '../services/binance-api-cache';
 import {
     cancelAllFuturesAlgoOrders,
     cancelFuturesOrder,
@@ -267,14 +268,33 @@ export const futuresTradingRouter = router({
         return dbPositions;
       }
 
+      if (binanceApiCache.isBanned()) {
+        const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: `IP banned by Binance. Try again in ${waitSeconds} seconds.`,
+        });
+      }
+
+      const cached = binanceApiCache.get<Awaited<ReturnType<typeof getFuturesPositions>>>('POSITIONS', input.walletId);
+      if (cached) return cached;
+
       try {
         const client = createBinanceFuturesClient(wallet);
         const exchangePositions = await getFuturesPositions(client);
+        binanceApiCache.set('POSITIONS', input.walletId, exchangePositions);
         return exchangePositions;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (errorMessage.includes('418') || errorMessage.includes('-1003') || errorMessage.includes('Way too many requests')) {
+          const banMatch = errorMessage.match(/until\s+(\d+)/);
+          const banExpiry = banMatch?.[1] ? parseInt(banMatch[1], 10) : Date.now() + 5 * 60 * 1000;
+          binanceApiCache.setBanned(banExpiry);
+        }
+        logger.error({ error: errorMessage }, 'Failed to get futures positions');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get futures positions',
+          message: errorMessage,
           cause: error,
         });
       }
@@ -544,12 +564,33 @@ export const futuresTradingRouter = router({
       }
 
       try {
+        if (binanceApiCache.isBanned()) {
+          const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
+          throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: `IP banned by Binance. Try again in ${waitSeconds} seconds.`,
+          });
+        }
+
+        const cacheKey = input.symbol || 'all';
+        const cached = binanceApiCache.get<Awaited<ReturnType<typeof getOpenOrders>>>('OPEN_ORDERS', input.walletId, cacheKey);
+        if (cached) return cached;
+
         const client = createBinanceFuturesClient(wallet);
-        return await getOpenOrders(client, input.symbol);
+        const openOrders = await getOpenOrders(client, input.symbol);
+        binanceApiCache.set('OPEN_ORDERS', input.walletId, openOrders, cacheKey);
+        return openOrders;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (errorMessage.includes('418') || errorMessage.includes('banned') || errorMessage.includes('-1003')) {
+          const banMatch = errorMessage.match(/until\s+(\d+)/);
+          const banExpiry = banMatch?.[1] ? parseInt(banMatch[1], 10) : Date.now() + 5 * 60 * 1000;
+          binanceApiCache.setBanned(banExpiry);
+        }
+        logger.error({ error: errorMessage }, 'Failed to get open futures orders');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get open orders',
+          message: errorMessage,
           cause: error,
         });
       }

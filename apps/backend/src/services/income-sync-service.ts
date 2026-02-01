@@ -30,12 +30,16 @@ export interface IncomeSyncResult {
   errors: string[];
 }
 
+export interface IncomeSyncServiceStartOptions {
+  delayFirstSync?: number;
+}
+
 class IncomeSyncService {
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private isRunning = false;
   private lastSyncTime: Map<string, number> = new Map();
 
-  start(): void {
+  start(options: IncomeSyncServiceStartOptions = {}): void {
     if (this.isRunning) return;
     this.isRunning = true;
 
@@ -43,7 +47,11 @@ class IncomeSyncService {
       void this.syncAllWallets();
     }, SYNC_INTERVAL_MS);
 
-    void this.syncAllWallets();
+    if (options.delayFirstSync) {
+      setTimeout(() => void this.syncAllWallets(), options.delayFirstSync);
+    } else {
+      void this.syncAllWallets();
+    }
   }
 
   stop(): void {

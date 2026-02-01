@@ -152,3 +152,13 @@ export type WebsocketConfigConstants = typeof WEBSOCKET_CONFIG;
 export type TimeMsConstants = typeof TIME_MS;
 export type IntervalMsConstants = typeof INTERVAL_MS;
 export type UnitMsConstants = typeof UNIT_MS;
+
+export const STARTUP_CONFIG = {
+  KLINE_MAINTENANCE_DELAY_MS: 30 * TIME_MS.SECOND,
+  ORDER_SYNC_DELAY_MS: 60 * TIME_MS.SECOND,
+  INCOME_SYNC_DELAY_MS: 120 * TIME_MS.SECOND,
+  FUNDING_RATE_INTERVAL_MS: 5 * TIME_MS.MINUTE,
+  POSITION_SYNC_INTERVAL_MS: 5 * TIME_MS.MINUTE,
+} as const;
+
+export type StartupConfigConstants = typeof STARTUP_CONFIG;

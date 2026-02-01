@@ -37,6 +37,31 @@ vi.mock('../../services/kline-prefetch', () => ({
   prefetchKlinesAsync: vi.fn(),
 }));
 
+vi.mock('../../services/symbol-mapping', () => ({
+  getValidBinanceSymbols: vi.fn().mockResolvedValue(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT']),
+  mapAndValidateSymbols: vi.fn().mockResolvedValue(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT']),
+  getAvailableSymbolsSet: vi.fn().mockResolvedValue(new Set(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'])),
+}));
+
+vi.mock('../../services/market-cap-data', () => ({
+  getMarketCapDataService: vi.fn(() => ({
+    getTopCoinsByMarketCap: vi.fn().mockResolvedValue([
+      { symbol: 'BTCUSDT', marketCap: 1000000000000 },
+      { symbol: 'ETHUSDT', marketCap: 500000000000 },
+      { symbol: 'BNBUSDT', marketCap: 100000000000 },
+    ]),
+  })),
+}));
+
+vi.mock('../../services/opportunity-scoring', () => ({
+  getOpportunityScoringService: vi.fn(() => ({
+    getSymbolScores: vi.fn().mockResolvedValue([
+      { symbol: 'BTCUSDT', score: 85, breakdown: {} },
+      { symbol: 'ETHUSDT', score: 80, breakdown: {} },
+    ]),
+  })),
+}));
+
 describe('Auto-Trading Router', () => {
   beforeAll(async () => {
     await setupTestDatabase();

@@ -137,7 +137,6 @@ export class BinanceFuturesUserStreamService {
   private connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
   private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
-  private balanceSyncInterval: ReturnType<typeof setInterval> | null = null;
 
   async start(): Promise<void> {
     if (this.isRunning) return;
@@ -149,10 +148,6 @@ export class BinanceFuturesUserStreamService {
     this.walletSubscriptionInterval = setInterval(() => {
       void this.subscribeAllActiveWallets();
     }, 60000);
-
-    this.balanceSyncInterval = setInterval(() => {
-      void this.syncAllWalletBalances();
-    }, 30000);
   }
 
   stop(): void {
@@ -163,74 +158,11 @@ export class BinanceFuturesUserStreamService {
       this.walletSubscriptionInterval = null;
     }
 
-    if (this.balanceSyncInterval) {
-      clearInterval(this.balanceSyncInterval);
-      this.balanceSyncInterval = null;
-    }
-
     for (const [walletId, connection] of this.connections) {
       connection.wsClient.closeAll(true);
       this.connections.delete(walletId);
     }
     logger.info('[FuturesUserStream] Service stopped');
-  }
-
-  private async syncAllWalletBalances(): Promise<void> {
-    for (const [walletId, connection] of this.connections) {
-      try {
-        const accountInfo = await connection.apiClient.getAccountInformation();
-        const usdtBalance = accountInfo.assets?.find((a) => a.asset === 'USDT');
-
-        if (!usdtBalance) continue;
-
-        const apiBalance = parseFloat(String(usdtBalance.walletBalance));
-
-        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
-
-        if (!wallet) continue;
-
-        const dbBalance = parseFloat(wallet.currentBalance || '0');
-        const discrepancy = Math.abs(apiBalance - dbBalance);
-        const discrepancyPercent = dbBalance > 0 ? (discrepancy / dbBalance) * 100 : 0;
-
-        if (discrepancyPercent > 0.01 && discrepancy > 0.01) {
-          logger.warn(
-            {
-              walletId,
-              apiBalance: apiBalance.toFixed(4),
-              dbBalance: dbBalance.toFixed(4),
-              discrepancy: discrepancy.toFixed(4),
-              discrepancyPercent: discrepancyPercent.toFixed(4),
-            },
-            '[FuturesUserStream] ⚠️ Balance discrepancy detected - syncing from API'
-          );
-
-          await db
-            .update(wallets)
-            .set({
-              currentBalance: apiBalance.toString(),
-              updatedAt: new Date(),
-            })
-            .where(eq(wallets.id, walletId));
-
-          logger.info(
-            {
-              walletId,
-              newBalance: apiBalance.toFixed(4),
-            },
-            '[FuturesUserStream] Balance synced from API'
-          );
-        }
-      } catch (error) {
-        logger.error(
-          {
-            walletId,
-            error: serializeError(error),
-          },
-          '[FuturesUserStream] Failed to sync wallet balance'
-        );
-      }
-    }
   }
 
   private async subscribeAllActiveWallets(): Promise<void> {

@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
+import { STARTUP_CONFIG } from './constants';
 import { env } from './env';
 import { initializeKlineMaintenance } from './services/kline-maintenance';
 import { initializeWebSocket } from './services/websocket';
@@ -115,6 +116,9 @@ const start = async (): Promise<void> => {
     const { binanceUserStreamService } = await import('./services/binance-user-stream');
     await binanceUserStreamService.start();
 
+    const { binanceFuturesUserStreamService } = await import('./services/binance-futures-user-stream');
+    await binanceFuturesUserStreamService.start();
+
     const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
     await autoTradingScheduler.restoreWatchersFromDb();
 
@@ -125,13 +129,13 @@ const start = async (): Promise<void> => {
     fundingRateService.start();
 
     const klineMaintenance = initializeKlineMaintenance();
-    await klineMaintenance.start();
+    await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
 
     const { orderSyncService } = await import('./services/order-sync');
-    await orderSyncService.start({ autoCancelOrphans: true });
+    await orderSyncService.start({ autoCancelOrphans: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
 
     const { incomeSyncService } = await import('./services/income-sync-service');
-    incomeSyncService.start();
+    incomeSyncService.start({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
 
     const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
     await indicatorSchedulerService.start();
@@ -142,8 +146,8 @@ const start = async (): Promise<void> => {
     fastify.log.info(`📈 Position monitor service started`);
     fastify.log.info(`💹 Binance price stream service started`);
     fastify.log.info(`📉 Binance kline stream service started (SPOT + FUTURES)`);
-    fastify.log.info(`👤 Binance user stream service started`);
-    fastify.log.info(`🔄 Kline gap filler service started`);
+    fastify.log.info(`👤 Binance user stream service started (SPOT + FUTURES)`);
+    fastify.log.info(`🔄 Kline maintenance service started (delayed ${STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS / 1000}s)`);
     fastify.log.info(`📊 Indicator scheduler started (snapshots every 30min)`);
   } catch (err) {
     fastify.log.error(err);

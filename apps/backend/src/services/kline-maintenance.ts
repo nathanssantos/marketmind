@@ -40,13 +40,33 @@ interface ActivePair {
   marketType: 'SPOT' | 'FUTURES';
 }
 
+export interface KlineMaintenanceStartOptions {
+  skipStartupSync?: boolean;
+  delayMs?: number;
+}
+
 class KlineMaintenance {
   private checkInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
 
-  async start(): Promise<void> {
+  async start(options: KlineMaintenanceStartOptions = {}): Promise<void> {
     if (this.checkInterval) return;
 
+    this.checkInterval = setInterval(async () => {
+      await this.checkAndFillGaps();
+    }, GAP_CHECK_INTERVAL);
+
+    if (options.skipStartupSync) {
+      if (options.delayMs) {
+        setTimeout(() => void this.runStartupSync(), options.delayMs);
+      }
+      return;
+    }
+
+    await this.runStartupSync();
+  }
+
+  private async runStartupSync(): Promise<void> {
     const logBuffer = new MaintenanceLogBuffer('startup');
 
     const [gapResults] = await Promise.all([
@@ -59,10 +79,6 @@ class KlineMaintenance {
     outputMaintenanceResults(logBuffer.toResult());
 
     await this.checkAndFillGaps();
-
-    this.checkInterval = setInterval(async () => {
-      await this.checkAndFillGaps();
-    }, GAP_CHECK_INTERVAL);
   }
 
   private async checkCorruptionOnStartup(logBuffer?: MaintenanceLogBuffer): Promise<{ pairsChecked: number }> {

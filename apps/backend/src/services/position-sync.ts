@@ -1,6 +1,7 @@
 import type { OrphanedPositionEntry, PositionSyncResult, UnknownPositionEntry, UpdatedPositionEntry, WalletSyncEntry } from '@marketmind/logger';
 import type { FuturesPosition } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
+import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceFuturesClient, isPaperWallet, getPositions } from './binance-futures-client';
@@ -36,7 +37,7 @@ export class PositionSyncService {
 
     this.syncInterval = setInterval(() => {
       void this.syncAllWallets();
-    }, 60000);
+    }, STARTUP_CONFIG.POSITION_SYNC_INTERVAL_MS);
   }
 
   stop(): void {

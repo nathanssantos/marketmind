@@ -2,6 +2,7 @@ import { serializeError } from '../utils/errors';
 import { createLogger } from '@marketmind/logger';
 import type { Interval } from '@marketmind/types';
 import { ABSOLUTE_MINIMUM_KLINES, REQUIRED_KLINES } from '../constants';
+import { binanceApiCache } from './binance-api-cache';
 import { smartBackfillKlines, type SmartBackfillResult } from './binance-historical';
 
 const log = createLogger('Kline-Prefetch');
@@ -41,6 +42,19 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     silent = false,
     forRotation = false,
   } = options;
+
+  if (binanceApiCache.isBanned()) {
+    const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
+    if (!silent) log.warn('⏸️ Skipping prefetch - IP banned', { symbol, interval, marketType, waitSeconds });
+    return {
+      success: false,
+      downloaded: 0,
+      totalInDb: 0,
+      gaps: 0,
+      alreadyComplete: false,
+      error: `IP banned. Try again in ${waitSeconds} seconds.`,
+    };
+  }
 
   const key = getBackfillKey(symbol, interval, marketType);
 
@@ -95,6 +109,13 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     };
   } catch (err) {
     const errorMessage = serializeError(err);
+
+    if (errorMessage.includes('418') || errorMessage.includes('banned') || errorMessage.includes('-1003')) {
+      const banMatch = errorMessage.match(/until\s+(\d+)/);
+      const banExpiry = banMatch?.[1] ? parseInt(banMatch[1], 10) : Date.now() + 5 * 60 * 1000;
+      binanceApiCache.setBanned(banExpiry);
+    }
+
     if (!silent) {
       log.error('❌ Failed to prefetch klines', { symbol, interval, marketType, error: errorMessage });
     }

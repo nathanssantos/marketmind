@@ -46,23 +46,33 @@ export interface OrderSyncResult {
   errors: string[];
 }
 
+export interface OrderSyncServiceStartOptions {
+  autoCancelOrphans?: boolean;
+  autoFixMismatches?: boolean;
+  delayFirstSync?: number;
+}
+
 export class OrderSyncService {
   private isRunning = false;
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private autoCancelOrphans = false;
   private autoFixMismatches = false;
 
-  async start(options?: { autoCancelOrphans?: boolean; autoFixMismatches?: boolean }): Promise<void> {
+  async start(options?: OrderSyncServiceStartOptions): Promise<void> {
     if (this.isRunning) return;
     this.isRunning = true;
     this.autoCancelOrphans = options?.autoCancelOrphans ?? false;
     this.autoFixMismatches = options?.autoFixMismatches ?? false;
 
-    await this.syncAllWallets();
-
     this.syncInterval = setInterval(() => {
       void this.syncAllWallets();
     }, 5 * 60 * 1000);
+
+    if (options?.delayFirstSync) {
+      setTimeout(() => void this.syncAllWallets(), options.delayFirstSync);
+    } else {
+      await this.syncAllWallets();
+    }
   }
 
   stop(): void {

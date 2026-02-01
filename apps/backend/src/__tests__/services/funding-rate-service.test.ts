@@ -101,7 +101,7 @@ describe('FundingRateService', () => {
     it('should process funding rates periodically', async () => {
       fundingRateService.start();
 
-      await vi.advanceTimersByTimeAsync(60000);
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
 
       expect(mockDbSelect).toHaveBeenCalled();
     });

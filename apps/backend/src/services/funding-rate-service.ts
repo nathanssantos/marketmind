@@ -8,7 +8,7 @@ import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 
 const FUNDING_INTERVAL_MS = 8 * TIME_MS.HOUR;
-const CHECK_INTERVAL_MS = TIME_MS.MINUTE;
+const CHECK_INTERVAL_MS = 5 * TIME_MS.MINUTE;
 
 interface FundingRateCache {
   rate: number;
