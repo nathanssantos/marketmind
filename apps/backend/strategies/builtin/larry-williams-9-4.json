@@ -11,7 +11,7 @@
     "failure-pattern"
   ],
   "status": "active",
-  "enabled": false,
+  "enabled": true,
   "group": "larry-williams",
   "recommendedTimeframes": {
     "primary": "1d",
@@ -155,7 +155,7 @@
       "multiplier": "$atrTargetMultiplier"
     },
     "trailingStop": {
-      "enabled": false,
+      "enabled": true,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,
@@ -199,7 +199,7 @@
     "minConfidence": 60,
     "minRiskReward": 1,
     "trendFilter": {
-      "enabled": false,
+      "enabled": true,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

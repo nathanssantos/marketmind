@@ -3,7 +3,8 @@
   "name": "Bear Trap",
   "version": "1.0.0",
   "description": "False breakdown below support followed by rapid recovery. Entry LONG when price breaks below support then closes back above with volume confirmation.",
-  "author": "MarketMind",
+  "author": "Classic Technical Analysis",
+  "source": "Market Microstructure - Trap Patterns",
   "tags": [
     "trap",
     "reversal",
@@ -11,6 +12,7 @@
     "counter-trend"
   ],
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
@@ -155,5 +157,35 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "Classic Market Microstructure - False breakout patterns",
+    "createdYear": 1980,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "reference",
+          "descriptionKey": "strategies.bearTrap.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "confirmation",
+          "descriptionKey": "strategies.bearTrap.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.bearTrap.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["ema", "atr", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.bearTrap.summary",
+      "entryKey": "strategies.bearTrap.entry",
+      "exitKey": "strategies.bearTrap.exit"
+    }
   }
 }

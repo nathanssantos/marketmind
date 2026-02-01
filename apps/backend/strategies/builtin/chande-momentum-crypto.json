@@ -1,5 +1,5 @@
 {
-  "enabled": true,
+  "enabled": false,
   "id": "chande-momentum-crypto",
   "name": "Chande Momentum Crypto",
   "version": "1.0.0",
@@ -123,7 +123,7 @@
       }
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

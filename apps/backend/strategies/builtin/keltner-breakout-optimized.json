@@ -12,7 +12,7 @@
     "proven"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "breakout",
   "backtestSummary": {
     "profitFactor": 3.79,
@@ -154,7 +154,7 @@
       "multiplier": "$tpMultiplier"
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,
@@ -189,7 +189,7 @@
     "minConfidence": 65,
     "minRiskReward": 1,
     "trendFilter": {
-      "enabled": true,
+      "enabled": false,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

@@ -3,7 +3,8 @@
   "name": "7-Day Momentum Crypto",
   "version": "1.0.0",
   "description": "Crypto-optimized momentum strategy using 7-day price momentum. Research shows 7-day is the most stable momentum period for crypto trading. Uses EMA for trend confirmation.",
-  "author": "MarketMind",
+  "author": "Academic Research / MarketMind",
+  "source": "Research: 7-day momentum optimal for crypto volatility cycles",
   "tags": [
     "momentum",
     "crypto",
@@ -209,5 +210,30 @@
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "Academic Research - Crypto Momentum Studies (2017-2020)",
+    "createdYear": 2017,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.7dayMomentum.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.7dayMomentum.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["emaFast", "emaSlow", "rsi", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.7dayMomentum.summary",
+      "entryKey": "strategies.7dayMomentum.entry",
+      "exitKey": "strategies.7dayMomentum.exit"
+    }
   }
 }

@@ -12,7 +12,7 @@
   ],
   "source": "Technical Analysis Library",
   "status": "active",
-  "enabled": false,
+  "enabled": true,
   "group": "momentum",
   "recommendedTimeframes": {
     "primary": "4h",
@@ -103,7 +103,7 @@
       "multiplier": 2.5
     },
     "trailingStop": {
-      "enabled": false,
+      "enabled": true,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 2.5,
@@ -151,7 +151,7 @@
     "minConfidence": 65,
     "minRiskReward": 2,
     "trendFilter": {
-      "enabled": false,
+      "enabled": true,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

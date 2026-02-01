@@ -13,6 +13,7 @@ import { DynamicSymbolRankings } from '../DynamicSymbolRankings';
 import { TradingProfilesManager } from '../TradingProfilesManager';
 import { DynamicSelectionSection } from './DynamicSelectionSection';
 import { EmergencyStopSection } from './EmergencyStopSection';
+import { EntrySettingsSection } from './EntrySettingsSection';
 import { FiltersSection } from './FiltersSection';
 import { useWatcherState } from './hooks/useWatcherState';
 import { LeverageSettingsSection } from './LeverageSettingsSection';
@@ -21,6 +22,7 @@ import { PyramidingSection } from './PyramidingSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
 import { WatchersList } from './WatchersList';
+import { SetupToggleSection } from '../SetupToggleSection';
 
 export const WatcherManager = () => {
   const { t } = useTranslation();
@@ -73,7 +75,7 @@ export const WatcherManager = () => {
 
   const { formatCapitalTooltip } = useCapitalLimits(walletId, quickStartMarketType);
 
-  const useTrendFilter = config?.useTrendFilter ?? true;
+  const useBtcCorrelationFilter = config?.useBtcCorrelationFilter ?? true;
 
   // Debounce o count para não refazer query a cada digitação
   const debouncedQuickStartCount = useDebounce(quickStartCount, 500);
@@ -84,7 +86,7 @@ export const WatcherManager = () => {
     isLoadingFiltered,
     btcTrend,
     skippedTrend,
-  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, debouncedQuickStartCount, useTrendFilter);
+  } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, debouncedQuickStartCount, useBtcCorrelationFilter);
 
   // Usar filteredMaxAffordable como fonte (calculado com minNotional real de cada símbolo)
   const maxAffordableWatchers = filteredMaxAffordable ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
@@ -267,7 +269,7 @@ export const WatcherManager = () => {
         btcTrendStatus={btcTrendStatus}
         btcTrendInfo={btcTrend}
         skippedTrendCount={skippedTrend.length}
-        showBtcTrend={useTrendFilter || config?.useBtcCorrelationFilter === true}
+        showBtcTrend={useBtcCorrelationFilter}
         formatCapitalTooltip={formatCapitalTooltip}
         onMarketTypeChange={setQuickStartMarketType}
         onTimeframeChange={setQuickStartTimeframe}
@@ -280,6 +282,10 @@ export const WatcherManager = () => {
       <Separator />
 
       <TradingProfilesManager />
+
+      <Separator />
+
+      <SetupToggleSection />
 
       <Separator />
 
@@ -324,6 +330,20 @@ export const WatcherManager = () => {
         onTpModeChange={handleTpModeChange}
         onFibonacciLevelLongChange={handleFibonacciLevelLongChange}
         onFibonacciLevelShortChange={handleFibonacciLevelShortChange}
+        isPending={updateConfig.isPending}
+      />
+
+      <Separator />
+
+      <EntrySettingsSection
+        isExpanded={expandedSections.entrySettings}
+        onToggle={() => toggleSection('entrySettings')}
+        maxFibonacciEntryProgressPercent={config?.maxFibonacciEntryProgressPercent ?? 100}
+        onEntryProgressChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercent: value })}
+        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 0.75)}
+        onMinRiskRewardLongChange={(value) => handleConfigUpdate({ minRiskRewardRatioLong: value.toString() })}
+        minRiskRewardRatioShort={Number(config?.minRiskRewardRatioShort ?? 0.75)}
+        onMinRiskRewardShortChange={(value) => handleConfigUpdate({ minRiskRewardRatioShort: value.toString() })}
         isPending={updateConfig.isPending}
       />
 

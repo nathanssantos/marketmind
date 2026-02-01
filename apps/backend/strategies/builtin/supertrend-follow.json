@@ -11,7 +11,7 @@
     "trailing"
   ],
   "status": "active",
-  "enabled": false,
+  "enabled": true,
   "group": "trend",
   "recommendedTimeframes": {
     "primary": "4h",
@@ -123,7 +123,7 @@
       "multiplier": "$rrMultiplier"
     },
     "trailingStop": {
-      "enabled": false,
+      "enabled": true,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,
@@ -158,7 +158,7 @@
     "minConfidence": 60,
     "minRiskReward": 1,
     "trendFilter": {
-      "enabled": false,
+      "enabled": true,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

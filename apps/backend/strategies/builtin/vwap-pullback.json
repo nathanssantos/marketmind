@@ -3,7 +3,8 @@
   "name": "VWAP Pullback Strategy",
   "version": "1.0.0",
   "description": "VWAP pullback strategy (LONG ONLY). Enters when price is above VWAP with RSI pullback. Best on intraday timeframes (5-15m).",
-  "author": "MarketMind",
+  "author": "Institutional Trading",
+  "source": "VWAP - Volume Weighted Average Price (Institutional benchmark)",
   "tags": [
     "vwap",
     "pullback",
@@ -11,7 +12,8 @@
     "trend-following",
     "2025"
   ],
-  "status": "unprofitable",
+  "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "profitFactor": 0.92,
     "winRate": 36,
@@ -185,5 +187,30 @@
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Institutional Trading - VWAP as institutional price benchmark",
+    "createdYear": 1988,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.vwap.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.vwap.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["vwap", "rsi", "emaTrend", "atr"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.vwap.summary",
+      "entryKey": "strategies.vwap.entry",
+      "exitKey": "strategies.vwap.exit"
+    }
   }
 }

@@ -28,7 +28,7 @@ export interface RotationConfig {
   excludedSymbols: string[];
   marketType: MarketType;
   capitalRequirement?: CapitalRequirement;
-  useTrendFilter?: boolean;
+  useBtcCorrelationFilter?: boolean;
 }
 
 export interface RotationResult {
@@ -65,7 +65,7 @@ export class DynamicSymbolRotationService {
         targetLimit: config.limit,
         fetchedSymbols: scores.length,
         hasCapitalRequirement: !!config.capitalRequirement,
-        useTrendFilter: config.useTrendFilter,
+        useBtcCorrelationFilter: config.useBtcCorrelationFilter,
         walletBalance: config.capitalRequirement?.walletBalance,
         leverage: config.capitalRequirement?.leverage,
       }, '[DynamicRotation] Starting rotation');
@@ -104,9 +104,7 @@ export class DynamicSymbolRotationService {
 
       const symbolsAfterCapitalFilter = filteredScores.length;
 
-      const misalignedScores: SymbolScore[] = [];
-
-      if (config.useTrendFilter) {
+      if (config.useBtcCorrelationFilter) {
         const btcDbKlines = await db.query.klines.findMany({
           where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, config.interval)),
           orderBy: [desc(klines.openTime)],
@@ -122,57 +120,7 @@ export class DynamicSymbolRotationService {
             btcTrend,
             btcPrice: btcEma21Trend.price?.toFixed(2),
             btcEma21: btcEma21Trend.ema21?.toFixed(2),
-          }, '[DynamicRotation] BTC EMA21 Trend');
-
-          if (btcTrend !== 'NEUTRAL') {
-            const alignedScores: SymbolScore[] = [];
-
-            for (const score of filteredScores) {
-              const assetDbKlines = await db.query.klines.findMany({
-                where: and(
-                  eq(klines.symbol, score.symbol),
-                  eq(klines.interval, config.interval),
-                  eq(klines.marketType, config.marketType)
-                ),
-                orderBy: [desc(klines.openTime)],
-                limit: 100,
-              });
-
-              if (assetDbKlines.length >= 30) {
-                const assetKlines = mapDbKlinesReversed(assetDbKlines);
-                const assetTrend = getEma21Direction(assetKlines);
-
-                if (assetTrend.direction === 'NEUTRAL' || assetTrend.direction === btcTrend) {
-                  alignedScores.push(score);
-                } else {
-                  skippedTrend.push(score.symbol);
-                  misalignedScores.push(score);
-                }
-              } else {
-                alignedScores.push(score);
-              }
-
-              if (alignedScores.length + misalignedScores.length >= config.limit * 3) break;
-            }
-
-            if (alignedScores.length < config.limit && misalignedScores.length > 0) {
-              const needed = config.limit - alignedScores.length;
-              const toAdd = misalignedScores.slice(0, needed);
-              alignedScores.push(...toAdd);
-              logger.info({
-                alignedCount: alignedScores.length - toAdd.length,
-                addedMisaligned: toAdd.length,
-                totalEligible: alignedScores.length,
-              }, '[DynamicRotation] Added misaligned symbols to reach target');
-            }
-
-            filteredScores = alignedScores;
-            logger.info({
-              alignedCount: alignedScores.length,
-              skippedTrendCount: skippedTrend.length,
-              btcTrend,
-            }, '[DynamicRotation] EMA21 trend filter applied');
-          }
+          }, '[DynamicRotation] BTC Correlation Filter - Trend');
         }
       }
 
@@ -200,52 +148,7 @@ export class DynamicSymbolRotationService {
       const kept: string[] = [];
       const skippedInsufficientKlines: string[] = [];
 
-      const misalignedWithBtc = new Set<string>();
-
-      if (config.useTrendFilter && btcTrend !== 'NEUTRAL') {
-        for (const symbol of currentSymbols) {
-          const assetDbKlines = await db.query.klines.findMany({
-            where: and(
-              eq(klines.symbol, symbol),
-              eq(klines.interval, config.interval),
-              eq(klines.marketType, config.marketType)
-            ),
-            orderBy: [desc(klines.openTime)],
-            limit: 100,
-          });
-
-          if (assetDbKlines.length >= 30) {
-            const assetKlines = mapDbKlinesReversed(assetDbKlines);
-            const assetTrend = getEma21Direction(assetKlines);
-
-            if (assetTrend.direction !== 'NEUTRAL' && assetTrend.direction !== btcTrend) {
-              misalignedWithBtc.add(symbol);
-            }
-          }
-        }
-
-        if (misalignedWithBtc.size > 0) {
-          logger.info({
-            misalignedCount: misalignedWithBtc.size,
-            symbols: Array.from(misalignedWithBtc),
-            btcTrend,
-          }, '[DynamicRotation] Found existing watchers misaligned with BTC trend');
-        }
-      }
-
-      const alignedNewSymbols = filteredScores
-        .filter(s => !currentSymbols.has(s.symbol))
-        .filter(s => !misalignedScores.some(m => m.symbol === s.symbol))
-        .slice(0, config.limit);
-
-      const canRemoveMisaligned = alignedNewSymbols.length >= misalignedWithBtc.size;
-
       for (const symbol of currentSymbols) {
-        if (misalignedWithBtc.has(symbol) && canRemoveMisaligned) {
-          toRemove.push(symbol);
-          continue;
-        }
-
         const currentRank = currentRankings.get(symbol);
         const previousRank = walletPreviousRankings.get(symbol);
 
@@ -274,16 +177,13 @@ export class DynamicSymbolRotationService {
       if (filteredScores.length === 0 && currentSymbols.size > 0) {
         const filterReason = symbolsAfterCapitalFilter === 0
           ? 'capital requirements'
-          : skippedTrend.length > 0
-            ? `EMA21 trend filter (BTC: ${btcTrend})`
-            : 'unknown';
+          : 'unknown';
         logger.warn({
           walletId,
           marketType: config.marketType,
           currentWatchersCount: currentSymbols.size,
           keptCount: kept.length,
           symbolsAfterCapitalFilter,
-          skippedByTrend: skippedTrend.length,
           btcTrend,
           filterReason,
         }, `[DynamicRotation] ⚠️ All symbols filtered by ${filterReason} - keeping existing watchers`);

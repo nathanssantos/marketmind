@@ -11,7 +11,7 @@
   ],
   "source": "J. Welles Wilder - New Concepts",
   "status": "active",
-  "enabled": false,
+  "enabled": true,
   "group": "trend",
   "recommendedTimeframes": {
     "primary": "4h",
@@ -168,7 +168,7 @@
     "minConfidence": 65,
     "minRiskReward": 1,
     "trendFilter": {
-      "enabled": false,
+      "enabled": true,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

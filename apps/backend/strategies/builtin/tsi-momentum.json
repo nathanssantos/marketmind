@@ -12,6 +12,7 @@
   ],
   "source": "William Blau - TSI Creator",
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -159,5 +160,30 @@
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "William Blau - 'Momentum, Direction, and Divergence' (1995)",
+    "createdYear": 1991,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.tsi.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.tsi.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["tsi", "atr", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.tsi.summary",
+      "entryKey": "strategies.tsi.entry",
+      "exitKey": "strategies.tsi.exit"
+    }
   }
 }

@@ -11,7 +11,8 @@
     "trend"
   ],
   "source": "Stephen Klinger - KVO Creator",
-  "status": "unprofitable",
+  "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -158,5 +159,30 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Stephen Klinger - Klinger Volume Oscillator (1977)",
+    "createdYear": 1977,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.klinger.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.klinger.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["klinger", "atr", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.klinger.summary",
+      "entryKey": "strategies.klinger.entry",
+      "exitKey": "strategies.klinger.exit"
+    }
   }
 }

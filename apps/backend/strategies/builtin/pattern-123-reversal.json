@@ -3,7 +3,8 @@
   "name": "Pattern 1-2-3 Reversal",
   "version": "1.0.0",
   "description": "Classic 123 reversal pattern: Point 1 (swing low/high), Point 2 (reaction), Point 3 (higher low/lower high). Entry on breakout above/below Point 2 with volume confirmation.",
-  "author": "MarketMind",
+  "author": "Vic Sperandeo",
+  "source": "Vic Sperandeo - Trader Vic: Methods of a Wall Street Master (1991)",
   "tags": [
     "reversal",
     "price-action",
@@ -11,6 +12,7 @@
     "classic"
   ],
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [
@@ -153,5 +155,35 @@
   "filters": {
     "minConfidence": 70,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "Vic Sperandeo - 'Trader Vic: Methods of a Wall Street Master' (1991)",
+    "createdYear": 1991,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "reference",
+          "descriptionKey": "strategies.pattern123.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "confirmation",
+          "descriptionKey": "strategies.pattern123.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.pattern123.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["atr", "ema200", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.pattern123.summary",
+      "entryKey": "strategies.pattern123.entry",
+      "exitKey": "strategies.pattern123.exit"
+    }
   }
 }

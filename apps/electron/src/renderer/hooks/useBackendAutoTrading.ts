@@ -244,10 +244,10 @@ export const useFilteredSymbolsForQuickStart = (
   marketType: 'SPOT' | 'FUTURES',
   interval: string,
   limit: number,
-  useTrendFilter: boolean = true
+  useBtcCorrelationFilter: boolean = true
 ) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getFilteredSymbolsForQuickStart.useQuery(
-    { walletId, marketType, interval, limit: Math.max(1, limit), useTrendFilter },
+    { walletId, marketType, interval, limit: Math.max(1, limit), useBtcCorrelationFilter },
     { enabled: !!walletId && limit >= 1, staleTime: 30 * 1000, placeholderData: keepPreviousData }
   );
 

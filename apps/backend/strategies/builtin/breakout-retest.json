@@ -3,7 +3,8 @@
   "name": "Breakout Retest",
   "version": "1.0.0",
   "description": "Breakout of key support/resistance level followed by successful retest. Entry after price breaks level, retests it as new support/resistance, and continues in breakout direction.",
-  "author": "MarketMind",
+  "author": "Classic Technical Analysis",
+  "source": "Al Brooks - Price Action Trading",
   "tags": [
     "breakout",
     "retest",
@@ -11,6 +12,7 @@
     "trend-continuation"
   ],
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [
@@ -182,6 +184,36 @@
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
+    }
+  },
+  "education": {
+    "origin": "Classic Price Action - Documented by Al Brooks and many technical analysts",
+    "createdYear": 1990,
+    "candlePattern": {
+      "lookback": 3,
+      "candles": [
+        {
+          "offset": -2,
+          "role": "reference",
+          "descriptionKey": "strategies.breakoutRetest.candleMinus2"
+        },
+        {
+          "offset": -1,
+          "role": "confirmation",
+          "descriptionKey": "strategies.breakoutRetest.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.breakoutRetest.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["ema", "atr", "ema200", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.breakoutRetest.summary",
+      "entryKey": "strategies.breakoutRetest.entry",
+      "exitKey": "strategies.breakoutRetest.exit"
     }
   }
 }

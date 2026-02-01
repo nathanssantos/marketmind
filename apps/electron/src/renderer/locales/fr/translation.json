@@ -237,6 +237,25 @@
           "superExtendedDescription": "Extension maximale de Fibonacci - pour les mouvements paraboliques et momentum exceptionnel"
         }
       },
+      "entrySettings": {
+        "title": "Paramètres d'Entrée",
+        "description": "Configurez le timing d'entrée et les filtres de risque/récompense",
+        "entryLevel": {
+          "title": "Niveau d'Entrée Maximum",
+          "description": "Contrôle la distance que le prix peut parcourir du niveau de pullback avant de rejeter l'entrée. 0% = pullback profond uniquement, 100% = permet les entrées en breakout.",
+          "deepPullback": "Pullback Profond",
+          "pullback": "Pullback",
+          "shallowPullback": "Pullback Léger",
+          "breakout": "Breakout"
+        },
+        "minRR": {
+          "longTitle": "R:R Minimum (LONG)",
+          "longDescription": "Ratio risque/récompense minimum pour les entrées LONG",
+          "shortTitle": "R:R Minimum (SHORT)",
+          "shortDescription": "Ratio risque/récompense minimum pour les entrées SHORT"
+        },
+        "optimizedNote": "Valeurs optimisées par backtesting extensif. Niveau d'entrée 100% permet les entrées en breakout avec protection trailing stop. R:R 0.75 équilibre la capture d'opportunités avec la gestion des risques."
+      },
       "filters": {
         "title": "Filtres de Trade",
         "description": "Activez ou désactivez les filtres pour améliorer la qualité des trades.",

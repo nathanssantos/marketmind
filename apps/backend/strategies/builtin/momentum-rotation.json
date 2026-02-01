@@ -12,7 +12,7 @@
   ],
   "source": "Dual Momentum Strategy",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "pattern",
   "recommendedTimeframes": {
     "primary": "1d",
@@ -120,7 +120,7 @@
       "multiplier": 2.5
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 2.5,
@@ -177,7 +177,7 @@
     "minConfidence": 65,
     "minRiskReward": 2,
     "trendFilter": {
-      "enabled": true,
+      "enabled": false,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false

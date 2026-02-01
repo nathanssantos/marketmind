@@ -8,7 +8,7 @@ export const FILTER_DEFAULTS = {
   useMtfFilter: false,
   useBtcCorrelationFilter: true,
   useMarketRegimeFilter: false,
-  useVolumeFilter: false,
+  useVolumeFilter: true,
   volumeFilterObvLookbackLong: 7,
   volumeFilterObvLookbackShort: 5,
   useObvCheckLong: false,
@@ -19,10 +19,10 @@ export const FILTER_DEFAULTS = {
   confluenceMinScore: 60,
 
   exposureMultiplier: 1.5,
-  minRiskRewardRatioLong: 1.0,
-  minRiskRewardRatioShort: 1.0,
+  minRiskRewardRatioLong: 0.75,
+  minRiskRewardRatioShort: 0.75,
 
-  fibonacciTargetLevelLong: '1' as const,
+  fibonacciTargetLevelLong: '2' as const,
   fibonacciTargetLevelShort: '1.272' as const,
   maxFibonacciEntryProgressPercent: 100,
 

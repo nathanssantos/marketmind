@@ -13,6 +13,7 @@
   ],
   "source": "QuantifiedStrategies.com - Bitcoin RSI Trading Strategy",
   "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "referenceCAGR": 122,
     "referenceMaxDrawdown": 39,
@@ -165,5 +166,30 @@
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "QuantifiedStrategies.com - Bitcoin RSI Trading Strategy Research",
+    "createdYear": 2020,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.rsi50.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.rsi50.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["rsi", "atr", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.rsi50.summary",
+      "entryKey": "strategies.rsi50.entry",
+      "exitKey": "strategies.rsi50.exit"
+    }
   }
 }

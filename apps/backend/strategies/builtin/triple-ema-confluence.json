@@ -3,7 +3,8 @@
   "name": "Triple EMA Confluence",
   "version": "1.0.0",
   "description": "High-probability entries when all three EMAs are aligned and price crosses the fast EMA. Strong trend-following strategy for bull markets.",
-  "author": "MarketMind",
+  "author": "Classic Technical Analysis",
+  "source": "Triple EMA Stacking - Multiple Moving Average Confluence",
   "tags": [
     "trend-following",
     "ema",
@@ -194,5 +195,30 @@
   "filters": {
     "minConfidence": 65,
     "minRiskReward": 2
+  },
+  "education": {
+    "origin": "Classic Technical Analysis - Triple EMA alignment for trend confirmation",
+    "createdYear": 1990,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.tripleEma.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.tripleEma.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["emaFast", "emaMid", "emaSlow", "atr", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.tripleEma.summary",
+      "entryKey": "strategies.tripleEma.entry",
+      "exitKey": "strategies.tripleEma.exit"
+    }
   }
 }

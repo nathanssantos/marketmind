@@ -3,14 +3,16 @@
   "name": "MACD Signal Line Crossover",
   "version": "1.0.0",
   "description": "Long quando linha MACD cruza acima da linha de sinal. Short no cruzamento inverso. Estratégia clássica de momentum.",
-  "author": "MarketMind",
+  "author": "Gerald Appel",
+  "source": "Gerald Appel - MACD Creator (1979)",
   "tags": [
     "momentum",
     "macd",
     "crossover",
     "trend"
   ],
-  "status": "unprofitable",
+  "status": "active",
+  "enabled": true,
   "backtestSummary": {
     "profitFactor": 0.84,
     "winRate": 32.73,
@@ -170,5 +172,30 @@
   "filters": {
     "minConfidence": 60,
     "minRiskReward": 1
+  },
+  "education": {
+    "origin": "Gerald Appel - MACD (Moving Average Convergence Divergence) Creator (1979)",
+    "createdYear": 1979,
+    "candlePattern": {
+      "lookback": 2,
+      "candles": [
+        {
+          "offset": -1,
+          "role": "reference",
+          "descriptionKey": "strategies.macd.candleMinus1"
+        },
+        {
+          "offset": 0,
+          "role": "trigger",
+          "descriptionKey": "strategies.macd.candleTrigger"
+        }
+      ],
+      "indicatorsToShow": ["macd", "atr", "ema50", "volume"]
+    },
+    "howItWorks": {
+      "summaryKey": "strategies.macd.summary",
+      "entryKey": "strategies.macd.entry",
+      "exitKey": "strategies.macd.exit"
+    }
   }
 }

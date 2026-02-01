@@ -1,26 +1,28 @@
-import { TRADING_DEFAULTS, FILTER_DEFAULTS } from '@marketmind/types';
+import { FILTER_DEFAULTS } from '@marketmind/types';
 import type { MultiWatcherBacktestConfig } from '@marketmind/types';
 
 export const ENABLED_SETUPS = [
+  'breakout-retest',
+  'bear-trap',
+  'ema5-momentum-crypto',
+  'tema-momentum',
   '7day-momentum-crypto',
-  'chande-momentum-crypto',
-  'donchian-breakout',
-  'ema9-21-rsi-confirmation',
-  'golden-cross-sma',
-  'keltner-breakout-optimized',
-  'larry-williams-9-1',
-  'larry-williams-9-2',
-  'larry-williams-9-3',
-  'larry-williams-9-4',
+  'chaikin-money-flow',
+  'pattern-123-reversal',
+  'rsi50-momentum-crossover',
   'momentum-breakout-2025',
-  'momentum-rotation',
-  'nr7-breakout',
-  'rsi-sma-filter',
-  'rsi2-mean-reversion',
-  'trend-pullback-2025',
-  'triple-ema-confluence',
-  'vwap-ema-cross',
+  'tsi-momentum',
+  'larry-williams-9-1',
+  'larry-williams-9-3',
+  'klinger-oscillator',
   'vwap-pullback',
+  'supertrend-follow',
+  'parabolic-sar-crypto',
+  'macd-divergence',
+  'triple-ema-confluence',
+  'nr7-breakout',
+  'larry-williams-9-4',
+  'golden-cross-sma',
 ] as const;
 
 export const DEFAULT_BACKTEST_PARAMS = {
@@ -47,7 +49,7 @@ export type BaseBacktestConfig = Omit<MultiWatcherBacktestConfig, 'watchers' | '
 export const createBaseConfig = (): BaseBacktestConfig => ({
   initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
   exposureMultiplier: DEFAULT_BACKTEST_PARAMS.exposureMultiplier,
-  minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
+  minRiskRewardRatio: 0.75,
   setupTypes: [...ENABLED_SETUPS],
   useSharedExposure: true,
   marketType: DEFAULT_BACKTEST_PARAMS.marketType,
@@ -66,6 +68,7 @@ export const createBaseConfig = (): BaseBacktestConfig => ({
   useStochasticFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,
+  maxFibonacciEntryProgressPercent: 100,
   useFundingFilter: false,
   useBtcCorrelationFilter: true,
   useConfluenceScoring: false,

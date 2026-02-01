@@ -11,7 +11,7 @@
     "adx"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "backtestSummary": {
     "profitFactor": 1.8,
     "winRate": 41.4,
@@ -146,7 +146,7 @@
       "multiplier": "$rrMultiplier"
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

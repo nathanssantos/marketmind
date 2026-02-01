@@ -12,7 +12,7 @@
     "proven"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "backtestSummary": {
     "profitFactor": 1.21,
     "winRate": 29.27,
@@ -148,7 +148,7 @@
       "multiplier": "$tpMultiplier"
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,

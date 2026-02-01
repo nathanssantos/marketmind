@@ -3,8 +3,8 @@ import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowDown, LuArrowUp, LuMinus, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
-import { Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import { LuArrowDown, LuArrowUp, LuMinus } from 'react-icons/lu';
+import { Area, AreaChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 
 const useContainerWidth = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -51,12 +51,6 @@ const formatTooltipDate = (_: unknown, payload: readonly TooltipPayload[]): stri
 const formatFundingRate = (rate: number | null): string => {
   if (rate === null) return '-';
   return `${(rate * 100).toFixed(4)}%`;
-};
-
-const formatPrice = (price: number): string => {
-  if (price >= 10000) return price.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (price >= 100) return price.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  return price.toLocaleString(undefined, { maximumFractionDigits: 4 });
 };
 
 const formatLargeNumber = (num: number): string => {
@@ -117,47 +111,9 @@ const MiniAreaChart = memo(({ data, dataKey, color, gradientId, height = 60, for
   </Box>
 ));
 
-interface MiniLineChartProps {
-  data: Array<Record<string, unknown>>;
-  lines: Array<{ dataKey: string; color: string; strokeWidth?: number; dashed?: boolean }>;
-  height?: number;
-  formatter: (value: number) => string;
-}
-
-const MiniLineChart = memo(({ data, lines, height = 80, formatter }: MiniLineChartProps) => (
-  <Box h={`${height}px`} mx={-2}>
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={CHART_MARGIN}>
-        <YAxis domain={['dataMin', 'dataMax']} hide />
-        <Tooltip
-          contentStyle={TOOLTIP_STYLE}
-          labelFormatter={formatTooltipDate}
-          formatter={(value) => [formatter(value as number), '']}
-        />
-        {lines.map(({ dataKey, color, strokeWidth = 2, dashed }) => (
-          <Line
-            key={dataKey}
-            type="monotone"
-            dataKey={dataKey}
-            stroke={color}
-            strokeWidth={strokeWidth}
-            dot={false}
-            strokeDasharray={dashed ? '4 2' : undefined}
-          />
-        ))}
-      </LineChart>
-    </ResponsiveContainer>
-  </Box>
-));
-
 const MarketIndicatorsTabComponent = () => {
   const { t } = useTranslation();
   const { ref: containerRef, hasWidth } = useContainerWidth();
-
-  const { data: btcTrendStatus, isLoading: isBtcTrendLoading } = trpc.autoTrading.getBtcTrendStatus.useQuery(
-    { interval: '1d' },
-    { staleTime: REFRESH_INTERVALS.btcDominance, refetchInterval: REFRESH_INTERVALS.btcDominance }
-  );
 
   const { data: fundingRates, isLoading: isFundingLoading } = trpc.autoTrading.getBatchFundingRates.useQuery(
     { symbols: POPULAR_FUNDING_SYMBOLS },
@@ -183,9 +139,6 @@ const MarketIndicatorsTabComponent = () => {
     { symbol: 'BTCUSDT', period: '1h' },
     { staleTime: REFRESH_INTERVALS.longShortRatio, refetchInterval: REFRESH_INTERVALS.longShortRatio }
   );
-
-  const trendColor = btcTrendStatus?.trend === 'BULLISH' ? 'green' : btcTrendStatus?.trend === 'BEARISH' ? 'red' : 'gray';
-  const TrendIcon = btcTrendStatus?.trend === 'BULLISH' ? LuTrendingUp : btcTrendStatus?.trend === 'BEARISH' ? LuTrendingDown : LuMinus;
 
   return (
     <Stack gap={3} p={4} ref={containerRef}>
@@ -324,45 +277,6 @@ const MarketIndicatorsTabComponent = () => {
           <Text fontSize="2xs" color="fg.muted" mt={1}>
             {t('marketSidebar.indicators.topTraders')}: {(longShortRatio.topTraders.longAccount * 100).toFixed(1)}% / {(longShortRatio.topTraders.shortAccount * 100).toFixed(1)}%
           </Text>
-        )}
-      </Box>
-
-      <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
-        <Flex align="center" gap={2} mb={2}>
-          <CryptoIcon symbol="BTCUSDT" size={18} />
-          <Text fontSize="sm" fontWeight="medium">BTC EMA21 (1d)</Text>
-        </Flex>
-        {btcTrendStatus && (
-          <Flex align="center" gap={2} mb={2}>
-            <Badge colorPalette={trendColor} size="xs" px={2}>
-              <Flex align="center" gap={1}>
-                <TrendIcon size={10} />
-                {btcTrendStatus.trend}
-              </Flex>
-            </Badge>
-            {!btcTrendStatus.canLong && <Badge colorPalette="red" size="xs" px={2}>No Long</Badge>}
-            {!btcTrendStatus.canShort && <Badge colorPalette="red" size="xs" px={2}>No Short</Badge>}
-          </Flex>
-        )}
-
-        {isBtcTrendLoading || !hasWidth ? (
-          <Skeleton height="80px" />
-        ) : btcTrendStatus?.history && btcTrendStatus.history.length > 0 ? (
-          <MiniLineChart
-            data={btcTrendStatus.history}
-            lines={[
-              { dataKey: 'ema21', color: 'var(--chakra-colors-blue-500)', strokeWidth: 2 },
-              { dataKey: 'price', color: 'var(--chakra-colors-gray-400)', strokeWidth: 1.5, dashed: true },
-            ]}
-            formatter={(v) => `$${formatPrice(v)}`}
-          />
-        ) : btcTrendStatus ? (
-          <Flex justify="space-between" fontSize="xs" color="fg.muted">
-            <Text>Price: ${btcTrendStatus.btcPrice ? formatPrice(btcTrendStatus.btcPrice) : '-'}</Text>
-            <Text>EMA21: ${btcTrendStatus.btcEma21 ? formatPrice(btcTrendStatus.btcEma21) : '-'}</Text>
-          </Flex>
-        ) : (
-          <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
         )}
       </Box>
 

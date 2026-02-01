@@ -338,7 +338,7 @@ export class RotationManager {
       leverage?: number;
       exposureMultiplier?: number;
       walletBalance?: number;
-      useTrendFilter?: boolean;
+      useBtcCorrelationFilter?: boolean;
     }
   ): Promise<void> {
     if (!config.useDynamicSymbolSelection) {
@@ -363,7 +363,7 @@ export class RotationManager {
         targetWatchersCount: config.targetWatcherCount,
         exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
       } : undefined,
-      useTrendFilter: config.useTrendFilter,
+      useBtcCorrelationFilter: config.useBtcCorrelationFilter,
     };
 
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
@@ -566,7 +566,7 @@ export class RotationManager {
       leverage?: number;
       exposureMultiplier?: number;
       walletBalance?: number;
-      useTrendFilter?: boolean;
+      useBtcCorrelationFilter?: boolean;
     }
   ): Promise<RotationResult> {
     const rotationService = getDynamicSymbolRotationService();
@@ -584,7 +584,7 @@ export class RotationManager {
         targetWatchersCount: config.targetWatcherCount,
         exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
       } : undefined,
-      useTrendFilter: config.useTrendFilter,
+      useBtcCorrelationFilter: config.useBtcCorrelationFilter,
     };
 
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);
@@ -723,7 +723,7 @@ export class RotationManager {
           leverage: config.leverage ?? 1,
           exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
           walletBalance: walletBalanceMap.get(walletId),
-          useTrendFilter: config.useTrendFilter ?? true,
+          useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
         });
         restoredCount++;
       } catch (error) {

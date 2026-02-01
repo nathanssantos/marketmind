@@ -25,6 +25,14 @@ vi.mock('./AboutTab', () => ({
     AboutTab: () => <div>AboutTab Content</div>,
 }));
 
+vi.mock('./TradingProfilesTab', () => ({
+    TradingProfilesTab: () => <div>TradingProfilesTab Content</div>,
+}));
+
+vi.mock('../Trading/BacktestingPanel', () => ({
+    BacktestingPanel: () => <div>BacktestingPanel Content</div>,
+}));
+
 const renderWithChakra = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>

@@ -1015,7 +1015,7 @@ export const autoTradingRouter = router({
           enableAutoRotation: autoTradingConfig.enableAutoRotation,
           leverage: autoTradingConfig.leverage,
           exposureMultiplier: autoTradingConfig.exposureMultiplier,
-          useTrendFilter: autoTradingConfig.useTrendFilter,
+          useBtcCorrelationFilter: autoTradingConfig.useBtcCorrelationFilter,
         })
         .from(autoTradingConfig)
         .where(
@@ -1242,7 +1242,7 @@ export const autoTradingRouter = router({
             leverage: config?.leverage ?? 1,
             exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
             walletBalance: parseFloat(wallet.currentBalance ?? '0'),
-            useTrendFilter: config?.useTrendFilter ?? true,
+            useBtcCorrelationFilter: config?.useBtcCorrelationFilter ?? true,
           }
         );
       }
@@ -1302,7 +1302,7 @@ export const autoTradingRouter = router({
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         interval: z.string().default('30m'),
         limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX).default(10),
-        useTrendFilter: z.boolean().default(true),
+        useBtcCorrelationFilter: z.boolean().default(true),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -1351,10 +1351,9 @@ export const autoTradingRouter = router({
         ? scores.filter(s => filteredSymbolSet.has(s.symbol))
         : allSymbols.filter(s => filteredSymbolSet.has(s)).map(symbol => ({ symbol, score: 0 }));
 
-      let btcEma21Trend: Ema21TrendResult | null = null;
-      let btcKlinesData: ReturnType<typeof mapDbKlinesReversed> = [];
+      let btcTrendInfo: Ema21TrendResult | null = null;
 
-      if (input.useTrendFilter) {
+      if (input.useBtcCorrelationFilter) {
         const btcDbKlines = await ctx.db.query.klines.findMany({
           where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, input.interval)),
           orderBy: [desc(klines.openTime)],
@@ -1362,15 +1361,15 @@ export const autoTradingRouter = router({
         });
 
         if (btcDbKlines.length >= 30) {
-          btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-          btcEma21Trend = getEma21Direction(btcKlinesData);
-          log('📊 BTC EMA21 Trend', {
-            direction: btcEma21Trend.direction,
-            price: btcEma21Trend.price?.toFixed(2),
-            ema21: btcEma21Trend.ema21?.toFixed(2),
+          const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
+          btcTrendInfo = getEma21Direction(btcKlinesData);
+          log('📊 BTC Correlation Filter - Trend', {
+            direction: btcTrendInfo.direction,
+            price: btcTrendInfo.price?.toFixed(2),
+            ema21: btcTrendInfo.ema21?.toFixed(2),
           });
         } else {
-          logger.warn({ count: btcDbKlines.length }, '[getFilteredSymbolsForQuickStart] Insufficient BTC klines for EMA21 analysis');
+          logger.warn({ count: btcDbKlines.length }, '[getFilteredSymbolsForQuickStart] Insufficient BTC klines for trend analysis');
         }
       }
 
@@ -1378,7 +1377,6 @@ export const autoTradingRouter = router({
       const skippedInsufficientKlines: string[] = [];
       const skippedInsufficientCapital = Array.from(excludedSymbols.keys());
       const skippedTrend: { symbol: string; reason: string }[] = [];
-      const misalignedButEligible: string[] = [];
 
       for (const score of filteredScores) {
         const klineCheck = await checkKlineAvailability(
@@ -1393,54 +1391,12 @@ export const autoTradingRouter = router({
           continue;
         }
 
-        let isTrendAligned = true;
+        eligibleSymbols.push(score.symbol);
 
-        if (input.useTrendFilter && btcEma21Trend && btcEma21Trend.direction !== 'NEUTRAL') {
-          const assetDbKlines = await ctx.db.query.klines.findMany({
-            where: and(
-              eq(klines.symbol, score.symbol),
-              eq(klines.interval, input.interval),
-              eq(klines.marketType, input.marketType)
-            ),
-            orderBy: [desc(klines.openTime)],
-            limit: 100,
-          });
-
-          if (assetDbKlines.length >= 30) {
-            const assetKlines = mapDbKlinesReversed(assetDbKlines);
-            const assetTrend = getEma21Direction(assetKlines);
-
-            if (assetTrend.direction !== 'NEUTRAL' && assetTrend.direction !== btcEma21Trend.direction) {
-              isTrendAligned = false;
-              skippedTrend.push({
-                symbol: score.symbol,
-                reason: `Misaligned: BTC ${btcEma21Trend.direction}, Asset ${assetTrend.direction}`,
-              });
-            }
-          }
-        }
-
-        if (isTrendAligned) {
-          eligibleSymbols.push(score.symbol);
-        } else {
-          misalignedButEligible.push(score.symbol);
-        }
-
-        if (eligibleSymbols.length + misalignedButEligible.length >= input.limit * 2) break;
+        if (eligibleSymbols.length >= input.limit * 2) break;
       }
 
-      if (eligibleSymbols.length < input.limit && misalignedButEligible.length > 0) {
-        const needed = input.limit - eligibleSymbols.length;
-        const toAdd = misalignedButEligible.slice(0, needed);
-        eligibleSymbols.push(...toAdd);
-        logger.info({
-          alignedCount: eligibleSymbols.length - toAdd.length,
-          addedMisaligned: toAdd.length,
-          totalEligible: eligibleSymbols.length,
-        }, '[getFilteredSymbolsForQuickStart] Added misaligned symbols to reach target');
-      }
-
-      const btcTrendEmoji = btcEma21Trend?.direction === 'BULLISH' ? '🟢' : btcEma21Trend?.direction === 'BEARISH' ? '🔴' : '⚪';
+      const btcTrendEmoji = btcTrendInfo?.direction === 'BULLISH' ? '🟢' : btcTrendInfo?.direction === 'BEARISH' ? '🔴' : '⚪';
 
       logApiTable('getFilteredSymbolsForQuickStart', [
         ['Market Type', input.marketType],
@@ -1452,10 +1408,9 @@ export const autoTradingRouter = router({
         ['Eligible (Capital)', capitalEligible.length],
         ['Skipped (Capital)', skippedInsufficientCapital.length],
         ['Skipped (Klines)', skippedInsufficientKlines.length],
-        ['Skipped (Trend EMA21)', skippedTrend.length],
         ['Final Symbols', eligibleSymbols.length],
         ['Max Affordable', maxWatchers],
-        ['BTC Trend', btcEma21Trend ? `${btcTrendEmoji} ${btcEma21Trend.direction} (EMA21)` : 'N/A'],
+        ['BTC Trend', btcTrendInfo ? `${btcTrendEmoji} ${btcTrendInfo.direction}` : 'N/A'],
       ]);
 
       return {
@@ -1465,8 +1420,8 @@ export const autoTradingRouter = router({
         skippedTrend,
         capitalPerWatcher,
         maxAffordableWatchers: maxWatchers,
-        btcTrend: btcEma21Trend ? {
-          direction: btcEma21Trend.direction,
+        btcTrend: btcTrendInfo ? {
+          direction: btcTrendInfo.direction,
           isClearTrend: true,
           adx: 0,
           strength: 0,
@@ -1597,7 +1552,7 @@ export const autoTradingRouter = router({
           leverage: config.leverage ?? 1,
           exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
           walletBalance: parseFloat(wallet.currentBalance ?? '0'),
-          useTrendFilter: config.useTrendFilter ?? true,
+          useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
         }
       );
 

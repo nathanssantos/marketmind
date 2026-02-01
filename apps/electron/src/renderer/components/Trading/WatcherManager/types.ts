@@ -73,6 +73,7 @@ export interface SectionExpandedState {
   leverageSettings: boolean;
   trailingStop: boolean;
   tpMode: boolean;
+  entrySettings: boolean;
   filters: boolean;
   opportunityCost: boolean;
   pyramiding: boolean;

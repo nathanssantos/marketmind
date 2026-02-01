@@ -111,7 +111,7 @@ export const QuickStartSection = ({
                         : 'gray.300',
                 }}
               >
-                BTC: {btcTrendStatus.trend} (EMA21)
+                BTC: {btcTrendStatus.trend}
                 {!btcTrendStatus.canLong && ' (LONG blocked)'}
                 {!btcTrendStatus.canShort && ' (SHORT blocked)'}
               </Text>

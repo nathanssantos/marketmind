@@ -11,7 +11,7 @@
     "pullback"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
@@ -130,7 +130,7 @@
       "multiplier": "$targetMultiplier"
     },
     "trailingStop": {
-      "enabled": true,
+      "enabled": false,
       "type": "atr",
       "initialMultiplier": 2,
       "trailMultiplier": 1.5,
@@ -174,7 +174,7 @@
     "minConfidence": 70,
     "minRiskReward": 2,
     "trendFilter": {
-      "enabled": true,
+      "enabled": false,
       "indicator": "ema",
       "period": 200,
       "allowCounterTrend": false
