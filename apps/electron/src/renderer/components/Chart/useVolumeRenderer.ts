@@ -28,7 +28,7 @@ export const useVolumeRenderer = ({
   opacity = 0.3,
   volumeHeightRatio,
   hoveredKlineIndex,
-  timeframe = '1h',
+  timeframe = '12h',
   showVolumeMA = true,
 }: UseVolumeRendererProps): UseVolumeRendererReturn => {
   const render = useCallback((): void => {

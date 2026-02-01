@@ -6,91 +6,91 @@ Estou trabalhando no MarketMind, um app Electron de trading. Siga as instruçõe
 
 **Branch atual:** `feature/trailing-stop-backtest-simulation`
 
-## O Que Foi Concluído
+## O Que Foi Concluído (100% Core)
 
 ### 1. Trailing Stop Optimization (82,944 combinações testadas)
 - **Melhores params LONG:** Activation 90%, Distance 40%, ATR 1.5, BE 0.5%
 - **Melhores params SHORT:** Activation 80%, Distance 30%, ATR 1.5-3.0, BE 0.5-1.5%
 - **Resultado:** +$428.68 (+42.9%), Win Rate 37.6%, Sharpe 0.535
 
-### 2. Comparação de Timeframes (8 testados)
-- **Único lucrativo:** 12h (+11.75% em 3 anos)
-- **Insight:** LONGs sempre melhores que SHORTs
-- **Decisão:** Focar otimização no 12h, considerar LONG-only
+### 2. Comparação de Timeframes v2 (21 estratégias, 485 min)
+- **7/8 timeframes lucrativos** (vs apenas 1/8 na v1)
+- **12h é o melhor:** +$6,038 (+603.8%), PF 2.30, MaxDD 21%
+- **4h alternativa:** +$2,065 (+206.5%), MaxDD 20.5% (menor DD)
+- **Apenas 12h e 4h têm SHORT lucrativo**
+- **30m único negativo:** -$663 (overtrading)
 
-### 3. Market Indicators Sidebar COMPLETA
-- Gráficos históricos (31d) para todos indicadores
-- Componentes reutilizáveis: `MiniAreaChart`, `MiniLineChart`
-- Tooltips padronizados com datas
-- Caching otimizado (refresh 5-30min)
-- Layout padronizado: badges abaixo dos títulos
+### 3. Entry Levels & R:R Optimization
+- **Entry 100% (breakout) é 7.7x melhor** que 61.8%
+- **LONGs dominam:** +$180,604 vs SHORTs: -$3,139
 
-### 4. Entry Levels & R:R Optimization Script IMPLEMENTADO
-- **Script:** `apps/backend/src/cli/optimize-entry-levels.ts`
-- **Quick-test (12 combinações):** Entry 100% (breakout) é 7.7x melhor que 61.8% atual
-- **Resultado:** +$2,572 (+257%) vs $335 (+33.5%) com Entry 61.8%
-- **LONGs dominam:** +$18,260 vs SHORTs: -$855
+### 4. BTC Correlation Filter
+- **5.6x mais lucrativo** com filtro ($4,643 vs $830)
+- **Drawdown reduzido** em 17% (24.8% vs 41.8%)
 
-**Melhor configuração encontrada:**
+### 5. Monte Carlo Validation
+- **100% probabilidade lucrativa** (1000 simulações)
+- **CI95 Drawdown:** 27.1% (abaixo do limite 50%)
+- **Retorno mediano:** +490.4%
+
+### 6. Market Indicators Sidebar COMPLETA
+- Fear & Greed, BTC Dominance, OI, L/S Ratio
+- Gráficos históricos 31d com tooltips
+
+### 7. Trailing Stop UI
+- Separação LONG/SHORT implementada
+- Toggle `useProfitLockDistance` adicionado
+
+## Configuração Final Otimizada
+
 ```json
 {
+  "timeframe": "12h",
   "maxFibonacciEntryProgressPercent": 100,
   "minRiskRewardRatioLong": 0.75,
-  "minRiskRewardRatioShort": 0.75
+  "minRiskRewardRatioShort": 0.75,
+  "trailingActivationPercentLong": 0.9,
+  "trailingDistancePercentLong": 0.4,
+  "trailingActivationPercentShort": 0.8,
+  "trailingDistancePercentShort": 0.3,
+  "useBtcCorrelationFilter": true,
+  "useVolumeFilter": true,
+  "useMomentumTimingFilter": true
 }
 ```
 
-## Próximos Passos
+## Fase Atual: Auditoria e Documentação
 
-### Prioridade 1: Entry Levels FULL Optimization (12h)
-```bash
-# Rodar otimização completa (180 combinações)
-cd apps/backend
-pnpm tsx src/cli/optimize-entry-levels.ts --mode=full
+### Em Progresso
+1. **Documentação Frontend:** Listar componentes, hooks, stores
+2. **Documentação Backend:** Listar routers, services, CLI scripts
+3. **Limpeza:** Remover docs obsoletos
 
-# Ou testar LONG-only
-pnpm tsx src/cli/optimize-entry-levels.ts --mode=full --long-only
-```
-
-### Prioridade 2: Walk-Forward Validation
-Validar as configs com dados out-of-sample (70/30 split).
-
-### Prioridade 3: Trend Filter Optimization (Seção 14)
-```bash
-# Métodos a testar:
-- EMA simples (período único)
-- Combinado (EMA + MACD + RSI)
-- ADX (força de tendência)
-
-# Períodos a testar:
-- EMA9, EMA21, EMA50, EMA200
-```
-
-### Prioridade 4: Aplicar Defaults Ótimos (Seção 15)
-Aplicar as melhores configs encontradas como defaults do sistema.
+### Futuro (Baixa Prioridade)
+- **Rotation Melhorias:** Setup Pre-Scanner, Filter Pre-Validator
+- **Order Book Integration:** Imbalance, Liquidity Walls
 
 ## Arquivos Importantes
 
 ```
 docs/OPTIMIZATION_MASTER_PLAN.md     # Plano completo atualizado
 apps/backend/src/cli/                # Scripts de otimização
-├── optimize-entry-levels.ts         # ✅ NOVO - Entry Levels & R:R
-├── optimize-trailing-stop.ts        # Trailing Stop
-├── compare-timeframes.ts            # Comparação de timeframes
-apps/backend/src/services/backtesting/
-├── MultiWatcherBacktestEngine.ts    # Engine principal (atualizado)
-├── WalkForwardOptimizer.ts          # Walk-forward validation
-└── MonteCarloSimulator.ts           # Monte Carlo simulation
+├── optimize-trailing-stop.ts        # Trailing Stop (82,944 combos)
+├── compare-timeframes-v2.ts         # Timeframes v2 (21 estratégias)
+├── optimize-entry-levels.ts         # Entry Levels & R:R
+├── compare-btc-filter.ts            # BTC Correlation
+├── compare-trend-filters.ts         # Trend Filters
+└── validate-robustness.ts           # Monte Carlo validation
 ```
 
-## Regra Obrigatória
+## Métricas do Sistema
 
-**SEMPRE** rodar teste rápido antes de otimização completa:
-```bash
-cd apps/backend
-pnpm tsx src/cli/[script].ts --quick-test --verbose
-```
+| Métrica | Valor |
+|---------|-------|
+| Testes | 2,419 passing |
+| Test Files | 111 |
+| Code Coverage | 92.15% |
 
 ## Tarefa
 
-Rodar a otimização FULL de Entry Levels com `--mode=full` e `--long-only` para confirmar os resultados do quick-test e validar se LONG-only melhora os resultados.
+Continuar a fase de Auditoria e Documentação conforme definido no OPTIMIZATION_MASTER_PLAN.md seção 12.

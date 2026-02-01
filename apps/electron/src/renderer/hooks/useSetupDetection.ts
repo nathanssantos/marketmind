@@ -47,7 +47,7 @@ export const useSetupDetection = (options: UseSetupDetectionOptions = {}): UseSe
 
   const { data: result, isPending } = useDetectCurrent({
     symbol: symbol || '',
-    interval: interval || '1h',
+    interval: interval || '12h',
   });
 
   const detectSetups = (klines: Kline[]): TradingSetup[] => {

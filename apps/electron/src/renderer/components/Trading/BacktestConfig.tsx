@@ -59,7 +59,7 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const [marketType, setMarketType] = useState<MarketType>('SPOT');
 
   const [symbol, setSymbol] = useState(chartData?.symbol || 'BTCUSDT');
-  const [interval, setInterval] = useState<Timeframe>('1h');
+  const [interval, setInterval] = useState<Timeframe>('12h');
   const [startDate, setStartDate] = useState(lastMonthRange.start);
   const [endDate, setEndDate] = useState(lastMonthRange.end);
   const [initialCapital, setInitialCapital] = useState('10000');

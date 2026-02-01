@@ -1,6 +1,7 @@
 import { TIME_MS } from './intervals';
 
 export const TRADING_DEFAULTS = {
+  DEFAULT_TIMEFRAME: '12h' as const,
   MIN_RISK_REWARD_RATIO: 0.75,
   EXPOSURE_MULTIPLIER: 1.75,
   MAX_POSITION_SIZE_PERCENT: 10,

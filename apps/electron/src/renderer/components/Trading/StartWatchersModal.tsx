@@ -27,8 +27,8 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
   const walletId = wallets[0]?.id ?? '';
 
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
-  const [timeframe, setTimeframe] = useState<TimeInterval>('1h');
-  const [count, setCount] = useState(5);
+  const [timeframe, setTimeframe] = useState<TimeInterval>('12h');
+  const [count, setCount] = useState(20);
 
   const { startWatchersBulk, isStartingWatchersBulk } = useBackendAutoTrading(walletId);
 

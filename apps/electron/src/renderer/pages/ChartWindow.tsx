@@ -56,7 +56,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const [showEventRow, setShowEventRow] = useLocalStorage('marketmind:showEventRow', true);
   const [chartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '1h');
+  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '12h');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
