@@ -1,8 +1,8 @@
 # Plano Mestre de Otimização do Sistema de Trading
 
-**Status:** ✅ COMPLETO
-**Versão:** 2.0.0
-**Última Atualização:** 2026-01-31
+**Status:** 🔄 95% COMPLETO (Core) | 75% com Auditoria
+**Versão:** 2.1.0
+**Última Atualização:** 2026-02-01 00:10
 **Autor:** Claude Opus 4.5 + Nathan
 
 ---
@@ -11,18 +11,29 @@
 
 ### Visão Geral
 Este plano cobre a **otimização completa do sistema de trading** do MarketMind:
-1. **Trailing Stop** - Parâmetros ótimos LONG/SHORT
-2. **Entry Levels & R:R** - Fibonacci entry, breakout vs pullback, R:R mínimo (Seção 13)
-3. **Filtro de Tendência** - EMA simples vs Combinado vs ADX (Seção 14)
-4. **106 Estratégias** - Teste, eleição e otimização das melhores
-5. **Rotation/QuickStart** - Screening inteligente de ativos
-6. **Walk-Forward + Monte Carlo** - Validação estatística
-7. **Market & Watchers Sidebar** - 3 tabs: Indicadores, Watchers ativos, Logs
-8. **Aplicação dos Defaults** - Aplicar configs ótimas em TODO o sistema (Seção 15)
-9. **Auditoria e Documentação** - Atualizar docs, READMEs e remover obsoletos (Seção 12)
-10. **Order Book Integration** - Imbalance, Liquidity Walls, Order Flow (Seção 16)
+1. **Trailing Stop** - Parâmetros ótimos LONG/SHORT ✅
+2. **Entry Levels & R:R** - Fibonacci entry, breakout vs pullback, R:R mínimo ✅
+3. **Filtro de Tendência** - EMA simples vs Combinado vs ADX ✅
+4. **Comparação de Timeframes** - 8 timeframes testados ✅
+5. **Rotation/QuickStart** - BTC Correlation Filter simplificado ✅
+6. **Walk-Forward + Monte Carlo** - Validação estatística ✅
+7. **Market Indicators Sidebar** - Fear & Greed, BTC Dominance, OI, L/S Ratio ✅
+8. **Aplicação dos Defaults** - Configs ótimas aplicadas ✅
+9. **Auditoria e Documentação** - Atualizar docs, READMEs ❌ PENDENTE
+10. **Melhorias Rotation** - Setup Pre-Scanner, Filter Pre-Validator ❌ PENDENTE
+11. **Order Book Integration** - Imbalance, Liquidity Walls 🔮 FUTURO
 
-### Estado Atual (2026-01-31 23:00) - OTIMIZAÇÃO COMPLETA
+### Progresso por Categoria
+| Categoria | Status | % |
+|-----------|--------|---|
+| Core Optimization | ✅ | 100% |
+| Validação Estatística | ✅ | 100% |
+| UI/UX Implementado | ✅ | 100% |
+| Auditoria/Docs | ❌ | 0% |
+| Rotation Melhorias | ❌ | 0% |
+| Order Book | 🔮 | Futuro |
+
+### Estado Atual (2026-02-01 00:10) - CORE COMPLETO
 
 #### ✅ Otimização Trailing Stop COMPLETA
 - **Combinações testadas:** 82,944/82,944 (100%)
@@ -54,11 +65,12 @@ Este plano cobre a **otimização completa do sistema de trading** do MarketMind
 - Fear & Greed Index (Alternative.me API) + gráfico histórico 31d
 - BTC Dominance (CoinGecko API) + gráfico histórico 31d
 - Open Interest + Long/Short Ratio (Binance Futures) + gráficos históricos
-- BTC EMA21 Trend (LineChart com EMA + Price) + Funding Rates
-- **Componentes reutilizáveis:** `MiniAreaChart`, `MiniLineChart`
+- Funding Rates (top 5 símbolos)
+- **Componentes reutilizáveis:** `MiniAreaChart`
 - **Tooltips padronizados** com datas em todos os gráficos
 - **Layout padronizado:** badges abaixo dos títulos
 - **Caching otimizado:** refresh intervals inteligentes (5-30min)
+- ~~BTC EMA21 Chart~~ → Removido (simplificado para badge no QuickStart)
 
 #### ✅ Comparação de Timeframes COMPLETA (2026-01-31)
 - **Período:** 2023-01-01 a 2026-01-01 (3 anos)
@@ -2328,6 +2340,28 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 
 ## 15. Atualizações do Plano
 
+### v2.1.0 (2026-02-01 00:10)
+- **BTC Correlation Filter Simplificado:**
+  - Removido `useTrendFilter` (comparação EMA21 por ativo) do rotation/quick-start
+  - Mantido apenas `useBtcCorrelationFilter` (exibe trend BTC, bloqueia LONG/SHORT)
+  - Atualizado: `dynamic-symbol-rotation.ts`, `auto-trading-scheduler.ts`, `rotation-manager.ts`
+  - Badge simplificado: "BTC: BEARISH" (removido "(EMA21)")
+- **BTC EMA21 Chart Removido:**
+  - Removido da MarketIndicatorsTab (era redundante com badge no QuickStart)
+  - Removidos imports não utilizados: `Line`, `LineChart`, `LuTrendingUp`, `LuTrendingDown`
+  - Removido componente `MiniLineChart` (não mais usado)
+- **EntrySettingsSection Traduções:**
+  - Verificadas traduções em EN/PT/ES/FR para `settings.entrySettings.*`
+- **Comparação de Timeframes v2:**
+  - Rodando em background com 21 estratégias
+  - Configuração: 5 símbolos × 8 timeframes × 3 anos
+  - Processo duplicado identificado e removido
+- **Status do Plano Atualizado:**
+  - Core Optimization: 100% ✅
+  - Auditoria/Docs: 0% ❌ (próximo passo)
+  - Rotation Melhorias: 0% ❌ (Setup Pre-Scanner, etc.)
+  - Order Book: 🔮 Futuro
+
 ### v2.0.6 (2026-01-31 20:30)
 - **Trailing Stop Optimization COMPLETA:**
   - 82,944 combinações testadas em ~87 minutos
@@ -2499,38 +2533,49 @@ pnpm tsx apps/backend/src/cli/validate-optimization.ts \
 
 ## Próximos Passos Imediatos
 
-### Fase Atual: Otimização 3 Anos (Em Execução)
-- [x] Sistema de otimização principal criado (`optimize-trailing-stop.ts`)
-- [x] Download automático de klines implementado
-- [x] Validação aprovada (quick test passou)
-- [🔄] Otimização 3 anos rodando (82,944 combinações)
+### ✅ Fases Completas
+- [x] Sistema de otimização principal (`optimize-trailing-stop.ts`) - 82,944 combinações
+- [x] Comparação de Timeframes - 12h identificado como único lucrativo
+- [x] Entry Levels & R:R Optimization - Entry 100% (breakout) escolhido
+- [x] BTC Correlation Filter - Validado (+5.6x P&L, -17% drawdown)
+- [x] Trend Filters Comparison - Baseline sem filtros extras é melhor
+- [x] Monte Carlo Validation - 100% probabilidade lucrativa, CI95 validado
+- [x] Trailing Stop UI - Separação LONG/SHORT implementada
+- [x] Market Indicators Sidebar - Fear & Greed, BTC Dominance, OI, L/S Ratio
 
-### Próxima Fase: Validação de Robustez
-1. **Após otimização completar:**
-   - [ ] Analisar top 10 configurações
-   - [ ] Verificar se há overfitting (configs muito específicas)
-   - [ ] Comparar LONG vs SHORT performance
+### 🔄 Em Progresso
+- [🔄] Comparação de Timeframes v2 (21 estratégias) - Rodando em background
 
-2. **Implementar Walk-Forward Optimization:**
-   - [ ] Dividir dados em janelas (6 meses in-sample, 2 meses out-of-sample)
-   - [ ] Re-otimizar em cada janela
-   - [ ] Verificar consistência das configs ótimas
+### ❌ Próxima Fase: Auditoria e Documentação (Seção 12)
+1. **Documentação Frontend:**
+   - [ ] Listar todos os componentes e suas responsabilidades
+   - [ ] Documentar hooks customizados (useBackend*, useChart*, etc.)
+   - [ ] Documentar stores Zustand
+   - [ ] Verificar traduções (i18n) completas
 
-3. **Implementar Monte Carlo Validation:**
-   - [ ] Rodar 1000 simulações com trade shuffling
-   - [ ] Calcular intervalos de confiança (95%)
-   - [ ] Rejeitar configs onde P5 é negativo
+2. **Documentação Backend:**
+   - [ ] Listar todos os routers tRPC e endpoints
+   - [ ] Documentar services principais
+   - [ ] Documentar CLI scripts ativos
+   - [ ] Documentar schema do banco (Drizzle)
 
-### Fase Final: Aplicação dos Resultados
-4. **Aplicar configuração ótima:**
-   - [ ] Atualizar defaults no código
-   - [ ] Atualizar configs no banco de dados
-   - [ ] Testar em paper trading
+3. **Limpeza:**
+   - [ ] Remover documentação obsoleta
+   - [ ] Atualizar CLAUDE.md com padrões atuais
+   - [ ] Atualizar READMEs por módulo
 
-5. **Arquitetura (Médio Prazo):**
-   - [ ] Criar pacote `@marketmind/backtesting`
-   - [ ] Migrar engine e otimizadores
-   - [ ] Desacoplar de dependências do backend
+### 🔮 Futuro (Baixa Prioridade)
+- **Melhorias Rotation (Seção 13):**
+  - Setup Pre-Scanner
+  - Filter Pre-Validator
+  - BTC Dominance Check
+  - ADX Trend Strength
+  - Historical Win Rate
+
+- **Order Book Integration (Seção 16):**
+  - Imbalance Ratio
+  - Liquidity Walls
+  - Order Book Velocity
 
 ---
 
