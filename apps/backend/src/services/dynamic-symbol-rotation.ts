@@ -8,7 +8,6 @@ import { getEma21Direction } from '../utils/filters/btc-correlation-filter';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { getAltcoinSeasonIndexService, type SeasonType } from './altcoin-season-index';
 import { getBTCDominanceDataService } from './btc-dominance-data';
-import { checkKlineAvailability } from './kline-prefetch';
 import { logger } from './logger';
 import { getMinNotionalFilterService, type CapitalRequirement } from './min-notional-filter';
 import { getOpportunityScoringService, type SymbolScore } from './opportunity-scoring';
@@ -375,18 +374,6 @@ export class DynamicSymbolRotationService {
       for (const symbol of optimalSymbols) {
         if (toAdd.length >= slotsAvailable) break;
         if (!currentSymbols.has(symbol) && !kept.includes(symbol)) {
-          const klineCheck = await checkKlineAvailability(
-            symbol,
-            config.interval,
-            config.marketType,
-            true
-          );
-
-          if (!klineCheck.hasSufficient) {
-            skippedInsufficientKlines.push(symbol);
-            continue;
-          }
-
           toAdd.push(symbol);
         }
       }
