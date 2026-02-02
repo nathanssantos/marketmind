@@ -133,6 +133,8 @@ export const computeTrailingStop = (
       trailingDistancePercent: config.trailingDistancePercent,
       useFibonacciThresholds,
       useProfitLockDistance: config.useProfitLockDistance,
+      activationPercentLong: config.activationPercentLong,
+      activationPercentShort: config.activationPercentShort,
     }
   );
 
@@ -504,15 +506,36 @@ export class TrailingStopService {
           trailingDistancePercent,
         };
 
-        logger.debug({
+        const activationLevel = execution.side === 'LONG'
+          ? (executionConfig.activationPercentLong ?? 0.90)
+          : (executionConfig.activationPercentShort ?? 0.80);
+
+        let activationLevelPrice: number | null = null;
+        if (fibonacciProjection?.swingLow && fibonacciProjection?.swingHigh) {
+          const swingLow = fibonacciProjection.swingLow.price;
+          const swingHigh = fibonacciProjection.swingHigh.price;
+          const range = Math.abs(swingHigh - swingLow);
+          activationLevelPrice = activationLevel <= 1
+            ? swingLow + range * activationLevel
+            : swingHigh + range * (activationLevel - 1);
+        }
+
+        logger.info({
           executionId: execution.id,
           symbol: execution.symbol,
           side: execution.side,
+          currentPrice,
           useFibonacciThresholds,
-          activationPercentLong: executionConfig.activationPercentLong,
-          activationPercentShort: executionConfig.activationPercentShort,
-          trailingDistancePercent: executionConfig.trailingDistancePercent,
-        }, '[TrailingStop] Using wallet config for activation thresholds');
+          walletConfigRaw: {
+            activationPercentLong: walletConfig?.trailingActivationPercentLong,
+            activationPercentShort: walletConfig?.trailingActivationPercentShort,
+          },
+          activationLevel,
+          activationLevelPrice,
+          wouldActivate: execution.side === 'LONG'
+            ? (activationLevelPrice ? currentPrice >= activationLevelPrice : false)
+            : (activationLevelPrice ? currentPrice <= activationLevelPrice : false),
+        }, '[TrailingStop] Activation check details');
 
         const update = this.calculateTrailingStopWithConfig(
           execution,
