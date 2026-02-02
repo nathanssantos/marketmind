@@ -13,6 +13,27 @@ export type TestDatabase = ReturnType<typeof drizzle<typeof schema>>;
 let testDb: TestDatabase | null = null;
 let tablesCreated = false;
 
+const dropTablesSQL = `
+DROP TABLE IF EXISTS pyramid_entries CASCADE;
+DROP TABLE IF EXISTS trade_executions CASCADE;
+DROP TABLE IF EXISTS trading_setups CASCADE;
+DROP TABLE IF EXISTS setup_detections CASCADE;
+DROP TABLE IF EXISTS positions CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS auto_trading_config CASCADE;
+DROP TABLE IF EXISTS active_watchers CASCADE;
+DROP TABLE IF EXISTS strategy_performance CASCADE;
+DROP TABLE IF EXISTS trade_cooldowns CASCADE;
+DROP TABLE IF EXISTS klines CASCADE;
+DROP TABLE IF EXISTS price_cache CASCADE;
+DROP TABLE IF EXISTS api_keys CASCADE;
+DROP TABLE IF EXISTS user_preferences CASCADE;
+DROP TABLE IF EXISTS trading_profiles CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS wallets CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+`;
+
 const createTablesSQL = `
 CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(255) PRIMARY KEY,
@@ -181,7 +202,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   margin_top_up_threshold NUMERIC(5, 2) DEFAULT '30',
   margin_top_up_percent NUMERIC(5, 2) DEFAULT '10',
   margin_top_up_max_count INTEGER DEFAULT 3,
-  exposure_multiplier NUMERIC(4, 2) DEFAULT '1.50' NOT NULL,
+  position_size_percent NUMERIC(5, 2) DEFAULT '10.00' NOT NULL,
   min_risk_reward_ratio_long NUMERIC(4, 2) DEFAULT '0.75',
   min_risk_reward_ratio_short NUMERIC(4, 2) DEFAULT '0.75',
   max_fibonacci_entry_progress_percent INTEGER DEFAULT 100 NOT NULL,
@@ -444,6 +465,7 @@ export const setupTestDatabase = async (): Promise<TestDatabase> => {
   setTestDatabase(testDb as unknown as DatabaseType);
 
   if (!tablesCreated) {
+    await testDb.execute(sql.raw(dropTablesSQL));
     await testDb.execute(sql.raw(createTablesSQL));
     tablesCreated = true;
   }

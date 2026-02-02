@@ -71,7 +71,7 @@ All filter defaults are centralized in `@marketmind/types/filter-defaults.ts` to
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `exposureMultiplier` | `1.5` | Max exposure as multiple of initial capital |
+| `positionSizePercent` | `10` | Position size as percentage of capital |
 | `minRiskRewardRatioLong` | `1.0` | Minimum R:R for LONG trades |
 | `minRiskRewardRatioShort` | `0.8` | Minimum R:R for SHORT trades |
 
@@ -241,7 +241,7 @@ import { FILTER_DEFAULTS } from '@marketmind/types';
 // Access individual defaults
 console.log(FILTER_DEFAULTS.useTrendFilter);      // false
 console.log(FILTER_DEFAULTS.confluenceMinScore);  // 60
-console.log(FILTER_DEFAULTS.exposureMultiplier);  // 1.5
+console.log(FILTER_DEFAULTS.positionSizePercent); // 10
 ```
 
 This ensures consistency between:

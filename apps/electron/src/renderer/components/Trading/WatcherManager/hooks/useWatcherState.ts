@@ -23,6 +23,7 @@ export const useWatcherState = (): UseWatcherStateReturn => {
   const [expandedSections, setExpandedSections] = useState<SectionExpandedState>({
     watchers: true,
     dynamicSelection: false,
+    positionSize: false,
     leverageSettings: false,
     trailingStop: false,
     tpMode: false,

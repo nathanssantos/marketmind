@@ -18,6 +18,7 @@ import { FiltersSection } from './FiltersSection';
 import { useWatcherState } from './hooks/useWatcherState';
 import { LeverageSettingsSection } from './LeverageSettingsSection';
 import { OpportunityCostSection } from './OpportunityCostSection';
+import { PositionSizeSection } from './PositionSizeSection';
 import { PyramidingSection } from './PyramidingSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
@@ -296,6 +297,16 @@ export const WatcherManager = () => {
         marginType={config?.marginType ?? 'ISOLATED'}
         onLeverageChange={handleLeverageChange}
         onMarginTypeChange={handleMarginTypeChange}
+        isPending={updateConfig.isPending}
+      />
+
+      <Separator />
+
+      <PositionSizeSection
+        isExpanded={expandedSections.positionSize}
+        onToggle={() => toggleSection('positionSize')}
+        positionSizePercent={Number(config?.positionSizePercent ?? 10)}
+        onPositionSizeChange={(value) => handleConfigUpdate({ positionSizePercent: value.toString() })}
         isPending={updateConfig.isPending}
       />
 

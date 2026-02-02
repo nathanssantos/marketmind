@@ -1,5 +1,5 @@
 export interface ExposureConfig {
-  exposureMultiplier: number;
+  positionSizePercent: number;
   maxPositionSizePercent: number;
   maxConcurrentPositions: number;
 }

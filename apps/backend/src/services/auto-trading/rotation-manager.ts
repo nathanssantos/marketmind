@@ -336,7 +336,7 @@ export class RotationManager {
       profileId?: string;
       enableAutoRotation?: boolean;
       leverage?: number;
-      exposureMultiplier?: number;
+      positionSizePercent?: number;
       walletBalance?: number;
       useBtcCorrelationFilter?: boolean;
     }
@@ -361,7 +361,7 @@ export class RotationManager {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
         targetWatchersCount: config.targetWatcherCount,
-        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+        positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
       } : undefined,
       useBtcCorrelationFilter: config.useBtcCorrelationFilter,
     };
@@ -564,7 +564,7 @@ export class RotationManager {
       interval: string;
       profileId?: string;
       leverage?: number;
-      exposureMultiplier?: number;
+      positionSizePercent?: number;
       walletBalance?: number;
       useBtcCorrelationFilter?: boolean;
     }
@@ -582,7 +582,7 @@ export class RotationManager {
         walletBalance: config.walletBalance,
         leverage: config.leverage ?? 1,
         targetWatchersCount: config.targetWatcherCount,
-        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+        positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
       } : undefined,
       useBtcCorrelationFilter: config.useBtcCorrelationFilter,
     };
@@ -721,7 +721,7 @@ export class RotationManager {
           profileId: watcherInfo.profileId,
           enableAutoRotation: config.enableAutoRotation,
           leverage: config.leverage ?? 1,
-          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+          positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
           walletBalance: walletBalanceMap.get(walletId),
           useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
         });

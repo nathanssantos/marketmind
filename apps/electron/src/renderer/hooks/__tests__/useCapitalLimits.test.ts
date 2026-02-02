@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 interface CapitalLimits {
   walletBalance: number;
   leverage: number;
-  exposureMultiplier: number;
+  positionSizePercent: number;
   availableCapital: number;
   maxAffordableWatchers: number;
   capitalPerWatcher: number;
@@ -13,18 +13,18 @@ interface CapitalLimits {
 
 const formatCapitalTooltip = (capitalLimits: CapitalLimits | null): string => {
   if (!capitalLimits) return '';
-  const { walletBalance, leverage, exposureMultiplier, maxCapitalPerPosition } = capitalLimits;
-  return `$${walletBalance.toFixed(2)} × ${leverage}x × ${exposureMultiplier}x | Max/pos: $${maxCapitalPerPosition.toFixed(2)} (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO} rule)`;
+  const { walletBalance, leverage, positionSizePercent, maxCapitalPerPosition } = capitalLimits;
+  return `$${walletBalance.toFixed(2)} × ${leverage}x × ${positionSizePercent}% | Max/pos: $${maxCapitalPerPosition.toFixed(2)} (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO} rule)`;
 };
 
 const calculateMaxAffordableWatchers = (
   availableCapital: number,
-  exposureMultiplier: number,
+  positionSizePercent: number,
   minRequiredPerPosition: number
 ): number => {
   const safetyMargin = 1.1;
   const requiredPerWatcher = minRequiredPerPosition * safetyMargin;
-  const maxWatchers = Math.floor((availableCapital * exposureMultiplier) / requiredPerWatcher);
+  const maxWatchers = Math.floor((availableCapital * positionSizePercent / 100) / requiredPerWatcher);
   return Math.max(1, maxWatchers);
 };
 
@@ -53,7 +53,7 @@ describe('useCapitalLimits', () => {
       const capitalLimits: CapitalLimits = {
         walletBalance: 100,
         leverage: 1,
-        exposureMultiplier: 1.5,
+        positionSizePercent: 15,
         availableCapital: 100,
         maxAffordableWatchers: 10,
         capitalPerWatcher: 15,
@@ -61,14 +61,14 @@ describe('useCapitalLimits', () => {
       };
 
       const result = formatCapitalTooltip(capitalLimits);
-      expect(result).toBe('$100.00 × 1x × 1.5x | Max/pos: $20.00 (1/5 rule)');
+      expect(result).toBe('$100.00 × 1x × 15% | Max/pos: $20.00 (1/5 rule)');
     });
 
     it('should handle leverage in tooltip', () => {
       const capitalLimits: CapitalLimits = {
         walletBalance: 50,
         leverage: 2,
-        exposureMultiplier: 1.5,
+        positionSizePercent: 15,
         availableCapital: 100,
         maxAffordableWatchers: 5,
         capitalPerWatcher: 20,
@@ -76,14 +76,14 @@ describe('useCapitalLimits', () => {
       };
 
       const result = formatCapitalTooltip(capitalLimits);
-      expect(result).toBe('$50.00 × 2x × 1.5x | Max/pos: $20.00 (1/5 rule)');
+      expect(result).toBe('$50.00 × 2x × 15% | Max/pos: $20.00 (1/5 rule)');
     });
 
     it('should handle decimal values correctly', () => {
       const capitalLimits: CapitalLimits = {
         walletBalance: 123.456,
         leverage: 5,
-        exposureMultiplier: 2.0,
+        positionSizePercent: 20,
         availableCapital: 617.28,
         maxAffordableWatchers: 25,
         capitalPerWatcher: 24.69,
@@ -91,31 +91,31 @@ describe('useCapitalLimits', () => {
       };
 
       const result = formatCapitalTooltip(capitalLimits);
-      expect(result).toBe('$123.46 × 5x × 2x | Max/pos: $123.46 (1/5 rule)');
+      expect(result).toBe('$123.46 × 5x × 20% | Max/pos: $123.46 (1/5 rule)');
     });
   });
 
   describe('calculateMaxAffordableWatchers', () => {
     it('should calculate max watchers correctly', () => {
-      const result = calculateMaxAffordableWatchers(100, 1.5, 5);
+      const result = calculateMaxAffordableWatchers(1000, 15, 5);
       expect(result).toBe(27);
     });
 
     it('should return at least 1 watcher even with low capital', () => {
-      const result = calculateMaxAffordableWatchers(1, 1.5, 100);
+      const result = calculateMaxAffordableWatchers(100, 15, 100);
       expect(result).toBe(1);
     });
 
-    it('should handle higher leverage correctly', () => {
-      const result = calculateMaxAffordableWatchers(50, 1.5, 10);
+    it('should handle higher position size correctly', () => {
+      const result = calculateMaxAffordableWatchers(500, 15, 10);
       expect(result).toBe(6);
     });
 
     it('should consider safety margin (1.1x) in calculation', () => {
-      const availableCapital = 110;
-      const exposureMultiplier = 1.0;
+      const availableCapital = 1100;
+      const positionSizePercent = 10;
       const minRequired = 10;
-      const result = calculateMaxAffordableWatchers(availableCapital, exposureMultiplier, minRequired);
+      const result = calculateMaxAffordableWatchers(availableCapital, positionSizePercent, minRequired);
       expect(result).toBe(10);
     });
   });
@@ -202,7 +202,7 @@ describe('useCapitalLimits', () => {
       const leverage = 1;
       const availableCapital = walletBalance * leverage;
       const maxCapitalPerPosition = availableCapital / 5;
-      const exposureMultiplier = 1.5;
+      const positionSizePercent = 10;
 
       expect(maxCapitalPerPosition).toBe(10);
 
@@ -214,8 +214,8 @@ describe('useCapitalLimits', () => {
       expect(minRequired).toBeCloseTo(7.7, 1);
       expect(minRequired).toBeLessThan(maxCapitalPerPosition);
 
-      const maxWatchers = calculateMaxAffordableWatchers(availableCapital, exposureMultiplier, minRequired);
-      expect(maxWatchers).toBe(8);
+      const maxWatchers = calculateMaxAffordableWatchers(availableCapital, positionSizePercent, minRequired);
+      expect(maxWatchers).toBe(1);
     });
 
     it('should guarantee at least 5 watchers with 1/5 rule', () => {

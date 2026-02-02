@@ -420,7 +420,7 @@ export class PyramidingService {
       walletBalance,
       activeWatchersCount ?? 0,
       {
-        exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+        positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
         maxPositionSizePercent: configMaxPositionSize,
         maxConcurrentPositions: tradingConfig.maxConcurrentPositions,
       }

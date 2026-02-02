@@ -125,7 +125,7 @@ async function runBacktest(
     useFundingFilter: true,
     useConfluenceScoring: true,
     confluenceMinScore: 60,
-    exposureMultiplier: 1.5,
+    positionSizePercent: 10,
     tpCalculationMode: 'fibonacci',
     fibonacciTargetLevel: 'auto',
     useAlgorithmicLevels: true,

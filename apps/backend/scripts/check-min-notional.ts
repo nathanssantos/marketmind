@@ -19,19 +19,15 @@ async function check() {
   
   const balance = 55;
   const leverage = 1;
-  const exposureMultiplier = 1.5;
-  const watcherCount = 12;
-  
-  const exposurePerWatcher = Math.min((100 * exposureMultiplier) / watcherCount, 100);
-  const capitalPerWatcher = (balance * leverage * exposurePerWatcher) / 100;
+  const positionSizePercent = 10;
+
+  const capitalPerWatcher = (balance * leverage * positionSizePercent) / 100;
   const minAllowed = capitalPerWatcher / 1.1;
-  
+
   console.log('\n=== Cálculo de Capital ===');
   console.log(`Balance: ${balance} USDT`);
   console.log(`Leverage: ${leverage}x`);
-  console.log(`Exposure Multiplier: ${exposureMultiplier}`);
-  console.log(`Watchers: ${watcherCount}`);
-  console.log(`Exposure per watcher: ${exposurePerWatcher.toFixed(2)}%`);
+  console.log(`Position Size: ${positionSizePercent}%`);
   console.log(`Capital per watcher: ${capitalPerWatcher.toFixed(2)} USDT`);
   console.log(`Símbolos com minNotional > ${minAllowed.toFixed(2)} USDT serão FILTRADOS`);
   

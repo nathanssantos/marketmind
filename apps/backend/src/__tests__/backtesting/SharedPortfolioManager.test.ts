@@ -8,7 +8,7 @@ import type { TradingSetup } from '@marketmind/types';
 
 const createPortfolioConfig = (overrides: Partial<PortfolioConfig> = {}): PortfolioConfig => ({
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
-  exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+  positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
   maxPositionSizePercent: 15,
   maxConcurrentPositions: 5,
   dailyLossLimitPercent: TRADING_DEFAULTS.DAILY_LOSS_LIMIT_PERCENT,
@@ -41,55 +41,57 @@ const createSetup = (overrides: Partial<TradingSetup> = {}): TradingSetup => ({
 });
 
 describe('SharedPortfolioManager', () => {
-  describe('Dynamic Exposure Calculation', () => {
-    it('should calculate exposure per watcher using auto-trading formula', () => {
+  describe('Dynamic Position Size Calculation', () => {
+    it('should calculate position size based on positionSizePercent', () => {
       const activeWatchers = 3;
       const portfolio = new SharedPortfolioManager(createPortfolioConfig(), activeWatchers);
       const { exposurePerWatcher, maxPositionValue, maxTotalExposure } =
         portfolio.calculateExposureForNewPosition();
 
-      const expectedExposure = (100 * TRADING_DEFAULTS.EXPOSURE_MULTIPLIER) / activeWatchers;
-      const expectedPositionValue = (TRADING_DEFAULTS.INITIAL_CAPITAL * expectedExposure) / 100;
-      const expectedTotalExposure = TRADING_DEFAULTS.INITIAL_CAPITAL * TRADING_DEFAULTS.EXPOSURE_MULTIPLIER;
+      const expectedExposure = TRADING_DEFAULTS.POSITION_SIZE_PERCENT;
+      const expectedPositionValue = (TRADING_DEFAULTS.INITIAL_CAPITAL * TRADING_DEFAULTS.POSITION_SIZE_PERCENT) / 100;
+      const expectedTotalExposure = (TRADING_DEFAULTS.INITIAL_CAPITAL * TRADING_DEFAULTS.POSITION_SIZE_PERCENT * activeWatchers) / 100;
 
-      expect(exposurePerWatcher).toBeCloseTo(expectedExposure, 2);
-      expect(maxPositionValue).toBeCloseTo(expectedPositionValue, 2);
-      expect(maxTotalExposure).toBeCloseTo(expectedTotalExposure, 2);
+      expect(exposurePerWatcher).toBe(expectedExposure);
+      expect(maxPositionValue).toBe(expectedPositionValue);
+      expect(maxTotalExposure).toBe(expectedTotalExposure);
     });
 
-    it('should cap exposure at 100% per watcher', () => {
+    it('should return positionSizePercent as exposurePerWatcher regardless of watchers', () => {
       const portfolio = new SharedPortfolioManager(
-        createPortfolioConfig({ exposureMultiplier: 5 }),
+        createPortfolioConfig({ positionSizePercent: 50 }),
         2
       );
       const { exposurePerWatcher } = portfolio.calculateExposureForNewPosition();
 
-      expect(exposurePerWatcher).toBe(100);
+      expect(exposurePerWatcher).toBe(50);
     });
 
-    it('should use maxPositionSizePercent when no active watchers', () => {
+    it('should return positionSizePercent even with zero watchers', () => {
       const portfolio = new SharedPortfolioManager(
-        createPortfolioConfig({ maxPositionSizePercent: 20 }),
+        createPortfolioConfig({ positionSizePercent: 20 }),
         0
       );
-      const { exposurePerWatcher } = portfolio.calculateExposureForNewPosition();
+      const { exposurePerWatcher, maxTotalExposure } = portfolio.calculateExposureForNewPosition();
 
       expect(exposurePerWatcher).toBe(20);
+      expect(maxTotalExposure).toBe(0);
     });
 
-    it('should match auto-trading formula exactly', () => {
-      const exposureMultiplier = 1.5;
+    it('should calculate position size correctly with multiple watchers', () => {
+      const positionSizePercent = 15;
       const activeWatchers = 4;
       const portfolio = new SharedPortfolioManager(
-        createPortfolioConfig({ exposureMultiplier }),
+        createPortfolioConfig({ positionSizePercent }),
         activeWatchers
       );
 
-      const expected = Math.min((100 * exposureMultiplier) / activeWatchers, 100);
-      const { exposurePerWatcher } = portfolio.calculateExposureForNewPosition();
+      const { exposurePerWatcher, maxPositionValue, maxTotalExposure } = portfolio.calculateExposureForNewPosition();
 
-      expect(exposurePerWatcher).toBe(expected);
-      expect(exposurePerWatcher).toBe(37.5);
+      expect(exposurePerWatcher).toBe(positionSizePercent);
+      expect(exposurePerWatcher).toBe(15);
+      expect(maxPositionValue).toBe(1500);
+      expect(maxTotalExposure).toBe(6000);
     });
   });
 
@@ -258,7 +260,10 @@ describe('SharedPortfolioManager', () => {
     });
 
     it('should fail exposure check when exceeds limits', () => {
-      const result = portfolio.canOpenPosition(20000);
+      const { maxTotalExposure } = portfolio.calculateExposureForNewPosition();
+      expect(maxTotalExposure).toBe(3000);
+
+      const result = portfolio.canOpenPosition(4000);
       expect(result.passed).toBe(false);
       expect(result.reason).toContain('exceed max');
     });

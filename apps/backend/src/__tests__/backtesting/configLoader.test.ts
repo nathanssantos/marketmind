@@ -52,7 +52,7 @@ describe('configLoader', () => {
         initialCapital: 10000,
       });
 
-      expect(config.exposureMultiplier).toBe(FILTER_DEFAULTS.exposureMultiplier);
+      expect(config.positionSizePercent).toBe(FILTER_DEFAULTS.positionSizePercent);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
       expect(config.useTrendFilter).toBe(false);
@@ -73,7 +73,7 @@ describe('configLoader', () => {
         startDate: '2024-01-01',
         endDate: '2024-06-01',
         initialCapital: 10000,
-        exposureMultiplier: 2.0,
+        positionSizePercent: 20,
         useStochasticFilter: false,
         useAdxFilter: false,
         useTrendFilter: false,
@@ -84,7 +84,7 @@ describe('configLoader', () => {
         tpCalculationMode: 'fibonacci',
       });
 
-      expect(config.exposureMultiplier).toBe(2.0);
+      expect(config.positionSizePercent).toBe(20);
       expect(config.useStochasticFilter).toBe(false);
       expect(config.useAdxFilter).toBe(false);
       expect(config.useTrendFilter).toBe(false);

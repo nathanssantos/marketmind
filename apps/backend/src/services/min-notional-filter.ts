@@ -39,7 +39,7 @@ export interface CapitalRequirement {
   walletBalance: number;
   leverage: number;
   targetWatchersCount: number;
-  exposureMultiplier: number;
+  positionSizePercent: number;
 }
 
 interface PriceCache {
@@ -198,10 +198,10 @@ export class MinNotionalFilterService {
 
   getMaxAffordableWatchers(
     availableCapital: number,
-    exposureMultiplier: number,
+    positionSizePercent: number,
     minRequiredPerPosition: number
   ): number {
-    return calculateMaxAffordableWatchers(availableCapital, exposureMultiplier, minRequiredPerPosition);
+    return calculateMaxAffordableWatchers(availableCapital, positionSizePercent, minRequiredPerPosition);
   }
 
   getMinRequiredCapitalForSymbol(
@@ -218,13 +218,13 @@ export class MinNotionalFilterService {
   getCapitalPerWatcher(
     availableCapital: number,
     watchersCount: number,
-    exposureMultiplier: number
+    positionSizePercent: number
   ): number {
     const { maxPositionValue } = calculateDynamicExposure(
       availableCapital,
       watchersCount,
       {
-        exposureMultiplier,
+        positionSizePercent,
         maxPositionSizePercent: TRADING_DEFAULTS.MAX_POSITION_SIZE_PERCENT,
         maxConcurrentPositions: 1,
       }
@@ -237,18 +237,18 @@ export class MinNotionalFilterService {
     capitalReq: CapitalRequirement,
     marketType: MarketType
   ): Promise<CapitalFilterResult> {
-    const { walletBalance, leverage, targetWatchersCount, exposureMultiplier } = capitalReq;
+    const { walletBalance, leverage, targetWatchersCount, positionSizePercent } = capitalReq;
     const filters = await this.getSymbolFilters(marketType);
     const prices = await this.getSymbolPrices(marketType);
     const availableCapital = calculateAvailableCapital(walletBalance, leverage);
 
-    const maxCapitalPerPosition = calculateMaxCapitalPerPosition(availableCapital);
+    const maxCapitalPerPosition = calculateMaxCapitalPerPosition(availableCapital, positionSizePercent);
     const defaultMinNotional = getDefaultMinNotional(marketType);
 
     const capitalPerWatcher = this.getCapitalPerWatcher(
       availableCapital,
       targetWatchersCount,
-      exposureMultiplier
+      positionSizePercent
     );
 
     const eligible: string[] = [];
@@ -298,7 +298,7 @@ export class MinNotionalFilterService {
 
     const maxAffordableWatchers = calculateMaxAffordableWatchers(
       availableCapital,
-      exposureMultiplier,
+      positionSizePercent,
       Math.max(defaultMinNotional, maxCapitalPerPosition / CAPITAL_RULES.SAFETY_MARGIN)
     );
 
@@ -393,12 +393,12 @@ export class MinNotionalFilterService {
     symbols: string[],
     walletBalance: number,
     leverage: number,
-    exposureMultiplier: number,
+    positionSizePercent: number,
     marketType: MarketType
   ): Promise<{ maxWatchers: number; capitalPerWatcher: number; eligibleSymbols: string[]; excludedSymbols: Map<string, string> }> {
     const filters = await this.getSymbolFilters(marketType);
     const prices = await this.getSymbolPrices(marketType);
-    const availableCapital = walletBalance * leverage * exposureMultiplier;
+    const availableCapital = walletBalance * leverage * positionSizePercent;
     const maxCapitalPerPosition = availableCapital / CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO;
 
     const eligibleSymbols: string[] = [];

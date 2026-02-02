@@ -4,7 +4,7 @@ import { CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmind/types';
 export interface CapitalLimitsInput {
   walletBalance: number;
   leverage: number;
-  exposureMultiplier?: number;
+  positionSizePercent?: number;
   marketType: MarketType;
 }
 
@@ -25,8 +25,10 @@ export interface SymbolMinRequired {
 export const calculateAvailableCapital = (walletBalance: number, leverage: number): number =>
   walletBalance * leverage;
 
-export const calculateMaxCapitalPerPosition = (availableCapital: number): number =>
-  availableCapital / CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO;
+export const calculateMaxCapitalPerPosition = (
+  availableCapital: number,
+  positionSizePercent: number
+): number => (availableCapital * positionSizePercent) / 100;
 
 export const getDefaultMinNotional = (marketType: MarketType): number =>
   marketType === 'FUTURES' ? CAPITAL_RULES.MIN_NOTIONAL_FUTURES : CAPITAL_RULES.MIN_NOTIONAL_SPOT;
@@ -46,12 +48,12 @@ export const calculateMinRequiredForSymbol = (
 
 export const calculateMaxAffordableWatchers = (
   availableCapital: number,
-  exposureMultiplier: number,
+  positionSizePercent: number,
   minRequiredPerPosition: number
 ): number => {
-  const requiredPerWatcher = minRequiredPerPosition * CAPITAL_RULES.SAFETY_MARGIN;
-  const maxWatchers = Math.floor((availableCapital * exposureMultiplier) / requiredPerWatcher);
-  return maxWatchers;
+  const capitalPerPosition = (availableCapital * positionSizePercent) / 100;
+  if (capitalPerPosition < minRequiredPerPosition) return 0;
+  return Math.floor(100 / positionSizePercent);
 };
 
 export const calculateEffectiveMinRequired = (
@@ -61,20 +63,19 @@ export const calculateEffectiveMinRequired = (
   Math.max(defaultMinNotional, maxCapitalPerPosition / CAPITAL_RULES.SAFETY_MARGIN);
 
 export const calculateCapitalLimits = (input: CapitalLimitsInput): CapitalLimitsResult => {
-  const exposureMultiplier = input.exposureMultiplier ?? TRADING_DEFAULTS.EXPOSURE_MULTIPLIER;
+  const positionSizePercent = input.positionSizePercent ?? TRADING_DEFAULTS.POSITION_SIZE_PERCENT;
   const availableCapital = calculateAvailableCapital(input.walletBalance, input.leverage);
-  const maxCapitalPerPosition = calculateMaxCapitalPerPosition(availableCapital);
+  const maxCapitalPerPosition = calculateMaxCapitalPerPosition(availableCapital, positionSizePercent);
   const defaultMinNotional = getDefaultMinNotional(input.marketType);
   const effectiveMinRequired = calculateEffectiveMinRequired(maxCapitalPerPosition, defaultMinNotional);
 
   const maxAffordableWatchers = calculateMaxAffordableWatchers(
     availableCapital,
-    exposureMultiplier,
+    positionSizePercent,
     effectiveMinRequired
   );
 
-  const effectiveWatchersCount = maxAffordableWatchers > 0 ? maxAffordableWatchers : 1;
-  const capitalPerWatcher = (availableCapital * exposureMultiplier) / effectiveWatchersCount;
+  const capitalPerWatcher = maxCapitalPerPosition;
 
   return {
     availableCapital,
@@ -93,7 +94,7 @@ export const isSymbolAffordable = (
 export const formatCapitalTooltip = (
   walletBalance: number,
   leverage: number,
-  exposureMultiplier: number,
+  positionSizePercent: number,
   maxCapitalPerPosition: number
 ): string =>
-  `$${walletBalance.toFixed(2)} × ${leverage}x × ${exposureMultiplier}x | Max/pos: $${maxCapitalPerPosition.toFixed(2)} (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO} rule)`;
+  `$${walletBalance.toFixed(2)} × ${leverage}x × ${positionSizePercent}% | Per position: $${maxCapitalPerPosition.toFixed(2)}`;

@@ -133,7 +133,7 @@ export const autoTradingRouter = router({
         volumeFilterObvLookbackShort: z.number().min(1).max(20).optional(),
         useObvCheckLong: z.boolean().optional(),
         useObvCheckShort: z.boolean().optional(),
-        exposureMultiplier: z.string().optional(),
+        positionSizePercent: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciTargetLevelLong: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
@@ -245,8 +245,8 @@ export const autoTradingRouter = router({
         {updateData.useObvCheckLong = input.useObvCheckLong;}
       if (input.useObvCheckShort !== undefined)
         {updateData.useObvCheckShort = input.useObvCheckShort;}
-      if (input.exposureMultiplier !== undefined)
-        {updateData.exposureMultiplier = input.exposureMultiplier;}
+      if (input.positionSizePercent !== undefined)
+        {updateData.positionSizePercent = input.positionSizePercent;}
       if (input.tpCalculationMode !== undefined)
         {updateData.tpCalculationMode = input.tpCalculationMode;}
       if (input.fibonacciTargetLevel !== undefined)
@@ -1021,7 +1021,7 @@ export const autoTradingRouter = router({
           dynamicSymbolRotationInterval: autoTradingConfig.dynamicSymbolRotationInterval,
           enableAutoRotation: autoTradingConfig.enableAutoRotation,
           leverage: autoTradingConfig.leverage,
-          exposureMultiplier: autoTradingConfig.exposureMultiplier,
+          positionSizePercent: autoTradingConfig.positionSizePercent,
           useBtcCorrelationFilter: autoTradingConfig.useBtcCorrelationFilter,
         })
         .from(autoTradingConfig)
@@ -1080,7 +1080,7 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
-      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
+      const positionSizePercent = parseFloat(config?.positionSizePercent ?? String(TRADING_DEFAULTS.POSITION_SIZE_PERCENT));
 
       const minNotionalFilter = getMinNotionalFilterService();
       const { maxWatchers, capitalPerWatcher, eligibleSymbols, excludedSymbols } =
@@ -1088,7 +1088,7 @@ export const autoTradingRouter = router({
           input.symbols,
           walletBalance,
           leverage,
-          exposureMultiplier,
+          positionSizePercent,
           input.marketType
         );
 
@@ -1194,7 +1194,7 @@ export const autoTradingRouter = router({
             rankingSymbols,
             walletBalance,
             leverage,
-            exposureMultiplier,
+            positionSizePercent,
             input.marketType
           );
 
@@ -1247,7 +1247,7 @@ export const autoTradingRouter = router({
             profileId: input.profileId,
             enableAutoRotation: config?.enableAutoRotation ?? true,
             leverage: config?.leverage ?? 1,
-            exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+            positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
             walletBalance: parseFloat(wallet.currentBalance ?? '0'),
             useBtcCorrelationFilter: config?.useBtcCorrelationFilter ?? true,
           }
@@ -1328,7 +1328,7 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
-      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
+      const positionSizePercent = parseFloat(config?.positionSizePercent ?? String(TRADING_DEFAULTS.POSITION_SIZE_PERCENT));
 
       const scoringService = getOpportunityScoringService();
       const minNotionalFilter = getMinNotionalFilterService();
@@ -1349,7 +1349,7 @@ export const autoTradingRouter = router({
           allSymbols,
           walletBalance,
           leverage,
-          exposureMultiplier,
+          positionSizePercent,
           input.marketType
         );
 
@@ -1460,12 +1460,12 @@ export const autoTradingRouter = router({
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config?.leverage ?? 1;
-      const exposureMultiplier = parseFloat(config?.exposureMultiplier ?? String(TRADING_DEFAULTS.EXPOSURE_MULTIPLIER));
+      const positionSizePercent = parseFloat(config?.positionSizePercent ?? String(TRADING_DEFAULTS.POSITION_SIZE_PERCENT));
 
       const limits = calculateCapitalLimits({
         walletBalance,
         leverage,
-        exposureMultiplier,
+        positionSizePercent,
         marketType: input.marketType,
       });
 
@@ -1473,13 +1473,13 @@ export const autoTradingRouter = router({
       const capitalPerWatcher = minNotionalFilter.getCapitalPerWatcher(
         limits.availableCapital,
         limits.maxAffordableWatchers,
-        exposureMultiplier
+        positionSizePercent
       );
 
       logApiTable('getCapitalLimits', [
         ['Wallet Balance', `$${walletBalance.toFixed(2)}`],
         ['Leverage', `${leverage}x`],
-        ['Exposure Multiplier', `${exposureMultiplier}x`],
+        ['Position Size', `${positionSizePercent}%`],
         ['Available Capital', `$${limits.availableCapital.toFixed(2)}`],
         [`Max Capital/Position (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO})`, `$${limits.maxCapitalPerPosition.toFixed(2)}`],
         ['Effective Min Required', `$${limits.effectiveMinRequired.toFixed(2)}`],
@@ -1490,7 +1490,7 @@ export const autoTradingRouter = router({
       return {
         walletBalance,
         leverage,
-        exposureMultiplier,
+        positionSizePercent,
         availableCapital: limits.availableCapital,
         maxAffordableWatchers: limits.maxAffordableWatchers,
         capitalPerWatcher,
@@ -1557,7 +1557,7 @@ export const autoTradingRouter = router({
           interval: rotationConfig.interval,
           profileId: undefined,
           leverage: config.leverage ?? 1,
-          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+          positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
           walletBalance: parseFloat(wallet.currentBalance ?? '0'),
           useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
         }

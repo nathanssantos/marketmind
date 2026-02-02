@@ -18,7 +18,7 @@ interface MultiWatcherBacktestInput {
   startDate: string;
   endDate: string;
   initialCapital: number;
-  exposureMultiplier?: number;
+  positionSizePercent?: number;
   useStochasticFilter?: boolean;
   useAdxFilter?: boolean;
   onlyWithTrend?: boolean;

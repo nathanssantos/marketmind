@@ -70,6 +70,7 @@ export interface QuickStartState {
 export interface SectionExpandedState {
   watchers: boolean;
   dynamicSelection: boolean;
+  positionSize: boolean;
   leverageSettings: boolean;
   trailingStop: boolean;
   tpMode: boolean;

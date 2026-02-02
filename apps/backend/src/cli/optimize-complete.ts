@@ -85,7 +85,7 @@ const parseCliArgs = () => {
 
 const createBaseConfig = (): Omit<MultiWatcherBacktestConfig, 'watchers' | 'startDate' | 'endDate'> => ({
   initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
-  exposureMultiplier: DEFAULT_BACKTEST_PARAMS.exposureMultiplier,
+  positionSizePercent: DEFAULT_BACKTEST_PARAMS.positionSizePercent,
   minRiskRewardRatio: 1.0,
   setupTypes: [...ENABLED_SETUPS],
   useSharedExposure: true,

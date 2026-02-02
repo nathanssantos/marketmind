@@ -9,7 +9,7 @@ import { generateEntityId } from '../../utils/id';
 
 export interface PortfolioConfig {
   initialCapital: number;
-  exposureMultiplier: number;
+  positionSizePercent: number;
   maxPositionSizePercent: number;
   maxConcurrentPositions: number;
   dailyLossLimitPercent: number;
@@ -86,7 +86,7 @@ export class SharedPortfolioManager {
 
   getExposureConfig(): ExposureConfig {
     return {
-      exposureMultiplier: this.config.exposureMultiplier,
+      positionSizePercent: this.config.positionSizePercent,
       maxPositionSizePercent: this.config.maxPositionSizePercent,
       maxConcurrentPositions: this.activeWatchersCount,
     };

@@ -28,7 +28,7 @@ export const ENABLED_SETUPS = [
 export const DEFAULT_BACKTEST_PARAMS = {
   initialCapital: 1000,
   leverage: 1,
-  exposureMultiplier: 1.5,
+  positionSizePercent: 10,
   cooldownMinutes: 15,
   marketType: 'FUTURES' as const,
 } as const;
@@ -48,7 +48,7 @@ export type BaseBacktestConfig = Omit<MultiWatcherBacktestConfig, 'watchers' | '
 
 export const createBaseConfig = (): BaseBacktestConfig => ({
   initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
-  exposureMultiplier: DEFAULT_BACKTEST_PARAMS.exposureMultiplier,
+  positionSizePercent: DEFAULT_BACKTEST_PARAMS.positionSizePercent,
   minRiskRewardRatio: 0.75,
   setupTypes: [...ENABLED_SETUPS],
   useSharedExposure: true,

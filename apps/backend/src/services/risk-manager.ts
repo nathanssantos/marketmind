@@ -7,7 +7,6 @@ import {
   type RiskValidationResult,
   type DailyPnLInfo,
 } from '@marketmind/risk';
-import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, eq, gte } from 'drizzle-orm';
 import { RISK_MANAGER } from '../constants';
 import { db } from '../db';
@@ -95,16 +94,19 @@ export class RiskManagerService {
       }
 
       const maxPositionSize = parseFloat(config.maxPositionSize);
+      const positionSizePercent = parseFloat(config.positionSizePercent ?? '10');
 
-      const { maxPositionValue, maxTotalExposure: dynamicMaxExposure } = calculateDynamicExposure(
+      const { maxTotalExposure: dynamicMaxExposure } = calculateDynamicExposure(
         walletBalance,
         activeWatchersCount ?? 0,
         {
-          exposureMultiplier: TRADING_DEFAULTS.EXPOSURE_MULTIPLIER,
+          positionSizePercent,
           maxPositionSizePercent: maxPositionSize,
           maxConcurrentPositions: config.maxConcurrentPositions,
         }
       );
+
+      const maxPositionValue = (walletBalance * maxPositionSize) / 100;
 
       if (positionValue > maxPositionValue) {
         return {

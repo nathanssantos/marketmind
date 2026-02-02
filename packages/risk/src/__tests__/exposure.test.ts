@@ -13,27 +13,29 @@ import {
 
 describe('calculateDynamicExposure', () => {
   const defaultConfig = {
-    exposureMultiplier: 1.5,
+    positionSizePercent: 10,
     maxPositionSizePercent: 10,
     maxConcurrentPositions: 5,
   };
 
-  it('should divide exposure evenly among watchers', () => {
+  it('should calculate exposure based on position size percent', () => {
     const result = calculateDynamicExposure(10000, 4, defaultConfig);
 
-    expect(result.exposurePerWatcher).toBe(37.5);
-    expect(result.maxPositionValue).toBe(3750);
-    expect(result.maxTotalExposure).toBe(15000);
+    expect(result.exposurePerWatcher).toBe(10);
+    expect(result.maxPositionValue).toBe(1000);
+    expect(result.maxTotalExposure).toBe(5000);
   });
 
-  it('should cap exposure at 100%', () => {
-    const result = calculateDynamicExposure(10000, 1, defaultConfig);
+  it('should ignore watchers count in calculation', () => {
+    const result1 = calculateDynamicExposure(10000, 1, defaultConfig);
+    const result10 = calculateDynamicExposure(10000, 10, defaultConfig);
 
-    expect(result.exposurePerWatcher).toBe(100);
-    expect(result.maxPositionValue).toBe(10000);
+    expect(result1.exposurePerWatcher).toBe(result10.exposurePerWatcher);
+    expect(result1.maxPositionValue).toBe(result10.maxPositionValue);
+    expect(result1.maxTotalExposure).toBe(result10.maxTotalExposure);
   });
 
-  it('should fallback to maxPositionSizePercent with 0 watchers', () => {
+  it('should handle zero watchers the same as any other count', () => {
     const result = calculateDynamicExposure(10000, 0, defaultConfig);
 
     expect(result.exposurePerWatcher).toBe(10);
@@ -41,37 +43,30 @@ describe('calculateDynamicExposure', () => {
     expect(result.maxTotalExposure).toBe(5000);
   });
 
-  it('should calculate correctly with 2 watchers', () => {
-    const result = calculateDynamicExposure(10000, 2, defaultConfig);
+  it('should scale with wallet balance', () => {
+    const result = calculateDynamicExposure(20000, 4, defaultConfig);
 
-    expect(result.exposurePerWatcher).toBe(75);
-    expect(result.maxPositionValue).toBe(7500);
-    expect(result.maxTotalExposure).toBe(15000);
+    expect(result.exposurePerWatcher).toBe(10);
+    expect(result.maxPositionValue).toBe(2000);
+    expect(result.maxTotalExposure).toBe(10000);
   });
 
-  it('should calculate correctly with 3 watchers', () => {
-    const result = calculateDynamicExposure(10000, 3, defaultConfig);
-
-    expect(result.exposurePerWatcher).toBe(50);
-    expect(result.maxPositionValue).toBe(5000);
-    expect(result.maxTotalExposure).toBe(15000);
-  });
-
-  it('should handle higher exposure multiplier', () => {
-    const highMultiplierConfig = { ...defaultConfig, exposureMultiplier: 2.0 };
-    const result = calculateDynamicExposure(10000, 4, highMultiplierConfig);
-
-    expect(result.exposurePerWatcher).toBe(50);
-    expect(result.maxPositionValue).toBe(5000);
-    expect(result.maxTotalExposure).toBe(20000);
-  });
-
-  it('should handle many watchers with low per-watcher exposure', () => {
-    const result = calculateDynamicExposure(10000, 10, defaultConfig);
+  it('should handle higher position size percent', () => {
+    const highPercentConfig = { ...defaultConfig, positionSizePercent: 15 };
+    const result = calculateDynamicExposure(10000, 4, highPercentConfig);
 
     expect(result.exposurePerWatcher).toBe(15);
     expect(result.maxPositionValue).toBe(1500);
-    expect(result.maxTotalExposure).toBe(15000);
+    expect(result.maxTotalExposure).toBe(7500);
+  });
+
+  it('should calculate max total exposure based on max concurrent positions', () => {
+    const morePositionsConfig = { ...defaultConfig, maxConcurrentPositions: 10 };
+    const result = calculateDynamicExposure(10000, 4, morePositionsConfig);
+
+    expect(result.exposurePerWatcher).toBe(10);
+    expect(result.maxPositionValue).toBe(1000);
+    expect(result.maxTotalExposure).toBe(10000);
   });
 });
 

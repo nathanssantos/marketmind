@@ -47,6 +47,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@marketmind/types': path.resolve(__dirname, '../../packages/types/src'),
       '@marketmind/indicators': path.resolve(__dirname, '../../packages/indicators/src'),
+      '@marketmind/risk': path.resolve(__dirname, '../../packages/risk/src'),
     },
   },
 });

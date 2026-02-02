@@ -27,7 +27,7 @@ async function runMultiWatcherBacktest() {
 
   console.log('📋 Auto-Trading Config:');
   console.log(`   - Wallet ID: ${config.walletId}`);
-  console.log(`   - Exposure Multiplier: ${config.exposureMultiplier}`);
+  console.log(`   - Position Size: ${config.positionSizePercent}%`);
   console.log(`   - Max Position Size: ${config.maxPositionSize}%`);
   console.log(`   - Daily Loss Limit: ${config.dailyLossLimit}%`);
   console.log(`   - Leverage: ${config.leverage}x`);
@@ -127,7 +127,7 @@ async function runMultiWatcherBacktest() {
     endDate,
     initialCapital,
 
-    exposureMultiplier: parseFloat(config.exposureMultiplier),
+    positionSizePercent: parseFloat(config.positionSizePercent),
 
     useStochasticFilter: config.useStochasticFilter,
     useAdxFilter: config.useAdxFilter,

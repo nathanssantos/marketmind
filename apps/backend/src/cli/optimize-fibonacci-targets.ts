@@ -101,7 +101,7 @@ async function runOptimization() {
 
   const baseConfig: Omit<MultiWatcherBacktestConfig, 'watchers' | 'startDate' | 'endDate' | 'tpCalculationMode' | 'fibonacciTargetLevelLong' | 'fibonacciTargetLevelShort'> = {
     initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
-    exposureMultiplier: DEFAULT_BACKTEST_PARAMS.exposureMultiplier,
+    positionSizePercent: DEFAULT_BACKTEST_PARAMS.positionSizePercent,
     minRiskRewardRatio: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
     setupTypes: [...ENABLED_SETUPS],
     useSharedExposure: true,

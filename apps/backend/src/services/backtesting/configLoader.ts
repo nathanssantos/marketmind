@@ -86,7 +86,7 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
     endDate: options.endDate,
     initialCapital: options.initialCapital ?? 10000,
 
-    exposureMultiplier: parseFloat(config.exposureMultiplier),
+    positionSizePercent: parseFloat(config.positionSizePercent),
 
     useStochasticFilter: overrides?.useStochasticFilter ?? config.useStochasticFilter,
     useAdxFilter: overrides?.useAdxFilter ?? config.useAdxFilter,
@@ -120,7 +120,7 @@ export const buildMultiWatcherConfigFromWatchers = (
     startDate: string;
     endDate: string;
     initialCapital: number;
-    exposureMultiplier?: number;
+    positionSizePercent?: number;
     useStochasticFilter?: boolean;
     useAdxFilter?: boolean;
     minRiskRewardRatio?: number;
@@ -160,7 +160,7 @@ export const buildMultiWatcherConfigFromWatchers = (
     endDate: options.endDate,
     initialCapital: options.initialCapital,
 
-    exposureMultiplier: options.exposureMultiplier ?? FILTER_DEFAULTS.exposureMultiplier,
+    positionSizePercent: options.positionSizePercent ?? FILTER_DEFAULTS.positionSizePercent,
 
     useStochasticFilter: options.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
     useAdxFilter: options.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,

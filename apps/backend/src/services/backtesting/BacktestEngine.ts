@@ -287,7 +287,7 @@ export class BacktestEngine {
       minRiskRewardRatio: config.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
       minRiskRewardRatioLong: config.minRiskRewardRatioLong ?? FILTER_DEFAULTS.minRiskRewardRatioLong,
       minRiskRewardRatioShort: config.minRiskRewardRatioShort ?? FILTER_DEFAULTS.minRiskRewardRatioShort,
-      exposureMultiplier: config.exposureMultiplier ?? FILTER_DEFAULTS.exposureMultiplier,
+      positionSizePercent: config.positionSizePercent ?? FILTER_DEFAULTS.positionSizePercent,
       useStochasticFilter: config.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
       useAdxFilter: config.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
       useVolumeFilter: config.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,

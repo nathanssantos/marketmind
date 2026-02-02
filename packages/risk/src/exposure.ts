@@ -2,20 +2,14 @@ import type { ExposureConfig, ExposureCalculation, PositionLike, OrderSizeValida
 
 export const calculateDynamicExposure = (
   walletBalance: number,
-  activeWatchersCount: number,
+  _activeWatchersCount: number,
   config: ExposureConfig
 ): ExposureCalculation => {
-  const { exposureMultiplier, maxPositionSizePercent, maxConcurrentPositions } = config;
+  const { positionSizePercent, maxConcurrentPositions } = config;
 
-  const exposurePerWatcher = activeWatchersCount > 0
-    ? Math.min((100 * exposureMultiplier) / activeWatchersCount, 100)
-    : maxPositionSizePercent;
-
-  const maxPositionValue = (walletBalance * exposurePerWatcher) / 100;
-
-  const maxTotalExposure = activeWatchersCount > 0
-    ? walletBalance * exposureMultiplier
-    : (walletBalance * maxPositionSizePercent * maxConcurrentPositions) / 100;
+  const exposurePerWatcher = positionSizePercent;
+  const maxPositionValue = (walletBalance * positionSizePercent) / 100;
+  const maxTotalExposure = (walletBalance * positionSizePercent * maxConcurrentPositions) / 100;
 
   return { exposurePerWatcher, maxPositionValue, maxTotalExposure };
 };

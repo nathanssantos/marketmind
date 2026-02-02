@@ -112,7 +112,7 @@ export class DynamicSymbolRotationService {
             allSymbols,
             config.capitalRequirement.walletBalance,
             config.capitalRequirement.leverage,
-            config.capitalRequirement.exposureMultiplier,
+            config.capitalRequirement.positionSizePercent,
             config.marketType
           );
 

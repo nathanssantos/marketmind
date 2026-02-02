@@ -89,7 +89,7 @@ export class MultiWatcherBacktestEngine {
 
     const portfolioConfig: PortfolioConfig = {
       initialCapital: this.config.initialCapital,
-      exposureMultiplier: this.config.exposureMultiplier ?? BACKTEST_DEFAULTS.EXPOSURE_MULTIPLIER,
+      positionSizePercent: this.config.positionSizePercent ?? BACKTEST_DEFAULTS.POSITION_SIZE_PERCENT,
       maxPositionSizePercent: 10,
       maxConcurrentPositions: this.config.watchers.length,
       dailyLossLimitPercent: 5,

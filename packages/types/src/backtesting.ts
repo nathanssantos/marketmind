@@ -48,7 +48,7 @@ export interface BacktestConfig {
   useConfluenceScoring?: boolean; // Use confluence scoring system
   confluenceMinScore?: number; // Minimum confluence score to allow trade (default: 60)
 
-  exposureMultiplier?: number; // Max exposure as multiplier of available capital (default: 1.5)
+  positionSizePercent?: number; // Position size as percentage of available capital (default: 10%)
 
   marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)
   useBnbDiscount?: boolean; // Apply 25% BNB discount to fees (default: false)
@@ -318,7 +318,7 @@ export interface WatcherConfig {
 
 export interface MultiWatcherBacktestConfig extends Omit<BacktestConfig, 'symbol' | 'interval'> {
   watchers: WatcherConfig[];
-  exposureMultiplier?: number;
+  positionSizePercent?: number;
   useSharedExposure?: boolean;
 }
 

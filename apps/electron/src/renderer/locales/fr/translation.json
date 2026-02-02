@@ -1176,6 +1176,12 @@
     }
   },
   "watcherManager": {
+    "positionSize": {
+      "title": "Taille de Position",
+      "description": "Configurez la quantité de capital utilisée par chaque position",
+      "sizePercent": "Taille de Position (%)",
+      "sizePercentDescription": "Pourcentage du capital utilisé par position"
+    },
     "trailingStop": {
       "title": "Trailing Stop",
       "description": "Ajuste automatiquement le stop loss lorsque le prix évolue en votre faveur",

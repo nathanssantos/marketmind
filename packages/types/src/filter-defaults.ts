@@ -18,7 +18,7 @@ export const FILTER_DEFAULTS = {
   useConfluenceScoring: false,
   confluenceMinScore: 60,
 
-  exposureMultiplier: 1.5,
+  positionSizePercent: 10,
   minRiskRewardRatioLong: 0.75,
   minRiskRewardRatioShort: 0.75,
 

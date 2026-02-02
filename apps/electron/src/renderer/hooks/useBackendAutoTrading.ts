@@ -1,4 +1,3 @@
-import { CAPITAL_RULES } from '@marketmind/types';
 import { QUERY_CONFIG } from '@shared/constants';
 import { keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
@@ -327,7 +326,7 @@ export const useTriggerRotation = (walletId: string) => {
 export interface CapitalLimits {
   walletBalance: number;
   leverage: number;
-  exposureMultiplier: number;
+  positionSizePercent: number;
   availableCapital: number;
   maxAffordableWatchers: number;
   capitalPerWatcher: number;
@@ -346,7 +345,7 @@ export const useCapitalLimits = (
   const capitalLimits: CapitalLimits | null = data ? {
     walletBalance: data.walletBalance,
     leverage: data.leverage,
-    exposureMultiplier: data.exposureMultiplier,
+    positionSizePercent: data.positionSizePercent,
     availableCapital: data.availableCapital,
     maxAffordableWatchers: data.maxAffordableWatchers,
     capitalPerWatcher: data.capitalPerWatcher,
@@ -355,8 +354,8 @@ export const useCapitalLimits = (
 
   const formatCapitalTooltip = (): string => {
     if (!capitalLimits) return '';
-    const { walletBalance, leverage, exposureMultiplier, maxCapitalPerPosition } = capitalLimits;
-    return `$${walletBalance.toFixed(2)} × ${leverage}x × ${exposureMultiplier}x | Max/pos: $${maxCapitalPerPosition.toFixed(2)} (1/${CAPITAL_RULES.MAX_POSITION_CAPITAL_RATIO} rule)`;
+    const { walletBalance, leverage, positionSizePercent, maxCapitalPerPosition } = capitalLimits;
+    return `$${walletBalance.toFixed(2)} × ${leverage}x × ${positionSizePercent}% | Per position: $${maxCapitalPerPosition.toFixed(2)}`;
   };
 
   return {
