@@ -167,13 +167,30 @@ export const getFibonacciLevelPrice = (
   return levelData?.price ?? null;
 };
 
+export const calculateFibonacciPriceAtLevel = (
+  fibonacciProjection: FibonacciProjectionData | null | undefined,
+  level: number
+): number | null => {
+  if (!fibonacciProjection?.swingLow || !fibonacciProjection?.swingHigh) return null;
+
+  const swingLow = fibonacciProjection.swingLow.price;
+  const swingHigh = fibonacciProjection.swingHigh.price;
+  const range = Math.abs(swingHigh - swingLow);
+
+  if (range === 0) return null;
+
+  return level <= 1
+    ? swingLow + range * level
+    : swingHigh + range * (level - 1);
+};
+
 export const hasReachedFibonacciLevel = (
   currentPrice: number,
   fibonacciProjection: FibonacciProjectionData | null | undefined,
   level: number,
   isLong: boolean
 ): boolean => {
-  const levelPrice = getFibonacciLevelPrice(fibonacciProjection, level);
+  const levelPrice = calculateFibonacciPriceAtLevel(fibonacciProjection, level);
   if (levelPrice === null) return false;
   return isLong ? currentPrice >= levelPrice : currentPrice <= levelPrice;
 };

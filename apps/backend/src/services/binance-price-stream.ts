@@ -49,6 +49,19 @@ export class BinancePriceStreamService {
       }, 'Binance WebSocket error');
     });
 
+    this.client.on('open', (data) => {
+      logger.info({ wsKey: data?.wsKey }, 'Binance WebSocket connection opened');
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.client as any).on('close', () => {
+      logger.warn('Binance WebSocket connection closed');
+    });
+
+    this.client.on('reconnecting', (data) => {
+      logger.info({ wsKey: data?.wsKey }, 'Binance WebSocket reconnecting...');
+    });
+
     this.client.on('reconnected', () => {
       if (this.isReconnecting) {
         logger.debug('Ignoring duplicate reconnected event');
