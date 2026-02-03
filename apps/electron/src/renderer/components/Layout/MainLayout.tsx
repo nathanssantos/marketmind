@@ -7,7 +7,6 @@ import { useShallow } from 'zustand/react/shallow';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
-import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
 import { MarketSidebar } from '../MarketSidebar';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -122,7 +121,6 @@ export const MainLayout = ({
   const [isResizing, setIsResizing] = useState(false);
   const [isResizingMarket, setIsResizingMarket] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
@@ -130,7 +128,6 @@ export const MainLayout = ({
 
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
-    showKeyboardShortcuts: () => setShowKeyboardShortcuts(true),
     openSymbolSelector: () => onOpenSymbolSelector?.(),
     navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => onNavigateToSymbol?.(symbol, marketType),
   }), [onOpenSymbolSelector, onNavigateToSymbol]);
@@ -290,7 +287,6 @@ export const MainLayout = ({
           advancedConfig={advancedConfig}
           onAdvancedConfigChange={onAdvancedConfigChange}
         />
-        <KeyboardShortcutsDialog isOpen={showKeyboardShortcuts} onClose={() => setShowKeyboardShortcuts(false)} />
       </Box>
     </GlobalActionsProvider>
   );

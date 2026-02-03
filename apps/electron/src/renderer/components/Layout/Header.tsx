@@ -1,10 +1,9 @@
 import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { Logo } from '@/renderer/components/ui/logo';
 import { Flex, IconButton, Text } from '@chakra-ui/react';
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuMoon, LuSettings, LuSun, LuTerminal } from 'react-icons/lu';
-import { KeyboardShortcutsDialog } from '../KeyboardShortcuts/KeyboardShortcutsDialog';
+import { LuMoon, LuSettings, LuSun } from 'react-icons/lu';
 import { TooltipWrapper } from '../ui/Tooltip';
 
 interface HeaderProps {
@@ -14,7 +13,6 @@ interface HeaderProps {
 export const Header = memo(({ onSettingsClick }: HeaderProps) => {
   const { t } = useTranslation();
   const { colorMode, toggleColorMode } = useColorMode();
-  const [showShortcuts, setShowShortcuts] = useState(false);
 
   return (
     <Flex
@@ -51,16 +49,6 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
             {colorMode === 'dark' ? <LuSun /> : <LuMoon />}
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('header.keyboardShortcuts')} placement="bottom" showArrow>
-          <IconButton
-            aria-label={t('header.showKeyboardShortcuts')}
-            onClick={() => setShowShortcuts(true)}
-            variant="ghost"
-            size="2xs"
-          >
-            <LuTerminal />
-          </IconButton>
-        </TooltipWrapper>
         <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
           <IconButton
             aria-label={t('header.settings')}
@@ -72,11 +60,6 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
           </IconButton>
         </TooltipWrapper>
       </Flex>
-
-      <KeyboardShortcutsDialog
-        isOpen={showShortcuts}
-        onClose={() => setShowShortcuts(false)}
-      />
     </Flex>
   );
 });

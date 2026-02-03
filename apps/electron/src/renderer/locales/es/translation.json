@@ -57,10 +57,8 @@
     "theme": "Tema",
     "themeDark": "Oscuro",
     "themeLight": "Claro",
-    "keyboardShortcuts": "Atajos de Teclado",
     "settings": "Configuración",
-    "toggleColorMode": "Alternar modo de color",
-    "showKeyboardShortcuts": "Mostrar atajos de teclado"
+    "toggleColorMode": "Alternar modo de color"
   },
   "symbolSelector": {
     "label": "Binance",
@@ -598,30 +596,6 @@
     "later": "Más Tarde",
     "percent": "{{percent}}%",
     "downloadSpeed": "{{speed}} MB/s"
-  },
-  "keyboardShortcuts": {
-    "title": "Atajos de Teclado",
-    "global": "Global",
-    "chartControls": "Controles del Gráfico",
-    "symbolSelector": "Selector de Símbolos",
-    "shortcuts": {
-      "openSettings": "Abrir Configuración",
-      "showKeyboardShortcuts": "Mostrar atajos de teclado",
-      "closeDialogs": "Cerrar Diálogos",
-      "toggleVolume": "Alternar Visualización de Volumen",
-      "toggleGrid": "Alternar Visualización de Cuadrícula",
-      "switchChartType": "Cambiar Tipo de Gráfico",
-      "toggleMovingAverages": "Alternar Medias Móviles",
-      "zoomIn": "Acercar",
-      "zoomOut": "Alejar",
-      "resetZoom": "Restablecer Zoom",
-      "panLeftRight": "Desplazar Izquierda/Derecha",
-      "panChart": "Desplazar Gráfico",
-      "openSymbolSelector": "Abrir Selector de Símbolos",
-      "navigateSymbolList": "Navegar Lista de Símbolos",
-      "selectSymbol": "Seleccionar Símbolo",
-      "closeSelector": "Cerrar Selector"
-    }
   },
   "trading": {
     "simulator": {

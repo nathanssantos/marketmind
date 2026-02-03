@@ -18,13 +18,11 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
 import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS, REQUIRED_KLINES } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
-import { useGlobalActions } from './context/GlobalActionsContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
 import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
-import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useVisibilityChange } from './hooks/useVisibilityChange';
@@ -134,7 +132,7 @@ function AppContent(): ReactElement {
   const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const { showEventRow, setShowEventRow } = useUIStore();
-  const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
+  const [chartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
   const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '12h');
   const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', true);
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
@@ -469,19 +467,6 @@ function AppContent(): ReactElement {
         onMovingAveragesChange={setMovingAverages}
         onNavigateToSymbol={handleSymbolChange}
       >
-        <AppContentWithKeyboardShortcuts
-          showVolume={showVolume}
-          setShowVolume={setShowVolume}
-          showGrid={showGrid}
-          setShowGrid={setShowGrid}
-          chartType={chartType}
-          setChartType={setChartType}
-          movingAverages={movingAverages}
-          setMovingAverages={setMovingAverages}
-          advancedConfig={advancedConfig}
-          setAdvancedConfig={setAdvancedConfig}
-        />
-
         {loading && (
           <LoadingSpinner message={t('app.loadingMarketData')} />
         )}
@@ -527,71 +512,6 @@ function AppContent(): ReactElement {
       <UpdateNotification />
     </>
   );
-}
-
-interface KeyboardShortcutsWrapperProps {
-  showVolume: boolean;
-  setShowVolume: (value: boolean | ((prev: boolean) => boolean)) => void;
-  showGrid: boolean;
-  setShowGrid: (value: boolean | ((prev: boolean) => boolean)) => void;
-  chartType: 'kline' | 'line';
-  setChartType: (value: 'kline' | 'line' | ((prev: 'kline' | 'line') => 'kline' | 'line')) => void;
-  movingAverages: MovingAverageConfig[];
-  setMovingAverages: (value: MovingAverageConfig[] | ((prev: MovingAverageConfig[]) => MovingAverageConfig[])) => void;
-  advancedConfig: AdvancedControlsConfig;
-  setAdvancedConfig: (value: AdvancedControlsConfig | ((prev: AdvancedControlsConfig) => AdvancedControlsConfig)) => void;
-}
-
-function AppContentWithKeyboardShortcuts({
-  setShowVolume,
-  setShowGrid,
-  setChartType,
-  setMovingAverages,
-  setAdvancedConfig,
-}: KeyboardShortcutsWrapperProps) {
-  const globalActions = useGlobalActions();
-
-  useGlobalKeyboardShortcuts({
-    onToggleVolume: () => setShowVolume(prev => !prev),
-    onToggleGrid: () => setShowGrid(prev => !prev),
-    onToggleChartType: () => setChartType(prev => prev === 'kline' ? 'line' : 'kline'),
-    onToggleMA: (index) => {
-      setMovingAverages(prev => {
-        if (index < 0 || index >= prev.length) return prev;
-        const newMAs = [...prev];
-        const current = newMAs[index];
-        if (current) {
-          newMAs[index] = { ...current, visible: !current.visible };
-        }
-        return newMAs;
-      });
-    },
-    onZoomIn: () => {
-      setAdvancedConfig(prev => ({
-        ...prev,
-        klineSpacing: Math.min(prev.klineSpacing + 1, 30),
-      }));
-    },
-    onZoomOut: () => {
-      setAdvancedConfig(prev => ({
-        ...prev,
-        klineSpacing: Math.max(prev.klineSpacing - 1, 2),
-      }));
-    },
-    onResetZoom: () => {
-      setAdvancedConfig(prev => ({
-        ...prev,
-        klineSpacing: CHART_CONFIG.KLINE_SPACING,
-      }));
-    },
-    onPanLeft: () => { },
-    onPanRight: () => { },
-    onOpenSettings: globalActions.openSettings,
-    onShowShortcuts: globalActions.showKeyboardShortcuts,
-    onOpenSymbolSelector: () => { },
-  });
-
-  return null;
 }
 
 export default App;

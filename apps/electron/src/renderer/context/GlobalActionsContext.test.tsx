@@ -8,7 +8,6 @@ describe('GlobalActionsContext', () => {
     return (
       <div>
         <button onClick={actions.openSettings}>Open Settings</button>
-        <button onClick={actions.showKeyboardShortcuts}>Show Shortcuts</button>
         <button onClick={actions.openSymbolSelector}>Open Symbol</button>
       </div>
     );
@@ -16,7 +15,6 @@ describe('GlobalActionsContext', () => {
 
   const mockActions = {
     openSettings: vi.fn(),
-    showKeyboardShortcuts: vi.fn(),
     openSymbolSelector: vi.fn(),
     navigateToSymbol: vi.fn(),
   };
@@ -29,7 +27,6 @@ describe('GlobalActionsContext', () => {
     );
 
     expect(screen.getByText('Open Settings')).toBeTruthy();
-    expect(screen.getByText('Show Shortcuts')).toBeTruthy();
     expect(screen.getByText('Open Symbol')).toBeTruthy();
   });
 
@@ -53,9 +50,6 @@ describe('GlobalActionsContext', () => {
 
     screen.getByText('Open Settings').click();
     expect(mockActions.openSettings).toHaveBeenCalled();
-
-    screen.getByText('Show Shortcuts').click();
-    expect(mockActions.showKeyboardShortcuts).toHaveBeenCalled();
 
     screen.getByText('Open Symbol').click();
     expect(mockActions.openSymbolSelector).toHaveBeenCalled();

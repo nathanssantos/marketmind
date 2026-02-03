@@ -53,10 +53,8 @@
     "theme": "Theme",
     "themeDark": "Dark",
     "themeLight": "Light",
-    "keyboardShortcuts": "Keyboard Shortcuts",
     "settings": "Settings",
-    "toggleColorMode": "Toggle color mode",
-    "showKeyboardShortcuts": "Show keyboard shortcuts"
+    "toggleColorMode": "Toggle color mode"
   },
   "symbolSelector": {
     "label": "Binance",
@@ -520,30 +518,6 @@
     "later": "Later",
     "percent": "{{percent}}%",
     "downloadSpeed": "{{speed}} MB/s"
-  },
-  "keyboardShortcuts": {
-    "title": "Keyboard Shortcuts",
-    "global": "Global",
-    "chartControls": "Chart Controls",
-    "symbolSelector": "Symbol Selector",
-    "shortcuts": {
-      "openSettings": "Open Settings",
-      "showKeyboardShortcuts": "Show Keyboard Shortcuts",
-      "closeDialogs": "Close Dialogs",
-      "toggleVolume": "Toggle Volume Display",
-      "toggleGrid": "Toggle Grid Display",
-      "switchChartType": "Switch Chart Type",
-      "toggleMovingAverages": "Toggle Moving Averages",
-      "zoomIn": "Zoom In",
-      "zoomOut": "Zoom Out",
-      "resetZoom": "Reset Zoom",
-      "panLeftRight": "Pan Left/Right",
-      "panChart": "Pan Chart",
-      "openSymbolSelector": "Open Symbol Selector",
-      "navigateSymbolList": "Navigate Symbol List",
-      "selectSymbol": "Select Symbol",
-      "closeSelector": "Close Selector"
-    }
   },
   "trading": {
     "noWalletSelected": "No wallet selected. Please create or select a wallet first.",

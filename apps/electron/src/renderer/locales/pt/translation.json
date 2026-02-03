@@ -57,10 +57,8 @@
     "theme": "Tema",
     "themeDark": "Escuro",
     "themeLight": "Claro",
-    "keyboardShortcuts": "Atalhos de Teclado",
     "settings": "Configurações",
-    "toggleColorMode": "Alternar modo de cor",
-    "showKeyboardShortcuts": "Mostrar atalhos de teclado"
+    "toggleColorMode": "Alternar modo de cor"
   },
   "symbolSelector": {
     "label": "Binance",
@@ -572,30 +570,6 @@
     "later": "Mais Tarde",
     "percent": "{{percent}}%",
     "downloadSpeed": "{{speed}} MB/s"
-  },
-  "keyboardShortcuts": {
-    "title": "Atalhos de Teclado",
-    "global": "Global",
-    "chartControls": "Controles do Gráfico",
-    "symbolSelector": "Seletor de Símbolos",
-    "shortcuts": {
-      "openSettings": "Abrir Configurações",
-      "showKeyboardShortcuts": "Mostrar Atalhos de Teclado",
-      "closeDialogs": "Fechar Diálogos",
-      "toggleVolume": "Alternar Exibição de Volume",
-      "toggleGrid": "Alternar Exibição de Grade",
-      "switchChartType": "Alternar Tipo de Gráfico",
-      "toggleMovingAverages": "Alternar Médias Móveis",
-      "zoomIn": "Aumentar Zoom",
-      "zoomOut": "Diminuir Zoom",
-      "resetZoom": "Resetar Zoom",
-      "panLeftRight": "Mover Esquerda/Direita",
-      "panChart": "Mover Gráfico",
-      "openSymbolSelector": "Abrir Seletor de Símbolos",
-      "navigateSymbolList": "Navegar Lista de Símbolos",
-      "selectSymbol": "Selecionar Símbolo",
-      "closeSelector": "Fechar Seletor"
-    }
   },
   "trading": {
     "noWalletSelected": "Nenhuma carteira selecionada. Por favor, crie ou selecione uma carteira primeiro.",

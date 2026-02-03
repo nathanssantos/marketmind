@@ -3,7 +3,6 @@ import type { MarketType } from '@marketmind/types';
 
 interface GlobalActionsContextType {
   openSettings: () => void;
-  showKeyboardShortcuts: () => void;
   openSymbolSelector: () => void;
   navigateToSymbol: (symbol: string, marketType?: MarketType) => void;
 }

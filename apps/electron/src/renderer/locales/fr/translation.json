@@ -57,10 +57,8 @@
     "theme": "Thème",
     "themeDark": "Sombre",
     "themeLight": "Clair",
-    "keyboardShortcuts": "Raccourcis clavier",
     "settings": "Paramètres",
-    "toggleColorMode": "Changer le mode couleur",
-    "showKeyboardShortcuts": "Afficher les raccourcis clavier"
+    "toggleColorMode": "Changer le mode couleur"
   },
   "symbolSelector": {
     "label": "Binance",
@@ -591,30 +589,6 @@
     "later": "Plus tard",
     "percent": "{{percent}}%",
     "downloadSpeed": "{{speed}} Mo/s"
-  },
-  "keyboardShortcuts": {
-    "title": "Raccourcis clavier",
-    "global": "Global",
-    "chartControls": "Contrôles du graphique",
-    "symbolSelector": "Sélecteur de symboles",
-    "shortcuts": {
-      "openSettings": "Ouvrir les paramètres",
-      "showKeyboardShortcuts": "Afficher les raccourcis clavier",
-      "closeDialogs": "Fermer les dialogues",
-      "toggleVolume": "Basculer l'affichage du volume",
-      "toggleGrid": "Basculer l'affichage de la grille",
-      "switchChartType": "Changer le type de graphique",
-      "toggleMovingAverages": "Basculer les moyennes mobiles",
-      "zoomIn": "Zoomer",
-      "zoomOut": "Dézoomer",
-      "resetZoom": "Réinitialiser le zoom",
-      "panLeftRight": "Panoramique gauche/droite",
-      "panChart": "Panoramique du graphique",
-      "openSymbolSelector": "Ouvrir le sélecteur de symboles",
-      "navigateSymbolList": "Naviguer dans la liste des symboles",
-      "selectSymbol": "Sélectionner le symbole",
-      "closeSelector": "Fermer le sélecteur"
-    }
   },
   "trading": {
     "simulator": {
