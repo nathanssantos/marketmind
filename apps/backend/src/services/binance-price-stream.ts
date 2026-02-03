@@ -1,8 +1,9 @@
 import { serializeError } from '../utils/errors';
 import { WebsocketClient } from 'binance';
 import { and, eq, inArray } from 'drizzle-orm';
-import { WEBSOCKET_CONFIG } from '../constants';
+import { AUTO_TRADING_TIMING, WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
+import type { TradeExecution } from '../db/schema';
 import { tradeExecutions } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
@@ -15,7 +16,9 @@ export interface PriceUpdate {
   timestamp: number;
 }
 
-const POSITION_CHECK_THROTTLE_MS = 500;
+const POSITION_CHECK_THROTTLE_MS = AUTO_TRADING_TIMING.POSITION_CHECK_THROTTLE_MS;
+const SUBSCRIPTION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.SUBSCRIPTION_CHECK_INTERVAL_MS;
+const EXECUTION_CACHE_TTL_MS = 10_000;
 
 export class BinancePriceStreamService {
   private client: WebsocketClient | null = null;
@@ -24,6 +27,7 @@ export class BinancePriceStreamService {
   private isReconnecting = false;
   private subscriptionInterval: ReturnType<typeof setInterval> | null = null;
   private lastPositionCheck: Map<string, number> = new Map();
+  private openExecutionsCache: Map<string, { executions: TradeExecution[]; timestamp: number }> = new Map();
 
   start(): void {
     if (this.client) {
@@ -82,7 +86,7 @@ export class BinancePriceStreamService {
 
     this.subscriptionInterval = setInterval(() => {
       void this.subscribeToActivePositions();
-    }, 60000);
+    }, SUBSCRIPTION_CHECK_INTERVAL_MS);
   }
 
   stop(): void {
@@ -101,6 +105,7 @@ export class BinancePriceStreamService {
       this.client = null;
       this.subscribedSymbols.clear();
       this.lastPositionCheck.clear();
+      this.openExecutionsCache.clear();
       logger.info('Binance price stream service stopped');
     }
   }
@@ -158,14 +163,7 @@ export class BinancePriceStreamService {
 
       void positionMonitorService.updatePrice(update.symbol, update.price);
 
-      const openExecutions = await db
-        .select()
-        .from(tradeExecutions)
-        .where(and(
-          eq(tradeExecutions.symbol, update.symbol),
-          eq(tradeExecutions.status, 'open')
-        ));
-
+      const openExecutions = await this.getOpenExecutionsForSymbol(update.symbol);
       if (openExecutions.length === 0) return;
 
       const groups = positionMonitorService.groupExecutionsBySymbolAndSidePublic(openExecutions);
@@ -179,6 +177,32 @@ export class BinancePriceStreamService {
         price: update.price,
         error: serializeError(error),
       }, 'Error processing price update');
+    }
+  }
+
+  private async getOpenExecutionsForSymbol(symbol: string): Promise<TradeExecution[]> {
+    const cached = this.openExecutionsCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < EXECUTION_CACHE_TTL_MS) {
+      return cached.executions;
+    }
+
+    const executions = await db
+      .select()
+      .from(tradeExecutions)
+      .where(and(
+        eq(tradeExecutions.symbol, symbol),
+        eq(tradeExecutions.status, 'open')
+      ));
+
+    this.openExecutionsCache.set(symbol, { executions, timestamp: Date.now() });
+    return executions;
+  }
+
+  public invalidateExecutionCache(symbol?: string): void {
+    if (symbol) {
+      this.openExecutionsCache.delete(symbol);
+    } else {
+      this.openExecutionsCache.clear();
     }
   }
 

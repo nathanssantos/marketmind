@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { AUTO_TRADING_TIMING } from '../constants';
 import { db } from '../db';
 import { autoTradingConfig, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import {
@@ -29,7 +30,7 @@ interface MarginCheckResult {
 
 export class MarginManagerService {
   private checkInterval: ReturnType<typeof setInterval> | null = null;
-  private readonly CHECK_INTERVAL_MS = 30000;
+  private readonly CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.MARGIN_CHECK_INTERVAL_MS;
   private isRunning = false;
   private processingExecutions: Set<string> = new Set();
 

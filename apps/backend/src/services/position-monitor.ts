@@ -50,7 +50,11 @@ export interface PositionCheckResult {
 
 export class PositionMonitorService {
   private monitoringTimeout: NodeJS.Timeout | null = null;
+  private trailingStopTimeout: NodeJS.Timeout | null = null;
+  private opportunityCostTimeout: NodeJS.Timeout | null = null;
   private readonly CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.CHECK_INTERVAL_MS;
+  private readonly TRAILING_STOP_INTERVAL_MS = AUTO_TRADING_TIMING.TRAILING_STOP_INTERVAL_MS;
+  private readonly OPPORTUNITY_COST_INTERVAL_MS = AUTO_TRADING_TIMING.OPPORTUNITY_COST_INTERVAL_MS;
   private processingExits: Set<string> = new Set();
   private processingGroups: Set<string> = new Set();
   private unprotectedAlerts: Map<string, number> = new Map();
@@ -85,13 +89,67 @@ export class PositionMonitorService {
       .finally(() => {
         scheduleNext();
       });
+
+    this.startTrailingStopLoop();
+    this.startOpportunityCostLoop();
   }
 
   stop(): void {
     if (this.monitoringTimeout) {
       clearTimeout(this.monitoringTimeout);
       this.monitoringTimeout = null;
-      logger.info('Position monitor service stopped');
+    }
+    this.stopTrailingStopLoop();
+    this.stopOpportunityCostLoop();
+    logger.info('Position monitor service stopped');
+  }
+
+  private startTrailingStopLoop(): void {
+    const scheduleNext = () => {
+      this.trailingStopTimeout = setTimeout(async () => {
+        try {
+          const trailingUpdates = await trailingStopService.updateTrailingStops();
+          if (trailingUpdates.length > 0) {
+            logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
+          }
+        } catch (error) {
+          logger.error({
+            error: serializeError(error),
+          }, 'Error updating trailing stops');
+        }
+        scheduleNext();
+      }, this.TRAILING_STOP_INTERVAL_MS);
+    };
+    scheduleNext();
+  }
+
+  private stopTrailingStopLoop(): void {
+    if (this.trailingStopTimeout) {
+      clearTimeout(this.trailingStopTimeout);
+      this.trailingStopTimeout = null;
+    }
+  }
+
+  private startOpportunityCostLoop(): void {
+    const scheduleNext = () => {
+      this.opportunityCostTimeout = setTimeout(async () => {
+        try {
+          await opportunityCostManagerService.checkAllPositions();
+        } catch (error) {
+          logger.error({
+            error: serializeError(error),
+          }, 'Error checking opportunity cost');
+        }
+        scheduleNext();
+      }, this.OPPORTUNITY_COST_INTERVAL_MS);
+    };
+    scheduleNext();
+  }
+
+  private stopOpportunityCostLoop(): void {
+    if (this.opportunityCostTimeout) {
+      clearTimeout(this.opportunityCostTimeout);
+      this.opportunityCostTimeout = null;
     }
   }
 
@@ -107,32 +165,6 @@ export class PositionMonitorService {
       return;
     }
 
-    await this.invalidatePriceCache();
-
-    try {
-      const trailingUpdates = await trailingStopService.updateTrailingStops();
-      if (trailingUpdates.length > 0) {
-        logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
-      }
-    } catch (error) {
-      logger.error({
-        error: serializeError(error),
-      }, 'Error updating trailing stops');
-    }
-
-    const positionGroups = this.groupExecutionsBySymbolAndSide(openExecutions);
-
-    await Promise.all(
-      Array.from(positionGroups).map(([groupKey, executions]) =>
-        this.checkPositionGroup(groupKey, executions).catch(error => {
-          logger.error({
-            groupKey,
-            error: serializeError(error),
-          }, 'Error checking position group');
-        })
-      )
-    );
-
     const futuresExecutions = openExecutions.filter(e => e.marketType === 'FUTURES');
     if (futuresExecutions.length > 0) {
       try {
@@ -142,14 +174,6 @@ export class PositionMonitorService {
           error: serializeError(error),
         }, 'Error checking liquidation risk');
       }
-    }
-
-    try {
-      await opportunityCostManagerService.checkAllPositions();
-    } catch (error) {
-      logger.error({
-        error: serializeError(error),
-      }, 'Error checking opportunity cost');
     }
   }
 
@@ -350,69 +374,6 @@ export class PositionMonitorService {
     }
 
     return groups;
-  }
-
-  private async checkPositionGroup(groupKey: string, executions: TradeExecution[]): Promise<void> {
-    if (executions.length === 0) return;
-
-    const firstExecution = executions[0];
-    if (!firstExecution) return;
-
-    if (this.processingGroups.has(groupKey)) {
-      logger.debug({ groupKey }, 'Skipping group check (polling) - already processing');
-      return;
-    }
-
-    const marketType = firstExecution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
-    const currentPrice = await this.getCurrentPrice(firstExecution.symbol, marketType);
-    const isLong = firstExecution.side === 'LONG';
-
-    const consolidatedSL = this.calculateConsolidatedStopLoss(executions, isLong);
-    const consolidatedTP = this.calculateConsolidatedTakeProfit(executions, isLong);
-
-    const slTriggered = consolidatedSL !== null && (
-      isLong ? currentPrice <= consolidatedSL : currentPrice >= consolidatedSL
-    );
-
-    const tpTriggered = consolidatedTP !== null && (
-      isLong ? currentPrice >= consolidatedTP : currentPrice <= consolidatedTP
-    );
-
-    if (!slTriggered && !tpTriggered) {
-      return;
-    }
-
-    this.processingGroups.add(groupKey);
-
-    try {
-      if (slTriggered) {
-        logger.info({
-          groupKey,
-          reason: 'STOP_LOSS',
-          currentPrice,
-          consolidatedSL,
-          executionCount: executions.length,
-        }, 'Consolidated stop loss triggered - closing all positions in group');
-
-        for (const execution of executions) {
-          await this.executeExit(execution, currentPrice, 'STOP_LOSS');
-        }
-      } else if (tpTriggered) {
-        logger.info({
-          groupKey,
-          reason: 'TAKE_PROFIT',
-          currentPrice,
-          consolidatedTP,
-          executionCount: executions.length,
-        }, 'Consolidated take profit triggered - closing all positions in group');
-
-        for (const execution of executions) {
-          await this.executeExit(execution, currentPrice, 'TAKE_PROFIT');
-        }
-      }
-    } finally {
-      this.processingGroups.delete(groupKey);
-    }
   }
 
   private calculateConsolidatedStopLoss(executions: TradeExecution[], isLong: boolean): number | null {

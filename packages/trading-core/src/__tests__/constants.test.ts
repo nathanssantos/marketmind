@@ -49,7 +49,27 @@ describe('Trading Core Constants', () => {
     });
 
     it('should have check interval', () => {
-      expect(TIMING.CHECK_INTERVAL_MS).toBe(5000);
+      expect(TIMING.CHECK_INTERVAL_MS).toBe(30_000);
+    });
+
+    it('should have trailing stop interval', () => {
+      expect(TIMING.TRAILING_STOP_INTERVAL_MS).toBe(60_000);
+    });
+
+    it('should have opportunity cost interval', () => {
+      expect(TIMING.OPPORTUNITY_COST_INTERVAL_MS).toBe(60_000);
+    });
+
+    it('should have margin check interval', () => {
+      expect(TIMING.MARGIN_CHECK_INTERVAL_MS).toBe(60_000);
+    });
+
+    it('should have position check throttle', () => {
+      expect(TIMING.POSITION_CHECK_THROTTLE_MS).toBe(2_000);
+    });
+
+    it('should have subscription check interval', () => {
+      expect(TIMING.SUBSCRIPTION_CHECK_INTERVAL_MS).toBe(300_000);
     });
   });
 
