@@ -111,7 +111,7 @@ export const computeTrailingStop = (
   const useBnbDiscount = config.useBnbDiscount ?? false;
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
 
-  const result = computeTrailingStopCore(
+  return computeTrailingStopCore(
     {
       entryPrice,
       currentPrice,
@@ -137,20 +137,6 @@ export const computeTrailingStop = (
       activationPercentShort: config.activationPercentShort,
     }
   );
-
-  if (!result) return null;
-
-  const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
-  logger.debug({
-    entryPrice,
-    currentPrice,
-    profitPercent: `${(profitPercent * 100).toFixed(2)}%`,
-    takeProfit,
-    newStopLoss: result.newStopLoss,
-    reason: result.reason,
-  }, 'Trailing stop computed');
-
-  return result;
 };
 
 export class TrailingStopService {
@@ -353,11 +339,6 @@ export class TrailingStopService {
 
     const filtered = executions.filter(e => enabledWallets.has(e.walletId));
 
-    if (filtered.length < executions.length) {
-      const disabledCount = executions.length - filtered.length;
-      logger.debug({ disabledCount }, '[TrailingStop] Skipped executions with trailing stop disabled');
-    }
-
     return filtered;
   }
 
@@ -414,10 +395,7 @@ export class TrailingStopService {
         limit: 100,
       });
 
-      if (klinesData.length < 20) {
-        logger.debug({ symbol, interval, count: klinesData.length }, 'Insufficient klines for trailing stop calculation');
-        continue;
-      }
+      if (klinesData.length < 20) continue;
 
       klinesData.reverse();
 
@@ -459,16 +437,6 @@ export class TrailingStopService {
           marketType,
           useBnbDiscount,
         };
-
-        logger.debug({
-          symbol,
-          interval,
-          atrPercent: atrPercent.toFixed(2),
-          volatilityLevel: profile.level,
-          atrMultiplier: profile.atrMultiplier,
-          breakevenThreshold: (profile.breakevenThreshold * 100).toFixed(2),
-          minTrailingDistance: (profile.minTrailingDistance * 100).toFixed(3),
-        }, '[TrailingStop] Volatility-based profile applied');
       }
 
       for (const execution of groupExecutions) {
@@ -505,37 +473,6 @@ export class TrailingStopService {
             : undefined,
           trailingDistancePercent,
         };
-
-        const activationLevel = execution.side === 'LONG'
-          ? (executionConfig.activationPercentLong ?? 0.90)
-          : (executionConfig.activationPercentShort ?? 0.80);
-
-        let activationLevelPrice: number | null = null;
-        if (fibonacciProjection?.swingLow && fibonacciProjection?.swingHigh) {
-          const swingLow = fibonacciProjection.swingLow.price;
-          const swingHigh = fibonacciProjection.swingHigh.price;
-          const range = Math.abs(swingHigh - swingLow);
-          activationLevelPrice = activationLevel <= 1
-            ? swingLow + range * activationLevel
-            : swingHigh + range * (activationLevel - 1);
-        }
-
-        logger.info({
-          executionId: execution.id,
-          symbol: execution.symbol,
-          side: execution.side,
-          currentPrice,
-          useFibonacciThresholds,
-          walletConfigRaw: {
-            activationPercentLong: walletConfig?.trailingActivationPercentLong,
-            activationPercentShort: walletConfig?.trailingActivationPercentShort,
-          },
-          activationLevel,
-          activationLevelPrice,
-          wouldActivate: execution.side === 'LONG'
-            ? (activationLevelPrice ? currentPrice >= activationLevelPrice : false)
-            : (activationLevelPrice ? currentPrice <= activationLevelPrice : false),
-        }, '[TrailingStop] Activation check details');
 
         const update = this.calculateTrailingStopWithConfig(
           execution,
@@ -581,15 +518,7 @@ export class TrailingStopService {
 
     const entryCandle = klinesFromEntry[0]!;
 
-    if (now < entryCandle.closeTime) {
-      logger.debug({
-        executionId: execution.id,
-        entryCandle: new Date(entryCandle.openTime).toISOString(),
-        closesAt: new Date(entryCandle.closeTime).toISOString(),
-        now: new Date(now).toISOString(),
-      }, 'Trailing stop waiting for entry candle to close');
-      return null;
-    }
+    if (now < entryCandle.closeTime) return null;
 
     const klinesForTrailing = klinesFromEntry.slice(1);
     const firstKlineAfterTrailingStarts = klinesForTrailing[0];
