@@ -4,7 +4,7 @@
 
 | Fase | Descricao | Status |
 |------|-----------|--------|
-| 0 | Seletor de Currency | PENDENTE |
+| 0 | Seletor de Currency | CONCLUIDA (exceto mudanca de default para USD — aguardando IB) |
 | 1 | Desacoplar tipos de trading e fees do Binance | CONCLUIDA |
 | 2 | Criar interfaces exchange-agnosticas | CONCLUIDA |
 | 3 | Implementacoes Binance (wrap do codigo existente) | CONCLUIDA |
@@ -99,7 +99,7 @@ As interfaces da Fase 2 ja devem incluir:
 
 ---
 
-## Fase 0: Seletor de Currency [PENDENTE]
+## Fase 0: Seletor de Currency [CONCLUIDA]
 
 **Risco: BAIXO** — UI + schema change com default, independente da abstracoes de exchange
 
