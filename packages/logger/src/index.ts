@@ -5,13 +5,6 @@ export {
   colorize,
   stripAnsi,
   type ColorName,
-  TABLE_CHARS,
-  createTable,
-  Table,
-  type TableOptions,
-  EMOJI,
-  getEmoji,
-  type EmojiName,
 } from './formatters';
 
 export {

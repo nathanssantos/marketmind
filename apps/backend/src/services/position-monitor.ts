@@ -65,7 +65,7 @@ export class PositionMonitorService {
       return;
     }
 
-    logger.debug('Starting position monitor service');
+    logger.trace('Starting position monitor service');
 
     const scheduleNext = () => {
       this.monitoringTimeout = setTimeout(async () => {
@@ -309,7 +309,7 @@ export class PositionMonitorService {
 
             wsServiceFill.emitTradeNotification(execution.walletId, {
               type: 'LIMIT_FILLED',
-              title: '🎯 Limit Order Filled',
+              title: '> Limit Order Filled',
               body: `${sideLabel} ${execution.symbol} @ ${formatPrice(currentPrice)}`,
               urgency: 'normal',
               data: {
@@ -480,7 +480,7 @@ export class PositionMonitorService {
       });
 
       if (currentExecution?.status !== 'open') {
-        logger.debug({
+        logger.trace({
           executionId: execution.id,
           status: currentExecution?.status,
         }, 'Skipping exit - position already closed or not found');
@@ -719,11 +719,11 @@ export class PositionMonitorService {
 
         let title: string;
         if (reason === 'TAKE_PROFIT') {
-          title = '🎯 Take Profit';
+          title = '> Take Profit';
         } else if (isProfit) {
-          title = '✅ Stop Loss (Profit)';
+          title = '✓ Stop Loss (Profit)';
         } else {
-          title = '🛑 Stop Loss';
+          title = '✗ Stop Loss';
         }
 
         const pnlSign = pnl >= 0 ? '+' : '';
@@ -1003,7 +1003,7 @@ export class PositionMonitorService {
     const groupKey = `${firstExecution.symbol}-${firstExecution.side}`;
 
     if (this.processingGroups.has(groupKey)) {
-      logger.debug({ groupKey }, 'Skipping group check - already processing');
+      logger.trace({ groupKey }, 'Skipping group check - already processing');
       return;
     }
 
@@ -1155,10 +1155,10 @@ export class PositionMonitorService {
 
     const distancePercentFormatted = (risk.distancePercent * 100).toFixed(2);
     const message = risk.riskLevel === 'critical'
-      ? `⚠️ CRITICAL: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation!`
+      ? `! CRITICAL: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation!`
       : risk.riskLevel === 'danger'
-        ? `⚠️ DANGER: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation`
-        : `⚠️ WARNING: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation`;
+        ? `! DANGER: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation`
+        : `! WARNING: ${risk.symbol} ${risk.side} position ${distancePercentFormatted}% from liquidation`;
 
     wsService.emitLiquidationWarning(walletId, {
       symbol: risk.symbol,

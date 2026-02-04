@@ -41,6 +41,7 @@ vi.mock('../logger', () => ({
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
+    trace: vi.fn(),
   },
   serializeError: vi.fn((err) => err instanceof Error ? err.message : String(err)),
 }));

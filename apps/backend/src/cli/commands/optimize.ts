@@ -341,7 +341,7 @@ function interpretResults(best: any, _logger: BacktestLogger) {
   } else if (isGood) {
     console.log(chalk.green.bold('✓ RECOMMENDATION: ') + chalk.white('Good results! Consider further validation on recent data.'));
   } else {
-    console.log(chalk.yellow.bold('⚠ RECOMMENDATION: ') + chalk.white('Marginal results. Continue optimization or try different strategy.'));
+    console.log(chalk.yellow.bold('! RECOMMENDATION: ') + chalk.white('Marginal results. Continue optimization or try different strategy.'));
   }
   console.log('');
 }

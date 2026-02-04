@@ -84,7 +84,7 @@ class FundingRateService {
       const fundingInfo = await dataService.getCurrentFundingRate(symbol);
 
       if (!fundingInfo) {
-        logger.debug({ symbol }, '[FundingRateService] No funding rate available');
+        logger.trace({ symbol }, '[FundingRateService] No funding rate available');
         return;
       }
 

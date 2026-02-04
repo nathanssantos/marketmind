@@ -55,7 +55,7 @@ const testAdxFilter = () => {
   console.log(`  Is Allowed: ${resultShort.isAllowed}`);
   console.log(`  Reason: ${resultShort.reason}`);
 
-  console.log('\n✅ ADX Filter test completed');
+  console.log('\n✓ ADX Filter test completed');
 };
 
 const testAltcoinSeasonIndex = async () => {
@@ -86,21 +86,21 @@ const testAltcoinSeasonIndex = async () => {
       });
     }
 
-    console.log('\n✅ Altcoin Season Index test completed');
+    console.log('\n✓ Altcoin Season Index test completed');
   } catch (error) {
-    console.error('❌ Error testing Altcoin Season Index:', error);
+    console.error('✗ Error testing Altcoin Season Index:', error);
   }
 };
 
 const main = async () => {
-  console.log('🧪 Testing New Indicators\n');
+  console.log('> Testing New Indicators\n');
   console.log('='.repeat(50));
 
   testAdxFilter();
   await testAltcoinSeasonIndex();
 
   console.log('\n' + '='.repeat(50));
-  console.log('✅ All tests completed');
+  console.log('✓ All tests completed');
 };
 
 main().catch(console.error);

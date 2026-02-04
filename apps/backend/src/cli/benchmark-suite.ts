@@ -154,8 +154,8 @@ async function main() {
     const wrDiff = Math.abs(result.winRate - bench.expectedWinRate);
     const pfDiff = Math.abs(result.profitFactor - bench.expectedPF);
 
-    const wrStatus = wrDiff <= 5 ? '✅' : '⚠️';
-    const pfStatus = pfDiff <= 0.5 ? '✅' : '⚠️';
+    const wrStatus = wrDiff <= 5 ? '✓' : '!️';
+    const pfStatus = pfDiff <= 0.5 ? '✓' : '!️';
 
     if (wrDiff <= 5) passedWR++;
     if (pfDiff <= 0.5) passedPF++;
@@ -173,7 +173,7 @@ async function main() {
   console.log(`Profit Factor dentro da tolerância: ${passedPF}/${results.length}`);
 
   const overallPass = passedWR >= results.length * 0.6 && passedPF >= results.length * 0.6;
-  console.log(`\n${overallPass ? '✅ VALIDAÇÃO APROVADA' : '⚠️ ALGUNS BENCHMARKS FORA DA TOLERÂNCIA'}`);
+  console.log(`\n${overallPass ? '✓ VALIDAÇÃO APROVADA' : '! ALGUNS BENCHMARKS FORA DA TOLERÂNCIA'}`);
 
   if (overallPass) {
     console.log('\nO sistema de backtesting MarketMind produz resultados');

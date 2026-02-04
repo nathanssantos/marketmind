@@ -50,7 +50,7 @@ export class ProtectionOrderHandler {
     const useSeparateOrders = watcher.marketType === 'FUTURES';
 
     if (useSeparateOrders) {
-      log('📊 FUTURES market - using separate SL/TP orders (OCO not supported)', {
+      log('> FUTURES market - using separate SL/TP orders (OCO not supported)', {
         symbol: watcher.symbol,
         marketType: watcher.marketType,
         stopLoss: setup.stopLoss,
@@ -77,14 +77,14 @@ export class ProtectionOrderHandler {
         } else {
           stopLossOrderId = slResult.orderId;
         }
-        log('🛡️ FUTURES stop loss order placed', {
+        log('✓ FUTURES stop loss order placed', {
           stopLossOrderId,
           stopLossAlgoId,
           stopLoss: setup.stopLoss,
           isAlgoOrder: slResult.isAlgoOrder,
         });
       } else {
-        log('❌ FUTURES: Failed to place stop loss order after retries', {
+        log('✗ FUTURES: Failed to place stop loss order after retries', {
           error: serializeError(slRetryResult.lastError),
         });
       }
@@ -109,14 +109,14 @@ export class ProtectionOrderHandler {
         } else {
           takeProfitOrderId = tpResult.orderId;
         }
-        log('🎯 FUTURES take profit order placed', {
+        log('> FUTURES take profit order placed', {
           takeProfitOrderId,
           takeProfitAlgoId,
           takeProfit: effectiveTakeProfit,
           isAlgoOrder: tpResult.isAlgoOrder,
         });
       } else {
-        log('❌ FUTURES: Failed to place take profit order after retries', {
+        log('✗ FUTURES: Failed to place take profit order after retries', {
           error: serializeError(tpRetryResult.lastError),
         });
       }
@@ -142,7 +142,7 @@ export class ProtectionOrderHandler {
           orderListId = ocoResult.orderListId;
           stopLossOrderId = ocoResult.stopLossOrderId;
           takeProfitOrderId = ocoResult.takeProfitOrderId;
-          log('✅ OCO exit orders placed', {
+          log('✓ OCO exit orders placed', {
             orderListId,
             stopLossOrderId,
             takeProfitOrderId,
@@ -150,7 +150,7 @@ export class ProtectionOrderHandler {
             takeProfit: effectiveTakeProfit,
           });
         } else {
-          log('⚠️ OCO placement returned null, falling back to separate orders');
+          log('! OCO placement returned null, falling back to separate orders');
         }
 
         if (!orderListId) {
@@ -170,7 +170,7 @@ export class ProtectionOrderHandler {
           takeProfitIsAlgo = fallbackResult.takeProfitIsAlgo;
         }
       } catch (ocoError) {
-        log('⚠️ Failed to place OCO exit orders, falling back to separate orders', {
+        log('! Failed to place OCO exit orders, falling back to separate orders', {
           error: serializeError(ocoError),
         });
 
@@ -236,9 +236,9 @@ export class ProtectionOrderHandler {
       } else {
         stopLossOrderId = slResult.orderId;
       }
-      log('🛡️ Stop loss order placed (fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
+      log('✓ Stop loss order placed (fallback)', { stopLossOrderId, stopLossAlgoId, isAlgoOrder: slResult.isAlgoOrder });
     } else {
-      log('⚠️ Failed to place stop loss order (fallback) after retries', {
+      log('! Failed to place stop loss order (fallback) after retries', {
         error: serializeError(slFallbackResult.lastError),
       });
     }
@@ -263,9 +263,9 @@ export class ProtectionOrderHandler {
       } else {
         takeProfitOrderId = tpResult.orderId;
       }
-      log('🎯 Take profit order placed (fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
+      log('> Take profit order placed (fallback)', { takeProfitOrderId, takeProfitAlgoId, isAlgoOrder: tpResult.isAlgoOrder });
     } else {
-      log('⚠️ Failed to place take profit order (fallback) after retries', {
+      log('! Failed to place take profit order (fallback) after retries', {
         error: serializeError(tpFallbackResult.lastError),
       });
     }
@@ -310,9 +310,9 @@ export class ProtectionOrderHandler {
       } else {
         stopLossOrderId = slResult.orderId;
       }
-      log('🛡️ Stop loss order placed (no TP)', { stopLossOrderId, stopLossAlgoId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
+      log('✓ Stop loss order placed (no TP)', { stopLossOrderId, stopLossAlgoId, stopLoss: setup.stopLoss, isAlgoOrder: slResult.isAlgoOrder });
     } else {
-      log('⚠️ Failed to place stop loss order after retries', {
+      log('! Failed to place stop loss order after retries', {
         error: serializeError(slOnlyResult.lastError),
       });
     }
@@ -331,7 +331,7 @@ export class ProtectionOrderHandler {
     setupId: string,
     entryOrderId: number
   ): Promise<{ shouldReturn: boolean }> {
-    log('🚨 CRITICAL: SL creation failed - attempting to close entry position', {
+    log('! CRITICAL: SL creation failed - attempting to close entry position', {
       executionId,
       symbol: watcher.symbol,
       side: setup.direction,
@@ -351,7 +351,7 @@ export class ProtectionOrderHandler {
       );
 
       if (closeResult) {
-        log('✅ Compensation successful - position closed', {
+        log('✓ Compensation successful - position closed', {
           closeOrderId: closeResult.orderId,
           avgPrice: closeResult.avgPrice,
           entryPrice: actualEntryPrice,
@@ -397,7 +397,7 @@ export class ProtectionOrderHandler {
         return { shouldReturn: true };
       }
     } catch (closeError) {
-      log('❌ CRITICAL: Failed to close unprotected position', {
+      log('✗ CRITICAL: Failed to close unprotected position', {
         error: serializeError(closeError),
       });
     }
@@ -430,7 +430,7 @@ export class ProtectionOrderHandler {
     stopLossAlgoId: number | null,
     takeProfitAlgoId: number | null
   ): void {
-    log('🚨 CRITICAL: Incomplete protection orders - emitting alert', {
+    log('! CRITICAL: Incomplete protection orders - emitting alert', {
       symbol: watcher.symbol,
       hasSL,
       hasTP,

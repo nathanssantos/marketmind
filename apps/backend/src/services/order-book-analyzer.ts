@@ -135,7 +135,7 @@ export class OrderBookAnalyzerService {
         timestamp: new Date(),
       };
 
-      logger.debug({
+      logger.trace({
         symbol,
         imbalanceRatio: imbalanceRatio.toFixed(2),
         pressure,

@@ -328,7 +328,7 @@ function interpretResults(mcResult: any) {
   if (profitProb >= 0.7) {
     insights.push('✓ High probability of profitability (>70%)');
   } else if (profitProb >= 0.5) {
-    insights.push('⚠ Moderate probability of profitability (50-70%)');
+    insights.push('! Moderate probability of profitability (50-70%)');
   } else {
     insights.push('✗ Low probability of profitability (<50%)');
   }
@@ -339,7 +339,7 @@ function interpretResults(mcResult: any) {
   if (returnStdDev < 0.2) {
     insights.push('✓ Consistent returns across simulations');
   } else if (returnStdDev < 0.5) {
-    insights.push('⚠ Moderate variability in returns');
+    insights.push('! Moderate variability in returns');
   } else {
     insights.push('✗ High variability in returns - risky strategy');
   }
@@ -348,7 +348,7 @@ function interpretResults(mcResult: any) {
   if (dd20Prob < 0.1) {
     insights.push('✓ Low risk of significant drawdowns');
   } else if (dd20Prob < 0.3) {
-    insights.push('⚠ Moderate drawdown risk');
+    insights.push('! Moderate drawdown risk');
   } else {
     insights.push('✗ High risk of significant drawdowns (>20%)');
   }
@@ -357,7 +357,7 @@ function interpretResults(mcResult: any) {
   if (worstCaseReturn > -0.1) {
     insights.push('✓ Worst case is manageable (<10% loss)');
   } else if (worstCaseReturn > -0.2) {
-    insights.push('⚠ Worst case shows moderate losses (10-20%)');
+    insights.push('! Worst case shows moderate losses (10-20%)');
   } else {
     insights.push('✗ Worst case shows significant losses (>20%)');
   }
@@ -391,7 +391,7 @@ function interpretResults(mcResult: any) {
     console.log(chalk.white('Strategy shows positive statistical edge.'));
     console.log(chalk.white('Consider reducing position size or improving risk management.'));
   } else {
-    console.log(chalk.yellow.bold('⚠ MARGINAL STATISTICAL PROPERTIES'));
+    console.log(chalk.yellow.bold('! MARGINAL STATISTICAL PROPERTIES'));
     console.log(chalk.white('Strategy shows high variability and risk.'));
     console.log(chalk.white('Not recommended without further optimization or risk reduction.'));
   }

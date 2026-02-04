@@ -230,7 +230,7 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
   }
 
   if (warnings.length > 0) {
-    console.log(chalk.yellow.bold('⚠ Areas for Improvement:'));
+    console.log(chalk.yellow.bold('! Areas for Improvement:'));
     for (const warning of warnings) {
       console.log(chalk.yellow(`  • ${warning}`));
     }
@@ -246,7 +246,7 @@ function interpretResults(metrics: any, _logger: BacktestLogger) {
   if (isGood) {
     console.log(chalk.green.bold('✓ RECOMMENDATION: ') + chalk.white('Strategy shows promise! Consider parameter optimization.'));
   } else {
-    console.log(chalk.yellow.bold('⚠ RECOMMENDATION: ') + chalk.white('Strategy needs optimization before live trading.'));
+    console.log(chalk.yellow.bold('! RECOMMENDATION: ') + chalk.white('Strategy needs optimization before live trading.'));
   }
   console.log('');
 }

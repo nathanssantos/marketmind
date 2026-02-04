@@ -45,7 +45,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
 
   if (binanceApiCache.isBanned()) {
     const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
-    if (!silent) log.warn('⏸️ Skipping prefetch - IP banned', { symbol, interval, marketType, waitSeconds });
+    if (!silent) log.warn('~ Skipping prefetch - IP banned', { symbol, interval, marketType, waitSeconds });
     return {
       success: false,
       downloaded: 0,
@@ -60,7 +60,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
 
   const existingBackfill = activeBackfills.get(key);
   if (existingBackfill) {
-    if (!silent) log.info('⏳ Backfill already in progress, waiting...', { symbol, interval, marketType });
+    if (!silent) log.info('~ Backfill already in progress, waiting...', { symbol, interval, marketType });
     try {
       const result = await existingBackfill;
       return {
@@ -90,7 +90,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
 
     const hasGapsToFill = result.gaps > 0;
     if (!silent && hasGapsToFill) {
-      log.info('✅ Prefetch complete', {
+      log.info('✓ Prefetch complete', {
         symbol,
         interval,
         marketType,
@@ -117,7 +117,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     }
 
     if (!silent) {
-      log.error('❌ Failed to prefetch klines', { symbol, interval, marketType, error: errorMessage });
+      log.error('✗ Failed to prefetch klines', { symbol, interval, marketType, error: errorMessage });
     }
 
     return {
@@ -178,7 +178,7 @@ export const checkKlineAvailability = async (
     });
 
     if (!result.success) {
-      if (!silent) log.warn('⚠️ Kline availability check failed', { symbol, interval, marketType, error: result.error });
+      if (!silent) log.warn('! Kline availability check failed', { symbol, interval, marketType, error: result.error });
       return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
     }
 
@@ -192,7 +192,7 @@ export const checkKlineAvailability = async (
     if (!hasSufficient) {
       if (!silent) {
         if (!meetsHardMinimum) {
-          log.error('❌ Symbol has critically insufficient klines', {
+          log.error('✗ Symbol has critically insufficient klines', {
             symbol,
             interval,
             marketType,
@@ -202,7 +202,7 @@ export const checkKlineAvailability = async (
             apiExhausted,
           });
         } else {
-          log.warn('⚠️ Symbol has insufficient klines', {
+          log.warn('! Symbol has insufficient klines', {
             symbol,
             interval,
             marketType,
@@ -217,7 +217,7 @@ export const checkKlineAvailability = async (
     }
 
     if (!silent && meetsToleranceWithApiExhausted && !meetsExactRequirement) {
-      log.info('ℹ️ Symbol accepted with tolerance (API exhausted)', {
+      log.info('· Symbol accepted with tolerance (API exhausted)', {
         symbol,
         interval,
         marketType,
@@ -230,7 +230,7 @@ export const checkKlineAvailability = async (
     return { hasSufficient: true, totalAvailable: result.totalInDb, required, apiExhausted };
   } catch (error) {
     const errorMessage = serializeError(error);
-    if (!silent) log.error('❌ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
+    if (!silent) log.error('✗ Kline availability check error', { symbol, interval, marketType, error: errorMessage });
     return { hasSufficient: false, totalAvailable: 0, required, apiExhausted: false };
   }
 };

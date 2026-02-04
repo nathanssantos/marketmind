@@ -59,17 +59,17 @@ async function checkXrpSpike() {
     const apiHigh = apiK ? parseFloat(apiK.high) : null;
 
     const status = [];
-    if (!dbK) status.push('❌ NOT IN DB');
-    if (!apiK) status.push('❌ NOT IN API');
+    if (!dbK) status.push('✗ NOT IN DB');
+    if (!apiK) status.push('✗ NOT IN API');
 
     if (dbK && apiK) {
       const highDiff = Math.abs(dbHigh! - apiHigh!);
       if (highDiff > 0.001) {
-        status.push(`⚠️  HIGH DIFF: ${highDiff.toFixed(4)}`);
+        status.push(`!  HIGH DIFF: ${highDiff.toFixed(4)}`);
       }
     }
 
-    const statusStr = status.length > 0 ? status.join(' | ') : '✅';
+    const statusStr = status.length > 0 ? status.join(' | ') : '✓';
 
     console.log(`${time} | DB High: ${dbHigh?.toFixed(4) ?? 'N/A'} | API High: ${apiHigh?.toFixed(4) ?? 'N/A'} | ${statusStr}`);
   }

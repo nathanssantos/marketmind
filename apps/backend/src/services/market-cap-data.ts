@@ -58,7 +58,7 @@ export class MarketCapDataService {
 
     const now = Date.now();
     if (now - this.lastFetchTimestamp < this.minFetchInterval) {
-      logger.debug('Rate limiting CoinGecko fetch, returning empty');
+      logger.trace('Rate limiting CoinGecko fetch, returning empty');
       return [];
     }
 

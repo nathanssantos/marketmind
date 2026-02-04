@@ -54,7 +54,7 @@ export class OrderExecutor {
       await this.executeSetup(watcher, setup, strategies, cycleKlines, logBuffer);
       return true;
     } catch (error) {
-      logBuffer.error('❌', 'Setup execution failed', {
+      logBuffer.error('✗', 'Setup execution failed', {
         setup: setup.type,
         error: serializeError(error),
       });
@@ -72,7 +72,7 @@ export class OrderExecutor {
     const executionLockKey = `${watcher.walletId}-${watcher.symbol}-${setup.type}`;
 
     if (this.executingSetups.has(executionLockKey)) {
-      logBuffer.log('⏳', 'Setup execution already in progress, skipping duplicate', {
+      logBuffer.log('~', 'Setup execution already in progress, skipping duplicate', {
         type: setup.type,
         symbol: watcher.symbol,
         lockKey: executionLockKey,
@@ -102,7 +102,7 @@ export class OrderExecutor {
     const MIN_KLINES_FOR_ADX = 35;
 
     if (klines.length < MIN_KLINES_FOR_ADX) {
-      log('⚠️ Insufficient klines for ADX calculation, using default level', {
+      log('! Insufficient klines for ADX calculation, using default level', {
         klinesCount: klines.length,
         required: MIN_KLINES_FOR_ADX,
       });
@@ -113,7 +113,7 @@ export class OrderExecutor {
     const adx = adxResult.adx[adxResult.adx.length - 1];
 
     if (adx == null) {
-      log('⚠️ ADX calculation returned null, using default level');
+      log('! ADX calculation returned null, using default level');
       return 1.272;
     }
 
@@ -124,7 +124,7 @@ export class OrderExecutor {
     else if (adx >= ADX_MIN) targetLevel = 1.382;
     else targetLevel = 1.272;
 
-    log('📊 ADX-based Fibonacci level selected', {
+    log('> ADX-based Fibonacci level selected', {
       adx: adx.toFixed(2),
       targetLevel,
       thresholds: { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG },
@@ -145,7 +145,7 @@ export class OrderExecutor {
     const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction);
 
     if (!projection || projection.levels.length === 0) {
-      log('⚠️ Fibonacci projection failed', {
+      log('! Fibonacci projection failed', {
         klinesCount: klines.length,
         currentIndex,
         direction,
@@ -165,7 +165,7 @@ export class OrderExecutor {
 
     if (targetLevelData) return targetLevelData.price;
 
-    log('⚠️ Target level not found, using 161.8%', {
+    log('! Target level not found, using 161.8%', {
       targetLevel,
       availableLevels: projection.levels.map(l => l.level),
     });
@@ -181,7 +181,7 @@ export class OrderExecutor {
     cycleKlines: Kline[],
     logBuffer: WatcherLogBuffer
   ): Promise<void> {
-    logBuffer.log('🚀', 'Attempting to execute setup', {
+    logBuffer.log('>', 'Attempting to execute setup', {
       type: setup.type,
       direction: setup.direction,
       entryPrice: setup.entryPrice,
@@ -204,7 +204,7 @@ export class OrderExecutor {
     const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
     const effectiveFibLevel = setup.direction === 'LONG' ? fibonacciTargetLevelLong : fibonacciTargetLevelShort;
 
-    logBuffer.log('🎯', 'TP calculation config', {
+    logBuffer.log('>', 'TP calculation config', {
       tpCalculationMode,
       fibonacciTargetLevel: effectiveFibLevel,
       fibonacciTargetLevelLong,
@@ -229,7 +229,7 @@ export class OrderExecutor {
           : fibTarget < setup.entryPrice;
 
         if (isValidTarget) {
-          logBuffer.log('📐', 'Using Fibonacci projection for take profit', {
+          logBuffer.log('>', 'Using Fibonacci projection for take profit', {
             originalTP: setup.takeProfit?.toFixed(6),
             fibonacciTP: fibTarget.toFixed(6),
             configLevel: effectiveFibLevel,
@@ -284,7 +284,7 @@ export class OrderExecutor {
 
     try {
       if (!config?.isEnabled) {
-        logBuffer.warn('⚠️', 'Auto-trading disabled during execution');
+        logBuffer.warn('!', 'Auto-trading disabled during execution');
         return;
       }
 
@@ -297,7 +297,7 @@ export class OrderExecutor {
         .limit(1);
 
       if (!wallet) {
-        logBuffer.error('❌', 'Wallet not found', { walletId: watcher.walletId });
+        logBuffer.error('✗', 'Wallet not found', { walletId: watcher.walletId });
         return;
       }
 
@@ -469,7 +469,7 @@ export class OrderExecutor {
           value: `${pyramidEval.currentEntries}/${pyramidEval.maxEntries}`,
           reason: 'Allowed',
         });
-        logBuffer.log('📈', 'Pyramiding opportunity', {
+        logBuffer.log('>', 'Pyramiding opportunity', {
           currentEntries: pyramidEval.currentEntries,
           suggestedSize: pyramidEval.suggestedSize,
           mode: pyramidEval.mode ?? 'static',
@@ -564,7 +564,7 @@ export class OrderExecutor {
         orderType: 'MARKET',
       });
     } catch (error) {
-      logBuffer.error('❌', 'Error executing setup', {
+      logBuffer.error('✗', 'Error executing setup', {
         type: setup.type,
         error: serializeError(error),
       });
@@ -653,7 +653,7 @@ export class OrderExecutor {
         value: riskRewardRatio.toFixed(2),
         expected: `>= ${minRequired}`,
       });
-      logBuffer.log('✅', 'Risk/Reward ratio validated', {
+      logBuffer.log('✓', 'Risk/Reward ratio validated', {
         riskRewardRatio: riskRewardRatio.toFixed(2),
         minRequired,
         direction: setup.direction,
@@ -664,10 +664,10 @@ export class OrderExecutor {
         direction: setup.direction,
         reason: 'Missing stop loss',
       });
-      logBuffer.warn('🚫', 'Missing stop loss', { setup: setup.type, direction: setup.direction });
+      logBuffer.warn('✗', 'Missing stop loss', { setup: setup.type, direction: setup.direction });
       return { valid: false };
     } else {
-      logBuffer.log('ℹ️', 'Setup without take profit - skipping R:R validation');
+      logBuffer.log('·', 'Setup without take profit - skipping R:R validation');
     }
 
     return { valid: true };
@@ -704,14 +704,14 @@ export class OrderExecutor {
       expiresAt,
     });
 
-    log('📝 Created setup detection', { setupId });
+    log('> Created setup detection', { setupId });
 
     const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const quantityFormatted = dynamicSize.quantity.toFixed(8);
     const walletBalance = parseFloat(wallet.currentBalance ?? '0');
     const positionValue = dynamicSize.quantity * setup.entryPrice;
 
-    log('📐 Final position size', {
+    log('> Final position size', {
       positionValue: positionValue.toFixed(2),
       entryPrice: setup.entryPrice,
       quantity: quantityFormatted,
@@ -738,13 +738,13 @@ export class OrderExecutor {
     let orderListId: number | null = null;
 
     if (isLiveExecution) {
-      log('💸 Live execution - will use actual fill price from Binance', {
+      log('> Live execution - will use actual fill price from Binance', {
         setupEntry: setup.entryPrice,
         commissionPercent: COMMISSION_PERCENT,
         direction: setup.direction,
       });
     } else {
-      log('💸 Paper trading - entry price adjusted for simulated slippage', {
+      log('> Paper trading - entry price adjusted for simulated slippage', {
         originalEntry: setup.entryPrice,
         expectedEntry: expectedEntryWithSlippage,
         slippagePercent: SLIPPAGE_PERCENT,
@@ -823,7 +823,7 @@ export class OrderExecutor {
           reason: 'Invalid SL after slippage',
           details: { actualEntry: actualEntryPrice.toFixed(4), stopLoss: setup.stopLoss },
         });
-        logBuffer.warn('🚫', 'Invalid SL after slippage', { setup: setup.type, actualEntry: actualEntryPrice.toFixed(4) });
+        logBuffer.warn('✗', 'Invalid SL after slippage', { setup: setup.type, actualEntry: actualEntryPrice.toFixed(4) });
         return;
       }
 
@@ -847,7 +847,7 @@ export class OrderExecutor {
             minRequired,
           },
         });
-        logBuffer.warn('🚫', 'R:R too low after slippage', { setup: setup.type, finalRR: finalRiskRewardRatio.toFixed(2) });
+        logBuffer.warn('✗', 'R:R too low after slippage', { setup: setup.type, finalRR: finalRiskRewardRatio.toFixed(2) });
         return;
       }
     }
@@ -919,7 +919,7 @@ export class OrderExecutor {
         });
       }
     } catch (dbError) {
-      logBuffer.error('❌', 'Failed to insert trade execution', {
+      logBuffer.error('✗', 'Failed to insert trade execution', {
         executionId,
         error: serializeError(dbError),
       });
@@ -996,7 +996,7 @@ export class OrderExecutor {
           configMarginType
         );
 
-        log('⚙️ Futures leverage/margin configured', {
+        log('> Futures leverage/margin configured', {
           symbol: watcher.symbol,
           leverage: configLeverage,
           marginType: configMarginType,
@@ -1008,12 +1008,12 @@ export class OrderExecutor {
           errorMsg.includes('already set');
 
         if (isBenignError) {
-          log('⚙️ Futures leverage/margin already configured (skipping)', {
+          log('> Futures leverage/margin already configured (skipping)', {
             symbol: watcher.symbol,
             message: errorMsg,
           });
         } else {
-          log('❌ Failed to configure leverage/margin, aborting entry', {
+          log('✗ Failed to configure leverage/margin, aborting entry', {
             error: errorMsg,
           });
           return null;
@@ -1021,7 +1021,7 @@ export class OrderExecutor {
       }
     }
 
-    log(`🔴 LIVE EXECUTION - Placing ${orderType} order on Binance`, {
+    log(`> LIVE EXECUTION - Placing ${orderType} order on Binance`, {
       walletType: wallet.walletType,
       symbol: watcher.symbol,
       side: setup.direction === 'LONG' ? 'BUY' : 'SELL',
@@ -1037,7 +1037,7 @@ export class OrderExecutor {
         : dynamicSize.quantity;
 
       if (watcher.marketType === 'FUTURES') {
-        log('📊 Quantity adjusted for leverage', {
+        log('> Quantity adjusted for leverage', {
           originalQuantity: dynamicSize.quantity,
           adjustedQuantity,
           leverage: configLeverageForQty,
@@ -1063,7 +1063,7 @@ export class OrderExecutor {
 
       const orderFilled = parseFloat(orderResult.executedQty) > 0;
 
-      log('✅ Binance order executed', {
+      log('✓ Binance order executed', {
         orderId: entryOrderId,
         executedQty: orderResult.executedQty,
         price: orderResult.price,
@@ -1072,7 +1072,7 @@ export class OrderExecutor {
       });
 
       if (!orderFilled) {
-        log('⚠️ MARKET order not filled (executedQty=0) - aborting trade creation', {
+        log('! MARKET order not filled (executedQty=0) - aborting trade creation', {
           orderId: entryOrderId,
           symbol: watcher.symbol,
           orderType,
@@ -1090,14 +1090,14 @@ export class OrderExecutor {
             if (feeResult.avgPrice > 0) {
               actualEntryPrice = feeResult.avgPrice;
             }
-            log('💰 Entry fee captured from Binance', {
+            log('> Entry fee captured from Binance', {
               entryOrderId,
               entryFee: actualEntryFee,
               avgPrice: feeResult.avgPrice,
             });
           }
         } catch (feeError) {
-          log('⚠️ Failed to fetch entry fee, will be captured on close', {
+          log('! Failed to fetch entry fee, will be captured on close', {
             entryOrderId,
             error: serializeError(feeError),
           });
@@ -1165,7 +1165,7 @@ export class OrderExecutor {
         }
       }
     } catch (orderError) {
-      log('❌ Failed to execute Binance order', {
+      log('✗ Failed to execute Binance order', {
         error: serializeError(orderError),
       });
       return null;
@@ -1210,7 +1210,7 @@ export class OrderExecutor {
           : currentMarketPrice && currentMarketPrice >= setup.limitEntryPrice;
 
         if (!wouldLimitFill) {
-          log('📋 PAPER TRADING - Creating PENDING limit order', {
+          log('> PAPER TRADING - Creating PENDING limit order', {
             walletType: wallet.walletType,
             direction: setup.direction,
             limitEntryPrice: setup.limitEntryPrice,
@@ -1256,7 +1256,7 @@ export class OrderExecutor {
               fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
             });
 
-            log('✅ PENDING order created - waiting for price to reach limit', {
+            log('✓ PENDING order created - waiting for price to reach limit', {
               executionId,
               limitEntryPrice: setup.limitEntryPrice,
               currentMarketPrice,
@@ -1292,7 +1292,7 @@ export class OrderExecutor {
               'Pending order created'
             );
           } catch (pendingError) {
-            log('❌ Failed to create pending order', {
+            log('✗ Failed to create pending order', {
               error: serializeError(pendingError),
             });
           }
@@ -1301,7 +1301,7 @@ export class OrderExecutor {
         }
 
         actualEntryPrice = currentMarketPrice || setup.limitEntryPrice;
-        log('📝 PAPER TRADING - LIMIT order filled immediately at market price', {
+        log('> PAPER TRADING - LIMIT order filled immediately at market price', {
           walletType: wallet.walletType,
           direction: setup.direction,
           setupClosePrice: setup.entryPrice,
@@ -1310,7 +1310,7 @@ export class OrderExecutor {
           orderType: 'LIMIT',
         });
       } else {
-        log('📝 PAPER TRADING - Using current market price', {
+        log('> PAPER TRADING - Using current market price', {
           walletType: wallet.walletType,
           setupPrice: setup.entryPrice,
           orderType: 'MARKET',
@@ -1318,20 +1318,20 @@ export class OrderExecutor {
 
         if (currentMarketPrice) {
           actualEntryPrice = currentMarketPrice;
-          log('✅ Using live market price for paper trading', {
+          log('✓ Using live market price for paper trading', {
             setupPrice: setup.entryPrice,
             marketPrice: currentMarketPrice,
             difference: `${((currentMarketPrice - setup.entryPrice) / setup.entryPrice * 100).toFixed(2)}%`,
           });
         } else {
-          log('⚠️ No live price available, using setup price with slippage', {
+          log('! No live price available, using setup price with slippage', {
             setupPrice: setup.entryPrice,
             priceUsed: expectedEntryWithSlippage,
           });
         }
       }
     } catch (priceError) {
-      log('⚠️ Failed to get market price, using setup price with slippage', {
+      log('! Failed to get market price, using setup price with slippage', {
         error: serializeError(priceError),
       });
     }

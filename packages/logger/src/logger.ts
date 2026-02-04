@@ -15,7 +15,7 @@ export interface LoggerOptions {
   pinoInstance?: pino.Logger;
 }
 
-const isDevelopment = process.env['NODE_ENV'] === 'development';
+const isProduction = process.env['NODE_ENV'] === 'production';
 const logLevel = process.env['LOG_LEVEL'] ?? 'info';
 
 let sharedPinoInstance: pino.Logger | null = null;
@@ -24,21 +24,19 @@ const getSharedPino = (): pino.Logger => {
   if (!sharedPinoInstance) {
     sharedPinoInstance = pino({
       level: logLevel,
-      transport: isDevelopment
-        ? {
+      transport: isProduction
+        ? undefined
+        : {
             target: 'pino-pretty',
             options: {
               colorize: true,
-              translateTime: 'HH:MM:ss Z',
+              translateTime: 'HH:MM:ss',
               ignore: 'pid,hostname',
+              singleLine: true,
             },
-          }
-        : undefined,
+          },
       formatters: {
         level: (label) => ({ level: label }),
-      },
-      base: {
-        env: process.env['NODE_ENV'] ?? 'development',
       },
     });
   }

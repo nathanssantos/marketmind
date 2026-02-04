@@ -74,7 +74,7 @@ export async function clearProtectionOrderIds(
     .set(updates)
     .where(eq(tradeExecutions.id, executionId));
 
-  logger.debug({ executionId, field }, '[ExecutionManager] Cleared protection order IDs');
+  logger.trace({ executionId, field }, '[ExecutionManager] Cleared protection order IDs');
 }
 
 export async function updateProtectionOrderId(
@@ -102,7 +102,7 @@ export async function updateProtectionOrderId(
     .set(updates)
     .where(eq(tradeExecutions.id, executionId));
 
-  logger.debug({ executionId, field, newAlgoId, newTriggerPrice }, '[ExecutionManager] Updated protection order ID');
+  logger.trace({ executionId, field, newAlgoId, newTriggerPrice }, '[ExecutionManager] Updated protection order ID');
 }
 
 export interface CloseExecutionParams {
@@ -201,7 +201,7 @@ export async function cancelAndClearProtectionOrder(params: CancelAndClearParams
   const orderId = field === 'stopLoss' ? execution.stopLossOrderId : execution.takeProfitOrderId;
 
   if (!algoId && !orderId) {
-    logger.debug({ executionId: execution.id, field }, '[ExecutionManager] No order to cancel');
+    logger.trace({ executionId: execution.id, field }, '[ExecutionManager] No order to cancel');
     return true;
   }
 

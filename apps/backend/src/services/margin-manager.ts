@@ -148,7 +148,7 @@ export class MarginManagerService {
       const currentTopUpCount = execution.marginTopUpCount ?? 0;
 
       if (currentTopUpCount >= config.maxTopUps) {
-        logger.debug(
+        logger.trace(
           { executionId: execution.id, currentTopUpCount, maxTopUps: config.maxTopUps },
           '[MarginManager] Max top-ups reached for this position'
         );
@@ -215,7 +215,7 @@ export class MarginManagerService {
             topUpAmount: topUpAmount.toFixed(2),
             currentTopUpCount,
           },
-          '[MarginManager] ⚠️ Margin ratio exceeded threshold - initiating top-up'
+          '[MarginManager] ! Margin ratio exceeded threshold - initiating top-up'
         );
 
         try {
@@ -274,7 +274,7 @@ export class MarginManagerService {
               newTopUpCount: currentTopUpCount + 1,
               newWalletBalance: newBalance.toFixed(2),
             },
-            '[MarginManager] ✅ Margin top-up completed successfully'
+            '[MarginManager] ✓ Margin top-up completed successfully'
           );
         } catch (topUpError) {
           logger.error(

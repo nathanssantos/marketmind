@@ -397,7 +397,7 @@ export class AutoTradingService {
           futuresParams.reduceOnly = true;
         }
 
-        logger.debug({
+        logger.trace({
           symbol: orderParams.symbol,
           originalQuantity: orderParams.quantity,
           formattedQuantity,

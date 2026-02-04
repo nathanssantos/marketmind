@@ -15,17 +15,17 @@ const formatPercent = (value: number): string => {
 };
 
 async function runMultiWatcherBacktest() {
-  console.log('🚀 Multi-Watcher Backtest Runner');
+  console.log('> Multi-Watcher Backtest Runner');
   console.log('================================\n');
 
   const [config] = await db.select().from(autoTradingConfig).limit(1);
 
   if (!config) {
-    console.error('❌ No auto-trading config found in database');
+    console.error('✗ No auto-trading config found in database');
     process.exit(1);
   }
 
-  console.log('📋 Auto-Trading Config:');
+  console.log('> Auto-Trading Config:');
   console.log(`   - Wallet ID: ${config.walletId}`);
   console.log(`   - Position Size: ${config.positionSizePercent}%`);
   console.log(`   - Max Position Size: ${config.maxPositionSize}%`);
@@ -41,11 +41,11 @@ async function runMultiWatcherBacktest() {
     .where(eq(activeWatchers.walletId, config.walletId));
 
   if (watcherRows.length === 0) {
-    console.error('❌ No active watchers found for wallet');
+    console.error('✗ No active watchers found for wallet');
     process.exit(1);
   }
 
-  console.log(`📊 Active Watchers (${watcherRows.length}):`);
+  console.log(`> Active Watchers (${watcherRows.length}):`);
 
   const watchers: WatcherConfig[] = await Promise.all(
     watcherRows.map(async (w) => {
@@ -112,9 +112,9 @@ async function runMultiWatcherBacktest() {
   const endDateArg = process.argv.find(arg => arg.startsWith('--end='));
   const endDate = endDateArg ? endDateArg.split('=')[1]! : defaultEndDate;
 
-  console.log(`📅 Backtest Period: ${startDate} to ${endDate}`);
-  console.log(`💰 Initial Capital: $${formatCurrency(initialCapital)}`);
-  console.log(`🎯 TP Mode: ${tpMode}${tpMode === 'fibonacci' ? ` (target: ${fibonacciTargetLevelStr})` : ''}`);
+  console.log(`# Backtest Period: ${startDate} to ${endDate}`);
+  console.log(`> Initial Capital: $${formatCurrency(initialCapital)}`);
+  console.log(`> TP Mode: ${tpMode}${tpMode === 'fibonacci' ? ` (target: ${fibonacciTargetLevelStr})` : ''}`);
   if (fibonacciTpLevel || fibonacciTargetLevelNum) {
     const level = fibonacciTpLevel ?? fibonacciTargetLevelNum;
     if (level) console.log(`   Fibonacci TP Level: ${(level * 100).toFixed(1)}%`);
@@ -154,7 +154,7 @@ async function runMultiWatcherBacktest() {
     fibonacciTpLevel: fibonacciTpLevel ?? fibonacciTargetLevelNum,
   };
 
-  console.log('⏳ Running backtest... (this may take a few minutes)\n');
+  console.log('~ Running backtest... (this may take a few minutes)\n');
 
   const engine = new MultiWatcherBacktestEngine(backtestConfig);
   const startTime = Date.now();
@@ -163,16 +163,16 @@ async function runMultiWatcherBacktest() {
     const result = await engine.run();
     const duration = (Date.now() - startTime) / 1000;
 
-    console.log('\n📈 BACKTEST RESULTS');
+    console.log('\n> BACKTEST RESULTS');
     console.log('===================\n');
 
-    console.log('💵 Performance:');
+    console.log('> Performance:');
     console.log(`   - Final Equity: $${formatCurrency(initialCapital + result.metrics.totalPnl)}`);
     console.log(`   - Total P&L: $${formatCurrency(result.metrics.totalPnl)} (${formatPercent(result.metrics.totalPnlPercent)})`);
     console.log(`   - Max Drawdown: $${formatCurrency(result.metrics.maxDrawdown)} (${formatPercent(result.metrics.maxDrawdownPercent)})`);
     console.log();
 
-    console.log('📊 Trade Statistics:');
+    console.log('> Trade Statistics:');
     console.log(`   - Total Trades: ${result.metrics.totalTrades}`);
     console.log(`   - Winning: ${result.metrics.winningTrades} | Losing: ${result.metrics.losingTrades}`);
     console.log(`   - Win Rate: ${formatPercent(result.metrics.winRate)}`);
@@ -187,7 +187,7 @@ async function runMultiWatcherBacktest() {
     console.log(`   - Avg Win: ${result.metrics.avgWinDuration.toFixed(0)} min | Avg Loss: ${result.metrics.avgLossDuration.toFixed(0)} min`);
     console.log();
 
-    console.log('📋 Watcher Performance:');
+    console.log('> Watcher Performance:');
     for (const stats of result.watcherStats) {
       const winRateStr = stats.winRate > 0 ? formatPercent(stats.winRate) : 'N/A';
       console.log(`   ${stats.symbol} @ ${stats.interval}:`);
@@ -200,11 +200,11 @@ async function runMultiWatcherBacktest() {
     }
     console.log();
 
-    console.log(`✅ Backtest completed in ${duration.toFixed(1)}s`);
+    console.log(`✓ Backtest completed in ${duration.toFixed(1)}s`);
     console.log(`   Backtest ID: ${result.id}`);
 
   } catch (error) {
-    console.error('❌ Backtest failed:', error);
+    console.error('✗ Backtest failed:', error);
     process.exit(1);
   }
 

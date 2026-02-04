@@ -101,7 +101,7 @@ export const klineRouter = router({
       if (input.interval === '1y') {
         await prefetchKlines({ symbol: input.symbol, interval: '1M', targetCount: input.limit * 12, marketType });
         const yearlyKlines = await aggregateYearlyKlines(input.symbol, marketType, input.limit);
-        logger.debug({ symbol: input.symbol, interval: '1y', marketType, count: yearlyKlines.length }, 'Yearly klines aggregated from monthly data');
+        logger.trace({ symbol: input.symbol, interval: '1y', marketType, count: yearlyKlines.length }, 'Yearly klines aggregated from monthly data');
         return yearlyKlines;
       }
 

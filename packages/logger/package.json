@@ -12,7 +12,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "cli-table3": "^0.6.5",
     "pino": "^9.7.0"
   },
   "devDependencies": {

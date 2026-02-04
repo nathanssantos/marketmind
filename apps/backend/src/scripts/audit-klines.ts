@@ -68,7 +68,7 @@ const main = async () => {
     );
 
     if (!apiData) {
-      console.log(`⚠️  ${kline.openTime.toISOString()} - Not found in API`);
+      console.log(`!  ${kline.openTime.toISOString()} - Not found in API`);
       continue;
     }
 
@@ -104,7 +104,7 @@ const main = async () => {
 
     if (hasMismatch) {
       mismatches++;
-      console.log(`❌ ${kline.openTime.toISOString()}`);
+      console.log(`✗ ${kline.openTime.toISOString()}`);
       diffs.forEach(d => console.log(`   ${d}`));
 
       if (options.fix) {

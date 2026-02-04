@@ -369,7 +369,7 @@ function interpretResults(
   if (degradation < 0.15) {
     insights.push('✓ Excellent stability - minimal performance degradation');
   } else if (degradation < 0.3) {
-    insights.push('⚠ Acceptable stability - moderate performance degradation');
+    insights.push('! Acceptable stability - moderate performance degradation');
   } else {
     insights.push('✗ Poor stability - significant overfitting detected');
   }
@@ -377,7 +377,7 @@ function interpretResults(
   if (metrics.overallWinRate >= 0.55) {
     insights.push('✓ Strong win rate across all periods');
   } else if (metrics.overallWinRate >= 0.45) {
-    insights.push('⚠ Moderate win rate - consider position sizing optimization');
+    insights.push('! Moderate win rate - consider position sizing optimization');
   } else {
     insights.push('✗ Low win rate - strategy may not be viable');
   }
@@ -385,7 +385,7 @@ function interpretResults(
   if (metrics.overallProfitFactor >= 2.0) {
     insights.push('✓ Excellent profit factor');
   } else if (metrics.overallProfitFactor >= 1.5) {
-    insights.push('⚠ Acceptable profit factor');
+    insights.push('! Acceptable profit factor');
   } else {
     insights.push('✗ Poor profit factor - risk/reward needs improvement');
   }
@@ -393,7 +393,7 @@ function interpretResults(
   if (metrics.totalTrades >= 30) {
     insights.push('✓ Sufficient trade sample for statistical validity');
   } else {
-    insights.push('⚠ Limited trades - results may lack statistical significance');
+    insights.push('! Limited trades - results may lack statistical significance');
   }
 
   for (const insight of insights) {
@@ -427,7 +427,7 @@ function interpretResults(
     console.log(chalk.white('Strategy shows acceptable robustness.'));
     console.log(chalk.white('Consider additional validation on recent out-of-sample data.'));
   } else if (isRobust) {
-    console.log(chalk.yellow.bold('⚠ MARGINAL RESULTS'));
+    console.log(chalk.yellow.bold('! MARGINAL RESULTS'));
     console.log(chalk.white('Strategy is robust but performance metrics need improvement.'));
     console.log(chalk.white('Continue parameter optimization or try different strategy.'));
   } else {

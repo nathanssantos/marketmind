@@ -69,11 +69,11 @@ const loadStrategiesFilterTypes = (): void => {
             });
           }
         } catch (err) {
-          logger.debug({ file, error: err }, 'Failed to parse strategy file for filter types');
+          logger.trace({ file, error: err }, 'Failed to parse strategy file for filter types');
         }
       }
     } catch (err) {
-      logger.debug({ basePath, error: err }, 'Failed to read strategies directory');
+      logger.trace({ basePath, error: err }, 'Failed to read strategies directory');
     }
   }
 

@@ -92,7 +92,7 @@ export class SignalProcessor {
       const newWatcherIds = await this.deps.checkAllRotationsOnce();
 
       if (newWatcherIds.length > 0) {
-        log('📥 [DynamicRotation] Adding new watchers to current cycle', {
+        log('> [DynamicRotation] Adding new watchers to current cycle', {
           count: newWatcherIds.length,
           watcherIds: newWatcherIds.slice(0, 5).join(', ') + (newWatcherIds.length > 5 ? '...' : ''),
         });
@@ -190,7 +190,7 @@ export class SignalProcessor {
       result.isRecentlyRotated = isRecentlyRotated;
       return result;
     } catch (error) {
-      logBuffer.error('❌', 'Error processing watcher', {
+      logBuffer.error('✗', 'Error processing watcher', {
         error: serializeError(error),
       });
       const result = logBuffer.toResult('error', serializeError(error));
@@ -214,11 +214,11 @@ export class SignalProcessor {
     const watcherId = `${watcher.walletId}-${watcher.symbol}-${watcher.interval}-${watcher.marketType}`;
 
     if (this.deps.isWalletPaused(watcher.walletId)) {
-      logBuffer.log('⏸️', 'Wallet paused (no free capital)');
+      logBuffer.log('~', 'Wallet paused (no free capital)');
       return logBuffer.toResult('skipped', 'Wallet paused - no free capital');
     }
 
-    logBuffer.log('🔍', 'Processing watcher');
+    logBuffer.log('>', 'Processing watcher');
 
     const [walletWithConfig] = await db
       .select({
@@ -237,7 +237,7 @@ export class SignalProcessor {
 
     if (availableCapital <= TRADING_DEFAULTS.MIN_TRADE_VALUE_USD) {
       this.walletEconomyMode.set(watcher.walletId, true);
-      logBuffer.log('💤', 'Economy mode - no available capital', {
+      logBuffer.log('~', 'Economy mode - no available capital', {
         balance: walletBalance.toFixed(2),
         leverage,
         available: availableCapital.toFixed(2),
@@ -247,7 +247,7 @@ export class SignalProcessor {
 
     if (wasInEconomyMode) {
       this.walletEconomyMode.set(watcher.walletId, false);
-      logBuffer.log('🌅', 'Waking up from economy mode', {
+      logBuffer.log('>', 'Waking up from economy mode', {
         balance: walletBalance.toFixed(2),
         available: availableCapital.toFixed(2),
       });
@@ -273,7 +273,7 @@ export class SignalProcessor {
     });
 
     if (klinesData.length < minRequired) {
-      logBuffer.log('📥', 'Backfilling klines', { count: klinesData.length, required: minRequired });
+      logBuffer.log('>', 'Backfilling klines', { count: klinesData.length, required: minRequired });
 
       const result = await prefetchKlines({
         symbol: watcher.symbol,
@@ -283,14 +283,14 @@ export class SignalProcessor {
       });
 
       if (!result.success) {
-        logBuffer.error('❌', 'Failed to fetch klines', { error: result.error });
+        logBuffer.error('✗', 'Failed to fetch klines', { error: result.error });
         return logBuffer.toResult('error', 'Failed to fetch klines');
       }
 
       const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
 
       if (!meetsKlineRequirementWithTolerance(result.totalInDb, minRequired, hasReachedApiLimit)) {
-        logBuffer.warn('⚠️', 'Insufficient klines', {
+        logBuffer.warn('!', 'Insufficient klines', {
           totalInDb: result.totalInDb,
           minRequired,
           apiExhausted: hasReachedApiLimit,
@@ -337,7 +337,7 @@ export class SignalProcessor {
 
     const lastCandle = closedKlines[closedKlines.length - 1];
     if (!lastCandle) {
-      logBuffer.warn('⚠️', 'No closed candles available');
+      logBuffer.warn('!', 'No closed candles available');
       return logBuffer.toResult('skipped', 'No closed candles');
     }
 
@@ -346,7 +346,7 @@ export class SignalProcessor {
       const targetSafeTime = pendingRotation.targetCandleClose + CANDLE_CLOSE_SAFETY_BUFFER_MS;
       if (now < targetSafeTime) {
         const remainingMs = targetSafeTime - now;
-        logBuffer.log('🔄', 'Rotation sync pending', {
+        logBuffer.log('>', 'Rotation sync pending', {
           targetCandleClose: new Date(pendingRotation.targetCandleClose).toISOString(),
           remainingMs,
         });
@@ -361,7 +361,7 @@ export class SignalProcessor {
       }
 
       this.deps.deleteRotationPendingWatcher(watcherId);
-      logBuffer.log('✅', 'Rotation sync complete, processing normally');
+      logBuffer.log('✓', 'Rotation sync complete, processing normally');
     }
 
     const expectedCandleOpenTime = Math.floor(now / intervalMs) * intervalMs - intervalMs;
@@ -375,7 +375,7 @@ export class SignalProcessor {
       const waitMs = Math.max(0, safeMissingClose - now);
 
       if (waitMs > 0 && waitMs < 10000) {
-        logBuffer.log('⏳', 'Waiting for latest candle', {
+        logBuffer.log('~', 'Waiting for latest candle', {
           expected: new Date(expectedCandleOpenTime).toISOString(),
           actual: new Date(lastCandle.openTime).toISOString(),
           waitMs,
@@ -388,7 +388,7 @@ export class SignalProcessor {
         return logBuffer.toResult('pending', `Waiting for latest candle (${Math.ceil(waitMs / 1000)}s)`);
       }
 
-      logBuffer.log('📥', 'Fetching latest candle', {
+      logBuffer.log('>', 'Fetching latest candle', {
         expected: new Date(expectedCandleOpenTime).toISOString(),
         actual: new Date(lastCandle.openTime).toISOString(),
       });
@@ -425,11 +425,11 @@ export class SignalProcessor {
     }
 
     if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {
-      logBuffer.log('⏭️', 'Candle already processed');
+      logBuffer.log('~', 'Candle already processed');
       return logBuffer.toResult('skipped', 'Already processed');
     }
 
-    logBuffer.log('📊', 'Scanning for setups', {
+    logBuffer.log('>', 'Scanning for setups', {
       strategies: filteredStrategies.length,
       klines: closedKlines.length,
     });
@@ -510,7 +510,7 @@ export class SignalProcessor {
           riskReward: result.setup.riskRewardRatio?.toFixed(2) ?? '-',
         };
         logBuffer.addSetup(setupEntry);
-        logBuffer.log('📍', 'Setup detected', {
+        logBuffer.log('>', 'Setup detected', {
           type: result.setup.type,
           direction: result.setup.direction,
           confidence: result.confidence,
@@ -521,13 +521,13 @@ export class SignalProcessor {
     watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
 
     this.deps.incrementBarsForOpenTrades(watcher.symbol, watcher.interval, parseFloat(lastCandle.close)).catch((error: unknown) => {
-      logBuffer.warn('⚠️', 'Failed to increment bars for open trades', {
+      logBuffer.warn('!', 'Failed to increment bars for open trades', {
         error: serializeError(error),
       });
     });
 
     if (detectedSetups.length === 0) {
-      logBuffer.log('📭', 'No setups found');
+      logBuffer.log('·', 'No setups found');
       watcher.lastProcessedTime = Date.now();
       return logBuffer.toResult('success', undefined, closedKlines.length);
     }

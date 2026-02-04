@@ -9,10 +9,10 @@ const INITIAL_CAPITAL = 1000;
 
 async function validateRobustness() {
   console.log('═'.repeat(70));
-  console.log('🔬 VALIDAÇÃO DE ROBUSTEZ - WALK-FORWARD & MONTE CARLO');
+  console.log('> VALIDAÇÃO DE ROBUSTEZ - WALK-FORWARD & MONTE CARLO');
   console.log('═'.repeat(70));
   console.log('');
-  console.log('📋 CONFIGURAÇÃO OTIMIZADA:');
+  console.log('> CONFIGURAÇÃO OTIMIZADA:');
   console.log('   • Entry Level Fibo: 100% (breakout)');
   console.log('   • BTC Correlation Filter: ON');
   console.log('   • Volume Filter: ON');
@@ -23,7 +23,7 @@ async function validateRobustness() {
   console.log('');
 
   console.log('═'.repeat(70));
-  console.log('📊 PARTE 1: BACKTEST COMPLETO (3 anos)');
+  console.log('> PARTE 1: BACKTEST COMPLETO (3 anos)');
   console.log('═'.repeat(70));
   console.log('');
 
@@ -51,7 +51,7 @@ async function validateRobustness() {
     silent: true,
   });
 
-  console.log('🚀 Executando backtest...\n');
+  console.log('> Executando backtest...\n');
   const result = await engine.run();
 
   console.log('━'.repeat(70));
@@ -65,16 +65,16 @@ async function validateRobustness() {
   console.log('');
 
   if (result.trades.length < 10) {
-    console.log('⚠️  Poucos trades para Monte Carlo (mínimo 10). Pulando simulação.');
+    console.log('!  Poucos trades para Monte Carlo (mínimo 10). Pulando simulação.');
     process.exit(0);
   }
 
   console.log('═'.repeat(70));
-  console.log('📊 PARTE 2: MONTE CARLO SIMULATION (1000 iterações)');
+  console.log('> PARTE 2: MONTE CARLO SIMULATION (1000 iterações)');
   console.log('═'.repeat(70));
   console.log('');
 
-  console.log('🎲 Executando simulação Monte Carlo...\n');
+  console.log('> Executando simulação Monte Carlo...\n');
 
   const mcResult = MonteCarloSimulator.simulate(result.trades, INITIAL_CAPITAL, {
     numSimulations: 1000,
@@ -85,16 +85,16 @@ async function validateRobustness() {
   console.log('ESTATÍSTICAS MONTE CARLO');
   console.log('━'.repeat(70));
   console.log('');
-  console.log('📈 Equity Final:');
+  console.log('> Equity Final:');
   console.log(`   Média:   $${mcResult.statistics.meanFinalEquity.toFixed(2)}`);
   console.log(`   Mediana: $${mcResult.statistics.medianFinalEquity.toFixed(2)}`);
   console.log(`   Desvio:  $${mcResult.statistics.stdDevFinalEquity.toFixed(2)}`);
   console.log('');
-  console.log('📉 Max Drawdown:');
+  console.log('> Max Drawdown:');
   console.log(`   Média:   ${(mcResult.statistics.meanMaxDrawdown * 100).toFixed(1)}%`);
   console.log(`   Mediana: ${(mcResult.statistics.medianMaxDrawdown * 100).toFixed(1)}%`);
   console.log('');
-  console.log('📊 Retorno Total:');
+  console.log('> Retorno Total:');
   console.log(`   Média:   ${(mcResult.statistics.meanTotalReturn * 100).toFixed(1)}%`);
   console.log(`   Mediana: ${(mcResult.statistics.medianTotalReturn * 100).toFixed(1)}%`);
   console.log('');
@@ -125,13 +125,13 @@ async function validateRobustness() {
   console.log('CENÁRIOS EXTREMOS');
   console.log('━'.repeat(70));
   console.log('');
-  console.log(`🔴 Pior Caso:   Equity $${mcResult.worstCase.finalEquity.toFixed(2)} | DD ${(mcResult.worstCase.maxDrawdown * 100).toFixed(1)}% | Return ${(mcResult.worstCase.totalReturn * 100).toFixed(1)}%`);
-  console.log(`🟡 Mediana:     Equity $${mcResult.medianCase.finalEquity.toFixed(2)} | DD ${(mcResult.medianCase.maxDrawdown * 100).toFixed(1)}% | Return ${(mcResult.medianCase.totalReturn * 100).toFixed(1)}%`);
-  console.log(`🟢 Melhor Caso: Equity $${mcResult.bestCase.finalEquity.toFixed(2)} | DD ${(mcResult.bestCase.maxDrawdown * 100).toFixed(1)}% | Return ${(mcResult.bestCase.totalReturn * 100).toFixed(1)}%`);
+  console.log(`✗ Pior Caso:   Equity $${mcResult.worstCase.finalEquity.toFixed(2)} | DD ${(mcResult.worstCase.maxDrawdown * 100).toFixed(1)}% | Return ${(mcResult.worstCase.totalReturn * 100).toFixed(1)}%`);
+  console.log(`~ Mediana:     Equity $${mcResult.medianCase.finalEquity.toFixed(2)} | DD ${(mcResult.medianCase.maxDrawdown * 100).toFixed(1)}% | Return ${(mcResult.medianCase.totalReturn * 100).toFixed(1)}%`);
+  console.log(`✓ Melhor Caso: Equity $${mcResult.bestCase.finalEquity.toFixed(2)} | DD ${(mcResult.bestCase.maxDrawdown * 100).toFixed(1)}% | Return ${(mcResult.bestCase.totalReturn * 100).toFixed(1)}%`);
   console.log('');
 
   console.log('═'.repeat(70));
-  console.log('✅ VALIDAÇÃO DE ROBUSTEZ');
+  console.log('✓ VALIDAÇÃO DE ROBUSTEZ');
   console.log('═'.repeat(70));
   console.log('');
 
@@ -164,14 +164,14 @@ async function validateRobustness() {
   ];
 
   for (const check of checks) {
-    console.log(`${check.pass ? '✅' : '❌'} ${check.name}: ${check.value}`);
+    console.log(`${check.pass ? '✓' : '✗'} ${check.name}: ${check.value}`);
   }
 
   console.log('');
   if (isRobust) {
-    console.log('🎉 CONFIGURAÇÃO ROBUSTA - Aprovada para produção!');
+    console.log('✓ CONFIGURAÇÃO ROBUSTA - Aprovada para produção!');
   } else {
-    console.log('⚠️  CONFIGURAÇÃO PRECISA DE AJUSTES - Revisar parâmetros');
+    console.log('!  CONFIGURAÇÃO PRECISA DE AJUSTES - Revisar parâmetros');
   }
 
   process.exit(0);

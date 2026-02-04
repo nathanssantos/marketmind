@@ -32,11 +32,11 @@ export class WatcherManager {
 
   pauseWatchersForWallet(walletId: string, reason: string): void {
     if (this.pausedWallets.has(walletId)) {
-      log('⏸️ Wallet already paused', { walletId });
+      log('~ Wallet already paused', { walletId });
       return;
     }
     this.pausedWallets.set(walletId, { pausedAt: new Date(), reason });
-    log('⏸️ Watchers paused for wallet', { walletId, reason });
+    log('~ Watchers paused for wallet', { walletId, reason });
   }
 
   resumeWatchersForWallet(walletId: string): void {
@@ -45,7 +45,7 @@ export class WatcherManager {
 
     this.pausedWallets.delete(walletId);
     const pausedDuration = Date.now() - pauseInfo.pausedAt.getTime();
-    log('▶️ Watchers resumed for wallet', { walletId, wasReason: pauseInfo.reason, pausedDurationMs: pausedDuration });
+    log('✓ Watchers resumed for wallet', { walletId, wasReason: pauseInfo.reason, pausedDurationMs: pausedDuration });
   }
 
   isWalletPaused(walletId: string): boolean {
@@ -80,18 +80,18 @@ export class WatcherManager {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
     if (this.activeWatchers.has(watcherId)) {
-      if (!silent) log('⚠️ Watcher already exists', { watcherId });
+      if (!silent) log('! Watcher already exists', { watcherId });
       return;
     }
 
     const config = await this.deps.getCachedConfig(walletId, userId);
 
     if (!config || !(config as { isEnabled?: boolean }).isEnabled) {
-      if (!silent) log('⚠️ Auto-trading not enabled for wallet', { walletId });
+      if (!silent) log('! Auto-trading not enabled for wallet', { walletId });
       await db
         .delete(activeWatchersTable)
         .where(eq(activeWatchersTable.walletId, walletId));
-      if (!silent) log('🗑️ Removed stale watcher from database', { walletId });
+      if (!silent) log('✗ Removed stale watcher from database', { walletId });
       return;
     }
 
@@ -111,7 +111,7 @@ export class WatcherManager {
         enabledStrategies = JSON.parse(profile.enabledSetupTypes) as string[];
         profileName = profile.name;
       } else {
-        if (!silent) log('⚠️ Profile not found, falling back to global config', { profileId });
+        if (!silent) log('! Profile not found, falling back to global config', { profileId });
         enabledStrategies = JSON.parse(configWithStrategies.enabledSetupTypes ?? '[]') as string[];
       }
     } else {
@@ -119,7 +119,7 @@ export class WatcherManager {
     }
 
     if (enabledStrategies.length === 0) {
-      if (!silent) log('⚠️ No strategies enabled', { walletId, enabledStrategies, profileId });
+      if (!silent) log('! No strategies enabled', { walletId, enabledStrategies, profileId });
       return;
     }
 
@@ -183,7 +183,7 @@ export class WatcherManager {
     const lastProcessedCandleOpenTime = currentCandleOpenTime - (intervalMs * candlesBack);
 
     if (isFromRotation && !silent) {
-      log('🔄 [Rotation] Watcher initialized for rotation', {
+      log('> [Rotation] Watcher initialized for rotation', {
         watcherId,
         targetCandleClose: new Date(targetCandleClose).toISOString(),
         lastProcessedCandleOpenTime: new Date(lastProcessedCandleOpenTime).toISOString(),
@@ -222,7 +222,7 @@ export class WatcherManager {
     const watcher = this.activeWatchers.get(watcherId);
 
     if (!watcher) {
-      log('⚠️ Watcher not found', { watcherId });
+      log('! Watcher not found', { watcherId });
       return;
     }
 
@@ -236,7 +236,7 @@ export class WatcherManager {
     } else {
       binanceKlineStreamService.unsubscribe(symbol, interval);
     }
-    log('📊 Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
+    log('> Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
 
     await this.deps.cleanupBtcKlineStreamIfNeeded(interval, marketType);
 
@@ -251,7 +251,7 @@ export class WatcherManager {
         )
       );
 
-    log('🔴 Watcher stopped', { watcherId, marketType });
+    log('✗ Watcher stopped', { watcherId, marketType });
   }
 
   async stopAllWatchersForWallet(walletId: string): Promise<void> {
@@ -275,11 +275,11 @@ export class WatcherManager {
       .delete(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
-    log('🔴 All watchers stopped for wallet', { walletId, count: watchersToStop.length });
+    log('✗ All watchers stopped for wallet', { walletId, count: watchersToStop.length });
 
     if (this.activeWatchers.size === 0) {
       this.deps.clearCaches();
-      log('🧹 Caches cleared - no active watchers');
+      log('>Caches cleared - no active watchers');
     }
   }
 

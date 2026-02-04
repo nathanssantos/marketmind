@@ -44,7 +44,7 @@ export class BtcStreamManager {
       const klineMaintenance = getKlineMaintenance();
       await klineMaintenance.forceCheckSymbol('BTCUSDT', interval as Interval, marketType);
     } catch (error) {
-      log('⚠️ [BTC Correlation] Maintenance check failed for BTCUSDT', { error: serializeError(error) });
+      log('! [BTC Correlation] Maintenance check failed for BTCUSDT', { error: serializeError(error) });
     }
 
     const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('../binance-kline-stream');
@@ -82,7 +82,7 @@ export class BtcStreamManager {
     }
 
     this.btcStreamSubscribed.delete(btcKey);
-    log('📊 Unsubscribed from BTCUSDT kline stream (no more watchers)', { interval, marketType });
+    log('> Unsubscribed from BTCUSDT kline stream (no more watchers)', { interval, marketType });
   }
 
   isStreamSubscribed(symbol: string, interval: string, marketType: MarketType): boolean {

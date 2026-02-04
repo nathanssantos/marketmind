@@ -49,7 +49,7 @@ export class BinanceUserStreamService {
   private readonly LISTEN_KEY_REFRESH_INTERVAL = 30 * TIME_MS.MINUTE;
 
   async start(): Promise<void> {
-    logger.debug('Starting Binance User Stream service');
+    logger.trace('Starting Binance User Stream service');
     await this.subscribeAllActiveWallets();
 
     setInterval(() => {
@@ -153,7 +153,7 @@ export class BinanceUserStreamService {
     try {
       const client = createBinanceClient(wallet);
       await client.keepAliveSpotUserDataListenKey(listenKey);
-      logger.debug({ walletId: wallet.id }, 'Listen key refreshed');
+      logger.trace({ walletId: wallet.id }, 'Listen key refreshed');
     } catch (error) {
       logger.error({
         walletId: wallet.id,
@@ -214,7 +214,7 @@ export class BinanceUserStreamService {
             symbol,
             orderId,
             fillPrice,
-          }, '✅ Pending LIMIT order FILLED via WebSocket - activating position');
+          }, '✓ Pending LIMIT order FILLED via WebSocket - activating position');
 
           await db
             .update(tradeExecutions)
@@ -326,7 +326,7 @@ export class BinanceUserStreamService {
           pnl,
           oldBalance: currentBalance,
           newBalance,
-        }, '💰 Wallet balance updated via user stream');
+        }, '> Wallet balance updated via user stream');
 
         await db
           .update(tradeExecutions)

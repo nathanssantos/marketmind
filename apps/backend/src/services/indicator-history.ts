@@ -40,7 +40,7 @@ export class IndicatorHistoryService {
 
       this.cache.delete(indicatorType);
 
-      logger.debug({
+      logger.trace({
         indicatorType,
         value: value.toFixed(2),
       }, '[IndicatorHistory] Value saved');

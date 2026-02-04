@@ -7,10 +7,10 @@ const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
 
 async function validate() {
   console.log('═'.repeat(70));
-  console.log('🔬 VALIDAÇÃO DA CONFIGURAÇÃO OTIMIZADA');
+  console.log('> VALIDAÇÃO DA CONFIGURAÇÃO OTIMIZADA');
   console.log('═'.repeat(70));
   console.log('');
-  console.log('📋 CONFIGURAÇÃO:');
+  console.log('> CONFIGURAÇÃO:');
   console.log('   • Entry Level Fibo: 100% (breakout)');
   console.log('   • BTC Correlation Filter: HABILITADO');
   console.log('   • Volume Filter: HABILITADO');
@@ -47,7 +47,7 @@ async function validate() {
     silent: true,
   });
 
-  console.log('🚀 Iniciando backtest...\n');
+  console.log('> Iniciando backtest...\n');
   const startTime = Date.now();
 
   const result = await engine.run();
@@ -62,7 +62,7 @@ async function validate() {
   const shortWins = shortTrades.filter((t) => (t.netPnl || 0) > 0).length;
 
   console.log('═'.repeat(70));
-  console.log('📊 RESULTADOS');
+  console.log('> RESULTADOS');
   console.log('═'.repeat(70));
   console.log('');
   console.log(`⏱️  Tempo de execução: ${elapsed}s`);
@@ -122,7 +122,7 @@ async function validate() {
 
   console.log('');
   console.log('═'.repeat(70));
-  console.log('✅ VALIDAÇÃO CONCLUÍDA');
+  console.log('✓ VALIDAÇÃO CONCLUÍDA');
   console.log('═'.repeat(70));
 
   const pnlTarget = 4500;
@@ -135,15 +135,15 @@ async function validate() {
 
   console.log('');
   console.log('TARGETS:');
-  console.log(`  P&L >= $${pnlTarget}:     ${pnlOk ? '✅ PASS' : '❌ FAIL'} ($${result.metrics.totalPnl.toFixed(0)})`);
-  console.log(`  DD <= ${ddTarget}%:       ${ddOk ? '✅ PASS' : '❌ FAIL'} (${result.metrics.maxDrawdownPercent.toFixed(1)}%)`);
-  console.log(`  WR >= ${wrTarget}%:       ${wrOk ? '✅ PASS' : '❌ FAIL'} (${result.metrics.winRate.toFixed(1)}%)`);
+  console.log(`  P&L >= $${pnlTarget}:     ${pnlOk ? '✓ PASS' : '✗ FAIL'} ($${result.metrics.totalPnl.toFixed(0)})`);
+  console.log(`  DD <= ${ddTarget}%:       ${ddOk ? '✓ PASS' : '✗ FAIL'} (${result.metrics.maxDrawdownPercent.toFixed(1)}%)`);
+  console.log(`  WR >= ${wrTarget}%:       ${wrOk ? '✓ PASS' : '✗ FAIL'} (${result.metrics.winRate.toFixed(1)}%)`);
   console.log('');
 
   if (pnlOk && ddOk && wrOk) {
-    console.log('🎉 CONFIGURAÇÃO VALIDADA COM SUCESSO!');
+    console.log('✓ CONFIGURAÇÃO VALIDADA COM SUCESSO!');
   } else {
-    console.log('⚠️  Alguns targets não foram atingidos. Revisar configuração.');
+    console.log('!  Alguns targets não foram atingidos. Revisar configuração.');
   }
 
   process.exit(0);

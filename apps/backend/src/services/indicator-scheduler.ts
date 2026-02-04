@@ -46,7 +46,7 @@ class IndicatorSchedulerService {
 
   private async saveSnapshot(): Promise<void> {
     if (this.isSaving) {
-      logger.debug('[IndicatorScheduler] Skip - already saving');
+      logger.trace('[IndicatorScheduler] Skip - already saving');
       return;
     }
 

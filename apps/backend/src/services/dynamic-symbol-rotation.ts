@@ -365,7 +365,7 @@ export class DynamicSymbolRotationService {
           symbolsAfterCapitalFilter,
           btcTrend,
           filterReason,
-        }, `[DynamicRotation] ⚠️ All symbols filtered by ${filterReason} - keeping existing watchers`);
+        }, `[DynamicRotation] ! All symbols filtered by ${filterReason} - keeping existing watchers`);
       }
 
       const targetCount = currentSymbols.size === 0 ? config.limit : currentSymbols.size;

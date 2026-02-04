@@ -89,7 +89,7 @@ interface ActiveWatcher {
 const getPollingIntervalForTimeframe = (interval: string): number => {
   const intervalMs = INTERVAL_MS[interval as Interval];
   if (!intervalMs) {
-    log(`⚠️ Unknown interval ${interval}, defaulting to 1 minute polling`);
+    log(`! Unknown interval ${interval}, defaulting to 1 minute polling`);
     return TIME_MS.MINUTE;
   }
   return Math.max(intervalMs, TIME_MS.MINUTE);
@@ -197,11 +197,11 @@ export class AutoTradingScheduler {
 
   pauseWatchersForWallet(walletId: string, reason: string): void {
     if (this.pausedWallets.has(walletId)) {
-      log('⏸️ [Scheduler] Wallet already paused', { walletId });
+      log('~ [Scheduler] Wallet already paused', { walletId });
       return;
     }
     this.pausedWallets.set(walletId, { pausedAt: new Date(), reason });
-    log('⏸️ [Scheduler] Watchers paused for wallet', { walletId, reason });
+    log('~ [Scheduler] Watchers paused for wallet', { walletId, reason });
   }
 
   resumeWatchersForWallet(walletId: string): void {
@@ -210,7 +210,7 @@ export class AutoTradingScheduler {
 
     this.pausedWallets.delete(walletId);
     const pausedDurationMs = Date.now() - pauseInfo.pausedAt.getTime();
-    log('▶️ [Scheduler] Watchers resumed for wallet', { walletId, wasReason: pauseInfo.reason, pausedDurationMs });
+    log('✓ [Scheduler] Watchers resumed for wallet', { walletId, wasReason: pauseInfo.reason, pausedDurationMs });
   }
 
   isWalletPaused(walletId: string): boolean {
@@ -345,7 +345,7 @@ export class AutoTradingScheduler {
       const klineMaintenance = getKlineMaintenance();
       await klineMaintenance.forceCheckSymbol('BTCUSDT', interval as Interval, marketType);
     } catch (error) {
-      log('⚠️ [BTC Correlation] Maintenance check failed for BTCUSDT', { error: serializeError(error) });
+      log('! [BTC Correlation] Maintenance check failed for BTCUSDT', { error: serializeError(error) });
     }
 
     const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
@@ -382,7 +382,7 @@ export class AutoTradingScheduler {
     }
 
     this.btcStreamSubscribed.delete(btcKey);
-    log('📊 Unsubscribed from BTCUSDT kline stream (no more watchers)', { interval, marketType });
+    log('> Unsubscribed from BTCUSDT kline stream (no more watchers)', { interval, marketType });
   }
 
   private async getCachedConfig(walletId: string, userId?: string): Promise<typeof autoTradingConfig.$inferSelect | null> {
@@ -445,7 +445,7 @@ export class AutoTradingScheduler {
     clearInterval(this.anticipationCheckIntervalId);
     this.anticipationCheckIntervalId = null;
 
-    log('⏹️ [DynamicRotation] Stopped anticipation timer');
+    log('✗ [DynamicRotation] Stopped anticipation timer');
   }
 
   private async checkAnticipatedRotations(): Promise<void> {
@@ -465,7 +465,7 @@ export class AutoTradingScheduler {
                                  timeUntilCurrentClose >= MIN_ROTATION_PREPARATION_TIME_MS;
 
       if (isInRotationWindow && state.lastRotationCandleClose !== currentCandleClose) {
-        log('🔮 [DynamicRotation] Anticipating rotation', {
+        log('> [DynamicRotation] Anticipating rotation', {
           stateKey,
           interval: state.config.interval,
           marketType: state.config.marketType,
@@ -498,7 +498,7 @@ export class AutoTradingScheduler {
           );
 
           if (result.added.length > 0 || result.removed.length > 0) {
-            log('🔮 [DynamicRotation] Applying anticipated rotation', {
+            log('> [DynamicRotation] Applying anticipated rotation', {
               walletId,
               added: result.added.length,
               removed: result.removed.length,
@@ -518,7 +518,7 @@ export class AutoTradingScheduler {
 
           state.lastRotationCandleClose = currentCandleClose;
         } catch (error) {
-          log('❌ [DynamicRotation] Anticipated rotation failed', {
+          log('✗ [DynamicRotation] Anticipated rotation failed', {
             stateKey,
             error: serializeError(error),
           });
@@ -556,7 +556,7 @@ export class AutoTradingScheduler {
       return allAddedWatcherIds;
     }
 
-    log('🔄 [DynamicRotation] Checking rotations', {
+    log('> [DynamicRotation] Checking rotations', {
       count: rotationsToExecute.length,
       wallets: rotationsToExecute.map(r => r.state.config.marketType).join(', '),
       anticipated: rotationsToExecute.filter(r => r.isAnticipated).length,
@@ -588,7 +588,7 @@ export class AutoTradingScheduler {
         );
 
         if (result.added.length > 0 || result.removed.length > 0) {
-          log('🔄 [DynamicRotation] Applying rotation', {
+          log('> [DynamicRotation] Applying rotation', {
             walletId,
             added: result.added.length,
             removed: result.removed.length,
@@ -611,7 +611,7 @@ export class AutoTradingScheduler {
         state.lastCandleCloseTime = getCandleCloseTime(state.config.interval, now);
         state.lastRotationCandleClose = targetCandleClose;
       } catch (error) {
-        log('❌ [DynamicRotation] Rotation check failed', {
+        log('✗ [DynamicRotation] Rotation check failed', {
           stateKey,
           error: serializeError(error),
         });
@@ -644,7 +644,7 @@ export class AutoTradingScheduler {
     });
 
     if (symbolsToAdd.length > 0) {
-      log('📥 [DynamicRotation] Backfilling new symbols', {
+      log('> [DynamicRotation] Backfilling new symbols', {
         count: symbolsToAdd.length,
         symbols: symbolsToAdd.join(', '),
         targetCandleClose: targetCandleClose ? new Date(targetCandleClose).toISOString() : 'not set',
@@ -656,7 +656,7 @@ export class AutoTradingScheduler {
 
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          log('📥 [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
+          log('> [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
           const prefetchResult = await prefetchKlines({
             symbol,
             interval,
@@ -665,7 +665,7 @@ export class AutoTradingScheduler {
             silent: false,
             forRotation: true,
           });
-          log('📊 [DynamicRotation] Prefetch result', {
+          log('> [DynamicRotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
             downloaded: prefetchResult.downloaded,
@@ -759,18 +759,18 @@ export class AutoTradingScheduler {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
     if (this.activeWatchers.has(watcherId)) {
-      if (!silent) log('⚠️ Watcher already exists', { watcherId });
+      if (!silent) log('! Watcher already exists', { watcherId });
       return;
     }
 
     const config = await this.getCachedConfig(walletId, userId);
 
     if (!config?.isEnabled) {
-      if (!silent) log('⚠️ Auto-trading not enabled for wallet', { walletId });
+      if (!silent) log('! Auto-trading not enabled for wallet', { walletId });
       await db
         .delete(activeWatchersTable)
         .where(eq(activeWatchersTable.walletId, walletId));
-      if (!silent) log('🗑️ Removed stale watcher from database', { walletId });
+      if (!silent) log('✗ Removed stale watcher from database', { walletId });
       return;
     }
 
@@ -788,7 +788,7 @@ export class AutoTradingScheduler {
         enabledStrategies = JSON.parse(profile.enabledSetupTypes) as string[];
         profileName = profile.name;
       } else {
-        if (!silent) log('⚠️ Profile not found, falling back to global config', { profileId });
+        if (!silent) log('! Profile not found, falling back to global config', { profileId });
         enabledStrategies = JSON.parse(config.enabledSetupTypes) as string[];
       }
     } else {
@@ -796,7 +796,7 @@ export class AutoTradingScheduler {
     }
 
     if (enabledStrategies.length === 0) {
-      if (!silent) log('⚠️ No strategies enabled', { walletId, enabledStrategies, profileId });
+      if (!silent) log('! No strategies enabled', { walletId, enabledStrategies, profileId });
       return;
     }
 
@@ -860,7 +860,7 @@ export class AutoTradingScheduler {
     const lastProcessedCandleOpenTime = currentCandleOpenTime - (intervalMs * candlesBack);
 
     if (isFromRotation && !silent) {
-      log('🔄 [Rotation] Watcher initialized for rotation', {
+      log('> [Rotation] Watcher initialized for rotation', {
         watcherId,
         targetCandleClose: new Date(targetCandleClose).toISOString(),
         lastProcessedCandleOpenTime: new Date(lastProcessedCandleOpenTime).toISOString(),
@@ -900,7 +900,7 @@ export class AutoTradingScheduler {
     const watcher = this.activeWatchers.get(watcherId);
 
     if (!watcher) {
-      log('⚠️ Watcher not found', { watcherId });
+      log('! Watcher not found', { watcherId });
       return;
     }
 
@@ -914,7 +914,7 @@ export class AutoTradingScheduler {
     } else {
       binanceKlineStreamService.unsubscribe(symbol, interval);
     }
-    log('📊 Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
+    log('> Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
 
     await this.cleanupBtcKlineStreamIfNeeded(interval, marketType);
 
@@ -929,7 +929,7 @@ export class AutoTradingScheduler {
         )
       );
 
-    log('🔴 Watcher stopped', { watcherId, marketType });
+    log('✗ Watcher stopped', { watcherId, marketType });
   }
 
   async stopAllWatchersForWallet(walletId: string): Promise<void> {
@@ -953,11 +953,11 @@ export class AutoTradingScheduler {
       .delete(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
-    log('🔴 All watchers stopped for wallet', { walletId, count: watchersToStop.length });
+    log('✗ All watchers stopped for wallet', { walletId, count: watchersToStop.length });
 
     if (this.activeWatchers.size === 0) {
       this.clearCaches();
-      log('🧹 Caches cleared - no active watchers');
+      log('>Caches cleared - no active watchers');
     }
   }
 
@@ -1153,7 +1153,7 @@ export class AutoTradingScheduler {
     }
 
     if (dynamicWatchersByWallet.size === 0) {
-      log('📊 [Startup] No dynamic watchers to restore rotation for');
+      log('> [Startup] No dynamic watchers to restore rotation for');
       return;
     }
 
@@ -1198,7 +1198,7 @@ export class AutoTradingScheduler {
         });
         restoredCount++;
       } catch (error) {
-        log('⚠️ [Startup] Failed to restore rotation', {
+        log('! [Startup] Failed to restore rotation', {
           walletId,
           interval: watcherInfo.interval,
           error: serializeError(error),
@@ -1226,7 +1226,7 @@ export class AutoTradingScheduler {
     }
   ): Promise<void> {
     if (!config.useDynamicSymbolSelection) {
-      log('ℹ️ Dynamic symbol selection is disabled', { walletId });
+      log('· Dynamic symbol selection is disabled', { walletId });
       return;
     }
 
@@ -1273,7 +1273,7 @@ export class AutoTradingScheduler {
 
       this.startAnticipationTimer();
     } else {
-      log('ℹ️ Auto rotation disabled - manual rotation only', { walletId });
+      log('· Auto rotation disabled - manual rotation only', { walletId });
     }
   }
 
@@ -1286,7 +1286,7 @@ export class AutoTradingScheduler {
     }
 
     if (keysToDelete.length === 0) {
-      log('ℹ️ No active rotation for wallet', { walletId });
+      log('· No active rotation for wallet', { walletId });
       return;
     }
 
@@ -1314,12 +1314,12 @@ export class AutoTradingScheduler {
         await this.stopWatcher(watcher.walletId, watcher.symbol, watcher.interval, watcher.marketType as MarketType);
       }
 
-      log('🛑 Stopped dynamic rotation and removed dynamic watchers', {
+      log('✗ Stopped dynamic rotation and removed dynamic watchers', {
         walletId,
         watchersRemoved: dynamicWatchers.length,
       });
     } else {
-      log('🛑 Stopped dynamic rotation (kept existing watchers)', { walletId });
+      log('✗ Stopped dynamic rotation (kept existing watchers)', { walletId });
     }
   }
 
@@ -1373,7 +1373,7 @@ export class AutoTradingScheduler {
     }
 
     if (symbolsToAdd.length > 0) {
-      log('📥 [Rotation] Backfilling new symbols', {
+      log('> [Rotation] Backfilling new symbols', {
         count: symbolsToAdd.length,
         symbols: symbolsToAdd.join(', '),
       });
@@ -1382,9 +1382,9 @@ export class AutoTradingScheduler {
 
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          log('📥 [Rotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForApply });
+          log('> [Rotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForApply });
           const prefetchResult = await prefetchKlines({ symbol, interval, marketType, targetCount: requiredKlinesForApply, silent: false });
-          log('📊 [Rotation] Prefetch result', {
+          log('> [Rotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
             downloaded: prefetchResult.downloaded,
@@ -1429,7 +1429,7 @@ export class AutoTradingScheduler {
     }
 
     if (validations.length > 0) {
-      log('🔧 [Rotation] Kline validations completed', {
+      log('# [Rotation] Kline validations completed', {
         symbols: validations.map(v => v.symbol).join(', '),
         totalGapsFilled: validations.reduce((sum, v) => sum + v.gapsFilled, 0),
         totalCorruptedFixed: validations.reduce((sum, v) => sum + v.corruptedFixed, 0),

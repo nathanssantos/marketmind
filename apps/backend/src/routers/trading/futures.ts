@@ -421,7 +421,7 @@ export const futuresRouter = router({
           side: input.side,
           leverage: input.leverage,
           riskRewardRatio: riskRewardRatio.toFixed(2),
-        }, '✅ Risk/Reward ratio validated for futures position');
+        }, '✓ Risk/Reward ratio validated for futures position');
       }
 
       const positionId = generateEntityId();

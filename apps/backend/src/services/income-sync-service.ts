@@ -75,7 +75,7 @@ class IncomeSyncService {
       const realWallets = liveWallets.filter(w => !isPaperWallet(w));
 
       if (realWallets.length === 0) {
-        logger.debug('[IncomeSyncService] No live futures wallets to sync');
+        logger.trace('[IncomeSyncService] No live futures wallets to sync');
         return results;
       }
 
@@ -273,7 +273,7 @@ class IncomeSyncService {
       )
       .orderBy(desc(tradeExecutions.createdAt));
 
-    logger.debug({
+    logger.trace({
       walletId,
       tradesFound: recentTrades.length,
       commissionSymbols: Array.from(symbolCommissions.keys()),
@@ -285,7 +285,7 @@ class IncomeSyncService {
       const fundingData = symbolFunding.get(trade.symbol);
 
       if (!commissionData && !fundingData) {
-        logger.debug({
+        logger.trace({
           tradeId: trade.id,
           symbol: trade.symbol,
           availableSymbols: [...symbolCommissions.keys(), ...symbolFunding.keys()],

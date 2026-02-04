@@ -218,7 +218,7 @@ export class OpportunityCostManagerService {
       .set(updateData)
       .where(eq(tradeExecutions.id, executionId));
 
-    logger.debug({
+    logger.trace({
       executionId,
       symbol: execution.symbol,
       newBarsInTrade,

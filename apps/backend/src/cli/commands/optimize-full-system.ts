@@ -191,7 +191,7 @@ export async function optimizeFullSystemCommand(options: OptimizeFullSystemOptio
       if (best.walkForwardValidated === true) {
         console.log(chalk.green.bold('✓ WALK-FORWARD VALIDATED:') + chalk.white(' Strategy is robust'));
       } else if (best.walkForwardValidated === false) {
-        console.log(chalk.yellow.bold('⚠ WALK-FORWARD WARNING:') + chalk.white(' Strategy may be overfit'));
+        console.log(chalk.yellow.bold('! WALK-FORWARD WARNING:') + chalk.white(' Strategy may be overfit'));
       }
       console.log('');
     }

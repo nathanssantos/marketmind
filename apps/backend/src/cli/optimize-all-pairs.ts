@@ -147,11 +147,11 @@ const printProgress = (current: number, total: number, startTime: number) => {
   const barLength = 30;
   const filled = Math.round((current / total) * barLength);
   const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
-  process.stdout.write(`\r⏳ [${bar}] ${current}/${total} (${percent.toFixed(0)}%) ETA: ${eta.toFixed(0)}s    `);
+  process.stdout.write(`\r~ [${bar}] ${current}/${total} (${percent.toFixed(0)}%) ETA: ${eta.toFixed(0)}s    `);
 };
 
 async function runOptimization() {
-  console.log('🔬 ALL FILTER PAIR COMBINATIONS OPTIMIZER');
+  console.log('> ALL FILTER PAIR COMBINATIONS OPTIMIZER');
   console.log('==========================================\n');
 
   const { symbol, interval, startDate, endDate } = parseCliArgs();
@@ -166,9 +166,9 @@ async function runOptimization() {
     },
   ];
 
-  console.log(`📊 Symbol: ${symbol}@${interval} (FUTURES)`);
-  console.log(`📅 Period: ${startDate} to ${endDate}`);
-  console.log(`🔍 Tests to run: ${configs.length}`);
+  console.log(`> Symbol: ${symbol}@${interval} (FUTURES)`);
+  console.log(`# Period: ${startDate} to ${endDate}`);
+  console.log(`> Tests to run: ${configs.length}`);
   console.log(`   • Baseline: 2 configs`);
   console.log(`   • Single filter + Fib: ${FILTER_KEYS.length} configs`);
   console.log(`   • All pairs (with/without Fib): ${FILTER_KEYS.length * (FILTER_KEYS.length - 1)} configs\n`);
@@ -252,7 +252,7 @@ async function runOptimization() {
     timestamp: new Date().toISOString(),
   }, null, 2));
 
-  console.log(`\n💾 Results saved to: ${outputFile}`);
+  console.log(`\n> Results saved to: ${outputFile}`);
   process.exit(0);
 }
 
@@ -260,7 +260,7 @@ function printResults(results: TestResult[]) {
   const baseline = results.find(r => r.name === 'Baseline (no filters)')!;
 
   console.log('═'.repeat(140));
-  console.log('📊 ALL PAIR COMBINATIONS SORTED BY P&L');
+  console.log('> ALL PAIR COMBINATIONS SORTED BY P&L');
   console.log('═'.repeat(140) + '\n');
 
   console.log('Rank  Combination                                      P&L          P&L%    Trades   WinRate    PF    MaxDD    LONG P&L    SHORT P&L   vs Base');
@@ -283,7 +283,7 @@ function printResults(results: TestResult[]) {
     const diffPnl = r.pnl - baseline.pnl;
     const diffStr = `${diffPnl >= 0 ? '+' : ''}$${formatCurrency(diffPnl)}`.padStart(10);
 
-    const marker = i === 0 ? '🏆' : i < 3 ? '🥈' : i < 5 ? '🥉' : '  ';
+    const marker = i === 0 ? '>' : i < 3 ? '#2' : i < 5 ? '#3' : '  ';
 
     console.log(`${marker}${rank}${nameStr} ${pnlStr} ${pnlPctStr} ${tradesStr} ${wrStr} ${pfStr} ${ddStr} ${longPnlStr} ${shortPnlStr} ${diffStr}`);
   }
@@ -294,24 +294,24 @@ function printResults(results: TestResult[]) {
   const trendAdxFibResult = sortedResults.find(r => r.filters.includes('TrendEMA') && r.filters.includes('ADX') && r.filters.includes('Fib'));
 
   console.log('\n' + '═'.repeat(80));
-  console.log('🎯 TRENDEMA + ADX ANALYSIS');
+  console.log('> TRENDEMA + ADX ANALYSIS');
   console.log('═'.repeat(80) + '\n');
 
   if (trendAdxResult) {
-    console.log(`📌 TrendEMA + ADX (no Fib):`);
+    console.log(`> TrendEMA + ADX (no Fib):`);
     console.log(`   P&L: $${formatCurrency(trendAdxResult.pnl)} | WR: ${formatPercent(trendAdxResult.winRate)} | PF: ${trendAdxResult.profitFactor.toFixed(2)}`);
     console.log(`   vs Baseline: ${trendAdxResult.pnl - baseline.pnl >= 0 ? '+' : ''}$${formatCurrency(trendAdxResult.pnl - baseline.pnl)}`);
   }
 
   if (trendAdxFibResult) {
-    console.log(`\n📌 TrendEMA + ADX (with Fib):`);
+    console.log(`\n> TrendEMA + ADX (with Fib):`);
     console.log(`   P&L: $${formatCurrency(trendAdxFibResult.pnl)} | WR: ${formatPercent(trendAdxFibResult.winRate)} | PF: ${trendAdxFibResult.profitFactor.toFixed(2)}`);
     console.log(`   vs Baseline: ${trendAdxFibResult.pnl - baseline.pnl >= 0 ? '+' : ''}$${formatCurrency(trendAdxFibResult.pnl - baseline.pnl)}`);
   }
 
   const best = sortedResults[0]!;
   console.log('\n' + '═'.repeat(80));
-  console.log('🏆 BEST COMBINATION');
+  console.log('> BEST COMBINATION');
   console.log('═'.repeat(80) + '\n');
 
   console.log(`   ${best.name}`);
@@ -321,7 +321,7 @@ function printResults(results: TestResult[]) {
   console.log(`   LONG: $${formatCurrency(best.longPnl)} (${best.longTrades}) | SHORT: $${formatCurrency(best.shortPnl)} (${best.shortTrades})`);
 
   const top10 = sortedResults.slice(0, 10);
-  console.log('\n📊 TOP 10 COMBINATIONS:');
+  console.log('\n> TOP 10 COMBINATIONS:');
   for (let i = 0; i < top10.length; i++) {
     const r = top10[i]!;
     console.log(`   ${i + 1}. ${r.name}: $${formatCurrency(r.pnl)} (${formatPercent(r.winRate)} WR)`);

@@ -100,7 +100,7 @@ async function compare() {
 
   for (const filterCfg of FILTER_CONFIGS) {
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`🔄 Testando: ${filterCfg.name}`);
+    console.log(`> Testando: ${filterCfg.name}`);
     console.log(`${'═'.repeat(60)}\n`);
 
     const baseConfig = createBaseConfig();
@@ -164,7 +164,7 @@ async function compare() {
     });
 
     console.log('━'.repeat(60));
-    console.log(`📊 ${filterCfg.name}`);
+    console.log(`> ${filterCfg.name}`);
     console.log('━'.repeat(60));
     console.log('');
     console.log('Total Trades:', result.metrics.totalTrades);
@@ -184,7 +184,7 @@ async function compare() {
   }
 
   console.log('\n' + '═'.repeat(80));
-  console.log('📊 RESUMO COMPARATIVO (ordenado por P&L)');
+  console.log('> RESUMO COMPARATIVO (ordenado por P&L)');
   console.log('═'.repeat(80));
   console.log('');
 
@@ -194,7 +194,7 @@ async function compare() {
   console.log('|---|--------------------------------|------------|---------|--------|--------|-------|--------|');
 
   sortedResults.forEach((r, i) => {
-    const rank = i === 0 ? '🏆' : `${i + 1}`;
+    const rank = i === 0 ? '>' : `${i + 1}`;
     console.log(
       `| ${rank.padEnd(2)}| ${r.name.padEnd(30)} | $${r.totalPnl.toFixed(0).padStart(9)} | ${r.totalPnlPercent.toFixed(1).padStart(6)}% | ${r.winRate.toFixed(1).padStart(5)}% | ${r.maxDrawdown.toFixed(1).padStart(5)}% | ${r.profitFactor.toFixed(2).padStart(5)} | ${r.totalTrades.toString().padStart(6)} |`
     );
@@ -202,7 +202,7 @@ async function compare() {
 
   console.log('');
   console.log('═'.repeat(80));
-  console.log('📈 ANÁLISE');
+  console.log('> ANÁLISE');
   console.log('═'.repeat(80));
   console.log('');
 
@@ -210,21 +210,21 @@ async function compare() {
   const best = sortedResults[0];
 
   if (!baseline || !best) {
-    console.log('❌ Erro: baseline ou best não encontrado');
+    console.log('✗ Erro: baseline ou best não encontrado');
   } else if (best.name !== baseline.name) {
     const improvement = best.totalPnl - baseline.totalPnl;
     const improvementPct = ((improvement / baseline.totalPnl) * 100).toFixed(1);
-    console.log(`🏆 MELHOR FILTER: ${best.name}`);
+    console.log(`> MELHOR FILTER: ${best.name}`);
     console.log(`   P&L: $${best.totalPnl.toFixed(2)} (+$${improvement.toFixed(2)} vs baseline, +${improvementPct}%)`);
     console.log(`   Win Rate: ${best.winRate.toFixed(1)}%`);
     console.log(`   Max Drawdown: ${best.maxDrawdown.toFixed(1)}%`);
     console.log(`   Profit Factor: ${best.profitFactor.toFixed(2)}`);
   } else {
-    console.log('🟡 Nenhum filter superou o baseline significativamente');
+    console.log('~ Nenhum filter superou o baseline significativamente');
   }
 
   console.log('');
-  console.log('📌 RECOMENDAÇÕES:');
+  console.log('> RECOMENDAÇÕES:');
 
   const emaOnly = results.find((r) => r.name === 'EMA Trend Only');
   const adxOnly = results.find((r) => r.name === 'ADX Only');
@@ -246,7 +246,7 @@ async function compare() {
 
   const todos = results.find((r) => r.name.includes('TODOS'));
   if (todos && best && best.name !== todos.name) {
-    console.log(`   - ⚠️ Combinar TODOS os filtros NÃO é a melhor opção (P&L: $${todos.totalPnl.toFixed(0)})`);
+    console.log(`   - ! Combinar TODOS os filtros NÃO é a melhor opção (P&L: $${todos.totalPnl.toFixed(0)})`);
   }
 
   process.exit(0);

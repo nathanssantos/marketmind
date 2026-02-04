@@ -16,14 +16,14 @@ import {
 const TIMEFRAMES = BACKTEST_TIMEFRAMES;
 
 async function runTimeframeComparison() {
-  console.log('🕐 Comparação de Timeframes - BTC FUTURES');
+  console.log('# Comparação de Timeframes - BTC FUTURES');
   console.log('==========================================\n');
 
   const { symbol, startDate, endDate } = parseCliArgs();
   const baseConfig = createBaseConfig();
 
-  console.log(`📊 Symbol: ${symbol} (FUTURES)`);
-  console.log(`📅 Período: ${startDate} até ${endDate}`);
+  console.log(`> Symbol: ${symbol} (FUTURES)`);
+  console.log(`# Período: ${startDate} até ${endDate}`);
   console.log(`⏱️  Timeframes: ${TIMEFRAMES.join(', ')}\n`);
 
   printConfig();
@@ -42,7 +42,7 @@ async function runTimeframeComparison() {
   }> = [];
 
   for (const interval of TIMEFRAMES) {
-    console.log(`⏳ Testando ${interval}...`);
+    console.log(`~ Testando ${interval}...`);
 
     const watchers: WatcherConfig[] = [
       {
@@ -84,7 +84,7 @@ async function runTimeframeComparison() {
   }
 
   console.log('\n' + '═'.repeat(120));
-  console.log('📊 RESULTADOS POR P&L');
+  console.log('> RESULTADOS POR P&L');
   console.log('═'.repeat(120) + '\n');
 
   console.log('Interval    P&L          P&L%     Trades   WinRate    PF     MaxDD    AvgDuration   LONG P&L     SHORT P&L');
@@ -105,7 +105,7 @@ async function runTimeframeComparison() {
     const shortPnlStr = `$${formatCurrency(r.short.pnl)}`.padStart(12);
 
     const isBest = r === sortedResults[0];
-    const marker = isBest ? '🏆' : '  ';
+    const marker = isBest ? '>' : '  ';
 
     console.log(`${marker} ${intervalStr} ${pnlStr} ${pnlPctStr} ${tradesStr} ${wrStr} ${pfStr} ${ddStr} ${durationStr} ${longPnlStr} ${shortPnlStr}`);
   }
@@ -113,7 +113,7 @@ async function runTimeframeComparison() {
   console.log('─'.repeat(115));
 
   console.log('\n' + '═'.repeat(120));
-  console.log('📈 RESULTADOS POR WIN RATE');
+  console.log('> RESULTADOS POR WIN RATE');
   console.log('═'.repeat(120) + '\n');
 
   const sortedByWinRate = [...results].sort((a, b) => b.winRate - a.winRate);
@@ -131,7 +131,7 @@ async function runTimeframeComparison() {
     const shortWrStr = formatPercent(r.short.winRate).padStart(10);
 
     const isBest = r === sortedByWinRate[0];
-    const marker = isBest ? '🏆' : '  ';
+    const marker = isBest ? '>' : '  ';
 
     console.log(`${marker} ${intervalStr} ${wrStr} ${tradesStr} ${pfStr} ${pnlStr} ${longWrStr} ${shortWrStr}`);
   }
@@ -139,7 +139,7 @@ async function runTimeframeComparison() {
   console.log('─'.repeat(80));
 
   console.log('\n' + '═'.repeat(120));
-  console.log('📉 RESULTADOS POR DRAWDOWN (menor é melhor)');
+  console.log('> RESULTADOS POR DRAWDOWN (menor é melhor)');
   console.log('═'.repeat(120) + '\n');
 
   const sortedByDrawdown = [...results].sort((a, b) => a.maxDrawdown - b.maxDrawdown);
@@ -156,7 +156,7 @@ async function runTimeframeComparison() {
     const tradesStr = String(r.trades).padStart(6);
 
     const isBest = r === sortedByDrawdown[0];
-    const marker = isBest ? '🏆' : '  ';
+    const marker = isBest ? '>' : '  ';
 
     console.log(`${marker} ${intervalStr} ${ddStr} ${pnlStr} ${wrStr} ${pfStr} ${tradesStr}`);
   }
@@ -168,29 +168,29 @@ async function runTimeframeComparison() {
   const bestByDrawdown = sortedByDrawdown[0]!;
 
   console.log('\n' + '═'.repeat(120));
-  console.log('🏆 RESUMO FINAL');
+  console.log('> RESUMO FINAL');
   console.log('═'.repeat(120) + '\n');
 
-  console.log(`📊 MELHOR P&L: ${bestByPnl.interval}`);
+  console.log(`> MELHOR P&L: ${bestByPnl.interval}`);
   console.log(`   • P&L: $${formatCurrency(bestByPnl.pnl)} (${formatPercent(bestByPnl.pnlPct)})`);
   console.log(`   • Win Rate: ${formatPercent(bestByPnl.winRate)} | Profit Factor: ${bestByPnl.profitFactor.toFixed(2)}`);
   console.log(`   • Trades: ${bestByPnl.trades} | Max Drawdown: ${formatPercent(bestByPnl.maxDrawdown)}`);
   console.log(`   • LONG: $${formatCurrency(bestByPnl.long.pnl)} | SHORT: $${formatCurrency(bestByPnl.short.pnl)}`);
 
   if (bestByWinRate.interval !== bestByPnl.interval) {
-    console.log(`\n📈 MELHOR WIN RATE: ${bestByWinRate.interval}`);
+    console.log(`\n> MELHOR WIN RATE: ${bestByWinRate.interval}`);
     console.log(`   • Win Rate: ${formatPercent(bestByWinRate.winRate)} | P&L: $${formatCurrency(bestByWinRate.pnl)}`);
   }
 
   if (bestByDrawdown.interval !== bestByPnl.interval && bestByDrawdown.interval !== bestByWinRate.interval) {
-    console.log(`\n📉 MENOR DRAWDOWN: ${bestByDrawdown.interval}`);
+    console.log(`\n> MENOR DRAWDOWN: ${bestByDrawdown.interval}`);
     console.log(`   • Max Drawdown: ${formatPercent(bestByDrawdown.maxDrawdown)} | P&L: $${formatCurrency(bestByDrawdown.pnl)}`);
   }
 
   const profitableTimeframes = results.filter(r => r.pnl > 0);
   const unprofitableTimeframes = results.filter(r => r.pnl <= 0);
 
-  console.log(`\n📌 ESTATÍSTICAS GERAIS:`);
+  console.log(`\n> ESTATÍSTICAS GERAIS:`);
   console.log(`   • Timeframes lucrativos: ${profitableTimeframes.length}/${results.length}`);
   if (profitableTimeframes.length > 0) {
     console.log(`     ${profitableTimeframes.map(r => r.interval).join(', ')}`);
@@ -203,13 +203,13 @@ async function runTimeframeComparison() {
   const avgWinRate = results.reduce((sum, r) => sum + r.winRate, 0) / results.length;
   const avgTrades = results.reduce((sum, r) => sum + r.trades, 0) / results.length;
 
-  console.log(`\n📊 MÉDIAS:`);
+  console.log(`\n> MÉDIAS:`);
   console.log(`   • P&L médio: $${formatCurrency(avgPnl)}`);
   console.log(`   • Win Rate médio: ${formatPercent(avgWinRate)}`);
   console.log(`   • Trades médio: ${avgTrades.toFixed(0)}`);
 
   console.log('\n' + '═'.repeat(120));
-  console.log(`\n✅ Análise completa! Recomendação: usar timeframe ${bestByPnl.interval} para melhor P&L.`);
+  console.log(`\n✓ Análise completa! Recomendação: usar timeframe ${bestByPnl.interval} para melhor P&L.`);
 
   process.exit(0);
 }

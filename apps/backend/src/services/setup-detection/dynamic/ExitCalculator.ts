@@ -66,7 +66,7 @@ export class ExitCalculator {
           entryPrice,
           distance,
           exitType: exit.type,
-        }, '⚠️  Negative distance for stop loss - using absolute value');
+        }, '!  Negative distance for stop loss - using absolute value');
         throw new Error(`Invalid negative distance (${distance}) for stop loss calculation`);
       }
 
@@ -96,7 +96,7 @@ export class ExitCalculator {
         volatilityLevel: volatilityProfile.level,
         atrPercent: atrPercent.toFixed(2),
         minDistance: `${minStopPercent.toFixed(2)}%`,
-      }, '⚠️ Stop too tight - enforcing volatility-based minimum (same as trailing breakeven)');
+      }, '! Stop too tight - enforcing volatility-based minimum (same as trailing breakeven)');
 
       stopLoss = adjustedStopLoss;
     }
@@ -108,11 +108,11 @@ export class ExitCalculator {
         entryPrice: entryPrice.toFixed(4),
         stopLoss: stopLoss.toFixed(4),
         exitType: exit.type,
-      }, '❌ INVALID STOP LOSS - SL must be below entry for LONG and above entry for SHORT');
+      }, '✗ INVALID STOP LOSS - SL must be below entry for LONG and above entry for SHORT');
       throw new Error(`Invalid stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
     }
 
-    logger.debug({
+    logger.trace({
       type: 'stopLoss',
       exitType: exit.type,
       direction,
@@ -141,7 +141,7 @@ export class ExitCalculator {
         ? entryPrice + tpDistance 
         : entryPrice - tpDistance;
 
-      logger.debug({
+      logger.trace({
         type: 'takeProfit',
         exitType: 'riskReward',
         direction,
@@ -167,7 +167,7 @@ export class ExitCalculator {
             entryPrice: entryPrice.toFixed(4),
             indicatorTarget: target.toFixed(4),
             exitType: exit.type,
-          }, '⚠️ Indicator-based TP is in loss zone - using fallback or throwing');
+          }, '! Indicator-based TP is in loss zone - using fallback or throwing');
           if (exit.fallback) {
             logger.info('Using fallback TP calculation');
             return this.calculateTakeProfit(exit.fallback, context, stopLossPrice);
@@ -195,7 +195,7 @@ export class ExitCalculator {
         takeProfit: takeProfit.toFixed(4),
         distance: distance.toFixed(4),
         exitType: exit.type,
-      }, '❌ INVALID TAKE PROFIT - TP must be above entry for LONG and below entry for SHORT');
+      }, '✗ INVALID TAKE PROFIT - TP must be above entry for LONG and below entry for SHORT');
       throw new Error(`Invalid take profit: ${direction} TP ${takeProfit.toFixed(4)} must be ${direction === 'LONG' ? 'above' : 'below'} entry ${entryPrice.toFixed(4)}`);
     }
 
@@ -216,7 +216,7 @@ export class ExitCalculator {
           adjustedMultiplier = getVolatilityAdjustedMultiplier(baseMultiplier, atrPercent);
 
           if (adjustedMultiplier !== baseMultiplier) {
-            logger.debug({
+            logger.trace({
               exitType: 'atr',
               atrValue: atrValue.toFixed(6),
               entryPrice: entryPrice.toFixed(4),
@@ -285,7 +285,7 @@ export class ExitCalculator {
     if (fibonacciSwing) {
       rawSwingPrice = direction === 'SHORT' ? fibonacciSwing.swingHigh.price : fibonacciSwing.swingLow.price;
       usedFibonacciSwing = true;
-      logger.debug({
+      logger.trace({
         direction,
         swingPrice: rawSwingPrice.toFixed(4),
         swingType: direction === 'SHORT' ? 'swingHigh' : 'swingLow',
@@ -319,7 +319,7 @@ export class ExitCalculator {
         bufferApplied = true;
 
         if (adjustedBuffer !== effectiveBuffer) {
-          logger.debug({
+          logger.trace({
             direction,
             requestedBuffer: bufferValue,
             baseBuffer: effectiveBuffer,
@@ -327,7 +327,7 @@ export class ExitCalculator {
             atrPercent: atrPercent.toFixed(2),
           }, 'Volatility-adjusted ATR buffer for swing stop');
         } else if (bufferValue < MIN_SWING_BUFFER_ATR) {
-          logger.debug({
+          logger.trace({
             direction,
             requestedBuffer: bufferValue,
             appliedBuffer: effectiveBuffer,
@@ -350,7 +350,7 @@ export class ExitCalculator {
       const defaultPercentBuffer = stopLoss * (DEFAULT_SWING_BUFFER_PERCENT / 100);
       const defaultBufferAmount = Math.max(minAtrBuffer, defaultPercentBuffer);
       stopLoss = direction === 'SHORT' ? stopLoss + defaultBufferAmount : stopLoss - defaultBufferAmount;
-      logger.debug({
+      logger.trace({
         direction,
         defaultBufferPercent: DEFAULT_SWING_BUFFER_PERCENT,
         minAtrBuffer: minAtrBuffer.toFixed(4),
@@ -373,7 +373,7 @@ export class ExitCalculator {
         : entryPrice + fallbackDistance;
       usedFallback = true;
 
-      logger.debug({
+      logger.trace({
         direction,
         originalStopLoss: rawSwingPrice.toFixed(4),
         wasOnWrongSide: isOnWrongSide,
@@ -391,14 +391,14 @@ export class ExitCalculator {
         entryPrice: entryPrice.toFixed(4),
         stopLoss: stopLoss.toFixed(4),
         exitType: exit.type,
-      }, '❌ INVALID SWING HIGH/LOW STOP - SL must be below entry for LONG and above entry for SHORT');
+      }, '✗ INVALID SWING HIGH/LOW STOP - SL must be below entry for LONG and above entry for SHORT');
       throw new Error(`Invalid swing high/low stop loss: ${direction} SL ${stopLoss.toFixed(4)} must be ${direction === 'LONG' ? 'below' : 'above'} entry ${entryPrice.toFixed(4)}`);
     }
 
     const finalSeparation = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
     const maxLookback = Math.min(50, currentIndex);
 
-    logger.debug({
+    logger.trace({
       type: 'stopLoss',
       exitType: 'swingHighLow',
       direction,
@@ -500,7 +500,7 @@ export class ExitCalculator {
     const maxConfidence = config.max ?? DEFAULT_MAX_CONFIDENCE;
     const finalConfidence = Math.min(Math.max(confidence, 0), maxConfidence);
 
-    logger.debug({
+    logger.trace({
       strategy: strategy.id,
       baseConfidence: config.base,
       appliedBonuses,
@@ -611,7 +611,7 @@ export class ExitCalculator {
 
     const significantSwing = findSignificantSwingLow(klines, searchEndIndex, lookback);
     if (significantSwing && significantSwing.price) {
-      logger.debug({
+      logger.trace({
         currentIndex,
         skipRecent,
         swingIndex: significantSwing.index,
@@ -623,7 +623,7 @@ export class ExitCalculator {
 
     const recentSwing = findMostRecentSwingLow(klines, searchEndIndex, lookback, 3);
     if (recentSwing && recentSwing.price) {
-      logger.debug({
+      logger.trace({
         currentIndex,
         skipRecent,
         swingIndex: recentSwing.index,
@@ -642,7 +642,7 @@ export class ExitCalculator {
     }
     const minLow = lows.length > 0 ? Math.min(...lows) : parseFloat(String((klines[currentIndex] as { low: string }).low));
 
-    logger.debug({
+    logger.trace({
       currentIndex,
       skipRecent,
       fallbackStart,
@@ -660,7 +660,7 @@ export class ExitCalculator {
 
     const significantSwing = findSignificantSwingHigh(klines, searchEndIndex, lookback);
     if (significantSwing && significantSwing.price) {
-      logger.debug({
+      logger.trace({
         currentIndex,
         skipRecent,
         swingIndex: significantSwing.index,
@@ -672,7 +672,7 @@ export class ExitCalculator {
 
     const recentSwing = findMostRecentSwingHigh(klines, searchEndIndex, lookback, 3);
     if (recentSwing && recentSwing.price) {
-      logger.debug({
+      logger.trace({
         currentIndex,
         skipRecent,
         swingIndex: recentSwing.index,
@@ -691,7 +691,7 @@ export class ExitCalculator {
     }
     const maxHigh = highs.length > 0 ? Math.max(...highs) : parseFloat(String((klines[currentIndex] as { high: string }).high));
 
-    logger.debug({
+    logger.trace({
       currentIndex,
       skipRecent,
       fallbackStart,
@@ -722,7 +722,7 @@ export class ExitCalculator {
     );
 
     if (stop === null) {
-      logger.debug({
+      logger.trace({
         direction,
         entryPrice: entryPrice.toFixed(4),
         reason,
@@ -751,7 +751,7 @@ export class ExitCalculator {
     const separationPercent = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
 
     if (!isValid || separationPercent < MIN_ENTRY_STOP_SEPARATION_PERCENT) {
-      logger.debug({
+      logger.trace({
         direction,
         entryPrice: entryPrice.toFixed(4),
         pivotStop: stopLoss.toFixed(4),
@@ -767,7 +767,7 @@ export class ExitCalculator {
       return this.calculateSwingHighLowStop(swingExit, context);
     }
 
-    logger.debug({
+    logger.trace({
       type: 'stopLoss',
       exitType: 'pivotBased',
       direction,
@@ -802,7 +802,7 @@ export class ExitCalculator {
 
     if (target === null || !this.isPivotAcceptable(pivot, exit.pivotConfig?.minStrength ?? 'any', exit.pivotConfig?.requireVolumeConfirmation ?? false)) {
       if (exit.fallback) {
-        logger.debug({ direction, entryPrice }, 'No suitable pivot found for target - using fallback');
+        logger.trace({ direction, entryPrice }, 'No suitable pivot found for target - using fallback');
         return this.calculateTakeProfit(exit.fallback, context, stopLossPrice);
       }
 
@@ -813,7 +813,7 @@ export class ExitCalculator {
           ? entryPrice + (slDistance * defaultRR)
           : entryPrice - (slDistance * defaultRR);
 
-        logger.debug({
+        logger.trace({
           direction,
           entryPrice: entryPrice.toFixed(4),
           fallbackTarget: fallbackTarget.toFixed(4),
@@ -840,7 +840,7 @@ export class ExitCalculator {
       throw new Error(`Invalid pivot-based target: ${direction} TP ${target.toFixed(4)} must be ${direction === 'LONG' ? 'above' : 'below'} entry ${entryPrice.toFixed(4)}`);
     }
 
-    logger.debug({
+    logger.trace({
       type: 'takeProfit',
       exitType: 'pivotBased',
       direction,
@@ -882,7 +882,7 @@ export class ExitCalculator {
 
     const strongWithVolume = relevantPivots.find(p => p.strength === 'strong' && p.volumeConfirmed);
     if (strongWithVolume) {
-      logger.debug({
+      logger.trace({
         direction,
         pivotPrice: strongWithVolume.price.toFixed(4),
         strength: strongWithVolume.strength,
@@ -893,7 +893,7 @@ export class ExitCalculator {
 
     const strong = relevantPivots.find(p => p.strength === 'strong');
     if (strong) {
-      logger.debug({
+      logger.trace({
         direction,
         pivotPrice: strong.price.toFixed(4),
         strength: strong.strength,
@@ -904,7 +904,7 @@ export class ExitCalculator {
 
     const medium = relevantPivots.find(p => p.strength === 'medium');
     if (medium) {
-      logger.debug({
+      logger.trace({
         direction,
         pivotPrice: medium.price.toFixed(4),
         strength: medium.strength,

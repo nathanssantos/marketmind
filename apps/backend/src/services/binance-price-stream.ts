@@ -35,7 +35,7 @@ export class BinancePriceStreamService {
       return;
     }
 
-    logger.debug('Starting Binance price stream service');
+    logger.trace('Starting Binance price stream service');
 
     this.client = new WebsocketClient(
       { beautify: true, reconnectTimeout: WEBSOCKET_CONFIG.RECONNECT_DELAY_MS },
@@ -68,7 +68,7 @@ export class BinancePriceStreamService {
 
     this.client.on('reconnected', () => {
       if (this.isReconnecting) {
-        logger.debug('Ignoring duplicate reconnected event');
+        logger.trace('Ignoring duplicate reconnected event');
         return;
       }
       this.isReconnecting = true;
@@ -252,14 +252,14 @@ export class BinancePriceStreamService {
       }
 
       if (newSubscriptions.length > 0) {
-        logger.debug({
+        logger.trace({
           newSymbols: newSubscriptions,
           totalSubscribed: this.subscribedSymbols.size,
         }, `Subscribed to ${newSubscriptions.length} new symbol(s)`);
       }
 
       if (unsubscribed.length > 0) {
-        logger.debug({
+        logger.trace({
           removedSymbols: unsubscribed,
           totalSubscribed: this.subscribedSymbols.size,
         }, `Unsubscribed from ${unsubscribed.length} symbol(s) - no open positions`);
@@ -302,7 +302,7 @@ export class BinancePriceStreamService {
   private async resubscribeAll(): Promise<void> {
     const symbols = Array.from(this.subscribedSymbols);
     if (symbols.length === 0) {
-      logger.debug('No symbols to resubscribe');
+      logger.trace('No symbols to resubscribe');
       return;
     }
 

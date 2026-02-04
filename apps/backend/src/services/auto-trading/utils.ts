@@ -39,7 +39,7 @@ export const yieldToEventLoop = (): Promise<void> =>
 export const getPollingIntervalForTimeframe = (interval: string): number => {
   const intervalMs = INTERVAL_MS[interval as Interval];
   if (!intervalMs) {
-    log(`⚠️ Unknown interval ${interval}, defaulting to 1 minute polling`);
+    log(`! Unknown interval ${interval}, defaulting to 1 minute polling`);
     return TIME_MS.MINUTE;
   }
   return Math.max(intervalMs, TIME_MS.MINUTE);

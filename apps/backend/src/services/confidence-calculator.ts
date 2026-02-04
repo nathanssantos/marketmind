@@ -79,7 +79,7 @@ export class ConfidenceCalculator {
       }, '[Confidence] Poor strategy performance penalty applied');
     }
 
-    logger.debug({
+    logger.trace({
       symbol,
       strategyId,
       interval,

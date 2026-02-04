@@ -69,7 +69,7 @@ export class EntryCalculator {
         entryPrice: entryPrice.toFixed(4),
         calculatedPrice: calculatedPrice.toFixed(4),
         type: config.type,
-      }, '⚠️ Invalid entry price calculated, falling back to close price');
+      }, '! Invalid entry price calculated, falling back to close price');
       return {
         price: entryPrice,
         orderType: 'MARKET',
@@ -77,7 +77,7 @@ export class EntryCalculator {
       };
     }
 
-    logger.debug({
+    logger.trace({
       type: 'entryPrice',
       entryType: config.type,
       direction,
@@ -185,7 +185,7 @@ export class EntryCalculator {
       logger.warn({
         indicator: config.indicator,
         currentIndex,
-      }, '⚠️ Indicator value not available for entry calculation');
+      }, '! Indicator value not available for entry calculation');
       return entryPrice;
     }
 
@@ -205,7 +205,7 @@ export class EntryCalculator {
         calculatedPrice: calculatedPrice.toFixed(4),
         distancePercent: `${distancePercent.toFixed(2)}%`,
         maxAllowed: `${MAX_LIMIT_ENTRY_DISTANCE_PERCENT}%`,
-      }, '⚠️ Limit entry price too far from close - exceeds max distance');
+      }, '! Limit entry price too far from close - exceeds max distance');
       return false;
     }
 

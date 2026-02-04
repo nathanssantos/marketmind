@@ -132,8 +132,8 @@ export class TradeExecutor {
     }
 
     if (tradesCount === 0) {
-      const slSource = setup.stopLoss ? '✓ setup-ATR' : '⚠ config-fixed';
-      const tpSourceFormatted = tpSource === 'fibonacci' ? '📐 fibonacci' : (setup.takeProfit ? '✓ setup-ATR' : '⚠ config-fixed');
+      const slSource = setup.stopLoss ? '✓ setup-ATR' : '! config-fixed';
+      const tpSourceFormatted = tpSource === 'fibonacci' ? '> fibonacci' : (setup.takeProfit ? '✓ setup-ATR' : '! config-fixed');
       const slPercent = stopLoss ? (Math.abs((stopLoss - entryPrice) / entryPrice) * 100).toFixed(2) : 'N/A';
       const tpPercent = takeProfit ? (Math.abs((takeProfit - entryPrice) / entryPrice) * 100).toFixed(2) : 'N/A';
       console.log(`[TradeExecutor] First Trade SL/TP: ${slSource} ${slPercent}% | ${tpSourceFormatted} ${tpPercent}%`);

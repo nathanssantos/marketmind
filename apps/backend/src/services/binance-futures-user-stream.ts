@@ -306,7 +306,7 @@ export class BinanceFuturesUserStreamService {
           void this.resubscribeWallet(walletId);
           break;
         default:
-          logger.debug({ walletId, eventType }, '[FuturesUserStream] Unhandled event type');
+          logger.trace({ walletId, eventType }, '[FuturesUserStream] Unhandled event type');
       }
     } catch (error) {
       logger.error(
@@ -376,7 +376,7 @@ export class BinanceFuturesUserStreamService {
               entryFee,
               commissionAsset,
             },
-            '[FuturesUserStream] ✅ Pending LIMIT order FILLED - activating position'
+            '[FuturesUserStream] ✓ Pending LIMIT order FILLED - activating position'
           );
 
           await db
@@ -450,7 +450,7 @@ export class BinanceFuturesUserStreamService {
                 entryPrice,
                 detectedExitReason,
               },
-              '[FuturesUserStream] ⚠️ Detected closing order via realizedProfit fallback - ALGO_UPDATE may have been missed'
+              '[FuturesUserStream] ! Detected closing order via realizedProfit fallback - ALGO_UPDATE may have been missed'
             );
           } else {
             logger.warn(
@@ -524,7 +524,7 @@ export class BinanceFuturesUserStreamService {
               } else {
                 logger.error(
                   { error: errorMessage, orderToCancel, isAlgoOrder: oppositeIsAlgo },
-                  '[FuturesUserStream] ⚠️ CRITICAL: Failed to cancel opposite order after retries - MANUAL CHECK REQUIRED'
+                  '[FuturesUserStream] ! CRITICAL: Failed to cancel opposite order after retries - MANUAL CHECK REQUIRED'
                 );
               }
             }
@@ -572,7 +572,7 @@ export class BinanceFuturesUserStreamService {
             oldBalance: currentBalance.toFixed(2),
             newBalance: newBalance.toFixed(2),
           },
-          '[FuturesUserStream] 💰 Wallet balance updated'
+          '[FuturesUserStream] > Wallet balance updated'
         );
 
         const determinedExitReason = isAlgoTriggerFill
@@ -674,7 +674,7 @@ export class BinanceFuturesUserStreamService {
               })
               .where(eq(wallets.id, walletId));
 
-            logger.debug(
+            logger.trace(
               { walletId, newBalance, reason },
               '[FuturesUserStream] Wallet balance synced from account update'
             );
@@ -732,7 +732,7 @@ export class BinanceFuturesUserStreamService {
           crossWalletBalance,
           positionsAtRiskCount: positionsAtRisk.length,
         },
-        '[FuturesUserStream] ⚠️ MARGIN CALL received'
+        '[FuturesUserStream] ! MARGIN CALL received'
       );
 
       const wsService = getWebSocketService();
@@ -835,7 +835,7 @@ export class BinanceFuturesUserStreamService {
       const isTPOrder = Number(execution.takeProfitAlgoId) === Number(algoId) || Number(execution.takeProfitOrderId) === Number(algoId);
 
       if (!isSLOrder && !isTPOrder) {
-        logger.debug(
+        logger.trace(
           { walletId, symbol, algoId, stopLossAlgoId: execution.stopLossAlgoId, takeProfitAlgoId: execution.takeProfitAlgoId },
           '[FuturesUserStream] Algo order not recognized as SL or TP for this execution'
         );
@@ -856,7 +856,7 @@ export class BinanceFuturesUserStreamService {
           exitReason,
           orderToCancel,
         },
-        `[FuturesUserStream] ⚡ Algo ${exitReason} order TRIGGERED`
+        `[FuturesUserStream] > Algo ${exitReason} order TRIGGERED`
       );
 
       if (orderToCancel) {
@@ -894,7 +894,7 @@ export class BinanceFuturesUserStreamService {
               } else {
                 logger.error(
                   { error: errorMessage, orderToCancel },
-                  '[FuturesUserStream] ⚠️ CRITICAL: Failed to cancel opposite algo order after retries - MANUAL CHECK REQUIRED'
+                  '[FuturesUserStream] ! CRITICAL: Failed to cancel opposite algo order after retries - MANUAL CHECK REQUIRED'
                 );
               }
             }
@@ -932,7 +932,7 @@ export class BinanceFuturesUserStreamService {
         orderId,
         reason,
       },
-      '[FuturesUserStream] ⚠️ CRITICAL: Conditional order (TP/SL) was REJECTED'
+      '[FuturesUserStream] ! CRITICAL: Conditional order (TP/SL) was REJECTED'
     );
 
     const wsService = getWebSocketService();
@@ -979,7 +979,7 @@ export class BinanceFuturesUserStreamService {
               reason,
               clearedField: field,
             },
-            '[FuturesUserStream] ⚠️ CRITICAL: Position protection order REJECTED - IDs cleared, MANUAL INTERVENTION REQUIRED'
+            '[FuturesUserStream] ! CRITICAL: Position protection order REJECTED - IDs cleared, MANUAL INTERVENTION REQUIRED'
           );
         }
       }

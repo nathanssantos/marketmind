@@ -73,7 +73,7 @@ export const evaluateDynamicConditions = (
       adxValue = adxValues[adxValues.length - 1] ?? null;
 
       if (adxValue !== null && adxValue < config.adxThreshold) {
-        logger.debug({
+        logger.trace({
           adxValue,
           threshold: config.adxThreshold,
         }, '[DynamicPyramid] ADX below threshold - weak trend');
@@ -99,7 +99,7 @@ export const evaluateDynamicConditions = (
       rsiValue = rsiValues[rsiValues.length - 1] ?? null;
 
       if (rsiValue !== null && rsiValue > config.rsiLowerBound && rsiValue < config.rsiUpperBound) {
-        logger.debug({
+        logger.trace({
           rsiValue,
           lowerBound: config.rsiLowerBound,
           upperBound: config.rsiUpperBound,
@@ -126,7 +126,7 @@ export const evaluateDynamicConditions = (
     adjustedScaleFactor = Math.max(0.1, Math.min(1.0, adjustedScaleFactor));
   }
 
-  logger.debug({
+  logger.trace({
     atrRatio: atrRatio.toFixed(2),
     adxValue: adxValue?.toFixed(1) ?? 'N/A',
     rsiValue: rsiValue?.toFixed(1) ?? 'N/A',

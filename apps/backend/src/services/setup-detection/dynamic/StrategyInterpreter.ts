@@ -139,7 +139,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
             stopLoss: stopLoss.toFixed(4),
             separationPercent: entryStopSeparation.toFixed(3),
             minRequired: MIN_ENTRY_STOP_SEPARATION_PERCENT,
-          }, '⚠️ Entry and stop are too close - setup rejected');
+          }, '! Entry and stop are too close - setup rejected');
         }
         return {
           setup: null,
@@ -250,7 +250,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
         indicatorConfluence: indicatorConfluence.toFixed(2),
         hasFibonacciProjection: !!fibonacciProjection,
         resolvedParams: this.resolvedParams,
-      }, '✅ Setup detected');
+      }, '✓ Setup detected');
     }
 
     const triggerCandleData = this.extractTriggerCandles(klines, currentIndex);
@@ -308,7 +308,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     if (adxValue === null || atrValue === null) {
       if (!this.silent) {
-        logger.debug({ adxValue, atrValue }, 'Missing ADX or ATR for dynamic Fibonacci level selection, using default');
+        logger.trace({ adxValue, atrValue }, 'Missing ADX or ATR for dynamic Fibonacci level selection, using default');
       }
       return DEFAULT_FIBONACCI_LEVEL;
     }
@@ -332,7 +332,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const result = selectDynamicFibonacciLevel({ adx: adxValue, atrPercent, volumeRatio });
 
     if (!this.silent) {
-      logger.debug({
+      logger.trace({
         adx: adxValue.toFixed(2),
         atrPercent: atrPercent.toFixed(2),
         volumeRatio: volumeRatio?.toFixed(2) ?? 'N/A',
@@ -639,7 +639,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
         swingHigh: swingHigh.price.toFixed(4),
         fibLevel: `${progress.toFixed(1)}%`,
         maxAllowed: `${this.maxFibEntryProgress}%`,
-      }, '⚠️ Entry price above max Fibonacci level - setup rejected');
+      }, '! Entry price above max Fibonacci level - setup rejected');
     }
 
     return {

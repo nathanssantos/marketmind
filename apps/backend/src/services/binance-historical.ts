@@ -26,7 +26,7 @@ export const backfillHistoricalKlines = async (
 
   const effectiveStartTime = new Date(Math.max(startTime.getTime(), minStartTime));
 
-  logger.debug(
+  logger.trace(
     { symbol, interval, marketType, startTime: effectiveStartTime.toISOString(), endTime: endTime.toISOString() },
     'Starting historical klines backfill'
   );
@@ -78,7 +78,7 @@ export const backfillHistoricalKlines = async (
       totalInserted += klinesData.length;
       currentStartTime = lastCandle[0] + intervalMs;
 
-      logger.debug({ inserted: klinesData.length, total: totalInserted }, 'Inserted klines batch');
+      logger.trace({ inserted: klinesData.length, total: totalInserted }, 'Inserted klines batch');
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {
@@ -87,7 +87,7 @@ export const backfillHistoricalKlines = async (
     }
   }
 
-  logger.debug({ symbol, interval, marketType, totalInserted }, 'Historical klines backfill complete');
+  logger.trace({ symbol, interval, marketType, totalInserted }, 'Historical klines backfill complete');
   return totalInserted;
 };
 
@@ -105,7 +105,7 @@ export const fetchHistoricalKlinesFromAPI = async (
   startTime: Date,
   endTime: Date = new Date()
 ): Promise<any[]> => {
-  logger.debug(
+  logger.trace(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Fetching historical klines from Binance API'
   );
@@ -155,7 +155,7 @@ export const fetchHistoricalKlinesFromAPI = async (
     }
   }
 
-  logger.debug({ symbol, interval, totalFetched: allKlines.length }, 'Historical klines fetch complete');
+  logger.trace({ symbol, interval, totalFetched: allKlines.length }, 'Historical klines fetch complete');
   return allKlines;
 };
 
@@ -165,7 +165,7 @@ export const fetchFuturesKlinesFromAPI = async (
   startTime: Date,
   endTime: Date = new Date()
 ): Promise<any[]> => {
-  logger.debug(
+  logger.trace(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Fetching futures klines from Binance Futures API'
   );
@@ -215,7 +215,7 @@ export const fetchFuturesKlinesFromAPI = async (
     }
   }
 
-  logger.debug({ symbol, interval, totalFetched: allKlines.length }, 'Futures klines fetch complete');
+  logger.trace({ symbol, interval, totalFetched: allKlines.length }, 'Futures klines fetch complete');
   return allKlines;
 };
 
@@ -265,7 +265,7 @@ export const smartBackfillKlines = async (
   let totalDownloaded = 0;
 
   if (existingKlines.length === 0) {
-    logger.info({ symbol, interval, marketType, targetCount, forRotation }, '🚀 [SmartBackfill] No existing data, downloading full range');
+    logger.info({ symbol, interval, marketType, targetCount, forRotation }, '> [SmartBackfill] No existing data, downloading full range');
     const downloaded = await backfillHistoricalKlines(
       symbol,
       interval,
@@ -282,7 +282,7 @@ export const smartBackfillKlines = async (
 
   if (oldestExisting > targetStartTime + intervalMs * GAP_TOLERANCE_MULTIPLIER) {
     gaps.push({ start: targetStartTime, end: oldestExisting - intervalMs, type: 'start' });
-    logger.debug(
+    logger.trace(
       { symbol, interval, marketType, gapStart: new Date(targetStartTime).toISOString(), gapEnd: new Date(oldestExisting).toISOString() },
       'Smart backfill: detected gap at start (need older data)'
     );
@@ -290,7 +290,7 @@ export const smartBackfillKlines = async (
 
   if (newestExisting < effectiveEndTime - intervalMs * GAP_TOLERANCE_MULTIPLIER) {
     gaps.push({ start: newestExisting + intervalMs, end: effectiveEndTime, type: 'end' });
-    logger.debug(
+    logger.trace(
       { symbol, interval, marketType, gapStart: new Date(newestExisting).toISOString(), gapEnd: new Date(effectiveEndTime).toISOString() },
       'Smart backfill: detected gap at end (need recent data)'
     );
@@ -304,7 +304,7 @@ export const smartBackfillKlines = async (
 
     if (actualDiff > expectedDiff * GAP_TOLERANCE_MULTIPLIER) {
       gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs, type: 'internal' });
-      logger.debug(
+      logger.trace(
         { symbol, interval, marketType, gapStart: new Date(prevTime).toISOString(), gapEnd: new Date(currTime).toISOString(), missingCandles: Math.floor(actualDiff / intervalMs) - 1 },
         'Smart backfill: detected internal gap'
       );
@@ -312,11 +312,11 @@ export const smartBackfillKlines = async (
   }
 
   if (gaps.length === 0) {
-    logger.debug({ symbol, interval, marketType, currentCount }, '[SmartBackfill] Data complete');
+    logger.trace({ symbol, interval, marketType, currentCount }, '[SmartBackfill] Data complete');
     return { totalInDb: currentCount, downloaded: 0, gaps: 0, alreadyComplete: true };
   }
 
-  logger.debug({ symbol, interval, marketType, gapsCount: gaps.length }, '[SmartBackfill] Filling gaps');
+  logger.trace({ symbol, interval, marketType, gapsCount: gaps.length }, '[SmartBackfill] Filling gaps');
 
   const gapsFilled: Set<number> = new Set();
 
@@ -338,7 +338,7 @@ export const smartBackfillKlines = async (
     }
 
     if (gap.type === 'start' && downloaded === 0) {
-      logger.debug(
+      logger.trace(
         { symbol, interval, marketType, gapStart: new Date(gap.start).toISOString() },
         'Smart backfill: no older data available (reached listing date)'
       );
@@ -362,7 +362,7 @@ export const smartBackfillKlines = async (
   const isOperationallyComplete = hasSufficientData || criticalGaps.length === 0;
   const reportedGaps = isOperationallyComplete ? 0 : criticalGaps.length;
 
-  logger.debug(
+  logger.trace(
     { symbol, interval, marketType, finalCount: finalCount.length, downloaded: totalDownloaded, gaps: reportedGaps },
     '[SmartBackfill] Complete'
   );

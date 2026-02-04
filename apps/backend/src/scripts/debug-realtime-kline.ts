@@ -54,9 +54,9 @@ async function debugRealtimeKline() {
     console.log('Time difference:', timeDiff, 'ms');
 
     if (timeDiff !== 0) {
-      console.log('⚠️  MISMATCH: DB and API have different latest klines!');
+      console.log('!  MISMATCH: DB and API have different latest klines!');
     } else {
-      console.log('✅ Latest klines match');
+      console.log('✓ Latest klines match');
     }
   }
 

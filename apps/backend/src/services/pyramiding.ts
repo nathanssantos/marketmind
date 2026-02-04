@@ -1,4 +1,4 @@
-import { colorize, createTable } from '@marketmind/logger';
+import { colorize } from '@marketmind/logger';
 import { calculateDynamicExposure } from '@marketmind/risk';
 import type { Kline } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
@@ -27,29 +27,22 @@ import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
 import { positionMonitorService } from './position-monitor';
 
-const logPyramidTable = (
+const logPyramidDecision = (
   action: 'EVALUATE' | 'APPROVED' | 'REJECTED',
   symbol: string,
   direction: string,
   data: Record<string, string | number | null | undefined>
 ): void => {
   const actionColor = action === 'APPROVED' ? 'green' : action === 'REJECTED' ? 'red' : 'cyan';
-  const icon = action === 'APPROVED' ? '📈' : action === 'REJECTED' ? '🚫' : '🔍';
+  const icon = action === 'APPROVED' ? '✓' : action === 'REJECTED' ? '✗' : '>';
+  const dirColor = direction === 'LONG' ? 'green' : 'red';
 
-  const table = createTable({
-    head: ['Field', 'Value'],
-    headColor: actionColor,
-    colWidths: [20, 25],
-  });
+  const fields = Object.entries(data)
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(' · ');
 
-  Object.entries(data).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      table.push([colorize(key, 'dim'), String(value)]);
-    }
-  });
-
-  console.log(`\n  ${icon} ${colorize(`PYRAMID ${action}`, actionColor)} │ ${colorize(symbol, 'bright')} │ ${colorize(direction, direction === 'LONG' ? 'green' : 'red')}`);
-  console.log(table.toString());
+  console.log(`  ${colorize(icon, actionColor)} ${colorize(`pyramid ${action.toLowerCase()}`, actionColor)} · ${colorize(symbol, 'bright')} ${colorize(direction, dirColor)} · ${colorize(fields, 'dim')}`);
 };
 
 export interface ExecutionLike {
@@ -231,7 +224,7 @@ export class PyramidingService {
     }
 
     if (openExecutions.length >= pyramidConfig.maxEntries) {
-      logger.debug({
+      logger.trace({
         symbol,
         direction,
         currentEntries: openExecutions.length,
@@ -254,7 +247,7 @@ export class PyramidingService {
       : (avgEntryPrice - currentPrice) / avgEntryPrice;
 
     if (profitPercent < pyramidConfig.profitThreshold) {
-      logger.debug({
+      logger.trace({
         symbol,
         direction,
         currentProfit: (profitPercent * 100).toFixed(2),
@@ -334,7 +327,7 @@ export class PyramidingService {
       exposurePercent: (totalExposure / maxPositionSize) * 100,
     };
 
-    logPyramidTable('APPROVED', symbol, direction, {
+    logPyramidDecision('APPROVED', symbol, direction, {
       Mode: 'static',
       'Entry #': `${openExecutions.length + 1}/${pyramidConfig.maxEntries}`,
       'Avg Entry': avgEntryPrice.toFixed(4),
@@ -755,7 +748,7 @@ export class PyramidingService {
     const dynamicEval = evaluateDynamicConditions(klines, dynamicConfig);
 
     if (!dynamicEval.canPyramid) {
-      logPyramidTable('REJECTED', symbol, direction, {
+      logPyramidDecision('REJECTED', symbol, direction, {
         Mode: 'dynamic',
         Reason: dynamicEval.reason,
         ADX: dynamicEval.adxValue?.toFixed(2) ?? 'N/A',
@@ -799,7 +792,7 @@ export class PyramidingService {
     );
 
     if (staticEval.canPyramid) {
-      logPyramidTable('APPROVED', symbol, direction, {
+      logPyramidDecision('APPROVED', symbol, direction, {
         Mode: 'dynamic',
         'Entry #': `${staticEval.currentEntries + 1}/${staticEval.maxEntries}`,
         'Profit %': `${(staticEval.profitPercent * 100).toFixed(2)}%`,
@@ -909,7 +902,7 @@ export class PyramidingService {
       : (avgEntryPrice - currentPrice) / avgEntryPrice;
 
     if (!fiboEval.canPyramid) {
-      logPyramidTable('REJECTED', symbol, direction, {
+      logPyramidDecision('REJECTED', symbol, direction, {
         Mode: 'fibonacci',
         Reason: fiboEval.reason,
         'Entry #': `${openExecutions.length}/${config.maxEntries}`,
@@ -943,7 +936,7 @@ export class PyramidingService {
     const baseSize = calculateBaseSize(openExecutions);
     const scaledSize = baseSize * Math.pow(scaleFactor, openExecutions.length);
 
-    logPyramidTable('APPROVED', symbol, direction, {
+    logPyramidDecision('APPROVED', symbol, direction, {
       Mode: 'fibonacci',
       'Fibo Level': fiboEval.triggerLevel ?? '-',
       'Entry #': `${openExecutions.length + 1}/${config.maxEntries}`,

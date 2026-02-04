@@ -140,15 +140,15 @@ const start = async (): Promise<void> => {
     const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
     await indicatorSchedulerService.start();
 
-    fastify.log.info(`🚀 Backend server running on http://localhost:${port}`);
-    fastify.log.info(`📡 tRPC endpoint: http://localhost:${port}/trpc`);
-    fastify.log.info(`🔌 WebSocket server initialized`);
-    fastify.log.info(`📈 Position monitor service started`);
-    fastify.log.info(`💹 Binance price stream service started`);
-    fastify.log.info(`📉 Binance kline stream service started (SPOT + FUTURES)`);
-    fastify.log.info(`👤 Binance user stream service started (SPOT + FUTURES)`);
-    fastify.log.info(`🔄 Kline maintenance service started (delayed ${STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS / 1000}s)`);
-    fastify.log.info(`📊 Indicator scheduler started (snapshots every 30min)`);
+    fastify.log.info(`> Backend server running on http://localhost:${port}`);
+    fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
+    fastify.log.info(`> WebSocket server initialized`);
+    fastify.log.info(`> Position monitor service started`);
+    fastify.log.info(`> Binance price stream service started`);
+    fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
+    fastify.log.info(`> Binance user stream service started (SPOT + FUTURES)`);
+    fastify.log.info(`> Kline maintenance service started (delayed ${STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS / 1000}s)`);
+    fastify.log.info(`> Indicator scheduler started (snapshots every 30min)`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

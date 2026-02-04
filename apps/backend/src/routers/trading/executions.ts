@@ -506,7 +506,7 @@ export const executionsRouter = router({
         .set(updateData)
         .where(eq(tradeExecutions.id, input.id));
 
-      logger.debug({
+      logger.trace({
         executionId: execution.id,
         symbol: execution.symbol,
         stopLoss: input.stopLoss,

@@ -1,5 +1,5 @@
 import { FIBONACCI_PYRAMID_LEVELS, FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
-import { colorize, createTable } from '@marketmind/logger';
+import { colorize } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
@@ -52,10 +52,8 @@ const log = (message: string, data?: Record<string, unknown>): void => {
 };
 
 const logApiTable = (endpoint: string, rows: [string, string | number][]): void => {
-  const table = createTable({ head: ['Field', 'Value'], headColor: 'cyan', colWidths: [25, 30] });
-  rows.forEach(row => table.push([colorize(row[0], 'dim'), String(row[1])]));
-  console.log(`\n  📊 ${colorize(endpoint, 'cyan')}`);
-  console.log(table.toString());
+  const fields = rows.map(([key, value]) => `${key}=${value}`).join(' · ');
+  console.log(`  > ${colorize(endpoint, 'cyan')} · ${colorize(fields, 'dim')}`);
 };
 
 export const autoTradingRouter = router({
@@ -191,7 +189,7 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('📝 updateConfig called', { walletId: input.walletId, isEnabled: input.isEnabled });
+      log('> updateConfig called', { walletId: input.walletId, isEnabled: input.isEnabled });
 
       const [config] = await ctx.db
         .select()
@@ -205,7 +203,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!config) {
-        log('❌ Config not found for wallet', { walletId: input.walletId });
+        log('✗ Config not found for wallet', { walletId: input.walletId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Auto-trading config not found. Please get config first.',
@@ -362,7 +360,7 @@ export const autoTradingRouter = router({
         .where(eq(autoTradingConfig.id, config.id));
 
       if (input.isEnabled !== undefined) {
-        log(input.isEnabled ? '🟢 Auto-trading ENABLED' : '🔴 Auto-trading DISABLED', {
+        log(input.isEnabled ? '✓ Auto-trading ENABLED' : '✗ Auto-trading DISABLED', {
           walletId: input.walletId,
           enabledSetupTypes: input.enabledSetupTypes,
         });
@@ -380,7 +378,7 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🚀 executeSetup called', { setupId: input.setupId, walletId: input.walletId });
+      log('> executeSetup called', { setupId: input.setupId, walletId: input.walletId });
 
       const [setup] = await ctx.db
         .select()
@@ -394,14 +392,14 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!setup) {
-        log('❌ Setup not found', { setupId: input.setupId });
+        log('✗ Setup not found', { setupId: input.setupId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Setup not found',
         });
       }
 
-      log('📍 Setup found', {
+      log('> Setup found', {
         setupType: setup.setupType,
         symbol: setup.symbol,
         direction: setup.direction,
@@ -423,7 +421,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!config) {
-        log('❌ Auto-trading config not found', { walletId: input.walletId });
+        log('✗ Auto-trading config not found', { walletId: input.walletId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Auto-trading config not found',
@@ -431,7 +429,7 @@ export const autoTradingRouter = router({
       }
 
       if (!config.isEnabled) {
-        log('⚠️ Auto-trading is disabled', { walletId: input.walletId });
+        log('! Auto-trading is disabled', { walletId: input.walletId });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Auto-trading is not enabled for this wallet',
@@ -440,7 +438,7 @@ export const autoTradingRouter = router({
 
       const enabledSetupTypes = parseEnabledSetupTypes(config.enabledSetupTypes);
       if (!enabledSetupTypes.includes(setup.setupType)) {
-        log('⚠️ Setup type not enabled', { setupType: setup.setupType, enabledTypes: enabledSetupTypes });
+        log('! Setup type not enabled', { setupType: setup.setupType, enabledTypes: enabledSetupTypes });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Setup type ${setup.setupType} is not enabled`,
@@ -460,7 +458,7 @@ export const autoTradingRouter = router({
       const watcherStatus = autoTradingScheduler.getWatcherStatus(input.walletId);
       const effectiveMaxPositions = watcherStatus.watchers > 0 ? watcherStatus.watchers : config.maxConcurrentPositions;
 
-      log('📊 Current open positions', {
+      log('> Current open positions', {
         count: openPositions.length,
         max: effectiveMaxPositions,
         activeWatchers: watcherStatus.watchers,
@@ -468,7 +466,7 @@ export const autoTradingRouter = router({
       });
 
       if (openPositions.length >= effectiveMaxPositions) {
-        log('⚠️ Max concurrent positions reached', { current: openPositions.length, max: effectiveMaxPositions });
+        log('! Max concurrent positions reached', { current: openPositions.length, max: effectiveMaxPositions });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Maximum concurrent positions (${effectiveMaxPositions}) reached`,
@@ -493,7 +491,7 @@ export const autoTradingRouter = router({
       const effectivePositionSizePercent = Math.min(perWatcherExposurePercent, maxPositionSizePercent);
       const positionValue = (walletBalance * effectivePositionSizePercent) / 100;
 
-      log('💰 Position sizing', {
+      log('> Position sizing', {
         walletBalance: walletBalance.toFixed(2),
         maxPositionSizePercent,
         activeWatchers: watcherStatus.watchers,
@@ -510,14 +508,14 @@ export const autoTradingRouter = router({
       );
 
       if (!riskValidation.isValid) {
-        log('⚠️ Risk validation failed', { reason: riskValidation.reason });
+        log('! Risk validation failed', { reason: riskValidation.reason });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: `Risk validation failed: ${riskValidation.reason}`,
         });
       }
 
-      log('✅ Risk validation passed');
+      log('✓ Risk validation passed');
 
       if (setup.stopLoss && setup.takeProfit) {
         const entryPrice = parseFloat(setup.entryPrice);
@@ -536,7 +534,7 @@ export const autoTradingRouter = router({
         }
 
         if (risk <= 0) {
-          log('❌ Invalid stop loss - no risk', {
+          log('✗ Invalid stop loss - no risk', {
             setupType: setup.setupType,
             direction: setup.direction,
             entryPrice,
@@ -551,7 +549,7 @@ export const autoTradingRouter = router({
         const riskRewardRatio = reward / risk;
 
         if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
-          log('❌ Setup rejected - insufficient risk/reward ratio', {
+          log('✗ Setup rejected - insufficient risk/reward ratio', {
             setupType: setup.setupType,
             direction: setup.direction,
             entryPrice,
@@ -566,12 +564,12 @@ export const autoTradingRouter = router({
           });
         }
 
-        log('✅ Risk/Reward ratio validated', {
+        log('✓ Risk/Reward ratio validated', {
           setupType: setup.setupType,
           riskRewardRatio: riskRewardRatio.toFixed(2),
         });
       } else if (!setup.stopLoss) {
-        log('❌ Missing stop loss', {
+        log('✗ Missing stop loss', {
           setupType: setup.setupType,
         });
         throw new TRPCError({
@@ -579,7 +577,7 @@ export const autoTradingRouter = router({
           message: 'Stop loss is required for trade execution',
         });
       } else {
-        log('ℹ️ Setup without take profit - skipping R:R validation', {
+        log('· Setup without take profit - skipping R:R validation', {
           setupType: setup.setupType,
         });
       }
@@ -608,7 +606,7 @@ export const autoTradingRouter = router({
         triggerKlineOpenTime: setup.detectedAt.getTime(),
       });
 
-      log('✅ Trade execution created', {
+      log('✓ Trade execution created', {
         executionId,
         setupType: setup.setupType,
         symbol: setup.symbol,
@@ -631,7 +629,7 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🚫 cancelExecution called', { executionId: input.executionId });
+      log('✗ cancelExecution called', { executionId: input.executionId });
 
       const [execution] = await ctx.db
         .select()
@@ -645,7 +643,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!execution) {
-        log('❌ Execution not found', { executionId: input.executionId });
+        log('✗ Execution not found', { executionId: input.executionId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Execution not found',
@@ -653,7 +651,7 @@ export const autoTradingRouter = router({
       }
 
       if (execution.status !== 'open') {
-        log('⚠️ Cannot cancel - execution not open', { executionId: input.executionId, status: execution.status });
+        log('! Cannot cancel - execution not open', { executionId: input.executionId, status: execution.status });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Can only cancel open executions',
@@ -674,7 +672,7 @@ export const autoTradingRouter = router({
         })
         .where(eq(tradeExecutions.id, input.executionId));
 
-      log('✅ Execution cancelled', {
+      log('✓ Execution cancelled', {
         executionId: input.executionId,
         setupType: execution.setupType,
         symbol: execution.symbol,
@@ -756,7 +754,7 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🏁 closeExecution called', { executionId: input.executionId, exitPrice: input.exitPrice });
+      log('> closeExecution called', { executionId: input.executionId, exitPrice: input.exitPrice });
 
       const [execution] = await ctx.db
         .select()
@@ -770,7 +768,7 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!execution) {
-        log('❌ Execution not found', { executionId: input.executionId });
+        log('✗ Execution not found', { executionId: input.executionId });
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Execution not found',
@@ -778,7 +776,7 @@ export const autoTradingRouter = router({
       }
 
       if (execution.status !== 'open') {
-        log('⚠️ Cannot close - execution not open', { executionId: input.executionId, status: execution.status });
+        log('! Cannot close - execution not open', { executionId: input.executionId, status: execution.status });
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Execution is not open',
@@ -817,7 +815,7 @@ export const autoTradingRouter = router({
         .where(eq(tradeExecutions.id, input.executionId));
 
       const isWin = netPnl > 0;
-      log(`${isWin ? '💚 WIN' : '❤️ LOSS'} Execution closed`, {
+      log(`${isWin ? '✓ WIN' : '✗ LOSS'} Execution closed`, {
         executionId: input.executionId,
         setupType: execution.setupType,
         symbol: execution.symbol,
@@ -847,7 +845,7 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🚀 startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
+      log('> startWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
@@ -861,7 +859,7 @@ export const autoTradingRouter = router({
       const klineCheck = await checkKlineAvailability(input.symbol, input.interval, input.marketType);
 
       if (!klineCheck.hasSufficient) {
-        log('⚠️ Symbol has insufficient klines', {
+        log('! Symbol has insufficient klines', {
           symbol: input.symbol,
           interval: input.interval,
           marketType: input.marketType,
@@ -896,7 +894,7 @@ export const autoTradingRouter = router({
         true
       );
 
-      log('✅ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
+      log('✓ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
 
       return { success: true };
     }),
@@ -911,13 +909,13 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🛑 stopWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, marketType: input.marketType });
+      log('✗ stopWatcher called', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, marketType: input.marketType });
 
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       await autoTradingScheduler.stopWatcher(input.walletId, input.symbol, input.interval, input.marketType);
 
-      log('✅ Watcher stopped', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, marketType: input.marketType });
+      log('✓ Watcher stopped', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, marketType: input.marketType });
 
       return { success: true };
     }),
@@ -925,7 +923,7 @@ export const autoTradingRouter = router({
   stopAllWatchers: protectedProcedure
     .input(z.object({ walletId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      log('🛑 stopAllWatchers called', { walletId: input.walletId });
+      log('✗ stopAllWatchers called', { walletId: input.walletId });
 
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
@@ -941,7 +939,7 @@ export const autoTradingRouter = router({
 
       await autoTradingScheduler.stopAllWatchersForWallet(input.walletId);
 
-      log('✅ All watchers stopped', { walletId: input.walletId });
+      log('✓ All watchers stopped', { walletId: input.walletId });
 
       return { success: true };
     }),
@@ -975,9 +973,9 @@ export const autoTradingRouter = router({
       })
     )
     .query(async ({ input }) => {
-      log('📊 getTopSymbols called', { marketType: input.marketType, limit: input.limit });
+      log('> getTopSymbols called', { marketType: input.marketType, limit: input.limit });
       const symbols = await getTopSymbolsByVolume(input.marketType, input.limit);
-      log('✅ Top symbols fetched', { count: symbols.length });
+      log('✓ Top symbols fetched', { count: symbols.length });
       return symbols;
     }),
 
@@ -996,7 +994,7 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       const targetCount = input.targetCount ?? input.symbols.length;
 
-      log('🚀 startWatchersBulk called', {
+      log('> startWatchersBulk called', {
         walletId: input.walletId,
         symbols: input.symbols,
         interval: input.interval,
@@ -1036,7 +1034,7 @@ export const autoTradingRouter = router({
       const useDynamicSelection = config?.useDynamicSymbolSelection ?? false;
       const maxWatcherLimit = AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
 
-      log('📊 Config loaded', { useDynamicSelection, maxWatcherLimit, inputTargetCount: input.targetCount });
+      log('> Config loaded', { useDynamicSelection, maxWatcherLimit, inputTargetCount: input.targetCount });
 
       const existingWatchers = await ctx.db
         .select({ symbol: activeWatchers.symbol })
@@ -1053,7 +1051,7 @@ export const autoTradingRouter = router({
       const availableSlots = Math.max(0, maxWatcherLimit - existingCount);
       const effectiveTargetCount = Math.min(targetCount, availableSlots);
 
-      log('📊 Watcher limits', {
+      log('> Watcher limits', {
         existingCount,
         maxWatcherLimit,
         availableSlots,
@@ -1062,7 +1060,7 @@ export const autoTradingRouter = router({
       });
 
       if (availableSlots === 0) {
-        log('⚠️ No available slots for new watchers', { existingCount, maxWatcherLimit });
+        log('! No available slots for new watchers', { existingCount, maxWatcherLimit });
         return {
           results: [],
           successCount: 0,
@@ -1097,7 +1095,7 @@ export const autoTradingRouter = router({
       const capitalLimitedTarget = effectiveTargetCount;
 
       if (skippedCapitalSymbols.length > 0) {
-        log('💰 Capital filter applied to initial symbols', {
+        log('> Capital filter applied to initial symbols', {
           skippedSymbols: skippedCapitalSymbols.length,
           capitalPerWatcher: capitalPerWatcher.toFixed(2),
           walletBalance,
@@ -1158,7 +1156,7 @@ export const autoTradingRouter = router({
         } catch (error) {
           const errorMessage = serializeError(error);
           results.push({ symbol, success: false, error: errorMessage, fromRanking });
-          log('❌ Failed to start watcher', { symbol, error: errorMessage, fromRanking });
+          log('✗ Failed to start watcher', { symbol, error: errorMessage, fromRanking });
           return false;
         }
       };
@@ -1179,7 +1177,7 @@ export const autoTradingRouter = router({
       }
 
       if (startedSymbols.size < capitalLimitedTarget) {
-        log('🔄 Fetching additional symbols from ranking', {
+        log('> Fetching additional symbols from ranking', {
           current: startedSymbols.size,
           target: capitalLimitedTarget,
           needed: capitalLimitedTarget - startedSymbols.size,
@@ -1221,7 +1219,7 @@ export const autoTradingRouter = router({
       const fromRankingCount = results.filter(r => r.success && r.fromRanking).length;
       const targetMet = successCount >= capitalLimitedTarget;
 
-      log('✅ Bulk watcher creation complete', {
+      log('✓ Bulk watcher creation complete', {
         total: results.length,
         success: successCount,
         capitalLimitedTarget,
@@ -1277,10 +1275,10 @@ export const autoTradingRouter = router({
       })
     )
     .query(async ({ input }) => {
-      log('📊 getTopCoinsByMarketCap called', { marketType: input.marketType, limit: input.limit });
+      log('> getTopCoinsByMarketCap called', { marketType: input.marketType, limit: input.limit });
       const marketCapService = getMarketCapDataService();
       const coins = await marketCapService.getTopCoinsByMarketCap(input.limit, input.marketType);
-      log('✅ Top coins fetched', { count: coins.length });
+      log('✓ Top coins fetched', { count: coins.length });
       return coins;
     }),
 
@@ -1297,7 +1295,7 @@ export const autoTradingRouter = router({
       logApiTable('getDynamicSymbolScores', [
         ['Market Type', input.marketType],
         ['Limit', input.limit],
-        ['Scores Fetched', `✅ ${scores.length}`],
+        ['Scores Fetched', `✓ ${scores.length}`],
       ]);
       return scores;
     }),
@@ -1370,7 +1368,7 @@ export const autoTradingRouter = router({
         if (btcDbKlines.length >= 30) {
           const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
           btcTrendInfo = getEma21Direction(btcKlinesData);
-          log('📊 BTC Correlation Filter - Trend', {
+          log('> BTC Correlation Filter - Trend', {
             direction: btcTrendInfo.direction,
             price: btcTrendInfo.price?.toFixed(2),
             ema21: btcTrendInfo.ema21?.toFixed(2),
@@ -1403,7 +1401,7 @@ export const autoTradingRouter = router({
         if (eligibleSymbols.length >= input.limit * 2) break;
       }
 
-      const btcTrendEmoji = btcTrendInfo?.direction === 'BULLISH' ? '🟢' : btcTrendInfo?.direction === 'BEARISH' ? '🔴' : '⚪';
+      const btcTrendEmoji = btcTrendInfo?.direction === 'BULLISH' ? '✓' : btcTrendInfo?.direction === 'BEARISH' ? '✗' : '·';
 
       logApiTable('getFilteredSymbolsForQuickStart', [
         ['Market Type', input.marketType],
@@ -1505,7 +1503,7 @@ export const autoTradingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      log('🔄 triggerSymbolRotation called', { walletId: input.walletId });
+      log('> triggerSymbolRotation called', { walletId: input.walletId });
 
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
@@ -1563,7 +1561,7 @@ export const autoTradingRouter = router({
         }
       );
 
-      log('✅ Symbol rotation completed', {
+      log('✓ Symbol rotation completed', {
         walletId: input.walletId,
         added: result.added.length,
         removed: result.removed.length,
@@ -1624,7 +1622,7 @@ export const autoTradingRouter = router({
 
       const mappedKlines = mapDbKlinesReversed(btcKlinesData);
       const trendInfo = getBtcTrendEmaInfoWithHistory(mappedKlines);
-      const trendEmoji = trendInfo.trend === 'BULLISH' ? '🟢' : trendInfo.trend === 'BEARISH' ? '🔴' : '⚪';
+      const trendEmoji = trendInfo.trend === 'BULLISH' ? '✓' : trendInfo.trend === 'BEARISH' ? '✗' : '·';
       logApiTable('getBtcTrendStatus', [
         ['Interval', interval],
         ['Trend', `${trendEmoji} ${trendInfo.trend}`],
@@ -1664,8 +1662,8 @@ export const autoTradingRouter = router({
       const extremeCount = results.filter((r) => r.isExtreme).length;
       logApiTable('getBatchFundingRates', [
         ['Symbols', input.symbols.length],
-        ['Total Fetched', `✅ ${results.length}`],
-        ['Extreme Rates', extremeCount > 0 ? `⚠️ ${extremeCount}` : `${extremeCount}`],
+        ['Total Fetched', `✓ ${results.length}`],
+        ['Extreme Rates', extremeCount > 0 ? `! ${extremeCount}` : `${extremeCount}`],
       ]);
 
       return results;
@@ -1680,7 +1678,7 @@ export const autoTradingRouter = router({
     .mutation(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      log('🚨 EMERGENCY STOP initiated', { walletId: input.walletId });
+      log('! EMERGENCY STOP initiated', { walletId: input.walletId });
 
       const result = {
         watchersStopped: 0,
@@ -1692,7 +1690,7 @@ export const autoTradingRouter = router({
       try {
         await autoTradingScheduler.stopAllWatchersForWallet(input.walletId);
         result.watchersStopped = 1;
-        log(`⏹️ Stopped all watchers for wallet`, { walletId: input.walletId });
+        log(`✗ Stopped all watchers for wallet`, { walletId: input.walletId });
       } catch (error) {
         const errorMsg = serializeError(error);
         result.errors.push(`Failed to stop watchers: ${errorMsg}`);
@@ -1722,7 +1720,7 @@ export const autoTradingRouter = router({
             try {
               await cancelAllFuturesAlgoOrders(client, symbol);
               result.algoOrdersCancelled++;
-              log(`❌ Cancelled algo orders for ${symbol}`, { walletId: input.walletId, symbol });
+              log(`✗ Cancelled algo orders for ${symbol}`, { walletId: input.walletId, symbol });
             } catch (error) {
               const errorMsg = serializeError(error);
               if (!errorMsg.includes('No algo orders')) {
@@ -1752,7 +1750,7 @@ export const autoTradingRouter = router({
               );
               exitPricesBySymbol.set(position.symbol, closeResult.avgPrice);
               result.positionsClosed++;
-              log(`📉 Closed position ${position.symbol}`, {
+              log(`▼ Closed position ${position.symbol}`, {
                 walletId: input.walletId,
                 symbol: position.symbol,
                 amount: position.positionAmt,
@@ -1803,7 +1801,7 @@ export const autoTradingRouter = router({
                 })
                 .where(eq(tradeExecutions.id, execution.id));
 
-              log(`📊 Emergency closed execution`, {
+              log(`> Emergency closed execution`, {
                 executionId: execution.id,
                 symbol: execution.symbol,
                 side: execution.side,
@@ -1838,7 +1836,7 @@ export const autoTradingRouter = router({
         }
       } else {
         if (!isPaperWallet(wallet) && walletMarketType === 'SPOT') {
-          log('⚠️ SPOT wallet emergency stop - positions NOT closed on exchange, manual close required', {
+          log('! SPOT wallet emergency stop - positions NOT closed on exchange, manual close required', {
             walletId: input.walletId,
             openExecutions: openExecutions.length,
           });
@@ -1879,7 +1877,7 @@ export const autoTradingRouter = router({
           .where(eq(autoTradingConfig.id, config.id));
       }
 
-      log('🚨 EMERGENCY STOP completed', {
+      log('! EMERGENCY STOP completed', {
         walletId: input.walletId,
         ...result,
       });
@@ -1960,7 +1958,7 @@ export const autoTradingRouter = router({
       takeProfit: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      log('🔧 recoverUnprotectedPosition called', { executionId: input.executionId });
+      log('# recoverUnprotectedPosition called', { executionId: input.executionId });
 
       const [execution] = await ctx.db
         .select()
@@ -1973,12 +1971,12 @@ export const autoTradingRouter = router({
         .limit(1);
 
       if (!execution) {
-        log('❌ Execution not found or not open', { executionId: input.executionId });
+        log('✗ Execution not found or not open', { executionId: input.executionId });
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Open execution not found' });
       }
 
       if (execution.stopLoss) {
-        log('⚠️ Execution already has stop loss', { executionId: input.executionId, stopLoss: execution.stopLoss });
+        log('! Execution already has stop loss', { executionId: input.executionId, stopLoss: execution.stopLoss });
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Execution already has a stop loss' });
       }
 
@@ -1993,7 +1991,7 @@ export const autoTradingRouter = router({
           : currentPrice * (1 + PROTECTION_CONFIG.EMERGENCY_SL_PERCENT)
       );
 
-      log('📊 Recovery parameters', {
+      log('> Recovery parameters', {
         executionId: input.executionId,
         symbol: execution.symbol,
         side: execution.side,
@@ -2025,7 +2023,7 @@ export const autoTradingRouter = router({
         })
         .where(eq(tradeExecutions.id, input.executionId));
 
-      log('✅ Stop loss added to unprotected position', {
+      log('✓ Stop loss added to unprotected position', {
         executionId: input.executionId,
         symbol: execution.symbol,
         stopLoss,
@@ -2056,7 +2054,7 @@ export const autoTradingRouter = router({
   getBtcDominance: protectedProcedure.query(async () => {
     const service = getBTCDominanceDataService();
     const result = await service.getBTCDominanceResult();
-    const trendEmoji = result.trend === 'increasing' ? '📈' : result.trend === 'decreasing' ? '📉' : '➡️';
+    const trendEmoji = result.trend === 'increasing' ? '▲' : result.trend === 'decreasing' ? '▼' : '·';
     logApiTable('getBtcDominance', [
       ['Current', result.current !== null ? `${result.current.toFixed(2)}%` : 'N/A'],
       ['Change 24h', result.change24h !== null ? `${result.change24h >= 0 ? '+' : ''}${result.change24h.toFixed(2)}%` : 'N/A'],
@@ -2071,9 +2069,9 @@ export const autoTradingRouter = router({
     const result = await service.getAltcoinSeasonIndex();
     const history = await historyService.getIndicatorHistory('ALTCOIN_SEASON', 31);
 
-    const seasonEmoji = result.seasonType === 'ALT_SEASON' ? '🚀' : result.seasonType === 'BTC_SEASON' ? '🪙' : '⚖️';
+    const seasonIcon = result.seasonType === 'ALT_SEASON' ? '>' : result.seasonType === 'BTC_SEASON' ? '#' : '~';
     logApiTable('getAltcoinSeasonIndex', [
-      ['Season', `${seasonEmoji} ${result.seasonType}`],
+      ['Season', `${seasonIcon} ${result.seasonType}`],
       ['Index', `${result.altSeasonIndex.toFixed(1)}%`],
       ['Alts > BTC', `${result.altsOutperformingBtc}/${result.totalAltsAnalyzed}`],
       ['BTC 24h', `${result.btcPerformance24h >= 0 ? '+' : ''}${result.btcPerformance24h.toFixed(2)}%`],
@@ -2123,8 +2121,8 @@ export const autoTradingRouter = router({
         ['ADX', adxResult.adx !== null ? adxResult.adx.toFixed(2) : 'N/A'],
         ['+DI', adxResult.plusDI !== null ? adxResult.plusDI.toFixed(2) : 'N/A'],
         ['-DI', adxResult.minusDI !== null ? adxResult.minusDI.toFixed(2) : 'N/A'],
-        ['Strong Trend', adxResult.isStrongTrend ? '✅' : '❌'],
-        ['Choppy', isChoppy ? '⚠️ Yes' : 'No'],
+        ['Strong Trend', adxResult.isStrongTrend ? '✓' : '✗'],
+        ['Choppy', isChoppy ? '! Yes' : 'No'],
         ['History Points', history.history.length.toString()],
       ]);
 
@@ -2151,7 +2149,7 @@ export const autoTradingRouter = router({
       const service = getOrderBookAnalyzerService();
       const result = await service.getOrderBookAnalysis(input.symbol, input.marketType);
 
-      const pressureEmoji = result.pressure === 'BUYING' ? '📈' : result.pressure === 'SELLING' ? '📉' : '➡️';
+      const pressureEmoji = result.pressure === 'BUYING' ? '▲' : result.pressure === 'SELLING' ? '▼' : '·';
       logApiTable('getOrderBookAnalysis', [
         ['Symbol', result.symbol],
         ['Pressure', `${pressureEmoji} ${result.pressure}`],
@@ -2275,9 +2273,9 @@ export const autoTradingRouter = router({
     });
 
     logApiTable('saveIndicatorSnapshot', [
-      ['ADX', adxSaved ? '✅' : '❌'],
-      ['Altcoin Season', '✅'],
-      ['Order Book', '✅'],
+      ['ADX', adxSaved ? '✓' : '✗'],
+      ['Altcoin Season', '✓'],
+      ['Order Book', '✓'],
     ]);
 
     return { success: true, adxSaved, altSeasonSaved: true, orderBookSaved: true };

@@ -138,7 +138,7 @@ export const validateOrder = async (
         warnings,
       }, '[OrderValidator] Order validation failed');
     } else if (warnings.length > 0) {
-      logger.debug({
+      logger.trace({
         symbol: params.symbol,
         side: params.side,
         marketType,

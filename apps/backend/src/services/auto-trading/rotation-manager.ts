@@ -70,7 +70,7 @@ export class RotationManager {
     clearInterval(this.anticipationCheckIntervalId);
     this.anticipationCheckIntervalId = null;
 
-    log('⏹️ [DynamicRotation] Stopped anticipation timer');
+    log('✗ [DynamicRotation] Stopped anticipation timer');
   }
 
   async checkAnticipatedRotations(): Promise<void> {
@@ -90,7 +90,7 @@ export class RotationManager {
                                  timeUntilCurrentClose >= MIN_ROTATION_PREPARATION_TIME_MS;
 
       if (isInRotationWindow && state.lastRotationCandleClose !== currentCandleClose) {
-        log('🔮 [DynamicRotation] Anticipating rotation', {
+        log('> [DynamicRotation] Anticipating rotation', {
           stateKey,
           interval: state.config.interval,
           marketType: state.config.marketType,
@@ -123,7 +123,7 @@ export class RotationManager {
           );
 
           if (result.added.length > 0 || result.removed.length > 0) {
-            log('🔮 [DynamicRotation] Applying anticipated rotation', {
+            log('> [DynamicRotation] Applying anticipated rotation', {
               walletId,
               added: result.added.length,
               removed: result.removed.length,
@@ -143,7 +143,7 @@ export class RotationManager {
 
           state.lastRotationCandleClose = currentCandleClose;
         } catch (error) {
-          log('❌ [DynamicRotation] Anticipated rotation failed', {
+          log('✗ [DynamicRotation] Anticipated rotation failed', {
             stateKey,
             error: serializeError(error),
           });
@@ -181,7 +181,7 @@ export class RotationManager {
       return allAddedWatcherIds;
     }
 
-    log('🔄 [DynamicRotation] Checking rotations', {
+    log('> [DynamicRotation] Checking rotations', {
       count: rotationsToExecute.length,
       wallets: rotationsToExecute.map(r => r.state.config.marketType).join(', '),
       anticipated: rotationsToExecute.filter(r => r.isAnticipated).length,
@@ -213,7 +213,7 @@ export class RotationManager {
         );
 
         if (result.added.length > 0 || result.removed.length > 0) {
-          log('🔄 [DynamicRotation] Applying rotation', {
+          log('> [DynamicRotation] Applying rotation', {
             walletId,
             added: result.added.length,
             removed: result.removed.length,
@@ -236,7 +236,7 @@ export class RotationManager {
         state.lastCandleCloseTime = getCandleCloseTime(state.config.interval, now);
         state.lastRotationCandleClose = targetCandleClose;
       } catch (error) {
-        log('❌ [DynamicRotation] Rotation check failed', {
+        log('✗ [DynamicRotation] Rotation check failed', {
           stateKey,
           error: serializeError(error),
         });
@@ -270,7 +270,7 @@ export class RotationManager {
     });
 
     if (symbolsToAdd.length > 0) {
-      log('📥 [DynamicRotation] Backfilling new symbols', {
+      log('> [DynamicRotation] Backfilling new symbols', {
         count: symbolsToAdd.length,
         symbols: symbolsToAdd.join(', '),
         targetCandleClose: targetCandleClose ? new Date(targetCandleClose).toISOString() : 'not set',
@@ -281,7 +281,7 @@ export class RotationManager {
 
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          log('📥 [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
+          log('> [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
           const prefetchResult = await prefetchKlines({
             symbol,
             interval,
@@ -290,7 +290,7 @@ export class RotationManager {
             silent: false,
             forRotation: true,
           });
-          log('📊 [DynamicRotation] Prefetch result', {
+          log('> [DynamicRotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
             downloaded: prefetchResult.downloaded,
@@ -342,7 +342,7 @@ export class RotationManager {
     }
   ): Promise<void> {
     if (!config.useDynamicSymbolSelection) {
-      log('ℹ️ Dynamic symbol selection is disabled', { walletId });
+      log('· Dynamic symbol selection is disabled', { walletId });
       return;
     }
 
@@ -387,7 +387,7 @@ export class RotationManager {
 
       this.startAnticipationTimer();
     } else {
-      log('ℹ️ Auto rotation disabled - manual rotation only', { walletId });
+      log('· Auto rotation disabled - manual rotation only', { walletId });
     }
   }
 
@@ -400,7 +400,7 @@ export class RotationManager {
     }
 
     if (keysToDelete.length === 0) {
-      log('ℹ️ No active rotation for wallet', { walletId });
+      log('· No active rotation for wallet', { walletId });
       return;
     }
 
@@ -428,12 +428,12 @@ export class RotationManager {
         await this.deps.stopWatcher(watcher.walletId, watcher.symbol, watcher.interval, watcher.marketType as MarketType);
       }
 
-      log('🛑 Stopped dynamic rotation and removed dynamic watchers', {
+      log('✗ Stopped dynamic rotation and removed dynamic watchers', {
         walletId,
         watchersRemoved: dynamicWatchers.length,
       });
     } else {
-      log('🛑 Stopped dynamic rotation (kept existing watchers)', { walletId });
+      log('✗ Stopped dynamic rotation (kept existing watchers)', { walletId });
     }
   }
 
@@ -487,7 +487,7 @@ export class RotationManager {
     }
 
     if (symbolsToAdd.length > 0) {
-      log('📥 [Rotation] Backfilling new symbols', {
+      log('> [Rotation] Backfilling new symbols', {
         count: symbolsToAdd.length,
         symbols: symbolsToAdd.join(', '),
       });
@@ -496,9 +496,9 @@ export class RotationManager {
 
       await Promise.all(
         symbolsToAdd.map(async (symbol) => {
-          log('📥 [Rotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForApply });
+          log('> [Rotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForApply });
           const prefetchResult = await prefetchKlines({ symbol, interval, marketType, targetCount: requiredKlinesForApply, silent: false });
-          log('📊 [Rotation] Prefetch result', {
+          log('> [Rotation] Prefetch result', {
             symbol,
             success: prefetchResult.success,
             downloaded: prefetchResult.downloaded,
@@ -543,7 +543,7 @@ export class RotationManager {
     }
 
     if (validations.length > 0) {
-      log('🔧 [Rotation] Kline validations completed', {
+      log('# [Rotation] Kline validations completed', {
         symbols: validations.map(v => v.symbol).join(', '),
         totalGapsFilled: validations.reduce((sum, v) => sum + v.gapsFilled, 0),
         totalCorruptedFixed: validations.reduce((sum, v) => sum + v.corruptedFixed, 0),
@@ -682,7 +682,7 @@ export class RotationManager {
     }
 
     if (dynamicWatchersByWallet.size === 0) {
-      log('📊 [Startup] No dynamic watchers to restore rotation for');
+      log('> [Startup] No dynamic watchers to restore rotation for');
       return;
     }
 
@@ -727,7 +727,7 @@ export class RotationManager {
         });
         restoredCount++;
       } catch (error) {
-        log('⚠️ [Startup] Failed to restore rotation', {
+        log('! [Startup] Failed to restore rotation', {
           walletId,
           interval: watcherInfo.interval,
           error: serializeError(error),

@@ -32,7 +32,7 @@ export class SetupDetectionService {
 
   private debugLog(...args: unknown[]): void {
     if (!DEBUG_ENABLED) return;
-    logger.debug({ args }, '[SetupDetection]');
+    logger.trace({ args }, '[SetupDetection]');
   }
 
   constructor(config?: Partial<SetupDetectionConfig>) {

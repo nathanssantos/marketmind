@@ -82,7 +82,7 @@ function validateWinRate() {
 
   console.log(`\nEsperado: ${expectedWinRate.toFixed(2)}%`);
   console.log(`Calculado: ${calculatedWinRate.toFixed(2)}%`);
-  console.log(Math.abs(expectedWinRate - calculatedWinRate) < 0.01 ? '✅ WIN RATE CORRETO' : '❌ WIN RATE INCORRETO');
+  console.log(Math.abs(expectedWinRate - calculatedWinRate) < 0.01 ? '✓ WIN RATE CORRETO' : '✗ WIN RATE INCORRETO');
 }
 
 function validateProfitFactor() {
@@ -99,7 +99,7 @@ function validateProfitFactor() {
   console.log(`Gross Loss: ${grossLoss}`);
   console.log(`\nEsperado: ${expectedPF.toFixed(2)}`);
   console.log(`Calculado: ${calculatedPF.toFixed(2)}`);
-  console.log(Math.abs(expectedPF - calculatedPF) < 0.01 ? '✅ PROFIT FACTOR CORRETO' : '❌ PROFIT FACTOR INCORRETO');
+  console.log(Math.abs(expectedPF - calculatedPF) < 0.01 ? '✓ PROFIT FACTOR CORRETO' : '✗ PROFIT FACTOR INCORRETO');
 }
 
 function validateSharpeRatio() {
@@ -124,7 +124,7 @@ function validateSharpeRatio() {
 
   console.log(`\nEsperado: ${expectedSharpe.toFixed(4)}`);
   console.log(`Calculado: ${calculatedSharpe.toFixed(4)}`);
-  console.log(Math.abs(expectedSharpe - calculatedSharpe) < 0.01 ? '✅ SHARPE RATIO CORRETO' : '❌ SHARPE RATIO INCORRETO');
+  console.log(Math.abs(expectedSharpe - calculatedSharpe) < 0.01 ? '✓ SHARPE RATIO CORRETO' : '✗ SHARPE RATIO INCORRETO');
 }
 
 function validateMaxDrawdown() {
@@ -151,7 +151,7 @@ function validateMaxDrawdown() {
 
   console.log(`\nEsperado: ${expectedDDAmount.toFixed(2)} USDT (${expectedDDPercent.toFixed(2)}%)`);
   console.log(`Calculado: ${calculated.amount.toFixed(2)} USDT (${calculated.percent.toFixed(2)}%)`);
-  console.log(Math.abs(expectedDDAmount - calculated.amount) < 0.01 ? '✅ MAX DRAWDOWN CORRETO' : '❌ MAX DRAWDOWN INCORRETO');
+  console.log(Math.abs(expectedDDAmount - calculated.amount) < 0.01 ? '✓ MAX DRAWDOWN CORRETO' : '✗ MAX DRAWDOWN INCORRETO');
 }
 
 async function main() {
@@ -166,11 +166,11 @@ async function main() {
   validateMaxDrawdown();
 
   console.log('\n\n=== RESUMO DA VALIDAÇÃO ===');
-  console.log('✅ Win Rate: Cálculo verificado');
-  console.log('✅ Profit Factor: Cálculo verificado');
-  console.log('✅ Sharpe Ratio: Cálculo verificado');
-  console.log('✅ Max Drawdown: Cálculo verificado');
-  console.log('\n📋 Todas as métricas seguem fórmulas padrão da indústria!');
+  console.log('✓ Win Rate: Cálculo verificado');
+  console.log('✓ Profit Factor: Cálculo verificado');
+  console.log('✓ Sharpe Ratio: Cálculo verificado');
+  console.log('✓ Max Drawdown: Cálculo verificado');
+  console.log('\n> Todas as métricas seguem fórmulas padrão da indústria!');
 }
 
 main().catch(console.error);

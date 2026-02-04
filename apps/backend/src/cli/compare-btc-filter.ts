@@ -31,7 +31,7 @@ async function compare() {
   for (const useBtcFilter of [true, false]) {
     const filterName = useBtcFilter ? 'COM BTC Filter' : 'SEM BTC Filter';
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`🔄 Testando: ${filterName}`);
+    console.log(`> Testando: ${filterName}`);
     console.log(`${'═'.repeat(60)}\n`);
 
     const baseConfig = createBaseConfig();
@@ -82,7 +82,7 @@ async function compare() {
     });
 
     console.log('━'.repeat(60));
-    console.log('📊 ' + filterName.toUpperCase());
+    console.log('> ' + filterName.toUpperCase());
     console.log('━'.repeat(60));
     console.log('');
     console.log('Total Trades:', result.metrics.totalTrades);
@@ -98,7 +98,7 @@ async function compare() {
     console.log('');
     console.log(`Bloqueados por BTC Trend: ${blockedByBtcTrend}`);
 
-    console.log('\n📈 Por Símbolo:');
+    console.log('\n> Por Símbolo:');
     for (const ws of result.watcherStats) {
       console.log(
         `  ${ws.symbol}: ${ws.tradesExecuted} trades | Setups: ${ws.totalSetups} | Bloqueados: ${ws.tradesSkipped}`
@@ -108,7 +108,7 @@ async function compare() {
   }
 
   console.log('\n' + '═'.repeat(60));
-  console.log('📊 RESUMO COMPARATIVO');
+  console.log('> RESUMO COMPARATIVO');
   console.log('═'.repeat(60));
   console.log('');
 
@@ -141,13 +141,13 @@ async function compare() {
   const wrDiff = semFilter.winRate - comFilter.winRate;
 
   if (pnlDiff > 0 && wrDiff >= 0) {
-    console.log('🏆 RECOMENDAÇÃO: DESABILITAR BTC Correlation Filter');
+    console.log('> RECOMENDAÇÃO: DESABILITAR BTC Correlation Filter');
     console.log(`   Melhoria de P&L: +$${pnlDiff.toFixed(2)} (+${(semFilter.totalPnlPercent - comFilter.totalPnlPercent).toFixed(1)}%)`);
   } else if (pnlDiff < 0) {
-    console.log('🏆 RECOMENDAÇÃO: MANTER BTC Correlation Filter');
+    console.log('> RECOMENDAÇÃO: MANTER BTC Correlation Filter');
     console.log(`   Proteção de P&L: $${Math.abs(pnlDiff).toFixed(2)}`);
   } else {
-    console.log('🟡 INCONCLUSIVO: Diferença mínima - testar com mais dados');
+    console.log('~ INCONCLUSIVO: Diferença mínima - testar com mais dados');
   }
 
   process.exit(0);

@@ -76,7 +76,7 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
   }
 
   if (daysDiff > 365) {
-    console.log(chalk.yellow('⚠ Warning: Long date range (>1 year) may take significant time to process'));
+    console.log(chalk.yellow('! Warning: Long date range (>1 year) may take significant time to process'));
   }
 
   return { startDate, endDate };
@@ -142,7 +142,7 @@ export function validateCapital(capital: string): number {
   const amount = validateNumeric(capital, 'Capital', 100, 1000000);
 
   if (amount < 100) {
-    console.log(chalk.yellow('⚠ Warning: Capital below $100 may produce unrealistic results'));
+    console.log(chalk.yellow('! Warning: Capital below $100 may produce unrealistic results'));
   }
 
   return amount;
@@ -230,7 +230,7 @@ export async function validateFilePath(filepath: string): Promise<void> {
   }
 
   if (!filepath.endsWith('.json')) {
-    console.log(chalk.yellow(`⚠ Warning: File "${filepath}" does not have .json extension`));
+    console.log(chalk.yellow(`! Warning: File "${filepath}" does not have .json extension`));
   }
 }
 
@@ -238,7 +238,7 @@ export function validateParallelWorkers(workers: string): number {
   const count = validateNumeric(workers, 'Parallel workers', 1, 16);
 
   if (count > 8) {
-    console.log(chalk.yellow('⚠ Warning: High worker count (>8) may not improve performance'));
+    console.log(chalk.yellow('! Warning: High worker count (>8) may not improve performance'));
   }
 
   return count;
@@ -256,12 +256,12 @@ export function validateGridSearchSize(params: string[]): void {
 
   if (totalCombinations > 1000) {
     console.log(
-      chalk.yellow(`⚠ Warning: Grid search will test ${totalCombinations} combinations.`)
+      chalk.yellow(`! Warning: Grid search will test ${totalCombinations} combinations.`)
     );
     console.log(chalk.yellow('   This may take a very long time. Consider reducing parameter ranges.'));
   } else if (totalCombinations > 500) {
     console.log(
-      chalk.yellow(`⚠ Note: Grid search will test ${totalCombinations} combinations.`)
+      chalk.yellow(`! Note: Grid search will test ${totalCombinations} combinations.`)
     );
   }
 }

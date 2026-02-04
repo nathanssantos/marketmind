@@ -364,7 +364,7 @@ class KlineMaintenance {
         }
       }
     } catch (error) {
-      logger.debug({ error: serializeError(error) }, '[KlineMaintenance] Stream services not available (expected during startup)');
+      logger.trace({ error: serializeError(error) }, '[KlineMaintenance] Stream services not available (expected during startup)');
     }
 
     return pairs;

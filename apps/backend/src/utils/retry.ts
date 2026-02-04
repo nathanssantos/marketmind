@@ -107,7 +107,7 @@ export const withRetry = async <T>(
       }
 
       if (!isRetryableError(lastError, retryablePatterns, nonRetryablePatterns)) {
-        logger.debug({
+        logger.trace({
           attempt,
           error: lastError.message,
         }, 'Non-retryable error, failing immediately');

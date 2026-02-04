@@ -1,27 +1,26 @@
 import pino from 'pino';
 
-const isDevelopment = process.env['NODE_ENV'] === 'development';
+const isProduction = process.env['NODE_ENV'] === 'production';
 
 export const auditLogger = pino({
   name: 'security-audit',
   level: 'info',
-  transport: isDevelopment
-    ? {
+  transport: isProduction
+    ? undefined
+    : {
         target: 'pino-pretty',
         options: {
           colorize: true,
-          translateTime: 'HH:MM:ss Z',
+          translateTime: 'HH:MM:ss',
           ignore: 'pid,hostname',
-          messageFormat: '🔒 {msg}',
+          singleLine: true,
         },
-      }
-    : undefined,
+      },
   formatters: {
     level: (label) => ({ level: label }),
   },
   base: {
     service: 'security-audit',
-    env: process.env['NODE_ENV'] ?? 'development',
   },
 });
 

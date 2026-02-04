@@ -74,11 +74,11 @@ const printProgress = (current: number, total: number, startTime: number) => {
   const barLength = 30;
   const filled = Math.round((current / total) * barLength);
   const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
-  process.stdout.write(`\r⏳ [${bar}] ${current}/${total} (${percent.toFixed(0)}%) ETA: ${eta.toFixed(0)}s    `);
+  process.stdout.write(`\r~ [${bar}] ${current}/${total} (${percent.toFixed(0)}%) ETA: ${eta.toFixed(0)}s    `);
 };
 
 async function runOptimization() {
-  console.log('🎯 Fibonacci Target Level Optimization');
+  console.log('> Fibonacci Target Level Optimization');
   console.log('======================================\n');
 
   const { symbol, interval, startDate, endDate } = parseCliArgs();
@@ -93,11 +93,11 @@ async function runOptimization() {
     },
   ];
 
-  console.log(`📊 Symbol: ${symbol}@${interval} (FUTURES)`);
-  console.log(`📅 Period: ${startDate} to ${endDate}`);
-  console.log(`🔍 TP Modes: ${TP_MODES.join(', ')}`);
-  console.log(`📏 Fibonacci Levels: ${FIBONACCI_LEVELS.join(', ')}`);
-  console.log(`📋 Combinations to test: ${combinations.length} (1 default + ${FIBONACCI_LEVELS.length}² fibonacci)\n`);
+  console.log(`> Symbol: ${symbol}@${interval} (FUTURES)`);
+  console.log(`# Period: ${startDate} to ${endDate}`);
+  console.log(`> TP Modes: ${TP_MODES.join(', ')}`);
+  console.log(`# Fibonacci Levels: ${FIBONACCI_LEVELS.join(', ')}`);
+  console.log(`> Combinations to test: ${combinations.length} (1 default + ${FIBONACCI_LEVELS.length}² fibonacci)\n`);
 
   const baseConfig: Omit<MultiWatcherBacktestConfig, 'watchers' | 'startDate' | 'endDate' | 'tpCalculationMode' | 'fibonacciTargetLevelLong' | 'fibonacciTargetLevelShort'> = {
     initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
@@ -211,7 +211,7 @@ async function runOptimization() {
   };
 
   fs.writeFileSync(outputFile, JSON.stringify(outputData, null, 2));
-  console.log(`\n💾 Results saved to: ${outputFile}`);
+  console.log(`\n> Results saved to: ${outputFile}`);
 
   process.exit(0);
 }
@@ -267,7 +267,7 @@ function printResultsTables(results: TestResult[]) {
   const baseline = results.find(r => r.tpMode === 'default')!;
 
   console.log('═'.repeat(150));
-  console.log('📊 TOP 20 FIBONACCI CONFIGURATIONS (by P&L)');
+  console.log('> TOP 20 FIBONACCI CONFIGURATIONS (by P&L)');
   console.log('═'.repeat(150) + '\n');
 
   console.log('Rank  Configuration                   P&L          P&L%    Trades   WinRate    PF    MaxDD    AvgWin    AvgLoss    LONG P&L    SHORT P&L');
@@ -288,7 +288,7 @@ function printResultsTables(results: TestResult[]) {
     const longPnlStr = `$${formatCurrency(r.longPnl)}`.padStart(11);
     const shortPnlStr = `$${formatCurrency(r.shortPnl)}`.padStart(11);
 
-    const marker = i === 0 ? '🏆' : i < 3 ? '🥈' : i < 5 ? '🥉' : '  ';
+    const marker = i === 0 ? '>' : i < 3 ? '#2' : i < 5 ? '#3' : '  ';
 
     console.log(`${marker}${rank}${nameStr} ${pnlStr} ${pnlPctStr} ${tradesStr} ${wrStr} ${pfStr} ${ddStr} ${avgWinStr} ${avgLossStr} ${longPnlStr} ${shortPnlStr}`);
   }
@@ -296,7 +296,7 @@ function printResultsTables(results: TestResult[]) {
   console.log('─'.repeat(150));
 
   console.log('\n' + '═'.repeat(120));
-  console.log('📈 BEST LONG LEVELS (averaged across all SHORT levels)');
+  console.log('> BEST LONG LEVELS (averaged across all SHORT levels)');
   console.log('═'.repeat(120) + '\n');
 
   const longLevelStats = new Map<FibonacciLevel, { pnls: number[]; trades: number[]; winRates: number[] }>();
@@ -335,14 +335,14 @@ function printResultsTables(results: TestResult[]) {
     const diffPnl = stats.avgPnl - baseline.pnl;
     const valueStr = `${diffPnl >= 0 ? '+' : ''}$${formatCurrency(diffPnl)}`.padStart(16);
 
-    const marker = longLevelSorted[0] === stats ? '🏆' : '  ';
+    const marker = longLevelSorted[0] === stats ? '>' : '  ';
     console.log(`${marker}${levelStr} ${avgPnlStr} ${minPnlStr} ${maxPnlStr} ${avgTradesStr} ${avgWrStr} ${valueStr}`);
   }
 
   console.log('─'.repeat(100));
 
   console.log('\n' + '═'.repeat(120));
-  console.log('📉 BEST SHORT LEVELS (averaged across all LONG levels)');
+  console.log('> BEST SHORT LEVELS (averaged across all LONG levels)');
   console.log('═'.repeat(120) + '\n');
 
   const shortLevelStats = new Map<FibonacciLevel, { pnls: number[]; trades: number[]; winRates: number[] }>();
@@ -381,14 +381,14 @@ function printResultsTables(results: TestResult[]) {
     const diffPnl = stats.avgPnl - baseline.pnl;
     const valueStr = `${diffPnl >= 0 ? '+' : ''}$${formatCurrency(diffPnl)}`.padStart(16);
 
-    const marker = shortLevelSorted[0] === stats ? '🏆' : '  ';
+    const marker = shortLevelSorted[0] === stats ? '>' : '  ';
     console.log(`${marker}${levelStr} ${avgPnlStr} ${minPnlStr} ${maxPnlStr} ${avgTradesStr} ${avgWrStr} ${valueStr}`);
   }
 
   console.log('─'.repeat(100));
 
   console.log('\n' + '═'.repeat(120));
-  console.log('🎯 SUMMARY: FIBONACCI vs DEFAULT TP');
+  console.log('> SUMMARY: FIBONACCI vs DEFAULT TP');
   console.log('═'.repeat(120) + '\n');
 
   const fibResults = results.filter(r => r.tpMode === 'fibonacci');
@@ -396,27 +396,27 @@ function printResultsTables(results: TestResult[]) {
   const avgFibPnl = fibResults.reduce((sum, r) => sum + r.pnl, 0) / fibResults.length;
   const profitableFib = fibResults.filter(r => r.pnl > 0).length;
 
-  console.log(`📌 Default TP (no Fibonacci):`);
+  console.log(`> Default TP (no Fibonacci):`);
   console.log(`   P&L: $${formatCurrency(baseline.pnl)} | WR: ${formatPercent(baseline.winRate)} | PF: ${baseline.profitFactor.toFixed(2)} | MaxDD: ${formatPercent(baseline.maxDrawdown)}`);
   console.log(`   Trades: ${baseline.trades} | LONG: $${formatCurrency(baseline.longPnl)} | SHORT: $${formatCurrency(baseline.shortPnl)}`);
 
-  console.log(`\n🏆 Best Fibonacci Config:`);
+  console.log(`\n> Best Fibonacci Config:`);
   console.log(`   ${bestFib.name}`);
   console.log(`   P&L: $${formatCurrency(bestFib.pnl)} | WR: ${formatPercent(bestFib.winRate)} | PF: ${bestFib.profitFactor.toFixed(2)} | MaxDD: ${formatPercent(bestFib.maxDrawdown)}`);
   console.log(`   Trades: ${bestFib.trades} | LONG: $${formatCurrency(bestFib.longPnl)} | SHORT: $${formatCurrency(bestFib.shortPnl)}`);
   console.log(`   vs Default: ${bestFib.pnl - baseline.pnl >= 0 ? '+' : ''}$${formatCurrency(bestFib.pnl - baseline.pnl)}`);
 
-  console.log(`\n📊 Statistics:`);
+  console.log(`\n> Statistics:`);
   console.log(`   • Best LONG level: ${longLevelSorted[0]?.level} (avg P&L: $${formatCurrency(longLevelSorted[0]?.avgPnl ?? 0)})`);
   console.log(`   • Best SHORT level: ${shortLevelSorted[0]?.level} (avg P&L: $${formatCurrency(shortLevelSorted[0]?.avgPnl ?? 0)})`);
   console.log(`   • Profitable Fib configs: ${profitableFib}/${fibResults.length} (${formatPercent((profitableFib / fibResults.length) * 100)})`);
   console.log(`   • Average Fib P&L: $${formatCurrency(avgFibPnl)}`);
-  console.log(`   • Fibonacci adds value: ${bestFib.pnl > baseline.pnl ? '✅ YES' : '❌ NO'}`);
+  console.log(`   • Fibonacci adds value: ${bestFib.pnl > baseline.pnl ? '✓ YES' : '✗ NO'}`);
 
   if (bestFib.pnl > baseline.pnl) {
-    console.log(`\n💡 RECOMMENDATION: Use Fibonacci TP with LONG=${bestFib.longLevel}, SHORT=${bestFib.shortLevel}`);
+    console.log(`\n> RECOMMENDATION: Use Fibonacci TP with LONG=${bestFib.longLevel}, SHORT=${bestFib.shortLevel}`);
   } else {
-    console.log(`\n💡 RECOMMENDATION: Keep using default TP mode (Fibonacci doesn't add value for this config)`);
+    console.log(`\n> RECOMMENDATION: Keep using default TP mode (Fibonacci doesn't add value for this config)`);
   }
 }
 

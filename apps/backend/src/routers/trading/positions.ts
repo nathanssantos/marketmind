@@ -94,7 +94,7 @@ export const positionsRouter = router({
           symbol: input.symbol,
           side: input.side,
           riskRewardRatio: riskRewardRatio.toFixed(2),
-        }, '✅ Risk/Reward ratio validated for manual position');
+        }, '✓ Risk/Reward ratio validated for manual position');
       }
 
       const positionId = generateEntityId();
@@ -195,7 +195,7 @@ export const positionsRouter = router({
             marketType: position.marketType,
             leverage,
             message: 'Position closed manually by user',
-          }, '👤 [MANUAL] Manual close position: Binance exit order executed');
+          }, '> [MANUAL] Manual close position: Binance exit order executed');
         } catch (error) {
           logger.error({
             positionId: position.id,
@@ -222,7 +222,7 @@ export const positionsRouter = router({
           marketType: position.marketType,
           leverage,
           message: 'Position closed manually by user (paper trading)',
-        }, '👤 [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
+        }, '> [MANUAL] Manual close position: Paper/disabled mode - simulating exit');
       }
 
       const marketType = isFutures ? 'FUTURES' : 'SPOT';

@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import Table from 'cli-table3';
 import { ResultManager } from '../../services/backtesting/ResultManager';
 import { BacktestLogger, LogLevel } from '../utils/logger';
 import { validateFilePath, ValidationError } from '../utils/validators';
@@ -48,7 +47,7 @@ export async function compareCommand(files: string[], options: CompareOptions) {
 
     const comparison = resultManager.compareResults(results);
 
-    displayComparisonTable(comparison);
+    displayComparisonLines(comparison);
 
     console.log('');
     displayBestPerformers(comparison);
@@ -67,109 +66,53 @@ export async function compareCommand(files: string[], options: CompareOptions) {
   }
 }
 
-function displayComparisonTable(comparison: any[]) {
+function displayComparisonLines(comparison: any[]) {
   const hasValidation = comparison.some(c => c.type === 'validation');
   const hasOptimization = comparison.some(c => c.type === 'optimization');
 
   if (hasValidation && !hasOptimization) {
-    const table = new Table({
-      head: [
-        chalk.cyan('Strategy'),
-        chalk.cyan('Symbol'),
-        chalk.cyan('Interval'),
-        chalk.cyan('Period'),
-        chalk.cyan('Trades'),
-        chalk.cyan('Win %'),
-        chalk.cyan('PF'),
-        chalk.cyan('PnL %'),
-        chalk.cyan('DD %'),
-        chalk.cyan('Sharpe'),
-      ],
-      colWidths: [12, 10, 10, 25, 8, 8, 7, 9, 8, 8],
-    });
-
     for (const result of comparison) {
       if (result.type === 'validation') {
-        table.push([
-          result.strategy,
-          result.symbol,
-          result.interval,
-          result.period,
-          result.trades.toString(),
-          formatNumber(result.winRate, 1),
-          formatNumber(result.profitFactor, 2),
-          formatPnL(result.totalPnl),
-          formatNumber(result.maxDrawdown, 2),
-          formatNumber(result.sharpeRatio, 2),
-        ]);
+        console.log(
+          `  ${chalk.white(result.strategy.padEnd(10))} ${chalk.white(result.symbol.padEnd(10))} ${result.interval.padEnd(4)} ` +
+          `${chalk.gray(result.period)} ` +
+          `${result.trades.toString().padStart(4)} trades ` +
+          `WR=${formatNumber(result.winRate, 1)}% ` +
+          `PF=${formatNumber(result.profitFactor, 2)} ` +
+          `PnL=${formatPnL(result.totalPnl)}% ` +
+          `DD=${formatNumber(result.maxDrawdown, 2)}% ` +
+          `Sharpe=${formatNumber(result.sharpeRatio, 2)}`
+        );
       }
     }
-
-    console.log(table.toString());
 
   } else if (hasOptimization && !hasValidation) {
-    const table = new Table({
-      head: [
-        chalk.cyan('Strategy'),
-        chalk.cyan('Symbol'),
-        chalk.cyan('Int.'),
-        chalk.cyan('Period'),
-        chalk.cyan('Combs'),
-        chalk.cyan('Best WR'),
-        chalk.cyan('Best PF'),
-        chalk.cyan('Best PnL'),
-        chalk.cyan('Avg WR'),
-        chalk.cyan('Avg PnL'),
-      ],
-      colWidths: [12, 10, 6, 25, 7, 9, 8, 10, 8, 9],
-    });
-
     for (const result of comparison) {
       if (result.type === 'optimization') {
-        table.push([
-          result.strategy,
-          result.symbol,
-          result.interval,
-          result.period,
-          result.combinations.toString(),
-          formatNumber(result.bestWinRate, 1),
-          formatNumber(result.bestProfitFactor, 2),
-          formatPnL(result.bestPnl),
-          formatNumber(result.avgWinRate, 1),
-          formatPnL(result.avgPnl),
-        ]);
+        console.log(
+          `  ${chalk.white(result.strategy.padEnd(10))} ${chalk.white(result.symbol.padEnd(10))} ${result.interval.padEnd(4)} ` +
+          `${chalk.gray(result.period)} ` +
+          `${result.combinations} combs ` +
+          `bestWR=${formatNumber(result.bestWinRate, 1)}% ` +
+          `bestPF=${formatNumber(result.bestProfitFactor, 2)} ` +
+          `bestPnL=${formatPnL(result.bestPnl)}% ` +
+          `avgWR=${formatNumber(result.avgWinRate, 1)}% ` +
+          `avgPnL=${formatPnL(result.avgPnl)}%`
+        );
       }
     }
 
-    console.log(table.toString());
-
   } else {
-    console.log(chalk.yellow.bold('⚠ Mixed result types detected (validation + optimization)'));
+    console.log(chalk.yellow.bold('! Mixed result types detected (validation + optimization)'));
     console.log(chalk.gray('Displaying simplified comparison:'));
     console.log('');
 
-    const table = new Table({
-      head: [
-        chalk.cyan('Type'),
-        chalk.cyan('Strategy'),
-        chalk.cyan('Symbol'),
-        chalk.cyan('Interval'),
-        chalk.cyan('Period'),
-      ],
-      colWidths: [15, 12, 10, 10, 25],
-    });
-
     for (const result of comparison) {
-      table.push([
-        result.type,
-        result.strategy,
-        result.symbol,
-        result.interval,
-        result.period,
-      ]);
+      console.log(
+        `  ${chalk.gray(result.type.padEnd(12))} ${chalk.white(result.strategy.padEnd(10))} ` +
+        `${chalk.white(result.symbol.padEnd(10))} ${result.interval.padEnd(4)} ${chalk.gray(result.period)}`
+      );
     }
-
-    console.log(table.toString());
   }
 }
 
@@ -224,11 +167,7 @@ function formatNumber(value: number, decimals: number): string {
 
 function formatPnL(value: number): string {
   const formatted = value.toFixed(2);
-  if (value > 0) {
-    return chalk.green(`+${formatted}`);
-  } else if (value < 0) {
-    return chalk.red(formatted);
-  } else {
-    return chalk.gray(formatted);
-  }
+  if (value > 0) return chalk.green(`+${formatted}`);
+  if (value < 0) return chalk.red(formatted);
+  return chalk.gray(formatted);
 }

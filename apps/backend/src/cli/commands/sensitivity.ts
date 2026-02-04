@@ -1,7 +1,6 @@
 
 import type { Kline, TimeInterval } from '@marketmind/types';
 import chalk from 'chalk';
-import Table from 'cli-table3';
 import ora from 'ora';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { ParameterSensitivityAnalyzer, type ParameterRange, type SensitivityAnalysis } from '../../services/backtesting/ParameterSensitivityAnalyzer';
@@ -36,9 +35,7 @@ interface SensitivityOptions {
 export async function sensitivityCommand(options: SensitivityOptions): Promise<void> {
   try {
     console.log('');
-    console.log(chalk.cyan.bold('═'.repeat(80)));
-    console.log(chalk.cyan.bold('           PARAMETER SENSITIVITY ANALYSIS'));
-    console.log(chalk.cyan.bold('═'.repeat(80)));
+    console.log(chalk.cyan.bold('--- PARAMETER SENSITIVITY ANALYSIS ---'));
     console.log('');
 
     const symbol = validateSymbol(options.symbol);
@@ -94,7 +91,7 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
     console.log(chalk.gray(`  Strategy:        ${options.strategy.toUpperCase()}`));
     console.log(chalk.gray(`  Symbol:          ${symbol}`));
     console.log(chalk.gray(`  Interval:        ${interval}`));
-    console.log(chalk.gray(`  Period:          ${startDate} → ${endDate}`));
+    console.log(chalk.gray(`  Period:          ${startDate} -> ${endDate}`));
     console.log(chalk.gray(`  Capital:         $${capital.toLocaleString()}`));
     console.log(chalk.gray(`  Parameters:      ${paramSummary}`));
     console.log(chalk.gray(`  Combinations:    ${totalCombinations}`));
@@ -102,7 +99,7 @@ export async function sensitivityCommand(options: SensitivityOptions): Promise<v
     console.log('');
 
     if (totalCombinations > 100) {
-      console.log(chalk.yellow(`⚠ Warning: Testing ${totalCombinations} combinations may take a long time.`));
+      console.log(chalk.yellow(`! Warning: Testing ${totalCombinations} combinations may take a long time.`));
       console.log('');
     }
 
@@ -223,20 +220,14 @@ function displayResults(
   console.log(chalk.cyan.bold('BEST VS WORST PARAMETERS:'));
   console.log('');
 
-  const bestTable = new Table({
-    head: [chalk.cyan('Parameter'), chalk.green('Best Value'), chalk.red('Worst Value')],
-    style: { head: [] },
-  });
+  const pad = (s: string) => s.padEnd(20);
 
   for (const paramName of Object.keys(result.bestParameters)) {
-    bestTable.push([
-      paramName,
-      result.bestParameters[paramName]?.toFixed(2) || 'N/A',
-      result.worstParameters[paramName]?.toFixed(2) || 'N/A',
-    ]);
+    const best = result.bestParameters[paramName]?.toFixed(2) || 'N/A';
+    const worst = result.worstParameters[paramName]?.toFixed(2) || 'N/A';
+    console.log(`  ${pad(paramName)} best=${chalk.green(best)} worst=${chalk.red(worst)}`);
   }
 
-  console.log(bestTable.toString());
   console.log('');
 
   interpretResults(result);
@@ -261,7 +252,7 @@ function displayParameterAnalysis(
 
   const overOptCheck = ParameterSensitivityAnalyzer.detectOverOptimization(analysis);
   if (overOptCheck.isOverOptimized) {
-    console.log(chalk.red(`  ⚠ OVER-OPTIMIZED: ${overOptCheck.reason}`));
+    console.log(chalk.red(`  ! OVER-OPTIMIZED: ${overOptCheck.reason}`));
   } else {
     console.log(chalk.green(`  ✓ ${overOptCheck.reason}`));
   }
@@ -275,21 +266,14 @@ function displayParameterAnalysis(
     console.log('');
     console.log(chalk.gray('  Detailed Results:'));
 
-    const table = new Table({
-      head: [chalk.cyan('Value'), chalk.cyan(metric), chalk.cyan('Change %')],
-      style: { head: [] },
-    });
-
-    for (const result of analysis.results) {
-      const changeColor = result.percentageChange >= 0 ? 'green' : 'red';
-      table.push([
-        result.parameterValue.toFixed(2),
-        result.metricValue.toFixed(3),
-        chalk[changeColor](`${result.percentageChange >= 0 ? '+' : ''}${(result.percentageChange * 100).toFixed(1)}%`),
-      ]);
+    for (const r of analysis.results) {
+      const changeColor = r.percentageChange >= 0 ? 'green' : 'red';
+      const changeStr = `${r.percentageChange >= 0 ? '+' : ''}${(r.percentageChange * 100).toFixed(1)}%`;
+      console.log(
+        chalk.gray(`    value=${r.parameterValue.toFixed(2)} ${metric}=${r.metricValue.toFixed(3)} `) +
+        chalk[changeColor](changeStr)
+      );
     }
-
-    console.log(table.toString());
   }
 
   console.log('');
@@ -335,23 +319,23 @@ function interpretResults(result: any) {
   if (insights.length > 0) {
     console.log(chalk.green.bold('✓ INSIGHTS:'));
     for (const insight of insights) {
-      console.log(chalk.green(`  • ${insight}`));
+      console.log(chalk.green(`  · ${insight}`));
     }
     console.log('');
   }
 
   if (warnings.length > 0) {
-    console.log(chalk.yellow.bold('⚠ WARNINGS:'));
+    console.log(chalk.yellow.bold('! WARNINGS:'));
     for (const warning of warnings) {
-      console.log(chalk.yellow(`  • ${warning}`));
+      console.log(chalk.yellow(`  · ${warning}`));
     }
     console.log('');
   }
 
   if (recommendations.length > 0) {
-    console.log(chalk.cyan.bold('💡 RECOMMENDATIONS:'));
+    console.log(chalk.cyan.bold('> RECOMMENDATIONS:'));
     for (const recommendation of recommendations) {
-      console.log(chalk.cyan(`  • ${recommendation}`));
+      console.log(chalk.cyan(`  · ${recommendation}`));
     }
     console.log('');
   }
@@ -360,7 +344,7 @@ function interpretResults(result: any) {
   if (result.robustnessScore >= 80) {
     console.log(chalk.green('  ✓ Strategy parameters are robust and production-ready'));
   } else if (result.robustnessScore >= 60) {
-    console.log(chalk.yellow('  ⚠ Strategy shows acceptable robustness but requires validation'));
+    console.log(chalk.yellow('  ! Strategy shows acceptable robustness but requires validation'));
     console.log(chalk.gray('    Run walk-forward analysis before live trading'));
   } else {
     console.log(chalk.red('  ✗ Strategy is over-optimized and NOT recommended for live trading'));

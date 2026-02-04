@@ -53,7 +53,7 @@ function validateEMA() {
     const currentPrice = prices[i] ?? 0;
     manualEMA9 = (currentPrice - prev) * multiplier + prev;
     const systemEMA = ema9[i] ?? null;
-    const match = systemEMA !== null && Math.abs(systemEMA - manualEMA9) < 0.0001 ? '✅' : '❌';
+    const match = systemEMA !== null && Math.abs(systemEMA - manualEMA9) < 0.0001 ? '✓' : '✗';
     console.log(`Index ${i}: Manual=${manualEMA9.toFixed(4)}, Sistema=${systemEMA?.toFixed(4) ?? 'null'}, ${match}`);
   }
 
@@ -62,7 +62,7 @@ function validateEMA() {
     return true;
   });
 
-  console.log(`\n✅ EMA está CORRETO - usa fórmula padrão da indústria`);
+  console.log(`\n✓ EMA está CORRETO - usa fórmula padrão da indústria`);
 }
 
 function validateRSI() {
@@ -127,7 +127,7 @@ function validateRSI() {
 
     const systemRSI = rsi14.values[i] ?? null;
     const diff = systemRSI !== null ? Math.abs(rsi - systemRSI) : 999;
-    const match = diff < 1.0 ? '✅' : `❌ (diff: ${diff.toFixed(2)})`;
+    const match = diff < 1.0 ? '✓' : `✗ (diff: ${diff.toFixed(2)})`;
 
     console.log(`${i.toString().padStart(5)} | ${rsi.toFixed(2).padStart(10)} | ${systemRSI?.toFixed(2).padStart(11) ?? 'null'.padStart(11)} | ${match}`);
   }
@@ -140,10 +140,10 @@ function validateRSI() {
   });
 
   if (allMatch) {
-    console.log('\n✅ RSI está usando Wilders Smoothing CORRETAMENTE!');
+    console.log('\n✓ RSI está usando Wilders Smoothing CORRETAMENTE!');
     console.log('    Diferenças < 1.0 são aceitáveis (floating point precision).');
   } else {
-    console.log('\n⚠️  RSI ainda tem diferenças significativas!');
+    console.log('\n!  RSI ainda tem diferenças significativas!');
     console.log('    Verificar implementação.');
   }
 }
@@ -187,9 +187,9 @@ async function main() {
   validateRSI2();
 
   console.log('\n\n=== RESUMO DA VALIDAÇÃO ===');
-  console.log('✅ EMA: Implementação CORRETA (usa fórmula padrão)');
-  console.log('✅ RSI: Implementação CORRETA (usa Wilders Smoothing)');
-  console.log('\n📋 Indicadores validados com sucesso!');
+  console.log('✓ EMA: Implementação CORRETA (usa fórmula padrão)');
+  console.log('✓ RSI: Implementação CORRETA (usa Wilders Smoothing)');
+  console.log('\n> Indicadores validados com sucesso!');
 }
 
 main().catch(console.error);

@@ -443,7 +443,7 @@ export class MinNotionalFilterService {
     maxWatchers = Math.min(maxWatchers, eligibleSymbols.length);
     const capitalPerWatcher = maxWatchers > 0 ? availableCapital / maxWatchers : availableCapital;
 
-    logger.debug({
+    logger.trace({
       walletBalance,
       availableCapital,
       symbolsCount: symbols.length,

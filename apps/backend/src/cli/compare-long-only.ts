@@ -33,7 +33,7 @@ async function compare() {
   for (const onlyLong of [false, true]) {
     const modeName = onlyLong ? 'LONG-ONLY' : 'LONG + SHORT';
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`🔄 Testando: ${modeName}`);
+    console.log(`> Testando: ${modeName}`);
     console.log(`${'═'.repeat(60)}\n`);
 
     const baseConfig = createBaseConfig();
@@ -83,7 +83,7 @@ async function compare() {
     });
 
     console.log('━'.repeat(60));
-    console.log(`📊 ${modeName}`);
+    console.log(`> ${modeName}`);
     console.log('━'.repeat(60));
     console.log('');
     console.log('Total Trades:', result.metrics.totalTrades);
@@ -105,7 +105,7 @@ async function compare() {
     );
     console.log('');
 
-    console.log('📈 Por Símbolo:');
+    console.log('> Por Símbolo:');
     for (const ws of result.watcherStats) {
       console.log(
         `  ${ws.symbol}: ${ws.tradesExecuted} trades | Setups: ${ws.totalSetups} | Bloqueados: ${ws.tradesSkipped}`
@@ -115,7 +115,7 @@ async function compare() {
   }
 
   console.log('\n' + '═'.repeat(60));
-  console.log('📊 RESUMO COMPARATIVO');
+  console.log('> RESUMO COMPARATIVO');
   console.log('═'.repeat(60));
   console.log('');
 
@@ -154,19 +154,19 @@ async function compare() {
   const ddDiff = longOnly.maxDrawdown - longShort.maxDrawdown;
 
   if (pnlDiff > 0 && ddDiff <= 0) {
-    console.log('🏆 RECOMENDAÇÃO: USAR LONG-ONLY MODE');
+    console.log('> RECOMENDAÇÃO: USAR LONG-ONLY MODE');
     console.log(`   Melhoria de P&L: +$${pnlDiff.toFixed(2)}`);
     console.log(`   Melhoria de Drawdown: ${Math.abs(ddDiff).toFixed(1)}%`);
   } else if (pnlDiff < 0 && longShort.shortPnl > 0) {
-    console.log('🏆 RECOMENDAÇÃO: MANTER LONG+SHORT');
+    console.log('> RECOMENDAÇÃO: MANTER LONG+SHORT');
     console.log(`   SHORTs contribuem: +$${longShort.shortPnl.toFixed(2)}`);
     console.log(`   Win Rate SHORT: ${longShort.shortWinRate.toFixed(1)}%`);
   } else if (pnlDiff > 0) {
-    console.log('🏆 RECOMENDAÇÃO: USAR LONG-ONLY MODE');
+    console.log('> RECOMENDAÇÃO: USAR LONG-ONLY MODE');
     console.log(`   Melhoria de P&L: +$${pnlDiff.toFixed(2)}`);
-    if (ddDiff > 0) console.log(`   ⚠️ Drawdown aumenta: +${ddDiff.toFixed(1)}%`);
+    if (ddDiff > 0) console.log(`   ! Drawdown aumenta: +${ddDiff.toFixed(1)}%`);
   } else {
-    console.log('🟡 INCONCLUSIVO: Analisar trade-offs');
+    console.log('~ INCONCLUSIVO: Analisar trade-offs');
     console.log(`   LONG+SHORT P&L: $${longShort.totalPnl.toFixed(2)}`);
     console.log(`   LONG-ONLY P&L: $${longOnly.totalPnl.toFixed(2)}`);
   }

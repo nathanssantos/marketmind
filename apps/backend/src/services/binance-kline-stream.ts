@@ -23,7 +23,7 @@ class ReconnectionGuard {
 
     setTimeout(() => {
       this.isInGracePeriod = false;
-      logger.debug({ marketType }, 'Grace period ended - resuming normal kline persistence');
+      logger.trace({ marketType }, 'Grace period ended - resuming normal kline persistence');
 
       void this.triggerPostReconnectionCheck();
     }, this.GRACE_PERIOD_MS);
@@ -173,7 +173,7 @@ export class BinanceKlineStreamService {
 
     if (existing) {
       existing.clientCount++;
-      logger.debug({
+      logger.trace({
         count: existing.clientCount,
       }, `Kline subscription count increased for ${key}`);
       return;
@@ -215,7 +215,7 @@ export class BinanceKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          logger.debug(`Unsubscribed from kline stream: ${key}`);
+          logger.trace(`Unsubscribed from kline stream: ${key}`);
         } catch (error) {
           logger.error({
             symbol,
@@ -226,7 +226,7 @@ export class BinanceKlineStreamService {
       }
       this.subscriptions.delete(key);
     } else {
-      logger.debug({
+      logger.trace({
         count: existing.clientCount,
       }, `Kline subscription count decreased for ${key}`);
     }
@@ -298,12 +298,12 @@ export class BinanceKlineStreamService {
           symbol: update.symbol,
           interval: update.interval,
           openTime: new Date(update.openTime).toISOString(),
-        }, '🚨 CRITICAL: Attempted to persist an OPEN candle - This should NEVER happen!');
+        }, '! CRITICAL: Attempted to persist an OPEN candle - This should NEVER happen!');
         return;
       }
 
       if (!reconnectionGuard.shouldPersistKline()) {
-        logger.debug({
+        logger.trace({
           symbol: update.symbol,
           interval: update.interval,
           openTime: new Date(update.openTime).toISOString(),
@@ -527,7 +527,7 @@ export class BinanceFuturesKlineStreamService {
     if (existing.clientCount <= 0) {
       if (this.client) {
         try {
-          logger.debug(`Unsubscribed from futures kline stream: ${key}`);
+          logger.trace(`Unsubscribed from futures kline stream: ${key}`);
         } catch (error) {
           logger.error({
             symbol,
@@ -606,12 +606,12 @@ export class BinanceFuturesKlineStreamService {
           symbol: update.symbol,
           interval: update.interval,
           openTime: new Date(update.openTime).toISOString(),
-        }, '🚨 CRITICAL: Attempted to persist an OPEN futures candle - This should NEVER happen!');
+        }, '! CRITICAL: Attempted to persist an OPEN futures candle - This should NEVER happen!');
         return;
       }
 
       if (!reconnectionGuard.shouldPersistKline()) {
-        logger.debug({
+        logger.trace({
           symbol: update.symbol,
           interval: update.interval,
           openTime: new Date(update.openTime).toISOString(),

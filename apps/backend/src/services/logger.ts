@@ -1,6 +1,6 @@
 import pino from 'pino';
 
-const isDevelopment = process.env['NODE_ENV'] === 'development';
+const isProduction = process.env['NODE_ENV'] === 'production';
 const logLevel = process.env['LOG_LEVEL'] ?? 'info';
 
 export const serializeError = (error: unknown): string => {
@@ -24,21 +24,19 @@ export const serializeError = (error: unknown): string => {
 
 export const logger = pino({
   level: logLevel,
-  transport: isDevelopment
-    ? {
+  transport: isProduction
+    ? undefined
+    : {
         target: 'pino-pretty',
         options: {
           colorize: true,
-          translateTime: 'HH:MM:ss Z',
+          translateTime: 'HH:MM:ss',
           ignore: 'pid,hostname',
+          singleLine: true,
         },
-      }
-    : undefined,
+      },
   formatters: {
     level: (label) => ({ level: label }),
-  },
-  base: {
-    env: process.env['NODE_ENV'] ?? 'development',
   },
 });
 

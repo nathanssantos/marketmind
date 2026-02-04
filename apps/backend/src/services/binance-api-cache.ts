@@ -102,7 +102,7 @@ class BinanceApiCache {
     }
 
     if (cleaned > 0) {
-      logger.debug({ cleaned, remaining: this.cache.size }, '[BinanceApiCache] Cleanup completed');
+      logger.trace({ cleaned, remaining: this.cache.size }, '[BinanceApiCache] Cleanup completed');
     }
   }
 

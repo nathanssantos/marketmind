@@ -163,7 +163,7 @@ export async function benchmarkCommand(options: BenchmarkOptions) {
   console.log(`${chalk.bold('Overall:')} ${passedCount}/${totalCount} benchmarks passed\n`);
 
   for (const r of results) {
-    const status = r.passed ? chalk.green('✓ PASS') : chalk.yellow('⚠ DEVIATION');
+    const status = r.passed ? chalk.green('✓ PASS') : chalk.yellow('! DEVIATION');
     console.log(`${status} ${chalk.bold(r.spec.name)}`);
 
     if (r.error) {
@@ -192,7 +192,7 @@ export async function benchmarkCommand(options: BenchmarkOptions) {
   if (passedCount === totalCount) {
     console.log(chalk.green.bold('\n✓ All benchmarks passed! System validation successful.\n'));
   } else {
-    console.log(chalk.yellow.bold(`\n⚠ ${totalCount - passedCount} benchmark(s) show deviation from expected values.`));
+    console.log(chalk.yellow.bold(`\n! ${totalCount - passedCount} benchmark(s) show deviation from expected values.`));
     console.log(chalk.gray('Note: Crypto markets behave differently from equities (benchmark sources).\n'));
     console.log(chalk.gray('Tolerances applied: Win Rate ±5%, Profit Factor ±0.3\n'));
   }
