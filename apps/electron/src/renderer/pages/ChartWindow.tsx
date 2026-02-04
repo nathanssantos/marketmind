@@ -35,8 +35,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
-  const [symbol, setSymbol] = useLocalStorage('marketmind:chartwindow:symbol', routeSymbol || initialSymbol || 'BTCUSDT');
-  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:chartwindow:marketType', 'FUTURES');
+  const [symbol, setSymbol] = useState(routeSymbol || initialSymbol || 'BTCUSDT');
+  const [marketType, setMarketType] = useState<MarketType>('FUTURES');
 
   useCurrencyAutoRefresh();
 
@@ -56,7 +56,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
   const [showEventRow, setShowEventRow] = useLocalStorage('marketmind:showEventRow', true);
   const [chartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', (routeTimeframe as Timeframe) || '12h');
+  const [timeframe, setTimeframe] = useState<Timeframe>((routeTimeframe as Timeframe) || '12h');
   const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
     'marketmind:movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -263,20 +263,6 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   }, [marketData?.klines, liveKlines]);
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
-
-  useEffect(() => {
-    if (routeSymbol && routeSymbol !== symbol) {
-      setSymbol(routeSymbol);
-    } else if (initialSymbol && initialSymbol !== symbol) {
-      setSymbol(initialSymbol);
-    }
-  }, [routeSymbol, initialSymbol]);
-
-  useEffect(() => {
-    if (routeTimeframe && routeTimeframe !== timeframe) {
-      setTimeframe(routeTimeframe as Timeframe);
-    }
-  }, [routeTimeframe]);
 
   useEffect(() => {
     const newPath = `/chart/${encodeURIComponent(symbol)}/${timeframe}`;

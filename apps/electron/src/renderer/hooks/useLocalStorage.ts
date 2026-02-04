@@ -26,8 +26,6 @@ const KEY_TO_CATEGORY: Record<string, PreferenceCategory> = {
   'marketmind:timeframe': 'chart',
   'marketmind:movingAverages': 'chart',
   'marketmind:advancedConfig': 'chart',
-  'marketmind:chartwindow:symbol': 'chart',
-  'marketmind:chartwindow:marketType': 'chart',
   'trading-sidebar-open': 'ui',
   'trading-sidebar-width': 'ui',
   'marketmind:autoTradeConsole:fontSizeIndex': 'ui',
@@ -47,6 +45,24 @@ const normalizeKey = (key: string): string => {
   return key.replace(/[^a-zA-Z0-9_-]/g, '_');
 };
 
+const readLocalCache = <T>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) return JSON.parse(raw) as T;
+  } catch {
+    // Ignore parse errors
+  }
+  return fallback;
+};
+
+const writeLocalCache = <T>(key: string, value: T): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore quota errors
+  }
+};
+
 export function useLocalStorage<T>(
   key: string,
   initialValue: T
@@ -55,7 +71,7 @@ export function useLocalStorage<T>(
   const normalizedKey = normalizeKey(key);
   const utils = trpc.useUtils();
 
-  const [value, setValueState] = useState<T>(initialValue);
+  const [value, setValueState] = useState<T>(() => readLocalCache(key, initialValue));
   const isHydratedRef = useRef(false);
   const pendingValueRef = useRef<T | null>(null);
 
@@ -86,6 +102,7 @@ export function useLocalStorage<T>(
       const storedValue = preferences[normalizedKey];
       if (storedValue !== undefined) {
         setValueState(storedValue as T);
+        writeLocalCache(key, storedValue);
       }
       isHydratedRef.current = true;
 
@@ -98,7 +115,7 @@ export function useLocalStorage<T>(
         pendingValueRef.current = null;
       }
     }
-  }, [preferences, normalizedKey, isSuccess, category, setMutation]);
+  }, [preferences, normalizedKey, isSuccess, category, key, setMutation]);
 
   const setValue = useCallback(
     (newValue: T | ((prev: T) => T)) => {
@@ -106,6 +123,8 @@ export function useLocalStorage<T>(
         const computed = typeof newValue === 'function'
           ? (newValue as (prev: T) => T)(prev)
           : newValue;
+
+        writeLocalCache(key, computed);
 
         if (isAuthenticated) {
           setMutation.mutate({
@@ -120,7 +139,7 @@ export function useLocalStorage<T>(
         return computed;
       });
     },
-    [isAuthenticated, category, normalizedKey, setMutation]
+    [isAuthenticated, category, key, normalizedKey, setMutation]
   );
 
   return [value, setValue];
