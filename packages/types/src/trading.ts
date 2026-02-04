@@ -26,7 +26,19 @@ export type TimeInForce = 'GTC' | 'IOC' | 'FOK';
 
 export type ExpirationType = 'gtc' | 'day' | 'custom';
 
-export type WalletCurrency = 'USD' | 'USDT' | 'BRL' | 'EUR' | 'BTC' | 'ETH';
+export const WALLET_CURRENCIES = ['USD', 'USDT', 'BRL', 'EUR', 'BTC', 'ETH'] as const;
+export type WalletCurrency = (typeof WALLET_CURRENCIES)[number];
+
+export const CURRENCY_SYMBOLS: Record<WalletCurrency, string> = {
+  USD: '$',
+  USDT: '$',
+  BRL: 'R$',
+  EUR: '€',
+  BTC: '₿',
+  ETH: 'Ξ',
+};
+
+export const DEFAULT_CURRENCY: WalletCurrency = 'USDT';
 
 export type ContingencyType = 'OCO' | 'OTO' | 'OTOCO';
 

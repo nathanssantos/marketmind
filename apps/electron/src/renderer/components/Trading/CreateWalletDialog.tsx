@@ -1,13 +1,20 @@
 import { Alert, Box, Flex, Link, Stack, Text } from '@chakra-ui/react';
 import { Field } from '@renderer/components/ui/field';
 import { FormDialog } from '@renderer/components/ui/FormDialog';
-import type { WalletCurrency } from '@marketmind/types';
+import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type WalletCurrency } from '@marketmind/types';
 import { Input } from '@renderer/components/ui/input';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink, LuInfo } from 'react-icons/lu';
+
+const SELECTABLE_CURRENCIES: WalletCurrency[] = ['USDT', 'USD', 'BRL', 'EUR'];
+
+const CURRENCY_SELECT_OPTIONS = SELECTABLE_CURRENCIES.map((c) => ({
+  value: c,
+  label: c === CURRENCY_SYMBOLS[c] ? c : `${c} (${CURRENCY_SYMBOLS[c]})`,
+}));
 
 type WalletType = 'paper' | 'testnet' | 'live';
 
@@ -33,7 +40,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
   const [walletType, setWalletType] = useState<WalletType>('paper');
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('10000');
-  const [currency, setCurrency] = useState<WalletCurrency>('USDT');
+  const [currency, setCurrency] = useState<WalletCurrency>(DEFAULT_CURRENCY);
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +84,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
   const resetForm = () => {
     setName('');
     setInitialBalance('10000');
-    setCurrency('USDT');
+    setCurrency(DEFAULT_CURRENCY);
     setApiKey('');
     setApiSecret('');
     setWalletType('paper');
@@ -183,12 +190,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                 size="xs"
                 value={currency}
                 onChange={(value) => setCurrency(value as WalletCurrency)}
-                options={[
-                  { value: 'USDT', label: 'USDT' },
-                  { value: 'USD', label: 'USD ($)' },
-                  { value: 'BRL', label: 'BRL (R$)' },
-                  { value: 'EUR', label: 'EUR (€)' },
-                ]}
+                options={CURRENCY_SELECT_OPTIONS}
                 usePortal={false}
               />
             </Field>

@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
@@ -71,7 +72,7 @@ export const walletRouter = router({
       z.object({
         name: z.string().min(1).max(255),
         initialBalance: z.string().default('10000'),
-        currency: z.string().default('USDT'),
+        currency: z.string().default(DEFAULT_CURRENCY),
         marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
       })
     )
@@ -175,7 +176,7 @@ export const walletRouter = router({
           apiSecretEncrypted,
           initialBalance: initialBalance.toString(),
           currentBalance: initialBalance.toString(),
-          currency: 'USDT',
+          currency: DEFAULT_CURRENCY,
           isActive: true,
         });
 
@@ -186,7 +187,7 @@ export const walletRouter = router({
           marketType: input.marketType,
           initialBalance: initialBalance.toString(),
           currentBalance: initialBalance.toString(),
-          currency: 'USDT',
+          currency: DEFAULT_CURRENCY,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -294,7 +295,7 @@ export const walletRouter = router({
       if (isPaperWallet(wallet)) {
         return {
           currentBalance: wallet.currentBalance ?? '0',
-          currency: wallet.currency ?? 'USDT',
+          currency: wallet.currency ?? DEFAULT_CURRENCY,
           walletType: 'paper' as const,
         };
       }
@@ -350,7 +351,7 @@ export const walletRouter = router({
 
         return {
           currentBalance: currentBalance.toString(),
-          currency: 'USDT',
+          currency: wallet.currency ?? DEFAULT_CURRENCY,
           walletType: wallet.walletType,
           debug: debugInfo,
         };

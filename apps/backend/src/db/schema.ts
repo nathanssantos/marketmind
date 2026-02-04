@@ -12,6 +12,7 @@ import {
     unique,
     varchar
 } from 'drizzle-orm/pg-core';
+import { DEFAULT_CURRENCY } from '@marketmind/types';
 
 export const users = pgTable('users', {
   id: varchar({ length: 255 }).primaryKey(),
@@ -44,7 +45,7 @@ export const wallets = pgTable('wallets', {
   totalDeposits: numeric('total_deposits', { precision: 20, scale: 8 }).default('0'),
   totalWithdrawals: numeric('total_withdrawals', { precision: 20, scale: 8 }).default('0'),
   lastTransferSyncAt: timestamp('last_transfer_sync_at', { mode: 'date' }),
-  currency: varchar({ length: 10 }).default('USDT'),
+  currency: varchar({ length: 10 }).default(DEFAULT_CURRENCY),
   exchange: varchar({ length: 20 }).default('BINANCE'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

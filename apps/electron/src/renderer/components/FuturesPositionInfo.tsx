@@ -1,16 +1,18 @@
 import { Badge, Box, Flex, Progress, Text, VStack } from '@chakra-ui/react';
-import type { FuturesPosition } from '@marketmind/types';
+import { DEFAULT_CURRENCY, type FuturesPosition } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTrendingDown, LuTrendingUp, LuTriangleAlert } from 'react-icons/lu';
 import { CryptoIcon } from './ui/CryptoIcon';
+import { formatWalletCurrencyWithSign } from '../utils/currencyFormatter';
 
 interface FuturesPositionInfoProps {
   position: FuturesPosition;
   currentPrice?: number;
+  currency?: string;
 }
 
-export function FuturesPositionInfo({ position, currentPrice }: FuturesPositionInfoProps) {
+export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT_CURRENCY }: FuturesPositionInfoProps) {
   const { t } = useTranslation();
 
   const entryPrice = parseFloat(position.entryPrice);
@@ -51,10 +53,7 @@ export function FuturesPositionInfo({ position, currentPrice }: FuturesPositionI
     return price.toFixed(8);
   };
 
-  const formatPnl = (pnl: number): string => {
-    const sign = pnl >= 0 ? '+' : '';
-    return `${sign}$${Math.abs(pnl).toFixed(2)}`;
-  };
+  const formatPnl = (pnl: number): string => formatWalletCurrencyWithSign(pnl, currency);
 
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">

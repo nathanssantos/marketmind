@@ -4,6 +4,7 @@ import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
 import { trpc } from '@renderer/utils/trpc';
+import { formatWalletCurrency } from '@renderer/utils/currencyFormatter';
 import { useEffect, useState } from 'react';
 import { TradeListTable } from '../Backtest/TradeListTable';
 import { BacktestChart } from './BacktestChart';
@@ -97,9 +98,7 @@ export const BacktestResults = ({ backtestId, onClose }: BacktestResultsProps) =
     return `${value >= 0 ? '+' : ''}${formatNumber(value, decimals)}%`;
   };
 
-  const formatCurrency = (value: number) => {
-    return `$${formatNumber(value, 2)}`;
-  };
+  const formatCurrency = (value: number) => formatWalletCurrency(value);
 
   return (
     <Stack gap={3} p={4}>

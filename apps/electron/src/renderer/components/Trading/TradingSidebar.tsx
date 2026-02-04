@@ -20,7 +20,9 @@ interface TradingSidebarProps {
 const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
   const { t } = useTranslation();
   const { wallets: backendWallets } = useBackendWallet();
-  const activeWalletId = backendWallets[0]?.id;
+  const activeWallet = backendWallets[0];
+  const activeWalletId = activeWallet?.id;
+  const activeWalletCurrency = activeWallet?.currency ?? 'USDT';
 
   const { tradingSidebarTab, setTradingSidebarTab } = useUIStore(useShallow((s) => ({
     tradingSidebarTab: s.tradingSidebarTab,
@@ -75,7 +77,7 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
             <Tabs.Content value="analytics" h="full">
               <Stack gap={4} p={4} h="full" overflowY="auto">
                 <RiskDisplay walletId={activeWalletId} />
-                <PerformancePanel walletId={activeWalletId} />
+                <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
                 <SetupStatsTable walletId={activeWalletId} />
               </Stack>
             </Tabs.Content>

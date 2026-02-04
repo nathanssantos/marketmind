@@ -1,5 +1,19 @@
 # Exchange Abstraction Layer - Preparacao para Multi-Exchange
 
+## Status
+
+| Fase | Descricao | Status |
+|------|-----------|--------|
+| 0 | Seletor de Currency | PENDENTE |
+| 1 | Desacoplar tipos de trading e fees do Binance | CONCLUIDA |
+| 2 | Criar interfaces exchange-agnosticas | CONCLUIDA |
+| 3 | Implementacoes Binance (wrap do codigo existente) | CONCLUIDA |
+| 4 | Adicionar campo `exchange` ao schema de wallets | CONCLUIDA |
+| 5 | Conectar o registry e criar factory utilitaria | CONCLUIDA |
+| 6 | Desacoplar business logic de logica exchange-especifica | CONCLUIDA |
+
+**Ultima atualizacao:** 2026-02-04
+
 ## Objetivo
 
 Criar uma camada de abstracoes exchange-agnosticas, mover todo o codigo Binance para atras dessas interfaces, e preparar a infraestrutura para suportar qualquer exchange/broker no futuro (crypto, acoes BR/US, futuros). **Nenhuma funcionalidade muda** — o Binance continua sendo o unico provider, mas agora atras de interfaces.
@@ -85,7 +99,7 @@ As interfaces da Fase 2 ja devem incluir:
 
 ---
 
-## Fase 0: Seletor de Currency
+## Fase 0: Seletor de Currency [PENDENTE]
 
 **Risco: BAIXO** — UI + schema change com default, independente da abstracoes de exchange
 
@@ -152,7 +166,7 @@ Adicionar labels para as opcoes de currency nos 4 arquivos de traducao (en, pt, 
 
 ---
 
-## Fase 1: Desacoplar tipos de trading e fees do Binance
+## Fase 1: Desacoplar tipos de trading e fees do Binance [CONCLUIDA]
 
 **Risco: ZERO** — valores identicos, apenas muda a fonte da definicao
 
@@ -213,7 +227,7 @@ Separar conteudo exchange-agnostico do Binance-especifico:
 
 ---
 
-## Fase 2: Criar interfaces exchange-agnosticas
+## Fase 2: Criar interfaces exchange-agnosticas [CONCLUIDA]
 
 **Risco: ZERO** — arquivos novos, nada importa deles ainda
 
@@ -428,7 +442,7 @@ Barrel export de todas as interfaces e o registry.
 
 ---
 
-## Fase 3: Implementacoes Binance (wrap do codigo existente)
+## Fase 3: Implementacoes Binance (wrap do codigo existente) [CONCLUIDA]
 
 **Risco: ZERO** — arquivos novos que delegam para funcoes existentes
 
@@ -513,7 +527,7 @@ export const binanceProvider = new BinanceExchangeProvider();
 
 ---
 
-## Fase 4: Adicionar campo `exchange` ao schema de wallets
+## Fase 4: Adicionar campo `exchange` ao schema de wallets [CONCLUIDA]
 
 **Risco: BAIXO** — coluna nova com default, nao afeta queries existentes
 
@@ -539,7 +553,7 @@ Gerar migration com `pnpm --filter @marketmind/backend db:generate` que vai:
 
 ---
 
-## Fase 5: Conectar o registry e criar factory utilitaria
+## Fase 5: Conectar o registry e criar factory utilitaria [CONCLUIDA]
 
 **Risco: BAIXO** — adiciona funcoes utilitarias, comeca a usar em pontos controlados
 
@@ -604,7 +618,7 @@ Os `SpotClientAdapter`/`FuturesClientAdapter` fazem bridge entre `MarketClient` 
 
 ---
 
-## Fase 6: Desacoplar business logic de logica exchange-especifica
+## Fase 6: Desacoplar business logic de logica exchange-especifica [CONCLUIDA]
 
 **Risco: MEDIO** — muda imports em arquivos criticos, mas comportamento identico
 
