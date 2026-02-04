@@ -13,7 +13,8 @@ import {
   validateMinNotional,
   VOLATILITY_DEFAULTS,
 } from '../utils/trade-validation';
-import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from './binance-client';
+import { getFuturesClient, getSpotClient } from '../exchange';
+import { isPaperWallet } from './binance-client';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
 import { createStopLossOrder as createSLOrder, createTakeProfitOrder as createTPOrder } from './protection-orders';
@@ -373,27 +374,27 @@ export class AutoTradingService {
       }
 
       if (marketType === 'FUTURES') {
-        const client = createBinanceFuturesClient(wallet);
+        const client = getFuturesClient(wallet);
 
-        const orderPayload: Parameters<typeof client.submitNewOrder>[0] = {
+        const futuresParams: import('../exchange').FuturesOrderParams = {
           symbol: orderParams.symbol,
           side: orderParams.side,
           type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
-          quantity: formattedQuantity,
+          quantity: String(formattedQuantity),
           newOrderRespType: 'RESULT',
         };
 
         if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
-          orderPayload.price = parseFloat(formatPriceForBinance(orderParams.price, tickSize));
+          futuresParams.price = formatPriceForBinance(orderParams.price, tickSize);
         }
         if (orderParams.stopPrice !== undefined) {
-          orderPayload.stopPrice = parseFloat(formatPriceForBinance(orderParams.stopPrice, tickSize));
+          futuresParams.stopPrice = formatPriceForBinance(orderParams.stopPrice, tickSize);
         }
         if (orderParams.timeInForce) {
-          orderPayload.timeInForce = orderParams.timeInForce;
+          futuresParams.timeInForce = orderParams.timeInForce;
         }
         if (orderParams.reduceOnly) {
-          orderPayload.reduceOnly = 'true';
+          futuresParams.reduceOnly = true;
         }
 
         logger.debug({
@@ -402,9 +403,9 @@ export class AutoTradingService {
           formattedQuantity,
           stepSize,
           tickSize,
-        }, 'Formatted order parameters for Binance');
+        }, 'Formatted order parameters');
 
-        const order = await client.submitNewOrder(orderPayload);
+        const order = await client.submitOrder(futuresParams);
 
         logger.info({
           orderId: order.orderId,
@@ -414,7 +415,7 @@ export class AutoTradingService {
           price: order.price,
           walletType: wallet.walletType,
           marketType: 'FUTURES',
-        }, 'Binance Futures order executed');
+        }, 'Futures order executed');
 
         return {
           orderId: order.orderId,
@@ -423,41 +424,41 @@ export class AutoTradingService {
         };
       }
 
-      const client = createBinanceClient(wallet);
+      const client = getSpotClient(wallet);
 
-      const spotOrderPayload: Parameters<typeof client.submitNewOrder>[0] = {
+      const spotParams: import('../exchange').SpotOrderParams = {
         symbol: orderParams.symbol,
         side: orderParams.side,
-        type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS_LIMIT',
+        type: orderParams.type as import('../exchange').SpotOrderParams['type'],
         quantity: formattedQuantity,
       };
 
       if (orderParams.price !== undefined && orderParams.type !== 'MARKET') {
-        spotOrderPayload.price = parseFloat(formatPriceForBinance(orderParams.price, tickSize));
+        spotParams.price = parseFloat(formatPriceForBinance(orderParams.price, tickSize));
       }
       if (orderParams.stopPrice !== undefined) {
-        spotOrderPayload.stopPrice = parseFloat(formatPriceForBinance(orderParams.stopPrice, tickSize));
+        spotParams.stopPrice = parseFloat(formatPriceForBinance(orderParams.stopPrice, tickSize));
       }
       if (orderParams.timeInForce) {
-        spotOrderPayload.timeInForce = orderParams.timeInForce;
+        spotParams.timeInForce = orderParams.timeInForce;
       }
 
-      const order = await client.submitNewOrder(spotOrderPayload);
+      const order = await client.submitOrder(spotParams);
 
       logger.info({
         orderId: order.orderId,
         symbol: order.symbol,
-        side: 'side' in order ? order.side : 'unknown',
-        quantity: 'origQty' in order ? order.origQty : '0',
-        price: 'price' in order ? order.price : '0',
+        side: order.side,
+        quantity: order.origQty,
+        price: order.price,
         walletType: wallet.walletType,
         marketType: 'SPOT',
-      }, 'Binance Spot order executed');
+      }, 'Spot order executed');
 
       return {
         orderId: order.orderId,
-        executedQty: 'executedQty' in order ? order.executedQty?.toString() || '0' : '0',
-        price: 'price' in order ? order.price?.toString() || '0' : '0',
+        executedQty: order.executedQty?.toString() || '0',
+        price: order.price?.toString() || '0',
       };
     } catch (error) {
       logger.error({
@@ -583,13 +584,13 @@ export class AutoTradingService {
       logger.info({ symbol, originalQuantity: quantity, formattedQuantity, stepSize }, 'Formatting quantity for close position');
 
       if (marketType === 'FUTURES') {
-        const client = createBinanceFuturesClient(wallet);
-        const result = await client.submitNewOrder({
+        const client = getFuturesClient(wallet);
+        const result = await client.submitOrder({
           symbol,
           side,
           type: 'MARKET',
-          quantity: formattedQuantity,
-          reduceOnly: 'true',
+          quantity: String(formattedQuantity),
+          reduceOnly: true,
           newOrderRespType: 'RESULT',
         });
         logger.info({ symbol, orderId: result.orderId, avgPrice: result.avgPrice }, 'Futures position closed');
@@ -599,18 +600,17 @@ export class AutoTradingService {
         };
       }
 
-      const client = createBinanceClient(wallet);
-      const result = await client.submitNewOrder({
+      const client = getSpotClient(wallet);
+      const result = await client.submitOrder({
         symbol,
         side,
         type: 'MARKET',
         quantity: formattedQuantity,
       });
-      const avgPrice = result.fills?.[0]?.price ? parseFloat(String(result.fills[0].price)) : 0;
-      logger.info({ symbol, orderId: result.orderId, avgPrice }, 'Spot position closed');
+      logger.info({ symbol, orderId: result.orderId, price: result.price }, 'Spot position closed');
       return {
         orderId: result.orderId,
-        avgPrice,
+        avgPrice: result.price ? parseFloat(result.price) : 0,
       };
     } catch (error) {
       logger.error({ symbol, quantity, side, marketType, error: serializeError(error) }, 'Failed to close position');
@@ -628,9 +628,9 @@ export class AutoTradingService {
       return;
     }
 
-    const client = createBinanceFuturesClient(wallet);
+    const client = getFuturesClient(wallet);
     try {
-      await client.setLeverage({ symbol, leverage });
+      await client.setLeverage(symbol, leverage);
       logger.info({ symbol, leverage }, 'Futures leverage set');
     } catch (error) {
       const errorMsg = serializeError(error);
@@ -653,9 +653,9 @@ export class AutoTradingService {
       return;
     }
 
-    const client = createBinanceFuturesClient(wallet);
+    const client = getFuturesClient(wallet);
     try {
-      await client.setMarginType({ symbol, marginType });
+      await client.setMarginType(symbol, marginType);
       logger.info({ symbol, marginType }, 'Futures margin type set');
     } catch (error) {
       const errorMsg = serializeError(error);
@@ -677,9 +677,9 @@ export class AutoTradingService {
       return;
     }
 
-    const client = createBinanceFuturesClient(wallet);
+    const client = getFuturesClient(wallet);
     try {
-      await client.setPositionMode({ dualSidePosition: dualSidePosition ? 'true' : 'false' });
+      await client.setPositionMode(dualSidePosition);
       logger.info({ dualSidePosition }, 'Futures position mode set');
     } catch (error) {
       const errorMsg = serializeError(error);

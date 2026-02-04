@@ -386,6 +386,41 @@
       "when": 1769744552677,
       "tag": "0054_lively_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1769900000000,
+      "tag": "0055_trailing_distance_split",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1769900100000,
+      "tag": "0056_apply_optimized_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1769900200000,
+      "tag": "0057_add_max_fibonacci_entry_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1769900300000,
+      "tag": "0058_indicator_history_hypertable",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1769900400000,
+      "tag": "0059_replace_exposure_multiplier",
+      "breakpoints": true
     }
   ]
 }

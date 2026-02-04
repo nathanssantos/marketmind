@@ -5,6 +5,14 @@ import type {
     FuturesPosition,
     MarginType,
 } from '@marketmind/types';
+import type {
+    AccountTradeRecord,
+    AllTradeFeesResult,
+    FuturesAlgoOrder,
+    FuturesAlgoOrderParams,
+    FuturesOrderParams,
+    IncomeHistoryRecord,
+} from '../exchange/futures-client';
 import { USDMClient } from 'binance';
 import type { Wallet } from '../db/schema';
 import { formatQuantityForBinance } from '../utils/formatters';
@@ -223,18 +231,11 @@ export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount
   }
 }
 
-export interface FuturesOrderParams {
-  symbol: string;
-  side: 'BUY' | 'SELL';
-  type: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_MARKET' | 'TAKE_PROFIT' | 'TAKE_PROFIT_MARKET';
-  quantity: string;
-  price?: string;
-  stopPrice?: string;
-  timeInForce?: 'GTC' | 'IOC' | 'FOK';
-  reduceOnly?: boolean;
-  closePosition?: boolean;
-  newClientOrderId?: string;
-}
+export type { FuturesOrderParams } from '../exchange/futures-client';
+export type { FuturesAlgoOrderParams, FuturesAlgoOrder } from '../exchange/futures-client';
+export type { IncomeHistoryRecord } from '../exchange/futures-client';
+export type { AccountTradeRecord } from '../exchange/futures-client';
+export type { AllTradeFeesResult } from '../exchange/futures-client';
 
 export async function submitFuturesOrder(
   client: USDMClient,
@@ -412,41 +413,6 @@ export async function getSymbolLeverageBrackets(
   }
 }
 
-export interface FuturesAlgoOrderParams {
-  symbol: string;
-  side: 'BUY' | 'SELL';
-  type: 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | 'STOP' | 'TAKE_PROFIT' | 'TRAILING_STOP_MARKET';
-  quantity?: string;
-  triggerPrice?: string;
-  price?: string;
-  timeInForce?: 'GTC' | 'IOC' | 'FOK';
-  reduceOnly?: boolean;
-  closePosition?: boolean;
-  activationPrice?: string;
-  callbackRate?: string;
-  clientAlgoId?: string;
-  workingType?: 'MARK_PRICE' | 'CONTRACT_PRICE';
-  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
-}
-
-export interface FuturesAlgoOrder {
-  algoId: number;
-  clientAlgoId: string;
-  symbol: string;
-  side: 'BUY' | 'SELL';
-  positionSide: 'LONG' | 'SHORT' | 'BOTH';
-  type: string;
-  quantity: string;
-  triggerPrice?: string;
-  price?: string;
-  activationPrice?: string;
-  callbackRate?: string;
-  algoStatus: string;
-  reduceOnly: boolean;
-  closePosition: boolean;
-  createTime: number;
-  updateTime: number;
-}
 
 export async function submitFuturesAlgoOrder(
   client: USDMClient,
@@ -597,16 +563,6 @@ export async function getAlgoOrder(
   }
 }
 
-export interface IncomeHistoryRecord {
-  symbol?: string;
-  incomeType: string;
-  income: string;
-  asset: string;
-  time: number;
-  info: string;
-  tranId: number;
-  tradeId: string;
-}
 
 export async function getIncomeHistory(
   client: USDMClient,
@@ -637,21 +593,6 @@ export async function getIncomeHistory(
   }
 }
 
-export interface AccountTradeRecord {
-  symbol: string;
-  id: number;
-  orderId: number;
-  side: 'BUY' | 'SELL';
-  price: string;
-  qty: string;
-  realizedPnl: string;
-  quoteQty: string;
-  commission: string;
-  commissionAsset: string;
-  time: number;
-  buyer: boolean;
-  maker: boolean;
-}
 
 export async function getRecentTrades(
   client: USDMClient,
@@ -731,14 +672,6 @@ export async function getLastClosingTrade(
   }
 }
 
-export interface AllTradeFeesResult {
-  entryFee: number;
-  exitFee: number;
-  totalFees: number;
-  entryPrice: number;
-  exitPrice: number;
-  realizedPnl: number;
-}
 
 export async function getAllTradeFeesForPosition(
   client: USDMClient,

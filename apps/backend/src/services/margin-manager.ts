@@ -2,12 +2,8 @@ import { and, eq } from 'drizzle-orm';
 import { AUTO_TRADING_TIMING } from '../constants';
 import { db } from '../db';
 import { autoTradingConfig, tradeExecutions, wallets, type Wallet } from '../db/schema';
-import {
-  createBinanceFuturesClient,
-  getPosition,
-  modifyIsolatedPositionMargin,
-  isPaperWallet,
-} from './binance-futures-client';
+import { getFuturesClient } from '../exchange';
+import { isPaperWallet } from './binance-client';
 import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
 
@@ -166,8 +162,8 @@ export class MarginManagerService {
         };
       }
 
-      const client = createBinanceFuturesClient(wallet);
-      const position = await getPosition(client, execution.symbol);
+      const client = getFuturesClient(wallet);
+      const position = await client.getPosition(execution.symbol);
 
       if (!position) {
         return null;
@@ -223,12 +219,11 @@ export class MarginManagerService {
         );
 
         try {
-          await modifyIsolatedPositionMargin(
-            client,
+          await client.modifyIsolatedMargin(
             execution.symbol,
             topUpAmount,
-            '1',
-            execution.positionSide as 'LONG' | 'SHORT' | 'BOTH' | undefined
+            'ADD',
+            execution.positionSide ?? undefined
           );
 
           await db

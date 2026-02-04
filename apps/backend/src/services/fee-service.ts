@@ -1,5 +1,4 @@
-import { MainClient, USDMClient } from 'binance';
-import { decryptApiKey } from './encryption';
+import { getFuturesClient, getSpotClient } from '../exchange';
 import { logger, serializeError } from './logger';
 import type { Wallet } from '../db/schema';
 import type { MarketType, FeeOrderType, MarketFees } from '@marketmind/types';
@@ -70,22 +69,14 @@ export const fetchSpotFees = async (wallet: Wallet): Promise<MarketFees> => {
   }
 
   try {
-    const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-    const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
+    const client = getSpotClient(wallet);
+    const fees = await client.getTradeFees('BTCUSDT');
 
-    const client = new MainClient({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      testnet: wallet.walletType === 'testnet',
-    });
-
-    const feeInfo = await client.getTradeFee({ symbol: 'BTCUSDT' });
-
-    const firstFee = feeInfo?.[0];
+    const firstFee = fees?.[0];
     if (firstFee?.makerCommission && firstFee?.takerCommission) {
       return {
-        maker: Number(firstFee.makerCommission),
-        taker: Number(firstFee.takerCommission),
+        maker: firstFee.makerCommission,
+        taker: firstFee.takerCommission,
       };
     }
 
@@ -117,18 +108,11 @@ export const fetchFuturesFeesWithAccountInfo = async (wallet: Wallet): Promise<F
   }
 
   try {
-    const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-    const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-    const client = new USDMClient({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      testnet: wallet.walletType === 'testnet',
-    });
+    const client = getFuturesClient(wallet);
 
     const [commissionRate, accountInfo] = await Promise.all([
-      client.getAccountCommissionRate({ symbol: 'BTCUSDT' }),
-      client.getAccountInformation(),
+      client.getCommissionRate(),
+      client.getAccountInfo(),
     ]);
 
     const bnbAsset = accountInfo.assets.find(a => a.asset === 'BNB');
@@ -137,8 +121,8 @@ export const fetchFuturesFeesWithAccountInfo = async (wallet: Wallet): Promise<F
 
     return {
       fees: {
-        maker: Number(commissionRate.makerCommissionRate),
-        taker: Number(commissionRate.takerCommissionRate),
+        maker: commissionRate.makerCommissionRate,
+        taker: commissionRate.takerCommissionRate,
       },
       vipLevel: Number(accountInfo.feeTier),
       hasBnbDiscount,

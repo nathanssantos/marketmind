@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS wallets (
   total_withdrawals NUMERIC(20, 8) DEFAULT '0',
   last_transfer_sync_at TIMESTAMP,
   currency VARCHAR(10) DEFAULT 'USDT',
+  exchange VARCHAR(20) DEFAULT 'BINANCE',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL

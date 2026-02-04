@@ -5,11 +5,18 @@ import { autoTradingConfig, tradeExecutions, wallets } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { generateEntityId } from '../../utils/id';
 
-vi.mock('../../services/binance-futures-client', () => ({
-  createBinanceFuturesClient: vi.fn(() => ({})),
-  getPosition: vi.fn(),
-  modifyIsolatedPositionMargin: vi.fn(),
-  isPaperWallet: vi.fn((wallet) => wallet.walletType === 'paper'),
+const mockGetPosition = vi.fn();
+const mockModifyIsolatedMargin = vi.fn();
+
+vi.mock('../../exchange', () => ({
+  getFuturesClient: vi.fn(() => ({
+    getPosition: mockGetPosition,
+    modifyIsolatedMargin: mockModifyIsolatedMargin,
+  })),
+}));
+
+vi.mock('../../services/binance-client', () => ({
+  isPaperWallet: vi.fn((wallet: { walletType: string }) => wallet.walletType === 'paper'),
 }));
 
 vi.mock('../../services/websocket', () => ({
@@ -20,7 +27,6 @@ vi.mock('../../services/websocket', () => ({
 }));
 
 import { MarginManagerService } from '../../services/margin-manager';
-import { getPosition, modifyIsolatedPositionMargin } from '../../services/binance-futures-client';
 
 describe('MarginManagerService', () => {
   beforeAll(async () => {
@@ -159,7 +165,7 @@ describe('MarginManagerService', () => {
     it('should not process if no open futures executions', async () => {
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
-      expect(getPosition).not.toHaveBeenCalled();
+      expect(mockGetPosition).not.toHaveBeenCalled();
     });
 
     it('should skip paper wallets', async () => {
@@ -199,7 +205,7 @@ describe('MarginManagerService', () => {
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(getPosition).not.toHaveBeenCalled();
+      expect(mockGetPosition).not.toHaveBeenCalled();
     });
 
     it('should skip wallets without margin top-up enabled', async () => {
@@ -236,7 +242,7 @@ describe('MarginManagerService', () => {
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(getPosition).not.toHaveBeenCalled();
+      expect(mockGetPosition).not.toHaveBeenCalled();
     });
 
     it('should check positions for live wallets with margin top-up enabled', async () => {
@@ -273,17 +279,17 @@ describe('MarginManagerService', () => {
         openedAt: new Date(),
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '1000',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(getPosition).toHaveBeenCalledWith({}, 'BTCUSDT');
+      expect(mockGetPosition).toHaveBeenCalledWith('BTCUSDT');
     });
 
     it('should skip cross margin positions', async () => {
@@ -320,17 +326,17 @@ describe('MarginManagerService', () => {
         openedAt: new Date(),
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'CROSS',
         isolatedWallet: '0',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(modifyIsolatedPositionMargin).not.toHaveBeenCalled();
+      expect(mockModifyIsolatedMargin).not.toHaveBeenCalled();
     });
 
     it('should not top up if margin ratio below threshold', async () => {
@@ -367,17 +373,17 @@ describe('MarginManagerService', () => {
         openedAt: new Date(),
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '1000',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(modifyIsolatedPositionMargin).not.toHaveBeenCalled();
+      expect(mockModifyIsolatedMargin).not.toHaveBeenCalled();
     });
 
     it('should top up margin when ratio exceeds threshold', async () => {
@@ -417,23 +423,22 @@ describe('MarginManagerService', () => {
         marginTopUpCount: 0,
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '50',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
-      vi.mocked(modifyIsolatedPositionMargin).mockResolvedValue({} as unknown as ReturnType<typeof modifyIsolatedPositionMargin> extends Promise<infer T> ? T : never);
+      mockModifyIsolatedMargin.mockResolvedValue({} as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(modifyIsolatedPositionMargin).toHaveBeenCalledWith(
-        {},
+      expect(mockModifyIsolatedMargin).toHaveBeenCalledWith(
         'BTCUSDT',
         1000,
-        '1',
+        'ADD',
         expect.anything()
       );
 
@@ -481,17 +486,17 @@ describe('MarginManagerService', () => {
         marginTopUpCount: 3,
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '50',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(modifyIsolatedPositionMargin).not.toHaveBeenCalled();
+      expect(mockModifyIsolatedMargin).not.toHaveBeenCalled();
     });
 
     it('should update wallet balance after top-up', async () => {
@@ -530,14 +535,14 @@ describe('MarginManagerService', () => {
         marginTopUpCount: 0,
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '50',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
-      vi.mocked(modifyIsolatedPositionMargin).mockResolvedValue({} as unknown as ReturnType<typeof modifyIsolatedPositionMargin> extends Promise<infer T> ? T : never);
+      mockModifyIsolatedMargin.mockResolvedValue({} as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
@@ -586,17 +591,17 @@ describe('MarginManagerService', () => {
         marginTopUpCount: 0,
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '50',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();
 
-      expect(modifyIsolatedPositionMargin).not.toHaveBeenCalled();
+      expect(mockModifyIsolatedMargin).not.toHaveBeenCalled();
     });
 
     it('should handle API errors gracefully', async () => {
@@ -636,14 +641,14 @@ describe('MarginManagerService', () => {
         marginTopUpCount: 0,
       });
 
-      vi.mocked(getPosition).mockResolvedValue({
+      mockGetPosition.mockResolvedValue({
         symbol: 'BTCUSDT',
         marginType: 'ISOLATED',
         isolatedWallet: '50',
         notional: '5000',
-      } as unknown as ReturnType<typeof getPosition> extends Promise<infer T> ? T : never);
+      } as never);
 
-      vi.mocked(modifyIsolatedPositionMargin).mockRejectedValue(new Error('API Error'));
+      mockModifyIsolatedMargin.mockRejectedValue(new Error('API Error'));
 
       const service = new MarginManagerService();
       await service.checkAllIsolatedMargins();

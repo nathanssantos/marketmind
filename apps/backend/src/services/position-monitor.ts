@@ -9,8 +9,8 @@ import { priceCache as priceCacheTable, tradeExecutions, wallets } from '../db/s
 import { env } from '../env';
 import { calculateNotional, calculatePnl, formatPrice, formatQuantityForBinance, roundToDecimals } from '../utils/formatters';
 import { getMinNotionalFilterService } from './min-notional-filter';
-import { createBinanceClient, createBinanceClientForPrices, createBinanceFuturesClient, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
-import { getAllTradeFeesForPosition, getLastClosingTrade } from './binance-futures-client';
+import { getFuturesClient, getSpotClient } from '../exchange';
+import { createBinanceClientForPrices, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
@@ -568,9 +568,9 @@ export class PositionMonitorService {
 
       if (positionSyncedFromExchange && marketType === 'FUTURES') {
         try {
-          const client = createBinanceFuturesClient(wallet);
+          const client = getFuturesClient(wallet);
           const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
-          const allFees = await getAllTradeFeesForPosition(client, execution.symbol, execution.side, openedAt);
+          const allFees = await client.getAllTradeFeesForPosition(execution.symbol, execution.side, openedAt);
 
           if (allFees) {
             actualExitPrice = allFees.exitPrice || exitPrice;
@@ -596,7 +596,7 @@ export class PositionMonitorService {
               binanceRealizedPnl: allFees.realizedPnl,
             }, '[PositionMonitor] Fetched actual trade fees from Binance (entry + exit)');
           } else {
-            const closingTrade = await getLastClosingTrade(client, execution.symbol, execution.side, openedAt);
+            const closingTrade = await client.getLastClosingTrade(execution.symbol, execution.side, openedAt);
             if (closingTrade) {
               actualExitPrice = closingTrade.price;
               actualExitFee = closingTrade.commission;
@@ -793,13 +793,13 @@ export class PositionMonitorService {
     logger.info({ symbol, originalQuantity: quantity, formattedQuantity, stepSize }, 'Formatting quantity for exit order');
 
     if (marketType === 'FUTURES') {
-      const client = createBinanceFuturesClient(wallet);
-      const order = await client.submitNewOrder({
+      const client = getFuturesClient(wallet);
+      const order = await client.submitOrder({
         symbol,
         side: orderSide,
         type: 'MARKET',
-        quantity: formattedQuantity,
-        reduceOnly: 'true',
+        quantity: String(formattedQuantity),
+        reduceOnly: true,
         newOrderRespType: 'RESULT',
       });
 
@@ -811,13 +811,13 @@ export class PositionMonitorService {
         avgPrice: order.avgPrice,
         executedQty: order.executedQty,
         marketType: 'FUTURES',
-      }, 'Exit order created on Binance Futures');
+      }, 'Futures exit order created');
 
       return order.orderId;
     }
 
-    const client = createBinanceClient(wallet);
-    const order = await client.submitNewOrder({
+    const client = getSpotClient(wallet);
+    const order = await client.submitOrder({
       symbol,
       side: orderSide,
       type: 'MARKET',
@@ -830,7 +830,7 @@ export class PositionMonitorService {
       side: orderSide,
       quantity: formattedQuantity,
       marketType: 'SPOT',
-    }, 'Exit order created on Binance Spot');
+    }, 'Spot exit order created');
 
     return order.orderId;
   }

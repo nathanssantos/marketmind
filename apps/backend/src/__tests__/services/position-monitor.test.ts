@@ -67,7 +67,24 @@ vi.mock('../../services/logger', () => ({
 vi.mock('../../env', () => ({
   env: {
     ENABLE_LIVE_TRADING: false,
+    ENCRYPTION_KEY: '0'.repeat(64),
   },
+}));
+
+vi.mock('../../exchange', () => ({
+  getFuturesClient: vi.fn(() => ({
+    getPosition: vi.fn(),
+    getAllTradeFeesForPosition: vi.fn(),
+    getLastClosingTrade: vi.fn(),
+    submitOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    cancelOrder: vi.fn(),
+    cancelAllOrders: vi.fn(),
+    getOpenOrders: vi.fn().mockResolvedValue([]),
+  })),
+  getSpotClient: vi.fn(() => ({
+    submitOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    getAccountInfo: vi.fn().mockResolvedValue({ balances: [] }),
+  })),
 }));
 
 import { PositionMonitorService } from '../../services/position-monitor';

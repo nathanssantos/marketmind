@@ -81,6 +81,7 @@ describe('BinanceFuturesClient Service', () => {
     totalWithdrawals: null,
     lastTransferSyncAt: null,
     currency: null,
+    exchange: 'BINANCE',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),

@@ -4,7 +4,8 @@ import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { tradeExecutions, wallets } from '../../db/schema';
 import { env } from '../../env';
-import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../../services/binance-client';
+import { isPaperWallet } from '../../services/binance-client';
+import { getFuturesClient, getSpotClient } from '../../exchange';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { clearProtectionOrderIds } from '../../services/execution-manager';
@@ -93,10 +94,10 @@ export const executionsRouter = router({
           ].filter((id): id is number => id !== null);
 
           if (isFutures) {
-            const client = createBinanceFuturesClient(wallet);
+            const client = getFuturesClient(wallet);
             for (const orderId of orderIdsToCancel) {
               try {
-                await client.cancelOrder({ symbol: execution.symbol, orderId });
+                await client.cancelOrder(execution.symbol, orderId);
                 logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance Futures order');
               } catch (error) {
                 logger.warn({
@@ -107,10 +108,10 @@ export const executionsRouter = router({
               }
             }
           } else {
-            const client = createBinanceClient(wallet);
+            const client = getSpotClient(wallet);
             for (const orderId of orderIdsToCancel) {
               try {
-                await client.cancelOrder({ symbol: execution.symbol, orderId });
+                await client.cancelOrder(execution.symbol, orderId);
                 logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order');
               } catch (error) {
                 logger.warn({
@@ -169,14 +170,14 @@ export const executionsRouter = router({
           });
 
           if (isFutures) {
-            const client = createBinanceFuturesClient(wallet);
+            const client = getFuturesClient(wallet);
 
-            const order = await client.submitNewOrder({
+            const order = await client.submitOrder({
               symbol: execution.symbol,
               side: orderSide,
               type: 'MARKET',
-              quantity: qty,
-              reduceOnly: 'true',
+              quantity: String(qty),
+              reduceOnly: true,
               newOrderRespType: 'RESULT',
             });
 
@@ -184,9 +185,9 @@ export const executionsRouter = router({
             const filledPrice = parseFloat(order.avgPrice?.toString() || order.price?.toString() || '0');
             if (filledPrice > 0) exitPrice = filledPrice;
           } else {
-            const client = createBinanceClient(wallet);
+            const client = getSpotClient(wallet);
 
-            const order = await client.submitNewOrder({
+            const order = await client.submitOrder({
               symbol: execution.symbol,
               side: orderSide,
               type: 'MARKET',
@@ -194,7 +195,7 @@ export const executionsRouter = router({
             });
 
             exitOrderId = order.orderId;
-            const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
+            const filledPrice = order.price ? parseFloat(order.price) : 0;
             if (filledPrice > 0) exitPrice = filledPrice;
           }
 
@@ -312,11 +313,11 @@ export const executionsRouter = router({
         ].filter((id): id is number => id !== null);
 
         if (isFutures) {
-          const client = createBinanceFuturesClient(wallet);
+          const client = getFuturesClient(wallet);
 
           for (const orderId of orderIdsToCancel) {
             try {
-              await client.cancelOrder({ symbol: execution.symbol, orderId });
+              await client.cancelOrder(execution.symbol, orderId);
               logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance Futures order during execution cancel');
             } catch (error) {
               logger.warn({
@@ -327,11 +328,11 @@ export const executionsRouter = router({
             }
           }
         } else {
-          const client = createBinanceClient(wallet);
+          const client = getSpotClient(wallet);
 
           for (const orderId of orderIdsToCancel) {
             try {
-              await client.cancelOrder({ symbol: execution.symbol, orderId });
+              await client.cancelOrder(execution.symbol, orderId);
               logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order during execution cancel');
             } catch (error) {
               logger.warn({
@@ -344,7 +345,9 @@ export const executionsRouter = router({
 
           if (execution.orderListId) {
             try {
-              await client.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
+              const { createBinanceClient } = await import('../../services/binance-client');
+              const binanceClient = createBinanceClient(wallet);
+              await binanceClient.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
               logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
             } catch (error) {
               logger.warn({

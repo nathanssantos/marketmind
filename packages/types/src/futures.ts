@@ -1,4 +1,4 @@
-import { BINANCE_FEES } from './fees';
+import { BINANCE_FEES } from './binance-fees';
 
 export type MarketType = 'SPOT' | 'FUTURES';
 

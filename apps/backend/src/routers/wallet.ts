@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { STABLECOINS } from '../constants';
 import { orders, positions, wallets } from '../db/schema';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../services/binance-client';
+import { getFuturesClient, getSpotClient } from '../exchange';
 import { encryptApiKey } from '../services/encryption';
 import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
@@ -303,8 +304,8 @@ export const walletRouter = router({
         let debugInfo: Record<string, string> = {};
 
         if (wallet.marketType === 'FUTURES') {
-          const client = createBinanceFuturesClient(wallet);
-          const accountInfo = await client.getAccountInformation();
+          const client = getFuturesClient(wallet);
+          const accountInfo = await client.getAccountInfo();
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
           currentBalance = usdtAsset?.marginBalance
             ? parseFloat(String(usdtAsset.marginBalance))
@@ -322,8 +323,8 @@ export const walletRouter = router({
           };
 
         } else {
-          const client = createBinanceClient(wallet);
-          const accountInfo = await client.getAccountInformation();
+          const client = getSpotClient(wallet);
+          const accountInfo = await client.getAccountInfo();
           const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
           currentBalance = usdtBalance?.free
             ? parseFloat(usdtBalance.free.toString())
@@ -506,8 +507,8 @@ export const walletRouter = router({
         let assets: Array<{ asset: string; free: string; locked: string; valueUSDT: string }> = [];
 
         if (wallet.marketType === 'FUTURES') {
-          const client = createBinanceFuturesClient(wallet);
-          const accountInfo = await client.getAccountInformation();
+          const client = getFuturesClient(wallet);
+          const accountInfo = await client.getAccountInfo();
 
           const nonZeroAssets = accountInfo.assets?.filter((a) => {
             const balance = parseFloat(String(a.walletBalance || '0'));

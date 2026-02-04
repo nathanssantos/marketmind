@@ -45,6 +45,7 @@ export const wallets = pgTable('wallets', {
   totalWithdrawals: numeric('total_withdrawals', { precision: 20, scale: 8 }).default('0'),
   lastTransferSyncAt: timestamp('last_transfer_sync_at', { mode: 'date' }),
   currency: varchar({ length: 10 }).default('USDT'),
+  exchange: varchar({ length: 20 }).default('BINANCE'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),

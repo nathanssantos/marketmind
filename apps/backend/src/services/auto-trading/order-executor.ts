@@ -18,8 +18,7 @@ import {
 import { env } from '../../env';
 import { serializeError } from '../../utils/errors';
 import { autoTradingService } from '../auto-trading';
-import { createBinanceFuturesClient } from '../binance-client';
-import { getOrderEntryFee } from '../binance-futures-client';
+import { getFuturesClient } from '../../exchange';
 import { cooldownService } from '../cooldown';
 import { positionMonitorService } from '../position-monitor';
 import { pyramidingService } from '../pyramiding';
@@ -1084,8 +1083,8 @@ export class OrderExecutor {
 
       if (orderFilled && entryOrderId && watcher.marketType === 'FUTURES') {
         try {
-          const client = createBinanceFuturesClient(wallet);
-          const feeResult = await getOrderEntryFee(client, watcher.symbol, entryOrderId);
+          const client = getFuturesClient(wallet);
+          const feeResult = await client.getOrderEntryFee(watcher.symbol, entryOrderId);
           if (feeResult) {
             actualEntryFee = feeResult.entryFee;
             if (feeResult.avgPrice > 0) {

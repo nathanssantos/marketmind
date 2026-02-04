@@ -5,21 +5,8 @@ import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
 import { orders, positions } from '../../db/schema';
-import {
-  cancelAllFuturesAlgoOrders,
-  cancelFuturesOrder,
-  closePosition as closeExchangePosition,
-  createBinanceFuturesClient,
-  getOpenAlgoOrders,
-  getPositions as getFuturesPositions,
-  getOpenOrders,
-  getPosition,
-  getSymbolLeverageBrackets,
-  isPaperWallet,
-  setLeverage,
-  setMarginType,
-  submitFuturesOrder,
-} from '../../services/binance-futures-client';
+import { isPaperWallet } from '../../services/binance-client';
+import { getFuturesClient } from '../../exchange';
 import { getBinanceFuturesDataService } from '../../services/binance-futures-data';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
@@ -45,8 +32,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        const result = await setLeverage(client, input.symbol, input.leverage);
+        const client = getFuturesClient(wallet);
+        const result = await client.setLeverage(input.symbol, input.leverage);
         return result;
       } catch (error) {
         throw new TRPCError({
@@ -73,8 +60,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        await setMarginType(client, input.symbol, input.marginType);
+        const client = getFuturesClient(wallet);
+        await client.setMarginType(input.symbol, input.marginType);
         return { success: true, marginType: input.marginType };
       } catch (error) {
         throw new TRPCError({
@@ -121,8 +108,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        const account = await client.getAccountInformation();
+        const client = getFuturesClient(wallet);
+        const account = await client.getAccountInfo();
 
         return {
           totalWalletBalance: account.totalWalletBalance,
@@ -133,7 +120,7 @@ export const futuresRouter = router({
               symbol: p.symbol,
               positionAmt: String(p.positionAmt),
               entryPrice: String(p.entryPrice),
-              unrealizedProfit: String(p.unrealizedProfit),
+              unrealizedProfit: String(p.unrealizedPnl),
               leverage: String(p.leverage),
               marginType: (p as unknown as { marginType?: string }).marginType,
               liquidationPrice: (p as unknown as { liquidationPrice?: string }).liquidationPrice,
@@ -210,12 +197,12 @@ export const futuresRouter = router({
           };
         }
 
-        const client = createBinanceFuturesClient(wallet);
+        const client = getFuturesClient(wallet);
 
-        await setLeverage(client, input.symbol, input.leverage);
-        await setMarginType(client, input.symbol, input.marginType);
+        await client.setLeverage(input.symbol, input.leverage);
+        await client.setMarginType(input.symbol, input.marginType);
 
-        const futuresOrder = await submitFuturesOrder(client, {
+        const futuresOrder = await client.submitOrder({
           symbol: input.symbol,
           side: input.side,
           type: input.type,
@@ -286,8 +273,8 @@ export const futuresRouter = router({
           return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
         }
 
-        const client = createBinanceFuturesClient(wallet);
-        await cancelFuturesOrder(client, input.symbol, input.orderId);
+        const client = getFuturesClient(wallet);
+        await client.cancelOrder(input.symbol, input.orderId);
 
         await ctx.db
           .update(orders)
@@ -327,8 +314,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        const exchangePositions = await getFuturesPositions(client);
+        const client = getFuturesClient(wallet);
+        const exchangePositions = await client.getPositions();
         return exchangePositions;
       } catch (error) {
         throw new TRPCError({
@@ -368,8 +355,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        return await getPosition(client, input.symbol);
+        const client = getFuturesClient(wallet);
+        return await client.getPosition(input.symbol);
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -548,8 +535,8 @@ export const futuresRouter = router({
           };
         }
 
-        const client = createBinanceFuturesClient(wallet);
-        const position = await getPosition(client, input.symbol);
+        const client = getFuturesClient(wallet);
+        const position = await client.getPosition(input.symbol);
 
         if (!position) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
@@ -557,7 +544,7 @@ export const futuresRouter = router({
 
         const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
         const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
-        const result = await closeExchangePosition(client, input.symbol, position.positionAmt, stepSize);
+        const result = await client.closePosition(input.symbol, position.positionAmt, stepSize);
 
         logger.info({
           walletId: input.walletId,
@@ -603,8 +590,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        return await getOpenOrders(client, input.symbol);
+        const client = getFuturesClient(wallet);
+        return await client.getOpenOrders(input.symbol);
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -633,8 +620,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        return await getSymbolLeverageBrackets(client, input.symbol);
+        const client = getFuturesClient(wallet);
+        return await client.getLeverageBrackets(input.symbol);
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -678,8 +665,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        return await getOpenAlgoOrders(client, input.symbol);
+        const client = getFuturesClient(wallet);
+        return await client.getOpenAlgoOrders(input.symbol);
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -705,8 +692,8 @@ export const futuresRouter = router({
       }
 
       try {
-        const client = createBinanceFuturesClient(wallet);
-        const openOrders = await getOpenAlgoOrders(client, input.symbol);
+        const client = getFuturesClient(wallet);
+        const openOrders = await client.getOpenAlgoOrders(input.symbol);
         const orderCount = openOrders.length;
 
         if (orderCount === 0) {
@@ -714,7 +701,7 @@ export const futuresRouter = router({
           return { success: true, cancelled: 0 };
         }
 
-        await cancelAllFuturesAlgoOrders(client, input.symbol);
+        await client.cancelAllAlgoOrders(input.symbol);
         logger.info({ symbol: input.symbol, cancelled: orderCount }, 'Cancelled all algo orders for symbol');
 
         return { success: true, cancelled: orderCount };

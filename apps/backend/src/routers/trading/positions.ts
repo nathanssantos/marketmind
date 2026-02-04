@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
 import { positions, wallets } from '../../db/schema';
 import { env } from '../../env';
-import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../../services/binance-client';
+import { isPaperWallet } from '../../services/binance-client';
+import { getFuturesClient, getSpotClient } from '../../exchange';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
@@ -156,13 +157,13 @@ export const positionsRouter = router({
           const orderSide = position.side === 'LONG' ? 'SELL' : 'BUY';
 
           if (isFutures) {
-            const client = createBinanceFuturesClient(wallet);
-            const order = await client.submitNewOrder({
+            const client = getFuturesClient(wallet);
+            const order = await client.submitOrder({
               symbol: position.symbol,
               side: orderSide,
               type: 'MARKET',
-              quantity: qty,
-              reduceOnly: 'true',
+              quantity: String(qty),
+              reduceOnly: true,
               newOrderRespType: 'RESULT',
             });
 
@@ -170,8 +171,8 @@ export const positionsRouter = router({
             const filledPrice = parseFloat(order.avgPrice?.toString() || order.price?.toString() || '0');
             if (filledPrice > 0) exitPrice = filledPrice;
           } else {
-            const client = createBinanceClient(wallet);
-            const order = await client.submitNewOrder({
+            const client = getSpotClient(wallet);
+            const order = await client.submitOrder({
               symbol: position.symbol,
               side: orderSide,
               type: 'MARKET',
@@ -179,7 +180,7 @@ export const positionsRouter = router({
             });
 
             exitOrderId = order.orderId;
-            const filledPrice = 'price' in order ? parseFloat(order.price?.toString() || '0') : 0;
+            const filledPrice = order.price ? parseFloat(order.price) : 0;
             if (filledPrice > 0) exitPrice = filledPrice;
           }
 

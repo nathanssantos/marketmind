@@ -2,8 +2,7 @@ import type { MarketType } from '@marketmind/types';
 import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
-import { createBinanceClient } from './binance-client';
-import { cancelFuturesAlgoOrder, createBinanceFuturesClient, submitFuturesAlgoOrder } from './binance-futures-client';
+import { getFuturesClient, getSpotClient } from '../exchange';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
 
@@ -52,8 +51,8 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
     if (!algoId) return false;
 
     try {
-      const client = createBinanceFuturesClient(wallet);
-      await cancelFuturesAlgoOrder(client, algoId);
+      const client = getFuturesClient(wallet);
+      await client.cancelAlgoOrder(algoId);
       logger.info({ algoId, symbol }, '[ProtectionOrders] Cancelled futures algo order');
       return true;
     } catch (error) {
@@ -65,8 +64,8 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
   if (!orderId) return false;
 
   try {
-    const client = createBinanceClient(wallet);
-    await client.cancelOrder({ symbol, orderId });
+    const client = getSpotClient(wallet);
+    await client.cancelOrder(symbol, orderId);
     logger.info({ orderId, symbol }, '[ProtectionOrders] Cancelled spot order');
     return true;
   } catch (error) {
@@ -81,11 +80,11 @@ export async function createStopLossOrder(params: ProtectionOrderParams): Promis
   const { stepSize, tickSize } = await getSymbolFilters(symbol, marketType);
 
   if (marketType === 'FUTURES') {
-    const client = createBinanceFuturesClient(wallet);
+    const client = getFuturesClient(wallet);
     const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
     const formattedPrice = formatPriceForBinance(triggerPrice, tickSize);
 
-    const order = await submitFuturesAlgoOrder(client, {
+    const order = await client.submitAlgoOrder({
       symbol,
       side: closeSide,
       type: 'STOP_MARKET',
@@ -99,10 +98,10 @@ export async function createStopLossOrder(params: ProtectionOrderParams): Promis
     return { algoId: order.algoId, isAlgoOrder: true };
   }
 
-  const client = createBinanceClient(wallet);
+  const client = getSpotClient(wallet);
   const formattedQuantity = parseFloat(formatQuantityForBinance(quantity, stepSize));
   const formattedPrice = parseFloat(formatPriceForBinance(triggerPrice, tickSize));
-  const order = await client.submitNewOrder({
+  const order = await client.submitOrder({
     symbol,
     side: closeSide,
     type: 'STOP_LOSS_LIMIT',
@@ -112,9 +111,8 @@ export async function createStopLossOrder(params: ProtectionOrderParams): Promis
     timeInForce: 'GTC',
   });
 
-  const result = order as { orderId: number };
-  logger.info({ orderId: result.orderId, symbol, stopPrice: formattedPrice }, '[ProtectionOrders] Created spot SL order');
-  return { orderId: result.orderId, isAlgoOrder: false };
+  logger.info({ orderId: order.orderId, symbol, stopPrice: formattedPrice }, '[ProtectionOrders] Created spot SL order');
+  return { orderId: order.orderId, isAlgoOrder: false };
 }
 
 export async function createTakeProfitOrder(params: ProtectionOrderParams): Promise<ProtectionOrderResult> {
@@ -123,11 +121,11 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
   const { stepSize, tickSize } = await getSymbolFilters(symbol, marketType);
 
   if (marketType === 'FUTURES') {
-    const client = createBinanceFuturesClient(wallet);
+    const client = getFuturesClient(wallet);
     const formattedQuantity = formatQuantityForBinance(quantity, stepSize);
     const formattedPrice = formatPriceForBinance(triggerPrice, tickSize);
 
-    const order = await submitFuturesAlgoOrder(client, {
+    const order = await client.submitAlgoOrder({
       symbol,
       side: closeSide,
       type: 'TAKE_PROFIT_MARKET',
@@ -141,10 +139,10 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
     return { algoId: order.algoId, isAlgoOrder: true };
   }
 
-  const client = createBinanceClient(wallet);
+  const client = getSpotClient(wallet);
   const formattedQuantity = parseFloat(formatQuantityForBinance(quantity, stepSize));
   const formattedPrice = parseFloat(formatPriceForBinance(triggerPrice, tickSize));
-  const order = await client.submitNewOrder({
+  const order = await client.submitOrder({
     symbol,
     side: closeSide,
     type: 'TAKE_PROFIT_LIMIT',
@@ -154,9 +152,8 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
     timeInForce: 'GTC',
   });
 
-  const result = order as { orderId: number };
-  logger.info({ orderId: result.orderId, symbol, stopPrice: formattedPrice }, '[ProtectionOrders] Created spot TP order');
-  return { orderId: result.orderId, isAlgoOrder: false };
+  logger.info({ orderId: order.orderId, symbol, stopPrice: formattedPrice }, '[ProtectionOrders] Created spot TP order');
+  return { orderId: order.orderId, isAlgoOrder: false };
 }
 
 export async function updateStopLossOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {

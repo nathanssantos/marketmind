@@ -56,6 +56,7 @@ describe('FeeService', () => {
     totalWithdrawals: null,
     lastTransferSyncAt: null,
     currency: 'USDT',
+    exchange: 'BINANCE',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),

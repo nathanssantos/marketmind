@@ -6,6 +6,7 @@ export * from './events';
 export * from './filters';
 export * from './chart';
 export * from './fees';
+export * from './binance-fees';
 export * from './futures';
 export * from './indicator-constants';
 export * from './intervals';
