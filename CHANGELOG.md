@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.50.0] - 2026-02-05
+
 ### Added
 - **Interactive Brokers - Phase 6 Completion (Backend)**
   - `IBFeeCalculator` with tiered commission support (TIER_1-4, LITE accounts)
@@ -16,18 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CLI `--exchange` and `--asset-class` flags for `validate` and `batch` backtest commands
   - Integration test stubs for IB connection manager, stock client, kline stream, price stream (40 skipped)
   - 17 new fee calculator tests, all 2662 backend tests passing
-
-### Changed
-- `IBStockClient.getAccountInfo()` now uses `estimateCommissionRate` instead of hardcoded commission rates
-- `IBStockClient` accepts `accountType` parameter for fee calculation
-- `BacktestEngine` and `MultiWatcherBacktestEngine` accept `exchange` parameter for kline source routing
-- `BacktestConfig` type extended with `exchange` and `assetClass` fields
-
----
-
-## [0.50.0] - 2026-02-01
-
-### Added
 - **Order Book Integration** for Dynamic Symbol Rotation
   - `OrderBookAnalyzerService` with imbalance ratio and liquidity wall detection
   - Buying/selling pressure detection based on bid/ask volume ratios
@@ -44,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OPTIMIZATION_MASTER_PLAN completed** at 100% (v2.5.0)
 
 ### Changed
+- `IBStockClient.getAccountInfo()` now uses `estimateCommissionRate` instead of hardcoded commission rates
+- `IBStockClient` accepts `accountType` parameter for fee calculation
+- `BacktestEngine` and `MultiWatcherBacktestEngine` accept `exchange` parameter for kline source routing
+- `BacktestConfig` type extended with `exchange` and `assetClass` fields
 - Dynamic Symbol Rotation now considers order book conditions
   - Reduces exposure during strong selling pressure (imbalance < 0.7)
   - Detects significant ask walls and adjusts rotation accordingly
@@ -51,6 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ADX and Altcoin Season now show 24h change badges
   - Historical area charts when data is available
   - Order Book analysis card with pressure and imbalance
+
+### Removed
+- **Frontend backtesting UI** removed (backtesting is now CLI-only)
+  - Removed 14 frontend files: BacktestConfig, BacktestResults, BacktestingPanel, BacktestChart, EquityCurveChart, useBacktesting, useBacktestMetrics, useBacktestPlayback, TradeListTable
+  - Removed backtesting tab from Settings dialog
+  - Cleaned up related exports and translations
+
+### Performance
+- `detectSetupsInRange` now yields to event loop every 500 iterations (prevents blocking on 36K+ sync calls)
+- `BacktestEngine.findIndex` replaced O(n) lookup with O(1) `klineIndexMap`
+- `MultiWatcherBacktestEngine` O(n) `findIndex` replaced with O(1) Map in `buildUnifiedTimeline` and `checkAndClosePositions`
+- Fixed IB `subscribe()` race condition: async call is now properly awaited in watcher-manager
 
 ---
 
