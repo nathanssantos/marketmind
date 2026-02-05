@@ -31,7 +31,21 @@ const mapIntervalToBarSize = (interval: string): BarSizeSetting => {
   return mapping[interval] ?? BarSizeSetting.MINUTES_ONE;
 };
 
+const getNYTimezoneOffset = (date: Date): string => {
+  const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC', hour12: false });
+  const nyStr = date.toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
+  const utcDate = new Date(utcStr);
+  const nyDate = new Date(nyStr);
+  const diffMs = nyDate.getTime() - utcDate.getTime();
+  const diffHours = Math.round(diffMs / 3_600_000);
+  const sign = diffHours >= 0 ? '+' : '-';
+  return `${sign}${String(Math.abs(diffHours)).padStart(2, '0')}:00`;
+};
+
 const parseIBDateTime = (ibTime: string): number => {
+  const refDate = new Date();
+  const offset = getNYTimezoneOffset(refDate);
+
   if (ibTime.includes(' ')) {
     const [datePart, timePart] = ibTime.split(' ');
     if (!datePart) return Date.now();
@@ -39,12 +53,12 @@ const parseIBDateTime = (ibTime: string): number => {
     const month = datePart.slice(4, 6);
     const day = datePart.slice(6, 8);
     const timeStr = timePart ?? '09:30:00';
-    return new Date(`${year}-${month}-${day}T${timeStr}-05:00`).getTime();
+    return new Date(`${year}-${month}-${day}T${timeStr}${offset}`).getTime();
   }
   const year = ibTime.slice(0, 4);
   const month = ibTime.slice(4, 6);
   const day = ibTime.slice(6, 8);
-  return new Date(`${year}-${month}-${day}T09:30:00-05:00`).getTime();
+  return new Date(`${year}-${month}-${day}T09:30:00${offset}`).getTime();
 };
 
 const getIntervalMs = (interval: string): number => {
@@ -122,7 +136,7 @@ export class IBKlineStream implements IExchangeKlineStream {
     this.isRunning = false;
   }
 
-  subscribe(symbol: string, interval: string): void {
+  async subscribe(symbol: string, interval: string): Promise<void> {
     const key = this.getSubscriptionKey(symbol, interval);
 
     if (this.subscriptions.has(key)) {
@@ -130,12 +144,10 @@ export class IBKlineStream implements IExchangeKlineStream {
     }
 
     if (!this.connectionManager.isConnected) {
-      this.connectionManager.connect().then(() => {
-        this.createSubscription(symbol, interval);
-      });
-    } else {
-      this.createSubscription(symbol, interval);
+      await this.connectionManager.connect();
     }
+
+    this.createSubscription(symbol, interval);
   }
 
   private createSubscription(symbol: string, interval: string): void {

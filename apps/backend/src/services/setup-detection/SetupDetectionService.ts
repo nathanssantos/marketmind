@@ -169,17 +169,23 @@ export class SetupDetectionService {
     return setups;
   }
 
-  detectSetupsInRange(
+  async detectSetupsInRange(
     klines: Kline[],
     startIndex: number,
     endIndex: number,
-  ): TradingSetup[] {
+  ): Promise<TradingSetup[]> {
     const setups: TradingSetup[] = [];
+    const YIELD_INTERVAL = 500;
+    let iterationCount = 0;
 
     for (let i = startIndex; i <= endIndex; i += 1) {
       for (const interpreter of this.dynamicInterpreters.values()) {
         const result = interpreter.detect(klines, i);
         if (result.setup) setups.push(result.setup);
+        iterationCount++;
+        if (iterationCount % YIELD_INTERVAL === 0) {
+          await new Promise<void>((resolve) => setImmediate(resolve));
+        }
       }
     }
 

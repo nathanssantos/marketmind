@@ -29,10 +29,6 @@ vi.mock('./TradingProfilesTab', () => ({
     TradingProfilesTab: () => <div>TradingProfilesTab Content</div>,
 }));
 
-vi.mock('../Trading/BacktestingPanel', () => ({
-    BacktestingPanel: () => <div>BacktestingPanel Content</div>,
-}));
-
 vi.mock('../Trading/WalletManager', () => ({
     WalletManager: () => <div>WalletManager Content</div>,
 }));

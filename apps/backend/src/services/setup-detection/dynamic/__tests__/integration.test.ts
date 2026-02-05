@@ -181,11 +181,11 @@ describe('Dynamic Strategy Integration', () => {
       expect(Array.isArray(setups)).toBe(true);
     });
 
-    it('should detect setups in range', () => {
+    it('should detect setups in range', async () => {
       service.loadStrategy(emaCrossoverStrategy);
       const klines = generateCrossoverKlines();
 
-      const setups = service.detectSetupsInRange(klines, 50, 59);
+      const setups = await service.detectSetupsInRange(klines, 50, 59);
 
       expect(Array.isArray(setups)).toBe(true);
     });
@@ -223,11 +223,11 @@ describe('Dynamic Strategy Integration', () => {
   });
 
   describe('Setup structure', () => {
-    it('should return setup with correct structure', () => {
+    it('should return setup with correct structure', async () => {
       service.loadStrategy(rsiOversoldStrategy);
       const klines = generateTrendingKlines(100, 'down');
 
-      const setups = service.detectSetupsInRange(klines, 50, 99);
+      const setups = await service.detectSetupsInRange(klines, 50, 99);
 
       if (setups.length > 0) {
         const setup = setups[0]!;
@@ -250,11 +250,11 @@ describe('Dynamic Strategy Integration', () => {
       }
     });
 
-    it('should set correct setup type from strategy id', () => {
+    it('should set correct setup type from strategy id', async () => {
       service.loadStrategy(rsiOversoldStrategy);
       const klines = generateTrendingKlines(100, 'down');
 
-      const setups = service.detectSetupsInRange(klines, 50, 99);
+      const setups = await service.detectSetupsInRange(klines, 50, 99);
 
       if (setups.length > 0) {
         expect(setups[0]!.type).toBe('test-rsi-oversold');

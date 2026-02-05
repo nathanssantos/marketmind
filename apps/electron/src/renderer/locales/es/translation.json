@@ -111,7 +111,6 @@
       "general": "General",
       "chart": "Gráfico",
       "autoTrading": "Auto-Trading",
-      "backtesting": "Backtesting",
       "wallets": "Carteras",
       "aiTrading": "Auto-Trading IA",
       "context": "Contexto",
@@ -988,90 +987,6 @@
       "title": "Resumen",
       "enabledSetups": "Setups Habilitados",
       "avgConfidence": "Confianza Promedio"
-    }
-  },
-  "backtesting": {
-    "results": {
-      "title": "Resultados del Backtest"
-    },
-    "chart": {
-      "trades": "Operaciones",
-      "winRate": "Tasa de Aciertos"
-    },
-    "equityCurve": {
-      "title": "Curva de Equity",
-      "description": "Rendimiento a lo largo del tiempo con superposición de drawdown",
-      "equity": "Equity",
-      "drawdown": "Drawdown"
-    },
-    "config": {
-      "title": "Configuración del Backtest",
-      "symbol": "Símbolo",
-      "interval": "Intervalo",
-      "startDate": "Fecha de Inicio",
-      "endDate": "Fecha de Fin",
-      "initialCapital": "Capital Inicial ($)",
-      "initialCapitalHelper": "Saldo inicial para backtesting",
-      "maxPosition": "Tamaño Máximo de Posición (%)",
-      "maxPositionHelper": "Porcentaje máximo del capital por operación",
-      "commission": "Comisión (%)",
-      "commissionHelper": "Tasa de comisión por transacción",
-      "useAlgorithmicLevels": "Usar Niveles Algorítmicos de Stop/Take",
-      "useAlgorithmicLevelsHelper": "Calcular niveles basados en el algoritmo del setup",
-      "stopLoss": "Stop Loss (%)",
-      "takeProfit": "Take Profit (%)",
-      "minProfit": "Beneficio Mínimo (%)",
-      "minProfitHelper": "Filtrar setups con R:R por debajo de este umbral",
-      "minConfidence": "Confianza Mínima (%)",
-      "minConfidenceHelper": "Operar solo setups con confianza por encima de este nivel",
-      "runBacktest": "Ejecutar Backtest"
-    },
-    "trades": {
-      "title": "Lista de Operaciones",
-      "count": "{{count}} operaciones",
-      "columns": {
-        "side": "Lado",
-        "setup": "Setup",
-        "entry": "Entrada",
-        "exit": "Salida",
-        "entryTime": "Hora de Entrada",
-        "exitTime": "Hora de Salida",
-        "duration": "Duración",
-        "pnl": "P&L",
-        "pnlPercent": "P&L %",
-        "exitReason": "Motivo de Salida"
-      }
-    },
-    "metrics": {
-      "totalPnl": "P&L Total",
-      "winRate": "Tasa de Acierto",
-      "wins": "G",
-      "losses": "P",
-      "profitFactor": "Factor de Beneficio",
-      "totalTrades": "Total de Operaciones",
-      "avgDuration": "Duración Media",
-      "duration": "Duración",
-      "avgWin": "Ganancia Media",
-      "avgLoss": "Pérdida Media",
-      "largestWin": "Mayor Ganancia",
-      "largestLoss": "Mayor Pérdida",
-      "maxDrawdown": "Drawdown Máximo",
-      "sharpeRatio": "Ratio de Sharpe",
-      "sortinoRatio": "Ratio de Sortino",
-      "downsideRisk": "Riesgo a la Baja",
-      "totalCommission": "Comisión Total"
-    },
-    "quality": {
-      "excellent": "Excelente",
-      "good": "Bueno",
-      "fair": "Aceptable"
-    },
-    "configuration": {
-      "title": "Configuración",
-      "initialCapital": "Capital Inicial",
-      "maxPosition": "Posición Máxima",
-      "commission": "Comisión",
-      "setups": "Setups"
     }
   },
   "tradingProfiles": {

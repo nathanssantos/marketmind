@@ -60,7 +60,7 @@ export class IBPriceStream implements IExchangePriceStream {
     this.isRunning = false;
   }
 
-  subscribe(symbol: string, marketType: MarketType): void {
+  async subscribe(symbol: string, marketType: MarketType): Promise<void> {
     const upperSymbol = symbol.toUpperCase();
 
     if (this.subscriptions.has(upperSymbol)) {
@@ -68,21 +68,18 @@ export class IBPriceStream implements IExchangePriceStream {
     }
 
     if (!this.connectionManager.isConnected) {
-      this.connectionManager.connect().then(() => {
-        this.createSubscription(upperSymbol, marketType);
-      });
-    } else {
-      this.createSubscription(upperSymbol, marketType);
+      await this.connectionManager.connect();
     }
+
+    this.createSubscription(upperSymbol, marketType);
   }
 
   private createSubscription(symbol: string, marketType: MarketType): void {
     const contract = this.createContract(symbol);
 
-    const genericTickList = '236';
     const observable = this.connectionManager.client.getMarketData(
       contract,
-      genericTickList,
+      '',
       false,
       false
     );

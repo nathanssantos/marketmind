@@ -3,9 +3,17 @@ import { and, asc, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
 import { klines as klinesTable } from '../db/schema';
 import { IBKlineStream } from '../exchange/interactive-brokers/kline-stream';
+import type { IBConnectionManager } from '../exchange/interactive-brokers/connection-manager';
 import { IB_OPTIMAL_DURATION } from '../exchange/interactive-brokers/constants';
 import { logger } from './logger';
 import type { SmartBackfillResult } from './binance-historical';
+
+let sharedConnectionManager: IBConnectionManager | null = null;
+
+export const setIBConnectionManager = (manager: IBConnectionManager): void => {
+  sharedConnectionManager = manager;
+};
+
 
 const getIBDuration = (interval: string): string =>
   (IB_OPTIMAL_DURATION as Record<string, string>)[interval] ?? '1 M';
@@ -61,7 +69,7 @@ export const smartBackfillIBKlines = async (
   let downloaded = 0;
 
   try {
-    klineStream = new IBKlineStream();
+    klineStream = new IBKlineStream(sharedConnectionManager ?? undefined);
     const duration = getIBDuration(interval);
 
     logger.info({ symbol, interval, duration }, '[IB Backfill] Fetching historical data from IB Gateway');
@@ -79,7 +87,7 @@ export const smartBackfillIBKlines = async (
       logger.info({ symbol, interval, downloaded }, '[IB Backfill] Stored klines from IB Gateway');
     }
 
-    const updatedCount = await db
+    const updatedRows = await db
       .select({ openTime: klinesTable.openTime })
       .from(klinesTable)
       .where(
@@ -89,8 +97,8 @@ export const smartBackfillIBKlines = async (
           eq(klinesTable.marketType, 'SPOT'),
           gte(klinesTable.openTime, new Date(targetStartTime))
         )
-      )
-      .then((rows) => rows.length);
+      );
+    const updatedCount = updatedRows.length;
 
     return {
       totalInDb: updatedCount,

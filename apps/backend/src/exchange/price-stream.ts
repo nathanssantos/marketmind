@@ -11,7 +11,7 @@ export interface IExchangePriceStream {
   readonly exchangeId: ExchangeId;
   start(): void;
   stop(): void;
-  subscribe(symbol: string, marketType: MarketType): void;
+  subscribe(symbol: string, marketType: MarketType): void | Promise<void>;
   unsubscribe(symbol: string): void;
   isSubscribed(symbol: string): boolean;
   onPriceUpdate(handler: (update: PriceUpdate) => void): void;

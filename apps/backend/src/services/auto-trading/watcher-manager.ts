@@ -212,7 +212,7 @@ export class WatcherManager {
 
     const { getKlineStreamService } = await import('../exchange-stream-factory');
     const streamService = await getKlineStreamService(exchange, marketType);
-    streamService.subscribe(symbol, interval);
+    await streamService.subscribe(symbol, interval);
 
     await this.deps.ensureBtcKlineStream(walletId, userId, interval, marketType);
   }

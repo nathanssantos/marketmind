@@ -31,20 +31,18 @@ export const calculateTieredCommission = (
   }
 
   const tradeValue = shares * pricePerShare;
-  const totalShares = monthlyVolume + shares;
-  const tier = getTierForVolume(totalShares);
-  const rate = getTierRate(tier);
-  const rawCommission = shares * rate;
+  const rawCommission = calculateBlendedCommission(shares, monthlyVolume);
 
   const minCommission = IB_COMMISSION_RATES.TIERED.TIER_1.minCommission;
   const maxCommission = tradeValue * MAX_COMMISSION_PCT;
 
   const commission = Math.max(minCommission, Math.min(rawCommission, maxCommission));
   const effectiveRate = tradeValue > 0 ? commission / tradeValue : 0;
+  const tier = getTierForVolume(monthlyVolume + shares);
 
   return {
     commission,
-    perShareRate: rate,
+    perShareRate: shares > 0 ? commission / shares : 0,
     tier,
     shares,
     tradeValue,
@@ -77,6 +75,34 @@ export const estimateCommissionRate = (
 
   const tier = getTierForVolume(monthlyVolume);
   return getTierRate(tier);
+};
+
+const TIER_BRACKETS = [
+  { maxShares: IB_COMMISSION_RATES.TIERED.TIER_1.maxShares, rate: IB_COMMISSION_RATES.TIERED.TIER_1.rate },
+  { maxShares: IB_COMMISSION_RATES.TIERED.TIER_2.maxShares, rate: IB_COMMISSION_RATES.TIERED.TIER_2.rate },
+  { maxShares: IB_COMMISSION_RATES.TIERED.TIER_3.maxShares, rate: IB_COMMISSION_RATES.TIERED.TIER_3.rate },
+  { maxShares: Infinity, rate: IB_COMMISSION_RATES.TIERED.TIER_4.rate },
+];
+
+const calculateBlendedCommission = (shares: number, monthlyVolume: number): number => {
+  let remaining = shares;
+  let commission = 0;
+  let volumeSoFar = monthlyVolume;
+
+  for (const bracket of TIER_BRACKETS) {
+    if (remaining <= 0) break;
+
+    const bracketCapacity = Math.max(0, bracket.maxShares - volumeSoFar);
+    const sharesInBracket = Math.min(remaining, bracketCapacity);
+
+    if (sharesInBracket > 0) {
+      commission += sharesInBracket * bracket.rate;
+      remaining -= sharesInBracket;
+      volumeSoFar += sharesInBracket;
+    }
+  }
+
+  return commission;
 };
 
 const getTierForVolume = (totalShares: number): string => {

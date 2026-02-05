@@ -12,8 +12,8 @@ describe('IB Fee Calculator', () => {
       const result = calculateTieredCommission(100, 150);
 
       expect(result.tier).toBe('TIER_1');
-      expect(result.perShareRate).toBe(IB_COMMISSION_RATES.TIERED.TIER_1.rate);
-      expect(result.commission).toBe(100 * 0.0035);
+      expect(result.perShareRate).toBeCloseTo(IB_COMMISSION_RATES.TIERED.TIER_1.rate, 10);
+      expect(result.commission).toBeCloseTo(100 * 0.0035, 10);
       expect(result.shares).toBe(100);
       expect(result.tradeValue).toBe(15000);
     });
@@ -34,25 +34,25 @@ describe('IB Fee Calculator', () => {
     });
 
     it('should use TIER_2 rate for high monthly volume', () => {
-      const result = calculateTieredCommission(100, 150, 300_000);
+      const result = calculateTieredCommission(1000, 150, 300_000);
 
       expect(result.tier).toBe('TIER_2');
-      expect(result.perShareRate).toBe(IB_COMMISSION_RATES.TIERED.TIER_2.rate);
-      expect(result.commission).toBe(Math.max(0.35, 100 * 0.002));
+      expect(result.perShareRate).toBeCloseTo(IB_COMMISSION_RATES.TIERED.TIER_2.rate, 10);
+      expect(result.commission).toBeCloseTo(1000 * 0.002, 10);
     });
 
     it('should use TIER_3 rate for very high monthly volume', () => {
-      const result = calculateTieredCommission(100, 150, 3_000_000);
+      const result = calculateTieredCommission(1000, 150, 3_000_000);
 
       expect(result.tier).toBe('TIER_3');
-      expect(result.perShareRate).toBe(IB_COMMISSION_RATES.TIERED.TIER_3.rate);
+      expect(result.perShareRate).toBeCloseTo(IB_COMMISSION_RATES.TIERED.TIER_3.rate, 10);
     });
 
     it('should use TIER_4 rate for extremely high monthly volume', () => {
-      const result = calculateTieredCommission(100, 150, 20_000_000);
+      const result = calculateTieredCommission(1000, 150, 20_000_000);
 
       expect(result.tier).toBe('TIER_4');
-      expect(result.perShareRate).toBe(IB_COMMISSION_RATES.TIERED.TIER_4.rate);
+      expect(result.perShareRate).toBeCloseTo(IB_COMMISSION_RATES.TIERED.TIER_4.rate, 10);
     });
 
     it('should return zero commission for LITE accounts', () => {

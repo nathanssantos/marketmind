@@ -53,6 +53,7 @@ const __dirname = dirname(__filename);
 interface WatcherState {
   config: WatcherConfig;
   klines: Kline[];
+  klineIndexMap: Map<number, number>;
   detectedSetups: TradingSetup[];
   strategies: StrategyDefinition[];
   stats: WatcherStats;
@@ -247,9 +248,12 @@ export class MultiWatcherBacktestEngine {
       const setups = await this.detectSetups(watcherConfig, klines, watcherStrategies);
       console.log(`[MultiWatcherBacktest] Detected ${setups.length} setups for ${watcherId}`);
 
+      const klineIndexMap = new Map(klines.map((k, i) => [k.openTime, i]));
+
       this.watchers.set(watcherId, {
         config: watcherConfig,
         klines,
+        klineIndexMap,
         detectedSetups: setups,
         strategies: watcherStrategies,
         stats: this.initWatcherStats(watcherConfig),
@@ -341,7 +345,7 @@ export class MultiWatcherBacktestEngine {
     const warmupPeriod = BACKTEST_ENGINE.EMA200_WARMUP_BARS;
     const userStartTimestamp = new Date(this.config.startDate).getTime();
 
-    const detectedSetups = setupDetectionService.detectSetupsInRange(
+    const detectedSetups = await setupDetectionService.detectSetupsInRange(
       klines,
       warmupPeriod,
       klines.length - 1
@@ -355,7 +359,7 @@ export class MultiWatcherBacktestEngine {
 
     for (const [_watcherId, watcher] of this.watchers) {
       for (const setup of watcher.detectedSetups) {
-        const klineIndex = watcher.klines.findIndex((k) => k.openTime === setup.openTime);
+        const klineIndex = watcher.klineIndexMap.get(setup.openTime) ?? -1;
 
         events.push({
           timestamp: setup.openTime,
@@ -619,7 +623,7 @@ export class MultiWatcherBacktestEngine {
       if (!watcher) continue;
 
       const positionKlines = watcher.klines;
-      const entryIndex = positionKlines.findIndex((k) => k.openTime === position.entryTime);
+      const entryIndex = watcher.klineIndexMap.get(position.entryTime) ?? -1;
       if (entryIndex < 0) continue;
 
       for (let i = entryIndex + 1; i <= Math.min(currentIndex, positionKlines.length - 1); i++) {

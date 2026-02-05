@@ -4,7 +4,6 @@ import { Box, CloseButton } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
-import { BacktestingPanel } from '../Trading/BacktestingPanel';
 import { WalletManager } from '../Trading/WalletManager';
 import { AboutTab } from './AboutTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
@@ -45,7 +44,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="wallets">{t('settings.tabs.wallets')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="autoTrading">{t('settings.tabs.autoTrading')}</Tabs.Trigger>
-                <Tabs.Trigger value="backtesting">{t('settings.tabs.backtesting')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
               </Tabs.List>
 
@@ -67,10 +65,6 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="autoTrading">
                   <TradingProfilesTab />
-                </Tabs.Content>
-
-                <Tabs.Content value="backtesting">
-                  <BacktestingPanel />
                 </Tabs.Content>
 
                 <Tabs.Content value="about">

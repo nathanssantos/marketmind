@@ -38,8 +38,8 @@ describe('Interactive Brokers Integration', () => {
       expect(provider.capabilities.supportsAlgoOrders).toBe(true);
     });
 
-    it('should not support leverage (stocks)', () => {
-      expect(provider.capabilities.supportsLeverage).toBe(false);
+    it('should support leverage via margin accounts', () => {
+      expect(provider.capabilities.supportsLeverage).toBe(true);
       expect(provider.capabilities.supportsIsolatedMargin).toBe(false);
     });
 

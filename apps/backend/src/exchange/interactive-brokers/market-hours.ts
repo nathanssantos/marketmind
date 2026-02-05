@@ -1,8 +1,8 @@
 import {
   US_MARKET_REGULAR_SESSION,
   US_MARKET_EXTENDED_HOURS,
-  NYSE_HOLIDAYS_2025,
-  NYSE_EARLY_CLOSES_2025,
+  NYSE_HOLIDAYS,
+  NYSE_EARLY_CLOSES,
 } from './constants';
 import type { MarketSession, MarketCalendar } from './types';
 
@@ -26,8 +26,8 @@ const NYSE_CALENDAR: MarketCalendar = {
     { name: 'REGULAR', open: '09:30', close: '16:00', isCore: true },
     { name: 'AFTER_HOURS', open: '16:00', close: '20:00', isCore: false },
   ],
-  holidays: [...NYSE_HOLIDAYS_2025],
-  earlyCloses: NYSE_EARLY_CLOSES_2025,
+  holidays: [...NYSE_HOLIDAYS],
+  earlyCloses: NYSE_EARLY_CLOSES,
 };
 
 const formatDateKey = (date: Date): string => {

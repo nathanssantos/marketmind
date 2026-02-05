@@ -222,7 +222,7 @@ export const setupRouter = router({
       const mappedKlines = mapDbKlinesToApi(klinesData);
 
       const service = new SetupDetectionService();
-      const setups = service.detectSetupsInRange(
+      const setups = await service.detectSetupsInRange(
         mappedKlines,
         0,
         mappedKlines.length - 1,

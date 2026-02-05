@@ -8,7 +8,8 @@ import type { ExchangeProvider } from '../exchange-registry';
 import { IBStockClient } from './stock-client';
 import { IBKlineStream } from './kline-stream';
 import { IBPriceStream } from './price-stream';
-import { US_STOCK_MARKET_HOURS, US_MARKET_REGULAR_SESSION } from './constants';
+import { US_STOCK_MARKET_HOURS } from './constants';
+import { marketHoursService } from './market-hours';
 
 const IB_CAPABILITIES: ExchangeCapabilities = {
   supportedAssetClasses: ['EQUITY', 'ETF'],
@@ -21,7 +22,7 @@ const IB_CAPABILITIES: ExchangeCapabilities = {
   ],
   supportsOco: true,
   supportsAlgoOrders: true,
-  supportsLeverage: false,
+  supportsLeverage: true,
   supportsIsolatedMargin: false,
   supportsWebSocket: true,
   marketHours: US_STOCK_MARKET_HOURS,
@@ -64,39 +65,7 @@ export class IBExchangeProvider implements ExchangeProvider {
   }
 
   isMarketOpen(): boolean {
-    const now = new Date();
-    const nyTime = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(now);
-
-    const timeParts = nyTime.split(':').map(Number);
-    const hours = timeParts[0] ?? 0;
-    const minutes = timeParts[1] ?? 0;
-    const currentMinutes = hours * 60 + minutes;
-
-    const openParts = US_MARKET_REGULAR_SESSION.open.split(':').map(Number);
-    const closeParts = US_MARKET_REGULAR_SESSION.close.split(':').map(Number);
-    const openHours = openParts[0] ?? 9;
-    const openMinutes = openParts[1] ?? 30;
-    const closeHours = closeParts[0] ?? 16;
-    const closeMinutes = closeParts[1] ?? 0;
-
-    const openTotalMinutes = openHours * 60 + openMinutes;
-    const closeTotalMinutes = closeHours * 60 + closeMinutes;
-
-    const day = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
-      weekday: 'short',
-    }).format(now);
-
-    if (day === 'Sat' || day === 'Sun') {
-      return false;
-    }
-
-    return currentMinutes >= openTotalMinutes && currentMinutes < closeTotalMinutes;
+    return marketHoursService.isMarketOpen();
   }
 
   getMarketHours(): MarketHours {

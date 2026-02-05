@@ -1,7 +1,7 @@
 import type { Kline } from '@marketmind/types';
 import type { GapInfo, MarketCalendar } from './types';
 import { MarketHoursService } from './market-hours';
-import { NYSE_HOLIDAYS_2025, NYSE_EARLY_CLOSES_2025 } from './constants';
+import { NYSE_HOLIDAYS, NYSE_EARLY_CLOSES } from './constants';
 
 const TIME_MS = {
   '1m': 60_000,
@@ -23,8 +23,8 @@ const NYSE_CALENDAR: MarketCalendar = {
     { name: 'REGULAR', open: '09:30', close: '16:00', isCore: true },
     { name: 'AFTER_HOURS', open: '16:00', close: '20:00', isCore: false },
   ],
-  holidays: [...NYSE_HOLIDAYS_2025],
-  earlyCloses: NYSE_EARLY_CLOSES_2025,
+  holidays: [...NYSE_HOLIDAYS],
+  earlyCloses: NYSE_EARLY_CLOSES,
 };
 
 const OVERNIGHT_GAP_HOURS = {

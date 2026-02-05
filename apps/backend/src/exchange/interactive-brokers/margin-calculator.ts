@@ -150,7 +150,12 @@ export class MarginCalculator {
       whatIf: true,
     };
 
-    return new Promise((resolve, reject) => {
+    const toNumber = (val: string | number | undefined): number => {
+      if (val === undefined) return 0;
+      return typeof val === 'number' ? val : parseFloat(val);
+    };
+
+    return new Promise<IBMarginImpact>((resolve, reject) => {
       const timeout = setTimeout(() => {
         subscription.unsubscribe();
         reject(new Error('Timeout calculating margin impact'));
@@ -158,50 +163,40 @@ export class MarginCalculator {
 
       const subscription = this.connectionManager.client.getOpenOrders().subscribe({
         next: (openOrdersUpdate) => {
-          const orders = openOrdersUpdate.all;
-          if (!orders || orders.length === 0) return;
+          const orders = openOrdersUpdate.all ?? [];
+          for (const openOrder of orders) {
+            const state = openOrder.orderState;
+            if (!state) continue;
 
-          const lastOrder = orders[orders.length - 1];
-          if (!lastOrder?.orderState) return;
+            if (state.initMarginBefore !== undefined || state.commission !== undefined) {
+              const impact: IBMarginImpact = {
+                initMarginBefore: toNumber(state.initMarginBefore),
+                maintMarginBefore: toNumber(state.maintMarginBefore),
+                equityWithLoanBefore: toNumber(state.equityWithLoanBefore),
+                initMarginChange: toNumber(state.initMarginChange),
+                maintMarginChange: toNumber(state.maintMarginChange),
+                initMarginAfter: toNumber(state.initMarginAfter),
+                maintMarginAfter: toNumber(state.maintMarginAfter),
+                equityWithLoanAfter: toNumber(state.equityWithLoanAfter),
+                commission: toNumber(state.commission),
+                minCommission: toNumber(state.minCommission),
+                maxCommission: toNumber(state.maxCommission),
+              };
 
-          const state = lastOrder.orderState;
-
-          if (
-            state.initMarginBefore !== undefined ||
-            state.commission !== undefined
-          ) {
-            const toNumber = (val: string | number | undefined): number => {
-              if (val === undefined) return 0;
-              return typeof val === 'number' ? val : parseFloat(val);
-            };
-
-            const impact: IBMarginImpact = {
-              initMarginBefore: toNumber(state.initMarginBefore),
-              maintMarginBefore: toNumber(state.maintMarginBefore),
-              equityWithLoanBefore: toNumber(state.equityWithLoanBefore),
-              initMarginChange: toNumber(state.initMarginChange),
-              maintMarginChange: toNumber(state.maintMarginChange),
-              initMarginAfter: toNumber(state.initMarginAfter),
-              maintMarginAfter: toNumber(state.maintMarginAfter),
-              equityWithLoanAfter: toNumber(state.equityWithLoanAfter),
-              commission: toNumber(state.commission),
-              minCommission: toNumber(state.minCommission),
-              maxCommission: toNumber(state.maxCommission),
-            };
-
-            clearTimeout(timeout);
-            subscription.unsubscribe();
-            resolve(impact);
+              clearTimeout(timeout);
+              subscription.unsubscribe();
+              resolve(impact);
+              return;
+            }
           }
         },
-        error: (err) => {
+        error: (err: Error) => {
           clearTimeout(timeout);
-          subscription.unsubscribe();
           reject(err);
         },
       });
 
-      this.connectionManager.client.placeNewOrder(contract, order).catch((err) => {
+      this.connectionManager.client.placeNewOrder(contract, order).catch((err: Error) => {
         clearTimeout(timeout);
         subscription.unsubscribe();
         reject(err);

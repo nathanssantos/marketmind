@@ -22,7 +22,7 @@ class IBKlineStreamService {
     return `${symbol}_${interval}`.toLowerCase();
   }
 
-  subscribe(symbol: string, interval: string): void {
+  async subscribe(symbol: string, interval: string): Promise<void> {
     const key = this.getKey(symbol, interval);
     const existing = this.subscriptions.get(key);
 
@@ -32,7 +32,7 @@ class IBKlineStreamService {
     }
 
     this.subscriptions.set(key, { symbol, interval, clientCount: 1 });
-    this.getOrCreateStream().subscribe(symbol, interval);
+    await this.getOrCreateStream().subscribe(symbol, interval);
   }
 
   unsubscribe(symbol: string, interval: string): void {

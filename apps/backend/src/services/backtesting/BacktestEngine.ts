@@ -96,7 +96,7 @@ export class BacktestEngine {
         useBnbDiscount: config.useBnbDiscount,
       }, conditionEvaluator);
 
-      const detectedSetups = this.detectSetups(
+      const detectedSetups = await this.detectSetups(
         setupDetectionService,
         historicalKlines,
         loadedStrategies,
@@ -307,12 +307,12 @@ export class BacktestEngine {
     };
   }
 
-  private detectSetups(
+  private async detectSetups(
     setupDetectionService: SetupDetectionService,
     historicalKlines: any[],
     loadedStrategies: StrategyDefinition[],
     trendFilterPeriod?: number
-  ): any[] {
+  ): Promise<any[]> {
     try {
       const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies, trendFilterPeriod);
       const startIndex = warmupPeriod;
@@ -320,7 +320,7 @@ export class BacktestEngine {
 
       console.log(`[Backtest] Scanning from index ${startIndex} to ${endIndex} (${endIndex - startIndex + 1} candles)`);
 
-      const detectedSetups = setupDetectionService.detectSetupsInRange(
+      const detectedSetups = await setupDetectionService.detectSetupsInRange(
         historicalKlines,
         startIndex,
         endIndex
@@ -395,6 +395,7 @@ export class BacktestEngine {
     }];
 
     const klineMap = new Map(historicalKlines.map((k) => [k.openTime, k]));
+    const klineIndexMap = new Map(historicalKlines.map((k: any, i: number) => [k.openTime, i]));
     const sortedSetups = tradableSetups.sort((a: any, b: any) => a.openTime - b.openTime);
     const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
@@ -408,7 +409,7 @@ export class BacktestEngine {
       if (!filterManager.checkCooldown(setup.type, config.symbol, config.interval, setup.openTime)) continue;
       if (!filterManager.checkDirection(setup.direction)) continue;
 
-      const setupIndex = historicalKlines.findIndex(k => k.openTime === setup.openTime);
+      const setupIndex = klineIndexMap.get(setup.openTime) ?? -1;
 
       if (!filterManager.checkStochasticFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
       if (!filterManager.checkAdxFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;

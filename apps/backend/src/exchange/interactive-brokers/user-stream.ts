@@ -101,12 +101,15 @@ export class IBUserStream {
       const orderId = order.orderId;
       const existing = this.orders.get(orderId);
 
+      const filled = order.order?.filledQuantity ?? 0;
+      const total = order.order?.totalQuantity ?? 0;
+
       const orderInfo: OrderInfo = {
         orderId,
         contract: order.contract,
         status: order.orderState?.status ?? 'Unknown',
-        filled: order.order?.filledQuantity ?? 0,
-        remaining: order.order?.totalQuantity ?? 0,
+        filled,
+        remaining: total - filled,
         avgFillPrice: 0,
         lastUpdate: Date.now(),
       };
@@ -167,6 +170,9 @@ export class IBUserStream {
   }
 
   private mapToIBOrderResult(order: OpenOrder): IBOrderResult {
+    const filledQty = order.order?.filledQuantity ?? 0;
+    const totalQty = order.order?.totalQuantity ?? 0;
+
     return {
       orderId: order.orderId,
       clientId: order.order?.clientId ?? 0,
@@ -175,8 +181,8 @@ export class IBUserStream {
       order: order.order!,
       orderState: order.orderState!,
       status: order.orderState?.status ?? 'Unknown',
-      filled: order.order?.filledQuantity ?? 0,
-      remaining: order.order?.totalQuantity ?? 0,
+      filled: filledQty,
+      remaining: totalQty - filledQty,
       avgFillPrice: 0,
       lastFillPrice: 0,
       whyHeld: order.orderState?.warningText,

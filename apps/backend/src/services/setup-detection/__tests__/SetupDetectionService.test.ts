@@ -309,7 +309,7 @@ describe('SetupDetectionService', () => {
   });
 
   describe('detectSetupsInRange', () => {
-    it('should detect setups in specified range', () => {
+    it('should detect setups in specified range', async () => {
       const service = new SetupDetectionService();
       service.loadStrategy(createMockStrategy('range-detector', 'Range Detector'));
 
@@ -317,12 +317,12 @@ describe('SetupDetectionService', () => {
       mockDetect.mockReturnValue({ setup: mockSetup, confidence: 70 });
 
       const klines = createMockKlines(100);
-      service.detectSetupsInRange(klines, 50, 55);
+      await service.detectSetupsInRange(klines, 50, 55);
 
       expect(mockDetect).toHaveBeenCalledTimes(6);
     });
 
-    it('should sort results by confidence', () => {
+    it('should sort results by confidence', async () => {
       const service = new SetupDetectionService();
       service.loadStrategy(createMockStrategy('range-sort', 'Range Sort'));
 
@@ -332,21 +332,21 @@ describe('SetupDetectionService', () => {
         .mockReturnValueOnce({ setup: createMockSetup('range-sort', 'LONG', 65), confidence: 65 });
 
       const klines = createMockKlines(100);
-      const setups = service.detectSetupsInRange(klines, 50, 52);
+      const setups = await service.detectSetupsInRange(klines, 50, 52);
 
       expect(setups[0]!.confidence).toBe(80);
       expect(setups[1]!.confidence).toBe(65);
       expect(setups[2]!.confidence).toBe(50);
     });
 
-    it('should return empty array when no setups found', () => {
+    it('should return empty array when no setups found', async () => {
       const service = new SetupDetectionService();
       service.loadStrategy(createMockStrategy('empty-range', 'Empty Range'));
 
       mockDetect.mockReturnValue({ setup: null, confidence: 0 });
 
       const klines = createMockKlines(100);
-      const setups = service.detectSetupsInRange(klines, 50, 55);
+      const setups = await service.detectSetupsInRange(klines, 50, 55);
 
       expect(setups).toEqual([]);
     });

@@ -13,7 +13,7 @@ export interface IExchangeKlineStream {
   readonly exchangeId: ExchangeId;
   start(): void;
   stop(): void;
-  subscribe(symbol: string, interval: string): void;
+  subscribe(symbol: string, interval: string): void | Promise<void>;
   unsubscribe(symbol: string, interval: string): void;
   getSubscriptionCount(): number;
   onKlineUpdate(handler: (update: KlineUpdate) => void): void;

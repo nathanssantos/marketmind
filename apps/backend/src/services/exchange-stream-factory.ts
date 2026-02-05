@@ -1,7 +1,7 @@
 import type { ExchangeId, MarketType } from '@marketmind/types';
 
 interface KlineStreamSubscriber {
-  subscribe(symbol: string, interval: string): void;
+  subscribe(symbol: string, interval: string): void | Promise<void>;
   unsubscribe(symbol: string, interval: string): void;
 }
 

@@ -64,7 +64,7 @@ export class IBConnectionManager {
       this.api = new IBApiNext({
         host: this.config.host,
         port: this.config.port,
-        reconnectInterval: IB_RECONNECT_DELAY_MS,
+        reconnectInterval: IB_RECONNECT_DELAY_MS / 1000,
         connectionWatchdogInterval: 30,
         maxReqPerSec: 45,
       });

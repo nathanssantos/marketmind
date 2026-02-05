@@ -135,10 +135,36 @@ export const NYSE_HOLIDAYS_2025 = [
   new Date('2025-12-25'),
 ] as const;
 
+export const NYSE_HOLIDAYS_2026 = [
+  new Date('2026-01-01'),
+  new Date('2026-01-19'),
+  new Date('2026-02-16'),
+  new Date('2026-04-03'),
+  new Date('2026-05-25'),
+  new Date('2026-06-19'),
+  new Date('2026-07-03'),
+  new Date('2026-09-07'),
+  new Date('2026-11-26'),
+  new Date('2026-12-25'),
+] as const;
+
+export const NYSE_HOLIDAYS = [...NYSE_HOLIDAYS_2025, ...NYSE_HOLIDAYS_2026];
+
 export const NYSE_EARLY_CLOSES_2025 = new Map([
   ['2025-07-03', '13:00'],
   ['2025-11-28', '13:00'],
   ['2025-12-24', '13:00'],
+]);
+
+export const NYSE_EARLY_CLOSES_2026 = new Map([
+  ['2026-07-02', '13:00'],
+  ['2026-11-27', '13:00'],
+  ['2026-12-24', '13:00'],
+]);
+
+export const NYSE_EARLY_CLOSES = new Map([
+  ...NYSE_EARLY_CLOSES_2025,
+  ...NYSE_EARLY_CLOSES_2026,
 ]);
 
 export const IB_SHORTABILITY_THRESHOLDS = {

@@ -43,7 +43,6 @@ export { useToast } from './useToast';
 
 export { useAutoTrading } from './useAutoTrading';
 export { useAutoUpdate } from './useAutoUpdate';
-export { useBacktestMetrics } from './useBacktestMetrics';
 export { useChartWindows } from './useChartWindows';
 export { useExecutionNotifications } from './useExecutionNotifications';
 
