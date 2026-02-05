@@ -1147,10 +1147,13 @@ export const tradingRouter = router({
       z.object({
         symbols: z.array(z.string()),
         marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        exchange: z.enum(['BINANCE', 'INTERACTIVE_BROKERS']).default('BINANCE'),
       })
     )
     .query(async ({ input }) => {
       if (input.symbols.length === 0) return {};
+
+      if (input.exchange === 'INTERACTIVE_BROKERS') return {};
 
       const MAX_RETRIES = 3;
       const RETRY_DELAY_MS = 1000;

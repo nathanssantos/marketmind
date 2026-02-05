@@ -5,7 +5,7 @@ import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
@@ -45,8 +45,8 @@ const PortfolioComponent = () => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
 
-  const { wallets: backendWallets } = useBackendWallet();
-  const activeWalletId = backendWallets[0]?.id;
+  const { activeWallet: rawActiveWallet, isIB, wallets: backendWallets } = useActiveWallet();
+  const activeWalletId = rawActiveWallet?.id;
   useOrderUpdates(activeWalletId ?? '');
   usePositionUpdates(activeWalletId || '');
   const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
@@ -136,7 +136,7 @@ const PortfolioComponent = () => {
 
   return (
     <Stack gap={3} p={4}>
-      <FuturesPositionsPanel />
+      {!isIB && <FuturesPositionsPanel />}
 
       {!activeWallet ? (
         <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>

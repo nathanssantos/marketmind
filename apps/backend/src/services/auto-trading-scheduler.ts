@@ -1,4 +1,4 @@
-import type { Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import type { ExchangeId, Interval, Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import fs from 'fs';
@@ -77,6 +77,7 @@ interface ActiveWatcher {
   symbol: string;
   interval: string;
   marketType: MarketType;
+  exchange: ExchangeId;
   enabledStrategies: string[];
   profileId?: string;
   profileName?: string;
@@ -754,7 +755,8 @@ export class AutoTradingScheduler {
     isManual: boolean = true,
     _runImmediateCheck: boolean = false,
     silent: boolean = false,
-    targetCandleClose?: number
+    targetCandleClose?: number,
+    exchange: ExchangeId = 'BINANCE'
   ): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
 
@@ -822,6 +824,7 @@ export class AutoTradingScheduler {
           symbol,
           interval,
           marketType,
+          exchange,
           profileId: profileId ?? null,
           startedAt: new Date(),
           isManual,
@@ -873,6 +876,7 @@ export class AutoTradingScheduler {
       symbol,
       interval,
       marketType,
+      exchange,
       enabledStrategies,
       profileId,
       profileName,
@@ -884,12 +888,9 @@ export class AutoTradingScheduler {
 
     this.activeWatchers.set(watcherId, watcher);
 
-    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
-    if (marketType === 'FUTURES') {
-      binanceFuturesKlineStreamService.subscribe(symbol, interval);
-    } else {
-      binanceKlineStreamService.subscribe(symbol, interval);
-    }
+    const { getKlineStreamService } = await import('./exchange-stream-factory');
+    const streamService = await getKlineStreamService(exchange, marketType);
+    streamService.subscribe(symbol, interval);
 
     await this.ensureBtcKlineStream(walletId, userId, interval, marketType);
 
@@ -908,13 +909,10 @@ export class AutoTradingScheduler {
     clearTimeout(watcher.intervalId);
     this.activeWatchers.delete(watcherId);
 
-    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./binance-kline-stream');
-    if (watcher.marketType === 'FUTURES') {
-      binanceFuturesKlineStreamService.unsubscribe(symbol, interval);
-    } else {
-      binanceKlineStreamService.unsubscribe(symbol, interval);
-    }
-    log('> Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType });
+    const { getKlineStreamService } = await import('./exchange-stream-factory');
+    const streamService = await getKlineStreamService(watcher.exchange, watcher.marketType);
+    streamService.unsubscribe(symbol, interval);
+    log('> Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType, exchange: watcher.exchange });
 
     await this.cleanupBtcKlineStreamIfNeeded(interval, marketType);
 
@@ -971,14 +969,15 @@ export class AutoTradingScheduler {
     return { active: count > 0, watchers: count };
   }
 
-  getActiveWatchers(): Array<{ watcherId: string; symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }> {
-    const result: Array<{ watcherId: string; symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }> = [];
+  getActiveWatchers(): Array<{ watcherId: string; symbol: string; interval: string; marketType: MarketType; exchange: ExchangeId; profileId?: string; profileName?: string; isManual: boolean }> {
+    const result: Array<{ watcherId: string; symbol: string; interval: string; marketType: MarketType; exchange: ExchangeId; profileId?: string; profileName?: string; isManual: boolean }> = [];
     for (const [watcherId, watcher] of this.activeWatchers.entries()) {
       result.push({
         watcherId,
         symbol: watcher.symbol,
         interval: watcher.interval,
         marketType: watcher.marketType,
+        exchange: watcher.exchange,
         profileId: watcher.profileId,
         profileName: watcher.profileName,
         isManual: watcher.isManual,
@@ -987,13 +986,13 @@ export class AutoTradingScheduler {
     return result;
   }
 
-  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }[] }> {
+  async getWatcherStatusFromDb(walletId: string): Promise<{ active: boolean; watchers: number; watcherDetails: { symbol: string; interval: string; marketType: MarketType; exchange: ExchangeId; profileId?: string; profileName?: string; isManual: boolean }[] }> {
     const persistedWatchers = await db
       .select()
       .from(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
-    const watcherDetails: { symbol: string; interval: string; marketType: MarketType; profileId?: string; profileName?: string; isManual: boolean }[] = [];
+    const watcherDetails: { symbol: string; interval: string; marketType: MarketType; exchange: ExchangeId; profileId?: string; profileName?: string; isManual: boolean }[] = [];
 
     for (const w of persistedWatchers) {
       let profileName: string | undefined;
@@ -1009,6 +1008,7 @@ export class AutoTradingScheduler {
         symbol: w.symbol,
         interval: w.interval,
         marketType: (w.marketType as MarketType) ?? 'SPOT',
+        exchange: (w.exchange as ExchangeId) ?? 'BINANCE',
         profileId: w.profileId ?? undefined,
         profileName,
         isManual: w.isManual,
@@ -1056,6 +1056,7 @@ export class AutoTradingScheduler {
 
     for (const pw of persistedWatchers) {
       const marketType = (pw.marketType as MarketType) ?? 'SPOT';
+      const exchange = (pw.exchange as ExchangeId) ?? 'BINANCE';
 
       const result = await prefetchKlines({
         symbol: pw.symbol,
@@ -1089,7 +1090,9 @@ export class AutoTradingScheduler {
           marketType,
           pw.isManual,
           false,
-          true
+          true,
+          undefined,
+          exchange
         );
 
         startupBuffer.addRestoredWatcher({

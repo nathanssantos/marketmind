@@ -8,7 +8,7 @@ import { Select } from '@renderer/components/ui/select';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIStore, type OrdersFilterOption, type OrdersSortOption } from '@renderer/store/uiStore';
@@ -32,8 +32,8 @@ const OrdersListComponent = () => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
 
-  const { wallets: backendWallets } = useBackendWallet();
-  const activeWalletId = backendWallets[0]?.id;
+  const { activeWallet: rawActiveWallet, wallets: backendWallets } = useActiveWallet();
+  const activeWalletId = rawActiveWallet?.id;
   useOrderUpdates(activeWalletId ?? '');
   const {
     orders: backendOrdersData,

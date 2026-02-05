@@ -1,3 +1,4 @@
+import type { ExchangeId } from '@marketmind/types';
 import type { Kline, MarketType } from '@marketmind/types';
 import type { RotationConfig } from '../dynamic-symbol-rotation';
 
@@ -7,6 +8,7 @@ export interface ActiveWatcher {
   symbol: string;
   interval: string;
   marketType: MarketType;
+  exchange: ExchangeId;
   enabledStrategies: string[];
   profileId?: string;
   profileName?: string;
@@ -110,7 +112,8 @@ export interface RotationManagerDeps {
     isManual?: boolean,
     runImmediateCheck?: boolean,
     silent?: boolean,
-    targetCandleClose?: number
+    targetCandleClose?: number,
+    exchange?: ExchangeId
   ) => Promise<void>;
   stopWatcher: (walletId: string, symbol: string, interval: string, marketType: MarketType) => Promise<void>;
   addToProcessingQueue: (watcherIds: string[]) => void;

@@ -6,7 +6,7 @@ import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useDebounce } from '@renderer/hooks/useDebounce';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useMemo, useState } from 'react';
@@ -23,8 +23,8 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
 
-  const { wallets } = useBackendWallet();
-  const walletId = wallets[0]?.id ?? '';
+  const { activeWallet } = useActiveWallet();
+  const walletId = activeWallet?.id ?? '';
 
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
   const [timeframe, setTimeframe] = useState<TimeInterval>('12h');

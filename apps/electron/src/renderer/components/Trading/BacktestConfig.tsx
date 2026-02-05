@@ -11,7 +11,7 @@ import { Checkbox } from '@renderer/components/ui/checkbox';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBacktesting } from '@renderer/hooks/useBacktesting';
 import { useSetupStore } from '@renderer/store/setupStore';
 import { useCallback, useState } from 'react';
@@ -26,8 +26,8 @@ export const BacktestConfig = ({ onBacktestComplete }: BacktestConfigProps) => {
   const { chartData } = useChartContext();
   const { runBacktest, runMultiWatcherBacktest, isRunningBacktest, runBacktestError } = useBacktesting();
   const { config: setupConfig, setConfig: setSetupConfig } = useSetupStore();
-  const { wallets } = useBackendWallet();
-  const activeWalletId = wallets[0]?.id ?? '';
+  const { activeWallet } = useActiveWallet();
+  const activeWalletId = activeWallet?.id ?? '';
   const { config: autoTradingConfig, isLoadingConfig } = useBackendAutoTrading(activeWalletId);
 
   const getLastMonthRange = () => {

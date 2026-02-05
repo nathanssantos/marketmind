@@ -1,6 +1,7 @@
 import { FIBONACCI_PYRAMID_LEVELS, FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { colorize } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
+import type { ExchangeId } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -883,6 +884,8 @@ export const autoTradingRouter = router({
           )
         );
 
+      const exchange = (wallet.exchange as ExchangeId) ?? 'BINANCE';
+
       await autoTradingScheduler.startWatcher(
         input.walletId,
         ctx.user.id,
@@ -891,10 +894,14 @@ export const autoTradingRouter = router({
         input.profileId,
         false,
         input.marketType,
-        true
+        true,
+        false,
+        false,
+        undefined,
+        exchange
       );
 
-      log('✓ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType });
+      log('✓ Watcher started', { walletId: input.walletId, symbol: input.symbol, interval: input.interval, profileId: input.profileId, marketType: input.marketType, exchange });
 
       return { success: true };
     }),
@@ -1004,6 +1011,7 @@ export const autoTradingRouter = router({
       });
 
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      const walletExchange = (wallet.exchange as ExchangeId) ?? 'BINANCE';
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
         throw new TRPCError({
@@ -1147,7 +1155,11 @@ export const autoTradingRouter = router({
             input.profileId,
             false,
             input.marketType,
-            isManualWatcher
+            isManualWatcher,
+            false,
+            false,
+            undefined,
+            walletExchange
           );
 
           startedSymbols.add(symbol);

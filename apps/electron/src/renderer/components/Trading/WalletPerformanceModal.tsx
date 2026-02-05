@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { Dialog } from '@renderer/components/ui/dialog';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTranslation } from 'react-i18next';
 import {
   Area,
@@ -36,7 +36,7 @@ export const WalletPerformanceModal = ({
   walletId,
 }: WalletPerformanceModalProps) => {
   const { t } = useTranslation();
-  const { wallets } = useBackendWallet();
+  const { wallets } = useActiveWallet();
   const backendWallet = wallets.find((w) => w.id === walletId);
   const { performance, equityCurve, isLoading } = useBackendAnalytics(walletId || '', 'all');
 

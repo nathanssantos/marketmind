@@ -30,16 +30,30 @@ describe('uiStore', () => {
       expect(useUIStore.getState().tradingSidebarTab).toBe('portfolio');
     });
 
-    it('should update to wallets tab', () => {
-      const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('wallets');
-      expect(useUIStore.getState().tradingSidebarTab).toBe('wallets');
-    });
-
     it('should update to analytics tab', () => {
       const { setTradingSidebarTab } = useUIStore.getState();
       setTradingSidebarTab('analytics');
       expect(useUIStore.getState().tradingSidebarTab).toBe('analytics');
+    });
+  });
+
+  describe('activeWalletId', () => {
+    it('should initialize with null', () => {
+      const state = useUIStore.getState();
+      expect(state.activeWalletId).toBeNull();
+    });
+
+    it('should update to a wallet id', () => {
+      const { setActiveWalletId } = useUIStore.getState();
+      setActiveWalletId('wallet-1');
+      expect(useUIStore.getState().activeWalletId).toBe('wallet-1');
+    });
+
+    it('should reset to null', () => {
+      const { setActiveWalletId } = useUIStore.getState();
+      setActiveWalletId('wallet-1');
+      setActiveWalletId(null);
+      expect(useUIStore.getState().activeWalletId).toBeNull();
     });
   });
 
@@ -139,6 +153,7 @@ describe('uiStore', () => {
   describe('Store Function Existence', () => {
     it('should expose all setter functions', () => {
       const state = useUIStore.getState();
+      expect(typeof state.setActiveWalletId).toBe('function');
       expect(typeof state.setTradingSidebarTab).toBe('function');
       expect(typeof state.setOrdersFilterStatus).toBe('function');
       expect(typeof state.setPerformancePeriod).toBe('function');
@@ -155,6 +170,7 @@ describe('uiStore', () => {
 
     it('should expose all state properties', () => {
       const state = useUIStore.getState();
+      expect(state.activeWalletId).toBeDefined();
       expect(state.tradingSidebarTab).toBeDefined();
       expect(state.ordersFilterStatus).toBeDefined();
       expect(state.performancePeriod).toBeDefined();

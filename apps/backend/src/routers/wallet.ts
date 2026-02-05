@@ -446,6 +446,27 @@ export const walletRouter = router({
       }
 
       try {
+        if (wallet.exchange === 'INTERACTIVE_BROKERS') {
+          const net = await import('net');
+          const { IB_DEFAULT_HOST, IB_PORTS } = await import('../exchange/interactive-brokers/constants');
+          const port = wallet.walletType === 'live' ? IB_PORTS.GATEWAY_LIVE : IB_PORTS.GATEWAY_PAPER;
+
+          const connected = await new Promise<boolean>((resolve) => {
+            const socket = net.createConnection({ host: IB_DEFAULT_HOST, port, timeout: 3000 });
+            socket.on('connect', () => { socket.destroy(); resolve(true); });
+            socket.on('error', () => { socket.destroy(); resolve(false); });
+            socket.on('timeout', () => { socket.destroy(); resolve(false); });
+          });
+
+          return {
+            connected,
+            walletType: wallet.walletType,
+            marketType: wallet.marketType,
+            serverTime: connected ? Date.now() : undefined,
+            ...(!connected && { error: 'IB Gateway not reachable' }),
+          };
+        }
+
         let serverTime: number;
 
         if (wallet.marketType === 'FUTURES') {

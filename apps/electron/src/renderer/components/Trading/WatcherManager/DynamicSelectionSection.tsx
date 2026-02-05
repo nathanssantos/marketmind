@@ -14,6 +14,7 @@ export interface RotationStatus {
 export interface DynamicSelectionSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
+  isIB?: boolean;
   isAutoRotationEnabled: boolean;
   onAutoRotationToggle: (value: boolean) => void;
   rotationStatus?: RotationStatus;
@@ -44,6 +45,7 @@ export interface DynamicSelectionSectionProps {
 export const DynamicSelectionSection = ({
   isExpanded,
   onToggle,
+  isIB,
   isAutoRotationEnabled,
   onAutoRotationToggle,
   rotationStatus,
@@ -118,6 +120,7 @@ export const DynamicSelectionSection = ({
         <Collapsible.Content>
           <Stack gap={4} mt={4}>
             <QuickStartSection
+              isIB={isIB}
               marketType={quickStartMarketType}
               timeframe={quickStartTimeframe}
               count={quickStartCount}

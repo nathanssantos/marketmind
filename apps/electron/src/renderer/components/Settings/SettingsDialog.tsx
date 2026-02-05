@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { BacktestingPanel } from '../Trading/BacktestingPanel';
+import { WalletManager } from '../Trading/WalletManager';
 import { AboutTab } from './AboutTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { GeneralTab } from './GeneralTab';
@@ -41,6 +42,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
             <Tabs.Root value={activeTab} onValueChange={(e) => setActiveTab(e.value)} variant="enclosed">
               <Tabs.List>
                 <Tabs.Trigger value="general">{t('settings.tabs.general')}</Tabs.Trigger>
+                <Tabs.Trigger value="wallets">{t('settings.tabs.wallets')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="autoTrading">{t('settings.tabs.autoTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="backtesting">{t('settings.tabs.backtesting')}</Tabs.Trigger>
@@ -50,6 +52,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
               <Box mt={4}>
                 <Tabs.Content value="general">
                   <GeneralTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="wallets">
+                  <WalletManager />
                 </Tabs.Content>
 
                 <Tabs.Content value="chart">

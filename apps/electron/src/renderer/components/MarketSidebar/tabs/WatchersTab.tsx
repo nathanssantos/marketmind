@@ -3,7 +3,7 @@ import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@renderer/components/Trading/TradingTable';
 import { useUIStore } from '@renderer/store/uiStore';
 import { memo, useMemo, useState } from 'react';
@@ -26,8 +26,8 @@ const WatchersTabComponent = () => {
   const globalActions = useGlobalActionsOptional();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { wallets: backendWallets } = useBackendWallet();
-  const activeWalletId = backendWallets[0]?.id;
+  const { activeWallet } = useActiveWallet();
+  const activeWalletId = activeWallet?.id;
 
   const { watcherStatus, isLoadingWatcherStatus, stopAllWatchers, isStoppingAllWatchers } = useBackendAutoTrading(activeWalletId || '');
 

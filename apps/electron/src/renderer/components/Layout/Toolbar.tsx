@@ -16,6 +16,7 @@ import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { Logo } from '../ui/logo';
 import { TooltipWrapper } from '../ui/Tooltip';
+import { WalletSelector } from '../WalletSelector';
 
 export interface ToolbarProps {
   symbol: string;
@@ -133,45 +134,55 @@ export const Toolbar = memo(({
         <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
         {showSidebarButtons && (
-          <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
-            <IconButton
-              aria-label={t('header.settings')}
-              onClick={globalActions?.openSettings}
-              variant="solid"
-              colorPalette="blue"
-              size="2xs"
-            >
-              <LuSettings />
-            </IconButton>
-          </TooltipWrapper>
+          <>
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <HStack gap={1} flexShrink={0}>
+              <TooltipWrapper label={t('marketSidebar.title')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('marketSidebar.title')}
+                  onClick={toggleMarketSidebar}
+                  colorPalette={marketSidebarOpen ? 'blue' : 'gray'}
+                  variant={marketSidebarOpen ? 'solid' : 'ghost'}
+                >
+                  <LuActivity />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('trading.sidebar.title')}
+                  onClick={onToggleTrading}
+                  colorPalette={isTradingOpen ? 'blue' : 'gray'}
+                  variant={isTradingOpen ? 'solid' : 'ghost'}
+                >
+                  <LuDollarSign />
+                </IconButton>
+              </TooltipWrapper>
+            </HStack>
+
+            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+
+            <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
+              <IconButton
+                aria-label={t('header.settings')}
+                onClick={globalActions?.openSettings}
+                variant="solid"
+                colorPalette="blue"
+                size="2xs"
+              >
+                <LuSettings />
+              </IconButton>
+            </TooltipWrapper>
+          </>
         )}
       </Flex>
 
       {showSidebarButtons && (
-        <HStack gap={1} flexShrink={0}>
-          <TooltipWrapper label={t('marketSidebar.title')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('marketSidebar.title')}
-              onClick={toggleMarketSidebar}
-              colorPalette={marketSidebarOpen ? 'blue' : 'gray'}
-              variant={marketSidebarOpen ? 'solid' : 'ghost'}
-            >
-              <LuActivity />
-            </IconButton>
-          </TooltipWrapper>
-          <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('trading.sidebar.title')}
-              onClick={onToggleTrading}
-              colorPalette={isTradingOpen ? 'blue' : 'gray'}
-              variant={isTradingOpen ? 'solid' : 'ghost'}
-            >
-              <LuDollarSign />
-            </IconButton>
-          </TooltipWrapper>
-        </HStack>
+        <Box flexShrink={0}>
+          <WalletSelector />
+        </Box>
       )}
 
     </Flex>

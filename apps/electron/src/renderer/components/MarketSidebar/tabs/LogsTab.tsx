@@ -1,6 +1,6 @@
 import { Box, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
 import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import type { FrontendLogEntry } from '@renderer/hooks/useWebSocket';
@@ -59,8 +59,8 @@ LogLine.displayName = 'LogLine';
 const LogsTabComponent = () => {
   const { t } = useTranslation();
 
-  const { wallets: backendWallets } = useBackendWallet();
-  const activeWalletId = backendWallets[0]?.id;
+  const { activeWallet } = useActiveWallet();
+  const activeWalletId = activeWallet?.id;
 
   const { watcherStatus } = useBackendAutoTrading(activeWalletId || '');
   const hasActiveWatchers = (watcherStatus?.activeWatchers?.length ?? 0) > 0;

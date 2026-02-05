@@ -16,7 +16,7 @@ import { calculateFibonacciProjection, calculateProjectionLevels } from '@market
 import type { Kline, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
@@ -118,8 +118,8 @@ export const ChartCanvas = ({
   const { warning } = useToast();
   const colors = useChartColors();
 
-  const { wallets } = useBackendWallet();
-  const backendWalletId = wallets[0]?.id;
+  const { activeWallet } = useActiveWallet();
+  const backendWalletId = activeWallet?.id;
   const {
     createOrder: addBackendOrder,
     closeExecution,

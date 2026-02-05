@@ -24,6 +24,7 @@ export interface BtcTrendInfo {
 }
 
 export interface QuickStartSectionProps {
+  isIB?: boolean;
   marketType: MarketType;
   timeframe: TimeInterval;
   count: number;
@@ -44,6 +45,7 @@ export interface QuickStartSectionProps {
 }
 
 export const QuickStartSection = ({
+  isIB,
   marketType,
   timeframe,
   count,
@@ -70,7 +72,7 @@ export const QuickStartSection = ({
         <Text fontSize="sm" fontWeight="medium">
           {t('tradingProfiles.dynamicSelection.quickStartTitle')}
         </Text>
-        {showBtcTrend && btcTrendStatus && (
+        {!isIB && showBtcTrend && btcTrendStatus && (
           <Flex gap={2} align="center">
             <Box
               px={2}
@@ -128,24 +130,26 @@ export const QuickStartSection = ({
       </Flex>
       <Stack gap={3}>
         <Flex gap={3} align="center">
-          <Group attached flex="0 0 180px">
-            <Button
-              size="sm"
-              variant={marketType === 'SPOT' ? 'solid' : 'outline'}
-              onClick={() => onMarketTypeChange('SPOT')}
-              flex={1}
-            >
-              Spot
-            </Button>
-            <Button
-              size="sm"
-              variant={marketType === 'FUTURES' ? 'solid' : 'outline'}
-              onClick={() => onMarketTypeChange('FUTURES')}
-              flex={1}
-            >
-              Futures
-            </Button>
-          </Group>
+          {!isIB && (
+            <Group attached flex="0 0 180px">
+              <Button
+                size="sm"
+                variant={marketType === 'SPOT' ? 'solid' : 'outline'}
+                onClick={() => onMarketTypeChange('SPOT')}
+                flex={1}
+              >
+                Spot
+              </Button>
+              <Button
+                size="sm"
+                variant={marketType === 'FUTURES' ? 'solid' : 'outline'}
+                onClick={() => onMarketTypeChange('FUTURES')}
+                flex={1}
+              >
+                Futures
+              </Button>
+            </Group>
+          )}
           <Box>
             <TimeframeSelector
               selectedTimeframe={timeframe}

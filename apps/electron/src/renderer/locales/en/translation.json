@@ -108,6 +108,7 @@
       "chart": "Chart",
       "autoTrading": "Auto-Trading",
       "backtesting": "Backtesting",
+      "wallets": "Wallets",
       "algorithmicAutoTrading": "Algorithmic Auto-Trading",
       "tradingProfiles": "Trading Profiles",
       "setupDetection": "Setup Detection",
@@ -1402,5 +1403,11 @@
       "title": "Logs",
       "waiting": "Waiting for logs..."
     }
+  },
+  "walletSelector": {
+    "title": "Active Wallet",
+    "noWallets": "No wallets created",
+    "crypto": "Crypto",
+    "stocks": "Stocks"
   }
 }

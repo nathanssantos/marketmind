@@ -3,15 +3,15 @@ import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
-import { useBackendWallet } from '../../hooks/useBackendWallet';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
 import { Checkbox } from '../ui/checkbox';
 
 export const SetupToggleSection = memo(() => {
   const { t } = useTranslation();
-  const { wallets } = useBackendWallet();
-  const walletId = wallets[0]?.id;
+  const { activeWallet } = useActiveWallet();
+  const walletId = activeWallet?.id;
   const utils = trpc.useUtils();
 
   const { data: config, isLoading: isLoadingConfig } = trpc.autoTrading.getConfig.useQuery(

@@ -19,7 +19,7 @@ import {
   useDynamicSymbolScores,
   useRotationHistory,
 } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuHistory, LuTrendingUp } from 'react-icons/lu';
@@ -40,8 +40,8 @@ export const DynamicSymbolRankings = ({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('rankings');
 
-  const { wallets } = useBackendWallet();
-  const walletId = wallets[0]?.id ?? '';
+  const { activeWallet } = useActiveWallet();
+  const walletId = activeWallet?.id ?? '';
 
   const { symbolScores, isLoadingScores } = useDynamicSymbolScores(marketType, 50);
   const { watcherStatus } = useBackendAutoTrading(walletId);

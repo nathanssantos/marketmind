@@ -1,7 +1,7 @@
 import { Box, Stack, Tabs, Text } from '@chakra-ui/react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBackendWallet } from '../../hooks/useBackendWallet';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
@@ -12,7 +12,6 @@ import { PerformancePanel } from './PerformancePanel';
 import { Portfolio } from './Portfolio';
 import { RiskDisplay } from './RiskDisplay';
 import { SetupStatsTable } from './SetupStatsTable';
-import { WalletManager } from './WalletManager';
 
 interface TradingSidebarProps {
   width: number;
@@ -20,11 +19,9 @@ interface TradingSidebarProps {
 
 const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
   const { t } = useTranslation();
-  const { wallets: backendWallets } = useBackendWallet();
-  const activeWallet = backendWallets[0];
+  const { activeWallet, isIB: isIBWallet } = useActiveWallet();
   const activeWalletId = activeWallet?.id;
   const activeWalletCurrency = activeWallet?.currency ?? 'USDT';
-  const isIBWallet = activeWallet?.exchange === 'INTERACTIVE_BROKERS';
 
   const marginRequirements = useMemo(() => {
     if (!isIBWallet) return null;
@@ -53,9 +50,6 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
           <Tabs.Trigger value="portfolio">
             <Text fontSize="xs">{t('trading.tabs.portfolio')}</Text>
           </Tabs.Trigger>
-          <Tabs.Trigger value="wallets">
-            <Text fontSize="xs">{t('trading.tabs.wallets')}</Text>
-          </Tabs.Trigger>
           {activeWalletId && (
             <Tabs.Trigger value="analytics">
               <Text fontSize="xs">{t('trading.tabs.analytics')}</Text>
@@ -74,10 +68,6 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
 
           <Tabs.Content value="portfolio">
             <Portfolio />
-          </Tabs.Content>
-
-          <Tabs.Content value="wallets">
-            <WalletManager />
           </Tabs.Content>
 
           {activeWalletId && (

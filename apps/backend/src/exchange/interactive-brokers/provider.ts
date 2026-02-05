@@ -6,6 +6,8 @@ import type { ExchangeCapabilities, ExchangeCredentials, ExchangeId, MarketHours
 import type { IExchangeUserStream } from '../user-stream';
 import type { ExchangeProvider } from '../exchange-registry';
 import { IBStockClient } from './stock-client';
+import { IBKlineStream } from './kline-stream';
+import { IBPriceStream } from './price-stream';
 import { US_STOCK_MARKET_HOURS, US_MARKET_REGULAR_SESSION } from './constants';
 
 const IB_CAPABILITIES: ExchangeCapabilities = {
@@ -38,11 +40,11 @@ export class IBExchangeProvider implements ExchangeProvider {
   }
 
   createPriceStream(): IExchangePriceStream {
-    throw new Error('Price stream not yet implemented for Interactive Brokers');
+    return new IBPriceStream();
   }
 
   createSpotKlineStream(): IExchangeKlineStream {
-    throw new Error('Kline stream not yet implemented for Interactive Brokers');
+    return new IBKlineStream();
   }
 
   createFuturesKlineStream(): IExchangeKlineStream {

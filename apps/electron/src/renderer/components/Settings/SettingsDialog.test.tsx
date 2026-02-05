@@ -33,6 +33,10 @@ vi.mock('../Trading/BacktestingPanel', () => ({
     BacktestingPanel: () => <div>BacktestingPanel Content</div>,
 }));
 
+vi.mock('../Trading/WalletManager', () => ({
+    WalletManager: () => <div>WalletManager Content</div>,
+}));
+
 const renderWithChakra = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>

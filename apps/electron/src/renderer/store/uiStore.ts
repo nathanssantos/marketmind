@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'wallets' | 'analytics';
+export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'analytics';
 export type MarketSidebarTab = 'indicators' | 'watchers' | 'logs';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
@@ -12,6 +12,9 @@ export type ViewMode = 'cards' | 'table';
 export type TableSortDirection = 'asc' | 'desc';
 
 interface UIState {
+  activeWalletId: string | null;
+  setActiveWalletId: (id: string | null) => void;
+
   tradingSidebarTab: TradingSidebarTab;
   setTradingSidebarTab: (tab: TradingSidebarTab) => void;
 
@@ -68,6 +71,9 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
+      activeWalletId: null,
+      setActiveWalletId: (id) => set({ activeWalletId: id }),
+
       tradingSidebarTab: 'portfolio',
       setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
 
@@ -122,8 +128,17 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: 'ui-storage',
-      version: 1,
-      partialize: (state) => ({
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
+        if (version < 2) {
+          if (state['tradingSidebarTab'] === 'wallets') state['tradingSidebarTab'] = 'portfolio';
+          state['activeWalletId'] = null;
+        }
+        return state as unknown as UIState;
+      },
+      partialize: (state: UIState) => ({
+        activeWalletId: state.activeWalletId,
         tradingSidebarTab: state.tradingSidebarTab,
         marketSidebarOpen: state.marketSidebarOpen,
         marketSidebarTab: state.marketSidebarTab,

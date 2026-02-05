@@ -9,7 +9,7 @@ import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
-import { useBackendWallet } from '../../hooks/useBackendWallet';
+import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
 import { Checkbox } from '../ui/checkbox';
@@ -18,8 +18,8 @@ import { TooltipWrapper } from '../ui/Tooltip';
 
 export const SetupTogglePopover = memo(() => {
     const { t } = useTranslation();
-    const { wallets } = useBackendWallet();
-    const walletId = wallets[0]?.id;
+    const { activeWallet } = useActiveWallet();
+    const walletId = activeWallet?.id;
     const [isOpen, setIsOpen] = useState(false);
     const utils = trpc.useUtils();
 

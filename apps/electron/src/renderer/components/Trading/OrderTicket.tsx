@@ -7,7 +7,7 @@ import { Select } from '@renderer/components/ui/select';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
 import { getKlineClose } from '@shared/utils';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -28,22 +28,20 @@ const OrderTicketComponent = () => {
     };
   }, [chartData?.klines.length, chartData?.symbol]);
 
-  const { wallets: backendWallets } = useBackendWallet();
-  const activeWalletId = backendWallets[0]?.id;
+  const { activeWallet: rawActiveWallet, isIB } = useActiveWallet();
+  const activeWalletId = rawActiveWallet?.id;
 
   const spotTrading = useBackendTrading(activeWalletId || '', symbol);
   const futuresTrading = useBackendFuturesTrading(activeWalletId || '', symbol);
 
-  const wallets = backendWallets.map((w) => ({
-    id: w.id,
-    name: w.name,
-    balance: parseFloat(w.currentBalance || '0'),
-    initialBalance: parseFloat(w.initialBalance || '0'),
-    currency: (w.currency || 'USDT') as 'USDT' | 'BTC' | 'ETH',
-    createdAt: new Date(w.createdAt),
-  }));
-
-  const activeWallet = wallets.find((w) => w.id === activeWalletId);
+  const activeWallet = rawActiveWallet ? {
+    id: rawActiveWallet.id,
+    name: rawActiveWallet.name,
+    balance: parseFloat(rawActiveWallet.currentBalance || '0'),
+    initialBalance: parseFloat(rawActiveWallet.initialBalance || '0'),
+    currency: (rawActiveWallet.currency || 'USDT') as 'USDT' | 'BTC' | 'ETH',
+    createdAt: new Date(rawActiveWallet.createdAt),
+  } : undefined;
 
   const [quantityBySymbol, setQuantityBySymbol] = useLocalStorage<Record<string, number>>('marketmind:quantityBySymbol', {});
 
@@ -69,6 +67,10 @@ const OrderTicketComponent = () => {
   const [takeProfit, setTakeProfit] = useState('');
   const [leverage, setLeverage] = useState(1);
   const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('ISOLATED');
+
+  useEffect(() => {
+    if (isIB) setMarketType('SPOT');
+  }, [isIB]);
 
   useEffect(() => {
     const storedQty = getQuantityForSymbol(symbol);
@@ -152,30 +154,32 @@ const OrderTicketComponent = () => {
 
   return (
     <Stack gap={3} p={4}>
-      <Flex justify="flex-end" align="center" mb={1}>
-        <HStack gap={1}>
-          <Badge
-            size="sm"
-            colorPalette={marketType === 'SPOT' ? 'blue' : 'gray'}
-            cursor="pointer"
-            onClick={() => setMarketType('SPOT')}
-            variant={marketType === 'SPOT' ? 'solid' : 'subtle'}
-            px={3}
-          >
-            SPOT
-          </Badge>
-          <Badge
-            size="sm"
-            colorPalette={marketType === 'FUTURES' ? 'orange' : 'gray'}
-            cursor="pointer"
-            onClick={() => setMarketType('FUTURES')}
-            variant={marketType === 'FUTURES' ? 'solid' : 'subtle'}
-            px={3}
-          >
-            FUTURES
-          </Badge>
-        </HStack>
-      </Flex>
+      {!isIB && (
+        <Flex justify="flex-end" align="center" mb={1}>
+          <HStack gap={1}>
+            <Badge
+              size="sm"
+              colorPalette={marketType === 'SPOT' ? 'blue' : 'gray'}
+              cursor="pointer"
+              onClick={() => setMarketType('SPOT')}
+              variant={marketType === 'SPOT' ? 'solid' : 'subtle'}
+              px={3}
+            >
+              SPOT
+            </Badge>
+            <Badge
+              size="sm"
+              colorPalette={marketType === 'FUTURES' ? 'orange' : 'gray'}
+              cursor="pointer"
+              onClick={() => setMarketType('FUTURES')}
+              variant={marketType === 'FUTURES' ? 'solid' : 'subtle'}
+              px={3}
+            >
+              FUTURES
+            </Badge>
+          </HStack>
+        </Flex>
+      )}
 
       {!activeWallet ? (
         <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>

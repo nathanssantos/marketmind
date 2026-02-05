@@ -112,6 +112,7 @@
       "chart": "Gráfico",
       "autoTrading": "Auto-Trading",
       "backtesting": "Backtesting",
+      "wallets": "Carteras",
       "aiTrading": "Auto-Trading IA",
       "context": "Contexto",
       "algorithmicAutoTrading": "Auto-Trading Algorítmico",
@@ -1460,5 +1461,11 @@
       "title": "Logs",
       "waiting": "Esperando logs..."
     }
+  },
+  "walletSelector": {
+    "title": "Cartera Activa",
+    "noWallets": "No hay carteras creadas",
+    "crypto": "Crypto",
+    "stocks": "Acciones"
   }
 }

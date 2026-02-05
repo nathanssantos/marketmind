@@ -430,6 +430,7 @@ export const activeWatchers = pgTable('active_watchers', {
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
   marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('SPOT').notNull(),
+  exchange: varchar({ length: 20 }).default('BINANCE'),
   isManual: boolean('is_manual').default(true).notNull(),
   startedAt: timestamp('started_at', { mode: 'date' }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

@@ -4,7 +4,7 @@ import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBot, LuTrendingDown, LuTrendingUp, LuTriangleAlert, LuX } from 'react-icons/lu';
@@ -242,8 +242,8 @@ FuturesPositionCard.displayName = 'FuturesPositionCard';
 const FuturesPositionsPanelComponent = () => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
-  const { wallets } = useBackendWallet();
-  const activeWalletId = wallets[0]?.id;
+  const { activeWallet } = useActiveWallet();
+  const activeWalletId = activeWallet?.id;
 
   const {
     positions,

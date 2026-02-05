@@ -2,7 +2,7 @@ import { Box, Separator, Stack, Text } from '@chakra-ui/react';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
-import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
 import { useMemo } from 'react';
@@ -27,8 +27,8 @@ import { SetupToggleSection } from '../SetupToggleSection';
 
 export const WatcherManager = () => {
   const { t } = useTranslation();
-  const { wallets } = useBackendWallet();
-  const walletId = wallets[0]?.id ?? '';
+  const { activeWallet, isIB } = useActiveWallet();
+  const walletId = activeWallet?.id ?? '';
 
   const {
     watcherStatus,
@@ -253,6 +253,7 @@ export const WatcherManager = () => {
       <DynamicSelectionSection
         isExpanded={expandedSections.dynamicSelection}
         onToggle={() => toggleSection('dynamicSelection')}
+        isIB={isIB}
         isAutoRotationEnabled={config?.enableAutoRotation ?? true}
         onAutoRotationToggle={handleAutoRotationToggle}
         rotationStatus={rotationStatus}
@@ -290,17 +291,21 @@ export const WatcherManager = () => {
 
       <Separator />
 
-      <LeverageSettingsSection
-        isExpanded={expandedSections.leverageSettings}
-        onToggle={() => toggleSection('leverageSettings')}
-        leverage={config?.leverage ?? 1}
-        marginType={config?.marginType ?? 'ISOLATED'}
-        onLeverageChange={handleLeverageChange}
-        onMarginTypeChange={handleMarginTypeChange}
-        isPending={updateConfig.isPending}
-      />
+      {!isIB && (
+        <>
+          <LeverageSettingsSection
+            isExpanded={expandedSections.leverageSettings}
+            onToggle={() => toggleSection('leverageSettings')}
+            leverage={config?.leverage ?? 1}
+            marginType={config?.marginType ?? 'ISOLATED'}
+            onLeverageChange={handleLeverageChange}
+            onMarginTypeChange={handleMarginTypeChange}
+            isPending={updateConfig.isPending}
+          />
 
-      <Separator />
+          <Separator />
+        </>
+      )}
 
       <PositionSizeSection
         isExpanded={expandedSections.positionSize}
