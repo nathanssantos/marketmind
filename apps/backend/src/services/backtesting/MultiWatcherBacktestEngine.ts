@@ -41,6 +41,7 @@ import { db } from '../../db';
 import { klines as klinesTable } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 import { smartBackfillKlines } from '../binance-historical';
+import { smartBackfillIBKlines } from '../ib-historical';
 import { mapDbKlinesReversed } from '../../utils/kline-mapper';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { StrategyLoader } from '../setup-detection/dynamic';
@@ -282,12 +283,14 @@ export class MultiWatcherBacktestEngine {
     const intervalMs = this.getIntervalMs(interval);
     const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
     const minRequired = ABSOLUTE_MINIMUM_KLINES;
+    const exchange = this.config.exchange;
+    const effectiveMarketType = exchange === 'INTERACTIVE_BROKERS' ? 'SPOT' as const : marketType;
 
     let dbKlines = await db.query.klines.findMany({
       where: and(
         eq(klinesTable.symbol, symbol),
         eq(klinesTable.interval, interval),
-        eq(klinesTable.marketType, marketType),
+        eq(klinesTable.marketType, effectiveMarketType),
         gte(klinesTable.openTime, startTime),
         lte(klinesTable.openTime, endTime)
       ),
@@ -297,14 +300,17 @@ export class MultiWatcherBacktestEngine {
     if (dbKlines.length < minRequired) {
       console.log(`[MultiWatcherBacktest] Insufficient klines in DB (${dbKlines.length}/${minRequired}), running smart backfill...`);
 
-      const backfillResult = await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
-      console.log(`[MultiWatcherBacktest] Backfill complete: downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
+      const isIB = exchange === 'INTERACTIVE_BROKERS';
+      const backfillResult = isIB
+        ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
+        : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
+      console.log(`[MultiWatcherBacktest] Backfill complete (${isIB ? 'IB' : 'Binance'}): downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
 
       dbKlines = await db.query.klines.findMany({
         where: and(
           eq(klinesTable.symbol, symbol),
           eq(klinesTable.interval, interval),
-          eq(klinesTable.marketType, marketType),
+          eq(klinesTable.marketType, effectiveMarketType),
           gte(klinesTable.openTime, startTime),
           lte(klinesTable.openTime, endTime)
         ),

@@ -1,4 +1,4 @@
-import type { Interval, MarketType } from '@marketmind/types';
+import type { AssetClass, Interval, MarketType } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
@@ -52,9 +52,9 @@ export const useBackendKlines = () => {
       { enabled: !!symbol && !!interval }
     );
 
-  const useSearchSymbols = (query: string, marketType: MarketType = 'SPOT') =>
+  const useSearchSymbols = (query: string, marketType: MarketType = 'SPOT', assetClass: AssetClass = 'CRYPTO') =>
     trpc.kline.searchSymbols.useQuery(
-      { query, marketType },
+      { query, marketType, assetClass },
       { enabled: query.length >= 2 }
     );
 

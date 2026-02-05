@@ -45,7 +45,8 @@
     "marketClose": "Cierre",
     "high": "Alta",
     "medium": "Media",
-    "low": "Baja"
+    "low": "Baja",
+    "in": "en"
   },
   "app": {
     "title": "MarketMind",
@@ -61,11 +62,47 @@
     "toggleColorMode": "Alternar modo de color"
   },
   "symbolSelector": {
-    "label": "Binance",
+    "label": "Exchange",
     "placeholder": "Seleccionar símbolo",
     "searchPlaceholder": "Buscar símbolos... (ej: BTC, ETH)",
     "popularSymbols": "SÍMBOLOS POPULARES",
-    "noSymbolsFound": "No se encontraron símbolos"
+    "noSymbolsFound": "No se encontraron símbolos",
+    "crypto": "Cripto",
+    "stocks": "Acciones"
+  },
+  "marketStatus": {
+    "open": "Abierto",
+    "closed": "Cerrado",
+    "preMarket": "Pre-Mercado",
+    "afterHours": "After Hours",
+    "opens": "Abre",
+    "closes": "Cierra",
+    "tooltip": "Mercado NYSE: {{session}}"
+  },
+  "marginInfo": {
+    "title": "Info de Margen",
+    "used": "usado",
+    "buyingPower": "Poder de Compra",
+    "equity": "Patrimonio",
+    "marginUsed": "Margen Usado",
+    "availableMargin": "Margen Disponible",
+    "initialMargin": "Margen Inicial (Reg-T)",
+    "maintenanceMargin": "Margen de Mantenimiento",
+    "initialMarginTooltip": "Margen requerido para abrir posición (50% para acciones)",
+    "maintenanceMarginTooltip": "Patrimonio mínimo para mantener posición (25% para acciones)",
+    "orderImpact": "Impacto de Orden",
+    "requiredInitial": "Inicial Requerido",
+    "newBuyingPower": "Nuevo Poder de Compra"
+  },
+  "shortability": {
+    "easy": "Fácil de Alquilar",
+    "hard": "Difícil de Alquilar",
+    "unavailable": "No Disponible",
+    "tooltip": {
+      "available": "{{shares}} acciones disponibles ({{difficulty}})",
+      "availableNoCount": "Disponible para venta en corto ({{difficulty}})",
+      "unavailable": "Esta acción no está disponible para venta en corto"
+    }
   },
   "settings": {
     "title": "Configuración",
@@ -1179,7 +1216,12 @@
       "adaptiveMode": "Modo Adaptativo",
       "adaptiveModeDescription": "Ajusta automáticamente basado en la volatilidad del mercado"
     },
-    "pausedDueToCapital": "Watchers pausados - sin capital libre para nuevas entradas. Se reanudará cuando se cierre una posición."
+    "pausedDueToCapital": "Watchers pausados - sin capital libre para nuevas entradas. Se reanudará cuando se cierre una posición.",
+    "stockPresets": {
+      "title": "Presets de Acciones (IB)",
+      "description": "Inicie watchers rápidamente para acciones populares de EE.UU. vía Interactive Brokers",
+      "note": "Requiere IB Gateway o TWS ejecutándose localmente en el puerto 4001 (live) o 4002 (paper)"
+    }
   },
   "strategyInfo": {
     "noCandleData": "Datos de velas no disponibles",

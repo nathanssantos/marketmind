@@ -1,3 +1,4 @@
+import type { ExchangeId } from './market';
 import type { MarketType } from './futures';
 
 export type OrderSide = 'BUY' | 'SELL';
@@ -155,6 +156,7 @@ export interface Wallet extends Account {
   totalDeposits: number;
   totalWithdrawals: number;
   currency: WalletCurrency;
+  exchange?: ExchangeId;
   createdAt: number | Date;
   performance: WalletPerformancePoint[];
 }

@@ -38,6 +38,8 @@ interface BatchOptions {
   intervals?: string;
   marketType: 'SPOT' | 'FUTURES';
   leverage: string;
+  exchange: 'BINANCE' | 'INTERACTIVE_BROKERS';
+  assetClass: 'CRYPTO' | 'STOCKS';
   useMtfFilter: boolean;
   useBtcCorrelationFilter: boolean;
   useMarketRegimeFilter: boolean;
@@ -68,6 +70,8 @@ const runSingleBacktest = async (
       startDate,
       endDate,
       initialCapital: capital,
+      exchange: options.exchange ?? 'BINANCE',
+      assetClass: options.assetClass ?? 'CRYPTO',
       setupTypes: [strategy],
       useAlgorithmicLevels: true,
       slippagePercent: 0.1,
@@ -282,9 +286,12 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
 
   const totalCombinations = strategies.length * symbols.length * intervals.length;
 
+  const exchangeLabel = options.exchange === 'INTERACTIVE_BROKERS' ? 'Interactive Brokers' : 'Binance';
   console.log(chalk.bold('Configuration:'));
   console.log(`  Period: ${options.start} to ${options.end}`);
   console.log(`  Capital: $${capital.toLocaleString()}`);
+  console.log(`  Exchange: ${chalk.cyan(exchangeLabel)}`);
+  console.log(`  Asset Class: ${chalk.cyan(options.assetClass ?? 'CRYPTO')}`);
   console.log(`  Market Type: ${chalk.cyan(options.marketType)}`);
   console.log(`  Leverage: ${options.leverage}x`);
   console.log(`  Parallel workers: ${parallelWorkers}`);

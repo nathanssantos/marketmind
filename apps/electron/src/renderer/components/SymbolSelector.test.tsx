@@ -35,7 +35,7 @@ vi.mock('@/renderer/components/ui/Tooltip', () => ({
 }));
 
 describe('SymbolSelector', () => {
-  let mockOnChange: (symbol: string) => void;
+  let mockOnChange: ReturnType<typeof vi.fn>;
   let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
@@ -143,7 +143,7 @@ describe('SymbolSelector', () => {
 
     await user.click(screen.getByText('Ethereum / USDT'));
 
-    expect(mockOnChange).toHaveBeenCalledWith('ETHUSDT', 'SPOT');
+    expect(mockOnChange).toHaveBeenCalledWith('ETHUSDT', 'SPOT', 'CRYPTO');
   });
 
   it('should close popover after selecting a symbol', async () => {

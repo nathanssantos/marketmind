@@ -1,8 +1,8 @@
 import { Badge, Box, Button, Flex, IconButton, Input, Spinner, Text, VStack } from '@chakra-ui/react';
-import type { MarketType } from '@marketmind/types';
+import type { AssetClass, MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuCoins } from 'react-icons/lu';
+import { LuBuilding2, LuCoins } from 'react-icons/lu';
 import { useBackendKlines } from '../hooks/useBackendKlines';
 import { CryptoIcon } from './ui/CryptoIcon';
 import { Popover } from './ui/popover';
@@ -10,10 +10,13 @@ import { TooltipWrapper } from './ui/Tooltip';
 
 interface SymbolSelectorProps {
   value: string;
-  onChange: (symbol: string, marketType?: MarketType) => void;
+  onChange: (symbol: string, marketType?: MarketType, assetClass?: AssetClass) => void;
   marketType?: MarketType;
   onMarketTypeChange?: (marketType: MarketType) => void;
+  assetClass?: AssetClass;
+  onAssetClassChange?: (assetClass: AssetClass) => void;
   showMarketTypeToggle?: boolean;
+  showAssetClassToggle?: boolean;
 }
 
 const POPULAR_SPOT_SYMBOLS = [
@@ -46,24 +49,50 @@ const POPULAR_FUTURES_SYMBOLS = [
   { symbol: 'PENDLEUSDT', displayName: 'Pendle / USDT', baseAsset: 'PENDLE', quoteAsset: 'USDT' },
 ];
 
+const POPULAR_STOCK_SYMBOLS = [
+  { symbol: 'AAPL', displayName: 'Apple Inc', baseAsset: 'AAPL', quoteAsset: 'USD' },
+  { symbol: 'MSFT', displayName: 'Microsoft Corp', baseAsset: 'MSFT', quoteAsset: 'USD' },
+  { symbol: 'GOOGL', displayName: 'Alphabet Inc', baseAsset: 'GOOGL', quoteAsset: 'USD' },
+  { symbol: 'AMZN', displayName: 'Amazon.com Inc', baseAsset: 'AMZN', quoteAsset: 'USD' },
+  { symbol: 'NVDA', displayName: 'NVIDIA Corp', baseAsset: 'NVDA', quoteAsset: 'USD' },
+  { symbol: 'META', displayName: 'Meta Platforms Inc', baseAsset: 'META', quoteAsset: 'USD' },
+  { symbol: 'TSLA', displayName: 'Tesla Inc', baseAsset: 'TSLA', quoteAsset: 'USD' },
+  { symbol: 'JPM', displayName: 'JPMorgan Chase', baseAsset: 'JPM', quoteAsset: 'USD' },
+  { symbol: 'V', displayName: 'Visa Inc', baseAsset: 'V', quoteAsset: 'USD' },
+  { symbol: 'SPY', displayName: 'SPDR S&P 500 ETF', baseAsset: 'SPY', quoteAsset: 'USD' },
+  { symbol: 'QQQ', displayName: 'Invesco QQQ Trust', baseAsset: 'QQQ', quoteAsset: 'USD' },
+  { symbol: 'DIA', displayName: 'SPDR Dow Jones ETF', baseAsset: 'DIA', quoteAsset: 'USD' },
+];
+
 export function SymbolSelector({
   value,
   onChange,
   marketType: externalMarketType,
   onMarketTypeChange,
+  assetClass: externalAssetClass,
+  onAssetClassChange,
   showMarketTypeToggle = false,
+  showAssetClassToggle = false,
 }: SymbolSelectorProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [internalMarketType, setInternalMarketType] = useState<MarketType>('SPOT');
+  const [internalAssetClass, setInternalAssetClass] = useState<AssetClass>('CRYPTO');
 
   const marketType = externalMarketType ?? internalMarketType;
+  const assetClass = externalAssetClass ?? internalAssetClass;
   const isFutures = marketType === 'FUTURES';
-  const popularSymbols = isFutures ? POPULAR_FUTURES_SYMBOLS : POPULAR_SPOT_SYMBOLS;
+  const isStocks = assetClass === 'STOCKS';
+
+  const getPopularSymbols = () => {
+    if (isStocks) return POPULAR_STOCK_SYMBOLS;
+    return isFutures ? POPULAR_FUTURES_SYMBOLS : POPULAR_SPOT_SYMBOLS;
+  };
+  const popularSymbols = getPopularSymbols();
 
   const { useSearchSymbols } = useBackendKlines();
-  const searchResult = useSearchSymbols(searchQuery, marketType);
+  const searchResult = useSearchSymbols(searchQuery, marketType, assetClass);
 
   const displaySymbols = useMemo(() => {
     if (searchQuery.length >= 2 && searchResult.data) {
@@ -87,11 +116,20 @@ export function SymbolSelector({
     setSearchQuery('');
   };
 
+  const handleAssetClassToggle = (newClass: AssetClass) => {
+    if (onAssetClassChange) {
+      onAssetClassChange(newClass);
+    } else {
+      setInternalAssetClass(newClass);
+    }
+    setSearchQuery('');
+  };
+
   const selectedSymbol = popularSymbols.find(s => s.symbol === value);
-  const currentSymbol = selectedSymbol?.baseAsset || value.replace('USDT', '');
+  const currentSymbol = selectedSymbol?.baseAsset || (isStocks ? value : value.replace('USDT', ''));
 
   const handleSelect = (symbol: string) => {
-    onChange(symbol, marketType);
+    onChange(symbol, marketType, assetClass);
     setIsOpen(false);
     setSearchQuery('');
   };
@@ -110,16 +148,21 @@ export function SymbolSelector({
               aria-label={t('symbolSelector.label')}
               size="2xs"
               variant="solid"
-              colorPalette="blue"
+              colorPalette={isStocks ? 'green' : 'blue'}
             >
-              <LuCoins />
+              {isStocks ? <LuBuilding2 /> : <LuCoins />}
             </IconButton>
           </TooltipWrapper>
-          <CryptoIcon symbol={value} size={16} />
+          {!isStocks && <CryptoIcon symbol={value} size={16} />}
           <Text fontSize="xs" fontWeight="semibold" color="fg">
             {currentSymbol}
           </Text>
-          {isFutures && (
+          {isStocks && (
+            <Badge size="xs" colorPalette="green" variant="subtle" px={1}>
+              STK
+            </Badge>
+          )}
+          {!isStocks && isFutures && (
             <Badge size="xs" colorPalette="orange" variant="subtle" px={1}>
               FUT
             </Badge>
@@ -128,7 +171,31 @@ export function SymbolSelector({
       }
     >
       <Flex direction="column" maxH="400px">
-        {showMarketTypeToggle && (
+        {showAssetClassToggle && (
+          <Flex p={2} gap={1} borderBottomWidth="1px" borderColor="border" flexShrink={0}>
+            <Button
+              size="2xs"
+              variant={!isStocks ? 'solid' : 'outline'}
+              colorPalette={!isStocks ? 'blue' : 'gray'}
+              onClick={() => handleAssetClassToggle('CRYPTO')}
+              flex={1}
+            >
+              <LuCoins />
+              {t('symbolSelector.crypto')}
+            </Button>
+            <Button
+              size="2xs"
+              variant={isStocks ? 'solid' : 'outline'}
+              colorPalette={isStocks ? 'green' : 'gray'}
+              onClick={() => handleAssetClassToggle('STOCKS')}
+              flex={1}
+            >
+              <LuBuilding2 />
+              {t('symbolSelector.stocks')}
+            </Button>
+          </Flex>
+        )}
+        {showMarketTypeToggle && !isStocks && (
           <Flex p={2} gap={1} borderBottomWidth="1px" borderColor="border" flexShrink={0}>
             <Button
               size="2xs"
@@ -195,10 +262,24 @@ export function SymbolSelector({
                 >
                   <Flex align="center" justify="space-between">
                     <Flex align="center" gap={2}>
-                      <CryptoIcon symbol={symbol.symbol} size={20} />
+                      {isStocks ? (
+                        <Flex
+                          align="center"
+                          justify="center"
+                          w="20px"
+                          h="20px"
+                          borderRadius="md"
+                          bg="green.subtle"
+                          color="green.fg"
+                        >
+                          <LuBuilding2 size={12} />
+                        </Flex>
+                      ) : (
+                        <CryptoIcon symbol={symbol.symbol} size={20} />
+                      )}
                       <Flex direction="column">
                         <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
-                          {symbol.baseAsset}/{symbol.quoteAsset}
+                          {isStocks ? symbol.symbol : `${symbol.baseAsset}/${symbol.quoteAsset}`}
                         </Text>
                         <Text fontSize="2xs" color="fg.muted">
                           {symbol.displayName}
@@ -207,11 +288,11 @@ export function SymbolSelector({
                     </Flex>
                     <Badge
                       size="xs"
-                      colorPalette={isFutures ? 'orange' : 'blue'}
+                      colorPalette={isStocks ? 'green' : isFutures ? 'orange' : 'blue'}
                       variant="subtle"
                       px={2}
                     >
-                      {isFutures ? 'FUT' : 'SPOT'}
+                      {isStocks ? 'STK' : isFutures ? 'FUT' : 'SPOT'}
                     </Badge>
                   </Flex>
                 </Box>

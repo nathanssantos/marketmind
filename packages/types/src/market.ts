@@ -1,6 +1,22 @@
 import type { Kline, KlineData, TimeInterval } from './kline';
 
+export type AssetClass = 'CRYPTO' | 'STOCKS';
+
+export type ExchangeId = 'BINANCE' | 'INTERACTIVE_BROKERS';
+
 export type SymbolStatus = 'TRADING' | 'HALT' | 'BREAK';
+
+export interface StockSymbolInfo {
+  symbol: string;
+  conId: number;
+  secType: string;
+  primaryExchange: string;
+  currency: string;
+  description?: string;
+  baseAsset: string;
+  quoteAsset: string;
+  displayName: string;
+}
 
 export interface SymbolFilter {
   filterType: string;

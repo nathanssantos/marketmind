@@ -8,6 +8,11 @@ import {
 
 vi.mock('../../binance-historical', () => ({
   fetchHistoricalKlinesFromAPI: vi.fn(),
+  smartBackfillKlines: vi.fn().mockResolvedValue({ totalInDb: 0, downloaded: 0, gaps: 0, alreadyComplete: false }),
+}));
+
+vi.mock('../../ib-historical', () => ({
+  smartBackfillIBKlines: vi.fn().mockResolvedValue({ totalInDb: 0, downloaded: 0, gaps: 0, alreadyComplete: false }),
 }));
 
 describe('BacktestEngine', () => {
@@ -33,10 +38,14 @@ describe('BacktestEngine', () => {
       expect(result.equityCurve).toBeDefined();
     });
 
-    it('should handle empty klines array', async () => {
+    it('should handle empty klines array by attempting backfill', async () => {
       const config = createMockBacktestConfig();
 
-      await expect(engine.run(config, [])).rejects.toThrow();
+      const result = await engine.run(config, []);
+
+      expect(result).toBeDefined();
+      expect(result.status).toBe('COMPLETED');
+      expect(result.trades).toHaveLength(0);
     });
 
     it('should return correct structure', async () => {

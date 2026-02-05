@@ -45,7 +45,8 @@
     "marketClose": "Fermeture",
     "high": "Haute",
     "medium": "Moyenne",
-    "low": "Basse"
+    "low": "Basse",
+    "in": "dans"
   },
   "app": {
     "title": "MarketMind",
@@ -61,11 +62,47 @@
     "toggleColorMode": "Changer le mode couleur"
   },
   "symbolSelector": {
-    "label": "Binance",
+    "label": "Bourse",
     "placeholder": "Sélectionner un symbole",
     "searchPlaceholder": "Rechercher des symboles... (ex: BTC, ETH)",
     "popularSymbols": "SYMBOLES POPULAIRES",
-    "noSymbolsFound": "Aucun symbole trouvé"
+    "noSymbolsFound": "Aucun symbole trouvé",
+    "crypto": "Crypto",
+    "stocks": "Actions"
+  },
+  "marketStatus": {
+    "open": "Ouvert",
+    "closed": "Fermé",
+    "preMarket": "Pré-Marché",
+    "afterHours": "Après-Bourse",
+    "opens": "Ouvre",
+    "closes": "Ferme",
+    "tooltip": "Marché NYSE: {{session}}"
+  },
+  "marginInfo": {
+    "title": "Info Marge",
+    "used": "utilisé",
+    "buyingPower": "Pouvoir d'Achat",
+    "equity": "Capitaux Propres",
+    "marginUsed": "Marge Utilisée",
+    "availableMargin": "Marge Disponible",
+    "initialMargin": "Marge Initiale (Reg-T)",
+    "maintenanceMargin": "Marge de Maintien",
+    "initialMarginTooltip": "Marge requise pour ouvrir une position (50% pour les actions)",
+    "maintenanceMarginTooltip": "Capitaux propres minimum pour maintenir la position (25% pour les actions)",
+    "orderImpact": "Impact de l'Ordre",
+    "requiredInitial": "Initial Requis",
+    "newBuyingPower": "Nouveau Pouvoir d'Achat"
+  },
+  "shortability": {
+    "easy": "Facile à Emprunter",
+    "hard": "Difficile à Emprunter",
+    "unavailable": "Non Disponible",
+    "tooltip": {
+      "available": "{{shares}} actions disponibles ({{difficulty}})",
+      "availableNoCount": "Disponible pour vente à découvert ({{difficulty}})",
+      "unavailable": "Cette action n'est pas disponible pour la vente à découvert"
+    }
   },
   "settings": {
     "title": "Paramètres",
@@ -1172,7 +1209,12 @@
       "adaptiveMode": "Mode Adaptatif",
       "adaptiveModeDescription": "Ajuste automatiquement en fonction de la volatilité du marché"
     },
-    "pausedDueToCapital": "Watchers en pause - pas de capital disponible pour de nouvelles entrées. Reprendra lorsqu'une position sera fermée."
+    "pausedDueToCapital": "Watchers en pause - pas de capital disponible pour de nouvelles entrées. Reprendra lorsqu'une position sera fermée.",
+    "stockPresets": {
+      "title": "Presets Actions (IB)",
+      "description": "Démarrer rapidement des watchers pour les actions américaines populaires via Interactive Brokers",
+      "note": "Nécessite IB Gateway ou TWS en cours d'exécution localement sur le port 4001 (live) ou 4002 (paper)"
+    }
   },
   "strategyInfo": {
     "noCandleData": "Données de chandelle non disponibles",

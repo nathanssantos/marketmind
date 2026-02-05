@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Interactive Brokers - Phase 6 Completion (Backend)**
+  - `IBFeeCalculator` with tiered commission support (TIER_1-4, LITE accounts)
+  - `calculateTieredCommission`, `calculateRoundTripCommission`, `estimateCommissionRate` utilities
+  - `smartBackfillIBKlines` service for IB historical data backfill with DB caching
+  - BacktestEngine exchange routing: kline fetching routes to IB or Binance based on `--exchange` flag
+  - CLI `--exchange` and `--asset-class` flags for `validate` and `batch` backtest commands
+  - Integration test stubs for IB connection manager, stock client, kline stream, price stream (40 skipped)
+  - 17 new fee calculator tests, all 2662 backend tests passing
+
+### Changed
+- `IBStockClient.getAccountInfo()` now uses `estimateCommissionRate` instead of hardcoded commission rates
+- `IBStockClient` accepts `accountType` parameter for fee calculation
+- `BacktestEngine` and `MultiWatcherBacktestEngine` accept `exchange` parameter for kline source routing
+- `BacktestConfig` type extended with `exchange` and `assetClass` fields
+
+---
+
 ## [0.50.0] - 2026-02-01
 
 ### Added

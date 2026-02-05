@@ -43,6 +43,8 @@ interface ValidateOptions {
   dailyLossLimit: string;
   onlyLong: boolean;
   trendPeriod: string;
+  exchange: 'BINANCE' | 'INTERACTIVE_BROKERS';
+  assetClass: 'CRYPTO' | 'STOCKS';
 }
 
 export async function validateCommand(options: ValidateOptions) {
@@ -73,11 +75,14 @@ export async function validateCommand(options: ValidateOptions) {
     }
 
     const modeLabel = options.optimized ? ' [OPTIMIZED]' : '';
+    const exchangeLabel = options.exchange === 'INTERACTIVE_BROKERS' ? 'IB' : 'Binance';
     logger.header(`BACKTEST VALIDATION - ${options.strategy.toUpperCase()}${modeLabel}`, {
       'Symbol': options.symbol,
       'Interval': options.interval,
       'Period': `${options.start} → ${options.end}`,
       'Capital': `$${capital.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      'Exchange': exchangeLabel,
+      'Asset Class': options.assetClass ?? 'CRYPTO',
       ...(options.optimized ? { 'Mode': 'Using strategy optimizedParams' } : {}),
     });
 
@@ -87,6 +92,8 @@ export async function validateCommand(options: ValidateOptions) {
       startDate: options.start,
       endDate: options.end,
       initialCapital: capital,
+      exchange: options.exchange ?? 'BINANCE',
+      assetClass: options.assetClass ?? 'CRYPTO',
       setupTypes: [options.strategy],
       minConfidence: minConfidence,
       stopLossPercent: stopLoss,

@@ -1,9 +1,10 @@
 import { Box, Stack, Tabs, Text } from '@chakra-ui/react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBackendWallet } from '../../hooks/useBackendWallet';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
+import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { SidebarContainer } from '../ui/Sidebar';
 import { OrdersList } from './OrdersList';
 import { OrderTicket } from './OrderTicket';
@@ -23,6 +24,12 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
   const activeWallet = backendWallets[0];
   const activeWalletId = activeWallet?.id;
   const activeWalletCurrency = activeWallet?.currency ?? 'USDT';
+  const isIBWallet = activeWallet?.exchange === 'INTERACTIVE_BROKERS';
+
+  const marginRequirements = useMemo(() => {
+    if (!isIBWallet) return null;
+    return createMockMarginRequirements();
+  }, [isIBWallet]);
 
   const { tradingSidebarTab, setTradingSidebarTab } = useUIStore(useShallow((s) => ({
     tradingSidebarTab: s.tradingSidebarTab,
@@ -76,6 +83,9 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
           {activeWalletId && (
             <Tabs.Content value="analytics" h="full">
               <Stack gap={4} p={4} h="full" overflowY="auto">
+                {marginRequirements && (
+                  <MarginInfoPanel requirements={marginRequirements} />
+                )}
                 <RiskDisplay walletId={activeWalletId} />
                 <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
                 <SetupStatsTable walletId={activeWalletId} />

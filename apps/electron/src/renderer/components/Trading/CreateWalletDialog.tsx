@@ -1,7 +1,7 @@
 import { Alert, Box, Flex, Link, Stack, Text } from '@chakra-ui/react';
 import { Field } from '@renderer/components/ui/field';
 import { FormDialog } from '@renderer/components/ui/FormDialog';
-import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type WalletCurrency } from '@marketmind/types';
+import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type WalletCurrency, type ExchangeId } from '@marketmind/types';
 import { Input } from '@renderer/components/ui/input';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
@@ -17,6 +17,7 @@ const CURRENCY_SELECT_OPTIONS = SELECTABLE_CURRENCIES.map((c) => ({
 }));
 
 type WalletType = 'paper' | 'testnet' | 'live';
+type IBConnectionType = 'gateway' | 'tws';
 
 interface CreateWalletDialogProps {
   isOpen: boolean;
@@ -37,13 +38,19 @@ interface CreateWalletDialogProps {
 
 export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, isCreating = false }: CreateWalletDialogProps) => {
   const { t } = useTranslation();
+  const [exchange, setExchange] = useState<ExchangeId>('BINANCE');
   const [walletType, setWalletType] = useState<WalletType>('paper');
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('10000');
   const [currency, setCurrency] = useState<WalletCurrency>(DEFAULT_CURRENCY);
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [ibConnectionType, setIbConnectionType] = useState<IBConnectionType>('gateway');
+  const [ibPort, setIbPort] = useState('4002');
   const [error, setError] = useState<string | null>(null);
+
+  const isBinance = exchange === 'BINANCE';
+  const isIB = exchange === 'INTERACTIVE_BROKERS';
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -88,6 +95,9 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
     setApiKey('');
     setApiSecret('');
     setWalletType('paper');
+    setExchange('BINANCE');
+    setIbConnectionType('gateway');
+    setIbPort('4002');
     setError(null);
   };
 
@@ -97,9 +107,11 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
   };
 
   const isValid = name.trim() && (
-    walletType === 'paper'
-      ? parseFloat(initialBalance) > 0
-      : apiKey.trim() && apiSecret.trim()
+    isIB
+      ? ibPort.trim().length > 0
+      : walletType === 'paper'
+        ? parseFloat(initialBalance) > 0
+        : apiKey.trim() && apiSecret.trim()
   );
 
   return (
@@ -114,21 +126,43 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
       isLoading={isCreating}
     >
       <Stack gap={4}>
-        <Field label={t('trading.wallets.walletType', 'Wallet Type')}>
+        <Field label={t('trading.wallets.exchange', 'Exchange')}>
           <Select
             size="xs"
-            value={walletType}
-            onChange={(value) => setWalletType(value as WalletType)}
+            value={exchange}
+            onChange={(value) => {
+              setExchange(value as ExchangeId);
+              if (value === 'INTERACTIVE_BROKERS') {
+                setCurrency('USD');
+                setWalletType('paper');
+              }
+            }}
             options={[
-              { value: 'paper', label: `📝 ${t('trading.wallets.paper', 'Paper Trading')}` },
-              { value: 'testnet', label: `🧪 ${t('trading.wallets.testnet', 'Binance Testnet')}` },
-              { value: 'live', label: `🔴 ${t('trading.wallets.live', 'Live Trading')}` },
+              { value: 'BINANCE', label: `🪙 Binance (Crypto)` },
+              { value: 'INTERACTIVE_BROKERS', label: `📈 Interactive Brokers (Stocks)` },
             ]}
             usePortal={false}
           />
         </Field>
 
-        {walletType === 'testnet' && (
+        <Field label={t('trading.wallets.walletType', 'Wallet Type')}>
+          <Select
+            size="xs"
+            value={walletType}
+            onChange={(value) => setWalletType(value as WalletType)}
+            options={isBinance ? [
+              { value: 'paper', label: `📝 ${t('trading.wallets.paper', 'Paper Trading')}` },
+              { value: 'testnet', label: `🧪 ${t('trading.wallets.testnet', 'Binance Testnet')}` },
+              { value: 'live', label: `🔴 ${t('trading.wallets.live', 'Live Trading')}` },
+            ] : [
+              { value: 'paper', label: `📝 ${t('trading.wallets.ibPaper', 'IB Paper Trading (Port 4002)')}` },
+              { value: 'live', label: `🔴 ${t('trading.wallets.ibLive', 'IB Live Trading (Port 4001)')}` },
+            ]}
+            usePortal={false}
+          />
+        </Field>
+
+        {isBinance && walletType === 'testnet' && (
           <Alert.Root status="info" size="sm">
             <Alert.Indicator>
               <LuInfo />
@@ -145,6 +179,23 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
                     Futures Testnet <LuExternalLink style={{ display: 'inline' }} />
                   </Link>
                 </Flex>
+              </Alert.Description>
+            </Box>
+          </Alert.Root>
+        )}
+
+        {isIB && (
+          <Alert.Root status="info" size="sm">
+            <Alert.Indicator>
+              <LuInfo />
+            </Alert.Indicator>
+            <Box>
+              <Alert.Title fontSize="xs">{t('trading.wallets.ibInfo', 'Interactive Brokers')}</Alert.Title>
+              <Alert.Description fontSize="xs">
+                <Text mb={1}>{t('trading.wallets.ibDescription', 'Requires IB Gateway or TWS running locally.')}</Text>
+                <Link href="https://www.interactivebrokers.com/en/trading/ibgateway-stable.php" target="_blank" color="blue.500" fontSize="xs">
+                  {t('trading.wallets.downloadGateway', 'Download IB Gateway')} <LuExternalLink style={{ display: 'inline' }} />
+                </Link>
               </Alert.Description>
             </Box>
           </Alert.Root>
@@ -173,7 +224,33 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           />
         </Field>
 
-        {walletType === 'paper' ? (
+        {isIB && (
+          <>
+            <Field label={t('trading.wallets.connectionType', 'Connection Type')}>
+              <Select
+                size="xs"
+                value={ibConnectionType}
+                onChange={(value) => setIbConnectionType(value as IBConnectionType)}
+                options={[
+                  { value: 'gateway', label: t('trading.wallets.ibGateway', 'IB Gateway (Recommended)') },
+                  { value: 'tws', label: t('trading.wallets.ibTws', 'Trader Workstation (TWS)') },
+                ]}
+                usePortal={false}
+              />
+            </Field>
+
+            <Field label={t('trading.wallets.port', 'Port')}>
+              <Input
+                size="xs"
+                value={ibPort}
+                onChange={(e) => setIbPort(e.target.value)}
+                placeholder={walletType === 'paper' ? '4002' : '4001'}
+              />
+            </Field>
+          </>
+        )}
+
+        {isBinance && walletType === 'paper' && (
           <>
             <Field label={t('trading.wallets.initialBalance')}>
               <NumberInput
@@ -195,7 +272,9 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
               />
             </Field>
           </>
-        ) : (
+        )}
+
+        {isBinance && walletType !== 'paper' && (
           <>
             <Field label="API Key">
               <Input

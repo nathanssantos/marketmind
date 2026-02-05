@@ -21,6 +21,8 @@ export interface BacktestConfig {
   startDate: string; // ISO date
   endDate: string; // ISO date
   initialCapital: number;
+  exchange?: 'BINANCE' | 'INTERACTIVE_BROKERS'; // Exchange for data/trading (default: BINANCE)
+  assetClass?: 'CRYPTO' | 'STOCKS'; // Asset class (default: CRYPTO)
   minProfitPercent?: number; // Min expected profit % per trade after fees (filters out low R:R setups)
   minRiskRewardRatio?: number; // Min risk/reward ratio to enter trade (default: 1.0, fallback for both directions)
   minRiskRewardRatioLong?: number; // Min R:R for LONG positions (default: 1.0)

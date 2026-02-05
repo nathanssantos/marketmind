@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
-import type { Kline, MarketType } from '@marketmind/types';
+import type { AssetClass, Kline, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -13,6 +13,7 @@ import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
 import { Toolbar } from '../components/Layout/Toolbar';
+import { MarketStatusBar } from '../components/MarketStatusBar';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, REQUIRED_KLINES } from '../constants/defaults';
@@ -37,6 +38,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
   const [symbol, setSymbol] = useState(routeSymbol || initialSymbol || 'BTCUSDT');
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
+  const [assetClass, setAssetClass] = useState<AssetClass>('CRYPTO');
 
   useCurrencyAutoRefresh();
 
@@ -274,11 +276,12 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
 
-  const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
+  const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType, newAssetClass?: AssetClass): void => {
     clearDetectedSetups();
     setSymbol(newSymbol);
     if (newMarketType) setMarketType(newMarketType);
-  }, [setSymbol, setMarketType, clearDetectedSetups]);
+    if (newAssetClass) setAssetClass(newAssetClass);
+  }, [setSymbol, setMarketType, setAssetClass, clearDetectedSetups]);
 
   return (
     <Box
@@ -304,6 +307,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onToggleTrading={() => { }}
         />
       </Box>
+
+      {assetClass === 'STOCKS' && <MarketStatusBar />}
 
       <Box flex="1" position="relative" overflow="hidden">
         <ChartToolsToolbar

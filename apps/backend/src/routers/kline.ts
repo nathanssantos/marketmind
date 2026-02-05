@@ -1,9 +1,10 @@
-import type { Interval, MarketType } from '@marketmind/types';
+import type { AssetClass, Interval, MarketType } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { REQUIRED_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
+import { symbolSearch } from '../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
 import { prefetchKlines } from '../services/kline-prefetch';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
@@ -18,6 +19,7 @@ const intervalSchema = z.enum([
 ]);
 
 const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('SPOT');
+const assetClassSchema = z.enum(['CRYPTO', 'STOCKS']).default('CRYPTO');
 
 const symbolsCache = new Map<string, any[]>();
 const symbolsCacheTime = new Map<string, number>();
@@ -329,10 +331,31 @@ export const klineRouter = router({
       z.object({
         query: z.string().min(1).max(20),
         marketType: marketTypeSchema,
+        assetClass: assetClassSchema,
       })
     )
     .query(async ({ input }) => {
       const marketType = input.marketType as MarketType;
+      const assetClass = input.assetClass as AssetClass;
+
+      if (assetClass === 'STOCKS') {
+        try {
+          const results = await symbolSearch.searchStocks(input.query, 50);
+          return results.map((r) => ({
+            symbol: r.symbol,
+            baseAsset: r.symbol,
+            quoteAsset: r.currency,
+            displayName: r.description ?? r.symbol,
+            conId: r.conId,
+            secType: r.secType,
+            primaryExchange: r.primaryExchange,
+          }));
+        } catch (error) {
+          logger.warn({ query: input.query, error }, 'IB symbol search failed, returning empty results');
+          return [];
+        }
+      }
+
       const cacheKey = `symbols_${marketType}`;
 
       let symbols = symbolsCache.get(cacheKey);

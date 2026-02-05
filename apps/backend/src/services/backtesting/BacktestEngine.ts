@@ -17,6 +17,7 @@ import { klines as klinesTable } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 import { mapDbKlinesReversed } from '../../utils/kline-mapper';
 import { smartBackfillKlines } from '../binance-historical';
+import { smartBackfillIBKlines } from '../ib-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { ExitManager } from './ExitManager';
@@ -174,7 +175,8 @@ export class BacktestEngine {
       config.interval as Interval,
       marketType,
       startTime,
-      endTime
+      endTime,
+      config.exchange
     );
 
     const startTimestamp = new Date(config.startDate).getTime();
@@ -198,17 +200,19 @@ export class BacktestEngine {
     interval: Interval,
     marketType: 'SPOT' | 'FUTURES',
     startTime: Date,
-    endTime: Date
+    endTime: Date,
+    exchange?: 'BINANCE' | 'INTERACTIVE_BROKERS'
   ): Promise<Kline[]> {
     const intervalMs = this.getIntervalMs(interval);
     const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
     const minRequired = ABSOLUTE_MINIMUM_KLINES;
+    const effectiveMarketType = exchange === 'INTERACTIVE_BROKERS' ? 'SPOT' as const : marketType;
 
     let dbKlines = await db.query.klines.findMany({
       where: and(
         eq(klinesTable.symbol, symbol),
         eq(klinesTable.interval, interval),
-        eq(klinesTable.marketType, marketType),
+        eq(klinesTable.marketType, effectiveMarketType),
         gte(klinesTable.openTime, startTime),
         lte(klinesTable.openTime, endTime)
       ),
@@ -218,14 +222,17 @@ export class BacktestEngine {
     if (dbKlines.length < minRequired) {
       console.log(`[Backtest] Insufficient klines in DB (${dbKlines.length}/${minRequired}), running smart backfill...`);
 
-      const backfillResult = await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
-      console.log(`[Backtest] Backfill complete: downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
+      const isIB = exchange === 'INTERACTIVE_BROKERS';
+      const backfillResult = isIB
+        ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
+        : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
+      console.log(`[Backtest] Backfill complete (${isIB ? 'IB' : 'Binance'}): downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
 
       dbKlines = await db.query.klines.findMany({
         where: and(
           eq(klinesTable.symbol, symbol),
           eq(klinesTable.interval, interval),
-          eq(klinesTable.marketType, marketType),
+          eq(klinesTable.marketType, effectiveMarketType),
           gte(klinesTable.openTime, startTime),
           lte(klinesTable.openTime, endTime)
         ),
@@ -233,7 +240,7 @@ export class BacktestEngine {
       });
     }
 
-    console.log(`[Backtest] Retrieved ${dbKlines.length} klines from database for ${symbol} ${interval} ${marketType}`);
+    console.log(`[Backtest] Retrieved ${dbKlines.length} klines from database for ${symbol} ${interval} ${effectiveMarketType} (${exchange ?? 'BINANCE'})`);
     return mapDbKlinesReversed(dbKlines);
   }
 

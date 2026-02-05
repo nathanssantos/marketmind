@@ -49,6 +49,8 @@ program
   .option('--daily-loss-limit <percent>', 'Max daily loss as % of capital before stopping')
   .option('--only-long', 'Only allow LONG positions (buy only, no shorts)', false)
   .option('--trend-period <n>', 'EMA period for trend filter (9, 21, 50, 70, 100, 200)')
+  .option('--exchange <exchange>', 'Exchange for data/trading: BINANCE, INTERACTIVE_BROKERS (default: BINANCE)', 'BINANCE')
+  .option('--asset-class <class>', 'Asset class: CRYPTO, STOCKS (default: CRYPTO)', 'CRYPTO')
   .option('-v, --verbose', 'Show detailed trade-by-trade logs', false)
   .action(validateCommand);
 
@@ -210,6 +212,8 @@ program
   .option('-o, --output <path>', 'Output file path for CSV results')
   .option('-m, --market-type <type>', 'Market type: SPOT or FUTURES', 'SPOT')
   .option('-l, --leverage <n>', 'Leverage for FUTURES (1-125)', '1')
+  .option('--exchange <exchange>', 'Exchange for data/trading: BINANCE, INTERACTIVE_BROKERS (default: BINANCE)', 'BINANCE')
+  .option('--asset-class <class>', 'Asset class: CRYPTO, STOCKS (default: CRYPTO)', 'CRYPTO')
   .option('--use-mtf-filter', 'Enable Multi-Timeframe filter', true)
   .option('--no-use-mtf-filter', 'Disable Multi-Timeframe filter')
   .option('--use-btc-correlation-filter', 'Enable BTC correlation filter', true)

@@ -6,10 +6,12 @@ import type { IExchangeFuturesClient } from './futures-client';
 import type { IExchangeSpotClient } from './spot-client';
 import { exchangeRegistry } from './exchange-registry';
 import { BinanceExchangeProvider } from './binance';
+import { IBExchangeProvider } from './interactive-brokers';
 
 const DEFAULT_EXCHANGE_ID: ExchangeId = 'BINANCE';
 
 exchangeRegistry.register(new BinanceExchangeProvider());
+exchangeRegistry.register(new IBExchangeProvider());
 
 export function getExchangeCredentials(wallet: Wallet): ExchangeCredentials {
   const walletType = getWalletType(wallet);

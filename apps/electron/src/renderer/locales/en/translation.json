@@ -41,7 +41,8 @@
     "marketClose": "Market Close",
     "high": "High",
     "medium": "Medium",
-    "low": "Low"
+    "low": "Low",
+    "in": "in"
   },
   "app": {
     "title": "MarketMind",
@@ -57,11 +58,47 @@
     "toggleColorMode": "Toggle color mode"
   },
   "symbolSelector": {
-    "label": "Binance",
+    "label": "Exchange",
     "placeholder": "Select symbol",
     "searchPlaceholder": "Search symbols... (e.g., BTC, ETH)",
     "popularSymbols": "POPULAR SYMBOLS",
-    "noSymbolsFound": "No symbols found"
+    "noSymbolsFound": "No symbols found",
+    "crypto": "Crypto",
+    "stocks": "Stocks"
+  },
+  "marketStatus": {
+    "open": "Open",
+    "closed": "Closed",
+    "preMarket": "Pre-Market",
+    "afterHours": "After Hours",
+    "opens": "Opens",
+    "closes": "Closes",
+    "tooltip": "NYSE Market: {{session}}"
+  },
+  "marginInfo": {
+    "title": "Margin Info",
+    "used": "used",
+    "buyingPower": "Buying Power",
+    "equity": "Equity",
+    "marginUsed": "Margin Used",
+    "availableMargin": "Available Margin",
+    "initialMargin": "Initial Margin (Reg-T)",
+    "maintenanceMargin": "Maintenance Margin",
+    "initialMarginTooltip": "Required margin to open a position (50% for stocks)",
+    "maintenanceMarginTooltip": "Minimum equity to maintain position (25% for stocks)",
+    "orderImpact": "Order Impact",
+    "requiredInitial": "Required Initial",
+    "newBuyingPower": "New Buying Power"
+  },
+  "shortability": {
+    "easy": "Easy to Borrow",
+    "hard": "Hard to Borrow",
+    "unavailable": "Not Available",
+    "tooltip": {
+      "available": "{{shares}} shares available ({{difficulty}})",
+      "availableNoCount": "Available for short selling ({{difficulty}})",
+      "unavailable": "This stock is not available for short selling"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -545,6 +582,7 @@
       "empty": "No wallets yet. Create one to start trading.",
       "emptyReal": "No wallets yet. Create a paper trading wallet to test auto-trading.",
       "realMode": "Paper Trading Mode - Create a wallet to test auto-trading without real funds.",
+      "exchange": "Exchange",
       "name": "Wallet Name",
       "namePlaceholder": "My Wallet",
       "initialBalance": "Initial Balance",
@@ -563,7 +601,16 @@
       "pnl": "P&L",
       "netPnL": "Net P&L",
       "afterFees": "after fees",
-      "noTradesYet": "No trades yet. Start trading to see your equity curve."
+      "noTradesYet": "No trades yet. Start trading to see your equity curve.",
+      "ibPaper": "IB Paper Trading (Port 4002)",
+      "ibLive": "IB Live Trading (Port 4001)",
+      "ibInfo": "Interactive Brokers",
+      "ibDescription": "Requires IB Gateway or TWS running locally.",
+      "downloadGateway": "Download IB Gateway",
+      "connectionType": "Connection Type",
+      "ibGateway": "IB Gateway (Recommended)",
+      "ibTws": "Trader Workstation (TWS)",
+      "port": "Port"
     },
     "ticket": {
       "title": "Ticket",
@@ -1111,7 +1158,12 @@
       "adaptiveMode": "Adaptive Mode",
       "adaptiveModeDescription": "Automatically adjusts based on market volatility"
     },
-    "pausedDueToCapital": "Watchers paused - no free capital for new entries. Will resume when a position is closed."
+    "pausedDueToCapital": "Watchers paused - no free capital for new entries. Will resume when a position is closed.",
+    "stockPresets": {
+      "title": "Stock Presets (IB)",
+      "description": "Quick start watchers for popular US stocks via Interactive Brokers",
+      "note": "Requires IB Gateway or TWS running locally on port 4001 (live) or 4002 (paper)"
+    }
   },
   "strategyInfo": {
     "noCandleData": "No candle data available",

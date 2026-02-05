@@ -74,6 +74,7 @@
     "@marketmind/types": "workspace:*",
     "@marketmind/utils": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
+    "@stoqey/ib": "^1.5.3",
     "@trpc/server": "^11.7.2",
     "binance": "^3.1.5",
     "binance-api-node": "^0.13.5",
@@ -87,6 +88,7 @@
     "ora": "^9.0.0",
     "pg": "^8.16.3",
     "pino": "^10.1.0",
+    "rxjs": "^7.8.2",
     "socket.io": "^4.8.1",
     "ws": "^8.18.3",
     "zod": "^4.1.13"
