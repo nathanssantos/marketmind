@@ -8,6 +8,7 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { MarketSidebar } from '../MarketSidebar';
+import { AnalyticsModal } from '../Analytics';
 import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -289,6 +290,7 @@ export const MainLayout = ({
           onAdvancedConfigChange={onAdvancedConfigChange}
         />
         <ScreenerModal onSymbolClick={onNavigateToSymbol} />
+        <AnalyticsModal />
       </Box>
     </GlobalActionsProvider>
   );

@@ -1,17 +1,12 @@
-import { Box, Stack, Tabs, Text } from '@chakra-ui/react';
-import { memo, useCallback, useMemo } from 'react';
+import { Box, Tabs, Text } from '@chakra-ui/react';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
-import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { SidebarContainer } from '../ui/Sidebar';
 import { OrdersList } from './OrdersList';
 import { OrderTicket } from './OrderTicket';
-import { PerformancePanel } from './PerformancePanel';
 import { Portfolio } from './Portfolio';
-import { RiskDisplay } from './RiskDisplay';
-import { SetupStatsTable } from './SetupStatsTable';
 
 interface TradingSidebarProps {
   width: number;
@@ -19,14 +14,6 @@ interface TradingSidebarProps {
 
 const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
   const { t } = useTranslation();
-  const { activeWallet, isIB: isIBWallet } = useActiveWallet();
-  const activeWalletId = activeWallet?.id;
-  const activeWalletCurrency = activeWallet?.currency ?? 'USDT';
-
-  const marginRequirements = useMemo(() => {
-    if (!isIBWallet) return null;
-    return createMockMarginRequirements();
-  }, [isIBWallet]);
 
   const { tradingSidebarTab, setTradingSidebarTab } = useUIStore(useShallow((s) => ({
     tradingSidebarTab: s.tradingSidebarTab,
@@ -50,11 +37,6 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
           <Tabs.Trigger value="portfolio">
             <Text fontSize="xs">{t('trading.tabs.portfolio')}</Text>
           </Tabs.Trigger>
-          {activeWalletId && (
-            <Tabs.Trigger value="analytics">
-              <Text fontSize="xs">{t('trading.tabs.analytics')}</Text>
-            </Tabs.Trigger>
-          )}
         </Tabs.List>
 
         <Box flex={1} overflowY="auto">
@@ -69,19 +51,6 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
           <Tabs.Content value="portfolio">
             <Portfolio />
           </Tabs.Content>
-
-          {activeWalletId && (
-            <Tabs.Content value="analytics" h="full">
-              <Stack gap={4} p={4} h="full" overflowY="auto">
-                {marginRequirements && (
-                  <MarginInfoPanel requirements={marginRequirements} />
-                )}
-                <RiskDisplay walletId={activeWalletId} />
-                <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
-                <SetupStatsTable walletId={activeWalletId} />
-              </Stack>
-            </Tabs.Content>
-          )}
         </Box>
       </Tabs.Root>
     </SidebarContainer>

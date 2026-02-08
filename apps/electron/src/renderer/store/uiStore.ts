@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio' | 'analytics';
+export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio';
 export type MarketSidebarTab = 'indicators' | 'watchers' | 'logs';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
@@ -66,6 +66,10 @@ interface UIState {
 
   enableShiftAltOrderEntry: boolean;
   setEnableShiftAltOrderEntry: (enabled: boolean) => void;
+
+  isAnalyticsOpen: boolean;
+  setAnalyticsOpen: (open: boolean) => void;
+  toggleAnalytics: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -125,15 +129,22 @@ export const useUIStore = create<UIState>()(
 
       enableShiftAltOrderEntry: false,
       setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
+
+      isAnalyticsOpen: false,
+      setAnalyticsOpen: (open) => set({ isAnalyticsOpen: open }),
+      toggleAnalytics: () => set((state) => ({ isAnalyticsOpen: !state.isAnalyticsOpen })),
     }),
     {
       name: 'ui-storage',
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 2) {
           if (state['tradingSidebarTab'] === 'wallets') state['tradingSidebarTab'] = 'portfolio';
           state['activeWalletId'] = null;
+        }
+        if (version < 3) {
+          if (state['tradingSidebarTab'] === 'analytics') state['tradingSidebarTab'] = 'portfolio';
         }
         return state as unknown as UIState;
       },

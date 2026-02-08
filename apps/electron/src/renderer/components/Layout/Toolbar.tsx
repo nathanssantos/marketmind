@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
+  LuChartBar,
   LuDollarSign,
   LuPlus,
   LuScanLine,
@@ -51,10 +52,12 @@ export const Toolbar = memo(({
   const globalActions = useGlobalActionsOptional();
   const { openChartWindow } = useChartWindows();
 
-  const { marketSidebarOpen, toggleMarketSidebar } = useUIStore(
+  const { marketSidebarOpen, toggleMarketSidebar, isAnalyticsOpen, toggleAnalytics } = useUIStore(
     useShallow((state) => ({
       marketSidebarOpen: state.marketSidebarOpen,
       toggleMarketSidebar: state.toggleMarketSidebar,
+      isAnalyticsOpen: state.isAnalyticsOpen,
+      toggleAnalytics: state.toggleAnalytics,
     }))
   );
 
@@ -144,8 +147,6 @@ export const Toolbar = memo(({
 
         {showSidebarButtons && (
           <>
-            <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
             <HStack gap={1} flexShrink={0}>
               <TooltipWrapper label={t('marketSidebar.title')} showArrow>
                 <IconButton
@@ -167,6 +168,17 @@ export const Toolbar = memo(({
                   variant={isScreenerOpen ? 'solid' : 'ghost'}
                 >
                   <LuScanLine />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('trading.tabs.analytics')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('trading.tabs.analytics')}
+                  onClick={toggleAnalytics}
+                  colorPalette={isAnalyticsOpen ? 'blue' : 'gray'}
+                  variant={isAnalyticsOpen ? 'solid' : 'ghost'}
+                >
+                  <LuChartBar />
                 </IconButton>
               </TooltipWrapper>
               <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
