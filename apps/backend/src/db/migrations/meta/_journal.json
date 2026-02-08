@@ -421,6 +421,13 @@
       "when": 1769900400000,
       "tag": "0059_replace_exposure_multiplier",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1769900500000,
+      "tag": "0060_symbol_trailing_stop_overrides",
+      "breakpoints": true
     }
   ]
 }

@@ -4,8 +4,8 @@ import { getRoundTripFee } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
-import type { TradeExecution } from '../db/schema';
-import { autoTradingConfig, klines, priceCache, setupDetections, tradeExecutions, wallets } from '../db/schema';
+import type { AutoTradingConfig, SymbolTrailingStopOverride, TradeExecution } from '../db/schema';
+import { autoTradingConfig, klines, priceCache, setupDetections, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
@@ -40,6 +40,58 @@ export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   useVolatilityBasedThresholds: true,
   marketType: 'SPOT',
   useBnbDiscount: false,
+};
+
+export const resolveTrailingStopConfig = (
+  side: 'LONG' | 'SHORT',
+  symbolOverride: SymbolTrailingStopOverride | null,
+  walletConfig: AutoTradingConfig | null,
+  baseConfig: TrailingStopOptimizationConfig
+): TrailingStopOptimizationConfig => {
+  const useOverride = symbolOverride?.useIndividualConfig === true;
+
+  const activationPercentLong = useOverride && symbolOverride.trailingActivationPercentLong !== null
+    ? parseFloat(symbolOverride.trailingActivationPercentLong)
+    : walletConfig?.trailingActivationPercentLong
+      ? parseFloat(walletConfig.trailingActivationPercentLong)
+      : undefined;
+
+  const activationPercentShort = useOverride && symbolOverride.trailingActivationPercentShort !== null
+    ? parseFloat(symbolOverride.trailingActivationPercentShort)
+    : walletConfig?.trailingActivationPercentShort
+      ? parseFloat(walletConfig.trailingActivationPercentShort)
+      : undefined;
+
+  const distanceLong = useOverride && symbolOverride.trailingDistancePercentLong !== null
+    ? parseFloat(symbolOverride.trailingDistancePercentLong)
+    : walletConfig?.trailingDistancePercentLong
+      ? parseFloat(walletConfig.trailingDistancePercentLong)
+      : baseConfig.trailingDistancePercent;
+
+  const distanceShort = useOverride && symbolOverride.trailingDistancePercentShort !== null
+    ? parseFloat(symbolOverride.trailingDistancePercentShort)
+    : walletConfig?.trailingDistancePercentShort
+      ? parseFloat(walletConfig.trailingDistancePercentShort)
+      : baseConfig.trailingDistancePercent;
+
+  const trailingDistancePercent = side === 'LONG' ? distanceLong : distanceShort;
+
+  const useProfitLockDistance = useOverride && symbolOverride.useProfitLockDistance !== null
+    ? symbolOverride.useProfitLockDistance
+    : walletConfig?.useProfitLockDistance ?? baseConfig.useProfitLockDistance;
+
+  const useVolatilityBasedThresholds = useOverride && symbolOverride.useAdaptiveTrailing !== null
+    ? symbolOverride.useAdaptiveTrailing
+    : walletConfig?.useAdaptiveTrailing ?? baseConfig.useVolatilityBasedThresholds;
+
+  return {
+    ...baseConfig,
+    activationPercentLong,
+    activationPercentShort,
+    trailingDistancePercent,
+    useProfitLockDistance,
+    useVolatilityBasedThresholds,
+  };
 };
 
 export interface TrailingStopUpdate {
@@ -324,6 +376,16 @@ export class TrailingStopService {
       .from(autoTradingConfig)
       .where(inArray(autoTradingConfig.walletId, walletIds));
 
+    const overrides = await db
+      .select()
+      .from(symbolTrailingStopOverrides)
+      .where(inArray(symbolTrailingStopOverrides.walletId, walletIds));
+
+    const overrideMap = new Map<string, SymbolTrailingStopOverride>();
+    for (const override of overrides) {
+      overrideMap.set(`${override.walletId}:${override.symbol}`, override);
+    }
+
     const enabledWallets = new Set<string>();
     for (const config of configs) {
       if (config.trailingStopEnabled !== false) {
@@ -337,7 +399,13 @@ export class TrailingStopService {
       }
     }
 
-    const filtered = executions.filter(e => enabledWallets.has(e.walletId));
+    const filtered = executions.filter(e => {
+      const override = overrideMap.get(`${e.walletId}:${e.symbol}`);
+      if (override?.useIndividualConfig && override.trailingStopEnabled !== null) {
+        return override.trailingStopEnabled;
+      }
+      return enabledWallets.has(e.walletId);
+    });
 
     return filtered;
   }
@@ -439,6 +507,16 @@ export class TrailingStopService {
         };
       }
 
+      const groupWalletId = groupExecutions[0]?.walletId;
+      const symbolOverride = groupWalletId
+        ? await db.query.symbolTrailingStopOverrides.findFirst({
+            where: and(
+              eq(symbolTrailingStopOverrides.walletId, groupWalletId),
+              eq(symbolTrailingStopOverrides.symbol, symbol)
+            ),
+          })
+        : null;
+
       for (const execution of groupExecutions) {
         const walletConfig = await db.query.autoTradingConfig.findFirst({
           where: eq(autoTradingConfig.walletId, execution.walletId),
@@ -453,25 +531,18 @@ export class TrailingStopService {
           }
         }
 
-        // Enable Fibonacci thresholds when we have a fibonacciProjection available,
-        // regardless of tpCalculationMode. This allows trailing activation percentages
-        // (e.g., 88.6% for SHORT) to work whenever Fibonacci data is present.
         const useFibonacciThresholds = !!fibonacciProjection?.levels?.length;
 
-        const trailingDistancePercent = execution.side === 'LONG'
-          ? (walletConfig?.trailingDistancePercentLong ? parseFloat(walletConfig.trailingDistancePercentLong) : effectiveConfig.trailingDistancePercent)
-          : (walletConfig?.trailingDistancePercentShort ? parseFloat(walletConfig.trailingDistancePercentShort) : effectiveConfig.trailingDistancePercent);
+        const resolved = resolveTrailingStopConfig(
+          execution.side,
+          symbolOverride ?? null,
+          walletConfig ?? null,
+          effectiveConfig
+        );
 
         const executionConfig: TrailingStopOptimizationConfig = {
-          ...effectiveConfig,
+          ...resolved,
           useFibonacciThresholds,
-          activationPercentLong: walletConfig?.trailingActivationPercentLong
-            ? parseFloat(walletConfig.trailingActivationPercentLong)
-            : undefined,
-          activationPercentShort: walletConfig?.trailingActivationPercentShort
-            ? parseFloat(walletConfig.trailingActivationPercentShort)
-            : undefined,
-          trailingDistancePercent,
         };
 
         const update = this.calculateTrailingStopWithConfig(

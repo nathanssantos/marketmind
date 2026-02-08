@@ -1420,5 +1420,12 @@
     "footer": {
       "results": "{{matched}} matched / {{scanned}} scanned ({{time}}ms)"
     }
+  },
+  "positionTrailingStop": {
+    "title": "Trailing Stop",
+    "useIndividualConfig": "Individual config",
+    "useIndividualConfigDescription": "Override global trailing stop settings for this symbol",
+    "useGlobalConfig": "Global config",
+    "useGlobalConfigDescription": "Using wallet-level trailing stop settings"
   }
 }

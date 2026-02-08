@@ -4,7 +4,7 @@ import { MainClient, USDMClient } from 'binance';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
-import { orders, positions, tradeExecutions, wallets } from '../db/schema';
+import { orders, positions, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from '../services/auto-trading';
 import { isPaperWallet } from '../services/binance-client';
@@ -1410,5 +1410,79 @@ export const tradingRouter = router({
       }
 
       return { results };
+    }),
+
+  getSymbolTrailingConfig: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const override = await ctx.db.query.symbolTrailingStopOverrides.findFirst({
+        where: and(
+          eq(symbolTrailingStopOverrides.walletId, input.walletId),
+          eq(symbolTrailingStopOverrides.symbol, input.symbol)
+        ),
+      });
+
+      return override ?? null;
+    }),
+
+  updateSymbolTrailingConfig: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        useIndividualConfig: z.boolean().optional(),
+        trailingStopEnabled: z.boolean().nullable().optional(),
+        trailingActivationPercentLong: z.string().nullable().optional(),
+        trailingActivationPercentShort: z.string().nullable().optional(),
+        trailingDistancePercentLong: z.string().nullable().optional(),
+        trailingDistancePercentShort: z.string().nullable().optional(),
+        useAdaptiveTrailing: z.boolean().nullable().optional(),
+        useProfitLockDistance: z.boolean().nullable().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const { walletId, symbol, ...fields } = input;
+
+      const existing = await ctx.db.query.symbolTrailingStopOverrides.findFirst({
+        where: and(
+          eq(symbolTrailingStopOverrides.walletId, walletId),
+          eq(symbolTrailingStopOverrides.symbol, symbol)
+        ),
+      });
+
+      if (existing) {
+        const [updated] = await ctx.db
+          .update(symbolTrailingStopOverrides)
+          .set({ ...fields, updatedAt: new Date() })
+          .where(eq(symbolTrailingStopOverrides.id, existing.id))
+          .returning();
+        return updated!;
+      }
+
+      const [created] = await ctx.db
+        .insert(symbolTrailingStopOverrides)
+        .values({
+          walletId,
+          symbol,
+          useIndividualConfig: fields.useIndividualConfig ?? false,
+          trailingStopEnabled: fields.trailingStopEnabled ?? null,
+          trailingActivationPercentLong: fields.trailingActivationPercentLong ?? null,
+          trailingActivationPercentShort: fields.trailingActivationPercentShort ?? null,
+          trailingDistancePercentLong: fields.trailingDistancePercentLong ?? null,
+          trailingDistancePercentShort: fields.trailingDistancePercentShort ?? null,
+          useAdaptiveTrailing: fields.useAdaptiveTrailing ?? null,
+          useProfitLockDistance: fields.useProfitLockDistance ?? null,
+        })
+        .returning();
+      return created!;
     }),
 });

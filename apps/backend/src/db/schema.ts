@@ -10,6 +10,7 @@ import {
     text,
     timestamp,
     unique,
+    uniqueIndex,
     varchar
 } from 'drizzle-orm/pg-core';
 import { DEFAULT_CURRENCY } from '@marketmind/types';
@@ -568,3 +569,26 @@ export const indicatorHistory = pgTable('indicator_history', {
 
 export type IndicatorHistory = typeof indicatorHistory.$inferSelect;
 export type NewIndicatorHistory = typeof indicatorHistory.$inferInsert;
+
+export const symbolTrailingStopOverrides = pgTable('symbol_trailing_stop_overrides', {
+  id: serial('id').primaryKey(),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  symbol: varchar({ length: 20 }).notNull(),
+  useIndividualConfig: boolean('use_individual_config').default(false).notNull(),
+  trailingStopEnabled: boolean('trailing_stop_enabled'),
+  trailingActivationPercentLong: numeric('trailing_activation_percent_long', { precision: 5, scale: 4 }),
+  trailingActivationPercentShort: numeric('trailing_activation_percent_short', { precision: 5, scale: 4 }),
+  trailingDistancePercentLong: numeric('trailing_distance_percent_long', { precision: 5, scale: 4 }),
+  trailingDistancePercentShort: numeric('trailing_distance_percent_short', { precision: 5, scale: 4 }),
+  useAdaptiveTrailing: boolean('use_adaptive_trailing'),
+  useProfitLockDistance: boolean('use_profit_lock_distance'),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  walletSymbolIdx: uniqueIndex('symbol_ts_override_wallet_symbol_idx').on(table.walletId, table.symbol),
+}));
+
+export type SymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferSelect;
+export type NewSymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferInsert;

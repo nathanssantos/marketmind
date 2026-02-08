@@ -1462,5 +1462,12 @@
     "footer": {
       "results": "{{matched}} encontrados / {{scanned}} escaneados ({{time}}ms)"
     }
+  },
+  "positionTrailingStop": {
+    "title": "Trailing Stop",
+    "useIndividualConfig": "Config individual",
+    "useIndividualConfigDescription": "Sobrescrever configurações globais de trailing stop para este símbolo",
+    "useGlobalConfig": "Config global",
+    "useGlobalConfigDescription": "Usando configurações de trailing stop da carteira"
   }
 }

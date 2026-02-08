@@ -70,6 +70,10 @@ interface UIState {
   isAnalyticsOpen: boolean;
   setAnalyticsOpen: (open: boolean) => void;
   toggleAnalytics: () => void;
+
+  trailingStopPanelExpanded: boolean;
+  setTrailingStopPanelExpanded: (expanded: boolean) => void;
+  toggleTrailingStopPanel: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -133,10 +137,14 @@ export const useUIStore = create<UIState>()(
       isAnalyticsOpen: false,
       setAnalyticsOpen: (open) => set({ isAnalyticsOpen: open }),
       toggleAnalytics: () => set((state) => ({ isAnalyticsOpen: !state.isAnalyticsOpen })),
+
+      trailingStopPanelExpanded: false,
+      setTrailingStopPanelExpanded: (expanded) => set({ trailingStopPanelExpanded: expanded }),
+      toggleTrailingStopPanel: () => set((state) => ({ trailingStopPanelExpanded: !state.trailingStopPanelExpanded })),
     }),
     {
       name: 'ui-storage',
-      version: 3,
+      version: 4,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version < 2) {
@@ -145,6 +153,9 @@ export const useUIStore = create<UIState>()(
         }
         if (version < 3) {
           if (state['tradingSidebarTab'] === 'analytics') state['tradingSidebarTab'] = 'portfolio';
+        }
+        if (version < 4) {
+          state['trailingStopPanelExpanded'] = false;
         }
         return state as unknown as UIState;
       },
@@ -169,6 +180,7 @@ export const useUIStore = create<UIState>()(
         watchersTableSortDirection: state.watchersTableSortDirection,
         showEventRow: state.showEventRow,
         enableShiftAltOrderEntry: state.enableShiftAltOrderEntry,
+        trailingStopPanelExpanded: state.trailingStopPanelExpanded,
       }),
     }
   )

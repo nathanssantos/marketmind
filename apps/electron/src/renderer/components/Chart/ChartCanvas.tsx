@@ -38,6 +38,7 @@ import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { KlineTimer } from './KlineTimer';
+import { PositionTrailingStopPanel } from './PositionTrailingStopPanel';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderDragHandler } from './useOrderDragHandler';
 import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
@@ -174,6 +175,11 @@ export const ChartCanvas = ({
         fibonacciProjection: exec.fibonacciProjection ? JSON.parse(exec.fibonacciProjection) : null,
       }));
   }, [backendExecutions, symbol, marketType]);
+
+  const hasOpenPositionWithStop = useMemo(() =>
+    filteredBackendExecutions.some(e => e.status === 'open' && e.stopLoss),
+    [filteredBackendExecutions]
+  );
 
   const handleLongEntry = useCallback((price: number) => {
     if (!backendWalletId) {
@@ -1079,6 +1085,12 @@ export const ChartCanvas = ({
           lastKlineTime={klines[klines.length - 1]?.openTime}
           totalPanelHeight={manager?.getTotalPanelHeight() ?? 0}
         />
+        {hasOpenPositionWithStop && backendWalletId && symbol && (
+          <PositionTrailingStopPanel
+            symbol={symbol}
+            walletId={backendWalletId}
+          />
+        )}
         {showTooltip && (
           <ChartTooltip
             kline={tooltipData.kline}
