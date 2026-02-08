@@ -9,6 +9,7 @@ import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
 import { orderSyncRouter } from '../routers/order-sync';
 import { preferencesRouter } from '../routers/preferences';
+import { screenerRouter } from '../routers/screener';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { tradingRouter } from '../routers/trading';
@@ -35,6 +36,7 @@ export const appRouter = router({
   orderSync: orderSyncRouter,
   trade: nestedTradingRouter,
   preferences: preferencesRouter,
+  screener: screenerRouter,
 });
 
 export type AppRouter = typeof appRouter;

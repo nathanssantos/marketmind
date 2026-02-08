@@ -1385,5 +1385,98 @@
     "noWallets": "No hay carteras creadas",
     "crypto": "Crypto",
     "stocks": "Acciones"
+  },
+  "screener": {
+    "title": "Screener de Mercado",
+    "error": "Error al cargar los resultados del screener. Inténtalo de nuevo.",
+    "assetClass": {
+      "CRYPTO": "Crypto",
+      "STOCKS": "Acciones"
+    },
+    "marketType": {
+      "SPOT": "Spot",
+      "FUTURES": "Futuros"
+    },
+    "presets": {
+      "title": "Presets",
+      "custom": "Personalizado",
+      "names": {
+        "top-gainers": "Mayores Alzas",
+        "top-losers": "Mayores Bajas",
+        "btc-decorrelated": "Decorrelación BTC",
+        "oversold-uptrend": "Sobrevendido en Alza",
+        "overbought-downtrend": "Sobrecomprado en Baja",
+        "momentum-leaders": "Líderes de Momentum",
+        "volume-spike": "Pico de Volumen",
+        "breakout-candidates": "Candidatos a Ruptura",
+        "mean-reversion": "Reversión a la Media",
+        "high-volatility": "Alta Volatilidad"
+      },
+      "descriptions": {
+        "top-gainers": "Mayores ganancias de precio en las últimas 24h",
+        "top-losers": "Mayores pérdidas de precio en las últimas 24h",
+        "btc-decorrelated": "Activos con baja correlación con BTC y momentum positivo",
+        "oversold-uptrend": "RSI sobrevendido con precio sobre EMAs clave",
+        "overbought-downtrend": "RSI sobrecomprado con precio bajo EMAs clave",
+        "momentum-leaders": "Activos en tendencia fuerte con alto ADX y volumen",
+        "volume-spike": "Actividad de volumen inusual por encima de 2x el promedio",
+        "breakout-candidates": "Bandas de Bollinger estrechas con volumen creciente",
+        "mean-reversion": "Lecturas extremas de RSI para posibles reversiones",
+        "high-volatility": "Alto ATR% con volumen y tendencia fuertes"
+      }
+    },
+    "filters": {
+      "title": "Filtros",
+      "add": "Agregar Filtro",
+      "remove": "Eliminar",
+      "clearAll": "Limpiar Todo",
+      "value": "Valor",
+      "max": "Máx"
+    },
+    "operators": {
+      "ABOVE": "Por encima",
+      "BELOW": "Por debajo",
+      "BETWEEN": "Entre",
+      "CROSSES_ABOVE": "Cruza Arriba",
+      "CROSSES_BELOW": "Cruza Abajo",
+      "INCREASING": "Creciente",
+      "DECREASING": "Decreciente"
+    },
+    "categories": {
+      "oscillator": "Osciladores",
+      "trend": "Tendencia",
+      "volume": "Volumen",
+      "volatility": "Volatilidad",
+      "momentum": "Momentum",
+      "price": "Precio",
+      "market_data": "Datos de Mercado",
+      "crypto": "Crypto"
+    },
+    "results": {
+      "symbol": "Símbolo",
+      "price": "Precio",
+      "change24h": "24h %",
+      "volume": "Volumen",
+      "rank": "Rank",
+      "volRatio": "Razón Vol",
+      "score": "Score",
+      "empty": "No se encontraron resultados. Intenta ajustar tus filtros."
+    },
+    "saved": {
+      "title": "Screeners Guardados",
+      "load": "Cargar"
+    },
+    "save": {
+      "title": "Guardar Screener",
+      "description": "Guarda tu configuración de filtros actual para acceso rápido.",
+      "placeholder": "Nombre del screener..."
+    },
+    "actions": {
+      "refresh": "Actualizar",
+      "save": "Guardar"
+    },
+    "footer": {
+      "results": "{{matched}} encontrados / {{scanned}} escaneados ({{time}}ms)"
+    }
   }
 }

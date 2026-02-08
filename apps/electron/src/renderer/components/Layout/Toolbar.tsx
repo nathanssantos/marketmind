@@ -6,9 +6,11 @@ import {
   LuActivity,
   LuDollarSign,
   LuPlus,
+  LuScanLine,
   LuSettings,
 } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
+import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
@@ -53,6 +55,13 @@ export const Toolbar = memo(({
     useShallow((state) => ({
       marketSidebarOpen: state.marketSidebarOpen,
       toggleMarketSidebar: state.toggleMarketSidebar,
+    }))
+  );
+
+  const { isScreenerOpen, toggleScreener } = useScreenerStore(
+    useShallow((state) => ({
+      isScreenerOpen: state.isScreenerOpen,
+      toggleScreener: state.toggleScreener,
     }))
   );
 
@@ -147,6 +156,17 @@ export const Toolbar = memo(({
                   variant={marketSidebarOpen ? 'solid' : 'ghost'}
                 >
                   <LuActivity />
+                </IconButton>
+              </TooltipWrapper>
+              <TooltipWrapper label={t('screener.title')} showArrow>
+                <IconButton
+                  size="2xs"
+                  aria-label={t('screener.title')}
+                  onClick={toggleScreener}
+                  colorPalette={isScreenerOpen ? 'blue' : 'gray'}
+                  variant={isScreenerOpen ? 'solid' : 'ghost'}
+                >
+                  <LuScanLine />
                 </IconButton>
               </TooltipWrapper>
               <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
