@@ -373,6 +373,7 @@ export const WatcherManager = () => {
         config={config}
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
+        isIB={isIB}
       />
 
       <Separator />
@@ -397,6 +398,7 @@ export const WatcherManager = () => {
         onConfigUpdate={handleConfigUpdate}
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
+        isIB={isIB}
       />
 
       <AddWatcherDialog

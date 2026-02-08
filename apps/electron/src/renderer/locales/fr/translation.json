@@ -46,7 +46,10 @@
     "high": "Haute",
     "medium": "Moyenne",
     "low": "Basse",
-    "in": "dans"
+    "in": "dans",
+    "cryptoOnly": "Crypto",
+    "futuresOnly": "Futures",
+    "stocksOnly": "Actions"
   },
   "app": {
     "title": "MarketMind",

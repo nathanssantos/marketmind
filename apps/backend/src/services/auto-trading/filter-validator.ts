@@ -59,7 +59,7 @@ export class FilterValidator {
   ): Promise<FilterValidationResult> {
     const filterResults: FilterResults = {};
 
-    if (config.useBtcCorrelationFilter) {
+    if (config.useBtcCorrelationFilter && watcher.exchange !== 'INTERACTIVE_BROKERS') {
       const result = await this.checkBtcCorrelationFilter(watcher, setup, logBuffer);
       if (!result.passed) {
         logBuffer.addValidationCheck({
@@ -84,7 +84,7 @@ export class FilterValidator {
       }
     }
 
-    if (config.useFundingFilter && watcher.marketType === 'FUTURES') {
+    if (config.useFundingFilter && watcher.marketType === 'FUTURES' && watcher.exchange !== 'INTERACTIVE_BROKERS') {
       const result = await this.checkFundingFilter(watcher, setup, logBuffer);
       if (!result.passed) {
         logBuffer.addValidationCheck({

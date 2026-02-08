@@ -10,6 +10,7 @@ export interface FiltersSectionProps {
   config: WatcherConfig | undefined;
   onFilterToggle: (filterKey: string, value: boolean) => void;
   isPending: boolean;
+  isIB?: boolean;
 }
 
 export const FiltersSection = ({
@@ -18,6 +19,7 @@ export const FiltersSection = ({
   config,
   onFilterToggle,
   isPending,
+  isIB = false,
 }: FiltersSectionProps) => {
   const { t } = useTranslation();
 
@@ -64,6 +66,9 @@ export const FiltersSection = ({
                 checked={config?.useBtcCorrelationFilter ?? true}
                 onChange={(value) => onFilterToggle('useBtcCorrelationFilter', value)}
                 disabled={isPending}
+                tag={t('common.cryptoOnly')}
+                tagColorPalette="orange"
+                forceDisabled={isIB}
               />
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.marketRegime.title')}
@@ -136,6 +141,9 @@ export const FiltersSection = ({
                 checked={config?.useFundingFilter ?? true}
                 onChange={(value) => onFilterToggle('useFundingFilter', value)}
                 disabled={isPending}
+                tag={t('common.futuresOnly')}
+                tagColorPalette="purple"
+                forceDisabled={isIB}
               />
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.confluence.title')}

@@ -46,7 +46,10 @@
     "high": "Alta",
     "medium": "Media",
     "low": "Baja",
-    "in": "en"
+    "in": "en",
+    "cryptoOnly": "Crypto",
+    "futuresOnly": "Futuros",
+    "stocksOnly": "Acciones"
   },
   "app": {
     "title": "MarketMind",

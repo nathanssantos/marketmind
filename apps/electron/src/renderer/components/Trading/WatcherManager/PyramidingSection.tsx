@@ -1,5 +1,5 @@
 import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
-import { Box, Collapsible, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Collapsible, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Switch } from '@renderer/components/ui/switch';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ export interface PyramidingSectionProps {
   onConfigUpdate: (updates: Partial<WatcherConfig>) => void;
   onFilterToggle: (filterKey: string, value: boolean) => void;
   isPending: boolean;
+  isIB?: boolean;
 }
 
 export const PyramidingSection = ({
@@ -24,6 +25,7 @@ export const PyramidingSection = ({
   onConfigUpdate,
   onFilterToggle,
   isPending,
+  isIB = false,
 }: PyramidingSectionProps) => {
   const { t } = useTranslation();
 
@@ -259,15 +261,20 @@ export const PyramidingSection = ({
                         disabled={isPending}
                       />
                     </Flex>
-                    <Flex justify="space-between" align="center">
+                    <Flex justify="space-between" align="center" opacity={isIB ? 0.45 : 1}>
                       <Box>
-                        <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.leverageAware')}</Text>
+                        <Flex align="center" gap={2}>
+                          <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.leverageAware')}</Text>
+                          <Badge size="sm" colorPalette={isIB ? 'gray' : 'purple'} variant="subtle">
+                            {t('common.futuresOnly')}
+                          </Badge>
+                        </Flex>
                         <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.leverageAwareDesc')}</Text>
                       </Box>
                       <Switch
-                        checked={config?.leverageAwarePyramid ?? true}
+                        checked={isIB ? false : (config?.leverageAwarePyramid ?? true)}
                         onCheckedChange={(value) => onFilterToggle('leverageAwarePyramid', value)}
-                        disabled={isPending}
+                        disabled={isPending || isIB}
                       />
                     </Flex>
                   </Stack>

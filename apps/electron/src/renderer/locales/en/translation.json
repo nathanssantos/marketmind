@@ -42,7 +42,10 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low",
-    "in": "in"
+    "in": "in",
+    "cryptoOnly": "Crypto",
+    "futuresOnly": "Futures",
+    "stocksOnly": "Stocks"
   },
   "app": {
     "title": "MarketMind",
