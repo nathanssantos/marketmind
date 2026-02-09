@@ -265,7 +265,8 @@ describe('calculateFibonacciProjection', () => {
     const result = calculateFibonacciProjection(klines, 59, 50, 'LONG');
 
     expect(result).not.toBeNull();
-    expect(result!.direction).toBe('up');
+    const expectedDirection = result!.swingHigh.index > result!.swingLow.index ? 'up' : 'down';
+    expect(result!.direction).toBe(expectedDirection);
   });
 
   it('should include correct labels for all levels', () => {
@@ -288,6 +289,99 @@ describe('calculateFibonacciProjection', () => {
     expect(level200?.label).toBe('200.0%');
 
     expect(result!.levels).toHaveLength(16);
+  });
+});
+
+describe('alternating swing point order', () => {
+  const createTrendKlines = (prices: number[]): Kline[] =>
+    prices.map((p, i) => createMockKline(p + 1, p - 1, i));
+
+  it('should find swing points for LONG when high precedes low (High→Low)', () => {
+    const prices: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      if (i < 20) prices.push(150 + i * 2);
+      else if (i < 40) prices.push(190 - (i - 20) * 4);
+      else prices.push(110 + (i - 40) * 0.3);
+    }
+    const klines = createTrendKlines(prices);
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'LONG');
+
+    expect(result).not.toBeNull();
+    expect(result!.swingHigh.price).toBeGreaterThan(result!.swingLow.price);
+    expect(result!.direction).toBe('down');
+  });
+
+  it('should find swing points for SHORT when low precedes high (Low→High)', () => {
+    const prices: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      if (i < 20) prices.push(150 - i * 2);
+      else if (i < 40) prices.push(110 + (i - 20) * 4);
+      else prices.push(190 - (i - 40) * 0.3);
+    }
+    const klines = createTrendKlines(prices);
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'SHORT');
+
+    expect(result).not.toBeNull();
+    expect(result!.swingHigh.price).toBeGreaterThan(result!.swingLow.price);
+    expect(result!.direction).toBe('up');
+  });
+
+  it('should project LONG levels correctly when high precedes low', () => {
+    const prices: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      if (i < 20) prices.push(150 + i * 2);
+      else if (i < 40) prices.push(190 - (i - 20) * 4);
+      else prices.push(110 + (i - 40) * 0.3);
+    }
+    const klines = createTrendKlines(prices);
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'LONG');
+
+    expect(result).not.toBeNull();
+    expect(result!.levels.find((l) => l.level === 0)!.price).toBe(result!.swingLow.price);
+    expect(result!.levels.find((l) => l.level === 1)!.price).toBe(result!.swingHigh.price);
+
+    const level1618 = result!.levels.find((l) => l.level === 1.618)!;
+    expect(level1618.price).toBeGreaterThan(result!.swingHigh.price);
+  });
+
+  it('should project SHORT levels correctly when low precedes high', () => {
+    const prices: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      if (i < 20) prices.push(150 - i * 2);
+      else if (i < 40) prices.push(110 + (i - 20) * 4);
+      else prices.push(190 - (i - 40) * 0.3);
+    }
+    const klines = createTrendKlines(prices);
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'SHORT');
+
+    expect(result).not.toBeNull();
+    expect(result!.levels.find((l) => l.level === 0)!.price).toBe(result!.swingHigh.price);
+    expect(result!.levels.find((l) => l.level === 1)!.price).toBe(result!.swingLow.price);
+
+    const level1618 = result!.levels.find((l) => l.level === 1.618)!;
+    expect(level1618.price).toBeLessThan(result!.swingLow.price);
+  });
+
+  it('should set direction based on chronological order, not trade direction', () => {
+    const pricesHighFirst: number[] = [];
+    for (let i = 0; i < 80; i++) {
+      if (i < 20) pricesHighFirst.push(150 + i * 2);
+      else if (i < 40) pricesHighFirst.push(190 - (i - 20) * 4);
+      else pricesHighFirst.push(110 + (i - 40) * 0.3);
+    }
+    const klinesHighFirst = createTrendKlines(pricesHighFirst);
+
+    const longResult = calculateFibonacciProjection(klinesHighFirst, 79, 70, 'LONG');
+    const shortResult = calculateFibonacciProjection(klinesHighFirst, 79, 70, 'SHORT');
+
+    expect(longResult).not.toBeNull();
+    expect(shortResult).not.toBeNull();
+    expect(longResult!.direction).toBe('down');
+    expect(shortResult!.direction).toBe('down');
   });
 });
 

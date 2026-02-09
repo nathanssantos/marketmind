@@ -111,7 +111,7 @@ class KlineMaintenance {
 
       return { pairsChecked: activePairs.length };
     } catch (error) {
-      logger.error({ error }, 'Error in startup corruption check');
+      logger.error({ error: serializeError(error) }, 'Error in startup corruption check');
       return { pairsChecked: 0 };
     }
   }
@@ -251,7 +251,7 @@ class KlineMaintenance {
 
       return { pairsChecked: activePairs.length };
     } catch (error) {
-      logger.error({ error }, 'Error in initial gap check');
+      logger.error({ error: serializeError(error) }, 'Error in initial gap check');
       return { pairsChecked: 0 };
     }
   }
@@ -318,7 +318,7 @@ class KlineMaintenance {
 
       outputMaintenanceResults(logBuffer.toResult());
     } catch (error) {
-      logger.error({ error }, 'Error in gap check cycle');
+      logger.error({ error: serializeError(error) }, 'Error in gap check cycle');
     } finally {
       this.isRunning = false;
     }
@@ -547,7 +547,7 @@ class KlineMaintenance {
             .onConflictDoNothing();
           inserted++;
         } catch (error) {
-          logger.error({ kline, error }, 'Error inserting kline');
+          logger.error({ error: serializeError(error) }, 'Error inserting kline');
         }
       }
 

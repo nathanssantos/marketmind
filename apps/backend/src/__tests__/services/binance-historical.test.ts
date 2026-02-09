@@ -15,6 +15,7 @@ vi.mock('../../services/logger', () => ({
     error: vi.fn(),
     trace: vi.fn(),
   },
+  serializeError: (error: unknown) => error instanceof Error ? error.message : String(error),
 }));
 
 vi.mock('../../db', () => ({

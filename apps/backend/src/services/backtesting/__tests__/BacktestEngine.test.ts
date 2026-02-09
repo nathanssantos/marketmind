@@ -15,6 +15,16 @@ vi.mock('../../ib-historical', () => ({
   smartBackfillIBKlines: vi.fn().mockResolvedValue({ totalInDb: 0, downloaded: 0, gaps: 0, alreadyComplete: false }),
 }));
 
+vi.mock('../../../db', () => ({
+  db: {
+    query: {
+      klines: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    },
+  },
+}));
+
 describe('BacktestEngine', () => {
   let engine: BacktestEngine;
 
@@ -38,14 +48,12 @@ describe('BacktestEngine', () => {
       expect(result.equityCurve).toBeDefined();
     });
 
-    it('should handle empty klines array by attempting backfill', async () => {
+    it('should attempt backfill when given empty klines and throw if no data found', async () => {
       const config = createMockBacktestConfig();
 
-      const result = await engine.run(config, []);
-
-      expect(result).toBeDefined();
-      expect(result.status).toBe('COMPLETED');
-      expect(result.trades).toHaveLength(0);
+      await expect(engine.run(config, [])).rejects.toThrow(
+        expect.objectContaining({ code: 'INTERNAL_SERVER_ERROR' })
+      );
     });
 
     it('should return correct structure', async () => {

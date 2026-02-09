@@ -13,12 +13,9 @@ import {
 import {
   findSignificantSwingHigh,
   findSignificantSwingLow,
-  findSwingHighAfter,
-  findSwingLowAfter,
   validateSwingWithStructure,
   findAdaptiveFractalHigh,
   findAdaptiveFractalLow,
-  SWING_POINT_DEFAULTS,
 } from './swingPoints';
 
 const DEFAULT_LOOKBACK_PERIOD_MS = 14 * TIME_MS.DAY;
@@ -134,51 +131,30 @@ export const calculateFibonacciProjection = (
 
   if (endIndex - startIndex < 20) return null;
 
-  const fractalBars = SWING_POINT_DEFAULTS.FRACTAL_BARS_LEFT;
   const atrMultiplier = 2.0;
   const percentThreshold = 3.0;
   const useATR = true;
 
-  let swingLowResult: { price: number; index: number; timestamp: number } | null = null;
-  let swingHighResult: { price: number; index: number; timestamp: number } | null = null;
-
-  if (direction === 'LONG') {
-    let lowResult = findSignificantSwingLow(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
-
-    if (lowResult) {
-      const validation = validateSwingWithStructure(klines, lowResult, effectiveLookback);
-      if (!validation.valid) {
-        lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
-      }
-    } else {
-      lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
-    }
-
-    if (!lowResult) return null;
-    swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
-
-    const highResult = findSwingHighAfter(klines, swingLowResult.index, endIndex, fractalBars);
-    if (!highResult) return null;
-    swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
+  let highResult = findSignificantSwingHigh(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
+  if (highResult) {
+    const validation = validateSwingWithStructure(klines, highResult, effectiveLookback);
+    if (!validation.valid) highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
   } else {
-    let highResult = findSignificantSwingHigh(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
-
-    if (highResult) {
-      const validation = validateSwingWithStructure(klines, highResult, effectiveLookback);
-      if (!validation.valid) {
-        highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
-      }
-    } else {
-      highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
-    }
-
-    if (!highResult) return null;
-    swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
-
-    const lowResult = findSwingLowAfter(klines, swingHighResult.index, endIndex, fractalBars);
-    if (!lowResult) return null;
-    swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
+    highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
   }
+  if (!highResult) return null;
+
+  let lowResult = findSignificantSwingLow(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
+  if (lowResult) {
+    const validation = validateSwingWithStructure(klines, lowResult, effectiveLookback);
+    if (!validation.valid) lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
+  } else {
+    lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
+  }
+  if (!lowResult) return null;
+
+  const swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
+  const swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
 
   const swingLow: SwingPointWithIndex = {
     price: swingLowResult.price,

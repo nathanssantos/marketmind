@@ -5,7 +5,7 @@ import { ABSOLUTE_MINIMUM_KLINES, AUTO_TRADING_API, AUTO_TRADING_BATCH } from '.
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { withRetryFetch } from '../utils/retry';
-import { logger } from './logger';
+import { logger, serializeError } from './logger';
 
 const BATCH_SIZE = AUTO_TRADING_BATCH.KLINE_FETCH_BATCH_SIZE;
 const RATE_LIMIT_DELAY = AUTO_TRADING_API.RATE_LIMIT_DELAY_MS;
@@ -82,7 +82,7 @@ export const backfillHistoricalKlines = async (
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {
-      logger.error({ error, marketType }, 'Error fetching historical klines');
+      logger.error({ error: serializeError(error), marketType }, 'Error fetching historical klines');
       throw error;
     }
   }
@@ -150,7 +150,7 @@ export const fetchHistoricalKlinesFromAPI = async (
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {
-      logger.error({ error }, 'Error fetching historical klines from API');
+      logger.error({ error: serializeError(error) }, 'Error fetching historical klines from API');
       throw error;
     }
   }
@@ -210,7 +210,7 @@ export const fetchFuturesKlinesFromAPI = async (
 
       await sleep(RATE_LIMIT_DELAY);
     } catch (error) {
-      logger.error({ error }, 'Error fetching futures klines from API');
+      logger.error({ error: serializeError(error) }, 'Error fetching futures klines from API');
       throw error;
     }
   }
