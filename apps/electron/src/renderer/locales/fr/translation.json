@@ -724,7 +724,10 @@
       "sortSymbolDesc": "Symbole (Z-A)",
       "sortExposureDesc": "Plus Grande Exposition",
       "sortExposureAsc": "Plus Petite Exposition",
-      "opened": "Ouverture"
+      "opened": "Ouverture",
+      "stopProtected": "Protégé par Stop",
+      "stopProtectedOfExposure": "de l'exposition",
+      "stopProtectedOfBalance": "du solde"
     },
     "viewMode": {
       "cards": "Vue en cartes",

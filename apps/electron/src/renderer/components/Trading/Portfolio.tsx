@@ -134,6 +134,21 @@ const PortfolioComponent = () => {
     ? activeWallet.initialBalance + activeWallet.totalDeposits - activeWallet.totalWithdrawals
     : 0;
 
+  const stopProtectedValue = useMemo(() => {
+    let total = 0;
+    let positionsWithStops = 0;
+    for (const pos of positions) {
+      if (!pos.stopLoss) continue;
+      positionsWithStops++;
+      if (pos.side === 'LONG') {
+        total += pos.stopLoss * pos.quantity;
+      } else {
+        total += (2 * pos.avgPrice - pos.stopLoss) * pos.quantity;
+      }
+    }
+    return { total, positionsWithStops };
+  }, [positions]);
+
   return (
     <Stack gap={3} p={4}>
       {!isIB && <FuturesPositionsPanel />}
@@ -190,6 +205,25 @@ const PortfolioComponent = () => {
                   {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
                 </Text>
               </Flex>
+              {stopProtectedValue.positionsWithStops > 0 && (
+                <Flex justify="space-between">
+                  <Text color="fg.muted" flexShrink={0}>
+                    {t('trading.portfolio.stopProtected')} ({stopProtectedValue.positionsWithStops}/{positions.length})
+                  </Text>
+                  <Stack gap={0} align="flex-end">
+                    <Text fontWeight="medium" color="orange.500" textAlign="right">
+                      {activeWallet.currency} {stopProtectedValue.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                    <Text color="orange.500" textAlign="right">
+                      {((stopProtectedValue.total / positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0)) * 100).toFixed(1)}% {t('trading.portfolio.stopProtectedOfExposure')}
+                    </Text>
+                    <Text color="orange.500" textAlign="right">
+                      {activeWallet.balance > 0 ? ((stopProtectedValue.total / activeWallet.balance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
+                    </Text>
+                    <BrlValue usdtValue={stopProtectedValue.total} />
+                  </Stack>
+                </Flex>
+              )}
             </Stack>
           </Box>
 

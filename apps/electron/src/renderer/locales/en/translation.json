@@ -667,7 +667,10 @@
       "sortSymbolDesc": "Symbol (Z-A)",
       "sortExposureDesc": "Highest Exposure",
       "sortExposureAsc": "Lowest Exposure",
-      "opened": "Opened"
+      "opened": "Opened",
+      "stopProtected": "Stop-Protected",
+      "stopProtectedOfExposure": "of exposure",
+      "stopProtectedOfBalance": "of balance"
     },
     "viewMode": {
       "cards": "Card view",
