@@ -312,6 +312,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
       <Box flex="1" position="relative" overflow="hidden">
         <ChartToolsToolbar
+          symbol={symbol}
           showGrid={showGrid}
           showCurrentPriceLine={showCurrentPriceLine}
           showCrosshair={showCrosshair}

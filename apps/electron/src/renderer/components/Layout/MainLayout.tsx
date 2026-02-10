@@ -231,6 +231,7 @@ export const MainLayout = ({
             transition="width 0.2s ease"
           >
             <ChartToolsToolbar
+              symbol={symbol}
               showGrid={showGrid}
               showCurrentPriceLine={showCurrentPriceLine}
               showCrosshair={showCrosshair}
