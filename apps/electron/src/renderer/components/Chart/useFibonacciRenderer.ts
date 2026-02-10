@@ -13,6 +13,7 @@ interface UseFibonacciRendererProps {
 
 const LINE_WIDTH = 1;
 const LEVEL_DASH = [4, 4] as const;
+const HIDDEN_LEVELS = new Set([0.886, 1.382]);
 
 const getLevelColor = (level: number, colors: ChartThemeColors): string => {
   return getFibonacciLevelColor(level, colors.fibonacci, FIBONACCI_DEFAULT_COLOR);
@@ -38,7 +39,7 @@ export const useFibonacciRenderer = ({
     ctx.save();
 
     for (const level of fibonacciData.levels) {
-      if (!level) continue;
+      if (!level || HIDDEN_LEVELS.has(level.level)) continue;
 
       const y = manager.priceToY(level.price);
 

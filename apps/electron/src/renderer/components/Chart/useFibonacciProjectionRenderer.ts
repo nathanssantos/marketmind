@@ -27,6 +27,7 @@ const LEVEL_DASH = [4, 4] as const;
 const LABEL_OFFSET_X = 4;
 const LABEL_OFFSET_Y = 10;
 const PRICE_DECIMAL_PLACES = 2;
+const HIDDEN_LEVELS = new Set([0.886, 1.382]);
 
 const findIndexByTimestamp = (klines: Kline[], timestamp: number): number | null => {
   for (let i = 0; i < klines.length; i++) {
@@ -134,6 +135,7 @@ export const useFibonacciProjectionRenderer = ({
     drawSwingPoints(ctx, swingLowX, swingLowY, swingHighX, swingHighY);
 
     for (const level of levels) {
+      if (HIDDEN_LEVELS.has(level.level)) continue;
       const y = manager.priceToY(level.price);
       if (y < 0 || y > chartHeight) continue;
       drawExtensionLevel({ ctx, level, y, fibStartX, priceScaleX, colors });
