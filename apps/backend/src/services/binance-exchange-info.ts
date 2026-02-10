@@ -292,7 +292,7 @@ const validateSymbolsExist = async (
 };
 
 export const getTopSymbolsByMarketCap = async (
-  marketType: MarketType = 'SPOT',
+  marketType: MarketType = 'FUTURES',
   limit: number = 12
 ): Promise<string[]> => {
   const candidates = [...TOP_MARKET_CAP_SYMBOLS].slice(0, Math.min(limit + 5, TOP_MARKET_CAP_SYMBOLS.length));
@@ -301,13 +301,13 @@ export const getTopSymbolsByMarketCap = async (
 };
 
 export const getTopSymbolsByVolume = async (
-  marketType: MarketType = 'SPOT',
+  marketType: MarketType = 'FUTURES',
   limit: number = 12
 ): Promise<string[]> => {
   return getTopSymbolsByMarketCap(marketType, limit);
 };
 
-export const getAvailableSymbols = async (marketType: MarketType = 'SPOT'): Promise<string[]> => {
+export const getAvailableSymbols = async (marketType: MarketType = 'FUTURES'): Promise<string[]> => {
   const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
   const endpoint = marketType === 'FUTURES' ? '/fapi/v1/exchangeInfo' : '/api/v3/exchangeInfo';
 

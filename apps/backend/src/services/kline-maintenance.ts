@@ -761,7 +761,7 @@ class KlineMaintenance {
     return { corruptedFound: corruptedKlines.length, fixed };
   }
 
-  async forceCheckSymbol(symbol: string, interval: Interval, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
+  async forceCheckSymbol(symbol: string, interval: Interval, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
     const pair: ActivePair = { symbol, interval, marketType };
 
     const gaps = await this.detectGaps(pair);

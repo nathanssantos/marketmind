@@ -97,6 +97,7 @@ export const useBackendAutoTrading = (walletId: string) => {
       dailyLossLimit?: string;
       enabledSetupTypes?: string[];
       positionSizing?: 'fixed' | 'percentage' | 'kelly';
+      directionMode?: 'auto' | 'long_only' | 'short_only';
     }) => {
       return updateConfigMutation.mutateAsync(data);
     },
@@ -210,7 +211,7 @@ export const useBackendAutoTrading = (walletId: string) => {
   };
 };
 
-export const useTopSymbols = (marketType: 'SPOT' | 'FUTURES' = 'SPOT', limit: number = 12) => {
+export const useTopSymbols = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 12) => {
   const { data: topSymbols, isLoading: isLoadingTopSymbols, error: topSymbolsError } =
     trpc.autoTrading.getTopSymbols.useQuery(
       { marketType, limit },

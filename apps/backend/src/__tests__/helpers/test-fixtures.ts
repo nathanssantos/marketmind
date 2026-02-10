@@ -173,6 +173,7 @@ export const DEFAULT_ADDITIONAL_FILTERS_CONFIG = {
   useSuperTrendFilter: false,
   superTrendPeriod: 10,
   superTrendMultiplier: '3.00',
+  directionMode: 'auto' as const,
 };
 
 export const DEFAULT_AUTO_TRADING_CONFIG_EXTRAS = {
@@ -312,7 +313,7 @@ export const createTestOrder = async (options: CreateOrderOptions): Promise<Orde
     origQty = '0.01',
     executedQty = '0.01',
     status = 'FILLED',
-    marketType = 'SPOT',
+    marketType = 'FUTURES',
   } = options;
 
   const [order] = await db.insert(schema.orders).values({
@@ -353,7 +354,7 @@ export const createTestTradeExecution = async (options: CreateTradeExecutionOpti
     takeProfitOrderId,
     status = 'open',
     setupType = 'larry-williams-9.1',
-    marketType = 'SPOT',
+    marketType = 'FUTURES',
     leverage = 1,
   } = options;
 
@@ -393,7 +394,7 @@ export const createTestActiveWatcher = async (options: CreateActiveWatcherOption
     profileId,
     symbol = 'BTCUSDT',
     interval = '1h',
-    marketType = 'SPOT',
+    marketType = 'FUTURES',
     isManual = true,
   } = options;
 
@@ -421,7 +422,7 @@ export const createTestKlines = async (options: CreateKlinesOptions = {}): Promi
   const {
     symbol = 'BTCUSDT',
     interval = '1h',
-    marketType = 'SPOT',
+    marketType = 'FUTURES',
     count = 100,
     startTime = new Date(Date.now() - count * 60 * 60 * 1000),
     basePrice = 50000,

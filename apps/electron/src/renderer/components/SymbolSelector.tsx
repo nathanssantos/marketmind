@@ -77,7 +77,7 @@ export function SymbolSelector({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [internalMarketType, setInternalMarketType] = useState<MarketType>('SPOT');
+  const [internalMarketType, setInternalMarketType] = useState<MarketType>('FUTURES');
   const [internalAssetClass, setInternalAssetClass] = useState<AssetClass>('CRYPTO');
 
   const marketType = externalMarketType ?? internalMarketType;

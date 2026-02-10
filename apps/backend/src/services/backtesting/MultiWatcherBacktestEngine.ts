@@ -657,7 +657,7 @@ export class MultiWatcherBacktestEngine {
     const { totalFees: commission } = calculateTotalFees(
       position.positionValue,
       exitValue,
-      { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount, vipLevel: this.config.vipLevel ?? 0 }
+      { marketType: this.config.marketType ?? 'FUTURES', useBnbDiscount: this.config.useBnbDiscount, vipLevel: this.config.vipLevel ?? 0 }
     );
 
     const exitTime = exitResult.exitTime ?? fallbackExitTime;
@@ -738,7 +738,7 @@ export class MultiWatcherBacktestEngine {
       const { totalFees: commission } = calculateTotalFees(
         position.positionValue,
         exitValue,
-        { marketType: this.config.marketType ?? 'SPOT', useBnbDiscount: this.config.useBnbDiscount, vipLevel: this.config.vipLevel ?? 0 }
+        { marketType: this.config.marketType ?? 'FUTURES', useBnbDiscount: this.config.useBnbDiscount, vipLevel: this.config.vipLevel ?? 0 }
       );
 
       const tradeResult = this.portfolio.closePosition(

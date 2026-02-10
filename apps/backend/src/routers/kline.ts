@@ -18,7 +18,7 @@ const intervalSchema = z.enum([
   '1d', '3d', '1w', '1M', '1y',
 ]);
 
-const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('SPOT');
+const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('FUTURES');
 const assetClassSchema = z.enum(['CRYPTO', 'STOCKS']).default('CRYPTO');
 
 const symbolsCache = new Map<string, any[]>();

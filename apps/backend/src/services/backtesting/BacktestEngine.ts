@@ -162,7 +162,7 @@ export class BacktestEngine {
       return klines;
     }
 
-    const marketType = config.marketType ?? 'SPOT';
+    const marketType = config.marketType ?? 'FUTURES';
     const intervalMs = this.getIntervalMs(config.interval);
     const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
     const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
@@ -284,7 +284,7 @@ export class BacktestEngine {
     return {
       ...config,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
-      commission: config.commission ?? getDefaultFee(config.marketType ?? 'SPOT'),
+      commission: config.commission ?? getDefaultFee(config.marketType ?? 'FUTURES'),
       useMtfFilter: config.useMtfFilter ?? FILTER_DEFAULTS.useMtfFilter,
       useMomentumTimingFilter: config.useMomentumTimingFilter ?? FILTER_DEFAULTS.useMomentumTimingFilter,
       useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? FILTER_DEFAULTS.useBtcCorrelationFilter,
@@ -465,7 +465,7 @@ export class BacktestEngine {
         continue;
       }
 
-      if (!tradeExecutor.checkMinProfit(entryPrice, takeProfit, setup.direction, effectiveConfig.minProfitPercent, effectiveConfig.commission ?? getDefaultFee(config.marketType ?? 'SPOT'))) {
+      if (!tradeExecutor.checkMinProfit(entryPrice, takeProfit, setup.direction, effectiveConfig.minProfitPercent, effectiveConfig.commission ?? getDefaultFee(config.marketType ?? 'FUTURES'))) {
         filterManager.incrementMinProfit();
         continue;
       }

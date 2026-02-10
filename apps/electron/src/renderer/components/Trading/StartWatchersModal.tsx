@@ -1,17 +1,18 @@
 import { Dialog } from '@/renderer/components/ui/dialog';
-import { Box, CloseButton, Flex, Group, Stack, Text } from '@chakra-ui/react';
+import { Box, CloseButton, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
+import type { DirectionMode } from '@renderer/components/Trading/WatcherManager/WatchersList';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useDebounce } from '@renderer/hooks/useDebounce';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuPlay, LuSettings } from 'react-icons/lu';
+import { LuArrowUpDown, LuPlay, LuSettings, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 
 interface StartWatchersModalProps {
@@ -32,10 +33,23 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
 
   const { startWatchersBulk, isStartingWatchersBulk } = useBackendAutoTrading(walletId);
 
+  const utils = trpc.useUtils();
+
   const { data: config } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
     { enabled: !!walletId }
   );
+
+  const updateConfig = trpc.autoTrading.updateConfig.useMutation({
+    onSuccess: () => void utils.autoTrading.getConfig.invalidate(),
+  });
+
+  const directionMode: DirectionMode = (config?.directionMode as DirectionMode) ?? 'auto';
+
+  const handleDirectionModeChange = (mode: DirectionMode) => {
+    if (!walletId) return;
+    updateConfig.mutate({ walletId, directionMode: mode });
+  };
 
   const useTrendFilter = config?.useTrendFilter ?? true;
   const debouncedCount = useDebounce(count, 500);
@@ -229,6 +243,42 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
                       </Text>
                     </Flex>
                   </Flex>
+
+                  <HStack gap={1}>
+                    <Button
+                      size="xs"
+                      variant={directionMode === 'short_only' ? 'solid' : 'outline'}
+                      colorPalette={directionMode === 'short_only' ? 'red' : 'gray'}
+                      onClick={() => handleDirectionModeChange(directionMode === 'short_only' ? 'auto' : 'short_only')}
+                      disabled={updateConfig.isPending}
+                      flex={1}
+                    >
+                      <LuTrendingDown />
+                      {t('settings.algorithmicAutoTrading.directionMode.shortOnly')}
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={directionMode === 'auto' ? 'solid' : 'outline'}
+                      colorPalette={directionMode === 'auto' ? 'gray' : 'gray'}
+                      onClick={() => handleDirectionModeChange('auto')}
+                      disabled={updateConfig.isPending}
+                      flex={1}
+                    >
+                      <LuArrowUpDown />
+                      {t('settings.algorithmicAutoTrading.directionMode.auto')}
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={directionMode === 'long_only' ? 'solid' : 'outline'}
+                      colorPalette={directionMode === 'long_only' ? 'green' : 'gray'}
+                      onClick={() => handleDirectionModeChange(directionMode === 'long_only' ? 'auto' : 'long_only')}
+                      disabled={updateConfig.isPending}
+                      flex={1}
+                    >
+                      <LuTrendingUp />
+                      {t('settings.algorithmicAutoTrading.directionMode.longOnly')}
+                    </Button>
+                  </HStack>
 
                   <Text fontSize="sm" color="fg.muted">
                     {effectiveMax === 0

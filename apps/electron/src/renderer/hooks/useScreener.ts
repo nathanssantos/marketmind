@@ -7,6 +7,7 @@ import { trpc } from '../utils/trpc';
 export const useScreener = () => {
   const utils = trpc.useUtils();
   const {
+    isScreenerOpen,
     activePresetId,
     customFilters,
     assetClass,
@@ -28,29 +29,30 @@ export const useScreener = () => {
   const isPresetMode = activePresetId !== null;
 
   const customQuery = trpc.screener.run.useQuery(config, {
-    enabled: !isPresetMode,
+    enabled: isScreenerOpen && !isPresetMode,
     staleTime: QUERY_CONFIG.STALE_TIME.SLOW,
   });
 
   const presetQuery = trpc.screener.runPreset.useQuery(
     { presetId: activePresetId ?? '', assetClass, marketType, interval },
     {
-      enabled: isPresetMode,
+      enabled: isScreenerOpen && isPresetMode,
       staleTime: QUERY_CONFIG.STALE_TIME.SLOW,
     },
   );
 
   const presetsQuery = trpc.screener.getPresets.useQuery(
     { assetClass },
-    { staleTime: QUERY_CONFIG.STALE_TIME.LONG },
+    { enabled: isScreenerOpen, staleTime: QUERY_CONFIG.STALE_TIME.LONG },
   );
 
   const indicatorsQuery = trpc.screener.getAvailableIndicators.useQuery(
     { assetClass },
-    { staleTime: QUERY_CONFIG.STALE_TIME.PERMANENT },
+    { enabled: isScreenerOpen, staleTime: QUERY_CONFIG.STALE_TIME.PERMANENT },
   );
 
   const savedQuery = trpc.screener.getSavedScreeners.useQuery(undefined, {
+    enabled: isScreenerOpen,
     staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM,
   });
 

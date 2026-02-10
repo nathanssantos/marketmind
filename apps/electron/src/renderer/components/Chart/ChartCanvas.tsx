@@ -155,9 +155,9 @@ export const ChartCanvas = ({
 
   const filteredBackendExecutions = useMemo((): BackendExecution[] => {
     if (!backendExecutions || !symbol) return [];
-    const currentMarketType = marketType || 'SPOT';
+    const currentMarketType = marketType || 'FUTURES';
     return backendExecutions
-      .filter(exec => exec.symbol === symbol && (exec.marketType || 'SPOT') === currentMarketType)
+      .filter(exec => exec.symbol === symbol && (exec.marketType || 'FUTURES') === currentMarketType)
       .map(exec => ({
         id: exec.id,
         symbol: exec.symbol,

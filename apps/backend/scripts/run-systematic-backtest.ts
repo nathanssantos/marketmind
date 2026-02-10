@@ -4,7 +4,6 @@ import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
 import { writeFileSync, mkdirSync, appendFileSync } from 'fs';
 import {
-  BACKTEST_TIMEFRAMES,
   TRADING_DEFAULTS,
   BACKTEST_DEFAULTS,
 } from '@marketmind/types';
@@ -55,7 +54,7 @@ const CONFIGS: BacktestConfigVariation[] = [
   { name: 'momentum', rrLong: 0.75, rrShort: 0.5, fibLong: '1.618', fibShort: '1', entryLimit: 100.0 },
 ];
 
-const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'].includes(tf));
+const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
 
 const SETUPS = [
   '7day-momentum-crypto',

@@ -24,7 +24,7 @@ const fetchBinanceKline = async (
   symbol: string,
   interval: string,
   timestamp: number,
-  marketType: MarketType = 'SPOT'
+  marketType: MarketType = 'FUTURES'
 ): Promise<BinanceKline | null> => {
   const baseUrl = marketType === 'FUTURES' ? FUTURES_API : SPOT_API;
   const url = `${baseUrl}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${timestamp}&limit=1`;
@@ -56,7 +56,7 @@ const fetchBinanceKlinesRange = async (
   interval: string,
   startTime: number,
   endTime: number,
-  marketType: MarketType = 'SPOT'
+  marketType: MarketType = 'FUTURES'
 ): Promise<BinanceKline[]> => {
   const baseUrl = marketType === 'FUTURES' ? FUTURES_API : SPOT_API;
   const url = `${baseUrl}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=500`;
@@ -85,7 +85,7 @@ const fixCorruptedKline = async (
   interval: string,
   timestamp: number,
   description: string,
-  marketType: MarketType = 'SPOT'
+  marketType: MarketType = 'FUTURES'
 ) => {
   console.log(`\n${'─'.repeat(70)}`);
   console.log(`Fixing ${symbol} ${interval} ${marketType} - ${description}`);
@@ -166,7 +166,7 @@ const fixKlinesInRange = async (
   interval: string,
   startTime: Date,
   endTime: Date,
-  marketType: MarketType = 'SPOT'
+  marketType: MarketType = 'FUTURES'
 ) => {
   console.log(`\n${'═'.repeat(70)}`);
   console.log(`Fixing ${symbol} ${interval} ${marketType} range`);

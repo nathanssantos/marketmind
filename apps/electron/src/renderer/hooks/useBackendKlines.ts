@@ -33,26 +33,26 @@ export const useBackendKlines = () => {
     trpc.kline.list.useQuery(
       {
         ...params,
-        marketType: params.marketType ?? 'SPOT',
+        marketType: params.marketType ?? 'FUTURES',
       },
       {
         enabled: !!params.symbol && !!params.interval,
       }
     );
 
-  const useLatestKline = (symbol: string, interval: Interval, marketType: MarketType = 'SPOT') =>
+  const useLatestKline = (symbol: string, interval: Interval, marketType: MarketType = 'FUTURES') =>
     trpc.kline.latest.useQuery(
       { symbol, interval, marketType },
       { enabled: !!symbol && !!interval }
     );
 
-  const useKlineCount = (symbol: string, interval: Interval, marketType: MarketType = 'SPOT') =>
+  const useKlineCount = (symbol: string, interval: Interval, marketType: MarketType = 'FUTURES') =>
     trpc.kline.count.useQuery(
       { symbol, interval, marketType },
       { enabled: !!symbol && !!interval }
     );
 
-  const useSearchSymbols = (query: string, marketType: MarketType = 'SPOT', assetClass: AssetClass = 'CRYPTO') =>
+  const useSearchSymbols = (query: string, marketType: MarketType = 'FUTURES', assetClass: AssetClass = 'CRYPTO') =>
     trpc.kline.searchSymbols.useQuery(
       { query, marketType, assetClass },
       { enabled: query.length >= 2 }
@@ -92,7 +92,7 @@ export const useKlineStream = (
     timestamp: number;
   }) => void,
   enabled = true,
-  marketType: MarketType = 'SPOT'
+  marketType: MarketType = 'FUTURES'
 ) => {
   const { subscribeStream, unsubscribeStream } = useBackendKlines();
   const { isConnected, on, off, subscribe, unsubscribe } = useWebSocket({ autoConnect: enabled });

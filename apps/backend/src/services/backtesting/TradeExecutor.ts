@@ -304,7 +304,7 @@ export class TradeExecutor {
       : entryPrice - exitPrice;
 
     const pnl = priceDiff * positionSize;
-    const commissionRate = this.config.commission ?? getDefaultFee(this.config.marketType ?? 'SPOT');
+    const commissionRate = this.config.commission ?? getDefaultFee(this.config.marketType ?? 'FUTURES');
     const entryCommission = positionSize * entryPrice * commissionRate;
     const exitCommission = positionSize * exitPrice * commissionRate;
     const commission = entryCommission + exitCommission;

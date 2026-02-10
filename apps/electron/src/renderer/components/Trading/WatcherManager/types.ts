@@ -13,6 +13,7 @@ export interface WatcherConfig {
   useMarketRegimeFilter?: boolean | null;
   useTrendFilter?: boolean | null;
   useDirectionFilter?: boolean | null;
+  directionMode?: 'auto' | 'long_only' | 'short_only' | null;
   useMomentumTimingFilter?: boolean | null;
   useStochasticFilter?: boolean | null;
   useAdxFilter?: boolean | null;

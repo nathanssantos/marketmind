@@ -52,7 +52,7 @@ export interface BacktestConfig {
 
   positionSizePercent?: number; // Position size as percentage of available capital (default: 10%)
 
-  marketType?: 'SPOT' | 'FUTURES'; // Market type (default: SPOT)
+  marketType?: 'SPOT' | 'FUTURES'; // Market type (default: FUTURES)
   useBnbDiscount?: boolean; // Apply 25% BNB discount to fees (default: false)
   vipLevel?: number; // Binance VIP level 0-9 for fee calculation (default: 0)
   leverage?: number; // Futures leverage 1-125 (default: 1)

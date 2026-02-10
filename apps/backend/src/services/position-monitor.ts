@@ -21,6 +21,7 @@ import { getWebSocketService } from './websocket';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { autoTradingScheduler } from './auto-trading-scheduler';
+import { binancePriceStreamService } from './binance-price-stream';
 
 const LIQUIDATION_THRESHOLDS = {
   WARNING: AUTO_TRADING_LIQUIDATION.WARNING_THRESHOLD,
@@ -497,6 +498,26 @@ export class PositionMonitorService {
         throw new Error(`Wallet not found: ${execution.walletId}`);
       }
 
+      const walletSupportsLive = !isPaperWallet(wallet);
+      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
+
+      if (shouldExecuteReal) {
+        const hasExchangeSLProtection = currentExecution.stopLossAlgoId || currentExecution.stopLossOrderId;
+        const hasExchangeTPProtection = currentExecution.takeProfitAlgoId || currentExecution.takeProfitOrderId;
+
+        if ((reason === 'STOP_LOSS' && hasExchangeSLProtection) ||
+          (reason === 'TAKE_PROFIT' && hasExchangeTPProtection)) {
+          logger.trace({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            reason,
+            stopLossAlgoId: currentExecution.stopLossAlgoId,
+            takeProfitAlgoId: currentExecution.takeProfitAlgoId,
+          }, 'Skipping local exit - exchange-side protection order will handle it');
+          return;
+        }
+      }
+
       const quantity = parseFloat(execution.quantity);
       if (quantity === 0) {
         logger.warn({
@@ -519,9 +540,6 @@ export class PositionMonitorService {
 
       let exitOrderId: number | null = null;
       let positionSyncedFromExchange = false;
-
-      const walletSupportsLive = !isPaperWallet(wallet);
-      const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
       if (!shouldExecuteReal) {
         logger.info({
@@ -664,6 +682,8 @@ export class PositionMonitorService {
         })
         .where(eq(tradeExecutions.id, execution.id));
 
+      binancePriceStreamService.invalidateExecutionCache(execution.symbol);
+
       const hasProtectionOrders = execution.stopLossAlgoId || execution.stopLossOrderId ||
         execution.takeProfitAlgoId || execution.takeProfitOrderId;
 
@@ -780,7 +800,7 @@ export class PositionMonitorService {
     quantity: number,
     _price: number,
     side: 'LONG' | 'SHORT',
-    marketType: 'SPOT' | 'FUTURES' = 'SPOT'
+    marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
   ): Promise<number> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
@@ -835,7 +855,7 @@ export class PositionMonitorService {
     return order.orderId;
   }
 
-  async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<number> {
+  async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<number> {
     try {
       const inMemoryCached = priceCache.getPrice(symbol, marketType);
       if (inMemoryCached !== null) {

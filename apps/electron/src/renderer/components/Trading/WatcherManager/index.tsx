@@ -22,6 +22,7 @@ import { PositionSizeSection } from './PositionSizeSection';
 import { PyramidingSection } from './PyramidingSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
+import type { DirectionMode } from './WatchersList';
 import { WatchersList } from './WatchersList';
 import { SetupToggleSection } from '../SetupToggleSection';
 
@@ -165,6 +166,13 @@ export const WatcherManager = () => {
     });
   };
 
+  const directionMode: DirectionMode = config?.directionMode ?? 'auto';
+
+  const handleDirectionModeChange = (mode: DirectionMode): void => {
+    if (!walletId) return;
+    updateConfig.mutate({ walletId, directionMode: mode });
+  };
+
   const handleAutoRotationToggle = (value: boolean): void => {
     if (!walletId) return;
     updateConfig.mutate({
@@ -255,6 +263,9 @@ export const WatcherManager = () => {
         isStoppingWatcher={isStoppingWatcher}
         isStoppingAll={isStoppingAllWatchers}
         getProfileById={getProfileById}
+        directionMode={directionMode}
+        onDirectionModeChange={handleDirectionModeChange}
+        isPendingConfig={updateConfig.isPending}
       />
 
       <Separator />
@@ -385,6 +396,8 @@ export const WatcherManager = () => {
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
         isIB={isIB}
+        directionMode={directionMode}
+        onDirectionModeChange={handleDirectionModeChange}
       />
 
       <Separator />

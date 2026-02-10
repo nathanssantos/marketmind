@@ -46,7 +46,7 @@ const DEFAULT_TRAILING_DISTANCE_PERCENT_LONG = TRAILING_STOP.PEAK_PROFIT_FLOOR_L
 const DEFAULT_TRAILING_DISTANCE_PERCENT_SHORT = TRAILING_STOP.PEAK_PROFIT_FLOOR_SHORT;
 
 export const getRoundTripFeePercent = (
-  marketType: MarketType = 'SPOT',
+  marketType: MarketType = 'FUTURES',
   useBnbDiscount: boolean = false,
   vipLevel: number = 0
 ): number => {
@@ -284,7 +284,7 @@ export const computeTrailingStopCore = (
   } = input;
 
   const isLong = side === 'LONG';
-  const marketType = config.marketType ?? 'SPOT';
+  const marketType = config.marketType ?? 'FUTURES';
   const useBnbDiscount = config.useBnbDiscount ?? false;
   const vipLevel = config.vipLevel ?? 0;
   const feePercent = config.feePercent ?? getRoundTripFeePercent(marketType, useBnbDiscount, vipLevel);

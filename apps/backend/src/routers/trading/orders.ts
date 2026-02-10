@@ -32,7 +32,7 @@ export const ordersRouter = router({
         stopPrice: z.string().optional(),
         setupId: z.string().optional(),
         setupType: z.string().optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         reduceOnly: z.boolean().optional(),
       })
     )
@@ -148,7 +148,7 @@ export const ordersRouter = router({
         walletId: z.string(),
         symbol: z.string(),
         orderId: z.number(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -249,7 +249,7 @@ export const ordersRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -321,7 +321,7 @@ export const ordersRouter = router({
     .input(
       z.object({
         symbols: z.array(z.string()),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .query(async ({ input }) => {

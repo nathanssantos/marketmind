@@ -612,7 +612,7 @@ describe('Auto-Trading Router', () => {
       });
 
       expect(result.pnl).toBeDefined();
-      expect(parseFloat(result.pnlPercent)).toBeCloseTo(1.8, 1);
+      expect(parseFloat(result.pnlPercent)).toBeCloseTo(1.92, 1);
 
       const [execution] = await db
         .select()
@@ -647,7 +647,7 @@ describe('Auto-Trading Router', () => {
         exitPrice: '49000',
       });
 
-      expect(parseFloat(result.pnlPercent)).toBeCloseTo(1.8, 1);
+      expect(parseFloat(result.pnlPercent)).toBeCloseTo(1.92, 1);
     });
 
     it('should reject if execution not found', async () => {

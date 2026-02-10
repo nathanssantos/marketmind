@@ -271,7 +271,7 @@ export class BinancePriceStreamService {
     }
   }
 
-  private subscribe(symbol: string, market: 'spot' | 'usdm' = 'spot'): void {
+  private subscribe(symbol: string, market: 'spot' | 'usdm' = 'usdm'): void {
     if (!this.client) {
       return;
     }

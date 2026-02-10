@@ -71,7 +71,7 @@ export class WatcherManager {
     interval: string,
     profileId?: string,
     skipDbPersist: boolean = false,
-    marketType: MarketType = 'SPOT',
+    marketType: MarketType = 'FUTURES',
     isManual: boolean = true,
     _runImmediateCheck: boolean = false,
     silent: boolean = false,
@@ -217,7 +217,7 @@ export class WatcherManager {
     await this.deps.ensureBtcKlineStream(walletId, userId, interval, marketType);
   }
 
-  async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'SPOT'): Promise<void> {
+  async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'FUTURES'): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
     const watcher = this.activeWatchers.get(watcherId);
 
@@ -323,7 +323,7 @@ export class WatcherManager {
       watcherDetails.push({
         symbol: w.symbol,
         interval: w.interval,
-        marketType: (w.marketType as MarketType) ?? 'SPOT',
+        marketType: (w.marketType as MarketType) ?? 'FUTURES',
         profileId: w.profileId ?? undefined,
         profileName,
         isManual: w.isManual,
@@ -370,7 +370,7 @@ export class WatcherManager {
     const nextCandleClose = new Date(Math.ceil(now / pollIntervalMs) * pollIntervalMs);
 
     for (const pw of persistedWatchers) {
-      const marketType = (pw.marketType as MarketType) ?? 'SPOT';
+      const marketType = (pw.marketType as MarketType) ?? 'FUTURES';
       const exchange = (pw.exchange as ExchangeId) ?? 'BINANCE';
 
       const result = await prefetchKlines({

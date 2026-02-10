@@ -46,7 +46,7 @@ export const tradingRouter = router({
         stopPrice: z.string().optional(),
         setupId: z.string().optional(),
         setupType: z.string().optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         reduceOnly: z.boolean().optional(),
       })
     )
@@ -165,7 +165,7 @@ export const tradingRouter = router({
         walletId: z.string(),
         symbol: z.string(),
         orderId: z.number(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -279,7 +279,7 @@ export const tradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1146,7 +1146,7 @@ export const tradingRouter = router({
     .input(
       z.object({
         symbols: z.array(z.string()),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         exchange: z.enum(['BINANCE', 'INTERACTIVE_BROKERS']).default('BINANCE'),
       })
     )

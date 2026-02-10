@@ -276,6 +276,13 @@
         },
         "optimizedNote": "Values optimized through extensive backtesting. Entry Level 100% allows breakout entries with trailing stop protection. R:R 0.75 balances opportunity capture with risk management."
       },
+      "directionMode": {
+        "title": "Direction Mode",
+        "auto": "Auto",
+        "longOnly": "Long Only",
+        "shortOnly": "Short Only",
+        "description": "Filter setups by trade direction"
+      },
       "filters": {
         "title": "Trade Filters",
         "description": "Enable or disable filters to improve trade quality.",

@@ -87,7 +87,7 @@ describe('Kline Router', () => {
     const [kline] = await db.insert(schema.klines).values({
       symbol: options.symbol || 'BTCUSDT',
       interval: options.interval || '1m',
-      marketType: options.marketType || 'SPOT',
+      marketType: options.marketType || 'FUTURES',
       openTime: baseTime,
       closeTime: closeTime,
       open: '50000',

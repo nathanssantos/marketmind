@@ -75,7 +75,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
     config,
     externalData = {},
     symbol,
-    marketType = 'SPOT',
+    marketType = 'FUTURES',
     strategyHasTrendFilter = false,
   } = input;
 

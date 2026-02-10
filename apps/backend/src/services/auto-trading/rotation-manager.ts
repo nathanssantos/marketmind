@@ -254,7 +254,7 @@ export class RotationManager {
     result: RotationResult,
     interval: string,
     profileId?: string,
-    marketType: MarketType = 'SPOT',
+    marketType: MarketType = 'FUTURES',
     targetCandleClose?: number
   ): Promise<string[]> {
     const addedWatcherIds: string[] = [];
@@ -443,7 +443,7 @@ export class RotationManager {
     result: RotationResult,
     interval: string,
     profileId?: string,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<string[]> {
     const addedWatcherIds: string[] = [];
 
@@ -675,7 +675,7 @@ export class RotationManager {
         dynamicWatchersByWallet.set(key, {
           userId: pw.userId,
           interval: pw.interval,
-          marketType: (pw.marketType as MarketType) ?? 'SPOT',
+          marketType: (pw.marketType as MarketType) ?? 'FUTURES',
           profileId: pw.profileId ?? undefined,
         });
       }

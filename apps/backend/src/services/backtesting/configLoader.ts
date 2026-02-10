@@ -107,7 +107,7 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
 
     setupTypes: JSON.parse(config.enabledSetupTypes),
     useSharedExposure: true,
-    marketType: watchers[0]?.marketType ?? 'SPOT',
+    marketType: watchers[0]?.marketType ?? 'FUTURES',
     leverage: config.leverage ?? 1,
     tpCalculationMode: overrides?.tpCalculationMode ?? config.tpCalculationMode,
     fibonacciTargetLevel: overrides?.fibonacciTargetLevel ?? config.fibonacciTargetLevel,
@@ -184,7 +184,7 @@ export const buildMultiWatcherConfigFromWatchers = (
 
     setupTypes: Array.from(allSetupTypes),
     useSharedExposure: true,
-    marketType: options.marketType ?? 'SPOT',
+    marketType: options.marketType ?? 'FUTURES',
     leverage: options.leverage ?? 1,
     tpCalculationMode: options.tpCalculationMode ?? 'default',
     fibonacciTargetLevel: options.fibonacciTargetLevel ?? 'auto',

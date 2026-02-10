@@ -561,8 +561,8 @@ describe('TrailingStop Service', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBeGreaterThan(0);
     });
 
-    it('should default to SPOT market', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.marketType).toBe('SPOT');
+    it('should default to FUTURES market', () => {
+      expect(DEFAULT_TRAILING_STOP_CONFIG.marketType).toBe('FUTURES');
     });
 
     it('should default to no BNB discount', () => {

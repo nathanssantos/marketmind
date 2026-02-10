@@ -26,7 +26,7 @@ const fetchBinanceKlines = async (
   interval: Interval,
   startTime: number,
   endTime: number,
-  marketType: MarketType = 'SPOT'
+  marketType: MarketType = 'FUTURES'
 ): Promise<any[]> => {
   const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
   const allKlines: any[] = [];

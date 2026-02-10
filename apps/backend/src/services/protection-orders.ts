@@ -56,7 +56,12 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
       logger.info({ algoId, symbol }, '[ProtectionOrders] Cancelled futures algo order');
       return true;
     } catch (error) {
-      logger.warn({ algoId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel futures algo order');
+      const errorMessage = serializeError(error);
+      if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+        logger.info({ algoId, symbol }, '[ProtectionOrders] Futures algo order already executed or cancelled');
+        return true;
+      }
+      logger.warn({ algoId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel futures algo order');
       return false;
     }
   }
@@ -69,7 +74,12 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
     logger.info({ orderId, symbol }, '[ProtectionOrders] Cancelled spot order');
     return true;
   } catch (error) {
-    logger.warn({ orderId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel spot order');
+    const errorMessage = serializeError(error);
+    if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+      logger.info({ orderId, symbol }, '[ProtectionOrders] Spot order already executed or cancelled');
+      return true;
+    }
+    logger.warn({ orderId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel spot order');
     return false;
   }
 }

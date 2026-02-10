@@ -1,8 +1,10 @@
-import { Box, Collapsible, Flex, Grid, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Collapsible, Flex, Grid, HStack, Separator, Stack, Text } from '@chakra-ui/react';
+import { Button } from '@renderer/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { FilterToggle } from './FilterToggle';
 import type { WatcherConfig } from './types';
+import type { DirectionMode } from './WatchersList';
 
 export interface FiltersSectionProps {
   isExpanded: boolean;
@@ -11,6 +13,8 @@ export interface FiltersSectionProps {
   onFilterToggle: (filterKey: string, value: boolean) => void;
   isPending: boolean;
   isIB?: boolean;
+  directionMode: DirectionMode;
+  onDirectionModeChange: (mode: DirectionMode) => void;
 }
 
 export const FiltersSection = ({
@@ -20,6 +24,8 @@ export const FiltersSection = ({
   onFilterToggle,
   isPending,
   isIB = false,
+  directionMode,
+  onDirectionModeChange,
 }: FiltersSectionProps) => {
   const { t } = useTranslation();
 
@@ -52,6 +58,51 @@ export const FiltersSection = ({
             <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
               {t('settings.algorithmicAutoTrading.filters.directionFilters')}
             </Text>
+
+            <Box>
+              <Text fontSize="xs" fontWeight="medium" mb={2}>
+                {t('settings.algorithmicAutoTrading.directionMode.title')}
+              </Text>
+              <HStack gap={1}>
+                <Button
+                  size="xs"
+                  variant={directionMode === 'short_only' ? 'solid' : 'outline'}
+                  colorPalette={directionMode === 'short_only' ? 'red' : 'gray'}
+                  onClick={() => onDirectionModeChange(directionMode === 'short_only' ? 'auto' : 'short_only')}
+                  disabled={isPending}
+                  flex={1}
+                >
+                  <LuTrendingDown />
+                  {t('settings.algorithmicAutoTrading.directionMode.shortOnly')}
+                </Button>
+                <Button
+                  size="xs"
+                  variant={directionMode === 'auto' ? 'solid' : 'outline'}
+                  colorPalette={directionMode === 'auto' ? 'gray' : 'gray'}
+                  onClick={() => onDirectionModeChange('auto')}
+                  disabled={isPending}
+                  flex={1}
+                >
+                  <LuArrowUpDown />
+                  {t('settings.algorithmicAutoTrading.directionMode.auto')}
+                </Button>
+                <Button
+                  size="xs"
+                  variant={directionMode === 'long_only' ? 'solid' : 'outline'}
+                  colorPalette={directionMode === 'long_only' ? 'green' : 'gray'}
+                  onClick={() => onDirectionModeChange(directionMode === 'long_only' ? 'auto' : 'long_only')}
+                  disabled={isPending}
+                  flex={1}
+                >
+                  <LuTrendingUp />
+                  {t('settings.algorithmicAutoTrading.directionMode.longOnly')}
+                </Button>
+              </HStack>
+              <Text fontSize="xs" color="fg.muted" mt={1}>
+                {t('settings.algorithmicAutoTrading.directionMode.description')}
+              </Text>
+            </Box>
+
             <Grid templateColumns="repeat(2, 1fr)" gap={4}>
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.mtf.title')}

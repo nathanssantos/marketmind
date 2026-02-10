@@ -313,7 +313,7 @@ describe('Trailing Stop Pure Functions', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.swingLookback).toBe(3);
       expect(DEFAULT_TRAILING_STOP_CONFIG.useATRMultiplier).toBe(true);
       expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBe(2.0);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.feePercent).toBe(0.002);
+      expect(DEFAULT_TRAILING_STOP_CONFIG.feePercent).toBe(0.0008);
       expect(DEFAULT_TRAILING_STOP_CONFIG.trailingDistancePercent).toBe(0.4);
       expect(DEFAULT_TRAILING_STOP_CONFIG.useVolatilityBasedThresholds).toBe(true);
     });
@@ -332,7 +332,7 @@ describe('TrailingStopService', () => {
       expect(config.swingLookback).toBe(3);
       expect(config.useATRMultiplier).toBe(true);
       expect(config.atrMultiplier).toBe(2.0);
-      expect(config.feePercent).toBe(0.002);
+      expect(config.feePercent).toBe(0.0008);
       expect(config.trailingDistancePercent).toBe(0.4);
       expect(config.useVolatilityBasedThresholds).toBe(true);
     });
@@ -460,9 +460,9 @@ describe('TrailingStopService', () => {
         expect(result).toBeCloseTo(1003, 4);
       });
 
-      it('should use default fee of 0.2% when not specified', () => {
-        expect(calculateFeesCoveredPrice(100, true)).toBeCloseTo(100.2, 4);
-        expect(calculateFeesCoveredPrice(100, false)).toBeCloseTo(99.8, 4);
+      it('should use default fee of 0.08% when not specified (FUTURES round-trip)', () => {
+        expect(calculateFeesCoveredPrice(100, true)).toBeCloseTo(100.08, 4);
+        expect(calculateFeesCoveredPrice(100, false)).toBeCloseTo(99.92, 4);
       });
     });
 
@@ -638,7 +638,7 @@ describe('TrailingStopService', () => {
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.2, 1);
+        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
         expect(result!.reason).toBe('fees_covered');
       });
 
@@ -655,7 +655,7 @@ describe('TrailingStopService', () => {
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(99.8, 1);
+        expect(result!.newStopLoss).toBeCloseTo(99.92, 1);
         expect(result!.reason).toBe('fees_covered');
       });
 
@@ -680,7 +680,7 @@ describe('TrailingStopService', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 101.6,
-          currentStopLoss: 100,
+          currentStopLoss: 99,
           side: 'LONG',
           swingPoints: [{ price: 100.5, type: 'low' }],
           atr: 0.5,
@@ -693,7 +693,7 @@ describe('TrailingStopService', () => {
         });
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeGreaterThanOrEqual(100.2);
+        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
         expect(['fees_covered', 'swing_trail', 'progressive_trail']).toContain(result!.reason);
       });
 
@@ -701,7 +701,7 @@ describe('TrailingStopService', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 98.4,
-          currentStopLoss: 100,
+          currentStopLoss: 101,
           side: 'SHORT',
           swingPoints: [{ price: 99.5, type: 'high' }],
           atr: 0.5,
@@ -714,7 +714,7 @@ describe('TrailingStopService', () => {
         });
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeLessThanOrEqual(99.8);
+        expect(result!.newStopLoss).toBeLessThanOrEqual(99.92);
         expect(['fees_covered', 'swing_trail', 'progressive_trail']).toContain(result!.reason);
       });
 
@@ -753,7 +753,7 @@ describe('TrailingStopService', () => {
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.2, 1);
+        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
         expect(result!.reason).toBe('fees_covered');
       });
 
@@ -789,7 +789,7 @@ describe('TrailingStopService', () => {
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeGreaterThanOrEqual(100.2);
+        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
         expect(['atr_trail', 'fees_covered', 'progressive_trail']).toContain(result!.reason);
       });
 
@@ -834,7 +834,7 @@ describe('TrailingStopService', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 101.5,
-          currentStopLoss: 100,
+          currentStopLoss: 99,
           side: 'LONG',
           swingPoints: [],
           highestPrice: 101.5,

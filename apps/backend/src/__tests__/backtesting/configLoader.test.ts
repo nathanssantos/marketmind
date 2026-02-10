@@ -59,7 +59,7 @@ describe('configLoader', () => {
       expect(config.minRiskRewardRatio).toBe(TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO);
       expect(config.cooldownMinutes).toBe(15);
       expect(config.useSharedExposure).toBe(true);
-      expect(config.marketType).toBe('SPOT');
+      expect(config.marketType).toBe('FUTURES');
       expect(config.leverage).toBe(1);
       expect(config.tpCalculationMode).toBe('default');
     });

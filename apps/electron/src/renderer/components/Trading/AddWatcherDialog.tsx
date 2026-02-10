@@ -34,7 +34,7 @@ export const AddWatcherDialog = ({
   const [interval, setInterval] = useState<Timeframe>('12h');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [useDefault, setUseDefault] = useState(true);
-  const [marketType, setMarketType] = useState<MarketType>('SPOT');
+  const [marketType, setMarketType] = useState<MarketType>('FUTURES');
 
   const handleSymbolChange = (newSymbol: string, newMarketType?: MarketType) => {
     setSymbol(newSymbol);
@@ -74,7 +74,7 @@ export const AddWatcherDialog = ({
     setInterval('1h' as Timeframe);
     setProfileId(null);
     setUseDefault(true);
-    setMarketType('SPOT');
+    setMarketType('FUTURES');
     setIsBulkMode(false);
   };
 

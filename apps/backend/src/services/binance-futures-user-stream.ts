@@ -15,6 +15,7 @@ import {
 } from './execution-manager';
 import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
+import { binancePriceStreamService } from './binance-price-stream';
 import { getWebSocketService } from './websocket';
 
 interface FuturesAccountUpdate {
@@ -600,6 +601,8 @@ export class BinanceFuturesUserStreamService {
             updatedAt: new Date(),
           })
           .where(eq(tradeExecutions.id, execution.id));
+
+        binancePriceStreamService.invalidateExecutionCache(symbol);
 
         const wsService = getWebSocketService();
         if (wsService) {

@@ -71,7 +71,7 @@ export class OpportunityCostManagerService {
 
       for (const execution of executions) {
         try {
-          const currentPrice = await this.getCurrentPrice(execution.symbol, execution.marketType ?? 'SPOT');
+          const currentPrice = await this.getCurrentPrice(execution.symbol, execution.marketType ?? 'FUTURES');
           if (!currentPrice) continue;
 
           const check = await this.checkPosition(execution, config, currentPrice);

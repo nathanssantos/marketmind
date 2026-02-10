@@ -305,7 +305,7 @@ export class BinanceUserStreamService {
 
         const entryValue = entryPrice * quantity;
         const exitValue = exitPrice * quantity;
-        const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType: 'SPOT' });
+        const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType: 'FUTURES' });
         const pnl = grossPnl - totalFees;
 
         const pnlPercent = (pnl / (entryPrice * quantity)) * 100;

@@ -67,7 +67,7 @@ const OrdersListComponent = () => {
       entryPrice: parseFloat(o.price || '0'),
       quantity: parseFloat(o.origQty || '0'),
       createdAt: new Date(o.createdAt),
-      marketType: o.marketType || 'SPOT',
+      marketType: o.marketType || 'FUTURES',
     }));
 
     const ordersFromExecutions = tradeExecutions.map((e): Order => ({
@@ -99,7 +99,7 @@ const OrdersListComponent = () => {
       pnlPercent: e.pnlPercent || undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType || undefined,
-      marketType: e.marketType || 'SPOT',
+      marketType: e.marketType || 'FUTURES',
 
       isAutoTrade: true,
     }));

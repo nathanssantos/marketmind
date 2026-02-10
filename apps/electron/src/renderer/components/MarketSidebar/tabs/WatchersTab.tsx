@@ -1,14 +1,15 @@
-import { Badge, Box, Button, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@renderer/components/Trading/TradingTable';
+import type { DirectionMode } from '@renderer/components/Trading/WatcherManager/WatchersList';
 import { useUIStore } from '@renderer/store/uiStore';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuOctagonX, LuPlay } from 'react-icons/lu';
+import { LuArrowUpDown, LuOctagonX, LuPlay, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { StartWatchersModal } from '@renderer/components/Trading/StartWatchersModal';
 
@@ -29,9 +30,15 @@ const WatchersTabComponent = () => {
   const { activeWallet } = useActiveWallet();
   const activeWalletId = activeWallet?.id;
 
-  const { watcherStatus, isLoadingWatcherStatus, stopAllWatchers, isStoppingAllWatchers } = useBackendAutoTrading(activeWalletId || '');
+  const { watcherStatus, isLoadingWatcherStatus, stopAllWatchers, isStoppingAllWatchers, config, updateConfig, isUpdatingConfig } = useBackendAutoTrading(activeWalletId || '');
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
+  const directionMode: DirectionMode = (config?.directionMode as DirectionMode) ?? 'auto';
+
+  const handleDirectionModeChange = (mode: DirectionMode) => {
+    if (!activeWalletId) return;
+    void updateConfig({ walletId: activeWalletId, directionMode: mode });
+  };
 
   return (
     <Stack gap={3} p={4}>
@@ -58,6 +65,44 @@ const WatchersTabComponent = () => {
           </TooltipWrapper>
         </Flex>
       </Flex>
+
+      {activeWalletId && (
+        <HStack gap={1}>
+          <Button
+            size="2xs"
+            variant={directionMode === 'short_only' ? 'solid' : 'outline'}
+            colorPalette={directionMode === 'short_only' ? 'red' : 'gray'}
+            onClick={() => handleDirectionModeChange(directionMode === 'short_only' ? 'auto' : 'short_only')}
+            disabled={isUpdatingConfig}
+            flex={1}
+          >
+            <LuTrendingDown />
+            {t('settings.algorithmicAutoTrading.directionMode.shortOnly')}
+          </Button>
+          <Button
+            size="2xs"
+            variant={directionMode === 'auto' ? 'solid' : 'outline'}
+            colorPalette={directionMode === 'auto' ? 'gray' : 'gray'}
+            onClick={() => handleDirectionModeChange('auto')}
+            disabled={isUpdatingConfig}
+            flex={1}
+          >
+            <LuArrowUpDown />
+            {t('settings.algorithmicAutoTrading.directionMode.auto')}
+          </Button>
+          <Button
+            size="2xs"
+            variant={directionMode === 'long_only' ? 'solid' : 'outline'}
+            colorPalette={directionMode === 'long_only' ? 'green' : 'gray'}
+            onClick={() => handleDirectionModeChange(directionMode === 'long_only' ? 'auto' : 'long_only')}
+            disabled={isUpdatingConfig}
+            flex={1}
+          >
+            <LuTrendingUp />
+            {t('settings.algorithmicAutoTrading.directionMode.longOnly')}
+          </Button>
+        </HStack>
+      )}
 
       {!activeWalletId ? (
         <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>

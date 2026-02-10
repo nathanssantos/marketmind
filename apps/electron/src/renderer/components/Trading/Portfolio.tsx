@@ -107,7 +107,7 @@ const PortfolioComponent = () => {
           setupType: e.setupType || undefined,
           openedAt: new Date(e.openedAt),
           status: 'open',
-          marketType: e.marketType || 'SPOT',
+          marketType: e.marketType || 'FUTURES',
           isAutoTrade: true,
         };
       });

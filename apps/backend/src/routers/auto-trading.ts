@@ -188,6 +188,7 @@ export const autoTradingRouter = router({
         useSuperTrendFilter: z.boolean().optional(),
         superTrendPeriod: z.number().min(5).max(50).optional(),
         superTrendMultiplier: z.string().optional(),
+        directionMode: z.enum(['auto', 'long_only', 'short_only']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -357,6 +358,8 @@ export const autoTradingRouter = router({
         {updateData.superTrendPeriod = input.superTrendPeriod;}
       if (input.superTrendMultiplier !== undefined)
         {updateData.superTrendMultiplier = input.superTrendMultiplier;}
+      if (input.directionMode !== undefined)
+        {updateData.directionMode = input.directionMode;}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -378,7 +381,7 @@ export const autoTradingRouter = router({
       z.object({
         setupId: z.string(),
         walletId: z.string(),
-        marketType: z.enum(['SPOT', 'FUTURES']).optional().default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).optional().default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -845,7 +848,7 @@ export const autoTradingRouter = router({
         symbol: z.string(),
         interval: z.string(),
         profileId: z.string().optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -915,7 +918,7 @@ export const autoTradingRouter = router({
         walletId: z.string(),
         symbol: z.string(),
         interval: z.string(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -978,7 +981,7 @@ export const autoTradingRouter = router({
   getTopSymbols: protectedProcedure
     .input(
       z.object({
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         limit: z.number().min(1).max(50).default(12),
       })
     )
@@ -996,7 +999,7 @@ export const autoTradingRouter = router({
         symbols: z.array(z.string()).min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX),
         interval: z.string(),
         profileId: z.string().optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
         targetCount: z.number().min(AUTO_TRADING_CONFIG.TARGET_COUNT.MIN).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX).optional(),
         isManual: z.boolean().optional(),
       })
@@ -1712,7 +1715,7 @@ export const autoTradingRouter = router({
         logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
       }
 
-      const walletMarketType = wallet.marketType || 'SPOT';
+      const walletMarketType = wallet.marketType || 'FUTURES';
 
       const openExecutions = await ctx.db
         .select()

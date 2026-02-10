@@ -18,7 +18,7 @@ export const WatcherCardCompact = ({
   symbol,
   interval,
   profileName,
-  marketType = 'SPOT',
+  marketType = 'FUTURES',
   onStop,
   isStopping = false,
 }: WatcherCardCompactProps) => {

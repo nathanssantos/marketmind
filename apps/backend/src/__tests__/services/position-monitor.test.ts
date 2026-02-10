@@ -144,7 +144,7 @@ describe('PositionMonitorService', () => {
       openedAt: now,
       createdAt: now,
       updatedAt: now,
-      marketType: options.marketType || 'SPOT',
+      marketType: options.marketType || 'FUTURES',
       leverage: 1,
       entryOrderType: options.limitEntryPrice ? 'LIMIT' : 'MARKET',
       limitEntryPrice: options.limitEntryPrice ?? null,

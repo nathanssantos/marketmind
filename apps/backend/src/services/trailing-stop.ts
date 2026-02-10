@@ -35,10 +35,10 @@ export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
   swingLookback: 3,
   useATRMultiplier: true,
   atrMultiplier: 2.0,
-  feePercent: getRoundTripFee({ marketType: 'SPOT' }),
+  feePercent: getRoundTripFee({ marketType: 'FUTURES' }),
   trailingDistancePercent: TRAILING_STOP.PEAK_PROFIT_FLOOR,
   useVolatilityBasedThresholds: true,
-  marketType: 'SPOT',
+  marketType: 'FUTURES',
   useBnbDiscount: false,
 };
 
@@ -135,7 +135,7 @@ export const calculateFeesCoveredPrice = (
   entryPrice: number,
   isLong: boolean,
   feePercent?: number,
-  marketType: MarketType = 'SPOT',
+  marketType: MarketType = 'FUTURES',
   useBnbDiscount: boolean = false
 ): number => {
   const effectiveFee = feePercent ?? getRoundTripFee({ marketType, useBnbDiscount });
@@ -159,7 +159,7 @@ export const computeTrailingStop = (
 ): TrailingStopResult | null => {
   const { entryPrice, currentPrice, currentStopLoss, side, takeProfit, swingPoints, highestPrice, lowestPrice, atr, fibonacciProjection } = input;
   const isLong = side === 'LONG';
-  const marketType = config.marketType ?? 'SPOT';
+  const marketType = config.marketType ?? 'FUTURES';
   const useBnbDiscount = config.useBnbDiscount ?? false;
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
 
@@ -256,7 +256,7 @@ export class TrailingStopService {
     }
   }
 
-  private async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'SPOT'): Promise<number> {
+  private async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<number> {
     const cacheKey = marketType === 'FUTURES' ? `${symbol}_FUTURES` : symbol;
     const maxRetries = 3;
     const retryDelayMs = 1000;
@@ -492,7 +492,7 @@ export class TrailingStopService {
       let effectiveConfig = this.config;
       if (this.config.useVolatilityBasedThresholds && currentATR && currentATR > 0 && currentPrice > 0) {
         const atrPercent = calculateATRPercent(currentATR, currentPrice);
-        const marketType = this.config.marketType ?? 'SPOT';
+        const marketType = this.config.marketType ?? 'FUTURES';
         const useBnbDiscount = this.config.useBnbDiscount ?? false;
         const profile = getVolatilityProfile(atrPercent, { marketType, useBnbDiscount });
 

@@ -302,6 +302,13 @@
         },
         "optimizedNote": "Valeurs optimisées par backtesting extensif. Niveau d'entrée 100% permet les entrées en breakout avec protection trailing stop. R:R 0.75 équilibre la capture d'opportunités avec la gestion des risques."
       },
+      "directionMode": {
+        "title": "Mode de Direction",
+        "auto": "Auto",
+        "longOnly": "Long Seulement",
+        "shortOnly": "Short Seulement",
+        "description": "Filtrer les setups par direction de trade"
+      },
       "filters": {
         "title": "Filtres de Trade",
         "description": "Activez ou désactivez les filtres pour améliorer la qualité des trades.",

@@ -92,7 +92,7 @@ export class AutoTradingService {
     setupType?: string,
     symbol?: string,
     interval?: string,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<PositionSizeCalculation> {
     const maxPositionSizePercent = parseFloat(config.maxPositionSize);
     const maxPositionValue = (walletBalance * maxPositionSizePercent) / 100;
@@ -148,7 +148,7 @@ export class AutoTradingService {
     symbol?: string,
     interval?: string,
     currentPrice?: number,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<number> {
     if (!symbol || !interval || !currentPrice) return 1.0;
 
@@ -339,7 +339,7 @@ export class AutoTradingService {
   async executeBinanceOrder(
     wallet: Wallet,
     orderParams: OrderParams,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<{ orderId: number; executedQty: string; price: string }> {
     if (isPaperWallet(wallet)) {
       throw new Error('Paper wallets cannot execute real orders on Binance');
@@ -452,7 +452,7 @@ export class AutoTradingService {
         quantity: order.origQty,
         price: order.price,
         walletType: wallet.walletType,
-        marketType: 'SPOT',
+        marketType: 'FUTURES',
       }, 'Spot order executed');
 
       return {
@@ -475,7 +475,7 @@ export class AutoTradingService {
     entryPrice: number,
     stopLoss: number,
     takeProfit: number,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): { isViable: boolean; minRR: number; actualRR: number } {
     const totalFees = getRoundTripFee({ marketType });
     const risk = Math.abs(entryPrice - stopLoss);
@@ -499,7 +499,7 @@ export class AutoTradingService {
     quantity: number,
     stopLoss: number,
     side: 'LONG' | 'SHORT',
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<OrderResult> {
     if (marketType === 'FUTURES') {
       const result = await createSLOrder({
@@ -534,7 +534,7 @@ export class AutoTradingService {
     quantity: number,
     takeProfit: number,
     side: 'LONG' | 'SHORT',
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<OrderResult> {
     if (marketType === 'FUTURES') {
       const result = await createTPOrder({

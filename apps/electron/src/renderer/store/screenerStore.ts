@@ -57,7 +57,7 @@ export const useScreenerStore = create<ScreenerState>()(
       assetClass: 'CRYPTO' as AssetClass,
       setAssetClass: (assetClass) => set({ assetClass }),
 
-      marketType: 'SPOT' as MarketType,
+      marketType: 'FUTURES' as MarketType,
       setMarketType: (marketType) => set({ marketType }),
 
       interval: '4h' as TimeInterval,

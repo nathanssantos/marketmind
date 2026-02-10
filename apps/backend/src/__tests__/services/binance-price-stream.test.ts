@@ -115,7 +115,7 @@ describe('BinancePriceStreamService', () => {
       service.start();
       service.subscribeSymbol('BTCUSDT');
 
-      expect(mockSubscribeTrades).toHaveBeenCalledWith('btcusdt', 'spot');
+      expect(mockSubscribeTrades).toHaveBeenCalledWith('btcusdt', 'usdm');
       expect(service.getSubscribedSymbols()).toContain('btcusdt');
     });
 

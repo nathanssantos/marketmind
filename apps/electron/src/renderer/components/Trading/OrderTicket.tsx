@@ -59,7 +59,7 @@ const OrderTicketComponent = () => {
   const symbolQuantity = getQuantityForSymbol(symbol);
   const defaultQuantity = symbolQuantity > 0 ? symbolQuantity : calculateDefaultQuantity();
 
-  const [marketType, setMarketType] = useState<MarketType>('SPOT');
+  const [marketType, setMarketType] = useState<MarketType>('FUTURES');
   const [orderType, setOrderType] = useState<OrderDirection>('long');
   const [quantity, setQuantity] = useState(defaultQuantity.toFixed(8));
   const [entryPrice, setEntryPrice] = useState('');

@@ -632,7 +632,7 @@ export class AutoTradingScheduler {
     result: RotationResult,
     interval: string,
     profileId?: string,
-    marketType: MarketType = 'SPOT',
+    marketType: MarketType = 'FUTURES',
     targetCandleClose?: number
   ): Promise<string[]> {
     const addedWatcherIds: string[] = [];
@@ -753,7 +753,7 @@ export class AutoTradingScheduler {
     interval: string,
     profileId?: string,
     skipDbPersist: boolean = false,
-    marketType: MarketType = 'SPOT',
+    marketType: MarketType = 'FUTURES',
     isManual: boolean = true,
     _runImmediateCheck: boolean = false,
     silent: boolean = false,
@@ -898,7 +898,7 @@ export class AutoTradingScheduler {
 
   }
 
-  async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'SPOT'): Promise<void> {
+  async stopWatcher(walletId: string, symbol: string, interval: string, marketType: MarketType = 'FUTURES'): Promise<void> {
     const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
     const watcher = this.activeWatchers.get(watcherId);
 
@@ -1009,7 +1009,7 @@ export class AutoTradingScheduler {
       watcherDetails.push({
         symbol: w.symbol,
         interval: w.interval,
-        marketType: (w.marketType as MarketType) ?? 'SPOT',
+        marketType: (w.marketType as MarketType) ?? 'FUTURES',
         exchange: (w.exchange as ExchangeId) ?? 'BINANCE',
         profileId: w.profileId ?? undefined,
         profileName,
@@ -1057,7 +1057,7 @@ export class AutoTradingScheduler {
     const nextCandleClose = new Date(Math.ceil(now / pollIntervalMs) * pollIntervalMs);
 
     for (const pw of persistedWatchers) {
-      const marketType = (pw.marketType as MarketType) ?? 'SPOT';
+      const marketType = (pw.marketType as MarketType) ?? 'FUTURES';
       const exchange = (pw.exchange as ExchangeId) ?? 'BINANCE';
 
       const result = await prefetchKlines({
@@ -1151,7 +1151,7 @@ export class AutoTradingScheduler {
         dynamicWatchersByWallet.set(key, {
           userId: pw.userId,
           interval: pw.interval,
-          marketType: (pw.marketType as MarketType) ?? 'SPOT',
+          marketType: (pw.marketType as MarketType) ?? 'FUTURES',
           profileId: pw.profileId ?? undefined,
         });
       }
@@ -1334,7 +1334,7 @@ export class AutoTradingScheduler {
     result: RotationResult,
     interval: string,
     profileId?: string,
-    marketType: MarketType = 'SPOT'
+    marketType: MarketType = 'FUTURES'
   ): Promise<string[]> {
     const addedWatcherIds: string[] = [];
 

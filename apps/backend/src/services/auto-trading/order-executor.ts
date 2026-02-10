@@ -348,6 +348,21 @@ export class OrderExecutor {
       }
       logBuffer.addValidationCheck({ name: 'Cooldown', passed: true, reason: 'OK' });
 
+      const directionMode = config.directionMode ?? 'auto';
+      if (directionMode === 'long_only' && setup.direction === 'SHORT') {
+        logBuffer.addValidationCheck({ name: 'Direction Mode', passed: false, value: 'SHORT', reason: 'Long only mode' });
+        logBuffer.addRejection({ setupType: setup.type, direction: setup.direction, reason: 'Direction mode: long_only' });
+        logBuffer.completeSetupValidation('blocked', 'Direction mode: long only');
+        return;
+      }
+      if (directionMode === 'short_only' && setup.direction === 'LONG') {
+        logBuffer.addValidationCheck({ name: 'Direction Mode', passed: false, value: 'LONG', reason: 'Short only mode' });
+        logBuffer.addRejection({ setupType: setup.type, direction: setup.direction, reason: 'Direction mode: short_only' });
+        logBuffer.completeSetupValidation('blocked', 'Direction mode: short only');
+        return;
+      }
+      logBuffer.addValidationCheck({ name: 'Direction Mode', passed: true, reason: directionMode });
+
       const filterConfig: FilterValidatorConfig = {
         useBtcCorrelationFilter: config.useBtcCorrelationFilter,
         useFundingFilter: config.useFundingFilter,
@@ -723,7 +738,7 @@ export class OrderExecutor {
     });
 
     const SLIPPAGE_PERCENT = 0.1;
-    const commissionRate = getDefaultFee(watcher.marketType ?? 'SPOT', 'TAKER');
+    const commissionRate = getDefaultFee(watcher.marketType ?? 'FUTURES', 'TAKER');
     const COMMISSION_PERCENT = commissionRate * 100;
     const slippageFactor = setup.direction === 'LONG' ? (1 + SLIPPAGE_PERCENT / 100) : (1 - SLIPPAGE_PERCENT / 100);
     const expectedEntryWithSlippage = setup.entryPrice * slippageFactor;

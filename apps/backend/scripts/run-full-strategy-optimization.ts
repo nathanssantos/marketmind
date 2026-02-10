@@ -1,9 +1,9 @@
-import { resolve, basename } from 'path';
+import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { config as dotenvConfig } from 'dotenv';
-import { writeFileSync, mkdirSync, appendFileSync, readdirSync, readFileSync, existsSync } from 'fs';
-import { BACKTEST_TIMEFRAMES, TRADING_DEFAULTS, BACKTEST_DEFAULTS } from '@marketmind/types';
+import { writeFileSync, mkdirSync, appendFileSync, readFileSync, existsSync } from 'fs';
+import { TRADING_DEFAULTS, BACKTEST_DEFAULTS } from '@marketmind/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,14 +45,33 @@ const TOP_CONFIGS: ConfigVariation[] = [
   { name: 'momentum', rrLong: 0.75, rrShort: 0.5, fibLong: '1.618', fibShort: '1', entryLimit: 100.0 },
 ];
 
-const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'].includes(tf));
+const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
 
-const STRATEGIES_DIR = resolve(__dirname, '../strategies/builtin');
+const ACTIVE_STRATEGIES = [
+  '7day-momentum-crypto',
+  'bear-trap',
+  'breakout-retest',
+  'chaikin-money-flow',
+  'ema5-momentum-crypto',
+  'golden-cross-sma',
+  'klinger-oscillator',
+  'larry-williams-9-1',
+  'larry-williams-9-3',
+  'larry-williams-9-4',
+  'macd-divergence',
+  'momentum-breakout-2025',
+  'nr7-breakout',
+  'parabolic-sar-crypto',
+  'pattern-123-reversal',
+  'rsi50-momentum-crossover',
+  'supertrend-follow',
+  'tema-momentum',
+  'triple-ema-confluence',
+  'tsi-momentum',
+  'vwap-pullback',
+];
 
-const loadAllStrategies = (): string[] => {
-  const files = readdirSync(STRATEGIES_DIR).filter((f) => f.endsWith('.json'));
-  return files.map((f) => basename(f, '.json'));
-};
+const loadAllStrategies = (): string[] => ACTIVE_STRATEGIES;
 
 const BASE_CONFIG = {
   symbol: 'BTCUSDT',

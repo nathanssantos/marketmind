@@ -3,7 +3,7 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 
-export const useBackendTrading = (walletId: string, symbol?: string) => {
+export const useBackendTrading = (walletId: string, symbol?: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES') => {
   const utils = trpc.useUtils();
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
@@ -27,7 +27,7 @@ export const useBackendTrading = (walletId: string, symbol?: string) => {
   const realtimePrices = usePricesForSymbols(openPositionSymbols);
 
   const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
-    { symbols: openPositionSymbols },
+    { symbols: openPositionSymbols, marketType },
     { enabled: openPositionSymbols.length > 0, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 

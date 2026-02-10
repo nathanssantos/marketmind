@@ -191,7 +191,7 @@ export class ScreenerService {
 
     const limit = Math.min(config.limit ?? SCREENER.DEFAULT_SCAN_LIMIT, SCREENER.MAX_SYMBOLS_PER_SCAN);
     const interval = config.interval ?? SCREENER.DEFAULT_INTERVAL;
-    const marketType = config.marketType ?? 'SPOT';
+    const marketType = config.marketType ?? 'FUTURES';
     const isIB = config.exchange === 'INTERACTIVE_BROKERS' || config.assetClass === 'STOCKS';
 
     const { symbols, topCoinMap, tickerMap, btcKlines } = await this.fetchMarketData(

@@ -75,7 +75,7 @@ export const walletRouter = router({
         name: z.string().min(1).max(255),
         initialBalance: z.string().default('10000'),
         currency: z.string().default(DEFAULT_CURRENCY),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
     .mutation(async ({ input, ctx }) => {

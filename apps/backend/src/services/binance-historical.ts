@@ -18,7 +18,7 @@ export const backfillHistoricalKlines = async (
   interval: Interval,
   startTime: Date,
   endTime: Date = new Date(),
-  marketType: 'SPOT' | 'FUTURES' = 'SPOT'
+  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
 ): Promise<number> => {
   const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
   const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
@@ -230,7 +230,7 @@ export const smartBackfillKlines = async (
   symbol: string,
   interval: Interval,
   targetCount: number,
-  marketType: 'SPOT' | 'FUTURES' = 'SPOT',
+  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
   forRotation: boolean = false
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMilliseconds(interval);
@@ -390,7 +390,7 @@ export interface AggregatedKline {
 export const aggregateYearlyKline = async (
   symbol: string,
   year: number,
-  marketType: 'SPOT' | 'FUTURES' = 'SPOT'
+  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
 ): Promise<AggregatedKline | null> => {
   const startTime = new Date(year, 0, 1);
   const endTime = new Date(year + 1, 0, 1);
@@ -447,7 +447,7 @@ export const aggregateYearlyKline = async (
 
 export const aggregateYearlyKlines = async (
   symbol: string,
-  marketType: 'SPOT' | 'FUTURES' = 'SPOT',
+  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
   limit: number = 10
 ): Promise<AggregatedKline[]> => {
   const currentYear = new Date().getFullYear();
