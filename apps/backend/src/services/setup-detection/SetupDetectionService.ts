@@ -12,6 +12,7 @@ export interface SetupDetectionConfig {
   minConfidence?: number;
   minRiskReward?: number;
   maxFibonacciEntryProgressPercent?: number;
+  fibonacciSwingRange?: 'extended' | 'nearest';
   silent?: boolean;
 }
 
@@ -75,6 +76,7 @@ export class SetupDetectionService {
       strategy: definition,
       parameterOverrides: params,
       maxFibonacciEntryProgressPercent: this.config.maxFibonacciEntryProgressPercent,
+      fibonacciSwingRange: this.config.fibonacciSwingRange,
       silent: this.config.silent,
     });
 

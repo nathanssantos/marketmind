@@ -34,6 +34,7 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   parameterOverrides?: Record<string, number>;
   silent?: boolean;
   maxFibonacciEntryProgressPercent?: number;
+  fibonacciSwingRange?: 'extended' | 'nearest';
   interval?: TimeInterval;
 }
 
@@ -45,6 +46,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private exitCalculator: ExitCalculator;
   private silent: boolean;
   private maxFibEntryProgress: number;
+  private fibonacciSwingRange: 'extended' | 'nearest';
   private interval: TimeInterval | undefined;
 
   constructor(config: StrategyInterpreterConfig) {
@@ -61,6 +63,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
     this.silent = config.silent ?? false;
     this.maxFibEntryProgress = config.maxFibonacciEntryProgressPercent ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
+    this.fibonacciSwingRange = config.fibonacciSwingRange ?? 'nearest';
     this.interval = config.interval;
   }
 
@@ -272,7 +275,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     indicators: ComputedIndicators
   ): FibonacciProjectionData | undefined {
     const lookback = this.interval ?? DEFAULT_FIBONACCI_LOOKBACK;
-    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction);
+    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction, this.fibonacciSwingRange);
     if (!projection) return undefined;
 
     const primaryLevel = this.selectPrimaryFibonacciLevel(klines, currentIndex, indicators);

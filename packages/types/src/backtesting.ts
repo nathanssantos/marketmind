@@ -97,6 +97,7 @@ export interface BacktestConfig {
   fibonacciTargetLevelShort?: 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'; // Fibonacci target for SHORT positions (default: '1.272')
 
   maxFibonacciEntryProgressPercent?: number; // Max % progress in Fibonacci range for entry validation (default: 88.6)
+  fibonacciSwingRange?: 'extended' | 'nearest'; // Swing range for Fibonacci projection (default: 'nearest')
 
   silent?: boolean; // Suppress verbose logging in strategy interpreters (useful for batch backtests/optimization)
 }

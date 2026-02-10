@@ -25,14 +25,27 @@ interface ConfigVariation {
 }
 
 const TOP_CONFIGS: ConfigVariation[] = [
-  { name: 'entry-62', rrLong: 1.0, rrShort: 0.8, fibLong: '2', fibShort: '1.272', entryLimit: 61.8 },
-  { name: 'entry-89', rrLong: 1.0, rrShort: 0.8, fibLong: '2', fibShort: '1.272', entryLimit: 88.6 },
-  { name: 'day-trader', rrLong: 1.0, rrShort: 0.8, fibLong: '1.618', fibShort: '1.272', entryLimit: 61.8 },
-  { name: 'entry-50', rrLong: 1.0, rrShort: 0.8, fibLong: '2', fibShort: '1.272', entryLimit: 50.0 },
-  { name: 'scalper', rrLong: 0.5, rrShort: 0.5, fibLong: '1.618', fibShort: '1', entryLimit: 50.0 },
+  { name: 'entry-23', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 23.6 },
+  { name: 'entry-38', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 38.2 },
+  { name: 'entry-50', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 50.0 },
+  { name: 'entry-62', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 61.8 },
+  { name: 'entry-79', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 78.6 },
+  { name: 'entry-89', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 88.6 },
+  { name: 'entry-100', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 100.0 },
+  { name: 'rr-equal-1', rrLong: 1.0, rrShort: 1.0, fibLong: '1.618', fibShort: '1.272', entryLimit: 100.0 },
+  { name: 'rr-strict', rrLong: 1.5, rrShort: 1.2, fibLong: '1.618', fibShort: '1.272', entryLimit: 100.0 },
+  { name: 'rr-permissive', rrLong: 0.5, rrShort: 0.5, fibLong: '1.618', fibShort: '1.272', entryLimit: 100.0 },
+  { name: 'fib-conservative', rrLong: 0.75, rrShort: 0.75, fibLong: '1.272', fibShort: '1', entryLimit: 100.0 },
+  { name: 'fib-default-2', rrLong: 0.75, rrShort: 0.75, fibLong: '2', fibShort: '1.272', entryLimit: 100.0 },
+  { name: 'fib-aggressive', rrLong: 0.75, rrShort: 0.75, fibLong: '2.618', fibShort: '1.618', entryLimit: 100.0 },
+  { name: 'fib-equal-1618', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.618', entryLimit: 100.0 },
+  { name: 'scalper', rrLong: 0.5, rrShort: 0.5, fibLong: '1', fibShort: '1', entryLimit: 50.0 },
+  { name: 'day-trader', rrLong: 0.75, rrShort: 0.75, fibLong: '1.618', fibShort: '1.272', entryLimit: 78.6 },
+  { name: 'swing', rrLong: 1.5, rrShort: 1.0, fibLong: '2.618', fibShort: '1.618', entryLimit: 38.2 },
+  { name: 'momentum', rrLong: 0.75, rrShort: 0.5, fibLong: '1.618', fibShort: '1', entryLimit: 100.0 },
 ];
 
-const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['30m', '1h', '2h', '4h', '1d'].includes(tf));
+const TIMEFRAMES = BACKTEST_TIMEFRAMES.filter(tf => ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'].includes(tf));
 
 const STRATEGIES_DIR = resolve(__dirname, '../strategies/builtin');
 
@@ -48,24 +61,31 @@ const BASE_CONFIG = {
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
   leverage: 1,
+  marginType: 'CROSSED' as const,
   minConfidence: BACKTEST_DEFAULTS.MIN_CONFIDENCE,
+  minRiskRewardRatio: 0.75,
   useAlgorithmicLevels: true,
   useTrendFilter: false,
   tpCalculationMode: 'fibonacci' as const,
+  fibonacciTargetLevelLong: '1.618' as const,
+  fibonacciTargetLevelShort: '1.272' as const,
+  fibonacciSwingRange: 'nearest' as const,
+  maxFibonacciEntryProgressPercent: 100,
   useStochasticFilter: false,
   useMomentumTimingFilter: true,
   useAdxFilter: false,
   useMtfFilter: false,
-  useBtcCorrelationFilter: false,
-  useMarketRegimeFilter: true,
-  useVolumeFilter: false,
-  useFundingFilter: true,
-  useConfluenceScoring: true,
+  useBtcCorrelationFilter: true,
+  useMarketRegimeFilter: false,
+  useVolumeFilter: true,
+  useFundingFilter: false,
+  useConfluenceScoring: false,
   confluenceMinScore: 60,
   simulateFundingRates: true,
   simulateLiquidation: true,
   useCooldown: true,
   cooldownMinutes: TRADING_DEFAULTS.COOLDOWN_MINUTES,
+  positionSizePercent: 10,
 };
 
 interface BacktestResult {
@@ -91,7 +111,7 @@ interface StrategyRanking {
   bestPnl: number;
 }
 
-const OUTPUT_DIR = `/tmp/full-optimization-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+const OUTPUT_DIR = `/tmp/full-optimization-nearest-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
 const PROGRESS_FILE = `${OUTPUT_DIR}/progress.json`;
 
 const formatNumber = (num: number, decimals = 2): string => num.toFixed(decimals);
@@ -124,6 +144,7 @@ const runSingleBacktest = async (
       fibonacciTargetLevelLong: config.fibLong,
       fibonacciTargetLevelShort: config.fibShort,
       maxFibonacciEntryProgressPercent: config.entryLimit,
+      silent: true,
     });
 
     const metrics = result.metrics;
@@ -176,7 +197,7 @@ const generateReports = (results: BacktestResult[]): void => {
   summary += 'FULL STRATEGY OPTIMIZATION RESULTS\n';
   summary += `Generated: ${new Date().toISOString()}\n`;
   summary += `Period: ${BASE_CONFIG.startDate} to ${BASE_CONFIG.endDate}\n`;
-  summary += `Symbol: ${BASE_CONFIG.symbol} | Market: ${BASE_CONFIG.marketType}\n`;
+  summary += `Symbol: ${BASE_CONFIG.symbol} | Market: ${BASE_CONFIG.marketType} | Fib Swing: nearest | Fib L=${BASE_CONFIG.fibonacciTargetLevelLong} S=${BASE_CONFIG.fibonacciTargetLevelShort}\n`;
   summary += `Strategies: ${byStrategy.size} | Configs: ${TOP_CONFIGS.length} | Timeframes: ${TIMEFRAMES.length}\n`;
   summary += `Total Backtests: ${results.length}\n`;
   summary += '='.repeat(140) + '\n\n';

@@ -255,6 +255,7 @@ export class BacktestEngine {
 
     const setupDetectionService = new SetupDetectionService({
       maxFibonacciEntryProgressPercent: config.maxFibonacciEntryProgressPercent,
+      fibonacciSwingRange: config.fibonacciSwingRange,
     });
 
     const loadedStrategies: StrategyDefinition[] = [];
