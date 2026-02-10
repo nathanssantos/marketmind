@@ -10,9 +10,11 @@ export interface TpModeSectionProps {
   tpCalculationMode: 'default' | 'fibonacci';
   fibonacciTargetLevelLong: FibonacciTargetLevel;
   fibonacciTargetLevelShort: FibonacciTargetLevel;
+  fibonacciSwingRange: 'extended' | 'nearest';
   onTpModeChange: (details: { value: string }) => void;
   onFibonacciLevelLongChange: (details: { value: string }) => void;
   onFibonacciLevelShortChange: (details: { value: string }) => void;
+  onFibonacciSwingRangeChange: (details: { value: string }) => void;
   isPending: boolean;
 }
 
@@ -22,9 +24,11 @@ export const TpModeSection = ({
   tpCalculationMode,
   fibonacciTargetLevelLong,
   fibonacciTargetLevelShort,
+  fibonacciSwingRange,
   onTpModeChange,
   onFibonacciLevelLongChange,
   onFibonacciLevelShortChange,
+  onFibonacciSwingRangeChange,
   isPending,
 }: TpModeSectionProps) => {
   const { t } = useTranslation();
@@ -85,6 +89,43 @@ export const TpModeSection = ({
 
           {tpCalculationMode === 'fibonacci' && (
             <Stack mt={4} gap={4}>
+              <Box>
+                <Text fontSize="sm" fontWeight="medium" mb={2}>
+                  {t('settings.algorithmicAutoTrading.tpMode.swingRange.title')}
+                </Text>
+                <Text fontSize="xs" color="fg.muted" mb={2}>
+                  {t('settings.algorithmicAutoTrading.tpMode.swingRange.description')}
+                </Text>
+                <RadioGroup
+                  value={fibonacciSwingRange}
+                  onValueChange={onFibonacciSwingRangeChange}
+                  disabled={isPending}
+                >
+                  <HStack gap={6}>
+                    <Radio value="extended">
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {t('settings.algorithmicAutoTrading.tpMode.swingRange.extended')}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.swingRange.extendedDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                    <Radio value="nearest">
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {t('settings.algorithmicAutoTrading.tpMode.swingRange.nearest')}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t('settings.algorithmicAutoTrading.tpMode.swingRange.nearestDescription')}
+                        </Text>
+                      </Box>
+                    </Radio>
+                  </HStack>
+                </RadioGroup>
+              </Box>
+
               <Box pl={4} borderLeftWidth="2px" borderLeftColor="green.500">
                 <Text fontSize="sm" fontWeight="medium" mb={2} color="green.600" _dark={{ color: 'green.400' }}>
                   {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleLong')}

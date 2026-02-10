@@ -820,3 +820,105 @@ export const findAdaptiveFractalLow = (
 
   return findRecentLow(klines, startIndex, currentIndex);
 };
+
+export const findNearestSwingHigh = (
+  klines: Kline[],
+  currentIndex: number,
+  lookback: number = 100,
+  atrMultiplier: number = DEFAULT_ATR_MULTIPLIER,
+  percentThreshold: number = DEFAULT_PERCENT_THRESHOLD,
+  useATR: boolean = true,
+): SwingPoint | null => {
+  if (klines.length < 20 || currentIndex < 20) return null;
+
+  let minSwingSize: number;
+
+  if (useATR) {
+    const atrValues = calculateATR(klines.slice(0, currentIndex + 1), 14);
+    const currentATR = atrValues[atrValues.length - 1];
+    if (!currentATR || isNaN(currentATR)) {
+      const closePrice = getKlineClose(klines[currentIndex]!);
+      minSwingSize = closePrice * (percentThreshold / 100);
+    } else {
+      minSwingSize = currentATR * atrMultiplier;
+    }
+  } else {
+    const closePrice = getKlineClose(klines[currentIndex]!);
+    minSwingSize = closePrice * (percentThreshold / 100);
+  }
+
+  const significantHighs = findZigZagHighs(klines, currentIndex, lookback, minSwingSize);
+
+  if (significantHighs.length === 0) return null;
+
+  return significantHighs.sort((a, b) => b.index - a.index)[0]!;
+};
+
+export const findNearestSwingLow = (
+  klines: Kline[],
+  currentIndex: number,
+  lookback: number = 100,
+  atrMultiplier: number = DEFAULT_ATR_MULTIPLIER,
+  percentThreshold: number = DEFAULT_PERCENT_THRESHOLD,
+  useATR: boolean = true,
+): SwingPoint | null => {
+  if (klines.length < 20 || currentIndex < 20) return null;
+
+  let minSwingSize: number;
+
+  if (useATR) {
+    const atrValues = calculateATR(klines.slice(0, currentIndex + 1), 14);
+    const currentATR = atrValues[atrValues.length - 1];
+    if (!currentATR || isNaN(currentATR)) {
+      const closePrice = getKlineClose(klines[currentIndex]!);
+      minSwingSize = closePrice * (percentThreshold / 100);
+    } else {
+      minSwingSize = currentATR * atrMultiplier;
+    }
+  } else {
+    const closePrice = getKlineClose(klines[currentIndex]!);
+    minSwingSize = closePrice * (percentThreshold / 100);
+  }
+
+  const significantLows = findZigZagLows(klines, currentIndex, lookback, minSwingSize);
+
+  if (significantLows.length === 0) return null;
+
+  return significantLows.sort((a, b) => b.index - a.index)[0]!;
+};
+
+export const findNearestFractalHigh = (
+  klines: Kline[],
+  currentIndex: number,
+  lookback: number = 100,
+): SwingPoint | null => {
+  const startIndex = Math.max(0, currentIndex - lookback);
+
+  for (const period of [2, 3, 4, 5, 7, 9]) {
+    const fractals = findAllFractalHighs(klines, startIndex, currentIndex, period, period);
+
+    if (fractals.length > 0) {
+      return fractals.sort((a, b) => b.index - a.index)[0]!;
+    }
+  }
+
+  return findRecentHigh(klines, startIndex, currentIndex);
+};
+
+export const findNearestFractalLow = (
+  klines: Kline[],
+  currentIndex: number,
+  lookback: number = 100,
+): SwingPoint | null => {
+  const startIndex = Math.max(0, currentIndex - lookback);
+
+  for (const period of [2, 3, 4, 5, 7, 9]) {
+    const fractals = findAllFractalLows(klines, startIndex, currentIndex, period, period);
+
+    if (fractals.length > 0) {
+      return fractals.sort((a, b) => b.index - a.index)[0]!;
+    }
+  }
+
+  return findRecentLow(klines, startIndex, currentIndex);
+};

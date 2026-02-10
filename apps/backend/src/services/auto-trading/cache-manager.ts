@@ -1,4 +1,4 @@
-import type { Interval, Kline } from '@marketmind/types';
+import type { Interval, Kline, MarketType } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { AUTO_TRADING_CACHE } from '../../constants';
 import { db } from '../../db';
@@ -21,8 +21,8 @@ export class CacheManager {
     return Date.now() - cache.timestamp < ttlMs;
   }
 
-  async getBtcKlines(interval: string): Promise<Kline[]> {
-    const cacheKey = `BTCUSDT-${interval}`;
+  async getBtcKlines(interval: string, marketType: MarketType = 'FUTURES'): Promise<Kline[]> {
+    const cacheKey = `BTCUSDT-${interval}-${marketType}`;
     const cached = this.btcKlinesCache.get(cacheKey);
 
     if (this.isCacheValid(cached)) {
@@ -32,7 +32,8 @@ export class CacheManager {
     const btcKlines = await db.query.klines.findMany({
       where: and(
         eq(klines.symbol, 'BTCUSDT'),
-        eq(klines.interval, interval)
+        eq(klines.interval, interval),
+        eq(klines.marketType, marketType)
       ),
       orderBy: [desc(klines.openTime)],
       limit: 100,
@@ -58,8 +59,8 @@ export class CacheManager {
     return mappedKlines;
   }
 
-  async getHtfKlines(symbol: string, htfInterval: string): Promise<Kline[]> {
-    const cacheKey = `${symbol}-${htfInterval}`;
+  async getHtfKlines(symbol: string, htfInterval: string, marketType: MarketType = 'FUTURES'): Promise<Kline[]> {
+    const cacheKey = `${symbol}-${htfInterval}-${marketType}`;
     const cached = this.htfKlinesCache.get(cacheKey);
 
     if (this.isCacheValid(cached)) {
@@ -69,7 +70,8 @@ export class CacheManager {
     const htfKlines = await db.query.klines.findMany({
       where: and(
         eq(klines.symbol, symbol),
-        eq(klines.interval, htfInterval)
+        eq(klines.interval, htfInterval),
+        eq(klines.marketType, marketType)
       ),
       orderBy: [desc(klines.openTime)],
       limit: 300,

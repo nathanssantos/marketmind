@@ -1,4 +1,4 @@
-import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import type { Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 import {
   ADX_FILTER,
@@ -34,8 +34,8 @@ export interface FilterValidatorConfig {
 }
 
 export interface FilterValidatorDeps {
-  getBtcKlines: (interval: string) => Promise<Kline[]>;
-  getHtfKlines: (symbol: string, htfInterval: string) => Promise<Kline[]>;
+  getBtcKlines: (interval: string, marketType: MarketType) => Promise<Kline[]>;
+  getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => Promise<Kline[]>;
   getCachedFundingRate: (symbol: string) => Promise<number | null>;
 }
 
@@ -292,7 +292,7 @@ export class FilterValidator {
       return { passed: true };
     }
 
-    const mappedBtcKlines = await this.deps.getBtcKlines(watcher.interval);
+    const mappedBtcKlines = await this.deps.getBtcKlines(watcher.interval, watcher.marketType);
 
     if (mappedBtcKlines.length >= 26) {
       const btcResult = checkBtcCorrelation(mappedBtcKlines, setup.direction, watcher.symbol);
@@ -358,7 +358,7 @@ export class FilterValidator {
       return { passed: true };
     }
 
-    const mappedHtfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval);
+    const mappedHtfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
 
     if (mappedHtfKlines.length >= MTF_FILTER.MIN_KLINES_FOR_EMA200) {
       const mtfResult = checkMtfCondition(mappedHtfKlines, setup.direction, htfInterval);

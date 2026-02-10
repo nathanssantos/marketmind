@@ -263,6 +263,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   fibonacciTargetLevel: varchar('fibonacci_target_level', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'>().default('2').notNull(),
   fibonacciTargetLevelLong: varchar('fibonacci_target_level_long', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'>().default('2'),
   fibonacciTargetLevelShort: varchar('fibonacci_target_level_short', { length: 10 }).$type<'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236'>().default('1.272'),
+  fibonacciSwingRange: varchar('fibonacci_swing_range', { length: 10 }).$type<'extended' | 'nearest'>().default('nearest').notNull(),
   useDynamicSymbolSelection: boolean('use_dynamic_symbol_selection').default(false).notNull(),
   dynamicSymbolRotationInterval: varchar('dynamic_symbol_rotation_interval', { length: 10 }).$type<'1h' | '4h' | '1d'>().default('4h').notNull(),
   dynamicSymbolExcluded: text('dynamic_symbol_excluded'),

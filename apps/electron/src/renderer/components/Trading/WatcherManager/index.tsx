@@ -123,6 +123,7 @@ export const WatcherManager = () => {
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
   const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
   const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
+  const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
 
   const handleTpModeChange = (details: { value: string }): void => {
     if (!walletId) return;
@@ -145,6 +146,14 @@ export const WatcherManager = () => {
     updateConfig.mutate({
       walletId,
       fibonacciTargetLevelShort: details.value as FibonacciTargetLevel,
+    });
+  };
+
+  const handleFibonacciSwingRangeChange = (details: { value: string }): void => {
+    if (!walletId) return;
+    updateConfig.mutate({
+      walletId,
+      fibonacciSwingRange: details.value as 'extended' | 'nearest',
     });
   };
 
@@ -345,9 +354,11 @@ export const WatcherManager = () => {
         tpCalculationMode={tpCalculationMode}
         fibonacciTargetLevelLong={fibonacciTargetLevelLong}
         fibonacciTargetLevelShort={fibonacciTargetLevelShort}
+        fibonacciSwingRange={fibonacciSwingRange}
         onTpModeChange={handleTpModeChange}
         onFibonacciLevelLongChange={handleFibonacciLevelLongChange}
         onFibonacciLevelShortChange={handleFibonacciLevelShortChange}
+        onFibonacciSwingRangeChange={handleFibonacciSwingRangeChange}
         isPending={updateConfig.isPending}
       />
 

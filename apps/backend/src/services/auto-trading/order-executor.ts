@@ -138,11 +138,12 @@ export class OrderExecutor {
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
     fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236' = '2',
-    _interval: string = '4h'
+    _interval: string = '4h',
+    swingRange: 'extended' | 'nearest' = 'nearest'
   ): number | null {
     const currentIndex = klines.length - 1;
     const lookback = 100;
-    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction);
+    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction, swingRange);
 
     if (!projection || projection.levels.length === 0) {
       log('! Fibonacci projection failed', {
@@ -203,6 +204,7 @@ export class OrderExecutor {
     const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
     const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
     const effectiveFibLevel = setup.direction === 'LONG' ? fibonacciTargetLevelLong : fibonacciTargetLevelShort;
+    const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
 
     logBuffer.log('>', 'TP calculation config', {
       tpCalculationMode,
@@ -220,7 +222,8 @@ export class OrderExecutor {
         setup.entryPrice,
         setup.direction,
         effectiveFibLevel,
-        watcher.interval
+        watcher.interval,
+        fibonacciSwingRange
       );
 
       if (fibTarget !== null) {

@@ -13,9 +13,13 @@ import {
 import {
   findSignificantSwingHigh,
   findSignificantSwingLow,
+  findNearestSwingHigh,
+  findNearestSwingLow,
   validateSwingWithStructure,
   findAdaptiveFractalHigh,
   findAdaptiveFractalLow,
+  findNearestFractalHigh,
+  findNearestFractalLow,
 } from './swingPoints';
 
 const DEFAULT_LOOKBACK_PERIOD_MS = 14 * TIME_MS.DAY;
@@ -121,6 +125,7 @@ export const calculateFibonacciProjection = (
   currentIndex: number,
   lookback: number | TimeInterval = 100,
   direction: 'LONG' | 'SHORT',
+  swingRange: 'extended' | 'nearest' = 'nearest',
 ): FibonacciProjectionResult | null => {
   const effectiveLookback = typeof lookback === 'string'
     ? calculateTimeframeLookback(lookback)
@@ -135,21 +140,26 @@ export const calculateFibonacciProjection = (
   const percentThreshold = 3.0;
   const useATR = true;
 
-  let highResult = findSignificantSwingHigh(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
+  const swingHighFn = swingRange === 'nearest' ? findNearestSwingHigh : findSignificantSwingHigh;
+  const fractalHighFn = swingRange === 'nearest' ? findNearestFractalHigh : findAdaptiveFractalHigh;
+  const swingLowFn = swingRange === 'nearest' ? findNearestSwingLow : findSignificantSwingLow;
+  const fractalLowFn = swingRange === 'nearest' ? findNearestFractalLow : findAdaptiveFractalLow;
+
+  let highResult = swingHighFn(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
   if (highResult) {
     const validation = validateSwingWithStructure(klines, highResult, effectiveLookback);
-    if (!validation.valid) highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
+    if (!validation.valid) highResult = fractalHighFn(klines, endIndex, effectiveLookback);
   } else {
-    highResult = findAdaptiveFractalHigh(klines, endIndex, effectiveLookback);
+    highResult = fractalHighFn(klines, endIndex, effectiveLookback);
   }
   if (!highResult) return null;
 
-  let lowResult = findSignificantSwingLow(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
+  let lowResult = swingLowFn(klines, endIndex, effectiveLookback, atrMultiplier, percentThreshold, useATR);
   if (lowResult) {
     const validation = validateSwingWithStructure(klines, lowResult, effectiveLookback);
-    if (!validation.valid) lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
+    if (!validation.valid) lowResult = fractalLowFn(klines, endIndex, effectiveLookback);
   } else {
-    lowResult = findAdaptiveFractalLow(klines, endIndex, effectiveLookback);
+    lowResult = fractalLowFn(klines, endIndex, effectiveLookback);
   }
   if (!lowResult) return null;
 

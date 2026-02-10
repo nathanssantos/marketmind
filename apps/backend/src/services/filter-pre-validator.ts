@@ -45,6 +45,7 @@ export interface FilterPreValidatorConfig {
 
 export class FilterPreValidator {
   private btcKlinesCache: { klines: Kline[]; timestamp: number } | null = null;
+  private btcKlinesCacheKey: string | null = null;
   private btcCacheTTL = 60000;
 
   async validateSymbol(
@@ -79,7 +80,7 @@ export class FilterPreValidator {
     const filterResults: FilterValidationResult['filterResults'] = {};
 
     if (config.filters.useBtcCorrelationFilter && symbol !== 'BTCUSDT') {
-      const btcKlines = await this.getBtcKlines(config.interval);
+      const btcKlines = await this.getBtcKlines(config.interval, config.marketType);
       const btcResult = checkBtcCorrelation(btcKlines, direction, symbol);
       filterResults.btcCorrelation = {
         passed: btcResult.isAllowed,
@@ -191,25 +192,28 @@ export class FilterPreValidator {
     return results;
   }
 
-  private async getBtcKlines(interval: string): Promise<Kline[]> {
+  private async getBtcKlines(interval: string, marketType: MarketType): Promise<Kline[]> {
+    const cacheKey = `${interval}-${marketType}`;
     const now = Date.now();
-    if (this.btcKlinesCache && now - this.btcKlinesCache.timestamp < this.btcCacheTTL) {
+    if (this.btcKlinesCache && this.btcKlinesCacheKey === cacheKey && now - this.btcKlinesCache.timestamp < this.btcCacheTTL) {
       return this.btcKlinesCache.klines;
     }
 
     const btcDbKlines = await db.query.klines.findMany({
-      where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, interval)),
+      where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, interval), eq(klines.marketType, marketType)),
       orderBy: [desc(klines.openTime)],
       limit: 100,
     });
 
     const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
     this.btcKlinesCache = { klines: btcKlinesData, timestamp: now };
+    this.btcKlinesCacheKey = cacheKey;
     return btcKlinesData;
   }
 
   clearCache(): void {
     this.btcKlinesCache = null;
+    this.btcKlinesCacheKey = null;
   }
 }
 

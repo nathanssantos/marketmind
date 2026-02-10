@@ -38,6 +38,7 @@ export interface SetupPreScannerConfig {
 export class SetupPreScanner {
   private detectionService: SetupDetectionService | null = null;
   private btcKlinesCache: { klines: Kline[]; timestamp: number } | null = null;
+  private btcKlinesCacheKey: string | null = null;
   private btcCacheTTL = 60000;
   private initialized = false;
 
@@ -116,7 +117,8 @@ export class SetupPreScanner {
 
     const { btcTrend, alignedWithBTC } = await this.checkBtcAlignment(
       pendingSetups,
-      config.interval
+      config.interval,
+      config.marketType
     );
 
     const score = this.calculateScanScore(pendingSetups, alignedWithBTC);
@@ -160,13 +162,14 @@ export class SetupPreScanner {
 
   private async checkBtcAlignment(
     pendingSetups: PendingSetupInfo[],
-    interval: string
+    interval: string,
+    marketType: MarketType
   ): Promise<{ btcTrend: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; alignedWithBTC: boolean }> {
     if (pendingSetups.length === 0) {
       return { btcTrend: 'NEUTRAL', alignedWithBTC: true };
     }
 
-    const btcKlines = await this.getBtcKlines(interval);
+    const btcKlines = await this.getBtcKlines(interval, marketType);
     if (btcKlines.length < 30) {
       return { btcTrend: 'NEUTRAL', alignedWithBTC: true };
     }
@@ -187,20 +190,22 @@ export class SetupPreScanner {
     return { btcTrend, alignedWithBTC };
   }
 
-  private async getBtcKlines(interval: string): Promise<Kline[]> {
+  private async getBtcKlines(interval: string, marketType: MarketType): Promise<Kline[]> {
+    const cacheKey = `${interval}-${marketType}`;
     const now = Date.now();
-    if (this.btcKlinesCache && now - this.btcKlinesCache.timestamp < this.btcCacheTTL) {
+    if (this.btcKlinesCache && this.btcKlinesCacheKey === cacheKey && now - this.btcKlinesCache.timestamp < this.btcCacheTTL) {
       return this.btcKlinesCache.klines;
     }
 
     const btcDbKlines = await db.query.klines.findMany({
-      where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, interval)),
+      where: and(eq(klines.symbol, 'BTCUSDT'), eq(klines.interval, interval), eq(klines.marketType, marketType)),
       orderBy: [desc(klines.openTime)],
       limit: 100,
     });
 
     const btcKlines = mapDbKlinesReversed(btcDbKlines);
     this.btcKlinesCache = { klines: btcKlines, timestamp: now };
+    this.btcKlinesCacheKey = cacheKey;
     return btcKlines;
   }
 
@@ -216,6 +221,7 @@ export class SetupPreScanner {
 
   clearCache(): void {
     this.btcKlinesCache = null;
+    this.btcKlinesCacheKey = null;
   }
 }
 

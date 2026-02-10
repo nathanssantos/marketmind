@@ -428,6 +428,13 @@
       "when": 1769900500000,
       "tag": "0060_symbol_trailing_stop_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1770693900000,
+      "tag": "0061_add_fibonacci_swing_range",
+      "breakpoints": true
     }
   ]
 }

@@ -163,8 +163,8 @@ export class AutoTradingScheduler {
 
   constructor() {
     this.orderExecutor = new OrderExecutor({
-      getBtcKlines: (interval: string) => this.getBtcKlines(interval),
-      getHtfKlines: (symbol: string, htfInterval: string) => this.getHtfKlines(symbol, htfInterval),
+      getBtcKlines: (interval: string, marketType: MarketType) => this.getBtcKlines(interval, marketType),
+      getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => this.getHtfKlines(symbol, htfInterval, marketType),
       getCachedFundingRate: (symbol: string) => this.getCachedFundingRate(symbol),
       getCachedConfig: (walletId: string, userId?: string) => this.getCachedConfig(walletId, userId),
       getWatcherStatus: (walletId: string) => this.getWatcherStatus(walletId),
@@ -231,8 +231,8 @@ export class AutoTradingScheduler {
     return Date.now() - cache.timestamp < CACHE_TTL_MS;
   }
 
-  private async getBtcKlines(interval: string): Promise<Kline[]> {
-    const cacheKey = `BTCUSDT-${interval}`;
+  private async getBtcKlines(interval: string, marketType: MarketType = 'FUTURES'): Promise<Kline[]> {
+    const cacheKey = `BTCUSDT-${interval}-${marketType}`;
     const cached = this.btcKlinesCache.get(cacheKey);
 
     if (this.isCacheValid(cached)) {
@@ -242,7 +242,8 @@ export class AutoTradingScheduler {
     const btcKlines = await db.query.klines.findMany({
       where: and(
         eq(klines.symbol, 'BTCUSDT'),
-        eq(klines.interval, interval)
+        eq(klines.interval, interval),
+        eq(klines.marketType, marketType)
       ),
       orderBy: [desc(klines.openTime)],
       limit: 100,
@@ -268,8 +269,8 @@ export class AutoTradingScheduler {
     return mappedKlines;
   }
 
-  private async getHtfKlines(symbol: string, htfInterval: string): Promise<Kline[]> {
-    const cacheKey = `${symbol}-${htfInterval}`;
+  private async getHtfKlines(symbol: string, htfInterval: string, marketType: MarketType = 'FUTURES'): Promise<Kline[]> {
+    const cacheKey = `${symbol}-${htfInterval}-${marketType}`;
     const cached = this.htfKlinesCache.get(cacheKey);
 
     if (this.isCacheValid(cached)) {
@@ -279,7 +280,8 @@ export class AutoTradingScheduler {
     const htfKlines = await db.query.klines.findMany({
       where: and(
         eq(klines.symbol, symbol),
-        eq(klines.interval, htfInterval)
+        eq(klines.interval, htfInterval),
+        eq(klines.marketType, marketType)
       ),
       orderBy: [desc(klines.openTime)],
       limit: 300,

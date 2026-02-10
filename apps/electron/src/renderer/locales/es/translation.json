@@ -284,6 +284,14 @@
           "veryExtendedDescription": "Muy extendido - para tendencias excepcionalmente fuertes con momentum sostenido",
           "superExtended": "261.8% (2.618)",
           "superExtendedDescription": "Extensión máxima de Fibonacci - para movimientos parabólicos y momentum excepcional"
+        },
+        "swingRange": {
+          "title": "Rango del Swing",
+          "description": "Controla qué máximos/mínimos se usan para la proyección de Fibonacci.",
+          "extended": "Extendido",
+          "extendedDescription": "Usa el máximo/mínimo más extremo en el período — objetivos más amplios",
+          "nearest": "Cercano",
+          "nearestDescription": "Usa el máximo/mínimo más reciente — objetivos más cortos para operaciones rápidas"
         }
       },
       "entrySettings": {

@@ -212,6 +212,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   fibonacci_target_level VARCHAR(10) DEFAULT '2' NOT NULL,
   fibonacci_target_level_long VARCHAR(10) DEFAULT '2',
   fibonacci_target_level_short VARCHAR(10) DEFAULT '1.272',
+  fibonacci_swing_range VARCHAR(10) DEFAULT 'nearest' NOT NULL,
   use_dynamic_symbol_selection BOOLEAN DEFAULT false NOT NULL,
   dynamic_symbol_rotation_interval VARCHAR(10) DEFAULT '4h' NOT NULL,
   dynamic_symbol_excluded TEXT,

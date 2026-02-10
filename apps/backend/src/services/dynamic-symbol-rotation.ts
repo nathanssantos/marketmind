@@ -22,9 +22,9 @@ export const getIntervalMs = (interval: string): number => {
   return ms ?? TIME_MS.HOUR;
 };
 
-const fetchBtcKlines = async (interval: string) => {
+const fetchBtcKlines = async (interval: string, marketType: MarketType) => {
   return db.query.klines.findMany({
-    where: and(eq(klines.symbol, BTC_KLINE_QUERY.SYMBOL), eq(klines.interval, interval)),
+    where: and(eq(klines.symbol, BTC_KLINE_QUERY.SYMBOL), eq(klines.interval, interval), eq(klines.marketType, marketType)),
     orderBy: [desc(klines.openTime)],
     limit: BTC_KLINE_QUERY.LIMIT,
   });
@@ -146,7 +146,7 @@ export class DynamicSymbolRotationService {
 
       const needsBtcKlines = config.useBtcCorrelationFilter || config.useAdxTrendStrength;
       if (needsBtcKlines) {
-        const btcDbKlines = await fetchBtcKlines(config.interval);
+        const btcDbKlines = await fetchBtcKlines(config.interval, config.marketType);
         if (btcDbKlines.length >= ROTATION_FILTERS.MIN_BTC_KLINES) {
           btcKlinesData = mapDbKlinesReversed(btcDbKlines);
         }

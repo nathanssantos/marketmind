@@ -273,6 +273,14 @@
           "veryExtendedDescription": "Très étendu - pour les tendances exceptionnellement fortes avec momentum soutenu",
           "superExtended": "261.8% (2.618)",
           "superExtendedDescription": "Extension maximale de Fibonacci - pour les mouvements paraboliques et momentum exceptionnel"
+        },
+        "swingRange": {
+          "title": "Portée du Swing",
+          "description": "Contrôle quels sommets/creux sont utilisés pour la projection de Fibonacci.",
+          "extended": "Étendu",
+          "extendedDescription": "Utilise le sommet/creux le plus extrême — objectifs plus larges pour les grands mouvements",
+          "nearest": "Proche",
+          "nearestDescription": "Utilise le sommet/creux le plus récent — objectifs plus courts pour les trades rapides"
         }
       },
       "entrySettings": {

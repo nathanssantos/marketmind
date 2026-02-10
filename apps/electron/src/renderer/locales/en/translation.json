@@ -247,6 +247,14 @@
           "veryExtendedDescription": "Very extended - for exceptionally strong trends with sustained momentum",
           "superExtended": "261.8% (2.618)",
           "superExtendedDescription": "Maximum Fibonacci extension - for parabolic moves and exceptional momentum"
+        },
+        "swingRange": {
+          "title": "Swing Range",
+          "description": "Controls which swing highs/lows are used for Fibonacci projection.",
+          "extended": "Extended",
+          "extendedDescription": "Uses the most extreme swing high/low in the lookback — wider targets for bigger moves",
+          "nearest": "Nearest",
+          "nearestDescription": "Uses the most recent swing high/low — tighter targets for shorter trades"
         }
       },
       "entrySettings": {
