@@ -217,6 +217,7 @@ describe('Setup Detection Router', () => {
         caller.setupDetection.detectSetups({
           symbol: 'BTCUSDT',
           interval: '1h',
+          marketType: 'FUTURES',
         })
       ).rejects.toThrow('UNAUTHORIZED');
     });
@@ -228,6 +229,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetups({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
       });
 
       expect(result.setups).toEqual([]);
@@ -249,6 +251,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetups({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
       });
 
       expect(result).toHaveProperty('setups');
@@ -271,6 +274,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetups({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         enabledStrategies: ['test-strategy-1'],
       });
 
@@ -292,6 +296,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetups({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         minConfidence: 80,
       });
 
@@ -313,6 +318,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetups({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         minRiskReward: 1.5,
       });
 
@@ -328,6 +334,7 @@ describe('Setup Detection Router', () => {
         caller.setupDetection.detectSetupsInRange({
           symbol: 'BTCUSDT',
           interval: '1h',
+          marketType: 'FUTURES',
           startTime: Date.now() - 86400000,
           endTime: Date.now(),
         })
@@ -341,6 +348,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetupsInRange({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         startTime: Date.now() - 86400000,
         endTime: Date.now(),
       });
@@ -364,6 +372,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetupsInRange({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         startTime: now - 5 * 3600000,
         endTime: now,
       });
@@ -387,6 +396,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.detectSetupsInRange({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         startTime: now - 5 * 3600000,
         endTime: now,
         enabledStrategies: ['test-strategy-1'],
@@ -453,6 +463,7 @@ describe('Setup Detection Router', () => {
         caller.setupDetection.detectSetups({
           symbol: 'BTCUSDT',
           interval: '1h',
+          marketType: 'FUTURES',
           minConfidence: 150,
         })
       ).rejects.toThrow();
@@ -466,6 +477,7 @@ describe('Setup Detection Router', () => {
         caller.setupDetection.detectSetups({
           symbol: 'BTCUSDT',
           interval: '1h',
+          marketType: 'FUTURES',
           minRiskReward: -1,
         })
       ).rejects.toThrow();

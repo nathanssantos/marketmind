@@ -109,7 +109,7 @@ export const setupRouter = router({
       z.object({
         symbol: z.string(),
         interval: z.string(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']),
         config: setupDetectionConfigSchema.optional(),
       }),
     )
@@ -191,7 +191,7 @@ export const setupRouter = router({
         interval: z.string(),
         startTime: z.date(),
         endTime: z.date(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']),
         config: setupDetectionConfigSchema.optional(),
       }),
     )

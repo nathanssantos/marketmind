@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { useEffect } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
@@ -17,6 +17,7 @@ type SetupType =
 interface DetectCurrentParams {
   symbol: string;
   interval: Interval;
+  marketType: MarketType;
 }
 
 interface GetHistoryParams {
@@ -47,10 +48,11 @@ export const useBackendSetups = () => {
     symbol: string,
     interval: Interval,
     startTime: Date,
-    endTime: Date
+    endTime: Date,
+    marketType: MarketType = 'FUTURES'
   ) =>
     trpc.setup.detectRange.useQuery(
-      { symbol, interval, startTime, endTime },
+      { symbol, interval, startTime, endTime, marketType },
       {
         enabled: !!symbol && !!interval && !!startTime && !!endTime,
         staleTime: QUERY_CONFIG.STALE_TIME.LONG,

@@ -72,6 +72,7 @@ describe('Setup Router', () => {
       const result = await caller.setup.detectCurrent({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
       });
 
       expect(result.setups).toEqual([]);
@@ -85,6 +86,7 @@ describe('Setup Router', () => {
         caller.setup.detectCurrent({
           symbol: 'BTCUSDT',
           interval: '1h',
+          marketType: 'FUTURES',
         })
       ).rejects.toThrow(TRPCError);
     });
@@ -101,6 +103,7 @@ describe('Setup Router', () => {
       const result = await caller.setup.detectRange({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         startTime,
         endTime,
       });
@@ -116,6 +119,7 @@ describe('Setup Router', () => {
         caller.setup.detectRange({
           symbol: 'BTCUSDT',
           interval: '1h',
+          marketType: 'FUTURES',
           startTime: new Date(),
           endTime: new Date(),
         })

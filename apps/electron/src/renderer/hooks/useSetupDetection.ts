@@ -1,4 +1,4 @@
-import type { Interval, Kline, TradingSetup } from '@marketmind/types';
+import type { Interval, Kline, MarketType, TradingSetup } from '@marketmind/types';
 import { useQuery } from '@tanstack/react-query';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../services/trpc';
@@ -24,6 +24,7 @@ export const useStrategyList = (options: UseStrategyListOptions = {}) => {
 export interface UseSetupDetectionOptions {
   symbol?: string;
   interval?: Interval;
+  marketType?: MarketType;
   userId?: string;
   enableRealtimeUpdates?: boolean;
 }
@@ -34,7 +35,7 @@ export interface UseSetupDetectionResult {
 }
 
 export const useSetupDetection = (options: UseSetupDetectionOptions = {}): UseSetupDetectionResult => {
-  const { symbol, interval, userId, enableRealtimeUpdates = true } = options;
+  const { symbol, interval, marketType = 'FUTURES', userId, enableRealtimeUpdates = true } = options;
 
   const {
     useDetectCurrent,
@@ -48,6 +49,7 @@ export const useSetupDetection = (options: UseSetupDetectionOptions = {}): UseSe
   const { data: result, isPending } = useDetectCurrent({
     symbol: symbol || '',
     interval: interval || '12h',
+    marketType,
   });
 
   const detectSetups = (klines: Kline[]): TradingSetup[] => {

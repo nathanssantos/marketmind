@@ -56,6 +56,7 @@ describe('Setup Router', () => {
       const result = await caller.setup.detectCurrent({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
       });
 
       expect(result.setups).toEqual([]);
@@ -66,6 +67,7 @@ describe('Setup Router', () => {
       const result = await caller.setup.detectCurrent({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         config: {
           minConfidence: 80,
           minRiskReward: 3.0,
@@ -81,6 +83,7 @@ describe('Setup Router', () => {
       const result = await caller.setup.detectRange({
         symbol: 'BTCUSDT',
         interval: '1h',
+        marketType: 'FUTURES',
         startTime: new Date('2025-01-01'),
         endTime: new Date('2025-01-02'),
       });

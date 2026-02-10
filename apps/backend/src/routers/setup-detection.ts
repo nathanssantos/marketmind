@@ -25,7 +25,7 @@ const strategyStatusSchema = z.enum(['active', 'experimental', 'deprecated', 'un
 const detectSetupsInputSchema = z.object({
   symbol: z.string(),
   interval: z.string(),
-  marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+  marketType: z.enum(['SPOT', 'FUTURES']),
   enabledStrategies: z.array(z.string()).optional(),
   minConfidence: z.number().min(0).max(100).optional(),
   minRiskReward: z.number().min(0).optional(),
@@ -144,7 +144,7 @@ export const setupDetectionRouter = router({
         interval: z.string(),
         startTime: z.number(),
         endTime: z.number(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('SPOT'),
+        marketType: z.enum(['SPOT', 'FUTURES']),
         enabledStrategies: z.array(z.string()).optional(),
         minConfidence: z.number().min(0).max(100).optional(),
       }),
