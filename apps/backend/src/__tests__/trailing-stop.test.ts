@@ -1080,6 +1080,98 @@ describe('TrailingStopService', () => {
         expect(result).not.toBeNull();
         expect(result!.reason).toBe('fees_covered');
       });
+
+      it('should activate trailing for SHORT when price reaches activation Fibonacci level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+          feePercent: 0.002,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 99,
+          currentPrice: 91,
+          currentStopLoss: 103,
+          side: 'SHORT',
+          swingPoints: [],
+          lowestPrice: 91,
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).not.toBeNull();
+        expect(result!.reason).toBe('progressive_trail');
+        expect(result!.newStopLoss).toBeLessThan(99);
+        expect(result!.newStopLoss).toBeGreaterThan(91);
+      });
+
+      it('should not activate SHORT trailing before reaching activation level', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 99,
+          currentPrice: 95,
+          currentStopLoss: 103,
+          side: 'SHORT',
+          swingPoints: [],
+          lowestPrice: 95,
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).toBeNull();
+      });
+
+      it('should return fees_covered when fibonacci activated but no peak prices for SHORT', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+          feePercent: 0.002,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 99,
+          currentPrice: 91,
+          currentStopLoss: 103,
+          side: 'SHORT',
+          swingPoints: [],
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).not.toBeNull();
+        expect(result!.reason).toBe('fees_covered');
+        expect(result!.newStopLoss).toBeLessThan(99);
+      });
+
+      it('should return fees_covered when fibonacci activated but no candidates for LONG', () => {
+        const fib = createFibonacciProjection(90, 100);
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+          feePercent: 0.002,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 92,
+          currentPrice: 101,
+          currentStopLoss: 89,
+          side: 'LONG',
+          swingPoints: [],
+          fibonacciProjection: fib,
+        };
+
+        const result = computeTrailingStop(input, config);
+        expect(result).not.toBeNull();
+        expect(result!.reason).toBe('fees_covered');
+        expect(result!.newStopLoss).toBeGreaterThan(92);
+      });
     });
   });
 });

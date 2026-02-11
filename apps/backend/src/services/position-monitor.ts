@@ -471,6 +471,11 @@ export class PositionMonitorService {
       this.deferredExitTimestamps.has(`${executionId}-TAKE_PROFIT`);
   }
 
+  clearDeferredExit(executionId: string): void {
+    this.deferredExitTimestamps.delete(`${executionId}-STOP_LOSS`);
+    this.deferredExitTimestamps.delete(`${executionId}-TAKE_PROFIT`);
+  }
+
   async executeExit(
     execution: TradeExecution,
     exitPrice: number,
@@ -480,11 +485,16 @@ export class PositionMonitorService {
       return;
     }
 
+    this.processingExits.add(execution.id);
+
     const deferKey = `${execution.id}-${reason}`;
     const existingDeferral = this.deferredExitTimestamps.get(deferKey);
     if (existingDeferral !== undefined) {
       const now = Date.now();
-      if (now - existingDeferral < this.DEFERRED_EXIT_TIMEOUT_MS) return;
+      if (now - existingDeferral < this.DEFERRED_EXIT_TIMEOUT_MS) {
+        this.processingExits.delete(execution.id);
+        return;
+      }
       logger.warn({
         executionId: execution.id,
         symbol: execution.symbol,
@@ -493,8 +503,6 @@ export class PositionMonitorService {
       }, 'Exchange-side protection order stale - forcing local exit after timeout');
       this.deferredExitTimestamps.delete(deferKey);
     }
-
-    this.processingExits.add(execution.id);
 
     try {
       const currentExecution = await db.query.tradeExecutions.findFirst({
@@ -553,10 +561,11 @@ export class PositionMonitorService {
       const entryPrice = parseFloat(execution.entryPrice);
       const grossPnl = calculatePnl(entryPrice, exitPrice, quantity, execution.side);
 
-      const entryValue = calculateNotional(entryPrice, quantity);
       const exitValue = calculateNotional(exitPrice, quantity);
       const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
-      const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
+      const actualEntryFeeFromRecord = parseFloat(currentExecution.entryFee || '0');
+      const { exitFee: estimatedExitFee } = calculateTotalFees(0, exitValue, { marketType });
+      const totalFees = actualEntryFeeFromRecord + estimatedExitFee;
       const pnl = roundToDecimals(grossPnl - totalFees, 8);
 
       const pnlPercent = roundToDecimals(((exitPrice - entryPrice) / entryPrice) * 100, 4);
@@ -586,7 +595,8 @@ export class PositionMonitorService {
           );
         } catch (orderError) {
           const errorMessage = serializeError(orderError);
-          if (errorMessage.includes('ReduceOnly Order is rejected')) {
+          const errorCode = (orderError as Record<string, unknown>)?.code;
+          if (errorMessage.includes('ReduceOnly Order is rejected') || errorCode === -2022) {
             logger.warn({
               executionId: execution.id,
               symbol: execution.symbol,
@@ -605,8 +615,8 @@ export class PositionMonitorService {
       let actualPnl = pnl;
       let actualPnlPercent = adjustedPnlPercent;
 
-      let actualEntryFee = parseFloat(execution.entryFee || '0');
-      let actualExitFee = 0;
+      let actualEntryFee = actualEntryFeeFromRecord;
+      let actualExitFee = estimatedExitFee;
 
       if (positionSyncedFromExchange && marketType === 'FUTURES') {
         try {
@@ -1074,8 +1084,8 @@ export class PositionMonitorService {
       const anyTimedOut = executions.some(e => {
         const slTs = this.deferredExitTimestamps.get(`${e.id}-STOP_LOSS`);
         const tpTs = this.deferredExitTimestamps.get(`${e.id}-TAKE_PROFIT`);
-        const ts = slTs ?? tpTs;
-        return ts !== undefined && (now - ts >= this.DEFERRED_EXIT_TIMEOUT_MS);
+        const oldest = Math.min(slTs ?? Infinity, tpTs ?? Infinity);
+        return oldest !== Infinity && (now - oldest >= this.DEFERRED_EXIT_TIMEOUT_MS);
       });
       if (!anyTimedOut) return;
     }

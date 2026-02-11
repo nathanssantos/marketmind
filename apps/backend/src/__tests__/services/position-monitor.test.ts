@@ -126,6 +126,9 @@ describe('PositionMonitorService', () => {
     marketType?: 'SPOT' | 'FUTURES';
     limitEntryPrice?: string | null;
     expiresAt?: Date | null;
+    stopLossAlgoId?: number | null;
+    takeProfitAlgoId?: number | null;
+    entryFee?: string | null;
   }) => {
     const executionId = generateEntityId();
     const now = new Date();
@@ -149,6 +152,9 @@ describe('PositionMonitorService', () => {
       entryOrderType: options.limitEntryPrice ? 'LIMIT' : 'MARKET',
       limitEntryPrice: options.limitEntryPrice ?? null,
       expiresAt: options.expiresAt ?? null,
+      stopLossAlgoId: options.stopLossAlgoId ?? null,
+      takeProfitAlgoId: options.takeProfitAlgoId ?? null,
+      entryFee: options.entryFee ?? null,
     }).returning();
 
     return execution;
@@ -558,6 +564,316 @@ describe('PositionMonitorService', () => {
         .where(eq(schema.wallets.id, wallet.id));
 
       expect(parseFloat(updatedWallet!.currentBalance!)).toBeLessThan(10000);
+    });
+  });
+
+  describe('deferred exit mechanism', () => {
+    it('should report isExitDeferred as false for unknown execution', () => {
+      expect(service.isExitDeferred('unknown-id')).toBe(false);
+    });
+
+    it('should defer exit when live trading enabled and exchange-side SL protection exists', async () => {
+      const { env } = await import('../../env');
+      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
+      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
+
+      try {
+        const { user } = await createAuthenticatedUser();
+        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
+
+        const execution = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50000',
+          quantity: '0.1',
+          stopLoss: '49000',
+          stopLossAlgoId: 12345,
+        });
+
+        await service.executeExit(execution!, 48900, 'STOP_LOSS');
+
+        expect(service.isExitDeferred(execution!.id)).toBe(true);
+
+        const [updatedExecution] = await db
+          .select()
+          .from(schema.tradeExecutions)
+          .where(eq(schema.tradeExecutions.id, execution!.id));
+
+        expect(updatedExecution!.status).toBe('open');
+      } finally {
+        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
+      }
+    });
+
+    it('should return early for deferred exit that has not timed out', async () => {
+      const { env } = await import('../../env');
+      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
+      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
+
+      try {
+        const { user } = await createAuthenticatedUser();
+        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
+
+        const execution = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50000',
+          quantity: '0.1',
+          stopLoss: '49000',
+          stopLossAlgoId: 12345,
+        });
+
+        await service.executeExit(execution!, 48900, 'STOP_LOSS');
+        expect(service.isExitDeferred(execution!.id)).toBe(true);
+
+        await service.executeExit(execution!, 48800, 'STOP_LOSS');
+
+        const [updatedExecution] = await db
+          .select()
+          .from(schema.tradeExecutions)
+          .where(eq(schema.tradeExecutions.id, execution!.id));
+
+        expect(updatedExecution!.status).toBe('open');
+      } finally {
+        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
+      }
+    });
+
+    it('should clear deferred exit via clearDeferredExit', async () => {
+      const { env } = await import('../../env');
+      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
+      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
+
+      try {
+        const { user } = await createAuthenticatedUser();
+        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
+
+        const execution = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50000',
+          quantity: '0.1',
+          stopLoss: '49000',
+          stopLossAlgoId: 12345,
+        });
+
+        await service.executeExit(execution!, 48900, 'STOP_LOSS');
+        expect(service.isExitDeferred(execution!.id)).toBe(true);
+
+        service.clearDeferredExit(execution!.id);
+        expect(service.isExitDeferred(execution!.id)).toBe(false);
+      } finally {
+        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
+      }
+    });
+
+    it('should defer exit for TP when exchange-side TP protection exists', async () => {
+      const { env } = await import('../../env');
+      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
+      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
+
+      try {
+        const { user } = await createAuthenticatedUser();
+        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
+
+        const execution = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50000',
+          quantity: '0.1',
+          takeProfit: '52000',
+          takeProfitAlgoId: 67890,
+        });
+
+        await service.executeExit(execution!, 52100, 'TAKE_PROFIT');
+
+        expect(service.isExitDeferred(execution!.id)).toBe(true);
+
+        const [updatedExecution] = await db
+          .select()
+          .from(schema.tradeExecutions)
+          .where(eq(schema.tradeExecutions.id, execution!.id));
+
+        expect(updatedExecution!.status).toBe('open');
+      } finally {
+        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
+      }
+    });
+  });
+
+  describe('checkPositionGroupByPrice', () => {
+    it('should return silently when all executions are deferred and not timed out', async () => {
+      const { env } = await import('../../env');
+      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
+      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
+
+      try {
+        const { user } = await createAuthenticatedUser();
+        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
+
+        const execution1 = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50000',
+          quantity: '0.05',
+          stopLoss: '49000',
+          takeProfit: '52000',
+          stopLossAlgoId: 111,
+        });
+
+        const execution2 = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50100',
+          quantity: '0.05',
+          stopLoss: '49000',
+          takeProfit: '52000',
+          stopLossAlgoId: 222,
+        });
+
+        await service.executeExit(execution1!, 48900, 'STOP_LOSS');
+        await service.executeExit(execution2!, 48900, 'STOP_LOSS');
+
+        expect(service.isExitDeferred(execution1!.id)).toBe(true);
+        expect(service.isExitDeferred(execution2!.id)).toBe(true);
+
+        await service.checkPositionGroupByPrice([execution1!, execution2!], 48500);
+
+        const executions = await db.select().from(schema.tradeExecutions);
+        const openExecutions = executions.filter(e => e.status === 'open');
+        expect(openExecutions.length).toBe(2);
+      } finally {
+        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
+      }
+    });
+
+    it('should close positions in group when SL triggered (no deferral)', async () => {
+      const { user } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+
+      const execution1 = await createTestExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.05',
+        stopLoss: '49000',
+        takeProfit: '52000',
+      });
+
+      const execution2 = await createTestExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        side: 'LONG',
+        entryPrice: '50100',
+        quantity: '0.05',
+        stopLoss: '49000',
+        takeProfit: '52000',
+      });
+
+      await service.checkPositionGroupByPrice([execution1!, execution2!], 48500);
+
+      const [updated1] = await db
+        .select()
+        .from(schema.tradeExecutions)
+        .where(eq(schema.tradeExecutions.id, execution1!.id));
+
+      const [updated2] = await db
+        .select()
+        .from(schema.tradeExecutions)
+        .where(eq(schema.tradeExecutions.id, execution2!.id));
+
+      expect(updated1!.status).toBe('closed');
+      expect(updated1!.exitReason).toBe('STOP_LOSS');
+      expect(updated2!.status).toBe('closed');
+      expect(updated2!.exitReason).toBe('STOP_LOSS');
+    });
+
+    it('should handle empty executions array', async () => {
+      await expect(service.checkPositionGroupByPrice([], 50000)).resolves.not.toThrow();
+    });
+  });
+
+  describe('ReduceOnly rejection detection', () => {
+    it('should detect ReduceOnly error code -2022', async () => {
+      const { env } = await import('../../env');
+      const { getFuturesClient } = await import('../../exchange');
+      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
+      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
+
+      const mockSubmitOrder = vi.fn().mockRejectedValue(
+        Object.assign(new Error('Order failed'), { code: -2022 })
+      );
+      vi.mocked(getFuturesClient).mockReturnValue({
+        getPosition: vi.fn(),
+        getAllTradeFeesForPosition: vi.fn().mockResolvedValue(null),
+        getLastClosingTrade: vi.fn().mockResolvedValue(null),
+        submitOrder: mockSubmitOrder,
+        cancelOrder: vi.fn(),
+        cancelAllOrders: vi.fn(),
+        getOpenOrders: vi.fn().mockResolvedValue([]),
+      } as unknown as ReturnType<typeof getFuturesClient>);
+
+      try {
+        const { user } = await createAuthenticatedUser();
+        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
+
+        const execution = await createTestExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          side: 'LONG',
+          entryPrice: '50000',
+          quantity: '0.1',
+          stopLoss: '49000',
+        });
+
+        await service.executeExit(execution!, 49000, 'STOP_LOSS');
+
+        const [updatedExecution] = await db
+          .select()
+          .from(schema.tradeExecutions)
+          .where(eq(schema.tradeExecutions.id, execution!.id));
+
+        expect(updatedExecution!.status).toBe('closed');
+        expect(updatedExecution!.exitSource).toBe('EXCHANGE_SYNC');
+      } finally {
+        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
+      }
+    });
+  });
+
+  describe('fee calculation uses actual entry fee', () => {
+    it('should use stored entryFee instead of re-estimating', async () => {
+      const { user } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+
+      const execution = await createTestExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        side: 'LONG',
+        entryPrice: '50000',
+        quantity: '0.1',
+        stopLoss: '49000',
+        takeProfit: '52000',
+        entryFee: '5.00',
+      });
+
+      await service.executeExit(execution!, 52000, 'TAKE_PROFIT');
+
+      const [updatedExecution] = await db
+        .select()
+        .from(schema.tradeExecutions)
+        .where(eq(schema.tradeExecutions.id, execution!.id));
+
+      expect(updatedExecution!.status).toBe('closed');
+      expect(parseFloat(updatedExecution!.entryFee!)).toBe(5.00);
+      expect(parseFloat(updatedExecution!.fees!)).toBeGreaterThan(5.00);
     });
   });
 });

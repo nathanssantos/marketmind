@@ -323,7 +323,9 @@ export const computeTrailingStopCore = (
 
     if (!reachedThreshold) return null;
 
-    const candidates: Array<{ price: number; reason: TrailingStopReason }> = [];
+    const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
+      { price: feesCoveredPrice, reason: 'fees_covered' },
+    ];
 
     const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
     if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
@@ -340,8 +342,6 @@ export const computeTrailingStopCore = (
         }
       }
     }
-
-    if (candidates.length === 0) return null;
 
     const bestCandidate = selectBestCandidate(candidates, isLong);
     if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
