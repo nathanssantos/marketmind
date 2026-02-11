@@ -169,7 +169,8 @@ export const getFibonacciLevelPrice = (
 
 export const calculateFibonacciPriceAtLevel = (
   fibonacciProjection: FibonacciProjectionData | null | undefined,
-  level: number
+  level: number,
+  isLong: boolean
 ): number | null => {
   if (!fibonacciProjection?.swingLow || !fibonacciProjection?.swingHigh) return null;
 
@@ -179,9 +180,14 @@ export const calculateFibonacciPriceAtLevel = (
 
   if (range === 0) return null;
 
+  if (isLong) {
+    return level <= 1
+      ? swingLow + range * level
+      : swingHigh + range * (level - 1);
+  }
   return level <= 1
-    ? swingLow + range * level
-    : swingHigh + range * (level - 1);
+    ? swingHigh - range * level
+    : swingLow - range * (level - 1);
 };
 
 export const hasReachedFibonacciLevel = (
@@ -190,7 +196,7 @@ export const hasReachedFibonacciLevel = (
   level: number,
   isLong: boolean
 ): boolean => {
-  const levelPrice = calculateFibonacciPriceAtLevel(fibonacciProjection, level);
+  const levelPrice = calculateFibonacciPriceAtLevel(fibonacciProjection, level, isLong);
   if (levelPrice === null) return false;
   return isLong ? currentPrice >= levelPrice : currentPrice <= levelPrice;
 };
@@ -319,6 +325,9 @@ export const computeTrailingStopCore = (
 
     const candidates: Array<{ price: number; reason: TrailingStopReason }> = [];
 
+    const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+    if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
+
     const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, minTrailingDistancePercent);
     if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
 
@@ -330,11 +339,6 @@ export const computeTrailingStopCore = (
           candidates.push({ price: atrStop, reason: 'atr_trail' });
         }
       }
-    }
-
-    if (useProfitLockDistance) {
-      const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
-      if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
     }
 
     if (candidates.length === 0) return null;

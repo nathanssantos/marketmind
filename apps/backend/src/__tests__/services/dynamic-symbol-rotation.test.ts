@@ -103,7 +103,7 @@ describe('DynamicSymbolRotationService', () => {
   });
 
   describe('executeRotation - count maintenance', () => {
-    it('should NOT add symbols when all current symbols are kept (count should stay the same)', async () => {
+    it('should add symbols up to config.limit when current count is below limit', async () => {
       mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']);
 
       const result = await rotationService.executeRotation(
@@ -113,11 +113,12 @@ describe('DynamicSymbolRotationService', () => {
       );
 
       expect(result.kept).toHaveLength(3);
-      expect(result.added).toHaveLength(0);
       expect(result.removed).toHaveLength(0);
+      expect(result.added).toHaveLength(7);
+      expect(result.kept.length + result.added.length).toBe(10);
     });
 
-    it('should only add symbols to replace removed ones (count should stay the same)', async () => {
+    it('should fill to config.limit when a symbol is removed', async () => {
       mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'RANDOMUSDT']);
 
       await rotationService.executeRotation(
@@ -136,8 +137,7 @@ describe('DynamicSymbolRotationService', () => {
 
       expect(result.kept).toHaveLength(2);
       expect(result.removed).toContain('RANDOMUSDT');
-      expect(result.added).toHaveLength(1);
-      expect(result.kept.length + result.added.length).toBe(3);
+      expect(result.kept.length + result.added.length).toBe(10);
     });
 
     it('should fill up to limit when there are NO current watchers (initial setup)', async () => {
@@ -154,7 +154,7 @@ describe('DynamicSymbolRotationService', () => {
       expect(result.added).toHaveLength(5);
     });
 
-    it('should maintain 12 symbols when starting with 12 (not grow to limit 20)', async () => {
+    it('should grow from 12 to limit 20 when limit allows more symbols', async () => {
       const symbols = [
         'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'XRPUSDT', 'ADAUSDT',
         'LINKUSDT', 'DOTUSDT', 'AVAXUSDT', 'UNIUSDT', 'LTCUSDT', 'MATICUSDT',
@@ -169,11 +169,11 @@ describe('DynamicSymbolRotationService', () => {
 
       expect(result.kept).toHaveLength(12);
       expect(result.removed).toHaveLength(0);
-      expect(result.added).toHaveLength(0);
-      expect(result.kept.length + result.added.length).toBe(12);
+      expect(result.added).toHaveLength(8);
+      expect(result.kept.length + result.added.length).toBe(20);
     });
 
-    it('should maintain 18 symbols when starting with 18 and limit is 20', async () => {
+    it('should grow from 18 to limit 20 when limit allows more symbols', async () => {
       const symbols = [
         'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'XRPUSDT', 'ADAUSDT',
         'LINKUSDT', 'DOTUSDT', 'AVAXUSDT', 'UNIUSDT', 'LTCUSDT', 'MATICUSDT',
@@ -188,10 +188,10 @@ describe('DynamicSymbolRotationService', () => {
       );
 
       const totalAfterRotation = result.kept.length + result.added.length;
-      expect(totalAfterRotation).toBe(18);
+      expect(totalAfterRotation).toBe(20);
     });
 
-    it('should replace removed symbols with new ones maintaining count', async () => {
+    it('should replace removed symbols and fill to config.limit', async () => {
       mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'OLDCOIN1USDT', 'OLDCOIN2USDT', 'SOLUSDT']);
 
       await rotationService.executeRotation(
@@ -210,8 +210,34 @@ describe('DynamicSymbolRotationService', () => {
 
       expect(result.removed).toContain('OLDCOIN1USDT');
       expect(result.removed).toContain('OLDCOIN2USDT');
-      expect(result.added).toHaveLength(2);
-      expect(result.kept.length + result.added.length).toBe(5);
+      expect(result.kept.length + result.added.length).toBe(20);
+    });
+
+    it('should trim kept symbols to config.limit when hysteresis keeps too many', async () => {
+      const symbols = Array.from({ length: 15 }, (_, i) => `SYMBOL${i}USDT`);
+      mockSelectQuery(symbols);
+
+      const result = await rotationService.executeRotation(
+        'test-wallet',
+        'test-user',
+        { ...baseConfig, limit: 10 }
+      );
+
+      expect(result.kept.length + result.added.length).toBeLessThanOrEqual(10);
+      expect(result.kept.length).toBeLessThanOrEqual(10);
+    });
+
+    it('should never exceed config.limit total after rotation', async () => {
+      mockSelectQuery(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']);
+
+      const result = await rotationService.executeRotation(
+        'test-wallet',
+        'test-user',
+        { ...baseConfig, limit: 5 }
+      );
+
+      const total = result.kept.length + result.added.length;
+      expect(total).toBeLessThanOrEqual(5);
     });
 
   });

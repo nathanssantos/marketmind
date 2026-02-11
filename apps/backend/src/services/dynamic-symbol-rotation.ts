@@ -353,6 +353,17 @@ export class DynamicSymbolRotationService {
         }
       }
 
+      if (kept.length > config.limit) {
+        const rankedKept = kept.map(s => ({ symbol: s, rank: currentRankings.get(s) ?? Infinity }));
+        rankedKept.sort((a, b) => a.rank - b.rank);
+        const excess = rankedKept.slice(config.limit);
+        for (const { symbol } of excess) {
+          toRemove.push(symbol);
+        }
+        kept.length = 0;
+        kept.push(...rankedKept.slice(0, config.limit).map(r => r.symbol));
+      }
+
       if (filteredScores.length === 0 && currentSymbols.size > 0) {
         const filterReason = symbolsAfterCapitalFilter === 0
           ? 'capital requirements'
@@ -368,7 +379,7 @@ export class DynamicSymbolRotationService {
         }, `[DynamicRotation] ! All symbols filtered by ${filterReason} - keeping existing watchers`);
       }
 
-      const targetCount = currentSymbols.size === 0 ? config.limit : currentSymbols.size;
+      const targetCount = config.limit;
       const slotsAvailable = Math.max(0, targetCount - kept.length);
 
       for (const symbol of optimalSymbols) {

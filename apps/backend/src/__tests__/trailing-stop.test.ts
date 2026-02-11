@@ -1003,18 +1003,18 @@ describe('TrailingStopService', () => {
 
       it('should return true for SHORT when price reaches level', () => {
         const fib = createFibonacciProjection(90, 100);
-        expect(hasReachedFibonacciLevel(100, fib, 1.0, false)).toBe(true);
-        expect(hasReachedFibonacciLevel(95, fib, 1.0, false)).toBe(true);
+        expect(hasReachedFibonacciLevel(90, fib, 1.0, false)).toBe(true);
+        expect(hasReachedFibonacciLevel(85, fib, 1.0, false)).toBe(true);
       });
 
       it('should return false for SHORT when price above level', () => {
         const fib = createFibonacciProjection(90, 100);
-        expect(hasReachedFibonacciLevel(101, fib, 1.0, false)).toBe(false);
+        expect(hasReachedFibonacciLevel(95, fib, 1.0, false)).toBe(false);
       });
     });
 
     describe('computeTrailingStop with Fibonacci thresholds', () => {
-      it('should not trigger trailing if price below 100% Fibo level', () => {
+      it('should not trigger trailing if price below activation Fibo level', () => {
         const fib = createFibonacciProjection(90, 100);
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
@@ -1023,11 +1023,11 @@ describe('TrailingStopService', () => {
 
         const input: TrailingStopInput = {
           entryPrice: 92,
-          currentPrice: 99,
+          currentPrice: 98,
           currentStopLoss: 89,
           side: 'LONG',
           swingPoints: [],
-          highestPrice: 99,
+          highestPrice: 98,
           fibonacciProjection: fib,
         };
 
@@ -1035,7 +1035,7 @@ describe('TrailingStopService', () => {
         expect(result).toBeNull();
       });
 
-      it('should return null when price reaches 100% Fibo but not 161.8% (breakeven disabled)', () => {
+      it('should return progressive_trail when price reaches activation Fibo level', () => {
         const fib = createFibonacciProjection(90, 100);
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
@@ -1054,7 +1054,10 @@ describe('TrailingStopService', () => {
         };
 
         const result = computeTrailingStop(input, config);
-        expect(result).toBeNull();
+        expect(result).not.toBeNull();
+        expect(result!.reason).toBe('progressive_trail');
+        expect(result!.newStopLoss).toBeGreaterThan(92);
+        expect(result!.newStopLoss).toBeLessThan(101);
       });
 
       it('should fall back to percentage thresholds when Fibonacci data missing', () => {
