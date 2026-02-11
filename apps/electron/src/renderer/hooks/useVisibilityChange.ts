@@ -13,7 +13,7 @@ export interface UseVisibilityChangeOptions {
   minHiddenDurationForRefresh?: number;
 }
 
-const DEFAULT_MIN_HIDDEN_DURATION_MS = 30_000;
+const DEFAULT_MIN_HIDDEN_DURATION_MS = 5_000;
 
 export const useVisibilityChange = (options: UseVisibilityChangeOptions = {}) => {
   const {
@@ -62,13 +62,45 @@ export const useVisibilityChange = (options: UseVisibilityChangeOptions = {}) =>
     hiddenAtRef.current = null;
   }, [minHiddenDurationForRefresh]);
 
+  const handleWindowFocus = useCallback(() => {
+    if (hiddenAtRef.current === null) return;
+
+    const hiddenDuration = Date.now() - hiddenAtRef.current;
+    const wasHiddenLongEnough = hiddenDuration >= minHiddenDurationForRefresh;
+
+    setIsVisible(true);
+    setNeedsRefresh(wasHiddenLongEnough);
+    lastVisibleTimeRef.current = Date.now();
+
+    const state: VisibilityState = {
+      isVisible: true,
+      wasHidden: true,
+      hiddenDuration,
+      lastVisibleTime: lastVisibleTimeRef.current,
+    };
+
+    onBecameVisibleRef.current?.(state);
+    hiddenAtRef.current = null;
+  }, [minHiddenDurationForRefresh]);
+
+  const handleWindowBlur = useCallback(() => {
+    if (hiddenAtRef.current !== null) return;
+    hiddenAtRef.current = Date.now();
+    setIsVisible(false);
+    onBecameHiddenRef.current?.();
+  }, []);
+
   useEffect(() => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('blur', handleWindowBlur);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('blur', handleWindowBlur);
     };
-  }, [handleVisibilityChange]);
+  }, [handleVisibilityChange, handleWindowFocus, handleWindowBlur]);
 
   const clearRefreshNeeded = useCallback(() => {
     setNeedsRefresh(false);

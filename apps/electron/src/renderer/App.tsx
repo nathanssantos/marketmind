@@ -231,6 +231,7 @@ function AppContent(): ReactElement {
   const rafIdRef = useRef<number | null>(null);
   const lastRefetchRef = useRef<number>(0);
   const lastUpdateRef = useRef<number>(0);
+  const isRefetchingRef = useRef(false);
 
   const getIntervalMs = useCallback((tf: string): number => {
     return INTERVAL_MS_MAP[tf as TimeInterval] || 60_000;
@@ -248,6 +249,8 @@ function AppContent(): ReactElement {
   }, [symbol, timeframe, marketType]);
 
   const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
+    if (isRefetchingRef.current) return;
+
     const now = Date.now();
     const timeSinceLastUpdate = now - lastUpdateRef.current;
 
@@ -358,16 +361,17 @@ function AppContent(): ReactElement {
     }
   }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, backendKlinesQuery]);
 
-  const handleVisibilityRestore = useCallback((state: { hiddenDuration: number }) => {
-    if (state.hiddenDuration > 30_000) {
-      setLiveKlines([]);
-      backendKlinesQuery.refetch();
-    }
+  const handleVisibilityRestore = useCallback(async (state: { hiddenDuration: number }) => {
+    if (state.hiddenDuration < 5_000) return;
+    isRefetchingRef.current = true;
+    setLiveKlines([]);
+    await backendKlinesQuery.refetch();
+    isRefetchingRef.current = false;
   }, [backendKlinesQuery]);
 
   useVisibilityChange({
     onBecameVisible: handleVisibilityRestore,
-    minHiddenDurationForRefresh: 30_000,
+    minHiddenDurationForRefresh: 5_000,
   });
 
   const displayKlines = useMemo(() => {

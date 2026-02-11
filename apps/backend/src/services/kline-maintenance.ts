@@ -22,7 +22,7 @@ import {
   type CorruptionFixEntry,
 } from './watcher-batch-logger';
 
-const GAP_CHECK_INTERVAL = 5 * TIME_MS.MINUTE;
+const GAP_CHECK_INTERVAL = 2 * TIME_MS.HOUR;
 const MIN_GAP_SIZE_TO_FILL = 1;
 
 interface GapInfo {
