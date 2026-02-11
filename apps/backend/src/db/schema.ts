@@ -257,6 +257,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   marginTopUpPercent: numeric('margin_top_up_percent', { precision: 5, scale: 2 }).default('10'),
   marginTopUpMaxCount: integer('margin_top_up_max_count').default(3),
   positionSizePercent: numeric('position_size_percent', { precision: 5, scale: 2 }).default('10.00').notNull(),
+  maxGlobalExposurePercent: numeric('max_global_exposure_percent', { precision: 5, scale: 2 }).default('100.00').notNull(),
   minRiskRewardRatioLong: numeric('min_risk_reward_ratio_long', { precision: 4, scale: 2 }).default('0.75'),
   minRiskRewardRatioShort: numeric('min_risk_reward_ratio_short', { precision: 4, scale: 2 }).default('0.75'),
   maxFibonacciEntryProgressPercent: integer('max_fibonacci_entry_progress_percent').default(100).notNull(),

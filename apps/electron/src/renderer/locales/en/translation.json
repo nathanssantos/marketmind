@@ -1072,10 +1072,12 @@
   },
   "watcherManager": {
     "positionSize": {
-      "title": "Position Size",
-      "description": "Configure how much capital each position uses",
-      "sizePercent": "Position Size (%)",
-      "sizePercentDescription": "Percentage of capital used per position"
+      "title": "Exposure & Position Size",
+      "description": "Configure global exposure limit and per-position sizing",
+      "globalExposure": "Global Exposure Limit (%)",
+      "globalExposureDescription": "Maximum total portfolio exposure as percentage of balance",
+      "sizePercent": "Position Size per Entry (%)",
+      "sizePercentDescription": "Percentage of capital used per individual position"
     },
     "trailingStop": {
       "title": "Trailing Stop",

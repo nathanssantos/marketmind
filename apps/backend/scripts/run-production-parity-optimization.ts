@@ -1,0 +1,1167 @@
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { config as dotenvConfig } from 'dotenv';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
+import {
+  TRADING_DEFAULTS,
+  FILTER_DEFAULTS,
+  TRAILING_STOP_USER_DEFAULTS,
+  TRAILING_STOP_CONFIG,
+} from '@marketmind/types';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenvConfig({ path: resolve(__dirname, '../.env') });
+
+import { writeSync } from 'fs';
+
+const log = (...args: any[]): void => {
+  const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ') + '\n';
+  writeSync(1, msg);
+};
+
+process.env['LOG_LEVEL'] = 'silent';
+process.env['NODE_ENV'] = 'production';
+console.log = () => {};
+console.info = () => {};
+console.warn = () => {};
+console.error = () => {};
+console.debug = () => {};
+
+const { BacktestEngine } = await import('../src/services/backtesting/BacktestEngine.js');
+const { GranularPriceIndex } = await import('../src/services/backtesting/trailing-stop-backtest/GranularPriceIndex.js');
+const { TrailingStopSimulator } = await import('../src/services/backtesting/trailing-stop-backtest/TrailingStopSimulator.js');
+
+const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
+const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
+
+const ACTIVE_STRATEGIES = [
+  '7day-momentum-crypto',
+  'bear-trap',
+  'breakout-retest',
+  'chaikin-money-flow',
+  'ema5-momentum-crypto',
+  'golden-cross-sma',
+  'klinger-oscillator',
+  'larry-williams-9-1',
+  'larry-williams-9-3',
+  'larry-williams-9-4',
+  'macd-divergence',
+  'momentum-breakout-2025',
+  'nr7-breakout',
+  'parabolic-sar-crypto',
+  'pattern-123-reversal',
+  'rsi50-momentum-crossover',
+  'supertrend-follow',
+  'tema-momentum',
+  'triple-ema-confluence',
+  'tsi-momentum',
+  'vwap-pullback',
+];
+
+const PRODUCTION_BASE = {
+  startDate: '2025-01-24',
+  endDate: '2026-01-24',
+  initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
+  marketType: 'FUTURES' as const,
+  leverage: 1,
+  marginType: 'CROSSED' as const,
+  setupTypes: ACTIVE_STRATEGIES,
+  minConfidence: 50,
+  useAlgorithmicLevels: true,
+  tpCalculationMode: 'fibonacci' as const,
+  fibonacciSwingRange: 'nearest' as const,
+  fibonacciTargetLevelLong: FILTER_DEFAULTS.fibonacciTargetLevelLong,
+  fibonacciTargetLevelShort: FILTER_DEFAULTS.fibonacciTargetLevelShort,
+  maxFibonacciEntryProgressPercent: FILTER_DEFAULTS.maxFibonacciEntryProgressPercent,
+  minRiskRewardRatioLong: FILTER_DEFAULTS.minRiskRewardRatioLong,
+  minRiskRewardRatioShort: FILTER_DEFAULTS.minRiskRewardRatioShort,
+  useMomentumTimingFilter: FILTER_DEFAULTS.useMomentumTimingFilter,
+  useBtcCorrelationFilter: FILTER_DEFAULTS.useBtcCorrelationFilter,
+  useVolumeFilter: FILTER_DEFAULTS.useVolumeFilter,
+  useTrendFilter: FILTER_DEFAULTS.useTrendFilter,
+  useStochasticFilter: FILTER_DEFAULTS.useStochasticFilter,
+  useAdxFilter: FILTER_DEFAULTS.useAdxFilter,
+  useMtfFilter: FILTER_DEFAULTS.useMtfFilter,
+  useMarketRegimeFilter: FILTER_DEFAULTS.useMarketRegimeFilter,
+  useDirectionFilter: FILTER_DEFAULTS.useDirectionFilter,
+  useFundingFilter: FILTER_DEFAULTS.useFundingFilter,
+  useConfluenceScoring: FILTER_DEFAULTS.useConfluenceScoring,
+  confluenceMinScore: FILTER_DEFAULTS.confluenceMinScore,
+  positionSizePercent: FILTER_DEFAULTS.positionSizePercent,
+  useCooldown: FILTER_DEFAULTS.useCooldown,
+  cooldownMinutes: FILTER_DEFAULTS.cooldownMinutes,
+  simulateFundingRates: true,
+  simulateLiquidation: true,
+  silent: true,
+};
+
+type FibLevel = 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236';
+
+const PARAM_GRID = {
+  fibonacciTargetLevelLong: ['1.272', '1.618', '2', '2.618', '3.618'] as FibLevel[],
+  fibonacciTargetLevelShort: ['1', '1.272', '1.618', '2', '2.618'] as FibLevel[],
+  maxFibonacciEntryProgressPercent: [61.8, 78.6, 100, 127.2],
+  minRiskRewardRatioLong: [0.5, 0.75, 1.0, 1.5],
+  minRiskRewardRatioShort: [0.5, 0.75, 1.0, 1.5],
+};
+
+const TRAILING_STOP_GRID = {
+  activationPercentLong: [50, 70, 90, 100, 127.2],
+  activationPercentShort: [50, 70, 80, 100, 127.2],
+  useProfitLockDistance: [false, true],
+};
+
+interface DirectionMetrics {
+  trades: number;
+  winRate: number;
+  pnlPercent: number;
+  avgTradePercent: number;
+}
+
+interface BacktestResultRow {
+  stage: string;
+  configId: string;
+  fibLong: string;
+  fibShort: string;
+  entryProgress: number;
+  rrLong: number;
+  rrShort: number;
+  symbol: string;
+  timeframe: string;
+  totalTrades: number;
+  winRate: number;
+  totalPnlPercent: number;
+  profitFactor: number;
+  maxDrawdownPercent: number;
+  sharpeRatio: number;
+  long: DirectionMetrics;
+  short: DirectionMetrics;
+}
+
+interface TrailingStopResultRow {
+  configId: string;
+  baseConfigId: string;
+  activationLong: number;
+  activationShort: number;
+  useProfitLock: boolean;
+  symbol: string;
+  timeframe: string;
+  totalTrades: number;
+  winRate: number;
+  totalPnlPercent: number;
+  maxDrawdownPercent: number;
+  sharpeRatio: number;
+  trailingStopExits: number;
+  takeProfitExits: number;
+  stopLossExits: number;
+  long: DirectionMetrics;
+  short: DirectionMetrics;
+}
+
+interface ProgressData {
+  completed: string[];
+  stage1Results: BacktestResultRow[];
+  stage2Results: BacktestResultRow[];
+  stage3Results: TrailingStopResultRow[];
+  baselineResults: BacktestResultRow[];
+}
+
+const OUTPUT_DIR = `/tmp/prod-parity-optimization-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+const PROGRESS_FILE = `${OUTPUT_DIR}/progress.json`;
+
+const fmt = (num: number, decimals = 2): string => num.toFixed(decimals);
+const pct = (num: number): string => `${num >= 0 ? '+' : ''}${fmt(num)}%`;
+
+const klineCache = new Map<string, any[]>();
+const setupCache = new Map<string, any[]>();
+const tradeCache = new Map<string, any[]>();
+
+const klineCacheKey = (symbol: string, tf: string): string => `${symbol}:${tf}`;
+
+const loadProgress = (): ProgressData => {
+  if (existsSync(PROGRESS_FILE)) {
+    return JSON.parse(readFileSync(PROGRESS_FILE, 'utf-8'));
+  }
+  return { completed: [], stage1Results: [], stage2Results: [], stage3Results: [], baselineResults: [] };
+};
+
+const saveProgress = (data: ProgressData): void => {
+  writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
+};
+
+const splitByDirection = (trades: any[]): { long: DirectionMetrics; short: DirectionMetrics } => {
+  const longTrades = trades.filter((t: any) => t.side === 'LONG');
+  const shortTrades = trades.filter((t: any) => t.side === 'SHORT');
+
+  const longWins = longTrades.filter((t: any) => (t.pnlPercent ?? 0) > 0).length;
+  const shortWins = shortTrades.filter((t: any) => (t.pnlPercent ?? 0) > 0).length;
+
+  const longPnl = longTrades.reduce((sum: number, t: any) => sum + (t.pnlPercent ?? 0), 0);
+  const shortPnl = shortTrades.reduce((sum: number, t: any) => sum + (t.pnlPercent ?? 0), 0);
+
+  return {
+    long: {
+      trades: longTrades.length,
+      winRate: longTrades.length > 0 ? (longWins / longTrades.length) * 100 : 0,
+      pnlPercent: longPnl,
+      avgTradePercent: longTrades.length > 0 ? longPnl / longTrades.length : 0,
+    },
+    short: {
+      trades: shortTrades.length,
+      winRate: shortTrades.length > 0 ? (shortWins / shortTrades.length) * 100 : 0,
+      pnlPercent: shortPnl,
+      avgTradePercent: shortTrades.length > 0 ? shortPnl / shortTrades.length : 0,
+    },
+  };
+};
+
+const prefetchKlines = async (symbol: string, tf: string): Promise<any[]> => {
+  const key = klineCacheKey(symbol, tf);
+  if (klineCache.has(key)) return klineCache.get(key)!;
+
+  log(`  [Prefetch] ${symbol}/${tf}...`);
+  const engine = new BacktestEngine();
+  const result = await engine.run({ ...PRODUCTION_BASE, symbol, interval: tf });
+  const klines = result.klines || [];
+  klineCache.set(key, klines);
+
+  if (result.trades?.length > 0) {
+    setupCache.set(key, result.setupDetections || []);
+    tradeCache.set(key, result.trades || []);
+  }
+
+  return klines;
+};
+
+const runBacktest = async (
+  config: Record<string, any>,
+  symbol: string,
+  tf: string
+): Promise<{ trades: any[]; metrics: any; setupDetections: any[] } | null> => {
+  try {
+    const klines = await prefetchKlines(symbol, tf);
+    const engine = new BacktestEngine();
+    const result = await engine.run({ ...config, symbol, interval: tf }, klines);
+    return {
+      trades: result.trades || [],
+      metrics: result.metrics,
+      setupDetections: result.setupDetections || [],
+    };
+  } catch (error) {
+    log(`  [Error] ${symbol}/${tf}:`, error instanceof Error ? error.message : error);
+    return null;
+  }
+};
+
+const buildResultRow = (
+  stage: string,
+  configId: string,
+  config: Record<string, any>,
+  symbol: string,
+  tf: string,
+  metrics: any,
+  trades: any[]
+): BacktestResultRow => {
+  const dirs = splitByDirection(trades);
+  return {
+    stage,
+    configId,
+    fibLong: config.fibonacciTargetLevelLong ?? PRODUCTION_BASE.fibonacciTargetLevelLong,
+    fibShort: config.fibonacciTargetLevelShort ?? PRODUCTION_BASE.fibonacciTargetLevelShort,
+    entryProgress: config.maxFibonacciEntryProgressPercent ?? PRODUCTION_BASE.maxFibonacciEntryProgressPercent,
+    rrLong: config.minRiskRewardRatioLong ?? PRODUCTION_BASE.minRiskRewardRatioLong,
+    rrShort: config.minRiskRewardRatioShort ?? PRODUCTION_BASE.minRiskRewardRatioShort,
+    symbol,
+    timeframe: tf,
+    totalTrades: metrics.totalTrades,
+    winRate: metrics.winRate,
+    totalPnlPercent: metrics.totalPnlPercent,
+    profitFactor: metrics.profitFactor,
+    maxDrawdownPercent: metrics.maxDrawdownPercent ?? 0,
+    sharpeRatio: metrics.sharpeRatio ?? 0,
+    long: dirs.long,
+    short: dirs.short,
+  };
+};
+
+const runValidation = async (): Promise<boolean> => {
+  log('\n' + '='.repeat(80));
+  log('VALIDATION - Running 3 quick backtests on BTCUSDT/4h');
+  log('='.repeat(80));
+
+  const validationConfigs = [
+    { name: 'baseline (production)', overrides: {} },
+    { name: 'fib-long=1.272', overrides: { fibonacciTargetLevelLong: '1.272' as FibLevel } },
+    { name: 'rr-long=1.5', overrides: { minRiskRewardRatioLong: 1.5 } },
+  ];
+
+  for (const vc of validationConfigs) {
+    log(`\n  Testing: ${vc.name}`);
+    const result = await runBacktest({ ...PRODUCTION_BASE, ...vc.overrides }, 'BTCUSDT', '4h');
+
+    if (!result) {
+      log(`  FAILED: No result for ${vc.name}`);
+      return false;
+    }
+
+    const dirs = splitByDirection(result.trades);
+
+    log(`    Trades: ${result.metrics.totalTrades} (L:${dirs.long.trades} S:${dirs.short.trades})`);
+    log(`    PnL: ${pct(result.metrics.totalPnlPercent)} (L:${pct(dirs.long.pnlPercent)} S:${pct(dirs.short.pnlPercent)})`);
+    log(`    WR: ${fmt(result.metrics.winRate)}% | PF: ${fmt(result.metrics.profitFactor)} | Sharpe: ${fmt(result.metrics.sharpeRatio ?? 0)}`);
+
+    if (result.metrics.totalTrades === 0) {
+      log(`  ABORT: Zero trades for ${vc.name}`);
+      return false;
+    }
+  }
+
+  log('\n  Validation PASSED - all configs produced trades');
+  return true;
+};
+
+const runStage1 = async (progress: ProgressData): Promise<BacktestResultRow[]> => {
+  log('\n' + '='.repeat(80));
+  log('STAGE 1 - Parameter Sensitivity Sweeps');
+  log('='.repeat(80));
+
+  const completedSet = new Set(progress.completed);
+  const results: BacktestResultRow[] = [...progress.stage1Results];
+  const baselineResults: BacktestResultRow[] = [...progress.baselineResults];
+
+  type SweepConfig = { name: string; overrides: Record<string, any> };
+
+  const sweepConfigs: SweepConfig[] = [];
+
+  for (const val of PARAM_GRID.fibonacciTargetLevelLong) {
+    sweepConfigs.push({ name: `fibL-${val}`, overrides: { fibonacciTargetLevelLong: val } });
+  }
+  for (const val of PARAM_GRID.fibonacciTargetLevelShort) {
+    sweepConfigs.push({ name: `fibS-${val}`, overrides: { fibonacciTargetLevelShort: val } });
+  }
+  for (const val of PARAM_GRID.maxFibonacciEntryProgressPercent) {
+    sweepConfigs.push({ name: `entry-${val}`, overrides: { maxFibonacciEntryProgressPercent: val } });
+  }
+  for (const val of PARAM_GRID.minRiskRewardRatioLong) {
+    sweepConfigs.push({ name: `rrL-${val}`, overrides: { minRiskRewardRatioLong: val } });
+  }
+  for (const val of PARAM_GRID.minRiskRewardRatioShort) {
+    sweepConfigs.push({ name: `rrS-${val}`, overrides: { minRiskRewardRatioShort: val } });
+  }
+
+  const allConfigs = [{ name: 'baseline', overrides: {} }, ...sweepConfigs];
+  const totalTasks = allConfigs.length * SYMBOLS.length * TIMEFRAMES.length;
+  let completedCount = 0;
+
+  log(`  Configs: ${allConfigs.length} (1 baseline + ${sweepConfigs.length} sweeps)`);
+  log(`  Symbol-TFs: ${SYMBOLS.length * TIMEFRAMES.length}`);
+  log(`  Total backtests: ${totalTasks}`);
+
+  for (const symbol of SYMBOLS) {
+    for (const tf of TIMEFRAMES) {
+      await prefetchKlines(symbol, tf);
+
+      for (const cfg of allConfigs) {
+        const taskKey = `s1:${cfg.name}:${symbol}:${tf}`;
+        completedCount++;
+
+        if (completedSet.has(taskKey)) continue;
+
+        const fullConfig = { ...PRODUCTION_BASE, ...cfg.overrides };
+        const result = await runBacktest(fullConfig, symbol, tf);
+
+        if (result) {
+          const row = buildResultRow('S1', cfg.name, fullConfig, symbol, tf, result.metrics, result.trades);
+
+          if (cfg.name === 'baseline') {
+            baselineResults.push(row);
+          } else {
+            results.push(row);
+          }
+
+          completedSet.add(taskKey);
+          progress.completed = [...completedSet];
+          progress.stage1Results = results;
+          progress.baselineResults = baselineResults;
+
+          if (completedCount % 10 === 0) {
+            saveProgress(progress);
+            const pctDone = (completedCount / totalTasks) * 100;
+            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%)`);
+          }
+        }
+      }
+    }
+  }
+
+  saveProgress(progress);
+  log(`  Stage 1 complete: ${results.length} sweep results + ${baselineResults.length} baseline results`);
+  return results;
+};
+
+interface TopValues {
+  fibonacciTargetLevelLong: FibLevel[];
+  fibonacciTargetLevelShort: FibLevel[];
+  maxFibonacciEntryProgressPercent: number[];
+  minRiskRewardRatioLong: number[];
+  minRiskRewardRatioShort: number[];
+}
+
+const analyzeStage1 = (results: BacktestResultRow[], baselineResults: BacktestResultRow[]): TopValues => {
+  log('\n' + '='.repeat(80));
+  log('STAGE 1 ANALYSIS - Finding top parameter values');
+  log('='.repeat(80));
+
+  const baselineAvgPnl = baselineResults.length > 0
+    ? baselineResults.reduce((sum, r) => sum + r.totalPnlPercent, 0) / baselineResults.length
+    : 0;
+  log(`  Baseline avg PnL: ${pct(baselineAvgPnl)}`);
+
+  const analyzeParam = <T extends string | number>(
+    prefix: string,
+    values: T[],
+    label: string
+  ): T[] => {
+    const scores: Array<{ value: T; avgPnl: number; avgSharpe: number; count: number }> = [];
+
+    for (const val of values) {
+      const matching = results.filter(r => r.configId === `${prefix}${val}`);
+      if (matching.length === 0) continue;
+
+      const avgPnl = matching.reduce((s, r) => s + r.totalPnlPercent, 0) / matching.length;
+      const avgSharpe = matching.reduce((s, r) => s + r.sharpeRatio, 0) / matching.length;
+      scores.push({ value: val, avgPnl, avgSharpe, count: matching.length });
+    }
+
+    scores.sort((a, b) => {
+      const scoreA = a.avgPnl * 0.6 + a.avgSharpe * 10 * 0.4;
+      const scoreB = b.avgPnl * 0.6 + b.avgSharpe * 10 * 0.4;
+      return scoreB - scoreA;
+    });
+
+    log(`\n  ${label}:`);
+    for (const s of scores) {
+      const marker = scores.indexOf(s) < 3 ? ' <-- TOP' : '';
+      log(`    ${String(s.value).padStart(8)}: PnL ${pct(s.avgPnl).padStart(10)} | Sharpe ${fmt(s.avgSharpe).padStart(6)} | n=${s.count}${marker}`);
+    }
+
+    return scores.slice(0, 3).map(s => s.value);
+  };
+
+  const topFibLong = analyzeParam('fibL-', PARAM_GRID.fibonacciTargetLevelLong, 'Fibonacci Target Level LONG');
+  const topFibShort = analyzeParam('fibS-', PARAM_GRID.fibonacciTargetLevelShort, 'Fibonacci Target Level SHORT');
+  const topEntry = analyzeParam('entry-', PARAM_GRID.maxFibonacciEntryProgressPercent, 'Max Entry Progress %');
+  const topRrLong = analyzeParam('rrL-', PARAM_GRID.minRiskRewardRatioLong, 'Min R:R LONG');
+  const topRrShort = analyzeParam('rrS-', PARAM_GRID.minRiskRewardRatioShort, 'Min R:R SHORT');
+
+  return {
+    fibonacciTargetLevelLong: topFibLong as FibLevel[],
+    fibonacciTargetLevelShort: topFibShort as FibLevel[],
+    maxFibonacciEntryProgressPercent: topEntry as number[],
+    minRiskRewardRatioLong: topRrLong as number[],
+    minRiskRewardRatioShort: topRrShort as number[],
+  };
+};
+
+const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<BacktestResultRow[]> => {
+  log('\n' + '='.repeat(80));
+  log('STAGE 2 - Top Combinations Cross-Product');
+  log('='.repeat(80));
+
+  const completedSet = new Set(progress.completed);
+  const results: BacktestResultRow[] = [...progress.stage2Results];
+
+  type ComboConfig = { name: string; overrides: Record<string, any> };
+  const combos: ComboConfig[] = [];
+
+  for (const fibL of topValues.fibonacciTargetLevelLong) {
+    for (const fibS of topValues.fibonacciTargetLevelShort) {
+      const fibLNum = parseFloat(fibL);
+      const fibSNum = parseFloat(fibS);
+      if (fibSNum > fibLNum) continue;
+
+      for (const entry of topValues.maxFibonacciEntryProgressPercent) {
+        for (const rrL of topValues.minRiskRewardRatioLong) {
+          for (const rrS of topValues.minRiskRewardRatioShort) {
+            const name = `fL${fibL}-fS${fibS}-e${entry}-rL${rrL}-rS${rrS}`;
+            combos.push({
+              name,
+              overrides: {
+                fibonacciTargetLevelLong: fibL,
+                fibonacciTargetLevelShort: fibS,
+                maxFibonacciEntryProgressPercent: entry,
+                minRiskRewardRatioLong: rrL,
+                minRiskRewardRatioShort: rrS,
+              },
+            });
+          }
+        }
+      }
+    }
+  }
+
+  const totalTasks = combos.length * SYMBOLS.length * TIMEFRAMES.length;
+  let completedCount = 0;
+
+  log(`  Combinations: ${combos.length} (after filtering fibS > fibL)`);
+  log(`  Total backtests: ${totalTasks}`);
+
+  for (const symbol of SYMBOLS) {
+    for (const tf of TIMEFRAMES) {
+      for (const combo of combos) {
+        const taskKey = `s2:${combo.name}:${symbol}:${tf}`;
+        completedCount++;
+
+        if (completedSet.has(taskKey)) continue;
+
+        const fullConfig = { ...PRODUCTION_BASE, ...combo.overrides };
+        const result = await runBacktest(fullConfig, symbol, tf);
+
+        if (result) {
+          const row = buildResultRow('S2', combo.name, fullConfig, symbol, tf, result.metrics, result.trades);
+          results.push(row);
+
+          completedSet.add(taskKey);
+          progress.completed = [...completedSet];
+          progress.stage2Results = results;
+
+          if (completedCount % 25 === 0) {
+            saveProgress(progress);
+            const pctDone = (completedCount / totalTasks) * 100;
+            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%)`);
+          }
+        }
+      }
+    }
+  }
+
+  saveProgress(progress);
+  log(`  Stage 2 complete: ${results.length} results`);
+  return results;
+};
+
+const getTopStage2Configs = (
+  stage2Results: BacktestResultRow[],
+  topN: number = 5
+): Array<{ name: string; overrides: Record<string, any> }> => {
+  const byConfig = new Map<string, BacktestResultRow[]>();
+  for (const r of stage2Results) {
+    if (!byConfig.has(r.configId)) byConfig.set(r.configId, []);
+    byConfig.get(r.configId)!.push(r);
+  }
+
+  const ranked: Array<{ configId: string; avgPnl: number; avgSharpe: number; rows: BacktestResultRow[] }> = [];
+  for (const [configId, rows] of byConfig) {
+    const avgPnl = rows.reduce((s, r) => s + r.totalPnlPercent, 0) / rows.length;
+    const avgSharpe = rows.reduce((s, r) => s + r.sharpeRatio, 0) / rows.length;
+    ranked.push({ configId, avgPnl, avgSharpe, rows });
+  }
+
+  ranked.sort((a, b) => {
+    const scoreA = a.avgPnl * 0.6 + a.avgSharpe * 10 * 0.4;
+    const scoreB = b.avgPnl * 0.6 + b.avgSharpe * 10 * 0.4;
+    return scoreB - scoreA;
+  });
+
+  return ranked.slice(0, topN).map(r => {
+    const sample = r.rows[0]!;
+    return {
+      name: r.configId,
+      overrides: {
+        fibonacciTargetLevelLong: sample.fibLong,
+        fibonacciTargetLevelShort: sample.fibShort,
+        maxFibonacciEntryProgressPercent: sample.entryProgress,
+        minRiskRewardRatioLong: sample.rrLong,
+        minRiskRewardRatioShort: sample.rrShort,
+      },
+    };
+  });
+};
+
+const runStage3 = async (
+  stage2Results: BacktestResultRow[],
+  progress: ProgressData
+): Promise<TrailingStopResultRow[]> => {
+  log('\n' + '='.repeat(80));
+  log('STAGE 3 - Trailing Stop Optimization');
+  log('='.repeat(80));
+
+  const completedSet = new Set(progress.completed);
+  const results: TrailingStopResultRow[] = [...progress.stage3Results];
+  const topConfigs = getTopStage2Configs(stage2Results, 5);
+
+  log(`  Top configs from Stage 2: ${topConfigs.length}`);
+  for (const cfg of topConfigs) log(`    - ${cfg.name}`);
+
+  type TSCombo = {
+    name: string;
+    activationLong: number;
+    activationShort: number;
+    useProfitLock: boolean;
+  };
+
+  const tsCombos: TSCombo[] = [];
+  for (const actL of TRAILING_STOP_GRID.activationPercentLong) {
+    for (const actS of TRAILING_STOP_GRID.activationPercentShort) {
+      for (const profitLock of TRAILING_STOP_GRID.useProfitLockDistance) {
+        tsCombos.push({
+          name: `aL${actL}-aS${actS}-pl${profitLock ? 1 : 0}`,
+          activationLong: actL,
+          activationShort: actS,
+          useProfitLock: profitLock,
+        });
+      }
+    }
+  }
+
+  const totalTasks = topConfigs.length * tsCombos.length * SYMBOLS.length * TIMEFRAMES.length;
+  let completedCount = 0;
+
+  log(`  Trailing stop combos: ${tsCombos.length}`);
+  log(`  Total simulations: ${totalTasks}`);
+
+  for (const baseCfg of topConfigs) {
+    for (const symbol of SYMBOLS) {
+      for (const tf of TIMEFRAMES) {
+        const klines = await prefetchKlines(symbol, tf);
+        if (klines.length === 0) continue;
+
+        const fullConfig = { ...PRODUCTION_BASE, ...baseCfg.overrides };
+        const btResult = await runBacktest(fullConfig, symbol, tf);
+        if (!btResult || btResult.trades.length === 0) {
+          completedCount += tsCombos.length;
+          continue;
+        }
+
+        const setupMap = new Map<string, any>();
+        for (const setup of btResult.setupDetections) {
+          setupMap.set(setup.id, setup);
+        }
+
+        const granularIndex = new GranularPriceIndex(klines);
+
+        const tradeSetups = btResult.trades.map((trade: any) => {
+          const setup = setupMap.get(trade.setupId);
+          return {
+            id: trade.id,
+            symbol: trade.symbol ?? symbol,
+            side: trade.side,
+            entryPrice: trade.entryPrice,
+            entryTime: typeof trade.entryTime === 'string' ? new Date(trade.entryTime).getTime() : trade.entryTime,
+            stopLoss: trade.stopLoss ?? trade.entryPrice * (trade.side === 'LONG' ? 0.98 : 1.02),
+            takeProfit: trade.takeProfit ?? trade.entryPrice * (trade.side === 'LONG' ? 1.04 : 0.96),
+            quantity: trade.quantity,
+            atr: setup?.atr,
+            fibonacciProjection: setup?.fibonacciProjection ?? null,
+            maxExitTime: typeof trade.exitTime === 'string' ? new Date(trade.exitTime).getTime() : trade.exitTime,
+          };
+        });
+
+        for (const tsCombo of tsCombos) {
+          const taskKey = `s3:${baseCfg.name}:${tsCombo.name}:${symbol}:${tf}`;
+          completedCount++;
+
+          if (completedSet.has(taskKey)) continue;
+
+          const simConfig = {
+            trailingStopEnabled: true,
+            long: {
+              activationPercent: tsCombo.activationLong,
+              distancePercent: TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentLong * 100,
+              atrMultiplier: TRAILING_STOP_CONFIG.ATR_MULTIPLIER,
+              breakevenProfitThreshold: TRAILING_STOP_CONFIG.BREAKEVEN_THRESHOLD,
+            },
+            short: {
+              activationPercent: tsCombo.activationShort,
+              distancePercent: TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentShort * 100,
+              atrMultiplier: TRAILING_STOP_CONFIG.ATR_MULTIPLIER,
+              breakevenProfitThreshold: TRAILING_STOP_CONFIG.BREAKEVEN_THRESHOLD,
+            },
+            useAdaptiveTrailing: TRAILING_STOP_USER_DEFAULTS.useAdaptiveTrailing,
+            useProfitLockDistance: tsCombo.useProfitLock,
+            marketType: 'FUTURES' as const,
+            useBnbDiscount: false,
+            vipLevel: 0,
+          };
+
+          const simulator = new TrailingStopSimulator(simConfig, granularIndex);
+
+          let tsExits = 0;
+          let tpExits = 0;
+          let slExits = 0;
+          const simulatedTrades: Array<{ side: string; pnlPercent: number }> = [];
+
+          for (const tradeSetup of tradeSetups) {
+            const simResult = simulator.simulateTrade(tradeSetup);
+
+            if (simResult.exitReason === 'TRAILING_STOP') tsExits++;
+            else if (simResult.exitReason === 'TAKE_PROFIT') tpExits++;
+            else if (simResult.exitReason === 'STOP_LOSS') slExits++;
+
+            simulatedTrades.push({
+              side: tradeSetup.side,
+              pnlPercent: simResult.pnlPercent,
+            });
+          }
+
+          const totalPnl = simulatedTrades.reduce((s, t) => s + t.pnlPercent, 0);
+          const wins = simulatedTrades.filter(t => t.pnlPercent > 0).length;
+          const totalCount = simulatedTrades.length;
+
+          const longSim = simulatedTrades.filter(t => t.side === 'LONG');
+          const shortSim = simulatedTrades.filter(t => t.side === 'SHORT');
+
+          const longWins = longSim.filter(t => t.pnlPercent > 0).length;
+          const shortWins = shortSim.filter(t => t.pnlPercent > 0).length;
+          const longPnl = longSim.reduce((s, t) => s + t.pnlPercent, 0);
+          const shortPnl = shortSim.reduce((s, t) => s + t.pnlPercent, 0);
+
+          const row: TrailingStopResultRow = {
+            configId: `${baseCfg.name}|${tsCombo.name}`,
+            baseConfigId: baseCfg.name,
+            activationLong: tsCombo.activationLong,
+            activationShort: tsCombo.activationShort,
+            useProfitLock: tsCombo.useProfitLock,
+            symbol,
+            timeframe: tf,
+            totalTrades: totalCount,
+            winRate: totalCount > 0 ? (wins / totalCount) * 100 : 0,
+            totalPnlPercent: totalPnl,
+            maxDrawdownPercent: 0,
+            sharpeRatio: 0,
+            trailingStopExits: tsExits,
+            takeProfitExits: tpExits,
+            stopLossExits: slExits,
+            long: {
+              trades: longSim.length,
+              winRate: longSim.length > 0 ? (longWins / longSim.length) * 100 : 0,
+              pnlPercent: longPnl,
+              avgTradePercent: longSim.length > 0 ? longPnl / longSim.length : 0,
+            },
+            short: {
+              trades: shortSim.length,
+              winRate: shortSim.length > 0 ? (shortWins / shortSim.length) * 100 : 0,
+              pnlPercent: shortPnl,
+              avgTradePercent: shortSim.length > 0 ? shortPnl / shortSim.length : 0,
+            },
+          };
+
+          results.push(row);
+          completedSet.add(taskKey);
+          progress.completed = [...completedSet];
+          progress.stage3Results = results;
+
+          if (completedCount % 50 === 0) {
+            saveProgress(progress);
+            const pctDone = (completedCount / totalTasks) * 100;
+            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%)`);
+          }
+        }
+      }
+    }
+  }
+
+  saveProgress(progress);
+  log(`  Stage 3 complete: ${results.length} results`);
+  return results;
+};
+
+const generateReports = (
+  baselineResults: BacktestResultRow[],
+  stage1Results: BacktestResultRow[],
+  stage2Results: BacktestResultRow[],
+  stage3Results: TrailingStopResultRow[]
+): void => {
+  log('\n' + '='.repeat(80));
+  log('GENERATING REPORTS');
+  log('='.repeat(80));
+
+  const baselineAvgPnl = baselineResults.length > 0
+    ? baselineResults.reduce((s, r) => s + r.totalPnlPercent, 0) / baselineResults.length
+    : 0;
+  const baselineAvgSharpe = baselineResults.length > 0
+    ? baselineResults.reduce((s, r) => s + r.sharpeRatio, 0) / baselineResults.length
+    : 0;
+
+  let summary = '';
+  summary += '='.repeat(120) + '\n';
+  summary += 'PRODUCTION-PARITY OPTIMIZATION RESULTS\n';
+  summary += '='.repeat(120) + '\n';
+  summary += `Generated: ${new Date().toISOString()}\n`;
+  summary += `Period: ${PRODUCTION_BASE.startDate} to ${PRODUCTION_BASE.endDate}\n`;
+  summary += `Symbols: ${SYMBOLS.join(', ')}\n`;
+  summary += `Timeframes: ${TIMEFRAMES.join(', ')}\n`;
+  summary += `Strategies: ${ACTIVE_STRATEGIES.length} (portfolio mode)\n`;
+  summary += `Market: ${PRODUCTION_BASE.marketType} | Leverage: ${PRODUCTION_BASE.leverage}\n`;
+  summary += `Total backtests: S1=${baselineResults.length + stage1Results.length} S2=${stage2Results.length} S3=${stage3Results.length}\n`;
+  summary += '='.repeat(120) + '\n\n';
+
+  summary += 'PRODUCTION BASELINE\n';
+  summary += '-'.repeat(80) + '\n';
+  summary += `  Fib Long: ${PRODUCTION_BASE.fibonacciTargetLevelLong} | Fib Short: ${PRODUCTION_BASE.fibonacciTargetLevelShort}\n`;
+  summary += `  Entry Progress: ${PRODUCTION_BASE.maxFibonacciEntryProgressPercent}% | R:R Long: ${PRODUCTION_BASE.minRiskRewardRatioLong} | R:R Short: ${PRODUCTION_BASE.minRiskRewardRatioShort}\n`;
+  summary += `  Trailing LONG Activation: ${TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentLong * 100}%\n`;
+  summary += `  Trailing SHORT Activation: ${TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentShort * 100}%\n`;
+  summary += `  Profit Lock Distance: ${TRAILING_STOP_USER_DEFAULTS.useProfitLockDistance ? 'ON' : 'OFF'}\n`;
+  summary += `  Avg PnL: ${pct(baselineAvgPnl)} | Avg Sharpe: ${fmt(baselineAvgSharpe)}\n\n`;
+
+  const baselineBySymbol = new Map<string, BacktestResultRow[]>();
+  for (const r of baselineResults) {
+    if (!baselineBySymbol.has(r.symbol)) baselineBySymbol.set(r.symbol, []);
+    baselineBySymbol.get(r.symbol)!.push(r);
+  }
+  for (const [symbol, rows] of baselineBySymbol) {
+    const avg = rows.reduce((s, r) => s + r.totalPnlPercent, 0) / rows.length;
+    const avgL = rows.reduce((s, r) => s + r.long.pnlPercent, 0) / rows.length;
+    const avgS = rows.reduce((s, r) => s + r.short.pnlPercent, 0) / rows.length;
+    summary += `  ${symbol}: PnL ${pct(avg)} (L:${pct(avgL)} S:${pct(avgS)})\n`;
+  }
+
+  summary += '\n' + '='.repeat(120) + '\n';
+  summary += 'STAGE 1 - PARAMETER SENSITIVITY\n';
+  summary += '='.repeat(120) + '\n\n';
+
+  const paramGroups: Array<{ label: string; prefix: string; values: (string | number)[] }> = [
+    { label: 'Fibonacci Target LONG', prefix: 'fibL-', values: PARAM_GRID.fibonacciTargetLevelLong },
+    { label: 'Fibonacci Target SHORT', prefix: 'fibS-', values: PARAM_GRID.fibonacciTargetLevelShort },
+    { label: 'Max Entry Progress %', prefix: 'entry-', values: PARAM_GRID.maxFibonacciEntryProgressPercent },
+    { label: 'Min R:R LONG', prefix: 'rrL-', values: PARAM_GRID.minRiskRewardRatioLong },
+    { label: 'Min R:R SHORT', prefix: 'rrS-', values: PARAM_GRID.minRiskRewardRatioShort },
+  ];
+
+  for (const pg of paramGroups) {
+    summary += `${pg.label}\n`;
+    summary += '-'.repeat(100) + '\n';
+    summary += 'Value    | Avg PnL %   | Avg Sharpe | Avg WR %  | Avg L PnL % | Avg S PnL % | Trades | vs Baseline\n';
+    summary += '-'.repeat(100) + '\n';
+
+    const valueScores: Array<{ val: string | number; avgPnl: number }> = [];
+
+    for (const val of pg.values) {
+      const matching = stage1Results.filter(r => r.configId === `${pg.prefix}${val}`);
+      if (matching.length === 0) continue;
+
+      const avgPnl = matching.reduce((s, r) => s + r.totalPnlPercent, 0) / matching.length;
+      const avgSharpe = matching.reduce((s, r) => s + r.sharpeRatio, 0) / matching.length;
+      const avgWr = matching.reduce((s, r) => s + r.winRate, 0) / matching.length;
+      const avgLPnl = matching.reduce((s, r) => s + r.long.pnlPercent, 0) / matching.length;
+      const avgSPnl = matching.reduce((s, r) => s + r.short.pnlPercent, 0) / matching.length;
+      const totalTrades = matching.reduce((s, r) => s + r.totalTrades, 0);
+      const diff = avgPnl - baselineAvgPnl;
+
+      valueScores.push({ val, avgPnl });
+
+      summary += `${String(val).padStart(8)} | ${pct(avgPnl).padStart(11)} | ${fmt(avgSharpe).padStart(10)} | ${fmt(avgWr).padStart(8)}% | ${pct(avgLPnl).padStart(11)} | ${pct(avgSPnl).padStart(11)} | ${totalTrades.toString().padStart(6)} | ${pct(diff).padStart(10)}\n`;
+    }
+    summary += '\n';
+  }
+
+  summary += '='.repeat(120) + '\n';
+  summary += 'STAGE 2 - TOP COMBINATIONS\n';
+  summary += '='.repeat(120) + '\n\n';
+
+  const byConfig2 = new Map<string, BacktestResultRow[]>();
+  for (const r of stage2Results) {
+    if (!byConfig2.has(r.configId)) byConfig2.set(r.configId, []);
+    byConfig2.get(r.configId)!.push(r);
+  }
+
+  const ranked2: Array<{
+    configId: string;
+    avgPnl: number;
+    avgSharpe: number;
+    avgWr: number;
+    avgLPnl: number;
+    avgSPnl: number;
+    totalTrades: number;
+    avgDD: number;
+    sample: BacktestResultRow;
+  }> = [];
+
+  for (const [configId, rows] of byConfig2) {
+    ranked2.push({
+      configId,
+      avgPnl: rows.reduce((s, r) => s + r.totalPnlPercent, 0) / rows.length,
+      avgSharpe: rows.reduce((s, r) => s + r.sharpeRatio, 0) / rows.length,
+      avgWr: rows.reduce((s, r) => s + r.winRate, 0) / rows.length,
+      avgLPnl: rows.reduce((s, r) => s + r.long.pnlPercent, 0) / rows.length,
+      avgSPnl: rows.reduce((s, r) => s + r.short.pnlPercent, 0) / rows.length,
+      totalTrades: rows.reduce((s, r) => s + r.totalTrades, 0),
+      avgDD: rows.reduce((s, r) => s + r.maxDrawdownPercent, 0) / rows.length,
+      sample: rows[0]!,
+    });
+  }
+
+  ranked2.sort((a, b) => {
+    const scoreA = a.avgPnl * 0.6 + a.avgSharpe * 10 * 0.4;
+    const scoreB = b.avgPnl * 0.6 + b.avgSharpe * 10 * 0.4;
+    return scoreB - scoreA;
+  });
+
+  summary += 'TOP 20 COMBINATIONS\n';
+  summary += '-'.repeat(160) + '\n';
+  summary += 'Rank | Config                                          | Avg PnL %  | Sharpe | WR %   | L PnL %    | S PnL %    | Max DD % | Trades | vs BL\n';
+  summary += '-'.repeat(160) + '\n';
+
+  ranked2.slice(0, 20).forEach((r, i) => {
+    const diff = r.avgPnl - baselineAvgPnl;
+    summary += `${(i + 1).toString().padStart(4)} | ${r.configId.padEnd(47)} | ${pct(r.avgPnl).padStart(10)} | ${fmt(r.avgSharpe).padStart(6)} | ${fmt(r.avgWr).padStart(5)}% | ${pct(r.avgLPnl).padStart(10)} | ${pct(r.avgSPnl).padStart(10)} | ${fmt(r.avgDD).padStart(7)}% | ${r.totalTrades.toString().padStart(6)} | ${pct(diff).padStart(8)}\n`;
+  });
+
+  if (stage3Results.length > 0) {
+    summary += '\n' + '='.repeat(120) + '\n';
+    summary += 'STAGE 3 - TRAILING STOP OPTIMIZATION\n';
+    summary += '='.repeat(120) + '\n\n';
+
+    const byTsConfig = new Map<string, TrailingStopResultRow[]>();
+    for (const r of stage3Results) {
+      const key = `${r.activationLong}-${r.activationShort}-${r.useProfitLock}`;
+      if (!byTsConfig.has(key)) byTsConfig.set(key, []);
+      byTsConfig.get(key)!.push(r);
+    }
+
+    const rankedTs: Array<{
+      key: string;
+      actL: number;
+      actS: number;
+      profitLock: boolean;
+      avgPnl: number;
+      avgWr: number;
+      totalTrades: number;
+      avgTsExits: number;
+      avgTpExits: number;
+      avgSlExits: number;
+      avgLPnl: number;
+      avgSPnl: number;
+    }> = [];
+
+    for (const [key, rows] of byTsConfig) {
+      const sample = rows[0]!;
+      rankedTs.push({
+        key,
+        actL: sample.activationLong,
+        actS: sample.activationShort,
+        profitLock: sample.useProfitLock,
+        avgPnl: rows.reduce((s, r) => s + r.totalPnlPercent, 0) / rows.length,
+        avgWr: rows.reduce((s, r) => s + r.winRate, 0) / rows.length,
+        totalTrades: rows.reduce((s, r) => s + r.totalTrades, 0),
+        avgTsExits: rows.reduce((s, r) => s + r.trailingStopExits, 0) / rows.length,
+        avgTpExits: rows.reduce((s, r) => s + r.takeProfitExits, 0) / rows.length,
+        avgSlExits: rows.reduce((s, r) => s + r.stopLossExits, 0) / rows.length,
+        avgLPnl: rows.reduce((s, r) => s + r.long.pnlPercent, 0) / rows.length,
+        avgSPnl: rows.reduce((s, r) => s + r.short.pnlPercent, 0) / rows.length,
+      });
+    }
+
+    rankedTs.sort((a, b) => b.avgPnl - a.avgPnl);
+
+    summary += 'TRAILING STOP CONFIGS (aggregated across all base configs & symbol-TFs)\n';
+    summary += '-'.repeat(140) + '\n';
+    summary += 'Rank | Act L % | Act S % | ProfLock | Avg PnL %  | WR %   | L PnL %    | S PnL %    | TS Exits | TP Exits | SL Exits\n';
+    summary += '-'.repeat(140) + '\n';
+
+    rankedTs.slice(0, 20).forEach((r, i) => {
+      summary += `${(i + 1).toString().padStart(4)} | ${fmt(r.actL).padStart(7)} | ${fmt(r.actS).padStart(7)} | ${(r.profitLock ? 'ON' : 'OFF').padStart(8)} | ${pct(r.avgPnl).padStart(10)} | ${fmt(r.avgWr).padStart(5)}% | ${pct(r.avgLPnl).padStart(10)} | ${pct(r.avgSPnl).padStart(10)} | ${fmt(r.avgTsExits).padStart(8)} | ${fmt(r.avgTpExits).padStart(8)} | ${fmt(r.avgSlExits).padStart(8)}\n`;
+    });
+
+    summary += '\nPROFIT LOCK DISTANCE: ON vs OFF\n';
+    summary += '-'.repeat(80) + '\n';
+
+    const plOn = stage3Results.filter(r => r.useProfitLock);
+    const plOff = stage3Results.filter(r => !r.useProfitLock);
+
+    if (plOn.length > 0 && plOff.length > 0) {
+      const avgPnlOn = plOn.reduce((s, r) => s + r.totalPnlPercent, 0) / plOn.length;
+      const avgPnlOff = plOff.reduce((s, r) => s + r.totalPnlPercent, 0) / plOff.length;
+      const avgWrOn = plOn.reduce((s, r) => s + r.winRate, 0) / plOn.length;
+      const avgWrOff = plOff.reduce((s, r) => s + r.winRate, 0) / plOff.length;
+
+      summary += `  Profit Lock ON:  Avg PnL ${pct(avgPnlOn)} | WR ${fmt(avgWrOn)}% | n=${plOn.length}\n`;
+      summary += `  Profit Lock OFF: Avg PnL ${pct(avgPnlOff)} | WR ${fmt(avgWrOff)}% | n=${plOff.length}\n`;
+      summary += `  Difference: ${pct(avgPnlOn - avgPnlOff)} PnL | ${pct(avgWrOn - avgWrOff)} WR\n`;
+    }
+  }
+
+  summary += '\n' + '='.repeat(120) + '\n';
+  summary += 'RECOMMENDATIONS\n';
+  summary += '='.repeat(120) + '\n\n';
+
+  const bestS2 = ranked2[0];
+  if (bestS2) {
+    const diff = bestS2.avgPnl - baselineAvgPnl;
+    summary += `BEST OVERALL CONFIG (Stage 2):\n`;
+    summary += `  ${bestS2.configId}\n`;
+    summary += `  Fib Long: ${bestS2.sample.fibLong} | Fib Short: ${bestS2.sample.fibShort}\n`;
+    summary += `  Entry Progress: ${bestS2.sample.entryProgress}% | R:R Long: ${bestS2.sample.rrLong} | R:R Short: ${bestS2.sample.rrShort}\n`;
+    summary += `  Avg PnL: ${pct(bestS2.avgPnl)} | Sharpe: ${fmt(bestS2.avgSharpe)} | WR: ${fmt(bestS2.avgWr)}%\n`;
+    summary += `  Improvement vs baseline: ${pct(diff)}\n\n`;
+
+    const prodFibL = PRODUCTION_BASE.fibonacciTargetLevelLong;
+    const prodFibS = PRODUCTION_BASE.fibonacciTargetLevelShort;
+    const prodEntry = PRODUCTION_BASE.maxFibonacciEntryProgressPercent;
+    const prodRrL = PRODUCTION_BASE.minRiskRewardRatioLong;
+    const prodRrS = PRODUCTION_BASE.minRiskRewardRatioShort;
+
+    summary += 'PARAMETER CHANGES RECOMMENDED:\n';
+    summary += '-'.repeat(80) + '\n';
+
+    if (bestS2.sample.fibLong !== prodFibL) {
+      summary += `  fibonacciTargetLevelLong: ${prodFibL} -> ${bestS2.sample.fibLong}\n`;
+    }
+    if (bestS2.sample.fibShort !== prodFibS) {
+      summary += `  fibonacciTargetLevelShort: ${prodFibS} -> ${bestS2.sample.fibShort}\n`;
+    }
+    if (bestS2.sample.entryProgress !== prodEntry) {
+      summary += `  maxFibonacciEntryProgressPercent: ${prodEntry} -> ${bestS2.sample.entryProgress}\n`;
+    }
+    if (bestS2.sample.rrLong !== prodRrL) {
+      summary += `  minRiskRewardRatioLong: ${prodRrL} -> ${bestS2.sample.rrLong}\n`;
+    }
+    if (bestS2.sample.rrShort !== prodRrS) {
+      summary += `  minRiskRewardRatioShort: ${prodRrS} -> ${bestS2.sample.rrShort}\n`;
+    }
+
+    if (
+      bestS2.sample.fibLong === prodFibL &&
+      bestS2.sample.fibShort === prodFibS &&
+      bestS2.sample.entryProgress === prodEntry &&
+      bestS2.sample.rrLong === prodRrL &&
+      bestS2.sample.rrShort === prodRrS
+    ) {
+      summary += '  No changes needed - production defaults are optimal!\n';
+    }
+  }
+
+  if (stage3Results.length > 0) {
+    const byTsFull = new Map<string, TrailingStopResultRow[]>();
+    for (const r of stage3Results) {
+      const key = r.configId;
+      if (!byTsFull.has(key)) byTsFull.set(key, []);
+      byTsFull.get(key)!.push(r);
+    }
+
+    const bestTsOverall = [...byTsFull.entries()]
+      .map(([key, rows]) => ({
+        key,
+        sample: rows[0]!,
+        avgPnl: rows.reduce((s, r) => s + r.totalPnlPercent, 0) / rows.length,
+      }))
+      .sort((a, b) => b.avgPnl - a.avgPnl)[0];
+
+    if (bestTsOverall) {
+      const prodActL = TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentLong * 100;
+      const prodActS = TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentShort * 100;
+      const prodPL = TRAILING_STOP_USER_DEFAULTS.useProfitLockDistance;
+
+      summary += '\nTRAILING STOP CHANGES RECOMMENDED:\n';
+      summary += '-'.repeat(80) + '\n';
+
+      if (bestTsOverall.sample.activationLong !== prodActL) {
+        summary += `  trailingActivationPercentLong: ${prodActL}% -> ${bestTsOverall.sample.activationLong}%\n`;
+      }
+      if (bestTsOverall.sample.activationShort !== prodActS) {
+        summary += `  trailingActivationPercentShort: ${prodActS}% -> ${bestTsOverall.sample.activationShort}%\n`;
+      }
+      if (bestTsOverall.sample.useProfitLock !== prodPL) {
+        summary += `  useProfitLockDistance: ${prodPL ? 'ON' : 'OFF'} -> ${bestTsOverall.sample.useProfitLock ? 'ON' : 'OFF'}\n`;
+      }
+
+      if (
+        bestTsOverall.sample.activationLong === prodActL &&
+        bestTsOverall.sample.activationShort === prodActS &&
+        bestTsOverall.sample.useProfitLock === prodPL
+      ) {
+        summary += '  No changes needed - production trailing stop defaults are optimal!\n';
+      }
+    }
+  }
+
+  writeFileSync(`${OUTPUT_DIR}/summary.txt`, summary);
+  log(`  Wrote summary.txt`);
+
+  let csv = 'Stage,ConfigId,FibLong,FibShort,EntryProg,RRLong,RRShort,Symbol,TF,Trades,WR,PnL%,PF,MaxDD%,Sharpe,LongT,LongWR,LongPnL%,ShortT,ShortWR,ShortPnL%\n';
+
+  for (const r of [...baselineResults, ...stage1Results, ...stage2Results]) {
+    csv += `${r.stage},${r.configId},${r.fibLong},${r.fibShort},${r.entryProgress},${r.rrLong},${r.rrShort},${r.symbol},${r.timeframe},${r.totalTrades},${fmt(r.winRate)},${fmt(r.totalPnlPercent)},${fmt(r.profitFactor)},${fmt(r.maxDrawdownPercent)},${fmt(r.sharpeRatio)},${r.long.trades},${fmt(r.long.winRate)},${fmt(r.long.pnlPercent)},${r.short.trades},${fmt(r.short.winRate)},${fmt(r.short.pnlPercent)}\n`;
+  }
+
+  writeFileSync(`${OUTPUT_DIR}/full-results.csv`, csv);
+  log(`  Wrote full-results.csv`);
+
+  if (stage3Results.length > 0) {
+    let tsCsv = 'ConfigId,BaseConfig,ActL,ActS,ProfitLock,Symbol,TF,Trades,WR,PnL%,MaxDD%,Sharpe,TSExits,TPExits,SLExits,LongT,LongWR,LongPnL%,ShortT,ShortWR,ShortPnL%\n';
+
+    for (const r of stage3Results) {
+      tsCsv += `${r.configId},${r.baseConfigId},${r.activationLong},${r.activationShort},${r.useProfitLock},${r.symbol},${r.timeframe},${r.totalTrades},${fmt(r.winRate)},${fmt(r.totalPnlPercent)},${fmt(r.maxDrawdownPercent)},${fmt(r.sharpeRatio)},${r.trailingStopExits},${r.takeProfitExits},${r.stopLossExits},${r.long.trades},${fmt(r.long.winRate)},${fmt(r.long.pnlPercent)},${r.short.trades},${fmt(r.short.winRate)},${fmt(r.short.pnlPercent)}\n`;
+    }
+
+    writeFileSync(`${OUTPUT_DIR}/trailing-stop-results.csv`, tsCsv);
+    log(`  Wrote trailing-stop-results.csv`);
+  }
+
+  if (bestS2) {
+    const optimalConfig = {
+      fibonacciTargetLevelLong: bestS2.sample.fibLong,
+      fibonacciTargetLevelShort: bestS2.sample.fibShort,
+      maxFibonacciEntryProgressPercent: bestS2.sample.entryProgress,
+      minRiskRewardRatioLong: bestS2.sample.rrLong,
+      minRiskRewardRatioShort: bestS2.sample.rrShort,
+      metrics: {
+        avgPnlPercent: bestS2.avgPnl,
+        avgSharpe: bestS2.avgSharpe,
+        avgWinRate: bestS2.avgWr,
+        avgMaxDrawdown: bestS2.avgDD,
+      },
+    };
+    writeFileSync(`${OUTPUT_DIR}/optimal-config.json`, JSON.stringify(optimalConfig, null, 2));
+    log(`  Wrote optimal-config.json`);
+  }
+
+  log(`\n  All reports saved to: ${OUTPUT_DIR}`);
+};
+
+const main = async (): Promise<void> => {
+  const startTime = Date.now();
+
+  log('='.repeat(80));
+  log('PRODUCTION-PARITY FULL CONFIG OPTIMIZATION');
+  log('='.repeat(80));
+  log(`Symbols: ${SYMBOLS.join(', ')}`);
+  log(`Timeframes: ${TIMEFRAMES.join(', ')}`);
+  log(`Strategies: ${ACTIVE_STRATEGIES.length} (portfolio mode)`);
+  log(`Output: ${OUTPUT_DIR}`);
+  log(`Production defaults: FibL=${PRODUCTION_BASE.fibonacciTargetLevelLong} FibS=${PRODUCTION_BASE.fibonacciTargetLevelShort} Entry=${PRODUCTION_BASE.maxFibonacciEntryProgressPercent}% RRL=${PRODUCTION_BASE.minRiskRewardRatioLong} RRS=${PRODUCTION_BASE.minRiskRewardRatioShort}`);
+
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+
+  const isValid = await runValidation();
+  if (!isValid) {
+    log('\nABORTED: Validation failed');
+    process.exit(1);
+  }
+
+  const progress = loadProgress();
+
+  const stage1Results = await runStage1(progress);
+  const topValues = analyzeStage1(stage1Results, progress.baselineResults);
+
+  const stage2Results = await runStage2(topValues, progress);
+  const stage3Results = await runStage3(stage2Results, progress);
+
+  generateReports(progress.baselineResults, stage1Results, stage2Results, stage3Results);
+
+  const elapsed = Date.now() - startTime;
+  const hours = Math.floor(elapsed / 3600000);
+  const minutes = Math.floor((elapsed % 3600000) / 60000);
+  log(`\nTotal time: ${hours}h ${minutes}m`);
+
+  process.exit(0);
+};
+
+main().catch((error) => {
+  log('Fatal error:', error);
+  process.exit(1);
+});

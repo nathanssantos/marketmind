@@ -332,6 +332,8 @@ export const WatcherManager = () => {
         onToggle={() => toggleSection('positionSize')}
         positionSizePercent={Number(config?.positionSizePercent ?? 10)}
         onPositionSizeChange={(value) => handleConfigUpdate({ positionSizePercent: value.toString() })}
+        maxGlobalExposurePercent={Number(config?.maxGlobalExposurePercent ?? 100)}
+        onMaxGlobalExposureChange={(value) => handleConfigUpdate({ maxGlobalExposurePercent: value.toString() })}
         isPending={updateConfig.isPending}
       />
 

@@ -1114,10 +1114,12 @@
   },
   "watcherManager": {
     "positionSize": {
-      "title": "Tamanho da Posição",
-      "description": "Configure quanto capital cada posição utiliza",
-      "sizePercent": "Tamanho da Posição (%)",
-      "sizePercentDescription": "Porcentagem do capital utilizado por posição"
+      "title": "Exposição & Tamanho da Posição",
+      "description": "Configure o limite global de exposição e o dimensionamento por posição",
+      "globalExposure": "Limite Global de Exposição (%)",
+      "globalExposureDescription": "Exposição total máxima do portfólio como porcentagem do saldo",
+      "sizePercent": "Tamanho por Entrada (%)",
+      "sizePercentDescription": "Porcentagem do capital utilizado por posição individual"
     },
     "trailingStop": {
       "title": "Trailing Stop",

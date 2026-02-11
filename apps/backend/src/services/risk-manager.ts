@@ -95,6 +95,7 @@ export class RiskManagerService {
 
       const maxPositionSize = parseFloat(config.maxPositionSize);
       const positionSizePercent = parseFloat(config.positionSizePercent ?? '10');
+      const maxGlobalExposurePercent = parseFloat(config.maxGlobalExposurePercent ?? '100');
 
       const { maxTotalExposure: dynamicMaxExposure } = calculateDynamicExposure(
         walletBalance,
@@ -122,9 +123,9 @@ export class RiskManagerService {
       const currentExposure = calculatePositionExposure(mapDbPositionsToNumeric(openPositions));
       const totalExposure = currentExposure + positionValue;
 
-      const baseMaxExposure = RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100;
-      const leveragedMaxExposure = leverage > 1 ? leverage : baseMaxExposure;
-      const absoluteMaxExposure = walletBalance * leveragedMaxExposure;
+      const globalExposureLimit = (walletBalance * maxGlobalExposurePercent) / 100;
+      const leveragedMaxExposure = leverage > 1 ? walletBalance * leverage : globalExposureLimit;
+      const absoluteMaxExposure = Math.min(globalExposureLimit, leveragedMaxExposure);
 
       const maxTotalExposure = Math.min(dynamicMaxExposure, absoluteMaxExposure);
 

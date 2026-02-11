@@ -1125,10 +1125,12 @@
   },
   "watcherManager": {
     "positionSize": {
-      "title": "Taille de Position",
-      "description": "Configurez la quantité de capital utilisée par chaque position",
-      "sizePercent": "Taille de Position (%)",
-      "sizePercentDescription": "Pourcentage du capital utilisé par position"
+      "title": "Exposition & Taille de Position",
+      "description": "Configurez la limite d'exposition globale et le dimensionnement par position",
+      "globalExposure": "Limite d'Exposition Globale (%)",
+      "globalExposureDescription": "Exposition totale maximale du portefeuille en pourcentage du solde",
+      "sizePercent": "Taille par Entrée (%)",
+      "sizePercentDescription": "Pourcentage du capital utilisé par position individuelle"
     },
     "trailingStop": {
       "title": "Trailing Stop",

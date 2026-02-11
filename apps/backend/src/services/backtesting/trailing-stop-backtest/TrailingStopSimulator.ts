@@ -23,6 +23,7 @@ export interface TrailingStopSimulatorConfig {
   marketType: MarketType;
   useBnbDiscount: boolean;
   vipLevel: number;
+  useProfitLockDistance?: boolean;
 }
 
 const parseKlinePrice = (value: string | number): number =>
@@ -158,6 +159,7 @@ export class TrailingStopSimulator {
       useFibonacciThresholds: !!trade.fibonacciProjection,
       activationPercentLong: this.config.long.activationPercent / 100,
       activationPercentShort: this.config.short.activationPercent / 100,
+      useProfitLockDistance: this.config.useProfitLockDistance,
     };
 
     const coreInput: TrailingStopCoreInput = {

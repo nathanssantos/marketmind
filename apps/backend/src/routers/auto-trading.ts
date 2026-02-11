@@ -133,6 +133,7 @@ export const autoTradingRouter = router({
         useObvCheckLong: z.boolean().optional(),
         useObvCheckShort: z.boolean().optional(),
         positionSizePercent: z.string().optional(),
+        maxGlobalExposurePercent: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciTargetLevelLong: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
@@ -248,6 +249,8 @@ export const autoTradingRouter = router({
         {updateData.useObvCheckShort = input.useObvCheckShort;}
       if (input.positionSizePercent !== undefined)
         {updateData.positionSizePercent = input.positionSizePercent;}
+      if (input.maxGlobalExposurePercent !== undefined)
+        {updateData.maxGlobalExposurePercent = input.maxGlobalExposurePercent;}
       if (input.tpCalculationMode !== undefined)
         {updateData.tpCalculationMode = input.tpCalculationMode;}
       if (input.fibonacciTargetLevel !== undefined)
