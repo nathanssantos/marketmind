@@ -48,22 +48,41 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
   const { wallet, symbol, marketType, algoId, orderId } = params;
 
   if (marketType === 'FUTURES') {
-    if (!algoId) return false;
-
-    try {
-      const client = getFuturesClient(wallet);
-      await client.cancelAlgoOrder(algoId);
-      logger.info({ algoId, symbol }, '[ProtectionOrders] Cancelled futures algo order');
-      return true;
-    } catch (error) {
-      const errorMessage = serializeError(error);
-      if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
-        logger.info({ algoId, symbol }, '[ProtectionOrders] Futures algo order already executed or cancelled');
+    if (algoId) {
+      try {
+        const client = getFuturesClient(wallet);
+        await client.cancelAlgoOrder(algoId);
+        logger.info({ algoId, symbol }, '[ProtectionOrders] Cancelled futures algo order');
         return true;
+      } catch (error) {
+        const errorMessage = serializeError(error);
+        if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+          logger.info({ algoId, symbol }, '[ProtectionOrders] Futures algo order already executed or cancelled');
+          return true;
+        }
+        logger.warn({ algoId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel futures algo order');
+        return false;
       }
-      logger.warn({ algoId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel futures algo order');
-      return false;
     }
+
+    if (orderId) {
+      try {
+        const client = getFuturesClient(wallet);
+        await client.cancelOrder(symbol, orderId);
+        logger.info({ orderId, symbol }, '[ProtectionOrders] Cancelled futures regular order');
+        return true;
+      } catch (error) {
+        const errorMessage = serializeError(error);
+        if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+          logger.info({ orderId, symbol }, '[ProtectionOrders] Futures order already executed or cancelled');
+          return true;
+        }
+        logger.warn({ orderId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel futures order');
+        return false;
+      }
+    }
+
+    return false;
   }
 
   if (!orderId) return false;
@@ -205,7 +224,7 @@ export async function cancelAllProtectionOrders(params: {
 }): Promise<void> {
   const { wallet, symbol, marketType, stopLossAlgoId, stopLossOrderId, takeProfitAlgoId, takeProfitOrderId } = params;
 
-  await Promise.all([
+  await Promise.allSettled([
     cancelProtectionOrder({ wallet, symbol, marketType, algoId: stopLossAlgoId, orderId: stopLossOrderId }),
     cancelProtectionOrder({ wallet, symbol, marketType, algoId: takeProfitAlgoId, orderId: takeProfitOrderId }),
   ]);

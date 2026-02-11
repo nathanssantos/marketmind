@@ -1,7 +1,7 @@
 import { serializeError } from '../utils/errors';
 import type { PendingOrderAction, PendingOrdersCheckResult } from '@marketmind/logger';
 import { calculateTotalFees } from '@marketmind/types';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { AUTO_TRADING_LIQUIDATION, AUTO_TRADING_TIMING, PROTECTION_CONFIG, RISK_ALERT_TYPES, RISK_ALERT_LEVELS } from '../constants';
 import { db } from '../db';
 import type { TradeExecution, Wallet } from '../db/schema';
@@ -166,6 +166,18 @@ export class PositionMonitorService {
 
     if (openExecutions.length === 0) {
       return;
+    }
+
+    for (const execution of openExecutions) {
+      try {
+        await this.checkPosition(execution);
+      } catch (error) {
+        logger.error({
+          executionId: execution.id,
+          symbol: execution.symbol,
+          error: serializeError(error),
+        }, 'Error checking position SL/TP in polling loop');
+      }
     }
 
     const futuresExecutions = openExecutions.filter(e => e.marketType === 'FUTURES');
@@ -489,6 +501,7 @@ export class PositionMonitorService {
 
     const deferKey = `${execution.id}-${reason}`;
     const existingDeferral = this.deferredExitTimestamps.get(deferKey);
+    let forceLocalExit = false;
     if (existingDeferral !== undefined) {
       const now = Date.now();
       if (now - existingDeferral < this.DEFERRED_EXIT_TIMEOUT_MS) {
@@ -502,6 +515,7 @@ export class PositionMonitorService {
         deferredForMs: now - existingDeferral,
       }, 'Exchange-side protection order stale - forcing local exit after timeout');
       this.deferredExitTimestamps.delete(deferKey);
+      forceLocalExit = true;
     }
 
     try {
@@ -532,7 +546,7 @@ export class PositionMonitorService {
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
-      if (shouldExecuteReal) {
+      if (shouldExecuteReal && !forceLocalExit) {
         const hasExchangeSLProtection = currentExecution.stopLossAlgoId || currentExecution.stopLossOrderId;
         const hasExchangeTPProtection = currentExecution.takeProfitAlgoId || currentExecution.takeProfitOrderId;
 
@@ -566,7 +580,8 @@ export class PositionMonitorService {
       const actualEntryFeeFromRecord = parseFloat(currentExecution.entryFee || '0');
       const { exitFee: estimatedExitFee } = calculateTotalFees(0, exitValue, { marketType });
       const totalFees = actualEntryFeeFromRecord + estimatedExitFee;
-      const pnl = roundToDecimals(grossPnl - totalFees, 8);
+      const accumulatedFunding = parseFloat(currentExecution.accumulatedFunding || '0');
+      const pnl = roundToDecimals(grossPnl - totalFees + accumulatedFunding, 8);
 
       const pnlPercent = roundToDecimals(((exitPrice - entryPrice) / entryPrice) * 100, 4);
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
@@ -631,7 +646,7 @@ export class PositionMonitorService {
             actualFees = allFees.totalFees;
 
             const grossPnl = calculatePnl(entryPrice, actualExitPrice, quantity, execution.side);
-            actualPnl = roundToDecimals(grossPnl - actualFees, 8);
+            actualPnl = roundToDecimals(grossPnl - actualFees + accumulatedFunding, 8);
 
             const pnlPercentCalc = roundToDecimals(((actualExitPrice - entryPrice) / entryPrice) * 100, 4);
             actualPnlPercent = execution.side === 'LONG' ? pnlPercentCalc : -pnlPercentCalc;
@@ -652,10 +667,21 @@ export class PositionMonitorService {
             if (closingTrade) {
               actualExitPrice = closingTrade.price;
               actualExitFee = closingTrade.commission;
+
+              if (actualEntryFee === 0 && execution.entryOrderId) {
+                try {
+                  const entryFeeResult = await client.getOrderEntryFee(
+                    execution.symbol,
+                    Number(execution.entryOrderId)
+                  );
+                  if (entryFeeResult) actualEntryFee = entryFeeResult.entryFee;
+                } catch (_e) { /* entry fee fetch is best-effort */ }
+              }
+
               actualFees = actualEntryFee + actualExitFee;
 
               const grossPnl = calculatePnl(entryPrice, actualExitPrice, quantity, execution.side);
-              actualPnl = roundToDecimals(grossPnl - actualFees, 8);
+              actualPnl = roundToDecimals(grossPnl - actualFees + accumulatedFunding, 8);
 
               const pnlPercentCalc = roundToDecimals(((actualExitPrice - entryPrice) / entryPrice) * 100, 4);
               actualPnlPercent = execution.side === 'LONG' ? pnlPercentCalc : -pnlPercentCalc;
@@ -664,6 +690,7 @@ export class PositionMonitorService {
                 executionId: execution.id,
                 symbol: execution.symbol,
                 actualExitPrice,
+                actualEntryFee,
                 actualExitFee,
                 actualFees,
                 actualPnl,
@@ -676,6 +703,28 @@ export class PositionMonitorService {
             error: serializeError(fetchError),
           }, '[PositionMonitor] Failed to fetch actual fees from Binance, using detected values');
         }
+      }
+
+      if (actualEntryFee === 0 && !positionSyncedFromExchange && marketType === 'FUTURES' && execution.entryOrderId && !isPaperWallet(wallet)) {
+        try {
+          const client = getFuturesClient(wallet);
+          const entryFeeResult = await client.getOrderEntryFee(
+            execution.symbol,
+            Number(execution.entryOrderId)
+          );
+          if (entryFeeResult) {
+            actualEntryFee = entryFeeResult.entryFee;
+            actualFees = actualEntryFee + actualExitFee;
+            const grossPnlRecalc = calculatePnl(entryPrice, actualExitPrice, quantity, execution.side);
+            actualPnl = roundToDecimals(grossPnlRecalc - actualFees + accumulatedFunding, 8);
+            logger.info({
+              executionId: execution.id,
+              symbol: execution.symbol,
+              actualEntryFee,
+              actualFees,
+            }, '[PositionMonitor] Fetched missing entry fee from Binance');
+          }
+        } catch (_e) { /* entry fee fetch is best-effort */ }
       }
 
       const currentBalance = parseFloat(wallet.currentBalance || '0');
@@ -698,7 +747,7 @@ export class PositionMonitorService {
 
       const exitSource = positionSyncedFromExchange ? 'EXCHANGE_SYNC' : 'ALGORITHM';
 
-      await db
+      const closeResult = await db
         .update(tradeExecutions)
         .set({
           exitPrice: actualExitPrice.toString(),
@@ -714,7 +763,18 @@ export class PositionMonitorService {
           closedAt: new Date(),
           updatedAt: new Date(),
         })
-        .where(eq(tradeExecutions.id, execution.id));
+        .where(and(eq(tradeExecutions.id, execution.id), eq(tradeExecutions.status, 'open')))
+        .returning({ id: tradeExecutions.id });
+
+      if (closeResult.length === 0) {
+        logger.info({
+          executionId: execution.id,
+          symbol: execution.symbol,
+        }, '[PositionMonitor] Position already closed by another process - skipping balance update and cleanup');
+        this.deferredExitTimestamps.delete(`${execution.id}-STOP_LOSS`);
+        this.deferredExitTimestamps.delete(`${execution.id}-TAKE_PROFIT`);
+        return;
+      }
 
       binancePriceStreamService.invalidateExecutionCache(execution.symbol);
       this.deferredExitTimestamps.delete(`${execution.id}-STOP_LOSS`);

@@ -4,9 +4,11 @@ import { and, eq } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { calculateTotalFees } from '@marketmind/types';
 import { createBinanceFuturesClient, isPaperWallet, getPositions } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
+import { cancelAllProtectionOrders } from './protection-orders';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -192,8 +194,12 @@ export class PositionSyncService {
           let pnl = 0;
           let pnlPercent = 0;
           let exitPrice = 0;
+          let totalFees = 0;
+          const actualEntryFee = parseFloat(dbPosition.entryFee || '0');
+          let estimatedExitFee = 0;
           const entryPrice = parseFloat(dbPosition.entryPrice);
           const quantity = parseFloat(dbPosition.quantity);
+          const accumulatedFunding = parseFloat(dbPosition.accumulatedFunding || '0');
 
           try {
             const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbPosition.symbol);
@@ -201,11 +207,18 @@ export class PositionSyncService {
               exitPrice = markPriceData.markPrice;
               const leverage = dbPosition.leverage || 1;
 
+              let grossPnl = 0;
               if (dbPosition.side === 'LONG') {
-                pnl = (exitPrice - entryPrice) * quantity;
+                grossPnl = (exitPrice - entryPrice) * quantity;
               } else {
-                pnl = (entryPrice - exitPrice) * quantity;
+                grossPnl = (entryPrice - exitPrice) * quantity;
               }
+
+              const exitValue = exitPrice * quantity;
+              const { exitFee } = calculateTotalFees(0, exitValue, { marketType: 'FUTURES' });
+              estimatedExitFee = exitFee;
+              totalFees = actualEntryFee + estimatedExitFee;
+              pnl = grossPnl - totalFees + accumulatedFunding;
 
               const entryValue = entryPrice * quantity;
               const marginValue = entryValue / leverage;
@@ -231,6 +244,27 @@ export class PositionSyncService {
             );
           }
 
+          const hasProtectionOrders = dbPosition.stopLossAlgoId || dbPosition.stopLossOrderId ||
+            dbPosition.takeProfitAlgoId || dbPosition.takeProfitOrderId;
+          if (hasProtectionOrders && !isPaperWallet(wallet)) {
+            try {
+              await cancelAllProtectionOrders({
+                wallet,
+                symbol: dbPosition.symbol,
+                marketType: 'FUTURES',
+                stopLossAlgoId: dbPosition.stopLossAlgoId,
+                stopLossOrderId: dbPosition.stopLossOrderId,
+                takeProfitAlgoId: dbPosition.takeProfitAlgoId,
+                takeProfitOrderId: dbPosition.takeProfitOrderId,
+              });
+            } catch (cancelError) {
+              logger.warn({
+                executionId: dbPosition.id,
+                error: serializeError(cancelError),
+              }, '[PositionSync] Failed to cancel protection orders for orphaned position');
+            }
+          }
+
           result.detailedOrphaned?.push({
             walletId: wallet.id,
             executionId: dbPosition.id,
@@ -252,6 +286,13 @@ export class PositionSyncService {
               exitPrice: exitPrice > 0 ? exitPrice.toString() : null,
               pnl: pnl !== 0 ? pnl.toString() : null,
               pnlPercent: pnlPercent !== 0 ? pnlPercent.toString() : null,
+              fees: totalFees > 0 ? totalFees.toString() : null,
+              entryFee: actualEntryFee > 0 ? actualEntryFee.toString() : null,
+              exitFee: estimatedExitFee > 0 ? estimatedExitFee.toString() : null,
+              stopLossAlgoId: null,
+              stopLossOrderId: null,
+              takeProfitAlgoId: null,
+              takeProfitOrderId: null,
               closedAt: new Date(),
               updatedAt: new Date(),
             })

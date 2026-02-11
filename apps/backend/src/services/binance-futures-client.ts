@@ -708,7 +708,7 @@ export async function getAllTradeFeesForPosition(
       const commission = parseFloat(String(trade.commission));
       const realizedPnl = parseFloat(String(trade.realizedPnl));
 
-      if (trade.side === entrySide && realizedPnl === 0) {
+      if (trade.side === entrySide) {
         entryFee += commission;
         entryWeightedPrice += price * qty;
         entryTotalQty += qty;

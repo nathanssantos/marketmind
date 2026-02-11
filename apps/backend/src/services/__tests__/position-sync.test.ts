@@ -60,6 +60,18 @@ vi.mock('../websocket', () => ({
   getWebSocketService: () => mockWebSocketService,
 }));
 
+vi.mock('../protection-orders', () => ({
+  cancelAllProtectionOrders: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@marketmind/types', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@marketmind/types')>();
+  return {
+    ...original,
+    calculateTotalFees: vi.fn(() => ({ entryFee: 0, exitFee: 0, totalFees: 0 })),
+  };
+});
+
 describe('PositionSyncService', () => {
   let service: PositionSyncService;
 

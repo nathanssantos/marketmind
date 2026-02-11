@@ -1,11 +1,11 @@
 import type { USDMClient} from 'binance';
 import { WebsocketClient } from 'binance';
 import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import {
   detectExitReason,
@@ -546,7 +546,18 @@ export class BinanceFuturesUserStreamService {
         }
 
         const actualExitFee = parseFloat(commission || '0');
-        const actualEntryFee = parseFloat(execution.entryFee || '0');
+        let actualEntryFee = parseFloat(execution.entryFee || '0');
+
+        if (actualEntryFee === 0 && execution.entryOrderId) {
+          try {
+            const connection = this.connections.get(walletId);
+            if (connection) {
+              const feeResult = await getOrderEntryFee(connection.apiClient, symbol, Number(execution.entryOrderId));
+              if (feeResult) actualEntryFee = feeResult.entryFee;
+            }
+          } catch (_e) { /* entry fee fetch is best-effort */ }
+        }
+
         const totalFees = actualEntryFee + actualExitFee;
 
         const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
@@ -556,34 +567,13 @@ export class BinanceFuturesUserStreamService {
         const marginValue = entryValue / leverage;
         const pnlPercent = (pnl / marginValue) * 100;
 
-        const currentBalance = parseFloat(wallet.currentBalance || '0');
-        const newBalance = currentBalance + pnl;
-
-        await db
-          .update(wallets)
-          .set({
-            currentBalance: newBalance.toString(),
-            updatedAt: new Date(),
-          })
-          .where(eq(wallets.id, walletId));
-
-        logger.info(
-          {
-            walletId,
-            pnl: pnl.toFixed(2),
-            oldBalance: currentBalance.toFixed(2),
-            newBalance: newBalance.toFixed(2),
-          },
-          '[FuturesUserStream] > Wallet balance updated'
-        );
-
         const determinedExitReason = isAlgoTriggerFill
           ? execution.exitReason
           : isSLOrder
             ? 'STOP_LOSS'
             : 'TAKE_PROFIT';
 
-        await db
+        const closeResult = await db
           .update(tradeExecutions)
           .set({
             status: 'closed',
@@ -592,6 +582,7 @@ export class BinanceFuturesUserStreamService {
             pnl: pnl.toString(),
             pnlPercent: pnlPercent.toString(),
             fees: totalFees.toString(),
+            entryFee: actualEntryFee.toString(),
             exitFee: actualExitFee.toString(),
             exitSource: 'ALGORITHM',
             exitReason: determinedExitReason,
@@ -601,7 +592,29 @@ export class BinanceFuturesUserStreamService {
             takeProfitOrderId: null,
             updatedAt: new Date(),
           })
-          .where(eq(tradeExecutions.id, execution.id));
+          .where(and(eq(tradeExecutions.id, execution.id), eq(tradeExecutions.status, 'open')))
+          .returning({ id: tradeExecutions.id });
+
+        if (closeResult.length === 0) {
+          logger.info(
+            { executionId: execution.id, symbol },
+            '[FuturesUserStream] Position already closed by another process - skipping'
+          );
+          return;
+        }
+
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, walletId));
+
+        logger.info(
+          { walletId, pnl: pnl.toFixed(2) },
+          '[FuturesUserStream] > Wallet balance updated atomically'
+        );
 
         binancePriceStreamService.invalidateExecutionCache(symbol);
         positionMonitorService.clearDeferredExit(execution.id);
@@ -907,13 +920,26 @@ export class BinanceFuturesUserStreamService {
         }
       }
 
+      const clearFields = isSLOrder
+        ? { stopLossAlgoId: null, stopLossOrderId: null }
+        : { takeProfitAlgoId: null, takeProfitOrderId: null };
+
       await db
         .update(tradeExecutions)
         .set({
           exitReason,
+          ...clearFields,
           updatedAt: new Date(),
         })
         .where(eq(tradeExecutions.id, execution.id));
+
+      logger.info(
+        {
+          executionId: execution.id,
+          clearedFields: Object.keys(clearFields),
+        },
+        '[FuturesUserStream] Cleared triggered protection order IDs'
+      );
     } catch (error) {
       logger.error(
         {

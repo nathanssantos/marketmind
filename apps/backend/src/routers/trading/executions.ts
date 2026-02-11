@@ -327,6 +327,24 @@ export const executionsRouter = router({
               }, 'Failed to cancel Binance Futures order (may already be filled/cancelled)');
             }
           }
+
+          const algoIdsToCancel = [
+            execution.stopLossAlgoId,
+            execution.takeProfitAlgoId,
+          ].filter((id): id is number => id !== null && id !== undefined);
+
+          for (const algoId of algoIdsToCancel) {
+            try {
+              await client.cancelAlgoOrder(algoId);
+              logger.info({ algoId, symbol: execution.symbol }, 'Cancelled Binance Futures algo order during execution cancel');
+            } catch (error) {
+              logger.warn({
+                algoId,
+                symbol: execution.symbol,
+                error: serializeError(error),
+              }, 'Failed to cancel Binance Futures algo order (may already be filled/cancelled)');
+            }
+          }
         } else {
           const client = getSpotClient(wallet);
 

@@ -1,11 +1,13 @@
-import { calculateTotalFees } from '@marketmind/types';
+
 import { WebsocketClient } from 'binance';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet, silentWsLogger } from './binance-client';
 import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
+import { binancePriceStreamService } from './binance-price-stream';
+import { positionMonitorService } from './position-monitor';
 import { TIME_MS } from '../constants';
 
 interface OrderUpdateEvent {
@@ -183,7 +185,7 @@ export class BinanceUserStreamService {
 
   private async handleOrderUpdate(walletId: string, event: OrderUpdateEvent): Promise<void> {
     try {
-      const { s: symbol, X: status, x: execType, i: orderId, L: lastFilledPrice, z: executedQty, o: orderType } = event;
+      const { s: symbol, X: status, x: execType, i: orderId, L: lastFilledPrice, z: executedQty, o: orderType, n: commissionAmount, N: commissionAsset } = event;
 
       logger.info({
         walletId,
@@ -209,11 +211,14 @@ export class BinanceUserStreamService {
 
         if (pendingExecution?.entryOrderId === orderId) {
           const fillPrice = parseFloat(lastFilledPrice);
+          const entryFee = parseFloat(commissionAmount || '0');
           logger.info({
             executionId: pendingExecution.id,
             symbol,
             orderId,
             fillPrice,
+            entryFee,
+            commissionAsset,
           }, '✓ Pending LIMIT order FILLED via WebSocket - activating position');
 
           await db
@@ -221,6 +226,8 @@ export class BinanceUserStreamService {
             .set({
               status: 'open',
               entryPrice: fillPrice.toString(),
+              entryFee: entryFee.toString(),
+              commissionAsset: commissionAsset || 'USDT',
               openedAt: new Date(),
               updatedAt: new Date(),
             })
@@ -303,32 +310,14 @@ export class BinanceUserStreamService {
           grossPnl = (entryPrice - exitPrice) * quantity;
         }
 
-        const entryValue = entryPrice * quantity;
-        const exitValue = exitPrice * quantity;
-        const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType: 'FUTURES' });
+        const actualExitFee = parseFloat(commissionAmount || '0');
+        const actualEntryFee = parseFloat(execution.entryFee || '0');
+        const totalFees = actualEntryFee + actualExitFee;
         const pnl = grossPnl - totalFees;
 
         const pnlPercent = (pnl / (entryPrice * quantity)) * 100;
 
-        const currentBalance = parseFloat(wallet.currentBalance || '0');
-        const newBalance = currentBalance + pnl;
-
-        await db
-          .update(wallets)
-          .set({
-            currentBalance: newBalance.toString(),
-          })
-          .where(eq(wallets.id, walletId));
-
-        logger.info({
-          walletId,
-          walletType: wallet.walletType,
-          pnl,
-          oldBalance: currentBalance,
-          newBalance,
-        }, '> Wallet balance updated via user stream');
-
-        await db
+        const closeResult = await db
           .update(tradeExecutions)
           .set({
             status: 'closed',
@@ -337,8 +326,38 @@ export class BinanceUserStreamService {
             pnl: pnl.toString(),
             pnlPercent: pnlPercent.toString(),
             fees: totalFees.toString(),
+            entryFee: actualEntryFee.toString(),
+            exitFee: actualExitFee.toString(),
+            stopLossOrderId: null,
+            takeProfitOrderId: null,
+            stopLossAlgoId: null,
+            takeProfitAlgoId: null,
+            updatedAt: new Date(),
           })
-          .where(eq(tradeExecutions.id, execution.id));
+          .where(and(eq(tradeExecutions.id, execution.id), eq(tradeExecutions.status, 'open')))
+          .returning({ id: tradeExecutions.id });
+
+        if (closeResult.length === 0) {
+          logger.info({ executionId: execution.id, symbol }, 'Position already closed by another process - skipping');
+          return;
+        }
+
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, walletId));
+
+        logger.info({
+          walletId,
+          walletType: wallet.walletType,
+          pnl,
+        }, '> Wallet balance updated atomically via user stream');
+
+        binancePriceStreamService.invalidateExecutionCache(symbol);
+        positionMonitorService.clearDeferredExit(execution.id);
 
         const wsService = getWebSocketService();
         if (wsService) {
