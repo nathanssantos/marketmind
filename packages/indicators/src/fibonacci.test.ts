@@ -385,6 +385,118 @@ describe('alternating swing point order', () => {
   });
 });
 
+describe('swing point extreme wick validation', () => {
+  it('should use extreme wick candle closer to entry instead of smaller fractal', () => {
+    const klines: Kline[] = [];
+    for (let i = 0; i < 80; i++) {
+      let high: number;
+      let low: number;
+      if (i < 20) {
+        high = 120;
+        low = 100;
+      } else if (i < 30) {
+        high = 140 + i;
+        low = 130;
+      } else if (i < 40) {
+        high = 170 - (i - 30);
+        low = 80 + (i - 30);
+      } else if (i === 55) {
+        high = 200;
+        low = 60;
+      } else if (i < 70) {
+        high = 155;
+        low = 95;
+      } else {
+        high = 150;
+        low = 100;
+      }
+      klines.push(createMockKline(high, low, i));
+    }
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'LONG');
+
+    expect(result).not.toBeNull();
+    expect(result!.swingHigh.price).toBeGreaterThanOrEqual(200);
+    expect(result!.swingLow.price).toBeLessThanOrEqual(60);
+  });
+
+  it('should find earlier extreme candles within lookback range', () => {
+    const klines: Kline[] = [];
+    for (let i = 0; i < 80; i++) {
+      let high: number;
+      let low: number;
+      if (i < 20) {
+        high = 200;
+        low = 50;
+      } else {
+        high = 150;
+        low = 100;
+      }
+      klines.push(createMockKline(high, low, i));
+    }
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'LONG');
+
+    expect(result).not.toBeNull();
+    expect(result!.swingHigh.price).toBe(200);
+    expect(result!.swingLow.price).toBe(50);
+  });
+
+  it('should keep swing point when it is already the most extreme in lookback', () => {
+    const klines: Kline[] = [];
+    for (let i = 0; i < 80; i++) {
+      let high: number;
+      let low: number;
+      if (i >= 30 && i <= 35) {
+        high = 200;
+        low = 100;
+      } else if (i >= 50 && i <= 55) {
+        high = 150;
+        low = 60;
+      } else {
+        high = 160;
+        low = 90;
+      }
+      klines.push(createMockKline(high, low, i));
+    }
+
+    const result = calculateFibonacciProjection(klines, 79, 70, 'LONG');
+
+    expect(result).not.toBeNull();
+    expect(result!.swingHigh.price).toBe(200);
+    expect(result!.swingLow.price).toBe(60);
+  });
+
+  it('should capture full range in consolidation after big move', () => {
+    const klines: Kline[] = [];
+    for (let i = 0; i < 100; i++) {
+      let high: number;
+      let low: number;
+      if (i >= 10 && i <= 15) {
+        high = 0.3860;
+        low = 0.3800;
+      } else if (i >= 25 && i <= 30) {
+        high = 0.3550;
+        low = 0.3488;
+      } else if (i >= 50) {
+        high = 0.3700 + Math.sin(i * 0.5) * 0.002;
+        low = 0.3680 + Math.sin(i * 0.5) * 0.002;
+      } else {
+        high = 0.3750;
+        low = 0.3650;
+      }
+      klines.push(createMockKline(high, low, i));
+    }
+
+    const result = calculateFibonacciProjection(klines, 99, 90, 'LONG');
+
+    expect(result).not.toBeNull();
+    expect(result!.swingHigh.price).toBeGreaterThanOrEqual(0.3850);
+    expect(result!.swingLow.price).toBeLessThanOrEqual(0.3500);
+    expect(result!.range).toBeGreaterThan(0.03);
+  });
+});
+
 describe('selectDynamicFibonacciLevel', () => {
   describe('Default behavior (optimized for level 2)', () => {
     it('should return 2 for low ADX (ranging market)', () => {
