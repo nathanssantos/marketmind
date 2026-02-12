@@ -274,6 +274,7 @@ export const WatcherManager = () => {
         isExpanded={expandedSections.dynamicSelection}
         onToggle={() => toggleSection('dynamicSelection')}
         isIB={isIB}
+        directionMode={directionMode}
         isAutoRotationEnabled={config?.enableAutoRotation ?? true}
         onAutoRotationToggle={handleAutoRotationToggle}
         rotationStatus={rotationStatus}

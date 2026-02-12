@@ -365,7 +365,7 @@ export class OrderExecutor {
       logBuffer.addValidationCheck({ name: 'Direction Mode', passed: true, reason: directionMode });
 
       const filterConfig: FilterValidatorConfig = {
-        useBtcCorrelationFilter: config.useBtcCorrelationFilter,
+        useBtcCorrelationFilter: directionMode === 'auto' && config.useBtcCorrelationFilter,
         useFundingFilter: config.useFundingFilter,
         useMtfFilter: config.useMtfFilter,
         useMarketRegimeFilter: config.useMarketRegimeFilter,

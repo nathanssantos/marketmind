@@ -4,6 +4,7 @@ import { Button } from '@renderer/components/ui/button';
 import { Switch } from '@renderer/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuChevronDown, LuChevronUp, LuRefreshCw, LuZap } from 'react-icons/lu';
+import type { DirectionMode } from './WatchersList';
 import { QuickStartSection, type BtcTrendInfo, type BtcTrendStatus } from './QuickStartSection';
 
 export interface RotationStatus {
@@ -15,6 +16,7 @@ export interface DynamicSelectionSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   isIB?: boolean;
+  directionMode?: DirectionMode;
   isAutoRotationEnabled: boolean;
   onAutoRotationToggle: (value: boolean) => void;
   rotationStatus?: RotationStatus;
@@ -46,6 +48,7 @@ export const DynamicSelectionSection = ({
   isExpanded,
   onToggle,
   isIB,
+  directionMode,
   isAutoRotationEnabled,
   onAutoRotationToggle,
   rotationStatus,
@@ -121,6 +124,7 @@ export const DynamicSelectionSection = ({
           <Stack gap={4} mt={4}>
             <QuickStartSection
               isIB={isIB}
+              directionMode={directionMode}
               marketType={quickStartMarketType}
               timeframe={quickStartTimeframe}
               count={quickStartCount}

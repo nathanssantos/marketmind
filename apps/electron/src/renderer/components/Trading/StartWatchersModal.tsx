@@ -14,6 +14,7 @@ import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuPlay, LuSettings, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
+import { DirectionBadge } from './DirectionBadge';
 
 interface StartWatchersModalProps {
   isOpen: boolean;
@@ -144,61 +145,12 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
                   <Text fontSize="sm" fontWeight="medium">
                     {t('tradingProfiles.dynamicSelection.quickStartTitle')}
                   </Text>
-                  {showBtcTrend && btcTrendStatus && (
-                    <Flex gap={2} align="center">
-                      <Box
-                        px={2}
-                        py={0.5}
-                        bg={
-                          btcTrendStatus.trend === 'BULLISH'
-                            ? 'green.100'
-                            : btcTrendStatus.trend === 'BEARISH'
-                              ? 'red.100'
-                              : 'gray.100'
-                        }
-                        borderRadius="md"
-                        fontSize="xs"
-                        _dark={{
-                          bg:
-                            btcTrendStatus.trend === 'BULLISH'
-                              ? 'green.900'
-                              : btcTrendStatus.trend === 'BEARISH'
-                                ? 'red.900'
-                                : 'gray.700',
-                        }}
-                      >
-                        <Text
-                          fontWeight="medium"
-                          color={
-                            btcTrendStatus.trend === 'BULLISH'
-                              ? 'green.700'
-                              : btcTrendStatus.trend === 'BEARISH'
-                                ? 'red.700'
-                                : 'gray.600'
-                          }
-                          _dark={{
-                            color:
-                              btcTrendStatus.trend === 'BULLISH'
-                                ? 'green.200'
-                                : btcTrendStatus.trend === 'BEARISH'
-                                  ? 'red.200'
-                                  : 'gray.300',
-                          }}
-                        >
-                          BTC: {btcTrendStatus.trend}
-                          {!btcTrendStatus.canLong && ' (LONG blocked)'}
-                          {!btcTrendStatus.canShort && ' (SHORT blocked)'}
-                        </Text>
-                      </Box>
-                      {skippedTrend.length > 0 && (
-                        <Box px={2} py={0.5} bg="orange.100" borderRadius="md" fontSize="xs" _dark={{ bg: 'orange.900' }}>
-                          <Text fontWeight="medium" color="orange.700" _dark={{ color: 'orange.200' }}>
-                            {skippedTrend.length} filtered
-                          </Text>
-                        </Box>
-                      )}
-                    </Flex>
-                  )}
+                  <DirectionBadge
+                    directionMode={directionMode}
+                    btcTrendStatus={btcTrendStatus}
+                    showBtcTrend={showBtcTrend}
+                    skippedTrendCount={skippedTrend.length}
+                  />
                 </Flex>
 
                 <Stack gap={3}>
