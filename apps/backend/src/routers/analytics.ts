@@ -141,8 +141,11 @@ export const analyticsRouter = router({
 
       const initialBalance = wallet ? parseFloat(wallet.initialBalance || '0') : 0;
       const currentBalance = wallet ? parseFloat(wallet.currentBalance || '0') : 0;
+      const walletTotalDeposits = wallet ? parseFloat(wallet.totalDeposits || '0') : 0;
+      const walletTotalWithdrawals = wallet ? parseFloat(wallet.totalWithdrawals || '0') : 0;
+      const effectiveCapital = initialBalance + walletTotalDeposits - walletTotalWithdrawals;
       const totalReturn =
-        initialBalance > 0 ? ((currentBalance - initialBalance) / initialBalance) * 100 : 0;
+        effectiveCapital > 0 ? ((currentBalance - effectiveCapital) / effectiveCapital) * 100 : 0;
 
       const largestWin = winningTrades.length > 0
         ? Math.max(...winningTrades.map((t) => parseFloat(t.pnl || '0')))
@@ -153,8 +156,8 @@ export const analyticsRouter = router({
         : 0;
 
       let maxDrawdown = 0;
-      let peak = initialBalance;
-      let runningBalance = initialBalance;
+      let peak = effectiveCapital;
+      let runningBalance = effectiveCapital;
 
       for (const trade of trades.sort(
         (a, b) => new Date(a.closedAt!).getTime() - new Date(b.closedAt!).getTime()
@@ -191,6 +194,9 @@ export const analyticsRouter = router({
         largestWin: parseFloat(largestWin.toFixed(2)),
         largestLoss: parseFloat(largestLoss.toFixed(2)),
         maxDrawdown: parseFloat(maxDrawdown.toFixed(2)),
+        effectiveCapital: parseFloat(effectiveCapital.toFixed(2)),
+        totalDeposits: parseFloat(walletTotalDeposits.toFixed(2)),
+        totalWithdrawals: parseFloat(walletTotalWithdrawals.toFixed(2)),
       };
     }),
 
@@ -309,12 +315,15 @@ export const analyticsRouter = router({
         .orderBy(tradeExecutions.closedAt);
 
       const initialBalance = parseFloat(wallet.initialBalance || '0');
-      let runningBalance = initialBalance;
+      const curveDeposits = parseFloat(wallet.totalDeposits || '0');
+      const curveWithdrawals = parseFloat(wallet.totalWithdrawals || '0');
+      const effectiveCapital = initialBalance + curveDeposits - curveWithdrawals;
+      let runningBalance = effectiveCapital;
 
       const equityPoints = [
         {
           timestamp: wallet.createdAt.toISOString(),
-          balance: initialBalance,
+          balance: effectiveCapital,
           pnl: 0,
         },
       ];

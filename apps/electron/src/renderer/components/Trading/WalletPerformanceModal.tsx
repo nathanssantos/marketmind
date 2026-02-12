@@ -54,12 +54,15 @@ export const WalletPerformanceModal = ({
     name: backendWallet.name,
     balance: parseFloat(backendWallet.currentBalance || '0'),
     initialBalance: parseFloat(backendWallet.initialBalance || '0'),
+    totalDeposits: parseFloat(backendWallet.totalDeposits || '0'),
+    totalWithdrawals: parseFloat(backendWallet.totalWithdrawals || '0'),
     currency: (backendWallet.currency || 'USDT'),
     createdAt: new Date(backendWallet.createdAt),
   };
 
-  const totalPnL = wallet.balance - wallet.initialBalance;
-  const totalPnLPercent = wallet.initialBalance > 0 ? (totalPnL / wallet.initialBalance) * 100 : 0;
+  const effectiveCapital = wallet.initialBalance + wallet.totalDeposits - wallet.totalWithdrawals;
+  const totalPnL = wallet.balance - effectiveCapital;
+  const totalPnLPercent = effectiveCapital > 0 ? (totalPnL / effectiveCapital) * 100 : 0;
 
   const formatCurrency = (value: number, showSign = false) => {
     const sign = showSign && value >= 0 ? '+' : '';
@@ -86,7 +89,7 @@ export const WalletPerformanceModal = ({
       day: 'numeric',
     }),
     equity: point.balance,
-    initialCapital: wallet.initialBalance,
+    initialCapital: effectiveCapital,
   }));
 
   const CustomTooltip = ({
@@ -98,8 +101,8 @@ export const WalletPerformanceModal = ({
   }) => {
     if (active && payload && payload.length >= 1) {
       const equity = payload[0]?.value ?? 0;
-      const pnl = equity - wallet.initialBalance;
-      const pnlPercent = wallet.initialBalance > 0 ? (pnl / wallet.initialBalance) * 100 : 0;
+      const pnl = equity - effectiveCapital;
+      const pnlPercent = effectiveCapital > 0 ? (pnl / effectiveCapital) * 100 : 0;
 
       return (
         <Box p={2} bg="bg.panel" borderRadius="md" borderWidth="1px" borderColor="border">
