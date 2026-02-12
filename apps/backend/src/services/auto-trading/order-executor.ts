@@ -1,5 +1,5 @@
-import { calculateADX, calculateFibonacciProjection } from '@marketmind/indicators';
-import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
+import type { Kline, StrategyDefinition, TimeInterval, TradingSetup } from '@marketmind/types';
 import { FILTER_THRESHOLDS, getDefaultFee } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
@@ -139,11 +139,11 @@ export class OrderExecutor {
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
     fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236' = '2',
-    _interval: string = '4h',
+    interval: string = '4h',
     swingRange: 'extended' | 'nearest' = 'nearest'
   ): number | null {
     const currentIndex = klines.length - 1;
-    const lookback = 100;
+    const lookback = calculateTimeframeLookback(interval as TimeInterval);
     const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction, swingRange);
 
     if (!projection || projection.levels.length === 0) {
@@ -157,6 +157,16 @@ export class OrderExecutor {
       return null;
     }
 
+    log('Fibonacci projection', {
+      swingHigh: projection.swingHigh?.price,
+      swingLow: projection.swingLow?.price,
+      range: projection.range,
+      direction,
+      lookback,
+      interval,
+      swingRange,
+    });
+
     const targetLevel = fibonacciTargetLevel === 'auto'
       ? this.getAdxBasedFibonacciLevel(klines, direction)
       : parseFloat(fibonacciTargetLevel);
@@ -165,7 +175,13 @@ export class OrderExecutor {
       (l) => Math.abs(l.level - targetLevel) < 0.001
     );
 
-    if (targetLevelData) return targetLevelData.price;
+    if (targetLevelData) {
+      log('Fibonacci TP calculated', {
+        targetLevel,
+        targetPrice: targetLevelData.price,
+      });
+      return targetLevelData.price;
+    }
 
     log('! Target level not found, using 161.8%', {
       targetLevel,

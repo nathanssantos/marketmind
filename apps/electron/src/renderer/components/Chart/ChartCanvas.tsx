@@ -381,7 +381,7 @@ export const ChartCanvas = ({
 
           if (entryIndex !== -1) {
             const direction = activePosition.side as 'LONG' | 'SHORT';
-            const projection = calculateFibonacciProjection(klinesData, entryIndex, 100, direction);
+            const projection = calculateFibonacciProjection(klinesData, entryIndex, timeframe as TimeInterval, direction);
 
             if (projection) {
               return {

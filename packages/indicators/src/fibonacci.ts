@@ -163,19 +163,6 @@ export const calculateFibonacciProjection = (
   }
   if (!lowResult) return null;
 
-  for (let i = startIndex; i <= endIndex; i++) {
-    const kline = klines[i];
-    if (!kline) continue;
-    const high = getKlineHigh(kline);
-    if (high > highResult.price) {
-      highResult = { index: i, type: 'high', price: high, timestamp: Number(kline.openTime) };
-    }
-    const low = getKlineLow(kline);
-    if (low < lowResult.price) {
-      lowResult = { index: i, type: 'low', price: low, timestamp: Number(kline.openTime) };
-    }
-  }
-
   const swingHighResult = { price: highResult.price, index: highResult.index, timestamp: highResult.timestamp };
   const swingLowResult = { price: lowResult.price, index: lowResult.index, timestamp: lowResult.timestamp };
 
