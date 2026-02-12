@@ -149,6 +149,23 @@ const PortfolioComponent = () => {
     return { total, positionsWithStops };
   }, [positions]);
 
+  const tpProjectedProfit = useMemo(() => {
+    let total = 0;
+    let positionsWithTp = 0;
+    for (const pos of positions) {
+      if (!pos.takeProfit) continue;
+      positionsWithTp++;
+      if (pos.side === 'LONG') total += (pos.takeProfit - pos.avgPrice) * pos.quantity;
+      else total += (pos.avgPrice - pos.takeProfit) * pos.quantity;
+    }
+    return { total, positionsWithTp };
+  }, [positions]);
+
+  const totalExposure = useMemo(
+    () => positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0),
+    [positions]
+  );
+
   return (
     <Stack gap={3} p={4}>
       {!isIB && <FuturesPositionsPanel />}
@@ -168,61 +185,96 @@ const PortfolioComponent = () => {
       ) : (
         <>
           <Box p={3} bg="bg.muted" borderRadius="md">
-            <Stack gap={1} fontSize="xs">
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
-                <Text fontWeight="medium">{positions.length}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.profitable')}</Text>
-                <Text fontWeight="medium" color="green.500">{profitableCount}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.losing')}</Text>
-                <Text fontWeight="medium" color="red.500">{losingCount}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
-                <Stack gap={0} align="flex-end">
-                  <Text fontWeight="medium">
-                    {activeWallet.currency} {positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0) / activeWallet.balance) * 100).toFixed(1)}%)
-                  </Text>
-                  <BrlValue usdtValue={positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0)} />
-                </Stack>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
-                <Stack gap={0} align="flex-end">
-                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
-                    {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
-                  </Text>
-                  <BrlValue usdtValue={totalPnL} />
-                </Stack>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.portfolio.pnlVsBalance')}</Text>
-                <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
-                  {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
-                </Text>
-              </Flex>
-              {stopProtectedValue.positionsWithStops > 0 && (
+            <Stack gap={2.5} fontSize="xs">
+              <Stack gap={1}>
                 <Flex justify="space-between">
-                  <Text color="fg.muted" flexShrink={0}>
-                    {t('trading.portfolio.stopProtected')} ({stopProtectedValue.positionsWithStops}/{positions.length})
-                  </Text>
+                  <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
+                  <Text fontWeight="medium">{positions.length}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('trading.portfolio.profitable')}</Text>
+                  <Text fontWeight="medium" color="green.500">{profitableCount}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('trading.portfolio.losing')}</Text>
+                  <Text fontWeight="medium" color="red.500">{losingCount}</Text>
+                </Flex>
+              </Stack>
+
+              <Box h="1px" w="100%" bg="fg.muted" opacity={0.2} />
+
+              <Stack gap={1}>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
                   <Stack gap={0} align="flex-end">
-                    <Text fontWeight="medium" color="orange.500" textAlign="right">
-                      {activeWallet.currency} {stopProtectedValue.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <Text fontWeight="medium">
+                      {activeWallet.currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / activeWallet.balance) * 100).toFixed(1)}%)
                     </Text>
-                    <Text color="orange.500" textAlign="right">
-                      {((stopProtectedValue.total / positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0)) * 100).toFixed(1)}% {t('trading.portfolio.stopProtectedOfExposure')}
-                    </Text>
-                    <Text color="orange.500" textAlign="right">
-                      {activeWallet.balance > 0 ? ((stopProtectedValue.total / activeWallet.balance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
-                    </Text>
-                    <BrlValue usdtValue={stopProtectedValue.total} />
+                    <BrlValue usdtValue={totalExposure} />
                   </Stack>
                 </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
+                  <Stack gap={0} align="flex-end">
+                    <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+                      {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
+                    </Text>
+                    <BrlValue usdtValue={totalPnL} />
+                  </Stack>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('trading.portfolio.pnlVsBalance')}</Text>
+                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+                    {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
+                  </Text>
+                </Flex>
+              </Stack>
+
+              {(stopProtectedValue.positionsWithStops > 0 || tpProjectedProfit.positionsWithTp > 0) && (
+                <>
+                  <Box h="1px" w="100%" bg="fg.muted" opacity={0.2} />
+
+                  <Stack gap={1}>
+                    {stopProtectedValue.positionsWithStops > 0 && (
+                      <Flex justify="space-between">
+                        <Text color="fg.muted" flexShrink={0}>
+                          {t('trading.portfolio.stopProtected')} ({stopProtectedValue.positionsWithStops}/{positions.length})
+                        </Text>
+                        <Stack gap={0} align="flex-end">
+                          <Text fontWeight="medium" color="orange.500" textAlign="right">
+                            {activeWallet.currency} {stopProtectedValue.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Text>
+                          <Text color="orange.500" textAlign="right">
+                            {totalExposure > 0 ? ((stopProtectedValue.total / totalExposure) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfExposure')}
+                          </Text>
+                          <Text color="orange.500" textAlign="right">
+                            {activeWallet.balance > 0 ? ((stopProtectedValue.total / activeWallet.balance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
+                          </Text>
+                          <BrlValue usdtValue={stopProtectedValue.total} />
+                        </Stack>
+                      </Flex>
+                    )}
+                    {tpProjectedProfit.positionsWithTp > 0 && (
+                      <Flex justify="space-between">
+                        <Text color="fg.muted" flexShrink={0}>
+                          {t('trading.portfolio.tpProjected')} ({tpProjectedProfit.positionsWithTp}/{positions.length})
+                        </Text>
+                        <Stack gap={0} align="flex-end">
+                          <Text fontWeight="medium" color="green.500" textAlign="right">
+                            +{activeWallet.currency} {tpProjectedProfit.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Text>
+                          <Text color="green.500" textAlign="right">
+                            {totalExposure > 0 ? ((tpProjectedProfit.total / totalExposure) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfExposure')}
+                          </Text>
+                          <Text color="green.500" textAlign="right">
+                            {activeWallet.balance > 0 ? ((tpProjectedProfit.total / activeWallet.balance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfBalance')}
+                          </Text>
+                          <BrlValue usdtValue={tpProjectedProfit.total} />
+                        </Stack>
+                      </Flex>
+                    )}
+                  </Stack>
+                </>
               )}
             </Stack>
           </Box>

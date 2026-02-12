@@ -11,6 +11,7 @@ export interface UseKlineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   enabled?: boolean;
+  showActivityIndicator?: boolean;
   klineWickWidth?: number;
   hoveredKlineIndex?: number;
   highlightedCandlesRef?: MutableRefObject<HighlightedCandle[]>;
@@ -31,6 +32,7 @@ export const useKlineRenderer = ({
   manager,
   colors,
   enabled = true,
+  showActivityIndicator = true,
   klineWickWidth,
   hoveredKlineIndex,
   highlightedCandlesRef,
@@ -106,7 +108,7 @@ export const useKlineRenderer = ({
         drawCandleLabel(ctx, labelX, highY, labelText, labelColor);
       }
 
-      if (klineWidth >= 4 && avgTrades > 0) {
+      if (showActivityIndicator && klineWidth >= 4 && avgTrades > 0) {
         const trades = getKlineTrades(kline);
         const volume = getKlineVolume(kline);
 
@@ -134,7 +136,7 @@ export const useKlineRenderer = ({
     });
 
     ctx.restore();
-  }, [manager, colors, enabled, klineWickWidth, hoveredKlineIndex]);
+  }, [manager, colors, enabled, showActivityIndicator, klineWickWidth, hoveredKlineIndex]);
 
   return { render };
 };

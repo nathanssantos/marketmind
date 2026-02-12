@@ -2,6 +2,7 @@ import { Box, HStack, IconButton } from '@chakra-ui/react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuActivity,
   LuCalendarDays,
   LuCrosshair,
   LuDollarSign,
@@ -33,8 +34,10 @@ export interface ChartToolsToolbarProps {
   showBollingerBands: boolean;
   showATR: boolean;
   showVWAP: boolean;
+  showActivityIndicator: boolean;
   showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
+  onShowActivityIndicatorChange: (show: boolean) => void;
   onShowGridChange: (show: boolean) => void;
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
@@ -69,8 +72,10 @@ export const ChartToolsToolbar = memo(({
   showBollingerBands,
   showATR,
   showVWAP,
+  showActivityIndicator,
   showEventRow,
   movingAverages,
+  onShowActivityIndicatorChange,
   onShowGridChange,
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
@@ -105,6 +110,7 @@ export const ChartToolsToolbar = memo(({
   const handleRulerToggle = useCallback(() => onShowMeasurementRulerChange(!showMeasurementRuler), [showMeasurementRuler, onShowMeasurementRulerChange]);
   const handleAreaToggle = useCallback(() => onShowMeasurementAreaChange(!showMeasurementArea), [showMeasurementArea, onShowMeasurementAreaChange]);
   const handleTooltipToggle = useCallback(() => onShowTooltipChange(!showTooltip), [showTooltip, onShowTooltipChange]);
+  const handleActivityIndicatorToggle = useCallback(() => onShowActivityIndicatorChange(!showActivityIndicator), [showActivityIndicator, onShowActivityIndicatorChange]);
   const handleEventRowToggle = useCallback(() => onShowEventRowChange(!showEventRow), [showEventRow, onShowEventRowChange]);
 
   return (
@@ -224,6 +230,17 @@ export const ChartToolsToolbar = memo(({
             variant={showTooltip ? 'solid' : 'ghost'}
           >
             <LuMessageSquare />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.controls.activityIndicator')} showArrow placement="bottom">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.controls.activityIndicator')}
+            onClick={handleActivityIndicatorToggle}
+            colorPalette={showActivityIndicator ? 'blue' : 'gray'}
+            variant={showActivityIndicator ? 'solid' : 'ghost'}
+          >
+            <LuActivity />
           </IconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="bottom">

@@ -114,6 +114,13 @@ export {
 } from './indicators';
 
 export {
+  COINMETRICS_BASE_URL,
+  ON_CHAIN_CACHE_TTL,
+  ON_CHAIN_HISTORY_DAYS,
+  MINING_COST_MODEL,
+} from './on-chain';
+
+export {
   AUTO_TRADING,
   AUTO_TRADING_TIMING,
   AUTO_TRADING_CACHE,

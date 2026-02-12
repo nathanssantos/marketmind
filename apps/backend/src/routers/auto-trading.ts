@@ -24,6 +24,7 @@ import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { getAltcoinSeasonIndexService } from '../services/altcoin-season-index';
 import { getBTCDominanceDataService } from '../services/btc-dominance-data';
 import { getFearGreedDataService } from '../services/fear-greed-data';
+import { getOnChainDataService } from '../services/on-chain-data';
 import { walletQueries } from '../services/database/walletQueries';
 import { getCurrentIndicatorValues } from '../services/dynamic-pyramid-evaluator';
 import { getDynamicSymbolRotationService } from '../services/dynamic-symbol-rotation';
@@ -2253,6 +2254,27 @@ export const autoTradingRouter = router({
         topTraderHistory: topTraderRatio.slice(-24),
       };
     }),
+
+  getMvrvRatio: protectedProcedure.query(async () => {
+    const service = getOnChainDataService();
+    const result = await service.getOnChainMetrics();
+    logApiTable('getMvrvRatio', [
+      ['Current', result.mvrv.current !== null ? result.mvrv.current.toFixed(2) : 'N/A'],
+      ['History Points', result.mvrv.history.length.toString()],
+    ]);
+    return result.mvrv;
+  }),
+
+  getBtcProductionCost: protectedProcedure.query(async () => {
+    const service = getOnChainDataService();
+    const result = await service.getOnChainMetrics();
+    logApiTable('getBtcProductionCost', [
+      ['Cost', result.productionCost.currentCost !== null ? `$${result.productionCost.currentCost.toFixed(0)}` : 'N/A'],
+      ['Price', result.productionCost.currentPrice !== null ? `$${result.productionCost.currentPrice.toFixed(0)}` : 'N/A'],
+      ['History Points', result.productionCost.history.length.toString()],
+    ]);
+    return result.productionCost;
+  }),
 
   saveIndicatorSnapshot: protectedProcedure.mutation(async ({ ctx }) => {
     const historyService = getIndicatorHistoryService();

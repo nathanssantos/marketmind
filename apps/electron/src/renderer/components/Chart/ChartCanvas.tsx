@@ -75,6 +75,7 @@ export interface ChartCanvasProps {
   showMeasurementRuler?: boolean;
   showMeasurementArea?: boolean;
   showTooltip?: boolean;
+  showActivityIndicator?: boolean;
   showEventRow?: boolean;
   movingAverages?: MovingAverageConfig[];
   chartType?: 'kline' | 'line';
@@ -106,6 +107,7 @@ export const ChartCanvas = ({
   showMeasurementRuler = false,
   showMeasurementArea = false,
   showTooltip = true,
+  showActivityIndicator = true,
   showEventRow = false,
   movingAverages = [],
   chartType = 'kline',
@@ -340,6 +342,7 @@ export const ChartCanvas = ({
     showVolume,
     showCurrentPriceLine,
     showCrosshair,
+    showActivityIndicator,
     hoveredKlineIndex: tooltipData.klineIndex,
     highlightedCandlesRef,
     hoveredMAIndexRef,

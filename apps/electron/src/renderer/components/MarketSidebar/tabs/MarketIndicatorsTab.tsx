@@ -4,7 +4,7 @@ import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowDown, LuArrowUp, LuMinus } from 'react-icons/lu';
-import { Area, AreaChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import { Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 
 const useContainerWidth = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -31,6 +31,7 @@ const MIN_REFRESH_INTERVAL = 5 * 60 * 1000;
 const getRefreshIntervals = (halfIntervalMs: number) => ({
   fearGreed: Math.max(halfIntervalMs, 30 * 60 * 1000),
   btcDominance: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
+  onChain: Math.max(halfIntervalMs, 30 * 60 * 1000),
   openInterest: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
   longShortRatio: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
   fundingRates: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
@@ -92,6 +93,18 @@ const getOrderBookPressureColor = (pressure: string): string => {
   if (pressure === 'BUYING') return 'green';
   if (pressure === 'SELLING') return 'red';
   return 'gray';
+};
+
+const getMvrvColor = (value: number | null): string => {
+  if (value === null) return 'gray';
+  if (value >= 3.5) return 'red';
+  if (value >= 1) return 'green';
+  return 'blue';
+};
+
+const formatUsd = (value: number): string => {
+  if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+  return `$${value.toFixed(0)}`;
 };
 
 const SectionTitle = ({ children, mb = 2 }: { children: React.ReactNode; mb?: number }) => (
@@ -162,6 +175,16 @@ const MarketIndicatorsTabComponent = () => {
   const { data: btcDominance, isLoading: isBtcDominanceLoading } = trpc.autoTrading.getBtcDominance.useQuery(
     undefined,
     { staleTime: REFRESH_INTERVALS.btcDominance, refetchInterval: REFRESH_INTERVALS.btcDominance }
+  );
+
+  const { data: mvrv, isLoading: isMvrvLoading } = trpc.autoTrading.getMvrvRatio.useQuery(
+    undefined,
+    { staleTime: REFRESH_INTERVALS.onChain, refetchInterval: REFRESH_INTERVALS.onChain }
+  );
+
+  const { data: btcProductionCost, isLoading: isProductionCostLoading } = trpc.autoTrading.getBtcProductionCost.useQuery(
+    undefined,
+    { staleTime: REFRESH_INTERVALS.onChain, refetchInterval: REFRESH_INTERVALS.onChain }
   );
 
   const { data: openInterest, isLoading: isOpenInterestLoading } = trpc.autoTrading.getOpenInterest.useQuery(
@@ -268,6 +291,71 @@ const MarketIndicatorsTabComponent = () => {
         ) : !btcDominance || btcDominance.current === null ? (
           <Text fontSize="xs" color="fg.muted">-</Text>
         ) : null}
+      </Box>
+
+      <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+        <SectionTitle>{t('marketSidebar.indicators.mvrv')}</SectionTitle>
+        {mvrv && mvrv.current !== null && (
+          <Flex align="center" gap={2} mb={2}>
+            <Badge colorPalette={getMvrvColor(mvrv.current)} size="xs" px={2}>
+              {mvrv.current.toFixed(2)}
+            </Badge>
+            <Badge colorPalette="gray" size="xs" px={2}>
+              {mvrv.current >= 3.5 ? 'Overheated' : mvrv.current >= 1 ? 'Above Realized' : 'Below Realized'}
+            </Badge>
+          </Flex>
+        )}
+        {isMvrvLoading || !hasWidth ? (
+          <Skeleton height="60px" />
+        ) : mvrv?.history && mvrv.history.length > 0 ? (
+          <MiniAreaChart
+            data={mvrv.history}
+            dataKey="value"
+            color={`var(--chakra-colors-${getMvrvColor(mvrv.current)}-500)`}
+            gradientId="mvrvGradient"
+            formatter={(v) => v.toFixed(2)}
+            label="MVRV"
+            referenceLine={1}
+          />
+        ) : (
+          <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        )}
+      </Box>
+
+      <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+        <SectionTitle>{t('marketSidebar.indicators.btcProductionCost')}</SectionTitle>
+        {btcProductionCost && btcProductionCost.currentCost !== null && btcProductionCost.currentPrice !== null && (
+          <Flex align="center" gap={2} mb={2} flexWrap="wrap">
+            <Badge colorPalette="orange" size="xs" px={2}>
+              Cost: {formatUsd(btcProductionCost.currentCost)}
+            </Badge>
+            <Badge colorPalette="blue" size="xs" px={2}>
+              Price: {formatUsd(btcProductionCost.currentPrice)}
+            </Badge>
+            <Badge colorPalette={btcProductionCost.currentPrice >= btcProductionCost.currentCost ? 'green' : 'red'} size="xs" px={2}>
+              {btcProductionCost.currentPrice >= btcProductionCost.currentCost ? 'Above Cost' : 'Below Cost'}
+            </Badge>
+          </Flex>
+        )}
+        {isProductionCostLoading || !hasWidth ? (
+          <Skeleton height="60px" />
+        ) : btcProductionCost?.history && btcProductionCost.history.length > 0 ? (
+          <Box h="60px" mx={-2}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={btcProductionCost.history} margin={CHART_MARGIN}>
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  labelFormatter={formatTooltipDate}
+                  formatter={(value) => [formatUsd(value as number), '']}
+                />
+                <Line type="monotone" dataKey="productionCost" stroke="var(--chakra-colors-orange-500)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="btcPrice" stroke="var(--chakra-colors-blue-500)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+        ) : (
+          <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        )}
       </Box>
 
       <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">

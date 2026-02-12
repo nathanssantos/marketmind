@@ -26,6 +26,7 @@ export interface UseChartBaseRenderersProps {
   showVolume: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
+  showActivityIndicator: boolean;
   hoveredKlineIndex?: number;
   highlightedCandlesRef: React.MutableRefObject<HighlightedCandle[]>;
   hoveredMAIndexRef: React.MutableRefObject<number | undefined>;
@@ -60,6 +61,7 @@ export const useChartBaseRenderers = ({
   showVolume,
   showCurrentPriceLine,
   showCrosshair,
+  showActivityIndicator,
   hoveredKlineIndex,
   highlightedCandlesRef,
   hoveredMAIndexRef,
@@ -91,6 +93,7 @@ export const useChartBaseRenderers = ({
     manager,
     colors,
     enabled: chartType === 'kline',
+    showActivityIndicator,
     ...(advancedConfig?.rightMargin !== undefined && {
       rightMargin: advancedConfig.rightMargin,
     }),

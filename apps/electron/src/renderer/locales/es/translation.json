@@ -495,6 +495,7 @@
       "measurementRuler": "Regla de Medición",
       "measurementArea": "Área de Medición",
       "tooltip": "Tooltip",
+      "activityIndicator": "Indicador de Actividad",
       "marketEvents": "Eventos de Mercado",
       "autoPatterns": "Detección Automática de Patrones",
       "detectPatterns": "Detectar Patrones Ahora",
@@ -749,7 +750,10 @@
       "opened": "Apertura",
       "stopProtected": "Protegido por Stop",
       "stopProtectedOfExposure": "de exposición",
-      "stopProtectedOfBalance": "del saldo"
+      "stopProtectedOfBalance": "del saldo",
+      "tpProjected": "Proyectado por TP",
+      "tpProjectedOfExposure": "de exposición",
+      "tpProjectedOfBalance": "del saldo"
     },
     "viewMode": {
       "cards": "Vista de tarjetas",
@@ -1375,6 +1379,8 @@
       "title": "Indicadores de Mercado",
       "fearGreed": "Índice de Miedo y Codicia",
       "btcDominance": "Dominancia BTC",
+      "mvrv": "Ratio MVRV",
+      "btcProductionCost": "Costo de Producción BTC",
       "fundingRates": "Tasas de Funding",
       "openInterest": "Open Interest",
       "liquidations": "Liquidaciones",

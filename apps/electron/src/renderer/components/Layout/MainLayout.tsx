@@ -40,8 +40,10 @@ interface MainLayoutProps {
   showBollingerBands: boolean;
   showATR: boolean;
   showVWAP: boolean;
+  showActivityIndicator: boolean;
   showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
+  onShowActivityIndicatorChange: (show: boolean) => void;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onShowVolumeChange: (show: boolean) => void;
@@ -96,8 +98,10 @@ export const MainLayout = ({
   showBollingerBands,
   showATR,
   showVWAP,
+  showActivityIndicator,
   showEventRow,
   movingAverages,
+  onShowActivityIndicatorChange,
   onSymbolChange,
   onTimeframeChange,
   onShowVolumeChange,
@@ -246,8 +250,10 @@ export const MainLayout = ({
               showBollingerBands={showBollingerBands}
               showATR={showATR}
               showVWAP={showVWAP}
+              showActivityIndicator={showActivityIndicator}
               showEventRow={showEventRow}
               movingAverages={movingAverages}
+              onShowActivityIndicatorChange={onShowActivityIndicatorChange}
               onShowGridChange={onShowGridChange}
               onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
               onShowCrosshairChange={onShowCrosshairChange}
