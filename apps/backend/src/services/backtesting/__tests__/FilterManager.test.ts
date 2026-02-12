@@ -3,6 +3,7 @@ import type { Kline } from '@marketmind/types';
 
 vi.mock('@marketmind/indicators', () => ({
   calculateEMA: vi.fn(() => [50000, 50100, 50200, 50300, 50400]),
+  CHOPPINESS_FILTER: { DEFAULT_PERIOD: 14, HIGH_THRESHOLD: 61.8, LOW_THRESHOLD: 38.2 },
   detectTrendByEMA: vi.fn(() => ({
     direction: 'BULLISH',
     isClearTrend: true,
@@ -12,21 +13,67 @@ vi.mock('@marketmind/indicators', () => ({
   })),
 }));
 
+vi.mock('../../../utils/confluence-scoring', () => ({
+  calculateConfluenceScore: vi.fn(() => ({
+    isAllowed: true,
+    totalScore: 75,
+    maxPossibleScore: 110,
+    scorePercent: 68,
+    contributions: [],
+    alignmentBonus: 10,
+    recommendation: 'MODERATE_ENTRY',
+    reason: 'Confluence score 75/110 (68%) - MODERATE_ENTRY',
+  })),
+}));
+
 vi.mock('../../../utils/filters', async (importOriginal) => {
   const original = await importOriginal<typeof import('../../../utils/filters')>();
   return {
     ...original,
     ADX_FILTER: { MIN_KLINES_REQUIRED: 30 },
     checkAdxCondition: vi.fn(() => ({ isAllowed: true, reason: 'ADX passed' })),
-    STOCHASTIC_FILTER: { PERIOD: 14, LOOKBACK_BUFFER: 3 },
+    STOCHASTIC_FILTER: { K_PERIOD: 14, K_SMOOTHING: 3, D_PERIOD: 3 },
     checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
     checkTrendCondition: vi.fn(() => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
+    checkMomentumTiming: vi.fn(() => ({ isAllowed: true, rsiValue: 55, rsiMomentum: 'RISING', mfiValue: 60, reason: 'Momentum passed' })),
+    MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20, RSI_PERIOD: 14, MFI_PERIOD: 14, RSI_LONG_MIN: 40, RSI_SHORT_MAX: 60, RSI_PULLBACK_LONG_MIN: 30, RSI_PULLBACK_SHORT_MAX: 70, MFI_LONG_MIN: 30, MFI_SHORT_MAX: 70 },
+    MTF_FILTER: { EMA_SHORT_PERIOD: 50, EMA_LONG_PERIOD: 200, MIN_KLINES_FOR_EMA200: 250 },
+    checkMtfCondition: vi.fn(() => ({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, reason: 'MTF passed' })),
+    checkBtcCorrelation: vi.fn(() => ({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' })),
+    checkMarketRegime: vi.fn(() => ({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' })),
+    checkVolumeCondition: vi.fn(() => ({ isAllowed: true, currentVolume: 1500, avgVolume: 1000, volumeRatio: 1.5, obvTrend: 'RISING', reason: 'Volume passed' })),
+    checkFundingRate: vi.fn(() => ({ isAllowed: true, currentRate: 0.0001, fundingLevel: 'NORMAL', signal: 'NEUTRAL', nextFundingTime: null, reason: 'Funding rate normal' })),
+    checkChoppinessCondition: vi.fn(() => ({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' })),
+    checkSessionCondition: vi.fn(() => ({ isAllowed: true, currentHourUtc: 14, isInSession: true, reason: 'Session passed' })),
+    checkBollingerSqueezeCondition: vi.fn(() => ({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' })),
+    checkVwapCondition: vi.fn(() => ({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' })),
+    checkSupertrendCondition: vi.fn(() => ({ isAllowed: true, trend: 'UP', value: 49500, reason: 'Supertrend passed' })),
+    getHigherTimeframe: vi.fn((interval: string) => {
+      const mapping: Record<string, string> = { '1m': '15m', '5m': '1h', '15m': '4h', '1h': '4h', '4h': '1d', '1d': '1w' };
+      return mapping[interval] ?? null;
+    }),
   };
 });
 
 import { FilterManager, type FilterConfig } from '../FilterManager';
 import { calculateEMA } from '@marketmind/indicators';
-import { checkAdxCondition, checkStochasticCondition, checkTrendCondition } from '../../../utils/filters';
+import {
+  checkAdxCondition,
+  checkBollingerSqueezeCondition,
+  checkBtcCorrelation,
+  checkChoppinessCondition,
+  checkFundingRate,
+  checkMarketRegime,
+  checkMomentumTiming,
+  checkMtfCondition,
+  checkSessionCondition,
+  checkStochasticCondition,
+  checkSupertrendCondition,
+  checkTrendCondition,
+  checkVolumeCondition,
+  checkVwapCondition,
+} from '../../../utils/filters';
+import { calculateConfluenceScore } from '../../../utils/confluence-scoring';
 
 const createMockKlines = (count: number): Kline[] => {
   return Array(count).fill(null).map((_, i) => ({
@@ -53,6 +100,18 @@ describe('FilterManager', () => {
     vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
     vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, currentD: 48, isOversold: false, isOverbought: false, reason: 'Stochastic passed' });
     vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' });
+    vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: true, rsiValue: 55, rsiMomentum: 'RISING', mfiValue: 60, reason: 'Momentum passed' });
+    vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, reason: 'MTF passed' });
+    vi.mocked(checkBtcCorrelation).mockReturnValue({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' });
+    vi.mocked(checkMarketRegime).mockReturnValue({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' });
+    vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: true, currentVolume: 1500, avgVolume: 1000, volumeRatio: 1.5, obvTrend: 'RISING', reason: 'Volume passed' });
+    vi.mocked(checkFundingRate).mockReturnValue({ isAllowed: true, currentRate: 0.0001, fundingLevel: 'NORMAL', signal: 'NEUTRAL', nextFundingTime: null, reason: 'Funding rate normal' });
+    vi.mocked(checkChoppinessCondition).mockReturnValue({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' });
+    vi.mocked(checkSessionCondition).mockReturnValue({ isAllowed: true, currentHourUtc: 14, isInSession: true, reason: 'Session passed' });
+    vi.mocked(checkBollingerSqueezeCondition).mockReturnValue({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' });
+    vi.mocked(checkVwapCondition).mockReturnValue({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' });
+    vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: true, trend: 'UP', value: 49500, reason: 'Supertrend passed' });
+    vi.mocked(calculateConfluenceScore).mockReturnValue({ isAllowed: true, totalScore: 75, maxPossibleScore: 110, scorePercent: 68, contributions: [], alignmentBonus: 10, recommendation: 'MODERATE_ENTRY', reason: 'Confluence score 75/110 (68%) - MODERATE_ENTRY' });
     manager = new FilterManager({});
   });
 
@@ -459,6 +518,829 @@ describe('FilterManager', () => {
 
     it('should return 0 when no skips', () => {
       expect(manager.getTotalSkipped()).toBe(0);
+    });
+  });
+
+  describe('checkMomentumTimingFilter', () => {
+    it('should allow when momentum timing filter disabled', () => {
+      const klines = createMockKlines(50);
+      const result = manager.checkMomentumTimingFilter(klines, 30, 'LONG', 0);
+      expect(result).toBe(true);
+      expect(checkMomentumTiming).not.toHaveBeenCalled();
+    });
+
+    it('should call momentum timing check when enabled', () => {
+      const customManager = new FilterManager({ useMomentumTimingFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 0);
+
+      expect(result).toBe(true);
+      expect(checkMomentumTiming).toHaveBeenCalled();
+    });
+
+    it('should block when momentum timing condition fails', () => {
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiMomentum: 'FALLING', mfiValue: 25, reason: 'RSI too low for LONG' });
+      const customManager = new FilterManager({ useMomentumTimingFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 0);
+
+      expect(result).toBe(false);
+      expect(customManager.stats.skippedMomentumTiming).toBe(1);
+    });
+
+    it('should allow when insufficient klines', () => {
+      const customManager = new FilterManager({ useMomentumTimingFilter: true });
+      const klines = createMockKlines(15);
+
+      const result = customManager.checkMomentumTimingFilter(klines, 10, 'LONG', 0);
+
+      expect(result).toBe(true);
+    });
+
+    it('should not log when tradesCount >= 3', () => {
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiMomentum: 'FALLING', mfiValue: 25, reason: 'RSI too low' });
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const customManager = new FilterManager({ useMomentumTimingFilter: true });
+      const klines = createMockKlines(50);
+
+      customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 5);
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('should pass setupType to checkMomentumTiming', () => {
+      const customManager = new FilterManager({ useMomentumTimingFilter: true });
+      const klines = createMockKlines(50);
+
+      customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 0, 'SETUP_9_1');
+
+      expect(checkMomentumTiming).toHaveBeenCalledWith(expect.any(Array), 'LONG', 'SETUP_9_1');
+    });
+  });
+
+  describe('checkMtfFilter', () => {
+    it('should pass when MTF filter disabled', () => {
+      const klines = createMockKlines(300);
+      const result = manager.checkMtfFilter(klines, 'LONG', '4h', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkMtfCondition).not.toHaveBeenCalled();
+    });
+
+    it('should pass when htfInterval is null', () => {
+      const customManager = new FilterManager({ useMtfFilter: true });
+      const klines = createMockKlines(300);
+      const result = customManager.checkMtfFilter(klines, 'LONG', null, 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should pass when insufficient htf klines', () => {
+      const customManager = new FilterManager({ useMtfFilter: true });
+      const klines = createMockKlines(100);
+      const result = customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkMtfCondition with enough klines', () => {
+      const customManager = new FilterManager({ useMtfFilter: true });
+      const klines = createMockKlines(300);
+
+      const result = customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkMtfCondition).toHaveBeenCalledWith(klines, 'LONG', '4h');
+    });
+
+    it('should block when MTF condition fails', () => {
+      vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: false, htfTrend: 'BEARISH', htfInterval: '4h', ema50: 50000, ema200: 51000, price: 49000, goldenCross: false, reason: 'HTF bearish' });
+      const customManager = new FilterManager({ useMtfFilter: true });
+      const klines = createMockKlines(300);
+
+      const result = customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedMtf).toBe(1);
+    });
+  });
+
+  describe('checkBtcCorrelationFilter', () => {
+    it('should pass when BTC correlation filter disabled', () => {
+      const klines = createMockKlines(50);
+      const result = manager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkBtcCorrelation).not.toHaveBeenCalled();
+    });
+
+    it('should pass when insufficient btc klines', () => {
+      const customManager = new FilterManager({ useBtcCorrelationFilter: true });
+      const klines = createMockKlines(20);
+
+      const result = customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkBtcCorrelation with enough klines', () => {
+      const customManager = new FilterManager({ useBtcCorrelationFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkBtcCorrelation).toHaveBeenCalledWith(klines, 'LONG', 'ETHUSDT');
+    });
+
+    it('should block when BTC correlation fails', () => {
+      vi.mocked(checkBtcCorrelation).mockReturnValue({ isAllowed: false, btcTrend: 'BEARISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 48000, btcMacdHistogram: -200, btcRsi: 35, btcRsiMomentum: 'FALLING', isAltcoin: true, correlationScore: 25, reason: 'BTC bearish blocks LONG' });
+      const customManager = new FilterManager({ useBtcCorrelationFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedBtcCorrelation).toBe(1);
+    });
+  });
+
+  describe('checkMarketRegimeFilter', () => {
+    it('should pass when market regime filter disabled', () => {
+      const klines = createMockKlines(60);
+      const result = manager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkMarketRegime).not.toHaveBeenCalled();
+    });
+
+    it('should pass when setupIndex < 30', () => {
+      const customManager = new FilterManager({ useMarketRegimeFilter: true });
+      const klines = createMockKlines(60);
+
+      const result = customManager.checkMarketRegimeFilter(klines, 25, 'SETUP_9_1', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkMarketRegime with enough klines', () => {
+      const customManager = new FilterManager({ useMarketRegimeFilter: true });
+      const klines = createMockKlines(100);
+
+      const result = customManager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkMarketRegime).toHaveBeenCalled();
+    });
+
+    it('should block when market regime condition fails', () => {
+      vi.mocked(checkMarketRegime).mockReturnValue({ isAllowed: false, regime: 'RANGING', adx: 15, plusDI: 18, minusDI: 20, atr: 300, atrPercentile: 30, volatilityLevel: 'LOW', recommendedStrategy: 'MEAN_REVERSION', reason: 'Ranging market blocks trend strategy' });
+      const customManager = new FilterManager({ useMarketRegimeFilter: true });
+      const klines = createMockKlines(100);
+
+      const result = customManager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedMarketRegime).toBe(1);
+    });
+  });
+
+  describe('checkVolumeFilter', () => {
+    it('should pass when volume filter disabled', () => {
+      const klines = createMockKlines(50);
+      const result = manager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkVolumeCondition).not.toHaveBeenCalled();
+    });
+
+    it('should pass when setupIndex < 21', () => {
+      const customManager = new FilterManager({ useVolumeFilter: true });
+      const klines = createMockKlines(30);
+
+      const result = customManager.checkVolumeFilter(klines, 15, 'LONG', 'SETUP_9_1', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkVolumeCondition with enough klines', () => {
+      const customManager = new FilterManager({ useVolumeFilter: true });
+      const klines = createMockKlines(60);
+
+      const result = customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkVolumeCondition).toHaveBeenCalled();
+    });
+
+    it('should block when volume condition fails', () => {
+      vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: false, currentVolume: 200, avgVolume: 1000, volumeRatio: 0.2, obvTrend: 'FALLING', reason: 'Volume too low' });
+      const customManager = new FilterManager({ useVolumeFilter: true });
+      const klines = createMockKlines(60);
+
+      const result = customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedVolume).toBe(1);
+    });
+
+    it('should pass volumeFilterConfig to checkVolumeCondition', () => {
+      const volumeFilterConfig = { breakoutMultiplier: 2.0, pullbackMultiplier: 0.8, useObv: true };
+      const customManager = new FilterManager({ useVolumeFilter: true, volumeFilterConfig });
+      const klines = createMockKlines(60);
+
+      customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+
+      expect(checkVolumeCondition).toHaveBeenCalledWith(expect.any(Array), 'LONG', 'SETUP_9_1', volumeFilterConfig);
+    });
+  });
+
+  describe('checkFundingFilter', () => {
+    it('should pass when funding filter disabled', () => {
+      const result = manager.checkFundingFilter(0.0001, 'LONG', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkFundingRate).not.toHaveBeenCalled();
+    });
+
+    it('should call checkFundingRate when enabled', () => {
+      const customManager = new FilterManager({ useFundingFilter: true });
+
+      const result = customManager.checkFundingFilter(0.0001, 'LONG', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkFundingRate).toHaveBeenCalledWith(0.0001, 'LONG');
+    });
+
+    it('should block when funding rate condition fails', () => {
+      vi.mocked(checkFundingRate).mockReturnValue({ isAllowed: false, currentRate: 0.002, fundingLevel: 'EXTREME', signal: 'SHORT_CONTRARIAN', nextFundingTime: null, reason: 'LONG blocked: extreme positive funding' });
+      const customManager = new FilterManager({ useFundingFilter: true });
+
+      const result = customManager.checkFundingFilter(0.002, 'LONG', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedFunding).toBe(1);
+    });
+
+    it('should handle null funding rate', () => {
+      const customManager = new FilterManager({ useFundingFilter: true });
+
+      customManager.checkFundingFilter(null, 'LONG', 0);
+
+      expect(checkFundingRate).toHaveBeenCalledWith(null, 'LONG');
+    });
+  });
+
+  describe('checkConfluenceScoring', () => {
+    it('should pass when confluence scoring disabled', () => {
+      const filterResults = {} as Parameters<typeof calculateConfluenceScore>[0];
+      const result = manager.checkConfluenceScoring(filterResults, 0);
+
+      expect(result).toBe(true);
+      expect(calculateConfluenceScore).not.toHaveBeenCalled();
+    });
+
+    it('should call calculateConfluenceScore when enabled', () => {
+      const customManager = new FilterManager({ useConfluenceScoring: true });
+      const filterResults = {} as Parameters<typeof calculateConfluenceScore>[0];
+
+      const result = customManager.checkConfluenceScoring(filterResults, 0);
+
+      expect(result).toBe(true);
+      expect(calculateConfluenceScore).toHaveBeenCalled();
+    });
+
+    it('should block when confluence score is too low', () => {
+      vi.mocked(calculateConfluenceScore).mockReturnValue({ isAllowed: false, totalScore: 30, maxPossibleScore: 110, scorePercent: 27, contributions: [], alignmentBonus: 0, recommendation: 'NO_ENTRY', reason: 'Confluence score 30 below minimum 60' });
+      const customManager = new FilterManager({ useConfluenceScoring: true });
+      const filterResults = {} as Parameters<typeof calculateConfluenceScore>[0];
+
+      const result = customManager.checkConfluenceScoring(filterResults, 0);
+
+      expect(result).toBe(false);
+      expect(customManager.stats.skippedConfluence).toBe(1);
+    });
+
+    it('should use custom confluenceMinScore', () => {
+      const customManager = new FilterManager({ useConfluenceScoring: true, confluenceMinScore: 80 });
+      const filterResults = {} as Parameters<typeof calculateConfluenceScore>[0];
+
+      customManager.checkConfluenceScoring(filterResults, 0);
+
+      expect(calculateConfluenceScore).toHaveBeenCalledWith(filterResults, 80);
+    });
+  });
+
+  describe('getHigherTimeframe', () => {
+    it('should return higher timeframe for known intervals', () => {
+      expect(manager.getHigherTimeframe('1h')).toBe('4h');
+      expect(manager.getHigherTimeframe('4h')).toBe('1d');
+      expect(manager.getHigherTimeframe('1d')).toBe('1w');
+    });
+
+    it('should return null for unknown intervals', () => {
+      expect(manager.getHigherTimeframe('2w')).toBeNull();
+    });
+  });
+
+  describe('checkPositionConflict', () => {
+    it('should allow when no existing position for symbol', () => {
+      const result = manager.checkPositionConflict('BTCUSDT', 'LONG', 0);
+      expect(result).toBe(true);
+    });
+
+    it('should allow when same direction as existing position', () => {
+      manager.updatePositionTracking('BTCUSDT', 'LONG', true);
+
+      const result = manager.checkPositionConflict('BTCUSDT', 'LONG', 0);
+
+      expect(result).toBe(true);
+    });
+
+    it('should block when opposite direction to existing position', () => {
+      manager.updatePositionTracking('BTCUSDT', 'LONG', true);
+
+      const result = manager.checkPositionConflict('BTCUSDT', 'SHORT', 0);
+
+      expect(result).toBe(false);
+      expect(manager.stats.skippedPositionConflict).toBe(1);
+    });
+
+    it('should allow after position is closed', () => {
+      manager.updatePositionTracking('BTCUSDT', 'LONG', true);
+      manager.updatePositionTracking('BTCUSDT', 'LONG', false);
+
+      const result = manager.checkPositionConflict('BTCUSDT', 'SHORT', 0);
+
+      expect(result).toBe(true);
+    });
+
+    it('should track positions per symbol independently', () => {
+      manager.updatePositionTracking('BTCUSDT', 'LONG', true);
+      manager.updatePositionTracking('ETHUSDT', 'SHORT', true);
+
+      expect(manager.checkPositionConflict('BTCUSDT', 'LONG', 0)).toBe(true);
+      expect(manager.checkPositionConflict('BTCUSDT', 'SHORT', 0)).toBe(false);
+      expect(manager.checkPositionConflict('ETHUSDT', 'SHORT', 0)).toBe(true);
+      expect(manager.checkPositionConflict('ETHUSDT', 'LONG', 0)).toBe(false);
+    });
+  });
+
+  describe('checkStrategyPositionLimit', () => {
+    it('should allow when maxPerStrategy is undefined', () => {
+      const result = manager.checkStrategyPositionLimit('SETUP_9_1', undefined, 0);
+      expect(result).toBe(true);
+    });
+
+    it('should allow when maxPerStrategy is 0', () => {
+      const result = manager.checkStrategyPositionLimit('SETUP_9_1', 0, 0);
+      expect(result).toBe(true);
+    });
+
+    it('should allow when below max per strategy', () => {
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+
+      const result = manager.checkStrategyPositionLimit('SETUP_9_1', 3, 0);
+
+      expect(result).toBe(true);
+    });
+
+    it('should block when at max per strategy', () => {
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+
+      const result = manager.checkStrategyPositionLimit('SETUP_9_1', 3, 0);
+
+      expect(result).toBe(false);
+      expect(manager.stats.skippedMaxPositions).toBe(1);
+    });
+
+    it('should track counts per strategy independently', () => {
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+      manager.updateStrategyPositionCount('SETUP_9_2', 1);
+
+      expect(manager.checkStrategyPositionLimit('SETUP_9_1', 2, 0)).toBe(false);
+      expect(manager.checkStrategyPositionLimit('SETUP_9_2', 2, 0)).toBe(true);
+    });
+  });
+
+  describe('updateStrategyPositionCount', () => {
+    it('should not go below zero', () => {
+      manager.updateStrategyPositionCount('SETUP_9_1', -5);
+
+      expect(manager.checkStrategyPositionLimit('SETUP_9_1', 1, 0)).toBe(true);
+    });
+
+    it('should handle increment and decrement', () => {
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+      manager.updateStrategyPositionCount('SETUP_9_1', 1);
+      manager.updateStrategyPositionCount('SETUP_9_1', -1);
+
+      expect(manager.checkStrategyPositionLimit('SETUP_9_1', 1, 0)).toBe(false);
+      expect(manager.checkStrategyPositionLimit('SETUP_9_1', 2, 0)).toBe(true);
+    });
+  });
+
+  describe('incrementPyramidSkipped', () => {
+    it('should increment pyramid skipped count', () => {
+      manager.incrementPyramidSkipped();
+      expect(manager.stats.skippedPyramid).toBe(1);
+
+      manager.incrementPyramidSkipped();
+      expect(manager.stats.skippedPyramid).toBe(2);
+    });
+  });
+
+  describe('incrementPyramidEntries', () => {
+    it('should increment pyramid entries count', () => {
+      manager.incrementPyramidEntries();
+      expect(manager.stats.pyramidEntries).toBe(1);
+
+      manager.incrementPyramidEntries();
+      expect(manager.stats.pyramidEntries).toBe(2);
+    });
+  });
+
+  describe('checkChoppinessFilter', () => {
+    it('should pass when choppiness filter disabled', () => {
+      const klines = createMockKlines(30);
+      const result = manager.checkChoppinessFilter(klines, 20, 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkChoppinessCondition).not.toHaveBeenCalled();
+    });
+
+    it('should pass when setupIndex < period + 1', () => {
+      const customManager = new FilterManager({ useChoppinessFilter: true });
+      const klines = createMockKlines(20);
+
+      const result = customManager.checkChoppinessFilter(klines, 10, 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkChoppinessCondition with enough klines', () => {
+      const customManager = new FilterManager({ useChoppinessFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkChoppinessFilter(klines, 30, 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkChoppinessCondition).toHaveBeenCalled();
+    });
+
+    it('should block when choppiness condition fails', () => {
+      vi.mocked(checkChoppinessCondition).mockReturnValue({ isAllowed: false, choppinessValue: 70, isChoppy: true, isTrending: false, reason: 'Market is choppy' });
+      const customManager = new FilterManager({ useChoppinessFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkChoppinessFilter(klines, 30, 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedChoppiness).toBe(1);
+    });
+
+    it('should use custom choppiness thresholds and period', () => {
+      const customManager = new FilterManager({
+        useChoppinessFilter: true,
+        choppinessPeriod: 20,
+        choppinessThresholdHigh: 65,
+        choppinessThresholdLow: 35,
+      });
+      const klines = createMockKlines(60);
+
+      customManager.checkChoppinessFilter(klines, 30, 0);
+
+      expect(checkChoppinessCondition).toHaveBeenCalledWith(expect.any(Array), 65, 35, 20);
+    });
+  });
+
+  describe('checkSessionFilter', () => {
+    it('should pass when session filter disabled', () => {
+      const result = manager.checkSessionFilter(Date.now(), 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkSessionCondition).not.toHaveBeenCalled();
+    });
+
+    it('should call checkSessionCondition when enabled', () => {
+      const customManager = new FilterManager({ useSessionFilter: true });
+      const timestamp = Date.now();
+
+      const result = customManager.checkSessionFilter(timestamp, 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkSessionCondition).toHaveBeenCalled();
+    });
+
+    it('should block when session condition fails', () => {
+      vi.mocked(checkSessionCondition).mockReturnValue({ isAllowed: false, currentHourUtc: 3, isInSession: false, reason: 'Outside session hours' });
+      const customManager = new FilterManager({ useSessionFilter: true });
+
+      const result = customManager.checkSessionFilter(Date.now(), 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedSession).toBe(1);
+    });
+
+    it('should use custom session start and end', () => {
+      const customManager = new FilterManager({ useSessionFilter: true, sessionStartUtc: 9, sessionEndUtc: 17 });
+
+      customManager.checkSessionFilter(Date.now(), 0);
+
+      expect(checkSessionCondition).toHaveBeenCalledWith(expect.any(Number), 9, 17);
+    });
+  });
+
+  describe('checkBollingerSqueezeFilter', () => {
+    it('should pass when bollinger squeeze filter disabled', () => {
+      const klines = createMockKlines(30);
+      const result = manager.checkBollingerSqueezeFilter(klines, 25, 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkBollingerSqueezeCondition).not.toHaveBeenCalled();
+    });
+
+    it('should pass when setupIndex < period', () => {
+      const customManager = new FilterManager({ useBollingerSqueezeFilter: true });
+      const klines = createMockKlines(20);
+
+      const result = customManager.checkBollingerSqueezeFilter(klines, 15, 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkBollingerSqueezeCondition with enough klines', () => {
+      const customManager = new FilterManager({ useBollingerSqueezeFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkBollingerSqueezeFilter(klines, 30, 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkBollingerSqueezeCondition).toHaveBeenCalled();
+    });
+
+    it('should block when bollinger squeeze condition fails', () => {
+      vi.mocked(checkBollingerSqueezeCondition).mockReturnValue({ isAllowed: false, bbWidth: 0.03, isSqueezing: true, reason: 'BB squeeze detected' });
+      const customManager = new FilterManager({ useBollingerSqueezeFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkBollingerSqueezeFilter(klines, 30, 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedBollingerSqueeze).toBe(1);
+    });
+
+    it('should use custom bollinger parameters', () => {
+      const customManager = new FilterManager({
+        useBollingerSqueezeFilter: true,
+        bollingerSqueezePeriod: 30,
+        bollingerSqueezeThreshold: 0.05,
+        bollingerSqueezeStdDev: 2.5,
+      });
+      const klines = createMockKlines(60);
+
+      customManager.checkBollingerSqueezeFilter(klines, 40, 0);
+
+      expect(checkBollingerSqueezeCondition).toHaveBeenCalledWith(expect.any(Array), 0.05, 30, 2.5);
+    });
+  });
+
+  describe('checkVwapFilter', () => {
+    it('should pass when VWAP filter disabled', () => {
+      const klines = createMockKlines(30);
+      const result = manager.checkVwapFilter(klines, 20, 'LONG', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkVwapCondition).not.toHaveBeenCalled();
+    });
+
+    it('should pass when setupIndex < 10', () => {
+      const customManager = new FilterManager({ useVwapFilter: true });
+      const klines = createMockKlines(15);
+
+      const result = customManager.checkVwapFilter(klines, 5, 'LONG', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkVwapCondition with enough klines', () => {
+      const customManager = new FilterManager({ useVwapFilter: true });
+      const klines = createMockKlines(60);
+
+      const result = customManager.checkVwapFilter(klines, 30, 'LONG', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkVwapCondition).toHaveBeenCalled();
+    });
+
+    it('should block when VWAP condition fails', () => {
+      vi.mocked(checkVwapCondition).mockReturnValue({ isAllowed: false, vwap: 50000, currentPrice: 49000, priceVsVwap: 'BELOW', reason: 'LONG blocked: price below VWAP' });
+      const customManager = new FilterManager({ useVwapFilter: true });
+      const klines = createMockKlines(60);
+
+      const result = customManager.checkVwapFilter(klines, 30, 'LONG', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedVwap).toBe(1);
+    });
+  });
+
+  describe('checkSupertrendFilter', () => {
+    it('should pass when supertrend filter disabled', () => {
+      const klines = createMockKlines(30);
+      const result = manager.checkSupertrendFilter(klines, 20, 'LONG', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+      expect(checkSupertrendCondition).not.toHaveBeenCalled();
+    });
+
+    it('should pass when setupIndex < period + 1', () => {
+      const customManager = new FilterManager({ useSuperTrendFilter: true });
+      const klines = createMockKlines(15);
+
+      const result = customManager.checkSupertrendFilter(klines, 8, 'LONG', 0);
+
+      expect(result).toEqual({ passed: true, result: null });
+    });
+
+    it('should call checkSupertrendCondition with enough klines', () => {
+      const customManager = new FilterManager({ useSuperTrendFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkSupertrendFilter(klines, 20, 'LONG', 0);
+
+      expect(result.passed).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(checkSupertrendCondition).toHaveBeenCalled();
+    });
+
+    it('should block when supertrend condition fails', () => {
+      vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: false, trend: 'DOWN', value: 51000, reason: 'LONG blocked: supertrend is bearish' });
+      const customManager = new FilterManager({ useSuperTrendFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkSupertrendFilter(klines, 20, 'LONG', 0);
+
+      expect(result.passed).toBe(false);
+      expect(customManager.stats.skippedSupertrend).toBe(1);
+    });
+
+    it('should use custom supertrend parameters', () => {
+      const customManager = new FilterManager({
+        useSuperTrendFilter: true,
+        superTrendPeriod: 14,
+        superTrendMultiplier: 2.5,
+      });
+      const klines = createMockKlines(50);
+
+      customManager.checkSupertrendFilter(klines, 25, 'LONG', 0);
+
+      expect(checkSupertrendCondition).toHaveBeenCalledWith(expect.any(Array), 'LONG', 14, 2.5);
+    });
+  });
+
+  describe('checkAdxFilter - insufficient klines branch', () => {
+    it('should block and increment skippedAdx when setupIndex < MIN_KLINES_REQUIRED', () => {
+      const customManager = new FilterManager({ useAdxFilter: true });
+      const klines = createMockKlines(30);
+
+      const result = customManager.checkAdxFilter(klines, 20, 'LONG', 0);
+
+      expect(result).toBe(false);
+      expect(customManager.stats.skippedAdx).toBe(1);
+      expect(checkAdxCondition).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('combined filter scenarios', () => {
+    it('should accumulate skips across multiple filters', () => {
+      vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, currentK: 85, currentD: 82, isOversold: false, isOverbought: true, reason: 'Overbought' });
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiMomentum: 'FALLING', mfiValue: 25, reason: 'RSI too low' });
+
+      const customManager = new FilterManager({
+        useStochasticFilter: true,
+        useMomentumTimingFilter: true,
+        onlyLong: true,
+      });
+      const klines = createMockKlines(50);
+
+      customManager.checkStochasticFilter(klines, 30, 'LONG', 5);
+      customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 5);
+      customManager.checkDirection('SHORT');
+
+      expect(customManager.stats.skippedStochastic).toBe(1);
+      expect(customManager.stats.skippedMomentumTiming).toBe(1);
+      expect(customManager.getTotalSkipped()).toBe(2);
+    });
+
+    it('should handle all filters enabled simultaneously passing', () => {
+      const customManager = new FilterManager({
+        useTrendFilter: true,
+        useStochasticFilter: true,
+        useMomentumTimingFilter: true,
+        useAdxFilter: true,
+        useVolumeFilter: true,
+        useChoppinessFilter: true,
+        useSessionFilter: true,
+        useBollingerSqueezeFilter: true,
+        useVwapFilter: true,
+        useSuperTrendFilter: true,
+      });
+      const klines = createMockKlines(100);
+
+      expect(customManager.checkTrendFilter(klines, 30, 'LONG', true, 5)).toBe(true);
+      expect(customManager.checkStochasticFilter(klines, 30, 'LONG', 5)).toBe(true);
+      expect(customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 5)).toBe(true);
+      expect(customManager.checkAdxFilter(klines, 35, 'LONG', 5)).toBe(true);
+      expect(customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 5).passed).toBe(true);
+      expect(customManager.checkChoppinessFilter(klines, 30, 5).passed).toBe(true);
+      expect(customManager.checkSessionFilter(Date.now(), 5).passed).toBe(true);
+      expect(customManager.checkBollingerSqueezeFilter(klines, 30, 5).passed).toBe(true);
+      expect(customManager.checkVwapFilter(klines, 30, 'LONG', 5).passed).toBe(true);
+      expect(customManager.checkSupertrendFilter(klines, 20, 'LONG', 5).passed).toBe(true);
+      expect(customManager.getTotalSkipped()).toBe(0);
+    });
+  });
+
+  describe('updateDailyPnl - no dailyLossLimit configured', () => {
+    it('should do nothing when dailyLossLimit is not set', () => {
+      manager.updateDailyPnl(-5000, 10000);
+      expect(manager.checkDailyLossLimit(Date.now())).toBe(true);
+    });
+  });
+
+  describe('updateCooldown - cooldown disabled', () => {
+    it('should not store cooldown when cooldown is disabled', () => {
+      const now = Date.now();
+      manager.updateCooldown('setup1', 'BTCUSDT', '1h', now);
+
+      const customManager = new FilterManager({ useCooldown: true, cooldownMinutes: 15 });
+      expect(customManager.checkCooldown('setup1', 'BTCUSDT', '1h', now + 60000)).toBe(true);
+    });
+  });
+
+  describe('checkMaxPositions - empty positions array', () => {
+    it('should allow when no open positions exist', () => {
+      const customManager = new FilterManager({ maxConcurrentPositions: 1 });
+      const result = customManager.checkMaxPositions([], Date.now());
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('stochastic filter - null currentK logging', () => {
+    it('should log null for currentK when stochastic blocks with null K value', () => {
+      vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, currentK: null, currentD: null, isOversold: false, isOverbought: false, reason: 'Stochastic blocked' });
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const customManager = new FilterManager({ useStochasticFilter: true });
+      const klines = createMockKlines(50);
+
+      customManager.checkStochasticFilter(klines, 30, 'LONG', 0);
+
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('currK=null'));
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('momentum timing filter - null rsiValue logging', () => {
+    it('should log null for RSI when momentum blocks with null rsiValue', () => {
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: null, rsiMomentum: 'NEUTRAL', mfiValue: null, reason: 'RSI not available' });
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const customManager = new FilterManager({ useMomentumTimingFilter: true });
+      const klines = createMockKlines(50);
+
+      customManager.checkMomentumTimingFilter(klines, 30, 'LONG', 0);
+
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('RSI=null'));
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('initialize - handles null EMA values', () => {
+    it('should map null EMA values to 0', async () => {
+      vi.mocked(calculateEMA).mockReturnValue([null, 50100, null, 50300, null]);
+      const klines = createMockKlines(50);
+
+      await manager.initialize(klines, '2024-01-01', '2024-12-31', 'BTCUSDT');
+
+      const emaTrend = manager.getEmaTrend();
+      expect(emaTrend[0]).toBe(0);
+      expect(emaTrend[1]).toBe(50100);
+      expect(emaTrend[2]).toBe(0);
     });
   });
 });
