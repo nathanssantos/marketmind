@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { db } from '../db/index.js';
-import { klines } from '../db/schema.js';
+import { db } from '../../src/db/index.js';
+import { klines } from '../../src/db/schema.js';
 import { and, eq, desc } from 'drizzle-orm';
 import type { Interval } from '@marketmind/types';
 

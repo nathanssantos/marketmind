@@ -47,19 +47,12 @@
     "backtest:sensitivity": "tsx src/cli/backtest-runner.ts sensitivity",
     "backtest:compare": "tsx src/cli/backtest-runner.ts compare",
     "backtest:export": "tsx src/cli/backtest-runner.ts export",
-    "backtest:multi": "tsx scripts/run-multi-timeframe-backtest.ts",
-    "backtest:systematic": "tsx scripts/run-systematic-backtest.ts",
-    "backtest:batch": "bash scripts/batch-backtest-comparison.sh",
-    "backtest:fib-entry": "tsx scripts/run-fib-entry-comparison.ts",
-    "backtest:fib-target": "tsx scripts/run-fib-target-comparison.ts",
     "backtest:mw": "tsx src/cli/multi-watcher-backtest.ts",
     "backtest:volume": "tsx src/cli/compare-volume-filter.ts",
-    "validate:all": "tsx validate-strategies.mts",
-    "optimize:all": "node batch-optimize.mjs",
-    "test:all": "tsx validate-strategies.mts && node batch-optimize.mjs",
-    "reset-wallet": "tsx src/scripts/reset-wallet.ts",
-    "audit-klines": "tsx src/scripts/audit-klines.ts",
-    "clear-klines": "tsx src/scripts/clear-klines.ts"
+    "optimize:full": "tsx scripts/backtest/run-optimization.ts",
+    "reset-wallet": "tsx scripts/maintenance/reset-wallet.ts",
+    "audit-klines": "tsx scripts/maintenance/audit-klines.ts",
+    "clear-klines": "tsx scripts/maintenance/clear-klines.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

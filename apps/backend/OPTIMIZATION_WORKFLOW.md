@@ -15,66 +15,45 @@ Após análise comparativa com benchmarks:
 
 ## Estratégia de Otimização
 
-### 1️⃣ Fase 1: Otimização em Massa
+### 1️⃣ Fase 1: Otimização Completa (3 Estágios)
 
 **Executar:**
 ```bash
 cd apps/backend
-node batch-optimize.mjs
+pnpm optimize:full
 ```
 
 **O que faz:**
-- Otimiza 10 estratégias principais
-- Período: 2023-2024 completo (2 anos para maior robustez)
-- Grid search com 9-48 combinações por estratégia
-- Foca em melhorar Profit Factor e PnL
-- Filtros: min WR 30%, min PF 1.3
-- Execução paralela (4 workers)
+- Stage 1: Sensitivity sweep (Fibonacci targets, entry progress, R:R ratios)
+- Stage 2: Cross-product das top combinações do Stage 1
+- Stage 3: Trailing stop optimization nos melhores configs
+- Suporta SIGINT/SIGTERM (salva progresso para resume)
+- ETA display, kline gap warnings, per-symbol stats
 
-**Duração estimada:** 2-4 horas (dependendo do hardware)
-
-**Estratégias incluídas:**
-1. order-block-fvg
-2. liquidity-sweep
-3. divergence-rsi-macd
-4. larry-williams-9-1
-5. larry-williams-9-2
-6. larry-williams-9-3
-7. larry-williams-9-4
-8. connors-rsi2-original
-9. mean-reversion-bb-rsi
-10. rsi2-mean-reversion
+**Output:** `/tmp/prod-parity-optimization-run/` (summary.txt, optimal-config.json, CSVs)
 
 ### 2️⃣ Fase 2: Aplicar Parâmetros Otimizados
 
 **Executar:**
 ```bash
-node apply-optimized-params.mjs
+pnpm tsx scripts/audit/apply-optimizations.ts
 ```
 
 **O que faz:**
-- Lê os resultados da otimização
-- Atualiza arquivos JSON das estratégias
+- Lê o `optimal-config.json` gerado pelo Stage 2
+- Aplica os melhores parâmetros à configuração de produção
 - Mantém histórico de otimizações anteriores
-- Adiciona seção `backtestSummary` com métricas
-
-**Arquivos modificados:**
-- `strategies/builtin/<strategy>.json` (cada estratégia otimizada)
 
 ### 3️⃣ Fase 3: Validação dos Resultados
 
 **Executar:**
 ```bash
-# Validar uma estratégia específica
-npm run backtest:validate -- \
+pnpm backtest:validate -- \
   --strategy order-block-fvg \
   --symbol BTCUSDT \
   --interval 1h \
   --start 2024-06-01 \
   --end 2024-12-31
-
-# Ou rodar script de comparação (antes vs depois)
-node compare-optimization-results.mjs
 ```
 
 **O que validar:**
@@ -161,12 +140,12 @@ npm run backtest:walkforward -- \
 ## Cronograma Sugerido
 
 **Dia 1:**
-- ✅ Rodar `batch-optimize.mjs` (2-4h)
-- ✅ Revisar resultados em `results/optimizations/`
+- ✅ Rodar `pnpm optimize:full` (3 stages, suporta resume)
+- ✅ Revisar summary.txt e optimal-config.json
 
 **Dia 2:**
-- ✅ Executar `apply-optimized-params.mjs`
-- ✅ Validar 3 estratégias principais
+- ✅ Aplicar otimizações (`pnpm tsx scripts/audit/apply-optimizations.ts`)
+- ✅ Validar estratégias principais
 - ✅ Comparar métricas antes/depois
 
 **Dia 3:**
@@ -213,20 +192,20 @@ Após otimização bem-sucedida:
 ## Comandos Rápidos
 
 ```bash
-# 1. Otimizar todas as estratégias
-node batch-optimize.mjs
+# 1. Otimização completa (3 stages com resume)
+pnpm optimize:full
 
 # 2. Aplicar parâmetros otimizados
-node apply-optimized-params.mjs
+pnpm tsx scripts/audit/apply-optimizations.ts
 
 # 3. Validar uma estratégia
-npm run backtest:validate -- --strategy <name> --symbol BTCUSDT --interval 1h --start 2024-06-01 --end 2024-12-31
+pnpm backtest:validate -- --strategy <name> --symbol BTCUSDT --interval 1h --start 2024-06-01 --end 2024-12-31
 
 # 4. Comparar resultados
-npm run backtest:compare -- results/validations/*order-block-fvg*.json
+pnpm backtest:compare -- results/validations/*order-block-fvg*.json
 
 # 5. Walk-forward (robustez)
-npm run backtest:walkforward -- --strategy <name> --symbol BTCUSDT --interval 1h --start 2023-01-01 --end 2024-12-31
+pnpm backtest:walkforward -- --strategy <name> --symbol BTCUSDT --interval 1h --start 2023-01-01 --end 2024-12-31
 ```
 
 ---

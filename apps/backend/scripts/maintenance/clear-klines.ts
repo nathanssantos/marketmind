@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { db } from '../db';
-import { klines } from '../db/schema';
+import { db } from '../../src/db';
+import { klines } from '../../src/db/schema';
 
 const clearKlines = async () => {
   console.log('Starting klines cleanup...\n');

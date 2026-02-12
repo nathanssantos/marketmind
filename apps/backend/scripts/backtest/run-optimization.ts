@@ -13,7 +13,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenvConfig({ path: resolve(__dirname, '../.env') });
+dotenvConfig({ path: resolve(__dirname, '../../.env') });
 
 import { writeSync } from 'fs';
 
@@ -27,15 +27,27 @@ process.env['NODE_ENV'] = 'production';
 console.log = () => {};
 console.info = () => {};
 console.warn = () => {};
+const originalConsoleError = console.error;
 console.error = () => {};
 console.debug = () => {};
 
-const { BacktestEngine } = await import('../src/services/backtesting/BacktestEngine.js');
-const { GranularPriceIndex } = await import('../src/services/backtesting/trailing-stop-backtest/GranularPriceIndex.js');
-const { TrailingStopSimulator } = await import('../src/services/backtesting/trailing-stop-backtest/TrailingStopSimulator.js');
+const { BacktestEngine } = await import('../../src/services/backtesting/BacktestEngine.js');
+const { GranularPriceIndex } = await import('../../src/services/backtesting/trailing-stop-backtest/GranularPriceIndex.js');
+const { TrailingStopSimulator } = await import('../../src/services/backtesting/trailing-stop-backtest/TrailingStopSimulator.js');
+const { klineQueries } = await import('../../src/services/database/klineQueries.js');
+const { mapDbKlinesToApi } = await import('../../src/utils/kline-mapper.js');
+const { smartBackfillKlines } = await import('../../src/services/binance-historical.js');
+const { BACKTEST_ENGINE, ABSOLUTE_MINIMUM_KLINES } = await import('../../src/constants/index.js');
+
+const getIntervalMs = (interval: string): number => {
+  const match = interval.match(/^(\d+)([mhdw])$/);
+  if (!match?.[1] || !match[2]) return 4 * 3600000;
+  const units: Record<string, number> = { m: 60000, h: 3600000, d: 86400000, w: 604800000 };
+  return parseInt(match[1]) * (units[match[2]] ?? 3600000);
+};
 
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
-const TIMEFRAMES = ['15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d'];
+const TIMEFRAMES = ['1d', '12h', '8h', '6h', '4h', '2h', '1h', '30m', '15m'];
 
 const ACTIVE_STRATEGIES = [
   '7day-momentum-crypto',
@@ -169,15 +181,45 @@ interface ProgressData {
   baselineResults: BacktestResultRow[];
 }
 
-const OUTPUT_DIR = `/tmp/prod-parity-optimization-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`;
+const OUTPUT_DIR = `/tmp/prod-parity-optimization-run`;
 const PROGRESS_FILE = `${OUTPUT_DIR}/progress.json`;
+const MAX_RETRIES = 1;
 
 const fmt = (num: number, decimals = 2): string => num.toFixed(decimals);
 const pct = (num: number): string => `${num >= 0 ? '+' : ''}${fmt(num)}%`;
 
+const formatEta = (ms: number): string => {
+  if (ms <= 0) return '0m';
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+};
+
+let shuttingDown = false;
+let currentProgress: ProgressData | null = null;
+
+const handleShutdown = (signal: string): void => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log(`\n[${signal}] Saving progress and shutting down...`);
+  if (currentProgress) {
+    saveProgress(currentProgress);
+    log(`  Progress saved. Resume by re-running the script.`);
+  }
+  process.exit(0);
+};
+
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+
 const klineCache = new Map<string, any[]>();
-const setupCache = new Map<string, any[]>();
-const tradeCache = new Map<string, any[]>();
+
+const clearKlineCache = (): void => {
+  const size = klineCache.size;
+  klineCache.clear();
+  if (global.gc) global.gc();
+  log(`  [Memory] Cleared kline cache (${size} entries)`);
+};
 
 const klineCacheKey = (symbol: string, tf: string): string => `${symbol}:${tf}`;
 
@@ -223,17 +265,48 @@ const prefetchKlines = async (symbol: string, tf: string): Promise<any[]> => {
   if (klineCache.has(key)) return klineCache.get(key)!;
 
   log(`  [Prefetch] ${symbol}/${tf}...`);
-  const engine = new BacktestEngine();
-  const result = await engine.run({ ...PRODUCTION_BASE, symbol, interval: tf });
-  const klines = result.klines || [];
-  klineCache.set(key, klines);
 
-  if (result.trades?.length > 0) {
-    setupCache.set(key, result.setupDetections || []);
-    tradeCache.set(key, result.trades || []);
+  const intervalMs = getIntervalMs(tf);
+  const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+  const startTime = new Date(new Date(PRODUCTION_BASE.startDate).getTime() - warmupMs);
+  const endTime = new Date(PRODUCTION_BASE.endDate);
+  const marketType = PRODUCTION_BASE.marketType ?? 'FUTURES';
+
+  let dbKlines = await klineQueries.findMany({
+    symbol,
+    interval: tf as any,
+    marketType: marketType as any,
+    startTime,
+    endTime,
+  });
+
+  if (dbKlines.length < ABSOLUTE_MINIMUM_KLINES) {
+    log(`    DB has ${dbKlines.length} klines, backfilling...`);
+    const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
+    await smartBackfillKlines(symbol, tf as any, expectedKlines, marketType as any);
+
+    dbKlines = await klineQueries.findMany({
+      symbol,
+      interval: tf as any,
+      marketType: marketType as any,
+      startTime,
+      endTime,
+    });
+    log(`    After backfill: ${dbKlines.length} klines`);
+  } else {
+    log(`    Loaded ${dbKlines.length} klines from DB`);
   }
 
-  return klines;
+  const mapped = mapDbKlinesToApi(dbKlines);
+
+  const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
+  const ratio = mapped.length / expectedKlines;
+  if (ratio < 0.9) {
+    log(`    [Warning] ${symbol}/${tf}: only ${mapped.length}/${expectedKlines} klines (${fmt(ratio * 100)}%) — results may be unreliable`);
+  }
+
+  klineCache.set(key, mapped);
+  return mapped;
 };
 
 const runBacktest = async (
@@ -241,19 +314,27 @@ const runBacktest = async (
   symbol: string,
   tf: string
 ): Promise<{ trades: any[]; metrics: any; setupDetections: any[] } | null> => {
-  try {
-    const klines = await prefetchKlines(symbol, tf);
-    const engine = new BacktestEngine();
-    const result = await engine.run({ ...config, symbol, interval: tf }, klines);
-    return {
-      trades: result.trades || [],
-      metrics: result.metrics,
-      setupDetections: result.setupDetections || [],
-    };
-  } catch (error) {
-    log(`  [Error] ${symbol}/${tf}:`, error instanceof Error ? error.message : error);
-    return null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (shuttingDown) return null;
+      const klines = await prefetchKlines(symbol, tf);
+      const engine = new BacktestEngine();
+      const result = await engine.run({ ...config, symbol, interval: tf }, klines);
+      return {
+        trades: result.trades || [],
+        metrics: result.metrics,
+        setupDetections: result.setupDetections || [],
+      };
+    } catch (error) {
+      if (attempt < MAX_RETRIES) {
+        log(`  [Retry] ${symbol}/${tf} attempt ${attempt + 1}/${MAX_RETRIES + 1}:`, error instanceof Error ? error.message : error);
+        continue;
+      }
+      log(`  [Error] ${symbol}/${tf}:`, error instanceof Error ? error.message : error);
+      return null;
+    }
   }
+  return null;
 };
 
 const buildResultRow = (
@@ -355,16 +436,23 @@ const runStage1 = async (progress: ProgressData): Promise<BacktestResultRow[]> =
   const allConfigs = [{ name: 'baseline', overrides: {} }, ...sweepConfigs];
   const totalTasks = allConfigs.length * SYMBOLS.length * TIMEFRAMES.length;
   let completedCount = 0;
+  const stageStart = Date.now();
 
   log(`  Configs: ${allConfigs.length} (1 baseline + ${sweepConfigs.length} sweeps)`);
   log(`  Symbol-TFs: ${SYMBOLS.length * TIMEFRAMES.length}`);
   log(`  Total backtests: ${totalTasks}`);
 
   for (const symbol of SYMBOLS) {
+    const symbolStart = Date.now();
+    let symbolTrades = 0;
+    let symbolPnl = 0;
+
     for (const tf of TIMEFRAMES) {
+      if (shuttingDown) break;
       await prefetchKlines(symbol, tf);
 
       for (const cfg of allConfigs) {
+        if (shuttingDown) break;
         const taskKey = `s1:${cfg.name}:${symbol}:${tf}`;
         completedCount++;
 
@@ -381,20 +469,29 @@ const runStage1 = async (progress: ProgressData): Promise<BacktestResultRow[]> =
           } else {
             results.push(row);
           }
+          symbolTrades += result.metrics.totalTrades;
+          symbolPnl += result.metrics.totalPnlPercent;
 
           completedSet.add(taskKey);
           progress.completed = [...completedSet];
           progress.stage1Results = results;
           progress.baselineResults = baselineResults;
+          currentProgress = progress;
 
           if (completedCount % 10 === 0) {
             saveProgress(progress);
             const pctDone = (completedCount / totalTasks) * 100;
-            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%)`);
+            const elapsed = Date.now() - stageStart;
+            const rate = completedCount / elapsed;
+            const eta = (totalTasks - completedCount) / rate;
+            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)}`);
           }
         }
       }
     }
+
+    const symbolElapsed = Date.now() - symbolStart;
+    log(`  [Symbol] ${symbol} done in ${formatEta(symbolElapsed)} | ${symbolTrades} trades | avg PnL ${pct(symbolPnl / (allConfigs.length * TIMEFRAMES.length))}`);
   }
 
   saveProgress(progress);
@@ -505,13 +602,22 @@ const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<
 
   const totalTasks = combos.length * SYMBOLS.length * TIMEFRAMES.length;
   let completedCount = 0;
+  const stageStart = Date.now();
 
   log(`  Combinations: ${combos.length} (after filtering fibS > fibL)`);
   log(`  Total backtests: ${totalTasks}`);
 
+  clearKlineCache();
+
   for (const symbol of SYMBOLS) {
+    const symbolStart = Date.now();
+    let symbolTrades = 0;
+
     for (const tf of TIMEFRAMES) {
+      if (shuttingDown) break;
+
       for (const combo of combos) {
+        if (shuttingDown) break;
         const taskKey = `s2:${combo.name}:${symbol}:${tf}`;
         completedCount++;
 
@@ -523,19 +629,27 @@ const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<
         if (result) {
           const row = buildResultRow('S2', combo.name, fullConfig, symbol, tf, result.metrics, result.trades);
           results.push(row);
+          symbolTrades += result.metrics.totalTrades;
 
           completedSet.add(taskKey);
           progress.completed = [...completedSet];
           progress.stage2Results = results;
+          currentProgress = progress;
 
           if (completedCount % 25 === 0) {
             saveProgress(progress);
             const pctDone = (completedCount / totalTasks) * 100;
-            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%)`);
+            const elapsed = Date.now() - stageStart;
+            const rate = completedCount / elapsed;
+            const eta = (totalTasks - completedCount) / rate;
+            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)}`);
           }
         }
       }
     }
+
+    const symbolElapsed = Date.now() - symbolStart;
+    log(`  [Symbol] ${symbol} done in ${formatEta(symbolElapsed)} | ${symbolTrades} trades`);
   }
 
   saveProgress(progress);
@@ -619,13 +733,17 @@ const runStage3 = async (
 
   const totalTasks = topConfigs.length * tsCombos.length * SYMBOLS.length * TIMEFRAMES.length;
   let completedCount = 0;
+  const stageStart = Date.now();
 
   log(`  Trailing stop combos: ${tsCombos.length}`);
   log(`  Total simulations: ${totalTasks}`);
 
+  clearKlineCache();
+
   for (const baseCfg of topConfigs) {
     for (const symbol of SYMBOLS) {
       for (const tf of TIMEFRAMES) {
+        if (shuttingDown) break;
         const klines = await prefetchKlines(symbol, tf);
         if (klines.length === 0) continue;
 
@@ -753,11 +871,15 @@ const runStage3 = async (
           completedSet.add(taskKey);
           progress.completed = [...completedSet];
           progress.stage3Results = results;
+          currentProgress = progress;
 
           if (completedCount % 50 === 0) {
             saveProgress(progress);
             const pctDone = (completedCount / totalTasks) * 100;
-            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%)`);
+            const elapsed = Date.now() - stageStart;
+            const rate = completedCount / elapsed;
+            const eta = (totalTasks - completedCount) / rate;
+            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)}`);
           }
         }
       }
@@ -1144,12 +1266,16 @@ const main = async (): Promise<void> => {
   }
 
   const progress = loadProgress();
+  currentProgress = progress;
 
   const stage1Results = await runStage1(progress);
+  if (shuttingDown) return;
   const topValues = analyzeStage1(stage1Results, progress.baselineResults);
 
   const stage2Results = await runStage2(topValues, progress);
+  if (shuttingDown) return;
   const stage3Results = await runStage3(stage2Results, progress);
+  if (shuttingDown) return;
 
   generateReports(progress.baselineResults, stage1Results, stage2Results, stage3Results);
 
@@ -1162,6 +1288,7 @@ const main = async (): Promise<void> => {
 };
 
 main().catch((error) => {
-  log('Fatal error:', error);
+  originalConsoleError('Fatal error:', error);
+  log('Fatal error:', error instanceof Error ? error.stack ?? error.message : error);
   process.exit(1);
 });

@@ -23,6 +23,7 @@ import { cooldownService } from '../cooldown';
 import { positionMonitorService } from '../position-monitor';
 import { pyramidingService } from '../pyramiding';
 import { riskManagerService } from '../risk-manager';
+import { walletLockService } from '../wallet-lock';
 import { getWebSocketService } from '../websocket';
 import type { WatcherLogBuffer } from '../watcher-batch-logger';
 import type { ActiveWatcher } from './types';
@@ -542,45 +543,50 @@ export class OrderExecutor {
         maxConcurrentPositions: activeWatchersForWallet || config.maxConcurrentPositions,
       };
 
-      const riskValidation = await riskManagerService.validateNewPositionLocked(
-        watcher.walletId,
-        effectiveConfig,
-        positionValue,
-        activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
-      );
+      const release = await walletLockService.acquire(watcher.walletId);
+      try {
+        const riskValidation = await riskManagerService.validateNewPosition(
+          watcher.walletId,
+          effectiveConfig,
+          positionValue,
+          activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
+        );
 
-      if (!riskValidation.isValid) {
-        logBuffer.addValidationCheck({
-          name: 'Risk Management',
-          passed: false,
-          reason: riskValidation.reason ?? 'Failed',
+        if (!riskValidation.isValid) {
+          logBuffer.addValidationCheck({
+            name: 'Risk Management',
+            passed: false,
+            reason: riskValidation.reason ?? 'Failed',
+          });
+          logBuffer.addRejection({
+            setupType: setup.type,
+            direction: setup.direction,
+            reason: 'Risk validation failed',
+            details: { reason: riskValidation.reason ?? 'Unknown' },
+          });
+          logBuffer.completeSetupValidation('blocked', riskValidation.reason ?? 'Risk validation failed');
+          return;
+        }
+        logBuffer.addValidationCheck({ name: 'Risk Management', passed: true, reason: 'OK' });
+
+        await this.createAndExecuteTrade(
+          watcher,
+          setup,
+          effectiveTakeProfit,
+          wallet,
+          config,
+          dynamicSize,
+          isLiveExecution,
+          logBuffer
+        );
+
+        logBuffer.completeSetupValidation('executed', undefined, {
+          quantity: dynamicSize.quantity.toFixed(4),
+          orderType: 'MARKET',
         });
-        logBuffer.addRejection({
-          setupType: setup.type,
-          direction: setup.direction,
-          reason: 'Risk validation failed',
-          details: { reason: riskValidation.reason ?? 'Unknown' },
-        });
-        logBuffer.completeSetupValidation('blocked', riskValidation.reason ?? 'Risk validation failed');
-        return;
+      } finally {
+        release();
       }
-      logBuffer.addValidationCheck({ name: 'Risk Management', passed: true, reason: 'OK' });
-
-      await this.createAndExecuteTrade(
-        watcher,
-        setup,
-        effectiveTakeProfit,
-        wallet,
-        config,
-        dynamicSize,
-        isLiveExecution,
-        logBuffer
-      );
-
-      logBuffer.completeSetupValidation('executed', undefined, {
-        quantity: dynamicSize.quantity.toFixed(4),
-        orderType: 'MARKET',
-      });
     } catch (error) {
       logBuffer.error('✗', 'Error executing setup', {
         type: setup.type,

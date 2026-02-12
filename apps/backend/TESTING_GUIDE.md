@@ -2,46 +2,17 @@
 
 ## 📊 Comandos Rápidos
 
-### Validar TODAS as estratégias (72 ativas)
+### Otimizar (pipeline completo de 3 estágios)
 ```bash
-npm run validate:all
+pnpm optimize:full
 ```
 **O que faz:**
-- Testa todas as 72 estratégias ativas
-- Período: 2024 completo (BTCUSDT 1d)
-- Salva resultados individuais em JSON
-- Gera ranking automático das top 10 estratégias
+- Stage 1: Sensitivity sweep nos parâmetros (Fibonacci targets, entry progress, R:R)
+- Stage 2: Cross-product das top combinações do Stage 1
+- Stage 3: Trailing stop optimization nos melhores configs
+- Suporta resume (SIGINT/SIGTERM salva progresso)
 
-**Resultado esperado:** ~5-10 minutos
-**Output:** `results/bulk-validation-YYYY-MM-DD/`
-
----
-
-### Otimizar TODAS as estratégias
-```bash
-npm run optimize:all
-```
-**O que faz:**
-- Executa grid search em todas as estratégias
-- Encontra melhores parâmetros para cada uma
-- Salva parâmetros otimizados
-
-**Resultado esperado:** ~30-60 minutos (depende do grid)
-**Output:** `results/optimizations/`
-
----
-
-### Fazer TUDO (validar + otimizar)
-```bash
-npm run test:all
-```
-**O que faz:**
-- Primeiro valida todas as estratégias
-- Depois otimiza cada uma
-- Gera relatórios completos
-
-**Resultado esperado:** ~1-2 horas
-**Output:** Resultados em `results/`
+**Output:** `/tmp/prod-parity-optimization-run/` (summary.txt, optimal-config.json, CSVs)
 
 ---
 
@@ -166,31 +137,28 @@ results/
 
 ## 🚀 Workflow Recomendado
 
-1. **Primeira vez:**
+1. **Otimização completa:**
    ```bash
-   npm run validate:all
+   pnpm optimize:full
    ```
-   - Verificar quais estratégias funcionam
-   - Analisar resultados iniciais
-   - Identificar as top 10
+   - Roda 3 stages automaticamente
+   - Analisa sensitivity, cross-product e trailing stop
+   - Gera optimal-config.json com melhores parâmetros
 
-2. **Otimização:**
+2. **Otimização individual:**
    ```bash
-   # Otimizar apenas as top 10 promissoras
-   npm run backtest:optimize -- -s connors-rsi2-original ...
+   pnpm backtest:optimize -- -s connors-rsi2-original ...
    ```
 
-3. **Validação final:**
+3. **Validação:**
    ```bash
-   # Re-validar com parâmetros otimizados
-   npm run validate:all
+   pnpm backtest:validate -- -s top-strategy ...
    ```
 
 4. **Análise robustez:**
    ```bash
-   # Walk-forward e Monte Carlo nas melhores
-   npm run backtest:walkforward -- -s top-strategy ...
-   npm run backtest:montecarlo -- -s top-strategy ...
+   pnpm backtest:walkforward -- -s top-strategy ...
+   pnpm backtest:montecarlo -- -s top-strategy ...
    ```
 
 ---

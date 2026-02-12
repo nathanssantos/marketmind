@@ -114,7 +114,9 @@ The script tests 32 filter combinations and outputs:
 
 ```bash
 cd apps/backend
-npx tsx scripts/run-systematic-backtest.ts
+pnpm optimize:full              # Full 3-stage optimization
+pnpm backtest:optimize          # CLI parameter optimization
+pnpm backtest:validate          # Validate strategy parameters
 ```
 
 ### Programmatic Usage

@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { db } from '../db';
-import { orders, positions, setupDetections, strategyPerformance, tradeCooldowns, tradeExecutions, wallets } from '../db/schema';
+import { db } from '../../src/db';
+import { orders, positions, setupDetections, strategyPerformance, tradeCooldowns, tradeExecutions, wallets } from '../../src/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 const resetWallet = async () => {
