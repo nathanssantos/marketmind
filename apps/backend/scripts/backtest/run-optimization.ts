@@ -1,14 +1,13 @@
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { config as dotenvConfig } from 'dotenv';
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import {
-  TRADING_DEFAULTS,
   FILTER_DEFAULTS,
-  TRAILING_STOP_USER_DEFAULTS,
+  TRADING_DEFAULTS,
   TRAILING_STOP_CONFIG,
+  TRAILING_STOP_USER_DEFAULTS,
 } from '@marketmind/types';
+import { config as dotenvConfig } from 'dotenv';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
