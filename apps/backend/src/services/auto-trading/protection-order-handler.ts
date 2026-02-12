@@ -419,7 +419,7 @@ export class ProtectionOrderHandler {
       timestamp: Date.now(),
     });
 
-    return { shouldReturn: true };
+    return { shouldReturn: false };
   }
 
   private emitIncompleteProtectionAlert(

@@ -933,12 +933,15 @@ export class BinanceFuturesUserStreamService {
         })
         .where(eq(tradeExecutions.id, execution.id));
 
+      binancePriceStreamService.invalidateExecutionCache(symbol);
+      positionMonitorService.clearDeferredExit(execution.id);
+
       logger.info(
         {
           executionId: execution.id,
           clearedFields: Object.keys(clearFields),
         },
-        '[FuturesUserStream] Cleared triggered protection order IDs'
+        '[FuturesUserStream] Cleared triggered protection order IDs and unblocked deferral'
       );
     } catch (error) {
       logger.error(

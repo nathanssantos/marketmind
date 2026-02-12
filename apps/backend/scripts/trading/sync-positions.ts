@@ -1,16 +1,16 @@
 import 'dotenv/config';
 import { and, eq } from 'drizzle-orm';
 import type { USDMClient } from 'binance';
-import { db } from '../src/db';
-import { tradeExecutions, wallets, type TradeExecution } from '../src/db/schema';
-import { getWalletType } from '../src/services/binance-client';
+import { db } from '../../src/db';
+import { tradeExecutions, wallets, type TradeExecution } from '../../src/db/schema';
+import { getWalletType } from '../../src/services/binance-client';
 import {
   createBinanceFuturesClient,
   getLastClosingTrade,
   getOpenAlgoOrders,
   getOpenOrders,
   getPositions,
-} from '../src/services/binance-futures-client';
+} from '../../src/services/binance-futures-client';
 
 const FIX_FLAG = process.argv.includes('--fix');
 const SEPARATOR = '='.repeat(70);

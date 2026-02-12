@@ -1,14 +1,15 @@
+import 'dotenv/config';
 import { and, eq, inArray } from 'drizzle-orm';
-import { db } from '../src/db';
-import { tradeExecutions, wallets } from '../src/db/schema';
-import { getWalletType } from '../src/services/binance-client';
+import { db } from '../../src/db';
+import { tradeExecutions, wallets } from '../../src/db/schema';
+import { getWalletType } from '../../src/services/binance-client';
 import {
   createBinanceFuturesClient,
   getAccountInfo,
   getOpenAlgoOrders,
   getOpenOrders,
   getPositions,
-} from '../src/services/binance-futures-client';
+} from '../../src/services/binance-futures-client';
 
 async function syncDiagnostic() {
   console.log('\n' + '='.repeat(70));

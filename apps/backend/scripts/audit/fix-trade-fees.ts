@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import { USDMClient } from 'binance';
 import { and, eq, isNotNull } from 'drizzle-orm';
-import { db } from '../src/db/client';
-import { tradeExecutions, wallets } from '../src/db/schema';
-import { decryptApiKey } from '../src/services/encryption';
-import { getWalletType } from '../src/services/binance-client';
+import { db } from '../../src/db/client';
+import { tradeExecutions, wallets } from '../../src/db/schema';
+import { decryptApiKey } from '../../src/services/encryption';
+import { getWalletType } from '../../src/services/binance-client';
 
 interface BinanceTrade {
   symbol: string;
@@ -22,6 +22,8 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const DRY_RUN = process.argv.includes('--dry-run');
 const VERBOSE = process.argv.includes('--verbose');
 
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000 - 60_000;
+
 async function fetchAllAccountTrades(
   client: USDMClient,
   symbol: string,
@@ -32,50 +34,58 @@ async function fetchAllAccountTrades(
   const paddedStart = startTime - 10_000;
   const paddedEnd = endTime + 10_000;
 
-  const firstBatch = await client.getAccountTrades({
-    symbol,
-    startTime: paddedStart,
-    endTime: paddedEnd,
-    limit: 1000,
-  });
+  let windowStart = paddedStart;
+  while (windowStart < paddedEnd) {
+    const windowEnd = Math.min(windowStart + SEVEN_DAYS_MS, paddedEnd);
 
-  for (const t of firstBatch) {
-    allTrades.push({
-      symbol: t.symbol,
-      id: t.id,
-      orderId: t.orderId,
-      side: t.side,
-      price: String(t.price),
-      qty: String(t.qty),
-      realizedPnl: String(t.realizedPnl),
-      commission: String(t.commission),
-      time: t.time,
+    const firstBatch = await client.getAccountTrades({
+      symbol,
+      startTime: windowStart,
+      endTime: windowEnd,
+      limit: 1000,
     });
-  }
 
-  if (firstBatch.length === 1000) {
-    let fromId = firstBatch[firstBatch.length - 1]!.id + 1;
-    while (true) {
-      await sleep(200);
-      const batch = await client.getAccountTrades({ symbol, fromId, limit: 1000 });
-      if (batch.length === 0) break;
-      const inRange = batch.filter(t => t.time <= paddedEnd);
-      for (const t of inRange) {
-        allTrades.push({
-          symbol: t.symbol,
-          id: t.id,
-          orderId: t.orderId,
-          side: t.side,
-          price: String(t.price),
-          qty: String(t.qty),
-          realizedPnl: String(t.realizedPnl),
-          commission: String(t.commission),
-          time: t.time,
-        });
-      }
-      if (inRange.length < batch.length || batch.length < 1000) break;
-      fromId = batch[batch.length - 1]!.id + 1;
+    for (const t of firstBatch) {
+      allTrades.push({
+        symbol: t.symbol,
+        id: t.id,
+        orderId: t.orderId,
+        side: t.side,
+        price: String(t.price),
+        qty: String(t.qty),
+        realizedPnl: String(t.realizedPnl),
+        commission: String(t.commission),
+        time: t.time,
+      });
     }
+
+    if (firstBatch.length === 1000) {
+      let fromId = firstBatch[firstBatch.length - 1]!.id + 1;
+      while (true) {
+        await sleep(200);
+        const batch = await client.getAccountTrades({ symbol, fromId, limit: 1000 });
+        if (batch.length === 0) break;
+        const inRange = batch.filter(t => t.time <= windowEnd);
+        for (const t of inRange) {
+          allTrades.push({
+            symbol: t.symbol,
+            id: t.id,
+            orderId: t.orderId,
+            side: t.side,
+            price: String(t.price),
+            qty: String(t.qty),
+            realizedPnl: String(t.realizedPnl),
+            commission: String(t.commission),
+            time: t.time,
+          });
+        }
+        if (inRange.length < batch.length || batch.length < 1000) break;
+        fromId = batch[batch.length - 1]!.id + 1;
+      }
+    }
+
+    windowStart = windowEnd + 1;
+    if (windowStart < paddedEnd) await sleep(200);
   }
 
   const uniqueTrades = new Map<number, BinanceTrade>();
@@ -90,22 +100,29 @@ async function fetchFundingFees(
   endTime: number
 ): Promise<number> {
   let totalFunding = 0;
-  let currentStart = startTime;
+  let windowStart = startTime;
 
-  while (currentStart < endTime) {
-    await sleep(200);
-    const income = await client.getIncomeHistory({
-      symbol,
-      incomeType: 'FUNDING_FEE',
-      startTime: currentStart,
-      endTime,
-      limit: 1000,
-    } as Parameters<typeof client.getIncomeHistory>[0]);
+  while (windowStart < endTime) {
+    const windowEnd = Math.min(windowStart + SEVEN_DAYS_MS, endTime);
+    let currentStart = windowStart;
 
-    if (income.length === 0) break;
-    for (const item of income) totalFunding += parseFloat(item.income);
-    if (income.length < 1000) break;
-    currentStart = income[income.length - 1]!.time + 1;
+    while (currentStart < windowEnd) {
+      await sleep(200);
+      const income = await client.getIncomeHistory({
+        symbol,
+        incomeType: 'FUNDING_FEE',
+        startTime: currentStart,
+        endTime: windowEnd,
+        limit: 1000,
+      } as Parameters<typeof client.getIncomeHistory>[0]);
+
+      if (income.length === 0) break;
+      for (const item of income) totalFunding += parseFloat(item.income);
+      if (income.length < 1000) break;
+      currentStart = income[income.length - 1]!.time + 1;
+    }
+
+    windowStart = windowEnd + 1;
   }
 
   return totalFunding;
@@ -389,7 +406,8 @@ async function main() {
           totalCorrected++;
         }
       } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
+        const errObj = error as Record<string, unknown>;
+        const msg = error instanceof Error ? error.message : errObj?.message || JSON.stringify(error);
         console.log(`  [${exec.id.slice(0, 12)}] ${exec.symbol} - ERROR: ${msg}`);
         totalErrors++;
       }

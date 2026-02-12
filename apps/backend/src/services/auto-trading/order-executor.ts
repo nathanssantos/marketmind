@@ -828,7 +828,7 @@ export class OrderExecutor {
       actualQuantity = paperResult.actualQuantity;
     }
 
-    if (setup.stopLoss && effectiveTakeProfit) {
+    if (!isLiveExecution && setup.stopLoss && effectiveTakeProfit) {
       let risk: number;
       let reward: number;
 

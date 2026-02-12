@@ -60,7 +60,7 @@ export class PositionMonitorService {
   private processingGroups: Set<string> = new Set();
   private unprotectedAlerts: Map<string, number> = new Map();
   private deferredExitTimestamps: Map<string, number> = new Map();
-  private readonly DEFERRED_EXIT_TIMEOUT_MS = 30_000;
+  private readonly DEFERRED_EXIT_TIMEOUT_MS = 10_000;
 
   start(): void {
     if (this.monitoringTimeout) {
