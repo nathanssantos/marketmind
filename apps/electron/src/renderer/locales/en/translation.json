@@ -1103,7 +1103,11 @@
       "trailingDistanceShort": "SHORT Distance",
       "trailingDistanceShortDescription": "Percentage of peak profit to lock in for SHORT positions",
       "adaptiveMode": "Adaptive Mode",
-      "adaptiveModeDescription": "Automatically adjusts based on market volatility"
+      "adaptiveModeDescription": "Automatically adjusts based on market volatility",
+      "activationModeLong": "LONG Activation Mode",
+      "activationModeShort": "SHORT Activation Mode",
+      "modeAuto": "Auto",
+      "modeManual": "Manual"
     },
     "pausedDueToCapital": "Watchers paused - no free capital for new entries. Will resume when a position is closed.",
     "stockPresets": {
@@ -1456,6 +1460,8 @@
     "useIndividualConfig": "Individual config",
     "useIndividualConfigDescription": "Override global trailing stop settings for this symbol",
     "useGlobalConfig": "Global config",
-    "useGlobalConfigDescription": "Using wallet-level trailing stop settings"
+    "useGlobalConfigDescription": "Using wallet-level trailing stop settings",
+    "activateTrailingLong": "Activate LONG Trailing",
+    "activateTrailingShort": "Activate SHORT Trailing"
   }
 }

@@ -241,6 +241,7 @@ export interface TrailingStopOptimizationConfig {
   activationPercentLong?: number;
   activationPercentShort?: number;
   useProfitLockDistance?: boolean;
+  forceActivated?: boolean;
 }
 
 export interface TimeframeThreshold {

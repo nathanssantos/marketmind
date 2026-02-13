@@ -23,6 +23,10 @@ export interface TrailingStopSectionProps {
   onUseProfitLockDistanceChange: (enabled: boolean) => void;
   isPending: boolean;
   compact?: boolean;
+  activationModeLong?: 'auto' | 'manual';
+  onActivationModeLongChange?: (mode: 'auto' | 'manual') => void;
+  activationModeShort?: 'auto' | 'manual';
+  onActivationModeShortChange?: (mode: 'auto' | 'manual') => void;
 }
 
 export const TrailingStopSection = ({
@@ -44,6 +48,10 @@ export const TrailingStopSection = ({
   onUseProfitLockDistanceChange,
   isPending,
   compact = false,
+  activationModeLong = 'auto',
+  onActivationModeLongChange,
+  activationModeShort = 'auto',
+  onActivationModeShortChange,
 }: TrailingStopSectionProps) => {
   const { t } = useTranslation();
 
@@ -75,55 +83,139 @@ export const TrailingStopSection = ({
 
       {trailingStopEnabled && (
         <>
-          <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
-            <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
-              <Box>
+          {onActivationModeLongChange && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center">
                 <Text fontSize={labelSize} fontWeight="medium">
-                  {t('watcherManager.trailingStop.activationLong')}
+                  {t('watcherManager.trailingStop.activationModeLong')}
                 </Text>
-                {!compact && (
-                  <Text fontSize={descSize} color="fg.muted">
-                    {t('watcherManager.trailingStop.activationLongDescription')}
-                  </Text>
-                )}
-              </Box>
-              <Text fontSize={labelSize} fontWeight="bold" color="green.500">
-                {(trailingActivationPercentLong * 100).toFixed(1)}%
-              </Text>
-            </Flex>
-            <Slider
-              value={[trailingActivationPercentLong * 100]}
-              onValueChange={(values) => onTrailingActivationPercentLongChange(values[0]! / 100)}
-              min={50}
-              max={200}
-              step={0.1}
-            />
-          </Box>
+                <HStack gap={1}>
+                  <Box
+                    as="button"
+                    px={2}
+                    py={0.5}
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    borderRadius="full"
+                    cursor="pointer"
+                    bg={activationModeLong === 'auto' ? 'green.500' : 'bg.emphasized'}
+                    color={activationModeLong === 'auto' ? 'white' : 'fg.muted'}
+                    onClick={() => onActivationModeLongChange('auto')}
+                  >
+                    {t('watcherManager.trailingStop.modeAuto')}
+                  </Box>
+                  <Box
+                    as="button"
+                    px={2}
+                    py={0.5}
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    borderRadius="full"
+                    cursor="pointer"
+                    bg={activationModeLong === 'manual' ? 'green.500' : 'bg.emphasized'}
+                    color={activationModeLong === 'manual' ? 'white' : 'fg.muted'}
+                    onClick={() => onActivationModeLongChange('manual')}
+                  >
+                    {t('watcherManager.trailingStop.modeManual')}
+                  </Box>
+                </HStack>
+              </Flex>
+            </Box>
+          )}
 
-          <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
-            <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
-              <Box>
+          {onActivationModeShortChange && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center">
                 <Text fontSize={labelSize} fontWeight="medium">
-                  {t('watcherManager.trailingStop.activationShort')}
+                  {t('watcherManager.trailingStop.activationModeShort')}
                 </Text>
-                {!compact && (
-                  <Text fontSize={descSize} color="fg.muted">
-                    {t('watcherManager.trailingStop.activationShortDescription')}
+                <HStack gap={1}>
+                  <Box
+                    as="button"
+                    px={2}
+                    py={0.5}
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    borderRadius="full"
+                    cursor="pointer"
+                    bg={activationModeShort === 'auto' ? 'red.500' : 'bg.emphasized'}
+                    color={activationModeShort === 'auto' ? 'white' : 'fg.muted'}
+                    onClick={() => onActivationModeShortChange('auto')}
+                  >
+                    {t('watcherManager.trailingStop.modeAuto')}
+                  </Box>
+                  <Box
+                    as="button"
+                    px={2}
+                    py={0.5}
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    borderRadius="full"
+                    cursor="pointer"
+                    bg={activationModeShort === 'manual' ? 'red.500' : 'bg.emphasized'}
+                    color={activationModeShort === 'manual' ? 'white' : 'fg.muted'}
+                    onClick={() => onActivationModeShortChange('manual')}
+                  >
+                    {t('watcherManager.trailingStop.modeManual')}
+                  </Box>
+                </HStack>
+              </Flex>
+            </Box>
+          )}
+
+          {activationModeLong !== 'manual' && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
+                <Box>
+                  <Text fontSize={labelSize} fontWeight="medium">
+                    {t('watcherManager.trailingStop.activationLong')}
                   </Text>
-                )}
-              </Box>
-              <Text fontSize={labelSize} fontWeight="bold" color="red.500">
-                {(trailingActivationPercentShort * 100).toFixed(1)}%
-              </Text>
-            </Flex>
-            <Slider
-              value={[trailingActivationPercentShort * 100]}
-              onValueChange={(values) => onTrailingActivationPercentShortChange(values[0]! / 100)}
-              min={50}
-              max={200}
-              step={0.1}
-            />
-          </Box>
+                  {!compact && (
+                    <Text fontSize={descSize} color="fg.muted">
+                      {t('watcherManager.trailingStop.activationLongDescription')}
+                    </Text>
+                  )}
+                </Box>
+                <Text fontSize={labelSize} fontWeight="bold" color="green.500">
+                  {(trailingActivationPercentLong * 100).toFixed(1)}%
+                </Text>
+              </Flex>
+              <Slider
+                value={[trailingActivationPercentLong * 100]}
+                onValueChange={(values) => onTrailingActivationPercentLongChange(values[0]! / 100)}
+                min={50}
+                max={200}
+                step={0.1}
+              />
+            </Box>
+          )}
+
+          {activationModeShort !== 'manual' && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
+                <Box>
+                  <Text fontSize={labelSize} fontWeight="medium">
+                    {t('watcherManager.trailingStop.activationShort')}
+                  </Text>
+                  {!compact && (
+                    <Text fontSize={descSize} color="fg.muted">
+                      {t('watcherManager.trailingStop.activationShortDescription')}
+                    </Text>
+                  )}
+                </Box>
+                <Text fontSize={labelSize} fontWeight="bold" color="red.500">
+                  {(trailingActivationPercentShort * 100).toFixed(1)}%
+                </Text>
+              </Flex>
+              <Slider
+                value={[trailingActivationPercentShort * 100]}
+                onValueChange={(values) => onTrailingActivationPercentShortChange(values[0]! / 100)}
+                min={50}
+                max={200}
+                step={0.1}
+              />
+            </Box>
+          )}
 
           <HStack justify="space-between" p={sectionPadding} bg="bg.subtle" borderRadius="md">
             <Box>

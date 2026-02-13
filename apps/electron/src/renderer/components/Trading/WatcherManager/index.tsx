@@ -358,6 +358,10 @@ export const WatcherManager = () => {
         useProfitLockDistance={config?.useProfitLockDistance ?? false}
         onUseProfitLockDistanceChange={(enabled) => handleConfigUpdate({ useProfitLockDistance: enabled })}
         isPending={updateConfig.isPending}
+        activationModeLong={config?.trailingActivationModeLong ?? 'auto'}
+        onActivationModeLongChange={(mode) => handleConfigUpdate({ trailingActivationModeLong: mode })}
+        activationModeShort={config?.trailingActivationModeShort ?? 'auto'}
+        onActivationModeShortChange={(mode) => handleConfigUpdate({ trailingActivationModeShort: mode })}
       />
 
       <Separator />

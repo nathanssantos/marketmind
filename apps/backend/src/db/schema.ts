@@ -279,6 +279,10 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   trailingDistancePercentShort: numeric('trailing_distance_percent_short', { precision: 5, scale: 4 }).default('0.3').notNull(),
   useAdaptiveTrailing: boolean('use_adaptive_trailing').default(true).notNull(),
   useProfitLockDistance: boolean('use_profit_lock_distance').default(false).notNull(),
+  trailingActivationModeLong: varchar('trailing_activation_mode_long', { length: 10 })
+    .$type<'auto' | 'manual'>().default('auto').notNull(),
+  trailingActivationModeShort: varchar('trailing_activation_mode_short', { length: 10 })
+    .$type<'auto' | 'manual'>().default('auto').notNull(),
   pyramidingEnabled: boolean('pyramiding_enabled').default(false).notNull(),
   pyramidingMode: varchar('pyramiding_mode', { length: 20 }).$type<'static' | 'dynamic' | 'fibonacci'>().default('static').notNull(),
   maxPyramidEntries: integer('max_pyramid_entries').default(5).notNull(),
@@ -588,6 +592,12 @@ export const symbolTrailingStopOverrides = pgTable('symbol_trailing_stop_overrid
   trailingDistancePercentShort: numeric('trailing_distance_percent_short', { precision: 5, scale: 4 }),
   useAdaptiveTrailing: boolean('use_adaptive_trailing'),
   useProfitLockDistance: boolean('use_profit_lock_distance'),
+  trailingActivationModeLong: varchar('trailing_activation_mode_long', { length: 10 })
+    .$type<'auto' | 'manual'>(),
+  trailingActivationModeShort: varchar('trailing_activation_mode_short', { length: 10 })
+    .$type<'auto' | 'manual'>(),
+  manualTrailingActivatedLong: boolean('manual_trailing_activated_long').default(false),
+  manualTrailingActivatedShort: boolean('manual_trailing_activated_short').default(false),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

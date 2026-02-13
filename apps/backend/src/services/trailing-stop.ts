@@ -84,6 +84,18 @@ export const resolveTrailingStopConfig = (
     ? symbolOverride.useAdaptiveTrailing
     : walletConfig?.useAdaptiveTrailing ?? baseConfig.useVolatilityBasedThresholds;
 
+  const activationModeLong = useOverride && symbolOverride.trailingActivationModeLong !== null
+    ? symbolOverride.trailingActivationModeLong
+    : walletConfig?.trailingActivationModeLong ?? 'auto';
+  const activationModeShort = useOverride && symbolOverride.trailingActivationModeShort !== null
+    ? symbolOverride.trailingActivationModeShort
+    : walletConfig?.trailingActivationModeShort ?? 'auto';
+  const activationMode = side === 'LONG' ? activationModeLong : activationModeShort;
+  const isManuallyActivated = side === 'LONG'
+    ? (symbolOverride?.manualTrailingActivatedLong ?? false)
+    : (symbolOverride?.manualTrailingActivatedShort ?? false);
+  const forceActivated = activationMode === 'manual' && isManuallyActivated;
+
   return {
     ...baseConfig,
     activationPercentLong,
@@ -91,6 +103,7 @@ export const resolveTrailingStopConfig = (
     trailingDistancePercent,
     useProfitLockDistance,
     useVolatilityBasedThresholds,
+    forceActivated,
   };
 };
 
@@ -187,6 +200,7 @@ export const computeTrailingStop = (
       useProfitLockDistance: config.useProfitLockDistance,
       activationPercentLong: config.activationPercentLong,
       activationPercentShort: config.activationPercentShort,
+      forceActivated: config.forceActivated,
     }
   );
 };
@@ -521,6 +535,22 @@ export class TrailingStopService {
         const walletConfig = await db.query.autoTradingConfig.findFirst({
           where: eq(autoTradingConfig.walletId, execution.walletId),
         });
+
+        const useOverride = symbolOverride?.useIndividualConfig === true;
+        const activationMode = execution.side === 'LONG'
+          ? (useOverride && symbolOverride?.trailingActivationModeLong !== null
+              ? symbolOverride!.trailingActivationModeLong
+              : walletConfig?.trailingActivationModeLong ?? 'auto')
+          : (useOverride && symbolOverride?.trailingActivationModeShort !== null
+              ? symbolOverride!.trailingActivationModeShort
+              : walletConfig?.trailingActivationModeShort ?? 'auto');
+
+        if (activationMode === 'manual') {
+          const manualFlag = execution.side === 'LONG'
+            ? (symbolOverride?.manualTrailingActivatedLong ?? false)
+            : (symbolOverride?.manualTrailingActivatedShort ?? false);
+          if (!manualFlag) continue;
+        }
 
         let fibonacciProjection: FibonacciProjectionData | null = null;
         if (execution.fibonacciProjection) {

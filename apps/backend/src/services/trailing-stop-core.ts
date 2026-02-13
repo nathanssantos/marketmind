@@ -16,6 +16,7 @@ export interface TrailingStopCoreConfig {
   activationPercentLong?: number;
   activationPercentShort?: number;
   useProfitLockDistance?: boolean;
+  forceActivated?: boolean;
 }
 
 export interface TrailingStopCoreInput {
@@ -304,24 +305,27 @@ export const computeTrailingStopCore = (
   const activationPercentLong = config.activationPercentLong;
   const activationPercentShort = config.activationPercentShort;
   const useProfitLockDistance = config.useProfitLockDistance ?? false;
+  const forceActivated = config.forceActivated ?? false;
 
   const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
   const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
 
   const canUseFibonacciThresholds = useFibonacciThresholds && fibonacciProjection?.levels?.length;
 
-  if (canUseFibonacciThresholds) {
-    const reachedThreshold = hasReachedTPProgressThreshold(
-      entryPrice,
-      currentPrice,
-      takeProfit,
-      fibonacciProjection,
-      isLong,
-      activationPercentLong,
-      activationPercentShort
-    );
+  if (canUseFibonacciThresholds || forceActivated) {
+    if (!forceActivated) {
+      const reachedThreshold = hasReachedTPProgressThreshold(
+        entryPrice,
+        currentPrice,
+        takeProfit,
+        fibonacciProjection,
+        isLong,
+        activationPercentLong,
+        activationPercentShort
+      );
 
-    if (!reachedThreshold) return null;
+      if (!reachedThreshold) return null;
+    }
 
     const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
       { price: feesCoveredPrice, reason: 'fees_covered' },

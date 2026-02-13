@@ -87,6 +87,10 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             : 0.3,
         useAdaptiveTrailing: symbolConfig.useAdaptiveTrailing ?? walletConfig?.useAdaptiveTrailing ?? true,
         useProfitLockDistance: symbolConfig.useProfitLockDistance ?? walletConfig?.useProfitLockDistance ?? false,
+        activationModeLong: (symbolConfig.trailingActivationModeLong ?? walletConfig?.trailingActivationModeLong ?? 'auto') as 'auto' | 'manual',
+        activationModeShort: (symbolConfig.trailingActivationModeShort ?? walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
+        manualTrailingActivatedLong: symbolConfig.manualTrailingActivatedLong ?? false,
+        manualTrailingActivatedShort: symbolConfig.manualTrailingActivatedShort ?? false,
       };
     }
 
@@ -106,6 +110,10 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         : 0.3,
       useAdaptiveTrailing: walletConfig?.useAdaptiveTrailing ?? true,
       useProfitLockDistance: walletConfig?.useProfitLockDistance ?? false,
+      activationModeLong: (walletConfig?.trailingActivationModeLong ?? 'auto') as 'auto' | 'manual',
+      activationModeShort: (walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
+      manualTrailingActivatedLong: false,
+      manualTrailingActivatedShort: false,
     };
   }, [symbolConfig, walletConfig, useIndividualConfig]);
 
@@ -180,8 +188,38 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             useProfitLockDistance={effectiveValues.useProfitLockDistance}
             onUseProfitLockDistanceChange={(enabled) => debouncedUpdate({ useProfitLockDistance: enabled })}
             isPending={updateMutation.isPending}
+            activationModeLong={effectiveValues.activationModeLong}
+            onActivationModeLongChange={(mode) => debouncedUpdate({ trailingActivationModeLong: mode })}
+            activationModeShort={effectiveValues.activationModeShort}
+            onActivationModeShortChange={(mode) => debouncedUpdate({ trailingActivationModeShort: mode })}
           />
         </Box>
+
+        {useIndividualConfig && effectiveValues.activationModeLong === 'manual' && (
+          <HStack justify="space-between" p={2} bg="green.subtle" borderRadius="md">
+            <Text fontSize="xs" fontWeight="medium" color="green.600">
+              {t('positionTrailingStop.activateTrailingLong')}
+            </Text>
+            <Switch
+              checked={effectiveValues.manualTrailingActivatedLong}
+              onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedLong: checked })}
+              size="sm"
+            />
+          </HStack>
+        )}
+
+        {useIndividualConfig && effectiveValues.activationModeShort === 'manual' && (
+          <HStack justify="space-between" p={2} bg="red.subtle" borderRadius="md">
+            <Text fontSize="xs" fontWeight="medium" color="red.600">
+              {t('positionTrailingStop.activateTrailingShort')}
+            </Text>
+            <Switch
+              checked={effectiveValues.manualTrailingActivatedShort}
+              onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedShort: checked })}
+              size="sm"
+            />
+          </HStack>
+        )}
       </VStack>
     </Popover>
   );

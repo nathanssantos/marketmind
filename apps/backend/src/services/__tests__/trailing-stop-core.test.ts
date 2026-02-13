@@ -893,5 +893,105 @@ describe('trailing-stop-core', () => {
         expect(result).not.toBeNull();
       });
     });
+
+    describe('forceActivated', () => {
+      it('should skip fibonacci threshold check when forceActivated is true', () => {
+        const fibLevels = [
+          { level: 0.886, price: 117.72, label: '88.6%' },
+        ];
+        const fibProjection = makeFibProjection(100, 120, fibLevels);
+        const input: TrailingStopCoreInput = {
+          ...baseInput,
+          currentPrice: 105,
+          highestPrice: 106,
+          fibonacciProjection: fibProjection,
+        };
+        const configWithoutForce: TrailingStopCoreConfig = {
+          ...baseConfig,
+          useFibonacciThresholds: true,
+        };
+        const resultWithout = computeTrailingStopCore(input, configWithoutForce);
+        expect(resultWithout).toBeNull();
+
+        const configWithForce: TrailingStopCoreConfig = {
+          ...baseConfig,
+          useFibonacciThresholds: true,
+          forceActivated: true,
+        };
+        const resultWith = computeTrailingStopCore(input, configWithForce);
+        expect(resultWith).not.toBeNull();
+      });
+
+      it('should return null when forceActivated is false and threshold not reached', () => {
+        const fibLevels = [
+          { level: 0.886, price: 117.72, label: '88.6%' },
+        ];
+        const fibProjection = makeFibProjection(100, 120, fibLevels);
+        const input: TrailingStopCoreInput = {
+          ...baseInput,
+          currentPrice: 105,
+          highestPrice: 106,
+          fibonacciProjection: fibProjection,
+        };
+        const config: TrailingStopCoreConfig = {
+          ...baseConfig,
+          useFibonacciThresholds: true,
+          forceActivated: false,
+        };
+        const result = computeTrailingStopCore(input, config);
+        expect(result).toBeNull();
+      });
+
+      it('should work without fibonacci data when forceActivated is true', () => {
+        const input: TrailingStopCoreInput = {
+          ...baseInput,
+          currentPrice: 110,
+          highestPrice: 112,
+          fibonacciProjection: null,
+        };
+        const config: TrailingStopCoreConfig = {
+          ...baseConfig,
+          useFibonacciThresholds: false,
+          forceActivated: true,
+        };
+        const result = computeTrailingStopCore(input, config);
+        expect(result).not.toBeNull();
+      });
+
+      it('should work for SHORT side when forceActivated is true', () => {
+        const input: TrailingStopCoreInput = {
+          entryPrice: 100,
+          currentPrice: 90,
+          currentStopLoss: null,
+          side: 'SHORT',
+          lowestPrice: 88,
+          fibonacciProjection: null,
+        };
+        const config: TrailingStopCoreConfig = {
+          ...baseConfig,
+          useFibonacciThresholds: false,
+          forceActivated: true,
+        };
+        const result = computeTrailingStopCore(input, config);
+        expect(result).not.toBeNull();
+      });
+
+      it('should still respect shouldUpdateStopLoss with forceActivated', () => {
+        const input: TrailingStopCoreInput = {
+          ...baseInput,
+          currentPrice: 110,
+          highestPrice: 112,
+          currentStopLoss: 115,
+          fibonacciProjection: null,
+        };
+        const config: TrailingStopCoreConfig = {
+          ...baseConfig,
+          useFibonacciThresholds: false,
+          forceActivated: true,
+        };
+        const result = computeTrailingStopCore(input, config);
+        expect(result).toBeNull();
+      });
+    });
   });
 });

@@ -1145,7 +1145,11 @@
       "trailingDistanceShort": "Distância SHORT",
       "trailingDistanceShortDescription": "Porcentagem do lucro máximo a ser travado em posições SHORT",
       "adaptiveMode": "Modo Adaptativo",
-      "adaptiveModeDescription": "Ajusta automaticamente baseado na volatilidade do mercado"
+      "adaptiveModeDescription": "Ajusta automaticamente baseado na volatilidade do mercado",
+      "activationModeLong": "Modo de Ativação LONG",
+      "activationModeShort": "Modo de Ativação SHORT",
+      "modeAuto": "Auto",
+      "modeManual": "Manual"
     },
     "pausedDueToCapital": "Watchers pausados - sem capital livre para novas entradas. Será retomado quando uma posição for fechada.",
     "stockPresets": {
@@ -1498,6 +1502,8 @@
     "useIndividualConfig": "Config individual",
     "useIndividualConfigDescription": "Sobrescrever configurações globais de trailing stop para este símbolo",
     "useGlobalConfig": "Config global",
-    "useGlobalConfigDescription": "Usando configurações de trailing stop da carteira"
+    "useGlobalConfigDescription": "Usando configurações de trailing stop da carteira",
+    "activateTrailingLong": "Ativar Trailing LONG",
+    "activateTrailingShort": "Ativar Trailing SHORT"
   }
 }

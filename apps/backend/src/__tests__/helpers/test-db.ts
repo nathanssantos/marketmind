@@ -20,6 +20,7 @@ DROP TABLE IF EXISTS trading_setups CASCADE;
 DROP TABLE IF EXISTS setup_detections CASCADE;
 DROP TABLE IF EXISTS positions CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS symbol_trailing_stop_overrides CASCADE;
 DROP TABLE IF EXISTS auto_trading_config CASCADE;
 DROP TABLE IF EXISTS active_watchers CASCADE;
 DROP TABLE IF EXISTS strategy_performance CASCADE;
@@ -228,6 +229,8 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   trailing_distance_percent_short NUMERIC(5, 4) DEFAULT '0.3' NOT NULL,
   use_adaptive_trailing BOOLEAN DEFAULT true NOT NULL,
   use_profit_lock_distance BOOLEAN DEFAULT false NOT NULL,
+  trailing_activation_mode_long VARCHAR(10) DEFAULT 'auto' NOT NULL,
+  trailing_activation_mode_short VARCHAR(10) DEFAULT 'auto' NOT NULL,
   pyramiding_enabled BOOLEAN DEFAULT false NOT NULL,
   pyramiding_mode VARCHAR(20) DEFAULT 'static' NOT NULL,
   max_pyramid_entries INTEGER DEFAULT 5 NOT NULL,
@@ -449,6 +452,27 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
   UNIQUE(user_id, category, key)
 );
+
+CREATE TABLE IF NOT EXISTS symbol_trailing_stop_overrides (
+  id SERIAL PRIMARY KEY,
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  symbol VARCHAR(20) NOT NULL,
+  use_individual_config BOOLEAN DEFAULT false NOT NULL,
+  trailing_stop_enabled BOOLEAN,
+  trailing_activation_percent_long NUMERIC(5, 4),
+  trailing_activation_percent_short NUMERIC(5, 4),
+  trailing_distance_percent_long NUMERIC(5, 4),
+  trailing_distance_percent_short NUMERIC(5, 4),
+  use_adaptive_trailing BOOLEAN,
+  use_profit_lock_distance BOOLEAN,
+  trailing_activation_mode_long VARCHAR(10),
+  trailing_activation_mode_short VARCHAR(10),
+  manual_trailing_activated_long BOOLEAN DEFAULT false,
+  manual_trailing_activated_short BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE UNIQUE INDEX symbol_ts_override_wallet_symbol_idx ON symbol_trailing_stop_overrides(wallet_id, symbol);
 `;
 
 export const setupTestDatabase = async (): Promise<TestDatabase> => {
@@ -508,6 +532,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.tradingSetups);
   await db.delete(schema.positions);
   await db.delete(schema.orders);
+  await db.delete(schema.symbolTrailingStopOverrides);
   await db.delete(schema.autoTradingConfig);
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);

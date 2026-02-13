@@ -1445,6 +1445,10 @@ export const tradingRouter = router({
         trailingDistancePercentShort: z.string().nullable().optional(),
         useAdaptiveTrailing: z.boolean().nullable().optional(),
         useProfitLockDistance: z.boolean().nullable().optional(),
+        trailingActivationModeLong: z.enum(['auto', 'manual']).nullable().optional(),
+        trailingActivationModeShort: z.enum(['auto', 'manual']).nullable().optional(),
+        manualTrailingActivatedLong: z.boolean().nullable().optional(),
+        manualTrailingActivatedShort: z.boolean().nullable().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1481,6 +1485,10 @@ export const tradingRouter = router({
           trailingDistancePercentShort: fields.trailingDistancePercentShort ?? null,
           useAdaptiveTrailing: fields.useAdaptiveTrailing ?? null,
           useProfitLockDistance: fields.useProfitLockDistance ?? null,
+          trailingActivationModeLong: fields.trailingActivationModeLong ?? null,
+          trailingActivationModeShort: fields.trailingActivationModeShort ?? null,
+          manualTrailingActivatedLong: fields.manualTrailingActivatedLong ?? null,
+          manualTrailingActivatedShort: fields.manualTrailingActivatedShort ?? null,
         })
         .returning();
       return created!;
