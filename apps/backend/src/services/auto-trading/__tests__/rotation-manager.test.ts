@@ -113,6 +113,22 @@ vi.mock('../utils', () => ({
 
 import { RotationManager } from '../rotation-manager';
 import type { RotationManagerDeps } from '../types';
+import type { RotationResult } from '../../dynamic-symbol-rotation';
+
+const createRotationResult = (overrides: Partial<RotationResult> = {}): RotationResult => ({
+  added: [],
+  removed: [],
+  kept: [],
+  skippedInsufficientKlines: [],
+  skippedInsufficientCapital: [],
+  skippedTrend: [],
+  skippedBtcDominance: [],
+  skippedChoppyMarket: [],
+  skippedAltSeason: [],
+  skippedOrderBook: [],
+  timestamp: new Date(),
+  ...overrides,
+});
 
 const createDeps = (): RotationManagerDeps => ({
   startWatcher: vi.fn(),
@@ -128,18 +144,6 @@ const setupChainedDbSelect = (results: unknown[] = []) => {
   const fromMock = vi.fn(() => ({ where: whereMock }));
   mockDbSelect.mockReturnValue({ from: fromMock });
   return { fromMock, whereMock, limitMock };
-};
-
-const setupMultipleDbSelects = (...resultSets: unknown[][]) => {
-  let callIndex = 0;
-  mockDbSelect.mockImplementation(() => {
-    const results = resultSets[callIndex] ?? [];
-    callIndex++;
-    const limitMock = vi.fn().mockResolvedValue(results);
-    const whereMock = vi.fn(() => ({ limit: limitMock }));
-    const fromMock = vi.fn(() => ({ where: whereMock, limit: limitMock }));
-    return { from: fromMock };
-  });
 };
 
 describe('RotationManager', () => {
@@ -397,7 +401,7 @@ describe('RotationManager', () => {
         lastRotationCandleClose: previousCandleClose - intervalMs,
       });
 
-      mockExecuteRotation.mockResolvedValue({ added: ['ETHUSDT'], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult({ added: ['ETHUSDT'] }));
 
       const result = await manager.checkAllRotationsOnce();
       expect(mockExecuteRotation).toHaveBeenCalled();
@@ -460,7 +464,7 @@ describe('RotationManager', () => {
       });
 
       setupChainedDbSelect([{ currentBalance: '10000' }]);
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.checkAllRotationsOnce();
       expect(mockDbSelect).toHaveBeenCalled();
@@ -469,7 +473,7 @@ describe('RotationManager', () => {
 
   describe('applyRotationWithQueue', () => {
     it('should stop watchers for removed symbols', async () => {
-      const result = { added: [], removed: ['BTCUSDT', 'ETHUSDT'] };
+      const result = createRotationResult({ removed: ['BTCUSDT', 'ETHUSDT'] });
       await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
 
       expect(deps.stopWatcher).toHaveBeenCalledTimes(2);
@@ -478,7 +482,7 @@ describe('RotationManager', () => {
     });
 
     it('should start watchers for added symbols that do not exist', async () => {
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
@@ -492,7 +496,7 @@ describe('RotationManager', () => {
       activeWatchers.set('wallet-1-ETHUSDT-1h-FUTURES', { symbol: 'ETHUSDT' });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(activeWatchers);
 
-      const result = { added: ['ETHUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['ETHUSDT'] });
       await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
 
       expect(deps.startWatcher).not.toHaveBeenCalled();
@@ -500,7 +504,7 @@ describe('RotationManager', () => {
     });
 
     it('should prefetch klines for new symbols', async () => {
-      const result = { added: ['SOLUSDT', 'AVAXUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT', 'AVAXUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
@@ -510,7 +514,7 @@ describe('RotationManager', () => {
     });
 
     it('should set pending watcher with targetCandleClose', async () => {
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       const targetCandleClose = Date.now() + 60_000;
@@ -522,7 +526,7 @@ describe('RotationManager', () => {
     });
 
     it('should not set pending watcher when no targetCandleClose', async () => {
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
@@ -532,7 +536,7 @@ describe('RotationManager', () => {
     });
 
     it('should mark added watchers as recently rotated', async () => {
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
@@ -541,7 +545,7 @@ describe('RotationManager', () => {
     });
 
     it('should return added watcher IDs', async () => {
-      const result = { added: ['SOLUSDT', 'AVAXUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT', 'AVAXUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       const addedIds = await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
@@ -550,7 +554,7 @@ describe('RotationManager', () => {
     });
 
     it('should use default marketType FUTURES when not specified', async () => {
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       (deps.getActiveWatchers as ReturnType<typeof vi.fn>).mockReturnValue(new Map());
 
       const addedIds = await manager.applyRotationWithQueue('wallet-1', 'user-1', result, '1h', 'profile-1');
@@ -562,7 +566,7 @@ describe('RotationManager', () => {
   describe('applyRotation', () => {
     it('should remove only non-manual watchers', async () => {
       setupChainedDbSelect([{ walletId: 'wallet-1', symbol: 'BTCUSDT', isManual: false }]);
-      const result = { added: [], removed: ['BTCUSDT'] };
+      const result = createRotationResult({ removed: ['BTCUSDT'] });
 
       await manager.applyRotation('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
       expect(deps.stopWatcher).toHaveBeenCalledWith('wallet-1', 'BTCUSDT', '1h', 'FUTURES');
@@ -570,7 +574,7 @@ describe('RotationManager', () => {
 
     it('should not stop watcher if no matching db record found', async () => {
       setupChainedDbSelect([]);
-      const result = { added: [], removed: ['BTCUSDT'] };
+      const result = createRotationResult({ removed: ['BTCUSDT'] });
 
       await manager.applyRotation('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
       expect(deps.stopWatcher).not.toHaveBeenCalled();
@@ -587,7 +591,7 @@ describe('RotationManager', () => {
         return { from: fromMock };
       });
 
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       const addedIds = await manager.applyRotation('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
 
       expect(deps.startWatcher).toHaveBeenCalledTimes(1);
@@ -602,7 +606,7 @@ describe('RotationManager', () => {
         return { from: fromMock };
       });
 
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       const addedIds = await manager.applyRotation('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
 
       expect(deps.startWatcher).not.toHaveBeenCalled();
@@ -619,7 +623,7 @@ describe('RotationManager', () => {
 
       mockForceCheckSymbol.mockResolvedValue({ gapsFilled: 2, corruptedFixed: 1 });
 
-      const result = { added: ['SOLUSDT'], removed: [] };
+      const result = createRotationResult({ added: ['SOLUSDT'] });
       await manager.applyRotation('wallet-1', 'user-1', result, '1h', 'profile-1', 'FUTURES');
 
       expect(mockPrefetchKlines).toHaveBeenCalled();
@@ -641,7 +645,7 @@ describe('RotationManager', () => {
     });
 
     it('should execute initial rotation and set up state', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: ['ETHUSDT'], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult({ added: ['ETHUSDT'] }));
       mockDbSelect.mockImplementation(() => {
         const limitMock = vi.fn().mockResolvedValue([]);
         const whereMock = vi.fn(() => ({ limit: limitMock }));
@@ -662,7 +666,7 @@ describe('RotationManager', () => {
     });
 
     it('should start anticipation timer when auto rotation is enabled', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.startDynamicRotation('wallet-1', 'user-1', {
         useDynamicSymbolSelection: true,
@@ -677,7 +681,7 @@ describe('RotationManager', () => {
     });
 
     it('should not start anticipation timer when auto rotation is disabled', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.startDynamicRotation('wallet-1', 'user-1', {
         useDynamicSymbolSelection: true,
@@ -693,7 +697,7 @@ describe('RotationManager', () => {
     });
 
     it('should pass capital requirement when wallet balance is provided', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.startDynamicRotation('wallet-1', 'user-1', {
         useDynamicSymbolSelection: true,
@@ -718,7 +722,7 @@ describe('RotationManager', () => {
     });
 
     it('should not include capitalRequirement when walletBalance is undefined', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.startDynamicRotation('wallet-1', 'user-1', {
         useDynamicSymbolSelection: true,
@@ -738,7 +742,7 @@ describe('RotationManager', () => {
     });
 
     it('should add new watcher IDs to processing queue', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: ['SOLUSDT'], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult({ added: ['SOLUSDT'] }));
       mockDbSelect.mockImplementation(() => {
         const limitMock = vi.fn().mockResolvedValue([]);
         const whereMock = vi.fn(() => ({ limit: limitMock }));
@@ -865,7 +869,7 @@ describe('RotationManager', () => {
 
   describe('triggerManualRotation', () => {
     it('should execute rotation and return result', async () => {
-      const rotationResult = { added: ['SOLUSDT'], removed: ['BTCUSDT'] };
+      const rotationResult = createRotationResult({ added: ['SOLUSDT'], removed: ['BTCUSDT'] });
       mockExecuteRotation.mockResolvedValue(rotationResult);
 
       mockDbSelect.mockImplementation(() => {
@@ -887,7 +891,7 @@ describe('RotationManager', () => {
     });
 
     it('should add new watcher IDs to processing queue', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: ['SOLUSDT'], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult({ added: ['SOLUSDT'] }));
       mockDbSelect.mockImplementation(() => {
         const limitMock = vi.fn().mockResolvedValue([]);
         const whereMock = vi.fn(() => ({ limit: limitMock }));
@@ -906,7 +910,7 @@ describe('RotationManager', () => {
     });
 
     it('should include capital requirement when wallet balance is provided', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.triggerManualRotation('wallet-1', 'user-1', {
         targetWatcherCount: 5,
@@ -930,7 +934,7 @@ describe('RotationManager', () => {
     });
 
     it('should pass btcCorrelationFilter when set', async () => {
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.triggerManualRotation('wallet-1', 'user-1', {
         targetWatcherCount: 5,
@@ -993,7 +997,7 @@ describe('RotationManager', () => {
         return { from: fromMock };
       });
 
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.restoreRotationStates(watchers, () => 5);
 
@@ -1051,7 +1055,7 @@ describe('RotationManager', () => {
         return { from: fromMock };
       });
 
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.restoreRotationStates(watchers, () => 0);
 
@@ -1130,7 +1134,7 @@ describe('RotationManager', () => {
         return { from: fromMock };
       });
 
-      mockExecuteRotation.mockResolvedValue({ added: [], removed: [] });
+      mockExecuteRotation.mockResolvedValue(createRotationResult());
 
       await manager.restoreRotationStates(watchers, () => 5);
 

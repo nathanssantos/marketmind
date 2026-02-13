@@ -54,15 +54,15 @@ vi.mock('../../utils/errors', () => ({
 const mockFormatPrice = vi.fn((price: number, _tickSize?: string) => String(price));
 const mockFormatQuantity = vi.fn((qty: number, _stepSize?: string) => String(qty));
 vi.mock('../../utils/formatters', () => ({
-  formatPriceForBinance: (...args: unknown[]) => mockFormatPrice(...args),
-  formatQuantityForBinance: (...args: unknown[]) => mockFormatQuantity(...args),
+  formatPriceForBinance: (...args: Parameters<typeof mockFormatPrice>) => mockFormatPrice(...args),
+  formatQuantityForBinance: (...args: Parameters<typeof mockFormatQuantity>) => mockFormatQuantity(...args),
 }));
 
 vi.mock('../../utils/kline-mapper', () => ({
   mapDbKlinesReversed: vi.fn((klines: unknown[]) => klines),
 }));
 
-const mockValidateMinNotional = vi.fn(() => ({ isValid: true }));
+const mockValidateMinNotional = vi.fn((): { isValid: boolean; reason?: string } => ({ isValid: true }));
 const mockCalculateVolatilityAdj = vi.fn(() => ({
   factor: 1.0,
   isHighVolatility: false,
@@ -70,8 +70,8 @@ const mockCalculateVolatilityAdj = vi.fn(() => ({
   rationale: 'Normal volatility',
 }));
 vi.mock('../../utils/trade-validation', () => ({
-  calculateVolatilityAdjustment: (...args: unknown[]) => mockCalculateVolatilityAdj(...args),
-  validateMinNotional: (...args: unknown[]) => mockValidateMinNotional(...args),
+  calculateVolatilityAdjustment: (...args: Parameters<typeof mockCalculateVolatilityAdj>) => mockCalculateVolatilityAdj(...args),
+  validateMinNotional: (...args: Parameters<typeof mockValidateMinNotional>) => mockValidateMinNotional(...args),
   VOLATILITY_DEFAULTS: { ATR_PERIOD: 14, HIGH_VOLATILITY_THRESHOLD: 5, REDUCTION_FACTOR: 0.7 },
 }));
 
@@ -144,15 +144,14 @@ const createMockConfig = (overrides: Partial<Record<string, unknown>> = {}): Aut
   enabledSetupTypes: '[]',
   useDynamicSymbolSelection: false,
   dynamicSymbolExcluded: null,
-  targetWatcherCount: 10,
   enableAutoRotation: true,
   leverage: 5,
   useBtcCorrelationFilter: false,
-  isActive: true,
+  isEnabled: true,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
-} as AutoTradingConfig);
+} as unknown as AutoTradingConfig);
 
 const createMockWallet = (overrides: Record<string, unknown> = {}) => ({
   id: 'wallet-1',

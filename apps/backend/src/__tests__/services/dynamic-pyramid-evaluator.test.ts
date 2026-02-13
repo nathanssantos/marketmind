@@ -81,7 +81,7 @@ describe('evaluateDynamicConditions', () => {
 
   it('should calculate ATR ratio and adjust min distance', () => {
     const klines = createKlines(50);
-    const atrValues = Array.from({ length: 50 }, (_, i) => (i < 10 ? 0 : 2.0));
+    const atrValues: number[] = Array.from({ length: 50 }, (_, i) => (i < 10 ? 0 : 2.0));
     atrValues[atrValues.length - 1] = 3.0;
 
     mockedCalculateATR.mockReturnValue(atrValues);

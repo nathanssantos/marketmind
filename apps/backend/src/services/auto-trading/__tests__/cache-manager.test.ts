@@ -81,7 +81,6 @@ describe('CacheManager', () => {
 
   describe('getBtcKlines', () => {
     it('should return cached klines when cache is valid', async () => {
-      const mockKlines = [{ close: '100', open: '99', high: '101', low: '98' }];
       vi.mocked(db.query.klines.findMany).mockResolvedValueOnce(
         [{ symbol: 'BTCUSDT', interval: '1h', openTime: new Date(1000), closeTime: new Date(2000), open: '100', high: '101', low: '99', close: '100', volume: '1000', quoteVolume: '10000', trades: 50, takerBuyBaseVolume: '500', takerBuyQuoteVolume: '5000' }] as never
       );

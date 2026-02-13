@@ -231,7 +231,7 @@ describe('FuturesBacktestEngine - Extended', () => {
       const result = await engine.run(config);
 
       expect(result.trades[0]?.fundingPayments).toBeDefined();
-      expect(result.metrics.totalFundingPaid).toBeDefined();
+      expect((result.metrics as unknown as Record<string, unknown>).totalFundingPaid).toBeDefined();
     });
 
     it('should not compute funding payments when simulateFundingRates is false', async () => {
@@ -318,7 +318,7 @@ describe('FuturesBacktestEngine - Extended', () => {
 
       expect(result.trades[0]?.exitReason).toBe('LIQUIDATION');
       expect(result.trades[0]?.liquidationFee).toBeDefined();
-      expect(result.metrics.totalLiquidations).toBe(1);
+      expect((result.metrics as unknown as Record<string, unknown>).totalLiquidations).toBe(1);
     });
 
     it('should detect SHORT liquidation when price rises above liquidation level', async () => {
@@ -362,7 +362,7 @@ describe('FuturesBacktestEngine - Extended', () => {
       const result = await engine.run(config);
 
       expect(result.trades[0]?.exitReason).toBe('LIQUIDATION');
-      expect(result.metrics.totalLiquidations).toBe(1);
+      expect((result.metrics as unknown as Record<string, unknown>).totalLiquidations).toBe(1);
     });
 
     it('should not liquidate when price stays within safe range', async () => {
@@ -406,7 +406,7 @@ describe('FuturesBacktestEngine - Extended', () => {
       const result = await engine.run(config);
 
       expect(result.trades[0]?.exitReason).not.toBe('LIQUIDATION');
-      expect(result.metrics.totalLiquidations).toBe(0);
+      expect((result.metrics as unknown as Record<string, unknown>).totalLiquidations).toBe(0);
     });
 
     it('should not simulate liquidation when disabled', async () => {
@@ -449,7 +449,7 @@ describe('FuturesBacktestEngine - Extended', () => {
       const result = await engine.run(config);
 
       expect(result.trades[0]?.exitReason).not.toBe('LIQUIDATION');
-      expect(result.metrics.totalLiquidations).toBe(0);
+      expect((result.metrics as unknown as Record<string, unknown>).totalLiquidations).toBe(0);
     });
   });
 
@@ -1027,7 +1027,7 @@ describe('FuturesBacktestEngine - Extended', () => {
       });
 
       const engine = new FuturesBacktestEngine();
-      const result = await engine.run(config);
+      await engine.run(config);
 
       expect(mockRunFn).toHaveBeenCalled();
     });

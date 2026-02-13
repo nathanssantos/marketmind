@@ -787,6 +787,7 @@ describe('ExitCalculator', () => {
       const strongPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 15,
+        openTime: 1000000,
         price: 49000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -813,6 +814,7 @@ describe('ExitCalculator', () => {
       const strongPivot: EnhancedPivotPoint = {
         type: 'high',
         index: 15,
+        openTime: 1000000,
         price: 51000,
         strength: 'strong',
         volumeConfirmed: false,
@@ -838,6 +840,7 @@ describe('ExitCalculator', () => {
       const mediumPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 12,
+        openTime: 1000000,
         price: 48500,
         strength: 'medium',
         volumeConfirmed: false,
@@ -863,6 +866,7 @@ describe('ExitCalculator', () => {
       const strongPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 15,
+        openTime: 1000000,
         price: 48000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -888,6 +892,7 @@ describe('ExitCalculator', () => {
       const closePivot: EnhancedPivotPoint = {
         type: 'low',
         index: 15,
+        openTime: 1000000,
         price: 49999,
         strength: 'strong',
         volumeConfirmed: true,
@@ -915,6 +920,7 @@ describe('ExitCalculator', () => {
       const weakPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 15,
+        openTime: 1000000,
         price: 48000,
         strength: 'weak',
         volumeConfirmed: false,
@@ -949,6 +955,7 @@ describe('ExitCalculator', () => {
       const resistancePivot: EnhancedPivotPoint = {
         type: 'high',
         index: 10,
+        openTime: 1000000,
         price: 53000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -971,6 +978,7 @@ describe('ExitCalculator', () => {
       const supportPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 10,
+        openTime: 1000000,
         price: 47000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -1040,6 +1048,7 @@ describe('ExitCalculator', () => {
       const badPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 10,
+        openTime: 1000000,
         price: 48000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -1060,6 +1069,7 @@ describe('ExitCalculator', () => {
       const badPivot: EnhancedPivotPoint = {
         type: 'low',
         index: 10,
+        openTime: 1000000,
         price: 48000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -1086,6 +1096,7 @@ describe('ExitCalculator', () => {
       const weakPivot: EnhancedPivotPoint = {
         type: 'high',
         index: 10,
+        openTime: 1000000,
         price: 53000,
         strength: 'weak',
         volumeConfirmed: false,
@@ -1112,6 +1123,7 @@ describe('ExitCalculator', () => {
       const unconfirmedPivot: EnhancedPivotPoint = {
         type: 'high',
         index: 10,
+        openTime: 1000000,
         price: 53000,
         strength: 'strong',
         volumeConfirmed: false,
@@ -1561,7 +1573,7 @@ describe('ExitCalculator', () => {
   describe('findSwingHigh - fallback paths', () => {
     it('should use findMostRecentSwingHigh when findSignificantSwingHigh returns null', () => {
       vi.mocked(findSignificantSwingHigh).mockReturnValue(null);
-      vi.mocked(findMostRecentSwingHigh).mockReturnValue({ index: 15, price: 50500 });
+      vi.mocked(findMostRecentSwingHigh).mockReturnValue({ index: 15, price: 50500, type: 'high', timestamp: 1000000 });
 
       const exit: ExitLevel = { type: 'swingHighLow' };
       const context = createMockContext({ direction: 'SHORT', entryPrice: 48000 });
@@ -1573,7 +1585,7 @@ describe('ExitCalculator', () => {
 
     it('should use findMostRecentSwingLow when findSignificantSwingLow returns null', () => {
       vi.mocked(findSignificantSwingLow).mockReturnValue(null);
-      vi.mocked(findMostRecentSwingLow).mockReturnValue({ index: 10, price: 49500 });
+      vi.mocked(findMostRecentSwingLow).mockReturnValue({ index: 10, price: 49500, type: 'low', timestamp: 1000000 });
 
       const exit: ExitLevel = { type: 'swingHighLow' };
       const context = createMockContext({ direction: 'LONG', entryPrice: 52000 });
@@ -1589,6 +1601,7 @@ describe('ExitCalculator', () => {
       const strongPivot: EnhancedPivotPoint = {
         type: 'high',
         index: 15,
+        openTime: 1000000,
         price: 51000,
         strength: 'strong',
         volumeConfirmed: true,
@@ -1616,6 +1629,7 @@ describe('ExitCalculator', () => {
       const closePivot: EnhancedPivotPoint = {
         type: 'high',
         index: 15,
+        openTime: 1000000,
         price: 50001,
         strength: 'strong',
         volumeConfirmed: true,

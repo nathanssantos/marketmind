@@ -162,6 +162,7 @@ const createAlgoOrder = (overrides: Partial<FuturesAlgoOrder> = {}): FuturesAlgo
   reduceOnly: true,
   closePosition: false,
   createTime: Date.now(),
+  updateTime: Date.now(),
   ...overrides,
 });
 

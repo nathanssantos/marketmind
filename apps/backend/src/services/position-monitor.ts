@@ -624,7 +624,7 @@ export class PositionMonitorService {
           );
         } catch (orderError) {
           const errorMessage = serializeError(orderError);
-          const errorCode = (orderError as Record<string, unknown>)?.code;
+          const errorCode = (orderError as Record<string, unknown>)?.['code'];
           if (errorMessage.includes('ReduceOnly Order is rejected') || errorCode === -2022) {
             logger.warn({
               executionId: execution.id,

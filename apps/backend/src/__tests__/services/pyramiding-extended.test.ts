@@ -1,8 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   PyramidingService,
-  type PyramidConfig,
-  DEFAULT_PYRAMIDING_CONFIG,
 } from '../../services/pyramiding';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createTestUser, createTestWallet } from '../helpers/test-fixtures';
@@ -132,7 +130,7 @@ const insertTradeExecution = async (
   walletId: string,
   overrides: Partial<{
     symbol: string;
-    side: string;
+    side: 'LONG' | 'SHORT';
     entryPrice: string;
     quantity: string;
     status: string;
@@ -533,7 +531,7 @@ describe('PyramidingService Extended', () => {
         stopLoss: '49000',
       });
 
-      const result = await service.evaluatePyramidByMode(
+      await service.evaluatePyramidByMode(
         user.id, wallet.id, 'BTCUSDT', 'LONG', 52000, createKlines(50), null
       );
 

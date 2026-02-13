@@ -34,8 +34,8 @@ const {
     debug: vi.fn(),
   },
   mockUpdateStopLossOrder: vi.fn(),
-  mockCalculateATRPercent: vi.fn(() => 0.02),
-  mockGetVolatilityProfile: vi.fn(() => ({
+  mockCalculateATRPercent: vi.fn((_atr: number, _price: number) => 0.02),
+  mockGetVolatilityProfile: vi.fn((_atrPercent: number, _options: Record<string, unknown>) => ({
     atrMultiplier: 2.0,
     breakevenThreshold: 0.01,
     feesThreshold: 0.015,
@@ -43,7 +43,7 @@ const {
   })),
   mockEmitTradeNotification: vi.fn(),
   mockEmitPositionUpdate: vi.fn(),
-  mockGetWebSocketService: vi.fn(() => null),
+  mockGetWebSocketService: vi.fn((): unknown => null),
 }));
 
 vi.stubGlobal('fetch', mockFetch);
@@ -111,8 +111,8 @@ vi.mock('../../services/protection-orders', () => ({
 }));
 
 vi.mock('../../services/volatility-profile', () => ({
-  calculateATRPercent: (...args: unknown[]) => mockCalculateATRPercent(...args),
-  getVolatilityProfile: (...args: unknown[]) => mockGetVolatilityProfile(...args),
+  calculateATRPercent: (...args: [number, number]) => mockCalculateATRPercent(...args),
+  getVolatilityProfile: (...args: [number, Record<string, unknown>]) => mockGetVolatilityProfile(...args),
 }));
 
 vi.mock('../../services/websocket', () => ({
@@ -128,7 +128,8 @@ vi.mock('../../utils/formatters', () => ({
 }));
 
 import { TrailingStopService } from '../../services/trailing-stop';
-import type { TradeExecution, AutoTradingConfig, SymbolTrailingStopOverride } from '../../db/schema';
+import type { TradeExecution } from '../../db/schema';
+import type { TrailingStopUpdate } from '../../services/trailing-stop';
 
 const makeExecution = (overrides: Partial<TradeExecution> = {}): TradeExecution => ({
   id: 'exec-1',
@@ -339,7 +340,7 @@ describe('TrailingStopService - Manager Methods', () => {
       mockDbQuery.priceCache.findFirst.mockResolvedValue(null);
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const fetchPriceFromApi = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['fetchPriceFromApi'].bind(service);
+      const fetchPriceFromApi = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['fetchPriceFromApi']!.bind(service);
       await expect(fetchPriceFromApi('BTCUSDT', 'FUTURES')).rejects.toThrow('HTTP 500');
     });
   });
@@ -353,7 +354,7 @@ describe('TrailingStopService - Manager Methods', () => {
       };
       mockDbQuery.klines.findFirst.mockResolvedValue(recentKline);
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice'].bind(service);
+      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBe(45123.45);
     });
@@ -366,7 +367,7 @@ describe('TrailingStopService - Manager Methods', () => {
       };
       mockDbQuery.klines.findFirst.mockResolvedValue(staleKline);
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice'].bind(service);
+      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBeNull();
     });
@@ -374,7 +375,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should return null when no kline found', async () => {
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice'].bind(service);
+      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBeNull();
     });
@@ -382,7 +383,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should return null on database error', async () => {
       mockDbQuery.klines.findFirst.mockRejectedValue(new Error('DB error'));
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice'].bind(service);
+      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBeNull();
     });
@@ -396,7 +397,7 @@ describe('TrailingStopService - Manager Methods', () => {
         timestamp: new Date(Date.now() - 30000),
       });
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       const result = await getCurrentPrice('BTCUSDT', 'FUTURES');
       expect(result).toBe(44000);
       expect(mockFetch).not.toHaveBeenCalled();
@@ -415,7 +416,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
       setupInsertChain();
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       const result = await getCurrentPrice('BTCUSDT', 'FUTURES');
       expect(result).toBe(45000);
     });
@@ -427,7 +428,7 @@ describe('TrailingStopService - Manager Methods', () => {
         timestamp: new Date(Date.now() - 30000),
       });
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       const result = await getCurrentPrice('BTCUSDT', 'SPOT');
       expect(result).toBe(44000);
     });
@@ -443,7 +444,7 @@ describe('TrailingStopService - Manager Methods', () => {
         });
       setupInsertChain();
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
 
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES');
       await vi.advanceTimersByTimeAsync(1000);
@@ -465,7 +466,7 @@ describe('TrailingStopService - Manager Methods', () => {
         close: '43500',
       });
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
 
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES');
       await vi.advanceTimersByTimeAsync(10000);
@@ -486,7 +487,7 @@ describe('TrailingStopService - Manager Methods', () => {
         .mockRejectedValueOnce(new Error('Network error'));
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
 
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES');
       await vi.advanceTimersByTimeAsync(10000);
@@ -505,7 +506,7 @@ describe('TrailingStopService - Manager Methods', () => {
       mockFetch.mockImplementation(() => Promise.reject(networkError));
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
 
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES').catch((e: Error) => e);
       await vi.advanceTimersByTimeAsync(10000);
@@ -528,7 +529,7 @@ describe('TrailingStopService - Manager Methods', () => {
 
       const insertChain = setupInsertChain();
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice'].bind(service);
+      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       await getCurrentPrice('BTCUSDT', 'FUTURES');
 
       expect(mockDbInsert).toHaveBeenCalled();
@@ -590,7 +591,7 @@ describe('TrailingStopService - Manager Methods', () => {
 
   describe('filterByTrailingStopEnabled', () => {
     const filterByTrailingStopEnabled = (svc: TrailingStopService) =>
-      (svc as unknown as Record<string, (execs: TradeExecution[]) => Promise<TradeExecution[]>>)['filterByTrailingStopEnabled'].bind(svc);
+      (svc as unknown as Record<string, (execs: TradeExecution[]) => Promise<TradeExecution[]>>)['filterByTrailingStopEnabled']!.bind(svc);
 
     it('should include executions for wallets with trailing stop enabled', async () => {
       const exec = makeExecution({ walletId: 'wallet-1' });
@@ -689,7 +690,7 @@ describe('TrailingStopService - Manager Methods', () => {
   describe('groupExecutionsBySymbol', () => {
     type GroupFn = (execs: TradeExecution[]) => Map<string, TradeExecution[]>;
     const groupExecutionsBySymbol = (svc: TrailingStopService) =>
-      (svc as unknown as Record<string, GroupFn>)['groupExecutionsBySymbol'].bind(svc);
+      (svc as unknown as Record<string, GroupFn>)['groupExecutionsBySymbol']!.bind(svc);
 
     it('should group executions by symbol', () => {
       const exec1 = makeExecution({ id: 'e1', symbol: 'BTCUSDT' });
@@ -710,7 +711,7 @@ describe('TrailingStopService - Manager Methods', () => {
   describe('processSymbolGroup', () => {
     type ProcessFn = (symbol: string, execs: TradeExecution[]) => Promise<unknown[]>;
     const processSymbolGroup = (svc: TrailingStopService) =>
-      (svc as unknown as Record<string, ProcessFn>)['processSymbolGroup'].bind(svc);
+      (svc as unknown as Record<string, ProcessFn>)['processSymbolGroup']!.bind(svc);
 
     it('should skip executions without setupId', async () => {
       const exec = makeExecution({ setupId: null });
@@ -868,7 +869,7 @@ describe('TrailingStopService - Manager Methods', () => {
 
   describe('calculateTrailingStopWithConfig', () => {
     const calculateTrailingStopWithConfig = (svc: TrailingStopService) =>
-      (svc as unknown as Record<string, (...args: unknown[]) => unknown>)['calculateTrailingStopWithConfig'].bind(svc);
+      (svc as unknown as Record<string, (...args: unknown[]) => TrailingStopUpdate | null>)['calculateTrailingStopWithConfig']!.bind(svc);
 
     const baseKlines = makeKlineRows(30, Date.now() - 86400000 - 3600000).map((k, i) => ({
       symbol: k.symbol,
@@ -1070,7 +1071,7 @@ describe('TrailingStopService - Manager Methods', () => {
 
   describe('applyStopLossUpdate', () => {
     const applyStopLossUpdate = (svc: TrailingStopService) =>
-      (svc as unknown as Record<string, (...args: unknown[]) => Promise<void>>)['applyStopLossUpdate'].bind(svc);
+      (svc as unknown as Record<string, (...args: unknown[]) => Promise<void>>)['applyStopLossUpdate']!.bind(svc);
 
     it('should update trade execution in database with new stop loss', async () => {
       const exec = makeExecution({ side: 'LONG', marketType: 'FUTURES' });

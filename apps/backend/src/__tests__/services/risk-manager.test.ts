@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { autoTradingConfig, tradeExecutions, wallets } from '../../db/schema';
+import type { AutoTradingConfig } from '../../db/schema';
 import {
     calculateDrawdownPercent,
     calculateExposureUtilization,
@@ -202,7 +203,7 @@ describe('RiskManagerService', () => {
         ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as AutoTradingConfig;
 
       const result = await riskManagerService.validateNewPosition(
         'nonexistent',
@@ -314,7 +315,7 @@ describe('RiskManagerService', () => {
         ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as AutoTradingConfig;
 
       const result = await riskManagerService.validateNewPosition(
         wallet.id,
@@ -389,7 +390,7 @@ describe('RiskManagerService', () => {
         ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as AutoTradingConfig;
 
       const result = await riskManagerService.validateNewPosition(
         wallet.id,
@@ -464,7 +465,7 @@ describe('RiskManagerService', () => {
         ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as AutoTradingConfig;
 
       const result = await riskManagerService.validateNewPosition(
         wallet.id,
@@ -564,7 +565,7 @@ describe('RiskManagerService', () => {
         ...DEFAULT_ADDITIONAL_FILTERS_CONFIG,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as AutoTradingConfig;
 
       const result = await riskManagerService.validateNewPosition(
         wallet.id,

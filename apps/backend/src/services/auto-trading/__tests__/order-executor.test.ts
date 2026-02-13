@@ -206,6 +206,7 @@ import { OrderExecutor, type OrderExecutorDeps } from '../order-executor';
 import { calculateFibonacciProjection, calculateADX } from '@marketmind/indicators';
 import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { ActiveWatcher } from '../types';
+import type { AutoTradingConfig } from '../../../db/schema';
 import { env } from '../../../env';
 
 const createKline = (close: number, index: number): Kline => ({
@@ -289,7 +290,7 @@ const createDefaultConfig = (overrides: Record<string, unknown> = {}) => ({
   leverage: 1,
   marginType: 'ISOLATED',
   ...overrides,
-});
+}) as unknown as AutoTradingConfig;
 
 const createDeps = (): OrderExecutorDeps => ({
   getBtcKlines: vi.fn().mockResolvedValue(createKlines(30)),

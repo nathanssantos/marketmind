@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { FibonacciProjectionData } from '@marketmind/types';
 
 vi.mock('@marketmind/types', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal() as Record<string, unknown>;
   return {
     ...actual,
     getRoundTripFee: vi.fn(() => 0.0008),

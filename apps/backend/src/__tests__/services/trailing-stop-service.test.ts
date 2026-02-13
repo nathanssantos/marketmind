@@ -7,7 +7,7 @@ vi.mock('@marketmind/indicators', () => ({
 }));
 
 vi.mock('@marketmind/types', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal() as Record<string, unknown>;
   return {
     ...actual,
     getRoundTripFee: vi.fn(({ marketType, useBnbDiscount }: { marketType: string; useBnbDiscount?: boolean }) => {

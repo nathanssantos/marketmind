@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vites
 import { db } from '../../db';
 import {
   DynamicSymbolRotationService,
-  getIntervalMs,
   getDynamicSymbolRotationService,
   type RotationConfig,
 } from '../../services/dynamic-symbol-rotation';
@@ -212,7 +211,7 @@ describe('DynamicSymbolRotationService - extended coverage', () => {
     it('should return scored symbols up to limit', async () => {
       const result = await service.getRecommendedSymbols('FUTURES', 5);
       expect(result).toHaveLength(5);
-      expect(result[0].symbol).toBe('BTCUSDT');
+      expect(result[0]!.symbol).toBe('BTCUSDT');
     });
 
     it('should exclude specified symbols', async () => {
@@ -275,6 +274,7 @@ describe('DynamicSymbolRotationService - extended coverage', () => {
           walletBalance: 100,
           leverage: 10,
           positionSizePercent: 5,
+          targetWatchersCount: 5,
         },
       });
 

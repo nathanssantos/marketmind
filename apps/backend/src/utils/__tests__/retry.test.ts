@@ -110,8 +110,8 @@ describe('retry', () => {
         onRetry,
       });
 
-      const firstDelay = onRetry.mock.calls[0][2];
-      const secondDelay = onRetry.mock.calls[1][2];
+      const firstDelay = onRetry.mock.calls[0]![2];
+      const secondDelay = onRetry.mock.calls[1]![2];
 
       expect(firstDelay).toBe(10);
       expect(secondDelay).toBe(15);

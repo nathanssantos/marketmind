@@ -36,19 +36,19 @@ vi.mock('../../../utils/filters', async (importOriginal) => {
     checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
     checkStochasticRecoveryCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic Recovery passed' })),
     checkTrendCondition: vi.fn(() => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
-    checkMomentumTiming: vi.fn(() => ({ isAllowed: true, rsiValue: 55, rsiMomentum: 'RISING', mfiValue: 60, reason: 'Momentum passed' })),
+    checkMomentumTiming: vi.fn(() => ({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' })),
     MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20, RSI_PERIOD: 14, MFI_PERIOD: 14, RSI_LONG_MIN: 40, RSI_SHORT_MAX: 60, RSI_PULLBACK_LONG_MIN: 30, RSI_PULLBACK_SHORT_MAX: 70, MFI_LONG_MIN: 30, MFI_SHORT_MAX: 70 },
     MTF_FILTER: { EMA_SHORT_PERIOD: 50, EMA_LONG_PERIOD: 200, MIN_KLINES_FOR_EMA200: 250 },
-    checkMtfCondition: vi.fn(() => ({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, reason: 'MTF passed' })),
+    checkMtfCondition: vi.fn(() => ({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, deathCross: false, priceAboveEma50: true, priceAboveEma200: true, reason: 'MTF passed' })),
     checkBtcCorrelation: vi.fn(() => ({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' })),
     checkMarketRegime: vi.fn(() => ({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' })),
-    checkVolumeCondition: vi.fn(() => ({ isAllowed: true, currentVolume: 1500, avgVolume: 1000, volumeRatio: 1.5, obvTrend: 'RISING', reason: 'Volume passed' })),
+    checkVolumeCondition: vi.fn(() => ({ isAllowed: true, currentVolume: 1500, averageVolume: 1000, volumeRatio: 1.5, isVolumeSpike: false, obvTrend: 'RISING', reason: 'Volume passed' })),
     checkFundingRate: vi.fn(() => ({ isAllowed: true, currentRate: 0.0001, fundingLevel: 'NORMAL', signal: 'NEUTRAL', nextFundingTime: null, reason: 'Funding rate normal' })),
     checkChoppinessCondition: vi.fn(() => ({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' })),
     checkSessionCondition: vi.fn(() => ({ isAllowed: true, currentHourUtc: 14, isInSession: true, reason: 'Session passed' })),
     checkBollingerSqueezeCondition: vi.fn(() => ({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' })),
     checkVwapCondition: vi.fn(() => ({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' })),
-    checkSupertrendCondition: vi.fn(() => ({ isAllowed: true, trend: 'UP', value: 49500, reason: 'Supertrend passed' })),
+    checkSupertrendCondition: vi.fn(() => ({ isAllowed: true, trend: 'up', value: 49500, reason: 'Supertrend passed' })),
     getHigherTimeframe: vi.fn((interval: string) => {
       const mapping: Record<string, string> = { '1m': '15m', '5m': '1h', '15m': '4h', '1h': '4h', '4h': '1d', '1d': '1w' };
       return mapping[interval] ?? null;
@@ -102,17 +102,17 @@ describe('FilterManager', () => {
     vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
     vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, currentD: 48, isOversold: false, isOverbought: false, reason: 'Stochastic passed' });
     vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' });
-    vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: true, rsiValue: 55, rsiMomentum: 'RISING', mfiValue: 60, reason: 'Momentum passed' });
-    vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, reason: 'MTF passed' });
+    vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' });
+    vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, deathCross: false, priceAboveEma50: true, priceAboveEma200: true, reason: 'MTF passed' });
     vi.mocked(checkBtcCorrelation).mockReturnValue({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' });
     vi.mocked(checkMarketRegime).mockReturnValue({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' });
-    vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: true, currentVolume: 1500, avgVolume: 1000, volumeRatio: 1.5, obvTrend: 'RISING', reason: 'Volume passed' });
+    vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: true, currentVolume: 1500, averageVolume: 1000, volumeRatio: 1.5, isVolumeSpike: false, obvTrend: 'RISING', reason: 'Volume passed' });
     vi.mocked(checkFundingRate).mockReturnValue({ isAllowed: true, currentRate: 0.0001, fundingLevel: 'NORMAL', signal: 'NEUTRAL', nextFundingTime: null, reason: 'Funding rate normal' });
     vi.mocked(checkChoppinessCondition).mockReturnValue({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' });
     vi.mocked(checkSessionCondition).mockReturnValue({ isAllowed: true, currentHourUtc: 14, isInSession: true, reason: 'Session passed' });
     vi.mocked(checkBollingerSqueezeCondition).mockReturnValue({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' });
     vi.mocked(checkVwapCondition).mockReturnValue({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' });
-    vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: true, trend: 'UP', value: 49500, reason: 'Supertrend passed' });
+    vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: true, trend: 'up', value: 49500, reason: 'Supertrend passed' });
     vi.mocked(calculateConfluenceScore).mockReturnValue({ isAllowed: true, totalScore: 75, maxPossibleScore: 110, scorePercent: 68, contributions: [], alignmentBonus: 10, recommendation: 'MODERATE_ENTRY', reason: 'Confluence score 75/110 (68%) - MODERATE_ENTRY' });
     manager = new FilterManager({});
   });
@@ -581,7 +581,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when momentum timing condition fails', () => {
-      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiMomentum: 'FALLING', mfiValue: 25, reason: 'RSI too low for LONG' });
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiPrevValue: 38, rsiMomentum: 'FALLING', mfiValue: 25, mfiConfirmation: false, reason: 'RSI too low for LONG' });
       const customManager = new FilterManager({ useMomentumTimingFilter: true });
       const klines = createMockKlines(50);
 
@@ -601,7 +601,7 @@ describe('FilterManager', () => {
     });
 
     it('should not log when tradesCount >= 3', () => {
-      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiMomentum: 'FALLING', mfiValue: 25, reason: 'RSI too low' });
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiPrevValue: 38, rsiMomentum: 'FALLING', mfiValue: 25, mfiConfirmation: false, reason: 'RSI too low' });
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const customManager = new FilterManager({ useMomentumTimingFilter: true });
       const klines = createMockKlines(50);
@@ -659,7 +659,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when MTF condition fails', () => {
-      vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: false, htfTrend: 'BEARISH', htfInterval: '4h', ema50: 50000, ema200: 51000, price: 49000, goldenCross: false, reason: 'HTF bearish' });
+      vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: false, htfTrend: 'BEARISH', htfInterval: '4h', ema50: 50000, ema200: 51000, price: 49000, goldenCross: false, deathCross: true, priceAboveEma50: false, priceAboveEma200: false, reason: 'HTF bearish' });
       const customManager = new FilterManager({ useMtfFilter: true });
       const klines = createMockKlines(300);
 
@@ -782,7 +782,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when volume condition fails', () => {
-      vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: false, currentVolume: 200, avgVolume: 1000, volumeRatio: 0.2, obvTrend: 'FALLING', reason: 'Volume too low' });
+      vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: false, currentVolume: 200, averageVolume: 1000, volumeRatio: 0.2, isVolumeSpike: false, obvTrend: 'FALLING', reason: 'Volume too low' });
       const customManager = new FilterManager({ useVolumeFilter: true });
       const klines = createMockKlines(60);
 
@@ -1231,7 +1231,7 @@ describe('FilterManager', () => {
     });
 
     it('should block when supertrend condition fails', () => {
-      vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: false, trend: 'DOWN', value: 51000, reason: 'LONG blocked: supertrend is bearish' });
+      vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: false, trend: 'down', value: 51000, reason: 'LONG blocked: supertrend is bearish' });
       const customManager = new FilterManager({ useSuperTrendFilter: true });
       const klines = createMockKlines(50);
 
@@ -1271,7 +1271,7 @@ describe('FilterManager', () => {
   describe('combined filter scenarios', () => {
     it('should accumulate skips across multiple filters', () => {
       vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: false, currentK: 85, currentD: 82, isOversold: false, isOverbought: true, reason: 'Overbought' });
-      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiMomentum: 'FALLING', mfiValue: 25, reason: 'RSI too low' });
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: 35, rsiPrevValue: 38, rsiMomentum: 'FALLING', mfiValue: 25, mfiConfirmation: false, reason: 'RSI too low' });
 
       const customManager = new FilterManager({
         useStochasticFilter: true,
@@ -1359,7 +1359,7 @@ describe('FilterManager', () => {
 
   describe('momentum timing filter - null rsiValue logging', () => {
     it('should log null for RSI when momentum blocks with null rsiValue', () => {
-      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: null, rsiMomentum: 'NEUTRAL', mfiValue: null, reason: 'RSI not available' });
+      vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: false, rsiValue: null, rsiPrevValue: null, rsiMomentum: 'NEUTRAL', mfiValue: null, mfiConfirmation: false, reason: 'RSI not available' });
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const customManager = new FilterManager({ useMomentumTimingFilter: true });
       const klines = createMockKlines(50);

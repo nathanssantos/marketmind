@@ -105,7 +105,7 @@ describe('ProtectionOrderHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     handler = new ProtectionOrderHandler();
-    mockGetWebSocketService.mockReturnValue(mockWsService as ReturnType<typeof getWebSocketService>);
+    mockGetWebSocketService.mockReturnValue(mockWsService as unknown as ReturnType<typeof getWebSocketService>);
   });
 
   describe('placeProtectionOrders - FUTURES market', () => {

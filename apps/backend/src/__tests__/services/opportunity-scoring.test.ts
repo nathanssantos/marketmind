@@ -116,7 +116,7 @@ const mockDbChainTwoCalls = (firstResults: unknown[], secondResults: unknown[]) 
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockImplementation(() => {
           const base = Promise.resolve(results);
-          (base as Record<string, unknown>).groupBy = vi.fn().mockResolvedValue(results);
+          (base as unknown as Record<string, unknown>).groupBy = vi.fn().mockResolvedValue(results);
           return base;
         }),
       }),

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const {
   mockDbSelectLimit,
-  mockDbSelectWhere,
-  mockDbSelectLeftJoin,
+  mockDbSelectWhere: _mockDbSelectWhere,
+  mockDbSelectLeftJoin: _mockDbSelectLeftJoin,
   mockDbSelectFrom,
   mockDbFindMany,
   mockPrefetchKlines,
@@ -24,7 +24,7 @@ const {
   const mockMeetsKlineRequirement = vi.fn(() => true);
   const mockDetect = vi.fn().mockReturnValue({ setup: null, confidence: 0 });
   const mockLoadAll = vi.fn().mockResolvedValue([]);
-  const mockToResult = vi.fn(
+  const mockToResult: ReturnType<typeof vi.fn> = vi.fn(
     (status: string, reason?: string, klinesCount?: number) => ({
       watcherId: '',
       symbol: 'BTCUSDT',
@@ -192,6 +192,7 @@ vi.mock('../../../env', () => ({
 
 import { SignalProcessor, type SignalProcessorConfig } from '../signal-processor';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
+
 
 const HOUR_MS = 3_600_000;
 
@@ -985,7 +986,7 @@ describe('SignalProcessor', () => {
     });
 
     it('should detect and execute setups with sufficient confidence', async () => {
-      const { lastCandleOpen } = setupForDetection();
+      const { lastCandleOpen: _lastCandleOpen } = setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
       mockDetect.mockReturnValueOnce({
@@ -1662,7 +1663,7 @@ describe('SignalProcessor', () => {
     });
 
     it('should skip when websocket service is null', () => {
-      mockGetWebSocketService.mockReturnValueOnce(null);
+      mockGetWebSocketService.mockReturnValueOnce(null as unknown as ReturnType<typeof mockGetWebSocketService>);
 
       (processor as any).emitLogsToWebSocket([]);
 

@@ -629,7 +629,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
       vi.mocked(priceCache.getPrice).mockReturnValueOnce(null);
       vi.mocked(getBinanceFuturesDataService).mockReturnValueOnce({
         getMarkPrice: vi.fn().mockResolvedValue(null),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const price = await service.getCurrentPrice('BTCUSDT', 'FUTURES');
       expect(price).toBe(50000);
@@ -646,7 +646,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
       vi.mocked(priceCache.getPrice).mockReturnValueOnce(null);
       vi.mocked(getBinanceFuturesDataService).mockReturnValueOnce({
         getMarkPrice: vi.fn().mockRejectedValue(new Error('API failure')),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       await expect(service.getCurrentPrice('BTCUSDT', 'FUTURES'))
         .rejects.toThrow('API failure');
@@ -660,7 +660,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const execution = await createTestExecution({
         userId: user.id,
@@ -682,7 +682,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.30);
       const execution = await createTestExecution({
@@ -706,7 +706,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.15);
       const execution = await createTestExecution({
@@ -728,7 +728,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.05);
       const execution = await createTestExecution({
@@ -750,7 +750,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 + 0.05);
       const execution = await createTestExecution({
@@ -772,7 +772,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const execution = await createTestExecution({
         userId: user.id,
@@ -791,7 +791,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const execution = await createTestExecution({
         userId: user.id,
@@ -810,7 +810,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue(null),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const execution = await createTestExecution({
         userId: user.id,
@@ -829,7 +829,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockRejectedValue(new Error('API error')),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const execution = await createTestExecution({
         userId: user.id,
@@ -851,7 +851,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.05);
       const execution = await createTestExecution({
@@ -1521,7 +1521,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
         const deferredExitTimestamps = (service as unknown as Record<string, Map<string, number>>).deferredExitTimestamps;
         const deferKey = `${execution!.id}-STOP_LOSS`;
-        deferredExitTimestamps.set(deferKey, Date.now() - 15000);
+        deferredExitTimestamps!.set(deferKey, Date.now() - 15000);
 
         await service.executeExit(execution!, 48800, 'STOP_LOSS');
 
@@ -1618,7 +1618,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
       vi.mocked(priceCache.getPrice).mockReturnValue(null);
       vi.mocked(getBinanceFuturesDataService).mockReturnValueOnce({
         getMarkPrice: vi.fn().mockRejectedValue(new Error('Price error')),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       await createTestExecution({
         userId: user.id,
@@ -1823,7 +1823,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         emitWalletUpdate: vi.fn(),
         emitRiskAlert: localEmitRiskAlert,
         emitLiquidationWarning: vi.fn(),
-      } as ReturnType<typeof getWebSocketService>);
+      } as unknown as ReturnType<typeof getWebSocketService>);
 
       const result = await service.checkPosition(execution!);
       expect(result.action).toBe('NONE');
@@ -1864,7 +1864,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
       vi.mocked(priceCache.getPrice).mockReturnValueOnce(null);
       vi.mocked(getBinanceFuturesDataService).mockReturnValueOnce({
         getMarkPrice: vi.fn().mockRejectedValueOnce(new Error('Price error')),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       await expect(service.checkAllPositions()).resolves.not.toThrow();
     });
@@ -1882,7 +1882,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockRejectedValue(new Error('API down')),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       await expect(service.checkAllPositions()).resolves.not.toThrow();
     });
@@ -1943,14 +1943,14 @@ describe('PositionMonitorService - Extended Coverage', () => {
         emitWalletUpdate: vi.fn(),
         emitRiskAlert: localEmitRiskAlert,
         emitLiquidationWarning: vi.fn(),
-      } as ReturnType<typeof getWebSocketService>);
+      } as unknown as ReturnType<typeof getWebSocketService>);
 
       const { user } = await createAuthenticatedUser();
       const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.15);
       const execution = await createTestExecution({
@@ -1980,14 +1980,14 @@ describe('PositionMonitorService - Extended Coverage', () => {
         emitWalletUpdate: vi.fn(),
         emitRiskAlert: localEmitRiskAlert,
         emitLiquidationWarning: vi.fn(),
-      } as ReturnType<typeof getWebSocketService>);
+      } as unknown as ReturnType<typeof getWebSocketService>);
 
       const { user } = await createAuthenticatedUser();
       const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.30);
       const execution = await createTestExecution({
@@ -2017,7 +2017,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
 
       vi.mocked(getBinanceFuturesDataService).mockReturnValue({
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
-      } as ReturnType<typeof getBinanceFuturesDataService>);
+      } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const liquidationPrice = 50000 * (1 - 0.05);
       const execution = await createTestExecution({

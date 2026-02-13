@@ -2,8 +2,6 @@ import type {
   Kline,
   ScreenerConfig,
   ScreenerFilterCondition,
-  ScreenerResultRow,
-  ScreenerSortField,
 } from '@marketmind/types';
 import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
 
@@ -166,7 +164,7 @@ const setupDbSelect = (rows: unknown[] = []) => {
 const setupMarketData = (coins: TopCoin[], tickers: Map<string, Ticker24hr> = new Map()) => {
   vi.mocked(getMarketCapDataService).mockReturnValue({
     getTopCoinsByMarketCap: vi.fn().mockResolvedValue(coins),
-  } as ReturnType<typeof getMarketCapDataService>);
+  } as unknown as ReturnType<typeof getMarketCapDataService>);
   vi.mocked(get24hrTickerData).mockResolvedValue(tickers);
 };
 
@@ -526,6 +524,7 @@ describe('ScreenerService', () => {
         maxConcurrent = Math.max(maxConcurrent, concurrent);
         await new Promise((r) => setTimeout(r, 10));
         concurrent--;
+        return { totalInDb: 0, downloaded: 0, gaps: 0, alreadyComplete: true };
       });
       setupDbSelect(makeKlines(5));
 
@@ -590,7 +589,7 @@ describe('ScreenerService', () => {
 
       const service = new ScreenerService();
       const config = makeConfig();
-      delete (config as Record<string, unknown>)['interval'];
+      delete (config as unknown as Record<string, unknown>)['interval'];
       await service.runScreener(config);
 
       expect(smartBackfillKlines).toHaveBeenCalledWith(
@@ -608,7 +607,7 @@ describe('ScreenerService', () => {
 
       const service = new ScreenerService();
       const config = makeConfig();
-      delete (config as Record<string, unknown>)['marketType'];
+      delete (config as unknown as Record<string, unknown>)['marketType'];
       await service.runScreener(config);
 
       expect(smartBackfillKlines).toHaveBeenCalledWith(
@@ -853,7 +852,7 @@ describe('ScreenerService', () => {
       setupDbSelect(makeKlines(5));
 
       const service = new ScreenerService();
-      const result = await service.runScreener(makeConfig({
+      await service.runScreener(makeConfig({
         filters: [makeCondition({ indicator: 'RSI', operator: 'ABOVE', value: 50 })],
       }));
 
@@ -1012,7 +1011,7 @@ describe('ScreenerService', () => {
       const service = new ScreenerService();
       const config = makeConfig({ sortBy: 'rsi' });
 
-      const first = await service.runScreener(config);
+      await service.runScreener(config);
       const second = await service.runScreener(config);
 
       expect(second.cachedAt).not.toBeNull();
@@ -1077,7 +1076,7 @@ describe('ScreenerService', () => {
     it('should handle MarketCapDataService failure', async () => {
       vi.mocked(getMarketCapDataService).mockReturnValue({
         getTopCoinsByMarketCap: vi.fn().mockRejectedValue(new Error('API down')),
-      } as ReturnType<typeof getMarketCapDataService>);
+      } as unknown as ReturnType<typeof getMarketCapDataService>);
 
       const service = new ScreenerService();
       await expect(service.runScreener(makeConfig())).rejects.toThrow('API down');
@@ -1087,7 +1086,7 @@ describe('ScreenerService', () => {
       const coins = [makeTopCoin('BTCUSDT')];
       vi.mocked(getMarketCapDataService).mockReturnValue({
         getTopCoinsByMarketCap: vi.fn().mockResolvedValue(coins),
-      } as ReturnType<typeof getMarketCapDataService>);
+      } as unknown as ReturnType<typeof getMarketCapDataService>);
       vi.mocked(get24hrTickerData).mockRejectedValue(new Error('Ticker fetch failed'));
 
       const service = new ScreenerService();
@@ -1137,7 +1136,7 @@ describe('ScreenerService', () => {
         getTopCoinsByMarketCap: vi.fn().mockResolvedValue(
           coins.map((c) => ({ ...c, name: undefined })),
         ),
-      } as ReturnType<typeof getMarketCapDataService>);
+      } as unknown as ReturnType<typeof getMarketCapDataService>);
       vi.mocked(get24hrTickerData).mockResolvedValue(tickerMap);
       setupDbSelect(makeKlines(5));
 

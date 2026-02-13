@@ -528,7 +528,7 @@ describe('IndicatorCache - Extended Coverage', () => {
         author: 'test',
         parameters: {},
         indicators: {
-          sma: { type: 'sma' },
+          sma: { type: 'sma', params: {} },
         },
         entry: {},
         exit: { stopLoss: { type: 'percent', value: 2 } },

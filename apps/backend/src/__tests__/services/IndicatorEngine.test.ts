@@ -1501,7 +1501,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1525,7 +1525,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1549,7 +1549,7 @@ describe('IndicatorEngine', () => {
         ]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1574,7 +1574,7 @@ describe('IndicatorEngine', () => {
           { side: 'SELL', price: '46000', quantity: '0.5', time: Date.now(), symbol: 'BTCUSDT' },
         ]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1594,14 +1594,14 @@ describe('IndicatorEngine', () => {
       const mockBtcService = {
         getBTCDominance: vi.fn().mockResolvedValue({ btcDominance: 55.3 }),
       };
-      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as ReturnType<typeof getBTCDominanceDataService>);
+      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as unknown as ReturnType<typeof getBTCDominanceDataService>);
 
       const mockService = {
         getFundingRate: vi.fn().mockResolvedValue([]),
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1622,7 +1622,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1645,7 +1645,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1664,7 +1664,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -1681,14 +1681,14 @@ describe('IndicatorEngine', () => {
       const mockBtcService = {
         getBTCDominance: vi.fn().mockResolvedValue(null),
       };
-      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as ReturnType<typeof getBTCDominanceDataService>);
+      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as unknown as ReturnType<typeof getBTCDominanceDataService>);
 
       const mockService = {
         getFundingRate: vi.fn().mockResolvedValue([]),
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2171,7 +2171,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2203,7 +2203,7 @@ describe('IndicatorEngine', () => {
         ]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const newEngine = new IndicatorEngine();
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2224,7 +2224,7 @@ describe('IndicatorEngine', () => {
         ]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2246,7 +2246,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2268,7 +2268,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2291,7 +2291,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2313,7 +2313,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
       const btcMock = vi.mocked(getBTCDominanceDataService);
       btcMock.mockClear();
 
@@ -2334,7 +2334,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2353,14 +2353,14 @@ describe('IndicatorEngine', () => {
       const mockBtcService = {
         getBTCDominance: vi.fn().mockResolvedValue({ btcDominance: 48.7 }),
       };
-      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as ReturnType<typeof getBTCDominanceDataService>);
+      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as unknown as ReturnType<typeof getBTCDominanceDataService>);
 
       const mockService = {
         getFundingRate: vi.fn().mockResolvedValue([]),
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2378,14 +2378,14 @@ describe('IndicatorEngine', () => {
       const mockBtcService = {
         getBTCDominance: vi.fn().mockResolvedValue(null),
       };
-      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as ReturnType<typeof getBTCDominanceDataService>);
+      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as unknown as ReturnType<typeof getBTCDominanceDataService>);
 
       const mockService = {
         getFundingRate: vi.fn().mockResolvedValue([]),
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2540,7 +2540,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2569,7 +2569,7 @@ describe('IndicatorEngine', () => {
         ]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(10);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2599,7 +2599,7 @@ describe('IndicatorEngine', () => {
           { side: 'SELL', price: '46000', quantity: '1', time: Date.now(), symbol: 'BTCUSDT' },
         ]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
@@ -2626,7 +2626,7 @@ describe('IndicatorEngine', () => {
         getOpenInterest: vi.fn().mockResolvedValue([]),
         getLiquidations: vi.fn().mockResolvedValue([]),
       };
-      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
       const klines = generateKlines(5);
       const indicators: Record<string, IndicatorDefinition> = {
