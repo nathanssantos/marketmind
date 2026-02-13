@@ -2,6 +2,7 @@ export interface UnifiedFilterConfig {
   useTrendFilter?: boolean;
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
+  useStochasticRecoveryFilter?: boolean;
   useMomentumTimingFilter?: boolean;
   useAdxFilter?: boolean;
 

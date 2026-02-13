@@ -34,6 +34,7 @@ vi.mock('../../../utils/filters', async (importOriginal) => {
     checkAdxCondition: vi.fn(() => ({ isAllowed: true, reason: 'ADX passed' })),
     STOCHASTIC_FILTER: { K_PERIOD: 14, K_SMOOTHING: 3, D_PERIOD: 3 },
     checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
+    checkStochasticRecoveryCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic Recovery passed' })),
     checkTrendCondition: vi.fn(() => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
     checkMomentumTiming: vi.fn(() => ({ isAllowed: true, rsiValue: 55, rsiMomentum: 'RISING', mfiValue: 60, reason: 'Momentum passed' })),
     MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20, RSI_PERIOD: 14, MFI_PERIOD: 14, RSI_LONG_MIN: 40, RSI_SHORT_MAX: 60, RSI_PULLBACK_LONG_MIN: 30, RSI_PULLBACK_SHORT_MAX: 70, MFI_LONG_MIN: 30, MFI_SHORT_MAX: 70 },
@@ -68,6 +69,7 @@ import {
   checkMtfCondition,
   checkSessionCondition,
   checkStochasticCondition,
+  checkStochasticRecoveryCondition,
   checkSupertrendCondition,
   checkTrendCondition,
   checkVolumeCondition,
@@ -347,6 +349,45 @@ describe('FilterManager', () => {
       const klines = createMockKlines(10);
 
       const result = customManager.checkStochasticFilter(klines, 5, 'LONG', 0);
+
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('checkStochasticRecoveryFilter', () => {
+    it('should allow when stochastic recovery filter disabled', () => {
+      const klines = createMockKlines(50);
+      const result = manager.checkStochasticRecoveryFilter(klines, 30, 'LONG', 0);
+      expect(result).toBe(true);
+      expect(checkStochasticRecoveryCondition).not.toHaveBeenCalled();
+    });
+
+    it('should call stochastic recovery condition check when enabled', () => {
+      const customManager = new FilterManager({ useStochasticRecoveryFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkStochasticRecoveryFilter(klines, 30, 'LONG', 0);
+
+      expect(result).toBe(true);
+      expect(checkStochasticRecoveryCondition).toHaveBeenCalled();
+    });
+
+    it('should block when stochastic recovery condition fails', () => {
+      vi.mocked(checkStochasticRecoveryCondition).mockReturnValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked: already crossed midpoint' });
+      const customManager = new FilterManager({ useStochasticRecoveryFilter: true });
+      const klines = createMockKlines(50);
+
+      const result = customManager.checkStochasticRecoveryFilter(klines, 30, 'LONG', 0);
+
+      expect(result).toBe(false);
+      expect(customManager.stats.skippedStochasticRecovery).toBe(1);
+    });
+
+    it('should allow when insufficient klines', () => {
+      const customManager = new FilterManager({ useStochasticRecoveryFilter: true });
+      const klines = createMockKlines(10);
+
+      const result = customManager.checkStochasticRecoveryFilter(klines, 5, 'LONG', 0);
 
       expect(result).toBe(true);
     });

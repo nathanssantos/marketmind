@@ -15,6 +15,7 @@ export interface PortfolioConfig {
   dailyLossLimitPercent: number;
   cooldownMinutes: number;
   useStochasticFilter: boolean;
+  useStochasticRecoveryFilter: boolean;
   useMomentumTimingFilter: boolean;
   useAdxFilter: boolean;
   useTrendFilter: boolean;

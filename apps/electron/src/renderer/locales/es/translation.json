@@ -350,6 +350,10 @@
           "title": "Estocástico Lento",
           "description": "LONG solo cuando sobrevendido (K<20). SHORT solo cuando sobrecomprado (K>80)."
         },
+        "stochasticRecovery": {
+          "title": "Estocástico Recuperación",
+          "description": "LONG si K fue debajo de 20 y aún no cruzó 50. SHORT si K fue arriba de 80 y aún no cruzó 50."
+        },
         "adx": {
           "title": "Dirección ADX",
           "description": "LONG cuando +DI > -DI, SHORT cuando -DI > +DI (requiere ADX >= 20)."

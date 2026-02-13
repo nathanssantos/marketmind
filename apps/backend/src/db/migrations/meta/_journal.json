@@ -442,6 +442,13 @@
       "when": 1770780300000,
       "tag": "0062_add_max_global_exposure_percent",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1770866700000,
+      "tag": "0063_add_stochastic_recovery_filter",
+      "breakpoints": true
     }
   ]
 }

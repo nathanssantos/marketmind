@@ -218,6 +218,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   positionMode: varchar('position_mode', { length: 10 }).$type<'ONE_WAY' | 'HEDGE'>().default('ONE_WAY'),
   useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
   useStochasticFilter: boolean('use_stochastic_filter').default(false).notNull(),
+  useStochasticRecoveryFilter: boolean('use_stochastic_recovery_filter').default(false).notNull(),
   useMomentumTimingFilter: boolean('use_momentum_timing_filter').default(true).notNull(),
   useAdxFilter: boolean('use_adx_filter').default(false).notNull(),
   useTrendFilter: boolean('use_trend_filter').default(false).notNull(),

@@ -175,6 +175,7 @@ export interface FilterResults {
   volume?: VolumeFilterResult | null;
   fundingRate?: FundingFilterResult | null;
   stochastic?: StochasticFilterResult | null;
+  stochasticRecovery?: StochasticFilterResult | null;
   momentumTiming?: MomentumTimingResult | null;
   adx?: AdxFilterResult | null;
   trend?: TrendFilterResult | null;

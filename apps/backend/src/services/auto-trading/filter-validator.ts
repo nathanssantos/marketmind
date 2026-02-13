@@ -9,6 +9,7 @@ import {
   checkMomentumTiming,
   checkMtfCondition,
   checkStochasticCondition,
+  checkStochasticRecoveryCondition,
   checkTrendCondition,
   checkVolumeCondition,
   getHigherTimeframe,
@@ -28,6 +29,7 @@ export interface FilterValidatorConfig {
   useConfluenceScoring: boolean;
   confluenceMinScore: number;
   useStochasticFilter: boolean;
+  useStochasticRecoveryFilter: boolean;
   useMomentumTimingFilter: boolean;
   useAdxFilter: boolean;
   useTrendFilter: boolean;
@@ -222,6 +224,23 @@ export class FilterValidator {
         };
       }
       logBuffer.addValidationCheck({ name: 'Stochastic', passed: true });
+    }
+
+    if (config.useStochasticRecoveryFilter) {
+      const result = this.checkStochasticRecoveryFilter(cycleKlines, setup, logBuffer);
+      if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'Stochastic Recovery',
+          passed: false,
+          reason: 'Not in recovery zone',
+        });
+        return {
+          passed: false,
+          filterResults,
+          rejectionReason: 'Stochastic Recovery filter failed',
+        };
+      }
+      logBuffer.addValidationCheck({ name: 'Stochastic Recovery', passed: true });
     }
 
     if (config.useMomentumTimingFilter) {
@@ -463,6 +482,32 @@ export class FilterValidator {
 
       logBuffer.addFilterCheck({
         filterName: 'Stochastic',
+        passed: stochResult.isAllowed,
+        reason: stochResult.reason ?? 'N/A',
+        details: { k: stochResult.currentK?.toFixed(1) ?? 'N/A' },
+      });
+
+      if (!stochResult.isAllowed) {
+        return { passed: false };
+      }
+    }
+
+    return { passed: true };
+  }
+
+  private checkStochasticRecoveryFilter(
+    cycleKlines: Kline[],
+    setup: TradingSetup,
+    logBuffer: WatcherLogBuffer
+  ): { passed: boolean } {
+    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
+    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
+
+    if (cycleKlines.length >= minRequired) {
+      const stochResult = checkStochasticRecoveryCondition(cycleKlines, setup.direction);
+
+      logBuffer.addFilterCheck({
+        filterName: 'Stochastic Recovery',
         passed: stochResult.isAllowed,
         reason: stochResult.reason ?? 'N/A',
         details: { k: stochResult.currentK?.toFixed(1) ?? 'N/A' },

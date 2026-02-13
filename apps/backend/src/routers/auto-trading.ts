@@ -126,6 +126,7 @@ export const autoTradingRouter = router({
         positionSizing: z.enum(['fixed', 'percentage', 'kelly']).optional(),
         useLimitOrders: z.boolean().optional(),
         useStochasticFilter: z.boolean().optional(),
+        useStochasticRecoveryFilter: z.boolean().optional(),
         useAdxFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
         useVolumeFilter: z.boolean().optional(),
@@ -234,6 +235,8 @@ export const autoTradingRouter = router({
         {updateData.useLimitOrders = input.useLimitOrders;}
       if (input.useStochasticFilter !== undefined)
         {updateData.useStochasticFilter = input.useStochasticFilter;}
+      if (input.useStochasticRecoveryFilter !== undefined)
+        {updateData.useStochasticRecoveryFilter = input.useStochasticRecoveryFilter;}
       if (input.useAdxFilter !== undefined)
         {updateData.useAdxFilter = input.useAdxFilter;}
       if (input.useTrendFilter !== undefined)

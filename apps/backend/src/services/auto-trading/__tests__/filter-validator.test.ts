@@ -8,6 +8,7 @@ vi.mock('../../../utils/filters', () => ({
   checkMarketRegime: vi.fn(),
   checkVolumeCondition: vi.fn(),
   checkStochasticCondition: vi.fn(),
+  checkStochasticRecoveryCondition: vi.fn(),
   checkMomentumTiming: vi.fn(),
   checkAdxCondition: vi.fn(),
   checkTrendCondition: vi.fn(),
@@ -30,6 +31,7 @@ import {
   checkMarketRegime,
   checkVolumeCondition,
   checkStochasticCondition,
+  checkStochasticRecoveryCondition,
   checkMomentumTiming,
   checkAdxCondition,
   checkTrendCondition,
@@ -101,6 +103,7 @@ const allDisabledConfig: FilterValidatorConfig = {
   useConfluenceScoring: false,
   confluenceMinScore: 50,
   useStochasticFilter: false,
+  useStochasticRecoveryFilter: false,
   useMomentumTimingFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,
@@ -581,6 +584,61 @@ describe('FilterValidator', () => {
         createWatcher(),
         createSetup(),
         { ...allDisabledConfig, useStochasticFilter: true },
+        createKlines(50),
+        [],
+        logBuffer,
+      );
+
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('stochastic recovery filter', () => {
+    it('should skip when klines are insufficient', async () => {
+      const result = await validator.validateFilters(
+        createWatcher(),
+        createSetup(),
+        { ...allDisabledConfig, useStochasticRecoveryFilter: true },
+        createKlines(10),
+        [],
+        logBuffer,
+      );
+
+      expect(result.passed).toBe(true);
+      expect(checkStochasticRecoveryCondition).not.toHaveBeenCalled();
+    });
+
+    it('should fail when stochastic recovery rejects', async () => {
+      vi.mocked(checkStochasticRecoveryCondition).mockReturnValue({
+        isAllowed: false,
+        currentK: 55,
+        reason: 'Already crossed midpoint',
+      } as never);
+
+      const result = await validator.validateFilters(
+        createWatcher(),
+        createSetup(),
+        { ...allDisabledConfig, useStochasticRecoveryFilter: true },
+        createKlines(50),
+        [],
+        logBuffer,
+      );
+
+      expect(result.passed).toBe(false);
+      expect(result.rejectionReason).toContain('Stochastic Recovery');
+    });
+
+    it('should pass when stochastic recovery allows', async () => {
+      vi.mocked(checkStochasticRecoveryCondition).mockReturnValue({
+        isAllowed: true,
+        currentK: 30,
+        reason: 'Recovering from oversold',
+      } as never);
+
+      const result = await validator.validateFilters(
+        createWatcher(),
+        createSetup(),
+        { ...allDisabledConfig, useStochasticRecoveryFilter: true },
         createKlines(50),
         [],
         logBuffer,

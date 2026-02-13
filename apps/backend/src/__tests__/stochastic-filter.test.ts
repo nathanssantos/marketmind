@@ -59,8 +59,8 @@ const createKlinesForSlowStoch = (targetK: 'oversold' | 'overbought' | 'neutral'
 };
 
 describe('checkStochasticCondition (Slow Stochastic)', () => {
-  describe('LONG direction - blocked when overbought', () => {
-    it('should allow LONG when K is oversold (not overbought)', () => {
+  describe('LONG direction - allowed only when oversold', () => {
+    it('should allow LONG when K is oversold (K < 20)', () => {
       const klines = createKlinesForSlowStoch('oversold');
       const result = checkStochasticCondition(klines, 'LONG');
 
@@ -69,34 +69,35 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.isOverbought).toBe(false);
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('LONG allowed');
-      expect(result.reason).toContain('not overbought');
+      expect(result.reason).toContain('oversold');
     });
 
-    it('should allow LONG when K is neutral (not overbought)', () => {
+    it('should block LONG when K is neutral (not oversold)', () => {
       const klines = createKlinesForSlowStoch('neutral');
       const result = checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
-      expect(result.isOverbought).toBe(false);
-      expect(result.isAllowed).toBe(true);
-      expect(result.reason).toContain('LONG allowed');
-      expect(result.reason).toContain('not overbought');
+      expect(result.isOversold).toBe(false);
+      expect(result.isAllowed).toBe(false);
+      expect(result.reason).toContain('LONG blocked');
+      expect(result.reason).toContain('not oversold');
     });
 
-    it('should block LONG when K is overbought', () => {
+    it('should block LONG when K is overbought (not oversold)', () => {
       const klines = createKlinesForSlowStoch('overbought');
       const result = checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOverbought).toBe(true);
+      expect(result.isOversold).toBe(false);
       expect(result.isAllowed).toBe(false);
       expect(result.reason).toContain('LONG blocked');
-      expect(result.reason).toContain('overbought');
+      expect(result.reason).toContain('not oversold');
     });
   });
 
-  describe('SHORT direction - blocked when oversold', () => {
-    it('should allow SHORT when K is overbought (not oversold)', () => {
+  describe('SHORT direction - allowed only when overbought', () => {
+    it('should allow SHORT when K is overbought (K > 80)', () => {
       const klines = createKlinesForSlowStoch('overbought');
       const result = checkStochasticCondition(klines, 'SHORT');
 
@@ -105,29 +106,30 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.isOversold).toBe(false);
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('SHORT allowed');
-      expect(result.reason).toContain('not oversold');
+      expect(result.reason).toContain('overbought');
     });
 
-    it('should allow SHORT when K is neutral (not oversold)', () => {
+    it('should block SHORT when K is neutral (not overbought)', () => {
       const klines = createKlinesForSlowStoch('neutral');
       const result = checkStochasticCondition(klines, 'SHORT');
 
       expect(result.currentK).not.toBeNull();
-      expect(result.isOversold).toBe(false);
-      expect(result.isAllowed).toBe(true);
-      expect(result.reason).toContain('SHORT allowed');
-      expect(result.reason).toContain('not oversold');
+      expect(result.isOverbought).toBe(false);
+      expect(result.isAllowed).toBe(false);
+      expect(result.reason).toContain('SHORT blocked');
+      expect(result.reason).toContain('not overbought');
     });
 
-    it('should block SHORT when K is oversold', () => {
+    it('should block SHORT when K is oversold (not overbought)', () => {
       const klines = createKlinesForSlowStoch('oversold');
       const result = checkStochasticCondition(klines, 'SHORT');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOversold).toBe(true);
+      expect(result.isOverbought).toBe(false);
       expect(result.isAllowed).toBe(false);
       expect(result.reason).toContain('SHORT blocked');
-      expect(result.reason).toContain('oversold');
+      expect(result.reason).toContain('not overbought');
     });
   });
 

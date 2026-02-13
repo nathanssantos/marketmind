@@ -25,6 +25,7 @@ import {
   checkMomentumTiming,
   checkMtfCondition,
   checkStochasticCondition,
+  checkStochasticRecoveryCondition,
   checkTrendCondition,
   checkVolumeCondition,
   getHigherTimeframe,
@@ -97,6 +98,7 @@ export class MultiWatcherBacktestEngine {
       dailyLossLimitPercent: 5,
       cooldownMinutes: this.config.cooldownMinutes ?? 15,
       useStochasticFilter: this.config.useStochasticFilter ?? false,
+      useStochasticRecoveryFilter: this.config.useStochasticRecoveryFilter ?? false,
       useMomentumTimingFilter: this.config.useMomentumTimingFilter ?? false,
       useAdxFilter: this.config.useAdxFilter ?? false,
       useTrendFilter: this.config.useTrendFilter ?? false,
@@ -444,6 +446,19 @@ export class MultiWatcherBacktestEngine {
         if (!stochResult.isAllowed) {
           stats.tradesSkipped++;
           stats.skippedReasons['stochastic'] = (stats.skippedReasons['stochastic'] ?? 0) + 1;
+          return { passed: false };
+        }
+      }
+    }
+
+    const globalStochasticRecoveryEnabled = this.config.useStochasticRecoveryFilter === true;
+    if (globalStochasticRecoveryEnabled) {
+      const requiredKlines = STOCHASTIC_FILTER.K_PERIOD + STOCHASTIC_FILTER.K_SMOOTHING + STOCHASTIC_FILTER.D_PERIOD;
+      if (klines.length >= requiredKlines) {
+        const stochRecoveryResult = checkStochasticRecoveryCondition(klines, direction);
+        if (!stochRecoveryResult.isAllowed) {
+          stats.tradesSkipped++;
+          stats.skippedReasons['stochasticRecovery'] = (stats.skippedReasons['stochasticRecovery'] ?? 0) + 1;
           return { passed: false };
         }
       }

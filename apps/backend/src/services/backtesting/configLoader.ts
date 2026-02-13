@@ -27,6 +27,7 @@ interface ConfigOverrides {
   useMomentumTimingFilter?: boolean;
   useTrendFilter?: boolean;
   useStochasticFilter?: boolean;
+  useStochasticRecoveryFilter?: boolean;
   useAdxFilter?: boolean;
 }
 
@@ -89,6 +90,7 @@ export const loadMultiWatcherConfigFromAutoTrading = async (
     positionSizePercent: parseFloat(config.positionSizePercent),
 
     useStochasticFilter: overrides?.useStochasticFilter ?? config.useStochasticFilter,
+    useStochasticRecoveryFilter: overrides?.useStochasticRecoveryFilter ?? config.useStochasticRecoveryFilter ?? false,
     useAdxFilter: overrides?.useAdxFilter ?? config.useAdxFilter,
 
     useMtfFilter: overrides?.useMtfFilter ?? config.useMtfFilter,
@@ -122,6 +124,7 @@ export const buildMultiWatcherConfigFromWatchers = (
     initialCapital: number;
     positionSizePercent?: number;
     useStochasticFilter?: boolean;
+    useStochasticRecoveryFilter?: boolean;
     useAdxFilter?: boolean;
     minRiskRewardRatio?: number;
     useCooldown?: boolean;
@@ -163,6 +166,7 @@ export const buildMultiWatcherConfigFromWatchers = (
     positionSizePercent: options.positionSizePercent ?? FILTER_DEFAULTS.positionSizePercent,
 
     useStochasticFilter: options.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
+    useStochasticRecoveryFilter: options.useStochasticRecoveryFilter ?? FILTER_DEFAULTS.useStochasticRecoveryFilter,
     useAdxFilter: options.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
     minRiskRewardRatio: options.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
     useCooldown: options.useCooldown ?? FILTER_DEFAULTS.useCooldown,

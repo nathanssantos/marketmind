@@ -2,6 +2,7 @@ export const FILTER_DEFAULTS = {
   useTrendFilter: false,
   trendFilterPeriod: 21,
   useStochasticFilter: false,
+  useStochasticRecoveryFilter: false,
   useMomentumTimingFilter: true,
   useAdxFilter: false,
 

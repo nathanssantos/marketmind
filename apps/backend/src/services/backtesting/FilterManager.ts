@@ -9,6 +9,7 @@ import {
   checkMomentumTiming,
   checkMtfCondition,
   checkStochasticCondition,
+  checkStochasticRecoveryCondition,
   checkTrendCondition,
   checkVolumeCondition,
   checkChoppinessCondition,
@@ -39,6 +40,7 @@ export interface FilterConfig {
   useTrendFilter?: boolean;
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
+  useStochasticRecoveryFilter?: boolean;
   useMomentumTimingFilter?: boolean;
   useAdxFilter?: boolean;
   useCooldown?: boolean;
@@ -85,6 +87,7 @@ export interface FilterStats {
   skippedRiskReward: number;
   skippedLimitExpired: number;
   skippedStochastic: number;
+  skippedStochasticRecovery: number;
   skippedMomentumTiming: number;
   skippedAdx: number;
   skippedMtf: number;
@@ -138,6 +141,7 @@ export class FilterManager {
     skippedRiskReward: 0,
     skippedLimitExpired: 0,
     skippedStochastic: 0,
+    skippedStochasticRecovery: 0,
     skippedMomentumTiming: 0,
     skippedAdx: 0,
     skippedMtf: 0,
@@ -270,6 +274,37 @@ export class FilterManager {
 
     if (tradesCount < 3) {
       console.log(`[FilterManager] Stochastic filter passed ${direction} trade - ${result.reason}`);
+    }
+
+    return true;
+  }
+
+  checkStochasticRecoveryFilter(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): boolean {
+    if (!this.config.useStochasticRecoveryFilter) return true;
+
+    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
+    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
+    if (setupIndex < minRequired) return true;
+
+    const stochasticKlines = klines.slice(0, setupIndex + 1);
+    const result = checkStochasticRecoveryCondition(stochasticKlines, direction);
+
+    if (!result.isAllowed) {
+      this.stats.skippedStochasticRecovery++;
+      if (tradesCount < 3) {
+        const currK = result.currentK?.toFixed(2) ?? 'null';
+        console.log(`[FilterManager] Stochastic Recovery filter blocked ${direction} trade - currK=${currK}, ${result.reason}`);
+      }
+      return false;
+    }
+
+    if (tradesCount < 3) {
+      console.log(`[FilterManager] Stochastic Recovery filter passed ${direction} trade - ${result.reason}`);
     }
 
     return true;

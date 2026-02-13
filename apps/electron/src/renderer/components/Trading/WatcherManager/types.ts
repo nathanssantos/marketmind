@@ -16,6 +16,7 @@ export interface WatcherConfig {
   directionMode?: 'auto' | 'long_only' | 'short_only' | null;
   useMomentumTimingFilter?: boolean | null;
   useStochasticFilter?: boolean | null;
+  useStochasticRecoveryFilter?: boolean | null;
   useAdxFilter?: boolean | null;
   useVolumeFilter?: boolean | null;
   useFundingFilter?: boolean | null;

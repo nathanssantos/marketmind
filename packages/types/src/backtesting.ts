@@ -34,7 +34,8 @@ export interface BacktestConfig {
   takeProfitPercent?: number; // TP as % of entry (ignored if useAlgorithmicLevels = true)
   commission?: number; // Trading fee % (default 0.1% spot, 0.04% futures)
   slippagePercent?: number; // Slippage % for market orders - SL (default 0.05%)
-  useStochasticFilter?: boolean; // Slow Stochastic: LONG only when oversold (K < 20), SHORT only when overbought (K > 80)
+  useStochasticFilter?: boolean; // Slow Stochastic: LONG only when K < 20 (oversold), SHORT only when K > 80 (overbought)
+  useStochasticRecoveryFilter?: boolean; // Stochastic Recovery: LONG if K went below 20 and hasn't crossed 50 yet, SHORT if K went above 80 and hasn't crossed 50 yet
   useMomentumTimingFilter?: boolean; // RSI + MFI: LONG when RSI > 40 and rising with MFI > 30, SHORT when RSI < 60 and falling with MFI < 70
   useAdxFilter?: boolean; // Only allow LONG when +DI > -DI, SHORT when -DI > +DI (ADX >= 20)
 

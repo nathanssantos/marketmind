@@ -50,19 +50,19 @@ export const checkStochasticCondition = (
   const isOversold = currentK < OVERSOLD_THRESHOLD;
   const isOverbought = currentK > OVERBOUGHT_THRESHOLD;
 
-  const isLongAllowed = direction === 'LONG' && !isOverbought;
-  const isShortAllowed = direction === 'SHORT' && !isOversold;
+  const isLongAllowed = direction === 'LONG' && isOversold;
+  const isShortAllowed = direction === 'SHORT' && isOverbought;
   const isAllowed = isLongAllowed || isShortAllowed;
 
   let reason: string;
   if (direction === 'LONG') {
     reason = isAllowed
-      ? `LONG allowed: Slow Stoch K (${currentK.toFixed(2)}) is not overbought (≤ ${OVERBOUGHT_THRESHOLD})`
-      : `LONG blocked: Slow Stoch K (${currentK.toFixed(2)}) is overbought (> ${OVERBOUGHT_THRESHOLD})`;
+      ? `LONG allowed: Slow Stoch K (${currentK.toFixed(2)}) is oversold (< ${OVERSOLD_THRESHOLD})`
+      : `LONG blocked: Slow Stoch K (${currentK.toFixed(2)}) is not oversold (≥ ${OVERSOLD_THRESHOLD})`;
   } else {
     reason = isAllowed
-      ? `SHORT allowed: Slow Stoch K (${currentK.toFixed(2)}) is not oversold (≥ ${OVERSOLD_THRESHOLD})`
-      : `SHORT blocked: Slow Stoch K (${currentK.toFixed(2)}) is oversold (< ${OVERSOLD_THRESHOLD})`;
+      ? `SHORT allowed: Slow Stoch K (${currentK.toFixed(2)}) is overbought (> ${OVERBOUGHT_THRESHOLD})`
+      : `SHORT blocked: Slow Stoch K (${currentK.toFixed(2)}) is not overbought (≤ ${OVERBOUGHT_THRESHOLD})`;
   }
 
   return {

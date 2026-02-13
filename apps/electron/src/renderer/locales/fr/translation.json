@@ -343,6 +343,10 @@
           "title": "Stochastique Lent",
           "description": "LONG uniquement en survente (K<20). SHORT uniquement en surachat (K>80)."
         },
+        "stochasticRecovery": {
+          "title": "Stochastique Récupération",
+          "description": "LONG si K est descendu sous 20 et n'a pas encore franchi 50. SHORT si K est monté au-dessus de 80 et n'a pas encore franchi 50."
+        },
         "adx": {
           "title": "Direction ADX",
           "description": "LONG quand +DI > -DI, SHORT quand -DI > +DI (nécessite ADX >= 20)."

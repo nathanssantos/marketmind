@@ -64,6 +64,7 @@ export class BacktestEngine {
         useTrendFilter: effectiveConfig.useTrendFilter,
         trendFilterPeriod: effectiveConfig.trendFilterPeriod,
         useStochasticFilter: effectiveConfig.useStochasticFilter,
+        useStochasticRecoveryFilter: effectiveConfig.useStochasticRecoveryFilter,
         useAdxFilter: effectiveConfig.useAdxFilter,
         useCooldown: effectiveConfig.useCooldown,
         cooldownMinutes: effectiveConfig.cooldownMinutes,
@@ -298,6 +299,7 @@ export class BacktestEngine {
       minRiskRewardRatioShort: config.minRiskRewardRatioShort ?? FILTER_DEFAULTS.minRiskRewardRatioShort,
       positionSizePercent: config.positionSizePercent ?? FILTER_DEFAULTS.positionSizePercent,
       useStochasticFilter: config.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
+      useStochasticRecoveryFilter: config.useStochasticRecoveryFilter ?? FILTER_DEFAULTS.useStochasticRecoveryFilter,
       useAdxFilter: config.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
       useVolumeFilter: config.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
       useTrendFilter: config.useTrendFilter ?? FILTER_DEFAULTS.useTrendFilter,
@@ -414,6 +416,7 @@ export class BacktestEngine {
       const setupIndex = klineIndexMap.get(setup.openTime) ?? -1;
 
       if (!filterManager.checkStochasticFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
+      if (!filterManager.checkStochasticRecoveryFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
       if (!filterManager.checkAdxFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
 
       const entryKline = klineMap.get(setup.openTime);
@@ -747,6 +750,7 @@ export class BacktestEngine {
           useTrendFilter: effectiveConfig.useTrendFilter,
           trendFilterPeriod: effectiveConfig.trendFilterPeriod,
           useStochasticFilter: effectiveConfig.useStochasticFilter,
+          useStochasticRecoveryFilter: effectiveConfig.useStochasticRecoveryFilter,
           useAdxFilter: effectiveConfig.useAdxFilter,
           useCooldown: effectiveConfig.useCooldown,
           cooldownMinutes: effectiveConfig.cooldownMinutes,

@@ -165,6 +165,13 @@ export const FiltersSection = ({
                 disabled={isPending}
               />
               <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.stochasticRecovery.title')}
+                description={t('settings.algorithmicAutoTrading.filters.stochasticRecovery.description')}
+                checked={config?.useStochasticRecoveryFilter ?? false}
+                onChange={(value) => onFilterToggle('useStochasticRecoveryFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.adx.title')}
                 description={t('settings.algorithmicAutoTrading.filters.adx.description')}
                 checked={config?.useAdxFilter ?? false}

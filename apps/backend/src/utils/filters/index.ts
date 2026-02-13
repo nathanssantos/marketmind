@@ -4,6 +4,7 @@ export * from './market-regime-filter';
 export * from './volume-filter';
 export * from './funding-filter';
 export * from './stochastic-filter';
+export * from './stochastic-recovery-filter';
 export * from './momentum-timing-filter';
 export * from './adx-filter';
 export * from './trend-filter';
