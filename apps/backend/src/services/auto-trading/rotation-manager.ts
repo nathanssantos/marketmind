@@ -20,7 +20,7 @@ import {
 } from '../dynamic-symbol-rotation';
 import { getKlineMaintenance } from '../kline-maintenance';
 import { prefetchKlines } from '../kline-prefetch';
-import type { RotationManagerDeps, RotationPendingWatcher, WalletRotationState } from './types';
+import type { ActiveWatcher, RotationManagerDeps, RotationPendingWatcher, WalletRotationState } from './types';
 import { getRotationStateKey } from './types';
 import { log, getCandleCloseTime, getNextCandleCloseTime, getRotationAnticipationMs } from './utils';
 
@@ -35,6 +35,19 @@ export class RotationManager {
   private readonly ANTICIPATION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.ANTICIPATION_CHECK_INTERVAL_MS;
 
   constructor(private deps: RotationManagerDeps) {}
+
+  private countDynamicWatchersForInterval(
+    watchers: Map<string, ActiveWatcher>,
+    walletId: string,
+    interval: string,
+    marketType: MarketType
+  ): number {
+    let count = 0;
+    for (const watcher of watchers.values()) {
+      if (watcher.walletId === walletId && !watcher.isManual && watcher.interval === interval && watcher.marketType === marketType) count++;
+    }
+    return count;
+  }
 
   getRotationPendingWatcher(watcherId: string): RotationPendingWatcher | undefined {
     return this.rotationPendingWatchers.get(watcherId);
@@ -264,10 +277,15 @@ export class RotationManager {
     }
 
     const activeWatchers = this.deps.getActiveWatchers();
-    const symbolsToAdd = result.added.filter(symbol => {
-      const existingWatcher = activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
-      return !existingWatcher;
-    });
+    const currentDynamicCount = this.countDynamicWatchersForInterval(activeWatchers, walletId, interval, marketType);
+    const maxToAdd = Math.max(0, result.targetLimit - currentDynamicCount);
+
+    const symbolsToAdd = result.added
+      .filter(symbol => {
+        const existingWatcher = activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
+        return !existingWatcher;
+      })
+      .slice(0, maxToAdd);
 
     if (symbolsToAdd.length > 0) {
       log('> [DynamicRotation] Backfilling new symbols', {
@@ -468,8 +486,14 @@ export class RotationManager {
     const klineMaintenance = getKlineMaintenance();
     const validations: Array<{ symbol: string; gapsFilled: number; corruptedFixed: number }> = [];
 
+    const activeWatchers = this.deps.getActiveWatchers();
+    const currentDynamicCount = this.countDynamicWatchersForInterval(activeWatchers, walletId, interval, marketType);
+    const maxToAdd = Math.max(0, result.targetLimit - currentDynamicCount);
+
     const symbolsToAdd: string[] = [];
     for (const symbol of result.added) {
+      if (symbolsToAdd.length >= maxToAdd) break;
+
       const existingWatcher = await db
         .select()
         .from(activeWatchersTable)
@@ -658,25 +682,30 @@ export class RotationManager {
       isManual: boolean;
       profileId: string | null;
     }>,
-    getDynamicWatcherCount: (walletId: string) => number
+    _getDynamicWatcherCount: (walletId: string) => number
   ): Promise<void> {
     const dynamicWatchersByWallet = new Map<string, {
       userId: string;
       interval: string;
       marketType: MarketType;
       profileId?: string;
+      count: number;
     }>();
 
     for (const pw of persistedWatchers) {
       if (pw.isManual) continue;
 
       const key = `${pw.walletId}:${pw.interval}`;
-      if (!dynamicWatchersByWallet.has(key)) {
+      const existing = dynamicWatchersByWallet.get(key);
+      if (existing) {
+        existing.count++;
+      } else {
         dynamicWatchersByWallet.set(key, {
           userId: pw.userId,
           interval: pw.interval,
           marketType: (pw.marketType as MarketType) ?? 'FUTURES',
           profileId: pw.profileId ?? undefined,
+          count: 1,
         });
       }
     }
@@ -709,8 +738,7 @@ export class RotationManager {
       if (!config?.useDynamicSymbolSelection) continue;
 
       try {
-        const activeCount = getDynamicWatcherCount(walletId);
-        const targetCount = activeCount > 0 ? activeCount : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
+        const targetCount = watcherInfo.count > 0 ? watcherInfo.count : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
 
         await this.startDynamicRotation(walletId, watcherInfo.userId, {
           useDynamicSymbolSelection: true,

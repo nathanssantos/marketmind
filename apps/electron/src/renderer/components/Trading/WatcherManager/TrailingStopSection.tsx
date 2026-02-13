@@ -1,8 +1,8 @@
 import { Slider } from '@/renderer/components/ui/slider';
 import { Switch } from '@/renderer/components/ui/switch';
-import { Box, Collapsible, Flex, HStack, Text, VStack } from '@chakra-ui/react';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
 export interface TrailingStopSectionProps {
   isExpanded: boolean;
@@ -61,7 +61,7 @@ export const TrailingStopSection = ({
   const gapSize = compact ? 2 : 4;
 
   const content = (
-    <VStack gap={gapSize} mt={compact ? 0 : 4} align="stretch">
+    <VStack gap={gapSize} align="stretch">
       <HStack justify="space-between" p={sectionPadding} bg="bg.subtle" borderRadius="md">
         <Box>
           <Text fontSize={labelSize} fontWeight="medium">
@@ -316,33 +316,14 @@ export const TrailingStopSection = ({
   if (compact) return <Box>{content}</Box>;
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={onToggle}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
-        <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('watcherManager.trailingStop.title')}
-          </Text>
-          <Text fontSize="sm" color="fg.muted">
-            {t('watcherManager.trailingStop.description')}
-          </Text>
-        </Box>
-        {isExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
-
-      <Collapsible.Root open={isExpanded}>
-        <Collapsible.Content>
-          {content}
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+    <CollapsibleSection
+      title={t('watcherManager.trailingStop.title')}
+      description={t('watcherManager.trailingStop.description')}
+      open={isExpanded}
+      onOpenChange={onToggle}
+      size="lg"
+    >
+      {content}
+    </CollapsibleSection>
   );
 };

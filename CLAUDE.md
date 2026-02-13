@@ -64,6 +64,25 @@
 14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
 15. **🔴 CRITICAL - All Tests Must Pass:** NEVER commit code with failing tests. ALWAYS run `npm run test:run` before committing. If tests fail, FIX THEM FIRST. Breaking tests is NEVER acceptable. Zero tolerance for broken tests in commits.
 
+### UI Component Standards
+
+All frontend UI code must follow the standards defined in `docs/UI_STYLE_GUIDE.md` and `apps/electron/src/renderer/components/ui/README.md`. These documents are living references and must be updated whenever components are created, modified, or deprecated.
+
+**Import rules:**
+- Interactive/composite components (`Button`, `Input`, `Switch`, `Slider`, `Select`, `CollapsibleSection`, `Dialog`, `Tabs`, etc.) must come from `@/renderer/components/ui/` or `@renderer/components/ui/`
+- Layout primitives (`Box`, `Flex`, `Stack`, `Text`, `Grid`, etc.) come from `@chakra-ui/react`
+- Never import `Button`, `Input`, `Switch`, or other interactive components directly from `@chakra-ui/react`
+
+**Style rules:**
+- All colors via semantic tokens (never hardcoded)
+- Use theme recipes for repeated patterns (badge variants, collapsible sections)
+- Inline style props only for layout-specific context (spacing, dimensions)
+- Consult `docs/UI_STYLE_GUIDE.md` for the full style hierarchy
+
+**Documentation maintenance:**
+- When adding/modifying UI components, update `docs/UI_STYLE_GUIDE.md` and `apps/electron/src/renderer/components/ui/README.md`
+- When adding new recipes to the theme, document them in the Style Guide
+
 ### Git Workflow
 
 ```bash

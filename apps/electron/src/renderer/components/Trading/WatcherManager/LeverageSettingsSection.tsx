@@ -1,8 +1,8 @@
-import { Box, Collapsible, Flex, Group, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
 export interface LeverageSettingsSectionProps {
   isExpanded: boolean;
@@ -26,31 +26,14 @@ export const LeverageSettingsSection = ({
   const { t } = useTranslation();
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={onToggle}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
-        <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('settings.algorithmicAutoTrading.leverage.title', 'Futures Settings')}
-          </Text>
-          <Text fontSize="sm" color="fg.muted">
-            {t('settings.algorithmicAutoTrading.leverage.description', 'Configure leverage and margin type for futures trading')}
-          </Text>
-        </Box>
-        {isExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
-
-      <Collapsible.Root open={isExpanded}>
-        <Collapsible.Content>
-          <Stack gap={4} mt={4}>
+    <CollapsibleSection
+      title={t('settings.algorithmicAutoTrading.leverage.title', 'Futures Settings')}
+      description={t('settings.algorithmicAutoTrading.leverage.description', 'Configure leverage and margin type for futures trading')}
+      open={isExpanded}
+      onOpenChange={onToggle}
+      size="lg"
+    >
+          <Stack gap={4}>
             <Flex gap={4} align="flex-end" wrap="wrap">
               <Box flex="0 0 120px">
                 <Text fontSize="sm" fontWeight="medium" mb={1}>
@@ -95,8 +78,6 @@ export const LeverageSettingsSection = ({
               </Text>
             </Box>
           </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+    </CollapsibleSection>
   );
 };

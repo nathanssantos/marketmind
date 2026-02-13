@@ -641,10 +641,15 @@ export class AutoTradingScheduler {
       await this.stopWatcher(walletId, symbol, interval, marketType);
     }
 
-    const symbolsToAdd = result.added.filter(symbol => {
-      const existingWatcher = this.activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
-      return !existingWatcher;
-    });
+    const currentDynamicCount = this.countDynamicWatchersForInterval(walletId, interval, marketType);
+    const maxToAdd = Math.max(0, result.targetLimit - currentDynamicCount);
+
+    const symbolsToAdd = result.added
+      .filter(symbol => {
+        const existingWatcher = this.activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
+        return !existingWatcher;
+      })
+      .slice(0, maxToAdd);
 
     if (symbolsToAdd.length > 0) {
       log('> [DynamicRotation] Backfilling new symbols', {
@@ -1185,7 +1190,7 @@ export class AutoTradingScheduler {
       if (!config?.useDynamicSymbolSelection) continue;
 
       try {
-        const activeCount = this.getDynamicWatcherCount(walletId);
+        const activeCount = this.countDynamicWatchersForInterval(walletId, watcherInfo.interval, watcherInfo.marketType);
         const targetCount = activeCount > 0 ? activeCount : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
 
         await this.startDynamicRotation(walletId, watcherInfo.userId, {
@@ -1359,8 +1364,13 @@ export class AutoTradingScheduler {
     const klineMaintenance = getKlineMaintenance();
     const validations: Array<{ symbol: string; gapsFilled: number; corruptedFixed: number }> = [];
 
+    const currentDynamicCount = this.countDynamicWatchersForInterval(walletId, interval, marketType);
+    const maxToAdd = Math.max(0, result.targetLimit - currentDynamicCount);
+
     const symbolsToAdd: string[] = [];
     for (const symbol of result.added) {
+      if (symbolsToAdd.length >= maxToAdd) break;
+
       const existingWatcher = await db
         .select()
         .from(activeWatchersTable)
@@ -1494,6 +1504,14 @@ export class AutoTradingScheduler {
       if (watcher.walletId === walletId && !watcher.isManual) {
         count++;
       }
+    }
+    return count;
+  }
+
+  private countDynamicWatchersForInterval(walletId: string, interval: string, marketType: MarketType): number {
+    let count = 0;
+    for (const watcher of this.activeWatchers.values()) {
+      if (watcher.walletId === walletId && !watcher.isManual && watcher.interval === interval && watcher.marketType === marketType) count++;
     }
     return count;
   }

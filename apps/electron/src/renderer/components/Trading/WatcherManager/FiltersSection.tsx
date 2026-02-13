@@ -1,7 +1,8 @@
-import { Box, Collapsible, Flex, Grid, HStack, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, Grid, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
+import { LuArrowUpDown, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { FilterToggle } from './FilterToggle';
 import type { WatcherConfig } from './types';
 import type { DirectionMode } from './WatchersList';
@@ -30,31 +31,14 @@ export const FiltersSection = ({
   const { t } = useTranslation();
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={onToggle}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
-        <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('settings.algorithmicAutoTrading.filters.title')}
-          </Text>
-          <Text fontSize="sm" color="fg.muted">
-            {t('settings.algorithmicAutoTrading.filters.description')}
-          </Text>
-        </Box>
-        {isExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
-
-      <Collapsible.Root open={isExpanded}>
-        <Collapsible.Content>
-          <Stack gap={4} mt={4}>
+    <CollapsibleSection
+      title={t('settings.algorithmicAutoTrading.filters.title')}
+      description={t('settings.algorithmicAutoTrading.filters.description')}
+      open={isExpanded}
+      onOpenChange={onToggle}
+      size="lg"
+    >
+          <Stack gap={4}>
             <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
               {t('settings.algorithmicAutoTrading.filters.directionFilters')}
             </Text>
@@ -255,8 +239,6 @@ export const FiltersSection = ({
               />
             </Grid>
           </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+    </CollapsibleSection>
   );
 };

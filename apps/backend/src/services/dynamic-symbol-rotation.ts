@@ -53,6 +53,7 @@ export interface RotationResult {
   added: string[];
   removed: string[];
   kept: string[];
+  targetLimit: number;
   skippedInsufficientKlines: string[];
   skippedInsufficientCapital: string[];
   skippedTrend: string[];
@@ -311,7 +312,9 @@ export class DynamicSymbolRotationService {
         .where(
           and(
             eq(activeWatchers.walletId, walletId),
-            eq(activeWatchers.isManual, false)
+            eq(activeWatchers.isManual, false),
+            eq(activeWatchers.interval, config.interval),
+            eq(activeWatchers.marketType, config.marketType)
           )
         );
 
@@ -401,6 +404,7 @@ export class DynamicSymbolRotationService {
         added: toAdd,
         removed: toRemove,
         kept,
+        targetLimit: config.limit,
         skippedInsufficientKlines,
         skippedInsufficientCapital,
         skippedTrend,
@@ -445,6 +449,7 @@ export class DynamicSymbolRotationService {
         added: [],
         removed: [],
         kept: [],
+        targetLimit: config.limit,
         skippedInsufficientKlines: [],
         skippedInsufficientCapital: [],
         skippedTrend: [],

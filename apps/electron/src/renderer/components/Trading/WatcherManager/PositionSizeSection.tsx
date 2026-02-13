@@ -1,7 +1,7 @@
 import { Slider } from '@/renderer/components/ui/slider';
-import { Box, Collapsible, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
 export interface PositionSizeSectionProps {
   isExpanded: boolean;
@@ -25,85 +25,66 @@ export const PositionSizeSection = ({
   const { t } = useTranslation();
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={onToggle}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
+    <CollapsibleSection
+      title={t('watcherManager.positionSize.title')}
+      description={t('watcherManager.positionSize.description')}
+      open={isExpanded}
+      onOpenChange={onToggle}
+      size="lg"
+    >
+      <Stack gap={6}>
         <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('watcherManager.positionSize.title')}
+          <Text fontSize="sm" fontWeight="semibold" mb={2}>
+            {t('watcherManager.positionSize.globalExposure')}
           </Text>
-          <Text fontSize="sm" color="fg.muted">
-            {t('watcherManager.positionSize.description')}
+          <Text fontSize="xs" color="fg.muted" mb={4}>
+            {t('watcherManager.positionSize.globalExposureDescription')}
           </Text>
+          <HStack gap={4}>
+            <Slider
+              value={[maxGlobalExposurePercent]}
+              onValueChange={(values) => onMaxGlobalExposureChange(values[0] ?? 100)}
+              min={1}
+              max={100}
+              step={1}
+              width="full"
+            />
+            <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
+              {maxGlobalExposurePercent}%
+            </Text>
+          </HStack>
+          <HStack justify="space-between" mt={2}>
+            <Text fontSize="xs" color="fg.muted">1%</Text>
+            <Text fontSize="xs" color="fg.muted">100%</Text>
+          </HStack>
         </Box>
-        {isExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
 
-      <Collapsible.Root open={isExpanded}>
-        <Collapsible.Content>
-          <Stack gap={6} mt={4}>
-            <Box>
-              <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                {t('watcherManager.positionSize.globalExposure')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted" mb={4}>
-                {t('watcherManager.positionSize.globalExposureDescription')}
-              </Text>
-              <HStack gap={4}>
-                <Slider
-                  value={[maxGlobalExposurePercent]}
-                  onValueChange={(values) => onMaxGlobalExposureChange(values[0] ?? 100)}
-                  min={1}
-                  max={100}
-                  step={1}
-                  width="full"
-                />
-                <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
-                  {maxGlobalExposurePercent}%
-                </Text>
-              </HStack>
-              <HStack justify="space-between" mt={2}>
-                <Text fontSize="xs" color="fg.muted">1%</Text>
-                <Text fontSize="xs" color="fg.muted">100%</Text>
-              </HStack>
-            </Box>
-
-            <Box>
-              <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                {t('watcherManager.positionSize.sizePercent')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted" mb={4}>
-                {t('watcherManager.positionSize.sizePercentDescription')}
-              </Text>
-              <HStack gap={4}>
-                <Slider
-                  value={[positionSizePercent]}
-                  onValueChange={(values) => onPositionSizeChange(values[0] ?? 10)}
-                  min={1}
-                  max={100}
-                  step={1}
-                  width="full"
-                />
-                <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
-                  {positionSizePercent}%
-                </Text>
-              </HStack>
-              <HStack justify="space-between" mt={2}>
-                <Text fontSize="xs" color="fg.muted">1%</Text>
-                <Text fontSize="xs" color="fg.muted">100%</Text>
-              </HStack>
-            </Box>
-          </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+        <Box>
+          <Text fontSize="sm" fontWeight="semibold" mb={2}>
+            {t('watcherManager.positionSize.sizePercent')}
+          </Text>
+          <Text fontSize="xs" color="fg.muted" mb={4}>
+            {t('watcherManager.positionSize.sizePercentDescription')}
+          </Text>
+          <HStack gap={4}>
+            <Slider
+              value={[positionSizePercent]}
+              onValueChange={(values) => onPositionSizeChange(values[0] ?? 10)}
+              min={1}
+              max={100}
+              step={1}
+              width="full"
+            />
+            <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
+              {positionSizePercent}%
+            </Text>
+          </HStack>
+          <HStack justify="space-between" mt={2}>
+            <Text fontSize="xs" color="fg.muted">1%</Text>
+            <Text fontSize="xs" color="fg.muted">100%</Text>
+          </HStack>
+        </Box>
+      </Stack>
+    </CollapsibleSection>
   );
 };

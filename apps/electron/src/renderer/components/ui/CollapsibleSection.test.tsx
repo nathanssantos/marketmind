@@ -1,6 +1,6 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -142,5 +142,82 @@ describe('CollapsibleSection', () => {
       </ChakraProvider>
     );
     expect(screen.getByText('Medium')).toBeInTheDocument();
+  });
+
+  it('should render description', () => {
+    renderWithChakra(
+      <CollapsibleSection title="Settings" description="Configure your preferences">
+        <span>Content</span>
+      </CollapsibleSection>
+    );
+
+    expect(screen.getByText('Configure your preferences')).toBeInTheDocument();
+  });
+
+  it('should not render description when not provided', () => {
+    renderWithChakra(
+      <CollapsibleSection title="Settings">
+        <span>Content</span>
+      </CollapsibleSection>
+    );
+
+    expect(screen.queryByText('Configure your preferences')).not.toBeInTheDocument();
+  });
+
+  it('should support size lg', () => {
+    renderWithChakra(
+      <CollapsibleSection title="Large Section" size="lg" description="A large section">
+        <span>Content</span>
+      </CollapsibleSection>
+    );
+
+    expect(screen.getByText('Large Section')).toBeInTheDocument();
+    expect(screen.getByText('A large section')).toBeInTheDocument();
+  });
+
+  it('should work in controlled mode with open prop', async () => {
+    const onOpenChange = vi.fn();
+    const user = userEvent.setup();
+
+    const { rerender } = renderWithChakra(
+      <CollapsibleSection title="Controlled" open={false} onOpenChange={onOpenChange}>
+        <span data-testid="content">Content</span>
+      </CollapsibleSection>
+    );
+
+    expect(screen.getByTestId('content').closest('[data-state]')).toHaveAttribute('data-state', 'closed');
+
+    await user.click(screen.getByText('Controlled'));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId('content').closest('[data-state]')).toHaveAttribute('data-state', 'closed');
+
+    rerender(
+      <ChakraProvider value={defaultSystem}>
+        <CollapsibleSection title="Controlled" open={true} onOpenChange={onOpenChange}>
+          <span data-testid="content">Content</span>
+        </CollapsibleSection>
+      </ChakraProvider>
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('content').closest('[data-state]')).toHaveAttribute('data-state', 'open');
+    });
+  });
+
+  it('should not update internal state in controlled mode', async () => {
+    const onOpenChange = vi.fn();
+    const user = userEvent.setup();
+
+    renderWithChakra(
+      <CollapsibleSection title="Controlled" open={false} onOpenChange={onOpenChange}>
+        <span data-testid="content">Content</span>
+      </CollapsibleSection>
+    );
+
+    await user.click(screen.getByText('Controlled'));
+    await user.click(screen.getByText('Controlled'));
+
+    const content = screen.getByTestId('content');
+    expect(content.closest('[data-state]')).toHaveAttribute('data-state', 'closed');
+    expect(onOpenChange).toHaveBeenCalledTimes(2);
   });
 });

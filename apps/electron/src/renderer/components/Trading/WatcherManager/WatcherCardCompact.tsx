@@ -75,26 +75,25 @@ export const WatcherCardCompact = ({
         <Box
           px={1.5}
           py={0.5}
-          bg="blue.100"
-          color="blue.800"
+          bg={{ base: 'blue.100', _dark: 'blue.900' }}
+          color={{ base: 'blue.800', _dark: 'blue.200' }}
           borderRadius="sm"
           fontSize="2xs"
-          _dark={{ bg: 'blue.900', color: 'blue.200' }}
         >
           {interval}
         </Box>
         <Box
           px={1.5}
           py={0.5}
-          bg={marketType === 'FUTURES' ? 'orange.100' : 'green.100'}
-          color={marketType === 'FUTURES' ? 'orange.800' : 'green.800'}
+          bg={marketType === 'FUTURES'
+            ? { base: 'orange.100', _dark: 'orange.900' }
+            : { base: 'green.100', _dark: 'green.900' }}
+          color={marketType === 'FUTURES'
+            ? { base: 'orange.800', _dark: 'orange.200' }
+            : { base: 'green.800', _dark: 'green.200' }}
           borderRadius="sm"
           fontSize="2xs"
           fontWeight="medium"
-          _dark={{
-            bg: marketType === 'FUTURES' ? 'orange.900' : 'green.900',
-            color: marketType === 'FUTURES' ? 'orange.200' : 'green.200',
-          }}
         >
           {marketType}
         </Box>

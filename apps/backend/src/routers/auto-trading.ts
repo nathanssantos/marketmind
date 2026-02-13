@@ -194,6 +194,16 @@ export const autoTradingRouter = router({
         superTrendPeriod: z.number().min(5).max(50).optional(),
         superTrendMultiplier: z.string().optional(),
         directionMode: z.enum(['auto', 'long_only', 'short_only']).optional(),
+        minRiskRewardRatioLong: z.string().optional(),
+        minRiskRewardRatioShort: z.string().optional(),
+        maxFibonacciEntryProgressPercent: z.number().min(0).max(100).optional(),
+        useBtcCorrelationFilter: z.boolean().optional(),
+        useFundingFilter: z.boolean().optional(),
+        useMtfFilter: z.boolean().optional(),
+        useMarketRegimeFilter: z.boolean().optional(),
+        useDirectionFilter: z.boolean().optional(),
+        useMomentumTimingFilter: z.boolean().optional(),
+        useConfluenceScoring: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -373,6 +383,26 @@ export const autoTradingRouter = router({
         {updateData.superTrendMultiplier = input.superTrendMultiplier;}
       if (input.directionMode !== undefined)
         {updateData.directionMode = input.directionMode;}
+      if (input.minRiskRewardRatioLong !== undefined)
+        {updateData.minRiskRewardRatioLong = input.minRiskRewardRatioLong;}
+      if (input.minRiskRewardRatioShort !== undefined)
+        {updateData.minRiskRewardRatioShort = input.minRiskRewardRatioShort;}
+      if (input.maxFibonacciEntryProgressPercent !== undefined)
+        {updateData.maxFibonacciEntryProgressPercent = input.maxFibonacciEntryProgressPercent;}
+      if (input.useBtcCorrelationFilter !== undefined)
+        {updateData.useBtcCorrelationFilter = input.useBtcCorrelationFilter;}
+      if (input.useFundingFilter !== undefined)
+        {updateData.useFundingFilter = input.useFundingFilter;}
+      if (input.useMtfFilter !== undefined)
+        {updateData.useMtfFilter = input.useMtfFilter;}
+      if (input.useMarketRegimeFilter !== undefined)
+        {updateData.useMarketRegimeFilter = input.useMarketRegimeFilter;}
+      if (input.useDirectionFilter !== undefined)
+        {updateData.useDirectionFilter = input.useDirectionFilter;}
+      if (input.useMomentumTimingFilter !== undefined)
+        {updateData.useMomentumTimingFilter = input.useMomentumTimingFilter;}
+      if (input.useConfluenceScoring !== undefined)
+        {updateData.useConfluenceScoring = input.useConfluenceScoring;}
 
       await ctx.db
         .update(autoTradingConfig)

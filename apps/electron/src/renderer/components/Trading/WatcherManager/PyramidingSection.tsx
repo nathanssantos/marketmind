@@ -1,9 +1,9 @@
 import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
-import { Badge, Box, Collapsible, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Switch } from '@renderer/components/ui/switch';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import type { WatcherConfig } from './types';
 
 export interface PyramidingSectionProps {
@@ -77,36 +77,19 @@ export const PyramidingSection = ({
   };
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={onToggle}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
-        <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('settings.algorithmicAutoTrading.pyramiding.title')}
-          </Text>
-          <Text fontSize="sm" color="fg.muted">
-            {t('settings.algorithmicAutoTrading.pyramiding.description')}
-          </Text>
-        </Box>
-        {isExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
-
-      <Collapsible.Root open={isExpanded}>
-        <Collapsible.Content>
+    <CollapsibleSection
+      title={t('settings.algorithmicAutoTrading.pyramiding.title')}
+      description={t('settings.algorithmicAutoTrading.pyramiding.description')}
+      open={isExpanded}
+      onOpenChange={onToggle}
+      size="lg"
+    >
           <RadioGroup
             value={config?.pyramidingEnabled ? (config?.pyramidingMode ?? 'static') : 'disabled'}
             onValueChange={(e) => handlePyramidModeChange(e.value)}
             disabled={isPending}
           >
-            <HStack gap={6} mt={4}>
+            <HStack gap={6}>
               <Radio value="disabled">
                 <Box>
                   <Text fontSize="sm" fontWeight="medium">
@@ -325,8 +308,6 @@ export const PyramidingSection = ({
               )}
             </>
           )}
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+    </CollapsibleSection>
   );
 };

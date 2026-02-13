@@ -1,7 +1,7 @@
 import { Slider } from '@/renderer/components/ui/slider';
-import { Box, Collapsible, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Grid, HStack, Stack, Text } from '@chakra-ui/react';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
 export interface EntrySettingsSectionProps {
   isExpanded: boolean;
@@ -36,108 +36,89 @@ export const EntrySettingsSection = ({
   };
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={onToggle}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
+    <CollapsibleSection
+      title={t('settings.algorithmicAutoTrading.entrySettings.title')}
+      description={t('settings.algorithmicAutoTrading.entrySettings.description')}
+      open={isExpanded}
+      onOpenChange={onToggle}
+      size="lg"
+    >
+      <Stack gap={6}>
         <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            {t('settings.algorithmicAutoTrading.entrySettings.title')}
+          <Text fontSize="sm" fontWeight="semibold" mb={2}>
+            {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.title')}
           </Text>
-          <Text fontSize="sm" color="fg.muted">
-            {t('settings.algorithmicAutoTrading.entrySettings.description')}
+          <Text fontSize="xs" color="fg.muted" mb={4}>
+            {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.description')}
+          </Text>
+          <HStack gap={4}>
+            <Slider
+              value={[maxFibonacciEntryProgressPercent]}
+              onValueChange={(values) => onEntryProgressChange(values[0] ?? 100)}
+              min={0}
+              max={100}
+              step={5}
+            />
+            <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
+              {maxFibonacciEntryProgressPercent}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercent)})
+            </Text>
+          </HStack>
+          <HStack justify="space-between" mt={2}>
+            <Text fontSize="xs" color="fg.muted">0% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.deepPullback')})</Text>
+            <Text fontSize="xs" color="fg.muted">100% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.breakout')})</Text>
+          </HStack>
+        </Box>
+
+        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold" mb={2}>
+              {t('settings.algorithmicAutoTrading.entrySettings.minRR.longTitle')}
+            </Text>
+            <Text fontSize="xs" color="fg.muted" mb={4}>
+              {t('settings.algorithmicAutoTrading.entrySettings.minRR.longDescription')}
+            </Text>
+            <HStack gap={4}>
+              <Slider
+                value={[minRiskRewardRatioLong]}
+                onValueChange={(values) => onMinRiskRewardLongChange(values[0] ?? 0.75)}
+                min={0.5}
+                max={3}
+                step={0.05}
+              />
+              <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
+                {minRiskRewardRatioLong.toFixed(2)}
+              </Text>
+            </HStack>
+          </Box>
+
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold" mb={2}>
+              {t('settings.algorithmicAutoTrading.entrySettings.minRR.shortTitle')}
+            </Text>
+            <Text fontSize="xs" color="fg.muted" mb={4}>
+              {t('settings.algorithmicAutoTrading.entrySettings.minRR.shortDescription')}
+            </Text>
+            <HStack gap={4}>
+              <Slider
+                value={[minRiskRewardRatioShort]}
+                onValueChange={(values) => onMinRiskRewardShortChange(values[0] ?? 0.75)}
+                min={0.5}
+                max={3}
+                step={0.05}
+              />
+              <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
+                {minRiskRewardRatioShort.toFixed(2)}
+              </Text>
+            </HStack>
+          </Box>
+        </Grid>
+
+        <Box p={3} bg="bg.subtle" borderRadius="md" borderWidth="1px" borderColor="border.muted">
+          <Text fontSize="xs" color="fg.muted">
+            {t('settings.algorithmicAutoTrading.entrySettings.optimizedNote')}
           </Text>
         </Box>
-        {isExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
-
-      <Collapsible.Root open={isExpanded}>
-        <Collapsible.Content>
-          <Stack gap={6} mt={4}>
-            <Box>
-              <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.title')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted" mb={4}>
-                {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.description')}
-              </Text>
-              <HStack gap={4}>
-                <Slider
-                  value={[maxFibonacciEntryProgressPercent]}
-                  onValueChange={(values) => onEntryProgressChange(values[0] ?? 100)}
-                  min={0}
-                  max={100}
-                  step={5}
-                />
-                <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
-                  {maxFibonacciEntryProgressPercent}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercent)})
-                </Text>
-              </HStack>
-              <HStack justify="space-between" mt={2}>
-                <Text fontSize="xs" color="fg.muted">0% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.deepPullback')})</Text>
-                <Text fontSize="xs" color="fg.muted">100% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.breakout')})</Text>
-              </HStack>
-            </Box>
-
-            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  {t('settings.algorithmicAutoTrading.entrySettings.minRR.longTitle')}
-                </Text>
-                <Text fontSize="xs" color="fg.muted" mb={4}>
-                  {t('settings.algorithmicAutoTrading.entrySettings.minRR.longDescription')}
-                </Text>
-                <HStack gap={4}>
-                  <Slider
-                    value={[minRiskRewardRatioLong]}
-                    onValueChange={(values) => onMinRiskRewardLongChange(values[0] ?? 0.75)}
-                    min={0.5}
-                    max={3}
-                    step={0.25}
-                  />
-                  <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
-                    {minRiskRewardRatioLong.toFixed(2)}
-                  </Text>
-                </HStack>
-              </Box>
-
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  {t('settings.algorithmicAutoTrading.entrySettings.minRR.shortTitle')}
-                </Text>
-                <Text fontSize="xs" color="fg.muted" mb={4}>
-                  {t('settings.algorithmicAutoTrading.entrySettings.minRR.shortDescription')}
-                </Text>
-                <HStack gap={4}>
-                  <Slider
-                    value={[minRiskRewardRatioShort]}
-                    onValueChange={(values) => onMinRiskRewardShortChange(values[0] ?? 0.75)}
-                    min={0.5}
-                    max={3}
-                    step={0.25}
-                  />
-                  <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
-                    {minRiskRewardRatioShort.toFixed(2)}
-                  </Text>
-                </HStack>
-              </Box>
-            </Grid>
-
-            <Box p={3} bg="bg.subtle" borderRadius="md" borderWidth="1px" borderColor="border.muted">
-              <Text fontSize="xs" color="fg.muted">
-                {t('settings.algorithmicAutoTrading.entrySettings.optimizedNote')}
-              </Text>
-            </Box>
-          </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+      </Stack>
+    </CollapsibleSection>
   );
 };

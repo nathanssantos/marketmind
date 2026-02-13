@@ -119,6 +119,7 @@ const createRotationResult = (overrides: Partial<RotationResult> = {}): Rotation
   added: [],
   removed: [],
   kept: [],
+  targetLimit: 5,
   skippedInsufficientKlines: [],
   skippedInsufficientCapital: [],
   skippedTrend: [],
@@ -1025,7 +1026,7 @@ describe('RotationManager', () => {
       expect(mockExecuteRotation).not.toHaveBeenCalled();
     });
 
-    it('should use default target count when no dynamic watchers are active', async () => {
+    it('should use per-interval persisted watcher count as target', async () => {
       const watchers = [
         { walletId: 'w1', userId: 'u1', interval: '1h', marketType: 'FUTURES', isManual: false, profileId: null },
       ];
@@ -1063,7 +1064,7 @@ describe('RotationManager', () => {
         'w1',
         'u1',
         expect.objectContaining({
-          limit: 10,
+          limit: 1,
         })
       );
     });

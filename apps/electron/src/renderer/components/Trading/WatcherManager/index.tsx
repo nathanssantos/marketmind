@@ -50,27 +50,34 @@ export const WatcherManager = () => {
 
   const { data: config } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
-    { enabled: !!walletId }
+    { enabled: !!walletId, staleTime: 30_000 }
   );
 
   const updateConfig = trpc.autoTrading.updateConfig.useMutation({
     onSuccess: () => {
-      void utils.autoTrading.getConfig.invalidate({ walletId });
+      if (Object.keys(pendingUpdates.current).length === 0) {
+        void utils.autoTrading.getConfig.invalidate({ walletId });
+      }
     },
   });
 
   const mutateRef = useRef(updateConfig.mutate);
   mutateRef.current = updateConfig.mutate;
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const pendingUpdates = useRef<Record<string, unknown>>({});
 
   const handleConfigUpdate = useCallback((updates: Record<string, unknown>): void => {
     if (!walletId) return;
+    void utils.autoTrading.getConfig.cancel({ walletId });
     utils.autoTrading.getConfig.setData({ walletId }, (old) =>
       old ? { ...old, ...updates } : old
     );
+    pendingUpdates.current = { ...pendingUpdates.current, ...updates };
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      mutateRef.current({ walletId, ...updates });
+      const batch = pendingUpdates.current;
+      pendingUpdates.current = {};
+      mutateRef.current({ walletId, ...batch });
     }, 300);
   }, [walletId, utils]);
 

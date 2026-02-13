@@ -1,7 +1,7 @@
 import { Slider } from '@/renderer/components/ui/slider';
+import { Button } from '@renderer/components/ui/button';
 import {
   Box,
-  Button,
   Flex,
   HStack,
   Text,

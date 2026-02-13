@@ -204,6 +204,7 @@ marketmind/
 │   ├── types/             # Shared TypeScript types
 │   └── indicators/        # Technical analysis utilities
 ├── docs/                  # Documentation
+│   └── UI_STYLE_GUIDE.md  # UI standardization guide
 └── package.json           # Root package
 ```
 
