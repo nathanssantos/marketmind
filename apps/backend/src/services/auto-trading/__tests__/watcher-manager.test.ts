@@ -65,18 +65,18 @@ vi.mock('../../kline-prefetch', () => ({
 
 vi.mock('../../watcher-batch-logger', () => ({
   outputStartupResults: vi.fn(),
-  StartupLogBuffer: vi.fn().mockImplementation(() => ({
-    setPersistedCount: vi.fn(),
-    setPreloadedConfigs: vi.fn(),
-    addRestoredWatcher: vi.fn(),
-    getResults: vi.fn(() => ({
+  StartupLogBuffer: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.setPersistedCount = vi.fn();
+    this.setPreloadedConfigs = vi.fn();
+    this.addRestoredWatcher = vi.fn();
+    this.getResults = vi.fn(() => ({
       watchers: [],
       persistedCount: 0,
       durationMs: 0,
       preloadedConfigs: 0,
       walletCount: 0,
-    })),
-  })),
+    }));
+  }),
 }));
 
 vi.mock('../utils', () => ({
@@ -599,6 +599,589 @@ describe('WatcherManager', () => {
       expect(stats.hits).toBe(0);
       expect(stats.misses).toBe(0);
       expect(stats.preloads).toBe(0);
+    });
+  });
+
+  describe('startWatcher - additional branch coverage', () => {
+    it('should suppress logs when silent=true and watcher already exists', async () => {
+      insertWatcherDirectly(manager, 'w1-BTCUSDT-1h-FUTURES');
+      const { log: mockLog } = await import('../utils');
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, false, 'FUTURES', true, false, true);
+
+      expect(mockLog).not.toHaveBeenCalledWith('! Watcher already exists', expect.anything());
+    });
+
+    it('should suppress logs when silent=true and config is disabled', async () => {
+      deps = createDeps({
+        getCachedConfig: vi.fn().mockResolvedValue({ isEnabled: false }),
+      });
+      manager = new WatcherManager(deps);
+      const { log: mockLog } = await import('../utils');
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, false, 'FUTURES', true, false, true);
+
+      expect(mockLog).not.toHaveBeenCalledWith('! Auto-trading not enabled for wallet', expect.anything());
+      expect(mockLog).not.toHaveBeenCalledWith('✗ Removed stale watcher from database', expect.anything());
+    });
+
+    it('should suppress logs when silent=true and no strategies enabled', async () => {
+      deps = createDeps({
+        getCachedConfig: vi.fn().mockResolvedValue({
+          isEnabled: true,
+          enabledSetupTypes: '[]',
+        }),
+      });
+      manager = new WatcherManager(deps);
+      const { log: mockLog } = await import('../utils');
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, false, 'FUTURES', true, false, true);
+
+      expect(mockLog).not.toHaveBeenCalledWith('! No strategies enabled', expect.anything());
+    });
+
+    it('should use profile strategies when profileId is provided and profile exists', async () => {
+      const profileRow = {
+        id: 'p1',
+        name: 'My Profile',
+        enabledSetupTypes: '["setup_a","setup_b"]',
+      };
+
+      const mockLimit = vi.fn().mockResolvedValue([profileRow]);
+      const mockWhere = vi.fn(() => ({ limit: mockLimit }));
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const mockExistingLimit = vi.fn().mockResolvedValue([]);
+      const mockExistingWhere = vi.fn(() => ({ limit: mockExistingLimit }));
+      const mockExistingFrom = vi.fn(() => ({ where: mockExistingWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockExistingFrom } as never);
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', 'p1');
+
+      const watcher = manager.getActiveWatchersMap().get('w1-BTCUSDT-1h-FUTURES');
+      expect(watcher).toBeDefined();
+      expect(watcher!.enabledStrategies).toEqual(['setup_a', 'setup_b']);
+      expect(watcher!.profileName).toBe('My Profile');
+      expect(watcher!.profileId).toBe('p1');
+    });
+
+    it('should fall back to global config when profileId is provided but profile not found', async () => {
+      const mockLimit = vi.fn().mockResolvedValue([]);
+      const mockWhere = vi.fn(() => ({ limit: mockLimit }));
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const mockExistingLimit = vi.fn().mockResolvedValue([]);
+      const mockExistingWhere = vi.fn(() => ({ limit: mockExistingLimit }));
+      const mockExistingFrom = vi.fn(() => ({ where: mockExistingWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockExistingFrom } as never);
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', 'nonexistent-profile');
+
+      const watcher = manager.getActiveWatchersMap().get('w1-BTCUSDT-1h-FUTURES');
+      expect(watcher).toBeDefined();
+      expect(watcher!.enabledStrategies).toEqual(['larry_williams_9_1']);
+      expect(watcher!.profileName).toBeUndefined();
+    });
+
+    it('should fall back to global config when profileId is provided but profile not found and silent', async () => {
+      const mockLimit = vi.fn().mockResolvedValue([]);
+      const mockWhere = vi.fn(() => ({ limit: mockLimit }));
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const mockExistingLimit = vi.fn().mockResolvedValue([]);
+      const mockExistingWhere = vi.fn(() => ({ limit: mockExistingLimit }));
+      const mockExistingFrom = vi.fn(() => ({ where: mockExistingWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockExistingFrom } as never);
+
+      const { log: mockLog } = await import('../utils');
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', 'nonexistent-profile', false, 'FUTURES', true, false, true);
+
+      expect(mockLog).not.toHaveBeenCalledWith('! Profile not found, falling back to global config', expect.anything());
+    });
+
+    it('should use empty array fallback when enabledSetupTypes is undefined (no profileId)', async () => {
+      deps = createDeps({
+        getCachedConfig: vi.fn().mockResolvedValue({
+          isEnabled: true,
+        }),
+      });
+      manager = new WatcherManager(deps);
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h');
+
+      expect(manager.getActiveWatchersMap().size).toBe(0);
+    });
+
+    it('should use empty array fallback when enabledSetupTypes is undefined (profileId not found)', async () => {
+      deps = createDeps({
+        getCachedConfig: vi.fn().mockResolvedValue({
+          isEnabled: true,
+        }),
+      });
+      manager = new WatcherManager(deps);
+
+      const mockLimit = vi.fn().mockResolvedValue([]);
+      const mockWhere = vi.fn(() => ({ limit: mockLimit }));
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', 'missing-profile');
+
+      expect(manager.getActiveWatchersMap().size).toBe(0);
+    });
+
+    it('should update DB when existing watcher has different profileId', async () => {
+      const profileRow = {
+        id: 'new-profile',
+        name: 'New Profile',
+        enabledSetupTypes: '["setup_a"]',
+      };
+      const mockProfileLimit = vi.fn().mockResolvedValue([profileRow]);
+      const mockProfileWhere = vi.fn(() => ({ limit: mockProfileLimit }));
+      const mockProfileFrom = vi.fn(() => ({ where: mockProfileWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockProfileFrom } as never);
+
+      const existingRecord = { id: 'w1-BTCUSDT-1h-FUTURES', profileId: 'old-profile' };
+      const mockExistingLimit = vi.fn().mockResolvedValue([existingRecord]);
+      const mockExistingWhere = vi.fn(() => ({ limit: mockExistingLimit }));
+      const mockExistingFrom = vi.fn(() => ({ where: mockExistingWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockExistingFrom } as never);
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', 'new-profile', false, 'FUTURES', true, false, false, undefined, 'BINANCE');
+
+      expect(db.update).toHaveBeenCalled();
+    });
+
+    it('should not update DB when existing watcher has the same profileId', async () => {
+      const existingRecord = { id: 'w1-BTCUSDT-1h-FUTURES', profileId: 'p1' };
+
+      const profileRow = {
+        id: 'p1',
+        name: 'Same Profile',
+        enabledSetupTypes: '["setup_a"]',
+      };
+      const mockProfileLimit = vi.fn().mockResolvedValue([profileRow]);
+      const mockProfileWhere = vi.fn(() => ({ limit: mockProfileLimit }));
+      const mockProfileFrom = vi.fn(() => ({ where: mockProfileWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockProfileFrom } as never);
+
+      const mockExistingLimit = vi.fn().mockResolvedValue([existingRecord]);
+      const mockExistingWhere = vi.fn(() => ({ limit: mockExistingLimit }));
+      const mockExistingFrom = vi.fn(() => ({ where: mockExistingWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockExistingFrom } as never);
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', 'p1');
+
+      expect(db.update).not.toHaveBeenCalled();
+    });
+
+    it('should use TIME_MS.HOUR fallback for unknown interval', async () => {
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '2w', undefined, true);
+
+      const watcher = manager.getActiveWatchersMap().get('w1-BTCUSDT-2w-FUTURES');
+      expect(watcher).toBeDefined();
+    });
+
+    it('should set lastProcessedCandleOpenTime 2 candles back when targetCandleClose is set', async () => {
+      const targetClose = Date.now() + 3600000;
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, true, 'FUTURES', true, false, false, targetClose);
+
+      const watcher = manager.getActiveWatchersMap().get('w1-BTCUSDT-1h-FUTURES');
+      expect(watcher).toBeDefined();
+      expect(watcher!.lastProcessedCandleOpenTime).toBeDefined();
+    });
+
+    it('should log rotation info when targetCandleClose is set and not silent', async () => {
+      const { log: mockLog } = await import('../utils');
+      const targetClose = Date.now() + 3600000;
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, true, 'FUTURES', true, false, false, targetClose);
+
+      expect(mockLog).toHaveBeenCalledWith('> [Rotation] Watcher initialized for rotation', expect.objectContaining({
+        watcherId: 'w1-BTCUSDT-1h-FUTURES',
+      }));
+    });
+
+    it('should not log rotation info when targetCandleClose is set but silent', async () => {
+      const { log: mockLog } = await import('../utils');
+      const targetClose = Date.now() + 3600000;
+
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, true, 'FUTURES', true, false, true, targetClose);
+
+      expect(mockLog).not.toHaveBeenCalledWith('> [Rotation] Watcher initialized for rotation', expect.anything());
+    });
+
+    it('should set intervalId on watcher inside setTimeout callback', async () => {
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, true);
+
+      vi.advanceTimersByTime(3600000);
+
+      const watcher = manager.getActiveWatchersMap().get('w1-BTCUSDT-1h-FUTURES');
+      expect(watcher).toBeDefined();
+      expect(watcher!.intervalId).toBeDefined();
+    });
+
+    it('should repeatedly queue processing via setInterval after initial setTimeout', async () => {
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, true);
+
+      vi.advanceTimersByTime(3600000);
+      expect(deps.queueWatcherProcessing).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(3600000);
+      expect(deps.queueWatcherProcessing).toHaveBeenCalledTimes(2);
+
+      vi.advanceTimersByTime(3600000);
+      expect(deps.queueWatcherProcessing).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle setTimeout callback when watcher was removed before firing', async () => {
+      await manager.startWatcher('w1', 'u1', 'BTCUSDT', '1h', undefined, true);
+
+      manager.getActiveWatchersMap().delete('w1-BTCUSDT-1h-FUTURES');
+
+      vi.advanceTimersByTime(3600000);
+
+      expect(deps.queueWatcherProcessing).toHaveBeenCalledWith('w1-BTCUSDT-1h-FUTURES');
+    });
+  });
+
+  describe('getWatcherStatusFromDb', () => {
+    it('should return inactive when no persisted watchers exist', async () => {
+      const mockWhere = vi.fn().mockResolvedValue([]);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const result = await manager.getWatcherStatusFromDb('w1');
+
+      expect(result).toEqual({
+        active: false,
+        watchers: 0,
+        watcherDetails: [],
+      });
+    });
+
+    it('should return watcher details with profile name when profileId exists', async () => {
+      const persistedWatchers = [{
+        walletId: 'w1',
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        profileId: 'p1',
+        isManual: true,
+      }];
+
+      const mockWhere = vi.fn().mockResolvedValue(persistedWatchers);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const profileResult = [{ name: 'My Profile' }];
+      const mockProfileLimit = vi.fn().mockResolvedValue(profileResult);
+      const mockProfileWhere = vi.fn(() => ({ limit: mockProfileLimit }));
+      const mockProfileFrom = vi.fn(() => ({ where: mockProfileWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockProfileFrom } as never);
+
+      const result = await manager.getWatcherStatusFromDb('w1');
+
+      expect(result.active).toBe(true);
+      expect(result.watchers).toBe(1);
+      expect(result.watcherDetails[0]).toEqual({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        profileId: 'p1',
+        profileName: 'My Profile',
+        isManual: true,
+      });
+    });
+
+    it('should set profileName to undefined when profile not found in DB', async () => {
+      const persistedWatchers = [{
+        walletId: 'w1',
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        profileId: 'p-missing',
+        isManual: false,
+      }];
+
+      const mockWhere = vi.fn().mockResolvedValue(persistedWatchers);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const mockProfileLimit = vi.fn().mockResolvedValue([]);
+      const mockProfileWhere = vi.fn(() => ({ limit: mockProfileLimit }));
+      const mockProfileFrom = vi.fn(() => ({ where: mockProfileWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockProfileFrom } as never);
+
+      const result = await manager.getWatcherStatusFromDb('w1');
+
+      expect(result.watcherDetails[0]!.profileName).toBeUndefined();
+    });
+
+    it('should skip profile lookup when profileId is null', async () => {
+      const persistedWatchers = [{
+        walletId: 'w1',
+        symbol: 'ETHUSDT',
+        interval: '4h',
+        marketType: null,
+        profileId: null,
+        isManual: true,
+      }];
+
+      const mockWhere = vi.fn().mockResolvedValue(persistedWatchers);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const result = await manager.getWatcherStatusFromDb('w1');
+
+      expect(result.watcherDetails[0]).toEqual({
+        symbol: 'ETHUSDT',
+        interval: '4h',
+        marketType: 'FUTURES',
+        profileId: undefined,
+        profileName: undefined,
+        isManual: true,
+      });
+      expect(db.select).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle multiple persisted watchers with mixed profileIds', async () => {
+      const persistedWatchers = [
+        { walletId: 'w1', symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES', profileId: 'p1', isManual: true },
+        { walletId: 'w1', symbol: 'ETHUSDT', interval: '1h', marketType: 'SPOT', profileId: null, isManual: false },
+      ];
+
+      const mockWhere = vi.fn().mockResolvedValue(persistedWatchers);
+      const mockFrom = vi.fn(() => ({ where: mockWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockFrom } as never);
+
+      const mockProfileLimit = vi.fn().mockResolvedValue([{ name: 'Profile 1' }]);
+      const mockProfileWhere = vi.fn(() => ({ limit: mockProfileLimit }));
+      const mockProfileFrom = vi.fn(() => ({ where: mockProfileWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockProfileFrom } as never);
+
+      const result = await manager.getWatcherStatusFromDb('w1');
+
+      expect(result.watchers).toBe(2);
+      expect(result.watcherDetails[0]!.profileName).toBe('Profile 1');
+      expect(result.watcherDetails[1]!.profileId).toBeUndefined();
+      expect(result.watcherDetails[1]!.profileName).toBeUndefined();
+    });
+  });
+
+  describe('restoreWatchersFromDb', () => {
+    const mockDbSelectForRestore = (persistedWatchers: unknown[], configs: unknown[] = []) => {
+      const mockWatchersFrom = vi.fn().mockResolvedValue(persistedWatchers);
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockWatchersFrom } as never);
+
+      if (persistedWatchers.length > 0) {
+        const mockConfigWhere = vi.fn().mockResolvedValue(configs);
+        const mockConfigFrom = vi.fn(() => ({ where: mockConfigWhere }));
+        vi.mocked(db.select).mockReturnValueOnce({ from: mockConfigFrom } as never);
+      }
+    };
+
+    const defaultConfig = {
+      walletId: 'w1',
+      isEnabled: true,
+      enabledSetupTypes: '["larry_williams_9_1"]',
+    };
+
+    const defaultPw = {
+      walletId: 'w1',
+      userId: 'u1',
+      symbol: 'BTCUSDT',
+      interval: '1h',
+      marketType: 'FUTURES',
+      exchange: 'BINANCE',
+      profileId: null,
+      isManual: true,
+    };
+
+    it('should return early when no persisted watchers exist', async () => {
+      mockDbSelectForRestore([]);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(manager.getActiveWatchersMap().size).toBe(0);
+    });
+
+    it('should restore watchers successfully from database', async () => {
+      mockDbSelectForRestore([defaultPw], [defaultConfig]);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValueOnce({ success: true, totalInDb: 500 } as never);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(manager.getActiveWatchersMap().size).toBe(1);
+    });
+
+    it('should handle prefetch failure and continue with other watchers', async () => {
+      const persistedWatchers = [
+        { ...defaultPw, symbol: 'FAILSYMBOL' },
+        { ...defaultPw, symbol: 'BTCUSDT', isManual: false },
+      ];
+      mockDbSelectForRestore(persistedWatchers, [defaultConfig]);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines)
+        .mockResolvedValueOnce({ success: false, error: 'Network error' } as never)
+        .mockResolvedValueOnce({ success: true, totalInDb: 500 } as never);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(manager.getActiveWatchersMap().size).toBe(1);
+    });
+
+    it('should handle prefetch failure with no error message (fallback to "Prefetch failed")', async () => {
+      mockDbSelectForRestore([{ ...defaultPw, profileId: 'p1' }], [defaultConfig]);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValueOnce({ success: false } as never);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(manager.getActiveWatchersMap().size).toBe(0);
+    });
+
+    it('should handle startWatcher throwing during restore', async () => {
+      mockDbSelectForRestore([defaultPw], [defaultConfig]);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValueOnce({ success: true, totalInDb: 500 } as never);
+
+      deps = createDeps({
+        getCachedConfig: vi.fn().mockRejectedValue(new Error('Config fetch error')),
+      });
+      manager = new WatcherManager(deps);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(manager.getActiveWatchersMap().size).toBe(0);
+    });
+
+    it('should use FUTURES fallback when marketType is null', async () => {
+      mockDbSelectForRestore(
+        [{ ...defaultPw, interval: '4h', marketType: null, exchange: null }],
+        [defaultConfig]
+      );
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValueOnce({ success: true, totalInDb: 500 } as never);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(prefetchKlines).toHaveBeenCalledWith(expect.objectContaining({
+        marketType: 'FUTURES',
+      }));
+    });
+
+    it('should preload configs into cache for all unique wallet IDs', async () => {
+      const persistedWatchers = [
+        { ...defaultPw, symbol: 'BTCUSDT' },
+        { ...defaultPw, symbol: 'ETHUSDT' },
+        { ...defaultPw, walletId: 'w2', userId: 'u2', symbol: 'BTCUSDT' },
+      ];
+      const configs = [
+        defaultConfig,
+        { walletId: 'w2', isEnabled: true, enabledSetupTypes: '["larry_williams_9_1"]' },
+      ];
+      mockDbSelectForRestore(persistedWatchers, configs);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValue({ success: true, totalInDb: 500 } as never);
+
+      await manager.restoreWatchersFromDb();
+
+      const stats = manager.getConfigCacheStats();
+      expect(stats.preloads).toBe(2);
+    });
+
+    it('should call outputStartupResults with buffer results', async () => {
+      mockDbSelectForRestore([defaultPw], [defaultConfig]);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValueOnce({ success: true, totalInDb: 500 } as never);
+
+      const { outputStartupResults } = await import('../../watcher-batch-logger');
+
+      await manager.restoreWatchersFromDb();
+
+      expect(outputStartupResults).toHaveBeenCalled();
+    });
+
+    it('should handle persisted watcher with profileId passed to startWatcher', async () => {
+      mockDbSelectForRestore([{ ...defaultPw, profileId: 'p1' }], [defaultConfig]);
+
+      const { prefetchKlines } = await import('../../kline-prefetch');
+      vi.mocked(prefetchKlines).mockResolvedValueOnce({ success: true, totalInDb: 500 } as never);
+
+      const profileRow = {
+        id: 'p1',
+        name: 'Restored Profile',
+        enabledSetupTypes: '["setup_x"]',
+      };
+      const mockProfileLimit = vi.fn().mockResolvedValue([profileRow]);
+      const mockProfileWhere = vi.fn(() => ({ limit: mockProfileLimit }));
+      const mockProfileFrom = vi.fn(() => ({ where: mockProfileWhere }));
+      vi.mocked(db.select).mockReturnValueOnce({ from: mockProfileFrom } as never);
+
+      await manager.restoreWatchersFromDb();
+
+      expect(manager.getActiveWatchersMap().size).toBe(1);
+    });
+  });
+
+  describe('stopWatcher - additional branch coverage', () => {
+    it('should use default marketType FUTURES when not provided', async () => {
+      insertWatcherDirectly(manager, 'w1-BTCUSDT-1h-FUTURES');
+
+      await manager.stopWatcher('w1', 'BTCUSDT', '1h');
+
+      expect(manager.getActiveWatchersMap().has('w1-BTCUSDT-1h-FUTURES')).toBe(false);
+    });
+  });
+
+  describe('stopAllWatchersForWallet - additional branch coverage', () => {
+    it('should not clear caches when some watchers remain after stopping', async () => {
+      insertWatcherDirectly(manager, 'w1-BTCUSDT-1h-FUTURES', { walletId: 'w1' });
+      insertWatcherDirectly(manager, 'w2-ETHUSDT-1h-FUTURES', { walletId: 'w2', symbol: 'ETHUSDT' });
+
+      await manager.stopAllWatchersForWallet('w1');
+
+      expect(manager.getActiveWatchersMap().size).toBe(1);
+      expect(deps.clearCaches).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getConfigCacheStats - additional branch coverage', () => {
+    it('should calculate hitRate when total accesses > 0', () => {
+      const managerAny = manager as unknown as { configCacheMetrics: { hits: number; misses: number; preloads: number } };
+      managerAny.configCacheMetrics.hits = 7;
+      managerAny.configCacheMetrics.misses = 3;
+
+      const stats = manager.getConfigCacheStats();
+      expect(stats.hitRate).toBe(0.7);
+      expect(stats.hits).toBe(7);
+      expect(stats.misses).toBe(3);
+    });
+  });
+
+  describe('getPausedWalletInfo', () => {
+    it('should return undefined for unknown wallet', () => {
+      expect(manager.getPausedWalletInfo('nonexistent')).toBeUndefined();
+    });
+
+    it('should return pause info for paused wallet', () => {
+      manager.pauseWatchersForWallet('w1', 'test reason');
+      const info = manager.getPausedWalletInfo('w1');
+      expect(info).toBeDefined();
+      expect(info!.reason).toBe('test reason');
     });
   });
 });

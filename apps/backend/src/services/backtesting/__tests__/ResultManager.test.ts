@@ -485,5 +485,259 @@ describe('ResultManager', () => {
       const files = await resultManager.listRobustnessValidations();
       expect(files).toHaveLength(1);
     });
+
+    it('should return empty array when walkforward directory does not exist', async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(new Error('ENOENT'));
+      const files = await resultManager.listWalkForward();
+      expect(files).toEqual([]);
+    });
+
+    it('should return empty array when montecarlo directory does not exist', async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(new Error('ENOENT'));
+      const files = await resultManager.listMonteCarlo();
+      expect(files).toEqual([]);
+    });
+
+    it('should return empty array when sensitivity directory does not exist', async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(new Error('ENOENT'));
+      const files = await resultManager.listSensitivity();
+      expect(files).toEqual([]);
+    });
+
+    it('should return empty array when robustness directory does not exist', async () => {
+      vi.mocked(fs.readdir).mockRejectedValue(new Error('ENOENT'));
+      const files = await resultManager.listRobustnessValidations();
+      expect(files).toEqual([]);
+    });
+  });
+
+  describe('constructor default baseDir', () => {
+    it('should use default baseDir when none is provided', () => {
+      const defaultManager = new ResultManager();
+      expect(defaultManager).toBeInstanceOf(ResultManager);
+    });
+  });
+
+  describe('exportToCSV branch coverage', () => {
+    it('should handle trades with no exitTime, exitPrice, exitReason, pnl, pnlPercent, or netPnl', async () => {
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const savedResult: SavedBacktestResult = {
+        timestamp: '2024-01-01T00:00:00Z',
+        type: 'validation',
+        strategy: 'test',
+        symbol: 'BTCUSDT',
+        interval: '1d',
+        period: { start: '2024-01-01', end: '2024-03-01' },
+        config: { initialCapital: 10000 },
+        result: {
+          ...createMockBacktestResult(),
+          trades: [
+            {
+              id: 'trade-open',
+              setupType: 'test-setup',
+              entryTime: '2024-01-15T00:00:00Z',
+              entryPrice: 50000,
+              exitTime: undefined as any,
+              exitPrice: undefined as any,
+              quantity: 1,
+              side: undefined as any,
+              pnl: undefined as any,
+              pnlPercent: undefined as any,
+              exitReason: undefined as any,
+              commission: 5,
+              netPnl: undefined as any,
+              status: 'OPEN' as const,
+            },
+          ],
+        },
+        metrics: createMockMetrics(),
+      };
+
+      await resultManager.exportToCSV(savedResult, '/path/to/output.csv');
+
+      const writtenContent = vi.mocked(fs.writeFile).mock.calls[0]?.[1] as string;
+      const lines = writtenContent.split('\n');
+      const tradeLine = lines[1];
+
+      expect(tradeLine).toContain('UNKNOWN');
+      expect(tradeLine).toContain('0.00');
+    });
+
+    it('should use tradeData.type when side is not present', async () => {
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const savedResult: SavedBacktestResult = {
+        timestamp: '2024-01-01T00:00:00Z',
+        type: 'validation',
+        strategy: 'test',
+        symbol: 'BTCUSDT',
+        interval: '1d',
+        period: { start: '2024-01-01', end: '2024-03-01' },
+        config: { initialCapital: 10000 },
+        result: {
+          ...createMockBacktestResult(),
+          trades: [
+            {
+              id: 'trade-type-fallback',
+              setupType: 'test-setup',
+              entryTime: '2024-01-15T00:00:00Z',
+              entryPrice: 50000,
+              exitTime: '2024-01-16T00:00:00Z',
+              exitPrice: 50500,
+              quantity: 1,
+              side: '' as any,
+              type: 'BUY',
+              pnl: 500,
+              pnlPercent: 1,
+              exitReason: 'TAKE_PROFIT' as const,
+              commission: 5,
+              netPnl: 495,
+              status: 'CLOSED' as const,
+            } as any,
+          ],
+        },
+        metrics: createMockMetrics(),
+      };
+
+      await resultManager.exportToCSV(savedResult, '/path/to/output.csv');
+
+      const writtenContent = vi.mocked(fs.writeFile).mock.calls[0]?.[1] as string;
+      const lines = writtenContent.split('\n');
+      const tradeLine = lines[1];
+
+      expect(tradeLine).toContain('BUY');
+    });
+
+    it('should handle sharpeRatio being 0 or undefined in summary', async () => {
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const metricsNoSharpe = { ...createMockMetrics(), sharpeRatio: 0 };
+
+      const savedResult: SavedBacktestResult = {
+        timestamp: '2024-01-01T00:00:00Z',
+        type: 'validation',
+        strategy: 'test',
+        symbol: 'BTCUSDT',
+        interval: '1d',
+        period: { start: '2024-01-01', end: '2024-03-01' },
+        config: { initialCapital: 10000 },
+        result: createMockBacktestResult(),
+        metrics: metricsNoSharpe,
+      };
+
+      await resultManager.exportToCSV(savedResult, '/path/to/output.csv');
+
+      const writtenContent = vi.mocked(fs.writeFile).mock.calls[0]?.[1] as string;
+      expect(writtenContent).toContain('Sharpe Ratio,0.00');
+    });
+  });
+
+  describe('exportOptimizationToCSV branch coverage', () => {
+    it('should handle empty topResults array (no firstResult)', async () => {
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const summary: OptimizationSummary = {
+        timestamp: '2024-01-01T00:00:00Z',
+        type: 'optimization',
+        strategy: 'test',
+        symbol: 'BTCUSDT',
+        interval: '1d',
+        period: { start: '2024-01-01', end: '2024-03-01' },
+        totalCombinations: 0,
+        successfulRuns: 0,
+        topResults: [],
+        statistics: {
+          average: { winRate: 0, totalPnlPercent: 0, profitFactor: 0, sharpeRatio: 0 },
+        },
+      };
+
+      await resultManager.exportOptimizationToCSV(summary, '/path/to/output.csv');
+
+      const writtenContent = vi.mocked(fs.writeFile).mock.calls[0]?.[1] as string;
+
+      expect(writtenContent).toContain('Rank,');
+      expect(writtenContent).toContain('Trades,Win Rate');
+      expect(writtenContent).toContain('Total Combinations,0');
+      expect(writtenContent).not.toContain('sl');
+    });
+
+    it('should handle sharpeRatio being 0 in optimization results', async () => {
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const metricsNoSharpe = { ...createMockMetrics(), sharpeRatio: 0 };
+
+      const summary: OptimizationSummary = {
+        timestamp: '2024-01-01T00:00:00Z',
+        type: 'optimization',
+        strategy: 'test',
+        symbol: 'BTCUSDT',
+        interval: '1d',
+        period: { start: '2024-01-01', end: '2024-03-01' },
+        totalCombinations: 1,
+        successfulRuns: 1,
+        topResults: [{ params: { sl: 2 }, metrics: metricsNoSharpe }],
+        statistics: {
+          average: { winRate: 55, totalPnlPercent: 15, profitFactor: 1.8, sharpeRatio: 1.5 },
+        },
+      };
+
+      await resultManager.exportOptimizationToCSV(summary, '/path/to/output.csv');
+
+      const writtenContent = vi.mocked(fs.writeFile).mock.calls[0]?.[1] as string;
+      expect(writtenContent).toContain('0.00');
+    });
+  });
+
+  describe('compareResults branch coverage', () => {
+    it('should handle optimization result with empty topResults (no best)', () => {
+      const results: OptimizationSummary[] = [
+        {
+          timestamp: '2024-01-01T00:00:00Z',
+          type: 'optimization',
+          strategy: 'opt-empty',
+          symbol: 'BTCUSDT',
+          interval: '1d',
+          period: { start: '2024-01-01', end: '2024-03-01' },
+          totalCombinations: 0,
+          successfulRuns: 0,
+          topResults: [],
+          statistics: {
+            average: { winRate: 0, totalPnlPercent: 0, profitFactor: 0, sharpeRatio: 0 },
+          },
+        },
+      ];
+
+      const comparison = resultManager.compareResults(results);
+
+      expect(comparison).toHaveLength(1);
+      expect(comparison[0].type).toBe('optimization');
+      expect(comparison[0].bestWinRate).toBe(0);
+      expect(comparison[0].bestProfitFactor).toBe(0);
+      expect(comparison[0].bestPnl).toBe(0);
+    });
+
+    it('should handle validation result with sharpeRatio of 0', () => {
+      const metricsNoSharpe = { ...createMockMetrics(), sharpeRatio: 0 };
+
+      const results: SavedBacktestResult[] = [
+        {
+          timestamp: '2024-01-01T00:00:00Z',
+          type: 'validation',
+          strategy: 'strategy-no-sharpe',
+          symbol: 'BTCUSDT',
+          interval: '1d',
+          period: { start: '2024-01-01', end: '2024-03-01' },
+          config: {},
+          result: createMockBacktestResult(),
+          metrics: metricsNoSharpe,
+        },
+      ];
+
+      const comparison = resultManager.compareResults(results);
+
+      expect(comparison).toHaveLength(1);
+      expect(comparison[0].sharpeRatio).toBe(0);
+    });
   });
 });

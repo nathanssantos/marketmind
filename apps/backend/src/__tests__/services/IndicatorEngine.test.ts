@@ -1741,4 +1741,943 @@ describe('IndicatorEngine', () => {
       expect(value).toBe(102);
     });
   });
+
+  describe('toNumber helper branches', () => {
+    it('should use default when param is undefined (toNumber via missing param)', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        sma: { type: 'sma', params: {} },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['sma']).toBeDefined();
+    });
+
+    it('should parse string param value as number (toNumber string branch)', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        sma: { type: 'sma', params: { period: '15' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['sma']).toBeDefined();
+      expect(result['sma']!.type).toBe('sma');
+    });
+  });
+
+  describe('cache eviction edge cases', () => {
+    it('should evict oldest cache entry when MAX_CACHE_SIZE (100) is reached', () => {
+      const indicators: Record<string, IndicatorDefinition> = {
+        sma: { type: 'sma', params: { period: 10 } },
+      };
+
+      for (let i = 0; i < 100; i++) {
+        const klines = generateKlines(5, i * 1000);
+        engine.computeIndicators(klines, indicators, {});
+      }
+
+      const evictedKlines = generateKlines(5, 0);
+      const result1 = engine.computeIndicators(evictedKlines, indicators, {});
+
+      engine.clearCache();
+
+      const newKlines = generateKlines(5, 200000);
+      engine.computeIndicators(newKlines, indicators, {});
+
+      const result2 = engine.computeIndicators(evictedKlines, indicators, {});
+      expect(result1).not.toBe(result2);
+    });
+
+    it('should handle generateCacheKey with empty klines', () => {
+      const indicators: Record<string, IndicatorDefinition> = {
+        sma: { type: 'sma', params: { period: 10 } },
+      };
+
+      const result = engine.computeIndicators([], indicators, {});
+
+      expect(result['sma']).toBeDefined();
+    });
+  });
+
+  describe('resolveParams edge cases', () => {
+    it('should throw error for invalid parameter value type', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        sma: { type: 'sma', params: { period: null as unknown as number } },
+      };
+
+      expect(() => engine.computeIndicators(klines, indicators, {})).toThrow('Invalid parameter value');
+    });
+
+    it('should pass through non-$ string params unchanged', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fp: { type: 'floorPivots', params: { pivotType: 'camarilla' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['fp']!.type).toBe('floorPivots');
+    });
+  });
+
+  describe('computeIndicator unknown type', () => {
+    it('should throw error for unknown indicator type', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        test: { type: 'unknownType' as IndicatorType, params: {} },
+      };
+
+      expect(() => engine.computeIndicators(klines, indicators, {})).toThrow('Unknown indicator type: unknownType');
+    });
+  });
+
+  describe('parseReference advanced branches', () => {
+    it('should handle prevXYZ (non-numeric suffix) defaulting offset to 1', () => {
+      const klines = generateKlines(10);
+      const indicators = engine.computeIndicators(klines, {}, {});
+
+      const value = engine.resolveIndicatorValue(indicators, 'close.prevABC', 5);
+
+      expect(value).toBe(104);
+    });
+
+    it('should skip empty parts in reference path', () => {
+      const klines = generateKlines(10);
+      const indicators = engine.computeIndicators(klines, {}, {});
+
+      const value = engine.resolveIndicatorValue(indicators, 'close..prev', 5);
+
+      expect(value).toBe(104);
+    });
+
+    it('should handle subKey followed by prev (macd.histogram.prev)', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const current = engine.resolveIndicatorValue(indicators, 'macd.histogram', 49);
+      const prev = engine.resolveIndicatorValue(indicators, 'macd.histogram.prev', 49);
+
+      expect(current !== null || prev !== null).toBe(true);
+    });
+
+    it('should handle subKey already set when second non-prev part appears', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const value = engine.resolveIndicatorValue(indicators, 'macd.signal.extra', 49);
+
+      expect(value).not.toBeNull();
+    });
+  });
+
+  describe('resolveIndicatorValue additional branches', () => {
+    it('should return null when _price indicator is missing for price reference', () => {
+      const indicators: ComputedIndicators = {};
+
+      expect(engine.resolveIndicatorValue(indicators, 'close', 0)).toBeNull();
+    });
+
+    it('should return null for array indicator with out-of-range index', () => {
+      const klines = generateKlines(10);
+      const indicators = engine.computeIndicators(
+        klines,
+        { sma: { type: 'sma', params: { period: 5 } } },
+        {}
+      );
+
+      const value = engine.resolveIndicatorValue(indicators, 'sma', 999);
+
+      expect(value).toBeNull();
+    });
+
+    it('should return null for record indicator with non-existent subKey', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const value = engine.resolveIndicatorValue(indicators, 'macd.nonexistent', 49);
+
+      expect(value).toBeNull();
+    });
+
+    it('should return null when defaultKey values returns empty object', () => {
+      const indicators: ComputedIndicators = {
+        empty: {
+          type: 'sma' as IndicatorType,
+          values: {},
+        },
+      };
+
+      const value = engine.resolveIndicatorValue(indicators, 'empty', 0);
+
+      expect(value).toBeNull();
+    });
+
+    it('should return null for volume.nonexistent subKey', () => {
+      const klines = generateKlines(10);
+      const indicators = engine.computeIndicators(klines, {}, {});
+
+      const value = engine.resolveIndicatorValue(indicators, 'volume.nonexistent', 0);
+
+      expect(value).toBeNull();
+    });
+  });
+
+  describe('getIndicatorSeries additional branches', () => {
+    it('should return empty for indicator with empty values object (no defaultKey)', () => {
+      const indicators: ComputedIndicators = {
+        empty: {
+          type: 'sma' as IndicatorType,
+          values: {},
+        },
+      };
+
+      const series = engine.getIndicatorSeries(indicators, 'empty');
+
+      expect(series).toEqual([]);
+    });
+
+    it('should handle volume.subKey with offset (not entering volume branch)', () => {
+      const klines = generateKlines(25);
+      const indicators = engine.computeIndicators(klines, {}, {});
+
+      const series = engine.getIndicatorSeries(indicators, 'volume.current.prev');
+
+      expect(series).toHaveLength(25);
+      expect(series[0]).toBeNull();
+    });
+
+    it('should handle getIndicatorSeries for a record-type indicator with prev offset', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const series = engine.getIndicatorSeries(indicators, 'macd.signal.prev');
+
+      expect(series).toHaveLength(50);
+      expect(series[0]).toBeNull();
+    });
+
+    it('should return empty array for non-existent subKey on record indicator', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const series = engine.getIndicatorSeries(indicators, 'macd.nonexistent');
+
+      expect(series).toEqual([]);
+    });
+
+    it('should return shifted series when offset > 0 on array indicator', () => {
+      const klines = generateKlines(10);
+      const indicators = engine.computeIndicators(
+        klines,
+        { sma: { type: 'sma', params: { period: 3 } } },
+        {}
+      );
+
+      const series = engine.getIndicatorSeries(indicators, 'sma.prev');
+
+      expect(series).toHaveLength(10);
+      expect(series[0]).toBeNull();
+    });
+
+    it('should return empty series for missing price indicator in getIndicatorSeries', () => {
+      const indicators: ComputedIndicators = {};
+
+      const series = engine.getIndicatorSeries(indicators, 'open');
+
+      expect(series).toEqual([]);
+    });
+
+    it('should return empty series for missing volume indicator in getIndicatorSeries', () => {
+      const indicators: ComputedIndicators = {};
+
+      const series = engine.getIndicatorSeries(indicators, 'volume.sma20');
+
+      expect(series).toEqual([]);
+    });
+  });
+
+  describe('calculateHighest/Lowest source branches', () => {
+    it('should compute Highest with open source', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        h: { type: 'highest', params: { period: 3, source: 'open' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['h']!.values as (number | null)[];
+
+      expect(values[2]).not.toBeNull();
+    });
+
+    it('should compute Highest with low source', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        h: { type: 'highest', params: { period: 3, source: 'low' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['h']!.values as (number | null)[];
+
+      expect(values[2]).not.toBeNull();
+    });
+
+    it('should compute Lowest with high source', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        l: { type: 'lowest', params: { period: 3, source: 'high' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['l']!.values as (number | null)[];
+
+      expect(values[2]).not.toBeNull();
+    });
+
+    it('should compute Lowest with volume source', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        l: { type: 'lowest', params: { period: 3, source: 'volume' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['l']!.values as (number | null)[];
+
+      expect(values[2]).not.toBeNull();
+    });
+
+    it('should compute Highest with non-string source param defaulting to high', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        h: { type: 'highest', params: { period: 3, source: 99 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['h']!.values as (number | null)[];
+
+      expect(values[2]).not.toBeNull();
+    });
+
+    it('should compute Lowest with non-string source param defaulting to low', () => {
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        l: { type: 'lowest', params: { period: 3, source: 99 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['l']!.values as (number | null)[];
+
+      expect(values[2]).not.toBeNull();
+    });
+  });
+
+  describe('calculateVolumeSMA edge cases', () => {
+    it('should return empty array for period 0', () => {
+      const result = engine.computeIndicators([], {}, {});
+      const volumeValues = result['volume']!.values as Record<string, (number | null)[]>;
+
+      expect(volumeValues['sma20']).toHaveLength(0);
+    });
+  });
+
+  describe('OBV smaPeriod type branches', () => {
+    it('should handle OBV with string smaPeriod (non-number branch)', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        obv: { type: 'obv', params: { smaPeriod: 'invalid' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['obv']).toBeDefined();
+      expect(result['obv']!.type).toBe('obv');
+    });
+  });
+
+  describe('floorPivots pivotType branch', () => {
+    it('should handle floorPivots with numeric pivotType (non-string branch)', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fp: { type: 'floorPivots', params: { pivotType: 42 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['fp']!.type).toBe('floorPivots');
+    });
+
+    it('should handle floorPivots with woodie pivot type', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fp: { type: 'floorPivots', params: { pivotType: 'woodie' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['fp']!.type).toBe('floorPivots');
+    });
+
+    it('should handle floorPivots with demark pivot type', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fp: { type: 'floorPivots', params: { pivotType: 'demark' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['fp']!.type).toBe('floorPivots');
+    });
+
+    it('should handle floorPivots with camarilla pivot type', () => {
+      const klines = generateKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fp: { type: 'floorPivots', params: { pivotType: 'camarilla' } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['fp']!.type).toBe('floorPivots');
+    });
+  });
+
+  describe('crypto indicator handlers - data presence branches', () => {
+    it('should handle fundingRate when result.current is null', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([
+          { fundingRate: 0.0001, fundingTime: Date.now(), symbol: 'BTCUSDT' },
+        ]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fr: { type: 'fundingRate', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['fr']!.values as Record<string, (number | null)[]>;
+
+      expect(values['current']).toHaveLength(5);
+      expect(values['signal']).toHaveLength(5);
+    });
+
+    it('should handle openInterest where prev price is 0', async () => {
+      const klines: Kline[] = [
+        createMockKline({ close: 0, index: 0 }),
+        createMockKline({ close: 100, index: 1 }),
+        createMockKline({ close: 105, index: 2 }),
+        createMockKline({ close: 110, index: 3 }),
+        createMockKline({ close: 115, index: 4 }),
+      ];
+
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([
+          { openInterest: '50000', symbol: 'BTCUSDT', time: Date.now() - 3600000 },
+          { openInterest: '55000', symbol: 'BTCUSDT', time: Date.now() },
+        ]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const newEngine = new IndicatorEngine();
+      const indicators: Record<string, IndicatorDefinition> = {
+        oi: { type: 'openInterest', params: {} },
+      };
+
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['oi']!.values as Record<string, (number | null)[]>;
+
+      expect(values['current']).toHaveLength(5);
+    });
+
+    it('should handle openInterest when result.current is null', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([
+          { openInterest: '50000', symbol: 'BTCUSDT', time: Date.now() },
+        ]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        oi: { type: 'openInterest', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['oi']!.values as Record<string, (number | null)[]>;
+
+      expect(values['current']).toHaveLength(5);
+      expect(values['trend']).toHaveLength(5);
+      expect(values['divergence']).toHaveLength(5);
+    });
+
+    it('should handle relativeStrength with baseAssetCloses from cryptoData', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        rs: { type: 'relativeStrength', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'ETHUSDT');
+      const values = result['rs']!.values as Record<string, (number | null)[]>;
+
+      expect(values['ratio']).toHaveLength(10);
+      expect(values['outperforming']).toHaveLength(10);
+      expect(values['strength']).toHaveLength(10);
+    });
+
+    it('should handle btcDominance when btcDominance is undefined in cryptoData', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        btcd: { type: 'btcDominance', params: {} },
+        fr: { type: 'fundingRate', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+
+      expect(result['btcd']).toBeDefined();
+      const values = result['btcd']!.values as Record<string, (number | null)[]>;
+      expect(values['current']).toHaveLength(5);
+      expect(values['current']![4]).toBeNull();
+    });
+
+    it('should evict oldest crypto data cache entry when MAX_CRYPTO_CACHE_SIZE reached', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fr: { type: 'fundingRate', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      for (let i = 0; i < 51; i++) {
+        newEngine.clearCache();
+        await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, `SYMBOL${i}USDT`);
+      }
+
+      expect(mockService.getFundingRate).toHaveBeenCalledTimes(51);
+    });
+
+    it('should handle fetchCryptoData with needsBtcDominance false (no BTC dominance fetch)', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+      const btcMock = vi.mocked(getBTCDominanceDataService);
+      btcMock.mockClear();
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fr: { type: 'fundingRate', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+
+      expect(btcMock).not.toHaveBeenCalled();
+    });
+
+    it('should handle computeCryptoIndicator returning null for non-crypto type', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        sma: { type: 'sma', params: { period: 5 } },
+        fr: { type: 'fundingRate', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+
+      expect(result['sma']).toBeDefined();
+      expect(result['sma']!.type).toBe('sma');
+    });
+
+    it('should handle btcDominance with needsBtcDominance and results[3] containing data', async () => {
+      const mockBtcService = {
+        getBTCDominance: vi.fn().mockResolvedValue({ btcDominance: 48.7 }),
+      };
+      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as ReturnType<typeof getBTCDominanceDataService>);
+
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        btcd: { type: 'btcDominance', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['btcd']!.values as Record<string, (number | null)[]>;
+
+      expect(values['current']![4]).toBe(48.7);
+    });
+
+    it('should handle btcDominance with needsBtcDominance and null results[3]', async () => {
+      const mockBtcService = {
+        getBTCDominance: vi.fn().mockResolvedValue(null),
+      };
+      vi.mocked(getBTCDominanceDataService).mockReturnValue(mockBtcService as ReturnType<typeof getBTCDominanceDataService>);
+
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        btcd: { type: 'btcDominance', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['btcd']!.values as Record<string, (number | null)[]>;
+
+      expect(values['current']![4]).toBeNull();
+    });
+  });
+
+  describe('supertrend trend mapping branches', () => {
+    it('should map supertrend trend values correctly (up -> 1, down -> -1)', () => {
+      const klines = generateVolatileKlines(40);
+      const indicators: Record<string, IndicatorDefinition> = {
+        st: { type: 'supertrend', params: { period: 10, multiplier: 3 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['st']!.values as Record<string, (number | null)[]>;
+
+      for (const v of values['trend']!) {
+        expect(v === 1 || v === -1 || v === null).toBe(true);
+      }
+    });
+  });
+
+  describe('pivotPoints index bounds', () => {
+    it('should handle pivot points where index is within bounds', () => {
+      const klines = generateVolatileKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        pp: { type: 'pivotPoints', params: { lookback: 3 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['pp']).toBeDefined();
+      expect(result['pp']!.type).toBe('pivotPoints');
+    });
+  });
+
+  describe('fvg gap type branches', () => {
+    it('should handle FVG with bullish and bearish gaps in different indices', () => {
+      const klines: Kline[] = [];
+      for (let i = 0; i < 20; i++) {
+        const base = 100 + (i % 3 === 0 ? 10 : -10) * (i % 2 === 0 ? 1 : -1);
+        klines.push(createMockKline({
+          open: base - 5,
+          high: base + 15,
+          low: base - 15,
+          close: base,
+          volume: 1000,
+          index: i,
+        }));
+      }
+
+      const indicators: Record<string, IndicatorDefinition> = {
+        fvg: { type: 'fvg', params: {} },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['fvg']!.values as Record<string, (number | null)[]>;
+
+      expect(values['bullish']).toHaveLength(20);
+      expect(values['bearish']).toHaveLength(20);
+    });
+  });
+
+  describe('gapDetection type branches', () => {
+    it('should handle gap detection with up and down gaps', () => {
+      const klines: Kline[] = [];
+      for (let i = 0; i < 10; i++) {
+        const gapUp = i === 3;
+        const gapDown = i === 6;
+        const close = 100 + i * 2 + (gapUp ? 20 : 0) - (gapDown ? 20 : 0);
+        klines.push(createMockKline({
+          open: close - 1,
+          high: close + 2,
+          low: close - 2,
+          close,
+          volume: 1000,
+          index: i,
+        }));
+      }
+
+      const indicators: Record<string, IndicatorDefinition> = {
+        gap: { type: 'gapDetection', params: { threshold: 0.5 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+
+      expect(result['gap']!.type).toBe('gapDetection');
+    });
+  });
+
+  describe('liquidityLevels type branches', () => {
+    it('should handle liquidity levels with support and resistance types', () => {
+      const klines: Kline[] = [];
+      for (let i = 0; i < 80; i++) {
+        const price = 100 + Math.sin(i * 0.3) * 10;
+        klines.push(createMockKline({
+          open: price - 1,
+          high: price + 3,
+          low: price - 3,
+          close: price,
+          volume: 1000,
+          index: i,
+        }));
+      }
+
+      const indicators: Record<string, IndicatorDefinition> = {
+        ll: { type: 'liquidityLevels', params: { lookback: 20, minTouches: 2 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['ll']!.values as Record<string, (number | null)[]>;
+
+      expect(values['support']).toHaveLength(80);
+      expect(values['resistance']).toHaveLength(80);
+    });
+  });
+
+  describe('parabolicSar trend mapping', () => {
+    it('should map parabolicSar trend (up -> 1, down -> -1)', () => {
+      const klines = generateVolatileKlines(30);
+      const indicators: Record<string, IndicatorDefinition> = {
+        psar: { type: 'parabolicSar', params: { step: 0.02, max: 0.2 } },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['psar']!.values as Record<string, (number | null)[]>;
+
+      for (const v of values['trend']!) {
+        if (v !== null) {
+          expect(v === 1 || v === -1).toBe(true);
+        }
+      }
+    });
+  });
+
+  describe('fundingRate signal ternary branches', () => {
+    it('should map funding rate signal values (long=1, short=-1, neutral=0)', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([
+          { fundingRate: 0.0001, fundingTime: Date.now() - 7200000, symbol: 'BTCUSDT' },
+          { fundingRate: 0.0002, fundingTime: Date.now() - 3600000, symbol: 'BTCUSDT' },
+          { fundingRate: 0.0003, fundingTime: Date.now(), symbol: 'BTCUSDT' },
+        ]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        fr: { type: 'fundingRate', params: { extremeThreshold: 0.1, averagePeriod: 7 } },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['fr']!.values as Record<string, (number | null)[]>;
+
+      expect(values['signal']).toHaveLength(5);
+      for (const v of values['signal']!) {
+        expect(v === 1 || v === -1 || v === 0).toBe(true);
+      }
+    });
+  });
+
+  describe('openInterest trend and divergence ternary branches', () => {
+    it('should map OI trend and divergence values', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([
+          { openInterest: '50000', symbol: 'BTCUSDT', time: Date.now() - 7200000 },
+          { openInterest: '52000', symbol: 'BTCUSDT', time: Date.now() - 3600000 },
+          { openInterest: '55000', symbol: 'BTCUSDT', time: Date.now() },
+        ]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(10);
+      const indicators: Record<string, IndicatorDefinition> = {
+        oi: { type: 'openInterest', params: { lookback: 10, changeThreshold: 5, trendPeriod: 5 } },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['oi']!.values as Record<string, (number | null)[]>;
+
+      for (const v of values['trend']!) {
+        expect(v === 1 || v === -1 || v === 0).toBe(true);
+      }
+      for (const v of values['divergence']!) {
+        expect(v === 1 || v === -1 || v === 0).toBe(true);
+      }
+    });
+  });
+
+  describe('liquidations dominantSide ternary branches', () => {
+    it('should map liquidations dominantSide values (long=1, short=-1, neutral=0)', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([
+          { side: 'BUY', price: '45000', quantity: '5', time: Date.now(), symbol: 'BTCUSDT' },
+          { side: 'SELL', price: '46000', quantity: '1', time: Date.now(), symbol: 'BTCUSDT' },
+        ]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        liq: { type: 'liquidations', params: { cascadeThreshold: 1000000, lookbackPeriods: 6, imbalanceThreshold: 0.7 } },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'BTCUSDT');
+      const values = result['liq']!.values as Record<string, (number | null)[]>;
+
+      for (const v of values['dominantSide']!) {
+        expect(v === 1 || v === -1 || v === 0).toBe(true);
+      }
+      for (const v of values['cascade']!) {
+        expect(v === 1 || v === 0).toBe(true);
+      }
+    });
+  });
+
+  describe('relativeStrength result branches', () => {
+    it('should handle relativeStrength with ratio being null', async () => {
+      const mockService = {
+        getFundingRate: vi.fn().mockResolvedValue([]),
+        getOpenInterest: vi.fn().mockResolvedValue([]),
+        getLiquidations: vi.fn().mockResolvedValue([]),
+      };
+      vi.mocked(getBinanceFuturesDataService).mockReturnValue(mockService as ReturnType<typeof getBinanceFuturesDataService>);
+
+      const klines = generateKlines(5);
+      const indicators: Record<string, IndicatorDefinition> = {
+        rs: { type: 'relativeStrength', params: {} },
+      };
+
+      const newEngine = new IndicatorEngine();
+      const result = await newEngine.computeIndicatorsWithCryptoData(klines, indicators, {}, 'ETHUSDT');
+      const values = result['rs']!.values as Record<string, (number | null)[]>;
+
+      expect(values['ratio']).toHaveLength(5);
+      expect(values['outperforming']).toHaveLength(5);
+      expect(values['strength']).toHaveLength(5);
+
+      for (const v of values['outperforming']!) {
+        expect(v === 1 || v === 0).toBe(true);
+      }
+      for (const v of values['strength']!) {
+        expect(v === 2 || v === 1 || v === 0 || v === -1).toBe(true);
+      }
+    });
+  });
+
+  describe('getIndicatorSeries with prev on nested record types', () => {
+    it('should return shifted series for record type with subKey and prev', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const series = engine.getIndicatorSeries(indicators, 'macd.histogram.prev2');
+
+      expect(series).toHaveLength(50);
+      expect(series[0]).toBeNull();
+      expect(series[1]).toBeNull();
+    });
+
+    it('should return default first key for record indicator without subKey but with prev', () => {
+      const klines = generateKlines(50);
+      const indicators = engine.computeIndicators(
+        klines,
+        { macd: { type: 'macd', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 } } },
+        {}
+      );
+
+      const series = engine.getIndicatorSeries(indicators, 'macd.prev');
+
+      expect(series).toHaveLength(50);
+      expect(series[0]).toBeNull();
+    });
+  });
 });

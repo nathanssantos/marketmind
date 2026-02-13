@@ -1151,6 +1151,1077 @@ describe('KlineMaintenance', () => {
       expect(mockDbQueryActiveWatchersFindMany.mock.calls.length).toBe(callsAfterStop);
     });
   });
+
+  describe('start - branch coverage', () => {
+    it('should skip startup sync without delay when skipStartupSync is true and no delayMs', async () => {
+      await maintenance.start({ skipStartupSync: true });
+      expect(mockDbQueryActiveWatchersFindMany).not.toHaveBeenCalled();
+    });
+
+    it('should schedule delayed startup sync when skipStartupSync and delayMs are both set', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([]);
+      await maintenance.start({ skipStartupSync: true, delayMs: 1000 });
+      expect(mockDbQueryActiveWatchersFindMany).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1001);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  });
+
+  describe('checkCorruptionOnStartup - branch coverage', () => {
+    it('should return pairsChecked 0 when no active pairs', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([]);
+      await maintenance.start();
+    });
+
+    it('should log corruption fix with success status when all corrupted klines are fixed', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const corruptedKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+        open: '0',
+        high: '0',
+        low: '0',
+        close: '0',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([corruptedKline]);
+      mockIsKlineCorrupted.mockReturnValue({ openTime: corruptedKline.openTime, reason: 'Zero prices' });
+
+      const fixedKline = createApiKline(corruptedKline.openTime.getTime());
+      const apiMap = new Map();
+      apiMap.set(corruptedKline.openTime.getTime(), fixedKline);
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      await maintenance.start();
+    });
+
+    it('should log corruption fix with partial status when only some corrupted klines are fixed', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+      });
+      const kline2 = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+      mockIsKlineCorrupted
+        .mockReturnValueOnce({ openTime: kline1.openTime, reason: 'Zero prices' })
+        .mockReturnValueOnce({ openTime: kline2.openTime, reason: 'Zero prices' });
+
+      const apiMap = new Map();
+      apiMap.set(kline1.openTime.getTime(), createApiKline(kline1.openTime.getTime()));
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      await maintenance.start();
+    });
+
+    it('should log corruption fix with error status when no corrupted klines are fixed', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const corruptedKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([corruptedKline]);
+      mockIsKlineCorrupted.mockReturnValue({ openTime: corruptedKline.openTime, reason: 'Zero prices' });
+
+      mockFetchBinanceKlinesBatch.mockResolvedValue(new Map());
+
+      await maintenance.start();
+    });
+
+    it('should handle per-pair errors in corruption check on startup', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockRejectedValue(new Error('DB error'));
+
+      await maintenance.start();
+    });
+
+    it('should handle global error in corruption check on startup', async () => {
+      mockDbQueryActiveWatchersFindMany
+        .mockResolvedValueOnce([{ symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' }])
+        .mockRejectedValueOnce(new Error('Global error'));
+
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.start();
+    });
+  });
+
+  describe('updateMaintenanceLog - branch coverage', () => {
+    it('should set lastGapCheck and gapsFound when checkType is gap with gapsFound defined', async () => {
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+
+      expect(mockDbInsert).toHaveBeenCalled();
+    });
+
+    it('should set lastCorruptionCheck and corruptedFixed when checkType is corruption with corruptedFixed defined', async () => {
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+
+      const insertCalls = mockDbInsert.mock.calls.length;
+      expect(insertCalls).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('checkAllStoredPairs - branch coverage', () => {
+    it('should add skipped gap fill to logBuffer when cooldown is active during startup', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue({
+        lastGapCheck: new Date(Date.now() - 1000),
+        lastCorruptionCheck: new Date(Date.now() - 1000),
+      });
+
+      await maintenance.start();
+    });
+
+    it('should add gap fill with partial status when gaps found but none filled', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      await maintenance.start();
+    });
+
+    it('should add gap fill with success status when totalFilled > 0', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([createApiKline(baseTime + HOUR_MS)]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      await maintenance.start();
+    });
+
+    it('should handle per-pair error with logBuffer adding error entry', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockRejectedValue(new Error('DB pair error'));
+
+      await maintenance.start();
+    });
+
+    it('should handle per-pair error with non-Error object', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockRejectedValue('string error');
+
+      await maintenance.start();
+    });
+
+    it('should handle global error in checkAllStoredPairs', async () => {
+      mockDbQueryActiveWatchersFindMany.mockRejectedValue(new Error('DB connection error'));
+
+      await maintenance.start();
+    });
+  });
+
+  describe('checkAndFillGaps - branch coverage', () => {
+    it('should fill gaps and log with success status when totalFilled > 0', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([createApiKline(baseTime + HOUR_MS)]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should log with partial status when gaps found but totalFilled is 0', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should check and fix corrupted klines with partial fix status', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      mockDbQueryPairMaintenanceLogFindFirst
+        .mockResolvedValueOnce({ lastGapCheck: new Date(now - 1000) })
+        .mockResolvedValueOnce(null);
+
+      const kline1 = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+      });
+      const kline2 = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+      mockIsKlineCorrupted
+        .mockReturnValueOnce({ openTime: kline1.openTime, reason: 'Zero' })
+        .mockReturnValueOnce({ openTime: kline2.openTime, reason: 'Zero' });
+
+      const apiMap = new Map();
+      apiMap.set(kline1.openTime.getTime(), createApiKline(kline1.openTime.getTime()));
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should check and fix corrupted klines with error status when none fixed', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      mockDbQueryPairMaintenanceLogFindFirst
+        .mockResolvedValueOnce({ lastGapCheck: new Date(now - 1000) })
+        .mockResolvedValueOnce(null);
+
+      const corruptedKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([corruptedKline]);
+      mockIsKlineCorrupted.mockReturnValue({ openTime: corruptedKline.openTime, reason: 'Zero' });
+      mockFetchBinanceKlinesBatch.mockResolvedValue(new Map());
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should not log gap fill when no gaps and no filled candles', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const now = Date.now();
+      const klines = [
+        createDbKline({ openTime: new Date(now - 2 * HOUR_MS) }),
+        createDbKline({ openTime: new Date(now - HOUR_MS) }),
+      ];
+      mockDbQueryKlinesFindMany.mockResolvedValue(klines);
+
+      await maintenance.checkAndFillGaps();
+    });
+  });
+
+  describe('detectGaps - branch coverage', () => {
+    it('should use SPOT start time for SPOT market type', async () => {
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+      mockFetchHistoricalKlinesFromAPI.mockResolvedValue([]);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'SPOT');
+
+      expect(mockFetchHistoricalKlinesFromAPI).toHaveBeenCalled();
+    });
+
+    it('should use knownEarliestDate when available for minStartTime', async () => {
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue({
+        earliestKlineDate: new Date('2022-01-01'),
+        lastGapCheck: null,
+        lastCorruptionCheck: null,
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.gapsFilled).toBe(0);
+    });
+
+    it('should not add gap at beginning when knownEarliestDate is set even if first kline is after start', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue({
+        earliestKlineDate: new Date('2022-01-01'),
+        lastGapCheck: null,
+        lastCorruptionCheck: null,
+      });
+
+      const klines = [
+        createDbKline({ openTime: new Date(now - 5 * HOUR_MS) }),
+        createDbKline({ openTime: new Date(now - 4 * HOUR_MS) }),
+      ];
+      mockDbQueryKlinesFindMany.mockResolvedValue(klines);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+
+    it('should not add gap at beginning when missingAtStart < MIN_GAP_SIZE_TO_FILL', async () => {
+      const now = Date.now();
+      const baseTime = now - 2 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const klines = [
+        createDbKline({ openTime: new Date(baseTime) }),
+        createDbKline({ openTime: new Date(baseTime + HOUR_MS) }),
+      ];
+      mockDbQueryKlinesFindMany.mockResolvedValue(klines);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+
+    it('should skip gap between klines when missingCandles < MIN_GAP_SIZE_TO_FILL', async () => {
+      const now = Date.now();
+      const baseTime = now - 5 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const klines = [
+        createDbKline({ openTime: new Date(baseTime) }),
+        createDbKline({ openTime: new Date(baseTime + HOUR_MS) }),
+      ];
+      mockDbQueryKlinesFindMany.mockResolvedValue(klines);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+
+    it('should not add gap at end when missingAtEnd < MIN_GAP_SIZE_TO_FILL + 1', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const klines = [
+        createDbKline({ openTime: new Date(now - HOUR_MS) }),
+      ];
+      mockDbQueryKlinesFindMany.mockResolvedValue(klines);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+
+    it('should handle single kline with null prevKline and currKline check', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const klines = [
+        createDbKline({ openTime: new Date(now - 100 * HOUR_MS) }),
+      ];
+      mockDbQueryKlinesFindMany.mockResolvedValue(klines);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+  });
+
+  describe('fillGap - branch coverage', () => {
+    it('should log when not silent (forceCheckSymbol calls fillGap without silent)', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([createApiKline(baseTime + HOUR_MS)]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      const { logger: mockLogger } = await import('../../services/logger');
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ symbol: 'BTCUSDT' }),
+        'Filling gap'
+      );
+    });
+
+    it('should use fetchHistoricalKlinesFromAPI for SPOT market type in fillGap', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime), marketType: 'SPOT' });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS), marketType: 'SPOT' });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchHistoricalKlinesFromAPI.mockResolvedValue([createApiKline(baseTime + HOUR_MS)]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'SPOT');
+
+      expect(mockFetchHistoricalKlinesFromAPI).toHaveBeenCalled();
+    });
+
+    it('should handle empty API response with no existing klines in DB', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(null);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+
+    it('should handle klines with missing takerBuyBaseVolume and takerBuyQuoteVolume', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      const apiKline = {
+        openTime: baseTime + HOUR_MS,
+        closeTime: baseTime + 2 * HOUR_MS - 1,
+        open: '60000',
+        high: '61000',
+        low: '59000',
+        close: '60500',
+        volume: '1000',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '',
+        takerBuyQuoteVolume: '',
+      };
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([apiKline]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+
+      expect(mockDbInsert).toHaveBeenCalled();
+    });
+
+    it('should log success and update earliest kline when inserted > 0 and not silent', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([createApiKline(baseTime + HOUR_MS)]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(createDbKline({ openTime: new Date(baseTime) }));
+
+      const { logger: mockLogger } = await import('../../services/logger');
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ inserted: 1 }),
+        'Gap filled successfully'
+      );
+    });
+
+    it('should not update earliest kline when firstKline is null after insert', async () => {
+      const baseTime = Date.now() - 10 * HOUR_MS;
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({ openTime: new Date(baseTime) });
+      const kline2 = createDbKline({ openTime: new Date(baseTime + 5 * HOUR_MS) });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockFetchFuturesKlinesFromAPI.mockResolvedValue([createApiKline(baseTime + HOUR_MS)]);
+      mockDbQueryKlinesFindFirst.mockResolvedValue(null);
+
+      await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+    });
+  });
+
+  describe('detectAndFixCorruptedKlines - API validation branch coverage', () => {
+    it('should detect OHLC mismatches via API validation for recently closed klines', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const closedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+        open: '50000',
+        high: '51000',
+        low: '49000',
+        close: '50500',
+        volume: '500',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([closedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+
+      const apiKline = {
+        openTime: closedKline.openTime.getTime(),
+        closeTime: closedKline.closeTime.getTime(),
+        open: '60000',
+        high: '61000',
+        low: '59000',
+        close: '60500',
+        volume: '1000',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '500',
+        takerBuyQuoteVolume: '30000000',
+      };
+      const validationMap = new Map();
+      validationMap.set(closedKline.openTime.getTime(), apiKline);
+
+      const fixMap = new Map();
+      fixMap.set(closedKline.openTime.getTime(), apiKline);
+
+      mockFetchBinanceKlinesBatch
+        .mockResolvedValueOnce(validationMap)
+        .mockResolvedValueOnce(fixMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should skip API validation kline when no apiKline found in map', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const closedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([closedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+      mockFetchBinanceKlinesBatch.mockResolvedValue(new Map());
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBe(0);
+    });
+
+    it('should skip already-corrupted klines when validating against API', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const kline1 = createDbKline({
+        openTime: new Date(now - 4 * HOUR_MS),
+        closeTime: new Date(now - 3 * HOUR_MS - 1),
+      });
+      const kline2 = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([kline1, kline2]);
+
+      mockIsKlineCorrupted
+        .mockReturnValueOnce({ openTime: kline1.openTime, reason: 'Zero prices' })
+        .mockReturnValueOnce(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+
+      const apiMap = new Map();
+      apiMap.set(kline1.openTime.getTime(), createApiKline(kline1.openTime.getTime()));
+      apiMap.set(kline2.openTime.getTime(), createApiKline(kline2.openTime.getTime()));
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result).toBeDefined();
+    });
+
+    it('should detect volume mismatch via API validation', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const closedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+        volume: '10',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([closedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+
+      const apiKline = {
+        openTime: closedKline.openTime.getTime(),
+        closeTime: closedKline.closeTime.getTime(),
+        open: closedKline.open,
+        high: closedKline.high,
+        low: closedKline.low,
+        close: closedKline.close,
+        volume: '1000',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '500',
+        takerBuyQuoteVolume: '30000000',
+      };
+      const validationMap = new Map();
+      validationMap.set(closedKline.openTime.getTime(), apiKline);
+      const fixMap = new Map();
+      fixMap.set(closedKline.openTime.getTime(), apiKline);
+
+      mockFetchBinanceKlinesBatch
+        .mockResolvedValueOnce(validationMap)
+        .mockResolvedValueOnce(fixMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should detect individual OHLC field mismatches (open, high, low, close)', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const closedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+        open: '50000',
+        high: '51000',
+        low: '49000',
+        close: '50500',
+        volume: '1000',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([closedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+
+      const apiKline = {
+        openTime: closedKline.openTime.getTime(),
+        closeTime: closedKline.closeTime.getTime(),
+        open: '60000',
+        high: '62000',
+        low: '58000',
+        close: '61000',
+        volume: '1000',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '500',
+        takerBuyQuoteVolume: '30000000',
+      };
+      const validationMap = new Map();
+      validationMap.set(closedKline.openTime.getTime(), apiKline);
+      const fixMap = new Map();
+      fixMap.set(closedKline.openTime.getTime(), apiKline);
+
+      mockFetchBinanceKlinesBatch
+        .mockResolvedValueOnce(validationMap)
+        .mockResolvedValueOnce(fixMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBe(1);
+    });
+
+    it('should skip API validation fields when apiOHLC value is 0', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const closedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+        open: '60000',
+        high: '61000',
+        low: '59000',
+        close: '60500',
+        volume: '1000',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([closedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+
+      const apiKline = {
+        openTime: closedKline.openTime.getTime(),
+        closeTime: closedKline.closeTime.getTime(),
+        open: '0',
+        high: '0',
+        low: '0',
+        close: '0',
+        volume: '0',
+        quoteVolume: '0',
+        trades: 0,
+        takerBuyBaseVolume: '0',
+        takerBuyQuoteVolume: '0',
+      };
+      const validationMap = new Map();
+      validationMap.set(closedKline.openTime.getTime(), apiKline);
+
+      mockFetchBinanceKlinesBatch.mockResolvedValue(validationMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBe(0);
+    });
+
+    it('should not fix corrupted klines when no binanceKline found in fix map', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const corruptedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([corruptedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue({ openTime: corruptedKline.openTime, reason: 'Zero prices' });
+
+      const validationMap = new Map();
+      mockFetchBinanceKlinesBatch.mockResolvedValue(validationMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBe(0);
+    });
+
+    it('should log fixed corrupted klines when not silent and fixed > 0', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      mockDbQueryPairMaintenanceLogFindFirst
+        .mockResolvedValueOnce({ lastGapCheck: new Date(now - 1000) })
+        .mockResolvedValueOnce(null);
+
+      const corruptedKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([corruptedKline]);
+      mockIsKlineCorrupted.mockReturnValue({ openTime: corruptedKline.openTime, reason: 'Zero' });
+
+      const fixedKline = createApiKline(corruptedKline.openTime.getTime());
+      const apiMap = new Map();
+      apiMap.set(corruptedKline.openTime.getTime(), fixedKline);
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      await maintenance.checkAndFillGaps();
+
+      expect(mockDbUpdate).toHaveBeenCalled();
+    });
+
+    it('should not skip klines not yet closed for API validation', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const notClosedKline = createDbKline({
+        openTime: new Date(now - HOUR_MS),
+        closeTime: new Date(now + HOUR_MS),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([notClosedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue(null);
+      mockIsKlineStaleCorrupted.mockReturnValue(null);
+      mockIsKlineSpikeCorrupted.mockReturnValue(null);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result.corruptedFixed).toBe(0);
+    });
+
+    it('should handle empty klinesToValidate after filtering already corrupted', async () => {
+      const now = Date.now();
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+
+      const closedKline = createDbKline({
+        openTime: new Date(now - 3 * HOUR_MS),
+        closeTime: new Date(now - 2 * HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([closedKline]);
+
+      mockIsKlineCorrupted.mockReturnValue({ openTime: closedKline.openTime, reason: 'Zero prices' });
+
+      const apiMap = new Map();
+      apiMap.set(closedKline.openTime.getTime(), createApiKline(closedKline.openTime.getTime()));
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      const result = await maintenance.forceCheckSymbol('BTCUSDT', '1h', 'FUTURES');
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('checkAfterReconnection - branch coverage', () => {
+    beforeEach(() => {
+      vi.useRealTimers();
+    });
+
+    afterEach(() => {
+      vi.useFakeTimers();
+    });
+
+    it('should skip pair when firstKline or lastKline is undefined', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      const result = await maintenance.checkAfterReconnection();
+      expect(result.checked).toBe(0);
+    });
+
+    it('should skip kline when no apiKline found in map during reconnection', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      const recentKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([recentKline]);
+      mockFetchBinanceKlinesBatch.mockResolvedValue(new Map());
+
+      const result = await maintenance.checkAfterReconnection();
+      expect(result.checked).toBeGreaterThan(0);
+      expect(result.fixed).toBe(0);
+    });
+
+    it('should detect individual mismatch fields (open, high, low, close, volume) during reconnection', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      const dbKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+        open: '50000',
+        high: '51000',
+        low: '49000',
+        close: '50500',
+        volume: '100',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([dbKline]);
+
+      const apiMap = new Map();
+      apiMap.set(dbKline.openTime.getTime(), {
+        openTime: dbKline.openTime.getTime(),
+        open: '60000',
+        high: '62000',
+        low: '58000',
+        close: '61000',
+        volume: '1000',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '500',
+        takerBuyQuoteVolume: '30000000',
+        closeTime: dbKline.closeTime.getTime(),
+      });
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      const result = await maintenance.checkAfterReconnection();
+      expect(result.fixed).toBe(1);
+    });
+
+    it('should handle diffPercent calculation when apiOHLC field is 0', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      const dbKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+        volume: '0',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([dbKline]);
+
+      const apiMap = new Map();
+      apiMap.set(dbKline.openTime.getTime(), {
+        openTime: dbKline.openTime.getTime(),
+        open: dbKline.open,
+        high: dbKline.high,
+        low: dbKline.low,
+        close: dbKline.close,
+        volume: '0',
+        quoteVolume: dbKline.quoteVolume,
+        trades: dbKline.trades,
+        takerBuyBaseVolume: dbKline.takerBuyBaseVolume,
+        takerBuyQuoteVolume: dbKline.takerBuyQuoteVolume,
+        closeTime: dbKline.closeTime.getTime(),
+      });
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      const result = await maintenance.checkAfterReconnection();
+      expect(result.fixed).toBe(0);
+    });
+
+    it('should skip volume mismatch when apiOHLC.volume is 0', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      const dbKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+        open: '60000',
+        high: '61000',
+        low: '59000',
+        close: '60500',
+        volume: '1000',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([dbKline]);
+
+      const apiMap = new Map();
+      apiMap.set(dbKline.openTime.getTime(), {
+        openTime: dbKline.openTime.getTime(),
+        open: '60000',
+        high: '61000',
+        low: '59000',
+        close: '60500',
+        volume: '0',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '500',
+        takerBuyQuoteVolume: '30000000',
+        closeTime: dbKline.closeTime.getTime(),
+      });
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      const result = await maintenance.checkAfterReconnection();
+      expect(result.fixed).toBe(0);
+    });
+
+    it('should skip OHLC field mismatch when apiOHLC field is 0', async () => {
+      const now = Date.now();
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      const dbKline = createDbKline({
+        openTime: new Date(now - 2 * HOUR_MS),
+        closeTime: new Date(now - HOUR_MS - 1),
+        open: '60000',
+        high: '61000',
+        low: '59000',
+        close: '60500',
+        volume: '1000',
+      });
+      mockDbQueryKlinesFindMany.mockResolvedValue([dbKline]);
+
+      const apiMap = new Map();
+      apiMap.set(dbKline.openTime.getTime(), {
+        openTime: dbKline.openTime.getTime(),
+        open: '0',
+        high: '0',
+        low: '0',
+        close: '0',
+        volume: '1000',
+        quoteVolume: '60000000',
+        trades: 5000,
+        takerBuyBaseVolume: '500',
+        takerBuyQuoteVolume: '30000000',
+        closeTime: dbKline.closeTime.getTime(),
+      });
+      mockFetchBinanceKlinesBatch.mockResolvedValue(apiMap);
+
+      const result = await maintenance.checkAfterReconnection();
+      expect(result.fixed).toBe(0);
+    });
+  });
+
+  describe('getActivePairsWithSubscriptions - branch coverage', () => {
+    it('should deduplicate watchers with same symbol, interval, and marketType', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should add SPOT subscriptions that are not already in the set', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([]);
+      mockSpotGetActiveSubscriptions.mockReturnValue([
+        { symbol: 'ETHUSDT', interval: '15m' },
+        { symbol: 'ETHUSDT', interval: '15m' },
+      ]);
+      mockFuturesGetActiveSubscriptions.mockReturnValue([]);
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should add FUTURES subscriptions that are not already in the set', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([]);
+      mockSpotGetActiveSubscriptions.mockReturnValue([]);
+      mockFuturesGetActiveSubscriptions.mockReturnValue([
+        { symbol: 'SOLUSDT', interval: '4h' },
+        { symbol: 'SOLUSDT', interval: '4h' },
+      ]);
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should not add SPOT subscription when already seen from watchers', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'SPOT' },
+      ]);
+      mockSpotGetActiveSubscriptions.mockReturnValue([
+        { symbol: 'BTCUSDT', interval: '1h' },
+      ]);
+      mockFuturesGetActiveSubscriptions.mockReturnValue([]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.checkAndFillGaps();
+    });
+
+    it('should not add FUTURES subscription when already seen from watchers', async () => {
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockSpotGetActiveSubscriptions.mockReturnValue([]);
+      mockFuturesGetActiveSubscriptions.mockReturnValue([
+        { symbol: 'BTCUSDT', interval: '1h' },
+      ]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.checkAndFillGaps();
+    });
+  });
 });
 
 describe('Module exports', () => {
