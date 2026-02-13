@@ -34,10 +34,32 @@ pnpm tsx scripts/backtest/run-optimization.ts
 
 The optimization script runs 3 stages:
 1. **Stage 1** - Parameter sensitivity sweeps (Fibonacci targets, entry progress, R:R ratios)
-2. **Stage 2** - Cross-product of top parameters from Stage 1
+2. **Stage 2** - Cross-product of top parameters from Stage 1 (batched by `maxFibonacciEntryProgressPercent`)
 3. **Stage 3** - Trailing stop optimization on top Stage 2 configs
 
 Features: progress resume, SIGINT/SIGTERM handling, ETA display, kline gap warnings, per-symbol stats.
+
+### Performance architecture
+
+Stage 2 uses `BacktestEngine.runBatch()` to avoid redundant work. Setup detection and indicator
+computation are the most expensive steps (~80% of runtime) and only depend on `{symbol, timeframe,
+maxFibonacciEntryProgressPercent}`. Parameters like `fibonacciTargetLevel*` and `minRiskRewardRatio*`
+only affect the trade execution loop (TP calculation, R:R filtering).
+
+`runBatch()` groups configs sharing the same `maxFibonacciEntryProgressPercent`, runs setup detection
+once per group, then iterates only the trade execution for each fib/RR variation. This reduces
+Stage 2 from days to hours.
+
+Key constants in the script:
+- `TOP_N` (default: 2) - Top parameter values selected from Stage 1 per dimension. Controls the
+  cross-product explosion in Stage 2 (TOP_N^5 combos). Increasing to 3 raises combos from 32 to 243.
+- `TIMEFRAMES` - Timeframes to test. Smaller timeframes (15m, 30m) are much slower due to kline count.
+  15m was removed from the default set because it generates 17K+ klines and is rarely used in production.
+
+### Kline cache behavior
+
+Klines are cached in memory per `{symbol, timeframe}` and reused across all stages. The cache is NOT
+cleared between stages to avoid redundant DB queries. Memory usage for 3 symbols × 8 TFs is ~50-100MB.
 
 Output saved to `/tmp/prod-parity-optimization-run/`:
 - `summary.txt` - Human-readable report with recommendations

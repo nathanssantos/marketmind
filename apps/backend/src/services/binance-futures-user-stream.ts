@@ -405,7 +405,7 @@ export class BinanceFuturesUserStreamService {
           return;
         }
 
-        const [execution] = await db
+        const openExecutions = await db
           .select()
           .from(tradeExecutions)
           .where(
@@ -415,11 +415,23 @@ export class BinanceFuturesUserStreamService {
               eq(tradeExecutions.status, 'open'),
               eq(tradeExecutions.marketType, 'FUTURES')
             )
-          )
-          .limit(1);
+          );
+
+        const executionByOrderId = openExecutions.find(e =>
+          (e.stopLossOrderId && Number(e.stopLossOrderId) === Number(orderId)) ||
+          (e.stopLossAlgoId && Number(e.stopLossAlgoId) === Number(orderId)) ||
+          (e.takeProfitOrderId && Number(e.takeProfitOrderId) === Number(orderId)) ||
+          (e.takeProfitAlgoId && Number(e.takeProfitAlgoId) === Number(orderId))
+        );
+
+        const executionByExitReason = !executionByOrderId
+          ? openExecutions.find(e => e.exitReason === 'STOP_LOSS' || e.exitReason === 'TAKE_PROFIT')
+          : undefined;
+
+        const execution = executionByOrderId || executionByExitReason || openExecutions[0];
 
         if (!execution) {
-          logger.warn({ walletId, symbol, orderId }, '[FuturesUserStream] No open execution found');
+          logger.warn({ walletId, symbol, orderId, openCount: openExecutions.length }, '[FuturesUserStream] No open execution found');
           return;
         }
 
@@ -831,7 +843,7 @@ export class BinanceFuturesUserStreamService {
     }
 
     try {
-      const [execution] = await db
+      const algoOpenExecutions = await db
         .select()
         .from(tradeExecutions)
         .where(
@@ -841,11 +853,19 @@ export class BinanceFuturesUserStreamService {
             eq(tradeExecutions.status, 'open'),
             eq(tradeExecutions.marketType, 'FUTURES')
           )
-        )
-        .limit(1);
+        );
+
+      const executionByAlgoId = algoOpenExecutions.find(e =>
+        Number(e.stopLossAlgoId) === Number(algoId) ||
+        Number(e.stopLossOrderId) === Number(algoId) ||
+        Number(e.takeProfitAlgoId) === Number(algoId) ||
+        Number(e.takeProfitOrderId) === Number(algoId)
+      );
+
+      const execution = executionByAlgoId || algoOpenExecutions[0];
 
       if (!execution) {
-        logger.warn({ walletId, symbol, algoId }, '[FuturesUserStream] No open execution found for algo order');
+        logger.warn({ walletId, symbol, algoId, openCount: algoOpenExecutions.length }, '[FuturesUserStream] No open execution found for algo order');
         return;
       }
 

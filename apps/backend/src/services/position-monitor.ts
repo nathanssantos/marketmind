@@ -422,6 +422,20 @@ export class PositionMonitorService {
       currentPrice,
     };
 
+    const exitReason = execution.exitReason;
+    if (exitReason === 'STOP_LOSS' || exitReason === 'TAKE_PROFIT') {
+      logger.warn({
+        executionId: execution.id,
+        symbol: execution.symbol,
+        exitReason,
+        currentPrice,
+      }, '[PositionMonitor] Detected pending exit from algo trigger - forcing close (ORDER_TRADE_UPDATE likely missed)');
+
+      result.action = exitReason;
+      await this.executeExit(execution, currentPrice, exitReason);
+      return result;
+    }
+
     if (!execution.stopLoss && !execution.takeProfit) {
       const alertKey = `unprotected-${execution.id}`;
       const lastAlert = this.unprotectedAlerts.get(alertKey);
@@ -727,24 +741,6 @@ export class PositionMonitorService {
         } catch (_e) { /* entry fee fetch is best-effort */ }
       }
 
-      const currentBalance = parseFloat(wallet.currentBalance || '0');
-
-      await db
-        .update(wallets)
-        .set({
-          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${actualPnl}`,
-          updatedAt: new Date(),
-        })
-        .where(eq(wallets.id, wallet.id));
-
-      logger.info({
-        walletId: wallet.id,
-        walletType: wallet.walletType,
-        pnl: actualPnl,
-        previousBalance: currentBalance,
-        expectedNewBalance: currentBalance + actualPnl,
-      }, '[PositionMonitor] Wallet balance updated atomically after position exit');
-
       const exitSource = positionSyncedFromExchange ? 'EXCHANGE_SYNC' : 'ALGORITHM';
 
       const closeResult = await db
@@ -775,6 +771,24 @@ export class PositionMonitorService {
         this.deferredExitTimestamps.delete(`${execution.id}-TAKE_PROFIT`);
         return;
       }
+
+      const currentBalance = parseFloat(wallet.currentBalance || '0');
+
+      await db
+        .update(wallets)
+        .set({
+          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${actualPnl}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(wallets.id, wallet.id));
+
+      logger.info({
+        walletId: wallet.id,
+        walletType: wallet.walletType,
+        pnl: actualPnl,
+        previousBalance: currentBalance,
+        expectedNewBalance: currentBalance + actualPnl,
+      }, '[PositionMonitor] Wallet balance updated atomically after position exit');
 
       binancePriceStreamService.invalidateExecutionCache(execution.symbol);
       this.deferredExitTimestamps.delete(`${execution.id}-STOP_LOSS`);

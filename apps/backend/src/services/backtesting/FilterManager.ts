@@ -166,6 +166,10 @@ export class FilterManager {
     this.emaTrend = emaResult.map(v => v ?? 0);
   }
 
+  setEmaTrend(emaTrend: number[]): void {
+    this.emaTrend = emaTrend;
+  }
+
   getEmaTrend(): number[] {
     return this.emaTrend;
   }

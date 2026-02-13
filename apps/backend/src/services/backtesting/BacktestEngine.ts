@@ -7,6 +7,7 @@ import type {
   StrategyDefinition,
 } from '@marketmind/types';
 import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
+import { calculateEMA } from '@marketmind/indicators';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { dirname, resolve } from 'path';
@@ -691,6 +692,126 @@ export class BacktestEngine {
       maxDrawdown: `${metrics.maxDrawdown.toFixed(2)} USDT (${metrics.maxDrawdownPercent.toFixed(2)}%)`,
       profitFactor: metrics.profitFactor.toFixed(2),
     });
+  }
+
+  async runBatch(
+    configs: BacktestConfig[],
+    klines: Kline[]
+  ): Promise<Array<{ config: BacktestConfig; result: BacktestResult }>> {
+    if (configs.length === 0) return [];
+
+    const baseConfig = configs[0]!;
+    const historicalKlines = klines as any[];
+
+    const { setupDetectionService, loadedStrategies, strategyMap } = await this.initializeStrategies(baseConfig, historicalKlines);
+    const baseEffective = this.buildEffectiveConfig(baseConfig, loadedStrategies);
+
+    const indicatorEngine = new IndicatorEngine();
+    const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
+
+    const indicatorCache = new IndicatorCache();
+    if (loadedStrategies.length > 0) {
+      indicatorCache.initialize(klines);
+      indicatorCache.precomputeForStrategies(loadedStrategies, baseConfig.strategyParams || {});
+    }
+
+    const detectedSetups = await this.detectSetups(
+      setupDetectionService,
+      historicalKlines,
+      loadedStrategies,
+      baseEffective.trendFilterPeriod
+    );
+
+    const baseFilteredSetups = await this.filterSetups(
+      detectedSetups,
+      historicalKlines,
+      baseConfig,
+      baseEffective,
+      loadedStrategies
+    );
+
+    const emaTrendPeriod = baseEffective.trendFilterPeriod ?? 21;
+    const emaTrend = calculateEMA(klines, emaTrendPeriod).map(v => v ?? 0);
+
+    const results: Array<{ config: BacktestConfig; result: BacktestResult }> = [];
+
+    for (const config of configs) {
+      const backtestId = generateEntityId();
+      const startTime = Date.now();
+
+      try {
+        const effectiveConfig = this.buildEffectiveConfig(config, loadedStrategies);
+
+        const filterManager = new FilterManager({
+          onlyLong: effectiveConfig.onlyLong,
+          useTrendFilter: effectiveConfig.useTrendFilter,
+          trendFilterPeriod: effectiveConfig.trendFilterPeriod,
+          useStochasticFilter: effectiveConfig.useStochasticFilter,
+          useAdxFilter: effectiveConfig.useAdxFilter,
+          useCooldown: effectiveConfig.useCooldown,
+          cooldownMinutes: effectiveConfig.cooldownMinutes,
+        });
+        filterManager.setEmaTrend(emaTrend);
+
+        const tradeExecutor = new TradeExecutor({
+          commission: effectiveConfig.commission,
+          marketType: config.marketType,
+          minProfitPercent: effectiveConfig.minProfitPercent,
+          minRiskRewardRatio: effectiveConfig.minRiskRewardRatio,
+          minRiskRewardRatioLong: effectiveConfig.minRiskRewardRatioLong,
+          minRiskRewardRatioShort: effectiveConfig.minRiskRewardRatioShort,
+          stopLossPercent: effectiveConfig.stopLossPercent,
+          takeProfitPercent: effectiveConfig.takeProfitPercent,
+          tpCalculationMode: effectiveConfig.tpCalculationMode,
+          fibonacciTargetLevel: effectiveConfig.fibonacciTargetLevel,
+          fibonacciTargetLevelLong: effectiveConfig.fibonacciTargetLevelLong,
+          fibonacciTargetLevelShort: effectiveConfig.fibonacciTargetLevelShort,
+        });
+
+        const exitManager = new ExitManager({
+          slippagePercent: effectiveConfig.slippagePercent,
+          marketType: config.marketType,
+          useBnbDiscount: config.useBnbDiscount,
+        }, conditionEvaluator);
+
+        const { trades, equity, maxDrawdown, equityCurve } = this.executeBacktest(
+          baseFilteredSetups,
+          historicalKlines,
+          config,
+          effectiveConfig,
+          strategyMap,
+          filterManager,
+          tradeExecutor,
+          exitManager,
+          indicatorEngine,
+          indicatorCache
+        );
+
+        const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);
+        const endTime = Date.now();
+
+        results.push({
+          config,
+          result: {
+            id: backtestId,
+            config,
+            trades,
+            metrics,
+            equityCurve,
+            startTime: new Date(startTime).toISOString(),
+            endTime: new Date(endTime).toISOString(),
+            duration: endTime - startTime,
+            status: 'COMPLETED',
+            setupDetections: detectedSetups,
+            klines: historicalKlines,
+          },
+        });
+      } catch (_error) {
+        continue;
+      }
+    }
+
+    return results;
   }
 
   private calculateWarmupPeriod(strategies: StrategyDefinition[], trendFilterPeriod?: number): number {

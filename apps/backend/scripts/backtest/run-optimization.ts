@@ -46,7 +46,7 @@ const getIntervalMs = (interval: string): number => {
 };
 
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
-const TIMEFRAMES = ['1d', '12h', '8h', '6h', '4h', '2h', '1h', '30m', '15m'];
+const TIMEFRAMES = ['1d', '12h', '8h', '6h', '4h', '2h', '1h', '30m'];
 
 const ACTIVE_STRATEGIES = [
   '7day-momentum-crypto',
@@ -179,6 +179,8 @@ interface ProgressData {
   stage3Results: TrailingStopResultRow[];
   baselineResults: BacktestResultRow[];
 }
+
+const TOP_N = 2;
 
 const OUTPUT_DIR = `/tmp/prod-parity-optimization-run`;
 const PROGRESS_FILE = `${OUTPUT_DIR}/progress.json`;
@@ -334,6 +336,39 @@ const runBacktest = async (
     }
   }
   return null;
+};
+
+const runBatchBacktest = async (
+  configs: Array<{ name: string; overrides: Record<string, any> }>,
+  symbol: string,
+  tf: string
+): Promise<Array<{ name: string; trades: any[]; metrics: any; setupDetections: any[] }>> => {
+  if (shuttingDown || configs.length === 0) return [];
+
+  try {
+    const klines = await prefetchKlines(symbol, tf);
+    if (klines.length === 0) return [];
+
+    const engine = new BacktestEngine();
+    const batchConfigs = configs.map(c => ({
+      ...PRODUCTION_BASE,
+      ...c.overrides,
+      symbol,
+      interval: tf,
+    }));
+
+    const batchResults = await engine.runBatch(batchConfigs as any, klines);
+
+    return batchResults.map((br, i) => ({
+      name: configs[i]!.name,
+      trades: br.result.trades || [],
+      metrics: br.result.metrics,
+      setupDetections: br.result.setupDetections || [],
+    }));
+  } catch (error) {
+    log(`  [BatchError] ${symbol}/${tf}:`, error instanceof Error ? error.message : error);
+    return [];
+  }
 };
 
 const buildResultRow = (
@@ -544,7 +579,7 @@ const analyzeStage1 = (results: BacktestResultRow[], baselineResults: BacktestRe
       log(`    ${String(s.value).padStart(8)}: PnL ${pct(s.avgPnl).padStart(10)} | Sharpe ${fmt(s.avgSharpe).padStart(6)} | n=${s.count}${marker}`);
     }
 
-    return scores.slice(0, 3).map(s => s.value);
+    return scores.slice(0, TOP_N).map(s => s.value);
   };
 
   const topFibLong = analyzeParam('fibL-', PARAM_GRID.fibonacciTargetLevelLong, 'Fibonacci Target Level LONG');
@@ -564,14 +599,15 @@ const analyzeStage1 = (results: BacktestResultRow[], baselineResults: BacktestRe
 
 const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<BacktestResultRow[]> => {
   log('\n' + '='.repeat(80));
-  log('STAGE 2 - Top Combinations Cross-Product');
+  log('STAGE 2 - Top Combinations Cross-Product (batched)');
   log('='.repeat(80));
 
   const completedSet = new Set(progress.completed);
   const results: BacktestResultRow[] = [...progress.stage2Results];
 
   type ComboConfig = { name: string; overrides: Record<string, any> };
-  const combos: ComboConfig[] = [];
+
+  const combosByEntry = new Map<number, ComboConfig[]>();
 
   for (const fibL of topValues.fibonacciTargetLevelLong) {
     for (const fibS of topValues.fibonacciTargetLevelShort) {
@@ -583,7 +619,7 @@ const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<
         for (const rrL of topValues.minRiskRewardRatioLong) {
           for (const rrS of topValues.minRiskRewardRatioShort) {
             const name = `fL${fibL}-fS${fibS}-e${entry}-rL${rrL}-rS${rrS}`;
-            combos.push({
+            const combo: ComboConfig = {
               name,
               overrides: {
                 fibonacciTargetLevelLong: fibL,
@@ -592,21 +628,24 @@ const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<
                 minRiskRewardRatioLong: rrL,
                 minRiskRewardRatioShort: rrS,
               },
-            });
+            };
+            if (!combosByEntry.has(entry)) combosByEntry.set(entry, []);
+            combosByEntry.get(entry)!.push(combo);
           }
         }
       }
     }
   }
 
-  const totalTasks = combos.length * SYMBOLS.length * TIMEFRAMES.length;
+  const allCombos = [...combosByEntry.values()].flat();
+  const totalTasks = allCombos.length * SYMBOLS.length * TIMEFRAMES.length;
   let completedCount = 0;
   const stageStart = Date.now();
 
-  log(`  Combinations: ${combos.length} (after filtering fibS > fibL)`);
+  log(`  Entry groups: ${combosByEntry.size} (${[...combosByEntry.keys()].join(', ')})`);
+  log(`  Combinations: ${allCombos.length} (after filtering fibS > fibL)`);
   log(`  Total backtests: ${totalTasks}`);
-
-  clearKlineCache();
+  log(`  Optimization: batching by maxFibonacciEntryProgressPercent (shared setup detection)`);
 
   for (const symbol of SYMBOLS) {
     const symbolStart = Date.now();
@@ -615,35 +654,49 @@ const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<
     for (const tf of TIMEFRAMES) {
       if (shuttingDown) break;
 
-      for (const combo of combos) {
+      for (const [entry, combos] of combosByEntry) {
         if (shuttingDown) break;
-        const taskKey = `s2:${combo.name}:${symbol}:${tf}`;
-        completedCount++;
 
-        if (completedSet.has(taskKey)) continue;
-
-        const fullConfig = { ...PRODUCTION_BASE, ...combo.overrides };
-        const result = await runBacktest(fullConfig, symbol, tf);
-
-        if (result) {
-          const row = buildResultRow('S2', combo.name, fullConfig, symbol, tf, result.metrics, result.trades);
-          results.push(row);
-          symbolTrades += result.metrics.totalTrades;
-
-          completedSet.add(taskKey);
-          progress.completed = [...completedSet];
-          progress.stage2Results = results;
-          currentProgress = progress;
-
-          if (completedCount % 25 === 0) {
-            saveProgress(progress);
-            const pctDone = (completedCount / totalTasks) * 100;
-            const elapsed = Date.now() - stageStart;
-            const rate = completedCount / elapsed;
-            const eta = (totalTasks - completedCount) / rate;
-            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)}`);
+        const pendingCombos = combos.filter(c => {
+          const taskKey = `s2:${c.name}:${symbol}:${tf}`;
+          if (completedSet.has(taskKey)) {
+            completedCount++;
+            return false;
           }
+          return true;
+        });
+
+        if (pendingCombos.length === 0) {
+          completedCount += combos.length - pendingCombos.length;
+          continue;
         }
+
+        const batchResults = await runBatchBacktest(pendingCombos, symbol, tf);
+
+        for (const br of batchResults) {
+          const combo = pendingCombos.find(c => c.name === br.name);
+          if (!combo) continue;
+
+          const fullConfig = { ...PRODUCTION_BASE, ...combo.overrides };
+          const row = buildResultRow('S2', combo.name, fullConfig, symbol, tf, br.metrics, br.trades);
+          results.push(row);
+          symbolTrades += br.metrics.totalTrades;
+
+          const taskKey = `s2:${combo.name}:${symbol}:${tf}`;
+          completedSet.add(taskKey);
+        }
+
+        completedCount += pendingCombos.length;
+        progress.completed = [...completedSet];
+        progress.stage2Results = results;
+        currentProgress = progress;
+
+        saveProgress(progress);
+        const pctDone = (completedCount / totalTasks) * 100;
+        const elapsed = Date.now() - stageStart;
+        const rate = completedCount / elapsed;
+        const eta = (totalTasks - completedCount) / rate;
+        log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)} | batch=${pendingCombos.length} entry=${entry}`);
       }
     }
 
@@ -736,8 +789,6 @@ const runStage3 = async (
 
   log(`  Trailing stop combos: ${tsCombos.length}`);
   log(`  Total simulations: ${totalTasks}`);
-
-  clearKlineCache();
 
   for (const baseCfg of topConfigs) {
     for (const symbol of SYMBOLS) {
