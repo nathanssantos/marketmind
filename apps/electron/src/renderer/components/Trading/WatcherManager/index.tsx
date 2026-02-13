@@ -5,7 +5,7 @@ import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStar
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useDebounce } from '@renderer/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
 import { AddWatcherDialog } from '../AddWatcherDialog';
@@ -46,14 +46,33 @@ export const WatcherManager = () => {
 
   const { profiles, getProfileById } = useTradingProfiles();
 
-  const { data: config, refetch } = trpc.autoTrading.getConfig.useQuery(
+  const utils = trpc.useUtils();
+
+  const { data: config } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
     { enabled: !!walletId }
   );
 
   const updateConfig = trpc.autoTrading.updateConfig.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      void utils.autoTrading.getConfig.invalidate({ walletId });
+    },
   });
+
+  const mutateRef = useRef(updateConfig.mutate);
+  mutateRef.current = updateConfig.mutate;
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const handleConfigUpdate = useCallback((updates: Record<string, unknown>): void => {
+    if (!walletId) return;
+    utils.autoTrading.getConfig.setData({ walletId }, (old) =>
+      old ? { ...old, ...updates } : old
+    );
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      mutateRef.current({ walletId, ...updates });
+    }, 300);
+  }, [walletId, utils]);
 
   const {
     expandedSections,
@@ -127,76 +146,43 @@ export const WatcherManager = () => {
   const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
 
   const handleTpModeChange = (details: { value: string }): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      tpCalculationMode: details.value as 'default' | 'fibonacci',
-    });
+    handleConfigUpdate({ tpCalculationMode: details.value as 'default' | 'fibonacci' });
   };
 
   const handleFibonacciLevelLongChange = (details: { value: string }): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      fibonacciTargetLevelLong: details.value as FibonacciTargetLevel,
-    });
+    handleConfigUpdate({ fibonacciTargetLevelLong: details.value as FibonacciTargetLevel });
   };
 
   const handleFibonacciLevelShortChange = (details: { value: string }): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      fibonacciTargetLevelShort: details.value as FibonacciTargetLevel,
-    });
+    handleConfigUpdate({ fibonacciTargetLevelShort: details.value as FibonacciTargetLevel });
   };
 
   const handleFibonacciSwingRangeChange = (details: { value: string }): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      fibonacciSwingRange: details.value as 'extended' | 'nearest',
-    });
+    handleConfigUpdate({ fibonacciSwingRange: details.value as 'extended' | 'nearest' });
   };
 
   const handleFilterToggle = (filterKey: string, value: boolean): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      [filterKey]: value,
-    });
+    handleConfigUpdate({ [filterKey]: value });
   };
 
   const directionMode: DirectionMode = config?.directionMode ?? 'auto';
 
   const handleDirectionModeChange = (mode: DirectionMode): void => {
-    if (!walletId) return;
-    updateConfig.mutate({ walletId, directionMode: mode });
+    handleConfigUpdate({ directionMode: mode });
   };
 
   const handleAutoRotationToggle = (value: boolean): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      enableAutoRotation: value,
-    });
+    handleConfigUpdate({ enableAutoRotation: value });
   };
 
   const handleLeverageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    if (!walletId) return;
     const leverage = parseInt(e.target.value, 10);
     if (isNaN(leverage) || leverage < 1 || leverage > 125) return;
-    updateConfig.mutate({
-      walletId,
-      leverage,
-    });
+    handleConfigUpdate({ leverage });
   };
 
   const handleMarginTypeChange = (value: 'ISOLATED' | 'CROSSED'): void => {
-    if (!walletId) return;
-    updateConfig.mutate({
-      walletId,
-      marginType: value,
-    });
+    handleConfigUpdate({ marginType: value });
   };
 
   const handleTriggerRotation = async (): Promise<void> => {
@@ -223,11 +209,6 @@ export const WatcherManager = () => {
   const handleEmergencyStop = async () => {
     await emergencyStop();
     setShowEmergencyConfirm(false);
-  };
-
-  const handleConfigUpdate = (updates: Record<string, unknown>): void => {
-    if (!walletId) return;
-    updateConfig.mutate({ walletId, ...updates });
   };
 
   if (!walletId) {

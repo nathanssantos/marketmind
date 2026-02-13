@@ -1,9 +1,9 @@
+import { Slider } from '@/renderer/components/ui/slider';
 import {
   Box,
   Button,
   Flex,
   HStack,
-  Slider,
   Text,
   VStack,
 } from '@chakra-ui/react';
@@ -30,8 +30,8 @@ export function LeverageSelector({
   const [sliderValue, setSliderValue] = useState(value);
 
   const handleSliderChange = useCallback(
-    (details: { value: number[] }) => {
-      const newValue = details.value[0] ?? value;
+    (values: number[]) => {
+      const newValue = values[0] ?? value;
       setSliderValue(newValue);
       onChange(newValue);
     },
@@ -75,21 +75,13 @@ export function LeverageSelector({
       </Flex>
 
       <Box px={2}>
-        <Slider.Root
+        <Slider
           value={[sliderValue]}
           min={1}
           max={maxLeverage}
           step={1}
           onValueChange={handleSliderChange}
-          disabled={disabled}
-        >
-          <Slider.Control>
-            <Slider.Track>
-              <Slider.Range />
-            </Slider.Track>
-            <Slider.Thumb index={0} />
-          </Slider.Control>
-        </Slider.Root>
+        />
       </Box>
 
       <Flex wrap="wrap" gap={1} justify="center">

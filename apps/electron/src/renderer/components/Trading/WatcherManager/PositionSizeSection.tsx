@@ -1,4 +1,5 @@
-import { Box, Collapsible, Flex, HStack, Slider, Stack, Text } from '@chakra-ui/react';
+import { Slider } from '@/renderer/components/ui/slider';
+import { Box, Collapsible, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
@@ -19,7 +20,7 @@ export const PositionSizeSection = ({
   onPositionSizeChange,
   maxGlobalExposurePercent,
   onMaxGlobalExposureChange,
-  isPending,
+  isPending: _isPending,
 }: PositionSizeSectionProps) => {
   const { t } = useTranslation();
 
@@ -57,22 +58,14 @@ export const PositionSizeSection = ({
                 {t('watcherManager.positionSize.globalExposureDescription')}
               </Text>
               <HStack gap={4}>
-                <Slider.Root
+                <Slider
                   value={[maxGlobalExposurePercent]}
-                  onValueChange={({ value }) => onMaxGlobalExposureChange(value[0] ?? 100)}
+                  onValueChange={(values) => onMaxGlobalExposureChange(values[0] ?? 100)}
                   min={1}
                   max={100}
                   step={1}
-                  disabled={isPending}
                   width="full"
-                >
-                  <Slider.Control>
-                    <Slider.Track>
-                      <Slider.Range />
-                    </Slider.Track>
-                    <Slider.Thumb index={0} />
-                  </Slider.Control>
-                </Slider.Root>
+                />
                 <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
                   {maxGlobalExposurePercent}%
                 </Text>
@@ -91,22 +84,14 @@ export const PositionSizeSection = ({
                 {t('watcherManager.positionSize.sizePercentDescription')}
               </Text>
               <HStack gap={4}>
-                <Slider.Root
+                <Slider
                   value={[positionSizePercent]}
-                  onValueChange={({ value }) => onPositionSizeChange(value[0] ?? 10)}
+                  onValueChange={(values) => onPositionSizeChange(values[0] ?? 10)}
                   min={1}
                   max={100}
                   step={1}
-                  disabled={isPending}
                   width="full"
-                >
-                  <Slider.Control>
-                    <Slider.Track>
-                      <Slider.Range />
-                    </Slider.Track>
-                    <Slider.Thumb index={0} />
-                  </Slider.Control>
-                </Slider.Root>
+                />
                 <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
                   {positionSizePercent}%
                 </Text>

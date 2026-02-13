@@ -1,4 +1,5 @@
-import { Box, Collapsible, Flex, Grid, HStack, Slider, Stack, Text } from '@chakra-ui/react';
+import { Slider } from '@/renderer/components/ui/slider';
+import { Box, Collapsible, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
@@ -23,7 +24,7 @@ export const EntrySettingsSection = ({
   onMinRiskRewardLongChange,
   minRiskRewardRatioShort,
   onMinRiskRewardShortChange,
-  isPending,
+  isPending: _isPending,
 }: EntrySettingsSectionProps) => {
   const { t } = useTranslation();
 
@@ -68,22 +69,13 @@ export const EntrySettingsSection = ({
                 {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.description')}
               </Text>
               <HStack gap={4}>
-                <Slider.Root
+                <Slider
                   value={[maxFibonacciEntryProgressPercent]}
-                  onValueChange={({ value }) => onEntryProgressChange(value[0] ?? 100)}
+                  onValueChange={(values) => onEntryProgressChange(values[0] ?? 100)}
                   min={0}
                   max={100}
                   step={5}
-                  disabled={isPending}
-                  width="full"
-                >
-                  <Slider.Control>
-                    <Slider.Track>
-                      <Slider.Range />
-                    </Slider.Track>
-                    <Slider.Thumb index={0} />
-                  </Slider.Control>
-                </Slider.Root>
+                />
                 <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
                   {maxFibonacciEntryProgressPercent}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercent)})
                 </Text>
@@ -103,22 +95,13 @@ export const EntrySettingsSection = ({
                   {t('settings.algorithmicAutoTrading.entrySettings.minRR.longDescription')}
                 </Text>
                 <HStack gap={4}>
-                  <Slider.Root
+                  <Slider
                     value={[minRiskRewardRatioLong]}
-                    onValueChange={({ value }) => onMinRiskRewardLongChange(value[0] ?? 0.75)}
+                    onValueChange={(values) => onMinRiskRewardLongChange(values[0] ?? 0.75)}
                     min={0.5}
                     max={3}
                     step={0.25}
-                    disabled={isPending}
-                    width="full"
-                  >
-                    <Slider.Control>
-                      <Slider.Track>
-                        <Slider.Range />
-                      </Slider.Track>
-                      <Slider.Thumb index={0} />
-                    </Slider.Control>
-                  </Slider.Root>
+                  />
                   <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
                     {minRiskRewardRatioLong.toFixed(2)}
                   </Text>
@@ -133,22 +116,13 @@ export const EntrySettingsSection = ({
                   {t('settings.algorithmicAutoTrading.entrySettings.minRR.shortDescription')}
                 </Text>
                 <HStack gap={4}>
-                  <Slider.Root
+                  <Slider
                     value={[minRiskRewardRatioShort]}
-                    onValueChange={({ value }) => onMinRiskRewardShortChange(value[0] ?? 0.75)}
+                    onValueChange={(values) => onMinRiskRewardShortChange(values[0] ?? 0.75)}
                     min={0.5}
                     max={3}
                     step={0.25}
-                    disabled={isPending}
-                    width="full"
-                  >
-                    <Slider.Control>
-                      <Slider.Track>
-                        <Slider.Range />
-                      </Slider.Track>
-                      <Slider.Thumb index={0} />
-                    </Slider.Control>
-                  </Slider.Root>
+                  />
                   <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
                     {minRiskRewardRatioShort.toFixed(2)}
                   </Text>
