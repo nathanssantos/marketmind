@@ -125,21 +125,6 @@
           "right": "$rsiOversold"
         }
       ]
-    },
-    "short": {
-      "operator": "AND",
-      "conditions": [
-        {
-          "left": "close",
-          "op": "<",
-          "right": "vwap"
-        },
-        {
-          "left": "rsi",
-          "op": ">",
-          "right": "$rsiOverbought"
-        }
-      ]
     }
   },
   "exit": {

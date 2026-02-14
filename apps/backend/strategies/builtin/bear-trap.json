@@ -90,26 +90,6 @@
           "right": "ema"
         }
       ]
-    },
-    "short": {
-      "operator": "AND",
-      "conditions": [
-        {
-          "left": "high.prev",
-          "op": ">",
-          "right": "high.prev2"
-        },
-        {
-          "left": "close",
-          "op": "<",
-          "right": "high.prev2"
-        },
-        {
-          "left": "close",
-          "op": "<",
-          "right": "ema"
-        }
-      ]
     }
   },
   "exit": {
