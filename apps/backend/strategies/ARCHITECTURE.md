@@ -198,7 +198,6 @@ O `SetupDetectionService` foi modificado para suportar ambos:
 ```typescript
 interface SetupDetectionConfig {
   // Configurações legacy (TypeScript detectors)
-  pattern123: Pattern123Config;
   bearTrap: BearTrapConfig;
   meanReversion: MeanReversionConfig;
 

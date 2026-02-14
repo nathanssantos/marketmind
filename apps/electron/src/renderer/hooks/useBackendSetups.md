@@ -181,7 +181,6 @@ Available setup types:
 - `setup92` - Larry Williams 9.2 (EMA9 Pullback)
 - `setup93` - Larry Williams 9.3 (EMA9 Double Pullback)
 - `setup94` - Larry Williams 9.4 (EMA9 Continuation)
-- `pattern123` - 1-2-3 Pattern
 - `bullTrap` - Bull Trap Pattern
 - `bearTrap` - Bear Trap Pattern
 - `breakoutRetest` - Breakout Retest

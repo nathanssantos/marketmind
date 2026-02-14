@@ -49,7 +49,7 @@ describe('Trading Core Constants', () => {
     });
 
     it('should have check interval', () => {
-      expect(TIMING.CHECK_INTERVAL_MS).toBe(30_000);
+      expect(TIMING.CHECK_INTERVAL_MS).toBe(15_000);
     });
 
     it('should have trailing stop interval', () => {

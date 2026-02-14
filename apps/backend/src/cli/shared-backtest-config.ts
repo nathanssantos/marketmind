@@ -8,7 +8,6 @@ export const ENABLED_SETUPS = [
   'tema-momentum',
   '7day-momentum-crypto',
   'chaikin-money-flow',
-  'pattern-123-reversal',
   'rsi50-momentum-crossover',
   'momentum-breakout-2025',
   'tsi-momentum',

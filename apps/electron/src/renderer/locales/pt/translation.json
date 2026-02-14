@@ -990,10 +990,6 @@
         "title": "Setup 9.4 (Continuação EMA9)",
         "description": "Continuação EMA9 - falha temporária de 1 kline na EMA9 seguida por retomada da tendência original"
       },
-      "pattern123": {
-        "title": "Padrão 123 (Padrão de Reversão)",
-        "description": "Padrão clássico 123 de pivôs com confirmação de rompimento"
-      },
       "bullTrap": {
         "title": "Bull Trap (Falso Rompimento)",
         "description": "Detecta falsos rompimentos acima da resistência seguidos de reversão"

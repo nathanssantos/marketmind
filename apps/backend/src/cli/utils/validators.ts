@@ -97,7 +97,6 @@ function getDynamicStrategies(): string[] {
 
 export function validateStrategy(strategy: string): void {
   const legacyStrategies = [
-    'pattern123',
     'bearTrap',
     'meanReversion',
   ];

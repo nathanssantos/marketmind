@@ -1001,10 +1001,6 @@
         "title": "Setup 9.4 (Continuation EMA9)",
         "description": "Continuation EMA9 - échec temporaire d'1 bougie sur EMA9 suivi de reprise de tendance originale"
       },
-      "pattern123": {
-        "title": "Motif 123 (Motif d'Inversion)",
-        "description": "Motif classique 123 de pivot avec confirmation de cassure"
-      },
       "bullTrap": {
         "title": "Bull Trap (Fausse Cassure)",
         "description": "Détecte les fausses cassures au-dessus de la résistance suivies d'un renversement"

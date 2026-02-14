@@ -9,7 +9,6 @@ type SetupType =
   | 'setup92'
   | 'setup93'
   | 'setup94'
-  | 'pattern123'
   | 'bullTrap'
   | 'bearTrap'
   | 'breakoutRetest';

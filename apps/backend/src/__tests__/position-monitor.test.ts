@@ -6,7 +6,7 @@ const createMockExecution = (overrides: Partial<TradeExecution> = {}): TradeExec
   userId: 'user-1',
   walletId: 'wallet-1',
   setupId: 'test-setup',
-  setupType: 'pattern-123',
+  setupType: 'bear-trap',
   symbol: 'BTCUSDT',
   side: 'LONG',
   entryOrderId: null,

@@ -1,6 +1,6 @@
 import type { TriggerCandleSnapshot, TriggerIndicatorValues } from './strategyVisualization';
 
-export type BuiltinSetupType = '123-reversal' | 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
+export type BuiltinSetupType = 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
 
 export type SetupType = BuiltinSetupType | string;
 

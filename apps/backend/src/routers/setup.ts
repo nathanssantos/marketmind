@@ -15,7 +15,6 @@ const setupTypeSchema = z.enum([
   'setup92',
   'setup93',
   'setup94',
-  'pattern123',
   'bullTrap',
   'bearTrap',
   'breakoutRetest',
@@ -64,13 +63,6 @@ const setupDetectionConfigSchema = z.object({
     atrMultiplier: z.number(),
     stopLossATRMultiplier: z.number(),
     takeProfitATRMultiplier: z.number(),
-  }).optional(),
-
-  pattern123: z.object({
-    enabled: z.boolean(),
-    pivotLookback: z.number(),
-    breakoutConfirmation: z.number(),
-    minRR: z.number(),
   }).optional(),
 
   bullTrap: z.object({

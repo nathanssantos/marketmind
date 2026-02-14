@@ -1012,10 +1012,6 @@
         "title": "Setup 9.4 (Continuación EMA9)",
         "description": "Continuación EMA9 - fallo temporal de 1 vela en EMA9 seguido de reanudación de tendencia original"
       },
-      "pattern123": {
-        "title": "Patrón 123 (Patrón de Reversión)",
-        "description": "Patrón clásico 123 de pivotes con confirmación de ruptura"
-      },
       "bullTrap": {
         "title": "Bull Trap (Falso Rompimiento)",
         "description": "Detecta falsos rompimientos por encima de la resistencia seguidos de reversión"

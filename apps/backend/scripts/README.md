@@ -30,14 +30,31 @@ pnpm optimize:full
 
 # Or directly
 pnpm tsx scripts/backtest/run-optimization.ts
+
+# Quick validation mode (1 symbol, 2 TFs, no Stage 3)
+pnpm tsx scripts/backtest/run-optimization.ts --quick
 ```
 
 The optimization script runs 3 stages:
-1. **Stage 1** - Parameter sensitivity sweeps (Fibonacci targets, entry progress, R:R ratios)
-2. **Stage 2** - Cross-product of top parameters from Stage 1 (batched by `maxFibonacciEntryProgressPercent`)
+1. **Stage 1** - Parameter sensitivity sweeps + filter sensitivity analysis
+   - Fibonacci targets, entry progress, R:R ratios (one-at-a-time sweeps)
+   - Filter toggle sweeps (8 filters ON vs OFF: stochastic recovery, stochastic, momentum timing,
+     BTC correlation, volume, direction, ADX, trend)
+   - Fibonacci swing range comparison (nearest vs extended)
+2. **Stage 2** - Cross-product of top parameters from Stage 1, using optimal filters from Stage 1
 3. **Stage 3** - Trailing stop optimization on top Stage 2 configs
 
-Features: progress resume, SIGINT/SIGTERM handling, ETA display, kline gap warnings, per-symbol stats.
+Features: progress resume, SIGINT/SIGTERM handling, ETA display, kline gap warnings, per-symbol stats,
+quick validation mode.
+
+### Quick mode (`--quick`)
+
+Runs a fast sanity check before committing to a full optimization:
+- 1 symbol (BTCUSDT) instead of 3
+- 2 timeframes (4h, 1d) instead of 7
+- Smaller parameter grids (3 values per dimension instead of 4-5)
+- Skips Stage 3 (trailing stop optimization)
+- Estimated runtime: ~5 minutes
 
 ### Performance architecture
 
@@ -53,19 +70,21 @@ Stage 2 from days to hours.
 Key constants in the script:
 - `TOP_N` (default: 2) - Top parameter values selected from Stage 1 per dimension. Controls the
   cross-product explosion in Stage 2 (TOP_N^5 combos). Increasing to 3 raises combos from 32 to 243.
-- `TIMEFRAMES` - Timeframes to test. Smaller timeframes (15m, 30m) are much slower due to kline count.
-  15m was removed from the default set because it generates 17K+ klines and is rarely used in production.
+- `TIMEFRAMES` - 1h through 1d (7 timeframes). 30m and 15m were removed due to disproportionate
+  kline counts (17K+) and runtime.
+- `FILTER_GRID` - 8 boolean filters tested ON vs OFF in Stage 1. The best state for each filter
+  is carried forward into Stage 2 and Stage 3.
 
 ### Kline cache behavior
 
 Klines are cached in memory per `{symbol, timeframe}` and reused across all stages. The cache is NOT
-cleared between stages to avoid redundant DB queries. Memory usage for 3 symbols × 8 TFs is ~50-100MB.
+cleared between stages to avoid redundant DB queries. Memory usage for 3 symbols × 7 TFs is ~50-100MB.
 
 Output saved to `/tmp/prod-parity-optimization-run/`:
-- `summary.txt` - Human-readable report with recommendations
-- `full-results.csv` - All backtest results
+- `summary.txt` - Human-readable report with parameter and filter recommendations
+- `full-results.csv` - All backtest results (S1 + S2)
 - `trailing-stop-results.csv` - Stage 3 trailing stop results
-- `optimal-config.json` - Best config parameters
+- `optimal-config.json` - Best config parameters, filter states, and swing range
 - `progress.json` - Resume checkpoint
 
 ## data/

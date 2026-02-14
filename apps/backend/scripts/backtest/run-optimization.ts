@@ -14,6 +14,8 @@ const __dirname = dirname(__filename);
 
 dotenvConfig({ path: resolve(__dirname, '../../.env') });
 
+const QUICK_MODE = process.argv.includes('--quick');
+
 import { writeSync } from 'fs';
 
 const log = (...args: any[]): void => {
@@ -45,8 +47,14 @@ const getIntervalMs = (interval: string): number => {
   return parseInt(match[1]) * (units[match[2]] ?? 3600000);
 };
 
-const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
-const TIMEFRAMES = ['1d', '12h', '8h', '6h', '4h', '2h', '1h', '30m'];
+const SYMBOLS_FULL = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
+const TIMEFRAMES_FULL = ['1d', '12h', '8h', '6h', '4h', '2h', '1h'];
+
+const SYMBOLS_QUICK = ['BTCUSDT'];
+const TIMEFRAMES_QUICK = ['4h', '1d'];
+
+const SYMBOLS = QUICK_MODE ? SYMBOLS_QUICK : SYMBOLS_FULL;
+const TIMEFRAMES = QUICK_MODE ? TIMEFRAMES_QUICK : TIMEFRAMES_FULL;
 
 const ACTIVE_STRATEGIES = [
   '7day-momentum-crypto',
@@ -63,7 +71,6 @@ const ACTIVE_STRATEGIES = [
   'momentum-breakout-2025',
   'nr7-breakout',
   'parabolic-sar-crypto',
-  'pattern-123-reversal',
   'rsi50-momentum-crossover',
   'supertrend-follow',
   'tema-momentum',
@@ -94,6 +101,7 @@ const PRODUCTION_BASE = {
   useVolumeFilter: FILTER_DEFAULTS.useVolumeFilter,
   useTrendFilter: FILTER_DEFAULTS.useTrendFilter,
   useStochasticFilter: FILTER_DEFAULTS.useStochasticFilter,
+  useStochasticRecoveryFilter: FILTER_DEFAULTS.useStochasticRecoveryFilter,
   useAdxFilter: FILTER_DEFAULTS.useAdxFilter,
   useMtfFilter: FILTER_DEFAULTS.useMtfFilter,
   useMarketRegimeFilter: FILTER_DEFAULTS.useMarketRegimeFilter,
@@ -111,7 +119,7 @@ const PRODUCTION_BASE = {
 
 type FibLevel = 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236';
 
-const PARAM_GRID = {
+const PARAM_GRID_FULL = {
   fibonacciTargetLevelLong: ['1.272', '1.618', '2', '2.618', '3.618'] as FibLevel[],
   fibonacciTargetLevelShort: ['1', '1.272', '1.618', '2', '2.618'] as FibLevel[],
   maxFibonacciEntryProgressPercent: [61.8, 78.6, 100, 127.2],
@@ -119,11 +127,49 @@ const PARAM_GRID = {
   minRiskRewardRatioShort: [0.5, 0.75, 1.0, 1.5],
 };
 
+const PARAM_GRID_QUICK = {
+  fibonacciTargetLevelLong: ['1.272', '2', '3.618'] as FibLevel[],
+  fibonacciTargetLevelShort: ['1', '1.618', '2.618'] as FibLevel[],
+  maxFibonacciEntryProgressPercent: [78.6, 100, 127.2],
+  minRiskRewardRatioLong: [0.5, 1.0, 1.5],
+  minRiskRewardRatioShort: [0.5, 1.0, 1.5],
+};
+
+const PARAM_GRID = QUICK_MODE ? PARAM_GRID_QUICK : PARAM_GRID_FULL;
+
+const FILTER_GRID: Record<string, boolean[]> = {
+  useStochasticRecoveryFilter: [false, true],
+  useStochasticFilter: [false, true],
+  useMomentumTimingFilter: [false, true],
+  useBtcCorrelationFilter: [false, true],
+  useVolumeFilter: [false, true],
+  useDirectionFilter: [false, true],
+  useAdxFilter: [false, true],
+  useTrendFilter: [false, true],
+};
+
+type SwingRange = 'nearest' | 'extended';
+const SWING_RANGE_VALUES: SwingRange[] = ['nearest', 'extended'];
+
 const TRAILING_STOP_GRID = {
   activationPercentLong: [50, 70, 90, 100, 127.2],
   activationPercentShort: [50, 70, 80, 100, 127.2],
   useProfitLockDistance: [false, true],
 };
+
+interface TopValues {
+  fibonacciTargetLevelLong: FibLevel[];
+  fibonacciTargetLevelShort: FibLevel[];
+  maxFibonacciEntryProgressPercent: number[];
+  minRiskRewardRatioLong: number[];
+  minRiskRewardRatioShort: number[];
+}
+
+interface Stage1Analysis {
+  topValues: TopValues;
+  filterOverrides: Record<string, boolean>;
+  swingRange: SwingRange;
+}
 
 interface DirectionMetrics {
   trades: number;
@@ -178,6 +224,7 @@ interface ProgressData {
   stage2Results: BacktestResultRow[];
   stage3Results: TrailingStopResultRow[];
   baselineResults: BacktestResultRow[];
+  stage1Analysis?: Stage1Analysis;
 }
 
 const TOP_N = 2;
@@ -467,6 +514,22 @@ const runStage1 = async (progress: ProgressData): Promise<BacktestResultRow[]> =
     sweepConfigs.push({ name: `rrS-${val}`, overrides: { minRiskRewardRatioShort: val } });
   }
 
+  for (const [filterName, values] of Object.entries(FILTER_GRID)) {
+    for (const val of values) {
+      sweepConfigs.push({
+        name: `filter-${filterName}-${val}`,
+        overrides: { [filterName]: val },
+      });
+    }
+  }
+
+  for (const val of SWING_RANGE_VALUES) {
+    sweepConfigs.push({
+      name: `swing-${val}`,
+      overrides: { fibonacciSwingRange: val },
+    });
+  }
+
   const allConfigs = [{ name: 'baseline', overrides: {} }, ...sweepConfigs];
   const totalTasks = allConfigs.length * SYMBOLS.length * TIMEFRAMES.length;
   let completedCount = 0;
@@ -533,15 +596,7 @@ const runStage1 = async (progress: ProgressData): Promise<BacktestResultRow[]> =
   return results;
 };
 
-interface TopValues {
-  fibonacciTargetLevelLong: FibLevel[];
-  fibonacciTargetLevelShort: FibLevel[];
-  maxFibonacciEntryProgressPercent: number[];
-  minRiskRewardRatioLong: number[];
-  minRiskRewardRatioShort: number[];
-}
-
-const analyzeStage1 = (results: BacktestResultRow[], baselineResults: BacktestResultRow[]): TopValues => {
+const analyzeStage1 = (results: BacktestResultRow[], baselineResults: BacktestResultRow[]): Stage1Analysis => {
   log('\n' + '='.repeat(80));
   log('STAGE 1 ANALYSIS - Finding top parameter values');
   log('='.repeat(80));
@@ -588,16 +643,62 @@ const analyzeStage1 = (results: BacktestResultRow[], baselineResults: BacktestRe
   const topRrLong = analyzeParam('rrL-', PARAM_GRID.minRiskRewardRatioLong, 'Min R:R LONG');
   const topRrShort = analyzeParam('rrS-', PARAM_GRID.minRiskRewardRatioShort, 'Min R:R SHORT');
 
+  log('\n  FILTER SENSITIVITY:');
+  log('  ' + '-'.repeat(70));
+
+  const filterOverrides: Record<string, boolean> = {};
+
+  for (const filterName of Object.keys(FILTER_GRID)) {
+    const onResults = results.filter(r => r.configId === `filter-${filterName}-true`);
+    const offResults = results.filter(r => r.configId === `filter-${filterName}-false`);
+
+    if (onResults.length === 0 || offResults.length === 0) continue;
+
+    const onAvgPnl = onResults.reduce((s, r) => s + r.totalPnlPercent, 0) / onResults.length;
+    const offAvgPnl = offResults.reduce((s, r) => s + r.totalPnlPercent, 0) / offResults.length;
+    const best = onAvgPnl > offAvgPnl;
+
+    log(`    ${filterName.padEnd(30)}: ON=${pct(onAvgPnl).padStart(10)} OFF=${pct(offAvgPnl).padStart(10)} -> ${best ? 'ON' : 'OFF'}`);
+    filterOverrides[filterName] = best;
+  }
+
+  log('\n  SWING RANGE:');
+  log('  ' + '-'.repeat(70));
+
+  let bestSwingRange: SwingRange = 'nearest';
+
+  for (const val of SWING_RANGE_VALUES) {
+    const matching = results.filter(r => r.configId === `swing-${val}`);
+    if (matching.length === 0) continue;
+    const avgPnl = matching.reduce((s, r) => s + r.totalPnlPercent, 0) / matching.length;
+    log(`    ${val.padEnd(30)}: PnL ${pct(avgPnl).padStart(10)} | n=${matching.length}`);
+  }
+
+  const nearestResults = results.filter(r => r.configId === 'swing-nearest');
+  const extendedResults = results.filter(r => r.configId === 'swing-extended');
+
+  if (nearestResults.length > 0 && extendedResults.length > 0) {
+    const nearestAvg = nearestResults.reduce((s, r) => s + r.totalPnlPercent, 0) / nearestResults.length;
+    const extendedAvg = extendedResults.reduce((s, r) => s + r.totalPnlPercent, 0) / extendedResults.length;
+    bestSwingRange = extendedAvg > nearestAvg ? 'extended' : 'nearest';
+    log(`    -> Best: ${bestSwingRange}`);
+  }
+
   return {
-    fibonacciTargetLevelLong: topFibLong as FibLevel[],
-    fibonacciTargetLevelShort: topFibShort as FibLevel[],
-    maxFibonacciEntryProgressPercent: topEntry as number[],
-    minRiskRewardRatioLong: topRrLong as number[],
-    minRiskRewardRatioShort: topRrShort as number[],
+    topValues: {
+      fibonacciTargetLevelLong: topFibLong as FibLevel[],
+      fibonacciTargetLevelShort: topFibShort as FibLevel[],
+      maxFibonacciEntryProgressPercent: topEntry as number[],
+      minRiskRewardRatioLong: topRrLong as number[],
+      minRiskRewardRatioShort: topRrShort as number[],
+    },
+    filterOverrides,
+    swingRange: bestSwingRange,
   };
 };
 
-const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<BacktestResultRow[]> => {
+const runStage2 = async (analysis: Stage1Analysis, progress: ProgressData): Promise<BacktestResultRow[]> => {
+  const { topValues, filterOverrides, swingRange: bestSwingRange } = analysis;
   log('\n' + '='.repeat(80));
   log('STAGE 2 - Top Combinations Cross-Product (batched)');
   log('='.repeat(80));
@@ -622,6 +723,8 @@ const runStage2 = async (topValues: TopValues, progress: ProgressData): Promise<
             const combo: ComboConfig = {
               name,
               overrides: {
+                ...filterOverrides,
+                fibonacciSwingRange: bestSwingRange,
                 fibonacciTargetLevelLong: fibL,
                 fibonacciTargetLevelShort: fibS,
                 maxFibonacciEntryProgressPercent: entry,
@@ -747,17 +850,34 @@ const getTopStage2Configs = (
   });
 };
 
+const getTopStage2ConfigsWithOverrides = (
+  stage2Results: BacktestResultRow[],
+  filterOverrides: Record<string, boolean>,
+  swingRange: SwingRange,
+  topN: number = 5
+): Array<{ name: string; overrides: Record<string, any> }> =>
+  getTopStage2Configs(stage2Results, topN).map(c => ({
+    ...c,
+    overrides: {
+      ...filterOverrides,
+      fibonacciSwingRange: swingRange,
+      ...c.overrides,
+    },
+  }));
+
 const runStage3 = async (
   stage2Results: BacktestResultRow[],
+  analysis: Stage1Analysis,
   progress: ProgressData
 ): Promise<TrailingStopResultRow[]> => {
+  const { filterOverrides, swingRange: bestSwingRange } = analysis;
   log('\n' + '='.repeat(80));
   log('STAGE 3 - Trailing Stop Optimization');
   log('='.repeat(80));
 
   const completedSet = new Set(progress.completed);
   const results: TrailingStopResultRow[] = [...progress.stage3Results];
-  const topConfigs = getTopStage2Configs(stage2Results, 5);
+  const topConfigs = getTopStage2ConfigsWithOverrides(stage2Results, filterOverrides, bestSwingRange, 5);
 
   log(`  Top configs from Stage 2: ${topConfigs.length}`);
   for (const cfg of topConfigs) log(`    - ${cfg.name}`);
@@ -962,7 +1082,8 @@ const generateReports = (
   baselineResults: BacktestResultRow[],
   stage1Results: BacktestResultRow[],
   stage2Results: BacktestResultRow[],
-  stage3Results: TrailingStopResultRow[]
+  stage3Results: TrailingStopResultRow[],
+  analysis: Stage1Analysis
 ): void => {
   log('\n' + '='.repeat(80));
   log('GENERATING REPORTS');
@@ -1049,6 +1170,38 @@ const generateReports = (
   }
 
   summary += '='.repeat(120) + '\n';
+  summary += 'FILTER SENSITIVITY (ON vs OFF)\n';
+  summary += '='.repeat(120) + '\n\n';
+
+  summary += 'Filter                         | ON PnL %    | OFF PnL %   | Best  | Applied\n';
+  summary += '-'.repeat(100) + '\n';
+
+  for (const filterName of Object.keys(FILTER_GRID)) {
+    const onResults = stage1Results.filter(r => r.configId === `filter-${filterName}-true`);
+    const offResults = stage1Results.filter(r => r.configId === `filter-${filterName}-false`);
+
+    if (onResults.length === 0 || offResults.length === 0) continue;
+
+    const onAvgPnl = onResults.reduce((s, r) => s + r.totalPnlPercent, 0) / onResults.length;
+    const offAvgPnl = offResults.reduce((s, r) => s + r.totalPnlPercent, 0) / offResults.length;
+    const best = analysis.filterOverrides[filterName] ? 'ON' : 'OFF';
+    const applied = analysis.filterOverrides[filterName] ?? (PRODUCTION_BASE as Record<string, any>)[filterName] ?? false;
+
+    summary += `${filterName.padEnd(30)} | ${pct(onAvgPnl).padStart(11)} | ${pct(offAvgPnl).padStart(11)} | ${best.padStart(5)} | ${applied ? 'ON' : 'OFF'}\n`;
+  }
+
+  summary += '\nSWING RANGE\n';
+  summary += '-'.repeat(100) + '\n';
+
+  for (const val of SWING_RANGE_VALUES) {
+    const matching = stage1Results.filter(r => r.configId === `swing-${val}`);
+    if (matching.length === 0) continue;
+    const avgPnl = matching.reduce((s, r) => s + r.totalPnlPercent, 0) / matching.length;
+    const marker = val === analysis.swingRange ? ' <-- SELECTED' : '';
+    summary += `  ${val.padEnd(12)}: PnL ${pct(avgPnl).padStart(10)} | n=${matching.length}${marker}\n`;
+  }
+
+  summary += '\n' + '='.repeat(120) + '\n';
   summary += 'STAGE 2 - TOP COMBINATIONS\n';
   summary += '='.repeat(120) + '\n\n';
 
@@ -1222,6 +1375,23 @@ const generateReports = (
     ) {
       summary += '  No changes needed - production defaults are optimal!\n';
     }
+
+    summary += '\nFILTER CHANGES RECOMMENDED:\n';
+    summary += '-'.repeat(80) + '\n';
+
+    let filterChanges = 0;
+    for (const [filterName, bestValue] of Object.entries(analysis.filterOverrides)) {
+      const prodValue = (PRODUCTION_BASE as Record<string, any>)[filterName] ?? false;
+      if (bestValue !== prodValue) {
+        summary += `  ${filterName}: ${prodValue ? 'ON' : 'OFF'} -> ${bestValue ? 'ON' : 'OFF'}\n`;
+        filterChanges++;
+      }
+    }
+    if (filterChanges === 0) summary += '  No filter changes needed - production defaults are optimal!\n';
+
+    if (analysis.swingRange !== PRODUCTION_BASE.fibonacciSwingRange) {
+      summary += `\n  fibonacciSwingRange: ${PRODUCTION_BASE.fibonacciSwingRange} -> ${analysis.swingRange}\n`;
+    }
   }
 
   if (stage3Results.length > 0) {
@@ -1298,6 +1468,8 @@ const generateReports = (
       maxFibonacciEntryProgressPercent: bestS2.sample.entryProgress,
       minRiskRewardRatioLong: bestS2.sample.rrLong,
       minRiskRewardRatioShort: bestS2.sample.rrShort,
+      fibonacciSwingRange: analysis.swingRange,
+      filters: analysis.filterOverrides,
       metrics: {
         avgPnlPercent: bestS2.avgPnl,
         avgSharpe: bestS2.avgSharpe,
@@ -1316,8 +1488,9 @@ const main = async (): Promise<void> => {
   const startTime = Date.now();
 
   log('='.repeat(80));
-  log('PRODUCTION-PARITY FULL CONFIG OPTIMIZATION');
+  log(`PRODUCTION-PARITY FULL CONFIG OPTIMIZATION${QUICK_MODE ? ' (QUICK MODE)' : ''}`);
   log('='.repeat(80));
+  log(`Mode: ${QUICK_MODE ? 'QUICK (validation only)' : 'FULL'}`);
   log(`Symbols: ${SYMBOLS.join(', ')}`);
   log(`Timeframes: ${TIMEFRAMES.join(', ')}`);
   log(`Strategies: ${ACTIVE_STRATEGIES.length} (portfolio mode)`);
@@ -1337,14 +1510,20 @@ const main = async (): Promise<void> => {
 
   const stage1Results = await runStage1(progress);
   if (shuttingDown) return;
-  const topValues = analyzeStage1(stage1Results, progress.baselineResults);
+  const analysis = analyzeStage1(stage1Results, progress.baselineResults);
 
-  const stage2Results = await runStage2(topValues, progress);
-  if (shuttingDown) return;
-  const stage3Results = await runStage3(stage2Results, progress);
+  const stage2Results = await runStage2(analysis, progress);
   if (shuttingDown) return;
 
-  generateReports(progress.baselineResults, stage1Results, stage2Results, stage3Results);
+  let stage3Results: TrailingStopResultRow[] = [];
+  if (QUICK_MODE) {
+    log('\n[QUICK MODE] Skipping Stage 3 (trailing stop optimization)');
+  } else {
+    stage3Results = await runStage3(stage2Results, analysis, progress);
+    if (shuttingDown) return;
+  }
+
+  generateReports(progress.baselineResults, stage1Results, stage2Results, stage3Results, analysis);
 
   const elapsed = Date.now() - startTime;
   const hours = Math.floor(elapsed / 3600000);

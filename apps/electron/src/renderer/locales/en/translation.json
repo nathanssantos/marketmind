@@ -948,10 +948,6 @@
         "title": "Setup 9.4 (EMA9 Continuation)",
         "description": "EMA9 continuation - temporary 1-kline EMA9 failure followed by resumption of original trend"
       },
-      "pattern123": {
-        "title": "Pattern 123 (Reversal Pattern)",
-        "description": "Classic 123 pivot pattern with breakout confirmation"
-      },
       "bullTrap": {
         "title": "Bull Trap (Fake Breakout)",
         "description": "Detects false breakouts above resistance followed by reversal"
