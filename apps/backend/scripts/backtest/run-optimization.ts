@@ -787,149 +787,166 @@ const runStage3 = async (
   let completedCount = 0;
   const stageStart = Date.now();
 
+  const configsByEntry = new Map<number, typeof topConfigs>();
+  for (const cfg of topConfigs) {
+    const entry = cfg.overrides.maxFibonacciEntryProgressPercent ?? PRODUCTION_BASE.maxFibonacciEntryProgressPercent;
+    if (!configsByEntry.has(entry)) configsByEntry.set(entry, []);
+    configsByEntry.get(entry)!.push(cfg);
+  }
+
   log(`  Trailing stop combos: ${tsCombos.length}`);
   log(`  Total simulations: ${totalTasks}`);
+  log(`  Entry progress groups: ${configsByEntry.size} (batched from ${topConfigs.length} configs)`);
 
-  for (const baseCfg of topConfigs) {
-    for (const symbol of SYMBOLS) {
-      for (const tf of TIMEFRAMES) {
+  for (const symbol of SYMBOLS) {
+    for (const tf of TIMEFRAMES) {
+      if (shuttingDown) break;
+      const klines = await prefetchKlines(symbol, tf);
+      if (klines.length === 0) {
+        completedCount += topConfigs.length * tsCombos.length;
+        continue;
+      }
+
+      const granularIndex = new GranularPriceIndex(klines);
+
+      for (const [_entry, configGroup] of configsByEntry) {
         if (shuttingDown) break;
-        const klines = await prefetchKlines(symbol, tf);
-        if (klines.length === 0) continue;
 
-        const fullConfig = { ...PRODUCTION_BASE, ...baseCfg.overrides };
-        const btResult = await runBacktest(fullConfig, symbol, tf);
-        if (!btResult || btResult.trades.length === 0) {
-          completedCount += tsCombos.length;
-          continue;
-        }
+        const batchResults = await runBatchBacktest(configGroup, symbol, tf);
 
-        const setupMap = new Map<string, any>();
-        for (const setup of btResult.setupDetections) {
-          setupMap.set(setup.id, setup);
-        }
+        const resultsByName = new Map<string, (typeof batchResults)[0]>();
+        for (const br of batchResults) resultsByName.set(br.name, br);
 
-        const granularIndex = new GranularPriceIndex(klines);
-
-        const tradeSetups = btResult.trades.map((trade: any) => {
-          const setup = setupMap.get(trade.setupId);
-          return {
-            id: trade.id,
-            symbol: trade.symbol ?? symbol,
-            side: trade.side,
-            entryPrice: trade.entryPrice,
-            entryTime: typeof trade.entryTime === 'string' ? new Date(trade.entryTime).getTime() : trade.entryTime,
-            stopLoss: trade.stopLoss ?? trade.entryPrice * (trade.side === 'LONG' ? 0.98 : 1.02),
-            takeProfit: trade.takeProfit ?? trade.entryPrice * (trade.side === 'LONG' ? 1.04 : 0.96),
-            quantity: trade.quantity,
-            atr: setup?.atr,
-            fibonacciProjection: setup?.fibonacciProjection ?? null,
-            maxExitTime: typeof trade.exitTime === 'string' ? new Date(trade.exitTime).getTime() : trade.exitTime,
-          };
-        });
-
-        for (const tsCombo of tsCombos) {
-          const taskKey = `s3:${baseCfg.name}:${tsCombo.name}:${symbol}:${tf}`;
-          completedCount++;
-
-          if (completedSet.has(taskKey)) continue;
-
-          const simConfig = {
-            trailingStopEnabled: true,
-            long: {
-              activationPercent: tsCombo.activationLong,
-              distancePercent: TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentLong * 100,
-              atrMultiplier: TRAILING_STOP_CONFIG.ATR_MULTIPLIER,
-              breakevenProfitThreshold: TRAILING_STOP_CONFIG.BREAKEVEN_THRESHOLD,
-            },
-            short: {
-              activationPercent: tsCombo.activationShort,
-              distancePercent: TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentShort * 100,
-              atrMultiplier: TRAILING_STOP_CONFIG.ATR_MULTIPLIER,
-              breakevenProfitThreshold: TRAILING_STOP_CONFIG.BREAKEVEN_THRESHOLD,
-            },
-            useAdaptiveTrailing: TRAILING_STOP_USER_DEFAULTS.useAdaptiveTrailing,
-            useProfitLockDistance: tsCombo.useProfitLock,
-            marketType: 'FUTURES' as const,
-            useBnbDiscount: false,
-            vipLevel: 0,
-          };
-
-          const simulator = new TrailingStopSimulator(simConfig, granularIndex);
-
-          let tsExits = 0;
-          let tpExits = 0;
-          let slExits = 0;
-          const simulatedTrades: Array<{ side: string; pnlPercent: number }> = [];
-
-          for (const tradeSetup of tradeSetups) {
-            const simResult = simulator.simulateTrade(tradeSetup);
-
-            if (simResult.exitReason === 'TRAILING_STOP') tsExits++;
-            else if (simResult.exitReason === 'TAKE_PROFIT') tpExits++;
-            else if (simResult.exitReason === 'STOP_LOSS') slExits++;
-
-            simulatedTrades.push({
-              side: tradeSetup.side,
-              pnlPercent: simResult.pnlPercent,
-            });
+        for (const baseCfg of configGroup) {
+          const btResult = resultsByName.get(baseCfg.name);
+          if (!btResult || btResult.trades.length === 0) {
+            completedCount += tsCombos.length;
+            continue;
           }
 
-          const totalPnl = simulatedTrades.reduce((s, t) => s + t.pnlPercent, 0);
-          const wins = simulatedTrades.filter(t => t.pnlPercent > 0).length;
-          const totalCount = simulatedTrades.length;
+          const setupMap = new Map<string, any>();
+          for (const setup of btResult.setupDetections) setupMap.set(setup.id, setup);
 
-          const longSim = simulatedTrades.filter(t => t.side === 'LONG');
-          const shortSim = simulatedTrades.filter(t => t.side === 'SHORT');
+          const tradeSetups = btResult.trades.map((trade: any) => {
+            const setup = setupMap.get(trade.setupId);
+            return {
+              id: trade.id,
+              symbol: trade.symbol ?? symbol,
+              side: trade.side,
+              entryPrice: trade.entryPrice,
+              entryTime: typeof trade.entryTime === 'string' ? new Date(trade.entryTime).getTime() : trade.entryTime,
+              stopLoss: trade.stopLoss ?? trade.entryPrice * (trade.side === 'LONG' ? 0.98 : 1.02),
+              takeProfit: trade.takeProfit ?? trade.entryPrice * (trade.side === 'LONG' ? 1.04 : 0.96),
+              quantity: trade.quantity,
+              atr: setup?.atr,
+              fibonacciProjection: setup?.fibonacciProjection ?? null,
+              maxExitTime: typeof trade.exitTime === 'string' ? new Date(trade.exitTime).getTime() : trade.exitTime,
+            };
+          });
 
-          const longWins = longSim.filter(t => t.pnlPercent > 0).length;
-          const shortWins = shortSim.filter(t => t.pnlPercent > 0).length;
-          const longPnl = longSim.reduce((s, t) => s + t.pnlPercent, 0);
-          const shortPnl = shortSim.reduce((s, t) => s + t.pnlPercent, 0);
+          for (const tsCombo of tsCombos) {
+            const taskKey = `s3:${baseCfg.name}:${tsCombo.name}:${symbol}:${tf}`;
+            completedCount++;
 
-          const row: TrailingStopResultRow = {
-            configId: `${baseCfg.name}|${tsCombo.name}`,
-            baseConfigId: baseCfg.name,
-            activationLong: tsCombo.activationLong,
-            activationShort: tsCombo.activationShort,
-            useProfitLock: tsCombo.useProfitLock,
-            symbol,
-            timeframe: tf,
-            totalTrades: totalCount,
-            winRate: totalCount > 0 ? (wins / totalCount) * 100 : 0,
-            totalPnlPercent: totalPnl,
-            maxDrawdownPercent: 0,
-            sharpeRatio: 0,
-            trailingStopExits: tsExits,
-            takeProfitExits: tpExits,
-            stopLossExits: slExits,
-            long: {
-              trades: longSim.length,
-              winRate: longSim.length > 0 ? (longWins / longSim.length) * 100 : 0,
-              pnlPercent: longPnl,
-              avgTradePercent: longSim.length > 0 ? longPnl / longSim.length : 0,
-            },
-            short: {
-              trades: shortSim.length,
-              winRate: shortSim.length > 0 ? (shortWins / shortSim.length) * 100 : 0,
-              pnlPercent: shortPnl,
-              avgTradePercent: shortSim.length > 0 ? shortPnl / shortSim.length : 0,
-            },
-          };
+            if (completedSet.has(taskKey)) continue;
 
-          results.push(row);
-          completedSet.add(taskKey);
-          progress.completed = [...completedSet];
-          progress.stage3Results = results;
-          currentProgress = progress;
+            const simConfig = {
+              trailingStopEnabled: true,
+              long: {
+                activationPercent: tsCombo.activationLong,
+                distancePercent: TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentLong * 100,
+                atrMultiplier: TRAILING_STOP_CONFIG.ATR_MULTIPLIER,
+                breakevenProfitThreshold: TRAILING_STOP_CONFIG.BREAKEVEN_THRESHOLD,
+              },
+              short: {
+                activationPercent: tsCombo.activationShort,
+                distancePercent: TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentShort * 100,
+                atrMultiplier: TRAILING_STOP_CONFIG.ATR_MULTIPLIER,
+                breakevenProfitThreshold: TRAILING_STOP_CONFIG.BREAKEVEN_THRESHOLD,
+              },
+              useAdaptiveTrailing: TRAILING_STOP_USER_DEFAULTS.useAdaptiveTrailing,
+              useProfitLockDistance: tsCombo.useProfitLock,
+              marketType: 'FUTURES' as const,
+              useBnbDiscount: false,
+              vipLevel: 0,
+            };
 
-          if (completedCount % 50 === 0) {
-            saveProgress(progress);
-            const pctDone = (completedCount / totalTasks) * 100;
-            const elapsed = Date.now() - stageStart;
-            const rate = completedCount / elapsed;
-            const eta = (totalTasks - completedCount) / rate;
-            log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)}`);
+            const simulator = new TrailingStopSimulator(simConfig, granularIndex);
+
+            let tsExits = 0;
+            let tpExits = 0;
+            let slExits = 0;
+            const simulatedTrades: Array<{ side: string; pnlPercent: number }> = [];
+
+            for (const tradeSetup of tradeSetups) {
+              const simResult = simulator.simulateTrade(tradeSetup);
+
+              if (simResult.exitReason === 'TRAILING_STOP') tsExits++;
+              else if (simResult.exitReason === 'TAKE_PROFIT') tpExits++;
+              else if (simResult.exitReason === 'STOP_LOSS') slExits++;
+
+              simulatedTrades.push({
+                side: tradeSetup.side,
+                pnlPercent: simResult.pnlPercent,
+              });
+            }
+
+            const totalPnl = simulatedTrades.reduce((s, t) => s + t.pnlPercent, 0);
+            const wins = simulatedTrades.filter(t => t.pnlPercent > 0).length;
+            const totalCount = simulatedTrades.length;
+
+            const longSim = simulatedTrades.filter(t => t.side === 'LONG');
+            const shortSim = simulatedTrades.filter(t => t.side === 'SHORT');
+
+            const longWins = longSim.filter(t => t.pnlPercent > 0).length;
+            const shortWins = shortSim.filter(t => t.pnlPercent > 0).length;
+            const longPnl = longSim.reduce((s, t) => s + t.pnlPercent, 0);
+            const shortPnl = shortSim.reduce((s, t) => s + t.pnlPercent, 0);
+
+            const row: TrailingStopResultRow = {
+              configId: `${baseCfg.name}|${tsCombo.name}`,
+              baseConfigId: baseCfg.name,
+              activationLong: tsCombo.activationLong,
+              activationShort: tsCombo.activationShort,
+              useProfitLock: tsCombo.useProfitLock,
+              symbol,
+              timeframe: tf,
+              totalTrades: totalCount,
+              winRate: totalCount > 0 ? (wins / totalCount) * 100 : 0,
+              totalPnlPercent: totalPnl,
+              maxDrawdownPercent: 0,
+              sharpeRatio: 0,
+              trailingStopExits: tsExits,
+              takeProfitExits: tpExits,
+              stopLossExits: slExits,
+              long: {
+                trades: longSim.length,
+                winRate: longSim.length > 0 ? (longWins / longSim.length) * 100 : 0,
+                pnlPercent: longPnl,
+                avgTradePercent: longSim.length > 0 ? longPnl / longSim.length : 0,
+              },
+              short: {
+                trades: shortSim.length,
+                winRate: shortSim.length > 0 ? (shortWins / shortSim.length) * 100 : 0,
+                pnlPercent: shortPnl,
+                avgTradePercent: shortSim.length > 0 ? shortPnl / shortSim.length : 0,
+              },
+            };
+
+            results.push(row);
+            completedSet.add(taskKey);
+            progress.completed = [...completedSet];
+            progress.stage3Results = results;
+            currentProgress = progress;
+
+            if (completedCount % 50 === 0) {
+              saveProgress(progress);
+              const pctDone = (completedCount / totalTasks) * 100;
+              const elapsed = Date.now() - stageStart;
+              const rate = completedCount / elapsed;
+              const eta = (totalTasks - completedCount) / rate;
+              log(`  [Progress] ${completedCount}/${totalTasks} (${fmt(pctDone)}%) | ETA: ${formatEta(eta)}`);
+            }
           }
         }
       }
