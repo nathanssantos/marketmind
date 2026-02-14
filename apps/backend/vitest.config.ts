@@ -1,27 +1,29 @@
 import path from 'path';
 import { defineConfig } from 'vitest/config';
 
+const INTEGRATION_SERVICE_TESTS = [
+  'src/__tests__/services/position-monitor.test.ts',
+  'src/__tests__/services/position-monitor-extended.test.ts',
+  'src/__tests__/services/risk-manager.test.ts',
+  'src/__tests__/services/pyramiding.test.ts',
+  'src/__tests__/services/pyramiding-extended.test.ts',
+  'src/__tests__/services/margin-manager.test.ts',
+  'src/__tests__/services/execution-manager.test.ts',
+  'src/__tests__/services/opportunity-cost-manager.test.ts',
+  'src/__tests__/services/cooldown.test.ts',
+  'src/__tests__/services/binance-futures-user-stream.test.ts',
+];
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@marketmind/types': path.resolve(__dirname, '../../packages/types/src'),
+      '@marketmind/indicators': path.resolve(__dirname, '../../packages/indicators/src'),
+      '@marketmind/risk': path.resolve(__dirname, '../../packages/risk/src'),
+    },
+  },
   test: {
-    globals: true,
-    environment: 'node',
-    setupFiles: './src/__tests__/setup.ts',
-    globalSetup: './src/__tests__/globalSetup.ts',
-    include: ['src/**/*.test.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**'],
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
-    isolate: true,
-    testTimeout: 30000,
-    hookTimeout: 30000,
-    sequence: {
-      shuffle: false,
-    },
-    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -95,13 +97,44 @@ export default defineConfig({
         statements: 80,
       },
     },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@marketmind/types': path.resolve(__dirname, '../../packages/types/src'),
-      '@marketmind/indicators': path.resolve(__dirname, '../../packages/indicators/src'),
-      '@marketmind/risk': path.resolve(__dirname, '../../packages/risk/src'),
-    },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          globals: true,
+          environment: 'node',
+          include: ['src/**/*.test.ts'],
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            'src/__tests__/routers/**',
+            'src/__tests__/integration/**',
+            ...INTEGRATION_SERVICE_TESTS,
+          ],
+          testTimeout: 30000,
+          hookTimeout: 30000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          globals: true,
+          environment: 'node',
+          setupFiles: './src/__tests__/setup.ts',
+          globalSetup: './src/__tests__/globalSetup.ts',
+          include: [
+            'src/__tests__/routers/**/*.test.ts',
+            'src/__tests__/integration/**/*.test.ts',
+            ...INTEGRATION_SERVICE_TESTS,
+          ],
+          pool: 'forks',
+          testTimeout: 30000,
+          hookTimeout: 30000,
+          fileParallelism: false,
+        },
+      },
+    ],
   },
 });
