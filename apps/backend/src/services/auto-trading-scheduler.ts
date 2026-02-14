@@ -1205,6 +1205,7 @@ export class AutoTradingScheduler {
           positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
           walletBalance: walletBalanceMap.get(walletId),
           useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
+          directionMode: config.directionMode,
         });
         restoredCount++;
       } catch (error) {
@@ -1233,6 +1234,7 @@ export class AutoTradingScheduler {
       positionSizePercent?: number;
       walletBalance?: number;
       useBtcCorrelationFilter?: boolean;
+      directionMode?: 'auto' | 'long_only' | 'short_only';
     }
   ): Promise<void> {
     if (!config.useDynamicSymbolSelection) {
@@ -1258,6 +1260,7 @@ export class AutoTradingScheduler {
         positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
       } : undefined,
       useBtcCorrelationFilter: config.useBtcCorrelationFilter,
+      directionMode: config.directionMode,
     };
 
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
@@ -1468,6 +1471,7 @@ export class AutoTradingScheduler {
       positionSizePercent?: number;
       walletBalance?: number;
       useBtcCorrelationFilter?: boolean;
+      directionMode?: 'auto' | 'long_only' | 'short_only';
     }
   ): Promise<RotationResult> {
     const rotationService = getDynamicSymbolRotationService();
@@ -1486,6 +1490,7 @@ export class AutoTradingScheduler {
         positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
       } : undefined,
       useBtcCorrelationFilter: config.useBtcCorrelationFilter,
+      directionMode: config.directionMode,
     };
 
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);

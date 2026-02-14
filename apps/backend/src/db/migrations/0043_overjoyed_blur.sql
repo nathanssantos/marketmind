@@ -1,1 +1,0 @@
-ALTER TABLE "auto_trading_config" ADD COLUMN "trailing_stop_enabled" boolean DEFAULT true NOT NULL;

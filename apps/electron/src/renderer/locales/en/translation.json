@@ -283,6 +283,19 @@
         "shortOnly": "Short Only",
         "description": "Filter setups by trade direction"
       },
+      "leverage": {
+        "title": "Futures Settings",
+        "description": "Configure leverage and margin type for futures trading",
+        "label": "Leverage",
+        "warning": "Higher leverage increases both potential gains and losses. Use with caution.",
+        "positionMode": "Position Mode",
+        "positionModeDescription": "One-Way: single direction per symbol. Hedge: simultaneous long and short.",
+        "oneWay": "One-Way",
+        "hedge": "Hedge"
+      },
+      "marginType": {
+        "label": "Margin Type"
+      },
       "filters": {
         "title": "Trade Filters",
         "description": "Enable or disable filters to improve trade quality.",
@@ -307,7 +320,11 @@
         },
         "direction": {
           "title": "Long-term Trend (EMA200)",
-          "description": "Long-term filter: LONGs blocked in bear markets (price < EMA200), SHORTs blocked in bull markets (price > EMA200)."
+          "description": "Long-term filter: LONGs blocked in bear markets (price < EMA200), SHORTs blocked in bull markets (price > EMA200).",
+          "enableLongInBear": "Allow Long in Bear",
+          "enableLongInBearDescription": "Override: allow LONG trades in bearish markets",
+          "enableShortInBull": "Allow Short in Bull",
+          "enableShortInBullDescription": "Override: allow SHORT trades in bullish markets"
         },
         "momentumTiming": {
           "title": "Momentum Timing (RSI+MFI)",
@@ -335,7 +352,9 @@
         },
         "confluence": {
           "title": "Confluence Scoring",
-          "description": "Calculate a confluence score from all filters. Only trade when score exceeds minimum threshold."
+          "description": "Calculate a confluence score from all filters. Only trade when score exceeds minimum threshold.",
+          "minScore": "Min Confluence Score",
+          "minScoreDescription": "Higher = stricter filter (30-80 recommended)"
         },
         "volatilityFilters": "Volatility & Session Filters",
         "choppiness": {
@@ -1108,6 +1127,24 @@
       "activationModeShort": "SHORT Activation Mode",
       "modeAuto": "Auto",
       "modeManual": "Manual"
+    },
+    "riskManagement": {
+      "title": "Risk Management",
+      "description": "Configure drawdown limits and margin protection",
+      "maxDrawdown": {
+        "title": "Max Drawdown",
+        "description": "Blocks new positions when portfolio drawdown exceeds this limit"
+      },
+      "marginTopUp": {
+        "title": "Margin Top-Up",
+        "description": "Auto-add margin to prevent liquidation",
+        "threshold": "Trigger Threshold",
+        "thresholdDescription": "Margin ratio at which top-up is triggered",
+        "amount": "Top-Up Amount",
+        "amountDescription": "Percentage of position margin to add per top-up",
+        "maxCount": "Max Top-Ups Per Position",
+        "maxCountDescription": "Maximum number of margin top-ups allowed per position"
+      }
     },
     "pausedDueToCapital": "Watchers paused - no free capital for new entries. Will resume when a position is closed.",
     "stockPresets": {

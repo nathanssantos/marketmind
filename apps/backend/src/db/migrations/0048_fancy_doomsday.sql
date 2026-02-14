@@ -1,2 +1,0 @@
-ALTER TABLE "auto_trading_config" ADD COLUMN "volume_filter_obv_lookback_long" integer DEFAULT 7;--> statement-breakpoint
-ALTER TABLE "auto_trading_config" ADD COLUMN "volume_filter_obv_lookback_short" integer DEFAULT 5;

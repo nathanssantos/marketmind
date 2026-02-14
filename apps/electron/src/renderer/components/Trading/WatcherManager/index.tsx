@@ -20,6 +20,7 @@ import { LeverageSettingsSection } from './LeverageSettingsSection';
 import { OpportunityCostSection } from './OpportunityCostSection';
 import { PositionSizeSection } from './PositionSizeSection';
 import { PyramidingSection } from './PyramidingSection';
+import { RiskManagementSection } from './RiskManagementSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
 import type { DirectionMode } from './WatchersList';
@@ -192,6 +193,40 @@ export const WatcherManager = () => {
     handleConfigUpdate({ marginType: value });
   };
 
+  const handlePositionModeChange = (mode: 'ONE_WAY' | 'HEDGE'): void => {
+    handleConfigUpdate({ positionMode: mode });
+  };
+
+  const handleMaxDrawdownEnabledChange = (enabled: boolean): void => {
+    handleConfigUpdate({ maxDrawdownEnabled: enabled });
+  };
+
+  const handleMaxDrawdownChange = (value: number): void => {
+    handleConfigUpdate({ maxDrawdownPercent: value.toString() });
+  };
+
+  const handleMarginTopUpEnabledChange = (enabled: boolean): void => {
+    handleConfigUpdate({ marginTopUpEnabled: enabled });
+  };
+
+  const handleMarginTopUpThresholdChange = (value: number): void => {
+    handleConfigUpdate({ marginTopUpThreshold: value.toString() });
+  };
+
+  const handleMarginTopUpPercentChange = (value: number): void => {
+    handleConfigUpdate({ marginTopUpPercent: value.toString() });
+  };
+
+  const handleMarginTopUpMaxCountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const count = parseInt(e.target.value, 10);
+    if (isNaN(count) || count < 1 || count > 10) return;
+    handleConfigUpdate({ marginTopUpMaxCount: count });
+  };
+
+  const handleConfluenceMinScoreChange = (value: number): void => {
+    handleConfigUpdate({ confluenceMinScore: value });
+  };
+
   const handleTriggerRotation = async (): Promise<void> => {
     if (!walletId) return;
     await triggerRotation();
@@ -309,6 +344,8 @@ export const WatcherManager = () => {
             marginType={config?.marginType ?? 'ISOLATED'}
             onLeverageChange={handleLeverageChange}
             onMarginTypeChange={handleMarginTypeChange}
+            positionMode={config?.positionMode ?? 'ONE_WAY'}
+            onPositionModeChange={handlePositionModeChange}
             isPending={updateConfig.isPending}
           />
 
@@ -324,6 +361,27 @@ export const WatcherManager = () => {
         maxGlobalExposurePercent={Number(config?.maxGlobalExposurePercent ?? 100)}
         onMaxGlobalExposureChange={(value) => handleConfigUpdate({ maxGlobalExposurePercent: value.toString() })}
         isPending={updateConfig.isPending}
+      />
+
+      <Separator />
+
+      <RiskManagementSection
+        isExpanded={expandedSections.riskManagement}
+        onToggle={() => toggleSection('riskManagement')}
+        maxDrawdownEnabled={config?.maxDrawdownEnabled ?? false}
+        onMaxDrawdownEnabledChange={handleMaxDrawdownEnabledChange}
+        maxDrawdownPercent={Number(config?.maxDrawdownPercent ?? 15)}
+        onMaxDrawdownChange={handleMaxDrawdownChange}
+        marginTopUpEnabled={config?.marginTopUpEnabled ?? false}
+        onMarginTopUpEnabledChange={handleMarginTopUpEnabledChange}
+        marginTopUpThreshold={Number(config?.marginTopUpThreshold ?? 30)}
+        onMarginTopUpThresholdChange={handleMarginTopUpThresholdChange}
+        marginTopUpPercent={Number(config?.marginTopUpPercent ?? 10)}
+        onMarginTopUpPercentChange={handleMarginTopUpPercentChange}
+        marginTopUpMaxCount={config?.marginTopUpMaxCount ?? 3}
+        onMarginTopUpMaxCountChange={handleMarginTopUpMaxCountChange}
+        isPending={updateConfig.isPending}
+        isIB={isIB}
       />
 
       <Separator />
@@ -393,6 +451,8 @@ export const WatcherManager = () => {
         isIB={isIB}
         directionMode={directionMode}
         onDirectionModeChange={handleDirectionModeChange}
+        confluenceMinScore={config?.confluenceMinScore ?? 60}
+        onConfluenceMinScoreChange={handleConfluenceMinScoreChange}
       />
 
       <Separator />

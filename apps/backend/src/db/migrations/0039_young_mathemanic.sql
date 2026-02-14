@@ -1,1 +1,0 @@
-ALTER TABLE "auto_trading_config" DROP COLUMN "dynamic_symbol_limit";

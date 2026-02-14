@@ -320,6 +320,19 @@
         "shortOnly": "Solo Short",
         "description": "Filtrar setups por dirección de trade"
       },
+      "leverage": {
+        "title": "Configuración de Futuros",
+        "description": "Configura apalancamiento y tipo de margen para trading de futuros",
+        "label": "Apalancamiento",
+        "warning": "Mayor apalancamiento aumenta tanto las ganancias como las pérdidas potenciales. Usar con precaución.",
+        "positionMode": "Modo de Posición",
+        "positionModeDescription": "One-Way: dirección única por símbolo. Hedge: largo y corto simultáneos.",
+        "oneWay": "One-Way",
+        "hedge": "Hedge"
+      },
+      "marginType": {
+        "label": "Tipo de Margen"
+      },
       "filters": {
         "title": "Filtros de Trade",
         "description": "Active o desactive filtros para mejorar la calidad de los trades.",
@@ -341,6 +354,14 @@
         "trend": {
           "title": "Filtro de Tendencia EMA",
           "description": "Solo opera cuando el precio está por encima/debajo de EMA21 para la dirección correspondiente."
+        },
+        "direction": {
+          "title": "Tendencia de Largo Plazo (EMA200)",
+          "description": "Filtro de largo plazo: LONGs bloqueados en mercados bajistas (precio < EMA200), SHORTs bloqueados en mercados alcistas (precio > EMA200).",
+          "enableLongInBear": "Permitir Long en Bear",
+          "enableLongInBearDescription": "Override: permitir trades LONG en mercados bajistas",
+          "enableShortInBull": "Permitir Short en Bull",
+          "enableShortInBullDescription": "Override: permitir trades SHORT en mercados alcistas"
         },
         "momentumTiming": {
           "title": "Timing de Momentum (RSI+MFI)",
@@ -368,7 +389,9 @@
         },
         "confluence": {
           "title": "Score de Confluencia",
-          "description": "Calcula un score de confluencia de todos los filtros. Solo opera cuando el score supera el mínimo."
+          "description": "Calcula un score de confluencia de todos los filtros. Solo opera cuando el score supera el mínimo.",
+          "minScore": "Score Mínimo de Confluencia",
+          "minScoreDescription": "Mayor = filtro más estricto (30-80 recomendado)"
         },
         "volatilityFilters": "Filtros de Volatilidad y Sesión",
         "choppiness": {
@@ -1166,6 +1189,24 @@
       "activationModeShort": "Modo de Activación SHORT",
       "modeAuto": "Auto",
       "modeManual": "Manual"
+    },
+    "riskManagement": {
+      "title": "Gestión de Riesgo",
+      "description": "Configura límites de drawdown y protección de margen",
+      "maxDrawdown": {
+        "title": "Drawdown Máximo",
+        "description": "Bloquea nuevas posiciones cuando el drawdown del portafolio excede este límite"
+      },
+      "marginTopUp": {
+        "title": "Refuerzo de Margen",
+        "description": "Agregar margen automáticamente para evitar liquidación",
+        "threshold": "Umbral de Activación",
+        "thresholdDescription": "Ratio de margen en el cual se activa el refuerzo",
+        "amount": "Monto del Refuerzo",
+        "amountDescription": "Porcentaje del margen de la posición a agregar por refuerzo",
+        "maxCount": "Máx. Refuerzos por Posición",
+        "maxCountDescription": "Número máximo de refuerzos de margen permitidos por posición"
+      }
     },
     "pausedDueToCapital": "Watchers pausados - sin capital libre para nuevas entradas. Se reanudará cuando se cierre una posición.",
     "stockPresets": {

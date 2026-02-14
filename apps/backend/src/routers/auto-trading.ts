@@ -204,6 +204,16 @@ export const autoTradingRouter = router({
         useDirectionFilter: z.boolean().optional(),
         useMomentumTimingFilter: z.boolean().optional(),
         useConfluenceScoring: z.boolean().optional(),
+        enableLongInBearMarket: z.boolean().optional(),
+        enableShortInBullMarket: z.boolean().optional(),
+        confluenceMinScore: z.number().min(0).max(100).optional(),
+        maxDrawdownEnabled: z.boolean().optional(),
+        maxDrawdownPercent: z.string().optional(),
+        marginTopUpEnabled: z.boolean().optional(),
+        marginTopUpThreshold: z.string().optional(),
+        marginTopUpPercent: z.string().optional(),
+        marginTopUpMaxCount: z.number().min(1).max(10).optional(),
+        positionMode: z.enum(['ONE_WAY', 'HEDGE']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -403,6 +413,26 @@ export const autoTradingRouter = router({
         {updateData.useMomentumTimingFilter = input.useMomentumTimingFilter;}
       if (input.useConfluenceScoring !== undefined)
         {updateData.useConfluenceScoring = input.useConfluenceScoring;}
+      if (input.enableLongInBearMarket !== undefined)
+        {updateData.enableLongInBearMarket = input.enableLongInBearMarket;}
+      if (input.enableShortInBullMarket !== undefined)
+        {updateData.enableShortInBullMarket = input.enableShortInBullMarket;}
+      if (input.confluenceMinScore !== undefined)
+        {updateData.confluenceMinScore = input.confluenceMinScore;}
+      if (input.maxDrawdownEnabled !== undefined)
+        {updateData.maxDrawdownEnabled = input.maxDrawdownEnabled;}
+      if (input.maxDrawdownPercent !== undefined)
+        {updateData.maxDrawdownPercent = input.maxDrawdownPercent;}
+      if (input.marginTopUpEnabled !== undefined)
+        {updateData.marginTopUpEnabled = input.marginTopUpEnabled;}
+      if (input.marginTopUpThreshold !== undefined)
+        {updateData.marginTopUpThreshold = input.marginTopUpThreshold;}
+      if (input.marginTopUpPercent !== undefined)
+        {updateData.marginTopUpPercent = input.marginTopUpPercent;}
+      if (input.marginTopUpMaxCount !== undefined)
+        {updateData.marginTopUpMaxCount = input.marginTopUpMaxCount;}
+      if (input.positionMode !== undefined)
+        {updateData.positionMode = input.positionMode;}
 
       await ctx.db
         .update(autoTradingConfig)
@@ -1078,6 +1108,7 @@ export const autoTradingRouter = router({
           leverage: autoTradingConfig.leverage,
           positionSizePercent: autoTradingConfig.positionSizePercent,
           useBtcCorrelationFilter: autoTradingConfig.useBtcCorrelationFilter,
+          directionMode: autoTradingConfig.directionMode,
         })
         .from(autoTradingConfig)
         .where(
@@ -1309,6 +1340,7 @@ export const autoTradingRouter = router({
             positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
             walletBalance: parseFloat(wallet.currentBalance ?? '0'),
             useBtcCorrelationFilter: config?.useBtcCorrelationFilter ?? true,
+            directionMode: config?.directionMode,
           }
         );
       }
@@ -1619,6 +1651,7 @@ export const autoTradingRouter = router({
           positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
           walletBalance: parseFloat(wallet.currentBalance ?? '0'),
           useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
+          directionMode: config.directionMode,
         }
       );
 

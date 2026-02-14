@@ -11,6 +11,8 @@ export interface LeverageSettingsSectionProps {
   marginType: 'ISOLATED' | 'CROSSED';
   onLeverageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onMarginTypeChange: (value: 'ISOLATED' | 'CROSSED') => void;
+  positionMode: 'ONE_WAY' | 'HEDGE';
+  onPositionModeChange: (mode: 'ONE_WAY' | 'HEDGE') => void;
   isPending: boolean;
 }
 
@@ -21,6 +23,8 @@ export const LeverageSettingsSection = ({
   marginType,
   onLeverageChange,
   onMarginTypeChange,
+  positionMode,
+  onPositionModeChange,
   isPending,
 }: LeverageSettingsSectionProps) => {
   const { t } = useTranslation();
@@ -68,6 +72,29 @@ export const LeverageSettingsSection = ({
                     disabled={isPending}
                   >
                     Cross
+                  </Button>
+                </Group>
+              </Box>
+              <Box>
+                <Text fontSize="sm" fontWeight="medium" mb={1}>
+                  {t('settings.algorithmicAutoTrading.leverage.positionMode', 'Position Mode')}
+                </Text>
+                <Group attached>
+                  <Button
+                    size="sm"
+                    variant={positionMode === 'ONE_WAY' ? 'solid' : 'outline'}
+                    onClick={() => onPositionModeChange('ONE_WAY')}
+                    disabled={isPending}
+                  >
+                    {t('settings.algorithmicAutoTrading.leverage.oneWay', 'One-Way')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={positionMode === 'HEDGE' ? 'solid' : 'outline'}
+                    onClick={() => onPositionModeChange('HEDGE')}
+                    disabled={isPending}
+                  >
+                    {t('settings.algorithmicAutoTrading.leverage.hedge', 'Hedge')}
                   </Button>
                 </Group>
               </Box>

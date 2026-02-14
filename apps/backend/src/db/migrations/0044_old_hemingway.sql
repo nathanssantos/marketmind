@@ -1,2 +1,0 @@
-ALTER TABLE "auto_trading_config" ADD COLUMN "fibonacci_target_level_long" varchar(10) DEFAULT '2';--> statement-breakpoint
-ALTER TABLE "auto_trading_config" ADD COLUMN "fibonacci_target_level_short" varchar(10) DEFAULT '1.272';

@@ -156,10 +156,12 @@ export class RiskManagerService {
         };
       }
 
-      const maxDrawdownPercent = parseFloat(config.maxDrawdownPercent || '15');
-      const drawdownResult = await this.validateDrawdownForNewPosition(walletId, maxDrawdownPercent);
-      if (!drawdownResult.isValid) {
-        return drawdownResult;
+      if (config.maxDrawdownEnabled) {
+        const maxDrawdownPercent = parseFloat(config.maxDrawdownPercent || '15');
+        const drawdownResult = await this.validateDrawdownForNewPosition(walletId, maxDrawdownPercent);
+        if (!drawdownResult.isValid) {
+          return drawdownResult;
+        }
       }
 
       return { isValid: true };

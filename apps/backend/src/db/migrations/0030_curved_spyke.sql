@@ -1,1 +1,0 @@
-ALTER TABLE "pair_maintenance_log" ADD COLUMN "earliest_kline_date" timestamp;

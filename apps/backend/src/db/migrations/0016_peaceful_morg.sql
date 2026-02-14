@@ -1,1 +1,0 @@
-ALTER TABLE "auto_trading_config" ADD COLUMN "use_stochastic_filter" boolean DEFAULT false NOT NULL;

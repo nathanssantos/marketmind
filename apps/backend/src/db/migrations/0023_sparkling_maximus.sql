@@ -1,1 +1,0 @@
-ALTER TABLE "auto_trading_config" ADD COLUMN "exposure_multiplier" numeric(3, 1) DEFAULT '2' NOT NULL;

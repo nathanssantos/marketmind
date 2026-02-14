@@ -17,18 +17,20 @@ vi.mock('../../db', () => ({
   },
 }));
 
-const mockGetSymbolScores = vi.fn().mockResolvedValue([
-  { symbol: 'BTCUSDT', compositeScore: 95 },
-  { symbol: 'ETHUSDT', compositeScore: 90 },
-  { symbol: 'SOLUSDT', compositeScore: 85 },
-  { symbol: 'DOGEUSDT', compositeScore: 80 },
-  { symbol: 'XRPUSDT', compositeScore: 75 },
-  { symbol: 'ADAUSDT', compositeScore: 70 },
-  { symbol: 'LINKUSDT', compositeScore: 65 },
-  { symbol: 'DOTUSDT', compositeScore: 60 },
-  { symbol: 'AVAXUSDT', compositeScore: 55 },
-  { symbol: 'UNIUSDT', compositeScore: 50 },
-]);
+const createMockScores = () => [
+  { symbol: 'BTCUSDT', compositeScore: 95, rawData: { priceChange24h: 2.5, marketCap: 1e12, volume24h: 1e10, setupCount7d: 5, winRate: 0.6 } },
+  { symbol: 'ETHUSDT', compositeScore: 90, rawData: { priceChange24h: -1.2, marketCap: 5e11, volume24h: 5e9, setupCount7d: 4, winRate: 0.55 } },
+  { symbol: 'SOLUSDT', compositeScore: 85, rawData: { priceChange24h: 4.0, marketCap: 1e11, volume24h: 2e9, setupCount7d: 3, winRate: 0.5 } },
+  { symbol: 'DOGEUSDT', compositeScore: 80, rawData: { priceChange24h: -3.5, marketCap: 5e10, volume24h: 1e9, setupCount7d: 2, winRate: 0.45 } },
+  { symbol: 'XRPUSDT', compositeScore: 75, rawData: { priceChange24h: 1.0, marketCap: 4e10, volume24h: 8e8, setupCount7d: 2, winRate: 0.5 } },
+  { symbol: 'ADAUSDT', compositeScore: 70, rawData: { priceChange24h: -0.5, marketCap: 3e10, volume24h: 5e8, setupCount7d: 1, winRate: 0.4 } },
+  { symbol: 'LINKUSDT', compositeScore: 65, rawData: { priceChange24h: 3.0, marketCap: 2e10, volume24h: 4e8, setupCount7d: 1, winRate: 0.45 } },
+  { symbol: 'DOTUSDT', compositeScore: 60, rawData: { priceChange24h: -2.0, marketCap: 1e10, volume24h: 3e8, setupCount7d: 1, winRate: 0.4 } },
+  { symbol: 'AVAXUSDT', compositeScore: 55, rawData: { priceChange24h: 0, marketCap: 8e9, volume24h: 2e8, setupCount7d: 0, winRate: null } },
+  { symbol: 'UNIUSDT', compositeScore: 50, rawData: { priceChange24h: -4.0, marketCap: 5e9, volume24h: 1e8, setupCount7d: 0, winRate: null } },
+];
+
+const mockGetSymbolScores = vi.fn().mockResolvedValue(createMockScores());
 
 vi.mock('../../services/opportunity-scoring', () => ({
   getOpportunityScoringService: vi.fn(() => ({
@@ -164,18 +166,7 @@ describe('DynamicSymbolRotationService - extended coverage', () => {
   beforeEach(() => {
     service = new DynamicSymbolRotationService();
     vi.clearAllMocks();
-    mockGetSymbolScores.mockResolvedValue([
-      { symbol: 'BTCUSDT', compositeScore: 95 },
-      { symbol: 'ETHUSDT', compositeScore: 90 },
-      { symbol: 'SOLUSDT', compositeScore: 85 },
-      { symbol: 'DOGEUSDT', compositeScore: 80 },
-      { symbol: 'XRPUSDT', compositeScore: 75 },
-      { symbol: 'ADAUSDT', compositeScore: 70 },
-      { symbol: 'LINKUSDT', compositeScore: 65 },
-      { symbol: 'DOTUSDT', compositeScore: 60 },
-      { symbol: 'AVAXUSDT', compositeScore: 55 },
-      { symbol: 'UNIUSDT', compositeScore: 50 },
-    ]);
+    mockGetSymbolScores.mockResolvedValue(createMockScores());
   });
 
   describe('getRotationHistory', () => {
@@ -323,6 +314,88 @@ describe('DynamicSymbolRotationService - extended coverage', () => {
 
       expect(result.kept).toContain('BTCUSDT');
       expect(result.kept).toContain('ETHUSDT');
+    });
+  });
+
+  describe('executeRotation - direction-aware scoring', () => {
+    it('should favor positive-trending symbols in long_only mode', async () => {
+      mockSelectQuery([]);
+
+      const result = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 3,
+        directionMode: 'long_only',
+      });
+
+      expect(result.added).toHaveLength(3);
+      expect(result.directionMode).toBe('long_only');
+      for (const symbol of result.added) {
+        const score = createMockScores().find(s => s.symbol === symbol);
+        expect(score).toBeDefined();
+      }
+    });
+
+    it('should favor negative-trending symbols in short_only mode', async () => {
+      mockSelectQuery([]);
+
+      const result = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 3,
+        directionMode: 'short_only',
+      });
+
+      expect(result.added).toHaveLength(3);
+      expect(result.directionMode).toBe('short_only');
+    });
+
+    it('should not apply direction bias in auto mode', async () => {
+      mockSelectQuery([]);
+
+      const resultAuto = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 5,
+        directionMode: 'auto',
+      });
+
+      service.clearHistory('wallet-1');
+
+      const resultDefault = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 5,
+      });
+
+      expect(resultAuto.added).toEqual(resultDefault.added);
+    });
+
+    it('should reorder symbols based on direction in long_only mode', async () => {
+      mockSelectQuery([]);
+
+      const resultDefault = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 10,
+      });
+
+      service.clearHistory('wallet-1');
+
+      const resultLong = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 10,
+        directionMode: 'long_only',
+      });
+
+      expect(resultLong.added).not.toEqual(resultDefault.added);
+    });
+
+    it('should still fill to target count regardless of direction mode', async () => {
+      mockSelectQuery([]);
+
+      const result = await service.executeRotation('wallet-1', 'user-1', {
+        ...baseConfig,
+        limit: 5,
+        directionMode: 'short_only',
+      });
+
+      expect(result.added).toHaveLength(5);
     });
   });
 });

@@ -123,10 +123,6 @@ const createRotationResult = (overrides: Partial<RotationResult> = {}): Rotation
   skippedInsufficientKlines: [],
   skippedInsufficientCapital: [],
   skippedTrend: [],
-  skippedBtcDominance: [],
-  skippedChoppyMarket: [],
-  skippedAltSeason: [],
-  skippedOrderBook: [],
   timestamp: new Date(),
   ...overrides,
 });

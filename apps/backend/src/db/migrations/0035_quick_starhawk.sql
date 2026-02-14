@@ -1,1 +1,0 @@
-ALTER TABLE "wallets" ADD COLUMN "market_type" varchar(10) DEFAULT 'SPOT';

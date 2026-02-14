@@ -1,3 +1,4 @@
+import { Slider } from '@/renderer/components/ui/slider';
 import { Box, Grid, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
 import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
@@ -16,6 +17,8 @@ export interface FiltersSectionProps {
   isIB?: boolean;
   directionMode: DirectionMode;
   onDirectionModeChange: (mode: DirectionMode) => void;
+  confluenceMinScore: number;
+  onConfluenceMinScoreChange: (value: number) => void;
 }
 
 export const FiltersSection = ({
@@ -27,6 +30,8 @@ export const FiltersSection = ({
   isIB = false,
   directionMode,
   onDirectionModeChange,
+  confluenceMinScore,
+  onConfluenceMinScoreChange,
 }: FiltersSectionProps) => {
   const { t } = useTranslation();
 
@@ -126,6 +131,26 @@ export const FiltersSection = ({
                 onChange={(value) => onFilterToggle('useDirectionFilter', value)}
                 disabled={isPending}
               />
+              {config?.useDirectionFilter && (
+                <Box gridColumn="span 2" pl={4} borderLeftWidth="2px" borderLeftColor="green.500">
+                  <Grid templateColumns="repeat(2, 1fr)" gap={3}>
+                    <FilterToggle
+                      label={t('settings.algorithmicAutoTrading.filters.direction.enableLongInBear')}
+                      description={t('settings.algorithmicAutoTrading.filters.direction.enableLongInBearDescription')}
+                      checked={config?.enableLongInBearMarket ?? false}
+                      onChange={(v) => onFilterToggle('enableLongInBearMarket', v)}
+                      disabled={isPending}
+                    />
+                    <FilterToggle
+                      label={t('settings.algorithmicAutoTrading.filters.direction.enableShortInBull')}
+                      description={t('settings.algorithmicAutoTrading.filters.direction.enableShortInBullDescription')}
+                      checked={config?.enableShortInBullMarket ?? false}
+                      onChange={(v) => onFilterToggle('enableShortInBullMarket', v)}
+                      disabled={isPending}
+                    />
+                  </Grid>
+                </Box>
+              )}
             </Grid>
 
             <Separator />
@@ -194,6 +219,29 @@ export const FiltersSection = ({
                 onChange={(value) => onFilterToggle('useConfluenceScoring', value)}
                 disabled={isPending}
               />
+              {config?.useConfluenceScoring && (
+                <Box gridColumn="span 2" pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+                  <Text fontSize="sm" fontWeight="medium" mb={1}>
+                    {t('settings.algorithmicAutoTrading.filters.confluence.minScore')}
+                  </Text>
+                  <Text fontSize="xs" color="fg.muted" mb={2}>
+                    {t('settings.algorithmicAutoTrading.filters.confluence.minScoreDescription')}
+                  </Text>
+                  <HStack gap={4}>
+                    <Slider
+                      value={[confluenceMinScore]}
+                      onValueChange={(values) => onConfluenceMinScoreChange(values[0] ?? 60)}
+                      min={0}
+                      max={100}
+                      step={5}
+                      width="full"
+                    />
+                    <Text fontSize="sm" fontWeight="medium" minW="40px" textAlign="right">
+                      {confluenceMinScore}
+                    </Text>
+                  </HStack>
+                </Box>
+              )}
             </Grid>
 
             <Separator />

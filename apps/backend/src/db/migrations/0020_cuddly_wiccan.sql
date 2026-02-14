@@ -1,2 +1,0 @@
-ALTER TABLE "auto_trading_config" ALTER COLUMN "use_stochastic_filter" SET DEFAULT true;--> statement-breakpoint
-ALTER TABLE "auto_trading_config" ADD COLUMN "use_trend_filter" boolean DEFAULT true NOT NULL;

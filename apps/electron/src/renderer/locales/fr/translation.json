@@ -309,6 +309,19 @@
         "shortOnly": "Short Seulement",
         "description": "Filtrer les setups par direction de trade"
       },
+      "leverage": {
+        "title": "Paramètres Futures",
+        "description": "Configurer l'effet de levier et le type de marge pour le trading de futures",
+        "label": "Effet de Levier",
+        "warning": "Un effet de levier plus élevé augmente les gains et les pertes potentiels. Utiliser avec prudence.",
+        "positionMode": "Mode de Position",
+        "positionModeDescription": "One-Way: direction unique par symbole. Hedge: long et short simultanés.",
+        "oneWay": "One-Way",
+        "hedge": "Hedge"
+      },
+      "marginType": {
+        "label": "Type de Marge"
+      },
       "filters": {
         "title": "Filtres de Trade",
         "description": "Activez ou désactivez les filtres pour améliorer la qualité des trades.",
@@ -333,7 +346,11 @@
         },
         "direction": {
           "title": "Tendance Long Terme (EMA200)",
-          "description": "Filtre long terme: LONGs bloqués en bear market (prix < EMA200), SHORTs bloqués en bull market (prix > EMA200)."
+          "description": "Filtre long terme: LONGs bloqués en bear market (prix < EMA200), SHORTs bloqués en bull market (prix > EMA200).",
+          "enableLongInBear": "Autoriser Long en Bear",
+          "enableLongInBearDescription": "Override: autoriser les trades LONG dans les marchés baissiers",
+          "enableShortInBull": "Autoriser Short en Bull",
+          "enableShortInBullDescription": "Override: autoriser les trades SHORT dans les marchés haussiers"
         },
         "momentumTiming": {
           "title": "Timing de Momentum (RSI+MFI)",
@@ -361,7 +378,9 @@
         },
         "confluence": {
           "title": "Score de Confluence",
-          "description": "Calcule un score de confluence de tous les filtres. N'opère que si le score dépasse le minimum."
+          "description": "Calcule un score de confluence de tous les filtres. N'opère que si le score dépasse le minimum.",
+          "minScore": "Score Minimum de Confluence",
+          "minScoreDescription": "Plus élevé = filtre plus strict (30-80 recommandé)"
         },
         "volatilityFilters": "Filtres de Volatilité et Session",
         "choppiness": {
@@ -1159,6 +1178,24 @@
       "activationModeShort": "Mode d'Activation SHORT",
       "modeAuto": "Auto",
       "modeManual": "Manuel"
+    },
+    "riskManagement": {
+      "title": "Gestion des Risques",
+      "description": "Configurer les limites de drawdown et la protection de marge",
+      "maxDrawdown": {
+        "title": "Drawdown Maximum",
+        "description": "Bloque les nouvelles positions lorsque le drawdown du portefeuille dépasse cette limite"
+      },
+      "marginTopUp": {
+        "title": "Rechargement de Marge",
+        "description": "Ajouter automatiquement de la marge pour éviter la liquidation",
+        "threshold": "Seuil d'Activation",
+        "thresholdDescription": "Ratio de marge auquel le rechargement est déclenché",
+        "amount": "Montant du Rechargement",
+        "amountDescription": "Pourcentage de la marge de position à ajouter par rechargement",
+        "maxCount": "Max. Rechargements par Position",
+        "maxCountDescription": "Nombre maximum de rechargements de marge autorisés par position"
+      }
     },
     "pausedDueToCapital": "Watchers en pause - pas de capital disponible pour de nouvelles entrées. Reprendra lorsqu'une position sera fermée.",
     "stockPresets": {

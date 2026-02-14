@@ -43,6 +43,16 @@ export interface WatcherConfig {
   pyramidUseRsi?: boolean | null;
   leverageAwarePyramid?: boolean | null;
   pyramidFiboLevels?: string | null;
+  enableLongInBearMarket?: boolean | null;
+  enableShortInBullMarket?: boolean | null;
+  confluenceMinScore?: number | null;
+  maxDrawdownEnabled?: boolean | null;
+  maxDrawdownPercent?: string | null;
+  marginTopUpEnabled?: boolean | null;
+  marginTopUpThreshold?: string | null;
+  marginTopUpPercent?: string | null;
+  marginTopUpMaxCount?: number | null;
+  positionMode?: 'ONE_WAY' | 'HEDGE' | null;
 }
 
 export interface ActiveWatcher {
@@ -74,6 +84,7 @@ export interface SectionExpandedState {
   dynamicSelection: boolean;
   positionSize: boolean;
   leverageSettings: boolean;
+  riskManagement: boolean;
   trailingStop: boolean;
   tpMode: boolean;
   entrySettings: boolean;

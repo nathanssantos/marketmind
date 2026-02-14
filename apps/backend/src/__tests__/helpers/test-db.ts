@@ -202,6 +202,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   use_super_trend_filter BOOLEAN DEFAULT false NOT NULL,
   super_trend_period INTEGER DEFAULT 10,
   super_trend_multiplier NUMERIC(4, 2) DEFAULT '3.00',
+  max_drawdown_enabled BOOLEAN DEFAULT false,
   max_drawdown_percent NUMERIC(5, 2) DEFAULT '15',
   margin_top_up_enabled BOOLEAN DEFAULT false,
   margin_top_up_threshold NUMERIC(5, 2) DEFAULT '30',
