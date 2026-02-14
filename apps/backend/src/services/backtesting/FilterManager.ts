@@ -37,6 +37,7 @@ import { calculateConfluenceScore, type FilterResults } from '../../utils/conflu
 
 export interface FilterConfig {
   onlyLong?: boolean;
+  directionMode?: 'long_only' | 'short_only';
   useTrendFilter?: boolean;
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
@@ -242,9 +243,12 @@ export class FilterManager {
   }
 
   checkDirection(setupDirection: string): boolean {
-    if (this.config.onlyLong && setupDirection === 'SHORT') {
-      return false;
+    if (this.config.directionMode) {
+      if (this.config.directionMode === 'long_only' && setupDirection === 'SHORT') return false;
+      if (this.config.directionMode === 'short_only' && setupDirection === 'LONG') return false;
+      return true;
     }
+    if (this.config.onlyLong && setupDirection === 'SHORT') return false;
     return true;
   }
 

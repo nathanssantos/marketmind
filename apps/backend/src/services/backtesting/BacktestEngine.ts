@@ -59,8 +59,12 @@ export class BacktestEngine {
         indicatorCache.precomputeForStrategies(loadedStrategies, config.strategyParams || {});
       }
 
+      const resolvedDirectionMode = effectiveConfig.directionMode
+        ?? (effectiveConfig.onlyLong ? 'long_only' as const : undefined);
+
       const filterManager = new FilterManager({
         onlyLong: effectiveConfig.onlyLong,
+        directionMode: resolvedDirectionMode,
         useTrendFilter: effectiveConfig.useTrendFilter,
         trendFilterPeriod: effectiveConfig.trendFilterPeriod,
         useStochasticFilter: effectiveConfig.useStochasticFilter,
@@ -745,8 +749,12 @@ export class BacktestEngine {
       try {
         const effectiveConfig = this.buildEffectiveConfig(config, loadedStrategies);
 
+        const batchDirectionMode = effectiveConfig.directionMode
+          ?? (effectiveConfig.onlyLong ? 'long_only' as const : undefined);
+
         const filterManager = new FilterManager({
           onlyLong: effectiveConfig.onlyLong,
+          directionMode: batchDirectionMode,
           useTrendFilter: effectiveConfig.useTrendFilter,
           trendFilterPeriod: effectiveConfig.trendFilterPeriod,
           useStochasticFilter: effectiveConfig.useStochasticFilter,

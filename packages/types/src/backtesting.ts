@@ -87,7 +87,8 @@ export interface BacktestConfig {
   useCooldown?: boolean; // Simulate cooldown between trades (same as auto-trading)
   cooldownMinutes?: number; // Minutes of cooldown per strategy-symbol-interval (default: 15)
 
-  onlyLong?: boolean; // Only allow LONG positions (buy only, no shorts)
+  onlyLong?: boolean; // Only allow LONG positions (buy only, no shorts) - legacy, prefer directionMode
+  directionMode?: 'long_only' | 'short_only'; // Direction filter (overrides onlyLong if set)
   trendFilterPeriod?: number; // EMA period for trend filter (default: 21 to match auto-trading)
   useTrendFilter?: boolean; // Enable trend filter (EMA21 alignment)
 

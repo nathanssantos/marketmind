@@ -313,6 +313,34 @@ describe('FilterManager', () => {
       expect(customManager.checkDirection('LONG')).toBe(true);
       expect(customManager.checkDirection('SHORT')).toBe(false);
     });
+
+    it('should block SHORT when directionMode is long_only', () => {
+      const customManager = new FilterManager({ directionMode: 'long_only' });
+
+      expect(customManager.checkDirection('LONG')).toBe(true);
+      expect(customManager.checkDirection('SHORT')).toBe(false);
+    });
+
+    it('should block LONG when directionMode is short_only', () => {
+      const customManager = new FilterManager({ directionMode: 'short_only' });
+
+      expect(customManager.checkDirection('LONG')).toBe(false);
+      expect(customManager.checkDirection('SHORT')).toBe(true);
+    });
+
+    it('should allow all directions when directionMode is undefined', () => {
+      const customManager = new FilterManager({});
+
+      expect(customManager.checkDirection('LONG')).toBe(true);
+      expect(customManager.checkDirection('SHORT')).toBe(true);
+    });
+
+    it('should prefer directionMode over onlyLong when both set', () => {
+      const customManager = new FilterManager({ onlyLong: true, directionMode: 'short_only' });
+
+      expect(customManager.checkDirection('LONG')).toBe(false);
+      expect(customManager.checkDirection('SHORT')).toBe(true);
+    });
   });
 
   describe('checkStochasticFilter', () => {

@@ -36,6 +36,7 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   maxFibonacciEntryProgressPercent?: number;
   fibonacciSwingRange?: 'extended' | 'nearest';
   interval?: TimeInterval;
+  directionMode?: 'long_only' | 'short_only';
 }
 
 export class StrategyInterpreter extends BaseSetupDetector {
@@ -48,6 +49,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private maxFibEntryProgress: number;
   private fibonacciSwingRange: 'extended' | 'nearest';
   private interval: TimeInterval | undefined;
+  private directionMode: 'long_only' | 'short_only' | undefined;
 
   constructor(config: StrategyInterpreterConfig) {
     super({
@@ -65,6 +67,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.maxFibEntryProgress = config.maxFibonacciEntryProgressPercent ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
     this.fibonacciSwingRange = config.fibonacciSwingRange ?? 'nearest';
     this.interval = config.interval;
+    this.directionMode = config.directionMode;
   }
 
   detect(klines: Kline[], currentIndex: number): SetupDetectorResult {
@@ -423,18 +426,14 @@ export class StrategyInterpreter extends BaseSetupDetector {
   } {
     const { entry } = this.strategy;
 
-    if (entry.long) {
+    if (this.directionMode !== 'short_only' && entry.long) {
       const longTriggered = this.conditionEvaluator.evaluate(entry.long, context);
-      if (longTriggered) {
-        return { direction: 'LONG', triggered: true };
-      }
+      if (longTriggered) return { direction: 'LONG', triggered: true };
     }
 
-    if (entry.short) {
+    if (this.directionMode !== 'long_only' && entry.short) {
       const shortTriggered = this.conditionEvaluator.evaluate(entry.short, context);
-      if (shortTriggered) {
-        return { direction: 'SHORT', triggered: true };
-      }
+      if (shortTriggered) return { direction: 'SHORT', triggered: true };
     }
 
     return { direction: null, triggered: false };

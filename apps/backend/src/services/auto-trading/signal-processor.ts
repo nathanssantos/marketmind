@@ -224,6 +224,7 @@ export class SignalProcessor {
       .select({
         currentBalance: wallets.currentBalance,
         leverage: autoTradingConfig.leverage,
+        directionMode: autoTradingConfig.directionMode,
       })
       .from(wallets)
       .leftJoin(autoTradingConfig, eq(wallets.id, autoTradingConfig.walletId))
@@ -254,10 +255,15 @@ export class SignalProcessor {
       await this.deps.checkAllRotationsOnce();
     }
 
+    const directionMode = walletWithConfig?.directionMode ?? 'auto';
+
     const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
-    const filteredStrategies = strategies.filter((s) =>
-      watcher.enabledStrategies.includes(s.id)
-    );
+    const filteredStrategies = strategies.filter((s) => {
+      if (!watcher.enabledStrategies.includes(s.id)) return false;
+      if (directionMode === 'long_only' && !s.entry.long) return false;
+      if (directionMode === 'short_only' && !s.entry.short) return false;
+      return true;
+    });
 
     const requiredKlines = calculateRequiredKlines();
     const minRequired = ABSOLUTE_MINIMUM_KLINES;
@@ -431,6 +437,7 @@ export class SignalProcessor {
 
     logBuffer.log('>', 'Scanning for setups', {
       strategies: filteredStrategies.length,
+      directionMode,
       klines: closedKlines.length,
     });
 
@@ -447,6 +454,7 @@ export class SignalProcessor {
         strategy,
         silent: true,
         interval: watcher.interval as TimeInterval,
+        directionMode: directionMode !== 'auto' ? directionMode as 'long_only' | 'short_only' : undefined,
       });
 
       const result = interpreter.detect(closedKlines, currentIndex);

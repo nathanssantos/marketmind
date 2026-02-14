@@ -638,6 +638,100 @@ describe('StrategyInterpreter', () => {
     });
   });
 
+  describe('directionMode', () => {
+    it('should skip LONG evaluation when directionMode is short_only', () => {
+      const config: StrategyInterpreterConfig = {
+        strategy: createMockStrategy(),
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.0,
+        directionMode: 'short_only',
+      };
+
+      mockMethods.conditionEvaluator.evaluate.mockReturnValue(true);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).not.toBeNull();
+      expect(result.setup?.direction).toBe('SHORT');
+      expect(mockMethods.conditionEvaluator.evaluate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should skip SHORT evaluation when directionMode is long_only', () => {
+      const config: StrategyInterpreterConfig = {
+        strategy: createMockStrategy(),
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.0,
+        directionMode: 'long_only',
+      };
+
+      mockMethods.conditionEvaluator.evaluate.mockReturnValue(true);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).not.toBeNull();
+      expect(result.setup?.direction).toBe('LONG');
+      expect(mockMethods.conditionEvaluator.evaluate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return null when short_only and only long entry exists', () => {
+      const strategy = createMockStrategy({
+        entry: {
+          long: {
+            operator: 'AND',
+            conditions: [{ left: 'close', op: '>', right: 'ema' }],
+          },
+        },
+      });
+      const config: StrategyInterpreterConfig = {
+        strategy,
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.0,
+        directionMode: 'short_only',
+      };
+
+      mockMethods.conditionEvaluator.evaluate.mockReturnValue(true);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).toBeNull();
+      expect(mockMethods.conditionEvaluator.evaluate).not.toHaveBeenCalled();
+    });
+
+    it('should evaluate both directions when directionMode is undefined', () => {
+      const config: StrategyInterpreterConfig = {
+        strategy: createMockStrategy(),
+        enabled: true,
+        minConfidence: 50,
+        minRiskReward: 1.0,
+      };
+
+      mockMethods.conditionEvaluator.evaluate
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+
+      interpreter = new StrategyInterpreter(config);
+      const klines = createMockKlines(50);
+
+      const result = interpreter.detect(klines, 49);
+
+      expect(result.setup).not.toBeNull();
+      expect(result.setup?.direction).toBe('SHORT');
+      expect(mockMethods.conditionEvaluator.evaluate).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('Fibonacci entry progress validation', () => {
     it('should reject setup when entry is past 50% of Fibonacci target', async () => {
       const { calculateFibonacciProjection } = await import('@marketmind/indicators');
