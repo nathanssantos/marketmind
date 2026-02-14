@@ -80,8 +80,8 @@ const ACTIVE_STRATEGIES = [
 ];
 
 const PRODUCTION_BASE = {
-  startDate: '2025-01-24',
-  endDate: '2026-01-24',
+  startDate: '2023-02-13',
+  endDate: '2026-02-13',
   initialCapital: TRADING_DEFAULTS.INITIAL_CAPITAL,
   marketType: 'FUTURES' as const,
   leverage: 1,
