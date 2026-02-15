@@ -104,7 +104,7 @@ export const WatcherManager = () => {
 
   const { formatCapitalTooltip } = useCapitalLimits(walletId, quickStartMarketType);
 
-  const useBtcCorrelationFilter = config?.useBtcCorrelationFilter ?? true;
+  const useBtcCorrelationFilter = config?.useBtcCorrelationFilter ?? false;
 
   // Debounce o count para não refazer query a cada digitação
   const debouncedQuickStartCount = useDebounce(quickStartCount, 500);
@@ -149,7 +149,7 @@ export const WatcherManager = () => {
   }, [quickStartSymbols, fundingRates, config?.useFundingFilter, quickStartMarketType]);
 
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
-  const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
+  const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '3.618';
   const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
   const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
 
@@ -431,11 +431,11 @@ export const WatcherManager = () => {
       <EntrySettingsSection
         isExpanded={expandedSections.entrySettings}
         onToggle={() => toggleSection('entrySettings')}
-        maxFibonacciEntryProgressPercent={config?.maxFibonacciEntryProgressPercent ?? 100}
+        maxFibonacciEntryProgressPercent={Number(config?.maxFibonacciEntryProgressPercent ?? 127.2)}
         onEntryProgressChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercent: value })}
-        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 0.75)}
+        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 0.5)}
         onMinRiskRewardLongChange={(value) => handleConfigUpdate({ minRiskRewardRatioLong: value.toString() })}
-        minRiskRewardRatioShort={Number(config?.minRiskRewardRatioShort ?? 0.75)}
+        minRiskRewardRatioShort={Number(config?.minRiskRewardRatioShort ?? 1)}
         onMinRiskRewardShortChange={(value) => handleConfigUpdate({ minRiskRewardRatioShort: value.toString() })}
         isPending={updateConfig.isPending}
       />

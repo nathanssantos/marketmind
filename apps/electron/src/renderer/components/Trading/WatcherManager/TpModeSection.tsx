@@ -140,6 +140,15 @@ export const TpModeSection = ({
                 <Radio value="2.618">
                   <Text fontSize="sm">261.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtended')}</Text>
                 </Radio>
+                <Radio value="3">
+                  <Text fontSize="sm">300% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.triple')}</Text>
+                </Radio>
+                <Radio value="3.618">
+                  <Text fontSize="sm">361.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.ultraExtended')}</Text>
+                </Radio>
+                <Radio value="4.236">
+                  <Text fontSize="sm">423.6% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.maximum')}</Text>
+                </Radio>
               </Stack>
             </RadioGroup>
           </Box>
@@ -174,6 +183,15 @@ export const TpModeSection = ({
                 </Radio>
                 <Radio value="2.618">
                   <Text fontSize="sm">261.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtended')}</Text>
+                </Radio>
+                <Radio value="3">
+                  <Text fontSize="sm">300% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.triple')}</Text>
+                </Radio>
+                <Radio value="3.618">
+                  <Text fontSize="sm">361.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.ultraExtended')}</Text>
+                </Radio>
+                <Radio value="4.236">
+                  <Text fontSize="sm">423.6% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.maximum')}</Text>
                 </Radio>
               </Stack>
             </RadioGroup>

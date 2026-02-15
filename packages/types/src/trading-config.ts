@@ -55,8 +55,8 @@ export interface TrailingStopUserConfig {
 }
 
 export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
-  trailingActivationPercentLong: 0.9,
-  trailingActivationPercentShort: 0.8,
+  trailingActivationPercentLong: 1.272,
+  trailingActivationPercentShort: 1.272,
   trailingDistancePercentLong: 0.4,
   trailingDistancePercentShort: 0.3,
   useAdaptiveTrailing: true,

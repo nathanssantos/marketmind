@@ -53,9 +53,9 @@ describe('configLoader', () => {
       });
 
       expect(config.positionSizePercent).toBe(FILTER_DEFAULTS.positionSizePercent);
-      expect(config.useStochasticFilter).toBe(false);
-      expect(config.useAdxFilter).toBe(false);
-      expect(config.useTrendFilter).toBe(false);
+      expect(config.useStochasticFilter).toBe(FILTER_DEFAULTS.useStochasticFilter);
+      expect(config.useAdxFilter).toBe(FILTER_DEFAULTS.useAdxFilter);
+      expect(config.useTrendFilter).toBe(FILTER_DEFAULTS.useTrendFilter);
       expect(config.minRiskRewardRatio).toBe(TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO);
       expect(config.cooldownMinutes).toBe(15);
       expect(config.useSharedExposure).toBe(true);

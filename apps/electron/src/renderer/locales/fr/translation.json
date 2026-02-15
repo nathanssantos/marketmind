@@ -272,7 +272,13 @@
           "veryExtended": "227.2% (2.272)",
           "veryExtendedDescription": "Très étendu - pour les tendances exceptionnellement fortes avec momentum soutenu",
           "superExtended": "261.8% (2.618)",
-          "superExtendedDescription": "Extension maximale de Fibonacci - pour les mouvements paraboliques et momentum exceptionnel"
+          "superExtendedDescription": "Extension maximale de Fibonacci - pour les mouvements paraboliques et momentum exceptionnel",
+          "triple": "300% (3.0)",
+          "tripleDescription": "Triple extension - pour les tendances de cassure soutenues avec momentum extrême",
+          "ultraExtended": "361.8% (3.618)",
+          "ultraExtendedDescription": "Ultra extension - pour laisser courir les gagnants dans les tendances paraboliques fortes",
+          "maximum": "423.6% (4.236)",
+          "maximumDescription": "Objectif maximum - pour les mouvements de momentum extraordinaires sans résistance"
         },
         "swingRange": {
           "title": "Portée du Swing",
@@ -288,11 +294,12 @@
         "description": "Configurez le timing d'entrée et les filtres de risque/récompense",
         "entryLevel": {
           "title": "Niveau d'Entrée Maximum",
-          "description": "Contrôle la distance que le prix peut parcourir du niveau de pullback avant de rejeter l'entrée. 0% = pullback profond uniquement, 100% = permet les entrées en breakout.",
+          "description": "Contrôle la distance que le prix peut parcourir du niveau de pullback avant de rejeter l'entrée. 0% = pullback profond uniquement, 100% = breakout, >100% = entrées étendues au-delà du breakout.",
           "deepPullback": "Pullback Profond",
           "pullback": "Pullback",
           "shallowPullback": "Pullback Léger",
-          "breakout": "Breakout"
+          "breakout": "Breakout",
+          "extendedBreakout": "Étendu"
         },
         "minRR": {
           "longTitle": "R:R Minimum (LONG)",

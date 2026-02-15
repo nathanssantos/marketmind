@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   max_global_exposure_percent NUMERIC(5, 2) DEFAULT '100.00' NOT NULL,
   min_risk_reward_ratio_long NUMERIC(4, 2) DEFAULT '0.75',
   min_risk_reward_ratio_short NUMERIC(4, 2) DEFAULT '0.75',
-  max_fibonacci_entry_progress_percent INTEGER DEFAULT 100 NOT NULL,
+  max_fibonacci_entry_progress_percent NUMERIC(5, 1) DEFAULT '127.2' NOT NULL,
   tp_calculation_mode VARCHAR(20) DEFAULT 'fibonacci' NOT NULL,
   fibonacci_target_level VARCHAR(10) DEFAULT '2' NOT NULL,
   fibonacci_target_level_long VARCHAR(10) DEFAULT '2',

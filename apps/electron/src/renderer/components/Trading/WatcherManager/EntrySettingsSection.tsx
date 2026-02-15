@@ -32,7 +32,8 @@ export const EntrySettingsSection = ({
     if (value <= 20) return t('settings.algorithmicAutoTrading.entrySettings.entryLevel.deepPullback');
     if (value <= 50) return t('settings.algorithmicAutoTrading.entrySettings.entryLevel.pullback');
     if (value <= 80) return t('settings.algorithmicAutoTrading.entrySettings.entryLevel.shallowPullback');
-    return t('settings.algorithmicAutoTrading.entrySettings.entryLevel.breakout');
+    if (value <= 100) return t('settings.algorithmicAutoTrading.entrySettings.entryLevel.breakout');
+    return t('settings.algorithmicAutoTrading.entrySettings.entryLevel.extendedBreakout');
   };
 
   return (
@@ -56,8 +57,8 @@ export const EntrySettingsSection = ({
               value={[maxFibonacciEntryProgressPercent]}
               onValueChange={(values) => onEntryProgressChange(values[0] ?? 100)}
               min={0}
-              max={100}
-              step={5}
+              max={150}
+              step={0.1}
             />
             <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
               {maxFibonacciEntryProgressPercent}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercent)})
@@ -65,7 +66,7 @@ export const EntrySettingsSection = ({
           </HStack>
           <HStack justify="space-between" mt={2}>
             <Text fontSize="xs" color="fg.muted">0% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.deepPullback')})</Text>
-            <Text fontSize="xs" color="fg.muted">100% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.breakout')})</Text>
+            <Text fontSize="xs" color="fg.muted">150% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.extendedBreakout')})</Text>
           </HStack>
         </Box>
 

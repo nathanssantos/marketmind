@@ -96,14 +96,14 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.mtf.title')}
                 description={t('settings.algorithmicAutoTrading.filters.mtf.description')}
-                checked={config?.useMtfFilter ?? true}
+                checked={config?.useMtfFilter ?? false}
                 onChange={(value) => onFilterToggle('useMtfFilter', value)}
                 disabled={isPending}
               />
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.btcCorrelation.title')}
                 description={t('settings.algorithmicAutoTrading.filters.btcCorrelation.description')}
-                checked={config?.useBtcCorrelationFilter ?? true}
+                checked={config?.useBtcCorrelationFilter ?? false}
                 onChange={(value) => onFilterToggle('useBtcCorrelationFilter', value)}
                 disabled={isPending}
                 tag={t('common.cryptoOnly')}
@@ -120,7 +120,7 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.trend.title')}
                 description={t('settings.algorithmicAutoTrading.filters.trend.description')}
-                checked={config?.useTrendFilter ?? false}
+                checked={config?.useTrendFilter ?? true}
                 onChange={(value) => onFilterToggle('useTrendFilter', value)}
                 disabled={isPending}
               />
@@ -197,14 +197,14 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.adx.title')}
                 description={t('settings.algorithmicAutoTrading.filters.adx.description')}
-                checked={config?.useAdxFilter ?? false}
+                checked={config?.useAdxFilter ?? true}
                 onChange={(value) => onFilterToggle('useAdxFilter', value)}
                 disabled={isPending}
               />
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.volume.title')}
                 description={t('settings.algorithmicAutoTrading.filters.volume.description')}
-                checked={config?.useVolumeFilter ?? true}
+                checked={config?.useVolumeFilter ?? false}
                 onChange={(value) => onFilterToggle('useVolumeFilter', value)}
                 disabled={isPending}
               />
@@ -219,7 +219,7 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.funding.title')}
                 description={t('settings.algorithmicAutoTrading.filters.funding.description')}
-                checked={config?.useFundingFilter ?? true}
+                checked={config?.useFundingFilter ?? false}
                 onChange={(value) => onFilterToggle('useFundingFilter', value)}
                 disabled={isPending}
                 tag={t('common.futuresOnly')}
@@ -229,7 +229,7 @@ export const FiltersSection = ({
               <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.confluence.title')}
                 description={t('settings.algorithmicAutoTrading.filters.confluence.description')}
-                checked={config?.useConfluenceScoring ?? true}
+                checked={config?.useConfluenceScoring ?? false}
                 onChange={(value) => onFilterToggle('useConfluenceScoring', value)}
                 disabled={isPending}
               />

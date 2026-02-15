@@ -48,7 +48,7 @@ export type BaseBacktestConfig = Omit<MultiWatcherBacktestConfig, 'watchers' | '
 export const createBaseConfig = (): BaseBacktestConfig => ({
   initialCapital: DEFAULT_BACKTEST_PARAMS.initialCapital,
   positionSizePercent: DEFAULT_BACKTEST_PARAMS.positionSizePercent,
-  minRiskRewardRatio: 0.75,
+  minRiskRewardRatio: 0.5,
   setupTypes: [...ENABLED_SETUPS],
   useSharedExposure: true,
   marketType: DEFAULT_BACKTEST_PARAMS.marketType,
@@ -57,25 +57,25 @@ export const createBaseConfig = (): BaseBacktestConfig => ({
   useCooldown: true,
   cooldownMinutes: DEFAULT_BACKTEST_PARAMS.cooldownMinutes,
 
-  useVolumeFilter: true,
+  useVolumeFilter: false,
   volumeFilterConfig: VOLUME_FILTER_CONFIG,
 
-  useMomentumTimingFilter: true,
+  useMomentumTimingFilter: false,
   useMtfFilter: false,
   useMarketRegimeFilter: false,
 
   useStochasticFilter: false,
-  useAdxFilter: false,
-  useTrendFilter: false,
-  maxFibonacciEntryProgressPercent: 100,
+  useAdxFilter: true,
+  useTrendFilter: true,
+  maxFibonacciEntryProgressPercent: 127.2,
   useFundingFilter: false,
-  useBtcCorrelationFilter: true,
+  useBtcCorrelationFilter: false,
   useConfluenceScoring: false,
   trendFilterPeriod: 21,
 
   tpCalculationMode: 'fibonacci',
   fibonacciTargetLevel: 'auto',
-  fibonacciTargetLevelLong: '2',
+  fibonacciTargetLevelLong: '3.618',
   fibonacciTargetLevelShort: '1.272',
 });
 
@@ -109,11 +109,11 @@ export const printConfig = () => {
   console.log(`   • Capital: $${formatCurrency(DEFAULT_BACKTEST_PARAMS.initialCapital)}`);
   console.log(`   • Leverage: ${DEFAULT_BACKTEST_PARAMS.leverage}x`);
   console.log(`   • Setups: ${ENABLED_SETUPS.length} estratégias`);
-  console.log('   • BTC Correlation Filter: ON');
-  console.log('   • Volume Filter: ON (OBV LONG=off, SHORT=on)');
-  console.log('   • Momentum Timing Filter: ON');
-  console.log('   • EMA Trend Filter: OFF');
-  console.log('   • ADX Filter: OFF');
+  console.log('   • BTC Correlation Filter: OFF');
+  console.log('   • Volume Filter: OFF');
+  console.log('   • Momentum Timing Filter: OFF');
+  console.log('   • EMA Trend Filter: ON');
+  console.log('   • ADX Filter: ON');
   console.log('   • TP Mode: Fibonacci (auto)');
   console.log(`   • Cooldown: ${DEFAULT_BACKTEST_PARAMS.cooldownMinutes} min\n`);
 };

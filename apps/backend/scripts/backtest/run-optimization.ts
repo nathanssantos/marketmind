@@ -148,6 +148,15 @@ const FILTER_GRID: Record<string, boolean[]> = {
   useDirectionFilter: [false, true],
   useAdxFilter: [false, true],
   useTrendFilter: [false, true],
+  useChoppinessFilter: [false, true],
+  useSuperTrendFilter: [false, true],
+  useMarketRegimeFilter: [false, true],
+  useBollingerSqueezeFilter: [false, true],
+  useVwapFilter: [false, true],
+  useMtfFilter: [false, true],
+  useStochasticHtfFilter: [false, true],
+  useStochasticRecoveryHtfFilter: [false, true],
+  useFundingFilter: [false, true],
 };
 
 type SwingRange = 'nearest' | 'extended';

@@ -198,7 +198,7 @@ export const autoTradingRouter = router({
         directionMode: z.enum(['auto', 'long_only', 'short_only']).optional(),
         minRiskRewardRatioLong: z.string().optional(),
         minRiskRewardRatioShort: z.string().optional(),
-        maxFibonacciEntryProgressPercent: z.number().min(0).max(100).optional(),
+        maxFibonacciEntryProgressPercent: z.number().min(0).max(150).optional(),
         useBtcCorrelationFilter: z.boolean().optional(),
         useFundingFilter: z.boolean().optional(),
         useMtfFilter: z.boolean().optional(),
@@ -404,7 +404,7 @@ export const autoTradingRouter = router({
       if (input.minRiskRewardRatioShort !== undefined)
         {updateData.minRiskRewardRatioShort = input.minRiskRewardRatioShort;}
       if (input.maxFibonacciEntryProgressPercent !== undefined)
-        {updateData.maxFibonacciEntryProgressPercent = input.maxFibonacciEntryProgressPercent;}
+        {updateData.maxFibonacciEntryProgressPercent = String(input.maxFibonacciEntryProgressPercent);}
       if (input.useBtcCorrelationFilter !== undefined)
         {updateData.useBtcCorrelationFilter = input.useBtcCorrelationFilter;}
       if (input.useFundingFilter !== undefined)
