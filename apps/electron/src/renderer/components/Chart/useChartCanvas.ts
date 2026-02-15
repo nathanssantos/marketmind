@@ -9,6 +9,7 @@ const SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
 const TARGET_KLINE_WIDTH = 10;
 const KLINE_TOTAL_WIDTH = TARGET_KLINE_WIDTH + CHART_CONFIG.KLINE_SPACING;
 const DEFAULT_VISIBLE_KLINES = 100;
+const NEAR_LEFT_EDGE_THRESHOLD = 100;
 
 const calculateVisibleKlines = (chartWidth?: number): number => {
   if (!chartWidth || chartWidth <= 0) return DEFAULT_VISIBLE_KLINES;
@@ -19,6 +20,7 @@ export interface UseChartCanvasProps {
   klines: Kline[];
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
+  onNearLeftEdge?: () => void;
 }
 
 export interface UseChartCanvasReturn {
@@ -47,6 +49,7 @@ export const useChartCanvas = ({
   klines,
   initialViewport = DEFAULT_VIEWPORT,
   onViewportChange,
+  onNearLeftEdge,
 }: UseChartCanvasProps): UseChartCanvasReturn => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const managerRef = useRef<CanvasManager | null>(null);
@@ -78,9 +81,15 @@ export const useChartCanvas = ({
   const klinesLengthRef = useRef(klines.length);
   const lastViewportUpdateRef = useRef<number>(0);
 
+  const onNearLeftEdgeRef = useRef(onNearLeftEdge);
+
   useEffect(() => {
     onViewportChangeRef.current = onViewportChange;
   }, [onViewportChange]);
+
+  useEffect(() => {
+    onNearLeftEdgeRef.current = onNearLeftEdge;
+  }, [onNearLeftEdge]);
 
   useEffect(() => {
     klinesLengthRef.current = klines.length;
@@ -128,6 +137,7 @@ export const useChartCanvas = ({
   const prevKlineCountRef = useRef<number>(klines.length);
   const wasAtEndRef = useRef<boolean>(true);
   const prevFirstKlineTimestampRef = useRef<number>(klines[0]?.openTime ?? 0);
+  const prevLastKlineTimestampRef = useRef<number>(klines[klines.length - 1]?.openTime ?? 0);
   const isInitialLoadRef = useRef<boolean>(true);
 
   useEffect(() => {
@@ -148,7 +158,25 @@ export const useChartCanvas = ({
         currentCount > 0 &&
         prevFirstKlineTimestamp > 0;
 
-      if (isInitialLoadRef.current && currentCount > 0) {
+      const lastKlineTimestamp = klines[klines.length - 1]?.openTime ?? 0;
+      const prevLastKlineTimestamp = prevLastKlineTimestampRef.current;
+      const isPrepend = isCompleteDataChange &&
+        firstKlineTimestamp < prevFirstKlineTimestamp &&
+        lastKlineTimestamp === prevLastKlineTimestamp &&
+        currentCount > prevCount;
+
+      if (isPrepend) {
+        const prependedCount = currentCount - prevCount;
+        const currentVp = managerRef.current.getViewport();
+        const shiftedViewport = {
+          ...currentVp,
+          start: currentVp.start + prependedCount,
+          end: currentVp.end + prependedCount,
+        };
+        setViewport(shiftedViewport);
+        managerRef.current.setViewport(shiftedViewport);
+        onViewportChange?.(shiftedViewport);
+      } else if (isInitialLoadRef.current && currentCount > 0) {
         const chartWidth = managerRef.current.getDimensions()?.chartWidth;
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
         const futureSpace = Math.max(
@@ -209,6 +237,7 @@ export const useChartCanvas = ({
 
       prevKlineCountRef.current = currentCount;
       prevFirstKlineTimestampRef.current = firstKlineTimestamp;
+      prevLastKlineTimestampRef.current = klines[klines.length - 1]?.openTime ?? 0;
     }
   }, [klines]);
 
@@ -308,6 +337,10 @@ export const useChartCanvas = ({
             updateViewport(newViewport);
             wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
             lastViewportUpdateRef.current = now;
+
+            if (newViewport.start < NEAR_LEFT_EDGE_THRESHOLD && onNearLeftEdgeRef.current) {
+              onNearLeftEdgeRef.current();
+            }
           }
         }
         if (deltaY !== 0) {

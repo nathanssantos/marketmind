@@ -1,7 +1,7 @@
 import type { Interval } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import {
-  REQUIRED_KLINES,
+  MAINTENANCE_KLINES,
   TIME_MS,
   COOLDOWN_GAP_CHECK,
   COOLDOWN_CORRUPTION_CHECK,
@@ -373,7 +373,7 @@ class KlineMaintenance {
   private async detectGaps(pair: ActivePair): Promise<GapInfo[]> {
     const now = Date.now();
     const intervalMs = getIntervalMilliseconds(pair.interval);
-    const lookbackMs = REQUIRED_KLINES * intervalMs;
+    const lookbackMs = MAINTENANCE_KLINES * intervalMs;
 
     const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
     const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
@@ -414,7 +414,7 @@ class KlineMaintenance {
           ...pair,
           gapStart: startTime,
           gapEnd: endTime,
-          missingCandles: REQUIRED_KLINES,
+          missingCandles: MAINTENANCE_KLINES,
         },
       ];
     }

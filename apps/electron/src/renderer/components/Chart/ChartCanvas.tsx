@@ -83,6 +83,8 @@ export interface ChartCanvasProps {
   onToggleSetupsVisibility?: () => void;
   setupsVisible?: boolean;
   timeframe?: string;
+  onNearLeftEdge?: () => void;
+  isLoadingMore?: boolean;
 }
 
 export const ChartCanvas = ({
@@ -115,6 +117,8 @@ export const ChartCanvas = ({
   onToggleSetupsVisibility: _onToggleSetupsVisibility,
   setupsVisible: _setupsVisible = true,
   timeframe = '12h',
+  onNearLeftEdge,
+  isLoadingMore: _isLoadingMore,
 }: ChartCanvasProps): ReactElement => {
   const { t } = useTranslation();
   const { warning } = useToast();
@@ -229,6 +233,7 @@ export const ChartCanvas = ({
     klines,
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
+    onNearLeftEdge,
   });
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({

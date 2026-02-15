@@ -16,9 +16,10 @@ import { Toolbar } from '../components/Layout/Toolbar';
 import { MarketStatusBar } from '../components/MarketStatusBar';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, REQUIRED_KLINES } from '../constants/defaults';
+import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS } from '../constants/defaults';
 import { ChartProvider } from '../context/ChartContext';
-import { useBackendKlines, useKlineStream } from '../hooks/useBackendKlines';
+import { useKlineStream } from '../hooks/useBackendKlines';
+import { useKlinePagination } from '../hooks/useKlinePagination';
 import { useDebounce } from '../hooks/useDebounce';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useCurrencyAutoRefresh } from '../store/currencyStore';
@@ -79,48 +80,27 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
 
-  const { useKlineList } = useBackendKlines();
-  const backendKlinesQuery = useKlineList({
+  const {
+    allKlines: paginatedKlines,
+    isLoadingMore,
+    hasMore,
+    loadOlderKlines,
+    isInitialLoading,
+    error: paginationError,
+  } = useKlinePagination({
     symbol,
     interval: timeframe as any,
     marketType,
-    limit: REQUIRED_KLINES,
+    enabled: !!symbol,
   });
 
   const marketData = useMemo(() => {
-    if (!backendKlinesQuery.data || backendKlinesQuery.data.length === 0) {
-      return null;
-    }
+    if (paginatedKlines.length === 0) return null;
+    return { symbol, interval: timeframe, klines: paginatedKlines };
+  }, [paginatedKlines, symbol, timeframe]);
 
-    const parseTimestamp = (time: unknown): number => {
-      if (typeof time === 'string') return new Date(time).getTime();
-      if (time instanceof Date) return time.getTime();
-      return Number(time);
-    };
-
-    const klines: Kline[] = backendKlinesQuery.data.map((k) => ({
-      openTime: parseTimestamp(k.openTime),
-      closeTime: parseTimestamp(k.closeTime),
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-      volume: k.volume,
-      quoteVolume: k.quoteVolume || '0',
-      trades: k.trades || 0,
-      takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
-      takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
-    }));
-
-    return {
-      symbol,
-      interval: timeframe,
-      klines,
-    };
-  }, [backendKlinesQuery.data, symbol, timeframe]);
-
-  const loading = backendKlinesQuery.isLoading;
-  const error = backendKlinesQuery.error ? new Error(backendKlinesQuery.error.message) : null;
+  const loading = isInitialLoading;
+  const error = paginationError;
 
   useEffect(() => {
     const migrateMovingAverages = () => {
@@ -387,6 +367,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
             timeframe={timeframe}
+            onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
+            isLoadingMore={isLoadingMore}
           />
         )}
       </Box>

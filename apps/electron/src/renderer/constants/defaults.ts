@@ -7,7 +7,9 @@ import { getChartColors } from '../theme';
 export { INTERVAL_MS };
 export const INTERVAL_MS_MAP = INTERVAL_MS;
 
-export const REQUIRED_KLINES = 40_000;
+export const CHART_INITIAL_LOAD = 10_000;
+export const CHART_PAGE_SIZE = 5_000;
+export const REQUIRED_KLINES = CHART_INITIAL_LOAD;
 
 export const getDefaultMovingAverages = (colorMode: 'light' | 'dark'): MovingAverageConfig[] => {
   const colors = getChartColors(colorMode);

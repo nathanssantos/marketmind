@@ -1,7 +1,7 @@
 import { serializeError } from '../utils/errors';
 import { createLogger } from '@marketmind/logger';
 import type { Interval } from '@marketmind/types';
-import { ABSOLUTE_MINIMUM_KLINES, REQUIRED_KLINES } from '../constants';
+import { ABSOLUTE_MINIMUM_KLINES, BACKFILL_TARGET_KLINES } from '../constants';
 import { binanceApiCache } from './binance-api-cache';
 import { smartBackfillKlines, type SmartBackfillResult } from './binance-historical';
 
@@ -38,7 +38,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     symbol,
     interval,
     marketType = 'FUTURES',
-    targetCount = REQUIRED_KLINES,
+    targetCount = BACKFILL_TARGET_KLINES,
     silent = false,
     forRotation = false,
   } = options;
@@ -173,7 +173,7 @@ export const checkKlineAvailability = async (
       symbol,
       interval,
       marketType,
-      targetCount: REQUIRED_KLINES,
+      targetCount: BACKFILL_TARGET_KLINES,
       silent,
     });
 

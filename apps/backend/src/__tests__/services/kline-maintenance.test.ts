@@ -142,7 +142,7 @@ vi.mock('../../services/watcher-batch-logger', () => {
 });
 
 vi.mock('../../constants', () => ({
-  REQUIRED_KLINES: 2500,
+  MAINTENANCE_KLINES: 10_000,
   TIME_MS: { HOUR: 3_600_000, MINUTE: 60_000, SECOND: 1000 },
   COOLDOWN_GAP_CHECK: 7_200_000,
   COOLDOWN_CORRUPTION_CHECK: 7_200_000,

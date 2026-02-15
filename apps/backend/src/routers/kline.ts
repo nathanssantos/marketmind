@@ -1,7 +1,7 @@
 import type { AssetClass, Interval, MarketType } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
-import { REQUIRED_KLINES, TIME_MS } from '../constants';
+import { CHART_INITIAL_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
 import { symbolSearch } from '../exchange/interactive-brokers/symbol-search';
@@ -94,7 +94,7 @@ export const klineRouter = router({
         marketType: marketTypeSchema,
         startTime: z.date().optional(),
         endTime: z.date().optional(),
-        limit: z.number().min(1).max(REQUIRED_KLINES).default(REQUIRED_KLINES),
+        limit: z.number().min(1).max(50_000).default(CHART_INITIAL_KLINES),
       })
     )
     .query(async ({ input }) => {
@@ -149,7 +149,7 @@ export const klineRouter = router({
         symbol: z.string(),
         interval: intervalSchema,
         marketType: marketTypeSchema,
-        periodsBack: z.number().min(1).default(REQUIRED_KLINES),
+        periodsBack: z.number().min(1).default(CHART_INITIAL_KLINES),
       })
     )
     .mutation(async ({ input }) => {

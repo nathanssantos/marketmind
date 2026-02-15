@@ -16,10 +16,11 @@ import { MainLayout } from './components/Layout/MainLayout';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
-import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS, REQUIRED_KLINES } from './constants/defaults';
+import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
-import { useBackendKlines, useKlineStream } from './hooks/useBackendKlines';
+import { useKlineStream } from './hooks/useBackendKlines';
+import { useKlinePagination } from './hooks/useKlinePagination';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
@@ -181,50 +182,28 @@ function AppContent(): ReactElement {
     setIsTradingOpen((prev) => !prev);
   }, [setIsTradingOpen]);
 
-  const { useKlineList } = useBackendKlines();
-  const backendKlinesQuery = useKlineList({
+  const {
+    allKlines: paginatedKlines,
+    isLoadingMore,
+    hasMore,
+    loadOlderKlines,
+    isInitialLoading,
+    error: paginationError,
+    refetch: refetchKlines,
+  } = useKlinePagination({
     symbol,
     interval: timeframe as any,
-    limit: REQUIRED_KLINES,
     marketType,
+    enabled: !!symbol,
   });
 
-
-
   const marketData = useMemo(() => {
-    if (!backendKlinesQuery.data || backendKlinesQuery.data.length === 0) {
-      return null;
-    }
+    if (paginatedKlines.length === 0) return null;
+    return { symbol, interval: timeframe, klines: paginatedKlines };
+  }, [paginatedKlines, symbol, timeframe]);
 
-    const parseTimestamp = (time: unknown): number => {
-      if (typeof time === 'string') return new Date(time).getTime();
-      if (time instanceof Date) return time.getTime();
-      return Number(time);
-    };
-
-    const klines: Kline[] = backendKlinesQuery.data.map((k) => ({
-      openTime: parseTimestamp(k.openTime),
-      closeTime: parseTimestamp(k.closeTime),
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-      volume: k.volume,
-      quoteVolume: k.quoteVolume || '0',
-      trades: k.trades || 0,
-      takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
-      takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
-    }));
-
-    return {
-      symbol,
-      interval: timeframe,
-      klines,
-    };
-  }, [backendKlinesQuery.data, symbol, timeframe]);
-
-  const loading = backendKlinesQuery.isLoading;
-  const error = backendKlinesQuery.error ? new Error(backendKlinesQuery.error.message) : null;
+  const loading = isInitialLoading;
+  const error = paginationError;
 
   const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
   const previousPriceRef = useRef<number | null>(null);
@@ -357,18 +336,18 @@ function AppContent(): ReactElement {
         console.log(`[App] Detected gap of ${gapCandles} candles, refetching klines...`);
         lastRefetchRef.current = now;
         setLiveKlines([]);
-        backendKlinesQuery.refetch();
+        refetchKlines();
       }
     }
-  }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, backendKlinesQuery]);
+  }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, refetchKlines]);
 
   const handleVisibilityRestore = useCallback(async (state: { hiddenDuration: number }) => {
     if (state.hiddenDuration < 5_000) return;
     isRefetchingRef.current = true;
     setLiveKlines([]);
-    await backendKlinesQuery.refetch();
+    await refetchKlines();
     isRefetchingRef.current = false;
-  }, [backendKlinesQuery]);
+  }, [refetchKlines]);
 
   useVisibilityChange({
     onBecameVisible: handleVisibilityRestore,
@@ -513,6 +492,8 @@ function AppContent(): ReactElement {
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}
             timeframe={timeframe}
+            onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
+            isLoadingMore={isLoadingMore}
           />
         )}
       </MainLayout>
