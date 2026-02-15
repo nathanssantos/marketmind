@@ -225,6 +225,8 @@ export class SignalProcessor {
         currentBalance: wallets.currentBalance,
         leverage: autoTradingConfig.leverage,
         directionMode: autoTradingConfig.directionMode,
+        maxFibonacciEntryProgressPercent: autoTradingConfig.maxFibonacciEntryProgressPercent,
+        fibonacciSwingRange: autoTradingConfig.fibonacciSwingRange,
       })
       .from(wallets)
       .leftJoin(autoTradingConfig, eq(wallets.id, autoTradingConfig.walletId))
@@ -455,6 +457,8 @@ export class SignalProcessor {
         silent: true,
         interval: watcher.interval as TimeInterval,
         directionMode: directionMode !== 'auto' ? directionMode as 'long_only' | 'short_only' : undefined,
+        maxFibonacciEntryProgressPercent: walletWithConfig?.maxFibonacciEntryProgressPercent ? parseFloat(walletWithConfig.maxFibonacciEntryProgressPercent) : undefined,
+        fibonacciSwingRange: walletWithConfig?.fibonacciSwingRange ?? undefined,
       });
 
       const result = interpreter.detect(closedKlines, currentIndex);
