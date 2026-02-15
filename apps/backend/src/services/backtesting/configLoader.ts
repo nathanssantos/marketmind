@@ -28,6 +28,8 @@ interface ConfigOverrides {
   useTrendFilter?: boolean;
   useStochasticFilter?: boolean;
   useStochasticRecoveryFilter?: boolean;
+  useStochasticHtfFilter?: boolean;
+  useStochasticRecoveryHtfFilter?: boolean;
   useAdxFilter?: boolean;
 }
 
@@ -125,6 +127,8 @@ export const buildMultiWatcherConfigFromWatchers = (
     positionSizePercent?: number;
     useStochasticFilter?: boolean;
     useStochasticRecoveryFilter?: boolean;
+    useStochasticHtfFilter?: boolean;
+    useStochasticRecoveryHtfFilter?: boolean;
     useAdxFilter?: boolean;
     minRiskRewardRatio?: number;
     useCooldown?: boolean;
@@ -167,6 +171,8 @@ export const buildMultiWatcherConfigFromWatchers = (
 
     useStochasticFilter: options.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
     useStochasticRecoveryFilter: options.useStochasticRecoveryFilter ?? FILTER_DEFAULTS.useStochasticRecoveryFilter,
+    useStochasticHtfFilter: options.useStochasticHtfFilter ?? FILTER_DEFAULTS.useStochasticHtfFilter,
+    useStochasticRecoveryHtfFilter: options.useStochasticRecoveryHtfFilter ?? FILTER_DEFAULTS.useStochasticRecoveryHtfFilter,
     useAdxFilter: options.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
     minRiskRewardRatio: options.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
     useCooldown: options.useCooldown ?? FILTER_DEFAULTS.useCooldown,

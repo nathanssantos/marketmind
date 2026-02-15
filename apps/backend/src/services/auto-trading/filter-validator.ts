@@ -10,9 +10,12 @@ import {
   checkMtfCondition,
   checkStochasticCondition,
   checkStochasticRecoveryCondition,
+  checkStochasticHtfCondition,
+  checkStochasticRecoveryHtfCondition,
   checkTrendCondition,
   checkVolumeCondition,
   getHigherTimeframe,
+  getOneStepAboveTimeframe,
   MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
   STOCHASTIC_FILTER,
@@ -30,6 +33,8 @@ export interface FilterValidatorConfig {
   confluenceMinScore: number;
   useStochasticFilter: boolean;
   useStochasticRecoveryFilter: boolean;
+  useStochasticHtfFilter: boolean;
+  useStochasticRecoveryHtfFilter: boolean;
   useMomentumTimingFilter: boolean;
   useAdxFilter: boolean;
   useTrendFilter: boolean;
@@ -241,6 +246,40 @@ export class FilterValidator {
         };
       }
       logBuffer.addValidationCheck({ name: 'Stochastic Recovery', passed: true });
+    }
+
+    if (config.useStochasticHtfFilter) {
+      const result = await this.checkStochasticHtfFilter(watcher, setup, logBuffer);
+      if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'HTF Stochastic',
+          passed: false,
+          reason: 'Unfavorable HTF zone',
+        });
+        return {
+          passed: false,
+          filterResults,
+          rejectionReason: 'HTF Stochastic filter failed',
+        };
+      }
+      logBuffer.addValidationCheck({ name: 'HTF Stochastic', passed: true });
+    }
+
+    if (config.useStochasticRecoveryHtfFilter) {
+      const result = await this.checkStochasticRecoveryHtfFilter(watcher, setup, logBuffer);
+      if (!result.passed) {
+        logBuffer.addValidationCheck({
+          name: 'HTF Stochastic Recovery',
+          passed: false,
+          reason: 'Not in HTF recovery zone',
+        });
+        return {
+          passed: false,
+          filterResults,
+          rejectionReason: 'HTF Stochastic Recovery filter failed',
+        };
+      }
+      logBuffer.addValidationCheck({ name: 'HTF Stochastic Recovery', passed: true });
     }
 
     if (config.useMomentumTimingFilter) {
@@ -518,6 +557,54 @@ export class FilterValidator {
       }
     }
 
+    return { passed: true };
+  }
+
+  private async checkStochasticHtfFilter(
+    watcher: ActiveWatcher,
+    setup: TradingSetup,
+    logBuffer: WatcherLogBuffer
+  ): Promise<{ passed: boolean }> {
+    const htfInterval = getOneStepAboveTimeframe(watcher.interval);
+    if (!htfInterval) return { passed: true };
+
+    const htfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
+    if (htfKlines.length === 0) return { passed: true };
+
+    const result = checkStochasticHtfCondition(htfKlines, setup.openTime, setup.direction);
+
+    logBuffer.addFilterCheck({
+      filterName: 'HTF Stochastic',
+      passed: result.isAllowed,
+      reason: result.reason ?? 'N/A',
+      details: { k: result.currentK?.toFixed(1) ?? 'N/A', htfInterval },
+    });
+
+    if (!result.isAllowed) return { passed: false };
+    return { passed: true };
+  }
+
+  private async checkStochasticRecoveryHtfFilter(
+    watcher: ActiveWatcher,
+    setup: TradingSetup,
+    logBuffer: WatcherLogBuffer
+  ): Promise<{ passed: boolean }> {
+    const htfInterval = getOneStepAboveTimeframe(watcher.interval);
+    if (!htfInterval) return { passed: true };
+
+    const htfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
+    if (htfKlines.length === 0) return { passed: true };
+
+    const result = checkStochasticRecoveryHtfCondition(htfKlines, setup.openTime, setup.direction);
+
+    logBuffer.addFilterCheck({
+      filterName: 'HTF Stochastic Recovery',
+      passed: result.isAllowed,
+      reason: result.reason ?? 'N/A',
+      details: { k: result.currentK?.toFixed(1) ?? 'N/A', htfInterval },
+    });
+
+    if (!result.isAllowed) return { passed: false };
     return { passed: true };
   }
 

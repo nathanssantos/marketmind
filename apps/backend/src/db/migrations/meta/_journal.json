@@ -8,6 +8,13 @@
       "when": 1771027709124,
       "tag": "0000_outgoing_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771158234948,
+      "tag": "0001_volatile_major_mapleleaf",
+      "breakpoints": true
     }
   ]
 }

@@ -127,6 +127,8 @@ export const autoTradingRouter = router({
         useLimitOrders: z.boolean().optional(),
         useStochasticFilter: z.boolean().optional(),
         useStochasticRecoveryFilter: z.boolean().optional(),
+        useStochasticHtfFilter: z.boolean().optional(),
+        useStochasticRecoveryHtfFilter: z.boolean().optional(),
         useAdxFilter: z.boolean().optional(),
         useTrendFilter: z.boolean().optional(),
         useVolumeFilter: z.boolean().optional(),
@@ -259,6 +261,10 @@ export const autoTradingRouter = router({
         {updateData.useStochasticFilter = input.useStochasticFilter;}
       if (input.useStochasticRecoveryFilter !== undefined)
         {updateData.useStochasticRecoveryFilter = input.useStochasticRecoveryFilter;}
+      if (input.useStochasticHtfFilter !== undefined)
+        {updateData.useStochasticHtfFilter = input.useStochasticHtfFilter;}
+      if (input.useStochasticRecoveryHtfFilter !== undefined)
+        {updateData.useStochasticRecoveryHtfFilter = input.useStochasticRecoveryHtfFilter;}
       if (input.useAdxFilter !== undefined)
         {updateData.useAdxFilter = input.useAdxFilter;}
       if (input.useTrendFilter !== undefined)

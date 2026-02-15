@@ -10,6 +10,8 @@ import {
   checkMtfCondition,
   checkStochasticCondition,
   checkStochasticRecoveryCondition,
+  checkStochasticHtfCondition,
+  checkStochasticRecoveryHtfCondition,
   checkTrendCondition,
   checkVolumeCondition,
   checkChoppinessCondition,
@@ -42,6 +44,8 @@ export interface FilterConfig {
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
   useStochasticRecoveryFilter?: boolean;
+  useStochasticHtfFilter?: boolean;
+  useStochasticRecoveryHtfFilter?: boolean;
   useMomentumTimingFilter?: boolean;
   useAdxFilter?: boolean;
   useCooldown?: boolean;
@@ -89,6 +93,8 @@ export interface FilterStats {
   skippedLimitExpired: number;
   skippedStochastic: number;
   skippedStochasticRecovery: number;
+  skippedStochasticHtf: number;
+  skippedStochasticRecoveryHtf: number;
   skippedMomentumTiming: number;
   skippedAdx: number;
   skippedMtf: number;
@@ -143,6 +149,8 @@ export class FilterManager {
     skippedLimitExpired: 0,
     skippedStochastic: 0,
     skippedStochasticRecovery: 0,
+    skippedStochasticHtf: 0,
+    skippedStochasticRecoveryHtf: 0,
     skippedMomentumTiming: 0,
     skippedAdx: 0,
     skippedMtf: 0,
@@ -309,6 +317,60 @@ export class FilterManager {
 
     if (tradesCount < 3) {
       console.log(`[FilterManager] Stochastic Recovery filter passed ${direction} trade - ${result.reason}`);
+    }
+
+    return true;
+  }
+
+  checkStochasticHtfFilter(
+    htfKlines: Kline[],
+    setupTimestamp: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): boolean {
+    if (!this.config.useStochasticHtfFilter) return true;
+    if (htfKlines.length === 0) return true;
+
+    const result = checkStochasticHtfCondition(htfKlines, setupTimestamp, direction);
+
+    if (!result.isAllowed) {
+      this.stats.skippedStochasticHtf++;
+      if (tradesCount < 3) {
+        const currK = result.currentK?.toFixed(2) ?? 'null';
+        console.log(`[FilterManager] HTF Stochastic filter blocked ${direction} trade - currK=${currK}, isOversold=${result.isOversold}, isOverbought=${result.isOverbought}`);
+      }
+      return false;
+    }
+
+    if (tradesCount < 3) {
+      console.log(`[FilterManager] HTF Stochastic filter passed ${direction} trade - ${result.reason}`);
+    }
+
+    return true;
+  }
+
+  checkStochasticRecoveryHtfFilter(
+    htfKlines: Kline[],
+    setupTimestamp: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): boolean {
+    if (!this.config.useStochasticRecoveryHtfFilter) return true;
+    if (htfKlines.length === 0) return true;
+
+    const result = checkStochasticRecoveryHtfCondition(htfKlines, setupTimestamp, direction);
+
+    if (!result.isAllowed) {
+      this.stats.skippedStochasticRecoveryHtf++;
+      if (tradesCount < 3) {
+        const currK = result.currentK?.toFixed(2) ?? 'null';
+        console.log(`[FilterManager] HTF Stochastic Recovery filter blocked ${direction} trade - currK=${currK}, ${result.reason}`);
+      }
+      return false;
+    }
+
+    if (tradesCount < 3) {
+      console.log(`[FilterManager] HTF Stochastic Recovery filter passed ${direction} trade - ${result.reason}`);
     }
 
     return true;

@@ -26,9 +26,12 @@ import {
   checkMtfCondition,
   checkStochasticCondition,
   checkStochasticRecoveryCondition,
+  checkStochasticHtfCondition,
+  checkStochasticRecoveryHtfCondition,
   checkTrendCondition,
   checkVolumeCondition,
   getHigherTimeframe,
+  getOneStepAboveTimeframe,
   MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
   STOCHASTIC_FILTER,
@@ -79,6 +82,7 @@ export class MultiWatcherBacktestEngine {
   };
   private btcKlinesCache: Map<string, Kline[]> = new Map();
   private htfKlinesCache: Map<string, Kline[]> = new Map();
+  private stochasticHtfKlinesCache: Map<string, Kline[]> = new Map();
 
   constructor(private config: MultiWatcherBacktestConfig) {}
 
@@ -244,6 +248,21 @@ export class MultiWatcherBacktestEngine {
         }
       }
 
+      if (this.config.useStochasticHtfFilter || this.config.useStochasticRecoveryHtfFilter) {
+        const stochHtfInterval = getOneStepAboveTimeframe(watcherConfig.interval);
+        if (stochHtfInterval && !this.stochasticHtfKlinesCache.has(`${watcherId}-stoch-htf`)) {
+          const stochHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+            watcherConfig.symbol,
+            stochHtfInterval,
+            watcherConfig.marketType ?? 'FUTURES',
+            new Date(this.config.startDate),
+            new Date(this.config.endDate)
+          );
+          this.stochasticHtfKlinesCache.set(`${watcherId}-stoch-htf`, stochHtfKlines);
+          console.log(`[MultiWatcherBacktest] Cached ${stochHtfKlines.length} stochastic HTF klines (${stochHtfInterval}) for ${watcherId}`);
+        }
+      }
+
       const setupTypes = watcherConfig.setupTypes ?? this.config.setupTypes ?? [];
       const watcherStrategies = allStrategies.filter((s) => setupTypes.includes(s.id));
 
@@ -388,9 +407,11 @@ export class MultiWatcherBacktestEngine {
       symbol: string;
       interval: string;
       setupType: string;
+      setupTimestamp: number;
       btcKlines?: Kline[];
       htfKlines?: Kline[];
       htfInterval?: string | null;
+      stochasticHtfKlines?: Kline[];
     }
   ): { passed: boolean } {
     const filterResults: FilterResults = {};
@@ -461,6 +482,24 @@ export class MultiWatcherBacktestEngine {
           stats.skippedReasons['stochasticRecovery'] = (stats.skippedReasons['stochasticRecovery'] ?? 0) + 1;
           return { passed: false };
         }
+      }
+    }
+
+    if (this.config.useStochasticHtfFilter === true && context?.stochasticHtfKlines && context.stochasticHtfKlines.length > 0) {
+      const stochHtfResult = checkStochasticHtfCondition(context.stochasticHtfKlines, context.setupTimestamp, direction);
+      if (!stochHtfResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['stochasticHtf'] = (stats.skippedReasons['stochasticHtf'] ?? 0) + 1;
+        return { passed: false };
+      }
+    }
+
+    if (this.config.useStochasticRecoveryHtfFilter === true && context?.stochasticHtfKlines && context.stochasticHtfKlines.length > 0) {
+      const stochRecoveryHtfResult = checkStochasticRecoveryHtfCondition(context.stochasticHtfKlines, context.setupTimestamp, direction);
+      if (!stochRecoveryHtfResult.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons['stochasticRecoveryHtf'] = (stats.skippedReasons['stochasticRecoveryHtf'] ?? 0) + 1;
+        return { passed: false };
       }
     }
 
@@ -547,6 +586,7 @@ export class MultiWatcherBacktestEngine {
     const htfKlinesKey = `${watcherId}-htf`;
     const htfKlines = this.htfKlinesCache.get(htfKlinesKey);
     const htfInterval = getHigherTimeframe(event.watcherInterval);
+    const stochasticHtfKlines = this.stochasticHtfKlinesCache.get(`${watcherId}-stoch-htf`);
 
     const filterResult = this.applyIndicatorFilters(
       klinesUpToSetup,
@@ -557,9 +597,11 @@ export class MultiWatcherBacktestEngine {
         symbol: event.watcherSymbol,
         interval: event.watcherInterval,
         setupType: event.setup.type,
+        setupTimestamp: event.timestamp,
         btcKlines: btcKlines?.slice(0, event.klineIndex + 1),
         htfKlines,
         htfInterval,
+        stochasticHtfKlines,
       }
     );
     if (!filterResult.passed) return;

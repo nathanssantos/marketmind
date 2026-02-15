@@ -3,6 +3,8 @@ export interface UnifiedFilterConfig {
   trendFilterPeriod?: number;
   useStochasticFilter?: boolean;
   useStochasticRecoveryFilter?: boolean;
+  useStochasticHtfFilter?: boolean;
+  useStochasticRecoveryHtfFilter?: boolean;
   useMomentumTimingFilter?: boolean;
   useAdxFilter?: boolean;
 

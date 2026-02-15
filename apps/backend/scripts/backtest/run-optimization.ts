@@ -102,6 +102,8 @@ const PRODUCTION_BASE = {
   useTrendFilter: FILTER_DEFAULTS.useTrendFilter,
   useStochasticFilter: FILTER_DEFAULTS.useStochasticFilter,
   useStochasticRecoveryFilter: FILTER_DEFAULTS.useStochasticRecoveryFilter,
+  useStochasticHtfFilter: FILTER_DEFAULTS.useStochasticHtfFilter,
+  useStochasticRecoveryHtfFilter: FILTER_DEFAULTS.useStochasticRecoveryHtfFilter,
   useAdxFilter: FILTER_DEFAULTS.useAdxFilter,
   useMtfFilter: FILTER_DEFAULTS.useMtfFilter,
   useMarketRegimeFilter: FILTER_DEFAULTS.useMarketRegimeFilter,

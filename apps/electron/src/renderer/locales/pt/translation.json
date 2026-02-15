@@ -364,6 +364,14 @@
           "title": "Estocástico Recuperação",
           "description": "LONG se K foi abaixo de 20 e ainda não cruzou 50. SHORT se K foi acima de 80 e ainda não cruzou 50."
         },
+        "stochasticHtf": {
+          "title": "Estocástico HTF",
+          "description": "Igual ao Estocástico Lento mas no timeframe acima (ex: 1h usa 2h)."
+        },
+        "stochasticRecoveryHtf": {
+          "title": "Recuperação Estocástico HTF",
+          "description": "Igual à Recuperação Estocástica mas no timeframe acima (ex: 1h usa 2h)."
+        },
         "adx": {
           "title": "Direção ADX",
           "description": "LONG quando +DI > -DI, SHORT quando -DI > +DI (requer ADX >= 20)."

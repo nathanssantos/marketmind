@@ -181,6 +181,20 @@ export const FiltersSection = ({
                 disabled={isPending}
               />
               <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.stochasticHtf.title')}
+                description={t('settings.algorithmicAutoTrading.filters.stochasticHtf.description')}
+                checked={config?.useStochasticHtfFilter ?? false}
+                onChange={(value) => onFilterToggle('useStochasticHtfFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.stochasticRecoveryHtf.title')}
+                description={t('settings.algorithmicAutoTrading.filters.stochasticRecoveryHtf.description')}
+                checked={config?.useStochasticRecoveryHtfFilter ?? false}
+                onChange={(value) => onFilterToggle('useStochasticRecoveryHtfFilter', value)}
+                disabled={isPending}
+              />
+              <FilterToggle
                 label={t('settings.algorithmicAutoTrading.filters.adx.title')}
                 description={t('settings.algorithmicAutoTrading.filters.adx.description')}
                 checked={config?.useAdxFilter ?? false}

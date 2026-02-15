@@ -169,6 +169,8 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   use_limit_orders BOOLEAN DEFAULT false NOT NULL,
   use_stochastic_filter BOOLEAN DEFAULT false NOT NULL,
   use_stochastic_recovery_filter BOOLEAN DEFAULT false NOT NULL,
+  use_stochastic_htf_filter BOOLEAN DEFAULT false NOT NULL,
+  use_stochastic_recovery_htf_filter BOOLEAN DEFAULT false NOT NULL,
   use_momentum_timing_filter BOOLEAN DEFAULT false NOT NULL,
   use_adx_filter BOOLEAN DEFAULT false NOT NULL,
   use_trend_filter BOOLEAN DEFAULT true NOT NULL,

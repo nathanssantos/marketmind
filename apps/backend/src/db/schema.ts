@@ -219,6 +219,8 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
   useStochasticFilter: boolean('use_stochastic_filter').default(false).notNull(),
   useStochasticRecoveryFilter: boolean('use_stochastic_recovery_filter').default(false).notNull(),
+  useStochasticHtfFilter: boolean('use_stochastic_htf_filter').default(false).notNull(),
+  useStochasticRecoveryHtfFilter: boolean('use_stochastic_recovery_htf_filter').default(false).notNull(),
   useMomentumTimingFilter: boolean('use_momentum_timing_filter').default(true).notNull(),
   useAdxFilter: boolean('use_adx_filter').default(false).notNull(),
   useTrendFilter: boolean('use_trend_filter').default(false).notNull(),

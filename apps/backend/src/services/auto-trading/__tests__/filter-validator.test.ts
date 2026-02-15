@@ -104,6 +104,8 @@ const allDisabledConfig: FilterValidatorConfig = {
   confluenceMinScore: 50,
   useStochasticFilter: false,
   useStochasticRecoveryFilter: false,
+  useStochasticHtfFilter: false,
+  useStochasticRecoveryHtfFilter: false,
   useMomentumTimingFilter: false,
   useAdxFilter: false,
   useTrendFilter: false,

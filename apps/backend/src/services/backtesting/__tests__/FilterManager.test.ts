@@ -35,6 +35,8 @@ vi.mock('../../../utils/filters', async (importOriginal) => {
     STOCHASTIC_FILTER: { K_PERIOD: 14, K_SMOOTHING: 3, D_PERIOD: 3 },
     checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
     checkStochasticRecoveryCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic Recovery passed' })),
+    checkStochasticHtfCondition: vi.fn(() => ({ isAllowed: true, reason: 'LONG allowed (HTF): oversold', currentK: 15, currentD: 18, isOversold: true, isOverbought: false })),
+    checkStochasticRecoveryHtfCondition: vi.fn(() => ({ isAllowed: true, reason: 'LONG allowed (HTF): recovering from oversold', currentK: 30, currentD: 28, isOversold: false, isOverbought: false })),
     checkTrendCondition: vi.fn(() => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
     checkMomentumTiming: vi.fn(() => ({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' })),
     MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20, RSI_PERIOD: 14, MFI_PERIOD: 14, RSI_LONG_MIN: 40, RSI_SHORT_MAX: 60, RSI_PULLBACK_LONG_MIN: 30, RSI_PULLBACK_SHORT_MAX: 70, MFI_LONG_MIN: 30, MFI_SHORT_MAX: 70 },
@@ -69,7 +71,9 @@ import {
   checkMtfCondition,
   checkSessionCondition,
   checkStochasticCondition,
+  checkStochasticHtfCondition,
   checkStochasticRecoveryCondition,
+  checkStochasticRecoveryHtfCondition,
   checkSupertrendCondition,
   checkTrendCondition,
   checkVolumeCondition,
@@ -416,6 +420,82 @@ describe('FilterManager', () => {
       const klines = createMockKlines(10);
 
       const result = customManager.checkStochasticRecoveryFilter(klines, 5, 'LONG', 0);
+
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('checkStochasticHtfFilter', () => {
+    it('should allow when HTF stochastic filter disabled', () => {
+      const htfKlines = createMockKlines(50);
+      const result = manager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      expect(result).toBe(true);
+      expect(checkStochasticHtfCondition).not.toHaveBeenCalled();
+    });
+
+    it('should call checkStochasticHtfCondition when enabled', () => {
+      const customManager = new FilterManager({ useStochasticHtfFilter: true });
+      const htfKlines = createMockKlines(50);
+
+      const result = customManager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+
+      expect(result).toBe(true);
+      expect(checkStochasticHtfCondition).toHaveBeenCalled();
+    });
+
+    it('should block when HTF stochastic condition fails', () => {
+      vi.mocked(checkStochasticHtfCondition).mockReturnValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked (HTF): not oversold' });
+      const customManager = new FilterManager({ useStochasticHtfFilter: true });
+      const htfKlines = createMockKlines(50);
+
+      const result = customManager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+
+      expect(result).toBe(false);
+      expect(customManager.stats.skippedStochasticHtf).toBe(1);
+    });
+
+    it('should allow when htfKlines is empty', () => {
+      const customManager = new FilterManager({ useStochasticHtfFilter: true });
+
+      const result = customManager.checkStochasticHtfFilter([], Date.now(), 'LONG', 0);
+
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('checkStochasticRecoveryHtfFilter', () => {
+    it('should allow when HTF stochastic recovery filter disabled', () => {
+      const htfKlines = createMockKlines(50);
+      const result = manager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      expect(result).toBe(true);
+      expect(checkStochasticRecoveryHtfCondition).not.toHaveBeenCalled();
+    });
+
+    it('should call checkStochasticRecoveryHtfCondition when enabled', () => {
+      const customManager = new FilterManager({ useStochasticRecoveryHtfFilter: true });
+      const htfKlines = createMockKlines(50);
+
+      const result = customManager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+
+      expect(result).toBe(true);
+      expect(checkStochasticRecoveryHtfCondition).toHaveBeenCalled();
+    });
+
+    it('should block when HTF stochastic recovery condition fails', () => {
+      vi.mocked(checkStochasticRecoveryHtfCondition).mockReturnValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked (HTF): already crossed midpoint' });
+      const customManager = new FilterManager({ useStochasticRecoveryHtfFilter: true });
+      const htfKlines = createMockKlines(50);
+
+      const result = customManager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+
+      expect(result).toBe(false);
+      expect(customManager.stats.skippedStochasticRecoveryHtf).toBe(1);
+    });
+
+    it('should allow when htfKlines is empty', () => {
+      const customManager = new FilterManager({ useStochasticRecoveryHtfFilter: true });
+
+      const result = customManager.checkStochasticRecoveryHtfFilter([], Date.now(), 'LONG', 0);
 
       expect(result).toBe(true);
     });

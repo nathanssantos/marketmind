@@ -21,6 +21,7 @@ import { smartBackfillKlines } from '../binance-historical';
 import { smartBackfillIBKlines } from '../ib-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
+import { getOneStepAboveTimeframe } from '../../utils/filters';
 import { ExitManager } from './ExitManager';
 import { FilterManager } from './FilterManager';
 import { IndicatorCache } from './IndicatorCache';
@@ -69,6 +70,8 @@ export class BacktestEngine {
         trendFilterPeriod: effectiveConfig.trendFilterPeriod,
         useStochasticFilter: effectiveConfig.useStochasticFilter,
         useStochasticRecoveryFilter: effectiveConfig.useStochasticRecoveryFilter,
+        useStochasticHtfFilter: effectiveConfig.useStochasticHtfFilter,
+        useStochasticRecoveryHtfFilter: effectiveConfig.useStochasticRecoveryHtfFilter,
         useAdxFilter: effectiveConfig.useAdxFilter,
         useCooldown: effectiveConfig.useCooldown,
         cooldownMinutes: effectiveConfig.cooldownMinutes,
@@ -80,6 +83,27 @@ export class BacktestEngine {
         config.endDate,
         config.symbol
       );
+
+      let stochasticHtfKlines: Kline[] = [];
+      if (effectiveConfig.useStochasticHtfFilter || effectiveConfig.useStochasticRecoveryHtfFilter) {
+        const htfInterval = getOneStepAboveTimeframe(config.interval);
+        if (htfInterval) {
+          const marketType = config.marketType ?? 'FUTURES';
+          const intervalMs = this.getIntervalMs(config.interval);
+          const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+          const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
+          const endTime = new Date(config.endDate);
+          stochasticHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+            config.symbol,
+            htfInterval,
+            marketType,
+            startTime,
+            endTime,
+            config.exchange
+          );
+          console.log(`[Backtest] Fetched ${stochasticHtfKlines.length} HTF stochastic klines (${htfInterval}) for ${config.symbol}`);
+        }
+      }
 
       const tradeExecutor = new TradeExecutor({
         commission: effectiveConfig.commission,
@@ -127,7 +151,8 @@ export class BacktestEngine {
         tradeExecutor,
         exitManager,
         indicatorEngine,
-        indicatorCache
+        indicatorCache,
+        stochasticHtfKlines
       );
 
       const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);
@@ -304,6 +329,8 @@ export class BacktestEngine {
       positionSizePercent: config.positionSizePercent ?? FILTER_DEFAULTS.positionSizePercent,
       useStochasticFilter: config.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
       useStochasticRecoveryFilter: config.useStochasticRecoveryFilter ?? FILTER_DEFAULTS.useStochasticRecoveryFilter,
+      useStochasticHtfFilter: config.useStochasticHtfFilter ?? FILTER_DEFAULTS.useStochasticHtfFilter,
+      useStochasticRecoveryHtfFilter: config.useStochasticRecoveryHtfFilter ?? FILTER_DEFAULTS.useStochasticRecoveryHtfFilter,
       useAdxFilter: config.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
       useVolumeFilter: config.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
       useTrendFilter: config.useTrendFilter ?? FILTER_DEFAULTS.useTrendFilter,
@@ -388,7 +415,8 @@ export class BacktestEngine {
     tradeExecutor: TradeExecutor,
     exitManager: ExitManager,
     indicatorEngine: IndicatorEngine,
-    indicatorCache: IndicatorCache
+    indicatorCache: IndicatorCache,
+    stochasticHtfKlines: Kline[] = []
   ): { trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] } {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
@@ -421,6 +449,8 @@ export class BacktestEngine {
 
       if (!filterManager.checkStochasticFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
       if (!filterManager.checkStochasticRecoveryFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
+      if (!filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
+      if (!filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
       if (!filterManager.checkAdxFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
 
       const entryKline = klineMap.get(setup.openTime);
@@ -740,6 +770,27 @@ export class BacktestEngine {
     const emaTrendPeriod = baseEffective.trendFilterPeriod ?? 21;
     const emaTrend = calculateEMA(klines, emaTrendPeriod).map(v => v ?? 0);
 
+    const anyHtfStochastic = configs.some(c => c.useStochasticHtfFilter || c.useStochasticRecoveryHtfFilter);
+    let batchStochasticHtfKlines: Kline[] = [];
+    if (anyHtfStochastic) {
+      const htfInterval = getOneStepAboveTimeframe(baseConfig.interval);
+      if (htfInterval) {
+        const marketType = baseConfig.marketType ?? 'FUTURES';
+        const intervalMs = this.getIntervalMs(baseConfig.interval);
+        const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+        const startTime = new Date(new Date(baseConfig.startDate).getTime() - warmupMs);
+        const endTime = new Date(baseConfig.endDate);
+        batchStochasticHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+          baseConfig.symbol,
+          htfInterval,
+          marketType,
+          startTime,
+          endTime,
+          baseConfig.exchange
+        );
+      }
+    }
+
     const results: Array<{ config: BacktestConfig; result: BacktestResult }> = [];
 
     for (const config of configs) {
@@ -759,6 +810,8 @@ export class BacktestEngine {
           trendFilterPeriod: effectiveConfig.trendFilterPeriod,
           useStochasticFilter: effectiveConfig.useStochasticFilter,
           useStochasticRecoveryFilter: effectiveConfig.useStochasticRecoveryFilter,
+          useStochasticHtfFilter: effectiveConfig.useStochasticHtfFilter,
+          useStochasticRecoveryHtfFilter: effectiveConfig.useStochasticRecoveryHtfFilter,
           useAdxFilter: effectiveConfig.useAdxFilter,
           useCooldown: effectiveConfig.useCooldown,
           cooldownMinutes: effectiveConfig.cooldownMinutes,
@@ -796,7 +849,8 @@ export class BacktestEngine {
           tradeExecutor,
           exitManager,
           indicatorEngine,
-          indicatorCache
+          indicatorCache,
+          batchStochasticHtfKlines
         );
 
         const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);

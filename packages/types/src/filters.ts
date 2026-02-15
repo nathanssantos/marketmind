@@ -176,6 +176,8 @@ export interface FilterResults {
   fundingRate?: FundingFilterResult | null;
   stochastic?: StochasticFilterResult | null;
   stochasticRecovery?: StochasticFilterResult | null;
+  stochasticHtf?: StochasticFilterResult | null;
+  stochasticRecoveryHtf?: StochasticFilterResult | null;
   momentumTiming?: MomentumTimingResult | null;
   adx?: AdxFilterResult | null;
   trend?: TrendFilterResult | null;

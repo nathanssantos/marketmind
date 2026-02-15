@@ -390,6 +390,8 @@ export class OrderExecutor {
         confluenceMinScore: config.confluenceMinScore,
         useStochasticFilter: config.useStochasticFilter,
         useStochasticRecoveryFilter: config.useStochasticRecoveryFilter,
+        useStochasticHtfFilter: config.useStochasticHtfFilter,
+        useStochasticRecoveryHtfFilter: config.useStochasticRecoveryHtfFilter,
         useMomentumTimingFilter: config.useMomentumTimingFilter,
         useAdxFilter: config.useAdxFilter,
         useTrendFilter: config.useTrendFilter,

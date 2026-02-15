@@ -338,6 +338,14 @@
           "title": "Stochastic Recovery",
           "description": "LONG if K went below 20 and hasn't crossed 50. SHORT if K went above 80 and hasn't crossed 50."
         },
+        "stochasticHtf": {
+          "title": "HTF Slow Stochastic",
+          "description": "Same as Slow Stochastic but on one timeframe above (e.g., 1h uses 2h)."
+        },
+        "stochasticRecoveryHtf": {
+          "title": "HTF Stochastic Recovery",
+          "description": "Same as Stochastic Recovery but on one timeframe above (e.g., 1h uses 2h)."
+        },
         "adx": {
           "title": "ADX Direction",
           "description": "LONG when +DI > -DI, SHORT when -DI > +DI (requires ADX >= 20)."

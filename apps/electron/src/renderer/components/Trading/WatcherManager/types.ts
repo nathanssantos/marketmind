@@ -17,6 +17,8 @@ export interface WatcherConfig {
   useMomentumTimingFilter?: boolean | null;
   useStochasticFilter?: boolean | null;
   useStochasticRecoveryFilter?: boolean | null;
+  useStochasticHtfFilter?: boolean | null;
+  useStochasticRecoveryHtfFilter?: boolean | null;
   useAdxFilter?: boolean | null;
   useVolumeFilter?: boolean | null;
   useFundingFilter?: boolean | null;
