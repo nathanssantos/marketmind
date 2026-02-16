@@ -22,6 +22,20 @@
       "when": 1771168371476,
       "tag": "0002_parched_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1771202270899,
+      "tag": "0003_young_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1771203760048,
+      "tag": "0004_luxuriant_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }

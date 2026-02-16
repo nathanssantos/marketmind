@@ -103,6 +103,7 @@ vi.mock('../utils/formatters', () => ({
 }));
 
 import {
+  calculateAutoStopOffset,
   calculateBreakevenPrice,
   calculateFeesCoveredPrice,
   calculateNewStopLoss,
@@ -127,6 +128,8 @@ const makeSymbolOverride = (overrides: Partial<SymbolTrailingStopOverride> = {})
   trailingDistancePercentShort: null,
   useAdaptiveTrailing: null,
   useProfitLockDistance: null,
+  trailingDistanceMode: null,
+  trailingStopOffsetPercent: null,
   trailingActivationModeLong: null,
   trailingActivationModeShort: null,
   manualTrailingActivatedLong: false,
@@ -170,6 +173,8 @@ const makeWalletConfig = (overrides: Partial<AutoTradingConfig> = {}): AutoTradi
   trailingDistancePercentShort: '0.3',
   useAdaptiveTrailing: true,
   useProfitLockDistance: false,
+  trailingDistanceMode: 'fixed',
+  trailingStopOffsetPercent: '0',
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -780,6 +785,108 @@ describe('trailing-stop exports', () => {
           useBnbDiscount: true,
         })
       );
+    });
+  });
+
+  describe('calculateAutoStopOffset', () => {
+    it('should return 0 for very low volatility (ATR < 0.5%)', () => {
+      expect(calculateAutoStopOffset(0.001)).toBe(0);
+      expect(calculateAutoStopOffset(0.004)).toBe(0);
+    });
+
+    it('should return 0.0025 for low volatility (0.5% <= ATR < 1%)', () => {
+      expect(calculateAutoStopOffset(0.005)).toBe(0.0025);
+      expect(calculateAutoStopOffset(0.009)).toBe(0.0025);
+    });
+
+    it('should return 0.005 for medium-low volatility (1% <= ATR < 2%)', () => {
+      expect(calculateAutoStopOffset(0.01)).toBe(0.005);
+      expect(calculateAutoStopOffset(0.015)).toBe(0.005);
+      expect(calculateAutoStopOffset(0.019)).toBe(0.005);
+    });
+
+    it('should return 0.0075 for medium volatility (2% <= ATR < 3%)', () => {
+      expect(calculateAutoStopOffset(0.02)).toBe(0.0075);
+      expect(calculateAutoStopOffset(0.025)).toBe(0.0075);
+      expect(calculateAutoStopOffset(0.029)).toBe(0.0075);
+    });
+
+    it('should return 0.01 for high volatility (3% <= ATR < 4%)', () => {
+      expect(calculateAutoStopOffset(0.03)).toBe(0.01);
+      expect(calculateAutoStopOffset(0.035)).toBe(0.01);
+      expect(calculateAutoStopOffset(0.039)).toBe(0.01);
+    });
+
+    it('should return 0.015 for extreme volatility (ATR >= 4%)', () => {
+      expect(calculateAutoStopOffset(0.04)).toBe(0.015);
+      expect(calculateAutoStopOffset(0.05)).toBe(0.015);
+      expect(calculateAutoStopOffset(0.10)).toBe(0.015);
+    });
+
+    it('should handle boundary values correctly', () => {
+      expect(calculateAutoStopOffset(0)).toBe(0);
+      expect(calculateAutoStopOffset(0.005)).toBe(0.0025);
+      expect(calculateAutoStopOffset(0.01)).toBe(0.005);
+      expect(calculateAutoStopOffset(0.02)).toBe(0.0075);
+      expect(calculateAutoStopOffset(0.03)).toBe(0.01);
+      expect(calculateAutoStopOffset(0.04)).toBe(0.015);
+    });
+  });
+
+  describe('resolveTrailingStopConfig - trailingDistanceMode', () => {
+    const baseConfig: TrailingStopOptimizationConfig = {
+      ...DEFAULT_TRAILING_STOP_CONFIG,
+      trailingDistanceMode: 'fixed',
+    };
+
+    it('should default to fixed when no override or wallet config', () => {
+      const result = resolveTrailingStopConfig('LONG', null, null, baseConfig);
+      expect(result.trailingDistanceMode).toBe('fixed');
+    });
+
+    it('should use wallet config trailingDistanceMode', () => {
+      const walletConfig = makeWalletConfig({ trailingDistanceMode: 'auto' });
+      const result = resolveTrailingStopConfig('LONG', null, walletConfig, baseConfig);
+      expect(result.trailingDistanceMode).toBe('auto');
+    });
+
+    it('should use symbol override trailingDistanceMode when individual config is enabled', () => {
+      const symbolOverride = makeSymbolOverride({
+        useIndividualConfig: true,
+        trailingDistanceMode: 'auto',
+      });
+      const walletConfig = makeWalletConfig({ trailingDistanceMode: 'fixed' });
+      const result = resolveTrailingStopConfig('LONG', symbolOverride, walletConfig, baseConfig);
+      expect(result.trailingDistanceMode).toBe('auto');
+    });
+
+    it('should fall back to wallet config when symbol override has null trailingDistanceMode', () => {
+      const symbolOverride = makeSymbolOverride({
+        useIndividualConfig: true,
+        trailingDistanceMode: null,
+      });
+      const walletConfig = makeWalletConfig({ trailingDistanceMode: 'auto' });
+      const result = resolveTrailingStopConfig('LONG', symbolOverride, walletConfig, baseConfig);
+      expect(result.trailingDistanceMode).toBe('auto');
+    });
+
+    it('should fall back to base config when both override and wallet are null', () => {
+      const symbolOverride = makeSymbolOverride({ useIndividualConfig: false });
+      const walletConfig = makeWalletConfig();
+      const baseWithAuto: TrailingStopOptimizationConfig = {
+        ...baseConfig,
+        trailingDistanceMode: 'auto',
+      };
+      const result = resolveTrailingStopConfig('LONG', symbolOverride, walletConfig, baseWithAuto);
+      expect(result.trailingDistanceMode).toBe('fixed');
+    });
+
+    it('should default to fixed when trailingDistanceMode is undefined in base config', () => {
+      const baseWithoutMode: TrailingStopOptimizationConfig = {
+        ...DEFAULT_TRAILING_STOP_CONFIG,
+      };
+      const result = resolveTrailingStopConfig('LONG', null, null, baseWithoutMode);
+      expect(result.trailingDistanceMode).toBe('fixed');
     });
   });
 });

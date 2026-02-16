@@ -1,0 +1,2 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "trailing_distance_mode" varchar(10) DEFAULT 'fixed' NOT NULL;--> statement-breakpoint
+ALTER TABLE "symbol_trailing_stop_overrides" ADD COLUMN "trailing_distance_mode" varchar(10);

@@ -17,6 +17,10 @@ export interface TrailingStopSectionProps {
   onTrailingDistancePercentLongChange: (value: number) => void;
   trailingDistancePercentShort: number;
   onTrailingDistancePercentShortChange: (value: number) => void;
+  trailingDistanceMode?: 'auto' | 'fixed';
+  onTrailingDistanceModeChange?: (mode: 'auto' | 'fixed') => void;
+  trailingStopOffsetPercent?: number;
+  onTrailingStopOffsetPercentChange?: (value: number) => void;
   useAdaptiveTrailing: boolean;
   onUseAdaptiveTrailingChange: (enabled: boolean) => void;
   useProfitLockDistance: boolean;
@@ -42,6 +46,10 @@ export const TrailingStopSection = ({
   onTrailingDistancePercentLongChange,
   trailingDistancePercentShort,
   onTrailingDistancePercentShortChange,
+  trailingDistanceMode = 'fixed',
+  onTrailingDistanceModeChange,
+  trailingStopOffsetPercent = 0,
+  onTrailingStopOffsetPercentChange,
   useAdaptiveTrailing,
   onUseAdaptiveTrailingChange,
   useProfitLockDistance,
@@ -212,6 +220,82 @@ export const TrailingStopSection = ({
                 onValueChange={(values) => onTrailingActivationPercentShortChange(values[0]! / 100)}
                 min={50}
                 max={200}
+                step={0.1}
+              />
+            </Box>
+          )}
+
+          {onTrailingDistanceModeChange && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center">
+                <Box>
+                  <Text fontSize={labelSize} fontWeight="medium">
+                    {t('watcherManager.trailingStop.stopOffsetMode')}
+                  </Text>
+                  {!compact && (
+                    <Text fontSize={descSize} color="fg.muted">
+                      {trailingDistanceMode === 'auto'
+                        ? t('watcherManager.trailingStop.stopOffsetModeAutoDescription')
+                        : t('watcherManager.trailingStop.stopOffsetModeFixedDescription')}
+                    </Text>
+                  )}
+                </Box>
+                <HStack gap={1}>
+                  <Box
+                    as="button"
+                    px={2}
+                    py={0.5}
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    borderRadius="full"
+                    cursor="pointer"
+                    bg={trailingDistanceMode === 'auto' ? 'blue.500' : 'bg.emphasized'}
+                    color={trailingDistanceMode === 'auto' ? 'white' : 'fg.muted'}
+                    onClick={() => onTrailingDistanceModeChange('auto')}
+                  >
+                    {t('watcherManager.trailingStop.stopOffsetModeAuto')}
+                  </Box>
+                  <Box
+                    as="button"
+                    px={2}
+                    py={0.5}
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    borderRadius="full"
+                    cursor="pointer"
+                    bg={trailingDistanceMode === 'fixed' ? 'blue.500' : 'bg.emphasized'}
+                    color={trailingDistanceMode === 'fixed' ? 'white' : 'fg.muted'}
+                    onClick={() => onTrailingDistanceModeChange('fixed')}
+                  >
+                    {t('watcherManager.trailingStop.stopOffsetModeFixed')}
+                  </Box>
+                </HStack>
+              </Flex>
+            </Box>
+          )}
+
+          {trailingDistanceMode === 'fixed' && onTrailingStopOffsetPercentChange && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
+                <Box>
+                  <Text fontSize={labelSize} fontWeight="medium">
+                    {t('watcherManager.trailingStop.stopOffsetPercent')}
+                  </Text>
+                  {!compact && (
+                    <Text fontSize={descSize} color="fg.muted">
+                      {t('watcherManager.trailingStop.stopOffsetPercentDescription')}
+                    </Text>
+                  )}
+                </Box>
+                <Text fontSize={labelSize} fontWeight="bold" color="blue.500">
+                  {(trailingStopOffsetPercent * 100).toFixed(1)}%
+                </Text>
+              </Flex>
+              <Slider
+                value={[trailingStopOffsetPercent * 100]}
+                onValueChange={(values) => onTrailingStopOffsetPercentChange(values[0]! / 100)}
+                min={0}
+                max={3}
                 step={0.1}
               />
             </Box>

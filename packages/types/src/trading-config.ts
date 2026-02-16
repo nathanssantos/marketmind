@@ -45,11 +45,15 @@ export const TRAILING_STOP_CONFIG = {
   TP_PROGRESS_THRESHOLD_SHORT: 0.80,
 } as const;
 
+export type TrailingDistanceMode = 'auto' | 'fixed';
+
 export interface TrailingStopUserConfig {
   trailingActivationPercentLong: number;
   trailingActivationPercentShort: number;
   trailingDistancePercentLong: number;
   trailingDistancePercentShort: number;
+  trailingDistanceMode: TrailingDistanceMode;
+  trailingStopOffsetPercent: number;
   useAdaptiveTrailing: boolean;
   useProfitLockDistance: boolean;
 }
@@ -59,6 +63,8 @@ export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
   trailingActivationPercentShort: 1.272,
   trailingDistancePercentLong: 0.4,
   trailingDistancePercentShort: 0.3,
+  trailingDistanceMode: 'fixed',
+  trailingStopOffsetPercent: 0,
   useAdaptiveTrailing: true,
   useProfitLockDistance: false,
 };

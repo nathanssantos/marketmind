@@ -1,5 +1,6 @@
 import type { Kline, MarketType } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
+import { calculateAutoStopOffset } from '../../trailing-stop';
 import {
   computeTrailingStopCore,
   hasReachedFibonacciLevel,
@@ -177,10 +178,24 @@ export class TrailingStopSimulator {
     const result = computeTrailingStopCore(coreInput, coreConfig);
 
     if (result) {
-      state.currentStopLoss = result.newStopLoss;
+      let offsetPercent = dirConfig.stopOffsetPercent ?? 0;
+      if (dirConfig.trailingDistanceMode === 'auto' && trade.atr && trade.atr > 0 && currentPrice > 0) {
+        const atrPercent = trade.atr / currentPrice;
+        offsetPercent = calculateAutoStopOffset(atrPercent);
+      }
+
+      let adjustedStop = result.newStopLoss;
+      if (offsetPercent > 0) {
+        const isLong = trade.side === 'LONG';
+        adjustedStop = isLong
+          ? adjustedStop * (1 - offsetPercent)
+          : adjustedStop * (1 + offsetPercent);
+      }
+
+      state.currentStopLoss = adjustedStop;
       state.stopLossHistory.push({
         timestamp: kline.closeTime,
-        price: result.newStopLoss,
+        price: adjustedStop,
         reason: result.reason,
       });
     }

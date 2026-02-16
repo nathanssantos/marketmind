@@ -148,6 +148,8 @@ export const DEFAULT_TRAILING_STOP_USER_CONFIG = {
   trailingDistancePercentShort: '0.3',
   useAdaptiveTrailing: true,
   useProfitLockDistance: false,
+  trailingDistanceMode: 'fixed' as const,
+  trailingStopOffsetPercent: '0',
   trailingActivationModeLong: 'auto' as const,
   trailingActivationModeShort: 'auto' as const,
 };

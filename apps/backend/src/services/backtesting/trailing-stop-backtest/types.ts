@@ -24,6 +24,8 @@ export interface DirectionalTrailingConfig {
   distancePercent: number;
   atrMultiplier: number;
   breakevenProfitThreshold: number;
+  trailingDistanceMode?: 'auto' | 'fixed';
+  stopOffsetPercent?: number;
 }
 
 export interface TrailingStopBacktestConfig extends TrailingStopOptimizationConfig {

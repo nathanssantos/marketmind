@@ -237,6 +237,8 @@ export interface TrailingStopOptimizationConfig {
   atrMultiplier: number;
   feePercent?: number;
   trailingDistancePercent?: number;
+  trailingDistanceMode?: import('./trading-config').TrailingDistanceMode;
+  trailingStopOffsetPercent?: number;
   useVolatilityBasedThresholds?: boolean;
   marketType?: 'SPOT' | 'FUTURES';
   useBnbDiscount?: boolean;

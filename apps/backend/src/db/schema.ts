@@ -282,6 +282,9 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   trailingDistancePercentShort: numeric('trailing_distance_percent_short', { precision: 5, scale: 4 }).default('0.3').notNull(),
   useAdaptiveTrailing: boolean('use_adaptive_trailing').default(true).notNull(),
   useProfitLockDistance: boolean('use_profit_lock_distance').default(false).notNull(),
+  trailingDistanceMode: varchar('trailing_distance_mode', { length: 10 })
+    .$type<'auto' | 'fixed'>().default('fixed').notNull(),
+  trailingStopOffsetPercent: numeric('trailing_stop_offset_percent', { precision: 5, scale: 4 }).default('0').notNull(),
   trailingActivationModeLong: varchar('trailing_activation_mode_long', { length: 10 })
     .$type<'auto' | 'manual'>().default('auto').notNull(),
   trailingActivationModeShort: varchar('trailing_activation_mode_short', { length: 10 })
@@ -595,6 +598,9 @@ export const symbolTrailingStopOverrides = pgTable('symbol_trailing_stop_overrid
   trailingDistancePercentShort: numeric('trailing_distance_percent_short', { precision: 5, scale: 4 }),
   useAdaptiveTrailing: boolean('use_adaptive_trailing'),
   useProfitLockDistance: boolean('use_profit_lock_distance'),
+  trailingDistanceMode: varchar('trailing_distance_mode', { length: 10 })
+    .$type<'auto' | 'fixed'>(),
+  trailingStopOffsetPercent: numeric('trailing_stop_offset_percent', { precision: 5, scale: 4 }),
   trailingActivationModeLong: varchar('trailing_activation_mode_long', { length: 10 })
     .$type<'auto' | 'manual'>(),
   trailingActivationModeShort: varchar('trailing_activation_mode_short', { length: 10 })

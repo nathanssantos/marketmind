@@ -87,6 +87,12 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             : 0.3,
         useAdaptiveTrailing: symbolConfig.useAdaptiveTrailing ?? walletConfig?.useAdaptiveTrailing ?? true,
         useProfitLockDistance: symbolConfig.useProfitLockDistance ?? walletConfig?.useProfitLockDistance ?? false,
+        trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+        trailingStopOffsetPercent: symbolConfig.trailingStopOffsetPercent
+          ? parseFloat(symbolConfig.trailingStopOffsetPercent)
+          : walletConfig?.trailingStopOffsetPercent
+            ? parseFloat(walletConfig.trailingStopOffsetPercent)
+            : 0,
         activationModeLong: (symbolConfig.trailingActivationModeLong ?? walletConfig?.trailingActivationModeLong ?? 'auto') as 'auto' | 'manual',
         activationModeShort: (symbolConfig.trailingActivationModeShort ?? walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
         manualTrailingActivatedLong: symbolConfig.manualTrailingActivatedLong ?? false,
@@ -110,6 +116,10 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         : 0.3,
       useAdaptiveTrailing: walletConfig?.useAdaptiveTrailing ?? true,
       useProfitLockDistance: walletConfig?.useProfitLockDistance ?? false,
+      trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+      trailingStopOffsetPercent: walletConfig?.trailingStopOffsetPercent
+        ? parseFloat(walletConfig.trailingStopOffsetPercent)
+        : 0,
       activationModeLong: (walletConfig?.trailingActivationModeLong ?? 'auto') as 'auto' | 'manual',
       activationModeShort: (walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
       manualTrailingActivatedLong: false,
@@ -187,6 +197,10 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
             useProfitLockDistance={effectiveValues.useProfitLockDistance}
             onUseProfitLockDistanceChange={(enabled) => debouncedUpdate({ useProfitLockDistance: enabled })}
+            trailingDistanceMode={effectiveValues.trailingDistanceMode}
+            onTrailingDistanceModeChange={(mode) => debouncedUpdate({ trailingDistanceMode: mode })}
+            trailingStopOffsetPercent={effectiveValues.trailingStopOffsetPercent}
+            onTrailingStopOffsetPercentChange={(value) => debouncedUpdate({ trailingStopOffsetPercent: value.toString() })}
             isPending={updateMutation.isPending}
             activationModeLong={effectiveValues.activationModeLong}
             onActivationModeLongChange={(mode) => debouncedUpdate({ trailingActivationModeLong: mode })}

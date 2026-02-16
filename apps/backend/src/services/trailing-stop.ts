@@ -20,6 +20,15 @@ import { getWebSocketService } from './websocket';
 
 export { getRoundTripFee } from '@marketmind/types';
 
+export const calculateAutoStopOffset = (atrPercent: number): number => {
+  if (atrPercent < 0.005) return 0;
+  if (atrPercent < 0.01) return 0.0025;
+  if (atrPercent < 0.02) return 0.005;
+  if (atrPercent < 0.03) return 0.0075;
+  if (atrPercent < 0.04) return 0.01;
+  return 0.015;
+};
+
 export const getFeesThresholdForMarketType = (
   marketType: MarketType,
   useBnbDiscount: boolean = false
@@ -80,6 +89,16 @@ export const resolveTrailingStopConfig = (
     ? symbolOverride.useProfitLockDistance
     : walletConfig?.useProfitLockDistance ?? baseConfig.useProfitLockDistance;
 
+  const trailingDistanceMode = useOverride && symbolOverride.trailingDistanceMode !== null
+    ? symbolOverride.trailingDistanceMode
+    : walletConfig?.trailingDistanceMode ?? baseConfig.trailingDistanceMode ?? 'fixed';
+
+  const trailingStopOffsetPercent = useOverride && symbolOverride.trailingStopOffsetPercent !== null
+    ? parseFloat(symbolOverride.trailingStopOffsetPercent!)
+    : walletConfig?.trailingStopOffsetPercent
+      ? parseFloat(walletConfig.trailingStopOffsetPercent)
+      : baseConfig.trailingStopOffsetPercent ?? 0;
+
   const useVolatilityBasedThresholds = useOverride && symbolOverride.useAdaptiveTrailing !== null
     ? symbolOverride.useAdaptiveTrailing
     : walletConfig?.useAdaptiveTrailing ?? baseConfig.useVolatilityBasedThresholds;
@@ -101,6 +120,8 @@ export const resolveTrailingStopConfig = (
     activationPercentLong,
     activationPercentShort,
     trailingDistancePercent,
+    trailingDistanceMode,
+    trailingStopOffsetPercent,
     useProfitLockDistance,
     useVolatilityBasedThresholds,
     forceActivated,
@@ -586,6 +607,19 @@ export class TrailingStopService {
         );
 
         if (update) {
+          let offsetPercent = resolved.trailingStopOffsetPercent ?? 0;
+          if (resolved.trailingDistanceMode === 'auto' && currentATR && currentATR > 0 && currentPrice > 0) {
+            const atrPct = calculateATRPercent(currentATR, currentPrice);
+            offsetPercent = calculateAutoStopOffset(atrPct);
+          }
+
+          if (offsetPercent > 0) {
+            const isLong = execution.side === 'LONG';
+            update.newStopLoss = isLong
+              ? update.newStopLoss * (1 - offsetPercent)
+              : update.newStopLoss * (1 + offsetPercent);
+          }
+
           await this.applyStopLossUpdate(execution, update.newStopLoss, update.oldStopLoss, update.isFirstActivation, update.currentExtremePrice);
           updates.push(update);
         }

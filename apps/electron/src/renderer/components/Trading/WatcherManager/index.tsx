@@ -403,6 +403,10 @@ export const WatcherManager = () => {
         onUseAdaptiveTrailingChange={(enabled) => handleConfigUpdate({ useAdaptiveTrailing: enabled })}
         useProfitLockDistance={config?.useProfitLockDistance ?? false}
         onUseProfitLockDistanceChange={(enabled) => handleConfigUpdate({ useProfitLockDistance: enabled })}
+        trailingDistanceMode={config?.trailingDistanceMode ?? 'fixed'}
+        onTrailingDistanceModeChange={(mode) => handleConfigUpdate({ trailingDistanceMode: mode })}
+        trailingStopOffsetPercent={Number(config?.trailingStopOffsetPercent ?? 0)}
+        onTrailingStopOffsetPercentChange={(value) => handleConfigUpdate({ trailingStopOffsetPercent: value.toString() })}
         isPending={updateConfig.isPending}
         activationModeLong={config?.trailingActivationModeLong ?? 'auto'}
         onActivationModeLongChange={(mode) => handleConfigUpdate({ trailingActivationModeLong: mode })}

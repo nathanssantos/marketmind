@@ -1,0 +1,2 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "trailing_stop_offset_percent" numeric(5, 4) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "symbol_trailing_stop_overrides" ADD COLUMN "trailing_stop_offset_percent" numeric(5, 4);
