@@ -5,7 +5,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import {
   detectExitReason,
@@ -213,7 +213,7 @@ export class BinanceFuturesUserStreamService {
         silentWsLogger
       );
 
-      wsClient.on('formattedMessage', (data) => {
+      wsClient.on('message', (data) => {
         this.handleUserDataMessage(wallet.id, data);
       });
 
@@ -963,6 +963,14 @@ export class BinanceFuturesUserStreamService {
         },
         '[FuturesUserStream] Cleared triggered protection order IDs and unblocked deferral'
       );
+
+      const executionId = execution.id;
+      const executionSide = execution.side as 'LONG' | 'SHORT';
+      const openedAt = execution.openedAt ? new Date(execution.openedAt).getTime() : execution.createdAt ? new Date(execution.createdAt).getTime() : 0;
+
+      setTimeout(() => {
+        void this.verifyAlgoFillProcessed(walletId, executionId, symbol, executionSide, openedAt, exitReason);
+      }, 10_000);
     } catch (error) {
       logger.error(
         {
@@ -971,6 +979,148 @@ export class BinanceFuturesUserStreamService {
           error: serializeError(error),
         },
         '[FuturesUserStream] Error handling algo order update'
+      );
+    }
+  }
+
+  private async verifyAlgoFillProcessed(
+    walletId: string,
+    executionId: string,
+    symbol: string,
+    side: 'LONG' | 'SHORT',
+    openedAt: number,
+    exitReason: string
+  ): Promise<void> {
+    try {
+      const [execution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.id, executionId),
+            eq(tradeExecutions.status, 'open')
+          )
+        )
+        .limit(1);
+
+      if (!execution) return;
+
+      logger.warn(
+        { walletId, executionId, symbol, exitReason },
+        '[FuturesUserStream] ! Position still open 10s after algo trigger - fetching fill from REST API'
+      );
+
+      const apiClient = this.connections.get(walletId)?.apiClient;
+      if (!apiClient) {
+        logger.error({ walletId, executionId }, '[FuturesUserStream] No API client for delayed verification - falling back to position sync');
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+        if (wallet) await positionSyncService.syncWallet(wallet);
+        return;
+      }
+
+      const closingTrade = await getLastClosingTrade(apiClient, symbol, side, openedAt);
+
+      if (!closingTrade) {
+        logger.warn({ walletId, executionId, symbol }, '[FuturesUserStream] No closing trade found yet - scheduling retry');
+        setTimeout(() => {
+          void this.verifyAlgoFillProcessed(walletId, executionId, symbol, side, openedAt, exitReason);
+        }, 10_000);
+        return;
+      }
+
+      const exitPrice = closingTrade.price;
+      const exitFee = closingTrade.commission;
+      const entryPrice = parseFloat(execution.entryPrice);
+      const quantity = parseFloat(execution.quantity);
+      const leverage = execution.leverage || 1;
+      const entryFee = parseFloat(execution.entryFee || '0');
+      const totalFees = entryFee + exitFee;
+      const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
+
+      const grossPnl = side === 'LONG'
+        ? (exitPrice - entryPrice) * quantity
+        : (entryPrice - exitPrice) * quantity;
+
+      const pnl = grossPnl - totalFees + accumulatedFunding;
+      const entryValue = entryPrice * quantity;
+      const marginValue = entryValue / leverage;
+      const pnlPercent = marginValue > 0 ? (pnl / marginValue) * 100 : 0;
+
+      const closeResult = await db
+        .update(tradeExecutions)
+        .set({
+          status: 'closed',
+          exitPrice: exitPrice.toString(),
+          closedAt: new Date(),
+          pnl: pnl.toString(),
+          pnlPercent: pnlPercent.toString(),
+          fees: totalFees.toString(),
+          entryFee: entryFee.toString(),
+          exitFee: exitFee.toString(),
+          exitSource: 'ALGO_VERIFICATION',
+          exitReason,
+          stopLossAlgoId: null,
+          stopLossOrderId: null,
+          takeProfitAlgoId: null,
+          takeProfitOrderId: null,
+          trailingStopAlgoId: null,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(tradeExecutions.id, executionId), eq(tradeExecutions.status, 'open')))
+        .returning({ id: tradeExecutions.id });
+
+      if (closeResult.length === 0) {
+        logger.info({ executionId }, '[FuturesUserStream] Position already closed by ORDER_TRADE_UPDATE - verification no-op');
+        return;
+      }
+
+      await db
+        .update(wallets)
+        .set({
+          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(wallets.id, walletId));
+
+      binancePriceStreamService.invalidateExecutionCache(symbol);
+
+      const wsService = getWebSocketService();
+      if (wsService) {
+        wsService.emitPositionUpdate(walletId, {
+          ...execution,
+          status: 'closed',
+          exitPrice: exitPrice.toString(),
+          pnl: pnl.toString(),
+          pnlPercent: pnlPercent.toString(),
+          exitReason,
+        });
+
+        wsService.emitOrderUpdate(walletId, {
+          id: execution.id,
+          symbol,
+          status: 'closed',
+          exitPrice: exitPrice.toString(),
+          pnl: pnl.toString(),
+          pnlPercent: pnlPercent.toString(),
+          exitReason,
+        });
+      }
+
+      logger.warn(
+        {
+          executionId,
+          symbol,
+          exitPrice: exitPrice.toFixed(4),
+          pnl: pnl.toFixed(2),
+          pnlPercent: pnlPercent.toFixed(2),
+          exitReason,
+        },
+        '[FuturesUserStream] ! Position closed via ALGO_VERIFICATION (ORDER_TRADE_UPDATE was missed)'
+      );
+    } catch (error) {
+      logger.error(
+        { executionId, symbol, error: serializeError(error) },
+        '[FuturesUserStream] Error in algo fill verification'
       );
     }
   }

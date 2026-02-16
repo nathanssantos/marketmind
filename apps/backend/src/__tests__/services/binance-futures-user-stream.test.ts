@@ -66,6 +66,8 @@ vi.mock('../../services/binance-futures-client', () => ({
   isPaperWallet: vi.fn((wallet) => wallet.walletType === 'paper'),
   getWalletType: vi.fn((wallet) => wallet.walletType === 'testnet' ? 'testnet' : 'live'),
   cancelFuturesAlgoOrder: vi.fn().mockResolvedValue({ status: 'CANCELLED' }),
+  getOrderEntryFee: vi.fn().mockResolvedValue(null),
+  getLastClosingTrade: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../../services/encryption', () => ({
@@ -237,7 +239,7 @@ describe('BinanceFuturesUserStreamService', () => {
         executedQty: '0.1',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -296,7 +298,7 @@ describe('BinanceFuturesUserStreamService', () => {
         executedQty: '0.1',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -354,7 +356,7 @@ describe('BinanceFuturesUserStreamService', () => {
         executedQty: '0.1',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -390,7 +392,7 @@ describe('BinanceFuturesUserStreamService', () => {
         balances: [{ asset: 'USDT', walletBalance: '15000', crossWalletBalance: '15000', balanceChange: '5000' }],
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -446,7 +448,7 @@ describe('BinanceFuturesUserStreamService', () => {
         }],
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -489,7 +491,7 @@ describe('BinanceFuturesUserStreamService', () => {
         }],
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -524,7 +526,7 @@ describe('BinanceFuturesUserStreamService', () => {
         leverage: 20,
       });
 
-      expect(() => getMockWsClient()?.emit('formattedMessage', event)).not.toThrow();
+      expect(() => getMockWsClient()?.emit('message', event)).not.toThrow();
 
       service.stop();
     });
@@ -545,7 +547,7 @@ describe('BinanceFuturesUserStreamService', () => {
         multiAssetMode: true,
       });
 
-      expect(() => getMockWsClient()?.emit('formattedMessage', event)).not.toThrow();
+      expect(() => getMockWsClient()?.emit('message', event)).not.toThrow();
 
       service.stop();
     });
@@ -564,9 +566,9 @@ describe('BinanceFuturesUserStreamService', () => {
       const service = new BinanceFuturesUserStreamService();
       await service.subscribeWallet(wallet);
 
-      expect(() => getMockWsClient()?.emit('formattedMessage', null)).not.toThrow();
-      expect(() => getMockWsClient()?.emit('formattedMessage', 'invalid')).not.toThrow();
-      expect(() => getMockWsClient()?.emit('formattedMessage', { e: 'UNKNOWN_EVENT' })).not.toThrow();
+      expect(() => getMockWsClient()?.emit('message', null)).not.toThrow();
+      expect(() => getMockWsClient()?.emit('message', 'invalid')).not.toThrow();
+      expect(() => getMockWsClient()?.emit('message', { e: 'UNKNOWN_EVENT' })).not.toThrow();
 
       service.stop();
     });
@@ -611,7 +613,7 @@ describe('BinanceFuturesUserStreamService', () => {
         side: 'SELL',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -664,7 +666,7 @@ describe('BinanceFuturesUserStreamService', () => {
         side: 'SELL',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -716,7 +718,7 @@ describe('BinanceFuturesUserStreamService', () => {
         orderType: 'STOP_MARKET',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -770,7 +772,7 @@ describe('BinanceFuturesUserStreamService', () => {
         reason: 'PRICE_NOT_MET',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -831,7 +833,7 @@ describe('BinanceFuturesUserStreamService', () => {
         executedQty: '0.1',
       });
 
-      getMockWsClient()?.emit('formattedMessage', event);
+      getMockWsClient()?.emit('message', event);
 
       await new Promise(resolve => setTimeout(resolve, 100));
 

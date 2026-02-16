@@ -1,6 +1,10 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import pino from 'pino';
 
 const isProduction = process.env['NODE_ENV'] === 'production';
+const isTest = process.env['NODE_ENV'] === 'test' || process.env['VITEST'] === 'true';
 const logLevel = process.env['LOG_LEVEL'] ?? 'info';
 
 const MAX_ERROR_LENGTH = 500;
@@ -28,22 +32,59 @@ export const serializeError = (error: unknown): string => {
   return truncate(String(error));
 };
 
-export const logger = pino({
-  level: logLevel,
-  transport: isProduction
-    ? undefined
-    : {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss',
-          ignore: 'pid,hostname',
-          singleLine: true,
-        },
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const LOG_DIR = path.join(currentDir, '../../logs');
+const ERROR_LOG_FILE = path.join(LOG_DIR, 'error.log');
+
+const ensureLogDir = (): void => {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+};
+
+const createLogger = (): pino.Logger => {
+  if (isTest) {
+    return pino({ level: 'silent' });
+  }
+
+  ensureLogDir();
+
+  const streams: pino.StreamEntry[] = [
+    {
+      level: logLevel as pino.Level,
+      stream: isProduction
+        ? process.stdout
+        : pino.transport({
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+              translateTime: 'HH:MM:ss',
+              ignore: 'pid,hostname',
+              singleLine: true,
+            },
+          }),
+    },
+    {
+      level: 'warn' as pino.Level,
+      stream: pino.destination({
+        dest: ERROR_LOG_FILE,
+        sync: false,
+        mkdir: true,
+      }),
+    },
+  ];
+
+  return pino(
+    {
+      level: logLevel,
+      formatters: {
+        level: (label) => ({ level: label }),
       },
-  formatters: {
-    level: (label) => ({ level: label }),
-  },
-});
+    },
+    pino.multistream(streams)
+  );
+};
+
+export const logger = createLogger();
 
 export default logger;

@@ -37,6 +37,8 @@ export class PositionSyncService {
 
     logger.info('[PositionSync] Starting Position Sync service');
 
+    void this.syncAllWallets();
+
     this.syncInterval = setInterval(() => {
       void this.syncAllWallets();
     }, STARTUP_CONFIG.POSITION_SYNC_INTERVAL_MS);

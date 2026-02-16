@@ -119,6 +119,9 @@ const start = async (): Promise<void> => {
     const { binanceFuturesUserStreamService } = await import('./services/binance-futures-user-stream');
     await binanceFuturesUserStreamService.start();
 
+    const { positionSyncService } = await import('./services/position-sync');
+    await positionSyncService.start();
+
     const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
     await autoTradingScheduler.restoreWatchersFromDb();
 
