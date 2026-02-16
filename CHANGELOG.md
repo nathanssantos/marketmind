@@ -9,6 +9,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.51.0] - 2026-02-15
+
+### Added
+- **Trailing Stop System**
+  - Trailing stop functionality with popover and toolbar integration
+  - Symbol-level trailing stop overrides
+  - Trailing activation modes (immediate, threshold-based) for auto trading
+  - Stop offset configuration (auto/fixed modes) with ATR-based adaptive offset
+  - Stop-protected value calculation with translations (EN/PT/ES/FR)
+  - Enhanced position monitoring and exit handling with fee calculations
+- **Symbol Selector - Open Positions**
+  - Assets with open positions now appear at the top of the symbol selector
+  - Dedicated "Open Positions" section above popular symbols
+  - Search results sort open-position symbols first with green dot indicator
+- **Trading Filters & Strategies**
+  - HTF Stochastic and Stochastic Recovery filters
+  - Stochastic recovery filter in auto trading configuration
+  - 9 new filters added to optimization grid
+  - Direction mode configuration for strategies and filters
+  - Quick validation mode for optimization
+- **Analytics & Market Data**
+  - AnalyticsModal component with UI store integration
+  - Market screener store and related types
+  - On-chain metrics: MVRV ratio and BTC production cost
+  - DirectionBadge component for trading direction visualization
+  - Effective capital calculation in analytics and wallet performance
+- **Risk Management**
+  - Risk management features and UI components
+  - Max global exposure percent in auto trading configuration
+- **Fibonacci Enhancements**
+  - Fibonacci swing range configuration for backtesting
+  - Hidden levels in fibonacci renderer and projection logic
+  - Swing point extreme wick validation with enhanced projection logic
+- **Utility Scripts**
+  - Trade fee correction script for futures executions
+  - Dust order management and position synchronization scripts
+- **Testing**
+  - Comprehensive unit tests for formatters, profile transformers, and retry logic
+  - Enhanced ExitCalculator tests with additional scenarios and edge cases
+  - Enhanced coverage for watcher-manager and result-manager
+  - Integration test configuration improvements
+
+### Changed
+- Market type defaults to FUTURES across components and services
+- Kline prefetch logic updated for improved data loading
+- WatcherCardCompact and WatchersList components refactored for improved styling
+- Slider.Root replaced with Slider component across multiple sections
+- Short entry conditions removed from multiple strategies for simplification
+- Pattern-123 strategy removed and related references cleaned up
+- Gap check intervals updated to 2 hours for improved performance
+- Backtest configuration handling optimized with improved simulation results logging
+- marketType parameter added to setup detection and setup routers
+- Filter validation enhanced for Interactive Brokers support
+- Import paths updated for consistency and readability
+
+### Fixed
+- `maxFibonacciEntryProgressPercent` now correctly passed to StrategyInterpreter in auto-trading
+- Entry level column type fixed in optimization grid
+- Deferred exit timeout adjusted for position monitoring
+- Error logging enhanced with serialization for backtesting logic
+
+---
+
 ## [0.50.0] - 2026-02-05
 
 ### Added
