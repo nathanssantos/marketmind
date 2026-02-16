@@ -40,7 +40,7 @@ const WalletSelectorComponent = () => {
           aria-label={t('walletSelector.title')}
         >
           <HStack gap={1}>
-            {activeWallet && <ExchangeIcon exchange={activeWallet.exchange ?? 'BINANCE'} />}
+            <LuWallet size={14} />
             <Text fontSize="xs" fontWeight="medium" maxW="120px" truncate>
               {activeWallet?.name ?? t('walletSelector.title')}
             </Text>

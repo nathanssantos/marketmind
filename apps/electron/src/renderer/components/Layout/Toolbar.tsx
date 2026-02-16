@@ -6,7 +6,7 @@ import {
   LuActivity,
   LuChartBar,
   LuDollarSign,
-  LuPlus,
+  LuSquareArrowOutUpRight,
   LuScanLine,
   LuSettings,
 } from 'react-icons/lu';
@@ -129,7 +129,7 @@ export const Toolbar = memo(({
               colorPalette="blue"
               variant="ghost"
             >
-              <LuPlus />
+              <LuSquareArrowOutUpRight />
             </IconButton>
           </TooltipWrapper>
         )}
