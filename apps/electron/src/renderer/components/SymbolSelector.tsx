@@ -3,7 +3,9 @@ import type { AssetClass, MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuCoins } from 'react-icons/lu';
+import { useActiveWallet } from '../hooks/useActiveWallet';
 import { useBackendKlines } from '../hooks/useBackendKlines';
+import { trpc } from '../utils/trpc';
 import { CryptoIcon } from './ui/CryptoIcon';
 import { Popover } from './ui/popover';
 import { TooltipWrapper } from './ui/Tooltip';
@@ -19,7 +21,14 @@ interface SymbolSelectorProps {
   showAssetClassToggle?: boolean;
 }
 
-const POPULAR_SPOT_SYMBOLS = [
+interface SymbolInfo {
+  symbol: string;
+  displayName: string;
+  baseAsset: string;
+  quoteAsset: string;
+}
+
+const POPULAR_SPOT_SYMBOLS: SymbolInfo[] = [
   { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
   { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
   { symbol: 'XRPUSDT', displayName: 'XRP / USDT', baseAsset: 'XRP', quoteAsset: 'USDT' },
@@ -34,7 +43,7 @@ const POPULAR_SPOT_SYMBOLS = [
   { symbol: 'PENDLEUSDT', displayName: 'Pendle / USDT', baseAsset: 'PENDLE', quoteAsset: 'USDT' },
 ];
 
-const POPULAR_FUTURES_SYMBOLS = [
+const POPULAR_FUTURES_SYMBOLS: SymbolInfo[] = [
   { symbol: 'BTCUSDT', displayName: 'Bitcoin / USDT', baseAsset: 'BTC', quoteAsset: 'USDT' },
   { symbol: 'ETHUSDT', displayName: 'Ethereum / USDT', baseAsset: 'ETH', quoteAsset: 'USDT' },
   { symbol: 'XRPUSDT', displayName: 'XRP / USDT', baseAsset: 'XRP', quoteAsset: 'USDT' },
@@ -49,7 +58,7 @@ const POPULAR_FUTURES_SYMBOLS = [
   { symbol: 'PENDLEUSDT', displayName: 'Pendle / USDT', baseAsset: 'PENDLE', quoteAsset: 'USDT' },
 ];
 
-const POPULAR_STOCK_SYMBOLS = [
+const POPULAR_STOCK_SYMBOLS: SymbolInfo[] = [
   { symbol: 'AAPL', displayName: 'Apple Inc', baseAsset: 'AAPL', quoteAsset: 'USD' },
   { symbol: 'MSFT', displayName: 'Microsoft Corp', baseAsset: 'MSFT', quoteAsset: 'USD' },
   { symbol: 'GOOGL', displayName: 'Alphabet Inc', baseAsset: 'GOOGL', quoteAsset: 'USD' },
@@ -63,6 +72,32 @@ const POPULAR_STOCK_SYMBOLS = [
   { symbol: 'QQQ', displayName: 'Invesco QQQ Trust', baseAsset: 'QQQ', quoteAsset: 'USD' },
   { symbol: 'DIA', displayName: 'SPDR Dow Jones ETF', baseAsset: 'DIA', quoteAsset: 'USD' },
 ];
+
+const useOpenPositionSymbols = (walletId: string | undefined) => {
+  const { data: tradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
+    { walletId: walletId ?? '', limit: 100 },
+    { enabled: !!walletId }
+  );
+
+  const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
+    { walletId: walletId ?? '', limit: 100 },
+    { enabled: !!walletId }
+  );
+
+  return useMemo(() => {
+    const symbols = new Set<string>();
+
+    tradeExecutions
+      ?.filter((e) => e.status === 'open' || e.status === 'pending')
+      .forEach((e) => symbols.add(e.symbol));
+
+    activeExecutions
+      ?.filter((e) => e.status === 'open' || e.status === 'pending')
+      .forEach((e) => symbols.add(e.symbol));
+
+    return symbols;
+  }, [tradeExecutions, activeExecutions]);
+};
 
 export function SymbolSelector({
   value,
@@ -80,6 +115,9 @@ export function SymbolSelector({
   const [internalMarketType, setInternalMarketType] = useState<MarketType>('FUTURES');
   const [internalAssetClass, setInternalAssetClass] = useState<AssetClass>('CRYPTO');
 
+  const { activeWalletId } = useActiveWallet();
+  const openPositionSymbols = useOpenPositionSymbols(activeWalletId ?? undefined);
+
   const marketType = externalMarketType ?? internalMarketType;
   const assetClass = externalAssetClass ?? internalAssetClass;
   const isFutures = marketType === 'FUTURES';
@@ -94,14 +132,50 @@ export function SymbolSelector({
   const { useSearchSymbols } = useBackendKlines();
   const searchResult = useSearchSymbols(searchQuery, marketType, assetClass);
 
-  const displaySymbols = useMemo(() => {
-    if (searchQuery.length >= 2 && searchResult.data) {
-      return isFutures
-        ? searchResult.data.map(s => ({ ...s, displayName: `${s.displayName} FUTURES` }))
+  const isSearching = searchQuery.length >= 2;
+
+  const displaySymbols: SymbolInfo[] = useMemo(() => {
+    if (isSearching && searchResult.data) {
+      const results: SymbolInfo[] = isFutures
+        ? searchResult.data.map((s: SymbolInfo) => ({ ...s, displayName: `${s.displayName} FUTURES` }))
         : searchResult.data;
+      return [...results].sort((a, b) => {
+        const aOpen = openPositionSymbols.has(a.symbol) ? 0 : 1;
+        const bOpen = openPositionSymbols.has(b.symbol) ? 0 : 1;
+        return aOpen - bOpen;
+      });
     }
     return popularSymbols;
-  }, [searchQuery, searchResult.data, popularSymbols, isFutures]);
+  }, [isSearching, searchResult.data, popularSymbols, isFutures, openPositionSymbols]);
+
+  const openPositionItems = useMemo(() => {
+    if (isSearching) return [];
+    const allSymbols = isFutures ? POPULAR_FUTURES_SYMBOLS : isStocks ? POPULAR_STOCK_SYMBOLS : POPULAR_SPOT_SYMBOLS;
+    const symbolMap = new Map(allSymbols.map(s => [s.symbol, s]));
+
+    const items: SymbolInfo[] = [];
+    for (const sym of openPositionSymbols) {
+      const known = symbolMap.get(sym);
+      if (known) {
+        items.push(known);
+      } else {
+        const baseAsset = isStocks ? sym : sym.replace('USDT', '');
+        const quoteAsset = isStocks ? 'USD' : 'USDT';
+        items.push({
+          symbol: sym,
+          displayName: isStocks ? sym : `${baseAsset} / ${quoteAsset}`,
+          baseAsset,
+          quoteAsset,
+        });
+      }
+    }
+    return items;
+  }, [isSearching, openPositionSymbols, isFutures, isStocks]);
+
+  const filteredPopularSymbols = useMemo(() => {
+    if (isSearching || openPositionItems.length === 0) return displaySymbols;
+    return displaySymbols.filter((s: SymbolInfo) => !openPositionSymbols.has(s.symbol));
+  }, [isSearching, displaySymbols, openPositionSymbols, openPositionItems.length]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -133,6 +207,73 @@ export function SymbolSelector({
     setIsOpen(false);
     setSearchQuery('');
   };
+
+  const renderSymbolRow = (symbol: SymbolInfo, hasOpenPosition: boolean) => (
+    <Box
+      key={symbol.symbol}
+      px={3}
+      py={2}
+      cursor="pointer"
+      bg={value === symbol.symbol ? 'bg.muted' : 'transparent'}
+      _hover={{ bg: 'bg.muted' }}
+      onClick={() => handleSelect(symbol.symbol)}
+      borderBottomWidth="1px"
+      borderColor="border"
+    >
+      <Flex align="center" justify="space-between">
+        <Flex align="center" gap={2}>
+          {isStocks ? (
+            <Flex
+              align="center"
+              justify="center"
+              w="20px"
+              h="20px"
+              borderRadius="md"
+              bg="green.subtle"
+              color="green.fg"
+            >
+              <LuBuilding2 size={12} />
+            </Flex>
+          ) : (
+            <CryptoIcon symbol={symbol.symbol} size={20} />
+          )}
+          <Flex direction="column">
+            <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
+              {isStocks ? symbol.symbol : `${symbol.baseAsset}/${symbol.quoteAsset}`}
+            </Text>
+            <Text fontSize="2xs" color="fg.muted">
+              {symbol.displayName}
+            </Text>
+          </Flex>
+        </Flex>
+        <Flex align="center" gap={1}>
+          {hasOpenPosition && isSearching && (
+            <Box w="6px" h="6px" borderRadius="full" bg="green.500" />
+          )}
+          <Badge
+            size="xs"
+            colorPalette={isStocks ? 'green' : isFutures ? 'orange' : 'blue'}
+            variant="subtle"
+            px={2}
+          >
+            {isStocks ? 'STK' : isFutures ? 'FUT' : 'SPOT'}
+          </Badge>
+        </Flex>
+      </Flex>
+    </Box>
+  );
+
+  const renderSectionHeader = (label: string) => (
+    <Box px={3} py={1.5} bg="bg.subtle">
+      <Text fontSize="2xs" fontWeight="semibold" color="fg.muted" letterSpacing="wide">
+        {label}
+      </Text>
+    </Box>
+  );
+
+  const totalItems = isSearching
+    ? displaySymbols.length
+    : openPositionItems.length + filteredPopularSymbols.length;
 
   return (
     <Popover
@@ -238,65 +379,32 @@ export function SymbolSelector({
             </Flex>
           )}
 
-          {!searchResult.isLoading && displaySymbols.length === 0 && (
+          {!searchResult.isLoading && totalItems === 0 && (
             <Box p={4} textAlign="center">
               <Text color="fg.muted" fontSize="xs">
-                {searchQuery.length >= 2 ? t('symbolSelector.noSymbolsFound') : t('common.typeToSearch')}
+                {isSearching ? t('symbolSelector.noSymbolsFound') : t('common.typeToSearch')}
               </Text>
             </Box>
           )}
 
-          {!searchResult.isLoading && displaySymbols.length > 0 && (
+          {!searchResult.isLoading && totalItems > 0 && (
             <VStack gap={0} align="stretch">
-              {displaySymbols.slice(0, 20).map((symbol) => (
-                <Box
-                  key={symbol.symbol}
-                  px={3}
-                  py={2}
-                  cursor="pointer"
-                  bg={value === symbol.symbol ? 'bg.muted' : 'transparent'}
-                  _hover={{ bg: 'bg.muted' }}
-                  onClick={() => handleSelect(symbol.symbol)}
-                  borderBottomWidth="1px"
-                  borderColor="border"
-                >
-                  <Flex align="center" justify="space-between">
-                    <Flex align="center" gap={2}>
-                      {isStocks ? (
-                        <Flex
-                          align="center"
-                          justify="center"
-                          w="20px"
-                          h="20px"
-                          borderRadius="md"
-                          bg="green.subtle"
-                          color="green.fg"
-                        >
-                          <LuBuilding2 size={12} />
-                        </Flex>
-                      ) : (
-                        <CryptoIcon symbol={symbol.symbol} size={20} />
-                      )}
-                      <Flex direction="column">
-                        <Text fontWeight={value === symbol.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
-                          {isStocks ? symbol.symbol : `${symbol.baseAsset}/${symbol.quoteAsset}`}
-                        </Text>
-                        <Text fontSize="2xs" color="fg.muted">
-                          {symbol.displayName}
-                        </Text>
-                      </Flex>
-                    </Flex>
-                    <Badge
-                      size="xs"
-                      colorPalette={isStocks ? 'green' : isFutures ? 'orange' : 'blue'}
-                      variant="subtle"
-                      px={2}
-                    >
-                      {isStocks ? 'STK' : isFutures ? 'FUT' : 'SPOT'}
-                    </Badge>
-                  </Flex>
-                </Box>
-              ))}
+              {isSearching ? (
+                displaySymbols.slice(0, 20).map((symbol) =>
+                  renderSymbolRow(symbol, openPositionSymbols.has(symbol.symbol))
+                )
+              ) : (
+                <>
+                  {openPositionItems.length > 0 && (
+                    <>
+                      {renderSectionHeader(t('symbolSelector.openPositions'))}
+                      {openPositionItems.map((symbol) => renderSymbolRow(symbol, true))}
+                    </>
+                  )}
+                  {renderSectionHeader(t('symbolSelector.popularSymbols'))}
+                  {filteredPopularSymbols.slice(0, 20).map((symbol) => renderSymbolRow(symbol, false))}
+                </>
+              )}
             </VStack>
           )}
         </Box>

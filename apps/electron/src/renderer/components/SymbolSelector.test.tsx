@@ -4,6 +4,34 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SymbolSelector } from './SymbolSelector';
 
+vi.mock('../hooks/useActiveWallet', () => ({
+  useActiveWallet: vi.fn(() => ({
+    activeWalletId: 'test-wallet-id',
+    activeWallet: null,
+    wallets: [],
+    isLoading: false,
+    setActiveWalletId: vi.fn(),
+    isIB: false,
+    assetClass: 'CRYPTO',
+    exchangeId: 'BINANCE',
+  })),
+}));
+
+vi.mock('../utils/trpc', () => ({
+  trpc: {
+    trading: {
+      getTradeExecutions: {
+        useQuery: vi.fn(() => ({ data: undefined })),
+      },
+    },
+    autoTrading: {
+      getActiveExecutions: {
+        useQuery: vi.fn(() => ({ data: undefined })),
+      },
+    },
+  },
+}));
+
 vi.mock('../hooks/useBackendKlines', () => ({
   useBackendKlines: vi.fn(() => ({
     useSearchSymbols: vi.fn(() => ({
