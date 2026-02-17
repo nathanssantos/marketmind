@@ -1147,7 +1147,8 @@
       "activationModeLong": "LONG Activation Mode",
       "activationModeShort": "SHORT Activation Mode",
       "modeAuto": "Auto",
-      "modeManual": "Manual"
+      "modeManual": "Manual",
+      "global": "all symbols"
     },
     "riskManagement": {
       "title": "Risk Management",
@@ -1520,6 +1521,13 @@
     "useGlobalConfig": "Global config",
     "useGlobalConfigDescription": "Using wallet-level trailing stop settings",
     "activateTrailingLong": "Activate LONG Trailing",
-    "activateTrailingShort": "Activate SHORT Trailing"
+    "activateTrailingShort": "Activate SHORT Trailing",
+    "trailingStopEnabled": "Trailing Stop enabled for {{symbol}}",
+    "trailingStopDisabled": "Trailing Stop disabled for {{symbol}}",
+    "trailingLongActivated": "LONG Trailing Stop activated for {{symbol}}",
+    "trailingLongDeactivated": "LONG Trailing Stop deactivated for {{symbol}}",
+    "trailingShortActivated": "SHORT Trailing Stop activated for {{symbol}}",
+    "trailingShortDeactivated": "SHORT Trailing Stop deactivated for {{symbol}}",
+    "configSaved": "Trailing Stop config saved for {{symbol}}"
   }
 }

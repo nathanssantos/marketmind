@@ -50,6 +50,18 @@ export interface BacktestConfig {
   useVolumeFilter?: boolean; // Require volume confirmation
   volumeFilterConfig?: VolumeFilterConfig;
   useFundingFilter?: boolean; // Block trades with extreme funding rates
+  useChoppinessFilter?: boolean; // Block trades in choppy/ranging markets (Choppiness Index > threshold)
+  choppinessThresholdHigh?: number; // Choppiness Index above this = choppy (default: 61.8)
+  choppinessThresholdLow?: number; // Choppiness Index below this = trending (default: 38.2)
+  choppinessPeriod?: number; // Choppiness Index lookback period (default: 14)
+  useSuperTrendFilter?: boolean; // Only LONG when SuperTrend is bullish, SHORT when bearish
+  superTrendPeriod?: number; // SuperTrend ATR period (default: 10)
+  superTrendMultiplier?: number; // SuperTrend ATR multiplier (default: 3.0)
+  useBollingerSqueezeFilter?: boolean; // Block trades during Bollinger Band squeeze (low volatility)
+  bollingerSqueezeThreshold?: number; // BB width threshold for squeeze detection (default: 0.1)
+  bollingerSqueezePeriod?: number; // Bollinger Bands period (default: 20)
+  bollingerSqueezeStdDev?: number; // Bollinger Bands standard deviation (default: 2.0)
+  useVwapFilter?: boolean; // Only LONG above VWAP, SHORT below VWAP
   useConfluenceScoring?: boolean; // Use confluence scoring system
   confluenceMinScore?: number; // Minimum confluence score to allow trade (default: 60)
 

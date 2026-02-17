@@ -21,7 +21,7 @@ import { smartBackfillKlines } from '../binance-historical';
 import { smartBackfillIBKlines } from '../ib-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
-import { getOneStepAboveTimeframe } from '../../utils/filters';
+import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
 import { ExitManager } from './ExitManager';
 import { FilterManager } from './FilterManager';
 import { IndicatorCache } from './IndicatorCache';
@@ -73,6 +73,20 @@ export class BacktestEngine {
         useStochasticHtfFilter: effectiveConfig.useStochasticHtfFilter,
         useStochasticRecoveryHtfFilter: effectiveConfig.useStochasticRecoveryHtfFilter,
         useAdxFilter: effectiveConfig.useAdxFilter,
+        useChoppinessFilter: effectiveConfig.useChoppinessFilter,
+        choppinessThresholdHigh: effectiveConfig.choppinessThresholdHigh,
+        choppinessThresholdLow: effectiveConfig.choppinessThresholdLow,
+        choppinessPeriod: effectiveConfig.choppinessPeriod,
+        useSuperTrendFilter: effectiveConfig.useSuperTrendFilter,
+        superTrendPeriod: effectiveConfig.superTrendPeriod,
+        superTrendMultiplier: effectiveConfig.superTrendMultiplier,
+        useMarketRegimeFilter: effectiveConfig.useMarketRegimeFilter,
+        useBollingerSqueezeFilter: effectiveConfig.useBollingerSqueezeFilter,
+        bollingerSqueezeThreshold: effectiveConfig.bollingerSqueezeThreshold,
+        bollingerSqueezePeriod: effectiveConfig.bollingerSqueezePeriod,
+        bollingerSqueezeStdDev: effectiveConfig.bollingerSqueezeStdDev,
+        useVwapFilter: effectiveConfig.useVwapFilter,
+        useMtfFilter: effectiveConfig.useMtfFilter,
         useCooldown: effectiveConfig.useCooldown,
         cooldownMinutes: effectiveConfig.cooldownMinutes,
       });
@@ -102,6 +116,28 @@ export class BacktestEngine {
             config.exchange
           );
           console.log(`[Backtest] Fetched ${stochasticHtfKlines.length} HTF stochastic klines (${htfInterval}) for ${config.symbol}`);
+        }
+      }
+
+      let mtfHtfKlines: Kline[] = [];
+      let mtfHtfInterval: string | null = null;
+      if (effectiveConfig.useMtfFilter) {
+        mtfHtfInterval = getHigherTimeframe(config.interval);
+        if (mtfHtfInterval) {
+          const marketType = config.marketType ?? 'FUTURES';
+          const intervalMs = this.getIntervalMs(config.interval);
+          const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+          const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
+          const endTime = new Date(config.endDate);
+          mtfHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+            config.symbol,
+            mtfHtfInterval as Interval,
+            marketType,
+            startTime,
+            endTime,
+            config.exchange
+          );
+          console.log(`[Backtest] Fetched ${mtfHtfKlines.length} MTF HTF klines (${mtfHtfInterval}) for ${config.symbol}`);
         }
       }
 
@@ -152,7 +188,9 @@ export class BacktestEngine {
         exitManager,
         indicatorEngine,
         indicatorCache,
-        stochasticHtfKlines
+        stochasticHtfKlines,
+        mtfHtfKlines,
+        mtfHtfInterval
       );
 
       const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);
@@ -334,6 +372,18 @@ export class BacktestEngine {
       useAdxFilter: config.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
       useVolumeFilter: config.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
       useTrendFilter: config.useTrendFilter ?? FILTER_DEFAULTS.useTrendFilter,
+      useChoppinessFilter: config.useChoppinessFilter ?? FILTER_DEFAULTS.useChoppinessFilter,
+      choppinessThresholdHigh: config.choppinessThresholdHigh ?? FILTER_DEFAULTS.choppinessThresholdHigh,
+      choppinessThresholdLow: config.choppinessThresholdLow ?? FILTER_DEFAULTS.choppinessThresholdLow,
+      choppinessPeriod: config.choppinessPeriod ?? FILTER_DEFAULTS.choppinessPeriod,
+      useSuperTrendFilter: config.useSuperTrendFilter ?? FILTER_DEFAULTS.useSuperTrendFilter,
+      superTrendPeriod: config.superTrendPeriod ?? FILTER_DEFAULTS.superTrendPeriod,
+      superTrendMultiplier: config.superTrendMultiplier ?? FILTER_DEFAULTS.superTrendMultiplier,
+      useBollingerSqueezeFilter: config.useBollingerSqueezeFilter ?? FILTER_DEFAULTS.useBollingerSqueezeFilter,
+      bollingerSqueezeThreshold: config.bollingerSqueezeThreshold ?? FILTER_DEFAULTS.bollingerSqueezeThreshold,
+      bollingerSqueezePeriod: config.bollingerSqueezePeriod ?? FILTER_DEFAULTS.bollingerSqueezePeriod,
+      bollingerSqueezeStdDev: config.bollingerSqueezeStdDev ?? FILTER_DEFAULTS.bollingerSqueezeStdDev,
+      useVwapFilter: config.useVwapFilter ?? FILTER_DEFAULTS.useVwapFilter,
       useCooldown: config.useCooldown ?? FILTER_DEFAULTS.useCooldown,
       cooldownMinutes: config.cooldownMinutes ?? FILTER_DEFAULTS.cooldownMinutes,
       leverage: config.leverage ?? 1,
@@ -416,7 +466,9 @@ export class BacktestEngine {
     exitManager: ExitManager,
     indicatorEngine: IndicatorEngine,
     indicatorCache: IndicatorCache,
-    stochasticHtfKlines: Kline[] = []
+    stochasticHtfKlines: Kline[] = [],
+    mtfHtfKlines: Kline[] = [],
+    mtfHtfInterval: string | null = null
   ): { trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] } {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
@@ -452,6 +504,12 @@ export class BacktestEngine {
       if (!filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
       if (!filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
       if (!filterManager.checkAdxFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
+      if (!filterManager.checkChoppinessFilter(historicalKlines as Kline[], setupIndex, trades.length).passed) continue;
+      if (!filterManager.checkSupertrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length).passed) continue;
+      if (!filterManager.checkMarketRegimeFilter(historicalKlines as Kline[], setupIndex, setup.type, trades.length).passed) continue;
+      if (!filterManager.checkBollingerSqueezeFilter(historicalKlines as Kline[], setupIndex, trades.length).passed) continue;
+      if (!filterManager.checkVwapFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length).passed) continue;
+      if (!filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length).passed) continue;
 
       const entryKline = klineMap.get(setup.openTime);
       if (!entryKline) {
@@ -791,6 +849,28 @@ export class BacktestEngine {
       }
     }
 
+    const anyMtf = configs.some(c => c.useMtfFilter);
+    let batchMtfHtfKlines: Kline[] = [];
+    let batchMtfHtfInterval: string | null = null;
+    if (anyMtf) {
+      batchMtfHtfInterval = getHigherTimeframe(baseConfig.interval);
+      if (batchMtfHtfInterval) {
+        const marketType = baseConfig.marketType ?? 'FUTURES';
+        const intervalMs = this.getIntervalMs(baseConfig.interval);
+        const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+        const startTime = new Date(new Date(baseConfig.startDate).getTime() - warmupMs);
+        const endTime = new Date(baseConfig.endDate);
+        batchMtfHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+          baseConfig.symbol,
+          batchMtfHtfInterval as Interval,
+          marketType,
+          startTime,
+          endTime,
+          baseConfig.exchange
+        );
+      }
+    }
+
     const results: Array<{ config: BacktestConfig; result: BacktestResult }> = [];
 
     for (const config of configs) {
@@ -813,6 +893,20 @@ export class BacktestEngine {
           useStochasticHtfFilter: effectiveConfig.useStochasticHtfFilter,
           useStochasticRecoveryHtfFilter: effectiveConfig.useStochasticRecoveryHtfFilter,
           useAdxFilter: effectiveConfig.useAdxFilter,
+          useChoppinessFilter: effectiveConfig.useChoppinessFilter,
+          choppinessThresholdHigh: effectiveConfig.choppinessThresholdHigh,
+          choppinessThresholdLow: effectiveConfig.choppinessThresholdLow,
+          choppinessPeriod: effectiveConfig.choppinessPeriod,
+          useSuperTrendFilter: effectiveConfig.useSuperTrendFilter,
+          superTrendPeriod: effectiveConfig.superTrendPeriod,
+          superTrendMultiplier: effectiveConfig.superTrendMultiplier,
+          useMarketRegimeFilter: effectiveConfig.useMarketRegimeFilter,
+          useBollingerSqueezeFilter: effectiveConfig.useBollingerSqueezeFilter,
+          bollingerSqueezeThreshold: effectiveConfig.bollingerSqueezeThreshold,
+          bollingerSqueezePeriod: effectiveConfig.bollingerSqueezePeriod,
+          bollingerSqueezeStdDev: effectiveConfig.bollingerSqueezeStdDev,
+          useVwapFilter: effectiveConfig.useVwapFilter,
+          useMtfFilter: effectiveConfig.useMtfFilter,
           useCooldown: effectiveConfig.useCooldown,
           cooldownMinutes: effectiveConfig.cooldownMinutes,
         });
@@ -850,7 +944,9 @@ export class BacktestEngine {
           exitManager,
           indicatorEngine,
           indicatorCache,
-          batchStochasticHtfKlines
+          batchStochasticHtfKlines,
+          batchMtfHtfKlines,
+          batchMtfHtfInterval
         );
 
         const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);

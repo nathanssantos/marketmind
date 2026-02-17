@@ -1,6 +1,7 @@
 import { Switch } from '@/renderer/components/ui/switch';
 import { Box, Flex, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +16,10 @@ interface TrailingStopPopoverProps {
 
 export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) => {
   const { t } = useTranslation();
+  const { success, info } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const pendingFieldsRef = useRef<Record<string, unknown>>({});
 
   const { activeWallet } = useActiveWallet();
   const walletId = activeWallet?.id ?? '';
@@ -43,9 +46,30 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
 
   const utils = trpc.useUtils();
 
+  const lastSentFieldsRef = useRef<Record<string, unknown>>({});
+
   const updateMutation = trpc.trading.updateSymbolTrailingConfig.useMutation({
     onSuccess: () => {
       void utils.trading.getSymbolTrailingConfig.invalidate({ walletId, symbol });
+      const sent = lastSentFieldsRef.current;
+
+      if ('trailingStopEnabled' in sent) {
+        const enabled = sent['trailingStopEnabled'];
+        const key = enabled ? 'trailingStopEnabled' : 'trailingStopDisabled';
+        (enabled ? success : info)(t(`positionTrailingStop.${key}`, { symbol }));
+      }
+      if ('manualTrailingActivatedLong' in sent) {
+        const activated = sent['manualTrailingActivatedLong'];
+        const key = activated ? 'trailingLongActivated' : 'trailingLongDeactivated';
+        (activated ? success : info)(t(`positionTrailingStop.${key}`, { symbol }));
+      }
+      if ('manualTrailingActivatedShort' in sent) {
+        const activated = sent['manualTrailingActivatedShort'];
+        const key = activated ? 'trailingShortActivated' : 'trailingShortDeactivated';
+        (activated ? success : info)(t(`positionTrailingStop.${key}`, { symbol }));
+      }
+
+      lastSentFieldsRef.current = {};
     },
   });
 
@@ -53,9 +77,12 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
   mutateRef.current = updateMutation.mutate;
 
   const debouncedUpdate = useCallback((fields: Record<string, unknown>) => {
+    pendingFieldsRef.current = { ...pendingFieldsRef.current, ...fields };
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      mutateRef.current({ walletId, symbol, ...fields });
+      lastSentFieldsRef.current = { ...pendingFieldsRef.current };
+      mutateRef.current({ walletId, symbol, ...pendingFieldsRef.current });
+      pendingFieldsRef.current = {};
     }, 300);
   }, [walletId, symbol]);
 

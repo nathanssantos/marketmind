@@ -3,6 +3,7 @@ import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useToast } from '@renderer/hooks/useToast';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
 import { useCallback, useMemo, useRef } from 'react';
@@ -29,6 +30,7 @@ import { SetupToggleSection } from '../SetupToggleSection';
 
 export const WatcherManager = () => {
   const { t } = useTranslation();
+  const { success, info } = useToast();
   const { activeWallet, isIB } = useActiveWallet();
   const walletId = activeWallet?.id ?? '';
 
@@ -54,11 +56,20 @@ export const WatcherManager = () => {
     { enabled: !!walletId, staleTime: 30_000 }
   );
 
+  const lastSentBatchRef = useRef<Record<string, unknown>>({});
+
   const updateConfig = trpc.autoTrading.updateConfig.useMutation({
     onSuccess: () => {
       if (Object.keys(pendingUpdates.current).length === 0) {
         void utils.autoTrading.getConfig.invalidate({ walletId });
       }
+      const sent = lastSentBatchRef.current;
+      if ('trailingStopEnabled' in sent) {
+        const enabled = sent['trailingStopEnabled'];
+        const key = enabled ? 'trailingStopEnabled' : 'trailingStopDisabled';
+        (enabled ? success : info)(t(`positionTrailingStop.${key}`, { symbol: t('watcherManager.trailingStop.global') }));
+      }
+      lastSentBatchRef.current = {};
     },
   });
 
@@ -78,6 +89,7 @@ export const WatcherManager = () => {
     debounceRef.current = setTimeout(() => {
       const batch = pendingUpdates.current;
       pendingUpdates.current = {};
+      lastSentBatchRef.current = { ...batch };
       mutateRef.current({ walletId, ...batch });
     }, 300);
   }, [walletId, utils]);

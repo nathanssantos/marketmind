@@ -1198,7 +1198,8 @@
       "activationModeLong": "Mode d'Activation LONG",
       "activationModeShort": "Mode d'Activation SHORT",
       "modeAuto": "Auto",
-      "modeManual": "Manuel"
+      "modeManual": "Manuel",
+      "global": "tous les actifs"
     },
     "riskManagement": {
       "title": "Gestion des Risques",
@@ -1571,6 +1572,13 @@
     "useGlobalConfig": "Config globale",
     "useGlobalConfigDescription": "Utilisation des paramètres de trailing stop du portefeuille",
     "activateTrailingLong": "Activer Trailing LONG",
-    "activateTrailingShort": "Activer Trailing SHORT"
+    "activateTrailingShort": "Activer Trailing SHORT",
+    "trailingStopEnabled": "Trailing Stop activé pour {{symbol}}",
+    "trailingStopDisabled": "Trailing Stop désactivé pour {{symbol}}",
+    "trailingLongActivated": "Trailing Stop LONG activé pour {{symbol}}",
+    "trailingLongDeactivated": "Trailing Stop LONG désactivé pour {{symbol}}",
+    "trailingShortActivated": "Trailing Stop SHORT activé pour {{symbol}}",
+    "trailingShortDeactivated": "Trailing Stop SHORT désactivé pour {{symbol}}",
+    "configSaved": "Config du Trailing Stop sauvegardée pour {{symbol}}"
   }
 }
