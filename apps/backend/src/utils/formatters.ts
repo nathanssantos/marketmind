@@ -47,7 +47,9 @@ export const formatQuantityForBinance = (quantity: number, stepSize?: string): s
     ? stepSize.split('.')[1]?.replace(/0+$/, '').length || 0
     : 0;
 
-  const adjusted = Math.floor(quantity / stepSizeNum) * stepSizeNum;
+  const rawSteps = quantity / stepSizeNum;
+  const rounded = Math.round(rawSteps * 1e10) / 1e10;
+  const adjusted = Math.floor(rounded) * stepSizeNum;
 
   return formatNumberForBinance(adjusted, precision);
 };
