@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { createToaster } from '@chakra-ui/react';
 
 export const toaster = createToaster({
@@ -13,3 +14,13 @@ export const toaster = createToaster({
     left: '16px',
   },
 });
+
+type NavigateToSymbolFn = (symbol: string, marketType?: MarketType) => void;
+
+let navigateToSymbolFn: NavigateToSymbolFn | null = null;
+
+export const setToasterNavigateToSymbol = (fn: NavigateToSymbolFn | null) => {
+  navigateToSymbolFn = fn;
+};
+
+export const getToasterNavigateToSymbol = () => navigateToSymbolFn;

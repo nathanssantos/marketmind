@@ -229,18 +229,19 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     const handleTradeNotification = async (notification: TradeNotification) => {
       console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
 
-      const toastType = notification.type === 'POSITION_CLOSED'
-        ? (parseFloat(notification.data.pnl || '0') >= 0 ? 'success' : 'error')
-        : notification.type === 'TRAILING_STOP_UPDATED'
-          ? 'info'
+      if (notification.type !== 'TRAILING_STOP_UPDATED') {
+        const toastType = notification.type === 'POSITION_CLOSED'
+          ? (parseFloat(notification.data.pnl || '0') >= 0 ? 'success' : 'error')
           : 'success';
 
-      toaster.create({
-        title: notification.title,
-        description: notification.body,
-        type: toastType,
-        duration: notification.urgency === 'critical' ? undefined : 8000,
-      });
+        toaster.create({
+          title: notification.title,
+          description: notification.body,
+          type: toastType,
+          duration: notification.urgency === 'critical' ? undefined : 8000,
+          meta: { symbol: notification.data.symbol },
+        });
+      }
 
       try {
         const adapter = await createPlatformAdapter();

@@ -22,10 +22,10 @@ export const FILTER_DEFAULTS = {
   confluenceMinScore: 60,
 
   positionSizePercent: 10,
-  minRiskRewardRatioLong: 0.5,
+  minRiskRewardRatioLong: 1,
   minRiskRewardRatioShort: 1,
 
-  fibonacciTargetLevelLong: '3.618' as const,
+  fibonacciTargetLevelLong: '1.272' as const,
   fibonacciTargetLevelShort: '1.272' as const,
   maxFibonacciEntryProgressPercent: 127.2,
 
@@ -36,7 +36,7 @@ export const FILTER_DEFAULTS = {
   enableLongInBearMarket: false,
   enableShortInBullMarket: false,
 
-  useChoppinessFilter: false,
+  useChoppinessFilter: true,
   choppinessThresholdHigh: 61.8,
   choppinessThresholdLow: 38.2,
   choppinessPeriod: 14,
@@ -50,7 +50,7 @@ export const FILTER_DEFAULTS = {
   bollingerSqueezePeriod: 20,
   bollingerSqueezeStdDev: 2.0,
 
-  useVwapFilter: false,
+  useVwapFilter: true,
 
   useSuperTrendFilter: false,
   superTrendPeriod: 10,

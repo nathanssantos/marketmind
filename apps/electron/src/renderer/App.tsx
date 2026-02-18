@@ -1,4 +1,4 @@
-import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
+import { Box, ChakraProvider, Flex, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
 import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
@@ -13,6 +13,7 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainLayout } from './components/Layout/MainLayout';
+import { CryptoIcon } from './components/ui/CryptoIcon';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
@@ -31,7 +32,7 @@ import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { useSetupStore } from './store/setupStore';
 import { useUIStore } from './store/uiStore';
 import { system } from './theme';
-import { toaster } from './utils/toaster';
+import { getToasterNavigateToSymbol, setToasterNavigateToSymbol, toaster } from './utils/toaster';
 
 function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
   const { wallets } = useBackendWallet();
@@ -52,6 +53,11 @@ function App(): ReactElement {
           <Toaster toaster={toaster}>
             {(toast) => {
               const { t } = useTranslation();
+              const symbol = (toast.meta as Record<string, unknown> | undefined)?.['symbol'] as string | undefined;
+              const marketType = (toast.meta as Record<string, unknown> | undefined)?.['marketType'] as MarketType | undefined;
+              const navigate = getToasterNavigateToSymbol();
+              const canNavigate = !!symbol && !!navigate;
+
               return (
                 <Box
                   key={toast.id}
@@ -84,11 +90,26 @@ function App(): ReactElement {
                   >
                     <LuX />
                   </IconButton>
-                  <ChakraText fontWeight="bold" mb={1} pr={6}>
-                    {toast.title}
-                  </ChakraText>
+                  {symbol ? (
+                    <Flex
+                      align="center"
+                      gap={2}
+                      mb={1}
+                      pr={6}
+                      cursor={canNavigate ? 'pointer' : 'default'}
+                      onClick={canNavigate ? () => navigate(symbol, marketType) : undefined}
+                      _hover={canNavigate ? { opacity: 0.8 } : undefined}
+                    >
+                      <CryptoIcon symbol={symbol} size={18} />
+                      <ChakraText fontWeight="bold">{toast.title}</ChakraText>
+                    </Flex>
+                  ) : (
+                    <ChakraText fontWeight="bold" mb={1} pr={6}>
+                      {toast.title}
+                    </ChakraText>
+                  )}
                   {toast.description && (
-                    <ChakraText fontSize="sm">{toast.description}</ChakraText>
+                    <ChakraText fontSize="sm" pl={symbol ? 7 : 0}>{toast.description}</ChakraText>
                   )}
                 </Box>
               );
@@ -392,6 +413,11 @@ function AppContent(): ReactElement {
     setSymbol(newSymbol);
     if (newMarketType) setMarketType(newMarketType);
   }, [setSymbol, setMarketType, clearDetectedSetups]);
+
+  useEffect(() => {
+    setToasterNavigateToSymbol(handleSymbolChange);
+    return () => setToasterNavigateToSymbol(null);
+  }, [handleSymbolChange]);
 
   useChartData({
     klines: displayKlines,

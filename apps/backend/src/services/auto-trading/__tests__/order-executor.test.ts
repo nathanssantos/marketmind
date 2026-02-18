@@ -60,6 +60,7 @@ const {
   mockRelease: vi.fn(),
   mockWsService: {
     emitPositionUpdate: vi.fn(),
+    emitTradeNotification: vi.fn(),
     broadcastToUser: vi.fn(),
   },
   mockProtectionOrderHandler: {

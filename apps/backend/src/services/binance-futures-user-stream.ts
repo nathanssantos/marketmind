@@ -5,7 +5,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import {
   detectExitReason,
@@ -368,7 +368,16 @@ export class BinanceFuturesUserStreamService {
 
         if (pendingExecution && Number(pendingExecution.entryOrderId) === Number(orderId)) {
           const fillPrice = parseFloat(avgPrice || lastFilledPrice);
-          const entryFee = parseFloat(commission || '0');
+          let entryFee = parseFloat(commission || '0');
+
+          try {
+            const connection = this.connections.get(walletId);
+            if (connection) {
+              const feeResult = await getOrderEntryFee(connection.apiClient, symbol, Number(orderId));
+              if (feeResult && feeResult.entryFee > 0) entryFee = feeResult.entryFee;
+            }
+          } catch (_e) { /* entry fee fetch is best-effort */ }
+
           logger.info(
             {
               executionId: pendingExecution.id,
@@ -557,8 +566,27 @@ export class BinanceFuturesUserStreamService {
           grossPnl = (entryPrice - exitPrice) * quantity;
         }
 
-        const actualExitFee = parseFloat(commission || '0');
+        let actualExitFee = parseFloat(commission || '0');
         let actualEntryFee = parseFloat(execution.entryFee || '0');
+
+        try {
+          const connection = this.connections.get(walletId);
+          if (connection) {
+            const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
+            const allFees = await getAllTradeFeesForPosition(connection.apiClient, symbol, execution.side, openedAt);
+            if (allFees) {
+              actualExitFee = allFees.exitFee;
+              if (allFees.entryFee > 0) actualEntryFee = allFees.entryFee;
+              logger.info({
+                walletId, symbol, executionId: execution.id,
+                eventCommission: parseFloat(commission || '0'),
+                actualExitFee, actualEntryFee,
+              }, '[FuturesUserStream] Fetched accurate fees from REST API');
+            }
+          }
+        } catch (_e) {
+          logger.warn({ walletId, symbol, executionId: execution.id }, '[FuturesUserStream] Failed to fetch accurate fees - using event commission');
+        }
 
         if (actualEntryFee === 0 && execution.entryOrderId) {
           try {
@@ -1033,7 +1061,15 @@ export class BinanceFuturesUserStreamService {
       const entryPrice = parseFloat(execution.entryPrice);
       const quantity = parseFloat(execution.quantity);
       const leverage = execution.leverage || 1;
-      const entryFee = parseFloat(execution.entryFee || '0');
+      let entryFee = parseFloat(execution.entryFee || '0');
+
+      if (entryFee === 0 && execution.entryOrderId) {
+        try {
+          const feeResult = await getOrderEntryFee(apiClient, symbol, Number(execution.entryOrderId));
+          if (feeResult && feeResult.entryFee > 0) entryFee = feeResult.entryFee;
+        } catch (_e) { /* entry fee fetch is best-effort */ }
+      }
+
       const totalFees = entryFee + exitFee;
       const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
 

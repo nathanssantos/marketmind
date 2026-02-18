@@ -46,6 +46,7 @@ export const useOrderNotifications = () => {
     const isLong = order.side === 'BUY';
     const orderLabel = `${order.symbol} ${t(`trading.ticket.${isLong ? 'long' : 'short'}`)}`;
     const orderType = isLong ? t('trading.order.long') : t('trading.order.short');
+    const meta = { symbol: order.symbol };
 
     const isActive = newStatus === 'FILLED' || newStatus === 'PARTIALLY_FILLED';
     const wasPending = oldStatus === 'NEW' || oldStatus === 'PENDING_NEW';
@@ -59,7 +60,7 @@ export const useOrderNotifications = () => {
         price: parseFloat(order.price || '0').toFixed(2)
       });
 
-      success(toastTitle, toastBody);
+      success(toastTitle, toastBody, meta);
 
       if (isSupported) {
         showNotification({
@@ -75,7 +76,7 @@ export const useOrderNotifications = () => {
       const cancelledTitle = t('trading.notifications.orderCancelled');
       const cancelledBody = t('trading.notifications.orderCancelledDesc', { order: orderLabel });
 
-      warning(cancelledTitle, cancelledBody);
+      warning(cancelledTitle, cancelledBody, meta);
 
       if (isSupported) {
         showNotification({
@@ -91,7 +92,7 @@ export const useOrderNotifications = () => {
       const expiredTitle = t('trading.notifications.orderExpired');
       const expiredBody = t('trading.notifications.orderExpiredDesc', { order: orderLabel });
 
-      info(expiredTitle, expiredBody);
+      info(expiredTitle, expiredBody, meta);
 
       if (isSupported) {
         showNotification({

@@ -960,6 +960,24 @@ export class OrderExecutor {
           setupType: setup.type,
           fibonacciProjection: setup.fibonacciProjection,
         });
+
+        const sideLabel = setup.direction === 'LONG' ? 'Long' : 'Short';
+        wsServiceOpen.emitTradeNotification(watcher.walletId, {
+          type: 'POSITION_OPENED',
+          title: `> ${setup.type} (${sideLabel})`,
+          body: `${sideLabel} ${watcher.symbol} @ ${actualEntryPrice.toFixed(2)}`,
+          urgency: 'normal',
+          data: {
+            executionId,
+            symbol: watcher.symbol,
+            side: setup.direction,
+            entryPrice: actualEntryPrice.toString(),
+            exitPrice: '',
+            pnl: '',
+            pnlPercent: '',
+            exitReason: '',
+          },
+        });
       }
     } catch (dbError) {
       logBuffer.error('✗', 'Failed to insert trade execution', {

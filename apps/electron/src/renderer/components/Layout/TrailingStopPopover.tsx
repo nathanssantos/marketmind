@@ -53,20 +53,21 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
       void utils.trading.getSymbolTrailingConfig.invalidate({ walletId, symbol });
       const sent = lastSentFieldsRef.current;
 
+      const meta = { symbol };
       if ('trailingStopEnabled' in sent) {
         const enabled = sent['trailingStopEnabled'];
         const key = enabled ? 'trailingStopEnabled' : 'trailingStopDisabled';
-        (enabled ? success : info)(t(`positionTrailingStop.${key}`, { symbol }));
+        (enabled ? success : info)(t(`positionTrailingStop.${key}`, { symbol }), undefined, meta);
       }
       if ('manualTrailingActivatedLong' in sent) {
         const activated = sent['manualTrailingActivatedLong'];
         const key = activated ? 'trailingLongActivated' : 'trailingLongDeactivated';
-        (activated ? success : info)(t(`positionTrailingStop.${key}`, { symbol }));
+        (activated ? success : info)(t(`positionTrailingStop.${key}`, { symbol }), undefined, meta);
       }
       if ('manualTrailingActivatedShort' in sent) {
         const activated = sent['manualTrailingActivatedShort'];
         const key = activated ? 'trailingShortActivated' : 'trailingShortDeactivated';
-        (activated ? success : info)(t(`positionTrailingStop.${key}`, { symbol }));
+        (activated ? success : info)(t(`positionTrailingStop.${key}`, { symbol }), undefined, meta);
       }
 
       lastSentFieldsRef.current = {};
