@@ -28,6 +28,7 @@ import { getWebSocketService } from '../websocket';
 import type { WatcherLogBuffer } from '../watcher-batch-logger';
 import type { ActiveWatcher } from './types';
 import { log } from './utils';
+import { buildFilterConfigFromDb } from '../../utils/filters/filter-registry';
 import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from './filter-validator';
 import { protectionOrderHandler } from './protection-order-handler';
 
@@ -381,38 +382,8 @@ export class OrderExecutor {
       logBuffer.addValidationCheck({ name: 'Direction Mode', passed: true, reason: directionMode });
 
       const filterConfig: FilterValidatorConfig = {
+        ...buildFilterConfigFromDb(config as unknown as Record<string, unknown>),
         useBtcCorrelationFilter: directionMode === 'auto' && config.useBtcCorrelationFilter,
-        useFundingFilter: config.useFundingFilter,
-        useMtfFilter: config.useMtfFilter,
-        useMarketRegimeFilter: config.useMarketRegimeFilter,
-        useVolumeFilter: config.useVolumeFilter,
-        useConfluenceScoring: config.useConfluenceScoring,
-        confluenceMinScore: config.confluenceMinScore,
-        useStochasticFilter: config.useStochasticFilter,
-        useStochasticRecoveryFilter: config.useStochasticRecoveryFilter,
-        useStochasticHtfFilter: config.useStochasticHtfFilter,
-        useStochasticRecoveryHtfFilter: config.useStochasticRecoveryHtfFilter,
-        useMomentumTimingFilter: config.useMomentumTimingFilter,
-        useAdxFilter: config.useAdxFilter,
-        useTrendFilter: config.useTrendFilter,
-        useChoppinessFilter: config.useChoppinessFilter,
-        choppinessThresholdHigh: config.choppinessThresholdHigh ? parseFloat(config.choppinessThresholdHigh) : 61.80,
-        choppinessThresholdLow: config.choppinessThresholdLow ? parseFloat(config.choppinessThresholdLow) : 38.20,
-        choppinessPeriod: config.choppinessPeriod ?? 14,
-        useSessionFilter: config.useSessionFilter,
-        sessionStartUtc: config.sessionStartUtc ?? 13,
-        sessionEndUtc: config.sessionEndUtc ?? 16,
-        useBollingerSqueezeFilter: config.useBollingerSqueezeFilter,
-        bollingerSqueezeThreshold: config.bollingerSqueezeThreshold ? parseFloat(config.bollingerSqueezeThreshold) : 0.1,
-        bollingerSqueezePeriod: config.bollingerSqueezePeriod ?? 20,
-        bollingerSqueezeStdDev: config.bollingerSqueezeStdDev ? parseFloat(config.bollingerSqueezeStdDev) : 2.0,
-        useVwapFilter: config.useVwapFilter,
-        useSuperTrendFilter: config.useSuperTrendFilter,
-        superTrendPeriod: config.superTrendPeriod ?? 10,
-        superTrendMultiplier: config.superTrendMultiplier ? parseFloat(config.superTrendMultiplier) : 3.0,
-        useDirectionFilter: config.useDirectionFilter,
-        enableLongInBearMarket: config.enableLongInBearMarket,
-        enableShortInBullMarket: config.enableShortInBullMarket,
         volumeFilterConfig: {
           longConfig: {
             useObvCheck: config.useObvCheckLong ?? false,
@@ -423,7 +394,7 @@ export class OrderExecutor {
             obvLookback: config.volumeFilterObvLookbackShort ?? 5,
           },
         },
-      };
+      } as FilterValidatorConfig;
 
       const filterValidation = await this.filterValidator.validateFilters(
         watcher,

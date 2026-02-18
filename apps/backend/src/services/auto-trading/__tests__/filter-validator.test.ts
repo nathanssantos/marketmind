@@ -1,26 +1,84 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Kline, TradingSetup, StrategyDefinition, MarketType } from '@marketmind/types';
 
-vi.mock('../../../utils/filters', () => ({
+const filterMocks = vi.hoisted(() => ({
+  checkStochasticCondition: vi.fn(),
+  checkStochasticRecoveryCondition: vi.fn(),
+  checkMomentumTiming: vi.fn(),
+  checkAdxCondition: vi.fn(),
+  checkChoppinessCondition: vi.fn(),
+  checkSessionCondition: vi.fn(),
+  checkBollingerSqueezeCondition: vi.fn(),
+  checkVwapCondition: vi.fn(),
+  checkSupertrendCondition: vi.fn(),
+  checkDirectionFilter: vi.fn(),
   checkBtcCorrelation: vi.fn(),
   checkFundingRate: vi.fn(),
   checkMtfCondition: vi.fn(),
   checkMarketRegime: vi.fn(),
   checkVolumeCondition: vi.fn(),
-  checkStochasticCondition: vi.fn(),
-  checkStochasticRecoveryCondition: vi.fn(),
-  checkMomentumTiming: vi.fn(),
-  checkAdxCondition: vi.fn(),
   checkTrendCondition: vi.fn(),
   getHigherTimeframe: vi.fn(),
-  ADX_FILTER: { MIN_KLINES_REQUIRED: 35 },
-  MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20 },
-  MTF_FILTER: { MIN_KLINES_FOR_EMA200: 200 },
-  STOCHASTIC_FILTER: { K_PERIOD: 14, K_SMOOTHING: 3, D_PERIOD: 3 },
+  calculateConfluenceScore: vi.fn(),
 }));
 
+vi.mock('../../../utils/filters/stochastic-filter', () => ({
+  checkStochasticCondition: filterMocks.checkStochasticCondition,
+}));
+vi.mock('../../../utils/filters/stochastic-recovery-filter', () => ({
+  checkStochasticRecoveryCondition: filterMocks.checkStochasticRecoveryCondition,
+}));
+vi.mock('../../../utils/filters/momentum-timing-filter', () => ({
+  checkMomentumTiming: filterMocks.checkMomentumTiming,
+}));
+vi.mock('../../../utils/filters/adx-filter', () => ({
+  checkAdxCondition: filterMocks.checkAdxCondition,
+}));
+vi.mock('../../../utils/filters/choppiness-filter', () => ({
+  checkChoppinessCondition: filterMocks.checkChoppinessCondition,
+}));
+vi.mock('../../../utils/filters/session-filter', () => ({
+  checkSessionCondition: filterMocks.checkSessionCondition,
+}));
+vi.mock('../../../utils/filters/bollinger-squeeze-filter', () => ({
+  checkBollingerSqueezeCondition: filterMocks.checkBollingerSqueezeCondition,
+}));
+vi.mock('../../../utils/filters/vwap-filter', () => ({
+  checkVwapCondition: filterMocks.checkVwapCondition,
+}));
+vi.mock('../../../utils/filters/supertrend-filter', () => ({
+  checkSupertrendCondition: filterMocks.checkSupertrendCondition,
+}));
+vi.mock('../../../utils/filters/direction-filter', () => ({
+  checkDirectionFilter: filterMocks.checkDirectionFilter,
+}));
+vi.mock('../../../utils/filters/market-regime-filter', () => ({
+  checkMarketRegime: filterMocks.checkMarketRegime,
+}));
+vi.mock('../../../utils/filters/volume-filter', () => ({
+  checkVolumeCondition: filterMocks.checkVolumeCondition,
+}));
+vi.mock('../../../utils/filters/trend-filter', () => ({
+  checkTrendCondition: filterMocks.checkTrendCondition,
+}));
+vi.mock('../../../utils/filters/btc-correlation-filter', () => ({
+  checkBtcCorrelation: filterMocks.checkBtcCorrelation,
+}));
+
+vi.mock('../../../utils/filters', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/filters')>();
+  return {
+    ...actual,
+    ...filterMocks,
+    ADX_FILTER: { MIN_KLINES_REQUIRED: 35 },
+    MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20 },
+    MTF_FILTER: { MIN_KLINES_FOR_EMA200: 200 },
+    STOCHASTIC_FILTER: { K_PERIOD: 14, K_SMOOTHING: 3, D_PERIOD: 3 },
+  };
+});
+
 vi.mock('../../../utils/confluence-scoring', () => ({
-  calculateConfluenceScore: vi.fn(),
+  calculateConfluenceScore: filterMocks.calculateConfluenceScore,
 }));
 
 import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from '../filter-validator';
@@ -38,6 +96,7 @@ import {
   getHigherTimeframe,
 } from '../../../utils/filters';
 import { calculateConfluenceScore } from '../../../utils/confluence-scoring';
+import { createDisabledFilterConfig } from '../../../utils/filters/filter-registry';
 import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { ActiveWatcher } from '../types';
 
@@ -94,40 +153,9 @@ const createLogBuffer = (): WatcherLogBuffer => ({
   completeSetupValidation: vi.fn(),
 } as unknown as WatcherLogBuffer);
 
-const allDisabledConfig: FilterValidatorConfig = {
-  useBtcCorrelationFilter: false,
-  useFundingFilter: false,
-  useMtfFilter: false,
-  useMarketRegimeFilter: false,
-  useVolumeFilter: false,
-  useConfluenceScoring: false,
-  confluenceMinScore: 50,
-  useStochasticFilter: false,
-  useStochasticRecoveryFilter: false,
-  useStochasticHtfFilter: false,
-  useStochasticRecoveryHtfFilter: false,
-  useMomentumTimingFilter: false,
-  useAdxFilter: false,
-  useTrendFilter: false,
-  useChoppinessFilter: false,
-  choppinessThresholdHigh: 61.80,
-  choppinessThresholdLow: 38.20,
-  choppinessPeriod: 14,
-  useSessionFilter: false,
-  sessionStartUtc: 13,
-  sessionEndUtc: 16,
-  useBollingerSqueezeFilter: false,
-  bollingerSqueezeThreshold: 0.1,
-  bollingerSqueezePeriod: 20,
-  bollingerSqueezeStdDev: 2.0,
-  useVwapFilter: false,
-  useSuperTrendFilter: false,
-  superTrendPeriod: 10,
-  superTrendMultiplier: 3.0,
-  useDirectionFilter: false,
-  enableLongInBearMarket: false,
-  enableShortInBullMarket: false,
-};
+const allDisabledConfig = {
+  ...createDisabledFilterConfig(),
+} as unknown as FilterValidatorConfig;
 
 const createDeps = (): FilterValidatorDeps => ({
   getBtcKlines: vi.fn().mockResolvedValue(createKlines(30)),
@@ -142,6 +170,21 @@ describe('FilterValidator', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    const defaultAllow = { isAllowed: true, reason: 'OK' };
+    filterMocks.checkStochasticCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkStochasticRecoveryCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkMomentumTiming.mockReturnValue(defaultAllow);
+    filterMocks.checkAdxCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkChoppinessCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkSessionCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkBollingerSqueezeCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkVwapCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkSupertrendCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkDirectionFilter.mockReturnValue(defaultAllow);
+    filterMocks.checkTrendCondition.mockReturnValue(defaultAllow);
+    filterMocks.checkBtcCorrelation.mockReturnValue(defaultAllow);
+    filterMocks.checkMarketRegime.mockReturnValue(defaultAllow);
+    filterMocks.checkVolumeCondition.mockReturnValue(defaultAllow);
     deps = createDeps();
     validator = new FilterValidator(deps);
     logBuffer = createLogBuffer();
@@ -559,7 +602,7 @@ describe('FilterValidator', () => {
   });
 
   describe('stochastic filter', () => {
-    it('should skip when klines are insufficient', async () => {
+    it('should pass when check function allows with few klines', async () => {
       const result = await validator.validateFilters(
         createWatcher(),
         createSetup(),
@@ -570,7 +613,7 @@ describe('FilterValidator', () => {
       );
 
       expect(result.passed).toBe(true);
-      expect(checkStochasticCondition).not.toHaveBeenCalled();
+      expect(checkStochasticCondition).toHaveBeenCalled();
     });
 
     it('should fail when stochastic rejects', async () => {
@@ -614,7 +657,7 @@ describe('FilterValidator', () => {
   });
 
   describe('stochastic recovery filter', () => {
-    it('should skip when klines are insufficient', async () => {
+    it('should pass when check function allows with few klines', async () => {
       const result = await validator.validateFilters(
         createWatcher(),
         createSetup(),
@@ -625,7 +668,7 @@ describe('FilterValidator', () => {
       );
 
       expect(result.passed).toBe(true);
-      expect(checkStochasticRecoveryCondition).not.toHaveBeenCalled();
+      expect(checkStochasticRecoveryCondition).toHaveBeenCalled();
     });
 
     it('should fail when stochastic recovery rejects', async () => {
@@ -669,7 +712,7 @@ describe('FilterValidator', () => {
   });
 
   describe('momentum timing filter', () => {
-    it('should skip when klines are insufficient', async () => {
+    it('should pass when check function allows with few klines', async () => {
       const result = await validator.validateFilters(
         createWatcher(),
         createSetup(),
@@ -680,7 +723,7 @@ describe('FilterValidator', () => {
       );
 
       expect(result.passed).toBe(true);
-      expect(checkMomentumTiming).not.toHaveBeenCalled();
+      expect(checkMomentumTiming).toHaveBeenCalled();
     });
 
     it('should fail when momentum rejects', async () => {
@@ -705,7 +748,7 @@ describe('FilterValidator', () => {
   });
 
   describe('ADX filter', () => {
-    it('should fail when klines are insufficient for ADX', async () => {
+    it('should pass when check function allows with few klines', async () => {
       const result = await validator.validateFilters(
         createWatcher(),
         createSetup(),
@@ -715,8 +758,8 @@ describe('FilterValidator', () => {
         logBuffer,
       );
 
-      expect(result.passed).toBe(false);
-      expect(result.rejectionReason).toContain('Insufficient');
+      expect(result.passed).toBe(true);
+      expect(checkAdxCondition).toHaveBeenCalled();
     });
 
     it('should fail when ADX rejects', async () => {

@@ -18,23 +18,17 @@ import { calculateTotalFees } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
 import { BACKTEST_DEFAULTS } from '../../constants';
 import {
-  ADX_FILTER,
-  checkAdxCondition,
   checkBtcCorrelation,
   checkMarketRegime,
-  checkMomentumTiming,
   checkMtfCondition,
-  checkStochasticCondition,
-  checkStochasticRecoveryCondition,
   checkStochasticHtfCondition,
   checkStochasticRecoveryHtfCondition,
   checkTrendCondition,
   checkVolumeCondition,
+  getFilterValidatorSyncFilters,
   getHigherTimeframe,
   getOneStepAboveTimeframe,
-  MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
-  STOCHASTIC_FILTER,
 } from '../../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 import { resolve, dirname } from 'path';
@@ -459,29 +453,14 @@ export class MultiWatcherBacktestEngine {
       }
     }
 
-    const globalStochasticEnabled = this.config.useStochasticFilter === true;
-    if (globalStochasticEnabled) {
-      const requiredKlines = STOCHASTIC_FILTER.K_PERIOD + STOCHASTIC_FILTER.K_SMOOTHING + STOCHASTIC_FILTER.D_PERIOD;
-      if (klines.length >= requiredKlines) {
-        const stochResult = checkStochasticCondition(klines, direction);
-        if (!stochResult.isAllowed) {
-          stats.tradesSkipped++;
-          stats.skippedReasons['stochastic'] = (stats.skippedReasons['stochastic'] ?? 0) + 1;
-          return { passed: false };
-        }
-      }
-    }
-
-    const globalStochasticRecoveryEnabled = this.config.useStochasticRecoveryFilter === true;
-    if (globalStochasticRecoveryEnabled) {
-      const requiredKlines = STOCHASTIC_FILTER.K_PERIOD + STOCHASTIC_FILTER.K_SMOOTHING + STOCHASTIC_FILTER.D_PERIOD;
-      if (klines.length >= requiredKlines) {
-        const stochRecoveryResult = checkStochasticRecoveryCondition(klines, direction);
-        if (!stochRecoveryResult.isAllowed) {
-          stats.tradesSkipped++;
-          stats.skippedReasons['stochasticRecovery'] = (stats.skippedReasons['stochasticRecovery'] ?? 0) + 1;
-          return { passed: false };
-        }
+    for (const filter of getFilterValidatorSyncFilters()) {
+      const configRecord = this.config as unknown as Record<string, unknown>;
+      if (!configRecord[filter.enableKey]) continue;
+      const result = filter.run!(klines, direction, context?.setupType ?? '', configRecord);
+      if (!result.isAllowed) {
+        stats.tradesSkipped++;
+        stats.skippedReasons[filter.id] = (stats.skippedReasons[filter.id] ?? 0) + 1;
+        return { passed: false };
       }
     }
 
@@ -500,31 +479,6 @@ export class MultiWatcherBacktestEngine {
         stats.tradesSkipped++;
         stats.skippedReasons['stochasticRecoveryHtf'] = (stats.skippedReasons['stochasticRecoveryHtf'] ?? 0) + 1;
         return { passed: false };
-      }
-    }
-
-    const globalMomentumTimingEnabled = this.config.useMomentumTimingFilter === true;
-    if (globalMomentumTimingEnabled) {
-      const requiredKlines = MOMENTUM_TIMING_FILTER.MIN_KLINES_REQUIRED;
-      if (klines.length >= requiredKlines) {
-        const momentumResult = checkMomentumTiming(klines, direction, context?.setupType);
-        if (!momentumResult.isAllowed) {
-          stats.tradesSkipped++;
-          stats.skippedReasons['momentumTiming'] = (stats.skippedReasons['momentumTiming'] ?? 0) + 1;
-          return { passed: false };
-        }
-      }
-    }
-
-    const globalAdxEnabled = this.config.useAdxFilter === true;
-    if (globalAdxEnabled) {
-      if (klines.length >= ADX_FILTER.MIN_KLINES_REQUIRED) {
-        const adxResult = checkAdxCondition(klines, direction);
-        if (!adxResult.isAllowed) {
-          stats.tradesSkipped++;
-          stats.skippedReasons['adx'] = (stats.skippedReasons['adx'] ?? 0) + 1;
-          return { passed: false };
-        }
       }
     }
 

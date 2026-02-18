@@ -16,3 +16,4 @@ export * from './bollinger-squeeze-filter';
 export * from './vwap-filter';
 export * from './supertrend-filter';
 export * from './strategy-filter-types';
+export * from './filter-registry';

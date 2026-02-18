@@ -20,6 +20,8 @@ import {
   checkVwapCondition,
   checkSupertrendCondition,
   getHigherTimeframe,
+  getSyncFilters,
+  createFilterStatsInit,
   MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
   STOCHASTIC_FILTER,
@@ -136,6 +138,7 @@ export class FilterManager {
   private positionsPerStrategy: Map<string, number> = new Map();
 
   public stats: FilterStats = {
+    ...createFilterStatsInit(),
     skippedKlineNotFound: 0,
     skippedTrend: 0,
     skippedMinNotional: 0,
@@ -147,30 +150,32 @@ export class FilterManager {
     skippedVolatility: 0,
     skippedRiskReward: 0,
     skippedLimitExpired: 0,
-    skippedStochastic: 0,
-    skippedStochasticRecovery: 0,
-    skippedStochasticHtf: 0,
-    skippedStochasticRecoveryHtf: 0,
-    skippedMomentumTiming: 0,
-    skippedAdx: 0,
-    skippedMtf: 0,
-    skippedBtcCorrelation: 0,
-    skippedMarketRegime: 0,
-    skippedVolume: 0,
-    skippedFunding: 0,
-    skippedConfluence: 0,
     skippedPositionConflict: 0,
     skippedPyramid: 0,
     pyramidEntries: 0,
-    skippedChoppiness: 0,
-    skippedSession: 0,
-    skippedBollingerSqueeze: 0,
-    skippedVwap: 0,
-    skippedSupertrend: 0,
-  };
+  } as FilterStats;
 
   constructor(config: FilterConfig) {
     this.config = config;
+  }
+
+  runRegisteredFilters(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    setupType: string,
+  ): boolean {
+    const filterKlines = klines.slice(0, setupIndex + 1);
+    for (const filter of getSyncFilters()) {
+      if (!this.config[filter.enableKey as keyof FilterConfig]) continue;
+      const result = filter.run!(filterKlines, direction, setupType, this.config as unknown as Record<string, unknown>);
+      if (!result.isAllowed) {
+        const statsRecord = this.stats as unknown as Record<string, number>;
+        statsRecord[filter.statsKey] = (statsRecord[filter.statsKey] ?? 0) + 1;
+        return false;
+      }
+    }
+    return true;
   }
 
   async initialize(klines: Kline[], _startDate: string, _endDate: string, _symbol: string): Promise<void> {

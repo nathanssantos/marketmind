@@ -39,11 +39,13 @@ import { riskManagerService } from '../services/risk-manager';
 import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
 import { checkAdxCondition } from '../utils/filters/adx-filter';
+import { applyConfigFieldsToUpdate } from '../utils/config-field-registry';
+import { applyFilterInputToUpdate } from '../utils/filters/filter-registry';
 import { getBtcTrendEmaInfoWithHistory, getEma21Direction, type Ema21TrendResult } from '../utils/filters/btc-correlation-filter';
 import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { calculatePnl } from '../utils/pnl-calculator';
-import { parseEnabledSetupTypes, stringifyDynamicSymbolExcluded, stringifyEnabledSetupTypes, transformAutoTradingConfig } from '../utils/profile-transformers';
+import { parseEnabledSetupTypes, transformAutoTradingConfig } from '../utils/profile-transformers';
 
 const log = (message: string, data?: Record<string, unknown>): void => {
   if (data) {
@@ -246,205 +248,8 @@ export const autoTradingRouter = router({
         updatedAt: new Date(),
       };
 
-      if (input.isEnabled !== undefined) updateData.isEnabled = input.isEnabled;
-      if (input.maxConcurrentPositions !== undefined)
-        {updateData.maxConcurrentPositions = input.maxConcurrentPositions;}
-      if (input.maxPositionSize !== undefined)
-        {updateData.maxPositionSize = input.maxPositionSize;}
-      if (input.dailyLossLimit !== undefined)
-        {updateData.dailyLossLimit = input.dailyLossLimit;}
-      if (input.enabledSetupTypes !== undefined)
-        {updateData.enabledSetupTypes = stringifyEnabledSetupTypes(input.enabledSetupTypes);}
-      if (input.positionSizing !== undefined)
-        {updateData.positionSizing = input.positionSizing;}
-      if (input.useLimitOrders !== undefined)
-        {updateData.useLimitOrders = input.useLimitOrders;}
-      if (input.useStochasticFilter !== undefined)
-        {updateData.useStochasticFilter = input.useStochasticFilter;}
-      if (input.useStochasticRecoveryFilter !== undefined)
-        {updateData.useStochasticRecoveryFilter = input.useStochasticRecoveryFilter;}
-      if (input.useStochasticHtfFilter !== undefined)
-        {updateData.useStochasticHtfFilter = input.useStochasticHtfFilter;}
-      if (input.useStochasticRecoveryHtfFilter !== undefined)
-        {updateData.useStochasticRecoveryHtfFilter = input.useStochasticRecoveryHtfFilter;}
-      if (input.useAdxFilter !== undefined)
-        {updateData.useAdxFilter = input.useAdxFilter;}
-      if (input.useTrendFilter !== undefined)
-        {updateData.useTrendFilter = input.useTrendFilter;}
-      if (input.useVolumeFilter !== undefined)
-        {updateData.useVolumeFilter = input.useVolumeFilter;}
-      if (input.volumeFilterObvLookbackLong !== undefined)
-        {updateData.volumeFilterObvLookbackLong = input.volumeFilterObvLookbackLong;}
-      if (input.volumeFilterObvLookbackShort !== undefined)
-        {updateData.volumeFilterObvLookbackShort = input.volumeFilterObvLookbackShort;}
-      if (input.useObvCheckLong !== undefined)
-        {updateData.useObvCheckLong = input.useObvCheckLong;}
-      if (input.useObvCheckShort !== undefined)
-        {updateData.useObvCheckShort = input.useObvCheckShort;}
-      if (input.positionSizePercent !== undefined)
-        {updateData.positionSizePercent = input.positionSizePercent;}
-      if (input.maxGlobalExposurePercent !== undefined)
-        {updateData.maxGlobalExposurePercent = input.maxGlobalExposurePercent;}
-      if (input.tpCalculationMode !== undefined)
-        {updateData.tpCalculationMode = input.tpCalculationMode;}
-      if (input.fibonacciTargetLevel !== undefined)
-        {updateData.fibonacciTargetLevel = input.fibonacciTargetLevel;}
-      if (input.fibonacciTargetLevelLong !== undefined)
-        {updateData.fibonacciTargetLevelLong = input.fibonacciTargetLevelLong;}
-      if (input.fibonacciTargetLevelShort !== undefined)
-        {updateData.fibonacciTargetLevelShort = input.fibonacciTargetLevelShort;}
-      if (input.fibonacciSwingRange !== undefined)
-        {updateData.fibonacciSwingRange = input.fibonacciSwingRange;}
-      if (input.useDynamicSymbolSelection !== undefined)
-        {updateData.useDynamicSymbolSelection = input.useDynamicSymbolSelection;}
-      if (input.dynamicSymbolRotationInterval !== undefined)
-        {updateData.dynamicSymbolRotationInterval = input.dynamicSymbolRotationInterval;}
-      if (input.dynamicSymbolExcluded !== undefined)
-        {updateData.dynamicSymbolExcluded = stringifyDynamicSymbolExcluded(input.dynamicSymbolExcluded);}
-      if (input.enableAutoRotation !== undefined)
-        {updateData.enableAutoRotation = input.enableAutoRotation;}
-      if (input.trailingStopMode !== undefined)
-        {updateData.trailingStopMode = input.trailingStopMode;}
-      if (input.trailingStopEnabled !== undefined)
-        {updateData.trailingStopEnabled = input.trailingStopEnabled;}
-      if (input.trailingActivationPercentLong !== undefined)
-        {updateData.trailingActivationPercentLong = input.trailingActivationPercentLong;}
-      if (input.trailingActivationPercentShort !== undefined)
-        {updateData.trailingActivationPercentShort = input.trailingActivationPercentShort;}
-      if (input.trailingDistancePercentLong !== undefined)
-        {updateData.trailingDistancePercentLong = input.trailingDistancePercentLong;}
-      if (input.trailingDistancePercentShort !== undefined)
-        {updateData.trailingDistancePercentShort = input.trailingDistancePercentShort;}
-      if (input.useAdaptiveTrailing !== undefined)
-        {updateData.useAdaptiveTrailing = input.useAdaptiveTrailing;}
-      if (input.useProfitLockDistance !== undefined)
-        {updateData.useProfitLockDistance = input.useProfitLockDistance;}
-      if (input.trailingDistanceMode !== undefined)
-        {updateData.trailingDistanceMode = input.trailingDistanceMode;}
-      if (input.trailingStopOffsetPercent !== undefined)
-        {updateData.trailingStopOffsetPercent = input.trailingStopOffsetPercent;}
-      if (input.trailingActivationModeLong !== undefined)
-        {updateData.trailingActivationModeLong = input.trailingActivationModeLong;}
-      if (input.trailingActivationModeShort !== undefined)
-        {updateData.trailingActivationModeShort = input.trailingActivationModeShort;}
-      if (input.leverage !== undefined)
-        {updateData.leverage = input.leverage;}
-      if (input.marginType !== undefined)
-        {updateData.marginType = input.marginType;}
-      if (input.opportunityCostEnabled !== undefined)
-        {updateData.opportunityCostEnabled = input.opportunityCostEnabled;}
-      if (input.maxHoldingPeriodBars !== undefined)
-        {updateData.maxHoldingPeriodBars = input.maxHoldingPeriodBars;}
-      if (input.stalePriceThresholdPercent !== undefined)
-        {updateData.stalePriceThresholdPercent = input.stalePriceThresholdPercent;}
-      if (input.staleTradeAction !== undefined)
-        {updateData.staleTradeAction = input.staleTradeAction;}
-      if (input.timeBasedStopTighteningEnabled !== undefined)
-        {updateData.timeBasedStopTighteningEnabled = input.timeBasedStopTighteningEnabled;}
-      if (input.timeTightenAfterBars !== undefined)
-        {updateData.timeTightenAfterBars = input.timeTightenAfterBars;}
-      if (input.timeTightenPercentPerBar !== undefined)
-        {updateData.timeTightenPercentPerBar = input.timeTightenPercentPerBar;}
-      if (input.pyramidingEnabled !== undefined)
-        {updateData.pyramidingEnabled = input.pyramidingEnabled;}
-      if (input.pyramidingMode !== undefined)
-        {updateData.pyramidingMode = input.pyramidingMode;}
-      if (input.maxPyramidEntries !== undefined)
-        {updateData.maxPyramidEntries = input.maxPyramidEntries;}
-      if (input.pyramidProfitThreshold !== undefined)
-        {updateData.pyramidProfitThreshold = input.pyramidProfitThreshold;}
-      if (input.pyramidScaleFactor !== undefined)
-        {updateData.pyramidScaleFactor = input.pyramidScaleFactor;}
-      if (input.pyramidMinDistance !== undefined)
-        {updateData.pyramidMinDistance = input.pyramidMinDistance;}
-      if (input.pyramidUseAtr !== undefined)
-        {updateData.pyramidUseAtr = input.pyramidUseAtr;}
-      if (input.pyramidUseAdx !== undefined)
-        {updateData.pyramidUseAdx = input.pyramidUseAdx;}
-      if (input.pyramidUseRsi !== undefined)
-        {updateData.pyramidUseRsi = input.pyramidUseRsi;}
-      if (input.pyramidAdxThreshold !== undefined)
-        {updateData.pyramidAdxThreshold = input.pyramidAdxThreshold;}
-      if (input.pyramidRsiLowerBound !== undefined)
-        {updateData.pyramidRsiLowerBound = input.pyramidRsiLowerBound;}
-      if (input.pyramidRsiUpperBound !== undefined)
-        {updateData.pyramidRsiUpperBound = input.pyramidRsiUpperBound;}
-      if (input.pyramidFiboLevels !== undefined)
-        {updateData.pyramidFiboLevels = JSON.stringify(input.pyramidFiboLevels);}
-      if (input.leverageAwarePyramid !== undefined)
-        {updateData.leverageAwarePyramid = input.leverageAwarePyramid;}
-      if (input.useChoppinessFilter !== undefined)
-        {updateData.useChoppinessFilter = input.useChoppinessFilter;}
-      if (input.choppinessThresholdHigh !== undefined)
-        {updateData.choppinessThresholdHigh = input.choppinessThresholdHigh;}
-      if (input.choppinessThresholdLow !== undefined)
-        {updateData.choppinessThresholdLow = input.choppinessThresholdLow;}
-      if (input.choppinessPeriod !== undefined)
-        {updateData.choppinessPeriod = input.choppinessPeriod;}
-      if (input.useSessionFilter !== undefined)
-        {updateData.useSessionFilter = input.useSessionFilter;}
-      if (input.sessionStartUtc !== undefined)
-        {updateData.sessionStartUtc = input.sessionStartUtc;}
-      if (input.sessionEndUtc !== undefined)
-        {updateData.sessionEndUtc = input.sessionEndUtc;}
-      if (input.useBollingerSqueezeFilter !== undefined)
-        {updateData.useBollingerSqueezeFilter = input.useBollingerSqueezeFilter;}
-      if (input.bollingerSqueezeThreshold !== undefined)
-        {updateData.bollingerSqueezeThreshold = input.bollingerSqueezeThreshold;}
-      if (input.bollingerSqueezePeriod !== undefined)
-        {updateData.bollingerSqueezePeriod = input.bollingerSqueezePeriod;}
-      if (input.bollingerSqueezeStdDev !== undefined)
-        {updateData.bollingerSqueezeStdDev = input.bollingerSqueezeStdDev;}
-      if (input.useVwapFilter !== undefined)
-        {updateData.useVwapFilter = input.useVwapFilter;}
-      if (input.useSuperTrendFilter !== undefined)
-        {updateData.useSuperTrendFilter = input.useSuperTrendFilter;}
-      if (input.superTrendPeriod !== undefined)
-        {updateData.superTrendPeriod = input.superTrendPeriod;}
-      if (input.superTrendMultiplier !== undefined)
-        {updateData.superTrendMultiplier = input.superTrendMultiplier;}
-      if (input.directionMode !== undefined)
-        {updateData.directionMode = input.directionMode;}
-      if (input.minRiskRewardRatioLong !== undefined)
-        {updateData.minRiskRewardRatioLong = input.minRiskRewardRatioLong;}
-      if (input.minRiskRewardRatioShort !== undefined)
-        {updateData.minRiskRewardRatioShort = input.minRiskRewardRatioShort;}
-      if (input.maxFibonacciEntryProgressPercent !== undefined)
-        {updateData.maxFibonacciEntryProgressPercent = String(input.maxFibonacciEntryProgressPercent);}
-      if (input.useBtcCorrelationFilter !== undefined)
-        {updateData.useBtcCorrelationFilter = input.useBtcCorrelationFilter;}
-      if (input.useFundingFilter !== undefined)
-        {updateData.useFundingFilter = input.useFundingFilter;}
-      if (input.useMtfFilter !== undefined)
-        {updateData.useMtfFilter = input.useMtfFilter;}
-      if (input.useMarketRegimeFilter !== undefined)
-        {updateData.useMarketRegimeFilter = input.useMarketRegimeFilter;}
-      if (input.useDirectionFilter !== undefined)
-        {updateData.useDirectionFilter = input.useDirectionFilter;}
-      if (input.useMomentumTimingFilter !== undefined)
-        {updateData.useMomentumTimingFilter = input.useMomentumTimingFilter;}
-      if (input.useConfluenceScoring !== undefined)
-        {updateData.useConfluenceScoring = input.useConfluenceScoring;}
-      if (input.enableLongInBearMarket !== undefined)
-        {updateData.enableLongInBearMarket = input.enableLongInBearMarket;}
-      if (input.enableShortInBullMarket !== undefined)
-        {updateData.enableShortInBullMarket = input.enableShortInBullMarket;}
-      if (input.confluenceMinScore !== undefined)
-        {updateData.confluenceMinScore = input.confluenceMinScore;}
-      if (input.maxDrawdownEnabled !== undefined)
-        {updateData.maxDrawdownEnabled = input.maxDrawdownEnabled;}
-      if (input.maxDrawdownPercent !== undefined)
-        {updateData.maxDrawdownPercent = input.maxDrawdownPercent;}
-      if (input.marginTopUpEnabled !== undefined)
-        {updateData.marginTopUpEnabled = input.marginTopUpEnabled;}
-      if (input.marginTopUpThreshold !== undefined)
-        {updateData.marginTopUpThreshold = input.marginTopUpThreshold;}
-      if (input.marginTopUpPercent !== undefined)
-        {updateData.marginTopUpPercent = input.marginTopUpPercent;}
-      if (input.marginTopUpMaxCount !== undefined)
-        {updateData.marginTopUpMaxCount = input.marginTopUpMaxCount;}
-      if (input.positionMode !== undefined)
-        {updateData.positionMode = input.positionMode;}
+      applyConfigFieldsToUpdate(input as Record<string, unknown>, updateData as Record<string, unknown>);
+      applyFilterInputToUpdate(input as Record<string, unknown>, updateData as Record<string, unknown>);
 
       await ctx.db
         .update(autoTradingConfig)

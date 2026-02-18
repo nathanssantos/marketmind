@@ -22,8 +22,9 @@ import { smartBackfillIBKlines } from '../ib-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
+import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import { ExitManager } from './ExitManager';
-import { FilterManager } from './FilterManager';
+import { FilterManager, type FilterConfig } from './FilterManager';
 import { IndicatorCache } from './IndicatorCache';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
 
@@ -64,32 +65,9 @@ export class BacktestEngine {
         ?? (effectiveConfig.onlyLong ? 'long_only' as const : undefined);
 
       const filterManager = new FilterManager({
-        onlyLong: effectiveConfig.onlyLong,
+        ...effectiveConfig,
         directionMode: resolvedDirectionMode,
-        useTrendFilter: effectiveConfig.useTrendFilter,
-        trendFilterPeriod: effectiveConfig.trendFilterPeriod,
-        useStochasticFilter: effectiveConfig.useStochasticFilter,
-        useStochasticRecoveryFilter: effectiveConfig.useStochasticRecoveryFilter,
-        useStochasticHtfFilter: effectiveConfig.useStochasticHtfFilter,
-        useStochasticRecoveryHtfFilter: effectiveConfig.useStochasticRecoveryHtfFilter,
-        useAdxFilter: effectiveConfig.useAdxFilter,
-        useChoppinessFilter: effectiveConfig.useChoppinessFilter,
-        choppinessThresholdHigh: effectiveConfig.choppinessThresholdHigh,
-        choppinessThresholdLow: effectiveConfig.choppinessThresholdLow,
-        choppinessPeriod: effectiveConfig.choppinessPeriod,
-        useSuperTrendFilter: effectiveConfig.useSuperTrendFilter,
-        superTrendPeriod: effectiveConfig.superTrendPeriod,
-        superTrendMultiplier: effectiveConfig.superTrendMultiplier,
-        useMarketRegimeFilter: effectiveConfig.useMarketRegimeFilter,
-        useBollingerSqueezeFilter: effectiveConfig.useBollingerSqueezeFilter,
-        bollingerSqueezeThreshold: effectiveConfig.bollingerSqueezeThreshold,
-        bollingerSqueezePeriod: effectiveConfig.bollingerSqueezePeriod,
-        bollingerSqueezeStdDev: effectiveConfig.bollingerSqueezeStdDev,
-        useVwapFilter: effectiveConfig.useVwapFilter,
-        useMtfFilter: effectiveConfig.useMtfFilter,
-        useCooldown: effectiveConfig.useCooldown,
-        cooldownMinutes: effectiveConfig.cooldownMinutes,
-      });
+      } as FilterConfig);
 
       await filterManager.initialize(
         historicalKlines as Kline[],
@@ -351,39 +329,17 @@ export class BacktestEngine {
   private buildEffectiveConfig(config: BacktestConfig, _loadedStrategies: StrategyDefinition[]): BacktestConfig {
     const isFutures = config.marketType === 'FUTURES';
     return {
-      ...config,
+      ...applyFilterDefaults(
+        config as unknown as Record<string, unknown>,
+        FILTER_DEFAULTS as unknown as Record<string, unknown>,
+      ) as unknown as BacktestConfig,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
       commission: config.commission ?? getDefaultFee(config.marketType ?? 'FUTURES'),
-      useMtfFilter: config.useMtfFilter ?? FILTER_DEFAULTS.useMtfFilter,
-      useMomentumTimingFilter: config.useMomentumTimingFilter ?? FILTER_DEFAULTS.useMomentumTimingFilter,
-      useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? FILTER_DEFAULTS.useBtcCorrelationFilter,
-      useMarketRegimeFilter: config.useMarketRegimeFilter ?? FILTER_DEFAULTS.useMarketRegimeFilter,
       useFundingFilter: config.useFundingFilter ?? (isFutures && FILTER_DEFAULTS.useFundingFilter),
-      useConfluenceScoring: config.useConfluenceScoring ?? FILTER_DEFAULTS.useConfluenceScoring,
-      confluenceMinScore: config.confluenceMinScore ?? FILTER_DEFAULTS.confluenceMinScore,
       minRiskRewardRatio: config.minRiskRewardRatio ?? BACKTEST_DEFAULTS.MIN_RISK_REWARD_RATIO,
       minRiskRewardRatioLong: config.minRiskRewardRatioLong ?? FILTER_DEFAULTS.minRiskRewardRatioLong,
       minRiskRewardRatioShort: config.minRiskRewardRatioShort ?? FILTER_DEFAULTS.minRiskRewardRatioShort,
       positionSizePercent: config.positionSizePercent ?? FILTER_DEFAULTS.positionSizePercent,
-      useStochasticFilter: config.useStochasticFilter ?? FILTER_DEFAULTS.useStochasticFilter,
-      useStochasticRecoveryFilter: config.useStochasticRecoveryFilter ?? FILTER_DEFAULTS.useStochasticRecoveryFilter,
-      useStochasticHtfFilter: config.useStochasticHtfFilter ?? FILTER_DEFAULTS.useStochasticHtfFilter,
-      useStochasticRecoveryHtfFilter: config.useStochasticRecoveryHtfFilter ?? FILTER_DEFAULTS.useStochasticRecoveryHtfFilter,
-      useAdxFilter: config.useAdxFilter ?? FILTER_DEFAULTS.useAdxFilter,
-      useVolumeFilter: config.useVolumeFilter ?? FILTER_DEFAULTS.useVolumeFilter,
-      useTrendFilter: config.useTrendFilter ?? FILTER_DEFAULTS.useTrendFilter,
-      useChoppinessFilter: config.useChoppinessFilter ?? FILTER_DEFAULTS.useChoppinessFilter,
-      choppinessThresholdHigh: config.choppinessThresholdHigh ?? FILTER_DEFAULTS.choppinessThresholdHigh,
-      choppinessThresholdLow: config.choppinessThresholdLow ?? FILTER_DEFAULTS.choppinessThresholdLow,
-      choppinessPeriod: config.choppinessPeriod ?? FILTER_DEFAULTS.choppinessPeriod,
-      useSuperTrendFilter: config.useSuperTrendFilter ?? FILTER_DEFAULTS.useSuperTrendFilter,
-      superTrendPeriod: config.superTrendPeriod ?? FILTER_DEFAULTS.superTrendPeriod,
-      superTrendMultiplier: config.superTrendMultiplier ?? FILTER_DEFAULTS.superTrendMultiplier,
-      useBollingerSqueezeFilter: config.useBollingerSqueezeFilter ?? FILTER_DEFAULTS.useBollingerSqueezeFilter,
-      bollingerSqueezeThreshold: config.bollingerSqueezeThreshold ?? FILTER_DEFAULTS.bollingerSqueezeThreshold,
-      bollingerSqueezePeriod: config.bollingerSqueezePeriod ?? FILTER_DEFAULTS.bollingerSqueezePeriod,
-      bollingerSqueezeStdDev: config.bollingerSqueezeStdDev ?? FILTER_DEFAULTS.bollingerSqueezeStdDev,
-      useVwapFilter: config.useVwapFilter ?? FILTER_DEFAULTS.useVwapFilter,
       useCooldown: config.useCooldown ?? FILTER_DEFAULTS.useCooldown,
       cooldownMinutes: config.cooldownMinutes ?? FILTER_DEFAULTS.cooldownMinutes,
       leverage: config.leverage ?? 1,
@@ -499,16 +455,9 @@ export class BacktestEngine {
 
       const setupIndex = klineIndexMap.get(setup.openTime) ?? -1;
 
-      if (!filterManager.checkStochasticFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
-      if (!filterManager.checkStochasticRecoveryFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
+      if (!filterManager.runRegisteredFilters(historicalKlines as Kline[], setupIndex, setup.direction, setup.type)) continue;
       if (!filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
       if (!filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
-      if (!filterManager.checkAdxFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length)) continue;
-      if (!filterManager.checkChoppinessFilter(historicalKlines as Kline[], setupIndex, trades.length).passed) continue;
-      if (!filterManager.checkSupertrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length).passed) continue;
-      if (!filterManager.checkMarketRegimeFilter(historicalKlines as Kline[], setupIndex, setup.type, trades.length).passed) continue;
-      if (!filterManager.checkBollingerSqueezeFilter(historicalKlines as Kline[], setupIndex, trades.length).passed) continue;
-      if (!filterManager.checkVwapFilter(historicalKlines as Kline[], setupIndex, setup.direction, trades.length).passed) continue;
       if (!filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length).passed) continue;
 
       const entryKline = klineMap.get(setup.openTime);
@@ -884,32 +833,9 @@ export class BacktestEngine {
           ?? (effectiveConfig.onlyLong ? 'long_only' as const : undefined);
 
         const filterManager = new FilterManager({
-          onlyLong: effectiveConfig.onlyLong,
+          ...effectiveConfig,
           directionMode: batchDirectionMode,
-          useTrendFilter: effectiveConfig.useTrendFilter,
-          trendFilterPeriod: effectiveConfig.trendFilterPeriod,
-          useStochasticFilter: effectiveConfig.useStochasticFilter,
-          useStochasticRecoveryFilter: effectiveConfig.useStochasticRecoveryFilter,
-          useStochasticHtfFilter: effectiveConfig.useStochasticHtfFilter,
-          useStochasticRecoveryHtfFilter: effectiveConfig.useStochasticRecoveryHtfFilter,
-          useAdxFilter: effectiveConfig.useAdxFilter,
-          useChoppinessFilter: effectiveConfig.useChoppinessFilter,
-          choppinessThresholdHigh: effectiveConfig.choppinessThresholdHigh,
-          choppinessThresholdLow: effectiveConfig.choppinessThresholdLow,
-          choppinessPeriod: effectiveConfig.choppinessPeriod,
-          useSuperTrendFilter: effectiveConfig.useSuperTrendFilter,
-          superTrendPeriod: effectiveConfig.superTrendPeriod,
-          superTrendMultiplier: effectiveConfig.superTrendMultiplier,
-          useMarketRegimeFilter: effectiveConfig.useMarketRegimeFilter,
-          useBollingerSqueezeFilter: effectiveConfig.useBollingerSqueezeFilter,
-          bollingerSqueezeThreshold: effectiveConfig.bollingerSqueezeThreshold,
-          bollingerSqueezePeriod: effectiveConfig.bollingerSqueezePeriod,
-          bollingerSqueezeStdDev: effectiveConfig.bollingerSqueezeStdDev,
-          useVwapFilter: effectiveConfig.useVwapFilter,
-          useMtfFilter: effectiveConfig.useMtfFilter,
-          useCooldown: effectiveConfig.useCooldown,
-          cooldownMinutes: effectiveConfig.cooldownMinutes,
-        });
+        } as FilterConfig);
         filterManager.setEmaTrend(emaTrend);
 
         const tradeExecutor = new TradeExecutor({

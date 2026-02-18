@@ -1,30 +1,18 @@
 import type { Kline, MarketType, StrategyDefinition, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 import {
-  ADX_FILTER,
-  checkAdxCondition,
-  checkBollingerSqueezeCondition,
   checkBtcCorrelation,
-  checkChoppinessCondition,
-  checkDirectionFilter,
   checkFundingRate,
   checkMarketRegime,
-  checkMomentumTiming,
   checkMtfCondition,
-  checkSessionCondition,
-  checkStochasticCondition,
-  checkStochasticRecoveryCondition,
   checkStochasticHtfCondition,
   checkStochasticRecoveryHtfCondition,
-  checkSupertrendCondition,
   checkTrendCondition,
   checkVolumeCondition,
-  checkVwapCondition,
+  getFilterValidatorSyncFilters,
   getHigherTimeframe,
   getOneStepAboveTimeframe,
-  MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
-  STOCHASTIC_FILTER,
 } from '../../utils/filters';
 import type { WatcherLogBuffer } from '../watcher-batch-logger';
 import type { ActiveWatcher } from './types';
@@ -239,40 +227,6 @@ export class FilterValidator {
       });
     }
 
-    if (config.useStochasticFilter) {
-      const result = this.checkStochasticFilter(cycleKlines, setup, logBuffer);
-      if (!result.passed) {
-        logBuffer.addValidationCheck({
-          name: 'Stochastic',
-          passed: false,
-          reason: 'Unfavorable zone',
-        });
-        return {
-          passed: false,
-          filterResults,
-          rejectionReason: 'Stochastic filter failed',
-        };
-      }
-      logBuffer.addValidationCheck({ name: 'Stochastic', passed: true });
-    }
-
-    if (config.useStochasticRecoveryFilter) {
-      const result = this.checkStochasticRecoveryFilter(cycleKlines, setup, logBuffer);
-      if (!result.passed) {
-        logBuffer.addValidationCheck({
-          name: 'Stochastic Recovery',
-          passed: false,
-          reason: 'Not in recovery zone',
-        });
-        return {
-          passed: false,
-          filterResults,
-          rejectionReason: 'Stochastic Recovery filter failed',
-        };
-      }
-      logBuffer.addValidationCheck({ name: 'Stochastic Recovery', passed: true });
-    }
-
     if (config.useStochasticHtfFilter) {
       const result = await this.checkStochasticHtfFilter(watcher, setup, logBuffer);
       if (!result.passed) {
@@ -307,41 +261,6 @@ export class FilterValidator {
       logBuffer.addValidationCheck({ name: 'HTF Stochastic Recovery', passed: true });
     }
 
-    if (config.useMomentumTimingFilter) {
-      const result = this.checkMomentumFilter(cycleKlines, setup, logBuffer);
-      if (!result.passed) {
-        logBuffer.addValidationCheck({
-          name: 'Momentum',
-          passed: false,
-          reason: 'Weak momentum',
-        });
-        return {
-          passed: false,
-          filterResults,
-          rejectionReason: 'Momentum filter failed',
-        };
-      }
-      logBuffer.addValidationCheck({ name: 'Momentum', passed: true });
-    }
-
-    if (config.useAdxFilter) {
-      const result = this.checkAdxFilter(cycleKlines, setup, logBuffer);
-      if (!result.passed) {
-        logBuffer.addValidationCheck({
-          name: 'ADX',
-          passed: false,
-          reason: result.reason ?? 'Weak trend',
-        });
-        return {
-          passed: false,
-          filterResults,
-          rejectionReason: result.reason ?? 'ADX filter failed',
-          rejectionDetails: result.details,
-        };
-      }
-      logBuffer.addValidationCheck({ name: 'ADX', passed: true });
-    }
-
     const shouldApplyTrendFilter = this.shouldApplyTrendFilter(config, setup, strategies);
     if (shouldApplyTrendFilter) {
       const result = this.checkTrendFilter(cycleKlines, setup, logBuffer);
@@ -361,112 +280,19 @@ export class FilterValidator {
       logBuffer.addValidationCheck({ name: 'Trend (EMA21)', passed: true });
     }
 
-    if (config.useChoppinessFilter) {
-      const result = checkChoppinessCondition(
-        cycleKlines,
-        config.choppinessThresholdHigh,
-        config.choppinessThresholdLow,
-        config.choppinessPeriod
-      );
+    for (const filter of getFilterValidatorSyncFilters()) {
+      if (!config[filter.enableKey as keyof FilterValidatorConfig]) continue;
+      const result = filter.run!(cycleKlines, setup.direction, setup.type, config as unknown as Record<string, unknown>);
       logBuffer.addFilterCheck({
-        filterName: 'Choppiness',
+        filterName: filter.displayName,
         passed: result.isAllowed,
         reason: result.reason ?? 'N/A',
-        details: { value: result.choppinessValue?.toFixed(2) ?? 'N/A' },
       });
       if (!result.isAllowed) {
-        logBuffer.addValidationCheck({ name: 'Choppiness', passed: false, reason: result.reason ?? 'Choppy market' });
-        return { passed: false, filterResults, rejectionReason: 'Choppiness filter failed' };
+        logBuffer.addValidationCheck({ name: filter.displayName, passed: false, reason: result.reason });
+        return { passed: false, filterResults, rejectionReason: `${filter.displayName} filter failed` };
       }
-      logBuffer.addValidationCheck({ name: 'Choppiness', passed: true });
-    }
-
-    if (config.useSessionFilter) {
-      const result = checkSessionCondition(Date.now(), config.sessionStartUtc, config.sessionEndUtc);
-      logBuffer.addFilterCheck({
-        filterName: 'Session',
-        passed: result.isAllowed,
-        reason: result.reason ?? 'N/A',
-        details: { currentHour: result.currentHourUtc },
-      });
-      if (!result.isAllowed) {
-        logBuffer.addValidationCheck({ name: 'Session', passed: false, reason: result.reason ?? 'Outside session' });
-        return { passed: false, filterResults, rejectionReason: 'Session filter failed' };
-      }
-      logBuffer.addValidationCheck({ name: 'Session', passed: true });
-    }
-
-    if (config.useBollingerSqueezeFilter) {
-      const result = checkBollingerSqueezeCondition(
-        cycleKlines,
-        config.bollingerSqueezeThreshold,
-        config.bollingerSqueezePeriod,
-        config.bollingerSqueezeStdDev
-      );
-      logBuffer.addFilterCheck({
-        filterName: 'Bollinger Squeeze',
-        passed: result.isAllowed,
-        reason: result.reason ?? 'N/A',
-        details: { bbWidth: result.bbWidth?.toFixed(4) ?? 'N/A' },
-      });
-      if (!result.isAllowed) {
-        logBuffer.addValidationCheck({ name: 'Bollinger Squeeze', passed: false, reason: result.reason ?? 'Volatility squeeze' });
-        return { passed: false, filterResults, rejectionReason: 'Bollinger Squeeze filter failed' };
-      }
-      logBuffer.addValidationCheck({ name: 'Bollinger Squeeze', passed: true });
-    }
-
-    if (config.useVwapFilter) {
-      const result = checkVwapCondition(cycleKlines, setup.direction);
-      logBuffer.addFilterCheck({
-        filterName: 'VWAP',
-        passed: result.isAllowed,
-        reason: result.reason ?? 'N/A',
-        details: { vwap: result.vwap?.toFixed(2) ?? 'N/A', price: result.currentPrice?.toFixed(2) ?? 'N/A' },
-      });
-      if (!result.isAllowed) {
-        logBuffer.addValidationCheck({ name: 'VWAP', passed: false, reason: result.reason ?? 'Wrong side of VWAP' });
-        return { passed: false, filterResults, rejectionReason: 'VWAP filter failed' };
-      }
-      logBuffer.addValidationCheck({ name: 'VWAP', passed: true });
-    }
-
-    if (config.useSuperTrendFilter) {
-      const result = checkSupertrendCondition(
-        cycleKlines,
-        setup.direction,
-        config.superTrendPeriod,
-        config.superTrendMultiplier
-      );
-      logBuffer.addFilterCheck({
-        filterName: 'SuperTrend',
-        passed: result.isAllowed,
-        reason: result.reason ?? 'N/A',
-        details: { trend: result.trend ?? 'N/A', value: result.value?.toFixed(2) ?? 'N/A' },
-      });
-      if (!result.isAllowed) {
-        logBuffer.addValidationCheck({ name: 'SuperTrend', passed: false, reason: result.reason ?? 'Against trend' });
-        return { passed: false, filterResults, rejectionReason: 'SuperTrend filter failed' };
-      }
-      logBuffer.addValidationCheck({ name: 'SuperTrend', passed: true });
-    }
-
-    if (config.useDirectionFilter) {
-      const result = checkDirectionFilter(cycleKlines, setup.direction, {
-        enableLongInBearMarket: config.enableLongInBearMarket,
-        enableShortInBullMarket: config.enableShortInBullMarket,
-      });
-      logBuffer.addFilterCheck({
-        filterName: 'Direction (EMA200)',
-        passed: result.isAllowed,
-        reason: result.reason ?? 'N/A',
-        details: { direction: result.direction, priceVsEma: result.priceVsEma200Percent?.toFixed(1) ?? 'N/A' },
-      });
-      if (!result.isAllowed) {
-        logBuffer.addValidationCheck({ name: 'Direction (EMA200)', passed: false, reason: result.reason ?? 'Wrong direction' });
-        return { passed: false, filterResults, rejectionReason: 'Direction filter failed' };
-      }
-      logBuffer.addValidationCheck({ name: 'Direction (EMA200)', passed: true });
+      logBuffer.addValidationCheck({ name: filter.displayName, passed: true });
     }
 
     return { passed: true, filterResults };
@@ -642,58 +468,6 @@ export class FilterValidator {
     return { passed: confluenceResult.isAllowed };
   }
 
-  private checkStochasticFilter(
-    cycleKlines: Kline[],
-    setup: TradingSetup,
-    logBuffer: WatcherLogBuffer
-  ): { passed: boolean } {
-    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
-    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
-
-    if (cycleKlines.length >= minRequired) {
-      const stochResult = checkStochasticCondition(cycleKlines, setup.direction);
-
-      logBuffer.addFilterCheck({
-        filterName: 'Stochastic',
-        passed: stochResult.isAllowed,
-        reason: stochResult.reason ?? 'N/A',
-        details: { k: stochResult.currentK?.toFixed(1) ?? 'N/A' },
-      });
-
-      if (!stochResult.isAllowed) {
-        return { passed: false };
-      }
-    }
-
-    return { passed: true };
-  }
-
-  private checkStochasticRecoveryFilter(
-    cycleKlines: Kline[],
-    setup: TradingSetup,
-    logBuffer: WatcherLogBuffer
-  ): { passed: boolean } {
-    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
-    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
-
-    if (cycleKlines.length >= minRequired) {
-      const stochResult = checkStochasticRecoveryCondition(cycleKlines, setup.direction);
-
-      logBuffer.addFilterCheck({
-        filterName: 'Stochastic Recovery',
-        passed: stochResult.isAllowed,
-        reason: stochResult.reason ?? 'N/A',
-        details: { k: stochResult.currentK?.toFixed(1) ?? 'N/A' },
-      });
-
-      if (!stochResult.isAllowed) {
-        return { passed: false };
-      }
-    }
-
-    return { passed: true };
-  }
-
   private async checkStochasticHtfFilter(
     watcher: ActiveWatcher,
     setup: TradingSetup,
@@ -739,62 +513,6 @@ export class FilterValidator {
     });
 
     if (!result.isAllowed) return { passed: false };
-    return { passed: true };
-  }
-
-  private checkMomentumFilter(
-    cycleKlines: Kline[],
-    setup: TradingSetup,
-    logBuffer: WatcherLogBuffer
-  ): { passed: boolean } {
-    const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
-
-    if (cycleKlines.length >= MIN_KLINES_REQUIRED) {
-      const momentumResult = checkMomentumTiming(cycleKlines, setup.direction, setup.type);
-
-      logBuffer.addFilterCheck({
-        filterName: 'Momentum',
-        passed: momentumResult.isAllowed,
-        reason: momentumResult.reason ?? 'N/A',
-        details: { rsi: momentumResult.rsiValue?.toFixed(1) ?? 'N/A' },
-      });
-
-      if (!momentumResult.isAllowed) {
-        return { passed: false };
-      }
-    }
-
-    return { passed: true };
-  }
-
-  private checkAdxFilter(
-    cycleKlines: Kline[],
-    setup: TradingSetup,
-    logBuffer: WatcherLogBuffer
-  ): { passed: boolean; reason?: string; details?: Record<string, unknown> } {
-    const { MIN_KLINES_REQUIRED } = ADX_FILTER;
-
-    if (cycleKlines.length < MIN_KLINES_REQUIRED) {
-      return {
-        passed: false,
-        reason: 'Insufficient klines for ADX',
-        details: { klinesCount: cycleKlines.length },
-      };
-    }
-
-    const adxResult = checkAdxCondition(cycleKlines, setup.direction);
-
-    logBuffer.addFilterCheck({
-      filterName: 'ADX',
-      passed: adxResult.isAllowed,
-      reason: adxResult.reason ?? 'N/A',
-      details: { adx: adxResult.adx?.toFixed(1) ?? 'N/A' },
-    });
-
-    if (!adxResult.isAllowed) {
-      return { passed: false };
-    }
-
     return { passed: true };
   }
 
