@@ -170,6 +170,7 @@ function roundTo(n: number, decimals: number): number {
 
 interface CorrectionResult {
   executionId: string;
+  walletId: string;
   symbol: string;
   side: string;
   changes: string[];
@@ -374,6 +375,7 @@ async function main() {
 
         corrections.push({
           executionId: exec.id,
+          walletId: wallet.id,
           symbol: exec.symbol,
           side: exec.side,
           changes,
@@ -422,6 +424,8 @@ async function main() {
   console.log(`  Already correct:   ${totalSkipped}`);
   console.log(`  Errors:            ${totalErrors}`);
 
+  const walletPnlDeltas = new Map<string, number>();
+
   if (corrections.length > 0) {
     let totalOldFees = 0;
     let totalNewFees = 0;
@@ -434,8 +438,11 @@ async function main() {
         totalNewFees += parseFloat(c.newValues.fees);
       }
       if (c.oldValues.pnl && c.newValues.pnl) {
+        const pnlDelta = parseFloat(c.newValues.pnl) - parseFloat(c.oldValues.pnl);
         totalOldPnl += parseFloat(c.oldValues.pnl);
         totalNewPnl += parseFloat(c.newValues.pnl);
+        const current = walletPnlDeltas.get(c.walletId) || 0;
+        walletPnlDeltas.set(c.walletId, current + pnlDelta);
       }
     }
 
@@ -444,6 +451,29 @@ async function main() {
     }
     if (totalOldPnl !== 0 || totalNewPnl !== 0) {
       console.log(`  PnL impact:  old=$${totalOldPnl.toFixed(4)} → new=$${totalNewPnl.toFixed(4)} (delta=$${(totalNewPnl - totalOldPnl).toFixed(4)})`);
+    }
+  }
+
+  for (const [walletId, pnlDelta] of walletPnlDeltas) {
+    if (Math.abs(pnlDelta) < 0.001) continue;
+
+    const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+    if (!wallet) continue;
+
+    const currentBalance = parseFloat(wallet.currentBalance || '0');
+    const newBalance = roundTo(currentBalance + pnlDelta, 8);
+
+    console.log(`\n  WALLET BALANCE ADJUSTMENT (${wallet.name}):`);
+    console.log(`    current:  $${currentBalance.toFixed(8)}`);
+    console.log(`    pnlDelta: $${pnlDelta.toFixed(8)}`);
+    console.log(`    new:      $${newBalance.toFixed(8)}`);
+
+    if (!DRY_RUN) {
+      await db
+        .update(wallets)
+        .set({ currentBalance: newBalance.toString(), updatedAt: new Date() })
+        .where(eq(wallets.id, walletId));
+      console.log(`    ✓ Updated`);
     }
   }
 
