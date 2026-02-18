@@ -20,6 +20,7 @@ import {
 
 import { EXIT_CALCULATOR } from '../../../constants';
 import { logger } from '../../logger';
+import { isDirectionAllowed } from '../../../utils/trading-validation';
 import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
 import { IndicatorEngine } from './IndicatorEngine';
@@ -426,12 +427,12 @@ export class StrategyInterpreter extends BaseSetupDetector {
   } {
     const { entry } = this.strategy;
 
-    if (this.directionMode !== 'short_only' && entry.long) {
+    if (isDirectionAllowed(this.directionMode, 'LONG') && entry.long) {
       const longTriggered = this.conditionEvaluator.evaluate(entry.long, context);
       if (longTriggered) return { direction: 'LONG', triggered: true };
     }
 
-    if (this.directionMode !== 'long_only' && entry.short) {
+    if (isDirectionAllowed(this.directionMode, 'SHORT') && entry.short) {
       const shortTriggered = this.conditionEvaluator.evaluate(entry.short, context);
       if (shortTriggered) return { direction: 'SHORT', triggered: true };
     }

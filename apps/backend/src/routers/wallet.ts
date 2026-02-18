@@ -12,24 +12,26 @@ import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 
+const WALLET_SAFE_COLUMNS = {
+  id: wallets.id,
+  name: wallets.name,
+  walletType: wallets.walletType,
+  marketType: wallets.marketType,
+  currency: wallets.currency,
+  exchange: wallets.exchange,
+  initialBalance: wallets.initialBalance,
+  currentBalance: wallets.currentBalance,
+  totalDeposits: wallets.totalDeposits,
+  totalWithdrawals: wallets.totalWithdrawals,
+  isActive: wallets.isActive,
+  createdAt: wallets.createdAt,
+  updatedAt: wallets.updatedAt,
+} as const;
+
 export const walletRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     const userWallets = await ctx.db
-      .select({
-        id: wallets.id,
-        name: wallets.name,
-        walletType: wallets.walletType,
-        marketType: wallets.marketType,
-        currency: wallets.currency,
-        exchange: wallets.exchange,
-        initialBalance: wallets.initialBalance,
-        currentBalance: wallets.currentBalance,
-        totalDeposits: wallets.totalDeposits,
-        totalWithdrawals: wallets.totalWithdrawals,
-        isActive: wallets.isActive,
-        createdAt: wallets.createdAt,
-        updatedAt: wallets.updatedAt,
-      })
+      .select(WALLET_SAFE_COLUMNS)
       .from(wallets)
       .where(eq(wallets.userId, ctx.user.id));
 
@@ -40,21 +42,7 @@ export const walletRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const [wallet] = await ctx.db
-        .select({
-          id: wallets.id,
-          name: wallets.name,
-          walletType: wallets.walletType,
-          marketType: wallets.marketType,
-          currency: wallets.currency,
-          exchange: wallets.exchange,
-          initialBalance: wallets.initialBalance,
-          currentBalance: wallets.currentBalance,
-          totalDeposits: wallets.totalDeposits,
-          totalWithdrawals: wallets.totalWithdrawals,
-          isActive: wallets.isActive,
-          createdAt: wallets.createdAt,
-          updatedAt: wallets.updatedAt,
-        })
+        .select(WALLET_SAFE_COLUMNS)
         .from(wallets)
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);

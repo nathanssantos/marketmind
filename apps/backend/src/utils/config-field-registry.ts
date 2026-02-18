@@ -76,11 +76,12 @@ const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'positionMode' },
 ];
 
-export const applyConfigFieldsToUpdate = (
+const applyFieldsToUpdate = (
+  fields: ConfigFieldDef[],
   input: Record<string, unknown>,
   updateData: Record<string, unknown>,
 ): void => {
-  for (const field of CONFIG_FIELDS) {
+  for (const field of fields) {
     if (input[field.key] !== undefined) {
       updateData[field.key] = field.transform
         ? field.transform(input[field.key])
@@ -88,3 +89,22 @@ export const applyConfigFieldsToUpdate = (
     }
   }
 };
+
+export const applyConfigFieldsToUpdate = (
+  input: Record<string, unknown>,
+  updateData: Record<string, unknown>,
+): void => applyFieldsToUpdate(CONFIG_FIELDS, input, updateData);
+
+const TRADING_PROFILE_FIELDS: ConfigFieldDef[] = [
+  { key: 'name' },
+  { key: 'description' },
+  { key: 'enabledSetupTypes', transform: (v) => stringifyEnabledSetupTypes(v as string[]) },
+  { key: 'maxPositionSize', transform: (v) => v != null ? String(v) : null },
+  { key: 'maxConcurrentPositions' },
+  { key: 'isDefault' },
+];
+
+export const applyProfileFieldsToUpdate = (
+  input: Record<string, unknown>,
+  updateData: Record<string, unknown>,
+): void => applyFieldsToUpdate(TRADING_PROFILE_FIELDS, input, updateData);

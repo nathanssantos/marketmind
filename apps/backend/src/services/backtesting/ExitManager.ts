@@ -122,15 +122,12 @@ export class ExitManager {
       : exitConditions?.short;
 
     let barsInTrade = 0;
+    const startIndex = actualEntryKlineIndex + 1;
 
-    const actualEntryKline = klines[actualEntryKlineIndex];
-    const actualEntryTime = actualEntryKline?.openTime ?? setup.openTime;
-
-    const futureKlines = klines.filter((k) => k.openTime > actualEntryTime);
-
-    for (const futureKline of futureKlines) {
+    for (let i = startIndex; i < klines.length; i++) {
       barsInTrade++;
-      const futureIndex = klines.findIndex(k => k.openTime === futureKline.openTime);
+      const futureKline = klines[i]!;
+      const futureIndex = i;
       const high = parseFloat(String(futureKline.high));
       const low = parseFloat(String(futureKline.low));
       const open = parseFloat(String(futureKline.open));

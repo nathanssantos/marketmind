@@ -1224,15 +1224,19 @@ export class PositionMonitorService {
 
   async checkLiquidationRisk(futuresExecutions: TradeExecution[]): Promise<LiquidationRiskCheck[]> {
     const results: LiquidationRiskCheck[] = [];
-    const symbolsToCheck = [...new Set(futuresExecutions.map(e => e.symbol))];
+    const executionsBySymbol = new Map<string, TradeExecution[]>();
+    for (const e of futuresExecutions) {
+      const arr = executionsBySymbol.get(e.symbol);
+      if (arr) arr.push(e);
+      else executionsBySymbol.set(e.symbol, [e]);
+    }
 
-    for (const symbol of symbolsToCheck) {
+    for (const [symbol, executionsForSymbol] of executionsBySymbol) {
       try {
         const markPriceData = await getBinanceFuturesDataService().getMarkPrice(symbol);
         if (!markPriceData) continue;
 
         const markPrice = markPriceData.markPrice;
-        const executionsForSymbol = futuresExecutions.filter(e => e.symbol === symbol);
 
         for (const execution of executionsForSymbol) {
           if (!execution.liquidationPrice) continue;

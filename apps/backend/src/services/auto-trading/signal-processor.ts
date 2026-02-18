@@ -29,6 +29,7 @@ import { calculateRequiredKlines } from '../../utils/kline-calculator';
 import { serializeError } from '../../utils/errors';
 import type { ActiveWatcher, SignalProcessorDeps } from './types';
 import { log, yieldToEventLoop } from './utils';
+import { isDirectionAllowed } from '../../utils/trading-validation';
 
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = AUTO_TRADING_TIMING.CANDLE_CLOSE_SAFETY_BUFFER_MS;
 const BATCH_SIZE = parseInt(
@@ -264,8 +265,8 @@ export class SignalProcessor {
     const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
     const filteredStrategies = strategies.filter((s) => {
       if (!watcher.enabledStrategies.includes(s.id)) return false;
-      if (directionMode === 'long_only' && !s.entry.long) return false;
-      if (directionMode === 'short_only' && !s.entry.short) return false;
+      if (!isDirectionAllowed(directionMode, 'SHORT') && !s.entry.long) return false;
+      if (!isDirectionAllowed(directionMode, 'LONG') && !s.entry.short) return false;
       return true;
     });
 

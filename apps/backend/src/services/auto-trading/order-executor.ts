@@ -17,6 +17,7 @@ import {
 } from '../../db/schema';
 import { env } from '../../env';
 import { serializeError } from '../../utils/errors';
+import { isDirectionAllowed } from '../../utils/trading-validation';
 import { autoTradingService } from '../auto-trading';
 import { getFuturesClient } from '../../exchange';
 import { cooldownService } from '../cooldown';
@@ -367,16 +368,11 @@ export class OrderExecutor {
       logBuffer.addValidationCheck({ name: 'Cooldown', passed: true, reason: 'OK' });
 
       const directionMode = config.directionMode ?? 'auto';
-      if (directionMode === 'long_only' && setup.direction === 'SHORT') {
-        logBuffer.addValidationCheck({ name: 'Direction Mode', passed: false, value: 'SHORT', reason: 'Long only mode' });
-        logBuffer.addRejection({ setupType: setup.type, direction: setup.direction, reason: 'Direction mode: long_only' });
-        logBuffer.completeSetupValidation('blocked', 'Direction mode: long only');
-        return;
-      }
-      if (directionMode === 'short_only' && setup.direction === 'LONG') {
-        logBuffer.addValidationCheck({ name: 'Direction Mode', passed: false, value: 'LONG', reason: 'Short only mode' });
-        logBuffer.addRejection({ setupType: setup.type, direction: setup.direction, reason: 'Direction mode: short_only' });
-        logBuffer.completeSetupValidation('blocked', 'Direction mode: short only');
+      if (!isDirectionAllowed(directionMode, setup.direction)) {
+        const directionLabel = directionMode.replace('_', ' ');
+        logBuffer.addValidationCheck({ name: 'Direction Mode', passed: false, value: setup.direction, reason: `${directionLabel} mode` });
+        logBuffer.addRejection({ setupType: setup.type, direction: setup.direction, reason: `Direction mode: ${directionMode}` });
+        logBuffer.completeSetupValidation('blocked', `Direction mode: ${directionLabel}`);
         return;
       }
       logBuffer.addValidationCheck({ name: 'Direction Mode', passed: true, reason: directionMode });

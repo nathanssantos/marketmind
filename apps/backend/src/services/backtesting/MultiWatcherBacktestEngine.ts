@@ -1,6 +1,5 @@
 import type {
   BacktestEquityPoint,
-  BacktestMetrics,
   BacktestTrade,
   ConflictStats,
   FibonacciProjectionData,
@@ -18,31 +17,20 @@ import { calculateTotalFees } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
 import { BACKTEST_DEFAULTS } from '../../constants';
 import {
-  checkBtcCorrelation,
-  checkMarketRegime,
-  checkMtfCondition,
-  checkStochasticHtfCondition,
-  checkStochasticRecoveryHtfCondition,
-  checkTrendCondition,
-  checkVolumeCondition,
-  getFilterValidatorSyncFilters,
+  FILTER_REGISTRY,
   getHigherTimeframe,
   getOneStepAboveTimeframe,
-  MTF_FILTER,
 } from '../../utils/filters';
-import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
+import type { FilterResults } from '../../utils/confluence-scoring';
+import { FilterManager, type FilterConfig } from './FilterManager';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { and, eq, gte, lte, desc } from 'drizzle-orm';
-import { ABSOLUTE_MINIMUM_KLINES, BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
-import { db } from '../../db';
-import { klines as klinesTable } from '../../db/schema';
+import { BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
-import { smartBackfillKlines } from '../binance-historical';
-import { smartBackfillIBKlines } from '../ib-historical';
-import { mapDbKlinesReversed } from '../../utils/kline-mapper';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { StrategyLoader } from '../setup-detection/dynamic';
+import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
+import { calculateBacktestMetrics } from './metrics-calculator';
 import { SharedPortfolioManager, type TradeResult as PortfolioTradeResult, type PortfolioConfig } from './SharedPortfolioManager';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +43,7 @@ interface WatcherState {
   detectedSetups: TradingSetup[];
   strategies: StrategyDefinition[];
   stats: WatcherStats;
+  filterManager: FilterManager;
 }
 
 interface SetupEvent {
@@ -154,7 +143,16 @@ export class MultiWatcherBacktestEngine {
 
     const trades = this.convertToBacktestTrades();
     const watcherStats = this.buildWatcherStats();
-    const metrics = this.calculateMetrics(trades, maxDrawdown, maxDrawdownPercent);
+    const closedTrades = trades.filter((t) => t.status === 'CLOSED');
+    const metricsTrades = closedTrades.map((t) => ({
+      pnl: t.pnl ?? 0,
+      netPnl: t.netPnl ?? 0,
+      pnlPercent: t.pnlPercent ?? 0,
+      commission: t.commission,
+      entryTime: t.entryTime,
+      exitTime: t.exitTime,
+    }));
+    const metrics = calculateBacktestMetrics(metricsTrades, this.config.initialCapital, maxDrawdown, maxDrawdownPercent);
 
     const endTime = Date.now();
     const duration = endTime - startTime;
@@ -190,12 +188,13 @@ export class MultiWatcherBacktestEngine {
     if (this.config.useBtcCorrelationFilter) {
       console.log('[MultiWatcherBacktest] Fetching BTCUSDT klines for BTC Correlation filter...');
       for (const interval of intervalsNeeded) {
-        const btcKlines = await this.fetchKlinesFromDbWithBackfill(
+        const btcKlines = await fetchKlinesFromDbWithBackfill(
           'BTCUSDT',
           interval as Interval,
           marketType,
           new Date(this.config.startDate),
-          new Date(this.config.endDate)
+          new Date(this.config.endDate),
+          this.config.exchange
         );
         this.btcKlinesCache.set(interval, btcKlines);
         console.log(`[MultiWatcherBacktest] Cached ${btcKlines.length} BTCUSDT klines for ${interval}`);
@@ -207,12 +206,13 @@ export class MultiWatcherBacktestEngine {
       for (const interval of intervalsNeeded) {
         const htfInterval = getHigherTimeframe(interval);
         if (htfInterval && !this.htfKlinesCache.has(`${interval}-htf`)) {
-          const htfKlines = await this.fetchKlinesFromDbWithBackfill(
+          const htfKlines = await fetchKlinesFromDbWithBackfill(
             'BTCUSDT',
             htfInterval as Interval,
             marketType,
             new Date(this.config.startDate),
-            new Date(this.config.endDate)
+            new Date(this.config.endDate),
+            this.config.exchange
           );
           this.htfKlinesCache.set(`${interval}-htf`, htfKlines);
           console.log(`[MultiWatcherBacktest] Cached ${htfKlines.length} HTF klines (${htfInterval}) for ${interval}`);
@@ -230,12 +230,13 @@ export class MultiWatcherBacktestEngine {
       if (this.config.useMtfFilter) {
         const htfInterval = getHigherTimeframe(watcherConfig.interval);
         if (htfInterval && !this.htfKlinesCache.has(`${watcherId}-htf`)) {
-          const htfKlines = await this.fetchKlinesFromDbWithBackfill(
+          const htfKlines = await fetchKlinesFromDbWithBackfill(
             watcherConfig.symbol,
             htfInterval as Interval,
             watcherConfig.marketType ?? 'FUTURES',
             new Date(this.config.startDate),
-            new Date(this.config.endDate)
+            new Date(this.config.endDate),
+            this.config.exchange
           );
           this.htfKlinesCache.set(`${watcherId}-htf`, htfKlines);
           console.log(`[MultiWatcherBacktest] Cached ${htfKlines.length} HTF klines (${htfInterval}) for ${watcherId}`);
@@ -245,12 +246,13 @@ export class MultiWatcherBacktestEngine {
       if (this.config.useStochasticHtfFilter || this.config.useStochasticRecoveryHtfFilter) {
         const stochHtfInterval = getOneStepAboveTimeframe(watcherConfig.interval);
         if (stochHtfInterval && !this.stochasticHtfKlinesCache.has(`${watcherId}-stoch-htf`)) {
-          const stochHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+          const stochHtfKlines = await fetchKlinesFromDbWithBackfill(
             watcherConfig.symbol,
             stochHtfInterval,
             watcherConfig.marketType ?? 'FUTURES',
             new Date(this.config.startDate),
-            new Date(this.config.endDate)
+            new Date(this.config.endDate),
+            this.config.exchange
           );
           this.stochasticHtfKlinesCache.set(`${watcherId}-stoch-htf`, stochHtfKlines);
           console.log(`[MultiWatcherBacktest] Cached ${stochHtfKlines.length} stochastic HTF klines (${stochHtfInterval}) for ${watcherId}`);
@@ -272,72 +274,26 @@ export class MultiWatcherBacktestEngine {
         detectedSetups: setups,
         strategies: watcherStrategies,
         stats: this.initWatcherStats(watcherConfig),
+        filterManager: new FilterManager(this.config as unknown as FilterConfig),
       });
     }
   }
 
   private async fetchKlines(watcherConfig: WatcherConfig): Promise<Kline[]> {
     const marketType = watcherConfig.marketType ?? 'FUTURES';
-    const intervalMs = this.getIntervalMs(watcherConfig.interval);
+    const intervalMs = getIntervalMs(watcherConfig.interval);
     const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
     const startTime = new Date(new Date(this.config.startDate).getTime() - warmupMs);
     const endTime = new Date(this.config.endDate);
 
-    return this.fetchKlinesFromDbWithBackfill(
+    return fetchKlinesFromDbWithBackfill(
       watcherConfig.symbol,
       watcherConfig.interval as Interval,
       marketType,
       startTime,
-      endTime
+      endTime,
+      this.config.exchange
     );
-  }
-
-  private async fetchKlinesFromDbWithBackfill(
-    symbol: string,
-    interval: Interval,
-    marketType: 'SPOT' | 'FUTURES',
-    startTime: Date,
-    endTime: Date
-  ): Promise<Kline[]> {
-    const intervalMs = this.getIntervalMs(interval);
-    const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
-    const minRequired = ABSOLUTE_MINIMUM_KLINES;
-    const exchange = this.config.exchange;
-    const effectiveMarketType = exchange === 'INTERACTIVE_BROKERS' ? 'SPOT' as const : marketType;
-
-    let dbKlines = await db.query.klines.findMany({
-      where: and(
-        eq(klinesTable.symbol, symbol),
-        eq(klinesTable.interval, interval),
-        eq(klinesTable.marketType, effectiveMarketType),
-        gte(klinesTable.openTime, startTime),
-        lte(klinesTable.openTime, endTime)
-      ),
-      orderBy: [desc(klinesTable.openTime)],
-    });
-
-    if (dbKlines.length < minRequired) {
-      console.log(`[MultiWatcherBacktest] Insufficient klines in DB (${dbKlines.length}/${minRequired}), running smart backfill...`);
-
-      const isIB = exchange === 'INTERACTIVE_BROKERS';
-      const backfillResult = isIB
-        ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
-        : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
-      console.log(`[MultiWatcherBacktest] Backfill complete (${isIB ? 'IB' : 'Binance'}): downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
-
-      dbKlines = await db.query.klines.findMany({
-        where: and(
-          eq(klinesTable.symbol, symbol),
-          eq(klinesTable.interval, interval),
-          eq(klinesTable.marketType, effectiveMarketType),
-          gte(klinesTable.openTime, startTime),
-          lte(klinesTable.openTime, endTime)
-        ),
-        orderBy: [desc(klinesTable.openTime)],
-      });
-    }
-
-    return mapDbKlinesReversed(dbKlines);
   }
 
   private async detectSetups(
@@ -396,7 +352,8 @@ export class MultiWatcherBacktestEngine {
     klines: Kline[],
     direction: 'LONG' | 'SHORT',
     strategy: StrategyDefinition | undefined,
-    stats: WatcherStats,
+    filterManager: FilterManager,
+    tradesCount: number,
     context?: {
       symbol: string;
       interval: string;
@@ -409,104 +366,38 @@ export class MultiWatcherBacktestEngine {
     }
   ): { passed: boolean } {
     const filterResults: FilterResults = {};
+    const setupIndex = klines.length - 1;
+    const setupType = context?.setupType ?? '';
 
-    if (this.config.useBtcCorrelationFilter && context?.btcKlines && context.btcKlines.length >= 26) {
-      const btcResult = checkBtcCorrelation(context.btcKlines, direction, context.symbol);
-      filterResults.btcCorrelation = btcResult;
-      if (!btcResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['btcCorrelation'] = (stats.skippedReasons['btcCorrelation'] ?? 0) + 1;
-        return { passed: false };
-      }
+    const btcResult = filterManager.checkBtcCorrelationFilter(context?.btcKlines ?? [], direction, context?.symbol ?? '', tradesCount);
+    if (!btcResult.passed) return { passed: false };
+    if (btcResult.result) filterResults.btcCorrelation = btcResult.result;
+
+    const mtfResult = filterManager.checkMtfFilter(context?.htfKlines ?? [], direction, context?.htfInterval ?? null, tradesCount);
+    if (!mtfResult.passed) return { passed: false };
+    if (mtfResult.result) filterResults.mtf = mtfResult.result;
+
+    const regimeResult = filterManager.checkMarketRegimeFilter(klines, setupIndex, setupType, tradesCount);
+    if (!regimeResult.passed) return { passed: false };
+    if (regimeResult.result) {
+      filterResults.marketRegime = regimeResult.result;
+      filterResults.adxValue = regimeResult.result.adx ?? undefined;
     }
 
-    if (this.config.useMtfFilter && context?.htfKlines && context.htfInterval && context.htfKlines.length >= MTF_FILTER.MIN_KLINES_FOR_EMA200) {
-      const mtfResult = checkMtfCondition(context.htfKlines, direction, context.htfInterval);
-      filterResults.mtf = mtfResult;
-      if (!mtfResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['mtf'] = (stats.skippedReasons['mtf'] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
+    const volumeResult = filterManager.checkVolumeFilter(klines, setupIndex, direction, setupType, tradesCount);
+    if (!volumeResult.passed) return { passed: false };
+    if (volumeResult.result) filterResults.volume = volumeResult.result;
 
-    if (this.config.useMarketRegimeFilter && klines.length >= 30 && context?.setupType) {
-      const regimeKlines = klines.slice(-50);
-      const regimeResult = checkMarketRegime(regimeKlines, context.setupType);
-      filterResults.marketRegime = regimeResult;
-      filterResults.adxValue = regimeResult.adx ?? undefined;
-      if (!regimeResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['marketRegime'] = (stats.skippedReasons['marketRegime'] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
+    if (!filterManager.runValidatorFilters(klines, setupIndex, direction, setupType)) return { passed: false };
 
-    if (this.config.useVolumeFilter && klines.length >= 21 && context?.setupType) {
-      const volumeKlines = klines.slice(-30);
-      const volumeResult = checkVolumeCondition(volumeKlines, direction, context.setupType, this.config.volumeFilterConfig);
-      filterResults.volume = volumeResult;
-      if (!volumeResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['volume'] = (stats.skippedReasons['volume'] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
+    if (!filterManager.checkStochasticHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount)) return { passed: false };
+    if (!filterManager.checkStochasticRecoveryHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount)) return { passed: false };
 
-    for (const filter of getFilterValidatorSyncFilters()) {
-      const configRecord = this.config as unknown as Record<string, unknown>;
-      if (!configRecord[filter.enableKey]) continue;
-      const result = filter.run!(klines, direction, context?.setupType ?? '', configRecord);
-      if (!result.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons[filter.id] = (stats.skippedReasons[filter.id] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
+    const shouldApplyTrend = this.config.useTrendFilter === true || strategy?.filters?.trendFilter?.enabled === true;
+    if (!filterManager.checkTrendFilter(klines, setupIndex, direction, shouldApplyTrend, tradesCount)) return { passed: false };
+    if (shouldApplyTrend) filterResults.trendAllowed = true;
 
-    if (this.config.useStochasticHtfFilter === true && context?.stochasticHtfKlines && context.stochasticHtfKlines.length > 0) {
-      const stochHtfResult = checkStochasticHtfCondition(context.stochasticHtfKlines, context.setupTimestamp, direction);
-      if (!stochHtfResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['stochasticHtf'] = (stats.skippedReasons['stochasticHtf'] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
-
-    if (this.config.useStochasticRecoveryHtfFilter === true && context?.stochasticHtfKlines && context.stochasticHtfKlines.length > 0) {
-      const stochRecoveryHtfResult = checkStochasticRecoveryHtfCondition(context.stochasticHtfKlines, context.setupTimestamp, direction);
-      if (!stochRecoveryHtfResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['stochasticRecoveryHtf'] = (stats.skippedReasons['stochasticRecoveryHtf'] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
-
-    const globalTrendEnabled = this.config.useTrendFilter === true;
-    const strategyTrendEnabled = strategy?.filters?.trendFilter?.enabled === true;
-    const shouldApplyTrend = globalTrendEnabled || strategyTrendEnabled;
-
-    if (shouldApplyTrend) {
-      if (klines.length >= 2) {
-        const trendResult = checkTrendCondition(klines, direction, this.config.trendFilterPeriod);
-        filterResults.trendAllowed = trendResult.isAllowed;
-        if (!trendResult.isAllowed) {
-          stats.tradesSkipped++;
-          stats.skippedReasons['trend'] = (stats.skippedReasons['trend'] ?? 0) + 1;
-          return { passed: false };
-        }
-      }
-    }
-
-    if (this.config.useConfluenceScoring) {
-      const minScore = this.config.confluenceMinScore ?? 60;
-      const confluenceResult = calculateConfluenceScore(filterResults, minScore);
-      if (!confluenceResult.isAllowed) {
-        stats.tradesSkipped++;
-        stats.skippedReasons['confluence'] = (stats.skippedReasons['confluence'] ?? 0) + 1;
-        return { passed: false };
-      }
-    }
+    if (!filterManager.checkConfluenceScoring(filterResults, tradesCount)) return { passed: false };
 
     return { passed: true };
   }
@@ -546,7 +437,8 @@ export class MultiWatcherBacktestEngine {
       klinesUpToSetup,
       event.setup.direction,
       setupStrategy,
-      watcher.stats,
+      watcher.filterManager,
+      watcher.stats.tradesExecuted,
       {
         symbol: event.watcherSymbol,
         interval: event.watcherInterval,
@@ -558,7 +450,10 @@ export class MultiWatcherBacktestEngine {
         stochasticHtfKlines,
       }
     );
-    if (!filterResult.passed) return;
+    if (!filterResult.passed) {
+      watcher.stats.tradesSkipped++;
+      return;
+    }
 
     const { exposurePerWatcher } = this.portfolio.calculateExposureForNewPosition();
     const { quantity, positionValue } = calculatePositionSize(
@@ -817,7 +712,14 @@ export class MultiWatcherBacktestEngine {
   }
 
   private buildWatcherStats(): WatcherStats[] {
-    return Array.from(this.watchers.values()).map((w) => w.stats);
+    return Array.from(this.watchers.values()).map((w) => {
+      const filterStats = w.filterManager.getSkipStats();
+      for (const filter of FILTER_REGISTRY) {
+        const value = (filterStats as unknown as Record<string, number>)[filter.statsKey] ?? 0;
+        if (value > 0) w.stats.skippedReasons[filter.id] = (w.stats.skippedReasons[filter.id] ?? 0) + value;
+      }
+      return w.stats;
+    });
   }
 
   private convertToBacktestTrades(): BacktestTrade[] {
@@ -841,120 +743,6 @@ export class MultiWatcherBacktestEngine {
       status: 'CLOSED' as const,
       marketType: this.config.marketType,
     }));
-  }
-
-  private calculateMetrics(
-    trades: BacktestTrade[],
-    maxDrawdown: number,
-    maxDrawdownPercent: number
-  ): BacktestMetrics {
-    const closedTrades = trades.filter((t) => t.status === 'CLOSED');
-    const totalTrades = closedTrades.length;
-
-    if (totalTrades === 0) {
-      return {
-        totalTrades: 0,
-        winningTrades: 0,
-        losingTrades: 0,
-        winRate: 0,
-        totalPnl: 0,
-        totalPnlPercent: 0,
-        avgPnl: 0,
-        avgPnlPercent: 0,
-        grossWinRate: 0,
-        grossProfitFactor: 0,
-        totalGrossPnl: 0,
-        avgWin: 0,
-        avgLoss: 0,
-        largestWin: 0,
-        largestLoss: 0,
-        profitFactor: 0,
-        maxDrawdown,
-        maxDrawdownPercent,
-        totalCommission: 0,
-        avgTradeDuration: 0,
-        avgWinDuration: 0,
-        avgLossDuration: 0,
-      };
-    }
-
-    const winningTrades = closedTrades.filter((t) => (t.netPnl ?? 0) > 0);
-    const losingTrades = closedTrades.filter((t) => (t.netPnl ?? 0) <= 0);
-
-    const totalPnl = closedTrades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0);
-    const totalGrossPnl = closedTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
-    const totalCommission = closedTrades.reduce((sum, t) => sum + t.commission, 0);
-
-    const grossWins = winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
-    const grossLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0));
-
-    const profitFactor = grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? Infinity : 0;
-
-    const avgWin =
-      winningTrades.length > 0
-        ? winningTrades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0) / winningTrades.length
-        : 0;
-
-    const avgLoss =
-      losingTrades.length > 0
-        ? losingTrades.reduce((sum, t) => sum + (t.netPnl ?? 0), 0) / losingTrades.length
-        : 0;
-
-    const largestWin = Math.max(...closedTrades.map((t) => t.netPnl ?? 0), 0);
-    const largestLoss = Math.min(...closedTrades.map((t) => t.netPnl ?? 0), 0);
-
-    const calculateDuration = (trade: BacktestTrade): number => {
-      if (!trade.entryTime || !trade.exitTime) return 0;
-      return (new Date(trade.exitTime).getTime() - new Date(trade.entryTime).getTime()) / 60000;
-    };
-
-    const avgTradeDuration =
-      totalTrades > 0
-        ? closedTrades.reduce((sum, t) => sum + calculateDuration(t), 0) / totalTrades
-        : 0;
-
-    const avgWinDuration =
-      winningTrades.length > 0
-        ? winningTrades.reduce((sum, t) => sum + calculateDuration(t), 0) / winningTrades.length
-        : 0;
-
-    const avgLossDuration =
-      losingTrades.length > 0
-        ? losingTrades.reduce((sum, t) => sum + calculateDuration(t), 0) / losingTrades.length
-        : 0;
-
-    return {
-      totalTrades,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      winRate: (winningTrades.length / totalTrades) * 100,
-      totalPnl,
-      totalPnlPercent: (totalPnl / this.config.initialCapital) * 100,
-      avgPnl: totalPnl / totalTrades,
-      avgPnlPercent: (totalPnl / this.config.initialCapital / totalTrades) * 100,
-      grossWinRate: (winningTrades.length / totalTrades) * 100,
-      grossProfitFactor: profitFactor,
-      totalGrossPnl,
-      avgWin,
-      avgLoss,
-      largestWin,
-      largestLoss,
-      profitFactor,
-      maxDrawdown,
-      maxDrawdownPercent,
-      totalCommission,
-      avgTradeDuration,
-      avgWinDuration,
-      avgLossDuration,
-    };
-  }
-
-  private getIntervalMs(interval: string): number {
-    const match = interval.match(/^(\d+)([mhdw])$/);
-    if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
-    const unitMs = UNIT_MS[match[2]];
-    if (!unitMs) return 4 * TIME_MS.HOUR;
-    return parseInt(match[1]) * unitMs;
   }
 
   private getEffectiveTakeProfit(setup: TradingSetup): { takeProfit: number | undefined; rejected: boolean; reason?: string } {

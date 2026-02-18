@@ -1,41 +1,26 @@
-import { calculateEMA, CHOPPINESS_FILTER } from '@marketmind/indicators';
+import { calculateEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { isDirectionAllowed } from '../../utils/trading-validation';
 import {
-  ADX_FILTER,
-  checkAdxCondition,
   checkBtcCorrelation,
   checkFundingRate,
   checkMarketRegime,
-  checkMomentumTiming,
   checkMtfCondition,
-  checkStochasticCondition,
-  checkStochasticRecoveryCondition,
   checkStochasticHtfCondition,
   checkStochasticRecoveryHtfCondition,
   checkTrendCondition,
   checkVolumeCondition,
-  checkChoppinessCondition,
-  checkSessionCondition,
-  checkBollingerSqueezeCondition,
-  checkVwapCondition,
-  checkSupertrendCondition,
   getHigherTimeframe,
   getSyncFilters,
+  getFilterValidatorSyncFilters,
   createFilterStatsInit,
-  MOMENTUM_TIMING_FILTER,
   MTF_FILTER,
-  STOCHASTIC_FILTER,
   type BtcCorrelationResult,
   type FundingFilterResult,
   type MarketRegimeResult,
   type MtfFilterResult,
   type VolumeFilterConfig,
   type VolumeFilterResult,
-  type ChoppinessFilterResult,
-  type SessionFilterResult,
-  type BollingerSqueezeFilterResult,
-  type VwapFilterResult,
-  type SupertrendFilterResult,
 } from '../../utils/filters';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 
@@ -178,6 +163,25 @@ export class FilterManager {
     return true;
   }
 
+  runValidatorFilters(
+    klines: Kline[],
+    setupIndex: number,
+    direction: 'LONG' | 'SHORT',
+    setupType: string,
+  ): boolean {
+    const filterKlines = klines.slice(0, setupIndex + 1);
+    for (const filter of getFilterValidatorSyncFilters()) {
+      if (!this.config[filter.enableKey as keyof FilterConfig]) continue;
+      const result = filter.run!(filterKlines, direction, setupType, this.config as unknown as Record<string, unknown>);
+      if (!result.isAllowed) {
+        const statsRecord = this.stats as unknown as Record<string, number>;
+        statsRecord[filter.statsKey] = (statsRecord[filter.statsKey] ?? 0) + 1;
+        return false;
+      }
+    }
+    return true;
+  }
+
   async initialize(klines: Kline[], _startDate: string, _endDate: string, _symbol: string): Promise<void> {
     const trendPeriod = this.config.trendFilterPeriod ?? 21;
     const emaResult = calculateEMA(klines, trendPeriod);
@@ -256,74 +260,8 @@ export class FilterManager {
   }
 
   checkDirection(setupDirection: string): boolean {
-    if (this.config.directionMode) {
-      if (this.config.directionMode === 'long_only' && setupDirection === 'SHORT') return false;
-      if (this.config.directionMode === 'short_only' && setupDirection === 'LONG') return false;
-      return true;
-    }
+    if (this.config.directionMode) return isDirectionAllowed(this.config.directionMode, setupDirection as 'LONG' | 'SHORT');
     if (this.config.onlyLong && setupDirection === 'SHORT') return false;
-    return true;
-  }
-
-  checkStochasticFilter(
-    klines: Kline[],
-    setupIndex: number,
-    direction: 'LONG' | 'SHORT',
-    tradesCount: number
-  ): boolean {
-    if (!this.config.useStochasticFilter) return true;
-
-    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
-    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
-    if (setupIndex < minRequired) return true;
-
-    const stochasticKlines = klines.slice(0, setupIndex + 1);
-    const result = checkStochasticCondition(stochasticKlines, direction);
-
-    if (!result.isAllowed) {
-      this.stats.skippedStochastic++;
-      if (tradesCount < 3) {
-        const currK = result.currentK?.toFixed(2) ?? 'null';
-        console.log(`[FilterManager] Stochastic filter blocked ${direction} trade - currK=${currK}, isOversold=${result.isOversold}, isOverbought=${result.isOverbought}`);
-      }
-      return false;
-    }
-
-    if (tradesCount < 3) {
-      console.log(`[FilterManager] Stochastic filter passed ${direction} trade - ${result.reason}`);
-    }
-
-    return true;
-  }
-
-  checkStochasticRecoveryFilter(
-    klines: Kline[],
-    setupIndex: number,
-    direction: 'LONG' | 'SHORT',
-    tradesCount: number
-  ): boolean {
-    if (!this.config.useStochasticRecoveryFilter) return true;
-
-    const { K_PERIOD, K_SMOOTHING, D_PERIOD } = STOCHASTIC_FILTER;
-    const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
-    if (setupIndex < minRequired) return true;
-
-    const stochasticKlines = klines.slice(0, setupIndex + 1);
-    const result = checkStochasticRecoveryCondition(stochasticKlines, direction);
-
-    if (!result.isAllowed) {
-      this.stats.skippedStochasticRecovery++;
-      if (tradesCount < 3) {
-        const currK = result.currentK?.toFixed(2) ?? 'null';
-        console.log(`[FilterManager] Stochastic Recovery filter blocked ${direction} trade - currK=${currK}, ${result.reason}`);
-      }
-      return false;
-    }
-
-    if (tradesCount < 3) {
-      console.log(`[FilterManager] Stochastic Recovery filter passed ${direction} trade - ${result.reason}`);
-    }
-
     return true;
   }
 
@@ -376,72 +314,6 @@ export class FilterManager {
 
     if (tradesCount < 3) {
       console.log(`[FilterManager] HTF Stochastic Recovery filter passed ${direction} trade - ${result.reason}`);
-    }
-
-    return true;
-  }
-
-  checkMomentumTimingFilter(
-    klines: Kline[],
-    setupIndex: number,
-    direction: 'LONG' | 'SHORT',
-    tradesCount: number,
-    setupType?: string
-  ): boolean {
-    if (!this.config.useMomentumTimingFilter) return true;
-
-    const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
-    if (setupIndex < MIN_KLINES_REQUIRED) return true;
-
-    const momentumKlines = klines.slice(0, setupIndex + 1);
-    const result = checkMomentumTiming(momentumKlines, direction, setupType);
-
-    if (!result.isAllowed) {
-      this.stats.skippedMomentumTiming++;
-      if (tradesCount < 3) {
-        const rsi = result.rsiValue?.toFixed(2) ?? 'null';
-        console.log(`[FilterManager] Momentum Timing filter blocked ${direction} trade - RSI=${rsi}, momentum=${result.rsiMomentum}`);
-      }
-      return false;
-    }
-
-    if (tradesCount < 3) {
-      console.log(`[FilterManager] Momentum Timing filter passed ${direction} trade - ${result.reason}`);
-    }
-
-    return true;
-  }
-
-  checkAdxFilter(
-    klines: Kline[],
-    setupIndex: number,
-    direction: 'LONG' | 'SHORT',
-    tradesCount: number
-  ): boolean {
-    if (!this.config.useAdxFilter) return true;
-
-    const { MIN_KLINES_REQUIRED } = ADX_FILTER;
-    if (setupIndex < MIN_KLINES_REQUIRED) {
-      this.stats.skippedAdx++;
-      if (tradesCount < 3) {
-        console.warn(`[FilterManager] ADX filter HARD BLOCK - insufficient klines (${setupIndex} < ${MIN_KLINES_REQUIRED})`);
-      }
-      return false;
-    }
-
-    const adxKlines = klines.slice(setupIndex - MIN_KLINES_REQUIRED, setupIndex + 1);
-    const result = checkAdxCondition(adxKlines, direction);
-
-    if (!result.isAllowed) {
-      this.stats.skippedAdx++;
-      if (tradesCount < 3) {
-        console.log(`[FilterManager] ADX filter blocked ${direction} trade - ${result.reason}`);
-      }
-      return false;
-    }
-
-    if (tradesCount < 3) {
-      console.log(`[FilterManager] ADX filter passed ${direction} trade - ${result.reason}`);
     }
 
     return true;
@@ -731,156 +603,4 @@ export class FilterManager {
     this.stats.pyramidEntries++;
   }
 
-  checkChoppinessFilter(
-    klines: Kline[],
-    setupIndex: number,
-    tradesCount: number
-  ): { passed: boolean; result: ChoppinessFilterResult | null } {
-    if (!this.config.useChoppinessFilter) {
-      return { passed: true, result: null };
-    }
-
-    const period = this.config.choppinessPeriod ?? CHOPPINESS_FILTER.DEFAULT_PERIOD;
-    if (setupIndex < period + 1) {
-      return { passed: true, result: null };
-    }
-
-    const choppinessKlines = klines.slice(Math.max(0, setupIndex - period - 10), setupIndex + 1);
-    const result = checkChoppinessCondition(
-      choppinessKlines,
-      this.config.choppinessThresholdHigh ?? CHOPPINESS_FILTER.HIGH_THRESHOLD,
-      this.config.choppinessThresholdLow ?? CHOPPINESS_FILTER.LOW_THRESHOLD,
-      period
-    );
-
-    if (!result.isAllowed) {
-      this.stats.skippedChoppiness++;
-      if (tradesCount < 3) {
-        console.log(`[FilterManager] Choppiness filter blocked trade - ${result.reason}`);
-      }
-      return { passed: false, result };
-    }
-
-    return { passed: true, result };
-  }
-
-  checkSessionFilter(
-    setupTime: number,
-    tradesCount: number
-  ): { passed: boolean; result: SessionFilterResult | null } {
-    if (!this.config.useSessionFilter) {
-      return { passed: true, result: null };
-    }
-
-    const result = checkSessionCondition(
-      setupTime,
-      this.config.sessionStartUtc ?? 13,
-      this.config.sessionEndUtc ?? 16
-    );
-
-    if (!result.isAllowed) {
-      this.stats.skippedSession++;
-      if (tradesCount < 3) {
-        console.log(`[FilterManager] Session filter blocked trade - ${result.reason}`);
-      }
-      return { passed: false, result };
-    }
-
-    return { passed: true, result };
-  }
-
-  checkBollingerSqueezeFilter(
-    klines: Kline[],
-    setupIndex: number,
-    tradesCount: number
-  ): { passed: boolean; result: BollingerSqueezeFilterResult | null } {
-    if (!this.config.useBollingerSqueezeFilter) {
-      return { passed: true, result: null };
-    }
-
-    const period = this.config.bollingerSqueezePeriod ?? 20;
-    if (setupIndex < period) {
-      return { passed: true, result: null };
-    }
-
-    const bbKlines = klines.slice(Math.max(0, setupIndex - period - 5), setupIndex + 1);
-    const result = checkBollingerSqueezeCondition(
-      bbKlines,
-      this.config.bollingerSqueezeThreshold ?? 0.1,
-      period,
-      this.config.bollingerSqueezeStdDev ?? 2.0
-    );
-
-    if (!result.isAllowed) {
-      this.stats.skippedBollingerSqueeze++;
-      if (tradesCount < 3) {
-        console.log(`[FilterManager] Bollinger Squeeze filter blocked trade - ${result.reason}`);
-      }
-      return { passed: false, result };
-    }
-
-    return { passed: true, result };
-  }
-
-  checkVwapFilter(
-    klines: Kline[],
-    setupIndex: number,
-    direction: 'LONG' | 'SHORT',
-    tradesCount: number
-  ): { passed: boolean; result: VwapFilterResult | null } {
-    if (!this.config.useVwapFilter) {
-      return { passed: true, result: null };
-    }
-
-    if (setupIndex < 10) {
-      return { passed: true, result: null };
-    }
-
-    const vwapKlines = klines.slice(Math.max(0, setupIndex - 50), setupIndex + 1);
-    const result = checkVwapCondition(vwapKlines, direction);
-
-    if (!result.isAllowed) {
-      this.stats.skippedVwap++;
-      if (tradesCount < 3) {
-        console.log(`[FilterManager] VWAP filter blocked ${direction} trade - ${result.reason}`);
-      }
-      return { passed: false, result };
-    }
-
-    return { passed: true, result };
-  }
-
-  checkSupertrendFilter(
-    klines: Kline[],
-    setupIndex: number,
-    direction: 'LONG' | 'SHORT',
-    tradesCount: number
-  ): { passed: boolean; result: SupertrendFilterResult | null } {
-    if (!this.config.useSuperTrendFilter) {
-      return { passed: true, result: null };
-    }
-
-    const period = this.config.superTrendPeriod ?? 10;
-    if (setupIndex < period + 1) {
-      return { passed: true, result: null };
-    }
-
-    const stKlines = klines.slice(Math.max(0, setupIndex - period - 10), setupIndex + 1);
-    const result = checkSupertrendCondition(
-      stKlines,
-      direction,
-      period,
-      this.config.superTrendMultiplier ?? 3.0
-    );
-
-    if (!result.isAllowed) {
-      this.stats.skippedSupertrend++;
-      if (tradesCount < 3) {
-        console.log(`[FilterManager] SuperTrend filter blocked ${direction} trade - ${result.reason}`);
-      }
-      return { passed: false, result };
-    }
-
-    return { passed: true, result };
-  }
 }

@@ -9,16 +9,10 @@ import type {
 import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
 import { calculateEMA } from '@marketmind/indicators';
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { ABSOLUTE_MINIMUM_KLINES, BACKTEST_DEFAULTS, BACKTEST_ENGINE, TIME_MS, UNIT_MS } from '../../constants';
-import { db } from '../../db';
-import { klines as klinesTable } from '../../db/schema';
+import { BACKTEST_DEFAULTS, BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
-import { mapDbKlinesReversed } from '../../utils/kline-mapper';
-import { smartBackfillKlines } from '../binance-historical';
-import { smartBackfillIBKlines } from '../ib-historical';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
@@ -26,20 +20,14 @@ import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import { ExitManager } from './ExitManager';
 import { FilterManager, type FilterConfig } from './FilterManager';
 import { IndicatorCache } from './IndicatorCache';
+import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
+import { calculateBacktestMetrics } from './metrics-calculator';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class BacktestEngine {
-  private getIntervalMs(interval: string): number {
-    const match = interval.match(/^(\d+)([mhdw])$/);
-    if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
-    const unitMs = UNIT_MS[match[2]];
-    if (!unitMs) return 4 * TIME_MS.HOUR;
-    return parseInt(match[1]) * unitMs;
-  }
-
   async run(config: BacktestConfig, klines?: any[]): Promise<BacktestResult> {
     const backtestId = generateEntityId();
     const startTime = Date.now();
@@ -81,11 +69,11 @@ export class BacktestEngine {
         const htfInterval = getOneStepAboveTimeframe(config.interval);
         if (htfInterval) {
           const marketType = config.marketType ?? 'FUTURES';
-          const intervalMs = this.getIntervalMs(config.interval);
+          const intervalMs = getIntervalMs(config.interval);
           const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
           const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
           const endTime = new Date(config.endDate);
-          stochasticHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+          stochasticHtfKlines = await fetchKlinesFromDbWithBackfill(
             config.symbol,
             htfInterval,
             marketType,
@@ -103,11 +91,11 @@ export class BacktestEngine {
         mtfHtfInterval = getHigherTimeframe(config.interval);
         if (mtfHtfInterval) {
           const marketType = config.marketType ?? 'FUTURES';
-          const intervalMs = this.getIntervalMs(config.interval);
+          const intervalMs = getIntervalMs(config.interval);
           const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
           const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
           const endTime = new Date(config.endDate);
-          mtfHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+          mtfHtfKlines = await fetchKlinesFromDbWithBackfill(
             config.symbol,
             mtfHtfInterval as Interval,
             marketType,
@@ -171,7 +159,7 @@ export class BacktestEngine {
         mtfHtfInterval
       );
 
-      const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);
+      const metrics = calculateBacktestMetrics(trades, config.initialCapital, maxDrawdown);
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -210,14 +198,14 @@ export class BacktestEngine {
     }
 
     const marketType = config.marketType ?? 'FUTURES';
-    const intervalMs = this.getIntervalMs(config.interval);
+    const intervalMs = getIntervalMs(config.interval);
     const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
     const startTime = new Date(new Date(config.startDate).getTime() - warmupMs);
     const endTime = new Date(config.endDate);
 
     console.log('[Backtest] Including warmup period for EMA200:', startTime.toISOString(), 'to', config.startDate);
 
-    const historicalKlines = await this.fetchKlinesFromDbWithBackfill(
+    const historicalKlines = await fetchKlinesFromDbWithBackfill(
       config.symbol,
       config.interval as Interval,
       marketType,
@@ -240,55 +228,6 @@ export class BacktestEngine {
 
     console.log('[Backtest] Sample kline:', historicalKlines[0]);
     return historicalKlines;
-  }
-
-  private async fetchKlinesFromDbWithBackfill(
-    symbol: string,
-    interval: Interval,
-    marketType: 'SPOT' | 'FUTURES',
-    startTime: Date,
-    endTime: Date,
-    exchange?: 'BINANCE' | 'INTERACTIVE_BROKERS'
-  ): Promise<Kline[]> {
-    const intervalMs = this.getIntervalMs(interval);
-    const expectedKlines = Math.ceil((endTime.getTime() - startTime.getTime()) / intervalMs);
-    const minRequired = ABSOLUTE_MINIMUM_KLINES;
-    const effectiveMarketType = exchange === 'INTERACTIVE_BROKERS' ? 'SPOT' as const : marketType;
-
-    let dbKlines = await db.query.klines.findMany({
-      where: and(
-        eq(klinesTable.symbol, symbol),
-        eq(klinesTable.interval, interval),
-        eq(klinesTable.marketType, effectiveMarketType),
-        gte(klinesTable.openTime, startTime),
-        lte(klinesTable.openTime, endTime)
-      ),
-      orderBy: [desc(klinesTable.openTime)],
-    });
-
-    if (dbKlines.length < minRequired) {
-      console.log(`[Backtest] Insufficient klines in DB (${dbKlines.length}/${minRequired}), running smart backfill...`);
-
-      const isIB = exchange === 'INTERACTIVE_BROKERS';
-      const backfillResult = isIB
-        ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
-        : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
-      console.log(`[Backtest] Backfill complete (${isIB ? 'IB' : 'Binance'}): downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
-
-      dbKlines = await db.query.klines.findMany({
-        where: and(
-          eq(klinesTable.symbol, symbol),
-          eq(klinesTable.interval, interval),
-          eq(klinesTable.marketType, effectiveMarketType),
-          gte(klinesTable.openTime, startTime),
-          lte(klinesTable.openTime, endTime)
-        ),
-        orderBy: [desc(klinesTable.openTime)],
-      });
-    }
-
-    console.log(`[Backtest] Retrieved ${dbKlines.length} klines from database for ${symbol} ${interval} ${effectiveMarketType} (${exchange ?? 'BINANCE'})`);
-    return mapDbKlinesReversed(dbKlines);
   }
 
   private async initializeStrategies(config: BacktestConfig, _historicalKlines: any[]) {
@@ -634,86 +573,6 @@ export class BacktestEngine {
     return { trades, equity, maxDrawdown, equityCurve };
   }
 
-  private calculateMetrics(
-    trades: TradeResult[],
-    initialCapital: number,
-    maxDrawdown: number,
-    _finalEquity: number
-  ): any {
-    const winningTrades = trades.filter((t) => t.pnl > 0);
-    const losingTrades = trades.filter((t) => t.pnl < 0);
-
-    const totalPnl = trades.reduce((sum, t) => sum + t.netPnl, 0);
-    const totalCommission = trades.reduce((sum, t) => sum + t.commission, 0);
-
-    const totalGrossPnl = trades.reduce((sum, t) => sum + t.pnl, 0);
-    const totalWins = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
-    const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
-    const grossProfitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
-
-    const calculateDuration = (trade: TradeResult) => {
-      if (!trade.exitTime) return 0;
-      const entry = new Date(trade.entryTime).getTime();
-      const exit = new Date(trade.exitTime).getTime();
-      return (exit - entry) / (1000 * 60);
-    };
-
-    const avgTradeDuration = trades.length > 0
-      ? trades.reduce((sum, t) => sum + calculateDuration(t), 0) / trades.length
-      : 0;
-
-    const avgWinDuration = winningTrades.length > 0
-      ? winningTrades.reduce((sum, t) => sum + calculateDuration(t), 0) / winningTrades.length
-      : 0;
-
-    const avgLossDuration = losingTrades.length > 0
-      ? losingTrades.reduce((sum, t) => sum + calculateDuration(t), 0) / losingTrades.length
-      : 0;
-
-    const winRate = trades.length > 0 ? (winningTrades.length / trades.length) * 100 : 0;
-    const peakEquity = initialCapital + Math.max(0, ...trades.map((_, i) =>
-      trades.slice(0, i + 1).reduce((sum, t) => sum + t.netPnl, 0)
-    ));
-
-    const metrics = {
-      totalTrades: trades.length,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      winRate,
-      totalPnl,
-      totalPnlPercent: (totalPnl / initialCapital) * 100,
-      avgPnl: trades.length > 0 ? totalPnl / trades.length : 0,
-      avgPnlPercent: trades.length > 0
-        ? trades.reduce((sum, t) => sum + t.pnlPercent, 0) / trades.length
-        : 0,
-      grossWinRate: winRate,
-      grossProfitFactor,
-      totalGrossPnl,
-      avgWin: winningTrades.length > 0 ? totalWins / winningTrades.length : 0,
-      avgLoss: losingTrades.length > 0 ? totalLosses / losingTrades.length : 0,
-      largestWin: winningTrades.length > 0 ? Math.max(...winningTrades.map((t) => t.pnl)) : 0,
-      largestLoss: losingTrades.length > 0 ? Math.min(...losingTrades.map((t) => t.pnl)) : 0,
-      profitFactor: grossProfitFactor,
-      maxDrawdown,
-      maxDrawdownPercent: (maxDrawdown / peakEquity) * 100,
-      totalCommission,
-      avgTradeDuration,
-      avgWinDuration,
-      avgLossDuration,
-      sharpeRatio: 0,
-    };
-
-    if (trades.length > 1) {
-      const returns = trades.map((t) => t.pnlPercent);
-      const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
-      const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1);
-      const stdDev = Math.sqrt(variance);
-      metrics.sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
-    }
-
-    return metrics;
-  }
-
   private logResults(
     filterManager: FilterManager,
     trades: TradeResult[],
@@ -783,11 +642,11 @@ export class BacktestEngine {
       const htfInterval = getOneStepAboveTimeframe(baseConfig.interval);
       if (htfInterval) {
         const marketType = baseConfig.marketType ?? 'FUTURES';
-        const intervalMs = this.getIntervalMs(baseConfig.interval);
+        const intervalMs = getIntervalMs(baseConfig.interval);
         const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
         const startTime = new Date(new Date(baseConfig.startDate).getTime() - warmupMs);
         const endTime = new Date(baseConfig.endDate);
-        batchStochasticHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+        batchStochasticHtfKlines = await fetchKlinesFromDbWithBackfill(
           baseConfig.symbol,
           htfInterval,
           marketType,
@@ -805,11 +664,11 @@ export class BacktestEngine {
       batchMtfHtfInterval = getHigherTimeframe(baseConfig.interval);
       if (batchMtfHtfInterval) {
         const marketType = baseConfig.marketType ?? 'FUTURES';
-        const intervalMs = this.getIntervalMs(baseConfig.interval);
+        const intervalMs = getIntervalMs(baseConfig.interval);
         const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
         const startTime = new Date(new Date(baseConfig.startDate).getTime() - warmupMs);
         const endTime = new Date(baseConfig.endDate);
-        batchMtfHtfKlines = await this.fetchKlinesFromDbWithBackfill(
+        batchMtfHtfKlines = await fetchKlinesFromDbWithBackfill(
           baseConfig.symbol,
           batchMtfHtfInterval as Interval,
           marketType,
@@ -859,7 +718,7 @@ export class BacktestEngine {
           useBnbDiscount: config.useBnbDiscount,
         }, conditionEvaluator);
 
-        const { trades, equity, maxDrawdown, equityCurve } = this.executeBacktest(
+        const { trades, maxDrawdown, equityCurve } = this.executeBacktest(
           baseFilteredSetups,
           historicalKlines,
           config,
@@ -875,7 +734,7 @@ export class BacktestEngine {
           batchMtfHtfInterval
         );
 
-        const metrics = this.calculateMetrics(trades, config.initialCapital, maxDrawdown, equity);
+        const metrics = calculateBacktestMetrics(trades, config.initialCapital, maxDrawdown);
         const endTime = Date.now();
 
         results.push({

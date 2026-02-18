@@ -6,6 +6,7 @@ import { activeWatchers, tradingProfiles } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 import { transformTradingProfile, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
+import { applyProfileFieldsToUpdate } from '../utils/config-field-registry';
 
 const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
@@ -98,13 +99,7 @@ export const tradingProfilesRouter = router({
     }
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
-
-    if (input.name !== undefined) updateData['name'] = input.name;
-    if (input.description !== undefined) updateData['description'] = input.description;
-    if (input.enabledSetupTypes !== undefined) updateData['enabledSetupTypes'] = stringifyEnabledSetupTypes(input.enabledSetupTypes);
-    if (input.maxPositionSize !== undefined) updateData['maxPositionSize'] = input.maxPositionSize?.toString() ?? null;
-    if (input.maxConcurrentPositions !== undefined) updateData['maxConcurrentPositions'] = input.maxConcurrentPositions;
-    if (input.isDefault !== undefined) updateData['isDefault'] = input.isDefault;
+    applyProfileFieldsToUpdate(input as Record<string, unknown>, updateData);
 
     await db.update(tradingProfiles).set(updateData).where(eq(tradingProfiles.id, input.id));
 
