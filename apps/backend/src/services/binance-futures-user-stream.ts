@@ -5,7 +5,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import {
   detectExitReason,
@@ -691,6 +691,10 @@ export class BinanceFuturesUserStreamService {
           },
           '[FuturesUserStream] Position closed via order fill'
         );
+
+        setTimeout(() => {
+          void this.closeResidualPosition(walletId, symbol, execution.id);
+        }, 3000);
       }
     } catch (error) {
       logger.error(
@@ -1153,10 +1157,59 @@ export class BinanceFuturesUserStreamService {
         },
         '[FuturesUserStream] ! Position closed via ALGO_VERIFICATION (ORDER_TRADE_UPDATE was missed)'
       );
+
+      setTimeout(() => {
+        void this.closeResidualPosition(walletId, symbol, executionId);
+      }, 3000);
     } catch (error) {
       logger.error(
         { executionId, symbol, error: serializeError(error) },
         '[FuturesUserStream] Error in algo fill verification'
+      );
+    }
+  }
+
+  private async closeResidualPosition(walletId: string, symbol: string, executionId: string): Promise<void> {
+    try {
+      const apiClient = this.connections.get(walletId)?.apiClient;
+      if (!apiClient) return;
+
+      const otherOpen = await db
+        .select({ id: tradeExecutions.id })
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        )
+        .limit(1);
+
+      if (otherOpen.length > 0) return;
+
+      const position = await getPosition(apiClient, symbol);
+      if (!position) return;
+
+      const positionAmt = parseFloat(String(position.positionAmt));
+      if (positionAmt === 0) return;
+
+      logger.warn(
+        { walletId, symbol, executionId, residualQty: positionAmt },
+        '[FuturesUserStream] Residual position detected after close - closing automatically'
+      );
+
+      await closePosition(apiClient, symbol, String(positionAmt));
+
+      logger.info(
+        { walletId, symbol, executionId, closedQty: positionAmt },
+        '[FuturesUserStream] Residual position closed successfully'
+      );
+    } catch (error) {
+      logger.error(
+        { walletId, symbol, executionId, error: serializeError(error) },
+        '[FuturesUserStream] Failed to close residual position'
       );
     }
   }
