@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.52.0] - 2026-02-18
+
+### Added
+- Optimized 1h timeframe defaults from full backtesting analysis
+
+### Fixed
+- Enforce all auto-trading config filters and invalidate cache on update
+- Prevent trailing stop from recreating identical SL orders every cycle
+- Handle already-cancelled orders gracefully in cancel functions
+- Auto-close residual positions after SL/TP fill
+- Position sync auto-closes unknown positions on exchange
+- Position sync adopts unknown positions and closes dust
+- Prevent floating point precision loss in formatQuantityForBinance
+- Wallet balance correction in fix-trade-fees script
+- Audit scripts with order ID matching and PnL-impact price thresholds
+- Positions stream stability
+- App icons updated
+
+### Refactored
+- Unified filter and config field registration with central registries (filter-registry.ts + config-field-registry.ts), reducing ~730 lines of boilerplate across 8 files
+
+---
+
 ## [0.51.0] - 2026-02-15
 
 ### Added
