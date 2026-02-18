@@ -13,6 +13,7 @@ import { updateStopLossOrder } from './protection-orders';
 import {
     calculateProfitPercent,
     computeTrailingStopCore,
+    shouldUpdateStopLoss,
     type TrailingStopReason,
 } from './trailing-stop-core';
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
@@ -620,6 +621,24 @@ export class TrailingStopService {
               : update.newStopLoss * (1 + offsetPercent);
           }
 
+          const currentStopLoss = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
+          if (!shouldUpdateStopLoss(update.newStopLoss, currentStopLoss, execution.side === 'LONG')) continue;
+
+          const profitPct = calculateProfitPercent(parseFloat(execution.entryPrice), currentPrice, execution.side === 'LONG');
+          logger.info({
+            executionId: execution.id,
+            symbol: execution.symbol,
+            side: execution.side,
+            entryPrice: parseFloat(execution.entryPrice),
+            currentPrice,
+            profitPercent: `${(profitPct * 100).toFixed(2)}%`,
+            oldStopLoss: currentStopLoss,
+            newStopLoss: update.newStopLoss,
+            reason: update.reason,
+            isFirstActivation: update.isFirstActivation,
+            offsetPercent: offsetPercent > 0 ? `${(offsetPercent * 100).toFixed(2)}%` : undefined,
+          }, 'Trailing stop updated');
+
           await this.applyStopLossUpdate(execution, update.newStopLoss, update.oldStopLoss, update.isFirstActivation, update.currentExtremePrice);
           updates.push(update);
         }
@@ -712,7 +731,7 @@ export class TrailingStopService {
 
     const profitPercent = calculateProfitPercent(entryPrice, currentPrice, execution.side === 'LONG');
 
-    logger.info({
+    logger.trace({
       executionId: execution.id,
       symbol: execution.symbol,
       side: execution.side,
@@ -723,7 +742,7 @@ export class TrailingStopService {
       newStopLoss: result.newStopLoss,
       reason: result.reason,
       isFirstActivation,
-    }, 'Trailing stop updated');
+    }, 'Trailing stop candidate computed (pre-offset)');
 
     return {
       executionId: execution.id,
