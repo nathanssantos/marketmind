@@ -5,7 +5,7 @@ import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculateTotalFees } from '@marketmind/types';
-import { createBinanceFuturesClient, isPaperWallet, getPositions } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
@@ -361,32 +361,49 @@ export class PositionSyncService {
       for (const [symbol, position] of exchangePositionsBySymbol) {
         result.changes.unknownPositions.push(symbol);
 
+        const positionAmt = parseFloat(String(position.positionAmt));
+        const entryPrice = parseFloat(String(position.entryPrice));
+        const notionalValue = Math.abs(positionAmt * entryPrice);
+
         result.detailedUnknown?.push({
           walletId: wallet.id,
           symbol,
-          positionAmt: parseFloat(String(position.positionAmt)),
-          entryPrice: parseFloat(String(position.entryPrice)),
+          positionAmt,
+          entryPrice,
           unrealizedPnl: parseFloat(String(position.unrealizedPnl || 0)),
           leverage: position.leverage || 1,
           marginType: position.marginType || 'ISOLATED',
         });
 
-        const wsService = getWebSocketService();
-        if (wsService) {
-          wsService.emitRiskAlert(wallet.id, {
-            type: 'UNKNOWN_POSITION',
-            level: 'critical',
-            symbol,
-            message: `Unknown position detected on exchange: ${symbol} with ${position.positionAmt} qty. This position is NOT tracked in the system - MANUAL CHECK REQUIRED.`,
-            data: {
-              positionAmt: position.positionAmt,
-              entryPrice: position.entryPrice,
-              unrealizedPnl: position.unrealizedPnl,
-              leverage: position.leverage,
-              marginType: position.marginType,
-            },
-            timestamp: Date.now(),
-          });
+        try {
+          await closePosition(client, symbol, String(position.positionAmt));
+          logger.info(
+            { walletId: wallet.id, symbol, positionAmt, notionalValue: notionalValue.toFixed(4) },
+            '[PositionSync] Auto-closed unknown position'
+          );
+        } catch (closeError) {
+          logger.error(
+            { walletId: wallet.id, symbol, positionAmt, error: serializeError(closeError) },
+            '[PositionSync] Failed to auto-close unknown position'
+          );
+
+          const wsService = getWebSocketService();
+          if (wsService) {
+            wsService.emitRiskAlert(wallet.id, {
+              type: 'UNKNOWN_POSITION',
+              level: 'critical',
+              symbol,
+              message: `Failed to auto-close unknown position: ${symbol} with ${position.positionAmt} qty - MANUAL CHECK REQUIRED.`,
+              data: {
+                positionAmt: position.positionAmt,
+                entryPrice: position.entryPrice,
+                unrealizedPnl: position.unrealizedPnl,
+                leverage: position.leverage,
+                marginType: position.marginType,
+              },
+              timestamp: Date.now(),
+            });
+          }
         }
       }
     } catch (error) {
