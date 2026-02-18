@@ -18,11 +18,20 @@ interface BinanceTrade {
   time: number;
 }
 
+interface ClassifiedTrades {
+  entryTrades: BinanceTrade[];
+  exitTrades: BinanceTrade[];
+  canVerifyEntry: boolean;
+  canVerifyExit: boolean;
+}
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const DRY_RUN = process.argv.includes('--dry-run');
 const VERBOSE = process.argv.includes('--verbose');
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000 - 60_000;
+const OVERLAP_RATIO_THRESHOLD = 1.5;
+const EXIT_RELIABILITY_THRESHOLD = 0.5;
 
 async function fetchAllAccountTrades(
   client: USDMClient,
@@ -39,23 +48,14 @@ async function fetchAllAccountTrades(
     const windowEnd = Math.min(windowStart + SEVEN_DAYS_MS, paddedEnd);
 
     const firstBatch = await client.getAccountTrades({
-      symbol,
-      startTime: windowStart,
-      endTime: windowEnd,
-      limit: 1000,
+      symbol, startTime: windowStart, endTime: windowEnd, limit: 1000,
     });
 
     for (const t of firstBatch) {
       allTrades.push({
-        symbol: t.symbol,
-        id: t.id,
-        orderId: t.orderId,
-        side: t.side,
-        price: String(t.price),
-        qty: String(t.qty),
-        realizedPnl: String(t.realizedPnl),
-        commission: String(t.commission),
-        time: t.time,
+        symbol: t.symbol, id: t.id, orderId: t.orderId, side: t.side,
+        price: String(t.price), qty: String(t.qty),
+        realizedPnl: String(t.realizedPnl), commission: String(t.commission), time: t.time,
       });
     }
 
@@ -68,15 +68,9 @@ async function fetchAllAccountTrades(
         const inRange = batch.filter(t => t.time <= windowEnd);
         for (const t of inRange) {
           allTrades.push({
-            symbol: t.symbol,
-            id: t.id,
-            orderId: t.orderId,
-            side: t.side,
-            price: String(t.price),
-            qty: String(t.qty),
-            realizedPnl: String(t.realizedPnl),
-            commission: String(t.commission),
-            time: t.time,
+            symbol: t.symbol, id: t.id, orderId: t.orderId, side: t.side,
+            price: String(t.price), qty: String(t.qty),
+            realizedPnl: String(t.realizedPnl), commission: String(t.commission), time: t.time,
           });
         }
         if (inRange.length < batch.length || batch.length < 1000) break;
@@ -109,11 +103,7 @@ async function fetchFundingFees(
     while (currentStart < windowEnd) {
       await sleep(200);
       const income = await client.getIncomeHistory({
-        symbol,
-        incomeType: 'FUNDING_FEE',
-        startTime: currentStart,
-        endTime: windowEnd,
-        limit: 1000,
+        symbol, incomeType: 'FUNDING_FEE', startTime: currentStart, endTime: windowEnd, limit: 1000,
       } as Parameters<typeof client.getIncomeHistory>[0]);
 
       if (income.length === 0) break;
@@ -128,44 +118,76 @@ async function fetchFundingFees(
   return totalFunding;
 }
 
+const sumQty = (trades: BinanceTrade[]) => trades.reduce((s, t) => s + parseFloat(t.qty), 0);
+
 function classifyTrades(
   trades: BinanceTrade[],
   side: 'LONG' | 'SHORT',
-  _entryOrderId: number | null,
-  _exitOrderIds: number[] = []
-): { entryTrades: BinanceTrade[]; exitTrades: BinanceTrade[] } {
+  entryOrderId: number | null,
+  exitOrderIds: number[],
+  dbQuantity: number
+): ClassifiedTrades {
+  const validEntryId = entryOrderId && entryOrderId > 0 ? entryOrderId : null;
+  const validExitIds = exitOrderIds.filter(id => id > 0);
+
   const entrySide = side === 'LONG' ? 'BUY' : 'SELL';
   const exitSide = side === 'LONG' ? 'SELL' : 'BUY';
+  const entryBySide = trades.filter(t => t.side === entrySide);
+  const exitBySide = trades.filter(t => t.side === exitSide);
 
-  const entryTrades = trades.filter(t => t.side === entrySide);
-  const exitTrades = trades.filter(t => t.side === exitSide);
-  return { entryTrades, exitTrades };
+  const entryByOrderId = validEntryId ? trades.filter(t => t.orderId === validEntryId) : [];
+  const exitByOrderId = validExitIds.length > 0 ? trades.filter(t => validExitIds.includes(t.orderId)) : [];
+
+  const entryQtyById = sumQty(entryByOrderId);
+  const entryQtyBySide = sumQty(entryBySide);
+  const exitQtyById = sumQty(exitByOrderId);
+
+  const hasHiddenOverlap = entryByOrderId.length > 0
+    ? entryQtyBySide > 0 && (entryQtyBySide / entryQtyById) > OVERLAP_RATIO_THRESHOLD
+    : dbQuantity > 0 && entryQtyBySide > 0 && (entryQtyBySide / dbQuantity) > OVERLAP_RATIO_THRESHOLD;
+
+  const exitIsReliable = exitByOrderId.length > 0 && dbQuantity > 0 && exitQtyById > dbQuantity * EXIT_RELIABILITY_THRESHOLD;
+
+  if (entryByOrderId.length > 0) {
+    if (exitIsReliable) {
+      return { entryTrades: entryByOrderId, exitTrades: exitByOrderId, canVerifyEntry: true, canVerifyExit: true };
+    }
+    if (!hasHiddenOverlap) {
+      return { entryTrades: entryByOrderId, exitTrades: exitBySide, canVerifyEntry: true, canVerifyExit: true };
+    }
+    return { entryTrades: entryByOrderId, exitTrades: [], canVerifyEntry: true, canVerifyExit: false };
+  }
+
+  if (hasHiddenOverlap) {
+    if (exitIsReliable) {
+      return { entryTrades: [], exitTrades: exitByOrderId, canVerifyEntry: false, canVerifyExit: true };
+    }
+    return { entryTrades: [], exitTrades: [], canVerifyEntry: false, canVerifyExit: false };
+  }
+
+  return { entryTrades: entryBySide, exitTrades: exitBySide, canVerifyEntry: true, canVerifyExit: true };
 }
 
 function computeWeightedAvg(trades: BinanceTrade[]): { avgPrice: number; totalQty: number; totalFee: number } {
   let weightedPrice = 0;
   let totalQty = 0;
   let totalFee = 0;
-
   for (const t of trades) {
     const qty = parseFloat(t.qty);
-    const price = parseFloat(t.price);
-    const fee = parseFloat(t.commission);
-    weightedPrice += price * qty;
+    weightedPrice += parseFloat(t.price) * qty;
     totalQty += qty;
-    totalFee += fee;
+    totalFee += parseFloat(t.commission);
   }
-
-  return {
-    avgPrice: totalQty > 0 ? weightedPrice / totalQty : 0,
-    totalQty,
-    totalFee,
-  };
+  return { avgPrice: totalQty > 0 ? roundTo(weightedPrice / totalQty, 8) : 0, totalQty, totalFee };
 }
 
 function roundTo(n: number, decimals: number): number {
   const factor = Math.pow(10, decimals);
   return Math.round(n * factor) / factor;
+}
+
+function isOrphanedExit(exec: { exitReason: string | null; exitSource: string | null }): boolean {
+  return exec.exitReason === 'ORPHANED_POSITION' || exec.exitSource === 'SYNC';
 }
 
 interface CorrectionResult {
@@ -209,10 +231,7 @@ async function main() {
     const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
     const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
     const client = new USDMClient({
-      api_key: apiKey,
-      api_secret: apiSecret,
-      testnet: walletType === 'testnet',
-      disableTimeSync: false,
+      api_key: apiKey, api_secret: apiSecret, testnet: walletType === 'testnet', disableTimeSync: false,
     });
 
     const closedExecutions = await db
@@ -232,6 +251,12 @@ async function main() {
     for (const exec of closedExecutions) {
       totalProcessed++;
 
+      if (isOrphanedExit(exec)) {
+        if (VERBOSE) console.log(`  [${exec.id}] ${exec.symbol} - Orphaned, skipping`);
+        totalSkipped++;
+        continue;
+      }
+
       try {
         const openedAt = exec.openedAt?.getTime() || exec.createdAt.getTime();
         const closedAt = exec.closedAt?.getTime() || Date.now();
@@ -240,17 +265,25 @@ async function main() {
         const trades = await fetchAllAccountTrades(client, exec.symbol, openedAt, closedAt);
 
         if (trades.length === 0) {
-          if (VERBOSE) console.log(`  [${exec.id.slice(0, 12)}] ${exec.symbol} - No Binance trades found, skipping`);
+          if (VERBOSE) console.log(`  [${exec.id}] ${exec.symbol} - No Binance trades, skipping`);
           totalSkipped++;
           continue;
         }
 
         const exitOrderIds = [
-          exec.exitOrderId,
-          exec.stopLossOrderId,
-          exec.takeProfitOrderId,
+          exec.exitOrderId, exec.stopLossOrderId, exec.takeProfitOrderId,
         ].filter((id): id is number => id !== null && id !== undefined && id > 0);
-        const { entryTrades, exitTrades } = classifyTrades(trades, exec.side, exec.entryOrderId, exitOrderIds);
+
+        const dbQuantity = parseFloat(exec.quantity);
+        const classified = classifyTrades(trades, exec.side, exec.entryOrderId, exitOrderIds, dbQuantity);
+        const { entryTrades, exitTrades, canVerifyEntry, canVerifyExit } = classified;
+
+        if (!canVerifyEntry && !canVerifyExit) {
+          if (VERBOSE) console.log(`  [${exec.id}] ${exec.symbol} ${exec.side} - Overlapping, unverifiable, skipping`);
+          totalSkipped++;
+          continue;
+        }
+
         const entry = computeWeightedAvg(entryTrades);
         const exit = computeWeightedAvg(exitTrades);
 
@@ -258,7 +291,7 @@ async function main() {
         try {
           await sleep(200);
           fundingFees = await fetchFundingFees(client, exec.symbol, openedAt, closedAt);
-        } catch (_e) { /* funding fetch is best-effort */ }
+        } catch (_e) { /* best-effort */ }
 
         const dbEntryFee = parseFloat(exec.entryFee || '0');
         const dbExitFee = parseFloat(exec.exitFee || '0');
@@ -266,40 +299,8 @@ async function main() {
         const dbPnl = parseFloat(exec.pnl || '0');
         const dbAccFunding = parseFloat(exec.accumulatedFunding || '0');
         const dbEntryPrice = parseFloat(exec.entryPrice);
-        const dbQuantity = parseFloat(exec.quantity);
+        const dbExitPrice = parseFloat(exec.exitPrice || '0');
         const leverage = exec.leverage || 1;
-
-        const binanceEntryQty = entry.totalQty;
-        const qtyRatio = binanceEntryQty > 0 ? dbQuantity / binanceEntryQty : 1;
-        const isOverlappingPosition = qtyRatio < 0.8 || qtyRatio > 1.2;
-
-        if (isOverlappingPosition) {
-          if (VERBOSE) console.log(`  [${exec.id.slice(0, 12)}] ${exec.symbol} ${exec.side} - Overlapping position (qty ratio ${qtyRatio.toFixed(2)}), skipping`);
-          totalSkipped++;
-          continue;
-        }
-
-        const quantity = (binanceEntryQty > 0 && Math.abs(dbQuantity - binanceEntryQty) > 0.00001)
-          ? binanceEntryQty : dbQuantity;
-        const entryPrice = (entry.avgPrice > 0 && Math.abs(dbEntryPrice - entry.avgPrice) > dbEntryPrice * 0.001)
-          ? entry.avgPrice : dbEntryPrice;
-
-        const binanceEntryFee = entry.totalFee;
-        const binanceExitFee = exit.totalFee;
-        const binanceTotalFees = binanceEntryFee + binanceExitFee;
-
-        const exitPrice = exit.avgPrice > 0 ? exit.avgPrice : parseFloat(exec.exitPrice || '0');
-
-        let grossPnl = 0;
-        if (exec.side === 'LONG') {
-          grossPnl = (exitPrice - entryPrice) * quantity;
-        } else {
-          grossPnl = (entryPrice - exitPrice) * quantity;
-        }
-
-        const correctPnl = roundTo(grossPnl - binanceTotalFees + fundingFees, 8);
-        const marginValue = (entryPrice * quantity) / leverage;
-        const correctPnlPercent = marginValue > 0 ? roundTo((correctPnl / marginValue) * 100, 4) : 0;
 
         const FEE_THRESHOLD = 0.001;
         const PNL_THRESHOLD = 0.01;
@@ -308,56 +309,85 @@ async function main() {
         const oldValues: Record<string, string> = {};
         const newValues: Record<string, string> = {};
 
-        if (quantity !== dbQuantity) {
-          changes.push(`quantity: ${dbQuantity} → ${quantity}`);
-          oldValues.quantity = dbQuantity.toString();
-          newValues.quantity = quantity.toFixed(8);
+        let quantity = dbQuantity;
+        let entryPrice = dbEntryPrice;
+        let exitPrice = dbExitPrice;
+
+        if (canVerifyEntry) {
+          if (entry.totalQty > 0 && Math.abs(dbQuantity - entry.totalQty) > 0.00001) {
+            quantity = entry.totalQty;
+            changes.push(`quantity: ${dbQuantity} → ${quantity}`);
+            oldValues.quantity = dbQuantity.toString();
+            newValues.quantity = quantity.toFixed(8);
+          }
+
+          if (entry.avgPrice > 0) {
+            const priceDiff = Math.abs(dbEntryPrice - entry.avgPrice);
+            const pnlImpact = priceDiff * quantity;
+            if (pnlImpact > PNL_THRESHOLD) {
+              entryPrice = entry.avgPrice;
+              changes.push(`entryPrice: ${dbEntryPrice} → ${entryPrice}`);
+              oldValues.entryPrice = dbEntryPrice.toString();
+              newValues.entryPrice = entryPrice.toString();
+            }
+          }
+
+          if (Math.abs(dbEntryFee - entry.totalFee) > FEE_THRESHOLD) {
+            changes.push(`entryFee: ${dbEntryFee.toFixed(8)} → ${entry.totalFee.toFixed(8)}`);
+            oldValues.entryFee = dbEntryFee.toFixed(8);
+            newValues.entryFee = entry.totalFee.toString();
+          }
         }
 
-        if (entryPrice !== dbEntryPrice) {
-          changes.push(`entryPrice: ${dbEntryPrice} → ${entryPrice}`);
-          oldValues.entryPrice = dbEntryPrice.toString();
-          newValues.entryPrice = entryPrice.toString();
+        if (canVerifyExit) {
+          if (exit.avgPrice > 0) {
+            const priceDiff = Math.abs(dbExitPrice - exit.avgPrice);
+            const pnlImpact = priceDiff * quantity;
+            if (pnlImpact > PNL_THRESHOLD) {
+              exitPrice = exit.avgPrice;
+              changes.push(`exitPrice: ${dbExitPrice} → ${exitPrice}`);
+              oldValues.exitPrice = dbExitPrice.toString();
+              newValues.exitPrice = exitPrice.toString();
+            }
+          }
+
+          if (Math.abs(dbExitFee - exit.totalFee) > FEE_THRESHOLD) {
+            changes.push(`exitFee: ${dbExitFee.toFixed(8)} → ${exit.totalFee.toFixed(8)}`);
+            oldValues.exitFee = dbExitFee.toFixed(8);
+            newValues.exitFee = exit.totalFee.toString();
+          }
         }
 
-        if (Math.abs(dbEntryFee - binanceEntryFee) > FEE_THRESHOLD) {
-          changes.push(`entryFee: ${dbEntryFee.toFixed(8)} → ${binanceEntryFee.toFixed(8)}`);
-          oldValues.entryFee = dbEntryFee.toFixed(8);
-          newValues.entryFee = binanceEntryFee.toString();
-        }
+        const binanceEntryFee = canVerifyEntry ? entry.totalFee : dbEntryFee;
+        const binanceExitFee = canVerifyExit ? exit.totalFee : dbExitFee;
+        const binanceTotalFees = binanceEntryFee + binanceExitFee;
 
-        if (Math.abs(dbExitFee - binanceExitFee) > FEE_THRESHOLD) {
-          changes.push(`exitFee: ${dbExitFee.toFixed(8)} → ${binanceExitFee.toFixed(8)}`);
-          oldValues.exitFee = dbExitFee.toFixed(8);
-          newValues.exitFee = binanceExitFee.toString();
-        }
-
-        if (Math.abs(dbTotalFees - binanceTotalFees) > FEE_THRESHOLD) {
+        if (canVerifyEntry && canVerifyExit && Math.abs(dbTotalFees - binanceTotalFees) > FEE_THRESHOLD) {
           changes.push(`fees: ${dbTotalFees.toFixed(8)} → ${binanceTotalFees.toFixed(8)}`);
           oldValues.fees = dbTotalFees.toFixed(8);
           newValues.fees = binanceTotalFees.toString();
         }
 
-        if (Math.abs(dbPnl - correctPnl) > PNL_THRESHOLD) {
-          changes.push(`pnl: ${dbPnl.toFixed(4)} → ${correctPnl.toFixed(4)}`);
-          oldValues.pnl = dbPnl.toFixed(4);
-          newValues.pnl = correctPnl.toString();
-        }
+        if (canVerifyEntry && canVerifyExit) {
+          const grossPnl = exec.side === 'LONG'
+            ? (exitPrice - entryPrice) * quantity
+            : (entryPrice - exitPrice) * quantity;
 
-        const dbPnlPercent = parseFloat(exec.pnlPercent || '0');
-        if (Math.abs(dbPnlPercent - correctPnlPercent) > 0.01) {
-          changes.push(`pnlPercent: ${dbPnlPercent.toFixed(4)} → ${correctPnlPercent.toFixed(4)}`);
-          oldValues.pnlPercent = dbPnlPercent.toFixed(4);
-          newValues.pnlPercent = correctPnlPercent.toString();
-        }
+          const correctPnl = roundTo(grossPnl - binanceTotalFees + fundingFees, 8);
+          const marginValue = (entryPrice * quantity) / leverage;
+          const correctPnlPercent = marginValue > 0 ? roundTo((correctPnl / marginValue) * 100, 4) : 0;
 
-        if (exit.avgPrice > 0) {
-          const dbExitPrice = parseFloat(exec.exitPrice || '0');
-          const priceDiff = Math.abs(dbExitPrice - exit.avgPrice);
-          if (priceDiff > dbExitPrice * 0.005 && priceDiff > 0.01) {
-            changes.push(`exitPrice: ${dbExitPrice} → ${exit.avgPrice}`);
-            oldValues.exitPrice = dbExitPrice.toString();
-            newValues.exitPrice = exit.avgPrice.toString();
+          if (Math.abs(dbPnl - correctPnl) > PNL_THRESHOLD) {
+            changes.push(`pnl: ${dbPnl.toFixed(4)} → ${correctPnl.toFixed(4)}`);
+            oldValues.pnl = dbPnl.toFixed(4);
+            newValues.pnl = correctPnl.toString();
+          }
+
+          const dbPnlPercent = parseFloat(exec.pnlPercent || '0');
+          if (Math.abs(dbPnlPercent - correctPnlPercent) > 0.01) {
+            changes.push(`pnlPercent: ${dbPnlPercent.toFixed(4)} → ${correctPnlPercent.toFixed(4)}`);
+            oldValues.pnlPercent = dbPnlPercent.toFixed(4);
+            newValues.pnlPercent = correctPnlPercent.toString();
           }
         }
 
@@ -368,22 +398,17 @@ async function main() {
         }
 
         if (changes.length === 0) {
-          if (VERBOSE) console.log(`  [${exec.id.slice(0, 12)}] ${exec.symbol} ${exec.side} - OK`);
+          if (VERBOSE) console.log(`  [${exec.id}] ${exec.symbol} ${exec.side} - OK`);
           totalSkipped++;
           continue;
         }
 
         corrections.push({
-          executionId: exec.id,
-          walletId: wallet.id,
-          symbol: exec.symbol,
-          side: exec.side,
-          changes,
-          oldValues,
-          newValues,
+          executionId: exec.id, walletId: wallet.id, symbol: exec.symbol,
+          side: exec.side, changes, oldValues, newValues,
         });
 
-        console.log(`  [${exec.id.slice(0, 12)}] ${exec.symbol} ${exec.side} - ${changes.length} correction(s):`);
+        console.log(`  [${exec.id}] ${exec.symbol} ${exec.side} - ${changes.length} correction(s):`);
         for (const c of changes) console.log(`    ${c}`);
 
         if (!DRY_RUN) {
@@ -410,7 +435,7 @@ async function main() {
       } catch (error) {
         const errObj = error as Record<string, unknown>;
         const msg = error instanceof Error ? error.message : errObj?.message || JSON.stringify(error);
-        console.log(`  [${exec.id.slice(0, 12)}] ${exec.symbol} - ERROR: ${msg}`);
+        console.log(`  [${exec.id}] ${exec.symbol} - ERROR: ${msg}`);
         totalErrors++;
       }
     }
