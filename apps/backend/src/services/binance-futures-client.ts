@@ -316,7 +316,12 @@ export async function cancelFuturesOrder(
   try {
     await client.cancelOrder({ symbol, orderId });
   } catch (error) {
-    logger.error({ error: serializeError(error), symbol, orderId }, 'Failed to cancel futures order');
+    const msg = serializeError(error);
+    if (msg.includes('Unknown order') || msg.includes('Order does not exist') || msg.includes('not found')) {
+      logger.info({ symbol, orderId }, '[Futures] Order already cancelled or does not exist');
+      return;
+    }
+    logger.error({ error: msg, symbol, orderId }, 'Failed to cancel futures order');
     throw error;
   }
 }
@@ -481,7 +486,12 @@ export async function cancelFuturesAlgoOrder(
     await client.cancelAlgoOrder({ algoId });
     logger.info({ algoId }, '[Futures] Algo order cancelled successfully');
   } catch (error) {
-    logger.error({ error: serializeError(error), algoId }, '[Futures] Failed to cancel algo order');
+    const msg = serializeError(error);
+    if (msg.includes('Unknown order') || msg.includes('Order does not exist') || msg.includes('not found')) {
+      logger.info({ algoId }, '[Futures] Algo order already cancelled or does not exist');
+      return;
+    }
+    logger.error({ error: msg, algoId }, '[Futures] Failed to cancel algo order');
     throw error;
   }
 }
