@@ -11,10 +11,15 @@ const mockDbUpdate = vi.fn(() => ({
   where: vi.fn().mockResolvedValue([]),
 }));
 
+const mockDbInsert = vi.fn(() => ({
+  values: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('../../db', () => ({
   db: {
     select: () => mockDbSelect(),
     update: () => mockDbUpdate(),
+    insert: () => mockDbInsert(),
   },
 }));
 
@@ -22,10 +27,13 @@ const mockGetPositions = vi.fn().mockResolvedValue([]);
 const mockCreateBinanceFuturesClient = vi.fn().mockReturnValue({});
 const mockIsPaperWallet = vi.fn((wallet) => wallet.walletType === 'paper');
 
+const mockClosePosition = vi.fn().mockResolvedValue({});
+
 vi.mock('../binance-futures-client', () => ({
   createBinanceFuturesClient: (wallet: unknown) => mockCreateBinanceFuturesClient(wallet),
   isPaperWallet: (wallet: { walletType: string }) => mockIsPaperWallet(wallet),
   getPositions: (client: unknown) => mockGetPositions(client),
+  closePosition: (...args: unknown[]) => mockClosePosition(...args),
 }));
 
 const mockGetMarkPrice = vi.fn().mockResolvedValue({ markPrice: 50000 });
@@ -576,7 +584,7 @@ describe('PositionSyncService', () => {
       );
     });
 
-    it('should emit risk alert for unknown positions when WebSocket available', async () => {
+    it('should adopt unknown positions into DB and emit warning alert', async () => {
       mockWebSocketService =({
         emitPositionUpdate: mockEmitPositionUpdate,
         emitRiskAlert: mockEmitRiskAlert,
@@ -600,11 +608,12 @@ describe('PositionSyncService', () => {
 
       await service.syncWallet(mockWallet as never);
 
+      expect(mockDbInsert).toHaveBeenCalled();
       expect(mockEmitRiskAlert).toHaveBeenCalledWith(
         'wallet-1',
         expect.objectContaining({
           type: 'UNKNOWN_POSITION',
-          level: 'critical',
+          level: 'warning',
           symbol: 'ETHUSDT',
         })
       );

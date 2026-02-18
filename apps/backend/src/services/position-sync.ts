@@ -375,34 +375,73 @@ export class PositionSyncService {
           marginType: position.marginType || 'ISOLATED',
         });
 
-        try {
-          await closePosition(client, symbol, String(position.positionAmt));
-          logger.info(
-            { walletId: wallet.id, symbol, positionAmt, notionalValue: notionalValue.toFixed(4) },
-            '[PositionSync] Auto-closed unknown position'
-          );
-        } catch (closeError) {
-          logger.error(
-            { walletId: wallet.id, symbol, positionAmt, error: serializeError(closeError) },
-            '[PositionSync] Failed to auto-close unknown position'
-          );
+        const DUST_NOTIONAL_THRESHOLD = 5;
+        const isDust = notionalValue < DUST_NOTIONAL_THRESHOLD;
 
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitRiskAlert(wallet.id, {
-              type: 'UNKNOWN_POSITION',
-              level: 'critical',
+        if (isDust) {
+          try {
+            await closePosition(client, symbol, String(position.positionAmt));
+            logger.info(
+              { walletId: wallet.id, symbol, positionAmt, notionalValue: notionalValue.toFixed(4) },
+              '[PositionSync] Auto-closed dust position'
+            );
+          } catch (closeError) {
+            logger.warn(
+              { walletId: wallet.id, symbol, positionAmt, error: serializeError(closeError) },
+              '[PositionSync] Failed to auto-close dust position'
+            );
+          }
+        } else {
+          const side: 'LONG' | 'SHORT' = positionAmt > 0 ? 'LONG' : 'SHORT';
+          const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+          try {
+            await db.insert(tradeExecutions).values({
+              id: executionId,
+              userId: wallet.userId,
+              walletId: wallet.id,
               symbol,
-              message: `Failed to auto-close unknown position: ${symbol} with ${position.positionAmt} qty - MANUAL CHECK REQUIRED.`,
-              data: {
-                positionAmt: position.positionAmt,
-                entryPrice: position.entryPrice,
-                unrealizedPnl: position.unrealizedPnl,
-                leverage: position.leverage,
-                marginType: position.marginType,
-              },
-              timestamp: Date.now(),
+              side,
+              entryPrice: entryPrice.toString(),
+              quantity: Math.abs(positionAmt).toFixed(8),
+              openedAt: new Date(),
+              status: 'open',
+              entryOrderType: 'MARKET',
+              marketType: 'FUTURES',
+              leverage: position.leverage || 1,
+              highestPriceSinceEntry: entryPrice.toString(),
+              lowestPriceSinceEntry: entryPrice.toString(),
+              exitSource: 'MANUAL',
             });
+
+            logger.info(
+              { walletId: wallet.id, symbol, executionId, side, positionAmt, entryPrice, notionalValue: notionalValue.toFixed(2) },
+              '[PositionSync] Adopted unknown position into DB'
+            );
+
+            const wsService = getWebSocketService();
+            if (wsService) {
+              wsService.emitRiskAlert(wallet.id, {
+                type: 'UNKNOWN_POSITION',
+                level: 'warning',
+                symbol,
+                message: `Unknown position adopted: ${symbol} ${side} ${Math.abs(positionAmt)} qty ($${notionalValue.toFixed(2)}) - now tracked as ${executionId}.`,
+                data: {
+                  positionAmt: position.positionAmt,
+                  entryPrice: position.entryPrice,
+                  unrealizedPnl: position.unrealizedPnl,
+                  leverage: position.leverage,
+                  marginType: position.marginType,
+                  executionId,
+                },
+                timestamp: Date.now(),
+              });
+            }
+          } catch (adoptError) {
+            logger.error(
+              { walletId: wallet.id, symbol, positionAmt, error: serializeError(adoptError) },
+              '[PositionSync] Failed to adopt unknown position'
+            );
           }
         }
       }
