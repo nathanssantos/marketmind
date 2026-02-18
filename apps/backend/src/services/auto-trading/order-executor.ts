@@ -395,6 +395,34 @@ export class OrderExecutor {
         useMomentumTimingFilter: config.useMomentumTimingFilter,
         useAdxFilter: config.useAdxFilter,
         useTrendFilter: config.useTrendFilter,
+        useChoppinessFilter: config.useChoppinessFilter,
+        choppinessThresholdHigh: config.choppinessThresholdHigh ? parseFloat(config.choppinessThresholdHigh) : 61.80,
+        choppinessThresholdLow: config.choppinessThresholdLow ? parseFloat(config.choppinessThresholdLow) : 38.20,
+        choppinessPeriod: config.choppinessPeriod ?? 14,
+        useSessionFilter: config.useSessionFilter,
+        sessionStartUtc: config.sessionStartUtc ?? 13,
+        sessionEndUtc: config.sessionEndUtc ?? 16,
+        useBollingerSqueezeFilter: config.useBollingerSqueezeFilter,
+        bollingerSqueezeThreshold: config.bollingerSqueezeThreshold ? parseFloat(config.bollingerSqueezeThreshold) : 0.1,
+        bollingerSqueezePeriod: config.bollingerSqueezePeriod ?? 20,
+        bollingerSqueezeStdDev: config.bollingerSqueezeStdDev ? parseFloat(config.bollingerSqueezeStdDev) : 2.0,
+        useVwapFilter: config.useVwapFilter,
+        useSuperTrendFilter: config.useSuperTrendFilter,
+        superTrendPeriod: config.superTrendPeriod ?? 10,
+        superTrendMultiplier: config.superTrendMultiplier ? parseFloat(config.superTrendMultiplier) : 3.0,
+        useDirectionFilter: config.useDirectionFilter,
+        enableLongInBearMarket: config.enableLongInBearMarket,
+        enableShortInBullMarket: config.enableShortInBullMarket,
+        volumeFilterConfig: {
+          longConfig: {
+            useObvCheck: config.useObvCheckLong ?? false,
+            obvLookback: config.volumeFilterObvLookbackLong ?? 7,
+          },
+          shortConfig: {
+            useObvCheck: config.useObvCheckShort ?? true,
+            obvLookback: config.volumeFilterObvLookbackShort ?? 5,
+          },
+        },
       };
 
       const filterValidation = await this.filterValidator.validateFilters(

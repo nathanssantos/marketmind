@@ -1,19 +1,25 @@
-import type { Kline, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import type { Kline, MarketType, StrategyDefinition, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 import {
   ADX_FILTER,
   checkAdxCondition,
+  checkBollingerSqueezeCondition,
   checkBtcCorrelation,
+  checkChoppinessCondition,
+  checkDirectionFilter,
   checkFundingRate,
   checkMarketRegime,
   checkMomentumTiming,
   checkMtfCondition,
+  checkSessionCondition,
   checkStochasticCondition,
   checkStochasticRecoveryCondition,
   checkStochasticHtfCondition,
   checkStochasticRecoveryHtfCondition,
+  checkSupertrendCondition,
   checkTrendCondition,
   checkVolumeCondition,
+  checkVwapCondition,
   getHigherTimeframe,
   getOneStepAboveTimeframe,
   MOMENTUM_TIMING_FILTER,
@@ -38,6 +44,25 @@ export interface FilterValidatorConfig {
   useMomentumTimingFilter: boolean;
   useAdxFilter: boolean;
   useTrendFilter: boolean;
+  useChoppinessFilter: boolean;
+  choppinessThresholdHigh: number;
+  choppinessThresholdLow: number;
+  choppinessPeriod: number;
+  useSessionFilter: boolean;
+  sessionStartUtc: number;
+  sessionEndUtc: number;
+  useBollingerSqueezeFilter: boolean;
+  bollingerSqueezeThreshold: number;
+  bollingerSqueezePeriod: number;
+  bollingerSqueezeStdDev: number;
+  useVwapFilter: boolean;
+  useSuperTrendFilter: boolean;
+  superTrendPeriod: number;
+  superTrendMultiplier: number;
+  useDirectionFilter: boolean;
+  enableLongInBearMarket: boolean;
+  enableShortInBullMarket: boolean;
+  volumeFilterConfig?: VolumeFilterConfig;
 }
 
 export interface FilterValidatorDeps {
@@ -168,7 +193,7 @@ export class FilterValidator {
     }
 
     if (config.useVolumeFilter) {
-      const result = this.checkVolumeFilter(cycleKlines, setup, logBuffer);
+      const result = this.checkVolumeFilter(cycleKlines, setup, logBuffer, config.volumeFilterConfig);
       if (!result.passed) {
         logBuffer.addValidationCheck({
           name: 'Volume',
@@ -336,6 +361,114 @@ export class FilterValidator {
       logBuffer.addValidationCheck({ name: 'Trend (EMA21)', passed: true });
     }
 
+    if (config.useChoppinessFilter) {
+      const result = checkChoppinessCondition(
+        cycleKlines,
+        config.choppinessThresholdHigh,
+        config.choppinessThresholdLow,
+        config.choppinessPeriod
+      );
+      logBuffer.addFilterCheck({
+        filterName: 'Choppiness',
+        passed: result.isAllowed,
+        reason: result.reason ?? 'N/A',
+        details: { value: result.choppinessValue?.toFixed(2) ?? 'N/A' },
+      });
+      if (!result.isAllowed) {
+        logBuffer.addValidationCheck({ name: 'Choppiness', passed: false, reason: result.reason ?? 'Choppy market' });
+        return { passed: false, filterResults, rejectionReason: 'Choppiness filter failed' };
+      }
+      logBuffer.addValidationCheck({ name: 'Choppiness', passed: true });
+    }
+
+    if (config.useSessionFilter) {
+      const result = checkSessionCondition(Date.now(), config.sessionStartUtc, config.sessionEndUtc);
+      logBuffer.addFilterCheck({
+        filterName: 'Session',
+        passed: result.isAllowed,
+        reason: result.reason ?? 'N/A',
+        details: { currentHour: result.currentHourUtc },
+      });
+      if (!result.isAllowed) {
+        logBuffer.addValidationCheck({ name: 'Session', passed: false, reason: result.reason ?? 'Outside session' });
+        return { passed: false, filterResults, rejectionReason: 'Session filter failed' };
+      }
+      logBuffer.addValidationCheck({ name: 'Session', passed: true });
+    }
+
+    if (config.useBollingerSqueezeFilter) {
+      const result = checkBollingerSqueezeCondition(
+        cycleKlines,
+        config.bollingerSqueezeThreshold,
+        config.bollingerSqueezePeriod,
+        config.bollingerSqueezeStdDev
+      );
+      logBuffer.addFilterCheck({
+        filterName: 'Bollinger Squeeze',
+        passed: result.isAllowed,
+        reason: result.reason ?? 'N/A',
+        details: { bbWidth: result.bbWidth?.toFixed(4) ?? 'N/A' },
+      });
+      if (!result.isAllowed) {
+        logBuffer.addValidationCheck({ name: 'Bollinger Squeeze', passed: false, reason: result.reason ?? 'Volatility squeeze' });
+        return { passed: false, filterResults, rejectionReason: 'Bollinger Squeeze filter failed' };
+      }
+      logBuffer.addValidationCheck({ name: 'Bollinger Squeeze', passed: true });
+    }
+
+    if (config.useVwapFilter) {
+      const result = checkVwapCondition(cycleKlines, setup.direction);
+      logBuffer.addFilterCheck({
+        filterName: 'VWAP',
+        passed: result.isAllowed,
+        reason: result.reason ?? 'N/A',
+        details: { vwap: result.vwap?.toFixed(2) ?? 'N/A', price: result.currentPrice?.toFixed(2) ?? 'N/A' },
+      });
+      if (!result.isAllowed) {
+        logBuffer.addValidationCheck({ name: 'VWAP', passed: false, reason: result.reason ?? 'Wrong side of VWAP' });
+        return { passed: false, filterResults, rejectionReason: 'VWAP filter failed' };
+      }
+      logBuffer.addValidationCheck({ name: 'VWAP', passed: true });
+    }
+
+    if (config.useSuperTrendFilter) {
+      const result = checkSupertrendCondition(
+        cycleKlines,
+        setup.direction,
+        config.superTrendPeriod,
+        config.superTrendMultiplier
+      );
+      logBuffer.addFilterCheck({
+        filterName: 'SuperTrend',
+        passed: result.isAllowed,
+        reason: result.reason ?? 'N/A',
+        details: { trend: result.trend ?? 'N/A', value: result.value?.toFixed(2) ?? 'N/A' },
+      });
+      if (!result.isAllowed) {
+        logBuffer.addValidationCheck({ name: 'SuperTrend', passed: false, reason: result.reason ?? 'Against trend' });
+        return { passed: false, filterResults, rejectionReason: 'SuperTrend filter failed' };
+      }
+      logBuffer.addValidationCheck({ name: 'SuperTrend', passed: true });
+    }
+
+    if (config.useDirectionFilter) {
+      const result = checkDirectionFilter(cycleKlines, setup.direction, {
+        enableLongInBearMarket: config.enableLongInBearMarket,
+        enableShortInBullMarket: config.enableShortInBullMarket,
+      });
+      logBuffer.addFilterCheck({
+        filterName: 'Direction (EMA200)',
+        passed: result.isAllowed,
+        reason: result.reason ?? 'N/A',
+        details: { direction: result.direction, priceVsEma: result.priceVsEma200Percent?.toFixed(1) ?? 'N/A' },
+      });
+      if (!result.isAllowed) {
+        logBuffer.addValidationCheck({ name: 'Direction (EMA200)', passed: false, reason: result.reason ?? 'Wrong direction' });
+        return { passed: false, filterResults, rejectionReason: 'Direction filter failed' };
+      }
+      logBuffer.addValidationCheck({ name: 'Direction (EMA200)', passed: true });
+    }
+
     return { passed: true, filterResults };
   }
 
@@ -466,10 +599,11 @@ export class FilterValidator {
   private checkVolumeFilter(
     cycleKlines: Kline[],
     setup: TradingSetup,
-    logBuffer: WatcherLogBuffer
+    logBuffer: WatcherLogBuffer,
+    volumeFilterConfig?: VolumeFilterConfig
   ): { passed: boolean; filterResult?: ReturnType<typeof checkVolumeCondition> } {
     if (cycleKlines.length >= 21) {
-      const volumeResult = checkVolumeCondition(cycleKlines, setup.direction, setup.type);
+      const volumeResult = checkVolumeCondition(cycleKlines, setup.direction, setup.type, volumeFilterConfig);
 
       logBuffer.addFilterCheck({
         filterName: 'Volume',

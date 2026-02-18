@@ -227,6 +227,8 @@ export class SignalProcessor {
         directionMode: autoTradingConfig.directionMode,
         maxFibonacciEntryProgressPercent: autoTradingConfig.maxFibonacciEntryProgressPercent,
         fibonacciSwingRange: autoTradingConfig.fibonacciSwingRange,
+        minRiskRewardRatioLong: autoTradingConfig.minRiskRewardRatioLong,
+        minRiskRewardRatioShort: autoTradingConfig.minRiskRewardRatioShort,
       })
       .from(wallets)
       .leftJoin(autoTradingConfig, eq(wallets.id, autoTradingConfig.walletId))
@@ -449,10 +451,17 @@ export class SignalProcessor {
     for (const strategy of filteredStrategies) {
       await yieldToEventLoop();
 
+      const minRRLong = walletWithConfig?.minRiskRewardRatioLong
+        ? parseFloat(walletWithConfig.minRiskRewardRatioLong)
+        : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
+      const minRRShort = walletWithConfig?.minRiskRewardRatioShort
+        ? parseFloat(walletWithConfig.minRiskRewardRatioShort)
+        : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
+
       const interpreter = new StrategyInterpreter({
         enabled: true,
         minConfidence: 50,
-        minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
+        minRiskReward: Math.min(minRRLong, minRRShort),
         strategy,
         silent: true,
         interval: watcher.interval as TimeInterval,

@@ -451,6 +451,8 @@ export const autoTradingRouter = router({
         .set(updateData)
         .where(eq(autoTradingConfig.id, config.id));
 
+      autoTradingScheduler.invalidateConfigCache(input.walletId);
+
       if (input.isEnabled !== undefined) {
         log(input.isEnabled ? '✓ Auto-trading ENABLED' : '✗ Auto-trading DISABLED', {
           walletId: input.walletId,
