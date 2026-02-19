@@ -51,6 +51,8 @@
     "backtest:mw": "tsx src/cli/multi-watcher-backtest.ts",
     "backtest:volume": "tsx src/cli/compare-volume-filter.ts",
     "optimize:full": "tsx scripts/backtest/run-optimization.ts",
+    "rank-strategies": "tsx scripts/backtest/rank-strategies.ts",
+    "migrate:enabled-strategies": "tsx scripts/maintenance/migrate-enabled-strategies.ts",
     "reset-wallet": "tsx scripts/maintenance/reset-wallet.ts",
     "audit-klines": "tsx scripts/maintenance/audit-klines.ts",
     "clear-klines": "tsx scripts/maintenance/clear-klines.ts"

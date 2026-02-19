@@ -12,6 +12,7 @@
     "proven"
   ],
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [

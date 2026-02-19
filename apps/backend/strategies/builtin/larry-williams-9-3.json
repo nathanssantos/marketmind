@@ -11,7 +11,7 @@
     "double-confirmation"
   ],
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "larry-williams",
   "recommendedTimeframes": {
     "primary": "1d",

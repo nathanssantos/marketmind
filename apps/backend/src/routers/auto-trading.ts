@@ -6,7 +6,7 @@ import { AUTO_TRADING_CONFIG, CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmin
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { PROTECTION_CONFIG, TRADING_CONFIG } from '../constants';
+import { DEFAULT_ENABLED_SETUPS, PROTECTION_CONFIG, TRADING_CONFIG } from '../constants';
 import {
     activeWatchers,
     autoTradingConfig,
@@ -83,12 +83,7 @@ export const autoTradingRouter = router({
 
       if (!config) {
         const configId = generateEntityId();
-        const defaultEnabledSetups = JSON.stringify([
-          'larry-williams-9-1',
-          'larry-williams-9-2',
-          'larry-williams-9-3',
-          'larry-williams-9-4',
-        ]);
+        const defaultEnabledSetups = JSON.stringify([...DEFAULT_ENABLED_SETUPS]);
 
         await ctx.db.insert(autoTradingConfig).values({
           id: configId,

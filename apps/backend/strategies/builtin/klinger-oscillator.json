@@ -12,7 +12,7 @@
   ],
   "source": "Stephen Klinger - KVO Creator",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "recommendedTimeframes": {
     "primary": "1d",
     "secondary": [

@@ -12,7 +12,7 @@
   ],
   "source": "Technical Analysis Library",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "momentum",
   "recommendedTimeframes": {
     "primary": "4h",

@@ -12,6 +12,7 @@
   ],
   "source": "Alan Hull - HMA Creator",
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "4h",
     "secondary": [

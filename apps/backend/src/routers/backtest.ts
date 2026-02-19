@@ -2,6 +2,7 @@ import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import type { BacktestConfig, BacktestResult, Interval, MultiWatcherBacktestResult } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { DEFAULT_ENABLED_SETUPS } from '../constants';
 import { BacktestEngine } from '../services/backtesting/BacktestEngine';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import { buildMultiWatcherConfigFromWatchers, loadMultiWatcherConfigFromAutoTrading } from '../services/backtesting/configLoader';
@@ -108,9 +109,7 @@ export const backtestRouter = router({
           startDate: input.startDate,
           endDate: input.endDate,
           initialCapital: input.initialCapital,
-          setupTypes: input.setupTypes || [
-            'larry-williams-9-1', 'larry-williams-9-2', 'larry-williams-9-3', 'larry-williams-9-4',
-          ],
+          setupTypes: input.setupTypes || [...DEFAULT_ENABLED_SETUPS],
           minConfidence: input.minConfidence,
           useTrendFilter: input.useTrendFilter,
           useAlgorithmicLevels: input.useAlgorithmicLevels,

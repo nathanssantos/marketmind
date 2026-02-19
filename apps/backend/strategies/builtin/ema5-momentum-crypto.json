@@ -12,7 +12,7 @@
   ],
   "source": "QuantifiedStrategies.com - Trend Following on Bitcoin",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "backtestSummary": {
     "referenceCAGR": 145,
     "referenceMaxDrawdown": 39,

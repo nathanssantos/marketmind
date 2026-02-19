@@ -1,28 +1,8 @@
 import { FILTER_DEFAULTS } from '@marketmind/types';
 import type { MultiWatcherBacktestConfig } from '@marketmind/types';
+import { DEFAULT_ENABLED_SETUPS } from '../constants/index.js';
 
-export const ENABLED_SETUPS = [
-  'breakout-retest',
-  'bear-trap',
-  'ema5-momentum-crypto',
-  'tema-momentum',
-  '7day-momentum-crypto',
-  'chaikin-money-flow',
-  'rsi50-momentum-crossover',
-  'momentum-breakout-2025',
-  'tsi-momentum',
-  'larry-williams-9-1',
-  'larry-williams-9-3',
-  'klinger-oscillator',
-  'vwap-pullback',
-  'supertrend-follow',
-  'parabolic-sar-crypto',
-  'macd-divergence',
-  'triple-ema-confluence',
-  'nr7-breakout',
-  'larry-williams-9-4',
-  'golden-cross-sma',
-] as const;
+export const ENABLED_SETUPS = DEFAULT_ENABLED_SETUPS;
 
 export const DEFAULT_BACKTEST_PARAMS = {
   initialCapital: 1000,

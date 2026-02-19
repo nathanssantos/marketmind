@@ -38,7 +38,9 @@ const { TrailingStopSimulator } = await import('../../src/services/backtesting/t
 const { klineQueries } = await import('../../src/services/database/klineQueries.js');
 const { mapDbKlinesToApi } = await import('../../src/utils/kline-mapper.js');
 const { smartBackfillKlines } = await import('../../src/services/binance-historical.js');
-const { BACKTEST_ENGINE, ABSOLUTE_MINIMUM_KLINES } = await import('../../src/constants/index.js');
+const { BACKTEST_ENGINE, ABSOLUTE_MINIMUM_KLINES, DEFAULT_ENABLED_SETUPS } = await import('../../src/constants/index.js');
+
+const ACTIVE_STRATEGIES = [...DEFAULT_ENABLED_SETUPS];
 
 const getIntervalMs = (interval: string): number => {
   const match = interval.match(/^(\d+)([mhdw])$/);
@@ -55,29 +57,6 @@ const TIMEFRAMES_QUICK = ['4h', '1d'];
 
 const SYMBOLS = QUICK_MODE ? SYMBOLS_QUICK : SYMBOLS_FULL;
 const TIMEFRAMES = QUICK_MODE ? TIMEFRAMES_QUICK : TIMEFRAMES_FULL;
-
-const ACTIVE_STRATEGIES = [
-  '7day-momentum-crypto',
-  'bear-trap',
-  'breakout-retest',
-  'chaikin-money-flow',
-  'ema5-momentum-crypto',
-  'golden-cross-sma',
-  'klinger-oscillator',
-  'larry-williams-9-1',
-  'larry-williams-9-3',
-  'larry-williams-9-4',
-  'macd-divergence',
-  'momentum-breakout-2025',
-  'nr7-breakout',
-  'parabolic-sar-crypto',
-  'rsi50-momentum-crossover',
-  'supertrend-follow',
-  'tema-momentum',
-  'triple-ema-confluence',
-  'tsi-momentum',
-  'vwap-pullback',
-];
 
 const PRODUCTION_BASE = {
   startDate: '2023-02-13',

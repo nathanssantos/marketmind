@@ -11,7 +11,7 @@
   ],
   "source": "J. Welles Wilder - New Concepts",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "group": "trend",
   "recommendedTimeframes": {
     "primary": "4h",

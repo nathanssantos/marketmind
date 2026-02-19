@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_ENABLED_SETUPS } from '../../constants';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createAuthenticatedUser, createTestWallet, createTestTradingProfile, createTestActiveWatcher, createTestAutoTradingConfig } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
@@ -96,7 +97,7 @@ describe('Auto-Trading Router', () => {
       expect(config.isEnabled).toBe(false);
       expect(config.maxConcurrentPositions).toBe(3);
       expect(parseFloat(config.maxPositionSize as string)).toBe(10);
-      expect(config.enabledSetupTypes).toContain('larry-williams-9-1');
+      expect(config.enabledSetupTypes).toContain(DEFAULT_ENABLED_SETUPS[0]);
     });
 
     it('should return existing config', async () => {
@@ -152,13 +153,14 @@ describe('Auto-Trading Router', () => {
 
       await caller.autoTrading.getConfig({ walletId: wallet.id });
 
+      const testSetups = [DEFAULT_ENABLED_SETUPS[0], DEFAULT_ENABLED_SETUPS[1]];
       const result = await caller.autoTrading.updateConfig({
         walletId: wallet.id,
         isEnabled: true,
         maxConcurrentPositions: 10,
         maxPositionSize: '25',
         dailyLossLimit: '3',
-        enabledSetupTypes: ['larry-williams-9-1', 'larry-williams-9-2'],
+        enabledSetupTypes: [...testSetups],
       });
 
       expect(result.success).toBe(true);
@@ -168,8 +170,8 @@ describe('Auto-Trading Router', () => {
       expect(config.maxConcurrentPositions).toBe(10);
       expect(parseFloat(config.maxPositionSize as string)).toBe(25);
       expect(parseFloat(config.dailyLossLimit as string)).toBe(3);
-      expect(config.enabledSetupTypes).toContain('larry-williams-9-1');
-      expect(config.enabledSetupTypes).toContain('larry-williams-9-2');
+      expect(config.enabledSetupTypes).toContain(testSetups[0]);
+      expect(config.enabledSetupTypes).toContain(testSetups[1]);
     });
 
     it('should reject if config does not exist', async () => {

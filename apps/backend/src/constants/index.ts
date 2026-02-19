@@ -74,17 +74,18 @@ export const BACKTEST_DEFAULTS = {
 
 export const DEFAULT_ENABLED_SETUPS = [
   '7day-momentum-crypto',
+  'breakout-retest',
+  'bull-trap',
+  'cumulative-rsi-r3',
+  'divergence-rsi-macd',
+  'golden-cross-sma',
+  'hull-ma-trend',
+  'liquidity-sweep',
+  'macd-divergence',
   'momentum-breakout-2025',
   'nr7-breakout',
-  'rsi2-mean-reversion',
-  'donchian-breakout',
-  'vwap-ema-cross',
+  'pin-inside-combo',
   'triple-ema-confluence',
-  'keltner-breakout-optimized',
-  'golden-cross-sma',
-  'rsi-sma-filter',
-  'momentum-rotation',
-  'chande-momentum-crypto',
 ] as const;
 
 export const SESSION_DURATION_DAYS = 30;

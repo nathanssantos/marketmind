@@ -13,7 +13,7 @@
   ],
   "source": "QuantifiedStrategies.com - Bitcoin RSI Trading Strategy",
   "status": "active",
-  "enabled": true,
+  "enabled": false,
   "backtestSummary": {
     "referenceCAGR": 122,
     "referenceMaxDrawdown": 39,

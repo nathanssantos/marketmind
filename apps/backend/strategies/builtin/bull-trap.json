@@ -11,6 +11,7 @@
     "counter-trend"
   ],
   "status": "active",
+  "enabled": true,
   "recommendedTimeframes": {
     "primary": "1h",
     "secondary": [
