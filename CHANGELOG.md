@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.52.1] - 2026-02-20
+
+### Fixed
+- Trailing stop activation logic improvements
+- Resolve 14 TypeScript errors in electron type-check (bracket notation for index signatures, unused import)
+
+### Refactored
+- Consolidate active strategies to single source of truth and optimize selection
+- Optimize algorithmic bottlenecks, deduplicate backtesting engines, and unify registries
+
+---
+
 ## [0.52.0] - 2026-02-18
 
 ### Added
