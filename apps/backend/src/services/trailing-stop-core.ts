@@ -1,21 +1,15 @@
-import type { FibonacciProjectionData, MarketType } from '@marketmind/types';
-import { getRoundTripFee } from '@marketmind/types';
+import type { FibonacciProjectionData } from '@marketmind/types';
 import { TRAILING_STOP } from '../constants';
 
 export interface TrailingStopCoreConfig {
-  feePercent?: number;
-  marketType?: MarketType;
-  useBnbDiscount?: boolean;
   minTrailingDistancePercent?: number;
   atrMultiplier?: number;
   trailingDistancePercent?: number;
   trailingDistancePercentLong?: number;
   trailingDistancePercentShort?: number;
-  vipLevel?: number;
   useFibonacciThresholds?: boolean;
   activationPercentLong?: number;
   activationPercentShort?: number;
-  useProfitLockDistance?: boolean;
   forceActivated?: boolean;
 }
 
@@ -32,27 +26,16 @@ export interface TrailingStopCoreInput {
   fibonacciProjection?: FibonacciProjectionData | null;
 }
 
-export type TrailingStopReason = 'fees_covered' | 'swing_trail' | 'atr_trail' | 'progressive_trail';
+export type TrailingStopReason = 'swing_trail' | 'atr_trail' | 'progressive_trail';
 
 export interface TrailingStopCoreResult {
   newStopLoss: number;
   reason: TrailingStopReason;
 }
 
-const FALLBACK_MIN_PROFIT_THRESHOLD = TRAILING_STOP.BREAKEVEN_THRESHOLD;
-const TP_THRESHOLD_FOR_BREAKEVEN = TRAILING_STOP.TP_THRESHOLD_FOR_BREAKEVEN;
-const TP_THRESHOLD_FOR_ADVANCED = TRAILING_STOP.TP_THRESHOLD_FOR_ADVANCED;
 const DEFAULT_TRAILING_DISTANCE_PERCENT = TRAILING_STOP.PEAK_PROFIT_FLOOR;
 const DEFAULT_TRAILING_DISTANCE_PERCENT_LONG = TRAILING_STOP.PEAK_PROFIT_FLOOR_LONG;
 const DEFAULT_TRAILING_DISTANCE_PERCENT_SHORT = TRAILING_STOP.PEAK_PROFIT_FLOOR_SHORT;
-
-export const getRoundTripFeePercent = (
-  marketType: MarketType = 'FUTURES',
-  useBnbDiscount: boolean = false,
-  vipLevel: number = 0
-): number => {
-  return getRoundTripFee({ marketType, useBnbDiscount, vipLevel });
-};
 
 export const calculateProfitPercent = (
   entryPrice: number,
@@ -62,26 +45,6 @@ export const calculateProfitPercent = (
   return isLong
     ? (currentPrice - entryPrice) / entryPrice
     : (entryPrice - currentPrice) / entryPrice;
-};
-
-export const calculateStopAtProfitPercent = (
-  entryPrice: number,
-  profitPercent: number,
-  isLong: boolean
-): number => {
-  return isLong
-    ? entryPrice * (1 + profitPercent)
-    : entryPrice * (1 - profitPercent);
-};
-
-export const calculateTPProfitPercent = (
-  entryPrice: number,
-  takeProfit: number,
-  isLong: boolean
-): number => {
-  return isLong
-    ? (takeProfit - entryPrice) / entryPrice
-    : (entryPrice - takeProfit) / entryPrice;
 };
 
 export const calculateProgressiveFloor = (
@@ -191,6 +154,42 @@ export const calculateFibonacciPriceAtLevel = (
     : swingLow - range * (level - 1);
 };
 
+export const interpolateActivationPrice = (
+  fibonacciProjection: FibonacciProjectionData | null | undefined,
+  activationLevel: number,
+  isLong: boolean
+): number | null => {
+  if (!fibonacciProjection?.levels?.length) return null;
+
+  const sorted = [...fibonacciProjection.levels].sort((a, b) => a.level - b.level);
+
+  const exactMatch = sorted.find(l => Math.abs(l.level - activationLevel) < 0.001);
+  if (exactMatch) return exactMatch.price;
+
+  let lower = sorted[0]!;
+  let upper = sorted[sorted.length - 1]!;
+
+  if (activationLevel <= lower.level) return lower.price;
+  if (activationLevel >= upper.level) return upper.price;
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i]!.level <= activationLevel && sorted[i + 1]!.level >= activationLevel) {
+      lower = sorted[i]!;
+      upper = sorted[i + 1]!;
+      break;
+    }
+  }
+
+  const levelRange = upper.level - lower.level;
+  if (levelRange === 0) return lower.price;
+
+  const t = (activationLevel - lower.level) / levelRange;
+  const interpolatedPrice = lower.price + t * (upper.price - lower.price);
+
+  if (isLong) return interpolatedPrice;
+  return interpolatedPrice;
+};
+
 export const hasReachedFibonacciLevel = (
   currentPrice: number,
   fibonacciProjection: FibonacciProjectionData | null | undefined,
@@ -232,21 +231,34 @@ export const getImpliedTakeProfit = (
 };
 
 export const hasReachedTPProgressThreshold = (
-  _entryPrice: number,
+  entryPrice: number,
   currentPrice: number,
-  _takeProfit: number | null | undefined,
+  takeProfit: number | null | undefined,
   fibonacciProjection: FibonacciProjectionData | null | undefined,
   isLong: boolean,
   activationPercentLong?: number,
   activationPercentShort?: number
 ): boolean => {
-  // The activation threshold represents a Fibonacci LEVEL (e.g., 0.886 = 88.6% Fibo level),
-  // not a percentage of the path to TP. We check if price has reached that Fibo level.
   const activationLevel = isLong
     ? (activationPercentLong ?? TP_PROGRESS_THRESHOLD_LONG)
     : (activationPercentShort ?? TP_PROGRESS_THRESHOLD_SHORT);
 
-  return hasReachedFibonacciLevel(currentPrice, fibonacciProjection, activationLevel, isLong);
+  const primaryPrice = calculateFibonacciPriceAtLevel(fibonacciProjection, activationLevel, isLong);
+  if (primaryPrice !== null) {
+    return isLong ? currentPrice >= primaryPrice : currentPrice <= primaryPrice;
+  }
+
+  const interpolatedPrice = interpolateActivationPrice(fibonacciProjection, activationLevel, isLong);
+  if (interpolatedPrice !== null) {
+    return isLong ? currentPrice >= interpolatedPrice : currentPrice <= interpolatedPrice;
+  }
+
+  if (takeProfit) {
+    const progress = calculateTPProgress(entryPrice, currentPrice, takeProfit, isLong);
+    return progress >= activationLevel;
+  }
+
+  return false;
 };
 
 export const shouldUpdateStopLoss = (
@@ -291,10 +303,6 @@ export const computeTrailingStopCore = (
   } = input;
 
   const isLong = side === 'LONG';
-  const marketType = config.marketType ?? 'FUTURES';
-  const useBnbDiscount = config.useBnbDiscount ?? false;
-  const vipLevel = config.vipLevel ?? 0;
-  const feePercent = config.feePercent ?? getRoundTripFeePercent(marketType, useBnbDiscount, vipLevel);
   const minTrailingDistancePercent = config.minTrailingDistancePercent ?? 0.002;
   const atrMultiplier = config.atrMultiplier ?? 2.0;
   const defaultDistance = isLong ? DEFAULT_TRAILING_DISTANCE_PERCENT_LONG : DEFAULT_TRAILING_DISTANCE_PERCENT_SHORT;
@@ -304,16 +312,12 @@ export const computeTrailingStopCore = (
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
   const activationPercentLong = config.activationPercentLong;
   const activationPercentShort = config.activationPercentShort;
-  const useProfitLockDistance = config.useProfitLockDistance ?? false;
   const forceActivated = config.forceActivated ?? false;
-
-  const profitPercent = calculateProfitPercent(entryPrice, currentPrice, isLong);
-  const feesCoveredPrice = calculateStopAtProfitPercent(entryPrice, feePercent, isLong);
 
   const canUseFibonacciThresholds = useFibonacciThresholds && fibonacciProjection?.levels?.length;
 
-  if (canUseFibonacciThresholds || forceActivated) {
-    if (!forceActivated) {
+  if (!forceActivated) {
+    if (canUseFibonacciThresholds) {
       const reachedThreshold = hasReachedTPProgressThreshold(
         entryPrice,
         currentPrice,
@@ -323,59 +327,22 @@ export const computeTrailingStopCore = (
         activationPercentLong,
         activationPercentShort
       );
-
       if (!reachedThreshold) return null;
+    } else if (takeProfit) {
+      const activationLevel = isLong
+        ? (activationPercentLong ?? TP_PROGRESS_THRESHOLD_LONG)
+        : (activationPercentShort ?? TP_PROGRESS_THRESHOLD_SHORT);
+      const progress = calculateTPProgress(entryPrice, currentPrice, takeProfit, isLong);
+      if (progress < activationLevel) return null;
+    } else {
+      return null;
     }
-
-    const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
-      { price: feesCoveredPrice, reason: 'fees_covered' },
-    ];
-
-    const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
-    if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
-
-    const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, minTrailingDistancePercent);
-    if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
-
-    if (atr && atr > 0) {
-      const extremePrice = isLong ? highestPrice : lowestPrice;
-      if (extremePrice !== undefined) {
-        const atrStop = calculateATRTrailingStop(extremePrice, atr, isLong, atrMultiplier);
-        if (shouldUpdateStopLoss(atrStop, currentStopLoss, isLong)) {
-          candidates.push({ price: atrStop, reason: 'atr_trail' });
-        }
-      }
-    }
-
-    const bestCandidate = selectBestCandidate(candidates, isLong);
-    if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;
-    return { newStopLoss: bestCandidate.price, reason: bestCandidate.reason };
   }
 
-  const tpProfitPercent = takeProfit
-    ? calculateTPProfitPercent(entryPrice, takeProfit, isLong)
-    : null;
+  const candidates: Array<{ price: number; reason: TrailingStopReason }> = [];
 
-  const breakevenThreshold = tpProfitPercent
-    ? tpProfitPercent * TP_THRESHOLD_FOR_BREAKEVEN
-    : FALLBACK_MIN_PROFIT_THRESHOLD;
-
-  const advancedThreshold = tpProfitPercent
-    ? tpProfitPercent * TP_THRESHOLD_FOR_ADVANCED
-    : null;
-
-  if (profitPercent < breakevenThreshold) return null;
-
-  const shouldUseAdvancedLogic = advancedThreshold !== null && profitPercent >= advancedThreshold;
-
-  if (!shouldUseAdvancedLogic) {
-    if (!shouldUpdateStopLoss(feesCoveredPrice, currentStopLoss, isLong)) return null;
-    return { newStopLoss: feesCoveredPrice, reason: 'fees_covered' };
-  }
-
-  const candidates: Array<{ price: number; reason: TrailingStopReason }> = [
-    { price: feesCoveredPrice, reason: 'fees_covered' },
-  ];
+  const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
+  if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
 
   const swingStop = findBestSwingStop(swingPoints, currentPrice, entryPrice, isLong, minTrailingDistancePercent);
   if (swingStop !== null) candidates.push({ price: swingStop, reason: 'swing_trail' });
@@ -390,10 +357,7 @@ export const computeTrailingStopCore = (
     }
   }
 
-  if (useProfitLockDistance) {
-    const progressiveFloor = calculateProgressiveFloor(entryPrice, highestPrice, lowestPrice, isLong, trailingDistancePercent);
-    if (progressiveFloor !== null) candidates.push({ price: progressiveFloor, reason: 'progressive_trail' });
-  }
+  if (candidates.length === 0) return null;
 
   const bestCandidate = selectBestCandidate(candidates, isLong);
   if (!shouldUpdateStopLoss(bestCandidate.price, currentStopLoss, isLong)) return null;

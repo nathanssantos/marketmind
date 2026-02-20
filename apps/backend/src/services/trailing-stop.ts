@@ -1,6 +1,5 @@
 import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
-import type { FibonacciProjectionData, Interval, Kline as KlineType, MarketType, TrailingStopOptimizationConfig } from '@marketmind/types';
-import { getRoundTripFee } from '@marketmind/types';
+import type { FibonacciProjectionData, Interval, Kline as KlineType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { TRAILING_STOP } from '../constants';
 import { db } from '../db';
@@ -19,8 +18,6 @@ import {
 import { calculateATRPercent, getVolatilityProfile } from './volatility-profile';
 import { getWebSocketService } from './websocket';
 
-export { getRoundTripFee } from '@marketmind/types';
-
 export const calculateAutoStopOffset = (atrPercent: number): number => {
   if (atrPercent < 0.005) return 0;
   if (atrPercent < 0.01) return 0.0025;
@@ -30,22 +27,11 @@ export const calculateAutoStopOffset = (atrPercent: number): number => {
   return 0.015;
 };
 
-export const getFeesThresholdForMarketType = (
-  marketType: MarketType,
-  useBnbDiscount: boolean = false
-): number => {
-  const roundTripFee = getRoundTripFee({ marketType, useBnbDiscount });
-  return roundTripFee + 0.005;
-};
-
 export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
-  breakevenProfitThreshold: TRAILING_STOP.BREAKEVEN_THRESHOLD,
-  breakevenWithFeesThreshold: TRAILING_STOP.FEES_COVERAGE_THRESHOLD,
   minTrailingDistancePercent: 0.002,
   swingLookback: 3,
   useATRMultiplier: true,
   atrMultiplier: 2.0,
-  feePercent: getRoundTripFee({ marketType: 'FUTURES' }),
   trailingDistancePercent: TRAILING_STOP.PEAK_PROFIT_FLOOR,
   useVolatilityBasedThresholds: true,
   marketType: 'FUTURES',
@@ -86,10 +72,6 @@ export const resolveTrailingStopConfig = (
 
   const trailingDistancePercent = side === 'LONG' ? distanceLong : distanceShort;
 
-  const useProfitLockDistance = useOverride && symbolOverride.useProfitLockDistance !== null
-    ? symbolOverride.useProfitLockDistance
-    : walletConfig?.useProfitLockDistance ?? baseConfig.useProfitLockDistance;
-
   const trailingDistanceMode = useOverride && symbolOverride.trailingDistanceMode !== null
     ? symbolOverride.trailingDistanceMode
     : walletConfig?.trailingDistanceMode ?? baseConfig.trailingDistanceMode ?? 'fixed';
@@ -123,7 +105,6 @@ export const resolveTrailingStopConfig = (
     trailingDistancePercent,
     trailingDistanceMode,
     trailingStopOffsetPercent,
-    useProfitLockDistance,
     useVolatilityBasedThresholds,
     forceActivated,
   };
@@ -158,44 +139,12 @@ export interface TrailingStopResult {
 
 export { calculateATRTrailingStop, calculateProfitPercent, calculateProgressiveFloor, findBestSwingStop, shouldUpdateStopLoss } from './trailing-stop-core';
 
-export const calculateBreakevenPrice = (
-  entryPrice: number,
-  isLong: boolean,
-  buffer: number = 0
-): number => {
-  return entryPrice * (isLong ? 1 + buffer : 1 - buffer);
-};
-
-export const calculateFeesCoveredPrice = (
-  entryPrice: number,
-  isLong: boolean,
-  feePercent?: number,
-  marketType: MarketType = 'FUTURES',
-  useBnbDiscount: boolean = false
-): number => {
-  const effectiveFee = feePercent ?? getRoundTripFee({ marketType, useBnbDiscount });
-  return entryPrice * (isLong ? 1 + effectiveFee : 1 - effectiveFee);
-};
-
-export const calculateNewStopLoss = (
-  breakevenPrice: number,
-  swingStop: number | null,
-  isLong: boolean
-): number => {
-  if (swingStop === null) return breakevenPrice;
-  return isLong
-    ? Math.max(breakevenPrice, swingStop)
-    : Math.min(breakevenPrice, swingStop);
-};
-
 export const computeTrailingStop = (
   input: TrailingStopInput,
   config: TrailingStopOptimizationConfig
 ): TrailingStopResult | null => {
   const { entryPrice, currentPrice, currentStopLoss, side, takeProfit, swingPoints, highestPrice, lowestPrice, atr, fibonacciProjection } = input;
   const isLong = side === 'LONG';
-  const marketType = config.marketType ?? 'FUTURES';
-  const useBnbDiscount = config.useBnbDiscount ?? false;
   const useFibonacciThresholds = config.useFibonacciThresholds ?? false;
 
   return computeTrailingStopCore(
@@ -212,14 +161,10 @@ export const computeTrailingStop = (
       fibonacciProjection,
     },
     {
-      feePercent: config.feePercent,
-      marketType,
-      useBnbDiscount,
       minTrailingDistancePercent: config.minTrailingDistancePercent,
       atrMultiplier: config.atrMultiplier,
       trailingDistancePercent: config.trailingDistancePercent,
       useFibonacciThresholds,
-      useProfitLockDistance: config.useProfitLockDistance,
       activationPercentLong: config.activationPercentLong,
       activationPercentShort: config.activationPercentShort,
       forceActivated: config.forceActivated,
@@ -535,8 +480,6 @@ export class TrailingStopService {
         effectiveConfig = {
           ...this.config,
           atrMultiplier: profile.atrMultiplier,
-          breakevenProfitThreshold: profile.breakevenThreshold,
-          breakevenWithFeesThreshold: profile.feesThreshold,
           minTrailingDistancePercent: profile.minTrailingDistance,
           marketType,
           useBnbDiscount,

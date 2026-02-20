@@ -235,19 +235,14 @@ export interface VolatilityProfile {
   level: VolatilityLevel;
   atrPercent: number;
   atrMultiplier: number;
-  breakevenThreshold: number;
-  feesThreshold: number;
   minTrailingDistance: number;
 }
 
 export interface TrailingStopOptimizationConfig {
-  breakevenProfitThreshold: number;
-  breakevenWithFeesThreshold?: number;
   minTrailingDistancePercent: number;
   swingLookback: number;
   useATRMultiplier: boolean;
   atrMultiplier: number;
-  feePercent?: number;
   trailingDistancePercent?: number;
   trailingDistanceMode?: import('./trading-config').TrailingDistanceMode;
   trailingStopOffsetPercent?: number;
@@ -257,7 +252,6 @@ export interface TrailingStopOptimizationConfig {
   useFibonacciThresholds?: boolean;
   activationPercentLong?: number;
   activationPercentShort?: number;
-  useProfitLockDistance?: boolean;
   forceActivated?: boolean;
 }
 

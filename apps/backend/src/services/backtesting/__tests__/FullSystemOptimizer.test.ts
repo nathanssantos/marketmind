@@ -70,12 +70,7 @@ describe('FullSystemOptimizer', () => {
 
     it('all presets should have valid trailing stop configs', () => {
       for (const preset of Object.values(OPTIMIZATION_PRESETS)) {
-        expect(preset.trailingStop.breakevenProfitThreshold.length).toBeGreaterThan(0);
         expect(preset.trailingStop.minTrailingDistancePercent.length).toBeGreaterThan(0);
-        for (const bt of preset.trailingStop.breakevenProfitThreshold) {
-          expect(bt).toBeGreaterThan(0);
-          expect(bt).toBeLessThan(1);
-        }
         for (const md of preset.trailingStop.minTrailingDistancePercent) {
           expect(md).toBeGreaterThan(0);
           expect(md).toBeLessThan(1);
@@ -98,7 +93,7 @@ describe('FullSystemOptimizer', () => {
       const combinations = optimizer.generateCombinations(preset);
       const expectedCount = optimizer.countCombinations(preset);
       expect(combinations.length).toBe(expectedCount);
-      expect(combinations.length).toBe(432);
+      expect(combinations.length).toBe(144);
     });
 
     it('should generate all unique combinations', () => {
@@ -134,7 +129,6 @@ describe('FullSystemOptimizer', () => {
       const combinations = optimizer.generateCombinations(preset);
       for (const combination of combinations) {
         expect(combination).toHaveProperty('trailingStop');
-        expect(combination.trailingStop).toHaveProperty('breakevenProfitThreshold');
         expect(combination.trailingStop).toHaveProperty('minTrailingDistancePercent');
       }
     });
@@ -144,13 +138,13 @@ describe('FullSystemOptimizer', () => {
     it('should correctly calculate combinations for quick preset', () => {
       const preset = OPTIMIZATION_PRESETS['quick']!;
       const count = optimizer.countCombinations(preset);
-      expect(count).toBe(2 * 1 * 1 * 2 * 1 * 1);
+      expect(count).toBe(2 * 1 * 1 * 2 * 1);
     });
 
     it('should correctly calculate combinations for balanced preset', () => {
       const preset = OPTIMIZATION_PRESETS['balanced']!;
       const count = optimizer.countCombinations(preset);
-      expect(count).toBe(4 * 3 * 3 * 2 * 3 * 2);
+      expect(count).toBe(4 * 3 * 3 * 2 * 2);
     });
 
     it('should return larger count for thorough vs balanced', () => {
@@ -194,7 +188,6 @@ describe('FullSystemOptimizer', () => {
           maxEntries: [3],
         },
         trailingStop: {
-          breakevenProfitThreshold: [0.005],
           minTrailingDistancePercent: [0.002],
         },
         walkForward: false,
@@ -213,7 +206,6 @@ describe('FullSystemOptimizer', () => {
           maxEntries: 3,
         },
         trailingStop: {
-          breakevenProfitThreshold: 0.005,
           minTrailingDistancePercent: 0.002,
         },
       });
@@ -229,7 +221,6 @@ describe('FullSystemOptimizer', () => {
           maxEntries: [3],
         },
         trailingStop: {
-          breakevenProfitThreshold: [0.005],
           minTrailingDistancePercent: [0.002],
         },
         walkForward: false,

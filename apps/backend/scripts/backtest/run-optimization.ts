@@ -144,7 +144,6 @@ const SWING_RANGE_VALUES: SwingRange[] = ['nearest', 'extended'];
 const TRAILING_STOP_GRID = {
   activationPercentLong: [50, 70, 90, 100, 127.2],
   activationPercentShort: [50, 70, 80, 100, 127.2],
-  useProfitLockDistance: [false, true],
   distancePercentLong: [20, 30, 40, 50, 60],
   distancePercentShort: [15, 20, 30, 40, 50],
   stopOffsetPercent: [0, 0.001, 0.002, 0.003, 0.005],
@@ -196,7 +195,6 @@ interface TrailingStopResultRow {
   baseConfigId: string;
   activationLong: number;
   activationShort: number;
-  useProfitLock: boolean;
   distanceLong: number;
   distanceShort: number;
   stopOffset: number;
@@ -882,7 +880,6 @@ const runStage3 = async (
     name: string;
     activationLong: number;
     activationShort: number;
-    useProfitLock: boolean;
     distanceLong: number;
     distanceShort: number;
     stopOffset: number;
@@ -891,20 +888,17 @@ const runStage3 = async (
   const tsCombos: TSCombo[] = [];
   for (const actL of TRAILING_STOP_GRID.activationPercentLong) {
     for (const actS of TRAILING_STOP_GRID.activationPercentShort) {
-      for (const profitLock of TRAILING_STOP_GRID.useProfitLockDistance) {
-        for (const dL of TRAILING_STOP_GRID.distancePercentLong) {
-          for (const dS of TRAILING_STOP_GRID.distancePercentShort) {
-            for (const offset of TRAILING_STOP_GRID.stopOffsetPercent) {
-              tsCombos.push({
-                name: `aL${actL}-aS${actS}-pl${profitLock ? 1 : 0}-dL${dL}-dS${dS}-off${offset}`,
-                activationLong: actL,
-                activationShort: actS,
-                useProfitLock: profitLock,
-                distanceLong: dL,
-                distanceShort: dS,
-                stopOffset: offset,
-              });
-            }
+      for (const dL of TRAILING_STOP_GRID.distancePercentLong) {
+        for (const dS of TRAILING_STOP_GRID.distancePercentShort) {
+          for (const offset of TRAILING_STOP_GRID.stopOffsetPercent) {
+            tsCombos.push({
+              name: `aL${actL}-aS${actS}-dL${dL}-dS${dS}-off${offset}`,
+              activationLong: actL,
+              activationShort: actS,
+              distanceLong: dL,
+              distanceShort: dS,
+              stopOffset: offset,
+            });
           }
         }
       }
@@ -995,7 +989,6 @@ const runStage3 = async (
                 stopOffsetPercent: tsCombo.stopOffset,
               },
               useAdaptiveTrailing: TRAILING_STOP_USER_DEFAULTS.useAdaptiveTrailing,
-              useProfitLockDistance: tsCombo.useProfitLock,
               marketType: 'FUTURES' as const,
               useBnbDiscount: false,
               vipLevel: 0,
@@ -1038,7 +1031,6 @@ const runStage3 = async (
               baseConfigId: baseCfg.name,
               activationLong: tsCombo.activationLong,
               activationShort: tsCombo.activationShort,
-              useProfitLock: tsCombo.useProfitLock,
               distanceLong: tsCombo.distanceLong,
               distanceShort: tsCombo.distanceShort,
               stopOffset: tsCombo.stopOffset,
@@ -1128,7 +1120,6 @@ const generateReports = (
   summary += `  Entry Progress: ${PRODUCTION_BASE.maxFibonacciEntryProgressPercent}% | R:R Long: ${PRODUCTION_BASE.minRiskRewardRatioLong} | R:R Short: ${PRODUCTION_BASE.minRiskRewardRatioShort}\n`;
   summary += `  Trailing LONG Activation: ${TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentLong * 100}%\n`;
   summary += `  Trailing SHORT Activation: ${TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentShort * 100}%\n`;
-  summary += `  Profit Lock Distance: ${TRAILING_STOP_USER_DEFAULTS.useProfitLockDistance ? 'ON' : 'OFF'}\n`;
   summary += `  Avg PnL: ${pct(baselineAvgPnl)} | Avg Sharpe: ${fmt(baselineAvgSharpe)}\n\n`;
 
   const baselineBySymbol = new Map<string, BacktestResultRow[]>();
@@ -1273,7 +1264,7 @@ const generateReports = (
 
     const byTsConfig = new Map<string, TrailingStopResultRow[]>();
     for (const r of stage3Results) {
-      const key = `${r.activationLong}-${r.activationShort}-${r.useProfitLock}-${r.distanceLong}-${r.distanceShort}-${r.stopOffset}`;
+      const key = `${r.activationLong}-${r.activationShort}-${r.distanceLong}-${r.distanceShort}-${r.stopOffset}`;
       if (!byTsConfig.has(key)) byTsConfig.set(key, []);
       byTsConfig.get(key)!.push(r);
     }
@@ -1282,7 +1273,6 @@ const generateReports = (
       key: string;
       actL: number;
       actS: number;
-      profitLock: boolean;
       distL: number;
       distS: number;
       offset: number;
@@ -1302,7 +1292,6 @@ const generateReports = (
         key,
         actL: sample.activationLong,
         actS: sample.activationShort,
-        profitLock: sample.useProfitLock,
         distL: sample.distanceLong,
         distS: sample.distanceShort,
         offset: sample.stopOffset,
@@ -1321,11 +1310,11 @@ const generateReports = (
 
     summary += 'TRAILING STOP CONFIGS (aggregated across all base configs & symbol-TFs)\n';
     summary += '-'.repeat(180) + '\n';
-    summary += 'Rank | Act L % | Act S % | ProfLock | Dist L | Dist S | Offset | Avg PnL %  | WR %   | L PnL %    | S PnL %    | TS Exits | TP Exits | SL Exits\n';
-    summary += '-'.repeat(180) + '\n';
+    summary += 'Rank | Act L % | Act S % | Dist L | Dist S | Offset | Avg PnL %  | WR %   | L PnL %    | S PnL %    | TS Exits | TP Exits | SL Exits\n';
+    summary += '-'.repeat(170) + '\n';
 
     rankedTs.slice(0, 30).forEach((r, i) => {
-      summary += `${(i + 1).toString().padStart(4)} | ${fmt(r.actL).padStart(7)} | ${fmt(r.actS).padStart(7)} | ${(r.profitLock ? 'ON' : 'OFF').padStart(8)} | ${fmt(r.distL).padStart(6)} | ${fmt(r.distS).padStart(6)} | ${fmt(r.offset, 3).padStart(6)} | ${pct(r.avgPnl).padStart(10)} | ${fmt(r.avgWr).padStart(5)}% | ${pct(r.avgLPnl).padStart(10)} | ${pct(r.avgSPnl).padStart(10)} | ${fmt(r.avgTsExits).padStart(8)} | ${fmt(r.avgTpExits).padStart(8)} | ${fmt(r.avgSlExits).padStart(8)}\n`;
+      summary += `${(i + 1).toString().padStart(4)} | ${fmt(r.actL).padStart(7)} | ${fmt(r.actS).padStart(7)} | ${fmt(r.distL).padStart(6)} | ${fmt(r.distS).padStart(6)} | ${fmt(r.offset, 3).padStart(6)} | ${pct(r.avgPnl).padStart(10)} | ${fmt(r.avgWr).padStart(5)}% | ${pct(r.avgLPnl).padStart(10)} | ${pct(r.avgSPnl).padStart(10)} | ${fmt(r.avgTsExits).padStart(8)} | ${fmt(r.avgTpExits).padStart(8)} | ${fmt(r.avgSlExits).padStart(8)}\n`;
     });
 
     summary += '\nPARAMETER SENSITIVITY BREAKDOWN\n';
@@ -1359,7 +1348,6 @@ const generateReports = (
     sensAnalysis('Distance % LONG', r => r.distanceLong);
     sensAnalysis('Distance % SHORT', r => r.distanceShort);
     sensAnalysis('Stop Offset %', r => r.stopOffset);
-    sensAnalysis('Profit Lock Distance', r => r.useProfitLock ? 'ON' : 'OFF');
   }
 
   summary += '\n' + '='.repeat(120) + '\n';
@@ -1448,7 +1436,6 @@ const generateReports = (
     if (bestTsOverall) {
       const prodActL = TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentLong * 100;
       const prodActS = TRAILING_STOP_USER_DEFAULTS.trailingActivationPercentShort * 100;
-      const prodPL = TRAILING_STOP_USER_DEFAULTS.useProfitLockDistance;
       const prodDistL = TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentLong * 100;
       const prodDistS = TRAILING_STOP_USER_DEFAULTS.trailingDistancePercentShort * 100;
       const prodOffset = TRAILING_STOP_USER_DEFAULTS.trailingStopOffsetPercent;
@@ -1461,9 +1448,6 @@ const generateReports = (
       }
       if (bestTsOverall.sample.activationShort !== prodActS) {
         summary += `  trailingActivationPercentShort: ${prodActS}% -> ${bestTsOverall.sample.activationShort}%\n`;
-      }
-      if (bestTsOverall.sample.useProfitLock !== prodPL) {
-        summary += `  useProfitLockDistance: ${prodPL ? 'ON' : 'OFF'} -> ${bestTsOverall.sample.useProfitLock ? 'ON' : 'OFF'}\n`;
       }
       if (bestTsOverall.sample.distanceLong !== prodDistL) {
         summary += `  trailingDistancePercentLong: ${prodDistL}% -> ${bestTsOverall.sample.distanceLong}%\n`;
@@ -1478,7 +1462,6 @@ const generateReports = (
       if (
         bestTsOverall.sample.activationLong === prodActL &&
         bestTsOverall.sample.activationShort === prodActS &&
-        bestTsOverall.sample.useProfitLock === prodPL &&
         bestTsOverall.sample.distanceLong === prodDistL &&
         bestTsOverall.sample.distanceShort === prodDistS &&
         bestTsOverall.sample.stopOffset === prodOffset
@@ -1501,10 +1484,10 @@ const generateReports = (
   log(`  Wrote full-results.csv`);
 
   if (stage3Results.length > 0) {
-    let tsCsv = 'ConfigId,BaseConfig,ActL,ActS,ProfitLock,DistL,DistS,StopOffset,Symbol,TF,Trades,WR,PnL%,MaxDD%,Sharpe,TSExits,TPExits,SLExits,LongT,LongWR,LongPnL%,ShortT,ShortWR,ShortPnL%\n';
+    let tsCsv = 'ConfigId,BaseConfig,ActL,ActS,DistL,DistS,StopOffset,Symbol,TF,Trades,WR,PnL%,MaxDD%,Sharpe,TSExits,TPExits,SLExits,LongT,LongWR,LongPnL%,ShortT,ShortWR,ShortPnL%\n';
 
     for (const r of stage3Results) {
-      tsCsv += `${r.configId},${r.baseConfigId},${r.activationLong},${r.activationShort},${r.useProfitLock},${r.distanceLong},${r.distanceShort},${r.stopOffset},${r.symbol},${r.timeframe},${r.totalTrades},${fmt(r.winRate)},${fmt(r.totalPnlPercent)},${fmt(r.maxDrawdownPercent)},${fmt(r.sharpeRatio)},${r.trailingStopExits},${r.takeProfitExits},${r.stopLossExits},${r.long.trades},${fmt(r.long.winRate)},${fmt(r.long.pnlPercent)},${r.short.trades},${fmt(r.short.winRate)},${fmt(r.short.pnlPercent)}\n`;
+      tsCsv += `${r.configId},${r.baseConfigId},${r.activationLong},${r.activationShort},${r.distanceLong},${r.distanceShort},${r.stopOffset},${r.symbol},${r.timeframe},${r.totalTrades},${fmt(r.winRate)},${fmt(r.totalPnlPercent)},${fmt(r.maxDrawdownPercent)},${fmt(r.sharpeRatio)},${r.trailingStopExits},${r.takeProfitExits},${r.stopLossExits},${r.long.trades},${fmt(r.long.winRate)},${fmt(r.long.pnlPercent)},${r.short.trades},${fmt(r.short.winRate)},${fmt(r.short.pnlPercent)}\n`;
     }
 
     writeFileSync(`${OUTPUT_DIR}/trailing-stop-results.csv`, tsCsv);

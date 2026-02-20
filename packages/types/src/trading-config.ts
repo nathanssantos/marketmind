@@ -23,16 +23,12 @@ export const CAPITAL_RULES = {
 } as const;
 
 export const TRAILING_STOP_CONFIG = {
-  BREAKEVEN_THRESHOLD: 0.01,
-  FEES_COVERAGE_THRESHOLD: 0.015,
   PEAK_PROFIT_FLOOR: 0.4,
   PEAK_PROFIT_FLOOR_LONG: 0.4,
   PEAK_PROFIT_FLOOR_SHORT: 0.3,
   ATR_MULTIPLIER: 0.002,
   DEFAULT_ACTIVATION_PERCENT: 1.5,
   DEFAULT_TRAIL_PERCENT: 0.75,
-  TP_THRESHOLD_FOR_BREAKEVEN: 0.50,
-  TP_THRESHOLD_FOR_ADVANCED: 0.70,
   MIN_STOP_CHANGE_ABSOLUTE: 0.005,
   STOP_OFFSET_LONG: 0.99,
   STOP_OFFSET_LONG_TIGHT: 0.98,
@@ -55,7 +51,6 @@ export interface TrailingStopUserConfig {
   trailingDistanceMode: TrailingDistanceMode;
   trailingStopOffsetPercent: number;
   useAdaptiveTrailing: boolean;
-  useProfitLockDistance: boolean;
 }
 
 export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
@@ -66,7 +61,6 @@ export const TRAILING_STOP_USER_DEFAULTS: TrailingStopUserConfig = {
   trailingDistanceMode: 'fixed',
   trailingStopOffsetPercent: 0.002,
   useAdaptiveTrailing: true,
-  useProfitLockDistance: true,
 };
 
 export const OPPORTUNITY_COST_CONFIG = {

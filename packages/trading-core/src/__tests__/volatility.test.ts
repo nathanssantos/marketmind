@@ -59,14 +59,14 @@ describe('getVolatilityProfile', () => {
     expect(profile.atrPercent).toBe(2.5);
   });
 
-  it('should calculate fees threshold for SPOT market', () => {
+  it('should accept SPOT market option', () => {
     const profile = getVolatilityProfile(1.5, { marketType: 'SPOT' });
-    expect(profile.feesThreshold).toBeGreaterThan(0);
+    expect(profile.level).toBe('MEDIUM');
   });
 
-  it('should calculate fees threshold for FUTURES market', () => {
+  it('should accept FUTURES market option', () => {
     const profile = getVolatilityProfile(1.5, { marketType: 'FUTURES' });
-    expect(profile.feesThreshold).toBeGreaterThan(0);
+    expect(profile.level).toBe('MEDIUM');
   });
 });
 

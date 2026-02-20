@@ -114,8 +114,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             ? parseFloat(walletConfig.trailingDistancePercentShort)
             : 0.3,
         useAdaptiveTrailing: symbolConfig.useAdaptiveTrailing ?? walletConfig?.useAdaptiveTrailing ?? true,
-        useProfitLockDistance: symbolConfig.useProfitLockDistance ?? walletConfig?.useProfitLockDistance ?? false,
-        trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+                trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
         trailingStopOffsetPercent: symbolConfig.trailingStopOffsetPercent
           ? parseFloat(symbolConfig.trailingStopOffsetPercent)
           : walletConfig?.trailingStopOffsetPercent
@@ -143,8 +142,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         ? parseFloat(walletConfig.trailingDistancePercentShort)
         : 0.3,
       useAdaptiveTrailing: walletConfig?.useAdaptiveTrailing ?? true,
-      useProfitLockDistance: walletConfig?.useProfitLockDistance ?? false,
-      trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+            trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
       trailingStopOffsetPercent: walletConfig?.trailingStopOffsetPercent
         ? parseFloat(walletConfig.trailingStopOffsetPercent)
         : 0,
@@ -223,8 +221,6 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
             useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
             onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
-            useProfitLockDistance={effectiveValues.useProfitLockDistance}
-            onUseProfitLockDistanceChange={(enabled) => debouncedUpdate({ useProfitLockDistance: enabled })}
             trailingDistanceMode={effectiveValues.trailingDistanceMode}
             onTrailingDistanceModeChange={(mode) => debouncedUpdate({ trailingDistanceMode: mode })}
             trailingStopOffsetPercent={effectiveValues.trailingStopOffsetPercent}

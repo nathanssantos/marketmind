@@ -23,7 +23,6 @@ export interface DirectionalTrailingConfig {
   activationPercent: number;
   distancePercent: number;
   atrMultiplier: number;
-  breakevenProfitThreshold: number;
   trailingDistanceMode?: 'auto' | 'fixed';
   stopOffsetPercent?: number;
 }
@@ -48,7 +47,7 @@ export interface BacktestTradeSetup {
   maxExitTime?: number;
 }
 
-export type TrailingStopReason = 'fees_covered' | 'swing_trail' | 'atr_trail' | 'progressive_trail';
+export type TrailingStopReason = 'swing_trail' | 'atr_trail' | 'progressive_trail';
 
 export interface StopLossHistoryEntry {
   timestamp: number;

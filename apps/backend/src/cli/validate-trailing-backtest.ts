@@ -33,18 +33,18 @@ const VALIDATION_TRAILING_CONFIGS: Array<{
 }> = [
   {
     name: 'Default (100%/88.6%, 30%)',
-    long: { activationPercent: 100, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1 },
-    short: { activationPercent: 88.6, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1 },
+    long: { activationPercent: 100, distancePercent: 30, atrMultiplier: 2.0 },
+    short: { activationPercent: 88.6, distancePercent: 30, atrMultiplier: 2.0 },
   },
   {
     name: 'Conservative (80%/80%, 40%)',
-    long: { activationPercent: 80, distancePercent: 40, atrMultiplier: 2.5, breakevenProfitThreshold: 1.5 },
-    short: { activationPercent: 80, distancePercent: 40, atrMultiplier: 2.5, breakevenProfitThreshold: 1.5 },
+    long: { activationPercent: 80, distancePercent: 40, atrMultiplier: 2.5 },
+    short: { activationPercent: 80, distancePercent: 40, atrMultiplier: 2.5 },
   },
   {
     name: 'Aggressive (120%/100%, 20%)',
-    long: { activationPercent: 120, distancePercent: 20, atrMultiplier: 1.5, breakevenProfitThreshold: 0.5 },
-    short: { activationPercent: 100, distancePercent: 20, atrMultiplier: 1.5, breakevenProfitThreshold: 0.5 },
+    long: { activationPercent: 120, distancePercent: 20, atrMultiplier: 1.5 },
+    short: { activationPercent: 100, distancePercent: 20, atrMultiplier: 1.5 },
   },
 ];
 

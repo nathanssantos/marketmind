@@ -1,19 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { FibonacciProjectionData } from '@marketmind/types';
 
-vi.mock('@marketmind/types', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, unknown>;
-  return {
-    ...actual,
-    getRoundTripFee: vi.fn(() => 0.0008),
-  };
-});
-
 vi.mock('../../constants', () => ({
   TRAILING_STOP: {
-    BREAKEVEN_THRESHOLD: 0.01,
-    TP_THRESHOLD_FOR_BREAKEVEN: 0.3,
-    TP_THRESHOLD_FOR_ADVANCED: 0.6,
     PEAK_PROFIT_FLOOR: 0.3,
     PEAK_PROFIT_FLOOR_LONG: 0.25,
     PEAK_PROFIT_FLOOR_SHORT: 0.35,
@@ -23,10 +12,7 @@ vi.mock('../../constants', () => ({
 }));
 
 import {
-  getRoundTripFeePercent,
   calculateProfitPercent,
-  calculateStopAtProfitPercent,
-  calculateTPProfitPercent,
   calculateProgressiveFloor,
   calculateATRTrailingStop,
   findBestSwingStop,
@@ -35,12 +21,13 @@ import {
   hasReachedFibonacciLevel,
   calculateTPProgress,
   getImpliedTakeProfit,
+  interpolateActivationPrice,
+  hasReachedTPProgressThreshold,
   shouldUpdateStopLoss,
   computeTrailingStopCore,
   type TrailingStopCoreInput,
   type TrailingStopCoreConfig,
 } from '../trailing-stop-core';
-import { getRoundTripFee } from '@marketmind/types';
 
 const makeFibProjection = (
   swingLow: number,
@@ -55,27 +42,6 @@ const makeFibProjection = (
 });
 
 describe('trailing-stop-core', () => {
-  describe('getRoundTripFeePercent', () => {
-    it('should delegate to getRoundTripFee with defaults', () => {
-      const result = getRoundTripFeePercent();
-      expect(getRoundTripFee).toHaveBeenCalledWith({
-        marketType: 'FUTURES',
-        useBnbDiscount: false,
-        vipLevel: 0,
-      });
-      expect(result).toBe(0.0008);
-    });
-
-    it('should pass custom marketType, useBnbDiscount, and vipLevel', () => {
-      getRoundTripFeePercent('SPOT', true, 3);
-      expect(getRoundTripFee).toHaveBeenCalledWith({
-        marketType: 'SPOT',
-        useBnbDiscount: true,
-        vipLevel: 3,
-      });
-    });
-  });
-
   describe('calculateProfitPercent', () => {
     it('should return positive profit for LONG when price rises', () => {
       expect(calculateProfitPercent(100, 110, true)).toBe(0.1);
@@ -100,48 +66,6 @@ describe('trailing-stop-core', () => {
 
     it('should handle small price changes', () => {
       expect(calculateProfitPercent(50000, 50025, true)).toBeCloseTo(0.0005, 6);
-    });
-  });
-
-  describe('calculateStopAtProfitPercent', () => {
-    it('should return price above entry for LONG', () => {
-      expect(calculateStopAtProfitPercent(100, 0.05, true)).toBeCloseTo(105, 6);
-    });
-
-    it('should return price below entry for SHORT', () => {
-      expect(calculateStopAtProfitPercent(100, 0.05, false)).toBeCloseTo(95, 6);
-    });
-
-    it('should return entry price when profitPercent is 0', () => {
-      expect(calculateStopAtProfitPercent(100, 0, true)).toBe(100);
-      expect(calculateStopAtProfitPercent(100, 0, false)).toBe(100);
-    });
-
-    it('should handle negative profitPercent for LONG (below entry)', () => {
-      expect(calculateStopAtProfitPercent(100, -0.02, true)).toBeCloseTo(98, 6);
-    });
-
-    it('should handle negative profitPercent for SHORT (above entry)', () => {
-      expect(calculateStopAtProfitPercent(100, -0.02, false)).toBeCloseTo(102, 6);
-    });
-  });
-
-  describe('calculateTPProfitPercent', () => {
-    it('should return correct distance for LONG take profit', () => {
-      expect(calculateTPProfitPercent(100, 120, true)).toBeCloseTo(0.2, 6);
-    });
-
-    it('should return correct distance for SHORT take profit', () => {
-      expect(calculateTPProfitPercent(100, 80, false)).toBeCloseTo(0.2, 6);
-    });
-
-    it('should return 0 when takeProfit equals entry price', () => {
-      expect(calculateTPProfitPercent(100, 100, true)).toBe(0);
-      expect(calculateTPProfitPercent(100, 100, false)).toBe(0);
-    });
-
-    it('should return negative value for LONG when TP is below entry', () => {
-      expect(calculateTPProfitPercent(100, 90, true)).toBeCloseTo(-0.1, 6);
     });
   });
 
@@ -439,6 +363,104 @@ describe('trailing-stop-core', () => {
     });
   });
 
+  describe('interpolateActivationPrice', () => {
+    it('should return exact price when level matches', () => {
+      const fib = makeFibProjection(100, 120, [
+        { level: 0.886, price: 117.72, label: '88.6%' },
+      ]);
+      expect(interpolateActivationPrice(fib, 0.886, true)).toBe(117.72);
+    });
+
+    it('should interpolate between two levels', () => {
+      const fib = makeFibProjection(100, 120, [
+        { level: 0.786, price: 115.72, label: '78.6%' },
+        { level: 1.0, price: 120, label: '100%' },
+      ]);
+      const result = interpolateActivationPrice(fib, 0.886, true);
+      expect(result).not.toBeNull();
+      const t = (0.886 - 0.786) / (1.0 - 0.786);
+      const expected = 115.72 + t * (120 - 115.72);
+      expect(result).toBeCloseTo(expected, 4);
+    });
+
+    it('should return lower bound price when activation level is below all levels', () => {
+      const fib = makeFibProjection(100, 120, [
+        { level: 0.786, price: 115.72, label: '78.6%' },
+        { level: 1.0, price: 120, label: '100%' },
+      ]);
+      const result = interpolateActivationPrice(fib, 0.5, true);
+      expect(result).toBe(115.72);
+    });
+
+    it('should return upper bound price when activation level is above all levels', () => {
+      const fib = makeFibProjection(100, 120, [
+        { level: 0.786, price: 115.72, label: '78.6%' },
+        { level: 1.0, price: 120, label: '100%' },
+      ]);
+      const result = interpolateActivationPrice(fib, 1.5, true);
+      expect(result).toBe(120);
+    });
+
+    it('should return null for null projection', () => {
+      expect(interpolateActivationPrice(null, 0.886, true)).toBeNull();
+    });
+
+    it('should return null for projection with empty levels', () => {
+      const fib = makeFibProjection(100, 120, []);
+      expect(interpolateActivationPrice(fib, 0.886, true)).toBeNull();
+    });
+
+    it('should handle single level', () => {
+      const fib = makeFibProjection(100, 120, [
+        { level: 0.786, price: 115.72, label: '78.6%' },
+      ]);
+      expect(interpolateActivationPrice(fib, 0.786, true)).toBe(115.72);
+    });
+  });
+
+  describe('hasReachedTPProgressThreshold', () => {
+    it('should use fibonacci price at activation level as primary check', () => {
+      const fib = makeFibProjection(100, 120, []);
+      expect(hasReachedTPProgressThreshold(100, 118, 120, fib, true)).toBe(true);
+      expect(hasReachedTPProgressThreshold(100, 117, 120, fib, true)).toBe(false);
+    });
+
+    it('should use interpolated price as secondary check', () => {
+      const fib = makeFibProjection(100, 120, [
+        { level: 0.786, price: 115.72, label: '78.6%' },
+        { level: 1.0, price: 120, label: '100%' },
+      ]);
+      const t = (0.886 - 0.786) / (1.0 - 0.786);
+      const interpolatedPrice = 115.72 + t * (120 - 115.72);
+      expect(hasReachedTPProgressThreshold(100, interpolatedPrice + 0.1, 120, fib, true)).toBe(true);
+      expect(hasReachedTPProgressThreshold(100, interpolatedPrice - 0.5, 120, fib, true)).toBe(false);
+    });
+
+    it('should fall back to TP progress when no fibonacci data', () => {
+      expect(hasReachedTPProgressThreshold(100, 119, 120, null, true)).toBe(true);
+      expect(hasReachedTPProgressThreshold(100, 101, 120, null, true)).toBe(false);
+    });
+
+    it('should return false when no fibonacci and no takeProfit', () => {
+      expect(hasReachedTPProgressThreshold(100, 119, null, null, true)).toBe(false);
+    });
+
+    it('should use custom activationPercentLong', () => {
+      expect(hasReachedTPProgressThreshold(100, 116, 120, null, true, 0.786)).toBe(true);
+      expect(hasReachedTPProgressThreshold(100, 115, 120, null, true, 0.786)).toBe(false);
+    });
+
+    it('should use custom activationPercentShort', () => {
+      expect(hasReachedTPProgressThreshold(100, 84, 80, null, false, undefined, 0.786)).toBe(true);
+      expect(hasReachedTPProgressThreshold(100, 86, 80, null, false, undefined, 0.786)).toBe(false);
+    });
+
+    it('should use TP_PROGRESS_THRESHOLD_SHORT default for SHORT', () => {
+      expect(hasReachedTPProgressThreshold(100, 84, 80, null, false)).toBe(true);
+      expect(hasReachedTPProgressThreshold(100, 86, 80, null, false)).toBe(false);
+    });
+  });
+
   describe('shouldUpdateStopLoss', () => {
     it('should return true when currentStopLoss is null', () => {
       expect(shouldUpdateStopLoss(105, null, true)).toBe(true);
@@ -481,12 +503,10 @@ describe('trailing-stop-core', () => {
       takeProfit: 120,
     };
 
-    const baseConfig: TrailingStopCoreConfig = {
-      feePercent: 0.001,
-    };
+    const baseConfig: TrailingStopCoreConfig = {};
 
     describe('without fibonacci thresholds (TP-based mode)', () => {
-      it('should return null when profit is below breakeven threshold', () => {
+      it('should return null when TP progress is below activation threshold', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
           currentPrice: 101,
@@ -496,48 +516,49 @@ describe('trailing-stop-core', () => {
         expect(result).toBeNull();
       });
 
-      it('should return fees_covered when profit is between breakeven and advanced thresholds', () => {
+      it('should return progressive_trail when price has passed activation threshold', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 108,
+          currentPrice: 118,
           takeProfit: 120,
+          highestPrice: 119,
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
-        expect(result!.newStopLoss).toBeCloseTo(100.1, 4);
+        expect(result!.reason).toBe('progressive_trail');
       });
 
       it('should return null when shouldUpdateStopLoss rejects the candidate', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 108,
+          currentPrice: 118,
           takeProfit: 120,
-          currentStopLoss: 100.15,
+          highestPrice: 119,
+          currentStopLoss: 120,
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).toBeNull();
       });
 
-      it('should use advanced logic when profit exceeds advanced threshold', () => {
+      it('should use advanced logic when profit exceeds activation threshold', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 115,
+          currentPrice: 118,
           takeProfit: 120,
-          highestPrice: 116,
+          highestPrice: 119,
           swingPoints: [
             { price: 112, type: 'low' },
           ],
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
-        expect(['fees_covered', 'swing_trail', 'atr_trail', 'progressive_trail']).toContain(result!.reason);
+        expect(['swing_trail', 'atr_trail', 'progressive_trail']).toContain(result!.reason);
       });
 
-      it('should include swing_trail candidate in advanced mode', () => {
+      it('should include swing_trail candidate', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 115,
+          currentPrice: 118,
           takeProfit: 120,
           swingPoints: [
             { price: 112, type: 'low' },
@@ -548,60 +569,21 @@ describe('trailing-stop-core', () => {
         expect(result!.reason).toBe('swing_trail');
       });
 
-      it('should include atr_trail candidate in advanced mode', () => {
+      it('should include atr_trail candidate', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 115,
+          currentPrice: 118,
           takeProfit: 120,
-          highestPrice: 116,
+          highestPrice: 119,
           atr: 1.5,
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
         expect(result!.reason).toBe('atr_trail');
-        expect(result!.newStopLoss).toBeCloseTo(116 - 1.5 * 2, 4);
+        expect(result!.newStopLoss).toBeCloseTo(119 - 1.5 * 2, 4);
       });
 
-      it('should include progressive_trail when useProfitLockDistance is enabled', () => {
-        const input: TrailingStopCoreInput = {
-          ...baseInput,
-          currentPrice: 115,
-          takeProfit: 120,
-          highestPrice: 116,
-        };
-        const config: TrailingStopCoreConfig = {
-          ...baseConfig,
-          useProfitLockDistance: true,
-        };
-        const result = computeTrailingStopCore(input, config);
-        expect(result).not.toBeNull();
-        expect(result!.reason).toBe('progressive_trail');
-      });
-
-      it('should not include progressive_trail when useProfitLockDistance is false', () => {
-        const input: TrailingStopCoreInput = {
-          ...baseInput,
-          currentPrice: 115,
-          takeProfit: 120,
-          highestPrice: 116,
-        };
-        const result = computeTrailingStopCore(input, baseConfig);
-        expect(result).not.toBeNull();
-        expect(result!.reason).not.toBe('progressive_trail');
-      });
-
-      it('should use FALLBACK_MIN_PROFIT_THRESHOLD when no takeProfit', () => {
-        const input: TrailingStopCoreInput = {
-          ...baseInput,
-          currentPrice: 102,
-          takeProfit: null,
-        };
-        const result = computeTrailingStopCore(input, baseConfig);
-        expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
-      });
-
-      it('should return null when no takeProfit and profit below FALLBACK threshold', () => {
+      it('should return null when no takeProfit and no fibonacci', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
           currentPrice: 100.5,
@@ -611,12 +593,22 @@ describe('trailing-stop-core', () => {
         expect(result).toBeNull();
       });
 
+      it('should return null when takeProfit is absent even with profit', () => {
+        const input: TrailingStopCoreInput = {
+          ...baseInput,
+          currentPrice: 102,
+          takeProfit: null,
+        };
+        const result = computeTrailingStopCore(input, baseConfig);
+        expect(result).toBeNull();
+      });
+
       it('should select highest candidate for LONG positions', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 115,
+          currentPrice: 118,
           takeProfit: 120,
-          highestPrice: 116,
+          highestPrice: 119,
           atr: 0.5,
           swingPoints: [
             { price: 112, type: 'low' },
@@ -624,7 +616,7 @@ describe('trailing-stop-core', () => {
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeGreaterThan(100.1);
+        expect(result!.newStopLoss).toBeGreaterThan(100);
       });
     });
 
@@ -637,7 +629,7 @@ describe('trailing-stop-core', () => {
         takeProfit: 80,
       };
 
-      it('should return null when SHORT profit is below breakeven threshold', () => {
+      it('should return null when SHORT TP progress is below activation threshold', () => {
         const input: TrailingStopCoreInput = {
           ...shortInput,
           currentPrice: 99,
@@ -647,24 +639,24 @@ describe('trailing-stop-core', () => {
         expect(result).toBeNull();
       });
 
-      it('should return fees_covered for SHORT at breakeven level', () => {
+      it('should return progressive_trail for SHORT at activation level', () => {
         const input: TrailingStopCoreInput = {
           ...shortInput,
-          currentPrice: 92,
+          currentPrice: 84,
           takeProfit: 80,
+          lowestPrice: 83,
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
-        expect(result!.newStopLoss).toBeCloseTo(99.9, 4);
+        expect(result!.reason).toBe('progressive_trail');
       });
 
-      it('should select lowest candidate for SHORT positions in advanced mode', () => {
+      it('should select lowest candidate for SHORT positions', () => {
         const input: TrailingStopCoreInput = {
           ...shortInput,
-          currentPrice: 86,
+          currentPrice: 84,
           takeProfit: 80,
-          lowestPrice: 84,
+          lowestPrice: 83,
           atr: 1,
           swingPoints: [
             { price: 92, type: 'high' },
@@ -672,7 +664,7 @@ describe('trailing-stop-core', () => {
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeLessThan(99.9);
+        expect(result!.newStopLoss).toBeLessThan(100);
       });
     });
 
@@ -688,7 +680,6 @@ describe('trailing-stop-core', () => {
       const fibProjection = makeFibProjection(100, 120, fibLevels);
 
       const fibConfig: TrailingStopCoreConfig = {
-        ...baseConfig,
         useFibonacciThresholds: true,
       };
 
@@ -799,54 +790,21 @@ describe('trailing-stop-core', () => {
         const result = computeTrailingStopCore(input, fibConfig);
         expect(result).not.toBeNull();
       });
-
-      it('should fall back to fees_covered as minimum candidate', () => {
-        const input: TrailingStopCoreInput = {
-          ...baseInput,
-          currentPrice: 118,
-          fibonacciProjection: fibProjection,
-        };
-        const result = computeTrailingStopCore(input, fibConfig);
-        expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeGreaterThanOrEqual(100.1 - 0.01);
-      });
     });
 
     describe('config defaults', () => {
-      it('should use FUTURES marketType by default', () => {
-        const input: TrailingStopCoreInput = {
-          ...baseInput,
-          currentPrice: 108,
-          takeProfit: 120,
-        };
-        const result = computeTrailingStopCore(input, {});
-        expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
-      });
-
-      it('should use provided feePercent instead of computing it', () => {
-        const input: TrailingStopCoreInput = {
-          ...baseInput,
-          currentPrice: 108,
-          takeProfit: 120,
-        };
-        const result = computeTrailingStopCore(input, { feePercent: 0.005 });
-        expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.5, 4);
-      });
-
       it('should use default atrMultiplier of 2.0', () => {
         const input: TrailingStopCoreInput = {
           ...baseInput,
-          currentPrice: 115,
+          currentPrice: 118,
           takeProfit: 120,
-          highestPrice: 116,
+          highestPrice: 119,
           atr: 2,
         };
         const result = computeTrailingStopCore(input, baseConfig);
         expect(result).not.toBeNull();
         if (result!.reason === 'atr_trail') {
-          expect(result!.newStopLoss).toBeCloseTo(116 - 2 * 2, 4);
+          expect(result!.newStopLoss).toBeCloseTo(119 - 2 * 2, 4);
         }
       });
 
@@ -862,7 +820,6 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: fibProjection,
         };
         const config: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: true,
           trailingDistancePercentLong: 0.1,
         };
@@ -885,7 +842,6 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: shortFibProjection,
         };
         const config: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: true,
           trailingDistancePercentShort: 0.1,
         };
@@ -907,14 +863,12 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: fibProjection,
         };
         const configWithoutForce: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: true,
         };
         const resultWithout = computeTrailingStopCore(input, configWithoutForce);
         expect(resultWithout).toBeNull();
 
         const configWithForce: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: true,
           forceActivated: true,
         };
@@ -934,7 +888,6 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: fibProjection,
         };
         const config: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: true,
           forceActivated: false,
         };
@@ -950,7 +903,6 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: null,
         };
         const config: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: false,
           forceActivated: true,
         };
@@ -968,7 +920,6 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: null,
         };
         const config: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: false,
           forceActivated: true,
         };
@@ -985,7 +936,6 @@ describe('trailing-stop-core', () => {
           fibonacciProjection: null,
         };
         const config: TrailingStopCoreConfig = {
-          ...baseConfig,
           useFibonacciThresholds: false,
           forceActivated: true,
         };

@@ -1,16 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   calculateATRTrailingStop,
-  calculateBreakevenPrice,
-  calculateFeesCoveredPrice,
-  calculateNewStopLoss,
   calculateProfitPercent,
   calculateProgressiveFloor,
   computeTrailingStop,
   DEFAULT_TRAILING_STOP_CONFIG,
   findBestSwingStop,
-  getFeesThresholdForMarketType,
-  getRoundTripFee,
   shouldUpdateStopLoss,
   TrailingStopService,
   type TrailingStopInput,
@@ -69,46 +64,6 @@ describe('TrailingStop Service', () => {
     vi.clearAllMocks();
   });
 
-  describe('getRoundTripFee', () => {
-    it('should return spot round-trip fee', () => {
-      const fee = getRoundTripFee({ marketType: 'SPOT' });
-      expect(fee).toBeGreaterThan(0);
-      expect(fee).toBeLessThan(0.01);
-    });
-
-    it('should return futures round-trip fee', () => {
-      const fee = getRoundTripFee({ marketType: 'FUTURES' });
-      expect(fee).toBeGreaterThan(0);
-      expect(fee).toBeLessThan(0.01);
-    });
-
-    it('should apply BNB discount when enabled', () => {
-      const feeWithoutDiscount = getRoundTripFee({ marketType: 'SPOT', useBnbDiscount: false });
-      const feeWithDiscount = getRoundTripFee({ marketType: 'SPOT', useBnbDiscount: true });
-
-      expect(feeWithDiscount).toBeLessThan(feeWithoutDiscount);
-    });
-  });
-
-  describe('getFeesThresholdForMarketType', () => {
-    it('should return threshold for spot market', () => {
-      const threshold = getFeesThresholdForMarketType('SPOT');
-      expect(threshold).toBeGreaterThan(0);
-    });
-
-    it('should return threshold for futures market', () => {
-      const threshold = getFeesThresholdForMarketType('FUTURES');
-      expect(threshold).toBeGreaterThan(0);
-    });
-
-    it('should return lower threshold with BNB discount', () => {
-      const thresholdWithoutDiscount = getFeesThresholdForMarketType('SPOT', false);
-      const thresholdWithDiscount = getFeesThresholdForMarketType('SPOT', true);
-
-      expect(thresholdWithDiscount).toBeLessThan(thresholdWithoutDiscount);
-    });
-  });
-
   describe('calculateProfitPercent', () => {
     it('should calculate profit for long position with gain', () => {
       const profit = calculateProfitPercent(100, 110, true);
@@ -136,45 +91,6 @@ describe('TrailingStop Service', () => {
 
       expect(profitLong).toBe(0);
       expect(profitShort).toBe(0);
-    });
-  });
-
-  describe('calculateBreakevenPrice', () => {
-    it('should calculate breakeven for long position', () => {
-      const breakeven = calculateBreakevenPrice(100, true);
-      expect(breakeven).toBe(100);
-    });
-
-    it('should calculate breakeven for short position', () => {
-      const breakeven = calculateBreakevenPrice(100, false);
-      expect(breakeven).toBe(100);
-    });
-
-    it('should apply buffer for long position', () => {
-      const breakeven = calculateBreakevenPrice(100, true, 0.001);
-      expect(breakeven).toBe(100.1);
-    });
-
-    it('should apply buffer for short position', () => {
-      const breakeven = calculateBreakevenPrice(100, false, 0.001);
-      expect(breakeven).toBe(99.9);
-    });
-  });
-
-  describe('calculateFeesCoveredPrice', () => {
-    it('should calculate fees covered price for long position', () => {
-      const price = calculateFeesCoveredPrice(100, true, 0.002);
-      expect(price).toBe(100.2);
-    });
-
-    it('should calculate fees covered price for short position', () => {
-      const price = calculateFeesCoveredPrice(100, false, 0.002);
-      expect(price).toBe(99.8);
-    });
-
-    it('should use default fee when not provided', () => {
-      const price = calculateFeesCoveredPrice(100, true, undefined, 'SPOT');
-      expect(price).toBeGreaterThan(100);
     });
   });
 
@@ -294,38 +210,6 @@ describe('TrailingStop Service', () => {
     });
   });
 
-  describe('calculateNewStopLoss', () => {
-    it('should return breakeven when no swing stop for long', () => {
-      const stop = calculateNewStopLoss(100, null, true);
-      expect(stop).toBe(100);
-    });
-
-    it('should return breakeven when no swing stop for short', () => {
-      const stop = calculateNewStopLoss(100, null, false);
-      expect(stop).toBe(100);
-    });
-
-    it('should return higher value for long', () => {
-      const stop = calculateNewStopLoss(100, 102, true);
-      expect(stop).toBe(102);
-    });
-
-    it('should return lower value for short', () => {
-      const stop = calculateNewStopLoss(100, 98, false);
-      expect(stop).toBe(98);
-    });
-
-    it('should prefer breakeven when it is better for long', () => {
-      const stop = calculateNewStopLoss(102, 100, true);
-      expect(stop).toBe(102);
-    });
-
-    it('should prefer breakeven when it is better for short', () => {
-      const stop = calculateNewStopLoss(98, 100, false);
-      expect(stop).toBe(98);
-    });
-  });
-
   describe('calculateATRTrailingStop', () => {
     it('should calculate ATR stop for long position', () => {
       const stop = calculateATRTrailingStop(110, 5, true, 2);
@@ -348,8 +232,7 @@ describe('TrailingStop Service', () => {
   describe('computeTrailingStop', () => {
     const defaultConfig: TrailingStopOptimizationConfig = {
       ...DEFAULT_TRAILING_STOP_CONFIG,
-      breakevenProfitThreshold: 0.005,
-      breakevenWithFeesThreshold: 0.01,
+      forceActivated: true,
     };
 
     it('should return null when profit is below threshold', () => {
@@ -365,34 +248,36 @@ describe('TrailingStop Service', () => {
       expect(result).toBeNull();
     });
 
-    it('should return fees_covered for 1% profit (new tier logic)', () => {
+    it('should return progressive_trail for 1% profit', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
         currentPrice: 101,
         currentStopLoss: null,
         side: 'LONG',
         swingPoints: [],
+        highestPrice: 101,
       };
 
       const result = computeTrailingStop(input, defaultConfig);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
+      expect(result!.reason).toBe('progressive_trail');
       expect(result!.newStopLoss).toBeGreaterThan(100);
-      expect(result!.newStopLoss).toBeLessThan(100.5);
+      expect(result!.newStopLoss).toBeLessThan(101);
     });
 
-    it('should return fees_covered for higher profit', () => {
+    it('should return progressive_trail for higher profit', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
         currentPrice: 102,
         currentStopLoss: null,
         side: 'LONG',
         swingPoints: [],
+        highestPrice: 102,
       };
 
       const result = computeTrailingStop(input, defaultConfig);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
+      expect(result!.reason).toBe('progressive_trail');
     });
 
     it('should return null when stop loss would not improve', () => {
@@ -450,13 +335,14 @@ describe('TrailingStop Service', () => {
         currentStopLoss: null,
         side: 'SHORT',
         swingPoints: [],
+        lowestPrice: 99,
       };
 
       const result = computeTrailingStop(input, defaultConfig);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
+      expect(result!.reason).toBe('progressive_trail');
       expect(result!.newStopLoss).toBeLessThan(100);
-      expect(result!.newStopLoss).toBeGreaterThan(99.5);
+      expect(result!.newStopLoss).toBeGreaterThan(99);
     });
 
     it('should use progressive trail when highest price set', () => {
@@ -485,7 +371,6 @@ describe('TrailingStop Service', () => {
         const service = new TrailingStopService();
         const config = service.getConfig();
 
-        expect(config.breakevenProfitThreshold).toBeDefined();
         expect(config.minTrailingDistancePercent).toBeDefined();
         expect(config.useATRMultiplier).toBeDefined();
       });
@@ -543,11 +428,6 @@ describe('TrailingStop Service', () => {
   });
 
   describe('DEFAULT_TRAILING_STOP_CONFIG', () => {
-    it('should have valid breakeven threshold', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold).toBeGreaterThan(0);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold).toBeLessThan(0.1);
-    });
-
     it('should have valid min trailing distance', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.minTrailingDistancePercent).toBeGreaterThan(0);
       expect(DEFAULT_TRAILING_STOP_CONFIG.minTrailingDistancePercent).toBeLessThan(0.1);
@@ -559,6 +439,10 @@ describe('TrailingStop Service', () => {
 
     it('should have valid ATR multiplier', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBeGreaterThan(0);
+    });
+
+    it('should have valid trailing distance percent', () => {
+      expect(DEFAULT_TRAILING_STOP_CONFIG.trailingDistancePercent).toBeGreaterThan(0);
     });
 
     it('should default to FUTURES market', () => {

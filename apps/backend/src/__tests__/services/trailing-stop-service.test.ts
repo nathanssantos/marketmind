@@ -6,23 +6,8 @@ vi.mock('@marketmind/indicators', () => ({
   calculateSwingPoints: vi.fn(() => ({ swingPoints: [] })),
 }));
 
-vi.mock('@marketmind/types', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, unknown>;
-  return {
-    ...actual,
-    getRoundTripFee: vi.fn(({ marketType, useBnbDiscount }: { marketType: string; useBnbDiscount?: boolean }) => {
-      if (marketType === 'SPOT') return useBnbDiscount ? 0.0015 : 0.002;
-      return useBnbDiscount ? 0.0003 : 0.0008;
-    }),
-  };
-});
-
 vi.mock('../../constants', () => ({
   TRAILING_STOP: {
-    BREAKEVEN_THRESHOLD: 0.01,
-    FEES_COVERAGE_THRESHOLD: 0.015,
-    TP_THRESHOLD_FOR_BREAKEVEN: 0.3,
-    TP_THRESHOLD_FOR_ADVANCED: 0.6,
     PEAK_PROFIT_FLOOR: 0.3,
     PEAK_PROFIT_FLOOR_LONG: 0.25,
     PEAK_PROFIT_FLOOR_SHORT: 0.35,
@@ -79,8 +64,6 @@ vi.mock('../../services/volatility-profile', () => ({
   calculateATRPercent: vi.fn(() => 0.02),
   getVolatilityProfile: vi.fn(() => ({
     atrMultiplier: 2.0,
-    breakevenThreshold: 0.01,
-    feesThreshold: 0.015,
     minTrailingDistance: 0.002,
   })),
 }));
@@ -94,17 +77,12 @@ vi.mock('../../utils/formatters', () => ({
 }));
 
 import {
-  calculateBreakevenPrice,
-  calculateFeesCoveredPrice,
-  calculateNewStopLoss,
   computeTrailingStop,
   DEFAULT_TRAILING_STOP_CONFIG,
-  getFeesThresholdForMarketType,
   resolveTrailingStopConfig,
   TrailingStopService,
   type TrailingStopInput,
 } from '../../services/trailing-stop';
-import { getRoundTripFee } from '@marketmind/types';
 import type { AutoTradingConfig, SymbolTrailingStopOverride } from '../../db/schema';
 
 const makeSymbolOverride = (overrides: Partial<SymbolTrailingStopOverride> = {}): SymbolTrailingStopOverride => ({
@@ -163,7 +141,6 @@ const makeWalletConfig = (overrides: Partial<AutoTradingConfig> = {}): AutoTradi
   trailingDistancePercentLong: '0.4',
   trailingDistancePercentShort: '0.3',
   useAdaptiveTrailing: true,
-  useProfitLockDistance: false,
   trailingDistanceMode: 'fixed',
   trailingStopOffsetPercent: '0',
   createdAt: new Date(),
@@ -179,43 +156,6 @@ const makeBaseConfig = (overrides: Partial<TrailingStopOptimizationConfig> = {})
 describe('trailing-stop-service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('getFeesThresholdForMarketType', () => {
-    it('should add 0.005 buffer to round trip fee for FUTURES', () => {
-      const result = getFeesThresholdForMarketType('FUTURES');
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-      expect(result).toBeCloseTo(0.0008 + 0.005, 6);
-    });
-
-    it('should add 0.005 buffer to round trip fee for SPOT', () => {
-      const result = getFeesThresholdForMarketType('SPOT');
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'SPOT', useBnbDiscount: false });
-      expect(result).toBeCloseTo(0.002 + 0.005, 6);
-    });
-
-    it('should apply BNB discount for FUTURES', () => {
-      const result = getFeesThresholdForMarketType('FUTURES', true);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: true });
-      expect(result).toBeCloseTo(0.0003 + 0.005, 6);
-    });
-
-    it('should apply BNB discount for SPOT', () => {
-      const result = getFeesThresholdForMarketType('SPOT', true);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'SPOT', useBnbDiscount: true });
-      expect(result).toBeCloseTo(0.0015 + 0.005, 6);
-    });
-
-    it('should return lower threshold with BNB discount than without', () => {
-      const withoutDiscount = getFeesThresholdForMarketType('SPOT', false);
-      const withDiscount = getFeesThresholdForMarketType('SPOT', true);
-      expect(withDiscount).toBeLessThan(withoutDiscount);
-    });
-
-    it('should default useBnbDiscount to false when not provided', () => {
-      getFeesThresholdForMarketType('FUTURES');
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-    });
   });
 
   describe('resolveTrailingStopConfig', () => {
@@ -316,35 +256,6 @@ describe('trailing-stop-service', () => {
       });
     });
 
-    describe('useProfitLockDistance', () => {
-      it('should use symbol override when useIndividualConfig is true', () => {
-        const override = makeSymbolOverride({ useProfitLockDistance: true });
-        const walletCfg = makeWalletConfig({ useProfitLockDistance: false });
-        const result = resolveTrailingStopConfig('LONG', override, walletCfg, makeBaseConfig());
-        expect(result.useProfitLockDistance).toBe(true);
-      });
-
-      it('should fall back to wallet config when override has null value', () => {
-        const override = makeSymbolOverride({ useProfitLockDistance: null });
-        const walletCfg = makeWalletConfig({ useProfitLockDistance: true });
-        const result = resolveTrailingStopConfig('LONG', override, walletCfg, makeBaseConfig());
-        expect(result.useProfitLockDistance).toBe(true);
-      });
-
-      it('should fall back to base config when wallet config is null', () => {
-        const base = makeBaseConfig({ useProfitLockDistance: true });
-        const result = resolveTrailingStopConfig('LONG', null, null, base);
-        expect(result.useProfitLockDistance).toBe(true);
-      });
-
-      it('should fall back to wallet config when useIndividualConfig is false', () => {
-        const override = makeSymbolOverride({ useIndividualConfig: false, useProfitLockDistance: true });
-        const walletCfg = makeWalletConfig({ useProfitLockDistance: false });
-        const result = resolveTrailingStopConfig('LONG', override, walletCfg, makeBaseConfig());
-        expect(result.useProfitLockDistance).toBe(false);
-      });
-    });
-
     describe('useVolatilityBasedThresholds', () => {
       it('should use symbol override useAdaptiveTrailing when useIndividualConfig is true', () => {
         const override = makeSymbolOverride({ useAdaptiveTrailing: false });
@@ -378,12 +289,10 @@ describe('trailing-stop-service', () => {
     describe('priority chain', () => {
       it('should spread baseConfig first then override specific fields', () => {
         const base = makeBaseConfig({
-          breakevenProfitThreshold: 0.02,
           swingLookback: 5,
           useATRMultiplier: false,
         });
         const result = resolveTrailingStopConfig('LONG', null, null, base);
-        expect(result.breakevenProfitThreshold).toBe(0.02);
         expect(result.swingLookback).toBe(5);
         expect(result.useATRMultiplier).toBe(false);
       });
@@ -401,106 +310,8 @@ describe('trailing-stop-service', () => {
     });
   });
 
-  describe('calculateBreakevenPrice', () => {
-    it('should return entry price for LONG with zero buffer', () => {
-      expect(calculateBreakevenPrice(100, true, 0)).toBe(100);
-    });
-
-    it('should return entry price for SHORT with zero buffer', () => {
-      expect(calculateBreakevenPrice(100, false, 0)).toBe(100);
-    });
-
-    it('should return entry price when no buffer is provided', () => {
-      expect(calculateBreakevenPrice(100, true)).toBe(100);
-      expect(calculateBreakevenPrice(100, false)).toBe(100);
-    });
-
-    it('should add buffer above entry for LONG', () => {
-      expect(calculateBreakevenPrice(100, true, 0.01)).toBeCloseTo(101, 6);
-    });
-
-    it('should subtract buffer below entry for SHORT', () => {
-      expect(calculateBreakevenPrice(100, false, 0.01)).toBeCloseTo(99, 6);
-    });
-
-    it('should handle large entry prices correctly', () => {
-      expect(calculateBreakevenPrice(50000, true, 0.001)).toBeCloseTo(50050, 6);
-      expect(calculateBreakevenPrice(50000, false, 0.001)).toBeCloseTo(49950, 6);
-    });
-  });
-
-  describe('calculateFeesCoveredPrice', () => {
-    it('should add custom fee to entry for LONG', () => {
-      expect(calculateFeesCoveredPrice(100, true, 0.002)).toBeCloseTo(100.2, 6);
-    });
-
-    it('should subtract custom fee from entry for SHORT', () => {
-      expect(calculateFeesCoveredPrice(100, false, 0.002)).toBeCloseTo(99.8, 6);
-    });
-
-    it('should use getRoundTripFee when feePercent is undefined for FUTURES', () => {
-      const result = calculateFeesCoveredPrice(1000, true, undefined, 'FUTURES', false);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-      expect(result).toBeCloseTo(1000 * (1 + 0.0008), 4);
-    });
-
-    it('should use getRoundTripFee when feePercent is undefined for SPOT', () => {
-      const result = calculateFeesCoveredPrice(1000, true, undefined, 'SPOT', false);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'SPOT', useBnbDiscount: false });
-      expect(result).toBeCloseTo(1000 * (1 + 0.002), 4);
-    });
-
-    it('should apply BNB discount when flag is true', () => {
-      const resultWithout = calculateFeesCoveredPrice(1000, true, undefined, 'FUTURES', false);
-      const resultWith = calculateFeesCoveredPrice(1000, true, undefined, 'FUTURES', true);
-      expect(resultWith).toBeLessThan(resultWithout);
-    });
-
-    it('should default to FUTURES market type', () => {
-      calculateFeesCoveredPrice(100, true);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-    });
-
-    it('should calculate correctly for SHORT with BNB discount', () => {
-      const result = calculateFeesCoveredPrice(1000, false, undefined, 'SPOT', true);
-      expect(result).toBeCloseTo(1000 * (1 - 0.0015), 4);
-    });
-  });
-
-  describe('calculateNewStopLoss', () => {
-    it('should return breakeven when swingStop is null for LONG', () => {
-      expect(calculateNewStopLoss(100.5, null, true)).toBe(100.5);
-    });
-
-    it('should return breakeven when swingStop is null for SHORT', () => {
-      expect(calculateNewStopLoss(99.5, null, false)).toBe(99.5);
-    });
-
-    it('should return max of breakeven and swingStop for LONG', () => {
-      expect(calculateNewStopLoss(100, 102, true)).toBe(102);
-      expect(calculateNewStopLoss(103, 101, true)).toBe(103);
-    });
-
-    it('should return min of breakeven and swingStop for SHORT', () => {
-      expect(calculateNewStopLoss(100, 98, false)).toBe(98);
-      expect(calculateNewStopLoss(97, 99, false)).toBe(97);
-    });
-
-    it('should return breakeven when breakeven and swingStop are equal for LONG', () => {
-      expect(calculateNewStopLoss(100, 100, true)).toBe(100);
-    });
-
-    it('should return breakeven when breakeven and swingStop are equal for SHORT', () => {
-      expect(calculateNewStopLoss(100, 100, false)).toBe(100);
-    });
-  });
-
   describe('computeTrailingStop', () => {
-    const baseConfig = makeBaseConfig({
-      breakevenProfitThreshold: 0.005,
-      breakevenWithFeesThreshold: 0.01,
-      feePercent: 0.001,
-    });
+    const baseConfig = makeBaseConfig({ forceActivated: true });
 
     it('should return null when profit is below threshold for LONG', () => {
       const input: TrailingStopInput = {
@@ -522,34 +333,6 @@ describe('trailing-stop-service', () => {
         swingPoints: [],
       };
       expect(computeTrailingStop(input, baseConfig)).toBeNull();
-    });
-
-    it('should return fees_covered result for moderate LONG profit', () => {
-      const input: TrailingStopInput = {
-        entryPrice: 100,
-        currentPrice: 102,
-        currentStopLoss: null,
-        side: 'LONG',
-        swingPoints: [],
-      };
-      const result = computeTrailingStop(input, baseConfig);
-      expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
-      expect(result!.newStopLoss).toBeCloseTo(100.1, 4);
-    });
-
-    it('should return fees_covered result for moderate SHORT profit', () => {
-      const input: TrailingStopInput = {
-        entryPrice: 100,
-        currentPrice: 98,
-        currentStopLoss: null,
-        side: 'SHORT',
-        swingPoints: [],
-      };
-      const result = computeTrailingStop(input, baseConfig);
-      expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
-      expect(result!.newStopLoss).toBeCloseTo(99.9, 4);
     });
 
     it('should pass highestPrice only for LONG positions', () => {
@@ -585,10 +368,12 @@ describe('trailing-stop-service', () => {
     it('should use marketType from config defaulting to FUTURES', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 102,
+        currentPrice: 115,
         currentStopLoss: null,
         side: 'LONG',
+        takeProfit: 120,
         swingPoints: [],
+        highestPrice: 116,
       };
       const configWithoutMarket = { ...baseConfig, marketType: undefined } as TrailingStopOptimizationConfig;
       const result = computeTrailingStop(input, configWithoutMarket);
@@ -598,10 +383,12 @@ describe('trailing-stop-service', () => {
     it('should use useBnbDiscount from config defaulting to false', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 102,
+        currentPrice: 115,
         currentStopLoss: null,
         side: 'LONG',
+        takeProfit: 120,
         swingPoints: [],
+        highestPrice: 116,
       };
       const configWithoutBnb = { ...baseConfig, useBnbDiscount: undefined } as TrailingStopOptimizationConfig;
       const result = computeTrailingStop(input, configWithoutBnb);
@@ -611,10 +398,12 @@ describe('trailing-stop-service', () => {
     it('should pass useFibonacciThresholds from config', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 102,
+        currentPrice: 115,
         currentStopLoss: null,
         side: 'LONG',
+        takeProfit: 120,
         swingPoints: [],
+        highestPrice: 116,
       };
       const fibConfig = { ...baseConfig, useFibonacciThresholds: false };
       const result = computeTrailingStop(input, fibConfig);
@@ -624,10 +413,12 @@ describe('trailing-stop-service', () => {
     it('should pass activationPercentLong and activationPercentShort from config', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 102,
+        currentPrice: 115,
         currentStopLoss: null,
         side: 'LONG',
+        takeProfit: 120,
         swingPoints: [],
+        highestPrice: 116,
       };
       const configWithActivation = {
         ...baseConfig,
@@ -637,22 +428,6 @@ describe('trailing-stop-service', () => {
       const result = computeTrailingStop(input, configWithActivation);
       expect(result).not.toBeNull();
     });
-
-    it('should pass useProfitLockDistance from config', () => {
-      const input: TrailingStopInput = {
-        entryPrice: 100,
-        currentPrice: 115,
-        currentStopLoss: null,
-        side: 'LONG',
-        takeProfit: 120,
-        swingPoints: [],
-        highestPrice: 116,
-      };
-      const configWithLock = { ...baseConfig, useProfitLockDistance: true };
-      const result = computeTrailingStop(input, configWithLock);
-      expect(result).not.toBeNull();
-      expect(result!.reason).toBe('progressive_trail');
-    });
   });
 
   describe('TrailingStopService', () => {
@@ -660,7 +435,6 @@ describe('trailing-stop-service', () => {
       it('should use DEFAULT_TRAILING_STOP_CONFIG when no config provided', () => {
         const service = new TrailingStopService();
         const config = service.getConfig();
-        expect(config.breakevenProfitThreshold).toBe(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold);
         expect(config.minTrailingDistancePercent).toBe(DEFAULT_TRAILING_STOP_CONFIG.minTrailingDistancePercent);
         expect(config.swingLookback).toBe(DEFAULT_TRAILING_STOP_CONFIG.swingLookback);
         expect(config.useATRMultiplier).toBe(DEFAULT_TRAILING_STOP_CONFIG.useATRMultiplier);
@@ -674,17 +448,15 @@ describe('trailing-stop-service', () => {
         const config = service.getConfig();
         expect(config.atrMultiplier).toBe(3);
         expect(config.marketType).toBe('SPOT');
-        expect(config.breakevenProfitThreshold).toBe(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold);
+        expect(config.minTrailingDistancePercent).toBe(DEFAULT_TRAILING_STOP_CONFIG.minTrailingDistancePercent);
       });
 
       it('should allow overriding all default config fields', () => {
         const customConfig: Partial<TrailingStopOptimizationConfig> = {
-          breakevenProfitThreshold: 0.05,
           minTrailingDistancePercent: 0.01,
           swingLookback: 10,
           useATRMultiplier: false,
           atrMultiplier: 5,
-          feePercent: 0.005,
           trailingDistancePercent: 0.5,
           useVolatilityBasedThresholds: false,
           marketType: 'SPOT',
@@ -692,12 +464,10 @@ describe('trailing-stop-service', () => {
         };
         const service = new TrailingStopService(customConfig);
         const config = service.getConfig();
-        expect(config.breakevenProfitThreshold).toBe(0.05);
         expect(config.minTrailingDistancePercent).toBe(0.01);
         expect(config.swingLookback).toBe(10);
         expect(config.useATRMultiplier).toBe(false);
         expect(config.atrMultiplier).toBe(5);
-        expect(config.feePercent).toBe(0.005);
         expect(config.trailingDistancePercent).toBe(0.5);
         expect(config.useVolatilityBasedThresholds).toBe(false);
         expect(config.marketType).toBe('SPOT');
@@ -760,14 +530,6 @@ describe('trailing-stop-service', () => {
   });
 
   describe('DEFAULT_TRAILING_STOP_CONFIG', () => {
-    it('should use TRAILING_STOP constants for breakeven threshold', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold).toBe(0.01);
-    });
-
-    it('should use TRAILING_STOP constants for fees coverage threshold', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenWithFeesThreshold).toBe(0.015);
-    });
-
     it('should use TRAILING_STOP PEAK_PROFIT_FLOOR for trailingDistancePercent', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.trailingDistancePercent).toBe(0.3);
     });

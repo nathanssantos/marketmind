@@ -35,7 +35,6 @@ const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'trailingDistancePercentLong' },
   { key: 'trailingDistancePercentShort' },
   { key: 'useAdaptiveTrailing' },
-  { key: 'useProfitLockDistance' },
   { key: 'trailingDistanceMode' },
   { key: 'trailingStopOffsetPercent' },
   { key: 'trailingActivationModeLong' },

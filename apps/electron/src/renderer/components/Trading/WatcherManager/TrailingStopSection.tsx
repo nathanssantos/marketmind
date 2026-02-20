@@ -23,8 +23,6 @@ export interface TrailingStopSectionProps {
   onTrailingStopOffsetPercentChange?: (value: number) => void;
   useAdaptiveTrailing: boolean;
   onUseAdaptiveTrailingChange: (enabled: boolean) => void;
-  useProfitLockDistance: boolean;
-  onUseProfitLockDistanceChange: (enabled: boolean) => void;
   isPending: boolean;
   compact?: boolean;
   activationModeLong?: 'auto' | 'manual';
@@ -52,8 +50,6 @@ export const TrailingStopSection = ({
   onTrailingStopOffsetPercentChange,
   useAdaptiveTrailing,
   onUseAdaptiveTrailingChange,
-  useProfitLockDistance,
-  onUseProfitLockDistanceChange,
   isPending,
   compact = false,
   activationModeLong = 'auto',
@@ -301,78 +297,55 @@ export const TrailingStopSection = ({
             </Box>
           )}
 
-          <HStack justify="space-between" p={sectionPadding} bg="bg.subtle" borderRadius="md">
-            <Box>
-              <Text fontSize={labelSize} fontWeight="medium">
-                {t('watcherManager.trailingStop.profitLock')}
-              </Text>
-              {!compact && (
-                <Text fontSize={descSize} color="fg.muted">
-                  {t('watcherManager.trailingStop.profitLockDescription')}
+          <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
+              <Box>
+                <Text fontSize={labelSize} fontWeight="medium">
+                  {t('watcherManager.trailingStop.trailingDistanceLong')}
                 </Text>
-              )}
-            </Box>
-            <Switch
-              checked={useProfitLockDistance}
-              onCheckedChange={onUseProfitLockDistanceChange}
-              disabled={isPending}
-              size={compact ? 'sm' : undefined}
+                {!compact && (
+                  <Text fontSize={descSize} color="fg.muted">
+                    {t('watcherManager.trailingStop.trailingDistanceLongDescription')}
+                  </Text>
+                )}
+              </Box>
+              <Text fontSize={labelSize} fontWeight="bold" color="green.500">
+                {(trailingDistancePercentLong * 100).toFixed(0)}%
+              </Text>
+            </Flex>
+            <Slider
+              value={[trailingDistancePercentLong * 100]}
+              onValueChange={(values) => onTrailingDistancePercentLongChange(values[0]! / 100)}
+              min={10}
+              max={80}
+              step={5}
             />
-          </HStack>
+          </Box>
 
-          {useProfitLockDistance && (
-            <>
-              <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
-                <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
-                  <Box>
-                    <Text fontSize={labelSize} fontWeight="medium">
-                      {t('watcherManager.trailingStop.trailingDistanceLong')}
-                    </Text>
-                    {!compact && (
-                      <Text fontSize={descSize} color="fg.muted">
-                        {t('watcherManager.trailingStop.trailingDistanceLongDescription')}
-                      </Text>
-                    )}
-                  </Box>
-                  <Text fontSize={labelSize} fontWeight="bold" color="green.500">
-                    {(trailingDistancePercentLong * 100).toFixed(0)}%
+          <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
+              <Box>
+                <Text fontSize={labelSize} fontWeight="medium">
+                  {t('watcherManager.trailingStop.trailingDistanceShort')}
+                </Text>
+                {!compact && (
+                  <Text fontSize={descSize} color="fg.muted">
+                    {t('watcherManager.trailingStop.trailingDistanceShortDescription')}
                   </Text>
-                </Flex>
-                <Slider
-                  value={[trailingDistancePercentLong * 100]}
-                  onValueChange={(values) => onTrailingDistancePercentLongChange(values[0]! / 100)}
-                  min={10}
-                  max={80}
-                  step={5}
-                />
+                )}
               </Box>
-
-              <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
-                <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
-                  <Box>
-                    <Text fontSize={labelSize} fontWeight="medium">
-                      {t('watcherManager.trailingStop.trailingDistanceShort')}
-                    </Text>
-                    {!compact && (
-                      <Text fontSize={descSize} color="fg.muted">
-                        {t('watcherManager.trailingStop.trailingDistanceShortDescription')}
-                      </Text>
-                    )}
-                  </Box>
-                  <Text fontSize={labelSize} fontWeight="bold" color="red.500">
-                    {(trailingDistancePercentShort * 100).toFixed(0)}%
-                  </Text>
-                </Flex>
-                <Slider
-                  value={[trailingDistancePercentShort * 100]}
-                  onValueChange={(values) => onTrailingDistancePercentShortChange(values[0]! / 100)}
-                  min={10}
-                  max={80}
-                  step={5}
-                />
-              </Box>
-            </>
-          )}
+              <Text fontSize={labelSize} fontWeight="bold" color="red.500">
+                {(trailingDistancePercentShort * 100).toFixed(0)}%
+              </Text>
+            </Flex>
+            <Slider
+              value={[trailingDistancePercentShort * 100]}
+              onValueChange={(values) => onTrailingDistancePercentShortChange(values[0]! / 100)}
+              min={10}
+              max={80}
+              step={5}
+            />
+          </Box>
 
           <HStack justify="space-between" p={sectionPadding} bg="bg.subtle" borderRadius="md">
             <Box>

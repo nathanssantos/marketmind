@@ -31,7 +31,6 @@ export interface FullSystemPreset {
     maxEntries: number[];
   };
   trailingStop: {
-    breakevenProfitThreshold: number[];
     minTrailingDistancePercent: number[];
   };
   walkForward: boolean;
@@ -48,7 +47,6 @@ export const OPTIMIZATION_PRESETS: Record<string, FullSystemPreset> = {
       maxEntries: [3, 5],
     },
     trailingStop: {
-      breakevenProfitThreshold: [0.0075],
       minTrailingDistancePercent: [0.002],
     },
     walkForward: false,
@@ -63,7 +61,6 @@ export const OPTIMIZATION_PRESETS: Record<string, FullSystemPreset> = {
       maxEntries: [3, 5],
     },
     trailingStop: {
-      breakevenProfitThreshold: [0.005, 0.0075, 0.01],
       minTrailingDistancePercent: [0.001, 0.002],
     },
     walkForward: true,
@@ -78,7 +75,6 @@ export const OPTIMIZATION_PRESETS: Record<string, FullSystemPreset> = {
       maxEntries: [2, 3, 4, 5],
     },
     trailingStop: {
-      breakevenProfitThreshold: [0.005, 0.0075, 0.01, 0.012, 0.015],
       minTrailingDistancePercent: [0.001, 0.0015, 0.002, 0.003],
     },
     walkForward: true,
@@ -100,14 +96,12 @@ export class FullSystemOptimizer {
       for (const profitThreshold of preset.pyramiding.profitThreshold) {
         for (const scaleFactor of preset.pyramiding.scaleFactor) {
           for (const maxEntries of preset.pyramiding.maxEntries) {
-            for (const breakevenProfitThreshold of preset.trailingStop.breakevenProfitThreshold) {
-              for (const minTrailingDistancePercent of preset.trailingStop.minTrailingDistancePercent) {
-                combinations.push({
-                  mlThreshold,
-                  pyramiding: { profitThreshold, scaleFactor, maxEntries },
-                  trailingStop: { breakevenProfitThreshold, minTrailingDistancePercent },
-                });
-              }
+            for (const minTrailingDistancePercent of preset.trailingStop.minTrailingDistancePercent) {
+              combinations.push({
+                mlThreshold,
+                pyramiding: { profitThreshold, scaleFactor, maxEntries },
+                trailingStop: { minTrailingDistancePercent },
+              });
             }
           }
         }
@@ -330,7 +324,6 @@ export class FullSystemOptimizer {
         pyramidProfitThreshold: pyramidingConfig.profitThreshold,
         pyramidScaleFactor: pyramidingConfig.scaleFactor,
         pyramidMaxEntries: pyramidingConfig.maxEntries,
-        trailingBreakeven: trailingConfig.breakevenProfitThreshold,
         trailingMinDistance: trailingConfig.minTrailingDistancePercent,
       },
     };
@@ -504,7 +497,6 @@ export class FullSystemOptimizer {
       preset.pyramiding.profitThreshold.length *
       preset.pyramiding.scaleFactor.length *
       preset.pyramiding.maxEntries.length *
-      preset.trailingStop.breakevenProfitThreshold.length *
       preset.trailingStop.minTrailingDistancePercent.length
     );
   }

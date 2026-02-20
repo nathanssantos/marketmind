@@ -15,7 +15,7 @@ vi.mock('../../../volatility-profile', () => ({
   getVolatilityAdjustedMultiplier: vi.fn((_base) => _base),
   getVolatilityProfile: vi.fn().mockReturnValue({
     level: 'normal',
-    breakevenThreshold: 0.005,
+    minTrailingDistance: 0.005,
     atrMultiplier: 1.0,
   }),
 }));

@@ -31,13 +31,11 @@ const PARAM_RANGES = {
     activationPercent: { min: 50, max: 150, step: 10 },
     distancePercent: { min: 10, max: 60, step: 10 },
     atrMultiplier: { min: 1.0, max: 3.5, step: 0.5 },
-    breakevenProfitThreshold: { min: 0.5, max: 2.0, step: 0.5 },
   },
   medium: {
     activationPercent: { min: 70, max: 120, step: 10 },
     distancePercent: { min: 20, max: 50, step: 10 },
     atrMultiplier: { min: 1.5, max: 3.0, step: 0.5 },
-    breakevenProfitThreshold: { min: 0.5, max: 1.5, step: 0.5 },
   },
 };
 
@@ -71,19 +69,15 @@ const generateDirectionalConfigs = (mode: 'full' | 'medium'): DirectionalTrailin
   const activations = generateRange(ranges.activationPercent.min, ranges.activationPercent.max, ranges.activationPercent.step);
   const distances = generateRange(ranges.distancePercent.min, ranges.distancePercent.max, ranges.distancePercent.step);
   const atrMults = generateRange(ranges.atrMultiplier.min, ranges.atrMultiplier.max, ranges.atrMultiplier.step);
-  const breakevenThresholds = generateRange(ranges.breakevenProfitThreshold.min, ranges.breakevenProfitThreshold.max, ranges.breakevenProfitThreshold.step);
 
   for (const activation of activations) {
     for (const distance of distances) {
       for (const atrMult of atrMults) {
-        for (const breakeven of breakevenThresholds) {
-          configs.push({
-            activationPercent: activation,
-            distancePercent: distance,
-            atrMultiplier: atrMult,
-            breakevenProfitThreshold: breakeven,
-          });
-        }
+        configs.push({
+          activationPercent: activation,
+          distancePercent: distance,
+          atrMultiplier: atrMult,
+        });
       }
     }
   }
@@ -357,18 +351,18 @@ Example:
 
   if (mode === 'quick') {
     longConfigs = [
-      { activationPercent: 80, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 100, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 100, distancePercent: 25, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 100, distancePercent: 35, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 120, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
+      { activationPercent: 80, distancePercent: 30, atrMultiplier: 2.0 },
+      { activationPercent: 100, distancePercent: 30, atrMultiplier: 2.0 },
+      { activationPercent: 100, distancePercent: 25, atrMultiplier: 2.0 },
+      { activationPercent: 100, distancePercent: 35, atrMultiplier: 2.0 },
+      { activationPercent: 120, distancePercent: 30, atrMultiplier: 2.0 },
     ];
     shortConfigs = [
-      { activationPercent: 80, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 88.6, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 100, distancePercent: 30, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 100, distancePercent: 25, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
-      { activationPercent: 100, distancePercent: 40, atrMultiplier: 2.0, breakevenProfitThreshold: 1.0 },
+      { activationPercent: 80, distancePercent: 30, atrMultiplier: 2.0 },
+      { activationPercent: 88.6, distancePercent: 30, atrMultiplier: 2.0 },
+      { activationPercent: 100, distancePercent: 30, atrMultiplier: 2.0 },
+      { activationPercent: 100, distancePercent: 25, atrMultiplier: 2.0 },
+      { activationPercent: 100, distancePercent: 40, atrMultiplier: 2.0 },
     ];
   } else {
     const paramMode = mode === 'full' ? 'full' : 'medium';
@@ -456,8 +450,8 @@ Example:
   for (let i = 0; i < Math.min(topN, results.length); i++) {
     const r = results[i]!;
     logger.info(`#${i + 1} Score: ${r.score.toFixed(2)}`);
-    logger.info(`  LONG:  Act=${r.longConfig.activationPercent}% Dist=${r.longConfig.distancePercent}% ATR=${r.longConfig.atrMultiplier} BE=${r.longConfig.breakevenProfitThreshold}%`);
-    logger.info(`  SHORT: Act=${r.shortConfig.activationPercent}% Dist=${r.shortConfig.distancePercent}% ATR=${r.shortConfig.atrMultiplier} BE=${r.shortConfig.breakevenProfitThreshold}%`);
+    logger.info(`  LONG:  Act=${r.longConfig.activationPercent}% Dist=${r.longConfig.distancePercent}% ATR=${r.longConfig.atrMultiplier}`);
+    logger.info(`  SHORT: Act=${r.shortConfig.activationPercent}% Dist=${r.shortConfig.distancePercent}% ATR=${r.shortConfig.atrMultiplier}`);
     logger.info(`  PnL: $${r.totalPnl.toFixed(2)} | Win Rate: ${r.winRate.toFixed(1)}% | Sharpe: ${r.sharpeRatio.toFixed(3)} | Max DD: ${(r.maxDrawdown * 100).toFixed(1)}%`);
     logger.info(`  Trailing: ${r.trailingActivations}/${r.totalTrades} activated (${r.trailingExitRate.toFixed(1)}% exits)`);
     logger.info('');

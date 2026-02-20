@@ -2,9 +2,6 @@ import type { FibonacciProjectionData, TrailingStopOptimizationConfig } from '@m
 import { describe, expect, it } from 'vitest';
 import {
     calculateATRTrailingStop,
-    calculateBreakevenPrice,
-    calculateFeesCoveredPrice,
-    calculateNewStopLoss,
     calculateProfitPercent,
     calculateProgressiveFloor,
     computeTrailingStop,
@@ -49,35 +46,6 @@ describe('Trailing Stop Pure Functions', () => {
     it('should handle small price changes accurately', () => {
       const result = calculateProfitPercent(100, 100.5, true);
       expect(result).toBeCloseTo(0.005, 6);
-    });
-  });
-
-  describe('calculateBreakevenPrice', () => {
-    it('should add buffer above entry for LONG positions', () => {
-      const result = calculateBreakevenPrice(100, true, 0.001);
-      expect(result).toBe(100.1);
-    });
-
-    it('should subtract buffer below entry for SHORT positions', () => {
-      const result = calculateBreakevenPrice(100, false, 0.001);
-      expect(result).toBe(99.9);
-    });
-
-    it('should use default buffer of 0 when not specified (pure breakeven)', () => {
-      const longResult = calculateBreakevenPrice(100, true);
-      const shortResult = calculateBreakevenPrice(100, false);
-      expect(longResult).toBe(100);
-      expect(shortResult).toBe(100);
-    });
-
-    it('should handle custom buffer values', () => {
-      const result = calculateBreakevenPrice(1000, true, 0.005);
-      expect(result).toBeCloseTo(1005, 4);
-    });
-
-    it('should handle zero buffer', () => {
-      expect(calculateBreakevenPrice(100, true, 0)).toBe(100);
-      expect(calculateBreakevenPrice(100, false, 0)).toBe(100);
     });
   });
 
@@ -194,33 +162,17 @@ describe('Trailing Stop Pure Functions', () => {
     });
   });
 
-  describe('calculateNewStopLoss', () => {
-    it('should return breakeven when swing stop is null', () => {
-      expect(calculateNewStopLoss(100, null, true)).toBe(100);
-      expect(calculateNewStopLoss(100, null, false)).toBe(100);
-    });
-
-    it('should return max of breakeven and swing for LONG', () => {
-      expect(calculateNewStopLoss(100, 105, true)).toBe(105);
-      expect(calculateNewStopLoss(100, 95, true)).toBe(100);
-    });
-
-    it('should return min of breakeven and swing for SHORT', () => {
-      expect(calculateNewStopLoss(100, 95, false)).toBe(95);
-      expect(calculateNewStopLoss(100, 105, false)).toBe(100);
-    });
-  });
-
   describe('computeTrailingStop', () => {
     const config: TrailingStopOptimizationConfig = {
-      breakevenProfitThreshold: 0.005,
       minTrailingDistancePercent: 0.002,
       swingLookback: 3,
       useATRMultiplier: false,
       atrMultiplier: 2.5,
+      trailingDistancePercent: 0.3,
+      forceActivated: true,
     };
 
-    it('should return null when profit is below threshold', () => {
+    it('should return null when no takeProfit or fibonacci data provided', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
         currentPrice: 100.3,
@@ -231,22 +183,24 @@ describe('Trailing Stop Pure Functions', () => {
       expect(computeTrailingStop(input, config)).toBeNull();
     });
 
-    it('should return fees_covered stop when profit exceeds fees threshold', () => {
+    it('should return progressive_trail when profit exceeds TP progress threshold', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 101,
+        currentPrice: 110,
         currentStopLoss: null,
         side: 'LONG',
         swingPoints: [],
+        highestPrice: 110,
+        takeProfit: 112,
       };
-      const configWithFees = { ...config, breakevenWithFeesThreshold: 0.0075, feePercent: 0.002 };
-      const result = computeTrailingStop(input, configWithFees);
+      const result = computeTrailingStop(input, config);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
-      expect(result!.newStopLoss).toBeCloseTo(100.2, 4);
+      expect(result!.reason).toBe('progressive_trail');
+      expect(result!.newStopLoss).toBeGreaterThan(100);
+      expect(result!.newStopLoss).toBeLessThan(110);
     });
 
-    it('should return swing trail stop when swing point is better and above 75% TP', () => {
+    it('should return swing trail stop when swing point is better and above TP threshold', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
         currentPrice: 110,
@@ -256,8 +210,7 @@ describe('Trailing Stop Pure Functions', () => {
         highestPrice: 110,
         takeProfit: 112,
       };
-      const configWithFees = { ...config, breakevenWithFeesThreshold: 0.0075, feePercent: 0.002 };
-      const result = computeTrailingStop(input, configWithFees);
+      const result = computeTrailingStop(input, config);
       expect(result).not.toBeNull();
       expect(result!.reason).toBe('swing_trail');
     });
@@ -269,6 +222,7 @@ describe('Trailing Stop Pure Functions', () => {
         currentStopLoss: 100.5,
         side: 'LONG',
         swingPoints: [],
+        takeProfit: 102,
       };
       expect(computeTrailingStop(input, config)).toBeNull();
     });
@@ -276,19 +230,21 @@ describe('Trailing Stop Pure Functions', () => {
     it('should handle SHORT positions correctly', () => {
       const input: TrailingStopInput = {
         entryPrice: 100,
-        currentPrice: 99,
+        currentPrice: 91,
         currentStopLoss: null,
         side: 'SHORT',
         swingPoints: [],
+        lowestPrice: 91,
+        takeProfit: 90,
       };
-      const configWithFees = { ...config, breakevenWithFeesThreshold: 0.0075, feePercent: 0.002 };
-      const result = computeTrailingStop(input, configWithFees);
+      const result = computeTrailingStop(input, config);
       expect(result).not.toBeNull();
-      expect(result!.reason).toBe('fees_covered');
-      expect(result!.newStopLoss).toBeCloseTo(99.8, 4);
+      expect(result!.reason).toBe('progressive_trail');
+      expect(result!.newStopLoss).toBeLessThan(100);
+      expect(result!.newStopLoss).toBeGreaterThan(91);
     });
 
-    it('should use swing high for SHORT trailing when above 75% TP', () => {
+    it('should use swing high for SHORT trailing when above TP threshold', () => {
       const input: TrailingStopInput = {
         entryPrice: 110,
         currentPrice: 100,
@@ -298,8 +254,7 @@ describe('Trailing Stop Pure Functions', () => {
         lowestPrice: 100,
         takeProfit: 98,
       };
-      const configWithFees = { ...config, breakevenWithFeesThreshold: 0.0075, feePercent: 0.002 };
-      const result = computeTrailingStop(input, configWithFees);
+      const result = computeTrailingStop(input, config);
       expect(result).not.toBeNull();
       expect(result!.reason).toBe('swing_trail');
     });
@@ -307,15 +262,14 @@ describe('Trailing Stop Pure Functions', () => {
 
   describe('DEFAULT_TRAILING_STOP_CONFIG', () => {
     it('should have expected default values', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold).toBe(0.01);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenWithFeesThreshold).toBe(0.015);
       expect(DEFAULT_TRAILING_STOP_CONFIG.minTrailingDistancePercent).toBe(0.002);
       expect(DEFAULT_TRAILING_STOP_CONFIG.swingLookback).toBe(3);
       expect(DEFAULT_TRAILING_STOP_CONFIG.useATRMultiplier).toBe(true);
       expect(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier).toBe(2.0);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.feePercent).toBe(0.0008);
-      expect(DEFAULT_TRAILING_STOP_CONFIG.trailingDistancePercent).toBe(0.4);
+      expect(DEFAULT_TRAILING_STOP_CONFIG.trailingDistancePercent).toBeGreaterThan(0);
       expect(DEFAULT_TRAILING_STOP_CONFIG.useVolatilityBasedThresholds).toBe(true);
+      expect(DEFAULT_TRAILING_STOP_CONFIG.marketType).toBe('FUTURES');
+      expect(DEFAULT_TRAILING_STOP_CONFIG.useBnbDiscount).toBe(false);
     });
   });
 });
@@ -326,25 +280,22 @@ describe('TrailingStopService', () => {
       const service = new TrailingStopService();
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.01);
-      expect(config.breakevenWithFeesThreshold).toBe(0.015);
       expect(config.minTrailingDistancePercent).toBe(0.002);
       expect(config.swingLookback).toBe(3);
       expect(config.useATRMultiplier).toBe(true);
       expect(config.atrMultiplier).toBe(2.0);
-      expect(config.feePercent).toBe(0.0008);
-      expect(config.trailingDistancePercent).toBe(0.4);
+      expect(config.trailingDistancePercent).toBeGreaterThan(0);
       expect(config.useVolatilityBasedThresholds).toBe(true);
+      expect(config.marketType).toBe('FUTURES');
+      expect(config.useBnbDiscount).toBe(false);
     });
 
     it('should merge partial config with defaults', () => {
       const service = new TrailingStopService({
-        breakevenProfitThreshold: 0.01,
         atrMultiplier: 3.0,
       });
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.01);
       expect(config.atrMultiplier).toBe(3.0);
       expect(config.minTrailingDistancePercent).toBe(0.002);
       expect(config.swingLookback).toBe(3);
@@ -352,7 +303,6 @@ describe('TrailingStopService', () => {
 
     it('should override all default values when full config provided', () => {
       const customConfig: TrailingStopOptimizationConfig = {
-        breakevenProfitThreshold: 0.02,
         minTrailingDistancePercent: 0.005,
         swingLookback: 5,
         useATRMultiplier: false,
@@ -361,7 +311,6 @@ describe('TrailingStopService', () => {
       const service = new TrailingStopService(customConfig);
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.02);
       expect(config.minTrailingDistancePercent).toBe(0.005);
       expect(config.swingLookback).toBe(5);
       expect(config.useATRMultiplier).toBe(false);
@@ -372,37 +321,33 @@ describe('TrailingStopService', () => {
   describe('updateConfig', () => {
     it('should update single config value', () => {
       const service = new TrailingStopService();
-      service.updateConfig({ breakevenProfitThreshold: 0.015 });
+      service.updateConfig({ trailingDistancePercent: 0.5 });
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.015);
+      expect(config.trailingDistancePercent).toBe(0.5);
       expect(config.minTrailingDistancePercent).toBe(0.002);
     });
 
     it('should update multiple config values', () => {
       const service = new TrailingStopService();
       service.updateConfig({
-        breakevenProfitThreshold: 0.02,
         atrMultiplier: 2.5,
         useATRMultiplier: false,
       });
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.02);
       expect(config.atrMultiplier).toBe(2.5);
       expect(config.useATRMultiplier).toBe(false);
     });
 
     it('should preserve existing values when updating', () => {
       const service = new TrailingStopService({
-        breakevenProfitThreshold: 0.01,
         swingLookback: 4,
       });
 
       service.updateConfig({ atrMultiplier: 3.0 });
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.01);
       expect(config.swingLookback).toBe(4);
       expect(config.atrMultiplier).toBe(3.0);
     });
@@ -410,13 +355,13 @@ describe('TrailingStopService', () => {
     it('should allow chaining multiple updates', () => {
       const service = new TrailingStopService();
 
-      service.updateConfig({ breakevenProfitThreshold: 0.01 });
+      service.updateConfig({ trailingDistancePercent: 0.5 });
       service.updateConfig({ atrMultiplier: 2.5 });
       service.updateConfig({ swingLookback: 5 });
 
       const config = service.getConfig();
 
-      expect(config.breakevenProfitThreshold).toBe(0.01);
+      expect(config.trailingDistancePercent).toBe(0.5);
       expect(config.atrMultiplier).toBe(2.5);
       expect(config.swingLookback).toBe(5);
     });
@@ -436,36 +381,14 @@ describe('TrailingStopService', () => {
       const service = new TrailingStopService();
       const config = service.getConfig();
 
-      config.breakevenProfitThreshold = 0.999;
+      config.atrMultiplier = 999;
 
       const freshConfig = service.getConfig();
-      expect(freshConfig.breakevenProfitThreshold).toBe(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold);
+      expect(freshConfig.atrMultiplier).toBe(DEFAULT_TRAILING_STOP_CONFIG.atrMultiplier);
     });
   });
 
-  describe('Three-Tier Trailing Stop System', () => {
-    describe('calculateFeesCoveredPrice', () => {
-      it('should calculate fees covered price for LONG position', () => {
-        const result = calculateFeesCoveredPrice(100, true, 0.002);
-        expect(result).toBeCloseTo(100.2, 4);
-      });
-
-      it('should calculate fees covered price for SHORT position', () => {
-        const result = calculateFeesCoveredPrice(100, false, 0.002);
-        expect(result).toBeCloseTo(99.8, 4);
-      });
-
-      it('should handle custom fee percentage', () => {
-        const result = calculateFeesCoveredPrice(1000, true, 0.003);
-        expect(result).toBeCloseTo(1003, 4);
-      });
-
-      it('should use default fee of 0.08% when not specified (FUTURES round-trip)', () => {
-        expect(calculateFeesCoveredPrice(100, true)).toBeCloseTo(100.08, 4);
-        expect(calculateFeesCoveredPrice(100, false)).toBeCloseTo(99.92, 4);
-      });
-    });
-
+  describe('Trailing Stop System', () => {
     describe('calculateProgressiveFloor', () => {
       it('should calculate progressive floor for LONG position', () => {
         const result = calculateProgressiveFloor(100, 110, undefined, true, 0.5);
@@ -531,9 +454,9 @@ describe('TrailingStopService', () => {
 
         const result = computeTrailingStop(input, {
           ...DEFAULT_TRAILING_STOP_CONFIG,
+          forceActivated: true,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
-          useProfitLockDistance: true,
         });
 
         expect(result).not.toBeNull();
@@ -554,9 +477,9 @@ describe('TrailingStopService', () => {
 
         const result = computeTrailingStop(input, {
           ...DEFAULT_TRAILING_STOP_CONFIG,
+          forceActivated: true,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
-          useProfitLockDistance: true,
         });
 
         expect(result).not.toBeNull();
@@ -577,6 +500,7 @@ describe('TrailingStopService', () => {
 
         const result = computeTrailingStop(input, {
           ...DEFAULT_TRAILING_STOP_CONFIG,
+          forceActivated: true,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
         });
@@ -589,9 +513,9 @@ describe('TrailingStopService', () => {
       it('should lock in more profit as price moves higher with takeProfit', () => {
         const config = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
+          forceActivated: true,
           useATRMultiplier: false,
           trailingDistancePercent: 0.5,
-          useProfitLockDistance: true,
         };
 
         const input1: TrailingStopInput = {
@@ -624,42 +548,46 @@ describe('TrailingStopService', () => {
       });
     });
 
-    describe('computeTrailingStop - Stage 1: Fees Covered at 1.0%', () => {
-      it('should move stop to fees covered price for LONG when profit >= 1.0%', () => {
+    describe('computeTrailingStop - Progressive Trail with TP Progress', () => {
+      it('should activate trailing for LONG when TP progress threshold is reached', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
-          currentPrice: 101,
+          currentPrice: 109,
           currentStopLoss: 98,
           side: 'LONG',
           swingPoints: [],
-          highestPrice: 101,
+          highestPrice: 109,
+          takeProfit: 110,
         };
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
-        expect(result!.reason).toBe('fees_covered');
+        expect(result!.reason).toBe('progressive_trail');
+        expect(result!.newStopLoss).toBeGreaterThan(100);
+        expect(result!.newStopLoss).toBeLessThan(109);
       });
 
-      it('should move stop to fees covered price for SHORT when profit >= 1.0%', () => {
+      it('should activate trailing for SHORT when TP progress threshold is reached', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
-          currentPrice: 99,
+          currentPrice: 91,
           currentStopLoss: 102,
           side: 'SHORT',
           swingPoints: [],
-          lowestPrice: 99,
+          lowestPrice: 91,
+          takeProfit: 90,
         };
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(99.92, 1);
-        expect(result!.reason).toBe('fees_covered');
+        expect(result!.reason).toBe('progressive_trail');
+        expect(result!.newStopLoss).toBeLessThan(100);
+        expect(result!.newStopLoss).toBeGreaterThan(91);
       });
 
-      it('should not trigger trailing if profit < 1.0%', () => {
+      it('should return null without takeProfit or fibonacci data', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 100.8,
@@ -675,50 +603,8 @@ describe('TrailingStopService', () => {
       });
     });
 
-    describe('computeTrailingStop - Stage 2: Fees Covered at 1.5%', () => {
-      it('should move stop to entry + fees for LONG when profit >= 1.5%', () => {
-        const input: TrailingStopInput = {
-          entryPrice: 100,
-          currentPrice: 101.6,
-          currentStopLoss: 99,
-          side: 'LONG',
-          swingPoints: [{ price: 100.5, type: 'low' }],
-          atr: 0.5,
-          highestPrice: 101.6,
-        };
-
-        const result = computeTrailingStop(input, {
-          ...DEFAULT_TRAILING_STOP_CONFIG,
-          useATRMultiplier: false,
-        });
-
-        expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
-        expect(['fees_covered', 'swing_trail', 'progressive_trail']).toContain(result!.reason);
-      });
-
-      it('should move stop to entry + fees for SHORT when profit >= 1.5%', () => {
-        const input: TrailingStopInput = {
-          entryPrice: 100,
-          currentPrice: 98.4,
-          currentStopLoss: 101,
-          side: 'SHORT',
-          swingPoints: [{ price: 99.5, type: 'high' }],
-          atr: 0.5,
-          lowestPrice: 98.4,
-        };
-
-        const result = computeTrailingStop(input, {
-          ...DEFAULT_TRAILING_STOP_CONFIG,
-          useATRMultiplier: false,
-        });
-
-        expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeLessThanOrEqual(99.92);
-        expect(['fees_covered', 'swing_trail', 'progressive_trail']).toContain(result!.reason);
-      });
-
-      it('should use swing trailing above fees covered with takeProfit', () => {
+    describe('computeTrailingStop - Swing and ATR with TP Progress', () => {
+      it('should use swing trailing when swing is available and above TP threshold', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 104,
@@ -731,33 +617,16 @@ describe('TrailingStopService', () => {
 
         const result = computeTrailingStop(input, {
           ...DEFAULT_TRAILING_STOP_CONFIG,
+          forceActivated: true,
           useATRMultiplier: false,
         });
 
         expect(result).not.toBeNull();
         expect(result!.newStopLoss).toBeGreaterThanOrEqual(100.2);
-        expect(['swing_trail', 'fees_covered', 'progressive_trail']).toContain(result!.reason);
+        expect(['swing_trail', 'progressive_trail']).toContain(result!.reason);
       });
 
-      it('should stay at fees_covered if profit between 50% and 75% of TP', () => {
-        const input: TrailingStopInput = {
-          entryPrice: 100,
-          currentPrice: 106,
-          currentStopLoss: 98,
-          side: 'LONG',
-          swingPoints: [],
-          highestPrice: 106,
-          takeProfit: 110,
-        };
-
-        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
-
-        expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
-        expect(result!.reason).toBe('fees_covered');
-      });
-
-      it('should return null if profit below 50% of TP', () => {
+      it('should return null if TP progress below activation threshold', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 101.2,
@@ -774,26 +643,27 @@ describe('TrailingStopService', () => {
       });
     });
 
-    describe('computeTrailingStop - ATR Trailing with Fees Covered Floor', () => {
-      it('should use ATR trailing but not below fees covered level', () => {
+    describe('computeTrailingStop - ATR Trailing', () => {
+      it('should use ATR trailing when above TP threshold with ATR data', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
-          currentPrice: 103,
+          currentPrice: 109,
           currentStopLoss: 98,
           side: 'LONG',
           swingPoints: [],
           atr: 0.5,
-          highestPrice: 103,
+          highestPrice: 109,
+          takeProfit: 110,
         };
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.08, 1);
-        expect(['atr_trail', 'fees_covered', 'progressive_trail']).toContain(result!.reason);
+        expect(result!.newStopLoss).toBeGreaterThan(100);
+        expect(['atr_trail', 'progressive_trail']).toContain(result!.reason);
       });
 
-      it('should use swing trail when swing is available and above 75% TP', () => {
+      it('should use swing trail when swing is available and above TP threshold', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 105,
@@ -805,16 +675,16 @@ describe('TrailingStopService', () => {
           takeProfit: 106,
         };
 
-        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+        const result = computeTrailingStop(input, { ...DEFAULT_TRAILING_STOP_CONFIG, forceActivated: true });
 
         expect(result).not.toBeNull();
         expect(result!.newStopLoss).toBeGreaterThan(100.2);
-        expect(['swing_trail', 'fees_covered', 'progressive_trail', 'atr_trail']).toContain(result!.reason);
+        expect(['swing_trail', 'progressive_trail', 'atr_trail']).toContain(result!.reason);
       });
     });
 
     describe('computeTrailingStop - Edge Cases', () => {
-      it('should handle exactly 1.0% profit (fees covered threshold)', () => {
+      it('should return null when no takeProfit and no fibonacci data', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 101,
@@ -826,27 +696,27 @@ describe('TrailingStopService', () => {
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
-        expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
+        expect(result).toBeNull();
       });
 
-      it('should handle exactly 1.5% profit (fees covered threshold)', () => {
+      it('should activate when TP progress is above threshold', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
-          currentPrice: 101.5,
+          currentPrice: 109.5,
           currentStopLoss: 99,
           side: 'LONG',
           swingPoints: [],
-          highestPrice: 101.5,
+          highestPrice: 109.5,
+          takeProfit: 110,
         };
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
 
         expect(result).not.toBeNull();
-        expect(['fees_covered', 'atr_trail', 'progressive_trail']).toContain(result!.reason);
+        expect(['progressive_trail', 'atr_trail']).toContain(result!.reason);
       });
 
-      it('should return null when profit below threshold and stop already at breakeven', () => {
+      it('should return null when stop already at a better level', () => {
         const input: TrailingStopInput = {
           entryPrice: 100,
           currentPrice: 100.4,
@@ -854,6 +724,7 @@ describe('TrailingStopService', () => {
           side: 'LONG',
           swingPoints: [],
           highestPrice: 100.8,
+          takeProfit: 101,
         };
 
         const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
@@ -873,7 +744,7 @@ describe('TrailingStopService', () => {
           takeProfit: 160,
         };
 
-        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+        const result = computeTrailingStop(input, { ...DEFAULT_TRAILING_STOP_CONFIG, forceActivated: true });
 
         expect(result).not.toBeNull();
         expect(result!.newStopLoss).toBeGreaterThan(100.2);
@@ -898,7 +769,7 @@ describe('TrailingStopService', () => {
           takeProfit: 105,
         };
 
-        const result = computeTrailingStop(input, DEFAULT_TRAILING_STOP_CONFIG);
+        const result = computeTrailingStop(input, { ...DEFAULT_TRAILING_STOP_CONFIG, forceActivated: true });
 
         expect(result).not.toBeNull();
         expect(result!.newStopLoss).toBeGreaterThanOrEqual(100.2);
@@ -906,48 +777,53 @@ describe('TrailingStopService', () => {
     });
 
     describe('Custom Configuration', () => {
-      it('should respect custom fee percentage', () => {
+      it('should respect custom trailing distance percent', () => {
         const customConfig: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
-          feePercent: 0.003,
+          trailingDistancePercent: 0.5,
+          useATRMultiplier: false,
         };
 
         const input: TrailingStopInput = {
           entryPrice: 100,
-          currentPrice: 101,
+          currentPrice: 109,
           currentStopLoss: 98,
           side: 'LONG',
           swingPoints: [],
-          highestPrice: 101,
+          highestPrice: 109,
+          takeProfit: 110,
         };
 
         const result = computeTrailingStop(input, customConfig);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.3, 1);
-        expect(result!.reason).toBe('fees_covered');
+        expect(result!.reason).toBe('progressive_trail');
+        expect(result!.newStopLoss).toBeGreaterThan(100);
+        expect(result!.newStopLoss).toBeLessThan(109);
       });
 
-      it('should apply custom fee when stop is below fees covered level', () => {
+      it('should use larger trailing distance to give more room', () => {
         const customConfig: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
-          feePercent: 0.003,
-          trailingDistancePercent: 1,
+          trailingDistancePercent: 0.8,
+          useATRMultiplier: false,
         };
 
         const input: TrailingStopInput = {
           entryPrice: 100,
-          currentPrice: 101.6,
-          currentStopLoss: 100,
+          currentPrice: 109,
+          currentStopLoss: 98,
           side: 'LONG',
           swingPoints: [],
-          highestPrice: 101.6,
+          highestPrice: 109,
+          takeProfit: 110,
         };
 
         const result = computeTrailingStop(input, customConfig);
 
         expect(result).not.toBeNull();
-        expect(result!.newStopLoss).toBeCloseTo(100.3, 1);
+        expect(result!.newStopLoss).toBeGreaterThan(100);
+        expect(result!.newStopLoss).toBeLessThan(109);
       });
     });
   });
@@ -1040,7 +916,6 @@ describe('TrailingStopService', () => {
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useFibonacciThresholds: true,
-          feePercent: 0.002,
         };
 
         const input: TrailingStopInput = {
@@ -1060,7 +935,7 @@ describe('TrailingStopService', () => {
         expect(result!.newStopLoss).toBeLessThan(101);
       });
 
-      it('should fall back to percentage thresholds when Fibonacci data missing', () => {
+      it('should return null when Fibonacci data missing and no takeProfit', () => {
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useFibonacciThresholds: true,
@@ -1077,8 +952,29 @@ describe('TrailingStopService', () => {
         };
 
         const result = computeTrailingStop(input, config);
+        expect(result).toBeNull();
+      });
+
+      it('should fall back to TP progress when Fibonacci data missing but takeProfit provided', () => {
+        const config: TrailingStopOptimizationConfig = {
+          ...DEFAULT_TRAILING_STOP_CONFIG,
+          useFibonacciThresholds: true,
+        };
+
+        const input: TrailingStopInput = {
+          entryPrice: 100,
+          currentPrice: 109,
+          currentStopLoss: 98,
+          side: 'LONG',
+          swingPoints: [],
+          highestPrice: 109,
+          takeProfit: 110,
+          fibonacciProjection: null,
+        };
+
+        const result = computeTrailingStop(input, config);
         expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
+        expect(result!.reason).toBe('progressive_trail');
       });
 
       it('should activate trailing for SHORT when price reaches activation Fibonacci level', () => {
@@ -1086,7 +982,6 @@ describe('TrailingStopService', () => {
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useFibonacciThresholds: true,
-          feePercent: 0.002,
         };
 
         const input: TrailingStopInput = {
@@ -1127,12 +1022,11 @@ describe('TrailingStopService', () => {
         expect(result).toBeNull();
       });
 
-      it('should return fees_covered when fibonacci activated but no peak prices for SHORT', () => {
+      it('should return null when fibonacci activated but no peak prices for SHORT', () => {
         const fib = createFibonacciProjection(90, 100);
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useFibonacciThresholds: true,
-          feePercent: 0.002,
         };
 
         const input: TrailingStopInput = {
@@ -1145,17 +1039,14 @@ describe('TrailingStopService', () => {
         };
 
         const result = computeTrailingStop(input, config);
-        expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
-        expect(result!.newStopLoss).toBeLessThan(99);
+        expect(result).toBeNull();
       });
 
-      it('should return fees_covered when fibonacci activated but no candidates for LONG', () => {
+      it('should return progressive_trail when fibonacci activated with peak prices for LONG', () => {
         const fib = createFibonacciProjection(90, 100);
         const config: TrailingStopOptimizationConfig = {
           ...DEFAULT_TRAILING_STOP_CONFIG,
           useFibonacciThresholds: true,
-          feePercent: 0.002,
         };
 
         const input: TrailingStopInput = {
@@ -1164,12 +1055,13 @@ describe('TrailingStopService', () => {
           currentStopLoss: 89,
           side: 'LONG',
           swingPoints: [],
+          highestPrice: 101,
           fibonacciProjection: fib,
         };
 
         const result = computeTrailingStop(input, config);
         expect(result).not.toBeNull();
-        expect(result!.reason).toBe('fees_covered');
+        expect(result!.reason).toBe('progressive_trail');
         expect(result!.newStopLoss).toBeGreaterThan(92);
       });
     });

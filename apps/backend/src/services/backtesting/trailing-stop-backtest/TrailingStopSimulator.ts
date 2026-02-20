@@ -3,7 +3,7 @@ import { getRoundTripFee } from '@marketmind/types';
 import { calculateAutoStopOffset } from '../../trailing-stop';
 import {
   computeTrailingStopCore,
-  hasReachedFibonacciLevel,
+  hasReachedTPProgressThreshold,
   type TrailingStopCoreInput,
   type TrailingStopCoreConfig,
 } from '../../trailing-stop-core';
@@ -24,7 +24,6 @@ export interface TrailingStopSimulatorConfig {
   marketType: MarketType;
   useBnbDiscount: boolean;
   vipLevel: number;
-  useProfitLockDistance?: boolean;
 }
 
 const parseKlinePrice = (value: string | number): number =>
@@ -150,17 +149,12 @@ export class TrailingStopSimulator {
     if (!state.isActivated) return;
 
     const coreConfig: TrailingStopCoreConfig = {
-      feePercent: this.feePercent,
-      marketType: this.config.marketType,
-      useBnbDiscount: this.config.useBnbDiscount,
-      vipLevel: this.config.vipLevel,
       minTrailingDistancePercent: 0.002,
       atrMultiplier: dirConfig.atrMultiplier,
       trailingDistancePercent: dirConfig.distancePercent / 100,
       useFibonacciThresholds: !!trade.fibonacciProjection,
       activationPercentLong: this.config.long.activationPercent / 100,
       activationPercentShort: this.config.short.activationPercent / 100,
-      useProfitLockDistance: this.config.useProfitLockDistance,
     };
 
     const coreInput: TrailingStopCoreInput = {
@@ -209,24 +203,15 @@ export class TrailingStopSimulator {
   ): boolean {
     const activationLevel = dirConfig.activationPercent / 100;
 
-    if (trade.fibonacciProjection?.levels?.length) {
-      return hasReachedFibonacciLevel(
-        currentPrice,
-        trade.fibonacciProjection,
-        activationLevel,
-        isLong
-      );
-    }
-
-    const profitPercent = isLong
-      ? (currentPrice - trade.entryPrice) / trade.entryPrice
-      : (trade.entryPrice - currentPrice) / trade.entryPrice;
-
-    const tpDistance = Math.abs(trade.takeProfit - trade.entryPrice);
-    const activationDistance = tpDistance * activationLevel;
-    const currentDistance = Math.abs(currentPrice - trade.entryPrice);
-
-    return profitPercent > 0 && currentDistance >= activationDistance;
+    return hasReachedTPProgressThreshold(
+      trade.entryPrice,
+      currentPrice,
+      trade.takeProfit,
+      trade.fibonacciProjection,
+      isLong,
+      isLong ? activationLevel : undefined,
+      isLong ? undefined : activationLevel
+    );
   }
 
   private createResult(

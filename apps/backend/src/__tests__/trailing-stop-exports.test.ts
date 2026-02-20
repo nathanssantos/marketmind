@@ -5,19 +5,6 @@ const { mockComputeTrailingStopCore } = vi.hoisted(() => ({
   mockComputeTrailingStopCore: vi.fn(),
 }));
 
-vi.mock('@marketmind/types', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    getRoundTripFee: vi.fn((params: { marketType: string; useBnbDiscount?: boolean }) => {
-      if (params.marketType === 'SPOT') {
-        return params.useBnbDiscount ? 0.0015 : 0.002;
-      }
-      return params.useBnbDiscount ? 0.00054 : 0.0008;
-    }),
-  };
-});
-
 vi.mock('@marketmind/indicators', () => ({
   calculateATR: vi.fn(() => []),
   calculateSwingPoints: vi.fn(() => ({ swingPoints: [] })),
@@ -25,14 +12,10 @@ vi.mock('@marketmind/indicators', () => ({
 
 vi.mock('../constants', () => ({
   TRAILING_STOP: {
-    BREAKEVEN_THRESHOLD: 0.01,
-    FEES_COVERAGE_THRESHOLD: 0.015,
     PEAK_PROFIT_FLOOR: 0.4,
     PEAK_PROFIT_FLOOR_LONG: 0.4,
     PEAK_PROFIT_FLOOR_SHORT: 0.3,
     ATR_MULTIPLIER: 0.002,
-    TP_THRESHOLD_FOR_BREAKEVEN: 0.50,
-    TP_THRESHOLD_FOR_ADVANCED: 0.70,
     MIN_STOP_CHANGE_ABSOLUTE: 0.005,
   },
 }));
@@ -104,17 +87,12 @@ vi.mock('../utils/formatters', () => ({
 
 import {
   calculateAutoStopOffset,
-  calculateBreakevenPrice,
-  calculateFeesCoveredPrice,
-  calculateNewStopLoss,
   computeTrailingStop,
   DEFAULT_TRAILING_STOP_CONFIG,
-  getFeesThresholdForMarketType,
   resolveTrailingStopConfig,
   type TrailingStopInput,
 } from '../services/trailing-stop';
 import type { AutoTradingConfig, SymbolTrailingStopOverride } from '../db/schema';
-import { getRoundTripFee } from '@marketmind/types';
 
 const makeSymbolOverride = (overrides: Partial<SymbolTrailingStopOverride> = {}): SymbolTrailingStopOverride => ({
   id: 1,
@@ -185,61 +163,12 @@ describe('trailing-stop exports', () => {
     vi.clearAllMocks();
   });
 
-  describe('getFeesThresholdForMarketType', () => {
-    it('should return round trip fee plus buffer for FUTURES', () => {
-      const threshold = getFeesThresholdForMarketType('FUTURES');
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-      expect(threshold).toBeCloseTo(0.0008 + 0.005, 6);
-    });
-
-    it('should return round trip fee plus buffer for SPOT', () => {
-      const threshold = getFeesThresholdForMarketType('SPOT');
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'SPOT', useBnbDiscount: false });
-      expect(threshold).toBeCloseTo(0.002 + 0.005, 6);
-    });
-
-    it('should return lower threshold with BNB discount for FUTURES', () => {
-      const threshold = getFeesThresholdForMarketType('FUTURES', true);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: true });
-      expect(threshold).toBeCloseTo(0.00054 + 0.005, 6);
-    });
-
-    it('should return lower threshold with BNB discount for SPOT', () => {
-      const threshold = getFeesThresholdForMarketType('SPOT', true);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'SPOT', useBnbDiscount: true });
-      expect(threshold).toBeCloseTo(0.0015 + 0.005, 6);
-    });
-
-    it('should default useBnbDiscount to false when omitted', () => {
-      getFeesThresholdForMarketType('FUTURES');
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-    });
-
-    it('should produce SPOT threshold higher than FUTURES threshold', () => {
-      const spotThreshold = getFeesThresholdForMarketType('SPOT', false);
-      const futuresThreshold = getFeesThresholdForMarketType('FUTURES', false);
-      expect(spotThreshold).toBeGreaterThan(futuresThreshold);
-    });
-  });
-
   describe('DEFAULT_TRAILING_STOP_CONFIG', () => {
-    it('should set breakevenProfitThreshold from TRAILING_STOP constant', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenProfitThreshold).toBe(0.01);
-    });
-
-    it('should set breakevenWithFeesThreshold from TRAILING_STOP constant', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.breakevenWithFeesThreshold).toBe(0.015);
-    });
-
-    it('should set feePercent from getRoundTripFee for FUTURES', () => {
-      expect(DEFAULT_TRAILING_STOP_CONFIG.feePercent).toBe(0.0008);
-    });
-
     it('should set trailingDistancePercent from PEAK_PROFIT_FLOOR', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.trailingDistancePercent).toBe(0.4);
     });
 
-    it('should default marketType to FUTURES and useBnbDiscount to false', () => {
+    it('should set marketType to FUTURES and useBnbDiscount to false', () => {
       expect(DEFAULT_TRAILING_STOP_CONFIG.marketType).toBe('FUTURES');
       expect(DEFAULT_TRAILING_STOP_CONFIG.useBnbDiscount).toBe(false);
     });
@@ -263,7 +192,6 @@ describe('trailing-stop exports', () => {
     const baseConfig: TrailingStopOptimizationConfig = {
       ...DEFAULT_TRAILING_STOP_CONFIG,
       trailingDistancePercent: 0.5,
-      useProfitLockDistance: false,
       useVolatilityBasedThresholds: true,
     };
 
@@ -271,7 +199,6 @@ describe('trailing-stop exports', () => {
       const result = resolveTrailingStopConfig('LONG', null, null, baseConfig);
 
       expect(result.trailingDistancePercent).toBe(baseConfig.trailingDistancePercent);
-      expect(result.useProfitLockDistance).toBe(baseConfig.useProfitLockDistance);
       expect(result.useVolatilityBasedThresholds).toBe(baseConfig.useVolatilityBasedThresholds);
       expect(result.activationPercentLong).toBeUndefined();
       expect(result.activationPercentShort).toBeUndefined();
@@ -305,13 +232,6 @@ describe('trailing-stop exports', () => {
       expect(result.activationPercentShort).toBe(0.786);
     });
 
-    it('should use walletConfig useProfitLockDistance when no override', () => {
-      const walletConfig = makeWalletConfig({ useProfitLockDistance: true });
-      const result = resolveTrailingStopConfig('LONG', null, walletConfig, baseConfig);
-
-      expect(result.useProfitLockDistance).toBe(true);
-    });
-
     it('should use walletConfig useAdaptiveTrailing for useVolatilityBasedThresholds', () => {
       const walletConfig = makeWalletConfig({ useAdaptiveTrailing: false });
       const result = resolveTrailingStopConfig('LONG', null, walletConfig, baseConfig);
@@ -326,7 +246,6 @@ describe('trailing-stop exports', () => {
         trailingDistancePercentShort: '0.20',
         trailingActivationPercentLong: '0.5',
         trailingActivationPercentShort: '0.6',
-        useProfitLockDistance: true,
         useAdaptiveTrailing: false,
       });
       const walletConfig = makeWalletConfig({
@@ -334,14 +253,12 @@ describe('trailing-stop exports', () => {
         trailingDistancePercentShort: '0.3',
         trailingActivationPercentLong: '0.9',
         trailingActivationPercentShort: '0.8',
-        useProfitLockDistance: false,
         useAdaptiveTrailing: true,
       });
 
       const resultLong = resolveTrailingStopConfig('LONG', symbolOverride, walletConfig, baseConfig);
       expect(resultLong.trailingDistancePercent).toBe(0.15);
       expect(resultLong.activationPercentLong).toBe(0.5);
-      expect(resultLong.useProfitLockDistance).toBe(true);
       expect(resultLong.useVolatilityBasedThresholds).toBe(false);
 
       const resultShort = resolveTrailingStopConfig('SHORT', symbolOverride, walletConfig, baseConfig);
@@ -370,20 +287,17 @@ describe('trailing-stop exports', () => {
         useIndividualConfig: true,
         trailingDistancePercentLong: null,
         trailingActivationPercentLong: null,
-        useProfitLockDistance: null,
         useAdaptiveTrailing: null,
       });
       const walletConfig = makeWalletConfig({
         trailingDistancePercentLong: '0.4',
         trailingActivationPercentLong: '0.9',
-        useProfitLockDistance: true,
         useAdaptiveTrailing: false,
       });
 
       const result = resolveTrailingStopConfig('LONG', symbolOverride, walletConfig, baseConfig);
       expect(result.trailingDistancePercent).toBe(0.4);
       expect(result.activationPercentLong).toBe(0.9);
-      expect(result.useProfitLockDistance).toBe(true);
       expect(result.useVolatilityBasedThresholds).toBe(false);
     });
 
@@ -392,13 +306,11 @@ describe('trailing-stop exports', () => {
         useIndividualConfig: true,
         trailingDistancePercentLong: null,
         trailingActivationPercentLong: null,
-        useProfitLockDistance: null,
         useAdaptiveTrailing: null,
       });
       const walletConfig = makeWalletConfig({
         trailingDistancePercentLong: '',
         trailingActivationPercentLong: '',
-        useProfitLockDistance: false,
         useAdaptiveTrailing: true,
       } as unknown as Partial<AutoTradingConfig>);
 
@@ -410,7 +322,6 @@ describe('trailing-stop exports', () => {
       const walletConfig = makeWalletConfig({ trailingDistancePercentLong: '0.25' });
       const result = resolveTrailingStopConfig('LONG', null, walletConfig, baseConfig);
 
-      expect(result.breakevenProfitThreshold).toBe(baseConfig.breakevenProfitThreshold);
       expect(result.minTrailingDistancePercent).toBe(baseConfig.minTrailingDistancePercent);
       expect(result.swingLookback).toBe(baseConfig.swingLookback);
       expect(result.useATRMultiplier).toBe(baseConfig.useATRMultiplier);
@@ -431,128 +342,13 @@ describe('trailing-stop exports', () => {
     });
   });
 
-  describe('calculateBreakevenPrice', () => {
-    it('should return entry price when buffer is zero for LONG', () => {
-      expect(calculateBreakevenPrice(50000, true, 0)).toBe(50000);
-    });
-
-    it('should return entry price when buffer is zero for SHORT', () => {
-      expect(calculateBreakevenPrice(50000, false, 0)).toBe(50000);
-    });
-
-    it('should add buffer above entry for LONG', () => {
-      expect(calculateBreakevenPrice(100, true, 0.01)).toBeCloseTo(101, 6);
-    });
-
-    it('should subtract buffer below entry for SHORT', () => {
-      expect(calculateBreakevenPrice(100, false, 0.01)).toBeCloseTo(99, 6);
-    });
-
-    it('should return entry price when buffer is omitted (default 0)', () => {
-      expect(calculateBreakevenPrice(200, true)).toBe(200);
-      expect(calculateBreakevenPrice(200, false)).toBe(200);
-    });
-
-    it('should handle large entry prices with small buffers', () => {
-      expect(calculateBreakevenPrice(65000, true, 0.0001)).toBeCloseTo(65006.5, 2);
-    });
-
-    it('should produce symmetric results for LONG and SHORT with same buffer', () => {
-      const longBE = calculateBreakevenPrice(100, true, 0.005);
-      const shortBE = calculateBreakevenPrice(100, false, 0.005);
-      expect(longBE + shortBE).toBeCloseTo(200, 6);
-    });
-  });
-
-  describe('calculateFeesCoveredPrice', () => {
-    it('should use explicit feePercent when provided for LONG', () => {
-      expect(calculateFeesCoveredPrice(100, true, 0.003)).toBeCloseTo(100.3, 6);
-    });
-
-    it('should use explicit feePercent when provided for SHORT', () => {
-      expect(calculateFeesCoveredPrice(100, false, 0.003)).toBeCloseTo(99.7, 6);
-    });
-
-    it('should use getRoundTripFee for FUTURES when feePercent not provided', () => {
-      const price = calculateFeesCoveredPrice(100, true, undefined, 'FUTURES', false);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'FUTURES', useBnbDiscount: false });
-      expect(price).toBeCloseTo(100.08, 4);
-    });
-
-    it('should use getRoundTripFee for SPOT when feePercent not provided', () => {
-      const price = calculateFeesCoveredPrice(100, true, undefined, 'SPOT', false);
-      expect(getRoundTripFee).toHaveBeenCalledWith({ marketType: 'SPOT', useBnbDiscount: false });
-      expect(price).toBeCloseTo(100.2, 4);
-    });
-
-    it('should apply BNB discount when useBnbDiscount is true', () => {
-      const priceWithDiscount = calculateFeesCoveredPrice(100, true, undefined, 'FUTURES', true);
-      const priceWithoutDiscount = calculateFeesCoveredPrice(100, true, undefined, 'FUTURES', false);
-      expect(priceWithDiscount).toBeLessThan(priceWithoutDiscount);
-    });
-
-    it('should default marketType to FUTURES and useBnbDiscount to false', () => {
-      const price = calculateFeesCoveredPrice(100, true);
-      expect(price).toBeCloseTo(100.08, 4);
-    });
-
-    it('should produce LONG result above entry and SHORT result below entry', () => {
-      const longPrice = calculateFeesCoveredPrice(1000, true, 0.001);
-      const shortPrice = calculateFeesCoveredPrice(1000, false, 0.001);
-      expect(longPrice).toBeGreaterThan(1000);
-      expect(shortPrice).toBeLessThan(1000);
-    });
-
-    it('should produce symmetric offsets for LONG and SHORT', () => {
-      const longPrice = calculateFeesCoveredPrice(100, true, 0.002);
-      const shortPrice = calculateFeesCoveredPrice(100, false, 0.002);
-      expect(longPrice - 100).toBeCloseTo(100 - shortPrice, 6);
-    });
-  });
-
-  describe('calculateNewStopLoss', () => {
-    it('should return breakeven when swingStop is null for LONG', () => {
-      expect(calculateNewStopLoss(100.5, null, true)).toBe(100.5);
-    });
-
-    it('should return breakeven when swingStop is null for SHORT', () => {
-      expect(calculateNewStopLoss(99.5, null, false)).toBe(99.5);
-    });
-
-    it('should return swingStop when it is higher than breakeven for LONG', () => {
-      expect(calculateNewStopLoss(100, 102, true)).toBe(102);
-    });
-
-    it('should return breakeven when it is higher than swingStop for LONG', () => {
-      expect(calculateNewStopLoss(103, 101, true)).toBe(103);
-    });
-
-    it('should return swingStop when it is lower than breakeven for SHORT', () => {
-      expect(calculateNewStopLoss(100, 98, false)).toBe(98);
-    });
-
-    it('should return breakeven when it is lower than swingStop for SHORT', () => {
-      expect(calculateNewStopLoss(97, 99, false)).toBe(97);
-    });
-
-    it('should return breakeven when both values are equal for LONG', () => {
-      expect(calculateNewStopLoss(100, 100, true)).toBe(100);
-    });
-
-    it('should return breakeven when both values are equal for SHORT', () => {
-      expect(calculateNewStopLoss(100, 100, false)).toBe(100);
-    });
-  });
-
   describe('computeTrailingStop', () => {
     const defaultConfig: TrailingStopOptimizationConfig = {
       ...DEFAULT_TRAILING_STOP_CONFIG,
-      breakevenProfitThreshold: 0.005,
-      breakevenWithFeesThreshold: 0.01,
     };
 
     it('should delegate to computeTrailingStopCore with correct input mapping for LONG', () => {
-      mockComputeTrailingStopCore.mockReturnValue({ newStopLoss: 101, reason: 'fees_covered' });
+      mockComputeTrailingStopCore.mockReturnValue({ newStopLoss: 101, reason: 'progressive_trail' });
 
       const input: TrailingStopInput = {
         entryPrice: 100,
@@ -581,9 +377,6 @@ describe('trailing-stop exports', () => {
           lowestPrice: undefined,
         }),
         expect.objectContaining({
-          feePercent: defaultConfig.feePercent,
-          marketType: 'FUTURES',
-          useBnbDiscount: false,
           minTrailingDistancePercent: defaultConfig.minTrailingDistancePercent,
           atrMultiplier: defaultConfig.atrMultiplier,
           trailingDistancePercent: defaultConfig.trailingDistancePercent,
@@ -592,7 +385,7 @@ describe('trailing-stop exports', () => {
     });
 
     it('should pass lowestPrice for SHORT and omit highestPrice', () => {
-      mockComputeTrailingStopCore.mockReturnValue({ newStopLoss: 99, reason: 'fees_covered' });
+      mockComputeTrailingStopCore.mockReturnValue({ newStopLoss: 99, reason: 'progressive_trail' });
 
       const input: TrailingStopInput = {
         entryPrice: 100,
@@ -681,60 +474,11 @@ describe('trailing-stop exports', () => {
       );
     });
 
-    it('should default marketType to FUTURES when not set in config', () => {
+    it('should pass activation percents from config', () => {
       mockComputeTrailingStopCore.mockReturnValue(null);
 
       const config: TrailingStopOptimizationConfig = {
         ...defaultConfig,
-        marketType: undefined,
-      };
-
-      const input: TrailingStopInput = {
-        entryPrice: 100,
-        currentPrice: 105,
-        currentStopLoss: null,
-        side: 'LONG',
-        swingPoints: [],
-      };
-
-      computeTrailingStop(input, config);
-
-      expect(mockComputeTrailingStopCore).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ marketType: 'FUTURES' })
-      );
-    });
-
-    it('should default useBnbDiscount to false when not set in config', () => {
-      mockComputeTrailingStopCore.mockReturnValue(null);
-
-      const config: TrailingStopOptimizationConfig = {
-        ...defaultConfig,
-        useBnbDiscount: undefined,
-      };
-
-      const input: TrailingStopInput = {
-        entryPrice: 100,
-        currentPrice: 105,
-        currentStopLoss: null,
-        side: 'LONG',
-        swingPoints: [],
-      };
-
-      computeTrailingStop(input, config);
-
-      expect(mockComputeTrailingStopCore).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ useBnbDiscount: false })
-      );
-    });
-
-    it('should pass useProfitLockDistance and activation percents from config', () => {
-      mockComputeTrailingStopCore.mockReturnValue(null);
-
-      const config: TrailingStopOptimizationConfig = {
-        ...defaultConfig,
-        useProfitLockDistance: true,
         activationPercentLong: 0.886,
         activationPercentShort: 0.786,
       };
@@ -752,20 +496,18 @@ describe('trailing-stop exports', () => {
       expect(mockComputeTrailingStopCore).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          useProfitLockDistance: true,
           activationPercentLong: 0.886,
           activationPercentShort: 0.786,
         })
       );
     });
 
-    it('should pass SPOT marketType when configured', () => {
+    it('should pass forceActivated from config', () => {
       mockComputeTrailingStopCore.mockReturnValue(null);
 
       const config: TrailingStopOptimizationConfig = {
         ...defaultConfig,
-        marketType: 'SPOT',
-        useBnbDiscount: true,
+        forceActivated: true,
       };
 
       const input: TrailingStopInput = {
@@ -781,8 +523,7 @@ describe('trailing-stop exports', () => {
       expect(mockComputeTrailingStopCore).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          marketType: 'SPOT',
-          useBnbDiscount: true,
+          forceActivated: true,
         })
       );
     });

@@ -73,7 +73,6 @@ export async function optimizeFullSystemCommand(options: OptimizeFullSystemOptio
     console.log(chalk.gray(`  Pyramiding profitThreshold: [${preset.pyramiding.profitThreshold.join(', ')}]`));
     console.log(chalk.gray(`  Pyramiding scaleFactor: [${preset.pyramiding.scaleFactor.join(', ')}]`));
     console.log(chalk.gray(`  Pyramiding maxEntries: [${preset.pyramiding.maxEntries.join(', ')}]`));
-    console.log(chalk.gray(`  Trailing breakevenThreshold: [${preset.trailingStop.breakevenProfitThreshold.join(', ')}]`));
     console.log(chalk.gray(`  Trailing minDistance: [${preset.trailingStop.minTrailingDistancePercent.join(', ')}]`));
     console.log('');
 
@@ -155,7 +154,7 @@ export async function optimizeFullSystemCommand(options: OptimizeFullSystemOptio
       console.log(`${chalk.white.bold(`#${i + 1}`)  } ${  wfStatus}`);
       console.log(chalk.gray(`  ML Threshold: ${(r.params.mlThreshold * 100).toFixed(0)}%`));
       console.log(chalk.gray(`  Pyramiding: profitThr=${r.params.pyramiding.profitThreshold}, scale=${r.params.pyramiding.scaleFactor}, max=${r.params.pyramiding.maxEntries}`));
-      console.log(chalk.gray(`  Trailing: breakeven=${r.params.trailingStop.breakevenProfitThreshold}, minDist=${r.params.trailingStop.minTrailingDistancePercent}`));
+      console.log(chalk.gray(`  Trailing: minDist=${r.params.trailingStop.minTrailingDistancePercent}`));
       console.log(chalk.gray(`  Metrics: WR=${m.winRate.toFixed(1)}%, PF=${m.profitFactor.toFixed(2)}, PnL=${m.totalPnlPercent.toFixed(1)}%, DD=${m.maxDrawdownPercent.toFixed(1)}%, Sharpe=${(m.sharpeRatio ?? 0).toFixed(2)}, Trades=${m.totalTrades}`));
 
       if (r.degradationPercent !== undefined) {
@@ -174,7 +173,6 @@ export async function optimizeFullSystemCommand(options: OptimizeFullSystemOptio
       console.log(chalk.gray(`  scaleFactor: ${best.params.pyramiding.scaleFactor}`));
       console.log(chalk.gray(`  maxEntries: ${best.params.pyramiding.maxEntries}`));
       console.log(chalk.white.bold('Trailing Stop:'));
-      console.log(chalk.gray(`  breakevenProfitThreshold: ${best.params.trailingStop.breakevenProfitThreshold}`));
       console.log(chalk.gray(`  minTrailingDistancePercent: ${best.params.trailingStop.minTrailingDistancePercent}`));
       console.log('');
 

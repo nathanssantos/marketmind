@@ -37,8 +37,6 @@ const {
   mockCalculateATRPercent: vi.fn((_atr: number, _price: number) => 0.02),
   mockGetVolatilityProfile: vi.fn((_atrPercent: number, _options: Record<string, unknown>) => ({
     atrMultiplier: 2.0,
-    breakevenThreshold: 0.01,
-    feesThreshold: 0.015,
     minTrailingDistance: 0.002,
   })),
   mockEmitTradeNotification: vi.fn(),
@@ -70,11 +68,7 @@ vi.mock('@marketmind/types', async (importOriginal) => {
 
 vi.mock('../../constants', () => ({
   TRAILING_STOP: {
-    BREAKEVEN_THRESHOLD: 0.01,
-    FEES_COVERAGE_THRESHOLD: 0.015,
     PEAK_PROFIT_FLOOR: 0.3,
-    TP_THRESHOLD_FOR_BREAKEVEN: 0.3,
-    TP_THRESHOLD_FOR_ADVANCED: 0.6,
   },
 }));
 
@@ -888,13 +882,10 @@ describe('TrailingStopService - Manager Methods', () => {
     }));
 
     const config: TrailingStopOptimizationConfig = {
-      breakevenProfitThreshold: 0.01,
-      breakevenWithFeesThreshold: 0.015,
       minTrailingDistancePercent: 0.002,
       swingLookback: 3,
       useATRMultiplier: false,
       atrMultiplier: 2.0,
-      feePercent: 0.0008,
       trailingDistancePercent: 0.3,
       useVolatilityBasedThresholds: false,
       marketType: 'FUTURES',

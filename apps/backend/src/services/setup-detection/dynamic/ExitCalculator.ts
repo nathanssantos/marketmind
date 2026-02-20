@@ -78,8 +78,8 @@ export class ExitCalculator {
     const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex) ?? 0;
     const atrPercent = atrValue > 0 && entryPrice > 0 ? calculateATRPercent(atrValue, entryPrice) : 0;
     const volatilityProfile = getVolatilityProfile(atrPercent);
-    const minStopPercent = volatilityProfile.breakevenThreshold * 100;
-    const minDistance = entryPrice * volatilityProfile.breakevenThreshold;
+    const minStopPercent = volatilityProfile.minTrailingDistance * 100;
+    const minDistance = entryPrice * volatilityProfile.minTrailingDistance;
     const currentDistance = Math.abs(entryPrice - stopLoss);
 
     if (currentDistance < minDistance) {
