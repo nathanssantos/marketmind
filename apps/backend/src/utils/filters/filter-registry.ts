@@ -108,9 +108,9 @@ export const FILTER_REGISTRY: FilterDef[] = [
     run: (klines, _direction, _setupType, cfg) =>
       checkChoppinessCondition(
         klines,
-        cfg.choppinessThresholdHigh as number,
-        cfg.choppinessThresholdLow as number,
-        cfg.choppinessPeriod as number,
+        cfg['choppinessThresholdHigh'] as number,
+        cfg['choppinessThresholdLow'] as number,
+        cfg['choppinessPeriod'] as number,
       ),
   },
   {
@@ -125,8 +125,8 @@ export const FILTER_REGISTRY: FilterDef[] = [
     run: (_klines, _direction, _setupType, cfg) =>
       checkSessionCondition(
         Date.now(),
-        cfg.sessionStartUtc as number,
-        cfg.sessionEndUtc as number,
+        cfg['sessionStartUtc'] as number,
+        cfg['sessionEndUtc'] as number,
       ),
   },
   {
@@ -142,9 +142,9 @@ export const FILTER_REGISTRY: FilterDef[] = [
     run: (klines, _direction, _setupType, cfg) =>
       checkBollingerSqueezeCondition(
         klines,
-        cfg.bollingerSqueezeThreshold as number,
-        cfg.bollingerSqueezePeriod as number,
-        cfg.bollingerSqueezeStdDev as number,
+        cfg['bollingerSqueezeThreshold'] as number,
+        cfg['bollingerSqueezePeriod'] as number,
+        cfg['bollingerSqueezeStdDev'] as number,
       ),
   },
   {
@@ -168,8 +168,8 @@ export const FILTER_REGISTRY: FilterDef[] = [
       checkSupertrendCondition(
         klines,
         direction,
-        cfg.superTrendPeriod as number,
-        cfg.superTrendMultiplier as number,
+        cfg['superTrendPeriod'] as number,
+        cfg['superTrendMultiplier'] as number,
       ),
   },
   {
@@ -183,8 +183,8 @@ export const FILTER_REGISTRY: FilterDef[] = [
     ],
     run: (klines, direction, _setupType, cfg) =>
       checkDirectionFilter(klines, direction, {
-        enableLongInBearMarket: cfg.enableLongInBearMarket as boolean,
-        enableShortInBullMarket: cfg.enableShortInBullMarket as boolean,
+        enableLongInBearMarket: cfg['enableLongInBearMarket'] as boolean,
+        enableShortInBullMarket: cfg['enableShortInBullMarket'] as boolean,
       }),
   },
   {
@@ -207,7 +207,7 @@ export const FILTER_REGISTRY: FilterDef[] = [
         klines,
         direction,
         setupType,
-        cfg.volumeFilterConfig as VolumeFilterConfig | undefined,
+        cfg['volumeFilterConfig'] as VolumeFilterConfig | undefined,
       ),
   },
   {

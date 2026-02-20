@@ -5,9 +5,6 @@ import { LuBuilding2, LuChevronDown, LuCoins, LuWallet } from 'react-icons/lu';
 import { useActiveWallet } from '../hooks/useActiveWallet';
 import { Popover } from './ui/popover';
 
-const ExchangeIcon = ({ exchange }: { exchange: string }) =>
-  exchange === 'INTERACTIVE_BROKERS' ? <LuBuilding2 size={14} /> : <LuCoins size={14} />;
-
 const WalletSelectorComponent = () => {
   const { t } = useTranslation();
   const { activeWallet, wallets, setActiveWalletId, isLoading } = useActiveWallet();
