@@ -5,10 +5,10 @@ import { workerPool } from '../renderer/utils/WorkerPool';
 
 expect.extend(matchers);
 
-const createUseLocalStorageMock = () => {
+const createUsePrefMock = () => {
   const stores = new Map<string, unknown>();
 
-  return function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+  return function usePref<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
     const React = require('react');
     const storedValue = stores.has(key) ? stores.get(key) : initialValue;
     const [value, setValueState] = React.useState<T>(storedValue as T);
@@ -27,8 +27,24 @@ const createUseLocalStorageMock = () => {
   };
 };
 
-vi.mock('@/renderer/hooks/useLocalStorage', () => ({
-  useLocalStorage: createUseLocalStorageMock(),
+vi.mock('@/renderer/store/preferencesStore', () => ({
+  useChartPref: createUsePrefMock(),
+  useUIPref: createUsePrefMock(),
+  useTradingPref: createUsePrefMock(),
+  usePreferencesStore: Object.assign(
+    () => ({ isHydrated: true, chart: {}, ui: {}, trading: {} }),
+    {
+      getState: () => ({
+        isHydrated: true,
+        chart: {},
+        ui: {},
+        trading: {},
+        set: vi.fn(),
+        hydrate: vi.fn(),
+        reset: vi.fn(),
+      }),
+    }
+  ),
 }));
 
 const mockPreferences = new Map<string, Record<string, unknown>>();

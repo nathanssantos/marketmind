@@ -20,37 +20,13 @@ interface IndicatorCategory {
 }
 
 interface IndicatorTogglePopoverProps {
-    showVolume: boolean;
-    showStochastic: boolean;
-    showRSI: boolean;
-    showBollingerBands: boolean;
-    showATR: boolean;
-    showVWAP: boolean;
     movingAverages: MovingAverageConfig[];
-    onShowVolumeChange: (show: boolean) => void;
-    onShowStochasticChange: (show: boolean) => void;
-    onShowRSIChange: (show: boolean) => void;
-    onShowBollingerBandsChange: (show: boolean) => void;
-    onShowATRChange: (show: boolean) => void;
-    onShowVWAPChange: (show: boolean) => void;
     onMovingAverageToggle: (index: number) => void;
 }
 
 export const IndicatorTogglePopover = memo(
     ({
-        showVolume,
-        showStochastic,
-        showRSI,
-        showBollingerBands,
-        showATR,
-        showVWAP,
         movingAverages,
-        onShowVolumeChange,
-        onShowStochasticChange,
-        onShowRSIChange,
-        onShowBollingerBandsChange,
-        onShowATRChange,
-        onShowVWAPChange,
         onMovingAverageToggle,
     }: IndicatorTogglePopoverProps) => {
         const { t } = useTranslation();
@@ -72,14 +48,14 @@ export const IndicatorTogglePopover = memo(
                         {
                             id: 'stochastic',
                             label: t('chart.controls.stochastic'),
-                            isActive: showStochastic,
-                            onToggle: () => onShowStochasticChange(!showStochastic),
+                            isActive: isIndicatorActive('stochastic'),
+                            onToggle: () => toggleIndicator('stochastic'),
                         },
                         {
                             id: 'rsi',
                             label: t('chart.controls.rsi'),
-                            isActive: showRSI,
-                            onToggle: () => onShowRSIChange(!showRSI),
+                            isActive: isIndicatorActive('rsi'),
+                            onToggle: () => toggleIndicator('rsi'),
                         },
                         {
                             id: 'williamsR',
@@ -193,16 +169,16 @@ export const IndicatorTogglePopover = memo(
                     title: t('chart.indicators.categories.volatility'),
                     indicators: [
                         {
-                            id: 'bollinger',
+                            id: 'bollingerBands',
                             label: t('chart.controls.bollingerBands'),
-                            isActive: showBollingerBands,
-                            onToggle: () => onShowBollingerBandsChange(!showBollingerBands),
+                            isActive: isIndicatorActive('bollingerBands'),
+                            onToggle: () => toggleIndicator('bollingerBands'),
                         },
                         {
                             id: 'atr',
                             label: t('chart.controls.atr'),
-                            isActive: showATR,
-                            onToggle: () => onShowATRChange(!showATR),
+                            isActive: isIndicatorActive('atr'),
+                            onToggle: () => toggleIndicator('atr'),
                         },
                         {
                             id: 'keltner',
@@ -224,14 +200,14 @@ export const IndicatorTogglePopover = memo(
                         {
                             id: 'volume',
                             label: t('chart.controls.volume'),
-                            isActive: showVolume,
-                            onToggle: () => onShowVolumeChange(!showVolume),
+                            isActive: isIndicatorActive('volume'),
+                            onToggle: () => toggleIndicator('volume'),
                         },
                         {
                             id: 'vwap',
                             label: t('chart.controls.vwap'),
-                            isActive: showVWAP,
-                            onToggle: () => onShowVWAPChange(!showVWAP),
+                            isActive: isIndicatorActive('vwap'),
+                            onToggle: () => toggleIndicator('vwap'),
                         },
                         {
                             id: 'obv',
@@ -292,6 +268,12 @@ export const IndicatorTogglePopover = memo(
                             isActive: isIndicatorActive('liquidityLevels'),
                             onToggle: () => toggleIndicator('liquidityLevels'),
                         },
+                        {
+                            id: 'activityIndicator',
+                            label: t('chart.indicators.names.activityIndicator', 'Activity Indicator'),
+                            isActive: isIndicatorActive('activityIndicator'),
+                            onToggle: () => toggleIndicator('activityIndicator'),
+                        },
                     ],
                 },
                 {
@@ -332,20 +314,8 @@ export const IndicatorTogglePopover = memo(
             ],
             [
                 t,
-                showVolume,
-                showStochastic,
-                showRSI,
-                showBollingerBands,
-                showATR,
-                showVWAP,
                 movingAverages,
                 isIndicatorActive,
-                onShowVolumeChange,
-                onShowStochasticChange,
-                onShowRSIChange,
-                onShowBollingerBandsChange,
-                onShowATRChange,
-                onShowVWAPChange,
                 onMovingAverageToggle,
                 toggleIndicator,
             ]

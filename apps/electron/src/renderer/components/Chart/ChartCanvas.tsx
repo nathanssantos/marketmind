@@ -19,7 +19,7 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
-import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
+import { useChartPref, useTradingPref } from '@renderer/store/preferencesStore';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
@@ -61,27 +61,9 @@ export interface ChartCanvasProps {
   height?: string | number;
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
-  showGrid?: boolean;
-  showVolume?: boolean;
-  showStochastic?: boolean;
-  showRSI?: boolean;
-  showBollingerBands?: boolean;
-  showATR?: boolean;
-  showVWAP?: boolean;
-  showCurrentPriceLine?: boolean;
-  showCrosshair?: boolean;
-  showProfitLossAreas?: boolean;
-  showFibonacciProjection?: boolean;
-  showMeasurementRuler?: boolean;
-  showMeasurementArea?: boolean;
-  showTooltip?: boolean;
-  showActivityIndicator?: boolean;
-  showEventRow?: boolean;
   movingAverages?: MovingAverageConfig[];
   chartType?: 'kline' | 'line';
   advancedConfig?: AdvancedControlsConfig;
-  onToggleSetupsVisibility?: () => void;
-  setupsVisible?: boolean;
   timeframe?: string;
   onNearLeftEdge?: () => void;
   isLoadingMore?: boolean;
@@ -95,31 +77,26 @@ export const ChartCanvas = ({
   height = '600px',
   initialViewport,
   onViewportChange,
-  showGrid = true,
-  showVolume = true,
-  showStochastic = false,
-  showRSI = false,
-  showBollingerBands = false,
-  showATR = false,
-  showVWAP = false,
-  showCurrentPriceLine = true,
-  showCrosshair = true,
-  showProfitLossAreas = true,
-  showFibonacciProjection = false,
-  showMeasurementRuler = false,
-  showMeasurementArea = false,
-  showTooltip = true,
-  showActivityIndicator = true,
-  showEventRow = false,
   movingAverages = [],
   chartType = 'kline',
   advancedConfig,
-  onToggleSetupsVisibility: _onToggleSetupsVisibility,
-  setupsVisible: _setupsVisible = true,
-  timeframe = '12h',
+  timeframe = '1h',
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
 }: ChartCanvasProps): ReactElement => {
+  const [showGrid] = useChartPref('showGrid', true);
+  const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
+  const [showCrosshair] = useChartPref('showCrosshair', true);
+  const [showProfitLossAreas] = useChartPref('showProfitLossAreas', true);
+  const [showFibonacciProjection] = useChartPref('showFibonacciProjection', false);
+  const [showMeasurementRuler] = useChartPref('showMeasurementRuler', false);
+  const [showMeasurementArea] = useChartPref('showMeasurementArea', false);
+  const [showTooltip] = useChartPref('showTooltip', false);
+  const [showEventRow] = useChartPref('showEventRow', false);
+
+  const isIndicatorActive = useIndicatorStore((s) => s.isActive);
+  const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
+  const showActivityIndicator = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
   const { t } = useTranslation();
   const { warning } = useToast();
   const colors = useChartColors();
@@ -135,7 +112,7 @@ export const ChartCanvas = ({
 
   const hasTradingEnabled = !!backendWalletId;
 
-  const [quantityBySymbol] = useLocalStorage<Record<string, number>>('marketmind:quantityBySymbol', {});
+  const [quantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
   const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
@@ -270,7 +247,6 @@ export const ChartCanvas = ({
   const indicatorData = useChartIndicators({
     klines,
     activeIndicators: activeIndicators as IndicatorId[],
-    showRSI,
   });
 
   const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow });
@@ -460,11 +436,6 @@ export const ChartCanvas = ({
     colors,
     indicatorData,
     stochasticData,
-    showStochastic,
-    showRSI,
-    showBollingerBands,
-    showATR,
-    showVWAP,
     showFibonacciProjection,
     showEventRow,
     marketEvents,
@@ -615,6 +586,7 @@ export const ChartCanvas = ({
     }
   };
 
+  const showStochastic = isIndicatorActive('stochastic');
   useEffect(() => {
     if (!showStochastic || klines.length === 0) {
       setStochasticData(null);
@@ -636,8 +608,6 @@ export const ChartCanvas = ({
 
   useChartPanelHeights({
     manager,
-    showStochastic,
-    showRSI,
     showEventRow,
     activeIndicators: activeIndicators as IndicatorId[],
     advancedConfig,

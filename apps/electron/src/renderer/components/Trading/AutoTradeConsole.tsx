@@ -1,6 +1,6 @@
 import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
 import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
-import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
+import { useUIPref } from '@renderer/store/preferencesStore';
 import type { FrontendLogEntry } from '@renderer/hooks/useWebSocket';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,9 +64,9 @@ export const AutoTradeConsole = memo(({ walletId, hasActiveWatchers = false }: A
   const { logs, isLoading, clearLogs } = useAutoTradingLogs(walletId, hasActiveWatchers);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fontSizeIndex, setFontSizeIndex] = useLocalStorage('marketmind:autoTradeConsole:fontSizeIndex', DEFAULT_FONT_SIZE_INDEX);
-  const [isExpanded, setIsExpanded] = useLocalStorage('marketmind:autoTradeConsole:isExpanded', true);
-  const [autoScroll, setAutoScroll] = useLocalStorage('marketmind:autoTradeConsole:autoScroll', true);
+  const [fontSizeIndex, setFontSizeIndex] = useUIPref<number>('autoTradeConsoleFontSizeIndex', DEFAULT_FONT_SIZE_INDEX);
+  const [isExpanded, setIsExpanded] = useUIPref<boolean>('autoTradeConsoleIsExpanded', true);
+  const [autoScroll, setAutoScroll] = useUIPref<boolean>('autoTradeConsoleAutoScroll', true);
 
   const fontSize = FONT_SIZE_STEPS[fontSizeIndex] ?? 12;
 

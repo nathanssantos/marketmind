@@ -48,11 +48,6 @@ export interface UseChartIndicatorRenderersProps {
   colors: ChartThemeColors;
   indicatorData: UseChartIndicatorsResult;
   stochasticData: StochasticResult | null;
-  showStochastic: boolean;
-  showRSI: boolean;
-  showBollingerBands: boolean;
-  showATR: boolean;
-  showVWAP: boolean;
   showFibonacciProjection: boolean;
   showEventRow: boolean;
   marketEvents: MarketEvent[];
@@ -108,11 +103,6 @@ export const useChartIndicatorRenderers = ({
   colors,
   indicatorData,
   stochasticData,
-  showStochastic,
-  showRSI,
-  showBollingerBands,
-  showATR,
-  showVWAP,
   showFibonacciProjection,
   showEventRow,
   marketEvents,
@@ -124,31 +114,31 @@ export const useChartIndicatorRenderers = ({
     manager,
     stochasticData,
     colors,
-    enabled: showStochastic,
+    enabled: isIndicatorActive('stochastic'),
   });
 
   const { render: renderRSI } = useRSIRenderer({
     manager,
     rsiData: indicatorData.rsiData,
     colors,
-    enabled: showRSI,
+    enabled: isIndicatorActive('rsi'),
   });
 
   const { render: renderBollingerBands } = useBollingerBandsRenderer({
     manager,
     colors,
-    enabled: showBollingerBands,
+    enabled: isIndicatorActive('bollingerBands'),
   });
 
   const { render: renderATR } = useATRRenderer({
     manager,
     colors,
-    enabled: showATR,
+    enabled: isIndicatorActive('atr'),
   });
 
   const { render: renderVWAP } = useVWAPRenderer({
     manager,
-    enabled: showVWAP,
+    enabled: isIndicatorActive('vwap'),
   });
 
   const { render: renderParabolicSAR } = useParabolicSARRenderer({

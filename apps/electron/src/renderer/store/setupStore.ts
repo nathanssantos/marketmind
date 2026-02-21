@@ -1,12 +1,18 @@
 import type { SetupType, TradingSetup } from '@marketmind/types';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { usePreferencesStore } from './preferencesStore';
 import type { SetupDetectionConfig } from './setupConfig';
 import { createDefaultSetupDetectionConfig, mergeSetupConfigs } from './setupConfig';
 
 const PERCENTAGE_MULTIPLIER = 100;
 const MAX_SETUP_HISTORY = 5000;
 const MAX_DETECTED_SETUPS = 100;
+
+const syncTrading = (key: string, value: unknown) => {
+  const prefs = usePreferencesStore.getState();
+  if (!prefs.isHydrated) return;
+  prefs.set('trading', key, value);
+};
 
 export interface SetupPerformanceStats {
   totalSetups: number;
@@ -45,6 +51,8 @@ export interface SetupExecution {
 }
 
 interface SetupStoreState {
+  hydrate: (data: Record<string, unknown>) => void;
+
   config: SetupDetectionConfig;
   isAutoTradingActive: boolean;
   detectedSetups: TradingSetup[];
@@ -128,27 +136,18 @@ const calculateStatsFromExecutions = (
 
     if (execution.pnl > 0) {
       stats.totalProfit += execution.pnl;
-      if (execution.pnl > stats.largestWin) {
-        stats.largestWin = execution.pnl;
-      }
+      if (execution.pnl > stats.largestWin) stats.largestWin = execution.pnl;
     } else {
       stats.totalLoss += Math.abs(execution.pnl);
-      if (Math.abs(execution.pnl) > stats.largestLoss) {
-        stats.largestLoss = Math.abs(execution.pnl);
-      }
+      if (Math.abs(execution.pnl) > stats.largestLoss) stats.largestLoss = Math.abs(execution.pnl);
     }
   });
 
-  if (stats.winningSetups > 0) {
-    stats.avgWin = stats.totalProfit / stats.winningSetups;
-  }
-
-  if (stats.losingSetups > 0) {
-    stats.avgLoss = stats.totalLoss / stats.losingSetups;
-  }
+  if (stats.winningSetups > 0) stats.avgWin = stats.totalProfit / stats.winningSetups;
+  if (stats.losingSetups > 0) stats.avgLoss = stats.totalLoss / stats.losingSetups;
 
   stats.expectancy =
-    stats.winRate / PERCENTAGE_MULTIPLIER * stats.avgWin - 
+    stats.winRate / PERCENTAGE_MULTIPLIER * stats.avgWin -
     (1 - stats.winRate / PERCENTAGE_MULTIPLIER) * stats.avgLoss;
 
   let consecutiveWins = 0;
@@ -158,15 +157,11 @@ const calculateStatsFromExecutions = (
     if (execution.status === 'won') {
       consecutiveWins++;
       consecutiveLosses = 0;
-      if (consecutiveWins > stats.maxConsecutiveWins) {
-        stats.maxConsecutiveWins = consecutiveWins;
-      }
+      if (consecutiveWins > stats.maxConsecutiveWins) stats.maxConsecutiveWins = consecutiveWins;
     } else {
       consecutiveLosses++;
       consecutiveWins = 0;
-      if (consecutiveLosses > stats.maxConsecutiveLosses) {
-        stats.maxConsecutiveLosses = consecutiveLosses;
-      }
+      if (consecutiveLosses > stats.maxConsecutiveLosses) stats.maxConsecutiveLosses = consecutiveLosses;
     }
   });
 
@@ -177,218 +172,180 @@ const calculateStatsFromExecutions = (
 };
 
 export const useSetupStore = create<SetupStoreState>()(
-  persist(
-    (set, get) => ({
-      config: createDefaultSetupDetectionConfig(),
-      isAutoTradingActive: false,
-      detectedSetups: [],
-      setupHistory: [],
-      performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
-      globalPerformance: createEmptyPerformanceStats(),
-
-      setConfig: (config) =>
-        set((state) => ({
-          config: { ...createDefaultSetupDetectionConfig(), ...state.config, ...config },
-        })),
-
-      resetConfigToDefaults: () =>
-        set({
-          config: createDefaultSetupDetectionConfig(),
-        }),
-
-      toggleAutoTrading: () =>
-        set((state) => {
-          const newState = !state.isAutoTradingActive;
-          console.log(`[Auto-Trading] ${newState ? '🟢 ENABLED' : '🔴 DISABLED'}`);
-          return {
-            isAutoTradingActive: newState,
-          };
-        }),
-
-      addDetectedSetup: (setup) =>
-        set((state) => {
-          const newSetups = [...state.detectedSetups, setup];
-          if (newSetups.length > MAX_DETECTED_SETUPS) {
-            return { detectedSetups: newSetups.slice(-MAX_DETECTED_SETUPS) };
-          }
-          return { detectedSetups: newSetups };
-        }),
-
-      removeDetectedSetup: (id) =>
-        set((state) => ({
-          detectedSetups: state.detectedSetups.filter((s) => s.id !== id),
-        })),
-
-      clearDetectedSetups: () => set({ detectedSetups: [] }),
-
-      getDetectedSetup: (id) => {
-        const state = get();
-        return state.detectedSetups.find((s) => s.id === id);
-      },
-
-      updateSetup: (id, updates) =>
-        set((state) => ({
-          detectedSetups: state.detectedSetups.map((s) =>
-            s.id === id ? { ...s, ...updates } : s,
-          ),
-        })),
-
-      cancelSetup: (id, reason) =>
-        set((state) => ({
-          detectedSetups: state.detectedSetups.map((s) => {
-            if (s.id !== id) return s;
-            const updated: TradingSetup = {
-              ...s,
-              isCancelled: true,
-              cancelledAt: Date.now(),
-            };
-            if (reason) {
-              updated.cancellationReason = reason;
-            }
-            return updated;
-          }),
-        })),
-
-      triggerSetup: (id) =>
-        set((state) => ({
-          detectedSetups: state.detectedSetups.map((s) =>
-            s.id === id
-              ? {
-                  ...s,
-                  isTriggered: true,
-                  triggeredAt: Date.now(),
-                }
-              : s,
-          ),
-        })),
-
-      executeSetup: (setupId) => {
-        const state = get();
-        const setup = state.detectedSetups.find((s) => s.id === setupId);
-        if (!setup) return;
-
-        const execution: SetupExecution = {
-          setupId: setup.id,
-          setupType: setup.type,
-          timestamp: Date.now(),
-          openTime: Date.now(),
-          entryPrice: setup.entryPrice,
-          stopLoss: setup.stopLoss,
-          takeProfit: setup.takeProfit,
-          status: 'active',
-          riskReward: setup.riskRewardRatio,
-          confidence: setup.confidence,
-        };
-
-        set((state) => {
-          const newHistory = [...state.setupHistory, execution];
-          if (newHistory.length > MAX_SETUP_HISTORY) {
-            return { setupHistory: newHistory.slice(-MAX_SETUP_HISTORY) };
-          }
-          return { setupHistory: newHistory };
-        });
-      },
-
-      updateExecution: (setupId, updates) =>
-        set((state) => ({
-          setupHistory: state.setupHistory.map((e) =>
-            e.setupId === setupId ? { ...e, ...updates } : e,
-          ),
-        })),
-
-      closeExecution: (setupId, exitPrice) => {
-        const state = get();
-        const execution = state.setupHistory.find((e) => e.setupId === setupId);
-        if (!execution) return;
-
-        const pnl = exitPrice - execution.entryPrice;
-        const status = pnl > 0 ? 'won' : 'lost';
-
-        set((state) => ({
-          setupHistory: state.setupHistory.map((e) =>
-            e.setupId === setupId
-              ? {
-                  ...e,
-                  exitPrice,
-                  exitTimestamp: Date.now(),
-                  status,
-                  pnl,
-                }
-              : e,
-          ),
-        }));
-
-        get().calculatePerformance();
-      },
-
-      cancelExecution: (setupId) => {
-        set((state) => ({
-          setupHistory: state.setupHistory.map((e) =>
-            e.setupId === setupId ? { ...e, status: 'cancelled' as const } : e,
-          ),
-        }));
-      },
-
-      getPerformanceByType: (setupType) => {
-        const state = get();
-        return (
-          state.performanceByType[setupType] || createEmptyPerformanceStats()
+  (set, get) => ({
+    hydrate: (data) => {
+      const updates: Record<string, unknown> = {};
+      if ('setupConfig' in data) {
+        updates['config'] = mergeSetupConfigs(
+          createDefaultSetupDetectionConfig(),
+          data['setupConfig'] as Partial<SetupDetectionConfig>,
         );
-      },
-
-      getGlobalPerformance: () => get().globalPerformance,
-
-      calculatePerformance: () => {
-        const state = get();
-        const { setupHistory } = state;
-
-        const globalStats = calculateStatsFromExecutions(setupHistory);
-
-        const statsByType: Record<SetupType, SetupPerformanceStats> =
-          {} as Record<SetupType, SetupPerformanceStats>;
-
-        const setupTypes = new Set(setupHistory.map((e) => e.setupType));
-        setupTypes.forEach((type) => {
-          const typeExecutions = setupHistory.filter(
-            (e) => e.setupType === type,
-          );
-          statsByType[type] = calculateStatsFromExecutions(typeExecutions);
-        });
-
-        set({
-          globalPerformance: globalStats,
-          performanceByType: statsByType,
-        });
-      },
-
-      clearHistory: () =>
-        set({
-          setupHistory: [],
-          performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
-          globalPerformance: createEmptyPerformanceStats(),
-        }),
-
-      exportHistory: () => get().setupHistory,
-    }),
-    {
-      name: 'marketmind-setup-storage',
-      partialize: (state) => ({
-        config: state.config,
-        isAutoTradingActive: state.isAutoTradingActive,
-        detectedSetups: state.detectedSetups,
-        setupHistory: state.setupHistory,
-        performanceByType: state.performanceByType,
-        globalPerformance: state.globalPerformance,
-      }),
-      merge: (persistedState, currentState) => {
-        const defaults = createDefaultSetupDetectionConfig();
-        const persisted = persistedState as Partial<SetupStoreState>;
-        return {
-          ...currentState,
-          ...persisted,
-          config: mergeSetupConfigs(defaults, persisted.config),
-        };
-      },
+      }
+      if ('isAutoTradingActive' in data) updates['isAutoTradingActive'] = data['isAutoTradingActive'];
+      if (Object.keys(updates).length > 0) set(updates as unknown as Partial<SetupStoreState>);
     },
-  ),
+
+    config: createDefaultSetupDetectionConfig(),
+    isAutoTradingActive: false,
+    detectedSetups: [],
+    setupHistory: [],
+    performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
+    globalPerformance: createEmptyPerformanceStats(),
+
+    setConfig: (config) =>
+      set((state) => {
+        const newConfig = { ...createDefaultSetupDetectionConfig(), ...state.config, ...config };
+        syncTrading('setupConfig', newConfig);
+        return { config: newConfig };
+      }),
+
+    resetConfigToDefaults: () => {
+      const config = createDefaultSetupDetectionConfig();
+      set({ config });
+      syncTrading('setupConfig', config);
+    },
+
+    toggleAutoTrading: () =>
+      set((state) => {
+        const newState = !state.isAutoTradingActive;
+        syncTrading('isAutoTradingActive', newState);
+        return { isAutoTradingActive: newState };
+      }),
+
+    addDetectedSetup: (setup) =>
+      set((state) => {
+        const newSetups = [...state.detectedSetups, setup];
+        if (newSetups.length > MAX_DETECTED_SETUPS) return { detectedSetups: newSetups.slice(-MAX_DETECTED_SETUPS) };
+        return { detectedSetups: newSetups };
+      }),
+
+    removeDetectedSetup: (id) =>
+      set((state) => ({
+        detectedSetups: state.detectedSetups.filter((s) => s.id !== id),
+      })),
+
+    clearDetectedSetups: () => set({ detectedSetups: [] }),
+
+    getDetectedSetup: (id) => get().detectedSetups.find((s) => s.id === id),
+
+    updateSetup: (id, updates) =>
+      set((state) => ({
+        detectedSetups: state.detectedSetups.map((s) =>
+          s.id === id ? { ...s, ...updates } : s,
+        ),
+      })),
+
+    cancelSetup: (id, reason) =>
+      set((state) => ({
+        detectedSetups: state.detectedSetups.map((s) => {
+          if (s.id !== id) return s;
+          const updated: TradingSetup = {
+            ...s,
+            isCancelled: true,
+            cancelledAt: Date.now(),
+          };
+          if (reason) updated.cancellationReason = reason;
+          return updated;
+        }),
+      })),
+
+    triggerSetup: (id) =>
+      set((state) => ({
+        detectedSetups: state.detectedSetups.map((s) =>
+          s.id === id
+            ? { ...s, isTriggered: true, triggeredAt: Date.now() }
+            : s,
+        ),
+      })),
+
+    executeSetup: (setupId) => {
+      const state = get();
+      const setup = state.detectedSetups.find((s) => s.id === setupId);
+      if (!setup) return;
+
+      const execution: SetupExecution = {
+        setupId: setup.id,
+        setupType: setup.type,
+        timestamp: Date.now(),
+        openTime: Date.now(),
+        entryPrice: setup.entryPrice,
+        stopLoss: setup.stopLoss,
+        takeProfit: setup.takeProfit,
+        status: 'active',
+        riskReward: setup.riskRewardRatio,
+        confidence: setup.confidence,
+      };
+
+      set((state) => {
+        const newHistory = [...state.setupHistory, execution];
+        if (newHistory.length > MAX_SETUP_HISTORY) return { setupHistory: newHistory.slice(-MAX_SETUP_HISTORY) };
+        return { setupHistory: newHistory };
+      });
+    },
+
+    updateExecution: (setupId, updates) =>
+      set((state) => ({
+        setupHistory: state.setupHistory.map((e) =>
+          e.setupId === setupId ? { ...e, ...updates } : e,
+        ),
+      })),
+
+    closeExecution: (setupId, exitPrice) => {
+      const state = get();
+      const execution = state.setupHistory.find((e) => e.setupId === setupId);
+      if (!execution) return;
+
+      const pnl = exitPrice - execution.entryPrice;
+      const status = pnl > 0 ? 'won' : 'lost';
+
+      set((state) => ({
+        setupHistory: state.setupHistory.map((e) =>
+          e.setupId === setupId
+            ? { ...e, exitPrice, exitTimestamp: Date.now(), status, pnl }
+            : e,
+        ),
+      }));
+
+      get().calculatePerformance();
+    },
+
+    cancelExecution: (setupId) => {
+      set((state) => ({
+        setupHistory: state.setupHistory.map((e) =>
+          e.setupId === setupId ? { ...e, status: 'cancelled' as const } : e,
+        ),
+      }));
+    },
+
+    getPerformanceByType: (setupType) =>
+      get().performanceByType[setupType] || createEmptyPerformanceStats(),
+
+    getGlobalPerformance: () => get().globalPerformance,
+
+    calculatePerformance: () => {
+      const state = get();
+      const { setupHistory } = state;
+
+      const globalStats = calculateStatsFromExecutions(setupHistory);
+      const statsByType = {} as Record<SetupType, SetupPerformanceStats>;
+
+      const setupTypes = new Set(setupHistory.map((e) => e.setupType));
+      setupTypes.forEach((type) => {
+        statsByType[type] = calculateStatsFromExecutions(
+          setupHistory.filter((e) => e.setupType === type),
+        );
+      });
+
+      set({ globalPerformance: globalStats, performanceByType: statsByType });
+    },
+
+    clearHistory: () =>
+      set({
+        setupHistory: [],
+        performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
+        globalPerformance: createEmptyPerformanceStats(),
+      }),
+
+    exportHistory: () => get().setupHistory,
+  }),
 );

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
+import { PreferencesHydrator } from './components/PreferencesHydrator';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 import { ChartCanvas } from './components/Chart/ChartCanvas';
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
@@ -17,7 +18,7 @@ import { CryptoIcon } from './components/ui/CryptoIcon';
 import { ErrorMessage } from './components/ui/ErrorMessage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
-import { DEFAULT_MOVING_AVERAGES, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from './constants/defaults';
+import { DEFAULT_MOVING_AVERAGES, DEFAULT_TIMEFRAME, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
 import { useKlineStream } from './hooks/useBackendKlines';
@@ -25,12 +26,12 @@ import { useKlinePagination } from './hooks/useKlinePagination';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
-import { useLocalStorage } from './hooks/useLocalStorage';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useVisibilityChange } from './hooks/useVisibilityChange';
+import { useIndicatorStore } from './store/indicatorStore';
+import { useChartPref, useUIPref } from './store/preferencesStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { useSetupStore } from './store/setupStore';
-import { useUIStore } from './store/uiStore';
 import { system } from './theme';
 import { getToasterNavigateToSymbol, setToasterNavigateToSymbol, toaster } from './utils/toaster';
 
@@ -50,78 +51,80 @@ function App(): ReactElement {
     <ErrorBoundary>
       <ChakraProvider value={system}>
         <AutoAuth>
-          <Toaster toaster={toaster}>
-            {(toast) => {
-              const { t } = useTranslation();
-              const symbol = (toast.meta as Record<string, unknown> | undefined)?.['symbol'] as string | undefined;
-              const marketType = (toast.meta as Record<string, unknown> | undefined)?.['marketType'] as MarketType | undefined;
-              const navigate = getToasterNavigateToSymbol();
-              const canNavigate = !!symbol && !!navigate;
+          <PreferencesHydrator>
+            <Toaster toaster={toaster}>
+              {(toast) => {
+                const { t } = useTranslation();
+                const symbol = (toast.meta as Record<string, unknown> | undefined)?.['symbol'] as string | undefined;
+                const marketType = (toast.meta as Record<string, unknown> | undefined)?.['marketType'] as MarketType | undefined;
+                const navigate = getToasterNavigateToSymbol();
+                const canNavigate = !!symbol && !!navigate;
 
-              return (
-                <Box
-                  key={toast.id}
-                  p={4}
-                  bg={
-                    toast.type === 'error'
-                      ? 'red.500'
-                      : toast.type === 'success'
-                        ? 'green.500'
-                        : toast.type === 'warning'
-                          ? 'orange.500'
-                          : 'blue.500'
-                  }
-                  color="white"
-                  borderRadius="md"
-                  boxShadow="lg"
-                  maxW="400px"
-                  position="relative"
-                >
-                  <IconButton
-                    aria-label={t('common.close')}
-                    size="xs"
-                    position="absolute"
-                    top={2}
-                    right={2}
-                    onClick={() => toaster.dismiss(toast.id)}
-                    variant="ghost"
+                return (
+                  <Box
+                    key={toast.id}
+                    p={4}
+                    bg={
+                      toast.type === 'error'
+                        ? 'red.500'
+                        : toast.type === 'success'
+                          ? 'green.500'
+                          : toast.type === 'warning'
+                            ? 'orange.500'
+                            : 'blue.500'
+                    }
                     color="white"
-                    _hover={{ bg: 'whiteAlpha.200' }}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    maxW="400px"
+                    position="relative"
                   >
-                    <LuX />
-                  </IconButton>
-                  {symbol ? (
-                    <Flex
-                      align="center"
-                      gap={2}
-                      mb={1}
-                      pr={6}
-                      cursor={canNavigate ? 'pointer' : 'default'}
-                      onClick={canNavigate ? () => navigate(symbol, marketType) : undefined}
-                      _hover={canNavigate ? { opacity: 0.8 } : undefined}
+                    <IconButton
+                      aria-label={t('common.close')}
+                      size="xs"
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      onClick={() => toaster.dismiss(toast.id)}
+                      variant="ghost"
+                      color="white"
+                      _hover={{ bg: 'whiteAlpha.200' }}
                     >
-                      <CryptoIcon symbol={symbol} size={18} />
-                      <ChakraText fontWeight="bold">{toast.title}</ChakraText>
-                    </Flex>
-                  ) : (
-                    <ChakraText fontWeight="bold" mb={1} pr={6}>
-                      {toast.title}
-                    </ChakraText>
-                  )}
-                  {toast.description && (
-                    <ChakraText fontSize="sm" pl={symbol ? 7 : 0}>{toast.description}</ChakraText>
-                  )}
-                </Box>
-              );
-            }}
-          </Toaster>
-          <ChartProvider>
-            <PinnedControlsProvider>
-              <RealtimeSyncWrapper>
-                <AppContent />
-              </RealtimeSyncWrapper>
-            </PinnedControlsProvider>
-          </ChartProvider>
+                      <LuX />
+                    </IconButton>
+                    {symbol ? (
+                      <Flex
+                        align="center"
+                        gap={2}
+                        mb={1}
+                        pr={6}
+                        cursor={canNavigate ? 'pointer' : 'default'}
+                        onClick={canNavigate ? () => navigate(symbol, marketType) : undefined}
+                        _hover={canNavigate ? { opacity: 0.8 } : undefined}
+                      >
+                        <CryptoIcon symbol={symbol} size={18} />
+                        <ChakraText fontWeight="bold">{toast.title}</ChakraText>
+                      </Flex>
+                    ) : (
+                      <ChakraText fontWeight="bold" mb={1} pr={6}>
+                        {toast.title}
+                      </ChakraText>
+                    )}
+                    {toast.description && (
+                      <ChakraText fontSize="sm" pl={symbol ? 7 : 0}>{toast.description}</ChakraText>
+                    )}
+                  </Box>
+                );
+              }}
+            </Toaster>
+            <ChartProvider>
+              <PinnedControlsProvider>
+                <RealtimeSyncWrapper>
+                  <AppContent />
+                </RealtimeSyncWrapper>
+              </PinnedControlsProvider>
+            </ChartProvider>
+          </PreferencesHydrator>
         </AutoAuth>
       </ChakraProvider>
     </ErrorBoundary>
@@ -130,40 +133,21 @@ function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
-  const [symbol, setSymbol] = useLocalStorage('marketmind:symbol', 'BTCUSDT');
-  const [marketType, setMarketType] = useLocalStorage<MarketType>('marketmind:marketType', 'FUTURES');
+  const [symbol, setSymbol] = useChartPref('symbol', 'BTCUSDT');
+  const [marketType, setMarketType] = useChartPref<MarketType>('marketType', 'FUTURES');
 
   useCurrencyAutoRefresh();
   useOrderNotifications();
 
-  const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
-  const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
-  const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
-  const [showCrosshair, setShowCrosshair] = useLocalStorage('marketmind:showCrosshair', true);
-  const [showProfitLossAreas, setShowProfitLossAreas] = useLocalStorage('marketmind:showProfitLossAreas', true);
-  const [showFibonacciProjection, setShowFibonacciProjection] = useLocalStorage(
-    'marketmind:showFibonacciProjection',
-    false
-  );
-  const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
-  const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
-  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', false);
-  const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', true);
-  const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
-  const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
-  const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
-  const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
-  const [showActivityIndicator, setShowActivityIndicator] = useLocalStorage('marketmind:showActivityIndicator', true);
-  const { showEventRow, setShowEventRow } = useUIStore();
-  const [chartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useLocalStorage<Timeframe>('marketmind:timeframe', '12h');
-  const [isTradingOpen, setIsTradingOpen] = useLocalStorage('trading-sidebar-open', true);
-  const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
-    'marketmind:movingAverages',
+  const [chartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [timeframe, setTimeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);
+  const [isTradingOpen, setIsTradingOpen] = useUIPref('tradingSidebarOpen', true);
+  const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
+    'movingAverages',
     DEFAULT_MOVING_AVERAGES
   );
 
-  const [advancedConfig, setAdvancedConfig] = useLocalStorage<AdvancedControlsConfig>('marketmind:advancedConfig', {
+  const [advancedConfig, setAdvancedConfig] = useChartPref<AdvancedControlsConfig>('advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
     volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
     klineSpacing: CHART_CONFIG.KLINE_SPACING,
@@ -176,6 +160,8 @@ function AppContent(): ReactElement {
     paddingLeft: CHART_CONFIG.CANVAS_PADDING_LEFT,
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
+
+  const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
 
   useEffect(() => {
     const migrateMovingAverages = () => {
@@ -441,41 +427,9 @@ function AppContent(): ReactElement {
         marketType={marketType}
         onMarketTypeChange={setMarketType}
         timeframe={timeframe}
-        showVolume={showVolume}
-        showGrid={showGrid}
-        showCurrentPriceLine={showCurrentPriceLine}
-        showCrosshair={showCrosshair}
-        showProfitLossAreas={showProfitLossAreas}
-        showFibonacciProjection={showFibonacciProjection}
-        showMeasurementRuler={showMeasurementRuler}
-        showMeasurementArea={showMeasurementArea}
-        showTooltip={showTooltip}
-        showStochastic={showStochastic}
-        showRSI={showRSI}
-        showBollingerBands={showBollingerBands}
-        showATR={showATR}
-        showVWAP={showVWAP}
-        showActivityIndicator={showActivityIndicator}
-        showEventRow={showEventRow}
         movingAverages={movingAverages}
-        onShowActivityIndicatorChange={setShowActivityIndicator}
         onSymbolChange={handleSymbolChange}
         onTimeframeChange={setTimeframe}
-        onShowVolumeChange={setShowVolume}
-        onShowGridChange={setShowGrid}
-        onShowCurrentPriceLineChange={setShowCurrentPriceLine}
-        onShowCrosshairChange={setShowCrosshair}
-        onShowProfitLossAreasChange={setShowProfitLossAreas}
-        onShowFibonacciProjectionChange={setShowFibonacciProjection}
-        onShowMeasurementRulerChange={setShowMeasurementRuler}
-        onShowMeasurementAreaChange={setShowMeasurementArea}
-        onShowTooltipChange={setShowTooltip}
-        onShowStochasticChange={setShowStochastic}
-        onShowRSIChange={setShowRSI}
-        onShowBollingerBandsChange={setShowBollingerBands}
-        onShowATRChange={setShowATR}
-        onShowVWAPChange={setShowVWAP}
-        onShowEventRowChange={setShowEventRow}
         onMovingAveragesChange={setMovingAverages}
         onNavigateToSymbol={handleSymbolChange}
       >
@@ -498,22 +452,6 @@ function AppContent(): ReactElement {
             marketType={marketType}
             width="100%"
             height="100%"
-            showVolume={showVolume}
-            showGrid={showGrid}
-            showCurrentPriceLine={showCurrentPriceLine}
-            showCrosshair={showCrosshair}
-            showProfitLossAreas={showProfitLossAreas}
-            showFibonacciProjection={showFibonacciProjection}
-            showMeasurementRuler={showMeasurementRuler}
-            showMeasurementArea={showMeasurementArea}
-            showTooltip={showTooltip}
-            showStochastic={showStochastic}
-            showRSI={showRSI}
-            showBollingerBands={showBollingerBands}
-            showATR={showATR}
-            showVWAP={showVWAP}
-            showActivityIndicator={showActivityIndicator}
-            showEventRow={showEventRow}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}

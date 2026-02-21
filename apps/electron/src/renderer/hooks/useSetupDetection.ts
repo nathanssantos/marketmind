@@ -48,7 +48,7 @@ export const useSetupDetection = (options: UseSetupDetectionOptions = {}): UseSe
 
   const { data: result, isPending } = useDetectCurrent({
     symbol: symbol || '',
-    interval: interval || '12h',
+    interval: interval || '1h',
     marketType,
   });
 

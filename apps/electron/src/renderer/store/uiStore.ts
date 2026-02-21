@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { usePreferencesStore } from './preferencesStore';
 
 export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio';
 export type MarketSidebarTab = 'indicators' | 'watchers' | 'logs';
@@ -11,7 +11,24 @@ export type PortfolioSortOption = 'newest' | 'oldest' | 'pnl-desc' | 'pnl-asc' |
 export type ViewMode = 'cards' | 'table';
 export type TableSortDirection = 'asc' | 'desc';
 
+const syncUI = (key: string, value: unknown) => {
+  const prefs = usePreferencesStore.getState();
+  if (!prefs.isHydrated) return;
+  prefs.set('ui', key, value);
+};
+
+const HYDRATE_KEYS = [
+  'activeWalletId', 'tradingSidebarTab', 'marketSidebarOpen', 'marketSidebarTab',
+  'ordersFilterStatus', 'ordersSortBy', 'performancePeriod', 'setupStatsPeriod',
+  'portfolioFilterOption', 'portfolioSortBy', 'ordersViewMode', 'portfolioViewMode',
+  'ordersTableSortKey', 'ordersTableSortDirection', 'portfolioTableSortKey', 'portfolioTableSortDirection',
+  'watchersTableSortKey', 'watchersTableSortDirection', 'showEventRow', 'enableShiftAltOrderEntry',
+  'isAnalyticsOpen', 'trailingStopPanelExpanded',
+] as const;
+
 interface UIState {
+  hydrate: (data: Record<string, unknown>) => void;
+
   activeWalletId: string | null;
   setActiveWalletId: (id: string | null) => void;
 
@@ -77,111 +94,100 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>()(
-  persist(
-    (set) => ({
-      activeWalletId: null,
-      setActiveWalletId: (id) => set({ activeWalletId: id }),
+  (set) => ({
+    hydrate: (data) => {
+      const updates: Record<string, unknown> = {};
+      for (const key of HYDRATE_KEYS) {
+        if (key in data) updates[key] = data[key];
+      }
+      if (Object.keys(updates).length > 0) set(updates as unknown as Partial<UIState>);
+    },
 
-      tradingSidebarTab: 'portfolio',
-      setTradingSidebarTab: (tab) => set({ tradingSidebarTab: tab }),
+    activeWalletId: null,
+    setActiveWalletId: (id) => { set({ activeWalletId: id }); syncUI('activeWalletId', id); },
 
-      marketSidebarOpen: false,
-      setMarketSidebarOpen: (open) => set({ marketSidebarOpen: open }),
-      toggleMarketSidebar: () => set((state) => ({ marketSidebarOpen: !state.marketSidebarOpen })),
+    tradingSidebarTab: 'portfolio',
+    setTradingSidebarTab: (tab) => { set({ tradingSidebarTab: tab }); syncUI('tradingSidebarTab', tab); },
 
-      marketSidebarTab: 'indicators',
-      setMarketSidebarTab: (tab) => set({ marketSidebarTab: tab }),
-
-      ordersSortBy: 'newest',
-      setOrdersSortBy: (sort) => set({ ordersSortBy: sort }),
-
-      ordersFilterStatus: 'closed',
-      setOrdersFilterStatus: (filter) => set({ ordersFilterStatus: filter }),
-
-      performancePeriod: 'all',
-      setPerformancePeriod: (period) => set({ performancePeriod: period }),
-
-      setupStatsPeriod: 'all',
-      setSetupStatsPeriod: (period) => set({ setupStatsPeriod: period }),
-
-      portfolioFilterOption: 'all',
-      setPortfolioFilterOption: (filter) => set({ portfolioFilterOption: filter }),
-
-      portfolioSortBy: 'newest',
-      setPortfolioSortBy: (sort) => set({ portfolioSortBy: sort }),
-
-      ordersViewMode: 'table',
-      setOrdersViewMode: (mode) => set({ ordersViewMode: mode }),
-
-      portfolioViewMode: 'table',
-      setPortfolioViewMode: (mode) => set({ portfolioViewMode: mode }),
-
-      ordersTableSortKey: 'createdAt',
-      ordersTableSortDirection: 'desc',
-      setOrdersTableSort: (key, direction) => set({ ordersTableSortKey: key, ordersTableSortDirection: direction }),
-
-      portfolioTableSortKey: 'pnl',
-      portfolioTableSortDirection: 'desc',
-      setPortfolioTableSort: (key, direction) => set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction }),
-
-      watchersTableSortKey: 'symbol',
-      watchersTableSortDirection: 'asc',
-      setWatchersTableSort: (key, direction) => set({ watchersTableSortKey: key, watchersTableSortDirection: direction }),
-
-      showEventRow: false,
-      setShowEventRow: (show) => set({ showEventRow: show }),
-
-      enableShiftAltOrderEntry: false,
-      setEnableShiftAltOrderEntry: (enabled) => set({ enableShiftAltOrderEntry: enabled }),
-
-      isAnalyticsOpen: false,
-      setAnalyticsOpen: (open) => set({ isAnalyticsOpen: open }),
-      toggleAnalytics: () => set((state) => ({ isAnalyticsOpen: !state.isAnalyticsOpen })),
-
-      trailingStopPanelExpanded: false,
-      setTrailingStopPanelExpanded: (expanded) => set({ trailingStopPanelExpanded: expanded }),
-      toggleTrailingStopPanel: () => set((state) => ({ trailingStopPanelExpanded: !state.trailingStopPanelExpanded })),
+    marketSidebarOpen: false,
+    setMarketSidebarOpen: (open) => { set({ marketSidebarOpen: open }); syncUI('marketSidebarOpen', open); },
+    toggleMarketSidebar: () => set((state) => {
+      const val = !state.marketSidebarOpen;
+      syncUI('marketSidebarOpen', val);
+      return { marketSidebarOpen: val };
     }),
-    {
-      name: 'ui-storage',
-      version: 4,
-      migrate: (persisted: unknown, version: number) => {
-        const state = persisted as Record<string, unknown>;
-        if (version < 2) {
-          if (state['tradingSidebarTab'] === 'wallets') state['tradingSidebarTab'] = 'portfolio';
-          state['activeWalletId'] = null;
-        }
-        if (version < 3) {
-          if (state['tradingSidebarTab'] === 'analytics') state['tradingSidebarTab'] = 'portfolio';
-        }
-        if (version < 4) {
-          state['trailingStopPanelExpanded'] = false;
-        }
-        return state as unknown as UIState;
-      },
-      partialize: (state: UIState) => ({
-        activeWalletId: state.activeWalletId,
-        tradingSidebarTab: state.tradingSidebarTab,
-        marketSidebarOpen: state.marketSidebarOpen,
-        marketSidebarTab: state.marketSidebarTab,
-        ordersFilterStatus: state.ordersFilterStatus,
-        ordersSortBy: state.ordersSortBy,
-        performancePeriod: state.performancePeriod,
-        setupStatsPeriod: state.setupStatsPeriod,
-        portfolioFilterOption: state.portfolioFilterOption,
-        portfolioSortBy: state.portfolioSortBy,
-        ordersViewMode: state.ordersViewMode,
-        portfolioViewMode: state.portfolioViewMode,
-        ordersTableSortKey: state.ordersTableSortKey,
-        ordersTableSortDirection: state.ordersTableSortDirection,
-        portfolioTableSortKey: state.portfolioTableSortKey,
-        portfolioTableSortDirection: state.portfolioTableSortDirection,
-        watchersTableSortKey: state.watchersTableSortKey,
-        watchersTableSortDirection: state.watchersTableSortDirection,
-        showEventRow: state.showEventRow,
-        enableShiftAltOrderEntry: state.enableShiftAltOrderEntry,
-        trailingStopPanelExpanded: state.trailingStopPanelExpanded,
-      }),
-    }
-  )
+
+    marketSidebarTab: 'indicators',
+    setMarketSidebarTab: (tab) => { set({ marketSidebarTab: tab }); syncUI('marketSidebarTab', tab); },
+
+    ordersFilterStatus: 'closed',
+    setOrdersFilterStatus: (filter) => { set({ ordersFilterStatus: filter }); syncUI('ordersFilterStatus', filter); },
+
+    ordersSortBy: 'newest',
+    setOrdersSortBy: (sort) => { set({ ordersSortBy: sort }); syncUI('ordersSortBy', sort); },
+
+    performancePeriod: 'all',
+    setPerformancePeriod: (period) => { set({ performancePeriod: period }); syncUI('performancePeriod', period); },
+
+    setupStatsPeriod: 'all',
+    setSetupStatsPeriod: (period) => { set({ setupStatsPeriod: period }); syncUI('setupStatsPeriod', period); },
+
+    portfolioFilterOption: 'all',
+    setPortfolioFilterOption: (filter) => { set({ portfolioFilterOption: filter }); syncUI('portfolioFilterOption', filter); },
+
+    portfolioSortBy: 'newest',
+    setPortfolioSortBy: (sort) => { set({ portfolioSortBy: sort }); syncUI('portfolioSortBy', sort); },
+
+    ordersViewMode: 'table',
+    setOrdersViewMode: (mode) => { set({ ordersViewMode: mode }); syncUI('ordersViewMode', mode); },
+
+    portfolioViewMode: 'table',
+    setPortfolioViewMode: (mode) => { set({ portfolioViewMode: mode }); syncUI('portfolioViewMode', mode); },
+
+    ordersTableSortKey: 'createdAt',
+    ordersTableSortDirection: 'desc',
+    setOrdersTableSort: (key, direction) => {
+      set({ ordersTableSortKey: key, ordersTableSortDirection: direction });
+      syncUI('ordersTableSortKey', key);
+      syncUI('ordersTableSortDirection', direction);
+    },
+
+    portfolioTableSortKey: 'pnl',
+    portfolioTableSortDirection: 'desc',
+    setPortfolioTableSort: (key, direction) => {
+      set({ portfolioTableSortKey: key, portfolioTableSortDirection: direction });
+      syncUI('portfolioTableSortKey', key);
+      syncUI('portfolioTableSortDirection', direction);
+    },
+
+    watchersTableSortKey: 'symbol',
+    watchersTableSortDirection: 'asc',
+    setWatchersTableSort: (key, direction) => {
+      set({ watchersTableSortKey: key, watchersTableSortDirection: direction });
+      syncUI('watchersTableSortKey', key);
+      syncUI('watchersTableSortDirection', direction);
+    },
+
+    showEventRow: false,
+    setShowEventRow: (show) => { set({ showEventRow: show }); syncUI('showEventRow', show); },
+
+    enableShiftAltOrderEntry: false,
+    setEnableShiftAltOrderEntry: (enabled) => { set({ enableShiftAltOrderEntry: enabled }); syncUI('enableShiftAltOrderEntry', enabled); },
+
+    isAnalyticsOpen: false,
+    setAnalyticsOpen: (open) => { set({ isAnalyticsOpen: open }); syncUI('isAnalyticsOpen', open); },
+    toggleAnalytics: () => set((state) => {
+      const val = !state.isAnalyticsOpen;
+      syncUI('isAnalyticsOpen', val);
+      return { isAnalyticsOpen: val };
+    }),
+
+    trailingStopPanelExpanded: false,
+    setTrailingStopPanelExpanded: (expanded) => { set({ trailingStopPanelExpanded: expanded }); syncUI('trailingStopPanelExpanded', expanded); },
+    toggleTrailingStopPanel: () => set((state) => {
+      const val = !state.trailingStopPanelExpanded;
+      syncUI('trailingStopPanelExpanded', val);
+      return { trailingStopPanelExpanded: val };
+    }),
+  })
 );

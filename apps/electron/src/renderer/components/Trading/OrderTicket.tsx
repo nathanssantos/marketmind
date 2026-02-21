@@ -8,7 +8,7 @@ import { useChartContext } from '@renderer/context/ChartContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
+import { useTradingPref } from '@renderer/store/preferencesStore';
 import { getKlineClose } from '@shared/utils';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +43,7 @@ const OrderTicketComponent = () => {
     createdAt: new Date(rawActiveWallet.createdAt),
   } : undefined;
 
-  const [quantityBySymbol, setQuantityBySymbol] = useLocalStorage<Record<string, number>>('marketmind:quantityBySymbol', {});
+  const [quantityBySymbol, setQuantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
 
   const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 0;
   const setQuantityForSymbol = (sym: string, qty: number) => {

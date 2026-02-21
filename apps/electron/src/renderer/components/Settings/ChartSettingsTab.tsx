@@ -5,7 +5,7 @@ import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useChartPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Grid, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,7 @@ interface ChartSettingsTabProps {
 
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
-  const [chartType, setChartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
+  const [chartType, setChartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
   const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
 

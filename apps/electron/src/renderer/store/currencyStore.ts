@@ -1,11 +1,18 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { fetchExchangeRate, fetchUsdtBrlRate } from '../services/exchangeRateService';
+import { usePreferencesStore } from './preferencesStore';
 
 const REFRESH_INTERVAL_MS = 60000;
 
+const syncUI = (key: string, value: unknown) => {
+  const prefs = usePreferencesStore.getState();
+  if (!prefs.isHydrated) return;
+  prefs.set('ui', key, value);
+};
+
 interface CurrencyState {
+  hydrate: (data: Record<string, unknown>) => void;
   usdtBrlRate: number;
   rates: Record<string, number>;
   lastUpdated: number | null;
@@ -21,58 +28,50 @@ interface CurrencyState {
 const makePairKey = (from: string, to: string): string => `${from}:${to}`;
 
 export const useCurrencyStore = create<CurrencyState>()(
-  persist(
-    (set, get) => ({
-      usdtBrlRate: 6.0,
-      rates: {},
-      lastUpdated: null,
-      isLoading: false,
-      showBrlValues: true,
+  (set, get) => ({
+    hydrate: (data) => {
+      if ('showBrlValues' in data) set({ showBrlValues: data['showBrlValues'] as boolean });
+    },
 
-      setUsdtBrlRate: (rate) => set((state) => ({
-        usdtBrlRate: rate,
-        rates: { ...state.rates, [makePairKey('USDT', 'BRL')]: rate },
-        lastUpdated: Date.now(),
-      })),
-      setIsLoading: (loading) => set({ isLoading: loading }),
-      setShowBrlValues: (show) => set({ showBrlValues: show }),
+    usdtBrlRate: 6.0,
+    rates: {},
+    lastUpdated: null,
+    isLoading: false,
+    showBrlValues: true,
 
-      refreshRate: async () => {
-        const { isLoading } = get();
-        if (isLoading) return;
+    setUsdtBrlRate: (rate) => set((state) => ({
+      usdtBrlRate: rate,
+      rates: { ...state.rates, [makePairKey('USDT', 'BRL')]: rate },
+      lastUpdated: Date.now(),
+    })),
+    setIsLoading: (loading) => set({ isLoading: loading }),
+    setShowBrlValues: (show) => { set({ showBrlValues: show }); syncUI('showBrlValues', show); },
 
-        set({ isLoading: true });
-        try {
-          const rate = await fetchUsdtBrlRate();
-          set((state) => ({
-            usdtBrlRate: rate,
-            rates: { ...state.rates, [makePairKey('USDT', 'BRL')]: rate },
-            lastUpdated: Date.now(),
-          }));
-        } finally {
-          set({ isLoading: false });
-        }
-      },
+    refreshRate: async () => {
+      const { isLoading } = get();
+      if (isLoading) return;
 
-      fetchRate: async (from: string, to: string) => {
-        const rate = await fetchExchangeRate(from, to);
+      set({ isLoading: true });
+      try {
+        const rate = await fetchUsdtBrlRate();
         set((state) => ({
-          rates: { ...state.rates, [makePairKey(from, to)]: rate },
+          usdtBrlRate: rate,
+          rates: { ...state.rates, [makePairKey('USDT', 'BRL')]: rate },
+          lastUpdated: Date.now(),
         }));
-        return rate;
-      },
-    }),
-    {
-      name: 'currency-storage',
-      version: 2,
-      partialize: (state) => ({
-        showBrlValues: state.showBrlValues,
-        usdtBrlRate: state.usdtBrlRate,
-        rates: state.rates,
-        lastUpdated: state.lastUpdated,
-      }),
-    }
-  )
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    fetchRate: async (from: string, to: string) => {
+      const rate = await fetchExchangeRate(from, to);
+      set((state) => ({
+        rates: { ...state.rates, [makePairKey(from, to)]: rate },
+      }));
+      return rate;
+    },
+  })
 );
 
 export const useCurrencyAutoRefresh = () => {
