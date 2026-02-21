@@ -1,6 +1,7 @@
 import { Button } from '@/renderer/components/ui/button';
 import { Checkbox } from '@/renderer/components/ui/checkbox';
 import { Field } from '@/renderer/components/ui/field';
+import { Switch } from '@/renderer/components/ui/switch';
 import { NumberInput } from '@/renderer/components/ui/number-input';
 import { Select } from '@/renderer/components/ui/select';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
@@ -20,6 +21,9 @@ interface ChartSettingsTabProps {
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
   const [chartType, setChartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [showGrid, setShowGrid] = useChartPref('showGrid', true);
+  const [showCurrentPriceLine, setShowCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
+  const [showCrosshair, setShowCrosshair] = useChartPref('showCrosshair', true);
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
   const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
 
@@ -65,6 +69,23 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             />
           </Field>
         </Grid>
+      </Box>
+
+      <Box>
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          {t('settings.chart.displayOptions')}
+        </Text>
+        <Stack gap={3}>
+          <Switch checked={showGrid} onCheckedChange={setShowGrid} size="sm">
+            {t('chart.controls.grid')}
+          </Switch>
+          <Switch checked={showCurrentPriceLine} onCheckedChange={setShowCurrentPriceLine} size="sm">
+            {t('chart.controls.currentPrice')}
+          </Switch>
+          <Switch checked={showCrosshair} onCheckedChange={setShowCrosshair} size="sm">
+            {t('chart.controls.crosshair')}
+          </Switch>
+        </Stack>
       </Box>
 
       <Box>

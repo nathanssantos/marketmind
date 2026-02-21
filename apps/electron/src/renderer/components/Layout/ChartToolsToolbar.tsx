@@ -1,12 +1,9 @@
-import { Box, HStack, IconButton } from '@chakra-ui/react';
+import { Box, HStack, IconButton, Separator } from '@chakra-ui/react';
 import { useChartPref } from '@renderer/store/preferencesStore';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuCalendarDays,
-  LuCrosshair,
-  LuDollarSign,
-  LuGrid3X3,
   LuMessageSquare,
   LuRectangleHorizontal,
   LuRuler,
@@ -31,11 +28,8 @@ export const ChartToolsToolbar = memo(({
 }: ChartToolsToolbarProps) => {
   const { t } = useTranslation();
 
-  const [showGrid, setShowGrid] = useChartPref('showGrid', true);
-  const [showCurrentPriceLine, setShowCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
-  const [showCrosshair, setShowCrosshair] = useChartPref('showCrosshair', true);
   const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', true);
-  const [showFibonacciProjection, setShowFibonacciProjection] = useChartPref('showFibonacciProjection', false);
+  const [showFibonacciProjection, setShowFibonacciProjection] = useChartPref('showFibonacciProjection', true);
   const [showMeasurementRuler, setShowMeasurementRuler] = useChartPref('showMeasurementRuler', false);
   const [showMeasurementArea, setShowMeasurementArea] = useChartPref('showMeasurementArea', false);
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
@@ -48,9 +42,6 @@ export const ChartToolsToolbar = memo(({
     onMovingAveragesChange(updated);
   }, [movingAverages, onMovingAveragesChange]);
 
-  const handleGridToggle = useCallback(() => setShowGrid(!showGrid), [showGrid, setShowGrid]);
-  const handlePriceLineToggle = useCallback(() => setShowCurrentPriceLine(!showCurrentPriceLine), [showCurrentPriceLine, setShowCurrentPriceLine]);
-  const handleCrosshairToggle = useCallback(() => setShowCrosshair(!showCrosshair), [showCrosshair, setShowCrosshair]);
   const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
   const handleFibToggle = useCallback(() => setShowFibonacciProjection(!showFibonacciProjection), [showFibonacciProjection, setShowFibonacciProjection]);
   const handleRulerToggle = useCallback(() => setShowMeasurementRuler(!showMeasurementRuler), [showMeasurementRuler, setShowMeasurementRuler]);
@@ -77,39 +68,7 @@ export const ChartToolsToolbar = memo(({
           movingAverages={movingAverages}
           onMovingAverageToggle={toggleMA}
         />
-        <TooltipWrapper label={t('chart.controls.grid')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.grid')}
-            onClick={handleGridToggle}
-            colorPalette={showGrid ? 'blue' : 'gray'}
-            variant={showGrid ? 'solid' : 'ghost'}
-          >
-            <LuGrid3X3 />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.currentPrice')}
-            onClick={handlePriceLineToggle}
-            colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
-            variant={showCurrentPriceLine ? 'solid' : 'ghost'}
-          >
-            <LuDollarSign />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.crosshair')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.crosshair')}
-            onClick={handleCrosshairToggle}
-            colorPalette={showCrosshair ? 'blue' : 'gray'}
-            variant={showCrosshair ? 'solid' : 'ghost'}
-          >
-            <LuCrosshair />
-          </IconButton>
-        </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
         <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="bottom">
           <IconButton
             size="2xs"
@@ -132,6 +91,7 @@ export const ChartToolsToolbar = memo(({
             <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
           </IconButton>
         </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
         <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow placement="bottom">
           <IconButton
             size="2xs"
@@ -154,6 +114,7 @@ export const ChartToolsToolbar = memo(({
             <LuScan />
           </IconButton>
         </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
         <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="bottom">
           <IconButton
             size="2xs"

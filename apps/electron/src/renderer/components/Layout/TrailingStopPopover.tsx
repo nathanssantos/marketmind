@@ -1,5 +1,5 @@
 import { Switch } from '@/renderer/components/ui/switch';
-import { Box, Flex, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, HStack, IconButton, Separator, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
@@ -156,6 +156,8 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
   if (!walletId || !hasOpenPositionWithStop) return null;
 
   return (
+    <>
+    <Separator orientation="vertical" height="4" />
     <Popover
       open={isOpen}
       onOpenChange={(e) => setIsOpen(e.open)}
@@ -260,6 +262,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         )}
       </VStack>
     </Popover>
+    </>
   );
 });
 

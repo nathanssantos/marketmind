@@ -185,6 +185,7 @@
     "chart": {
       "tipsRealtime": "As alterações são aplicadas imediatamente com um debounce de 300ms",
       "tipsReset": "Clique em 'Restaurar Padrões' para restaurar as configurações padrão do gráfico",
+      "displayOptions": "Opções de Exibição",
       "chartType": "Tipo de Gráfico",
       "defaultChartType": "Tipo de Gráfico Padrão",
       "defaultChartTypeHelper": "O estilo de visualização padrão do gráfico",

@@ -159,6 +159,7 @@
     "chart": {
       "tipsRealtime": "Changes are applied immediately with a 300ms debounce",
       "tipsReset": "Click 'Reset to Defaults' to restore default chart settings",
+      "displayOptions": "Display Options",
       "chartType": "Chart Type",
       "defaultChartType": "Default Chart Type",
       "defaultChartTypeHelper": "The default chart visualization style",
