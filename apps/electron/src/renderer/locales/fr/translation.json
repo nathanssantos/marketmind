@@ -1209,6 +1209,10 @@
         "title": "Drawdown Maximum",
         "description": "Bloque les nouvelles positions lorsque le drawdown du portefeuille dépasse cette limite"
       },
+      "maxRiskPerStop": {
+        "title": "Risque Maximum par Stop",
+        "description": "Filtre les trades où la perte potentielle au stop dépasse ce % du portefeuille"
+      },
       "marginTopUp": {
         "title": "Rechargement de Marge",
         "description": "Ajouter automatiquement de la marge pour éviter la liquidation",

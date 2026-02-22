@@ -12,6 +12,10 @@ export interface RiskManagementSectionProps {
   onMaxDrawdownEnabledChange: (enabled: boolean) => void;
   maxDrawdownPercent: number;
   onMaxDrawdownChange: (value: number) => void;
+  maxRiskPerStopEnabled: boolean;
+  onMaxRiskPerStopEnabledChange: (enabled: boolean) => void;
+  maxRiskPerStopPercent: number;
+  onMaxRiskPerStopChange: (value: number) => void;
   marginTopUpEnabled: boolean;
   onMarginTopUpEnabledChange: (enabled: boolean) => void;
   marginTopUpThreshold: number;
@@ -31,6 +35,10 @@ export const RiskManagementSection = ({
   onMaxDrawdownEnabledChange,
   maxDrawdownPercent,
   onMaxDrawdownChange,
+  maxRiskPerStopEnabled,
+  onMaxRiskPerStopEnabledChange,
+  maxRiskPerStopPercent,
+  onMaxRiskPerStopChange,
   marginTopUpEnabled,
   onMarginTopUpEnabledChange,
   marginTopUpThreshold,
@@ -86,6 +94,45 @@ export const RiskManagementSection = ({
             <HStack justify="space-between">
               <Text fontSize="xs" color="fg.muted">5%</Text>
               <Text fontSize="xs" color="fg.muted">50%</Text>
+            </HStack>
+          </Stack>
+        )}
+
+        <Separator />
+
+        <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold">
+              {t('watcherManager.riskManagement.maxRiskPerStop.title')}
+            </Text>
+            <Text fontSize="xs" color="fg.muted">
+              {t('watcherManager.riskManagement.maxRiskPerStop.description')}
+            </Text>
+          </Box>
+          <Switch
+            checked={maxRiskPerStopEnabled}
+            onCheckedChange={onMaxRiskPerStopEnabledChange}
+          />
+        </HStack>
+
+        {maxRiskPerStopEnabled && (
+          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+            <HStack gap={4}>
+              <Slider
+                value={[maxRiskPerStopPercent]}
+                onValueChange={(values) => onMaxRiskPerStopChange(values[0] ?? 2)}
+                min={0.5}
+                max={10}
+                step={0.5}
+                width="full"
+              />
+              <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
+                {maxRiskPerStopPercent}%
+              </Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text fontSize="xs" color="fg.muted">0.5%</Text>
+              <Text fontSize="xs" color="fg.muted">10%</Text>
             </HStack>
           </Stack>
         )}

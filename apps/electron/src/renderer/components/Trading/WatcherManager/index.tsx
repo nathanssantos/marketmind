@@ -217,6 +217,14 @@ export const WatcherManager = () => {
     handleConfigUpdate({ maxDrawdownPercent: value.toString() });
   };
 
+  const handleMaxRiskPerStopEnabledChange = (enabled: boolean): void => {
+    handleConfigUpdate({ maxRiskPerStopEnabled: enabled });
+  };
+
+  const handleMaxRiskPerStopChange = (value: number): void => {
+    handleConfigUpdate({ maxRiskPerStopPercent: value.toString() });
+  };
+
   const handleMarginTopUpEnabledChange = (enabled: boolean): void => {
     handleConfigUpdate({ marginTopUpEnabled: enabled });
   };
@@ -384,6 +392,10 @@ export const WatcherManager = () => {
         onMaxDrawdownEnabledChange={handleMaxDrawdownEnabledChange}
         maxDrawdownPercent={Number(config?.maxDrawdownPercent ?? 15)}
         onMaxDrawdownChange={handleMaxDrawdownChange}
+        maxRiskPerStopEnabled={config?.maxRiskPerStopEnabled ?? false}
+        onMaxRiskPerStopEnabledChange={handleMaxRiskPerStopEnabledChange}
+        maxRiskPerStopPercent={Number(config?.maxRiskPerStopPercent ?? 2)}
+        onMaxRiskPerStopChange={handleMaxRiskPerStopChange}
         marginTopUpEnabled={config?.marginTopUpEnabled ?? false}
         onMarginTopUpEnabledChange={handleMarginTopUpEnabledChange}
         marginTopUpThreshold={Number(config?.marginTopUpThreshold ?? 30)}

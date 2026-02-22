@@ -68,6 +68,8 @@ const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'maxFibonacciEntryProgressPercent', transform: (v) => String(v) },
   { key: 'maxDrawdownEnabled' },
   { key: 'maxDrawdownPercent' },
+  { key: 'maxRiskPerStopEnabled' },
+  { key: 'maxRiskPerStopPercent' },
   { key: 'marginTopUpEnabled' },
   { key: 'marginTopUpThreshold' },
   { key: 'marginTopUpPercent' },

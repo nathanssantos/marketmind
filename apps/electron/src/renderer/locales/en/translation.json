@@ -1158,6 +1158,10 @@
         "title": "Max Drawdown",
         "description": "Blocks new positions when portfolio drawdown exceeds this limit"
       },
+      "maxRiskPerStop": {
+        "title": "Max Risk Per Stop",
+        "description": "Filters trades where the potential stop loss exceeds this % of the portfolio"
+      },
       "marginTopUp": {
         "title": "Margin Top-Up",
         "description": "Auto-add margin to prevent liquidation",

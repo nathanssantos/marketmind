@@ -1220,6 +1220,10 @@
         "title": "Drawdown Máximo",
         "description": "Bloquea nuevas posiciones cuando el drawdown del portafolio excede este límite"
       },
+      "maxRiskPerStop": {
+        "title": "Riesgo Máximo por Stop",
+        "description": "Filtra operaciones donde el stop loss potencial supera este % del portafolio"
+      },
       "marginTopUp": {
         "title": "Refuerzo de Margen",
         "description": "Agregar margen automáticamente para evitar liquidación",

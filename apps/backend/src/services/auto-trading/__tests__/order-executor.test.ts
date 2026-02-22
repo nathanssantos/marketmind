@@ -1875,6 +1875,7 @@ describe('OrderExecutor', () => {
         expect.objectContaining({ maxConcurrentPositions: 8 }),
         expect.any(Number),
         8,
+        expect.anything(),
       );
     });
 

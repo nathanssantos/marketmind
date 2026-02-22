@@ -45,11 +45,12 @@ export class RiskManagerService {
     walletId: string,
     config: AutoTradingConfig,
     positionValue: number,
-    activeWatchersCount?: number
+    activeWatchersCount?: number,
+    stopRiskParams?: { entryPrice: number; stopLoss: number }
   ): Promise<RiskValidationResult> {
     const release = await walletLockService.acquire(walletId);
     try {
-      return await this.validateNewPosition(walletId, config, positionValue, activeWatchersCount);
+      return await this.validateNewPosition(walletId, config, positionValue, activeWatchersCount, stopRiskParams);
     } finally {
       release();
     }
@@ -59,7 +60,8 @@ export class RiskManagerService {
     walletId: string,
     config: AutoTradingConfig,
     positionValue: number,
-    activeWatchersCount?: number
+    activeWatchersCount?: number,
+    stopRiskParams?: { entryPrice: number; stopLoss: number }
   ): Promise<RiskValidationResult> {
     try {
       const [wallet] = await db
@@ -159,9 +161,19 @@ export class RiskManagerService {
       if (config.maxDrawdownEnabled) {
         const maxDrawdownPercent = parseFloat(config.maxDrawdownPercent || '15');
         const drawdownResult = await this.validateDrawdownForNewPosition(walletId, maxDrawdownPercent);
-        if (!drawdownResult.isValid) {
-          return drawdownResult;
-        }
+        if (!drawdownResult.isValid) return drawdownResult;
+      }
+
+      if (config.maxRiskPerStopEnabled && stopRiskParams) {
+        const maxRiskPercent = parseFloat(config.maxRiskPerStopPercent || '2');
+        const stopRiskResult = this.validateStopRisk(
+          walletBalance,
+          stopRiskParams.entryPrice,
+          stopRiskParams.stopLoss,
+          positionValue,
+          maxRiskPercent
+        );
+        if (!stopRiskResult.isValid) return stopRiskResult;
       }
 
       return { isValid: true };
@@ -371,6 +383,27 @@ export class RiskManagerService {
       };
     }
 
+    return { isValid: true };
+  }
+
+  validateStopRisk(
+    walletBalance: number,
+    entryPrice: number,
+    stopLoss: number,
+    positionValue: number,
+    maxRiskPercent: number
+  ): RiskValidationResult {
+    const stopDistancePercent = Math.abs(entryPrice - stopLoss) / entryPrice;
+    const stopRiskAmount = stopDistancePercent * positionValue;
+    const stopRiskPercent = (stopRiskAmount / walletBalance) * 100;
+
+    if (stopRiskPercent > maxRiskPercent) {
+      return {
+        isValid: false,
+        reason: `Stop risk (${stopRiskPercent.toFixed(2)}%) exceeds max allowed (${maxRiskPercent}%)`,
+        details: { currentExposure: stopRiskPercent, maxExposure: maxRiskPercent },
+      };
+    }
     return { isValid: true };
   }
 

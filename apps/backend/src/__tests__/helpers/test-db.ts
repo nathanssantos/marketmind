@@ -206,6 +206,8 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   super_trend_multiplier NUMERIC(4, 2) DEFAULT '3.00',
   max_drawdown_enabled BOOLEAN DEFAULT false,
   max_drawdown_percent NUMERIC(5, 2) DEFAULT '15',
+  max_risk_per_stop_enabled BOOLEAN DEFAULT false,
+  max_risk_per_stop_percent NUMERIC(5, 2) DEFAULT '2',
   margin_top_up_enabled BOOLEAN DEFAULT false,
   margin_top_up_threshold NUMERIC(5, 2) DEFAULT '30',
   margin_top_up_percent NUMERIC(5, 2) DEFAULT '10',

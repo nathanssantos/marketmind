@@ -256,6 +256,8 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   superTrendMultiplier: numeric('super_trend_multiplier', { precision: 4, scale: 2 }).default('3.00'),
   maxDrawdownEnabled: boolean('max_drawdown_enabled').default(false),
   maxDrawdownPercent: numeric('max_drawdown_percent', { precision: 5, scale: 2 }).default('15'),
+  maxRiskPerStopEnabled: boolean('max_risk_per_stop_enabled').default(false),
+  maxRiskPerStopPercent: numeric('max_risk_per_stop_percent', { precision: 5, scale: 2 }).default('2'),
   marginTopUpEnabled: boolean('margin_top_up_enabled').default(false),
   marginTopUpThreshold: numeric('margin_top_up_threshold', { precision: 5, scale: 2 }).default('30'),
   marginTopUpPercent: numeric('margin_top_up_percent', { precision: 5, scale: 2 }).default('10'),
