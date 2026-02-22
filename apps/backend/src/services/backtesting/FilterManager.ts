@@ -562,10 +562,16 @@ export class FilterManager {
     }
 
     const proximityFactor = proximityPercent / 100;
+    const prevCandle = klines[setupIndex - 1];
+    const prevHigh = prevCandle ? parseFloat(prevCandle.high as string) : entryPrice;
+    const prevLow = prevCandle ? parseFloat(prevCandle.low as string) : entryPrice;
+
     const nearGap = unfilledGaps.some(gap => {
       const zoneLow = gap.low * (1 - proximityFactor);
       const zoneHigh = gap.high * (1 + proximityFactor);
-      return entryPrice >= zoneLow && entryPrice <= zoneHigh;
+      const entryNear = entryPrice >= zoneLow && entryPrice <= zoneHigh;
+      const prevCandleTouched = prevHigh >= gap.low && prevLow <= gap.high;
+      return entryNear || prevCandleTouched;
     });
 
     if (!nearGap) {
