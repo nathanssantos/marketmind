@@ -120,6 +120,7 @@ export const walletRouter = router({
             api_key: input.apiKey,
             api_secret: input.apiSecret,
             testnet: input.walletType === 'testnet',
+            disableTimeSync: true,
           });
           const accountInfo = await client.getAccountInformation();
 
@@ -137,6 +138,7 @@ export const walletRouter = router({
             api_key: input.apiKey,
             api_secret: input.apiSecret,
             testnet: input.walletType === 'testnet',
+            disableTimeSync: true,
           });
           const accountInfo = await client.getAccountInformation();
 

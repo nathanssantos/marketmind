@@ -1163,7 +1163,7 @@ export const tradingRouter = router({
           const prices: Record<string, string> = {};
 
           if (input.marketType === 'FUTURES') {
-            const client = new USDMClient();
+            const client = new USDMClient({ disableTimeSync: true });
             const tickers = await client.getSymbolPriceTicker();
             const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
 
@@ -1175,7 +1175,7 @@ export const tradingRouter = router({
             return prices;
           }
 
-          const client = new MainClient();
+          const client = new MainClient({ disableTimeSync: true });
           const tickers = await client.getSymbolPriceTicker();
           const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
 

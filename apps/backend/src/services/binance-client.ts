@@ -41,7 +41,7 @@ export function createBinanceClient(wallet: Wallet): MainClient {
     api_key: apiKey,
     api_secret: apiSecret,
     testnet: walletType === 'testnet',
-    disableTimeSync: false,
+    disableTimeSync: true,
   });
 }
 
@@ -59,14 +59,14 @@ export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
     api_key: apiKey,
     api_secret: apiSecret,
     testnet: walletType === 'testnet',
-    disableTimeSync: false,
+    disableTimeSync: true,
   });
 }
 
 export function createBinanceClientForPrices(): MainClient {
-  return new MainClient();
+  return new MainClient({ disableTimeSync: true });
 }
 
 export function createBinanceFuturesClientForPrices(): USDMClient {
-  return new USDMClient();
+  return new USDMClient({ disableTimeSync: true });
 }

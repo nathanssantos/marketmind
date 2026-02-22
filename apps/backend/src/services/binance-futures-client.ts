@@ -36,12 +36,12 @@ export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
     api_key: apiKey,
     api_secret: apiSecret,
     testnet: walletType === 'testnet',
-    disableTimeSync: false,
+    disableTimeSync: true,
   });
 }
 
 export function createBinanceFuturesClientForPrices(): USDMClient {
-  return new USDMClient();
+  return new USDMClient({ disableTimeSync: true });
 }
 
 export async function setLeverage(

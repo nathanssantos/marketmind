@@ -49,8 +49,8 @@ export class OrderBookAnalyzerService {
   private cache = new KeyedCache<OrderBookAnalysis>(INDICATOR_CACHE.ORDER_BOOK_TTL);
 
   constructor() {
-    this.futuresClient = new USDMClient();
-    this.spotClient = new MainClient();
+    this.futuresClient = new USDMClient({ disableTimeSync: true });
+    this.spotClient = new MainClient({ disableTimeSync: true });
   }
 
   async getOrderBookAnalysis(

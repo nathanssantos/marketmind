@@ -61,7 +61,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
       api_key: credentials.apiKey,
       api_secret: credentials.apiSecret,
       testnet: credentials.testnet,
-      disableTimeSync: false,
+      disableTimeSync: true,
     });
   }
 
