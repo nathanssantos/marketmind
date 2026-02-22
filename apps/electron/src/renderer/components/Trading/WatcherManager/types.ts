@@ -28,6 +28,7 @@ export interface WatcherConfig {
   useBollingerSqueezeFilter?: boolean | null;
   useVwapFilter?: boolean | null;
   useSuperTrendFilter?: boolean | null;
+  useFvgFilter?: boolean | null;
   opportunityCostEnabled?: boolean | null;
   maxHoldingPeriodBars?: number | null;
   stalePriceThresholdPercent?: string | null;

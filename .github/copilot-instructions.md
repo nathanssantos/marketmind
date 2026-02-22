@@ -23,18 +23,21 @@
 **Backend:**
 - **Fastify 5.6.2** (high-performance HTTP server)
 - **tRPC 11.7.2** (type-safe RPC framework)
-- **Drizzle ORM 0.44.7** (TypeScript SQL ORM)
+- **Drizzle ORM 0.45.1** (TypeScript SQL ORM)
 - **PostgreSQL 17** (relational database)
 - **TimescaleDB 2.23.1** (time-series extension)
 - **Argon2** (password hashing - OWASP compliant)
 - **Binance SDK 3.1.5** (trading integration)
+- **TypeScript 5.9.3**, **Vite 7.2.7**, **Electron 39.2.6**
 
 **Architecture:**
 - **Monorepo** (pnpm workspaces)
-- **Shared Packages** (@marketmind/types, @marketmind/indicators)
+- **Shared Packages** (7 packages): `@marketmind/types`, `@marketmind/indicators`, `@marketmind/fibonacci`, `@marketmind/logger`, `@marketmind/trading-core`, `@marketmind/risk`, `@marketmind/utils`
+- **Exchange Abstraction**: Binance (crypto) + Interactive Brokers (US stocks via `@stoqey/ib`)
 - **Real-time API** (tRPC endpoints with React Query)
 - **Session Auth** (secure cookie-based authentication)
 - **Encrypted Storage** (AES-256-CBC for API keys)
+- **Strategy JSON System**: 105 builtin strategies in `apps/backend/strategies/builtin/`
 
 ### Repository Info
 - **Name:** nathanssantos/marketmind
@@ -216,20 +219,32 @@ marketmind/                        # Monorepo root
 │   └── backend/                  # Backend server
 │       ├── src/
 │       │   ├── db/              # Database (schema, migrations)
-│       │   ├── routers/         # tRPC routers (health, auth, wallet, trading)
-│       │   ├── services/        # Business logic (auth, encryption)
+│       │   ├── exchange/        # Exchange abstraction layer
+│       │   │   ├── binance/     # Binance crypto exchange
+│       │   │   └── interactive-brokers/  # IB stocks (16 modules)
+│       │   ├── routers/         # tRPC routers (health, auth, wallet, trading, analytics, fees, auto-trading)
+│       │   ├── services/        # Business logic (auth, encryption, backtesting, setup-detection)
+│       │   │   └── backtesting/ # BacktestEngine, MultiWatcherBacktestEngine, FilterManager
 │       │   └── trpc/            # tRPC setup (context, router)
+│       ├── strategies/
+│       │   └── builtin/         # 105 strategy JSON files
+│       ├── scripts/
+│       │   └── backtest/        # rank-strategies.ts, rank-strategies-with-filters.ts, run-optimization.ts
 │       └── package.json
 │
-├── packages/                     # Shared packages
+├── packages/                     # 7 shared packages
 │   ├── types/                   # Shared TypeScript types
-│   └── indicators/              # Technical analysis utilities
+│   ├── indicators/              # Technical analysis utilities
+│   ├── fibonacci/               # Fibonacci calculation engine
+│   ├── logger/                  # Logging utilities
+│   ├── trading-core/            # Core trading logic
+│   ├── risk/                    # Risk management
+│   └── utils/                   # General utilities
 │
 ├── scripts/                     # Build and utility scripts
 ├── docs/                        # Documentation
 │   ├── BACKEND_QUICKSTART.md   # Backend developer guide
-│   ├── COMPONENT_MIGRATION.md  # Component migration guide
-│   └── IMPLEMENTATION_PLAN.md  # Implementation roadmap
+│   └── COMPONENT_MIGRATION.md  # Component migration guide
 ├── pnpm-workspace.yaml         # Monorepo configuration
 └── package.json                # Root package
 ```
@@ -241,10 +256,9 @@ marketmind/                        # Monorepo root
 When starting a new chat due to context limits, provide:
 
 1. **This document** (`copilot-instructions.md`)
-2. **Current phase** from `IMPLEMENTATION_PLAN.md`
-3. **Current branch** and feature being worked on
-4. **Files already created** (list main ones)
-5. **Current task** or issue
+2. **Current branch** and feature being worked on
+3. **Files already created** (list main ones)
+4. **Current task** or issue
 
 Example:
 ```
@@ -466,42 +480,42 @@ describe('calculateSMA', () => {
 
 ## 📊 Current Development Phase
 
-Track progress in `IMPLEMENTATION_PLAN.md`. Update this section when starting new chats:
+**Version:** v0.52.1
+**Current Focus:** Backtesting infrastructure, strategy optimization, exchange abstraction (IB)
 
-**Current Phase:** Backend Integration (Phase 5)
-**Overall Progress:** 65% (Backend infrastructure complete, component migration in progress)
-**Current Tasks:** Migrating components from localStorage to backend API
-**Recent Updates:** Complete backend with tRPC, PostgreSQL, TimescaleDB, authentication
-**Blockers:** None
-
-### Backend Integration Status (v0.31.0+)
+### System Status (v0.52.1)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
-- **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1 with 9 tables
-- **✅ Authentication**: Argon2 password hashing + session management
-- **✅ API Routers**: health, auth, wallet, trading endpoints implemented
-- **✅ Frontend Hooks**: useBackendWallets, useBackendOrders created
-- **🟡 Component Migration**: In progress (TradingSidebar, WalletManager pending)
-- **⏳ Real Trading**: Pending (Phases 6-10)
+- **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
+- **✅ Authentication**: Argon2 + session management
+- **✅ API Routers**: health, auth, wallet, trading, auto-trading, analytics, fees
+- **✅ Exchange Abstraction**: Binance (crypto) + Interactive Brokers (stocks) with 16 IB modules
+- **✅ Futures Auto-Trading**: User stream, liquidation monitoring, margin manager, max drawdown
+- **✅ Trailing Stop System**: v0.51.0+, volatility-based with ATR multiplier
+- **✅ Risk Management**: Real-time alerts, margin top-up, position sizing
+- **✅ Integration Tests**: testcontainers with PostgreSQL + TimescaleDB
+- **✅ Strategy System**: 105 strategy JSON files in `strategies/builtin/`
+- **✅ Backtesting Infrastructure**: BacktestEngine, MultiWatcherBacktestEngine, 3 optimization scripts
 
-### Frontend Status (Production Ready)
-- **8 Trading Setups**: Complete Larry Williams suite (9.1, 9.2, 9.3, 9.4) + 4 pattern-based setups
-- **Setup 9.2 (EMA9 Pullback)**: Single kline pullback with 14 tests
-- **Setup 9.3 (EMA9 Double Pullback)**: Conservative 2-close confirmation with 14 tests  
-- **Setup 9.4 (EMA9 Continuation)**: Temporary EMA9 failure pattern with 16 tests
-- **44 New Tests**: All 3 new detectors with 100% pass rate
-- **Translations**: Complete EN/PT/ES/FR support for all setups
-- **UI Updates**: 13 total setups in configuration and toggle popover
+### DEFAULT_ENABLED_SETUPS (13 strategies)
+`7day-momentum-crypto`, `breakout-retest`, `bull-trap`, `cumulative-rsi-r3`, `divergence-rsi-macd`, `golden-cross-sma`, `hull-ma-trend`, `liquidity-sweep`, `macd-divergence`, `momentum-breakout-2025`, `nr7-breakout`, `pin-inside-combo`, `triple-ema-confluence`
 
-### Overall Project Status
-- 1,864 passing tests (100% pass rate)
-- 92.15% code coverage (exceeded 80% target!)
-- Backend + Frontend integration complete
-- Complete multi-language support (EN, PT, ES, FR)
-- Production-ready builds (macOS, Windows)
-- Auto-update system functional
-- Performance optimized
-- Accessibility compliant
-- Clean, maintainable codebase
+### Testing Status
+- **~7,248 total tests** (171 backend files + 212 frontend files)
+- **Backend**: 4,934 passing + 40 skipped (IB integration tests requiring Gateway)
+- **Frontend**: 2,316 passing (2,289 unit + 27 browser)
+- **Indicators**: 722 passing (60 files)
+
+### Backtesting Scripts
+```bash
+# Rank all 105 strategies (BTC/ETH/SOL, 1h, 3 years)
+node --experimental-vm-modules --loader ts-node/esm scripts/backtest/rank-strategies.ts
+
+# Test each strategy against 6 filter presets
+node --experimental-vm-modules --loader ts-node/esm scripts/backtest/rank-strategies-with-filters.ts
+
+# 3-stage optimization (Fib params → filters → trailing stop)
+node --experimental-vm-modules --loader ts-node/esm scripts/backtest/run-optimization.ts [--quick]
+```
 
 ---
 

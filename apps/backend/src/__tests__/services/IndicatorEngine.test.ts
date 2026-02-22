@@ -668,6 +668,14 @@ describe('IndicatorEngine', () => {
       expect(values['bearish']).toBeDefined();
       expect(values['bullish']).toHaveLength(klines.length);
       expect(values['bearish']).toHaveLength(klines.length);
+      expect(values['bullishTop']).toBeDefined();
+      expect(values['bullishBottom']).toBeDefined();
+      expect(values['bearishTop']).toBeDefined();
+      expect(values['bearishBottom']).toBeDefined();
+      expect(values['bullishTop']).toHaveLength(klines.length);
+      expect(values['bullishBottom']).toHaveLength(klines.length);
+      expect(values['bearishTop']).toHaveLength(klines.length);
+      expect(values['bearishBottom']).toHaveLength(klines.length);
     });
 
     it('should compute Gap Detection indicator', () => {
@@ -2454,6 +2462,40 @@ describe('IndicatorEngine', () => {
 
       expect(values['bullish']).toHaveLength(20);
       expect(values['bearish']).toHaveLength(20);
+      expect(values['bullishTop']).toHaveLength(20);
+      expect(values['bullishBottom']).toHaveLength(20);
+      expect(values['bearishTop']).toHaveLength(20);
+      expect(values['bearishBottom']).toHaveLength(20);
+    });
+
+    it('should expose zone prices for unfilled FVGs at subsequent indices', () => {
+      const klines: Kline[] = [
+        createMockKline({ open: 100, high: 102, low: 98, close: 101, volume: 1000, index: 0 }),
+        createMockKline({ open: 101, high: 103, low: 99, close: 102, volume: 1000, index: 1 }),
+        createMockKline({ open: 105, high: 108, low: 105, close: 107, volume: 1000, index: 2 }),
+        createMockKline({ open: 107, high: 110, low: 106, close: 109, volume: 1000, index: 3 }),
+        createMockKline({ open: 109, high: 112, low: 108, close: 111, volume: 1000, index: 4 }),
+      ];
+
+      const indicators: Record<string, IndicatorDefinition> = {
+        fvg: { type: 'fvg', params: {} },
+      };
+
+      const result = engine.computeIndicators(klines, indicators, {});
+      const values = result['fvg']!.values as Record<string, (number | null)[]>;
+
+      expect(values['bullish']).toHaveLength(5);
+      expect(values['bullishTop']).toHaveLength(5);
+      expect(values['bullishBottom']).toHaveLength(5);
+
+      for (let i = 0; i < 5; i++) {
+        if (values['bullish']![i] !== null) {
+          expect(values['bullishTop']![i]).not.toBeNull();
+          expect(values['bullishBottom']![i]).not.toBeNull();
+          expect(typeof values['bullishTop']![i]).toBe('number');
+          expect(typeof values['bullishBottom']![i]).toBe('number');
+        }
+      }
     });
   });
 

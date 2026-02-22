@@ -55,6 +55,9 @@ export const FILTER_DEFAULTS = {
   useSuperTrendFilter: false,
   superTrendPeriod: 10,
   superTrendMultiplier: 3.0,
+
+  useFvgFilter: false,
+  fvgFilterProximityPercent: 0.5,
 } as const;
 
 export type FilterDefaults = typeof FILTER_DEFAULTS;

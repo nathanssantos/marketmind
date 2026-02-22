@@ -420,6 +420,11 @@
           "title": "Filtre SuperTrend",
           "description": "N'opère que dans la direction de l'indicateur SuperTrend (détection de tendance basée sur ATR)."
         },
+        "smartMoneyFilters": "Filtres Smart Money",
+        "fvg": {
+          "title": "Filtre FVG",
+          "description": "N'entre que dans des trades proches de Fair Value Gaps non comblés (zones de déséquilibre institutionnel utilisées comme support/résistance)."
+        },
         "opportunityCost": {
           "title": "Gestion du Coût d'Opportunité",
           "description": "Gérer les trades qui immobilisent le capital sans progrès.",

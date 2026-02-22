@@ -146,6 +146,33 @@ describe('useFVGRenderer', () => {
       expect(mockCtx.fillRect).toHaveBeenCalled();
     });
 
+    it('should render unfilled FVG zones that started before the visible viewport', () => {
+      const managerWithOffset = {
+        ...mockManager,
+        getViewport: vi.fn(() => ({ start: 50, end: 80, klineWidth: 35 })),
+        indexToX: vi.fn((index: number) => (index - 50) * 35),
+      } as unknown as CanvasManager;
+
+      const oldGapData = {
+        gaps: [
+          { index: 10, high: 108, low: 105, type: 'bullish' as const, filled: false },
+        ],
+      };
+
+      const { result } = renderHook(() =>
+        useFVGRenderer({
+          manager: managerWithOffset,
+          fvgData: oldGapData,
+          colors: mockColors,
+          enabled: true,
+        })
+      );
+
+      result.current.render();
+
+      expect(mockCtx.fillRect).toHaveBeenCalledWith(0, expect.any(Number), expect.any(Number), expect.any(Number));
+    });
+
     it('should not draw filled gaps', () => {
       const filledOnlyData = {
         gaps: [{ index: 5, high: 108, low: 105, type: 'bullish' as const, filled: true }],

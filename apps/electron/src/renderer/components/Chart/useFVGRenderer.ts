@@ -30,14 +30,17 @@ export const useFVGRenderer = ({
 
     ctx.save();
 
-    const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
     for (const gap of fvgData.gaps) {
       if (gap.filled) continue;
-      if (gap.index < visibleStartIndex || gap.index > visibleEndIndex + 50) continue;
+      if (gap.index > visibleEndIndex + 50) continue;
 
-      const startX = manager.indexToX(gap.index);
+      const rawStartX = manager.indexToX(gap.index);
+      const startX = Math.max(0, rawStartX);
+      const drawWidth = effectiveWidth - startX;
+      if (drawWidth <= 0) continue;
+
       const topY = manager.priceToY(gap.high);
       const bottomY = manager.priceToY(gap.low);
       const height = Math.abs(bottomY - topY);
@@ -49,7 +52,7 @@ export const useFVGRenderer = ({
         ? (colors.fvg?.bullish ?? 'rgba(34, 197, 94, 0.15)')
         : (colors.fvg?.bearish ?? 'rgba(239, 68, 68, 0.15)');
 
-      ctx.fillRect(startX, Math.min(topY, bottomY), effectiveWidth - startX, height);
+      ctx.fillRect(startX, Math.min(topY, bottomY), drawWidth, height);
 
       ctx.strokeStyle = isBullish
         ? (colors.fvg?.bullishBorder ?? 'rgba(34, 197, 94, 0.4)')

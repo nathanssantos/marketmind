@@ -393,6 +393,11 @@
         "supertrend": {
           "title": "SuperTrend Filter",
           "description": "Only trade in the direction of SuperTrend indicator (ATR-based trend detection)."
+        },
+        "smartMoneyFilters": "Smart Money Filters",
+        "fvg": {
+          "title": "FVG Filter",
+          "description": "Only enter trades near unfilled Fair Value Gaps (institutional imbalance zones used as support/resistance)."
         }
       },
       "opportunityCost": {

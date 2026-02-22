@@ -12,6 +12,7 @@ import {
   calculateOpenInterest,
   calculateRelativeStrength,
   detectFundingRateSignal,
+  type FairValueGap,
   type FundingRateData,
   type LiquidationData,
   type OpenInterestData,
@@ -804,22 +805,48 @@ export class IndicatorEngine {
 
     fvg: (klines) => {
       const fvgResult = calculateFVG(klines);
-      const bullishValues: (number | null)[] = new Array(klines.length).fill(null);
-      const bearishValues: (number | null)[] = new Array(klines.length).fill(null);
-      for (const gap of fvgResult.gaps) {
-        if (gap.index >= 0 && gap.index < klines.length) {
+      const bullish: (number | null)[] = new Array(klines.length).fill(null);
+      const bearish: (number | null)[] = new Array(klines.length).fill(null);
+      const bullishTop: (number | null)[] = new Array(klines.length).fill(null);
+      const bullishBottom: (number | null)[] = new Array(klines.length).fill(null);
+      const bearishTop: (number | null)[] = new Array(klines.length).fill(null);
+      const bearishBottom: (number | null)[] = new Array(klines.length).fill(null);
+
+      for (let i = 0; i < klines.length; i++) {
+        let latestBullish: FairValueGap | null = null;
+        let latestBearish: FairValueGap | null = null;
+
+        for (const gap of fvgResult.gaps) {
+          if (gap.index >= i) continue;
+          if (gap.filled) continue;
           if (gap.type === 'bullish') {
-            bullishValues[gap.index] = 1;
+            if (!latestBullish || gap.index > latestBullish.index) latestBullish = gap;
           } else {
-            bearishValues[gap.index] = 1;
+            if (!latestBearish || gap.index > latestBearish.index) latestBearish = gap;
           }
         }
+
+        if (latestBullish) {
+          bullish[i] = 1;
+          bullishTop[i] = latestBullish.high;
+          bullishBottom[i] = latestBullish.low;
+        }
+        if (latestBearish) {
+          bearish[i] = 1;
+          bearishTop[i] = latestBearish.high;
+          bearishBottom[i] = latestBearish.low;
+        }
       }
+
       return {
         type: 'fvg',
         values: {
-          bullish: bullishValues,
-          bearish: bearishValues,
+          bullish,
+          bearish,
+          bullishTop,
+          bullishBottom,
+          bearishTop,
+          bearishBottom,
         },
       };
     },
