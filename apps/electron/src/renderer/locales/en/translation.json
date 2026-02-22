@@ -325,11 +325,11 @@
         },
         "trend": {
           "title": "Short-term Trend (EMA21)",
-          "description": "Short-term filter: LONGs only when price > EMA21, SHORTs only when price < EMA21."
+          "description": "Short-term filter: requires a confirmed candle that opened and closed entirely above EMA21 for LONGs, or entirely below for SHORTs. Crossover candles do not count."
         },
         "direction": {
           "title": "Long-term Trend (EMA200)",
-          "description": "Long-term filter: LONGs blocked in bear markets (price < EMA200), SHORTs blocked in bull markets (price > EMA200).",
+          "description": "Long-term filter: requires a confirmed candle that opened and closed entirely above EMA200 for LONGs, or entirely below for SHORTs. Crossover candles do not count.",
           "enableLongInBear": "Allow Long in Bear",
           "enableLongInBearDescription": "Override: allow LONG trades in bearish markets",
           "enableShortInBull": "Allow Short in Bull",

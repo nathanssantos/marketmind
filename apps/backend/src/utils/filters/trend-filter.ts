@@ -22,14 +22,14 @@ export const checkTrendCondition = (
   direction: 'LONG' | 'SHORT',
   emaPeriod: number = TREND_FILTER.EMA_PERIOD,
 ): TrendFilterResult => {
-  if (klines.length < 2) {
+  if (klines.length < 3) {
     return {
       isAllowed: false,
       ema21: null,
       price: null,
       isBullish: false,
       isBearish: false,
-      reason: `Insufficient klines for trend filter (${klines.length} < 2) - blocking for safety`,
+      reason: `Insufficient klines for trend filter (${klines.length} < 3) - blocking for safety`,
     };
   }
 
@@ -51,8 +51,13 @@ export const checkTrendCondition = (
 
   const ema21 = trendResult.details.ema?.value ?? null;
   const price = parseFloat(String(confirmationKline.close));
-  const isBullish = ema21 !== null && price > ema21;
-  const isBearish = ema21 !== null && price < ema21;
+  const openPrice = parseFloat(String(confirmationKline.open));
+
+  // The confirmation candle (klines[-2]) must have OPENED and CLOSED entirely above/below EMA.
+  // A candle that opened below and closed above is the crossover candle itself — not a confirmed breakout.
+  // This works correctly for both crypto (open = prev close) and stocks (gaps possible).
+  const isBullish = ema21 !== null && openPrice > ema21 && price > ema21;
+  const isBearish = ema21 !== null && openPrice < ema21 && price < ema21;
 
   if (ema21 === null) {
     return {
@@ -73,13 +78,13 @@ export const checkTrendCondition = (
   if (direction === 'LONG') {
     isAllowed = isBullish;
     reason = isAllowed
-      ? `LONG allowed: price (${formatPrice(price)}) above EMA${emaPeriod} (${formatPrice(ema21)}) - bullish trend`
-      : `LONG blocked: price (${formatPrice(price)}) below EMA${emaPeriod} (${formatPrice(ema21)}) - bearish trend`;
+      ? `LONG allowed: confirmation candle opened (${formatPrice(openPrice)}) and closed (${formatPrice(price)}) above EMA${emaPeriod} (${formatPrice(ema21)}) - breakout confirmed`
+      : `LONG blocked: confirmation candle did not open and close entirely above EMA${emaPeriod} (${formatPrice(ema21)}) - no confirmed breakout`;
   } else if (direction === 'SHORT') {
     isAllowed = isBearish;
     reason = isAllowed
-      ? `SHORT allowed: price (${formatPrice(price)}) below EMA${emaPeriod} (${formatPrice(ema21)}) - bearish trend`
-      : `SHORT blocked: price (${formatPrice(price)}) above EMA${emaPeriod} (${formatPrice(ema21)}) - bullish trend`;
+      ? `SHORT allowed: confirmation candle opened (${formatPrice(openPrice)}) and closed (${formatPrice(price)}) below EMA${emaPeriod} (${formatPrice(ema21)}) - breakout confirmed`
+      : `SHORT blocked: confirmation candle did not open and close entirely below EMA${emaPeriod} (${formatPrice(ema21)}) - no confirmed breakout`;
   } else {
     isAllowed = true;
     reason = 'Unknown direction';

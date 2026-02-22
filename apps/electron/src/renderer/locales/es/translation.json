@@ -362,11 +362,11 @@
         },
         "trend": {
           "title": "Filtro de Tendencia EMA",
-          "description": "Solo opera cuando el precio está por encima/debajo de EMA21 para la dirección correspondiente."
+          "description": "Filtro corto plazo: requiere un candle de confirmación que abrió y cerró completamente por encima de EMA21 para LONGs, o completamente por debajo para SHORTs. Los candles de cruce no cuentan."
         },
         "direction": {
           "title": "Tendencia de Largo Plazo (EMA200)",
-          "description": "Filtro de largo plazo: LONGs bloqueados en mercados bajistas (precio < EMA200), SHORTs bloqueados en mercados alcistas (precio > EMA200).",
+          "description": "Filtro largo plazo: requiere un candle de confirmación que abrió y cerró completamente por encima de EMA200 para LONGs, o completamente por debajo para SHORTs. Los candles de cruce no cuentan.",
           "enableLongInBear": "Permitir Long en Bear",
           "enableLongInBearDescription": "Override: permitir trades LONG en mercados bajistas",
           "enableShortInBull": "Permitir Short en Bull",

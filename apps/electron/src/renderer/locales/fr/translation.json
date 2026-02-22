@@ -351,11 +351,11 @@
         },
         "trend": {
           "title": "Tendance Court Terme (EMA21)",
-          "description": "Filtre court terme: LONGs uniquement quand prix > EMA21, SHORTs uniquement quand prix < EMA21."
+          "description": "Filtre court terme: nécessite une bougie de confirmation ayant ouvert et fermé entièrement au-dessus de l'EMA21 pour les LONGs, ou entièrement en dessous pour les SHORTs. Les bougies de croisement ne comptent pas."
         },
         "direction": {
           "title": "Tendance Long Terme (EMA200)",
-          "description": "Filtre long terme: LONGs bloqués en bear market (prix < EMA200), SHORTs bloqués en bull market (prix > EMA200).",
+          "description": "Filtre long terme: nécessite une bougie de confirmation ayant ouvert et fermé entièrement au-dessus de l'EMA200 pour les LONGs, ou entièrement en dessous pour les SHORTs. Les bougies de croisement ne comptent pas.",
           "enableLongInBear": "Autoriser Long en Bear",
           "enableLongInBearDescription": "Override: autoriser les trades LONG dans les marchés baissiers",
           "enableShortInBull": "Autoriser Short en Bull",

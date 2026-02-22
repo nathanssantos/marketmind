@@ -351,11 +351,11 @@
         },
         "trend": {
           "title": "Tendência Curto Prazo (EMA21)",
-          "description": "Filtro curto prazo: LONGs apenas quando preço > EMA21, SHORTs apenas quando preço < EMA21."
+          "description": "Filtro curto prazo: exige um candle de confirmação que abriu e fechou completamente acima da EMA21 para LONGs, ou completamente abaixo para SHORTs. Candles de cruzamento não contam."
         },
         "direction": {
           "title": "Tendência Longo Prazo (EMA200)",
-          "description": "Filtro longo prazo: LONGs bloqueados em bear market (preço < EMA200), SHORTs bloqueados em bull market (preço > EMA200).",
+          "description": "Filtro longo prazo: exige um candle de confirmação que abriu e fechou completamente acima da EMA200 para LONGs, ou completamente abaixo para SHORTs. Candles de cruzamento não contam.",
           "enableLongInBear": "Permitir Long em Bear",
           "enableLongInBearDescription": "Override: permitir trades LONG em mercados bearish",
           "enableShortInBull": "Permitir Short em Bull",
