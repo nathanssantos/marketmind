@@ -185,6 +185,7 @@
     "chart": {
       "tipsRealtime": "Los cambios se aplican inmediatamente con un debounce de 300ms",
       "tipsReset": "Haga clic en 'Restaurar Valores Predeterminados' para restaurar la configuración predeterminada del gráfico",
+      "displayOptions": "Opciones de Visualización",
       "chartType": "Tipo de Gráfico",
       "defaultChartType": "Tipo de Gráfico Predeterminado",
       "defaultChartTypeHelper": "El estilo de visualización predeterminado del gráfico",
@@ -319,7 +320,16 @@
           "shortTitle": "R:R Mínimo (SHORT)",
           "shortDescription": "Relación riesgo/recompensa mínima para entradas SHORT"
         },
-        "optimizedNote": "Valores optimizados mediante backtesting extensivo. Nivel de entrada 100% permite entradas en breakout con protección de trailing stop. R:R 0.75 equilibra captura de oportunidades con gestión de riesgo."
+        "optimizedNote": "Valores optimizados mediante backtesting extensivo. Nivel de entrada 100% permite entradas en breakout con protección de trailing stop. R:R 0.75 equilibra captura de oportunidades con gestión de riesgo.",
+        "chartDrag": {
+          "title": "Arrastrar Órdenes en el Gráfico",
+          "dragSl": "Arrastrar Stop Loss",
+          "dragSlDescription": "Permitir mover el stop loss arrastrando en el gráfico",
+          "slTightenOnly": "Solo Ajustar",
+          "slTightenOnlyDescription": "Solo permitir mover el stop loss más cerca del precio (asegurar ganancia / reducir riesgo)",
+          "dragTp": "Arrastrar Take Profit",
+          "dragTpDescription": "Permitir mover el take profit arrastrando en el gráfico"
+        }
       },
       "directionMode": {
         "title": "Modo de Dirección",
@@ -361,11 +371,11 @@
         },
         "trend": {
           "title": "Filtro de Tendencia EMA",
-          "description": "Solo opera cuando el precio está por encima/debajo de EMA21 para la dirección correspondiente."
+          "description": "Filtro corto plazo: requiere un candle de confirmación que abrió y cerró completamente por encima de EMA21 para LONGs, o completamente por debajo para SHORTs. Los candles de cruce no cuentan."
         },
         "direction": {
           "title": "Tendencia de Largo Plazo (EMA200)",
-          "description": "Filtro de largo plazo: LONGs bloqueados en mercados bajistas (precio < EMA200), SHORTs bloqueados en mercados alcistas (precio > EMA200).",
+          "description": "Filtro largo plazo: requiere un candle de confirmación que abrió y cerró completamente por encima de EMA200 para LONGs, o completamente por debajo para SHORTs. Los candles de cruce no cuentan.",
           "enableLongInBear": "Permitir Long en Bear",
           "enableLongInBearDescription": "Override: permitir trades LONG en mercados bajistas",
           "enableShortInBull": "Permitir Short en Bull",
@@ -429,6 +439,11 @@
         "supertrend": {
           "title": "Filtro SuperTrend",
           "description": "Solo opera en la dirección del indicador SuperTrend (detección de tendencia basada en ATR)."
+        },
+        "smartMoneyFilters": "Filtros Smart Money",
+        "fvg": {
+          "title": "Filtro FVG",
+          "description": "Solo entra en trades cerca de Fair Value Gaps no rellenos (zonas de desequilibrio institucional usadas como soporte/resistencia)."
         },
         "opportunityCost": {
           "title": "Gestión de Costo de Oportunidad",
@@ -1218,6 +1233,10 @@
       "maxDrawdown": {
         "title": "Drawdown Máximo",
         "description": "Bloquea nuevas posiciones cuando el drawdown del portafolio excede este límite"
+      },
+      "maxRiskPerStop": {
+        "title": "Riesgo Máximo por Stop",
+        "description": "Filtra operaciones donde el stop loss potencial supera este % del portafolio"
       },
       "marginTopUp": {
         "title": "Refuerzo de Margen",

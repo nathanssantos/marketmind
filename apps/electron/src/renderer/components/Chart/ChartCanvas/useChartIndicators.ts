@@ -31,45 +31,14 @@ import { useUltimateOscWorker } from '@renderer/hooks/useUltimateOscWorker';
 import { useVortexWorker } from '@renderer/hooks/useVortexWorker';
 import { useWilliamsRWorker } from '@renderer/hooks/useWilliamsRWorker';
 import { useWMAWorker } from '@renderer/hooks/useWMAWorker';
+import type { IndicatorId } from '@renderer/store/indicatorStore';
 import { useCallback, useMemo } from 'react';
 
-export type IndicatorId =
-  | 'parabolicSar'
-  | 'keltner'
-  | 'donchian'
-  | 'obv'
-  | 'cmf'
-  | 'stochRsi'
-  | 'macd'
-  | 'adx'
-  | 'williamsR'
-  | 'cci'
-  | 'supertrend'
-  | 'ichimoku'
-  | 'klinger'
-  | 'elderRay'
-  | 'aroon'
-  | 'vortex'
-  | 'mfi'
-  | 'roc'
-  | 'ao'
-  | 'tsi'
-  | 'ppo'
-  | 'cmo'
-  | 'ultimateOsc'
-  | 'dema'
-  | 'tema'
-  | 'wma'
-  | 'hma'
-  | 'pivotPoints'
-  | 'fibonacci'
-  | 'fvg'
-  | 'liquidityLevels';
+export type { IndicatorId };
 
 export interface UseChartIndicatorsProps {
   klines: Kline[];
   activeIndicators: IndicatorId[];
-  showRSI?: boolean;
 }
 
 export interface UseChartIndicatorsResult {
@@ -111,7 +80,6 @@ export interface UseChartIndicatorsResult {
 export const useChartIndicators = ({
   klines,
   activeIndicators,
-  showRSI = false,
 }: UseChartIndicatorsProps): UseChartIndicatorsResult => {
   const isIndicatorActive = useCallback(
     (id: IndicatorId): boolean => activeIndicators.includes(id),
@@ -149,7 +117,7 @@ export const useChartIndicators = ({
   const fibonacciData = useFibonacciWorker(klines, isIndicatorActive('fibonacci'));
   const fvgData = useFVGWorker(klines, isIndicatorActive('fvg'));
   const liquidityLevelsData = useLiquidityLevelsWorker(klines, isIndicatorActive('liquidityLevels'));
-  const rsiData = useRSIWorker(klines, 2, showRSI);
+  const rsiData = useRSIWorker(klines, 2, isIndicatorActive('rsi'));
 
   return useMemo(
     () => ({

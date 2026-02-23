@@ -159,6 +159,7 @@
     "chart": {
       "tipsRealtime": "Changes are applied immediately with a 300ms debounce",
       "tipsReset": "Click 'Reset to Defaults' to restore default chart settings",
+      "displayOptions": "Display Options",
       "chartType": "Chart Type",
       "defaultChartType": "Default Chart Type",
       "defaultChartTypeHelper": "The default chart visualization style",
@@ -282,7 +283,16 @@
           "shortTitle": "Min R:R (SHORT)",
           "shortDescription": "Minimum risk/reward ratio required for SHORT entries"
         },
-        "optimizedNote": "Values optimized through extensive backtesting. Entry Level 100% allows breakout entries with trailing stop protection. R:R 0.75 balances opportunity capture with risk management."
+        "optimizedNote": "Values optimized through extensive backtesting. Entry Level 100% allows breakout entries with trailing stop protection. R:R 0.75 balances opportunity capture with risk management.",
+        "chartDrag": {
+          "title": "Chart Order Dragging",
+          "dragSl": "Drag Stop Loss",
+          "dragSlDescription": "Allow moving the stop loss by dragging on the chart",
+          "slTightenOnly": "Tighten Only",
+          "slTightenOnlyDescription": "Only allow moving the stop loss closer to price (lock in profit / reduce risk)",
+          "dragTp": "Drag Take Profit",
+          "dragTpDescription": "Allow moving the take profit by dragging on the chart"
+        }
       },
       "directionMode": {
         "title": "Direction Mode",
@@ -324,11 +334,11 @@
         },
         "trend": {
           "title": "Short-term Trend (EMA21)",
-          "description": "Short-term filter: LONGs only when price > EMA21, SHORTs only when price < EMA21."
+          "description": "Short-term filter: requires a confirmed candle that opened and closed entirely above EMA21 for LONGs, or entirely below for SHORTs. Crossover candles do not count."
         },
         "direction": {
           "title": "Long-term Trend (EMA200)",
-          "description": "Long-term filter: LONGs blocked in bear markets (price < EMA200), SHORTs blocked in bull markets (price > EMA200).",
+          "description": "Long-term filter: requires a confirmed candle that opened and closed entirely above EMA200 for LONGs, or entirely below for SHORTs. Crossover candles do not count.",
           "enableLongInBear": "Allow Long in Bear",
           "enableLongInBearDescription": "Override: allow LONG trades in bearish markets",
           "enableShortInBull": "Allow Short in Bull",
@@ -392,6 +402,11 @@
         "supertrend": {
           "title": "SuperTrend Filter",
           "description": "Only trade in the direction of SuperTrend indicator (ATR-based trend detection)."
+        },
+        "smartMoneyFilters": "Smart Money Filters",
+        "fvg": {
+          "title": "FVG Filter",
+          "description": "Only enter trades near unfilled Fair Value Gaps (institutional imbalance zones used as support/resistance)."
         }
       },
       "opportunityCost": {
@@ -1156,6 +1171,10 @@
       "maxDrawdown": {
         "title": "Max Drawdown",
         "description": "Blocks new positions when portfolio drawdown exceeds this limit"
+      },
+      "maxRiskPerStop": {
+        "title": "Max Risk Per Stop",
+        "description": "Filters trades where the potential stop loss exceeds this % of the portfolio"
       },
       "marginTopUp": {
         "title": "Margin Top-Up",

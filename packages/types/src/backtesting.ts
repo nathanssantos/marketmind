@@ -62,6 +62,8 @@ export interface BacktestConfig {
   bollingerSqueezePeriod?: number; // Bollinger Bands period (default: 20)
   bollingerSqueezeStdDev?: number; // Bollinger Bands standard deviation (default: 2.0)
   useVwapFilter?: boolean; // Only LONG above VWAP, SHORT below VWAP
+  useFvgFilter?: boolean; // Only enter trades near unfilled Fair Value Gaps (S/R zones)
+  fvgFilterProximityPercent?: number; // % proximity tolerance for FVG zones (default: 0.5%)
   useConfluenceScoring?: boolean; // Use confluence scoring system
   confluenceMinScore?: number; // Minimum confluence score to allow trade (default: 60)
 

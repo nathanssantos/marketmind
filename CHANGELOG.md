@@ -9,6 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.53.0] - 2026-02-23
+
+### Added
+- **FVG Filter**: Fair Value Gap filter for trade entry validation (`useFvgFilter`, `fvgFilterProximityPercent`) with proximity-based zone check and wick-touch allowance
+- **Max Risk Per Stop**: new configuration field to cap risk per stop level
+- **SL/TP Drag Toggles**: independent toggles in WatcherManager to enable/disable stop loss and take profit dragging on the chart
+- **SL Tighten-Only Mode**: sub-toggle (visible when SL drag is enabled) that restricts SL movement to tightening only — moves SL closer to price to lock in profit or reduce risk; LONG SL can only move up, SHORT SL can only move down
+- **FVG Rejection Setup**: backtesting setup for FVG rejection entries
+- **Compare FVG Filter script**: new backtest script to compare strategies with/without FVG filter
+- **Audit script**: `fix-missing-tp.ts` to surgically recreate only missing TP orders without touching valid SL orders
+
+### Fixed
+- **Fibonacci nearest mode**: swing detection now compares the two most recent ZigZag pivots and returns the one with the higher price (for highs) or lower price (for lows) — prevents a small pullback pivot from being used as the swing high/low when a larger apex is nearby
+- **Stop placement**: stop loss now anchors at the correct apex swing high (closest significant top with offset), not at a shallow recent pivot in the middle of candles
+- **SL drag validation**: stop loss can now be placed above entry price (profit-protecting SL) — previous validation incorrectly blocked SL moves past entry
+- **FVG filter**: allow entry when previous candle wick touched the FVG zone
+- **FVG renderer**: fixed viewport culling — all unfilled gaps now render regardless of creation index
+- **IndicatorEngine FVG zones**: exposed per-index zone prices (`bullishTop/Bottom`, `bearishTop/Bottom`) for accurate filter checks
+- **SL drag toggle fallthrough**: clicking a disabled SL/TP line no longer falls through to entry drag
+- **Active Watchers accordion**: now collapsed by default
+
+### Refactored
+- Removed localStorage for preferences — all user preferences now persisted to backend DB via tRPC
+- Moved grid, price line and crosshair toggles to settings modal with toolbar separators
+- Enhanced trend filter logic
+- Removed `disableTimeSync: true` from exchange clients
+
+---
+
 ## [0.52.1] - 2026-02-20
 
 ### Fixed

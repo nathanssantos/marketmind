@@ -1,10 +1,12 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import type { IndicatorId } from '@renderer/store/indicatorStore';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { CHART_CONFIG } from '@shared/constants';
 import { useEffect } from 'react';
-import type { IndicatorId } from './useChartIndicators';
 
 const PANEL_INDICATORS = [
+  'stochastic',
+  'rsi',
   'obv',
   'cmf',
   'stochRsi',
@@ -29,8 +31,6 @@ export type PanelIndicatorId = (typeof PANEL_INDICATORS)[number];
 
 export interface UseChartPanelHeightsProps {
   manager: CanvasManager | null;
-  showStochastic: boolean;
-  showRSI: boolean;
   showEventRow: boolean;
   activeIndicators: IndicatorId[];
   advancedConfig?: AdvancedControlsConfig;
@@ -38,8 +38,6 @@ export interface UseChartPanelHeightsProps {
 
 export const useChartPanelHeights = ({
   manager,
-  showStochastic,
-  showRSI,
   showEventRow,
   activeIndicators,
   advancedConfig,
@@ -54,19 +52,20 @@ export const useChartPanelHeights = ({
 
   useEffect(() => {
     if (!manager) return;
-    const height = showStochastic ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0;
+    const height = activeIndicators.includes('stochastic') ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0;
     manager.setStochasticPanelHeight(height);
-  }, [manager, showStochastic]);
+  }, [manager, activeIndicators]);
 
   useEffect(() => {
     if (!manager) return;
-    const height = showRSI ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
+    const height = activeIndicators.includes('rsi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
     manager.setRSIPanelHeight(height);
-  }, [manager, showRSI]);
+  }, [manager, activeIndicators]);
 
   useEffect(() => {
     if (!manager) return;
     for (const indicator of PANEL_INDICATORS) {
+      if (indicator === 'stochastic' || indicator === 'rsi') continue;
       const isActive = activeIndicators.includes(indicator as IndicatorId);
       const height = isActive ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
       manager.setPanelHeight(indicator, height);

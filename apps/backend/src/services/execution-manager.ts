@@ -165,6 +165,7 @@ export async function closeExecutionWithPnL(params: CloseExecutionParams): Promi
       pnl: pnl.toString(),
       pnlPercent: pnlPercent.toString(),
       exitFee: exitFee.toString(),
+      fees: (parseFloat(execution.entryFee || '0') + exitFee).toString(),
       closedAt: new Date(),
       stopLossAlgoId: null,
       stopLossOrderId: null,

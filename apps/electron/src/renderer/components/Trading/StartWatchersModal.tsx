@@ -1,6 +1,7 @@
 import { Dialog } from '@/renderer/components/ui/dialog';
 import { Box, CloseButton, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
+import { DEFAULT_TIMEFRAME } from '@renderer/constants/defaults';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
@@ -29,7 +30,7 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
   const walletId = activeWallet?.id ?? '';
 
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
-  const [timeframe, setTimeframe] = useState<TimeInterval>('12h');
+  const [timeframe, setTimeframe] = useState<TimeInterval>(DEFAULT_TIMEFRAME);
   const [count, setCount] = useState(20);
 
   const { startWatchersBulk, isStartingWatchersBulk } = useBackendAutoTrading(walletId);

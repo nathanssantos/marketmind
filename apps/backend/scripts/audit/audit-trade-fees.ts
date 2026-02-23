@@ -1,7 +1,7 @@
 import { calculateTotalFees } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../src/db';
-import { tradeExecutions, wallets } from '../src/db/schema';
+import { db } from '../../src/db/client';
+import { tradeExecutions, wallets } from '../../src/db/schema';
 
 interface FeeAuditResult {
   tradeId: string;

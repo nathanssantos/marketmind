@@ -2,7 +2,7 @@ import { Box, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
 import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
-import { useLocalStorage } from '@renderer/hooks/useLocalStorage';
+import { useUIPref } from '@renderer/store/preferencesStore';
 import type { FrontendLogEntry } from '@renderer/hooks/useWebSocket';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,8 +68,8 @@ const LogsTabComponent = () => {
   const { logs, clearLogs } = useAutoTradingLogs(activeWalletId || '', hasActiveWatchers);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fontSizeIndex, setFontSizeIndex] = useLocalStorage('marketmind:logsTab:fontSizeIndex', DEFAULT_FONT_SIZE_INDEX);
-  const [autoScroll, setAutoScroll] = useLocalStorage('marketmind:logsTab:autoScroll', true);
+  const [fontSizeIndex, setFontSizeIndex] = useUIPref<number>('logsTabFontSizeIndex', DEFAULT_FONT_SIZE_INDEX);
+  const [autoScroll, setAutoScroll] = useUIPref<boolean>('logsTabAutoScroll', true);
 
   const fontSize = FONT_SIZE_STEPS[fontSizeIndex] ?? 12;
 

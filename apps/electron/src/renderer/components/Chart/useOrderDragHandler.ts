@@ -9,6 +9,9 @@ interface OrderDragConfig {
   priceToY: (price: number) => number;
   yToPrice: (y: number) => number;
   enabled: boolean;
+  slDragEnabled?: boolean;
+  tpDragEnabled?: boolean;
+  slTightenOnly?: boolean;
   getOrderAtPosition: (x: number, y: number) => Order | null;
   markDirty?: (layer: keyof DirtyFlags) => void;
 }
@@ -19,6 +22,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
   const [dragType, setDragType] = useState<DragType | null>(null);
   const previewPriceRef = useRef<number | null>(null);
+  const initialSlPriceRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
 
   const handleSLTPMouseDown = useCallback(
@@ -28,6 +32,9 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       sltpInfo: { orderId: string; type: 'stopLoss' | 'takeProfit'; price: number }
     ): boolean => {
       if (!config.enabled) return false;
+      // Consume click even when disabled — prevents fallthrough to entry drag
+      if (sltpInfo.type === 'stopLoss' && config.slDragEnabled === false) return true;
+      if (sltpInfo.type === 'takeProfit' && config.tpDragEnabled === false) return true;
 
       const order = config.orders.find((o) => getOrderId(o) === sltpInfo.orderId);
       if (!order || !isOrderActive(order)) return false;
@@ -35,6 +42,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       setDraggedOrder(order);
       setDragType(sltpInfo.type);
       previewPriceRef.current = config.yToPrice(y);
+      if (sltpInfo.type === 'stopLoss') initialSlPriceRef.current = sltpInfo.price;
       config.markDirty?.('overlays');
       return true;
     },
@@ -85,7 +93,14 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
         }
 
         if (dragType === 'stopLoss' || dragType === 'takeProfit') {
-          previewPriceRef.current = currentPrice;
+          let finalPrice = currentPrice;
+          if (dragType === 'stopLoss' && config.slTightenOnly && initialSlPriceRef.current !== null) {
+            const initialSl = initialSlPriceRef.current;
+            finalPrice = isOrderLong(draggedOrder)
+              ? Math.max(currentPrice, initialSl)
+              : Math.min(currentPrice, initialSl);
+          }
+          previewPriceRef.current = finalPrice;
           config.markDirty?.('overlays');
           return;
         }
@@ -101,7 +116,11 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
             (isOrderLong(draggedOrder) && isMovingUp) ||
             (isOrderShort(draggedOrder) && !isMovingUp);
 
-          setDragType(isCreatingTakeProfit ? 'takeProfit' : 'stopLoss');
+          const candidateType = isCreatingTakeProfit ? 'takeProfit' : 'stopLoss';
+          if (candidateType === 'stopLoss' && config.slDragEnabled === false) return;
+          if (candidateType === 'takeProfit' && config.tpDragEnabled === false) return;
+
+          setDragType(candidateType);
           previewPriceRef.current = currentPrice;
           config.markDirty?.('overlays');
           return;
@@ -123,6 +142,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       setDraggedOrder(null);
       setDragType(null);
       previewPriceRef.current = null;
+      initialSlPriceRef.current = null;
       return;
     }
 
@@ -130,6 +150,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       setDraggedOrder(null);
       setDragType(null);
       previewPriceRef.current = null;
+      initialSlPriceRef.current = null;
       return;
     }
 
@@ -141,10 +162,36 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       setDraggedOrder(null);
       setDragType(null);
       previewPriceRef.current = null;
+      initialSlPriceRef.current = null;
       return;
     }
 
     if (dragType === 'stopLoss' || dragType === 'takeProfit') {
+      const entryPrice = getOrderPrice(draggedOrder);
+      const isLong = isOrderLong(draggedOrder);
+      const isValidSl = dragType === 'stopLoss';
+      const isValidTp = dragType === 'takeProfit' && (isLong ? previewPrice > entryPrice : previewPrice < entryPrice);
+
+      if (!isValidSl && !isValidTp) {
+        setDraggedOrder(null);
+        setDragType(null);
+        previewPriceRef.current = null;
+        initialSlPriceRef.current = null;
+        return;
+      }
+
+      if (dragType === 'stopLoss' && config.slTightenOnly && initialSlPriceRef.current !== null) {
+        const initialSl = initialSlPriceRef.current;
+        const isTighter = isLong ? previewPrice >= initialSl : previewPrice <= initialSl;
+        if (!isTighter) {
+          setDraggedOrder(null);
+          setDragType(null);
+          previewPriceRef.current = null;
+          initialSlPriceRef.current = null;
+          return;
+        }
+      }
+
       const relatedOrders = config.orders.filter(
         (order) =>
           order.symbol === draggedOrder.symbol &&
@@ -162,6 +209,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     setDraggedOrder(null);
     setDragType(null);
     previewPriceRef.current = null;
+    initialSlPriceRef.current = null;
   }, [draggedOrder, dragType, config]);
 
   const cancelDrag = useCallback((): void => {
@@ -172,6 +220,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     setDraggedOrder(null);
     setDragType(null);
     previewPriceRef.current = null;
+    initialSlPriceRef.current = null;
   }, []);
 
   useEffect(() => {

@@ -67,7 +67,7 @@ const handleError = (error: Error, info: { componentStack?: string | null }) => 
       timestamp: new Date().toISOString(),
       url: window.location.href,
     };
-    localStorage.setItem('marketmind:lastError', JSON.stringify(errorLog));
+    console.error('[ErrorBoundary] Error log:', errorLog);
   } catch (e) {
     console.error('[ErrorBoundary] Failed to save error log:', e);
   }

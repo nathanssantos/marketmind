@@ -4,7 +4,7 @@ import { Switch } from '@/renderer/components/ui/switch';
 import { DEFAULT_AUTO_UPDATE_SETTINGS } from '@/renderer/constants/defaults';
 import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useUIPref } from '@/renderer/store/preferencesStore';
 import { Box, Grid, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuMoon, LuRefreshCw, LuSun } from 'react-icons/lu';
@@ -15,9 +15,9 @@ export const GeneralTab = () => {
   const { t } = useTranslation();
   const { colorMode, setColorMode } = useColorMode();
 
-  const [autoCheckUpdates, setAutoCheckUpdates] = useLocalStorage<boolean>('autoCheckUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
-  const [autoDownloadUpdates, setAutoDownloadUpdates] = useLocalStorage<boolean>('autoDownloadUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
-  const [updateCheckInterval, setUpdateCheckInterval] = useLocalStorage<number>('updateCheckInterval', DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
+  const [autoCheckUpdates, setAutoCheckUpdates] = useUIPref<boolean>('autoCheckUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
+  const [autoDownloadUpdates, setAutoDownloadUpdates] = useUIPref<boolean>('autoDownloadUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
+  const [updateCheckInterval, setUpdateCheckInterval] = useUIPref<number>('updateCheckInterval', DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
 
   const { status, checkForUpdates, startAutoCheck, stopAutoCheck } = useAutoUpdate();
 

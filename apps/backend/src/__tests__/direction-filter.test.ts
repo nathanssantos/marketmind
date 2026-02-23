@@ -27,6 +27,16 @@ const createKlines = (count: number, lastClose = 100): Kline[] =>
     createKline(i === count - 1 ? lastClose : 100, i),
   );
 
+// Sets klines[-2] (prevIndex) to prevClose, and klines[-1] to lastClose.
+// Used for tests that need to control the confirmation candle value.
+const createKlinesPrev = (count: number, prevClose: number, lastClose = prevClose): Kline[] =>
+  Array.from({ length: count }, (_, i) =>
+    createKline(
+      i === count - 1 ? lastClose : i === count - 2 ? prevClose : 100,
+      i,
+    ),
+  );
+
 const buildEmaArray = (length: number, lastValue: number, slopeDirection: 'up' | 'down' | 'flat' = 'flat'): (number | null)[] => {
   const arr: (number | null)[] = new Array(length).fill(null);
   const lookback = DIRECTION_FILTER.SLOPE_LOOKBACK;
@@ -93,7 +103,7 @@ describe('checkDirectionFilter', () => {
     it('should return soft pass when EMA200 is NaN', () => {
       const klines = createKlines(220, 100);
       const emaValues = new Array(220).fill(100);
-      emaValues[219] = NaN;
+      emaValues[218] = NaN;
       vi.mocked(calculateEMA).mockReturnValue(emaValues);
       const result = checkDirectionFilter(klines, 'LONG');
 
@@ -103,7 +113,7 @@ describe('checkDirectionFilter', () => {
     it('should return soft pass when EMA200 is 0', () => {
       const klines = createKlines(220, 100);
       const emaValues = new Array(220).fill(100);
-      emaValues[219] = 0;
+      emaValues[218] = 0;
       vi.mocked(calculateEMA).mockReturnValue(emaValues);
       const result = checkDirectionFilter(klines, 'LONG');
 
@@ -176,7 +186,7 @@ describe('checkDirectionFilter', () => {
 
   describe('NEUTRAL market', () => {
     it('should allow LONG when price above EMA with flat slope (classified BULLISH)', () => {
-      const klines = createKlines(220, 101);
+      const klines = createKlinesPrev(220, 101);
       vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'flat'));
       const result = checkDirectionFilter(klines, 'LONG');
 
@@ -185,7 +195,7 @@ describe('checkDirectionFilter', () => {
     });
 
     it('should allow SHORT when price below EMA with flat slope (classified BEARISH)', () => {
-      const klines = createKlines(220, 99);
+      const klines = createKlinesPrev(220, 99);
       vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'flat'));
       const result = checkDirectionFilter(klines, 'SHORT');
 
@@ -196,7 +206,7 @@ describe('checkDirectionFilter', () => {
 
   describe('price vs EMA200 percent', () => {
     it('should calculate correct percentage difference', () => {
-      const klines = createKlines(220, 110);
+      const klines = createKlinesPrev(220, 110);
       vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
       const result = checkDirectionFilter(klines, 'LONG');
 
@@ -206,8 +216,8 @@ describe('checkDirectionFilter', () => {
 
   describe('string close values', () => {
     it('should handle string close values in klines', () => {
-      const klines = createKlines(220, 110);
-      klines[219]!.close = '110' as unknown as string;
+      const klines = createKlinesPrev(220, 110);
+      klines[218]!.close = '110' as unknown as string;
       vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
       const result = checkDirectionFilter(klines, 'LONG');
 
@@ -218,7 +228,7 @@ describe('checkDirectionFilter', () => {
   describe('DIRECTION_FILTER constants', () => {
     it('should export correct default values', () => {
       expect(DIRECTION_FILTER.EMA_PERIOD).toBe(200);
-      expect(DIRECTION_FILTER.MIN_KLINES_REQUIRED).toBe(210);
+      expect(DIRECTION_FILTER.MIN_KLINES_REQUIRED).toBe(212);
       expect(DIRECTION_FILTER.SLOPE_LOOKBACK).toBe(20);
       expect(DIRECTION_FILTER.SLOPE_THRESHOLD).toBe(0.001);
     });

@@ -1,5 +1,5 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
-import { useLocalStorage } from '@/renderer/hooks/useLocalStorage';
+import { useUIPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -26,52 +26,20 @@ interface MainLayoutProps {
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
-  showVolume: boolean;
-  showGrid: boolean;
-  showCurrentPriceLine: boolean;
-  showCrosshair: boolean;
-  showProfitLossAreas: boolean;
-  showFibonacciProjection: boolean;
-  showMeasurementRuler: boolean;
-  showMeasurementArea: boolean;
-  showTooltip: boolean;
-  showStochastic: boolean;
-  showRSI: boolean;
-  showBollingerBands: boolean;
-  showATR: boolean;
-  showVWAP: boolean;
-  showActivityIndicator: boolean;
-  showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
-  onShowActivityIndicatorChange: (show: boolean) => void;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onShowVolumeChange: (show: boolean) => void;
-  onShowGridChange: (show: boolean) => void;
-  onShowCurrentPriceLineChange: (show: boolean) => void;
-  onShowCrosshairChange: (show: boolean) => void;
-  onShowProfitLossAreasChange: (show: boolean) => void;
-  onShowFibonacciProjectionChange: (show: boolean) => void;
-  onShowMeasurementRulerChange: (show: boolean) => void;
-  onShowMeasurementAreaChange: (show: boolean) => void;
-  onShowTooltipChange: (show: boolean) => void;
-  onShowStochasticChange: (show: boolean) => void;
-  onShowRSIChange: (show: boolean) => void;
-  onShowBollingerBandsChange: (show: boolean) => void;
-  onShowATRChange: (show: boolean) => void;
-  onShowVWAPChange: (show: boolean) => void;
-  onShowEventRowChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
 const MIN_TRADING_WIDTH = 300;
 const MAX_TRADING_WIDTH = 600;
-const DEFAULT_TRADING_WIDTH = 400;
+const DEFAULT_TRADING_WIDTH = MIN_TRADING_WIDTH;
 
 const MIN_MARKET_WIDTH = 300;
 const MAX_MARKET_WIDTH = 500;
-const DEFAULT_MARKET_WIDTH = 350;
+const DEFAULT_MARKET_WIDTH = MIN_MARKET_WIDTH;
 
 export const MainLayout = ({
   children,
@@ -84,46 +52,14 @@ export const MainLayout = ({
   marketType,
   onMarketTypeChange,
   timeframe,
-  showVolume,
-  showGrid,
-  showCurrentPriceLine,
-  showCrosshair,
-  showProfitLossAreas,
-  showFibonacciProjection,
-  showMeasurementRuler,
-  showMeasurementArea,
-  showTooltip,
-  showStochastic,
-  showRSI,
-  showBollingerBands,
-  showATR,
-  showVWAP,
-  showActivityIndicator,
-  showEventRow,
   movingAverages,
-  onShowActivityIndicatorChange,
   onSymbolChange,
   onTimeframeChange,
-  onShowVolumeChange,
-  onShowGridChange,
-  onShowCurrentPriceLineChange,
-  onShowCrosshairChange,
-  onShowProfitLossAreasChange,
-  onShowFibonacciProjectionChange,
-  onShowMeasurementRulerChange,
-  onShowMeasurementAreaChange,
-  onShowTooltipChange,
-  onShowStochasticChange,
-  onShowRSIChange,
-  onShowBollingerBandsChange,
-  onShowATRChange,
-  onShowVWAPChange,
-  onShowEventRowChange,
   onMovingAveragesChange,
   onNavigateToSymbol,
 }: MainLayoutProps) => {
-  const [tradingWidth, setTradingWidth] = useLocalStorage('trading-sidebar-width', DEFAULT_TRADING_WIDTH);
-  const [marketWidth, setMarketWidth] = useLocalStorage('market-sidebar-width', DEFAULT_MARKET_WIDTH);
+  const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
+  const [marketWidth, setMarketWidth] = useUIPref('marketSidebarWidth', DEFAULT_MARKET_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [isResizingMarket, setIsResizingMarket] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -236,39 +172,7 @@ export const MainLayout = ({
           >
             <ChartToolsToolbar
               symbol={symbol}
-              showGrid={showGrid}
-              showCurrentPriceLine={showCurrentPriceLine}
-              showCrosshair={showCrosshair}
-              showProfitLossAreas={showProfitLossAreas}
-              showFibonacciProjection={showFibonacciProjection}
-              showMeasurementRuler={showMeasurementRuler}
-              showMeasurementArea={showMeasurementArea}
-              showTooltip={showTooltip}
-              showVolume={showVolume}
-              showStochastic={showStochastic}
-              showRSI={showRSI}
-              showBollingerBands={showBollingerBands}
-              showATR={showATR}
-              showVWAP={showVWAP}
-              showActivityIndicator={showActivityIndicator}
-              showEventRow={showEventRow}
               movingAverages={movingAverages}
-              onShowActivityIndicatorChange={onShowActivityIndicatorChange}
-              onShowGridChange={onShowGridChange}
-              onShowCurrentPriceLineChange={onShowCurrentPriceLineChange}
-              onShowCrosshairChange={onShowCrosshairChange}
-              onShowProfitLossAreasChange={onShowProfitLossAreasChange}
-              onShowFibonacciProjectionChange={onShowFibonacciProjectionChange}
-              onShowMeasurementRulerChange={onShowMeasurementRulerChange}
-              onShowMeasurementAreaChange={onShowMeasurementAreaChange}
-              onShowTooltipChange={onShowTooltipChange}
-              onShowVolumeChange={onShowVolumeChange}
-              onShowStochasticChange={onShowStochasticChange}
-              onShowRSIChange={onShowRSIChange}
-              onShowBollingerBandsChange={onShowBollingerBandsChange}
-              onShowATRChange={onShowATRChange}
-              onShowVWAPChange={onShowVWAPChange}
-              onShowEventRowChange={onShowEventRowChange}
               onMovingAveragesChange={onMovingAveragesChange}
             />
             {children}

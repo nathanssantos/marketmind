@@ -211,6 +211,7 @@ describe('Execution Manager - Database Operations', () => {
       leverage: 10,
       stopLoss: '48000',
       takeProfit: '55000',
+      entryFee: '5',
       stopLossAlgoId: 12345,
       takeProfitAlgoId: 67890,
       ...overrides,
@@ -373,6 +374,7 @@ describe('Execution Manager - Database Operations', () => {
 
       expect(result).not.toBeNull();
       expect(parseFloat(result?.exitFee || '0')).toBe(10);
+      expect(parseFloat(result?.fees || '0')).toBe(15);
     });
 
     it('should return null for non-existent execution', async () => {

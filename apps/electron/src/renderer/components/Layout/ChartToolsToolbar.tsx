@@ -1,12 +1,9 @@
-import { Box, HStack, IconButton } from '@chakra-ui/react';
+import { Box, HStack, IconButton, Separator } from '@chakra-ui/react';
+import { useChartPref } from '@renderer/store/preferencesStore';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LuActivity,
   LuCalendarDays,
-  LuCrosshair,
-  LuDollarSign,
-  LuGrid3X3,
   LuMessageSquare,
   LuRectangleHorizontal,
   LuRuler,
@@ -20,80 +17,23 @@ import { TrailingStopPopover } from './TrailingStopPopover';
 
 export interface ChartToolsToolbarProps {
   symbol?: string;
-  showGrid: boolean;
-  showCurrentPriceLine: boolean;
-  showCrosshair: boolean;
-  showProfitLossAreas: boolean;
-  showFibonacciProjection: boolean;
-  showMeasurementRuler: boolean;
-  showMeasurementArea: boolean;
-  showTooltip: boolean;
-  showVolume: boolean;
-  showStochastic: boolean;
-  showRSI: boolean;
-  showBollingerBands: boolean;
-  showATR: boolean;
-  showVWAP: boolean;
-  showActivityIndicator: boolean;
-  showEventRow: boolean;
   movingAverages: MovingAverageConfig[];
-  onShowActivityIndicatorChange: (show: boolean) => void;
-  onShowGridChange: (show: boolean) => void;
-  onShowCurrentPriceLineChange: (show: boolean) => void;
-  onShowCrosshairChange: (show: boolean) => void;
-  onShowProfitLossAreasChange: (show: boolean) => void;
-  onShowFibonacciProjectionChange: (show: boolean) => void;
-  onShowMeasurementRulerChange: (show: boolean) => void;
-  onShowMeasurementAreaChange: (show: boolean) => void;
-  onShowTooltipChange: (show: boolean) => void;
-  onShowVolumeChange: (show: boolean) => void;
-  onShowStochasticChange: (show: boolean) => void;
-  onShowRSIChange: (show: boolean) => void;
-  onShowBollingerBandsChange: (show: boolean) => void;
-  onShowATRChange: (show: boolean) => void;
-  onShowVWAPChange: (show: boolean) => void;
-  onShowEventRowChange: (show: boolean) => void;
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
 }
 
 export const ChartToolsToolbar = memo(({
   symbol,
-  showGrid,
-  showCurrentPriceLine,
-  showCrosshair,
-  showProfitLossAreas,
-  showFibonacciProjection,
-  showMeasurementRuler,
-  showMeasurementArea,
-  showTooltip,
-  showVolume,
-  showStochastic,
-  showRSI,
-  showBollingerBands,
-  showATR,
-  showVWAP,
-  showActivityIndicator,
-  showEventRow,
   movingAverages,
-  onShowActivityIndicatorChange,
-  onShowGridChange,
-  onShowCurrentPriceLineChange,
-  onShowCrosshairChange,
-  onShowProfitLossAreasChange,
-  onShowFibonacciProjectionChange,
-  onShowMeasurementRulerChange,
-  onShowMeasurementAreaChange,
-  onShowTooltipChange,
-  onShowVolumeChange,
-  onShowStochasticChange,
-  onShowRSIChange,
-  onShowBollingerBandsChange,
-  onShowATRChange,
-  onShowVWAPChange,
-  onShowEventRowChange,
   onMovingAveragesChange,
 }: ChartToolsToolbarProps) => {
   const { t } = useTranslation();
+
+  const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', true);
+  const [showFibonacciProjection, setShowFibonacciProjection] = useChartPref('showFibonacciProjection', true);
+  const [showMeasurementRuler, setShowMeasurementRuler] = useChartPref('showMeasurementRuler', false);
+  const [showMeasurementArea, setShowMeasurementArea] = useChartPref('showMeasurementArea', false);
+  const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
+  const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
 
   const toggleMA = useCallback((index: number): void => {
     const updated = movingAverages.map((ma, i) =>
@@ -102,16 +42,12 @@ export const ChartToolsToolbar = memo(({
     onMovingAveragesChange(updated);
   }, [movingAverages, onMovingAveragesChange]);
 
-  const handleGridToggle = useCallback(() => onShowGridChange(!showGrid), [showGrid, onShowGridChange]);
-  const handlePriceLineToggle = useCallback(() => onShowCurrentPriceLineChange(!showCurrentPriceLine), [showCurrentPriceLine, onShowCurrentPriceLineChange]);
-  const handleCrosshairToggle = useCallback(() => onShowCrosshairChange(!showCrosshair), [showCrosshair, onShowCrosshairChange]);
-  const handleProfitLossToggle = useCallback(() => onShowProfitLossAreasChange(!showProfitLossAreas), [showProfitLossAreas, onShowProfitLossAreasChange]);
-  const handleFibToggle = useCallback(() => onShowFibonacciProjectionChange(!showFibonacciProjection), [showFibonacciProjection, onShowFibonacciProjectionChange]);
-  const handleRulerToggle = useCallback(() => onShowMeasurementRulerChange(!showMeasurementRuler), [showMeasurementRuler, onShowMeasurementRulerChange]);
-  const handleAreaToggle = useCallback(() => onShowMeasurementAreaChange(!showMeasurementArea), [showMeasurementArea, onShowMeasurementAreaChange]);
-  const handleTooltipToggle = useCallback(() => onShowTooltipChange(!showTooltip), [showTooltip, onShowTooltipChange]);
-  const handleActivityIndicatorToggle = useCallback(() => onShowActivityIndicatorChange(!showActivityIndicator), [showActivityIndicator, onShowActivityIndicatorChange]);
-  const handleEventRowToggle = useCallback(() => onShowEventRowChange(!showEventRow), [showEventRow, onShowEventRowChange]);
+  const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
+  const handleFibToggle = useCallback(() => setShowFibonacciProjection(!showFibonacciProjection), [showFibonacciProjection, setShowFibonacciProjection]);
+  const handleRulerToggle = useCallback(() => setShowMeasurementRuler(!showMeasurementRuler), [showMeasurementRuler, setShowMeasurementRuler]);
+  const handleAreaToggle = useCallback(() => setShowMeasurementArea(!showMeasurementArea), [showMeasurementArea, setShowMeasurementArea]);
+  const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
+  const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
 
   return (
     <Box
@@ -129,54 +65,10 @@ export const ChartToolsToolbar = memo(({
     >
       <HStack gap={1}>
         <IndicatorTogglePopover
-          showVolume={showVolume}
-          showStochastic={showStochastic}
-          showRSI={showRSI}
-          showBollingerBands={showBollingerBands}
-          showATR={showATR}
-          showVWAP={showVWAP}
           movingAverages={movingAverages}
-          onShowVolumeChange={onShowVolumeChange}
-          onShowStochasticChange={onShowStochasticChange}
-          onShowRSIChange={onShowRSIChange}
-          onShowBollingerBandsChange={onShowBollingerBandsChange}
-          onShowATRChange={onShowATRChange}
-          onShowVWAPChange={onShowVWAPChange}
           onMovingAverageToggle={toggleMA}
         />
-        <TooltipWrapper label={t('chart.controls.grid')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.grid')}
-            onClick={handleGridToggle}
-            colorPalette={showGrid ? 'blue' : 'gray'}
-            variant={showGrid ? 'solid' : 'ghost'}
-          >
-            <LuGrid3X3 />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.currentPrice')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.currentPrice')}
-            onClick={handlePriceLineToggle}
-            colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
-            variant={showCurrentPriceLine ? 'solid' : 'ghost'}
-          >
-            <LuDollarSign />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.crosshair')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.crosshair')}
-            onClick={handleCrosshairToggle}
-            colorPalette={showCrosshair ? 'blue' : 'gray'}
-            variant={showCrosshair ? 'solid' : 'ghost'}
-          >
-            <LuCrosshair />
-          </IconButton>
-        </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
         <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="bottom">
           <IconButton
             size="2xs"
@@ -199,6 +91,7 @@ export const ChartToolsToolbar = memo(({
             <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
           </IconButton>
         </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
         <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow placement="bottom">
           <IconButton
             size="2xs"
@@ -221,6 +114,7 @@ export const ChartToolsToolbar = memo(({
             <LuScan />
           </IconButton>
         </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
         <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="bottom">
           <IconButton
             size="2xs"
@@ -230,17 +124,6 @@ export const ChartToolsToolbar = memo(({
             variant={showTooltip ? 'solid' : 'ghost'}
           >
             <LuMessageSquare />
-          </IconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.activityIndicator')} showArrow placement="bottom">
-          <IconButton
-            size="2xs"
-            aria-label={t('chart.controls.activityIndicator')}
-            onClick={handleActivityIndicatorToggle}
-            colorPalette={showActivityIndicator ? 'blue' : 'gray'}
-            variant={showActivityIndicator ? 'solid' : 'ghost'}
-          >
-            <LuActivity />
           </IconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="bottom">

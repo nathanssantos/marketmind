@@ -1,5 +1,6 @@
 import { Slider } from '@/renderer/components/ui/slider';
-import { Box, Grid, HStack, Stack, Text } from '@chakra-ui/react';
+import { Switch } from '@/renderer/components/ui/switch';
+import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
 
@@ -13,6 +14,12 @@ export interface EntrySettingsSectionProps {
   minRiskRewardRatioShort: number;
   onMinRiskRewardShortChange: (value: number) => void;
   isPending: boolean;
+  dragSlEnabled: boolean;
+  onDragSlEnabledChange: (enabled: boolean) => void;
+  dragTpEnabled: boolean;
+  onDragTpEnabledChange: (enabled: boolean) => void;
+  slTightenOnly: boolean;
+  onSlTightenOnlyChange: (enabled: boolean) => void;
 }
 
 export const EntrySettingsSection = ({
@@ -25,6 +32,12 @@ export const EntrySettingsSection = ({
   minRiskRewardRatioShort,
   onMinRiskRewardShortChange,
   isPending: _isPending,
+  dragSlEnabled,
+  onDragSlEnabledChange,
+  dragTpEnabled,
+  onDragTpEnabledChange,
+  slTightenOnly,
+  onSlTightenOnlyChange,
 }: EntrySettingsSectionProps) => {
   const { t } = useTranslation();
 
@@ -113,6 +126,52 @@ export const EntrySettingsSection = ({
             </HStack>
           </Box>
         </Grid>
+
+        <Box>
+          <Text fontSize="sm" fontWeight="semibold" mb={3}>
+            {t('settings.algorithmicAutoTrading.entrySettings.chartDrag.title')}
+          </Text>
+          <Stack gap={3}>
+            <Flex justify="space-between" align="center">
+              <Box>
+                <Text fontSize="sm">{t('settings.algorithmicAutoTrading.entrySettings.chartDrag.dragSl')}</Text>
+                <Text fontSize="xs" color="fg.muted">
+                  {t('settings.algorithmicAutoTrading.entrySettings.chartDrag.dragSlDescription')}
+                </Text>
+              </Box>
+              <Switch
+                checked={dragSlEnabled}
+                onCheckedChange={onDragSlEnabledChange}
+              />
+            </Flex>
+            {dragSlEnabled && (
+              <Flex justify="space-between" align="center" pl={4} borderLeftWidth="2px" borderColor="border.muted">
+                <Box>
+                  <Text fontSize="sm">{t('settings.algorithmicAutoTrading.entrySettings.chartDrag.slTightenOnly')}</Text>
+                  <Text fontSize="xs" color="fg.muted">
+                    {t('settings.algorithmicAutoTrading.entrySettings.chartDrag.slTightenOnlyDescription')}
+                  </Text>
+                </Box>
+                <Switch
+                  checked={slTightenOnly}
+                  onCheckedChange={onSlTightenOnlyChange}
+                />
+              </Flex>
+            )}
+            <Flex justify="space-between" align="center">
+              <Box>
+                <Text fontSize="sm">{t('settings.algorithmicAutoTrading.entrySettings.chartDrag.dragTp')}</Text>
+                <Text fontSize="xs" color="fg.muted">
+                  {t('settings.algorithmicAutoTrading.entrySettings.chartDrag.dragTpDescription')}
+                </Text>
+              </Box>
+              <Switch
+                checked={dragTpEnabled}
+                onCheckedChange={onDragTpEnabledChange}
+              />
+            </Flex>
+          </Stack>
+        </Box>
 
         <Box p={3} bg="bg.subtle" borderRadius="md" borderWidth="1px" borderColor="border.muted">
           <Text fontSize="xs" color="fg.muted">

@@ -210,6 +210,8 @@ export const autoTradingRouter = router({
         confluenceMinScore: z.number().min(0).max(100).optional(),
         maxDrawdownEnabled: z.boolean().optional(),
         maxDrawdownPercent: z.string().optional(),
+        maxRiskPerStopEnabled: z.boolean().optional(),
+        maxRiskPerStopPercent: z.string().optional(),
         marginTopUpEnabled: z.boolean().optional(),
         marginTopUpThreshold: z.string().optional(),
         marginTopUpPercent: z.string().optional(),
@@ -398,7 +400,10 @@ export const autoTradingRouter = router({
         input.walletId,
         config,
         positionValue,
-        watcherStatus.watchers > 0 ? watcherStatus.watchers : undefined
+        watcherStatus.watchers > 0 ? watcherStatus.watchers : undefined,
+        setup.stopLoss && setup.entryPrice
+          ? { entryPrice: parseFloat(setup.entryPrice), stopLoss: parseFloat(setup.stopLoss) }
+          : undefined
       );
 
       if (!riskValidation.isValid) {

@@ -7,7 +7,7 @@ import type {
 } from '@marketmind/types';
 
 const EMA_PERIOD = 200;
-const MIN_KLINES_REQUIRED = 210;
+const MIN_KLINES_REQUIRED = 212;
 const SLOPE_LOOKBACK = 20;
 const SLOPE_THRESHOLD = 0.001;
 
@@ -79,8 +79,18 @@ export const checkDirectionFilter = (
 
   const emaValues = calculateEMA(klines, EMA_PERIOD);
   const lastIndex = klines.length - 1;
-  const ema200 = emaValues[lastIndex];
-  const currentPrice = getKlineClose(klines[lastIndex]);
+
+  // Use klines[-2] (not the signal candle itself) as the confirmation candle.
+  // It must have OPENED and CLOSED entirely on the correct side of EMA200:
+  // a candle that opened below and closed above is the crossover candle — not confirmation.
+  const prevIndex = lastIndex - 1;
+  const ema200 = emaValues[prevIndex];
+  const currentPrice = getKlineClose(klines[prevIndex]);
+  const openPrice = (() => {
+    const k = klines[prevIndex];
+    if (!k) return currentPrice;
+    return typeof k.open === 'string' ? parseFloat(k.open) : (k.open as number);
+  })();
 
   if (ema200 === null || ema200 === undefined || isNaN(ema200) || ema200 === 0) {
     return {
@@ -96,12 +106,23 @@ export const checkDirectionFilter = (
 
   const ema200Slope = calculateSlope(emaValues, SLOPE_LOOKBACK);
   const priceVsEma200Percent = ((currentPrice - ema200) / ema200) * 100;
-  const marketDirection = getMarketDirection(currentPrice, ema200, ema200Slope);
+
+  // Both open and close of klines[-2] must be on the same side of EMA200.
+  const openAbove = openPrice > ema200;
+  const closeAbove = currentPrice > ema200;
+  const confirmedAbove = openAbove && closeAbove;
+  const confirmedBelow = !openAbove && !closeAbove;
+  const confirmedDirection: MarketDirection = confirmedAbove ? 'BULLISH' : confirmedBelow ? 'BEARISH' : 'NEUTRAL';
+  const marketDirection = confirmedDirection !== 'NEUTRAL'
+    ? getMarketDirection(currentPrice, ema200, ema200Slope)
+    : ('NEUTRAL' as MarketDirection);
+  // Override to NEUTRAL if the candle itself crossed EMA200 (not a confirmed breakout)
+  const effectiveDirection: MarketDirection = confirmedDirection === 'NEUTRAL' ? 'NEUTRAL' : marketDirection;
 
   let isAllowed = true;
   let reason = '';
 
-  if (tradeDirection === 'LONG' && marketDirection === 'BEARISH') {
+  if (tradeDirection === 'LONG' && effectiveDirection === 'BEARISH') {
     if (enableLongInBearMarket) {
       isAllowed = true;
       reason = `LONG allowed in BEARISH market (override enabled). Price ${priceVsEma200Percent.toFixed(1)}% vs EMA200`;
@@ -109,7 +130,7 @@ export const checkDirectionFilter = (
       isAllowed = false;
       reason = `LONG blocked: Market is BEARISH (price ${priceVsEma200Percent.toFixed(1)}% below EMA200)`;
     }
-  } else if (tradeDirection === 'SHORT' && marketDirection === 'BULLISH') {
+  } else if (tradeDirection === 'SHORT' && effectiveDirection === 'BULLISH') {
     if (enableShortInBullMarket) {
       isAllowed = true;
       reason = `SHORT allowed in BULLISH market (override enabled). Price ${priceVsEma200Percent.toFixed(1)}% vs EMA200`;
@@ -117,13 +138,16 @@ export const checkDirectionFilter = (
       isAllowed = false;
       reason = `SHORT blocked: Market is BULLISH (price ${priceVsEma200Percent.toFixed(1)}% above EMA200)`;
     }
+  } else if (effectiveDirection === 'NEUTRAL') {
+    isAllowed = false;
+    reason = `${tradeDirection} blocked: EMA200 crossover candle not yet confirmed (prev candle crossed EMA200, wait for one candle to open and close entirely above/below)`;
   } else {
-    reason = `${tradeDirection} allowed: Market is ${marketDirection} (price ${priceVsEma200Percent.toFixed(1)}% vs EMA200)`;
+    reason = `${tradeDirection} allowed: Market is ${effectiveDirection} (price ${priceVsEma200Percent.toFixed(1)}% vs EMA200)`;
   }
 
   return {
     isAllowed,
-    direction: marketDirection,
+    direction: effectiveDirection,
     ema200,
     ema200Slope,
     currentPrice,

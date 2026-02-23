@@ -16,12 +16,12 @@ import { Toolbar } from '../components/Layout/Toolbar';
 import { MarketStatusBar } from '../components/MarketStatusBar';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS } from '../constants/defaults';
+import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, DEFAULT_TIMEFRAME } from '../constants/defaults';
 import { ChartProvider } from '../context/ChartContext';
 import { useKlineStream } from '../hooks/useBackendKlines';
 import { useKlinePagination } from '../hooks/useKlinePagination';
 import { useDebounce } from '../hooks/useDebounce';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useChartPref } from '../store/preferencesStore';
 import { useCurrencyAutoRefresh } from '../store/currencyStore';
 import { useSetupStore } from '../store/setupStore';
 import { system } from '../theme';
@@ -43,30 +43,13 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
   useCurrencyAutoRefresh();
 
-  const [showVolume, setShowVolume] = useLocalStorage('marketmind:showVolume', true);
-  const [showGrid, setShowGrid] = useLocalStorage('marketmind:showGrid', true);
-  const [showCurrentPriceLine, setShowCurrentPriceLine] = useLocalStorage('marketmind:showCurrentPriceLine', true);
-  const [showCrosshair, setShowCrosshair] = useLocalStorage('marketmind:showCrosshair', true);
-  const [showProfitLossAreas, setShowProfitLossAreas] = useLocalStorage('marketmind:showProfitLossAreas', true);
-  const [showFibonacciProjection, setShowFibonacciProjection] = useLocalStorage('marketmind:showFibonacciProjection', false);
-  const [showMeasurementRuler, setShowMeasurementRuler] = useLocalStorage('marketmind:showMeasurementRuler', false);
-  const [showMeasurementArea, setShowMeasurementArea] = useLocalStorage('marketmind:showMeasurementArea', false);
-  const [showTooltip, setShowTooltip] = useLocalStorage('marketmind:showTooltip', false);
-  const [showStochastic, setShowStochastic] = useLocalStorage('marketmind:showStochastic', false);
-  const [showRSI, setShowRSI] = useLocalStorage('marketmind:showRSI', false);
-  const [showBollingerBands, setShowBollingerBands] = useLocalStorage('marketmind:showBollingerBands', false);
-  const [showATR, setShowATR] = useLocalStorage('marketmind:showATR', false);
-  const [showVWAP, setShowVWAP] = useLocalStorage('marketmind:showVWAP', false);
-  const [showActivityIndicator, setShowActivityIndicator] = useLocalStorage('marketmind:showActivityIndicator', true);
-  const [showEventRow, setShowEventRow] = useLocalStorage('marketmind:showEventRow', true);
-  const [chartType] = useLocalStorage<'kline' | 'line'>('marketmind:chartType', 'kline');
-  const [timeframe, setTimeframe] = useState<Timeframe>((routeTimeframe as Timeframe) || '12h');
-  const [movingAverages, setMovingAverages] = useLocalStorage<MovingAverageConfig[]>(
-    'marketmind:movingAverages',
+  const [chartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
+    'movingAverages',
     DEFAULT_MOVING_AVERAGES
   );
 
-  const [advancedConfig] = useLocalStorage<AdvancedControlsConfig>('marketmind:advancedConfig', {
+  const [advancedConfig] = useChartPref<AdvancedControlsConfig>('advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
     volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
     klineSpacing: CHART_CONFIG.KLINE_SPACING,
@@ -79,6 +62,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
     paddingLeft: CHART_CONFIG.CANVAS_PADDING_LEFT,
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
+
+  const [timeframe, setTimeframe] = useState<Timeframe>((routeTimeframe as Timeframe) || DEFAULT_TIMEFRAME);
 
   const {
     allKlines: paginatedKlines,
@@ -294,39 +279,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       <Box flex="1" position="relative" overflow="hidden">
         <ChartToolsToolbar
           symbol={symbol}
-          showGrid={showGrid}
-          showCurrentPriceLine={showCurrentPriceLine}
-          showCrosshair={showCrosshair}
-          showProfitLossAreas={showProfitLossAreas}
-          showFibonacciProjection={showFibonacciProjection}
-          showMeasurementRuler={showMeasurementRuler}
-          showMeasurementArea={showMeasurementArea}
-          showTooltip={showTooltip}
-          showVolume={showVolume}
-          showStochastic={showStochastic}
-          showRSI={showRSI}
-          showBollingerBands={showBollingerBands}
-          showATR={showATR}
-          showVWAP={showVWAP}
-          showActivityIndicator={showActivityIndicator}
-          showEventRow={showEventRow}
           movingAverages={movingAverages}
-          onShowActivityIndicatorChange={setShowActivityIndicator}
-          onShowGridChange={setShowGrid}
-          onShowCurrentPriceLineChange={setShowCurrentPriceLine}
-          onShowCrosshairChange={setShowCrosshair}
-          onShowProfitLossAreasChange={setShowProfitLossAreas}
-          onShowFibonacciProjectionChange={setShowFibonacciProjection}
-          onShowMeasurementRulerChange={setShowMeasurementRuler}
-          onShowMeasurementAreaChange={setShowMeasurementArea}
-          onShowTooltipChange={setShowTooltip}
-          onShowVolumeChange={setShowVolume}
-          onShowStochasticChange={setShowStochastic}
-          onShowRSIChange={setShowRSI}
-          onShowBollingerBandsChange={setShowBollingerBands}
-          onShowATRChange={setShowATR}
-          onShowVWAPChange={setShowVWAP}
-          onShowEventRowChange={setShowEventRow}
           onMovingAveragesChange={setMovingAverages}
         />
         {loading && (
@@ -348,21 +301,6 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
             marketType={marketType}
             width="100%"
             height="100%"
-            showVolume={showVolume}
-            showGrid={showGrid}
-            showCurrentPriceLine={showCurrentPriceLine}
-            showCrosshair={showCrosshair}
-            showProfitLossAreas={showProfitLossAreas}
-            showFibonacciProjection={showFibonacciProjection}
-            showMeasurementRuler={showMeasurementRuler}
-            showMeasurementArea={showMeasurementArea}
-            showTooltip={showTooltip}
-            showStochastic={showStochastic}
-            showRSI={showRSI}
-            showBollingerBands={showBollingerBands}
-            showATR={showATR}
-            showVWAP={showVWAP}
-            showActivityIndicator={showActivityIndicator}
             chartType={chartType}
             movingAverages={movingAverages}
             advancedConfig={debouncedAdvancedConfig}

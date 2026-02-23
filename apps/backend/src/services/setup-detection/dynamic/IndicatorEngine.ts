@@ -12,6 +12,7 @@ import {
   calculateOpenInterest,
   calculateRelativeStrength,
   detectFundingRateSignal,
+  type FairValueGap,
   type FundingRateData,
   type LiquidationData,
   type OpenInterestData,
@@ -804,22 +805,70 @@ export class IndicatorEngine {
 
     fvg: (klines) => {
       const fvgResult = calculateFVG(klines);
-      const bullishValues: (number | null)[] = new Array(klines.length).fill(null);
-      const bearishValues: (number | null)[] = new Array(klines.length).fill(null);
-      for (const gap of fvgResult.gaps) {
-        if (gap.index >= 0 && gap.index < klines.length) {
-          if (gap.type === 'bullish') {
-            bullishValues[gap.index] = 1;
-          } else {
-            bearishValues[gap.index] = 1;
-          }
+      const bullish: (number | null)[] = new Array(klines.length).fill(null);
+      const bearish: (number | null)[] = new Array(klines.length).fill(null);
+      const bullishTop: (number | null)[] = new Array(klines.length).fill(null);
+      const bullishBottom: (number | null)[] = new Array(klines.length).fill(null);
+      const bearishTop: (number | null)[] = new Array(klines.length).fill(null);
+      const bearishBottom: (number | null)[] = new Array(klines.length).fill(null);
+
+      const fillAt: number[] = new Array(fvgResult.gaps.length).fill(Infinity);
+      for (let g = 0; g < fvgResult.gaps.length; g++) {
+        const gap = fvgResult.gaps[g]!;
+        for (let j = gap.index + 2; j < klines.length; j++) {
+          const k = klines[j]!;
+          const low = parseFloat(k.low);
+          const high = parseFloat(k.high);
+          if (gap.type === 'bullish' && low <= gap.low) { fillAt[g] = j; break; }
+          if (gap.type === 'bearish' && high >= gap.high) { fillAt[g] = j; break; }
         }
       }
+
+      const bullishGaps: Array<{ gap: FairValueGap; fillIdx: number }> = [];
+      const bearishGaps: Array<{ gap: FairValueGap; fillIdx: number }> = [];
+      for (let g = 0; g < fvgResult.gaps.length; g++) {
+        const gap = fvgResult.gaps[g]!;
+        const entry = { gap, fillIdx: fillAt[g]! };
+        if (gap.type === 'bullish') bullishGaps.push(entry);
+        else bearishGaps.push(entry);
+      }
+
+      let bPtr = 0;
+      let rPtr = 0;
+      const bStack: Array<{ gap: FairValueGap; fillIdx: number }> = [];
+      const rStack: Array<{ gap: FairValueGap; fillIdx: number }> = [];
+
+      for (let i = 0; i < klines.length; i++) {
+        while (bPtr < bullishGaps.length && bullishGaps[bPtr]!.gap.index < i) bStack.push(bullishGaps[bPtr++]!);
+        while (rPtr < bearishGaps.length && bearishGaps[rPtr]!.gap.index < i) rStack.push(bearishGaps[rPtr++]!);
+
+        while (bStack.length > 0 && bStack[bStack.length - 1]!.fillIdx <= i) bStack.pop();
+        while (rStack.length > 0 && rStack[rStack.length - 1]!.fillIdx <= i) rStack.pop();
+
+        const latestBullish = bStack.length > 0 ? bStack[bStack.length - 1]!.gap : null;
+        const latestBearish = rStack.length > 0 ? rStack[rStack.length - 1]!.gap : null;
+
+        if (latestBullish) {
+          bullish[i] = 1;
+          bullishTop[i] = latestBullish.high;
+          bullishBottom[i] = latestBullish.low;
+        }
+        if (latestBearish) {
+          bearish[i] = 1;
+          bearishTop[i] = latestBearish.high;
+          bearishBottom[i] = latestBearish.low;
+        }
+      }
+
       return {
         type: 'fvg',
         values: {
-          bullish: bullishValues,
-          bearish: bearishValues,
+          bullish,
+          bearish,
+          bullishTop,
+          bullishBottom,
+          bearishTop,
+          bearishBottom,
         },
       };
     },

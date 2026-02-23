@@ -300,6 +300,21 @@ export const FiltersSection = ({
                 disabled={isPending}
               />
             </Grid>
+
+            <Separator />
+
+            <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
+              {t('settings.algorithmicAutoTrading.filters.smartMoneyFilters')}
+            </Text>
+            <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+              <FilterToggle
+                label={t('settings.algorithmicAutoTrading.filters.fvg.title')}
+                description={t('settings.algorithmicAutoTrading.filters.fvg.description')}
+                checked={config?.useFvgFilter ?? false}
+                onChange={(value) => onFilterToggle('useFvgFilter', value)}
+                disabled={isPending}
+              />
+            </Grid>
           </Stack>
     </CollapsibleSection>
   );

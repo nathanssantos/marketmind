@@ -6,6 +6,7 @@ import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
+import { useTradingPref } from '@renderer/store/preferencesStore';
 import { useCallback, useMemo, useRef } from 'react';
 import { useDebounce } from '@renderer/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
@@ -165,6 +166,10 @@ export const WatcherManager = () => {
   const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
   const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
 
+  const [dragSlEnabled, setDragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
+  const [dragTpEnabled, setDragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
+  const [slTightenOnly, setSlTightenOnly] = useTradingPref<boolean>('slTightenOnly', true);
+
   const handleTpModeChange = (details: { value: string }): void => {
     handleConfigUpdate({ tpCalculationMode: details.value as 'default' | 'fibonacci' });
   };
@@ -215,6 +220,14 @@ export const WatcherManager = () => {
 
   const handleMaxDrawdownChange = (value: number): void => {
     handleConfigUpdate({ maxDrawdownPercent: value.toString() });
+  };
+
+  const handleMaxRiskPerStopEnabledChange = (enabled: boolean): void => {
+    handleConfigUpdate({ maxRiskPerStopEnabled: enabled });
+  };
+
+  const handleMaxRiskPerStopChange = (value: number): void => {
+    handleConfigUpdate({ maxRiskPerStopPercent: value.toString() });
   };
 
   const handleMarginTopUpEnabledChange = (enabled: boolean): void => {
@@ -384,6 +397,10 @@ export const WatcherManager = () => {
         onMaxDrawdownEnabledChange={handleMaxDrawdownEnabledChange}
         maxDrawdownPercent={Number(config?.maxDrawdownPercent ?? 15)}
         onMaxDrawdownChange={handleMaxDrawdownChange}
+        maxRiskPerStopEnabled={config?.maxRiskPerStopEnabled ?? false}
+        onMaxRiskPerStopEnabledChange={handleMaxRiskPerStopEnabledChange}
+        maxRiskPerStopPercent={Number(config?.maxRiskPerStopPercent ?? 2)}
+        onMaxRiskPerStopChange={handleMaxRiskPerStopChange}
         marginTopUpEnabled={config?.marginTopUpEnabled ?? false}
         onMarginTopUpEnabledChange={handleMarginTopUpEnabledChange}
         marginTopUpThreshold={Number(config?.marginTopUpThreshold ?? 30)}
@@ -452,6 +469,12 @@ export const WatcherManager = () => {
         minRiskRewardRatioShort={Number(config?.minRiskRewardRatioShort ?? 1)}
         onMinRiskRewardShortChange={(value) => handleConfigUpdate({ minRiskRewardRatioShort: value.toString() })}
         isPending={updateConfig.isPending}
+        dragSlEnabled={dragSlEnabled}
+        onDragSlEnabledChange={setDragSlEnabled}
+        dragTpEnabled={dragTpEnabled}
+        onDragTpEnabledChange={setDragTpEnabled}
+        slTightenOnly={slTightenOnly}
+        onSlTightenOnlyChange={setSlTightenOnly}
       />
 
       <Separator />

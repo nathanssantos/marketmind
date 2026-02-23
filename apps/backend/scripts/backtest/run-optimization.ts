@@ -88,6 +88,7 @@ const PRODUCTION_BASE = {
   useMarketRegimeFilter: FILTER_DEFAULTS.useMarketRegimeFilter,
   useDirectionFilter: FILTER_DEFAULTS.useDirectionFilter,
   useFundingFilter: FILTER_DEFAULTS.useFundingFilter,
+  useFvgFilter: FILTER_DEFAULTS.useFvgFilter,
   useConfluenceScoring: FILTER_DEFAULTS.useConfluenceScoring,
   confluenceMinScore: FILTER_DEFAULTS.confluenceMinScore,
   positionSizePercent: FILTER_DEFAULTS.positionSizePercent,
@@ -136,6 +137,7 @@ const FILTER_GRID: Record<string, boolean[]> = {
   useStochasticHtfFilter: [false, true],
   useStochasticRecoveryHtfFilter: [false, true],
   useFundingFilter: [false, true],
+  useFvgFilter: [false, true],
 };
 
 type SwingRange = 'nearest' | 'extended';

@@ -563,7 +563,8 @@ export class OrderExecutor {
           watcher.walletId,
           effectiveConfig,
           positionValue,
-          activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined
+          activeWatchersForWallet > 0 ? activeWatchersForWallet : undefined,
+          setup.stopLoss ? { entryPrice: setup.entryPrice, stopLoss: setup.stopLoss } : undefined
         );
 
         if (!riskValidation.isValid) {

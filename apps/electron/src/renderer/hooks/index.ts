@@ -38,7 +38,6 @@ export { useWMAWorker } from './useWMAWorker';
 export { useDebounce } from './useDebounce';
 export { useDebounceCallback } from './useDebounceCallback';
 
-export { useLocalStorage } from './useLocalStorage';
 export { useToast } from './useToast';
 
 export { useAutoTrading } from './useAutoTrading';

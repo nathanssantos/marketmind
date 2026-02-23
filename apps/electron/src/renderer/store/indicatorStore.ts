@@ -1,6 +1,6 @@
 import { FIBONACCI_LEVELS } from '@marketmind/indicators';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { usePreferencesStore } from './preferencesStore';
 
 export type IndicatorId =
   | 'volume'
@@ -39,7 +39,8 @@ export type IndicatorId =
   | 'dema'
   | 'tema'
   | 'wma'
-  | 'hma';
+  | 'hma'
+  | 'activityIndicator';
 
 export type IndicatorCategory =
   | 'oscillators'
@@ -161,12 +162,21 @@ export const OVERLAY_INDICATORS: IndicatorId[] = [
   'tema',
   'wma',
   'hma',
+  'activityIndicator',
 ];
+
+const syncToPreferences = (activeIndicators: IndicatorId[], indicatorParams: IndicatorParams) => {
+  const prefs = usePreferencesStore.getState();
+  if (!prefs.isHydrated) return;
+  prefs.set('chart', 'activeIndicators', activeIndicators);
+  prefs.set('chart', 'indicatorParams', indicatorParams);
+};
 
 interface IndicatorState {
   activeIndicators: IndicatorId[];
   indicatorParams: IndicatorParams;
 
+  hydrate: (data: { activeIndicators?: string[] | undefined; indicatorParams?: Record<string, unknown> | undefined }) => void;
   toggleIndicator: (id: IndicatorId) => void;
   setIndicatorActive: (id: IndicatorId, active: boolean) => void;
   isActive: (id: IndicatorId) => boolean;
@@ -181,73 +191,82 @@ interface IndicatorState {
 }
 
 export const useIndicatorStore = create<IndicatorState>()(
-  persist(
-    (set, get) => ({
-      activeIndicators: ['volume'],
-      indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
+  (set, get) => ({
+    activeIndicators: ['volume'],
+    indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
-      toggleIndicator: (id) =>
-        set((state) => {
-          const isActive = state.activeIndicators.includes(id);
-          return {
-            activeIndicators: isActive
-              ? state.activeIndicators.filter((i) => i !== id)
-              : [...state.activeIndicators, id],
-          };
-        }),
+    hydrate: (data) => {
+      const updates: Partial<IndicatorState> = {};
+      if (data.activeIndicators) updates.activeIndicators = data.activeIndicators as IndicatorId[];
+      if (data.indicatorParams) updates.indicatorParams = { ...DEFAULT_INDICATOR_PARAMS, ...data.indicatorParams } as IndicatorParams;
+      if (Object.keys(updates).length > 0) set(updates);
+    },
 
-      setIndicatorActive: (id, active) =>
-        set((state) => {
-          const isActive = state.activeIndicators.includes(id);
-          if (active && !isActive) {
-            return { activeIndicators: [...state.activeIndicators, id] };
-          }
-          if (!active && isActive) {
-            return { activeIndicators: state.activeIndicators.filter((i) => i !== id) };
-          }
-          return state;
-        }),
+    toggleIndicator: (id) =>
+      set((state) => {
+        const isActive = state.activeIndicators.includes(id);
+        const activeIndicators = isActive
+          ? state.activeIndicators.filter((i) => i !== id)
+          : [...state.activeIndicators, id];
+        syncToPreferences(activeIndicators, state.indicatorParams);
+        return { activeIndicators };
+      }),
 
-      isActive: (id) => get().activeIndicators.includes(id),
+    setIndicatorActive: (id, active) =>
+      set((state) => {
+        const isActive = state.activeIndicators.includes(id);
+        if (active && !isActive) {
+          const activeIndicators = [...state.activeIndicators, id];
+          syncToPreferences(activeIndicators, state.indicatorParams);
+          return { activeIndicators };
+        }
+        if (!active && isActive) {
+          const activeIndicators = state.activeIndicators.filter((i) => i !== id);
+          syncToPreferences(activeIndicators, state.indicatorParams);
+          return { activeIndicators };
+        }
+        return state;
+      }),
 
-      setIndicatorParams: (indicator, params) =>
-        set((state) => ({
-          indicatorParams: {
-            ...state.indicatorParams,
-            [indicator]: {
-              ...state.indicatorParams[indicator],
-              ...params,
-            },
+    isActive: (id) => get().activeIndicators.includes(id),
+
+    setIndicatorParams: (indicator, params) =>
+      set((state) => {
+        const indicatorParams = {
+          ...state.indicatorParams,
+          [indicator]: {
+            ...state.indicatorParams[indicator],
+            ...params,
           },
-        })),
+        };
+        syncToPreferences(state.activeIndicators, indicatorParams);
+        return { indicatorParams };
+      }),
 
-      getActiveByCategory: (category) => {
-        const state = get();
-        const categoryIndicators = INDICATOR_CATEGORIES[category];
-        return state.activeIndicators.filter((id) => categoryIndicators.includes(id));
-      },
+    getActiveByCategory: (category) => {
+      const state = get();
+      const categoryIndicators = INDICATOR_CATEGORIES[category];
+      return state.activeIndicators.filter((id) => categoryIndicators.includes(id));
+    },
 
-      getActivePanelIndicators: () => {
-        const state = get();
-        return state.activeIndicators.filter((id) => PANEL_INDICATORS.includes(id));
-      },
+    getActivePanelIndicators: () => {
+      const state = get();
+      return state.activeIndicators.filter((id) => PANEL_INDICATORS.includes(id));
+    },
 
-      getActiveOverlayIndicators: () => {
-        const state = get();
-        return state.activeIndicators.filter((id) => OVERLAY_INDICATORS.includes(id));
-      },
+    getActiveOverlayIndicators: () => {
+      const state = get();
+      return state.activeIndicators.filter((id) => OVERLAY_INDICATORS.includes(id));
+    },
 
-      resetParams: (indicator) =>
-        set((state) => ({
-          indicatorParams: {
-            ...state.indicatorParams,
-            [indicator]: DEFAULT_INDICATOR_PARAMS[indicator],
-          },
-        })),
-    }),
-    {
-      name: 'indicator-storage',
-      version: 1,
-    }
-  )
+    resetParams: (indicator) =>
+      set((state) => {
+        const indicatorParams = {
+          ...state.indicatorParams,
+          [indicator]: DEFAULT_INDICATOR_PARAMS[indicator],
+        };
+        syncToPreferences(state.activeIndicators, indicatorParams);
+        return { indicatorParams };
+      }),
+  })
 );

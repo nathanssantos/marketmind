@@ -1,0 +1,2 @@
+ALTER TABLE "auto_trading_config" ADD COLUMN "max_risk_per_stop_enabled" boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE "auto_trading_config" ADD COLUMN "max_risk_per_stop_percent" numeric(5, 2) DEFAULT '2';

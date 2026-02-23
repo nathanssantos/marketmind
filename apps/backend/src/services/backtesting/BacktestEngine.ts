@@ -420,6 +420,7 @@ export class BacktestEngine {
       const shouldUseTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
 
       if (!filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, shouldUseTrendFilter, trades.length)) continue;
+      if (!filterManager.checkFvgFilter(historicalKlines as Kline[], setupIndex, entryPrice, setup.direction, trades.length)) continue;
 
       const { stopLoss, takeProfit } = tradeExecutor.resolveStopLossAndTakeProfit(setup, entryPrice, trades.length);
 

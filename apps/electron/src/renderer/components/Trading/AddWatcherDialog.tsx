@@ -8,6 +8,7 @@ import { Select } from '@renderer/components/ui/select';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DEFAULT_TIMEFRAME } from '@renderer/constants/defaults';
 import { type Timeframe, TimeframeSelector } from '../Chart/TimeframeSelector';
 import { SymbolSelector } from '../SymbolSelector';
 import { BulkSymbolSelector } from './BulkSymbolSelector';
@@ -31,7 +32,7 @@ export const AddWatcherDialog = ({
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [symbol, setSymbol] = useState('BTCUSDT');
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
-  const [interval, setInterval] = useState<Timeframe>('12h');
+  const [interval, setInterval] = useState<Timeframe>(DEFAULT_TIMEFRAME);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [useDefault, setUseDefault] = useState(true);
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');

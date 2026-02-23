@@ -1,4 +1,4 @@
-import { calculateEMA } from '@marketmind/indicators';
+import { calculateEMA, calculateFVG } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { isDirectionAllowed } from '../../utils/trading-validation';
 import {
@@ -64,6 +64,8 @@ export interface FilterConfig {
   useSuperTrendFilter?: boolean;
   superTrendPeriod?: number;
   superTrendMultiplier?: number;
+  useFvgFilter?: boolean;
+  fvgFilterProximityPercent?: number;
 }
 
 export interface FilterStats {
@@ -98,6 +100,7 @@ export interface FilterStats {
   skippedBollingerSqueeze: number;
   skippedVwap: number;
   skippedSupertrend: number;
+  skippedFvg: number;
 }
 
 export interface FilterContext {
@@ -138,6 +141,7 @@ export class FilterManager {
     skippedPositionConflict: 0,
     skippedPyramid: 0,
     pyramidEntries: 0,
+    skippedFvg: 0,
   } as FilterStats;
 
   constructor(config: FilterConfig) {
@@ -528,6 +532,52 @@ export class FilterManager {
       this.stats.skippedConfluence++;
       if (tradesCount < 3) {
         console.log(`[FilterManager] Confluence Scoring blocked trade - score ${result.totalScore}/${result.maxPossibleScore} (${result.scorePercent}%), min required ${minScore}`);
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  checkFvgFilter(
+    klines: Kline[],
+    setupIndex: number,
+    entryPrice: number,
+    direction: 'LONG' | 'SHORT',
+    tradesCount: number
+  ): boolean {
+    if (!this.config.useFvgFilter) return true;
+    if (setupIndex < 3) return true;
+
+    const proximityPercent = this.config.fvgFilterProximityPercent ?? 0.5;
+    const fvgKlines = klines.slice(0, setupIndex + 1);
+    const { gaps } = calculateFVG(fvgKlines);
+
+    const relevantType = direction === 'LONG' ? 'bullish' : 'bearish';
+    const unfilledGaps = gaps.filter(g => g.type === relevantType && !g.filled && g.index < setupIndex);
+
+    if (unfilledGaps.length === 0) {
+      this.stats.skippedFvg++;
+      return false;
+    }
+
+    const proximityFactor = proximityPercent / 100;
+    const prevCandle = klines[setupIndex - 1];
+    const prevHigh = prevCandle ? parseFloat(prevCandle.high as string) : entryPrice;
+    const prevLow = prevCandle ? parseFloat(prevCandle.low as string) : entryPrice;
+
+    const nearGap = unfilledGaps.some(gap => {
+      const zoneLow = gap.low * (1 - proximityFactor);
+      const zoneHigh = gap.high * (1 + proximityFactor);
+      const entryNear = entryPrice >= zoneLow && entryPrice <= zoneHigh;
+      const prevCandleTouched = prevHigh >= gap.low && prevLow <= gap.high;
+      return entryNear || prevCandleTouched;
+    });
+
+    if (!nearGap) {
+      this.stats.skippedFvg++;
+      if (tradesCount < 3) {
+        console.log(`[FilterManager] FVG filter blocked ${direction} trade at price ${entryPrice} - not near any unfilled FVG zone`);
       }
       return false;
     }
