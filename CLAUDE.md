@@ -545,10 +545,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v0.52.1
+**Version:** v0.53.0
 **Current Focus:** Backtesting infrastructure, strategy optimization, exchange abstraction (IB)
 
-### System Status (v0.52.1)
+### System Status (v0.53.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management

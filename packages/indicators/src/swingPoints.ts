@@ -851,7 +851,12 @@ export const findNearestSwingHigh = (
 
   if (significantHighs.length === 0) return null;
 
-  return significantHighs.sort((a, b) => b.index - a.index)[0]!;
+  const byRecency = significantHighs.sort((a, b) => b.index - a.index);
+  const h1 = byRecency[0]!;
+  const h2 = byRecency[1];
+
+  if (h2 && h2.price > h1.price) return h2;
+  return h1;
 };
 
 export const findNearestSwingLow = (
@@ -884,7 +889,12 @@ export const findNearestSwingLow = (
 
   if (significantLows.length === 0) return null;
 
-  return significantLows.sort((a, b) => b.index - a.index)[0]!;
+  const byRecency = significantLows.sort((a, b) => b.index - a.index);
+  const l1 = byRecency[0]!;
+  const l2 = byRecency[1];
+
+  if (l2 && l2.price < l1.price) return l2;
+  return l1;
 };
 
 export const findNearestFractalHigh = (

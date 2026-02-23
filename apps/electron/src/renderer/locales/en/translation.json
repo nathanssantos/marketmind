@@ -283,7 +283,16 @@
           "shortTitle": "Min R:R (SHORT)",
           "shortDescription": "Minimum risk/reward ratio required for SHORT entries"
         },
-        "optimizedNote": "Values optimized through extensive backtesting. Entry Level 100% allows breakout entries with trailing stop protection. R:R 0.75 balances opportunity capture with risk management."
+        "optimizedNote": "Values optimized through extensive backtesting. Entry Level 100% allows breakout entries with trailing stop protection. R:R 0.75 balances opportunity capture with risk management.",
+        "chartDrag": {
+          "title": "Chart Order Dragging",
+          "dragSl": "Drag Stop Loss",
+          "dragSlDescription": "Allow moving the stop loss by dragging on the chart",
+          "slTightenOnly": "Tighten Only",
+          "slTightenOnlyDescription": "Only allow moving the stop loss closer to price (lock in profit / reduce risk)",
+          "dragTp": "Drag Take Profit",
+          "dragTpDescription": "Allow moving the take profit by dragging on the chart"
+        }
       },
       "directionMode": {
         "title": "Direction Mode",

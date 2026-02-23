@@ -22,7 +22,7 @@ export interface UseWatcherStateReturn {
 
 export const useWatcherState = (): UseWatcherStateReturn => {
   const [expandedSections, setExpandedSections] = useState<SectionExpandedState>({
-    watchers: true,
+    watchers: false,
     dynamicSelection: false,
     positionSize: false,
     leverageSettings: false,

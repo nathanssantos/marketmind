@@ -115,6 +115,10 @@ export const ChartCanvas = ({
   const [quantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
   const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
 
+  const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
+  const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
+  const [slTightenOnly] = useTradingPref<boolean>('slTightenOnly', true);
+
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
@@ -520,6 +524,9 @@ export const ChartCanvas = ({
     priceToY: memoizedPriceToY,
     yToPrice: memoizedYToPrice,
     enabled: hasTradingEnabled && draggableOrders.length > 0,
+    slDragEnabled: dragSlEnabled,
+    tpDragEnabled: dragTpEnabled,
+    slTightenOnly: dragSlEnabled ? slTightenOnly : false,
     getOrderAtPosition: memoizedGetOrderAtPosition,
     markDirty: memoizedMarkDirty,
   });

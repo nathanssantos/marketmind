@@ -309,7 +309,16 @@
           "shortTitle": "R:R Mínimo (SHORT)",
           "shortDescription": "Relação risco/retorno mínima para entradas SHORT"
         },
-        "optimizedNote": "Valores otimizados através de backtesting extensivo. Nível de entrada 100% permite entradas em breakout com proteção de trailing stop. R:R 0.75 equilibra captura de oportunidades com gerenciamento de risco."
+        "optimizedNote": "Valores otimizados através de backtesting extensivo. Nível de entrada 100% permite entradas em breakout com proteção de trailing stop. R:R 0.75 equilibra captura de oportunidades com gerenciamento de risco.",
+        "chartDrag": {
+          "title": "Arrastar Ordens no Gráfico",
+          "dragSl": "Arrastar Stop Loss",
+          "dragSlDescription": "Permitir mover o stop loss arrastando no gráfico",
+          "slTightenOnly": "Somente Apertar",
+          "slTightenOnlyDescription": "Permitir apenas mover o stop loss mais perto do preço (garantir lucro / reduzir risco)",
+          "dragTp": "Arrastar Take Profit",
+          "dragTpDescription": "Permitir mover o take profit arrastando no gráfico"
+        }
       },
       "directionMode": {
         "title": "Modo de Direção",
