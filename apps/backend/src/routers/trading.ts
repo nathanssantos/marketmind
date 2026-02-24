@@ -1,7 +1,7 @@
 import { calculatePnl } from '../utils/pnl-calculator';
 import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
 import { orders, positions, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
@@ -221,7 +221,9 @@ export const tradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string().optional(),
-        limit: z.number().min(1).max(100).default(50),
+        search: z.string().optional(),
+        limit: z.number().min(1).max(500).default(50),
+        offset: z.number().min(0).default(0),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -230,18 +232,35 @@ export const tradingRouter = router({
         eq(orders.walletId, input.walletId),
       ];
 
-      if (input.symbol) {
-        whereConditions.push(eq(orders.symbol, input.symbol));
-      }
+      if (input.symbol) whereConditions.push(eq(orders.symbol, input.symbol));
+      if (input.search) whereConditions.push(ilike(orders.symbol, `%${input.search}%`));
 
       const userOrders = await ctx.db
         .select()
         .from(orders)
         .where(and(...whereConditions))
         .orderBy(desc(orders.time))
-        .limit(input.limit);
+        .limit(input.limit)
+        .offset(input.offset);
 
       return userOrders;
+    }),
+
+  getOrdersStats: protectedProcedure
+    .input(z.object({ walletId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const [ordersCount] = await ctx.db
+        .select({ count: count() })
+        .from(orders)
+        .where(and(eq(orders.userId, ctx.user.id), eq(orders.walletId, input.walletId)));
+      const [executionsCount] = await ctx.db
+        .select({ count: count() })
+        .from(tradeExecutions)
+        .where(and(eq(tradeExecutions.userId, ctx.user.id), eq(tradeExecutions.walletId, input.walletId)));
+      return {
+        ordersCount: ordersCount?.count ?? 0,
+        executionsCount: executionsCount?.count ?? 0,
+      };
     }),
 
   getOrderById: protectedProcedure
@@ -616,8 +635,10 @@ export const tradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string().optional(),
+        search: z.string().optional(),
         status: z.enum(['pending', 'open', 'closed', 'cancelled']).optional(),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(500).default(50),
+        offset: z.number().min(0).default(0),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -626,20 +647,17 @@ export const tradingRouter = router({
         eq(tradeExecutions.walletId, input.walletId),
       ];
 
-      if (input.symbol) {
-        whereConditions.push(eq(tradeExecutions.symbol, input.symbol));
-      }
-
-      if (input.status) {
-        whereConditions.push(eq(tradeExecutions.status, input.status));
-      }
+      if (input.symbol) whereConditions.push(eq(tradeExecutions.symbol, input.symbol));
+      if (input.search) whereConditions.push(ilike(tradeExecutions.symbol, `%${input.search}%`));
+      if (input.status) whereConditions.push(eq(tradeExecutions.status, input.status));
 
       const executions = await ctx.db
         .select()
         .from(tradeExecutions)
         .where(and(...whereConditions))
         .orderBy(desc(tradeExecutions.openedAt))
-        .limit(input.limit);
+        .limit(input.limit)
+        .offset(input.offset);
 
       return executions;
     }),

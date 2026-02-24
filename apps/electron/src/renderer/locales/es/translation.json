@@ -869,7 +869,12 @@
       "fees": "Tasas Pagadas",
       "close": "Cerrar Orden",
       "cancel": "Cancelar Orden",
-      "autoTrade": "Orden automática"
+      "autoTrade": "Orden automática",
+      "viewAll": "Ver Todas las Órdenes",
+      "dialogTitle": "Todas las Órdenes",
+      "page": "Página {{page}} de {{total}}",
+      "search": "Buscar por símbolo...",
+      "noResults": "No se encontraron órdenes para su búsqueda."
     },
     "notifications": {
       "orderFilled": {

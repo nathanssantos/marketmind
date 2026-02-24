@@ -858,7 +858,12 @@
       "fees": "Frais Payés",
       "close": "Fermer l'Ordre",
       "cancel": "Annuler l'Ordre",
-      "autoTrade": "Ordre automatique"
+      "autoTrade": "Ordre automatique",
+      "viewAll": "Voir Toutes les Ordres",
+      "dialogTitle": "Toutes les Ordres",
+      "page": "Page {{page}} sur {{total}}",
+      "search": "Rechercher par symbole...",
+      "noResults": "Aucune ordre ne correspond à votre recherche."
     },
     "notifications": {
       "orderFilled": {

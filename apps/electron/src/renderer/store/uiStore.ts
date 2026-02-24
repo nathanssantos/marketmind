@@ -91,6 +91,9 @@ interface UIState {
   trailingStopPanelExpanded: boolean;
   setTrailingStopPanelExpanded: (expanded: boolean) => void;
   toggleTrailingStopPanel: () => void;
+
+  isOrdersDialogOpen: boolean;
+  setOrdersDialogOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -189,5 +192,8 @@ export const useUIStore = create<UIState>()(
       syncUI('trailingStopPanelExpanded', val);
       return { trailingStopPanelExpanded: val };
     }),
+
+    isOrdersDialogOpen: false,
+    setOrdersDialogOpen: (open) => set({ isOrdersDialogOpen: open }),
   })
 );

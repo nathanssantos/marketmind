@@ -801,7 +801,12 @@
       "fees": "Fees Paid",
       "close": "Close Order",
       "cancel": "Cancel Order",
-      "autoTrade": "Auto-trade order"
+      "autoTrade": "Auto-trade order",
+      "viewAll": "View All Orders",
+      "dialogTitle": "All Orders",
+      "page": "Page {{page}} of {{total}}",
+      "search": "Search by symbol...",
+      "noResults": "No orders match your search."
     },
     "notifications": {
       "orderFilled": {
