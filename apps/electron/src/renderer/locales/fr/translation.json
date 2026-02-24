@@ -958,6 +958,35 @@
         "week": "Semaine",
         "month": "Mois",
         "all": "Tout"
+      },
+      "calendar": {
+        "title": "Performance Quotidienne",
+        "weekdays": {
+          "sun": "Dim",
+          "mon": "Lun",
+          "tue": "Mar",
+          "wed": "Mer",
+          "thu": "Jeu",
+          "fri": "Ven",
+          "sat": "Sam"
+        },
+        "months": {
+          "1": "Janvier",
+          "2": "Février",
+          "3": "Mars",
+          "4": "Avril",
+          "5": "Mai",
+          "6": "Juin",
+          "7": "Juillet",
+          "8": "Août",
+          "9": "Septembre",
+          "10": "Octobre",
+          "11": "Novembre",
+          "12": "Décembre"
+        },
+        "noData": "Aucun trade ce mois",
+        "trades_one": "{{count}} trade",
+        "trades_other": "{{count}} trades"
       }
     }
   },

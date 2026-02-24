@@ -943,6 +943,35 @@
         "week": "Semana",
         "month": "Mês",
         "all": "Tudo"
+      },
+      "calendar": {
+        "title": "Desempenho Diário",
+        "weekdays": {
+          "sun": "Dom",
+          "mon": "Seg",
+          "tue": "Ter",
+          "wed": "Qua",
+          "thu": "Qui",
+          "fri": "Sex",
+          "sat": "Sáb"
+        },
+        "months": {
+          "1": "Janeiro",
+          "2": "Fevereiro",
+          "3": "Março",
+          "4": "Abril",
+          "5": "Maio",
+          "6": "Junho",
+          "7": "Julho",
+          "8": "Agosto",
+          "9": "Setembro",
+          "10": "Outubro",
+          "11": "Novembro",
+          "12": "Dezembro"
+        },
+        "noData": "Nenhum trade este mês",
+        "trades_one": "{{count}} trade",
+        "trades_other": "{{count}} trades"
       }
     }
   },

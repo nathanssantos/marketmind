@@ -56,7 +56,7 @@ describe('checkTrendCondition', () => {
       expect(result.isBearish).toBe(true);
       expect(result.isAllowed).toBe(false);
       expect(result.reason).toContain('LONG blocked');
-      expect(result.reason).toContain('bearish trend');
+      expect(result.reason).toContain('EMA21');
     });
   });
 
@@ -79,7 +79,7 @@ describe('checkTrendCondition', () => {
       expect(result.isBearish).toBe(false);
       expect(result.isAllowed).toBe(false);
       expect(result.reason).toContain('SHORT blocked');
-      expect(result.reason).toContain('bullish trend');
+      expect(result.reason).toContain('EMA21');
     });
   });
 

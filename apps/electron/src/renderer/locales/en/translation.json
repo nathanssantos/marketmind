@@ -901,6 +901,35 @@
         "week": "Week",
         "month": "Month",
         "all": "All Time"
+      },
+      "calendar": {
+        "title": "Daily Performance",
+        "weekdays": {
+          "sun": "Sun",
+          "mon": "Mon",
+          "tue": "Tue",
+          "wed": "Wed",
+          "thu": "Thu",
+          "fri": "Fri",
+          "sat": "Sat"
+        },
+        "months": {
+          "1": "January",
+          "2": "February",
+          "3": "March",
+          "4": "April",
+          "5": "May",
+          "6": "June",
+          "7": "July",
+          "8": "August",
+          "9": "September",
+          "10": "October",
+          "11": "November",
+          "12": "December"
+        },
+        "noData": "No trades this month",
+        "trades_one": "{{count}} trade",
+        "trades_other": "{{count}} trades"
       }
     }
   },
