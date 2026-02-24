@@ -76,6 +76,8 @@ export const orders = pgTable('orders', {
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES'),
   reduceOnly: boolean('reduce_only').default(false),
+  stopLossIntent: numeric('stop_loss_intent', { precision: 20, scale: 8 }),
+  takeProfitIntent: numeric('take_profit_intent', { precision: 20, scale: 8 }),
 });
 
 export const positions = pgTable('positions', {

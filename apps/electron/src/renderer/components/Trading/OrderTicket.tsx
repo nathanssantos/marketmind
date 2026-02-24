@@ -9,6 +9,7 @@ import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTradi
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingPref } from '@renderer/store/preferencesStore';
+import { trpc } from '../../utils/trpc';
 import { getKlineClose } from '@shared/utils';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +35,11 @@ const OrderTicketComponent = () => {
   const spotTrading = useBackendTrading(activeWalletId || '', symbol);
   const futuresTrading = useBackendFuturesTrading(activeWalletId || '', symbol);
 
+  const { data: autoConfig } = trpc.autoTrading.getConfig.useQuery(
+    { walletId: activeWalletId! },
+    { enabled: !!activeWalletId }
+  );
+
   const activeWallet = rawActiveWallet ? {
     id: rawActiveWallet.id,
     name: rawActiveWallet.name,
@@ -52,8 +58,8 @@ const OrderTicketComponent = () => {
 
   const calculateDefaultQuantity = () => {
     if (!activeWallet || !currentPrice) return 0;
-    const tenPercentBalance = activeWallet.balance * 0.1;
-    return tenPercentBalance / currentPrice;
+    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 100;
+    return (activeWallet.balance * sizePercent) / currentPrice;
   };
 
   const symbolQuantity = getQuantityForSymbol(symbol);
@@ -111,6 +117,8 @@ const OrderTicketComponent = () => {
         leverage,
         marginType,
         ...(stop !== undefined && { stopPrice: stop.toString() }),
+        stopLoss: stopLoss || undefined,
+        takeProfit: takeProfit || undefined,
       });
     } else {
       await spotTrading.createOrder({

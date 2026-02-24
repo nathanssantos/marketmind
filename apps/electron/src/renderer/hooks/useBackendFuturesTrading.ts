@@ -109,6 +109,8 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       setupType?: string;
       leverage?: number;
       marginType?: 'ISOLATED' | 'CROSSED';
+      stopLoss?: string;
+      takeProfit?: string;
     }) => {
       return createOrderMutation.mutateAsync(data);
     },

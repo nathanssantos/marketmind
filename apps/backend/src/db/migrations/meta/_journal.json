@@ -50,6 +50,13 @@
       "when": 1771767329829,
       "tag": "0006_woozy_skreet",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1771886837108,
+      "tag": "0007_elite_beast",
+      "breakpoints": true
     }
   ]
 }

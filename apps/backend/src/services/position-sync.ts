@@ -1,9 +1,9 @@
 import type { OrphanedPositionEntry, PositionSyncResult, UnknownPositionEntry, UpdatedPositionEntry, WalletSyncEntry } from '@marketmind/logger';
 import type { FuturesPosition } from '@marketmind/types';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, or } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
-import { tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculateTotalFees } from '@marketmind/types';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
@@ -11,6 +11,7 @@ import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
+import { autoTradingService } from './auto-trading';
 
 interface SyncResult {
   walletId: string;
@@ -436,6 +437,79 @@ export class PositionSyncService {
                 },
                 timestamp: Date.now(),
               });
+            }
+
+            try {
+              const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+              const intentOrder = await db.query.orders.findFirst({
+                where: and(
+                  eq(orders.walletId, wallet.id),
+                  eq(orders.symbol, symbol),
+                  eq(orders.side, side === 'LONG' ? 'BUY' : 'SELL'),
+                  or(isNotNull(orders.stopLossIntent), isNotNull(orders.takeProfitIntent)),
+                  gte(orders.createdAt, sevenDaysAgo),
+                ),
+                orderBy: [desc(orders.createdAt)],
+              });
+
+              if (intentOrder) {
+                const qty = Math.abs(positionAmt);
+                let stopLossAlgoId: number | null = null;
+                let takeProfitAlgoId: number | null = null;
+                let stopLossOrderId: number | null = null;
+                let takeProfitOrderId: number | null = null;
+                let stopLossIsAlgo = false;
+                let takeProfitIsAlgo = false;
+
+                if (intentOrder.stopLossIntent) {
+                  try {
+                    const slResult = await autoTradingService.createStopLossOrder(wallet, symbol, qty, parseFloat(intentOrder.stopLossIntent), side, 'FUTURES');
+                    if (slResult.isAlgoOrder) {
+                      stopLossAlgoId = slResult.algoId;
+                      stopLossIsAlgo = true;
+                    } else {
+                      stopLossOrderId = slResult.orderId;
+                    }
+                    logger.info({ executionId, symbol, stopLossIntent: intentOrder.stopLossIntent }, '[PositionSync] Placed SL from intent');
+                  } catch (slError) {
+                    logger.error({ executionId, symbol, error: serializeError(slError) }, '[PositionSync] Failed to place SL from intent');
+                  }
+                }
+
+                if (intentOrder.takeProfitIntent) {
+                  try {
+                    const tpResult = await autoTradingService.createTakeProfitOrder(wallet, symbol, qty, parseFloat(intentOrder.takeProfitIntent), side, 'FUTURES');
+                    if (tpResult.isAlgoOrder) {
+                      takeProfitAlgoId = tpResult.algoId;
+                      takeProfitIsAlgo = true;
+                    } else {
+                      takeProfitOrderId = tpResult.orderId;
+                    }
+                    logger.info({ executionId, symbol, takeProfitIntent: intentOrder.takeProfitIntent }, '[PositionSync] Placed TP from intent');
+                  } catch (tpError) {
+                    logger.error({ executionId, symbol, error: serializeError(tpError) }, '[PositionSync] Failed to place TP from intent');
+                  }
+                }
+
+                await db.update(tradeExecutions).set({
+                  stopLoss: intentOrder.stopLossIntent ?? undefined,
+                  takeProfit: intentOrder.takeProfitIntent ?? undefined,
+                  stopLossAlgoId,
+                  stopLossOrderId,
+                  takeProfitAlgoId,
+                  takeProfitOrderId,
+                  stopLossIsAlgo,
+                  takeProfitIsAlgo,
+                  updatedAt: new Date(),
+                }).where(eq(tradeExecutions.id, executionId));
+
+                await db.update(orders).set({
+                  stopLossIntent: null,
+                  takeProfitIntent: null,
+                }).where(eq(orders.orderId, intentOrder.orderId));
+              }
+            } catch (intentError) {
+              logger.error({ executionId, symbol, error: serializeError(intentError) }, '[PositionSync] Failed to process intent order for adopted position');
             }
           } catch (adoptError) {
             logger.error(
