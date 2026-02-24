@@ -62,7 +62,10 @@
     "themeDark": "Escuro",
     "themeLight": "Claro",
     "settings": "Configurações",
-    "toggleColorMode": "Alternar modo de cor"
+    "toggleColorMode": "Alternar modo de cor",
+    "zoomIn": "Aumentar Zoom",
+    "zoomOut": "Reduzir Zoom",
+    "zoomReset": "Redefinir Zoom"
   },
   "symbolSelector": {
     "label": "Corretora",

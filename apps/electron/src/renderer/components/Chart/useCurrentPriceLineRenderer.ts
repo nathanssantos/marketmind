@@ -1,7 +1,12 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
-import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import {
+  computeSecondsRemaining,
+  drawCurrentPriceTag,
+  formatTimerText,
+} from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
+import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineOpen } from '@shared/utils';
 import { useCallback } from 'react';
 
@@ -10,7 +15,7 @@ interface UseCurrentPriceLineRendererProps {
   colors: ChartThemeColors;
   enabled?: boolean;
   lineWidth?: number;
-  rightMargin?: number;
+  timeframe?: string;
 }
 
 interface UseCurrentPriceLineRendererReturn {
@@ -24,7 +29,7 @@ export const useCurrentPriceLineRenderer = ({
   colors,
   enabled = true,
   lineWidth = 2,
-  rightMargin = 72,
+  timeframe,
 }: UseCurrentPriceLineRendererProps): UseCurrentPriceLineRendererReturn => {
   const renderLine = useCallback((): void => {
     if (!enabled || !manager) return;
@@ -44,7 +49,7 @@ export const useCurrentPriceLineRenderer = ({
     const isBullish = currentPrice >= openPrice;
     const candleColor = isBullish ? colors.bullish : colors.bearish;
 
-    const { width, chartHeight } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
     const y = manager.priceToY(currentPrice);
 
     if (y < 0 || y > chartHeight) return;
@@ -54,13 +59,12 @@ export const useCurrentPriceLineRenderer = ({
     ctx.lineWidth = lineWidth;
     ctx.setLineDash([2, 3]);
 
-    const lineEndX = width - rightMargin;
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(lineEndX, y);
+    ctx.lineTo(chartWidth, y);
     ctx.stroke();
     ctx.restore();
-  }, [enabled, manager, colors, lineWidth, rightMargin, manager?.getKlines()]);
+  }, [enabled, manager, colors, lineWidth, manager?.getKlines()]);
 
   const renderLabel = useCallback((): void => {
     if (!manager) return;
@@ -79,25 +83,29 @@ export const useCurrentPriceLineRenderer = ({
     const openPrice = getKlineOpen(lastKline);
     const isBullish = currentPrice >= openPrice;
     const bgColor = isBullish ? colors.bullish : colors.bearish;
-    const textColor = '#ffffff';
 
-    const { width, chartHeight } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
     const y = manager.priceToY(currentPrice);
 
     if (y < 0 || y > chartHeight) return;
 
-    ctx.save();
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
     const priceText = formatChartPrice(currentPrice);
-    const lineEndX = width - rightMargin;
+    const timerText = timeframe
+      ? formatTimerText(computeSecondsRemaining(timeframe, lastKline.openTime))
+      : null;
 
-    drawPriceTag(ctx, priceText, y, lineEndX, bgColor, 72, textColor);
-
-    ctx.restore();
-  }, [manager, colors, rightMargin, manager?.getKlines()]);
+    drawCurrentPriceTag(
+      ctx,
+      priceText,
+      timerText,
+      y,
+      chartWidth,
+      bgColor,
+      colors.axisLine,
+      CHART_CONFIG.CANVAS_PADDING_RIGHT,
+      '#ffffff'
+    );
+  }, [manager, colors, timeframe, manager?.getKlines()]);
 
   const render = useCallback((): void => {
     renderLine();

@@ -62,7 +62,10 @@
     "themeDark": "Oscuro",
     "themeLight": "Claro",
     "settings": "Configuración",
-    "toggleColorMode": "Alternar modo de color"
+    "toggleColorMode": "Alternar modo de color",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoomReset": "Restablecer Zoom"
   },
   "symbolSelector": {
     "label": "Exchange",

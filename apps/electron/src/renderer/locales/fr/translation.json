@@ -62,7 +62,10 @@
     "themeDark": "Sombre",
     "themeLight": "Clair",
     "settings": "Paramètres",
-    "toggleColorMode": "Changer le mode couleur"
+    "toggleColorMode": "Changer le mode couleur",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "zoomReset": "Réinitialiser le zoom"
   },
   "symbolSelector": {
     "label": "Bourse",

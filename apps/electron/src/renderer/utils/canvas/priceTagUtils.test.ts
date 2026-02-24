@@ -22,7 +22,7 @@ describe('priceTagUtils', () => {
     it('should draw a price tag with default width', () => {
       const result = drawPriceTag(ctx, '100.50', 200, 100, 'rgba(34, 197, 94, 0.9)');
 
-      expect(result).toEqual({ width: 78, height: 18 });
+      expect(result).toEqual({ width: 70, height: 18 });
       expect(ctx.save).toHaveBeenCalled();
       expect(ctx.restore).toHaveBeenCalled();
     });
@@ -44,10 +44,10 @@ describe('priceTagUtils', () => {
 
     it('should handle different price formats', () => {
       const result1 = drawPriceTag(ctx, '0.01', 100, 100, 'rgba(0, 0, 0, 0.9)');
-      expect(result1).toEqual({ width: 78, height: 18 });
+      expect(result1).toEqual({ width: 70, height: 18 });
 
       const result2 = drawPriceTag(ctx, '99999.99', 100, 100, 'rgba(0, 0, 0, 0.9)');
-      expect(result2).toEqual({ width: 78, height: 18 });
+      expect(result2).toEqual({ width: 70, height: 18 });
     });
 
     it('should calculate correct width including arrow', () => {
@@ -87,8 +87,8 @@ describe('priceTagUtils', () => {
       const result1 = drawPriceTag(ctx, '0.00', 0, 0, 'rgba(0, 0, 0, 0.9)');
       const result2 = drawPriceTag(ctx, '999.99', 1000, 1000, 'rgba(0, 0, 0, 0.9)');
 
-      expect(result1).toEqual({ width: 78, height: 18 });
-      expect(result2).toEqual({ width: 78, height: 18 });
+      expect(result1).toEqual({ width: 70, height: 18 });
+      expect(result2).toEqual({ width: 70, height: 18 });
     });
 
     it('should work with different color formats', () => {
@@ -101,7 +101,7 @@ describe('priceTagUtils', () => {
 
       colors.forEach((color) => {
         const result = drawPriceTag(ctx, '100.00', 100, 100, color);
-        expect(result).toEqual({ width: 78, height: 18 });
+        expect(result).toEqual({ width: 70, height: 18 });
       });
     });
 

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { usePlatform } from '../context/PlatformContext';
+import { immediateFlushPreferences } from '../store/preferencesStore';
 
 interface UseChartWindowsResult {
   openChartWindow: (symbol?: string, timeframe?: string) => Promise<void>;
@@ -11,6 +12,7 @@ export const useChartWindows = (): UseChartWindowsResult => {
 
   const openChartWindow = useCallback(async (symbol?: string, timeframe?: string) => {
     try {
+      await immediateFlushPreferences();
       const result = await windowAdapter.openChart(symbol, timeframe);
       if (!result.success) {
         console.error('Failed to open chart window:', result.error);

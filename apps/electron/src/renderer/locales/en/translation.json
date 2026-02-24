@@ -58,7 +58,10 @@
     "themeDark": "Dark",
     "themeLight": "Light",
     "settings": "Settings",
-    "toggleColorMode": "Toggle color mode"
+    "toggleColorMode": "Toggle color mode",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "zoomReset": "Reset Zoom"
   },
   "symbolSelector": {
     "label": "Exchange",

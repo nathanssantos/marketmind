@@ -59,10 +59,16 @@ export interface HttpAdapter {
   fetch: (url: string, options?: HttpOptions) => Promise<unknown>;
 }
 
+export interface ZoomAdapter {
+  setFactor: (factor: number) => void;
+  getFactor: () => number;
+}
+
 export interface PlatformAdapter {
   update: UpdateAdapter;
   notification: NotificationAdapter;
   window: WindowAdapter;
   http: HttpAdapter;
+  zoom: ZoomAdapter;
   platform: 'electron' | 'web';
 }
