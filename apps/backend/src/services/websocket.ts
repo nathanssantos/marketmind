@@ -75,6 +75,17 @@ export class WebSocketService {
         }
       });
 
+      socket.on('subscribe:prices:batch', (symbols: string[]) => {
+        if (!Array.isArray(symbols)) return;
+        for (const symbol of symbols) {
+          const room = `prices:${symbol}`;
+          if (!socket.rooms.has(room)) {
+            socket.join(room);
+            binancePriceStreamService.subscribeSymbol(symbol);
+          }
+        }
+      });
+
       socket.on('subscribe:klines', (data: { symbol: string; interval: string }) => {
         const room = `klines:${data.symbol}:${data.interval}`;
         if (!socket.rooms.has(room)) {

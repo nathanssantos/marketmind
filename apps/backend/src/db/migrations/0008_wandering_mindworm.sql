@@ -1,0 +1,1 @@
+CREATE INDEX "klines_lookup_idx" ON "klines" USING btree ("symbol","interval","market_type","open_time");

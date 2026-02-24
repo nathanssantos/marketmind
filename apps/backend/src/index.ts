@@ -103,24 +103,32 @@ const start = async (): Promise<void> => {
     const websocketService = initializeWebSocket(fastify.server);
     setWebSocketService(websocketService);
 
-    const { positionMonitorService } = await import('./services/position-monitor');
+    const [
+      { positionMonitorService },
+      { binancePriceStreamService },
+      { binanceKlineStreamService, binanceFuturesKlineStreamService },
+      { binanceUserStreamService },
+      { binanceFuturesUserStreamService },
+      { positionSyncService },
+    ] = await Promise.all([
+      import('./services/position-monitor'),
+      import('./services/binance-price-stream'),
+      import('./services/binance-kline-stream'),
+      import('./services/binance-user-stream'),
+      import('./services/binance-futures-user-stream'),
+      import('./services/position-sync'),
+    ]);
+
     positionMonitorService.start();
-
-    const { binancePriceStreamService } = await import('./services/binance-price-stream');
     binancePriceStreamService.start();
-
-    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('./services/binance-kline-stream');
     binanceKlineStreamService.start();
     binanceFuturesKlineStreamService.start();
 
-    const { binanceUserStreamService } = await import('./services/binance-user-stream');
-    await binanceUserStreamService.start();
-
-    const { binanceFuturesUserStreamService } = await import('./services/binance-futures-user-stream');
-    await binanceFuturesUserStreamService.start();
-
-    const { positionSyncService } = await import('./services/position-sync');
-    await positionSyncService.start();
+    await Promise.all([
+      binanceUserStreamService.start(),
+      binanceFuturesUserStreamService.start(),
+      positionSyncService.start(),
+    ]);
 
     const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
     await autoTradingScheduler.restoreWatchersFromDb();

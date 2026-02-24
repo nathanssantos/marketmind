@@ -30,7 +30,7 @@ import {
     type RotationResult,
 } from './dynamic-symbol-rotation';
 import { getKlineMaintenance } from './kline-maintenance';
-import { prefetchKlines } from './kline-prefetch';
+import { prefetchKlines, prefetchKlinesAsync } from './kline-prefetch';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
 import {
     outputStartupResults,
@@ -894,6 +894,14 @@ export class AutoTradingScheduler {
     };
 
     this.activeWatchers.set(watcherId, watcher);
+
+    prefetchKlinesAsync({
+      symbol,
+      interval,
+      marketType,
+      targetCount: calculateRequiredKlines(),
+      silent: true,
+    });
 
     const { getKlineStreamService } = await import('./exchange-stream-factory');
     const streamService = await getKlineStreamService(exchange, marketType);

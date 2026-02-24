@@ -60,7 +60,11 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     useEffect(() => {
-        clearStaleCache(queryClient);
+        const version = (import.meta.env['VITE_APP_VERSION'] as string | undefined) ?? 'dev';
+        if (sessionStorage.getItem('mm-cache-version') !== version) {
+            clearStaleCache(queryClient);
+            sessionStorage.setItem('mm-cache-version', version);
+        }
     }, [queryClient]);
 
     return (

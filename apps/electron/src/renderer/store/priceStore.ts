@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
 
 interface PriceEntry {
   price: number;
@@ -19,7 +20,7 @@ const PRICE_STALENESS_MS = 30000;
 const MAX_PRICE_SYMBOLS = 500;
 const STALE_CLEANUP_THRESHOLD_MS = 5 * 60 * 1000;
 
-export const usePriceStore = create<PriceState>((set, get) => ({
+export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   prices: {},
 
   updatePrice: (symbol, price, source) => {
@@ -28,41 +29,19 @@ export const usePriceStore = create<PriceState>((set, get) => ({
 
     if (current) {
       if (source === 'chart') {
-        set((state) => ({
-          prices: {
-            ...state.prices,
-            [symbol]: { price, timestamp: now, source },
-          },
-        }));
+        set((state) => { state.prices[symbol] = { price, timestamp: now, source }; });
       } else if (source === 'websocket') {
         if (current.source !== 'chart' || now - current.timestamp > PRICE_STALENESS_MS) {
-          set((state) => ({
-            prices: {
-              ...state.prices,
-              [symbol]: { price, timestamp: now, source },
-            },
-          }));
+          set((state) => { state.prices[symbol] = { price, timestamp: now, source }; });
         }
       } else if (current.source === 'api' || now - current.timestamp > PRICE_STALENESS_MS) {
-        set((state) => ({
-          prices: {
-            ...state.prices,
-            [symbol]: { price, timestamp: now, source },
-          },
-        }));
+        set((state) => { state.prices[symbol] = { price, timestamp: now, source }; });
       }
     } else {
       set((state) => {
         const symbolCount = Object.keys(state.prices).length;
-        if (symbolCount >= MAX_PRICE_SYMBOLS) {
-          get().cleanupStaleSymbols();
-        }
-        return {
-          prices: {
-            ...state.prices,
-            [symbol]: { price, timestamp: now, source },
-          },
-        };
+        if (symbolCount >= MAX_PRICE_SYMBOLS) get().cleanupStaleSymbols();
+        state.prices[symbol] = { price, timestamp: now, source };
       });
     }
   },
@@ -82,20 +61,25 @@ export const usePriceStore = create<PriceState>((set, get) => ({
     const entries = Object.entries(currentPrices);
 
     if (entries.length <= MAX_PRICE_SYMBOLS) {
-      const filtered = entries.filter(
-        ([, entry]) => now - entry.timestamp < STALE_CLEANUP_THRESHOLD_MS
-      );
-      if (filtered.length < entries.length) {
-        set({ prices: Object.fromEntries(filtered) });
-      }
+      set((state) => {
+        for (const [sym, entry] of entries) {
+          if (now - entry.timestamp >= STALE_CLEANUP_THRESHOLD_MS) {
+            delete state.prices[sym];
+          }
+        }
+      });
       return;
     }
 
     const sorted = entries.sort((a, b) => b[1].timestamp - a[1].timestamp);
-    const kept = sorted.slice(0, MAX_PRICE_SYMBOLS);
-    set({ prices: Object.fromEntries(kept) });
+    const toRemove = sorted.slice(MAX_PRICE_SYMBOLS).map(([sym]) => sym);
+    set((state) => {
+      for (const sym of toRemove) {
+        delete state.prices[sym];
+      }
+    });
   },
-}));
+})));
 
 const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 1000;
 
