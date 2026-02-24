@@ -7,6 +7,7 @@ const {
   mockDbSelectFrom,
   mockDbFindMany,
   mockPrefetchKlines,
+  mockPrefetchKlinesAsync,
   mockMeetsKlineRequirement,
   mockDetect,
   mockLoadAll,
@@ -21,6 +22,7 @@ const {
   const mockDbSelectFrom = vi.fn(() => ({ leftJoin: mockDbSelectLeftJoin, where: mockDbSelectWhere }));
   const mockDbFindMany = vi.fn().mockResolvedValue([]);
   const mockPrefetchKlines = vi.fn().mockResolvedValue({ success: true, downloaded: 0, totalInDb: 100, gaps: 0, alreadyComplete: false });
+  const mockPrefetchKlinesAsync = vi.fn();
   const mockMeetsKlineRequirement = vi.fn(() => true);
   const mockDetect = vi.fn().mockReturnValue({ setup: null, confidence: 0 });
   const mockLoadAll = vi.fn().mockResolvedValue([]);
@@ -54,6 +56,7 @@ const {
     mockDbSelectFrom,
     mockDbFindMany,
     mockPrefetchKlines,
+    mockPrefetchKlinesAsync,
     mockMeetsKlineRequirement,
     mockDetect,
     mockLoadAll,
@@ -113,6 +116,7 @@ vi.mock('drizzle-orm', () => ({
 
 vi.mock('../../kline-prefetch', () => ({
   prefetchKlines: mockPrefetchKlines,
+  prefetchKlinesAsync: mockPrefetchKlinesAsync,
   meetsKlineRequirementWithTolerance: mockMeetsKlineRequirement,
 }));
 
@@ -578,30 +582,77 @@ describe('SignalProcessor', () => {
       setupWatcherWithBalance();
 
       mockDbFindMany.mockResolvedValueOnce([]);
-      mockPrefetchKlines.mockResolvedValueOnce({
-        success: true,
-        downloaded: 100,
-        totalInDb: 100,
-        gaps: 0,
-        alreadyComplete: false,
-      });
-      mockMeetsKlineRequirement.mockReturnValueOnce(true);
-
-      const now = Date.now();
-      const intervalMs = HOUR_MS;
-      const lastCandleOpen = Math.floor(now / intervalMs) * intervalMs - intervalMs;
-      const klineRows = Array.from({ length: 60 }, (_, i) =>
-        createKlineRow(lastCandleOpen - i * intervalMs)
-      );
-      mockDbFindMany.mockResolvedValueOnce(klineRows);
-      mockLoadAll.mockResolvedValueOnce([]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
         symbol: 'BTCUSDT',
         interval: '1h',
         marketType: 'FUTURES',
-        status: 'success',
+        status: 'pending',
+        reason: 'Kline backfill in progress',
+        setupsDetected: [],
+        filterChecks: [],
+        rejections: [],
+        tradeExecutions: [],
+        setupValidations: [],
+        tradesExecuted: 0,
+        durationMs: 0,
+        logs: [],
+      });
+
+      const result = await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
+
+      expect(mockPrefetchKlinesAsync).toHaveBeenCalledWith({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        targetCount: 500,
+        silent: true,
+      });
+      expect(result.status).toBe('pending');
+    });
+
+    it('should return pending and not block when klines are insufficient', async () => {
+      setupWatcherWithBalance();
+
+      mockDbFindMany.mockResolvedValueOnce([]);
+
+      mockToResult.mockReturnValueOnce({
+        watcherId: '',
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        status: 'pending',
+        reason: 'Kline backfill in progress',
+        setupsDetected: [],
+        filterChecks: [],
+        rejections: [],
+        tradeExecutions: [],
+        setupValidations: [],
+        tradesExecuted: 0,
+        durationMs: 0,
+        logs: [],
+      });
+
+      const result = await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
+
+      expect(mockPrefetchKlinesAsync).toHaveBeenCalled();
+      expect(mockPrefetchKlines).not.toHaveBeenCalled();
+      expect(result.status).toBe('pending');
+    });
+
+    it('should trigger async prefetch and not perform a blocking fetch', async () => {
+      setupWatcherWithBalance();
+
+      mockDbFindMany.mockResolvedValueOnce([]);
+
+      mockToResult.mockReturnValueOnce({
+        watcherId: '',
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        status: 'pending',
+        reason: 'Kline backfill in progress',
         setupsDetected: [],
         filterChecks: [],
         rejections: [],
@@ -614,114 +665,24 @@ describe('SignalProcessor', () => {
 
       await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
 
-      expect(mockPrefetchKlines).toHaveBeenCalledWith({
-        symbol: 'BTCUSDT',
-        interval: '1h',
-        marketType: 'FUTURES',
-        targetCount: 500,
-      });
-    });
-
-    it('should return error when prefetch fails', async () => {
-      setupWatcherWithBalance();
-
-      mockDbFindMany.mockResolvedValueOnce([]);
-      mockPrefetchKlines.mockResolvedValueOnce({
-        success: false,
-        downloaded: 0,
-        totalInDb: 0,
-        gaps: 0,
-        alreadyComplete: false,
-        error: 'API rate limit',
-      });
-
-      mockToResult.mockReturnValueOnce({
-        watcherId: '',
-        symbol: 'BTCUSDT',
-        interval: '1h',
-        marketType: 'FUTURES',
-        status: 'error',
-        reason: 'Failed to fetch klines',
-        setupsDetected: [],
-        filterChecks: [],
-        rejections: [],
-        tradeExecutions: [],
-        setupValidations: [],
-        tradesExecuted: 0,
-        durationMs: 0,
-        logs: [],
-      });
-
-      const result = await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
-
-      expect(result.status).toBe('error');
-      expect(result.reason).toBe('Failed to fetch klines');
-    });
-
-    it('should return skipped when klines are insufficient after backfill', async () => {
-      setupWatcherWithBalance();
-
-      mockDbFindMany.mockResolvedValueOnce([]);
-      mockPrefetchKlines.mockResolvedValueOnce({
-        success: true,
-        downloaded: 10,
-        totalInDb: 10,
-        gaps: 0,
-        alreadyComplete: true,
-      });
-      mockMeetsKlineRequirement.mockReturnValueOnce(false);
-
-      mockToResult.mockReturnValueOnce({
-        watcherId: '',
-        symbol: 'BTCUSDT',
-        interval: '1h',
-        marketType: 'FUTURES',
-        status: 'skipped',
-        reason: 'Insufficient klines',
-        setupsDetected: [],
-        filterChecks: [],
-        rejections: [],
-        tradeExecutions: [],
-        setupValidations: [],
-        tradesExecuted: 0,
-        durationMs: 0,
-        logs: [],
-      });
-
-      const result = await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
-
-      expect(result.status).toBe('skipped');
-    });
-
-    it('should skip refetch when downloaded is 0 after backfill', async () => {
-      setupWatcherWithBalance();
-
-      mockDbFindMany.mockResolvedValueOnce([]);
-      mockPrefetchKlines.mockResolvedValueOnce({
-        success: true,
-        downloaded: 0,
-        totalInDb: 100,
-        gaps: 0,
-        alreadyComplete: true,
-      });
-      mockMeetsKlineRequirement.mockReturnValueOnce(true);
-
-      const now = Date.now();
-      const intervalMs = HOUR_MS;
-      const lastCandleOpen = Math.floor(now / intervalMs) * intervalMs - intervalMs;
-      const klineRows = Array.from({ length: 60 }, (_, i) =>
-        createKlineRow(lastCandleOpen - i * intervalMs)
+      expect(mockPrefetchKlinesAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ symbol: 'BTCUSDT', interval: '1h', silent: true })
       );
+      expect(mockDbFindMany).toHaveBeenCalledTimes(1);
+    });
 
-      mockDbFindMany.mockResolvedValueOnce(klineRows);
-      mockLoadAll.mockResolvedValueOnce([]);
+    it('should only query klines once when insufficient (no re-fetch)', async () => {
+      setupWatcherWithBalance();
+
+      mockDbFindMany.mockResolvedValueOnce([]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
         symbol: 'BTCUSDT',
         interval: '1h',
         marketType: 'FUTURES',
-        status: 'success',
+        status: 'pending',
+        reason: 'Kline backfill in progress',
         setupsDetected: [],
         filterChecks: [],
         rejections: [],

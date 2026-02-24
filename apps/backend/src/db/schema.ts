@@ -130,6 +130,9 @@ export const klines = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.symbol, table.interval, table.marketType, table.openTime] }),
+    klinesLookupIdx: index('klines_lookup_idx').on(
+      table.symbol, table.interval, table.marketType, table.openTime
+    ),
   })
 );
 

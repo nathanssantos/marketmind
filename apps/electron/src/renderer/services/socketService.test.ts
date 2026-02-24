@@ -32,7 +32,7 @@ describe('socketService', () => {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        reconnectionAttempts: Infinity,
+        reconnectionAttempts: 50,
         transports: ['websocket'],
         timeout: 10000,
       });
@@ -154,6 +154,15 @@ describe('socketService', () => {
       )?.[1];
 
       expect(() => errorHandler?.(new Error('Test error'))).not.toThrow();
+    });
+
+    it('should handle reconnect_failed event without error', () => {
+      socketService.connect();
+      const failedHandler = mockSocket.on.mock.calls.find(
+        (call) => call[0] === 'reconnect_failed'
+      )?.[1];
+
+      expect(() => failedHandler?.()).not.toThrow();
     });
   });
 });

@@ -22,6 +22,7 @@ import { DEFAULT_MOVING_AVERAGES, DEFAULT_TIMEFRAME, INTERVAL_MS_MAP, MIN_UPDATE
 import { ChartProvider } from './context/ChartContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
 import { useKlineStream } from './hooks/useBackendKlines';
+import { trpc } from './utils/trpc';
 import { useKlinePagination } from './hooks/useKlinePagination';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
@@ -133,6 +134,15 @@ function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { t } = useTranslation();
+  const utils = trpc.useUtils();
+
+  useEffect(() => {
+    void Promise.all([
+      utils.wallet.list.prefetch(),
+      utils.tradingProfiles.list.prefetch(),
+    ]);
+  }, []);
+
   const [symbol, setSymbol] = useChartPref('symbol', 'BTCUSDT');
   const [marketType, setMarketType] = useChartPref<MarketType>('marketType', 'FUTURES');
 

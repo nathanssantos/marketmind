@@ -14,7 +14,7 @@ import {
   klines,
   wallets,
 } from '../../db/schema';
-import { meetsKlineRequirementWithTolerance, prefetchKlines } from '../kline-prefetch';
+import { prefetchKlines, prefetchKlinesAsync } from '../kline-prefetch';
 import { StrategyInterpreter, StrategyLoader } from '../setup-detection/dynamic';
 import {
   createBatchResult,
@@ -284,42 +284,15 @@ export class SignalProcessor {
     });
 
     if (klinesData.length < minRequired) {
-      logBuffer.log('>', 'Backfilling klines', { count: klinesData.length, required: minRequired });
-
-      const result = await prefetchKlines({
+      logBuffer.log('>', 'Kline backfill in progress', { count: klinesData.length, required: minRequired });
+      prefetchKlinesAsync({
         symbol: watcher.symbol,
         interval: watcher.interval,
         marketType: watcher.marketType,
         targetCount: requiredKlines,
+        silent: true,
       });
-
-      if (!result.success) {
-        logBuffer.error('✗', 'Failed to fetch klines', { error: result.error });
-        return logBuffer.toResult('error', 'Failed to fetch klines');
-      }
-
-      const hasReachedApiLimit = result.alreadyComplete || result.gaps === 0;
-
-      if (!meetsKlineRequirementWithTolerance(result.totalInDb, minRequired, hasReachedApiLimit)) {
-        logBuffer.warn('!', 'Insufficient klines', {
-          totalInDb: result.totalInDb,
-          minRequired,
-          apiExhausted: hasReachedApiLimit,
-        });
-        return logBuffer.toResult('skipped', 'Insufficient klines', result.totalInDb);
-      }
-
-      if (result.downloaded > 0) {
-        klinesData = await db.query.klines.findMany({
-          where: and(
-            eq(klines.symbol, watcher.symbol),
-            eq(klines.interval, watcher.interval),
-            eq(klines.marketType, watcher.marketType)
-          ),
-          orderBy: [desc(klines.openTime)],
-          limit: requiredKlines,
-        });
-      }
+      return logBuffer.toResult('pending', 'Kline backfill in progress');
     }
 
     klinesData.reverse();
