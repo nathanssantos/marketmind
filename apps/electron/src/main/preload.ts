@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
 interface UpdateInfo {
   version: string;
@@ -33,6 +33,11 @@ interface NotificationAPI {
 interface WindowAPI {
   openChart: (symbol?: string, timeframe?: string) => Promise<{ success: boolean; windowId?: number; error?: string }>;
   getChartWindows: () => Promise<number[]>;
+}
+
+interface ZoomAPI {
+  setFactor: (factor: number) => void;
+  getFactor: () => number;
 }
 
 interface UpdateAPI {
@@ -138,6 +143,11 @@ const API = {
       return await ipcRenderer.invoke('window:getChartWindows');
     },
   } as WindowAPI,
+
+  zoom: {
+    setFactor: (factor: number) => { webFrame.setZoomFactor(factor); },
+    getFactor: () => webFrame.getZoomFactor(),
+  } as ZoomAPI,
 } as const;
 
 contextBridge.exposeInMainWorld('electron', API);

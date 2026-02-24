@@ -111,7 +111,9 @@ CREATE TABLE IF NOT EXISTS orders (
   setup_type VARCHAR(100),
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   market_type VARCHAR(10) DEFAULT 'FUTURES',
-  reduce_only BOOLEAN DEFAULT false
+  reduce_only BOOLEAN DEFAULT false,
+  stop_loss_intent NUMERIC(20, 8),
+  take_profit_intent NUMERIC(20, 8)
 );
 
 CREATE TABLE IF NOT EXISTS positions (

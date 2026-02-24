@@ -58,7 +58,10 @@
     "themeDark": "Dark",
     "themeLight": "Light",
     "settings": "Settings",
-    "toggleColorMode": "Toggle color mode"
+    "toggleColorMode": "Toggle color mode",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "zoomReset": "Reset Zoom"
   },
   "symbolSelector": {
     "label": "Exchange",
@@ -801,7 +804,12 @@
       "fees": "Fees Paid",
       "close": "Close Order",
       "cancel": "Cancel Order",
-      "autoTrade": "Auto-trade order"
+      "autoTrade": "Auto-trade order",
+      "viewAll": "View All Orders",
+      "dialogTitle": "All Orders",
+      "page": "Page {{page}} of {{total}}",
+      "search": "Search by symbol...",
+      "noResults": "No orders match your search."
     },
     "notifications": {
       "orderFilled": {

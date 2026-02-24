@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "0.53.0",
+  "version": "0.54.0",
   "description": "MarketMind Electron Desktop App",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",
@@ -51,6 +51,7 @@
     "electron-updater": "^6.6.2",
     "i18next": "^25.7.2",
     "i18next-browser-languagedetector": "^8.2.0",
+    "immer": "^11.1.4",
     "nanoid": "^5.1.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

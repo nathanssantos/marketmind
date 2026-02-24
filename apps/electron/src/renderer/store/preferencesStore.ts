@@ -46,6 +46,14 @@ const queueFlush = () => {
   flushTimer = setTimeout(flushToBackend, FLUSH_DEBOUNCE_MS);
 };
 
+export const immediateFlushPreferences = async (): Promise<void> => {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  await flushToBackend();
+};
+
 export const usePreferencesStore = create<PreferencesState>()((set) => ({
   isHydrated: false,
   chart: {},

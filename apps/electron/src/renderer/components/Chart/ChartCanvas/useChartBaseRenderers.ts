@@ -146,12 +146,7 @@ export const useChartBaseRenderers = ({
       ...(advancedConfig?.currentPriceLineWidth !== undefined && {
         lineWidth: advancedConfig.currentPriceLineWidth,
       }),
-      ...(advancedConfig?.currentPriceLineStyle !== undefined && {
-        lineStyle: advancedConfig.currentPriceLineStyle,
-      }),
-      ...(advancedConfig?.rightMargin !== undefined && {
-        rightMargin: advancedConfig.rightMargin,
-      }),
+      timeframe,
     });
 
   const { render: renderCrosshairPriceLine } = useCrosshairPriceLineRenderer({

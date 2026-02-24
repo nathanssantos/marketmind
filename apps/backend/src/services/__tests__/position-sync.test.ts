@@ -72,6 +72,13 @@ vi.mock('../protection-orders', () => ({
   cancelAllProtectionOrders: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../auto-trading', () => ({
+  autoTradingService: {
+    createStopLossOrder: vi.fn().mockResolvedValue({ orderId: 999, isAlgoOrder: false }),
+    createTakeProfitOrder: vi.fn().mockResolvedValue({ orderId: 1000, isAlgoOrder: false }),
+  },
+}));
+
 vi.mock('@marketmind/types', async (importOriginal) => {
   const original = await importOriginal<typeof import('@marketmind/types')>();
   return {

@@ -326,24 +326,25 @@ export class OrderExecutor {
       const walletSupportsLive = wallet.walletType === 'live' || wallet.walletType === 'testnet';
       const isLiveExecution = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
-      const activePositions = await db
-        .select()
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, watcher.walletId),
-            inArray(tradeExecutions.status, ['open', 'pending'])
-          )
-        );
+      const [activePositions, cooldownCheck] = await Promise.all([
+        db
+          .select()
+          .from(tradeExecutions)
+          .where(
+            and(
+              eq(tradeExecutions.walletId, watcher.walletId),
+              inArray(tradeExecutions.status, ['open', 'pending'])
+            )
+          ),
+        cooldownService.checkCooldown(
+          setup.type,
+          watcher.symbol,
+          watcher.interval,
+          watcher.walletId
+        ),
+      ]);
 
       const openPositions = activePositions.filter(p => p.status === 'open');
-
-      const cooldownCheck = await cooldownService.checkCooldown(
-        setup.type,
-        watcher.symbol,
-        watcher.interval,
-        watcher.walletId
-      );
 
       if (cooldownCheck.inCooldown) {
         const remainingMs = cooldownCheck.cooldownUntil

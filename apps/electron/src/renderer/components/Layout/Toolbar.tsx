@@ -1,5 +1,5 @@
 import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
-import { Box, Flex, HStack, IconButton } from '@chakra-ui/react';
+import { Box, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,11 +9,15 @@ import {
   LuSquareArrowOutUpRight,
   LuScanLine,
   LuSettings,
+  LuZoomIn,
+  LuZoomOut,
 } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
+import { useUIZoom } from '../../hooks/useUIZoom';
+import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
@@ -30,6 +34,7 @@ export interface ToolbarProps {
   isTradingOpen: boolean;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
+  showZoomControls?: boolean;
   onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onToggleTrading: () => void;
@@ -44,6 +49,7 @@ export const Toolbar = memo(({
   isTradingOpen,
   showNewWindowButton = true,
   showSidebarButtons = true,
+  showZoomControls = true,
   onSymbolChange,
   onTimeframeChange,
   onToggleTrading,
@@ -51,6 +57,7 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
   const { openChartWindow } = useChartWindows();
+  const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
   const { marketSidebarOpen, toggleMarketSidebar, isAnalyticsOpen, toggleAnalytics } = useUIStore(
     useShallow((state) => ({
@@ -146,56 +153,92 @@ export const Toolbar = memo(({
         <Box w="1px" h="32px" bg="border" flexShrink={0} />
 
         {showSidebarButtons && (
+          <HStack gap={1} flexShrink={0}>
+            <TooltipWrapper label={t('marketSidebar.title')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('marketSidebar.title')}
+                onClick={toggleMarketSidebar}
+                colorPalette={marketSidebarOpen ? 'blue' : 'gray'}
+                variant={marketSidebarOpen ? 'solid' : 'ghost'}
+              >
+                <LuActivity />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('screener.title')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('screener.title')}
+                onClick={toggleScreener}
+                colorPalette={isScreenerOpen ? 'blue' : 'gray'}
+                variant={isScreenerOpen ? 'solid' : 'ghost'}
+              >
+                <LuScanLine />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('trading.tabs.analytics')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('trading.tabs.analytics')}
+                onClick={toggleAnalytics}
+                colorPalette={isAnalyticsOpen ? 'blue' : 'gray'}
+                variant={isAnalyticsOpen ? 'solid' : 'ghost'}
+              >
+                <LuChartBar />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('trading.sidebar.title')}
+                onClick={onToggleTrading}
+                colorPalette={isTradingOpen ? 'blue' : 'gray'}
+                variant={isTradingOpen ? 'solid' : 'ghost'}
+              >
+                <LuDollarSign />
+              </IconButton>
+            </TooltipWrapper>
+          </HStack>
+        )}
+
+        {showZoomControls && (
           <>
+            {showSidebarButtons && <Box w="1px" h="32px" bg="border" flexShrink={0} />}
             <HStack gap={1} flexShrink={0}>
-              <TooltipWrapper label={t('marketSidebar.title')} showArrow>
+              <TooltipWrapper label={t('header.zoomOut')} showArrow>
                 <IconButton
                   size="2xs"
-                  aria-label={t('marketSidebar.title')}
-                  onClick={toggleMarketSidebar}
-                  colorPalette={marketSidebarOpen ? 'blue' : 'gray'}
-                  variant={marketSidebarOpen ? 'solid' : 'ghost'}
+                  aria-label={t('header.zoomOut')}
+                  onClick={zoomOut}
+                  variant="solid"
+                  colorPalette="blue"
+                  disabled={zoomLevel <= ZOOM_MIN}
                 >
-                  <LuActivity />
+                  <LuZoomOut />
                 </IconButton>
               </TooltipWrapper>
-              <TooltipWrapper label={t('screener.title')} showArrow>
+              <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="center" userSelect="none">
+                {zoomLevel}%
+              </Text>
+              <TooltipWrapper label={t('header.zoomIn')} showArrow>
                 <IconButton
                   size="2xs"
-                  aria-label={t('screener.title')}
-                  onClick={toggleScreener}
-                  colorPalette={isScreenerOpen ? 'blue' : 'gray'}
-                  variant={isScreenerOpen ? 'solid' : 'ghost'}
+                  aria-label={t('header.zoomIn')}
+                  onClick={zoomIn}
+                  variant="solid"
+                  colorPalette="blue"
+                  disabled={zoomLevel >= ZOOM_MAX}
                 >
-                  <LuScanLine />
-                </IconButton>
-              </TooltipWrapper>
-              <TooltipWrapper label={t('trading.tabs.analytics')} showArrow>
-                <IconButton
-                  size="2xs"
-                  aria-label={t('trading.tabs.analytics')}
-                  onClick={toggleAnalytics}
-                  colorPalette={isAnalyticsOpen ? 'blue' : 'gray'}
-                  variant={isAnalyticsOpen ? 'solid' : 'ghost'}
-                >
-                  <LuChartBar />
-                </IconButton>
-              </TooltipWrapper>
-              <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
-                <IconButton
-                  size="2xs"
-                  aria-label={t('trading.sidebar.title')}
-                  onClick={onToggleTrading}
-                  colorPalette={isTradingOpen ? 'blue' : 'gray'}
-                  variant={isTradingOpen ? 'solid' : 'ghost'}
-                >
-                  <LuDollarSign />
+                  <LuZoomIn />
                 </IconButton>
               </TooltipWrapper>
             </HStack>
+          </>
+        )}
 
+        {showSidebarButtons && (
+          <>
             <Box w="1px" h="32px" bg="border" flexShrink={0} />
-
             <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
               <IconButton
                 aria-label={t('header.settings')}

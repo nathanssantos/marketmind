@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.54.0] - 2026-02-24
+
+### Performance
+- **DB Covering Index**: compound index `klines_lookup_idx` on `(symbol, interval, market_type, open_time)` reduces watcher cycle kline query from 2–5 s to <50 ms
+- **Non-blocking Kline Prefetch**: signal processor now fires `prefetchKlinesAsync` and returns `pending` instead of blocking the watcher mutex for 10–30 s when klines are insufficient
+- **Pre-warm Klines on Watcher Registration**: `startWatcher` fires `prefetchKlinesAsync` immediately when a watcher is added to the in-memory map, ensuring klines are ready before the first cycle
+- **Version-Guarded Cache Invalidation**: `TrpcProvider` only clears the kline cache on a version change (via `sessionStorage`), eliminating the blank screen on every app reload
+- **Socket Reconnection Cap**: `reconnectionAttempts` reduced from `Infinity` to `50` with a `reconnect_failed` handler to surface disconnection state
+- **Parallel Order Executor Queries**: `activePositions` and `cooldownCheck` DB queries in order executor run concurrently with `Promise.all` (−100–150 ms per execution)
+- **Fixed Double-Polling in RealtimeSync**: removed hardcoded `staleTime: 5000` overrides; queries now respect `QUERY_CONFIGS` values (1 min), eliminating unnecessary 5-second polling
+- **Batched WebSocket Price Subscriptions**: replaced per-symbol `subscribe:prices` loop with single `subscribe:prices:batch` event on mount/reconnect, with matching batch handler in backend
+- **Immer Middleware for PriceStore**: `updatePrice` and `cleanupStaleSymbols` use Immer draft mutations instead of spreading the entire `prices` object, eliminating cascading re-renders on price ticks
+- **Parallel Backend Service Startup**: `binanceUserStream`, `binanceFuturesUserStream`, and `positionSync` services start concurrently (−2–5 s backend startup)
+- **Parallel Prefetch on App Init**: `AppContent` fires parallel prefetches for `wallet.list` and `tradingProfiles.list` on mount, making data available before first chart render
+
+### Added
+- **UI Zoom Control**: toolbar zoom in/out/reset buttons and keyboard shortcuts (`Ctrl+Plus`, `Ctrl+Minus`, `Ctrl+0`) to scale the entire interface; persisted to preferences
+- **Orders Dialog**: full-featured dialog showing up to 500 orders + 500 trade executions, with search by symbol, status filter, card/table view modes, and client-side pagination (25 per page)
+- **Real Total Count**: sidebar Orders tab now shows the true database count via `getOrdersStats` instead of the local 50-item slice
+- **View All Buttons**: two "View All Orders" buttons (top and bottom of sidebar list) to open the Orders Dialog
+- **Backend `getOrdersStats`**: new tRPC procedure returning total orders and trade executions count per wallet
+- **Backend search + offset**: `getOrders` and `getTradeExecutions` procedures now accept `search` (ilike on symbol) and `offset` parameters, with limit raised to 500
+- **OrderTicket `positionSizePercent`**: position size can now be expressed as a percentage of available balance directly in the order ticket
+- **Manual Order SL/TP**: stop loss and take profit fields exposed in manual order form
+
+### Changed
+- `OrderCard` and `OrdersTableContent` extracted as standalone shared components; `orderHelpers.ts` centralises shared helper functions (`getStatusColor`, `getStatusTranslationKey`, `formatDate`, `formatPrice`)
+
+---
+
 ## [0.53.0] - 2026-02-23
 
 ### Added

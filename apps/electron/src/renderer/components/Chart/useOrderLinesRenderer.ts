@@ -2,7 +2,7 @@ import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { ORDER_LINE_COLORS } from '@shared/constants';
+import { CHART_CONFIG, ORDER_LINE_COLORS } from '@shared/constants';
 
 import {
     getKlineClose,
@@ -138,7 +138,7 @@ interface SLTPCloseButton {
   type: 'stopLoss' | 'takeProfit';
 }
 
-const PRICE_TAG_WIDTH = 72;
+const PRICE_TAG_WIDTH = CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
 const drawBotIcon = (
   ctx: CanvasRenderingContext2D,
@@ -372,7 +372,7 @@ export const useOrderLinesRenderer = (
     const klines = manager.getKlines();
     if (!ctx || !dimensions || !klines.length) return;
 
-    const { width, chartWidth, chartHeight } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
     const lastKline = klines[klines.length - 1];
     if (!lastKline) return;
 
@@ -743,14 +743,13 @@ export const useOrderLinesRenderer = (
         const fillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
 
         const priceText = formatChartPrice(getOrderPrice(order));
-        const tagStartX = chartWidth - PRICE_TAG_WIDTH;
-        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, PRICE_TAG_WIDTH);
+        drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
 
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(tagStartX, y);
+        ctx.lineTo(chartWidth, y);
         ctx.stroke();
 
         const typeLabel = isLong ? 'L' : 'S';
@@ -855,14 +854,13 @@ export const useOrderLinesRenderer = (
         const fillColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_FILL : ORDER_LINE_COLORS.POSITION_SHORT_FILL;
 
         const priceText = formatChartPrice(hPos.avgPrice);
-        const tagStartX = chartWidth - PRICE_TAG_WIDTH;
-        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, PRICE_TAG_WIDTH);
+        drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
 
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(tagStartX, y);
+        ctx.lineTo(chartWidth, y);
         ctx.stroke();
 
         const priceChange = currentPrice - hPos.avgPrice;
@@ -1215,19 +1213,10 @@ export const useOrderLinesRenderer = (
 
     ctx.restore();
 
-    ctx.save();
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
     priceTags.forEach(({ priceText, y, fillColor }) => {
-      if (y >= 0 && y <= chartHeight) {
-        const tagStartX = width - PRICE_TAG_WIDTH;
-        drawPriceTag(ctx, priceText, y, tagStartX, fillColor, PRICE_TAG_WIDTH);
-      }
+      if (y >= 0 && y <= chartHeight)
+        drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
     });
-    
-    ctx.restore();
   };
 
   const getClickedOrderId = (x: number, y: number): string | null => {

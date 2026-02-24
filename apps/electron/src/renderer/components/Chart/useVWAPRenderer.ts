@@ -31,7 +31,7 @@ export const useVWAPRenderer = ({
     const vwapValues = calculateMonthlyVWAP(klines);
     if (vwapValues.length === 0) return;
 
-    const { width, chartWidth, chartHeight } = dimensions;
+    const { chartWidth, chartHeight } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
@@ -86,17 +86,8 @@ export const useVWAPRenderer = ({
       const y = manager.priceToY(lastVisibleValue);
 
       if (y >= 0 && y <= chartHeight) {
-        ctx.save();
-        ctx.font = '11px monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-
         const priceText = formatChartPrice(lastVisibleValue);
-        const tagStartX = width - CHART_CONFIG.CHART_RIGHT_MARGIN;
-
-        drawPriceTag(ctx, priceText, y, tagStartX, VWAP_COLOR, CHART_CONFIG.CHART_RIGHT_MARGIN);
-
-        ctx.restore();
+        drawPriceTag(ctx, priceText, y, chartWidth, VWAP_COLOR, CHART_CONFIG.CANVAS_PADDING_RIGHT);
       }
     }
   }, [manager, enabled]);

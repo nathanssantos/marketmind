@@ -5,6 +5,7 @@ import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
 import { SidebarContainer } from '../ui/Sidebar';
 import { OrdersList } from './OrdersList';
+import { OrdersDialog } from './OrdersDialog';
 import { OrderTicket } from './OrderTicket';
 import { Portfolio } from './Portfolio';
 
@@ -26,6 +27,7 @@ const TradingSidebarComponent = ({ width }: TradingSidebarProps) => {
 
   return (
     <SidebarContainer width={width}>
+      <OrdersDialog />
       <Tabs.Root value={tradingSidebarTab} onValueChange={handleTabChange} fitted h="full" display="flex" flexDirection="column">
         <Tabs.List>
           <Tabs.Trigger value="ticket">

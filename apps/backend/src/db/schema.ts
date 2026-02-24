@@ -76,6 +76,8 @@ export const orders = pgTable('orders', {
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES'),
   reduceOnly: boolean('reduce_only').default(false),
+  stopLossIntent: numeric('stop_loss_intent', { precision: 20, scale: 8 }),
+  takeProfitIntent: numeric('take_profit_intent', { precision: 20, scale: 8 }),
 });
 
 export const positions = pgTable('positions', {
@@ -128,6 +130,9 @@ export const klines = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.symbol, table.interval, table.marketType, table.openTime] }),
+    klinesLookupIdx: index('klines_lookup_idx').on(
+      table.symbol, table.interval, table.marketType, table.openTime
+    ),
   })
 );
 

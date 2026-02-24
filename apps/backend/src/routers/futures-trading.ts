@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
 import { orders, positions } from '../db/schema';
 import { binanceApiCache } from '../services/binance-api-cache';
+import { autoTradingService } from '../services/auto-trading';
 import {
     cancelAllFuturesAlgoOrders,
     cancelFuturesOrder,
@@ -101,6 +102,8 @@ export const futuresTradingRouter = router({
         setupType: z.string().optional(),
         leverage: z.number().min(1).max(125).default(1),
         marginType: z.enum(['ISOLATED', 'CROSSED']).default('ISOLATED'),
+        stopLoss: z.string().optional(),
+        takeProfit: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -134,6 +137,8 @@ export const futuresTradingRouter = router({
             setupType: input.setupType,
             marketType: 'FUTURES',
             reduceOnly: input.reduceOnly ?? false,
+            stopLossIntent: input.stopLoss,
+            takeProfitIntent: input.takeProfit,
           });
 
           return {
@@ -182,7 +187,28 @@ export const futuresTradingRouter = router({
           setupType: input.setupType,
           marketType: 'FUTURES',
           reduceOnly: futuresOrder.reduceOnly,
+          stopLossIntent: input.stopLoss,
+          takeProfitIntent: input.takeProfit,
         });
+
+        if (input.type === 'MARKET') {
+          const direction = input.side === 'BUY' ? 'LONG' : 'SHORT';
+          const quantity = parseFloat(input.quantity);
+          if (input.stopLoss) {
+            try {
+              await autoTradingService.createStopLossOrder(wallet, input.symbol, quantity, parseFloat(input.stopLoss), direction, 'FUTURES');
+            } catch (slError) {
+              logger.error({ error: slError instanceof Error ? slError.message : String(slError), symbol: input.symbol }, '[createOrder] Failed to place MARKET SL order');
+            }
+          }
+          if (input.takeProfit) {
+            try {
+              await autoTradingService.createTakeProfitOrder(wallet, input.symbol, quantity, parseFloat(input.takeProfit), direction, 'FUTURES');
+            } catch (tpError) {
+              logger.error({ error: tpError instanceof Error ? tpError.message : String(tpError), symbol: input.symbol }, '[createOrder] Failed to place MARKET TP order');
+            }
+          }
+        }
 
         return {
           orderId: futuresOrder.orderId,

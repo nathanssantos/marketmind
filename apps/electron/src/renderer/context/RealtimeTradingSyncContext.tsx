@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, typ
 import type { Socket } from 'socket.io-client';
 import { createPlatformAdapter } from '../adapters/factory';
 import { socketService } from '../services/socketService';
+import { QUERY_CONFIGS } from '../services/queryConfig';
 import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
@@ -69,12 +70,12 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
   const { data: tradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId: walletId ?? '', limit: 100 },
-    { enabled: !!walletId, staleTime: 5000 }
+    { enabled: !!walletId, staleTime: QUERY_CONFIGS.tradeExecutions.staleTime }
   );
 
   const { data: orders } = trpc.trading.getOrders.useQuery(
     { walletId: walletId ?? '', limit: 100 },
-    { enabled: !!walletId, staleTime: 5000 }
+    { enabled: !!walletId, staleTime: QUERY_CONFIGS.orders.staleTime }
   );
 
   const allRequiredSymbols = useMemo(() => {
@@ -138,8 +139,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       if (!currentSubscribed.has(symbol)) {
         newSymbols.push(symbol);
         currentSubscribed.add(symbol);
-        socketRef.current.emit('subscribe:prices', symbol);
       }
+    }
+    if (newSymbols.length > 0) {
+      socketRef.current.emit('subscribe:prices:batch', newSymbols);
     }
 
     for (const symbol of currentSubscribed) {
@@ -172,9 +175,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       for (const symbol of allRequiredSymbols) {
         subscribedSymbolsRef.current.add(symbol);
       }
-      for (const symbol of subscribedSymbolsRef.current) {
-        console.log('[RealtimeSync] Subscribing to price:', symbol);
-        socket.emit('subscribe:prices', symbol);
+      const symbolsToSubscribe = [...subscribedSymbolsRef.current];
+      if (symbolsToSubscribe.length > 0) {
+        console.log('[RealtimeSync] Batch subscribing to prices:', symbolsToSubscribe);
+        socket.emit('subscribe:prices:batch', symbolsToSubscribe);
       }
     };
 

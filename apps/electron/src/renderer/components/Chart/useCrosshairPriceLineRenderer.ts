@@ -1,5 +1,6 @@
 import type { CanvasManager } from '@/renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
 import type { RefObject } from 'react';
@@ -96,33 +97,9 @@ export const useCrosshairPriceLineRenderer = ({
     if (mouseY < 0 || mouseY > chartHeight) return;
 
     const priceText = formatChartPrice(price);
-    ctx.save();
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
     const tagStartX = chartWidth;
 
-    ctx.fillStyle = colors.crosshair;
-    const labelPadding = 8;
-    const labelHeight = 18;
-    const arrowWidth = 6;
-    const tagWidth = CHART_CONFIG.CANVAS_PADDING_RIGHT;
-
-    const endX = tagStartX + tagWidth;
-    ctx.beginPath();
-    ctx.moveTo(tagStartX - arrowWidth, mouseY);
-    ctx.lineTo(tagStartX, mouseY - labelHeight / 2);
-    ctx.lineTo(endX, mouseY - labelHeight / 2);
-    ctx.lineTo(endX, mouseY + labelHeight / 2);
-    ctx.lineTo(tagStartX, mouseY + labelHeight / 2);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = colors.background;
-    ctx.fillText(priceText, tagStartX + labelPadding, mouseY);
-
-    ctx.restore();
+    drawPriceTag(ctx, priceText, mouseY, tagStartX, colors.crosshair, CHART_CONFIG.CANVAS_PADDING_RIGHT, colors.background);
   }, [enabled, manager, colors, lineWidth, lineStyle, rightMargin, mousePositionRef]);
 
   return { render };

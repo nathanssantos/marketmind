@@ -17,21 +17,25 @@ class SocketService {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: 50,
       transports: ['websocket'],
       timeout: 10000,
     });
 
     this.socket.on('connect', () => {
-      
+
     });
 
     this.socket.on('disconnect', () => {
-      
+
     });
 
     this.socket.on('connect_error', () => {
-      
+
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.warn('[SocketService] Reconnection failed after 50 attempts — backend may be offline');
     });
 
     this.connectionCount = 1;

@@ -62,7 +62,10 @@
     "themeDark": "Escuro",
     "themeLight": "Claro",
     "settings": "Configurações",
-    "toggleColorMode": "Alternar modo de cor"
+    "toggleColorMode": "Alternar modo de cor",
+    "zoomIn": "Aumentar Zoom",
+    "zoomOut": "Reduzir Zoom",
+    "zoomReset": "Redefinir Zoom"
   },
   "symbolSelector": {
     "label": "Corretora",
@@ -843,7 +846,12 @@
       "fees": "Taxas Pagas",
       "close": "Fechar Ordem",
       "cancel": "Cancelar Ordem",
-      "autoTrade": "Ordem automática"
+      "autoTrade": "Ordem automática",
+      "viewAll": "Ver Todas as Ordens",
+      "dialogTitle": "Todas as Ordens",
+      "page": "Página {{page}} de {{total}}",
+      "search": "Buscar por símbolo...",
+      "noResults": "Nenhuma ordem encontrada para sua busca."
     },
     "notifications": {
       "orderFilled": {

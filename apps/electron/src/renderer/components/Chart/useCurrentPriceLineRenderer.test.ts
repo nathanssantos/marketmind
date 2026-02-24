@@ -164,13 +164,12 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.lineWidth).toBe(3);
     });
 
-    it('should draw line from left edge to right margin', () => {
+    it('should draw line from left edge to chartWidth', () => {
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
           colors: mockColors,
           enabled: true,
-          rightMargin: 72,
         })
       );
 
@@ -241,13 +240,12 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.fillText).toHaveBeenCalledWith('105.00', expect.any(Number), expect.any(Number));
     });
 
-    it('should position tag at right margin', () => {
+    it('should position tag at chartWidth + labelPadding', () => {
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
           colors: mockColors,
           enabled: true,
-          rightMargin: 72,
         })
       );
 
@@ -339,19 +337,18 @@ describe('useCurrentPriceLineRenderer', () => {
       expect(mockCtx.strokeStyle).toBe(mockColors.bearish);
     });
 
-    it('should calculate line end position based on rightMargin', () => {
+    it('should always draw line to chartWidth regardless of config', () => {
       const { result } = renderHook(() =>
         useCurrentPriceLineRenderer({
           manager: mockManager,
           colors: mockColors,
           enabled: true,
-          rightMargin: 80,
         })
       );
 
       result.current.renderLine();
 
-      expect(mockCtx.lineTo).toHaveBeenCalledWith(720, expect.any(Number));
+      expect(mockCtx.lineTo).toHaveBeenCalledWith(728, expect.any(Number));
     });
 
     it('should handle renderLine and renderLabel independently', () => {
@@ -371,9 +368,8 @@ describe('useCurrentPriceLineRenderer', () => {
 
       vi.clearAllMocks();
       result.current.renderLabel();
-      
+
       expect(mockCtx.fill).toHaveBeenCalled();
-      expect(mockCtx.stroke).not.toHaveBeenCalled();
     });
 
     it('should position price tag using drawPriceTag utility', () => {

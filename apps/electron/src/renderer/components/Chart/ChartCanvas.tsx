@@ -37,7 +37,6 @@ import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
-import { KlineTimer } from './KlineTimer';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderDragHandler } from './useOrderDragHandler';
 import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
@@ -581,6 +580,12 @@ export const ChartCanvas = ({
     handleMouseLeave,
   });
 
+  useEffect(() => {
+    if (!manager) return;
+    const interval = setInterval(() => manager.markDirty('overlays'), 1000);
+    return () => clearInterval(interval);
+  }, [manager]);
+
   const handleResetView = (): void => {
     if (manager) {
       manager.resetToInitialView();
@@ -1057,11 +1062,6 @@ export const ChartCanvas = ({
         <ChartNavigation
           onResetView={handleResetView}
           onNextKline={handleNextKline}
-          totalPanelHeight={manager?.getTotalPanelHeight() ?? 0}
-        />
-        <KlineTimer
-          timeframe={timeframe}
-          lastKlineTime={klines[klines.length - 1]?.openTime}
           totalPanelHeight={manager?.getTotalPanelHeight() ?? 0}
         />
         {showTooltip && (
