@@ -112,17 +112,18 @@ class FuturesClient implements MarketClient {
   }
 
   async createOrder(params: OrderParams): Promise<OrderResult> {
-    const order = await this.client.submitNewOrder({
+    const orderParams: Parameters<typeof this.client.submitNewOrder>[0] = {
       symbol: params.symbol,
       side: params.side,
       type: params.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
       quantity: params.quantity,
-      price: params.price,
-      stopPrice: params.stopPrice,
-      timeInForce: params.timeInForce,
-      reduceOnly: params.reduceOnly ? 'true' : undefined,
       newOrderRespType: 'RESULT',
-    });
+    };
+    if (params.price !== undefined) orderParams.price = params.price;
+    if (params.stopPrice !== undefined) orderParams.stopPrice = params.stopPrice;
+    if (params.timeInForce) orderParams.timeInForce = params.timeInForce;
+    if (params.reduceOnly === true) orderParams.reduceOnly = 'true';
+    const order = await this.client.submitNewOrder(orderParams);
 
     return {
       orderId: order.orderId,

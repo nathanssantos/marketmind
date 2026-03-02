@@ -135,7 +135,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
               {pnl !== undefined ? (
                 <Text fontWeight="medium" color={pnl >= 0 ? 'green.500' : 'red.500'}>
                   {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
-                  {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%)`}
+                  {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : '-'}${Math.abs(pnlPercent).toFixed(2)}%)`}
                 </Text>
               ) : '-'}
             </TradingTableCell>

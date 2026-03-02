@@ -788,7 +788,10 @@
       "stopProtectedOfBalance": "do saldo",
       "tpProjected": "Projetado por TP",
       "tpProjectedOfExposure": "da exposição",
-      "tpProjectedOfBalance": "do saldo"
+      "tpProjectedOfBalance": "do saldo",
+      "source": "Origem",
+      "manual": "Manual",
+      "entriesCount": "{{count}}x"
     },
     "viewMode": {
       "cards": "Visualização em cards",
@@ -901,7 +904,12 @@
     },
     "order": {
       "long": "COMPRA",
-      "short": "VENDA"
+      "short": "VENDA",
+      "failed": "Falha ao criar ordem",
+      "cancelFailed": "Falha ao cancelar ordem",
+      "cancelSuccess": "Ordem cancelada",
+      "closeFailed": "Falha ao fechar ordem",
+      "slTpUpdateFailed": "Falha ao atualizar SL/TP"
     },
     "closeOrder": "Fechar Ordem",
     "closeOrderConfirm": "Fechar ordem {{type}} com entrada em {{entry}}? Preço atual: {{current}}",

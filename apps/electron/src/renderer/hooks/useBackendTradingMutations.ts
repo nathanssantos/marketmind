@@ -10,6 +10,7 @@ export const useBackendTradingMutations = () => {
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
     },
   });
 
@@ -56,7 +57,7 @@ export const useBackendTradingMutations = () => {
       walletId: string;
       symbol: string;
       side: 'BUY' | 'SELL';
-      type: 'MARKET' | 'LIMIT' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT';
+      type: 'MARKET' | 'LIMIT' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'STOP_MARKET';
       quantity: string;
       price?: string;
       stopPrice?: string;

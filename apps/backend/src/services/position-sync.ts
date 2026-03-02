@@ -188,7 +188,10 @@ export class PositionSyncService {
         exchangePositions.map((p) => [p.symbol, p])
       );
 
+      const processedSymbols = new Set<string>();
       for (const dbPosition of dbOpenPositions) {
+        if (processedSymbols.has(dbPosition.symbol)) continue;
+        processedSymbols.add(dbPosition.symbol);
         const exchangePosition = exchangePositionsBySymbol.get(dbPosition.symbol);
 
         if (!exchangePosition) {

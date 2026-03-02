@@ -12,6 +12,8 @@ import { getFuturesClient, getSpotClient } from '../exchange';
 import { createMarketClient } from '../services/market-client-factory';
 import { walletQueries } from '../services/database/walletQueries';
 import { logger } from '../services/logger';
+import { getMinNotionalFilterService } from '../services/min-notional-filter';
+import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { clearProtectionOrderIds } from '../services/execution-manager';
 import { cancelAllProtectionOrders, cancelProtectionOrder, updateStopLossOrder, updateTakeProfitOrder } from '../services/protection-orders';
 import { protectedProcedure, router } from '../trpc';
@@ -106,15 +108,99 @@ export const tradingRouter = router({
           };
         }
 
+        const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters(input.marketType);
+        const filters = symbolFiltersMap.get(input.symbol);
+        const tickSize = filters?.tickSize?.toString();
+        const stepSize = filters?.stepSize?.toString();
+
+        const isConditionalFuturesOrder =
+          input.marketType === 'FUTURES' &&
+          (input.type === 'STOP_MARKET' || input.type === 'TAKE_PROFIT_MARKET');
+
+        if (isConditionalFuturesOrder) {
+          const triggerPrice = input.stopPrice
+            ? formatPriceForBinance(parseFloat(input.stopPrice), tickSize)
+            : input.price
+              ? formatPriceForBinance(parseFloat(input.price), tickSize)
+              : undefined;
+
+          if (!triggerPrice) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'stopPrice is required for STOP_MARKET / TAKE_PROFIT_MARKET orders',
+            });
+          }
+
+          const futuresClient = getFuturesClient(wallet);
+          const algoOrder = await futuresClient.submitAlgoOrder({
+            symbol: input.symbol,
+            side: input.side,
+            type: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+            triggerPrice,
+            quantity: formatQuantityForBinance(parseFloat(input.quantity), stepSize),
+            workingType: 'CONTRACT_PRICE',
+            ...(input.reduceOnly && { reduceOnly: true }),
+          });
+
+          await ctx.db.insert(orders).values({
+            orderId: algoOrder.algoId,
+            userId: ctx.user.id,
+            walletId: input.walletId,
+            symbol: algoOrder.symbol,
+            side: algoOrder.side,
+            type: algoOrder.type,
+            price: algoOrder.triggerPrice ?? triggerPrice,
+            origQty: algoOrder.quantity,
+            executedQty: '0',
+            status: 'NEW',
+            time: algoOrder.createTime,
+            updateTime: algoOrder.updateTime,
+            setupId: input.setupId,
+            setupType: input.setupType,
+            marketType: input.marketType,
+            reduceOnly: input.reduceOnly,
+          });
+
+          if (!input.reduceOnly) {
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: input.side === 'BUY' ? 'LONG' : 'SHORT',
+              entryPrice: algoOrder.triggerPrice ?? triggerPrice,
+              limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
+              quantity: String(algoOrder.quantity || input.quantity),
+              entryOrderId: algoOrder.algoId,
+              entryOrderType: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+              status: 'pending',
+              marketType: input.marketType,
+              openedAt: new Date(),
+            });
+          }
+
+          return {
+            orderId: algoOrder.algoId,
+            symbol: algoOrder.symbol,
+            side: algoOrder.side,
+            type: algoOrder.type,
+            status: 'NEW',
+            price: algoOrder.triggerPrice ?? triggerPrice,
+            quantity: algoOrder.quantity,
+            executedQty: '0',
+            marketType: input.marketType,
+          };
+        }
+
         const marketClient = createMarketClient(wallet, input.marketType);
 
         const binanceOrder = await marketClient.createOrder({
           symbol: input.symbol,
           side: input.side,
           type: input.type,
-          quantity: parseFloat(input.quantity),
-          price: input.price ? parseFloat(input.price) : undefined,
-          stopPrice: input.stopPrice ? parseFloat(input.stopPrice) : undefined,
+          quantity: parseFloat(formatQuantityForBinance(parseFloat(input.quantity), stepSize)),
+          price: input.price ? parseFloat(formatPriceForBinance(parseFloat(input.price), tickSize)) : undefined,
+          stopPrice: input.stopPrice ? parseFloat(formatPriceForBinance(parseFloat(input.stopPrice), tickSize)) : undefined,
           timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
           reduceOnly: input.reduceOnly,
         });
@@ -139,6 +225,28 @@ export const tradingRouter = router({
           reduceOnly: input.reduceOnly,
         });
 
+        if (binanceOrder.status === 'NEW' && !input.reduceOnly) {
+          const rawTargetPrice = input.stopPrice ?? input.price ?? binanceOrder.price;
+          const targetPrice = rawTargetPrice && rawTargetPrice !== '0' ? rawTargetPrice : null;
+          if (targetPrice) {
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: input.side === 'BUY' ? 'LONG' : 'SHORT',
+              entryPrice: String(targetPrice),
+              limitEntryPrice: String(targetPrice),
+              quantity: String(binanceOrder.origQty || input.quantity),
+              entryOrderId: binanceOrder.orderId,
+              entryOrderType: 'LIMIT',
+              status: 'pending',
+              marketType: input.marketType,
+              openedAt: new Date(),
+            });
+          }
+        }
+
         return {
           orderId: binanceOrder.orderId,
           symbol: binanceOrder.symbol,
@@ -151,6 +259,7 @@ export const tradingRouter = router({
           marketType: input.marketType,
         };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to create order',
@@ -195,18 +304,52 @@ export const tradingRouter = router({
           };
         }
 
-        const marketClient = createMarketClient(wallet, input.marketType);
-        const canceledOrder = await marketClient.cancelOrder(input.symbol, input.orderId);
+        const [dbOrder] = await ctx.db.select().from(orders).where(eq(orders.orderId, input.orderId)).limit(1);
+        const isAlgoFuturesOrder = input.marketType === 'FUTURES' && dbOrder && (dbOrder.type === 'STOP_MARKET' || dbOrder.type === 'TAKE_PROFIT_MARKET');
+
+        let cancelSucceeded = false;
+        if (isAlgoFuturesOrder) {
+          const { createBinanceFuturesClient, cancelFuturesAlgoOrder } = await import('../services/binance-futures-client');
+          const apiClient = createBinanceFuturesClient(wallet);
+          try {
+            await cancelFuturesAlgoOrder(apiClient, input.orderId);
+            cancelSucceeded = true;
+          } catch (cancelError) {
+            const msg = (cancelError as Error)?.message ?? '';
+            if (!msg.includes('Unknown order') && !msg.includes('Order does not exist') && !msg.includes('not found')) throw cancelError;
+          }
+        } else {
+          const marketClient = createMarketClient(wallet, input.marketType);
+          try {
+            await marketClient.cancelOrder(input.symbol, input.orderId);
+            cancelSucceeded = true;
+          } catch (cancelError) {
+            const binanceCode = (cancelError as { cause?: { code?: number } })?.cause?.code;
+            if (binanceCode !== -2011) throw cancelError;
+          }
+        }
 
         await ctx.db
           .update(orders)
-          .set({
-            status: 'CANCELED',
-            updateTime: Date.now(),
-          })
+          .set({ status: 'CANCELED', updateTime: Date.now() })
           .where(eq(orders.orderId, input.orderId));
 
-        return canceledOrder;
+        await ctx.db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(
+            and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.entryOrderId, input.orderId),
+              eq(tradeExecutions.status, 'pending')
+            )
+          );
+
+        return {
+          orderId: input.orderId,
+          symbol: input.symbol,
+          status: cancelSucceeded ? 'CANCELED' : 'ALREADY_FILLED',
+        };
       } catch (error) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -941,18 +1084,35 @@ export const tradingRouter = router({
         ].filter((id): id is number => id !== null);
 
         if (isFutures) {
+          const { createBinanceFuturesClient, cancelFuturesAlgoOrder } = await import('../services/binance-futures-client');
+          const apiClient = createBinanceFuturesClient(wallet);
           const client = getFuturesClient(wallet);
 
-          for (const orderId of orderIdsToCancel) {
+          await cancelAllProtectionOrders({
+            wallet,
+            symbol: execution.symbol,
+            marketType: 'FUTURES',
+            stopLossAlgoId: execution.stopLossAlgoId,
+            stopLossOrderId: execution.stopLossOrderId,
+            takeProfitAlgoId: execution.takeProfitAlgoId,
+            takeProfitOrderId: execution.takeProfitOrderId,
+          });
+
+          if (execution.entryOrderId) {
+            const isAlgoEntry = execution.entryOrderType === 'STOP_MARKET' || execution.entryOrderType === 'TAKE_PROFIT_MARKET';
             try {
-              await client.cancelOrder(execution.symbol, orderId);
-              logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance Futures order during execution cancel');
+              if (isAlgoEntry) {
+                await cancelFuturesAlgoOrder(apiClient, execution.entryOrderId);
+              } else {
+                await client.cancelOrder(execution.symbol, execution.entryOrderId);
+              }
+              logger.info({ orderId: execution.entryOrderId, symbol: execution.symbol }, 'Cancelled entry order during execution cancel');
             } catch (error) {
               logger.warn({
-                orderId,
+                orderId: execution.entryOrderId,
                 symbol: execution.symbol,
                 error: serializeError(error),
-              }, 'Failed to cancel Binance Futures order (may already be filled/cancelled)');
+              }, 'Failed to cancel entry order (may already be filled/cancelled)');
             }
           }
         } else {

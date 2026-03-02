@@ -10,7 +10,7 @@ import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingPref } from '@renderer/store/preferencesStore';
 import { trpc } from '../../utils/trpc';
-import { getKlineClose } from '@shared/utils';
+import { getKlineClose, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -64,10 +64,11 @@ const OrderTicketComponent = () => {
 
   const symbolQuantity = getQuantityForSymbol(symbol);
   const defaultQuantity = symbolQuantity > 0 ? symbolQuantity : calculateDefaultQuantity();
+  const defaultQuantityStr = roundTradingQty(defaultQuantity);
 
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
   const [orderType, setOrderType] = useState<OrderDirection>('long');
-  const [quantity, setQuantity] = useState(defaultQuantity.toFixed(8));
+  const [quantity, setQuantity] = useState(defaultQuantityStr);
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
@@ -81,7 +82,9 @@ const OrderTicketComponent = () => {
   useEffect(() => {
     const storedQty = getQuantityForSymbol(symbol);
     const newQty = storedQty > 0 ? storedQty : calculateDefaultQuantity();
-    setQuantity(newQty.toFixed(8));
+    const rounded = roundTradingQty(newQty);
+    setQuantity(rounded);
+    if (storedQty <= 0 && newQty > 0) setQuantityForSymbol(symbol, Number(rounded));
   }, [symbol, activeWallet?.balance, currentPrice]);
 
   const handleQuantityChange = (value: string) => {
@@ -104,7 +107,12 @@ const OrderTicketComponent = () => {
     if (stop !== undefined && (isNaN(stop) || stop <= 0)) return;
 
     const cost = qty * entry;
-    if (cost > activeWallet.balance) return;
+    const submitEffectiveCost = marketType === 'FUTURES' ? cost / leverage : cost;
+    if (submitEffectiveCost > activeWallet.balance) return;
+
+    const roundedPrice = roundTradingPrice(entry);
+    const roundedQty = roundTradingQty(qty);
+    const roundedStop = stop !== undefined ? roundTradingPrice(stop) : undefined;
 
     if (marketType === 'FUTURES') {
       await futuresTrading.createOrder({
@@ -112,13 +120,13 @@ const OrderTicketComponent = () => {
         symbol,
         side: orderType === 'long' ? 'BUY' : 'SELL',
         type: 'LIMIT',
-        quantity: qty.toString(),
-        price: entry.toString(),
+        quantity: roundedQty,
+        price: roundedPrice,
         leverage,
         marginType,
-        ...(stop !== undefined && { stopPrice: stop.toString() }),
-        stopLoss: stopLoss || undefined,
-        takeProfit: takeProfit || undefined,
+        ...(roundedStop !== undefined && { stopPrice: roundedStop }),
+        stopLoss: stopLoss ? roundTradingPrice(Number(stopLoss)) : undefined,
+        takeProfit: takeProfit ? roundTradingPrice(Number(takeProfit)) : undefined,
       });
     } else {
       await spotTrading.createOrder({
@@ -126,9 +134,9 @@ const OrderTicketComponent = () => {
         symbol,
         side: orderType === 'long' ? 'BUY' : 'SELL',
         type: 'LIMIT',
-        quantity: qty.toString(),
-        price: entry.toString(),
-        ...(stop !== undefined && { stopPrice: stop.toString() }),
+        quantity: roundedQty,
+        price: roundedPrice,
+        ...(roundedStop !== undefined && { stopPrice: roundedStop }),
       });
     }
 
@@ -139,7 +147,7 @@ const OrderTicketComponent = () => {
 
   const handleUseCurrentPrice = () => {
     if (!currentPrice) return;
-    setEntryPrice(currentPrice.toFixed(2));
+    setEntryPrice(roundTradingPrice(currentPrice));
   };
 
   const qty = Number(quantity) || 0;

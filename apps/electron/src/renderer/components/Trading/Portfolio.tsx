@@ -39,6 +39,7 @@ interface PortfolioPosition {
   expiresAt?: Date;
   marketType?: 'SPOT' | 'FUTURES';
   isAutoTrade?: boolean;
+  count: number;
 }
 
 const PortfolioComponent = () => {
@@ -74,43 +75,51 @@ const PortfolioComponent = () => {
   const centralizedPrices = usePricesForSymbols(openExecutionSymbols);
 
   const positions: PortfolioPosition[] = useMemo(() => {
-    return tradeExecutions
-      .filter((e) => e.status === 'open')
-      .map((e) => {
-        const entryPrice = parseFloat(e.entryPrice || '0');
-        const quantity = parseFloat(e.quantity || '0');
+    const openExecutions = tradeExecutions.filter((e) => e.status === 'open');
+    const groups = new Map<string, typeof openExecutions>();
 
-        const centralPrice = centralizedPrices[e.symbol];
-        const tickerPrice = tickerPrices[e.symbol];
-        const currentPrice = centralPrice ?? (tickerPrice ? parseFloat(String(tickerPrice)) : entryPrice);
+    for (const e of openExecutions) {
+      const key = `${e.symbol}-${e.side}`;
+      const group = groups.get(key) ?? [];
+      group.push(e);
+      groups.set(key, group);
+    }
 
-        let pnl = 0;
-        if (e.side === 'LONG') {
-          pnl = (currentPrice - entryPrice) * quantity;
-        } else {
-          pnl = (entryPrice - currentPrice) * quantity;
-        }
-        const pnlPercent = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
-        const adjustedPnlPercent = e.side === 'LONG' ? pnlPercent : -pnlPercent;
+    return Array.from(groups.values()).flatMap((group) => {
+      const primary = group[0];
+      if (!primary) return [];
+      const totalQty = group.reduce((sum, e) => sum + parseFloat(e.quantity || '0'), 0);
+      const avgPrice = group.reduce((sum, e) => sum + parseFloat(e.entryPrice || '0') * parseFloat(e.quantity || '0'), 0) / (totalQty || 1);
 
-        return {
-          id: e.id,
-          symbol: e.symbol,
-          side: e.side,
-          quantity,
-          avgPrice: entryPrice,
-          currentPrice,
-          pnl,
-          pnlPercent: adjustedPnlPercent,
-          stopLoss: e.stopLoss ? parseFloat(e.stopLoss) : undefined,
-          takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
-          setupType: e.setupType || undefined,
-          openedAt: new Date(e.openedAt),
-          status: 'open',
-          marketType: e.marketType || 'FUTURES',
-          isAutoTrade: true,
-        };
-      });
+      const centralPrice = centralizedPrices[primary.symbol];
+      const tickerPrice = tickerPrices[primary.symbol];
+      const currentPrice = centralPrice ?? (tickerPrice ? parseFloat(String(tickerPrice)) : avgPrice);
+
+      const pnl = primary.side === 'LONG'
+        ? (currentPrice - avgPrice) * totalQty
+        : (avgPrice - currentPrice) * totalQty;
+      const pnlPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+      const adjustedPnlPercent = primary.side === 'LONG' ? pnlPercent : -pnlPercent;
+
+      return {
+        id: primary.id,
+        symbol: primary.symbol,
+        side: primary.side,
+        quantity: totalQty,
+        avgPrice,
+        currentPrice,
+        pnl,
+        pnlPercent: adjustedPnlPercent,
+        stopLoss: primary.stopLoss ? parseFloat(primary.stopLoss) : undefined,
+        takeProfit: primary.takeProfit ? parseFloat(primary.takeProfit) : undefined,
+        setupType: primary.setupType || undefined,
+        openedAt: new Date(primary.openedAt),
+        status: 'open' as const,
+        marketType: primary.marketType || 'FUTURES',
+        isAutoTrade: !!primary.setupType,
+        count: group.length,
+      };
+    });
   }, [tradeExecutions, tickerPrices, centralizedPrices]);
 
   const wallets = backendWallets.map((w) => ({
@@ -459,9 +468,16 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
               </Text>
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
-                {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
-              </Badge>
+              <Flex align="center" gap={1}>
+                <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
+                  {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
+                </Badge>
+                {position.count > 1 && (
+                  <Badge colorPalette="yellow" size="xs" px={1}>
+                    {t('trading.portfolio.entriesCount', { count: position.count })}
+                  </Badge>
+                )}
+              </Flex>
             </TradingTableCell>
             <TradingTableCell>
               {position.setupType ? (
@@ -573,6 +589,11 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
           <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
             {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
           </Badge>
+          {position.count > 1 && (
+            <Badge colorPalette="yellow" size="xs" px={1}>
+              {t('trading.portfolio.entriesCount', { count: position.count })}
+            </Badge>
+          )}
           {position.isAutoTrade && (
             <Badge colorPalette="blue" size="xs" px={1}>
               <Flex align="center" gap={1}>

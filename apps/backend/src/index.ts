@@ -145,6 +145,14 @@ const start = async (): Promise<void> => {
     const { orderSyncService } = await import('./services/order-sync');
     await orderSyncService.start({ autoCancelOrphans: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
 
+    setTimeout(() => {
+      import('./services/startup-audit').then(({ runStartupAudit }) => {
+        runStartupAudit().catch((err) => {
+          fastify.log.error({ err }, '[startup-audit] Unhandled error');
+        });
+      });
+    }, STARTUP_CONFIG.AUDIT_DELAY_MS);
+
     const { incomeSyncService } = await import('./services/income-sync-service');
     incomeSyncService.start({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
 

@@ -348,7 +348,7 @@ export const useOrderLinesRenderer = (
           orderDirection: exec.side === 'LONG' ? 'long' : 'short',
           stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
           takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
-          isAutoTrade: true,
+          isAutoTrade: !!exec.setupType,
           walletId: '',
           setupType: exec.setupType ?? undefined,
           isPendingLimitOrder: exec.status === 'pending',

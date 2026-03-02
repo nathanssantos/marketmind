@@ -281,6 +281,8 @@ class IncomeSyncService {
     }, '[IncomeSyncService] Matching trades with income records');
 
     for (const trade of recentTrades) {
+      if (trade.status === 'closed') continue;
+
       const commissionData = symbolCommissions.get(trade.symbol);
       const fundingData = symbolFunding.get(trade.symbol);
 

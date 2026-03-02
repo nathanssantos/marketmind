@@ -29,9 +29,9 @@ import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
 import { CHART_CONFIG } from '@shared/constants';
-import { getKlineClose, isOrderLong, isOrderPending } from '@shared/utils';
+import { getKlineClose, getOrderPrice, isOrderLong, isOrderPending, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
@@ -97,8 +97,10 @@ export const ChartCanvas = ({
   const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
   const showActivityIndicator = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
   const { t } = useTranslation();
-  const { warning } = useToast();
+  const { warning, error: toastError } = useToast();
   const colors = useChartColors();
+
+  const utils = trpc.useUtils();
 
   const { activeWallet } = useActiveWallet();
   const backendWalletId = activeWallet?.id;
@@ -110,6 +112,8 @@ export const ChartCanvas = ({
   } = useBackendTradingMutations();
 
   const hasTradingEnabled = !!backendWalletId;
+
+  const [optimisticExecutions, setOptimisticExecutions] = useState<BackendExecution[]>([]);
 
   const [quantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
   const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
@@ -129,7 +133,11 @@ export const ChartCanvas = ({
   }, []);
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
-  const isAutoTradingActive = watcherStatus?.active ?? false;
+
+  const { data: autoConfig } = trpc.autoTrading.getConfig.useQuery(
+    { walletId: backendWalletId! },
+    { enabled: !!backendWalletId }
+  );
 
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId: backendWalletId ?? '', limit: 50 },
@@ -161,44 +169,122 @@ export const ChartCanvas = ({
       }));
   }, [backendExecutions, symbol, marketType]);
 
-  const handleLongEntry = useCallback((price: number) => {
+  const allExecutions = useMemo((): BackendExecution[] => {
+    const realIds = new Set(filteredBackendExecutions.map(e => e.id));
+    const uniqueOptimistic = optimisticExecutions.filter(
+      o => o.symbol === symbol && !realIds.has(o.id)
+    );
+    return [...filteredBackendExecutions, ...uniqueOptimistic];
+  }, [filteredBackendExecutions, optimisticExecutions, symbol]);
+
+  const getOrderQuantity = useCallback((price: number): string => {
+    const stored = getQuantityForSymbol(symbol ?? '');
+    if (stored > 1) return roundTradingQty(stored);
+    const balance = parseFloat(activeWallet?.currentBalance ?? '0');
+    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 100;
+    const qty = balance > 0 && price > 0 ? (balance * sizePercent) / price : 1;
+    return roundTradingQty(qty);
+  }, [getQuantityForSymbol, symbol, activeWallet?.currentBalance, autoConfig?.positionSizePercent]);
+
+  const latestKlinesPriceRef = useRef(klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0);
+  latestKlinesPriceRef.current = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
+
+  const handleLongEntry = useCallback(async (price: number) => {
     if (!backendWalletId) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
 
-    addBackendOrder({
-      walletId: backendWalletId,
-      symbol,
-      side: 'BUY',
-      type: 'LIMIT',
-      price: price.toString(),
-      quantity: (getQuantityForSymbol(symbol) ?? 1).toString(),
-    });
-  }, [addBackendOrder, symbol, getQuantityForSymbol, warning, t, backendWalletId]);
+    const marketPrice = latestKlinesPriceRef.current;
+    const isAboveMarket = marketPrice > 0 && price > marketPrice;
+    const optimisticId = `opt-${Date.now()}`;
 
-  const handleShortEntry = useCallback((price: number) => {
+    setOptimisticExecutions(prev => [...prev, {
+      id: optimisticId,
+      symbol,
+      side: 'LONG',
+      entryPrice: roundTradingPrice(price),
+      quantity: getOrderQuantity(price),
+      stopLoss: null,
+      takeProfit: null,
+      status: 'pending',
+      setupType: null,
+      marketType: marketType || 'FUTURES',
+      openedAt: new Date(),
+      triggerKlineOpenTime: null,
+      fibonacciProjection: null,
+    }]);
+
+    try {
+      await addBackendOrder({
+        walletId: backendWalletId,
+        symbol,
+        side: 'BUY',
+        type: isAboveMarket ? 'STOP_MARKET' : 'LIMIT',
+        price: isAboveMarket ? undefined : roundTradingPrice(price),
+        stopPrice: isAboveMarket ? roundTradingPrice(price) : undefined,
+        quantity: getOrderQuantity(price),
+      });
+      utils.autoTrading.getActiveExecutions.invalidate();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toastError(t('trading.order.failed'), msg);
+    } finally {
+      setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+    }
+  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
+
+  const handleShortEntry = useCallback(async (price: number) => {
     if (!backendWalletId) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
 
-    addBackendOrder({
-      walletId: backendWalletId,
+    const marketPrice = latestKlinesPriceRef.current;
+    const isBelowMarket = marketPrice > 0 && price < marketPrice;
+    const optimisticId = `opt-${Date.now()}`;
+
+    setOptimisticExecutions(prev => [...prev, {
+      id: optimisticId,
       symbol,
-      side: 'SELL',
-      type: 'LIMIT',
-      price: price.toString(),
-      quantity: (getQuantityForSymbol(symbol) ?? 1).toString(),
-    });
-  }, [addBackendOrder, symbol, getQuantityForSymbol, warning, t, backendWalletId]);
+      side: 'SHORT',
+      entryPrice: roundTradingPrice(price),
+      quantity: getOrderQuantity(price),
+      stopLoss: null,
+      takeProfit: null,
+      status: 'pending',
+      setupType: null,
+      marketType: marketType || 'FUTURES',
+      openedAt: new Date(),
+      triggerKlineOpenTime: null,
+      fibonacciProjection: null,
+    }]);
+
+    try {
+      await addBackendOrder({
+        walletId: backendWalletId,
+        symbol,
+        side: 'SELL',
+        type: isBelowMarket ? 'STOP_MARKET' : 'LIMIT',
+        price: isBelowMarket ? undefined : roundTradingPrice(price),
+        stopPrice: isBelowMarket ? roundTradingPrice(price) : undefined,
+        quantity: getOrderQuantity(price),
+      });
+      utils.autoTrading.getActiveExecutions.invalidate();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toastError(t('trading.order.failed'), msg);
+    } finally {
+      setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+    }
+  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
     onShortEntry: handleShortEntry,
-    enabled: hasTradingEnabled && !isAutoTradingActive,
+    enabled: true,
   });
 
   const {
@@ -292,7 +378,7 @@ export const ChartCanvas = ({
       return;
     }
 
-    const exec = filteredBackendExecutions.find((e) => e.id === orderToClose);
+    const exec = allExecutions.find((e) => e.id === orderToClose);
     if (exec) {
       const klines = manager.getKlines();
       const lastKline = klines[klines.length - 1];
@@ -301,7 +387,7 @@ export const ChartCanvas = ({
     }
 
     setOrderToClose(null);
-  }, [orderToClose, manager, filteredBackendExecutions, closeExecution, cancelProtectionOrder]);
+  }, [orderToClose, manager, allExecutions, closeExecution, cancelProtectionOrder]);
 
   const {
     renderGrid,
@@ -337,7 +423,7 @@ export const ChartCanvas = ({
   });
 
   const fibonacciProjectionData = useMemo(() => {
-    const activePosition = filteredBackendExecutions.find(
+    const activePosition = allExecutions.find(
       exec => (exec.status === 'open' || exec.status === 'pending')
     );
 
@@ -392,7 +478,7 @@ export const ChartCanvas = ({
       };
     }
     return null;
-  }, [filteredBackendExecutions, detectedSetups, manager]);
+  }, [allExecutions, detectedSetups, manager]);
 
   const {
     renderStochastic,
@@ -445,7 +531,7 @@ export const ChartCanvas = ({
     fibonacciProjectionData,
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, filteredBackendExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas);
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -461,7 +547,7 @@ export const ChartCanvas = ({
   }, [symbol, currentPrice, updatePrice, isPanning]);
 
   const draggableOrders = useMemo((): Order[] => {
-    return filteredBackendExecutions
+    return allExecutions
       .filter(exec => exec.status === 'open' || exec.status === 'pending')
       .map(exec => ({
         id: exec.id,
@@ -486,12 +572,12 @@ export const ChartCanvas = ({
         orderDirection: exec.side === 'LONG' ? 'long' : 'short',
         stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
         takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
-        isAutoTrade: true,
+        isAutoTrade: !!exec.setupType,
         walletId: backendWalletId ?? '',
         setupType: exec.setupType ?? undefined,
         isPendingLimitOrder: exec.status === 'pending',
       } as Order));
-  }, [filteredBackendExecutions, backendWalletId]);
+  }, [allExecutions, backendWalletId]);
 
   const handleUpdateOrder = useCallback((id: string, updates: Partial<Order>) => {
     if (!id) return;
@@ -507,7 +593,7 @@ export const ChartCanvas = ({
 
     if (Object.keys(updatePayload).length > 0) {
       updateExecutionSLTP(id, updatePayload).catch((error) => {
-        console.error('Failed to update SL/TP:', error);
+        toastError(t('trading.order.slTpUpdateFailed'), error instanceof Error ? error.message : undefined);
       });
     }
   }, [updateExecutionSLTP]);
@@ -552,8 +638,6 @@ export const ChartCanvas = ({
     measurementArea,
     shiftPressed,
     altPressed,
-    hasTradingEnabled,
-    isAutoTradingActive,
     tooltipEnabledRef,
     mousePositionRef,
     orderPreviewRef,
@@ -572,6 +656,8 @@ export const ChartCanvas = ({
     getEventAtPosition,
     getClickedOrderId,
     getSLTPAtPosition,
+    onLongEntry: handleLongEntry,
+    onShortEntry: handleShortEntry,
     orderDragHandler,
     cursorManager,
     handleMouseMove,
@@ -632,14 +718,8 @@ export const ChartCanvas = ({
       return;
     }
 
-    if (isAutoTradingActive) {
-      orderPreviewRef.current = null;
-      if (manager) manager.markDirty('overlays');
-      return;
-    }
-
     const mousePos = mousePositionRef.current;
-    if (mousePos && manager && hasTradingEnabled) {
+    if (mousePos && manager) {
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
 
@@ -654,7 +734,7 @@ export const ChartCanvas = ({
         manager.markDirty('overlays');
       }
     }
-  }, [shiftPressed, altPressed, manager, hasTradingEnabled, isAutoTradingActive]);
+  }, [shiftPressed, altPressed, manager]);
 
   useEffect(() => {
     if (!manager) return;
@@ -711,12 +791,14 @@ export const ChartCanvas = ({
       renderCurrentPriceLine_Line();
       renderOrderLines();
 
-      if (orderDragHandler.isDragging && orderDragHandler.draggedOrder && orderDragHandler.previewPrice && manager) {
+      const currentDragPreviewPrice = orderDragHandler.getPreviewPrice();
+      if (orderDragHandler.isDragging && orderDragHandler.draggedOrder && currentDragPreviewPrice !== null && manager) {
         const ctx = manager.getContext();
         const dimensions = manager.getDimensions();
         if (!ctx || !dimensions) return;
 
-        const { dragType, previewPrice, draggedOrder } = orderDragHandler;
+        const { dragType, draggedOrder } = orderDragHandler;
+        const previewPrice = currentDragPreviewPrice;
         const y = manager.priceToY(previewPrice);
 
         let color: string;
@@ -739,7 +821,13 @@ export const ChartCanvas = ({
         } else {
           const isStopLoss = dragType === 'stopLoss';
           color = isStopLoss ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
-          label = `${isStopLoss ? 'SL' : 'TP'} ${previewPrice.toFixed(2)}`;
+          const entryPrice = getOrderPrice(draggedOrder);
+          const isLong = isOrderLong(draggedOrder);
+          const pctChange = isStopLoss
+            ? (isLong ? (previewPrice - entryPrice) / entryPrice : (entryPrice - previewPrice) / entryPrice) * 100
+            : (isLong ? (previewPrice - entryPrice) / entryPrice : (entryPrice - previewPrice) / entryPrice) * 100;
+          const pctSign = pctChange >= 0 ? '+' : '';
+          label = `${isStopLoss ? 'SL' : 'TP'} ${previewPrice.toFixed(2)} (${pctSign}${pctChange.toFixed(2)}%)`;
         }
 
         ctx.save();
@@ -784,7 +872,7 @@ export const ChartCanvas = ({
       renderCrosshairPriceLine();
 
       const orderPreviewValue = orderPreviewRef.current;
-      if (orderPreviewValue && manager && !isAutoTradingActive) {
+      if (orderPreviewValue && manager) {
         const ctx = manager.getContext();
         const dimensions = manager.getDimensions();
         if (!ctx || !dimensions) return;
@@ -949,9 +1037,8 @@ export const ChartCanvas = ({
     showMeasurementArea,
     showMeasurementRuler,
     colors,
-    filteredBackendExecutions,
+    allExecutions,
     orderDragHandler,
-    isAutoTradingActive,
     t,
   ]);
 
@@ -984,7 +1071,7 @@ export const ChartCanvas = ({
                     );
                   }
 
-                  const exec = filteredBackendExecutions.find((e) => e.id === orderToClose);
+                  const exec = allExecutions.find((e) => e.id === orderToClose);
                   if (!exec || !manager) return null;
 
                   const klines = manager.getKlines();

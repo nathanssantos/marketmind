@@ -118,7 +118,7 @@ const OrdersDialogComponent = () => {
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType || undefined,
       marketType: e.marketType || 'FUTURES',
-      isAutoTrade: true,
+      isAutoTrade: !!e.setupType,
     }));
 
     return [...ordersFromApi, ...ordersFromExecutions].sort((a, b) => (b.updateTime || b.time) - (a.updateTime || a.time));

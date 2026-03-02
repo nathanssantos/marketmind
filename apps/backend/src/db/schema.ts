@@ -354,7 +354,7 @@ export const tradeExecutions = pgTable('trade_executions', {
   openedAt: timestamp('opened_at', { mode: 'date' }).notNull(),
   closedAt: timestamp('closed_at', { mode: 'date' }),
   status: varchar({ length: 20 }).default('open'), // 'pending' | 'open' | 'closed' | 'cancelled'
-  entryOrderType: varchar('entry_order_type', { length: 10 }).$type<'MARKET' | 'LIMIT'>().default('MARKET'),
+  entryOrderType: varchar('entry_order_type', { length: 20 }).$type<'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET'>().default('MARKET'),
   limitEntryPrice: numeric('limit_entry_price', { precision: 20, scale: 8 }),
   expiresAt: timestamp('expires_at', { mode: 'date' }),
   marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES'),

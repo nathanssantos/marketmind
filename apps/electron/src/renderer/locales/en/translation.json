@@ -746,7 +746,10 @@
       "stopProtectedOfBalance": "of balance",
       "tpProjected": "TP-Projected",
       "tpProjectedOfExposure": "of exposure",
-      "tpProjectedOfBalance": "of balance"
+      "tpProjectedOfBalance": "of balance",
+      "source": "Source",
+      "manual": "Manual",
+      "entriesCount": "{{count}}x"
     },
     "viewMode": {
       "cards": "Card view",
@@ -859,7 +862,12 @@
     },
     "order": {
       "long": "BUY",
-      "short": "SELL"
+      "short": "SELL",
+      "failed": "Failed to create order",
+      "cancelFailed": "Failed to cancel order",
+      "cancelSuccess": "Order cancelled",
+      "closeFailed": "Failed to close order",
+      "slTpUpdateFailed": "Failed to update SL/TP"
     },
     "closeOrder": "Close Order",
     "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
