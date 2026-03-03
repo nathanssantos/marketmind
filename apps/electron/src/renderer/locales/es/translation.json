@@ -210,6 +210,15 @@
         "description": "Con qué frecuencia el sistema verifica automáticamente gaps y datos corruptos",
         "gapCheck": "Intervalo de verificación de gaps: {{hours}}h",
         "corruptionCheck": "Intervalo de verificación de corrupción: {{hours}}h"
+      },
+      "storage": {
+        "title": "Almacenamiento",
+        "description": "Espacio en disco utilizado por los datos de kline (velas).",
+        "size": "Klines: {{size}}",
+        "clearAll": "Borrar Todos los Klines",
+        "confirmTitle": "¿Borrar todos los datos de kline?",
+        "confirmDescription": "Todos los datos de velas descargados serán eliminados permanentemente. El sistema volverá a descargar solo lo necesario para gráficos, watchers y posiciones activas.",
+        "confirmButton": "Borrar"
       }
     },
     "chart": {
@@ -1068,7 +1077,12 @@
       "documentation": "Documentación",
       "changelog": "Registro de Cambios"
     },
-    "copyright": "© {{year}} MarketMind. Hecho con ❤️ para traders e inversores."
+    "copyright": "© {{year}} MarketMind. Hecho con ❤️ para traders e inversores.",
+    "update": {
+      "available": "v{{version}} disponible",
+      "upToDate": "Actualizado",
+      "readyToInstall": "Listo para instalar"
+    }
   },
   "setupConfig": {
     "configureSetups": "Configurar Setups de Trading",

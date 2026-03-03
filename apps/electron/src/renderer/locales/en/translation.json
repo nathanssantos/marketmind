@@ -184,6 +184,15 @@
         "description": "How often the system automatically checks for gaps and corrupted data",
         "gapCheck": "Gap check interval: {{hours}}h",
         "corruptionCheck": "Corruption check interval: {{hours}}h"
+      },
+      "storage": {
+        "title": "Storage",
+        "description": "Disk space used by kline (candlestick) data.",
+        "size": "Klines: {{size}}",
+        "clearAll": "Clear All Klines",
+        "confirmTitle": "Clear all kline data?",
+        "confirmDescription": "All downloaded candlestick data will be permanently deleted. The system will re-download only what is needed for active charts, watchers and positions.",
+        "confirmButton": "Clear"
       }
     },
     "chart": {
@@ -1000,7 +1009,12 @@
       "documentation": "Documentation",
       "changelog": "Changelog"
     },
-    "copyright": "© {{year}} MarketMind. Built with love for traders and investors."
+    "copyright": "© {{year}} MarketMind. Built with love for traders and investors.",
+    "update": {
+      "available": "v{{version}} available",
+      "upToDate": "Up to date",
+      "readyToInstall": "Ready to install"
+    }
   },
   "setupConfig": {
     "configureSetups": "Configure Trading Setups",

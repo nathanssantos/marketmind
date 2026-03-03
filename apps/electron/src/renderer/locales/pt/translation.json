@@ -210,6 +210,15 @@
         "description": "Com que frequência o sistema verifica automaticamente gaps e dados corrompidos",
         "gapCheck": "Intervalo de verificação de gaps: {{hours}}h",
         "corruptionCheck": "Intervalo de verificação de corrupção: {{hours}}h"
+      },
+      "storage": {
+        "title": "Armazenamento",
+        "description": "Espaço em disco usado pelos dados de kline (candlestick).",
+        "size": "Klines: {{size}}",
+        "clearAll": "Limpar Todos os Klines",
+        "confirmTitle": "Limpar todos os dados de kline?",
+        "confirmDescription": "Todos os dados de candlestick baixados serão excluídos permanentemente. O sistema irá baixar novamente apenas o necessário para gráficos, watchers e posições ativas.",
+        "confirmButton": "Limpar"
       }
     },
     "chart": {
@@ -1042,7 +1051,12 @@
       "documentation": "Documentação",
       "changelog": "Registro de Alterações"
     },
-    "copyright": "© {{year}} MarketMind. Feito com ❤️ para traders e investidores."
+    "copyright": "© {{year}} MarketMind. Feito com ❤️ para traders e investidores.",
+    "update": {
+      "available": "v{{version}} disponível",
+      "upToDate": "Atualizado",
+      "readyToInstall": "Pronto para instalar"
+    }
   },
   "setupConfig": {
     "configureSetups": "Configurar Setups de Trading",

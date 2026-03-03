@@ -210,6 +210,15 @@
         "description": "Fréquence à laquelle le système vérifie automatiquement les gaps et les données corrompues",
         "gapCheck": "Intervalle de vérification des gaps : {{hours}}h",
         "corruptionCheck": "Intervalle de vérification de corruption : {{hours}}h"
+      },
+      "storage": {
+        "title": "Stockage",
+        "description": "Espace disque utilisé par les données kline (chandeliers).",
+        "size": "Klines : {{size}}",
+        "clearAll": "Effacer tous les klines",
+        "confirmTitle": "Effacer toutes les données kline ?",
+        "confirmDescription": "Toutes les données de chandeliers téléchargées seront définitivement supprimées. Le système téléchargera à nouveau uniquement ce qui est nécessaire pour les graphiques, les watchers et les positions actives.",
+        "confirmButton": "Effacer"
       }
     },
     "chart": {
@@ -1057,7 +1066,12 @@
       "documentation": "Documentation",
       "changelog": "Journal des modifications"
     },
-    "copyright": "© {{year}} MarketMind. Fait avec ❤️ pour les traders et investisseurs."
+    "copyright": "© {{year}} MarketMind. Fait avec ❤️ pour les traders et investisseurs.",
+    "update": {
+      "available": "v{{version}} disponible",
+      "upToDate": "À jour",
+      "readyToInstall": "Prêt à installer"
+    }
   },
   "setupConfig": {
     "configureSetups": "Configurer les Setups de Trading",

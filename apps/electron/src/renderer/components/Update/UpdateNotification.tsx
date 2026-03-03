@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Text, Progress, Stack } from '@chakra-ui/react';
+import { Box, HStack, Text, Progress, Stack } from '@chakra-ui/react';
+import { Button } from '@renderer/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { useAutoUpdate } from '@renderer/hooks/useAutoUpdate';
 
@@ -90,14 +91,14 @@ export const UpdateNotification = () => {
               </Box>
             )}
 
-            <Stack direction="row" gap={2}>
-              <Button size="sm" colorScheme="blue" onClick={handleDownload}>
+            <HStack gap={2}>
+              <Button size="sm" colorPalette="blue" onClick={handleDownload}>
                 {t('update.downloadUpdate')}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleDismiss}>
                 {t('update.later')}
               </Button>
-            </Stack>
+            </HStack>
           </>
         )}
 
@@ -118,7 +119,7 @@ export const UpdateNotification = () => {
                   <Progress.Range />
                 </Progress.Track>
               </Progress.Root>
-              <Stack direction="row" justify="space-between" mt={1}>
+              <HStack justify="space-between" mt={1}>
                 <Text fontSize="xs" color="fg.muted">
                   {t('update.percent', { percent: progress.percent })}
                 </Text>
@@ -128,7 +129,7 @@ export const UpdateNotification = () => {
                 <Text fontSize="xs" color="fg.muted">
                   {t('update.downloadSpeed', { speed: formatSpeed(progress.bytesPerSecond) })}
                 </Text>
-              </Stack>
+              </HStack>
             </Box>
           </>
         )}
@@ -144,14 +145,14 @@ export const UpdateNotification = () => {
               </Text>
             </Box>
 
-            <Stack direction="row" gap={2}>
-              <Button size="sm" colorScheme="green" onClick={handleInstall}>
+            <HStack gap={2}>
+              <Button size="sm" colorPalette="green" onClick={handleInstall}>
                 {t('update.restartAndInstall')}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleDismiss}>
                 {t('update.later')}
               </Button>
-            </Stack>
+            </HStack>
           </>
         )}
 
