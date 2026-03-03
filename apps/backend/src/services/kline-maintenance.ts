@@ -902,6 +902,20 @@ class KlineMaintenance {
       }
     }
 
+    for (const pair of activePairs) {
+      try {
+        const gaps = await this.detectGaps(pair);
+        for (let i = 0; i < gaps.length; i += 3) {
+          const batch = gaps.slice(i, i + 3);
+          const results = await Promise.all(batch.map(gap => this.fillGap(gap, true).catch(() => 0)));
+          totalFixed += results.reduce((sum, n) => sum + n, 0);
+        }
+        if (gaps.length > 0) await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
+      } catch (error) {
+        logger.error({ pair, error }, '[checkAfterReconnection] Error filling gaps for pair');
+      }
+    }
+
     const result: ReconnectionValidationResult = {
       startTime,
       endTime: new Date(),
