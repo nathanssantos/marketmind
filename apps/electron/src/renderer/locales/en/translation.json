@@ -119,6 +119,7 @@
       "tradingProfiles": "Trading Profiles",
       "setupDetection": "Setup Detection",
       "tradingSimulator": "Trading Simulator",
+      "data": "Data",
       "about": "About"
     },
     "language": {
@@ -158,6 +159,32 @@
       "downloadAutomatically": "Download updates automatically",
       "downloadAutomaticallyDescription": "Automatically download new versions when available",
       "checkNow": "Check for Updates Now"
+    },
+    "data": {
+      "maintenance": {
+        "title": "Kline Maintenance",
+        "description": "Detect and repair missing or corrupted candles across all active pairs",
+        "repairAll": "Repair All Gaps",
+        "repairing": "Repairing...",
+        "pairsChecked": "{{count}} pairs checked",
+        "gapsFilled": "{{count}} gaps filled",
+        "corruptedFixed": "{{count}} corrupted fixed"
+      },
+      "status": {
+        "title": "Maintenance Status",
+        "symbol": "Symbol",
+        "interval": "Interval",
+        "market": "Market",
+        "lastCheck": "Last Check",
+        "gapsFound": "Gaps",
+        "corruptedFixed": "Corrupted"
+      },
+      "cooldowns": {
+        "title": "Check Intervals",
+        "description": "How often the system automatically checks for gaps and corrupted data",
+        "gapCheck": "Gap check interval: {{hours}}h",
+        "corruptionCheck": "Corruption check interval: {{hours}}h"
+      }
     },
     "chart": {
       "tipsRealtime": "Changes are applied immediately with a 300ms debounce",

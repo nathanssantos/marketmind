@@ -125,6 +125,7 @@
       "tradingProfiles": "Profils de Trading",
       "setupDetection": "Détection de Setups",
       "tradingSimulator": "Simulateur de Trading",
+      "data": "Données",
       "about": "À propos"
     },
     "contextConfig": {
@@ -184,6 +185,32 @@
       "downloadAutomatically": "Télécharger les mises à jour automatiquement",
       "downloadAutomaticallyDescription": "Télécharger automatiquement les nouvelles versions lorsqu'elles sont disponibles",
       "checkNow": "Vérifier les Mises à Jour Maintenant"
+    },
+    "data": {
+      "maintenance": {
+        "title": "Maintenance des Klines",
+        "description": "Détecter et réparer les bougies manquantes ou corrompues sur toutes les paires actives",
+        "repairAll": "Réparer Tous les Gaps",
+        "repairing": "Réparation...",
+        "pairsChecked": "{{count}} paires vérifiées",
+        "gapsFilled": "{{count}} gaps comblés",
+        "corruptedFixed": "{{count}} corrompus corrigés"
+      },
+      "status": {
+        "title": "État de Maintenance",
+        "symbol": "Symbole",
+        "interval": "Intervalle",
+        "market": "Marché",
+        "lastCheck": "Dernière Vérification",
+        "gapsFound": "Gaps",
+        "corruptedFixed": "Corrompus"
+      },
+      "cooldowns": {
+        "title": "Intervalles de Vérification",
+        "description": "Fréquence à laquelle le système vérifie automatiquement les gaps et les données corrompues",
+        "gapCheck": "Intervalle de vérification des gaps : {{hours}}h",
+        "corruptionCheck": "Intervalle de vérification de corruption : {{hours}}h"
+      }
     },
     "chart": {
       "tipsRealtime": "Les modifications sont appliquées immédiatement avec un debounce de 300ms",

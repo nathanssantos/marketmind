@@ -279,6 +279,35 @@ export const klineRouter = router({
       };
     }),
 
+  repairAll: protectedProcedure
+    .mutation(async () => {
+      const maintenance = getKlineMaintenance();
+      return maintenance.repairAll();
+    }),
+
+  getMaintenanceStatus: protectedProcedure
+    .query(async () => {
+      const maintenance = getKlineMaintenance();
+      return maintenance.getStatusEntries();
+    }),
+
+  getCooldowns: protectedProcedure
+    .query(() => {
+      return getKlineMaintenance().getCooldowns();
+    }),
+
+  setCooldowns: protectedProcedure
+    .input(
+      z.object({
+        gapCheckMs: z.number().min(30 * 60 * 1000).max(24 * 60 * 60 * 1000),
+        corruptionCheckMs: z.number().min(30 * 60 * 1000).max(24 * 60 * 60 * 1000),
+      })
+    )
+    .mutation(({ input }) => {
+      getKlineMaintenance().setCooldowns(input.gapCheckMs, input.corruptionCheckMs);
+      return { success: true };
+    }),
+
   sync: protectedProcedure
     .input(
       z.object({

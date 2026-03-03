@@ -48,6 +48,8 @@ export interface KlineMaintenanceStartOptions {
 class KlineMaintenance {
   private checkInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
+  private gapCheckCooldownMs = COOLDOWN_GAP_CHECK;
+  private corruptionCheckCooldownMs = COOLDOWN_CORRUPTION_CHECK;
 
   async start(options: KlineMaintenanceStartOptions = {}): Promise<void> {
     if (this.checkInterval) return;
@@ -135,7 +137,7 @@ class KlineMaintenance {
     if (!log?.lastGapCheck) return true;
 
     const elapsed = Date.now() - log.lastGapCheck.getTime();
-    return elapsed >= COOLDOWN_GAP_CHECK;
+    return elapsed >= this.gapCheckCooldownMs;
   }
 
   private async shouldCheckCorruption(pair: ActivePair): Promise<boolean> {
@@ -150,7 +152,7 @@ class KlineMaintenance {
     if (!log?.lastCorruptionCheck) return true;
 
     const elapsed = Date.now() - log.lastCorruptionCheck.getTime();
-    return elapsed >= COOLDOWN_CORRUPTION_CHECK;
+    return elapsed >= this.corruptionCheckCooldownMs;
   }
 
   private async updateMaintenanceLog(
@@ -929,6 +931,63 @@ class KlineMaintenance {
     outputReconnectionValidationResults(result);
 
     return { checked: totalChecked, fixed: totalFixed };
+  }
+
+  getCooldowns(): { gapCheckMs: number; corruptionCheckMs: number } {
+    return { gapCheckMs: this.gapCheckCooldownMs, corruptionCheckMs: this.corruptionCheckCooldownMs };
+  }
+
+  setCooldowns(gapCheckMs: number, corruptionCheckMs: number): void {
+    this.gapCheckCooldownMs = gapCheckMs;
+    this.corruptionCheckCooldownMs = corruptionCheckMs;
+    logger.info({ gapCheckMs, corruptionCheckMs }, '[KlineMaintenance] Cooldowns updated');
+  }
+
+  async repairAll(): Promise<{ pairsChecked: number; gapsFilled: number; corruptedFixed: number }> {
+    const activePairs = await this.getActivePairs();
+    let totalGapsFilled = 0;
+    let totalCorruptedFixed = 0;
+
+    for (const pair of activePairs) {
+      try {
+        const result = await this.forceCheckSymbol(pair.symbol, pair.interval, pair.marketType);
+        totalGapsFilled += result.gapsFilled;
+        totalCorruptedFixed += result.corruptedFixed;
+      } catch (error) {
+        logger.error({ pair, error }, '[repairAll] Error repairing pair');
+      }
+    }
+
+    return { pairsChecked: activePairs.length, gapsFilled: totalGapsFilled, corruptedFixed: totalCorruptedFixed };
+  }
+
+  async getStatusEntries(): Promise<Array<{ symbol: string; interval: string; marketType: string; lastGapCheck: Date | null; lastCorruptionCheck: Date | null; gapsFound: number; corruptedFixed: number; updatedAt: Date }>> {
+    const activePairs = await this.getActivePairs();
+    if (activePairs.length === 0) return [];
+
+    const results = await Promise.all(
+      activePairs.map(async (pair) => {
+        const log = await db.query.pairMaintenanceLog.findFirst({
+          where: and(
+            eq(pairMaintenanceLog.symbol, pair.symbol),
+            eq(pairMaintenanceLog.interval, pair.interval),
+            eq(pairMaintenanceLog.marketType, pair.marketType)
+          ),
+        });
+        return {
+          symbol: pair.symbol,
+          interval: pair.interval,
+          marketType: pair.marketType,
+          lastGapCheck: log?.lastGapCheck ?? null,
+          lastCorruptionCheck: log?.lastCorruptionCheck ?? null,
+          gapsFound: log?.gapsFound ?? 0,
+          corruptedFixed: log?.corruptedFixed ?? 0,
+          updatedAt: log?.updatedAt ?? new Date(0),
+        };
+      })
+    );
+
+    return results.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 }
 

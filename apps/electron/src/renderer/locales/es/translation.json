@@ -125,6 +125,7 @@
       "tradingProfiles": "Perfiles de Trading",
       "setupDetection": "Detección de Setups",
       "tradingSimulator": "Simulador de Trading",
+      "data": "Datos",
       "about": "Acerca de"
     },
     "contextConfig": {
@@ -184,6 +185,32 @@
       "downloadAutomatically": "Descargar actualizaciones automáticamente",
       "downloadAutomaticallyDescription": "Descargar automáticamente nuevas versiones cuando estén disponibles",
       "checkNow": "Buscar Actualizaciones Ahora"
+    },
+    "data": {
+      "maintenance": {
+        "title": "Mantenimiento de Klines",
+        "description": "Detectar y reparar velas faltantes o corruptas en todos los pares activos",
+        "repairAll": "Reparar Todos los Gaps",
+        "repairing": "Reparando...",
+        "pairsChecked": "{{count}} pares verificados",
+        "gapsFilled": "{{count}} gaps rellenados",
+        "corruptedFixed": "{{count}} corrompidos corregidos"
+      },
+      "status": {
+        "title": "Estado de Mantenimiento",
+        "symbol": "Símbolo",
+        "interval": "Intervalo",
+        "market": "Mercado",
+        "lastCheck": "Última Verificación",
+        "gapsFound": "Gaps",
+        "corruptedFixed": "Corrompidos"
+      },
+      "cooldowns": {
+        "title": "Intervalos de Verificación",
+        "description": "Con qué frecuencia el sistema verifica automáticamente gaps y datos corruptos",
+        "gapCheck": "Intervalo de verificación de gaps: {{hours}}h",
+        "corruptionCheck": "Intervalo de verificación de corrupción: {{hours}}h"
+      }
     },
     "chart": {
       "tipsRealtime": "Los cambios se aplican inmediatamente con un debounce de 300ms",

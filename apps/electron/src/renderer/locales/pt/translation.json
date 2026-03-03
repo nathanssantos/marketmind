@@ -125,6 +125,7 @@
       "context": "Contexto",
       "setupDetection": "Detecção de Setups",
       "tradingSimulator": "Simulador de Trading",
+      "data": "Dados",
       "about": "Sobre"
     },
     "contextConfig": {
@@ -184,6 +185,32 @@
       "downloadAutomatically": "Baixar atualizações automaticamente",
       "downloadAutomaticallyDescription": "Baixar automaticamente novas versões quando disponíveis",
       "checkNow": "Verificar Atualizações Agora"
+    },
+    "data": {
+      "maintenance": {
+        "title": "Manutenção de Klines",
+        "description": "Detectar e reparar candles ausentes ou corrompidos em todos os pares ativos",
+        "repairAll": "Reparar Todos os Gaps",
+        "repairing": "Reparando...",
+        "pairsChecked": "{{count}} pares verificados",
+        "gapsFilled": "{{count}} gaps preenchidos",
+        "corruptedFixed": "{{count}} corrompidos corrigidos"
+      },
+      "status": {
+        "title": "Status de Manutenção",
+        "symbol": "Símbolo",
+        "interval": "Intervalo",
+        "market": "Mercado",
+        "lastCheck": "Última Verificação",
+        "gapsFound": "Gaps",
+        "corruptedFixed": "Corrompidos"
+      },
+      "cooldowns": {
+        "title": "Intervalos de Verificação",
+        "description": "Com que frequência o sistema verifica automaticamente gaps e dados corrompidos",
+        "gapCheck": "Intervalo de verificação de gaps: {{hours}}h",
+        "corruptionCheck": "Intervalo de verificação de corrupção: {{hours}}h"
+      }
     },
     "chart": {
       "tipsRealtime": "As alterações são aplicadas imediatamente com um debounce de 300ms",
