@@ -1,9 +1,9 @@
 import type { AssetClass, Interval, MarketType } from '@marketmind/types';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { CHART_INITIAL_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
-import { klines } from '../db/schema';
+import { klines, pairMaintenanceLog } from '../db/schema';
 import { symbolSearch } from '../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
 import { prefetchKlines } from '../services/kline-prefetch';
@@ -354,6 +354,20 @@ export const klineRouter = router({
         serverTime: now,
       };
     }),
+
+  getDbSize: protectedProcedure.query(async () => {
+    const result = await db.execute(
+      sql`SELECT pg_total_relation_size('klines') as bytes`
+    );
+    const bytes = Number((result.rows[0] as { bytes: string }).bytes);
+    return { bytes };
+  }),
+
+  clearKlines: protectedProcedure.mutation(async () => {
+    await db.execute(sql`TRUNCATE TABLE klines`);
+    await db.delete(pairMaintenanceLog);
+    return { success: true };
+  }),
 
   searchSymbols: protectedProcedure
     .input(

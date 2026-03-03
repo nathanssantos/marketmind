@@ -1,4 +1,5 @@
 import { Button } from '@/renderer/components/ui/button';
+import { ConfirmationDialog } from '@/renderer/components/ui/ConfirmationDialog';
 import { Slider } from '@/renderer/components/ui/slider';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { trpc } from '@/renderer/utils/trpc';
@@ -6,10 +7,17 @@ import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColum
 import { Badge, Box, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuRefreshCw, LuWrench } from 'react-icons/lu';
+import { LuRefreshCw, LuTrash2, LuWrench } from 'react-icons/lu';
 
 const MS_PER_HOUR = 3_600_000;
 const DEFAULT_COOLDOWN_HOURS = 2;
+
+const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+};
 
 const formatTimeAgo = (date: Date | string | null): string => {
   if (!date) return '—';
@@ -46,6 +54,20 @@ export const DataTab = () => {
       setCorruptionCheckHours(cooldowns.corruptionCheckMs / MS_PER_HOUR);
     }
   }, [cooldowns]);
+
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const { data: dbSizeData, refetch: refetchDbSize } = trpc.kline.getDbSize.useQuery();
+  const dbSize = dbSizeData?.bytes;
+
+  const clearKlinesMutation = trpc.kline.clearKlines.useMutation({
+    onSuccess: () => {
+      setShowClearConfirm(false);
+      void refetchDbSize();
+      void refetchStatus();
+    },
+  });
+
+  const handleClearKlines = () => clearKlinesMutation.mutate();
 
   const repairAllMutation = trpc.kline.repairAll.useMutation({
     onSuccess: (result) => {
@@ -180,6 +202,42 @@ export const DataTab = () => {
           </Box>
         </Stack>
       </Box>
+
+      <Separator />
+
+      <Box>
+        <Text fontSize="md" fontWeight="medium" mb={1}>{t('settings.data.storage.title')}</Text>
+        <Text fontSize="sm" color="fg.muted" mb={4}>{t('settings.data.storage.description')}</Text>
+
+        <HStack gap={4} flexWrap="wrap" align="center">
+          {dbSize !== undefined && (
+            <Text fontSize="sm">
+              {t('settings.data.storage.size', { size: formatBytes(dbSize) })}
+            </Text>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            colorPalette="red"
+            onClick={() => setShowClearConfirm(true)}
+          >
+            <LuTrash2 />
+            {t('settings.data.storage.clearAll')}
+          </Button>
+        </HStack>
+      </Box>
+
+      <ConfirmationDialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={handleClearKlines}
+        title={t('settings.data.storage.confirmTitle')}
+        description={t('settings.data.storage.confirmDescription')}
+        confirmLabel={t('settings.data.storage.confirmButton')}
+        colorPalette="red"
+        isDestructive
+        isLoading={clearKlinesMutation.isPending}
+      />
     </Stack>
   );
 };

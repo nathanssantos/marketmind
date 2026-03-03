@@ -6,6 +6,17 @@ import { klines as klinesTable } from '../../db/schema';
 import { mapDbKlinesReversed } from '../../utils/kline-mapper';
 import { smartBackfillKlines } from '../binance-historical';
 import { smartBackfillIBKlines } from '../ib-historical';
+import { getKlineMaintenance } from '../kline-maintenance';
+import { logger } from '../logger';
+
+const hasLocalIntegrityIssues = (klines: Kline[], intervalMs: number): boolean => {
+  const TOLERANCE_MS = 1000;
+  for (let i = 1; i < klines.length; i++) {
+    const diff = klines[i]!.openTime - klines[i - 1]!.openTime;
+    if (Math.abs(diff - intervalMs) > TOLERANCE_MS) return true;
+  }
+  return false;
+};
 
 export const getIntervalMs = (interval: string): number => {
   const match = interval.match(/^(\d+)([mhdw])$/);
@@ -46,7 +57,7 @@ export const fetchKlinesFromDbWithBackfill = async (
     const backfillResult = isIB
       ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
       : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
-    console.log(`[KlineFetcher] Backfill complete (${isIB ? 'IB' : 'Binance'}): downloaded ${backfillResult.downloaded}, total in DB: ${backfillResult.totalInDb}`);
+    logger.debug({ symbol, interval, exchange: isIB ? 'IB' : 'Binance', downloaded: backfillResult.downloaded, totalInDb: backfillResult.totalInDb }, '[KlineFetcher] Backfill complete');
 
     dbKlines = await db.query.klines.findMany({
       where: queryWhere,
@@ -54,5 +65,11 @@ export const fetchKlinesFromDbWithBackfill = async (
     });
   }
 
-  return mapDbKlinesReversed(dbKlines);
+  const result = mapDbKlinesReversed(dbKlines);
+  if (result.length > 1 && hasLocalIntegrityIssues(result, intervalMs)) {
+    await getKlineMaintenance().forceCheckSymbol(symbol, interval, effectiveMarketType);
+    const fixed = await db.query.klines.findMany({ where: queryWhere, orderBy: [desc(klinesTable.openTime)] });
+    return mapDbKlinesReversed(fixed);
+  }
+  return result;
 };
