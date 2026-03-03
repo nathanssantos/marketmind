@@ -334,7 +334,8 @@
         "title": "Paramètres d'Entrée",
         "description": "Configurez le timing d'entrée et les filtres de risque/récompense",
         "entryLevel": {
-          "title": "Niveau d'Entrée Maximum",
+          "longTitle": "Niveau d'Entrée Maximum (LONG)",
+          "shortTitle": "Niveau d'Entrée Maximum (SHORT)",
           "description": "Contrôle la distance que le prix peut parcourir du niveau de pullback avant de rejeter l'entrée. 0% = pullback profond uniquement, 100% = breakout, >100% = entrées étendues au-delà du breakout.",
           "deepPullback": "Pullback Profond",
           "pullback": "Pullback",

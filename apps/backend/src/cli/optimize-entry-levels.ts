@@ -193,7 +193,8 @@ Example:
           watchers,
           startDate: config.startDate,
           endDate: config.endDate,
-          maxFibonacciEntryProgressPercent: entryLevel,
+          maxFibonacciEntryProgressPercentLong: entryLevel,
+          maxFibonacciEntryProgressPercentShort: entryLevel,
           minRiskRewardRatio: minRRLong,
           minRiskRewardRatioLong: minRRLong,
           minRiskRewardRatioShort: minRRShort,
@@ -351,7 +352,8 @@ Example:
   const best = results[0]!;
   console.log('Copy these values to your trading config:\n');
   console.log(JSON.stringify({
-    maxFibonacciEntryProgressPercent: best.entryLevel,
+    maxFibonacciEntryProgressPercentLong: best.entryLevel,
+    maxFibonacciEntryProgressPercentShort: best.entryLevel,
     minRiskRewardRatioLong: best.minRRLong,
     minRiskRewardRatioShort: best.minRRShort,
     results: {

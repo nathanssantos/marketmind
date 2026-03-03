@@ -334,7 +334,8 @@
         "title": "Configurações de Entrada",
         "description": "Configure o timing de entrada e filtros de risco/retorno",
         "entryLevel": {
-          "title": "Nível Máximo de Entrada",
+          "longTitle": "Nível Máximo de Entrada (LONG)",
+          "shortTitle": "Nível Máximo de Entrada (SHORT)",
           "description": "Controla o quanto o preço pode se afastar do nível de pullback antes da entrada ser rejeitada. 0% = apenas pullback profundo, 100% = breakout, >100% = entradas estendidas além do breakout.",
           "deepPullback": "Pullback Profundo",
           "pullback": "Pullback",

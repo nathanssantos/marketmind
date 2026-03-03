@@ -27,7 +27,8 @@ export const FILTER_DEFAULTS = {
 
   fibonacciTargetLevelLong: '1.272' as const,
   fibonacciTargetLevelShort: '1.272' as const,
-  maxFibonacciEntryProgressPercent: 127.2,
+  maxFibonacciEntryProgressPercentLong: 127.2,
+  maxFibonacciEntryProgressPercentShort: 127.2,
 
   useCooldown: true,
   cooldownMinutes: 15,

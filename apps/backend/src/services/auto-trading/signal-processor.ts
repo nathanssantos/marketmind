@@ -226,7 +226,8 @@ export class SignalProcessor {
         currentBalance: wallets.currentBalance,
         leverage: autoTradingConfig.leverage,
         directionMode: autoTradingConfig.directionMode,
-        maxFibonacciEntryProgressPercent: autoTradingConfig.maxFibonacciEntryProgressPercent,
+        maxFibonacciEntryProgressPercentLong: autoTradingConfig.maxFibonacciEntryProgressPercentLong,
+        maxFibonacciEntryProgressPercentShort: autoTradingConfig.maxFibonacciEntryProgressPercentShort,
         fibonacciSwingRange: autoTradingConfig.fibonacciSwingRange,
         minRiskRewardRatioLong: autoTradingConfig.minRiskRewardRatioLong,
         minRiskRewardRatioShort: autoTradingConfig.minRiskRewardRatioShort,
@@ -440,7 +441,8 @@ export class SignalProcessor {
         silent: true,
         interval: watcher.interval as TimeInterval,
         directionMode: directionMode !== 'auto' ? directionMode as 'long_only' | 'short_only' : undefined,
-        maxFibonacciEntryProgressPercent: walletWithConfig?.maxFibonacciEntryProgressPercent ? parseFloat(walletWithConfig.maxFibonacciEntryProgressPercent) : undefined,
+        maxFibonacciEntryProgressPercentLong: walletWithConfig?.maxFibonacciEntryProgressPercentLong ? parseFloat(walletWithConfig.maxFibonacciEntryProgressPercentLong) : undefined,
+        maxFibonacciEntryProgressPercentShort: walletWithConfig?.maxFibonacciEntryProgressPercentShort ? parseFloat(walletWithConfig.maxFibonacciEntryProgressPercentShort) : undefined,
         fibonacciSwingRange: walletWithConfig?.fibonacciSwingRange ?? undefined,
       });
 

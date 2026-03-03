@@ -11,7 +11,8 @@ export interface SetupDetectionConfig {
   dynamicStrategies?: StrategyDefinition[];
   minConfidence?: number;
   minRiskReward?: number;
-  maxFibonacciEntryProgressPercent?: number;
+  maxFibonacciEntryProgressPercentLong?: number;
+  maxFibonacciEntryProgressPercentShort?: number;
   fibonacciSwingRange?: 'extended' | 'nearest';
   silent?: boolean;
 }
@@ -46,7 +47,8 @@ export class SetupDetectionService {
       dynamicStrategies: config?.dynamicStrategies,
       minConfidence: config?.minConfidence ?? DEFAULT_MIN_CONFIDENCE,
       minRiskReward: config?.minRiskReward ?? DEFAULT_MIN_RISK_REWARD,
-      maxFibonacciEntryProgressPercent: config?.maxFibonacciEntryProgressPercent,
+      maxFibonacciEntryProgressPercentLong: config?.maxFibonacciEntryProgressPercentLong,
+      maxFibonacciEntryProgressPercentShort: config?.maxFibonacciEntryProgressPercentShort,
       silent: config?.silent,
     };
 
@@ -75,7 +77,8 @@ export class SetupDetectionService {
       minRiskReward: this.config.minRiskReward ?? DEFAULT_MIN_RISK_REWARD,
       strategy: definition,
       parameterOverrides: params,
-      maxFibonacciEntryProgressPercent: this.config.maxFibonacciEntryProgressPercent,
+      maxFibonacciEntryProgressPercentLong: this.config.maxFibonacciEntryProgressPercentLong,
+      maxFibonacciEntryProgressPercentShort: this.config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: this.config.fibonacciSwingRange,
       silent: this.config.silent,
     });

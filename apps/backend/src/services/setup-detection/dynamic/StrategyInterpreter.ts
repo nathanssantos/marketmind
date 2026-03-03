@@ -34,7 +34,8 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   strategy: StrategyDefinition;
   parameterOverrides?: Record<string, number>;
   silent?: boolean;
-  maxFibonacciEntryProgressPercent?: number;
+  maxFibonacciEntryProgressPercentLong?: number;
+  maxFibonacciEntryProgressPercentShort?: number;
   fibonacciSwingRange?: 'extended' | 'nearest';
   interval?: TimeInterval;
   directionMode?: 'long_only' | 'short_only';
@@ -47,7 +48,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private conditionEvaluator: ConditionEvaluator;
   private exitCalculator: ExitCalculator;
   private silent: boolean;
-  private maxFibEntryProgress: number;
+  private maxFibEntryProgressLong: number;
+  private maxFibEntryProgressShort: number;
   private fibonacciSwingRange: 'extended' | 'nearest';
   private interval: TimeInterval | undefined;
   private directionMode: 'long_only' | 'short_only' | undefined;
@@ -65,7 +67,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.conditionEvaluator = new ConditionEvaluator(this.indicatorEngine);
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
     this.silent = config.silent ?? false;
-    this.maxFibEntryProgress = config.maxFibonacciEntryProgressPercent ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
+    this.maxFibEntryProgressLong = config.maxFibonacciEntryProgressPercentLong ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
+    this.maxFibEntryProgressShort = config.maxFibonacciEntryProgressPercentShort ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
     this.fibonacciSwingRange = config.fibonacciSwingRange ?? 'nearest';
     this.interval = config.interval;
     this.directionMode = config.directionMode;
@@ -100,16 +103,17 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction, indicators);
 
-    const fibEntryValidation = this.validateFibonacciEntryProgress(entryPrice, fibonacciProjection, direction);
+    const maxFibProgress = direction === 'LONG' ? this.maxFibEntryProgressLong : this.maxFibEntryProgressShort;
+    const fibEntryValidation = this.validateFibonacciEntryProgress(entryPrice, fibonacciProjection, direction, maxFibProgress);
     if (!fibEntryValidation.valid) {
       return {
         setup: null,
         confidence: 0,
         rejection: {
-          reason: `Entry above max Fibonacci level (${this.maxFibEntryProgress}%)`,
+          reason: `Entry above max Fibonacci level (${maxFibProgress}%)`,
           details: {
             entryProgress: `${fibEntryValidation.progress.toFixed(1)}%`,
-            maxAllowed: `${this.maxFibEntryProgress}%`,
+            maxAllowed: `${maxFibProgress}%`,
             direction,
           },
         },
@@ -615,7 +619,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private validateFibonacciEntryProgress(
     entryPrice: number,
     fibonacciProjection: FibonacciProjectionData | undefined,
-    direction: SetupDirection
+    direction: SetupDirection,
+    maxProgress: number
   ): { valid: boolean; progress: number; reason?: string } {
     if (!fibonacciProjection) {
       return { valid: true, progress: 0 };
@@ -632,7 +637,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
       ? ((entryPrice - swingLow.price) / swingRange) * 100
       : ((swingHigh.price - entryPrice) / swingRange) * 100;
 
-    const isValid = progress <= this.maxFibEntryProgress;
+    const isValid = progress <= maxProgress;
 
     if (!isValid && !this.silent) {
       logger.warn({
@@ -641,7 +646,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
         swingLow: swingLow.price.toFixed(4),
         swingHigh: swingHigh.price.toFixed(4),
         fibLevel: `${progress.toFixed(1)}%`,
-        maxAllowed: `${this.maxFibEntryProgress}%`,
+        maxAllowed: `${maxProgress}%`,
       }, '! Entry price above max Fibonacci level - setup rejected');
     }
 

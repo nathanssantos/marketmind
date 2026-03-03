@@ -7,8 +7,10 @@ import { useTranslation } from 'react-i18next';
 export interface EntrySettingsSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
-  maxFibonacciEntryProgressPercent: number;
-  onEntryProgressChange: (value: number) => void;
+  maxFibonacciEntryProgressPercentLong: number;
+  onEntryProgressLongChange: (value: number) => void;
+  maxFibonacciEntryProgressPercentShort: number;
+  onEntryProgressShortChange: (value: number) => void;
   minRiskRewardRatioLong: number;
   onMinRiskRewardLongChange: (value: number) => void;
   minRiskRewardRatioShort: number;
@@ -25,8 +27,10 @@ export interface EntrySettingsSectionProps {
 export const EntrySettingsSection = ({
   isExpanded,
   onToggle,
-  maxFibonacciEntryProgressPercent,
-  onEntryProgressChange,
+  maxFibonacciEntryProgressPercentLong,
+  onEntryProgressLongChange,
+  maxFibonacciEntryProgressPercentShort,
+  onEntryProgressShortChange,
   minRiskRewardRatioLong,
   onMinRiskRewardLongChange,
   minRiskRewardRatioShort,
@@ -58,30 +62,48 @@ export const EntrySettingsSection = ({
       size="lg"
     >
       <Stack gap={6}>
-        <Box>
-          <Text fontSize="sm" fontWeight="semibold" mb={2}>
-            {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.title')}
-          </Text>
-          <Text fontSize="xs" color="fg.muted" mb={4}>
-            {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.description')}
-          </Text>
-          <HStack gap={4}>
-            <Slider
-              value={[maxFibonacciEntryProgressPercent]}
-              onValueChange={(values) => onEntryProgressChange(values[0] ?? 100)}
-              min={0}
-              max={150}
-              step={0.1}
-            />
-            <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
-              {maxFibonacciEntryProgressPercent}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercent)})
+        <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold" mb={2}>
+              {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.longTitle')}
             </Text>
-          </HStack>
-          <HStack justify="space-between" mt={2}>
-            <Text fontSize="xs" color="fg.muted">0% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.deepPullback')})</Text>
-            <Text fontSize="xs" color="fg.muted">150% ({t('settings.algorithmicAutoTrading.entrySettings.entryLevel.extendedBreakout')})</Text>
-          </HStack>
-        </Box>
+            <Text fontSize="xs" color="fg.muted" mb={4}>
+              {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.description')}
+            </Text>
+            <HStack gap={4}>
+              <Slider
+                value={[maxFibonacciEntryProgressPercentLong]}
+                onValueChange={(values) => onEntryProgressLongChange(values[0] ?? 100)}
+                min={0}
+                max={150}
+                step={0.1}
+              />
+              <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
+                {maxFibonacciEntryProgressPercentLong}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercentLong)})
+              </Text>
+            </HStack>
+          </Box>
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold" mb={2}>
+              {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.shortTitle')}
+            </Text>
+            <Text fontSize="xs" color="fg.muted" mb={4}>
+              {t('settings.algorithmicAutoTrading.entrySettings.entryLevel.description')}
+            </Text>
+            <HStack gap={4}>
+              <Slider
+                value={[maxFibonacciEntryProgressPercentShort]}
+                onValueChange={(values) => onEntryProgressShortChange(values[0] ?? 100)}
+                min={0}
+                max={150}
+                step={0.1}
+              />
+              <Text fontSize="sm" fontWeight="medium" minW="100px" textAlign="right">
+                {maxFibonacciEntryProgressPercentShort}% ({getEntryLevelLabel(maxFibonacciEntryProgressPercentShort)})
+              </Text>
+            </HStack>
+          </Box>
+        </Grid>
 
         <Grid templateColumns="repeat(2, 1fr)" gap={4}>
           <Box>

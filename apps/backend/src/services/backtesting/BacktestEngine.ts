@@ -235,12 +235,13 @@ export class BacktestEngine {
     const strategyOverrides = config.strategyParams || {};
 
     console.log('[Backtest] Dynamic setups:', setupsToEnable);
-    if (config.maxFibonacciEntryProgressPercent !== undefined) {
-      console.log(`[Backtest] Max Fibonacci entry progress: ${config.maxFibonacciEntryProgressPercent}%`);
+    if (config.maxFibonacciEntryProgressPercentLong !== undefined || config.maxFibonacciEntryProgressPercentShort !== undefined) {
+      console.log(`[Backtest] Max Fibonacci entry progress: LONG=${config.maxFibonacciEntryProgressPercentLong}% SHORT=${config.maxFibonacciEntryProgressPercentShort}%`);
     }
 
     const setupDetectionService = new SetupDetectionService({
-      maxFibonacciEntryProgressPercent: config.maxFibonacciEntryProgressPercent,
+      maxFibonacciEntryProgressPercentLong: config.maxFibonacciEntryProgressPercentLong,
+      maxFibonacciEntryProgressPercentShort: config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: config.fibonacciSwingRange,
     });
 

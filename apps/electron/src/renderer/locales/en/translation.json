@@ -308,7 +308,8 @@
         "title": "Entry Settings",
         "description": "Configure entry timing and risk/reward filters",
         "entryLevel": {
-          "title": "Maximum Entry Level",
+          "longTitle": "Max Entry Level (LONG)",
+          "shortTitle": "Max Entry Level (SHORT)",
           "description": "Controls how far price can move from the pullback level before entry is rejected. 0% = deep pullback only, 100% = breakout, >100% = extended entries beyond breakout.",
           "deepPullback": "Deep Pullback",
           "pullback": "Pullback",

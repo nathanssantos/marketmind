@@ -462,9 +462,11 @@ export const WatcherManager = () => {
       <EntrySettingsSection
         isExpanded={expandedSections.entrySettings}
         onToggle={() => toggleSection('entrySettings')}
-        maxFibonacciEntryProgressPercent={Number(config?.maxFibonacciEntryProgressPercent ?? 127.2)}
-        onEntryProgressChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercent: value })}
-        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 0.5)}
+        maxFibonacciEntryProgressPercentLong={Number(config?.maxFibonacciEntryProgressPercentLong ?? 127.2)}
+        onEntryProgressLongChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercentLong: value })}
+        maxFibonacciEntryProgressPercentShort={Number(config?.maxFibonacciEntryProgressPercentShort ?? 127.2)}
+        onEntryProgressShortChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercentShort: value })}
+        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 1)}
         onMinRiskRewardLongChange={(value) => handleConfigUpdate({ minRiskRewardRatioLong: value.toString() })}
         minRiskRewardRatioShort={Number(config?.minRiskRewardRatioShort ?? 1)}
         onMinRiskRewardShortChange={(value) => handleConfigUpdate({ minRiskRewardRatioShort: value.toString() })}
