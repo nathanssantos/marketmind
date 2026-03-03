@@ -2,7 +2,8 @@ import { Button } from '@/renderer/components/ui/button';
 import { Slider } from '@/renderer/components/ui/slider';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { trpc } from '@/renderer/utils/trpc';
-import { Badge, Box, HStack, Separator, Stack, Table, Text } from '@chakra-ui/react';
+import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@/renderer/components/Trading/TradingTable';
+import { Badge, Box, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw, LuWrench } from 'react-icons/lu';
@@ -18,6 +19,15 @@ const formatTimeAgo = (date: Date | string | null): string => {
   if (diffH < 24) return `${diffH}h ago`;
   return `${Math.floor(diffH / 24)}d ago`;
 };
+
+const statusColumns = (t: (key: string) => string): TradingTableColumn[] => [
+  { key: 'symbol', header: t('settings.data.status.symbol'), sticky: true, minW: '100px' },
+  { key: 'interval', header: t('settings.data.status.interval'), minW: '70px' },
+  { key: 'market', header: t('settings.data.status.market'), minW: '90px' },
+  { key: 'lastCheck', header: t('settings.data.status.lastCheck'), minW: '100px' },
+  { key: 'gaps', header: t('settings.data.status.gapsFound'), textAlign: 'right', minW: '70px' },
+  { key: 'corrupted', header: t('settings.data.status.corruptedFixed'), textAlign: 'right', minW: '90px' },
+];
 
 export const DataTab = () => {
   const { t } = useTranslation();
@@ -106,40 +116,29 @@ export const DataTab = () => {
           <Separator />
           <Box>
             <Text fontSize="md" fontWeight="medium" mb={3}>{t('settings.data.status.title')}</Text>
-            <Box overflowX="auto">
-              <Table.Root size="sm" variant="outline">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>{t('settings.data.status.symbol')}</Table.ColumnHeader>
-                    <Table.ColumnHeader>{t('settings.data.status.interval')}</Table.ColumnHeader>
-                    <Table.ColumnHeader>{t('settings.data.status.market')}</Table.ColumnHeader>
-                    <Table.ColumnHeader>{t('settings.data.status.lastCheck')}</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="right">{t('settings.data.status.gapsFound')}</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="right">{t('settings.data.status.corruptedFixed')}</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {statusEntries.map((entry) => (
-                    <Table.Row key={`${entry.symbol}-${entry.interval}-${entry.marketType}`}>
-                      <Table.Cell fontWeight="medium">{entry.symbol}</Table.Cell>
-                      <Table.Cell>{entry.interval}</Table.Cell>
-                      <Table.Cell>
-                        <Badge size="sm" colorPalette={entry.marketType === 'FUTURES' ? 'orange' : 'blue'}>
-                          {entry.marketType}
-                        </Badge>
-                      </Table.Cell>
-                      <Table.Cell color="fg.muted" fontSize="xs">{formatTimeAgo(entry.lastGapCheck)}</Table.Cell>
-                      <Table.Cell textAlign="right">
-                        <Badge size="sm" colorPalette={entry.gapsFound > 0 ? 'red' : 'green'}>{entry.gapsFound}</Badge>
-                      </Table.Cell>
-                      <Table.Cell textAlign="right">
-                        <Badge size="sm" colorPalette={entry.corruptedFixed > 0 ? 'orange' : 'green'}>{entry.corruptedFixed}</Badge>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table.Root>
-            </Box>
+            <TradingTable
+              columns={statusColumns(t)}
+              minW="600px"
+            >
+              {statusEntries.map((entry) => (
+                <TradingTableRow key={`${entry.symbol}-${entry.interval}-${entry.marketType}`}>
+                  <TradingTableCell sticky>{entry.symbol}</TradingTableCell>
+                  <TradingTableCell>{entry.interval}</TradingTableCell>
+                  <TradingTableCell>
+                    <Badge size="sm" px={2} colorPalette={entry.marketType === 'FUTURES' ? 'orange' : 'blue'}>
+                      {entry.marketType}
+                    </Badge>
+                  </TradingTableCell>
+                  <TradingTableCell>{formatTimeAgo(entry.lastGapCheck)}</TradingTableCell>
+                  <TradingTableCell textAlign="right">
+                    <Badge size="sm" px={2} colorPalette={entry.gapsFound > 0 ? 'red' : 'green'}>{entry.gapsFound}</Badge>
+                  </TradingTableCell>
+                  <TradingTableCell textAlign="right">
+                    <Badge size="sm" px={2} colorPalette={entry.corruptedFixed > 0 ? 'orange' : 'green'}>{entry.corruptedFixed}</Badge>
+                  </TradingTableCell>
+                </TradingTableRow>
+              ))}
+            </TradingTable>
           </Box>
         </>
       )}
