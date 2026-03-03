@@ -6,7 +6,7 @@ import { db } from '../db';
 import { tradeExecutions, wallets, positions, orders, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
-import { createStopLossOrder, createTakeProfitOrder, cancelProtectionOrder } from './protection-orders';
+import { createStopLossOrder, createTakeProfitOrder, cancelAllOpenProtectionOrdersOnExchange } from './protection-orders';
 import { generateEntityId } from '../utils/id';
 import { decryptApiKey } from './encryption';
 import {
@@ -421,12 +421,7 @@ export class BinanceFuturesUserStreamService {
             const slPrice = existingOpen.stopLoss ? parseFloat(existingOpen.stopLoss) : null;
             const tpPrice = existingOpen.takeProfit ? parseFloat(existingOpen.takeProfit) : null;
 
-            if (existingOpen.stopLossAlgoId || existingOpen.stopLossOrderId) {
-              await cancelProtectionOrder({ wallet: walletRow, symbol, marketType: 'FUTURES', algoId: existingOpen.stopLossAlgoId, orderId: existingOpen.stopLossOrderId }).catch((_e) => {});
-            }
-            if (existingOpen.takeProfitAlgoId || existingOpen.takeProfitOrderId) {
-              await cancelProtectionOrder({ wallet: walletRow, symbol, marketType: 'FUTURES', algoId: existingOpen.takeProfitAlgoId, orderId: existingOpen.takeProfitOrderId }).catch((_e) => {});
-            }
+            await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
             let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
             let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
@@ -695,12 +690,7 @@ export class BinanceFuturesUserStreamService {
               const slPrice = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
               const tpPrice = execution.takeProfit ? parseFloat(execution.takeProfit) : null;
 
-              if (execution.stopLossAlgoId || execution.stopLossOrderId) {
-                await cancelProtectionOrder({ wallet: walletRow, symbol, marketType: 'FUTURES', algoId: execution.stopLossAlgoId, orderId: execution.stopLossOrderId }).catch((_e) => {});
-              }
-              if (execution.takeProfitAlgoId || execution.takeProfitOrderId) {
-                await cancelProtectionOrder({ wallet: walletRow, symbol, marketType: 'FUTURES', algoId: execution.takeProfitAlgoId, orderId: execution.takeProfitOrderId }).catch((_e) => {});
-              }
+              await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
               let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
               let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
@@ -1205,12 +1195,7 @@ export class BinanceFuturesUserStreamService {
           const slPrice = existingOpen.stopLoss ? parseFloat(existingOpen.stopLoss) : null;
           const tpPrice = existingOpen.takeProfit ? parseFloat(existingOpen.takeProfit) : null;
 
-          if (existingOpen.stopLossAlgoId || existingOpen.stopLossOrderId) {
-            await cancelProtectionOrder({ wallet: walletRow, symbol, marketType: 'FUTURES', algoId: existingOpen.stopLossAlgoId, orderId: existingOpen.stopLossOrderId }).catch((_e) => {});
-          }
-          if (existingOpen.takeProfitAlgoId || existingOpen.takeProfitOrderId) {
-            await cancelProtectionOrder({ wallet: walletRow, symbol, marketType: 'FUTURES', algoId: existingOpen.takeProfitAlgoId, orderId: existingOpen.takeProfitOrderId }).catch((_e) => {});
-          }
+          await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
           let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
           let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;

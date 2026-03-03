@@ -213,6 +213,30 @@ export async function updateTakeProfitOrder(params: UpdateProtectionOrderParams)
   return createTakeProfitOrder(createParams);
 }
 
+export async function cancelAllOpenProtectionOrdersOnExchange(params: {
+  wallet: Wallet;
+  symbol: string;
+  marketType: MarketType;
+}): Promise<void> {
+  const { wallet, symbol, marketType } = params;
+  if (marketType !== 'FUTURES') return;
+
+  try {
+    const client = getFuturesClient(wallet);
+    const openAlgoOrders = await client.getOpenAlgoOrders(symbol);
+    if (openAlgoOrders.length === 0) return;
+
+    await Promise.allSettled(
+      openAlgoOrders.map((order) =>
+        client.cancelAlgoOrder(order.algoId).catch((_e) => {})
+      )
+    );
+    logger.info({ symbol, count: openAlgoOrders.length }, '[ProtectionOrders] Cancelled all open algo orders on exchange (pyramid cleanup)');
+  } catch (error) {
+    logger.warn({ symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to fetch/cancel open algo orders on exchange');
+  }
+}
+
 export async function cancelAllProtectionOrders(params: {
   wallet: Wallet;
   symbol: string;
