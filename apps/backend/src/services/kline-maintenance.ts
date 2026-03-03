@@ -1,5 +1,5 @@
 import type { Interval } from '@marketmind/types';
-import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, eq, gte, lte, desc } from 'drizzle-orm';
 import {
   MAINTENANCE_KLINES,
   TIME_MS,
@@ -763,11 +763,58 @@ class KlineMaintenance {
     return { corruptedFound: corruptedKlines.length, fixed };
   }
 
+  private async detectAndFixMisalignedKlines(pair: ActivePair): Promise<number> {
+    const intervalMs = getIntervalMilliseconds(pair.interval);
+    const lookbackMs = MAINTENANCE_KLINES * intervalMs;
+    const startTime = new Date(Date.now() - lookbackMs);
+    const ALIGNMENT_TOLERANCE_MS = 1000;
+
+    const recentKlines = await db.query.klines.findMany({
+      where: and(
+        eq(klines.symbol, pair.symbol),
+        eq(klines.interval, pair.interval),
+        eq(klines.marketType, pair.marketType),
+        gte(klines.openTime, startTime),
+      ),
+      orderBy: [asc(klines.openTime)],
+    });
+
+    const misaligned = recentKlines.filter((kline) => {
+      const openTimeMs = kline.openTime.getTime();
+      const alignedTime = Math.round(openTimeMs / intervalMs) * intervalMs;
+      return Math.abs(openTimeMs - alignedTime) > ALIGNMENT_TOLERANCE_MS;
+    });
+
+    if (misaligned.length === 0) return 0;
+
+    let deleted = 0;
+    for (const kline of misaligned) {
+      try {
+        await db.delete(klines).where(
+          and(
+            eq(klines.symbol, pair.symbol),
+            eq(klines.interval, pair.interval),
+            eq(klines.marketType, pair.marketType),
+            eq(klines.openTime, kline.openTime)
+          )
+        );
+        deleted++;
+        logger.info({ symbol: pair.symbol, interval: pair.interval, openTime: kline.openTime.toISOString() }, '[KlineMaintenance] Deleted misaligned kline (temporal gap)');
+      } catch (error) {
+        logger.error({ kline: { openTime: kline.openTime }, error }, '[KlineMaintenance] Error deleting misaligned kline');
+      }
+    }
+
+    return deleted;
+  }
+
   async forceCheckSymbol(symbol: string, interval: Interval, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
     const pair: ActivePair = { symbol, interval, marketType };
 
+    const misalignedDeleted = await this.detectAndFixMisalignedKlines(pair);
+
     const gaps = await this.detectGaps(pair);
-    let gapsFilled = 0;
+    let gapsFilled = misalignedDeleted;
 
     const GAP_BATCH_SIZE = 3;
     for (let i = 0; i < gaps.length; i += GAP_BATCH_SIZE) {
@@ -778,8 +825,7 @@ class KlineMaintenance {
 
     const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair, true);
 
-
-    await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
+    await this.updateMaintenanceLog(pair, { gapsFound: gaps.length + misalignedDeleted, checkType: 'gap' });
     await this.updateMaintenanceLog(pair, { corruptedFixed, checkType: 'corruption' });
 
     return { gapsFilled, corruptedFixed };
@@ -945,6 +991,22 @@ class KlineMaintenance {
 
   async repairAll(): Promise<{ pairsChecked: number; gapsFilled: number; corruptedFixed: number }> {
     const activePairs = await this.getActivePairs();
+    const seen = new Set(activePairs.map((p) => `${p.symbol}@${p.interval}@${p.marketType}`));
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * TIME_MS.DAY);
+    const recentlyMaintained = await db.query.pairMaintenanceLog.findMany({
+      where: gte(pairMaintenanceLog.updatedAt, thirtyDaysAgo),
+      orderBy: [desc(pairMaintenanceLog.updatedAt)],
+    });
+
+    for (const log of recentlyMaintained) {
+      const key = `${log.symbol}@${log.interval}@${log.marketType}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        activePairs.push({ symbol: log.symbol, interval: log.interval as Interval, marketType: log.marketType as 'SPOT' | 'FUTURES' });
+      }
+    }
+
     let totalGapsFilled = 0;
     let totalCorruptedFixed = 0;
 

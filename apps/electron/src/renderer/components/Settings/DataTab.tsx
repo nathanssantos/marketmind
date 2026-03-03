@@ -41,6 +41,7 @@ export const DataTab = () => {
     onSuccess: (result) => {
       setRepairResult(result);
       void refetchStatus();
+      void utils.kline.list.invalidate();
     },
   });
 
