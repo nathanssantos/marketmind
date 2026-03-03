@@ -143,7 +143,7 @@ const start = async (): Promise<void> => {
     await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
 
     const { orderSyncService } = await import('./services/order-sync');
-    await orderSyncService.start({ autoCancelOrphans: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
+    await orderSyncService.start({ autoCancelOrphans: true, autoFixMismatches: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
 
     setTimeout(() => {
       import('./services/startup-audit').then(({ runStartupAudit }) => {

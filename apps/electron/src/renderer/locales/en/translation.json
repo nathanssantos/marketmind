@@ -867,7 +867,8 @@
       "cancelFailed": "Failed to cancel order",
       "cancelSuccess": "Order cancelled",
       "closeFailed": "Failed to close order",
-      "slTpUpdateFailed": "Failed to update SL/TP"
+      "slTpUpdateFailed": "Failed to update SL/TP",
+      "entryUpdateFailed": "Failed to move pending order"
     },
     "closeOrder": "Close Order",
     "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",

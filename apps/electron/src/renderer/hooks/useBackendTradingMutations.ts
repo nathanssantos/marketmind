@@ -52,12 +52,18 @@ export const useBackendTradingMutations = () => {
     },
   });
 
+  const updatePendingEntryMutation = trpc.trading.updatePendingEntry.useMutation({
+    onSuccess: () => {
+      utils.autoTrading.getActiveExecutions.invalidate();
+    },
+  });
+
   const createOrder = useCallback(
     async (data: {
       walletId: string;
       symbol: string;
       side: 'BUY' | 'SELL';
-      type: 'MARKET' | 'LIMIT' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'STOP_MARKET';
+      type: 'MARKET' | 'LIMIT' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET';
       quantity: string;
       price?: string;
       stopPrice?: string;
@@ -104,6 +110,11 @@ export const useBackendTradingMutations = () => {
     [cancelProtectionOrderMutation]
   );
 
+  const updatePendingEntry = useCallback(
+    async (data: { id: string; newPrice: number }) => updatePendingEntryMutation.mutateAsync(data),
+    [updatePendingEntryMutation]
+  );
+
   return {
     createOrder,
     cancelOrder,
@@ -111,6 +122,7 @@ export const useBackendTradingMutations = () => {
     cancelExecution,
     updateExecutionSLTP,
     cancelProtectionOrder,
+    updatePendingEntry,
     isCreatingOrder: createOrderMutation.isPending,
     isCancelingOrder: cancelOrderMutation.isPending,
     isClosingExecution: closeExecutionMutation.isPending,

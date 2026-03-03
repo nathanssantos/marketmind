@@ -354,6 +354,20 @@ export class BinanceFuturesUserStreamService {
         '[FuturesUserStream] Order update received'
       );
 
+      if (status === 'CANCELED') {
+        await db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.status, 'pending'),
+              eq(tradeExecutions.entryOrderId, Number(orderId))
+            )
+          );
+        return;
+      }
+
       if (execType === 'TRADE' && status === 'FILLED') {
         const [pendingExecution] = await db
           .select()
@@ -1116,7 +1130,36 @@ export class BinanceFuturesUserStreamService {
       '[FuturesUserStream] Algo order update received'
     );
 
-    if (status !== 'TRIGGERED' && status !== 'TRIGGERING') {
+    if (status === 'REJECTED' || status === 'EXPIRED') {
+      await db
+        .update(tradeExecutions)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.status, 'pending'),
+            eq(tradeExecutions.entryOrderId, Number(algoId))
+          )
+        );
+      logger.warn({ walletId, symbol, algoId, status }, '[FuturesUserStream] Algo entry order rejected/expired — pending execution cancelled');
+      const wsService = getWebSocketService();
+      if (wsService) {
+        wsService.emitRiskAlert(walletId, {
+          type: 'ORDER_REJECTED',
+          level: 'critical',
+          symbol,
+          message: status === 'REJECTED'
+            ? `Entry order REJECTED by Binance — insufficient margin or invalid price at trigger time. Order for ${symbol} cancelled.`
+            : `Entry order EXPIRED for ${symbol}. Order was not filled within its validity window.`,
+          data: { algoId, orderType, status },
+          timestamp: Date.now(),
+        });
+        wsService.emitPositionUpdate(walletId, { id: String(algoId), status: 'cancelled' } as Parameters<typeof wsService.emitPositionUpdate>[1]);
+      }
+      return;
+    }
+
+    if (status !== 'TRIGGERED') {
       return;
     }
 
@@ -1578,6 +1621,34 @@ export class BinanceFuturesUserStreamService {
   private async handleConditionalOrderReject(walletId: string, event: FuturesConditionalOrderReject): Promise<void> {
     const { or: orderReject } = event;
     const { s: symbol, i: orderId, r: reason } = orderReject;
+
+    try {
+      const [pendingEntry] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.status, 'pending'),
+            eq(tradeExecutions.entryOrderId, Number(orderId))
+          )
+        )
+        .limit(1);
+
+      if (pendingEntry) {
+        await db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(eq(tradeExecutions.id, pendingEntry.id));
+        logger.warn(
+          { walletId, symbol, orderId, reason },
+          '[FuturesUserStream] Entry conditional order rejected — pending execution cancelled'
+        );
+        return;
+      }
+    } catch (error) {
+      logger.error({ walletId, orderId, error: serializeError(error) }, '[FuturesUserStream] Error checking entry execution for conditional reject');
+    }
 
     logger.error(
       {

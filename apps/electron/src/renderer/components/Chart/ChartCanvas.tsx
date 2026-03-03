@@ -109,14 +109,12 @@ export const ChartCanvas = ({
     closeExecution,
     updateExecutionSLTP,
     cancelProtectionOrder,
+    updatePendingEntry,
   } = useBackendTradingMutations();
 
   const hasTradingEnabled = !!backendWalletId;
 
   const [optimisticExecutions, setOptimisticExecutions] = useState<BackendExecution[]>([]);
-
-  const [quantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
-  const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 1;
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -178,13 +176,11 @@ export const ChartCanvas = ({
   }, [filteredBackendExecutions, optimisticExecutions, symbol]);
 
   const getOrderQuantity = useCallback((price: number): string => {
-    const stored = getQuantityForSymbol(symbol ?? '');
-    if (stored > 1) return roundTradingQty(stored);
     const balance = parseFloat(activeWallet?.currentBalance ?? '0');
-    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 100;
+    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 200;
     const qty = balance > 0 && price > 0 ? (balance * sizePercent) / price : 1;
     return roundTradingQty(qty);
-  }, [getQuantityForSymbol, symbol, activeWallet?.currentBalance, autoConfig?.positionSizePercent]);
+  }, [activeWallet?.currentBalance, autoConfig?.positionSizePercent]);
 
   const latestKlinesPriceRef = useRef(klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0);
   latestKlinesPriceRef.current = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
@@ -281,12 +277,6 @@ export const ChartCanvas = ({
     }
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
 
-  const { shiftPressed, altPressed } = useTradingShortcuts({
-    onLongEntry: handleLongEntry,
-    onShortEntry: handleShortEntry,
-    enabled: true,
-  });
-
   const {
     canvasRef,
     manager,
@@ -327,6 +317,18 @@ export const ChartCanvas = ({
     measurementArea: measurementAreaRef,
     measurementRaf: measurementRafRef,
   } = chartRefs;
+
+  const { shiftPressed, altPressed } = useTradingShortcuts({
+    onLongEntry: handleLongEntry,
+    onShortEntry: handleShortEntry,
+    onEscape: () => {
+      if (orderPreviewRef.current !== null) {
+        orderPreviewRef.current = null;
+        manager?.markDirty('overlays');
+      }
+    },
+    enabled: true,
+  });
 
   const cursorManager = useCursorManager(canvasRef);
   const { calculateStochastic } = useStochasticWorker();
@@ -582,6 +584,13 @@ export const ChartCanvas = ({
   const handleUpdateOrder = useCallback((id: string, updates: Partial<Order>) => {
     if (!id) return;
 
+    if (updates.entryPrice !== undefined) {
+      updatePendingEntry({ id, newPrice: updates.entryPrice }).catch((error) => {
+        toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
+      });
+      return;
+    }
+
     const updatePayload: { stopLoss?: number; takeProfit?: number } = {};
 
     if (updates.stopLoss !== undefined) {
@@ -596,7 +605,7 @@ export const ChartCanvas = ({
         toastError(t('trading.order.slTpUpdateFailed'), error instanceof Error ? error.message : undefined);
       });
     }
-  }, [updateExecutionSLTP]);
+  }, [updateExecutionSLTP, updatePendingEntry]);
 
   const memoizedPriceToY = useCallback((price: number) => manager?.priceToY(price) ?? 0, [manager]);
   const memoizedYToPrice = useCallback((y: number) => manager?.yToPrice(y) ?? 0, [manager]);

@@ -924,7 +924,8 @@
       "cancelFailed": "Échec de l'annulation",
       "cancelSuccess": "Ordre annulé",
       "closeFailed": "Échec de la fermeture",
-      "slTpUpdateFailed": "Échec de la mise à jour SL/TP"
+      "slTpUpdateFailed": "Échec de la mise à jour SL/TP",
+      "entryUpdateFailed": "Échec du déplacement de l'ordre en attente"
     },
     "closeOrder": "Fermer l'Ordre",
     "closeOrderConfirm": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",

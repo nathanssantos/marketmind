@@ -366,7 +366,7 @@ export const WatcherManager = () => {
             isExpanded={expandedSections.leverageSettings}
             onToggle={() => toggleSection('leverageSettings')}
             leverage={config?.leverage ?? 1}
-            marginType={config?.marginType ?? 'ISOLATED'}
+            marginType={config?.marginType ?? 'CROSSED'}
             onLeverageChange={handleLeverageChange}
             onMarginTypeChange={handleMarginTypeChange}
             positionMode={config?.positionMode ?? 'ONE_WAY'}

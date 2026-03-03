@@ -935,7 +935,8 @@
       "cancelFailed": "Error al cancelar orden",
       "cancelSuccess": "Orden cancelada",
       "closeFailed": "Error al cerrar orden",
-      "slTpUpdateFailed": "Error al actualizar SL/TP"
+      "slTpUpdateFailed": "Error al actualizar SL/TP",
+      "entryUpdateFailed": "Error al mover orden pendiente"
     },
     "closeOrder": "Cerrar Orden",
     "closeOrderConfirm": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",

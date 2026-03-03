@@ -8,7 +8,7 @@ import { useChartContext } from '@renderer/context/ChartContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { useTradingPref } from '@renderer/store/preferencesStore';
+import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '../../utils/trpc';
 import { getKlineClose, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -19,6 +19,7 @@ type MarketType = 'SPOT' | 'FUTURES';
 
 const OrderTicketComponent = () => {
   const { t } = useTranslation();
+  const { error: toastError } = useToast();
   const { chartData } = useChartContext();
 
   const { currentPrice, symbol } = useMemo(() => {
@@ -49,22 +50,13 @@ const OrderTicketComponent = () => {
     createdAt: new Date(rawActiveWallet.createdAt),
   } : undefined;
 
-  const [quantityBySymbol, setQuantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
-
-  const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 0;
-  const setQuantityForSymbol = (sym: string, qty: number) => {
-    setQuantityBySymbol((prev) => ({ ...prev, [sym]: qty }));
-  };
-
   const calculateDefaultQuantity = () => {
     if (!activeWallet || !currentPrice) return 0;
-    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 100;
+    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 200;
     return (activeWallet.balance * sizePercent) / currentPrice;
   };
 
-  const symbolQuantity = getQuantityForSymbol(symbol);
-  const defaultQuantity = symbolQuantity > 0 ? symbolQuantity : calculateDefaultQuantity();
-  const defaultQuantityStr = roundTradingQty(defaultQuantity);
+  const defaultQuantityStr = roundTradingQty(calculateDefaultQuantity());
 
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
   const [orderType, setOrderType] = useState<OrderDirection>('long');
@@ -73,26 +65,25 @@ const OrderTicketComponent = () => {
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [leverage, setLeverage] = useState(1);
-  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('ISOLATED');
+  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('CROSSED');
 
   useEffect(() => {
     if (isIB) setMarketType('SPOT');
   }, [isIB]);
 
   useEffect(() => {
-    const storedQty = getQuantityForSymbol(symbol);
-    const newQty = storedQty > 0 ? storedQty : calculateDefaultQuantity();
-    const rounded = roundTradingQty(newQty);
-    setQuantity(rounded);
-    if (storedQty <= 0 && newQty > 0) setQuantityForSymbol(symbol, Number(rounded));
-  }, [symbol, activeWallet?.balance, currentPrice]);
+    if (!autoConfig) return;
+    if (autoConfig.leverage) setLeverage(autoConfig.leverage);
+    if (autoConfig.marginType) setMarginType(autoConfig.marginType as 'ISOLATED' | 'CROSSED');
+  }, [autoConfig?.leverage, autoConfig?.marginType]);
+
+  useEffect(() => {
+    const qty = calculateDefaultQuantity();
+    if (qty > 0) setQuantity(roundTradingQty(qty));
+  }, [symbol, activeWallet?.balance, currentPrice, autoConfig?.positionSizePercent]);
 
   const handleQuantityChange = (value: string) => {
     setQuantity(value);
-    const numValue = Number(value);
-    if (!isNaN(numValue) && numValue > 0) {
-      setQuantityForSymbol(symbol, numValue);
-    }
   };
 
   const handleSubmit = async () => {
@@ -114,35 +105,39 @@ const OrderTicketComponent = () => {
     const roundedQty = roundTradingQty(qty);
     const roundedStop = stop !== undefined ? roundTradingPrice(stop) : undefined;
 
-    if (marketType === 'FUTURES') {
-      await futuresTrading.createOrder({
-        walletId: activeWalletId,
-        symbol,
-        side: orderType === 'long' ? 'BUY' : 'SELL',
-        type: 'LIMIT',
-        quantity: roundedQty,
-        price: roundedPrice,
-        leverage,
-        marginType,
-        ...(roundedStop !== undefined && { stopPrice: roundedStop }),
-        stopLoss: stopLoss ? roundTradingPrice(Number(stopLoss)) : undefined,
-        takeProfit: takeProfit ? roundTradingPrice(Number(takeProfit)) : undefined,
-      });
-    } else {
-      await spotTrading.createOrder({
-        walletId: activeWalletId,
-        symbol,
-        side: orderType === 'long' ? 'BUY' : 'SELL',
-        type: 'LIMIT',
-        quantity: roundedQty,
-        price: roundedPrice,
-        ...(roundedStop !== undefined && { stopPrice: roundedStop }),
-      });
-    }
+    try {
+      if (marketType === 'FUTURES') {
+        await futuresTrading.createOrder({
+          walletId: activeWalletId,
+          symbol,
+          side: orderType === 'long' ? 'BUY' : 'SELL',
+          type: 'LIMIT',
+          quantity: roundedQty,
+          price: roundedPrice,
+          leverage,
+          marginType,
+          ...(roundedStop !== undefined && { stopPrice: roundedStop }),
+          stopLoss: stopLoss ? roundTradingPrice(Number(stopLoss)) : undefined,
+          takeProfit: takeProfit ? roundTradingPrice(Number(takeProfit)) : undefined,
+        });
+      } else {
+        await spotTrading.createOrder({
+          walletId: activeWalletId,
+          symbol,
+          side: orderType === 'long' ? 'BUY' : 'SELL',
+          type: 'LIMIT',
+          quantity: roundedQty,
+          price: roundedPrice,
+          ...(roundedStop !== undefined && { stopPrice: roundedStop }),
+        });
+      }
 
-    setEntryPrice('');
-    setStopLoss('');
-    setTakeProfit('');
+      setEntryPrice('');
+      setStopLoss('');
+      setTakeProfit('');
+    } catch (err) {
+      toastError(t('trading.order.failed'), err instanceof Error ? err.message : undefined);
+    }
   };
 
   const handleUseCurrentPrice = () => {

@@ -909,7 +909,8 @@
       "cancelFailed": "Falha ao cancelar ordem",
       "cancelSuccess": "Ordem cancelada",
       "closeFailed": "Falha ao fechar ordem",
-      "slTpUpdateFailed": "Falha ao atualizar SL/TP"
+      "slTpUpdateFailed": "Falha ao atualizar SL/TP",
+      "entryUpdateFailed": "Falha ao mover ordem pendente"
     },
     "closeOrder": "Fechar Ordem",
     "closeOrderConfirm": "Fechar ordem {{type}} com entrada em {{entry}}? Preço atual: {{current}}",

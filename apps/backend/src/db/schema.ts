@@ -219,7 +219,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   enabledSetupTypes: text('enabled_setup_types').notNull(), // JSON array of setup types
   positionSizing: varchar('position_sizing', { length: 20 }).default('percentage'), // 'fixed' | 'percentage' | 'kelly'
   leverage: integer().default(1),
-  marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>().default('ISOLATED'),
+  marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>().default('CROSSED'),
   positionMode: varchar('position_mode', { length: 10 }).$type<'ONE_WAY' | 'HEDGE'>().default('ONE_WAY'),
   useLimitOrders: boolean('use_limit_orders').default(false).notNull(),
   useStochasticFilter: boolean('use_stochastic_filter').default(false).notNull(),

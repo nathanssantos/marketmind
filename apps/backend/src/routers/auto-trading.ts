@@ -95,6 +95,8 @@ export const autoTradingRouter = router({
           dailyLossLimit: '5',
           enabledSetupTypes: defaultEnabledSetups,
           positionSizing: 'percentage',
+          leverage: 1,
+          marginType: 'CROSSED',
         });
 
         [config] = await ctx.db

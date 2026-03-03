@@ -1040,7 +1040,7 @@ export class OrderExecutor {
     if (watcher.marketType === 'FUTURES') {
       try {
         const configLeverage = config.leverage ?? 1;
-        const configMarginType = config.marginType ?? 'ISOLATED';
+        const configMarginType = config.marginType ?? 'CROSSED';
 
         await autoTradingService.setFuturesLeverage(
           wallet,

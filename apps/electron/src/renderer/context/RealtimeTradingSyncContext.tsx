@@ -28,6 +28,14 @@ interface PriceUpdate {
   timestamp: number;
 }
 
+interface RiskAlert {
+  type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP' | 'UNKNOWN_POSITION' | 'ORDER_REJECTED' | 'ORPHAN_ORDERS' | 'ORDER_MISMATCH' | 'UNPROTECTED_POSITION';
+  level: 'info' | 'warning' | 'danger' | 'critical';
+  symbol?: string;
+  message: string;
+  timestamp: number;
+}
+
 interface TradeNotification {
   type: 'POSITION_OPENED' | 'POSITION_CLOSED' | 'TRAILING_STOP_UPDATED' | 'LIMIT_FILLED';
   title: string;
@@ -63,6 +71,7 @@ interface RealtimeTradingSyncProviderProps {
 export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
   const socketRef = useRef<Socket | null>(null);
   const isConnectedRef = useRef(false);
+  const recentAlertsRef = useRef<Map<string, number>>(new Map());
   const utils = trpc.useUtils();
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
@@ -230,6 +239,22 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       }
     };
 
+    const handleRiskAlert = (alert: RiskAlert) => {
+      const dedupKey = `${alert.type}:${alert.symbol ?? ''}:${alert.message}`;
+      const lastShown = recentAlertsRef.current.get(dedupKey) ?? 0;
+      const COOLDOWN_MS = 5 * 60 * 1000;
+      if (Date.now() - lastShown < COOLDOWN_MS) return;
+      recentAlertsRef.current.set(dedupKey, Date.now());
+
+      const toastType = alert.level === 'critical' || alert.level === 'danger' ? 'error' : alert.level === 'warning' ? 'warning' : 'info';
+      toaster.create({
+        type: toastType,
+        title: alert.symbol ? `${alert.type.replace(/_/g, ' ')} — ${alert.symbol}` : alert.type.replace(/_/g, ' '),
+        description: alert.message,
+        duration: alert.level === 'critical' ? undefined : 10000,
+      });
+    };
+
     const handleTradeNotification = async (notification: TradeNotification) => {
       console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
 
@@ -280,6 +305,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     socket.on('wallet:update', handleWalletUpdate);
     socket.on('price:update', handlePriceUpdate);
     socket.on('trade:notification', handleTradeNotification);
+    socket.on('risk:alert', handleRiskAlert);
 
     if (socket.connected) {
       console.log('[RealtimeSync] Socket already connected, subscribing immediately');
@@ -298,6 +324,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       socket.off('wallet:update', handleWalletUpdate);
       socket.off('price:update', handlePriceUpdate);
       socket.off('trade:notification', handleTradeNotification);
+      socket.off('risk:alert', handleRiskAlert);
 
       socket.emit('unsubscribe:positions', walletId);
       socket.emit('unsubscribe:wallet', walletId);
