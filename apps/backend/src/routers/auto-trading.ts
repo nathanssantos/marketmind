@@ -142,6 +142,7 @@ export const autoTradingRouter = router({
         fibonacciTargetLevelLong: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciTargetLevelShort: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciSwingRange: z.enum(['extended', 'nearest']).optional(),
+        initialStopMode: z.enum(['fibo_target', 'nearest_swing']).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),

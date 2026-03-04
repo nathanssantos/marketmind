@@ -330,6 +330,14 @@
           "nearestDescription": "Usa o topo/fundo mais recente — alvos mais curtos para trades menores"
         }
       },
+      "stopMode": {
+        "title": "Posicionamento do Stop Inicial",
+        "description": "Controla onde o stop loss inicial é colocado.",
+        "fiboTarget": "Alvo Fibonacci",
+        "fiboTargetDescription": "Coloca o stop no fundo/topo Fibonacci — stops mais largos para o movimento completo",
+        "nearestSwing": "Swing Próximo",
+        "nearestSwingDescription": "Coloca o stop no swing local mais recente — stops mais curtos para menor risco"
+      },
       "entrySettings": {
         "title": "Configurações de Entrada",
         "description": "Configure o timing de entrada e filtros de risco/retorno",

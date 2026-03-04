@@ -117,6 +117,7 @@ export interface BacktestConfig {
   maxFibonacciEntryProgressPercentLong?: number; // Max % progress for LONG entries (default: 127.2)
   maxFibonacciEntryProgressPercentShort?: number; // Max % progress for SHORT entries (default: 127.2)
   fibonacciSwingRange?: 'extended' | 'nearest'; // Swing range for Fibonacci projection (default: 'nearest')
+  initialStopMode?: 'fibo_target' | 'nearest_swing'; // Stop placement mode (default: 'fibo_target')
 
   silent?: boolean; // Suppress verbose logging in strategy interpreters (useful for batch backtests/optimization)
 }

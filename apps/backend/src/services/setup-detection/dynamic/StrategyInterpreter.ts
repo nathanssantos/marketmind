@@ -37,6 +37,7 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   maxFibonacciEntryProgressPercentLong?: number;
   maxFibonacciEntryProgressPercentShort?: number;
   fibonacciSwingRange?: 'extended' | 'nearest';
+  initialStopMode?: 'fibo_target' | 'nearest_swing';
   interval?: TimeInterval;
   directionMode?: 'long_only' | 'short_only';
 }
@@ -51,6 +52,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
   private maxFibEntryProgressLong: number;
   private maxFibEntryProgressShort: number;
   private fibonacciSwingRange: 'extended' | 'nearest';
+  private initialStopMode: 'fibo_target' | 'nearest_swing';
   private interval: TimeInterval | undefined;
   private directionMode: 'long_only' | 'short_only' | undefined;
 
@@ -70,6 +72,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     this.maxFibEntryProgressLong = config.maxFibonacciEntryProgressPercentLong ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
     this.maxFibEntryProgressShort = config.maxFibonacciEntryProgressPercentShort ?? MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT;
     this.fibonacciSwingRange = config.fibonacciSwingRange ?? 'nearest';
+    this.initialStopMode = config.initialStopMode ?? 'fibo_target';
     this.interval = config.interval;
     this.directionMode = config.directionMode;
   }
@@ -133,6 +136,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
             swingHigh: { price: fibonacciProjection.swingHigh.price, index: fibonacciProjection.swingHigh.index },
           }
         : undefined,
+      initialStopMode: this.initialStopMode,
     };
 
     const stopLoss = this.strategy.exit.stopLoss

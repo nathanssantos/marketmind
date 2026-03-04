@@ -29,6 +29,7 @@ export const useWatcherState = (): UseWatcherStateReturn => {
     riskManagement: false,
     trailingStop: false,
     tpMode: false,
+    stopMode: false,
     entrySettings: false,
     filters: false,
     opportunityCost: false,

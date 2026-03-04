@@ -243,6 +243,7 @@ export class BacktestEngine {
       maxFibonacciEntryProgressPercentLong: config.maxFibonacciEntryProgressPercentLong,
       maxFibonacciEntryProgressPercentShort: config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: config.fibonacciSwingRange,
+      initialStopMode: config.initialStopMode,
     });
 
     const loadedStrategies: StrategyDefinition[] = [];

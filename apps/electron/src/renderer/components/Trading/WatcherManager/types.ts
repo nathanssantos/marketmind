@@ -90,6 +90,7 @@ export interface SectionExpandedState {
   riskManagement: boolean;
   trailingStop: boolean;
   tpMode: boolean;
+  stopMode: boolean;
   entrySettings: boolean;
   filters: boolean;
   opportunityCost: boolean;

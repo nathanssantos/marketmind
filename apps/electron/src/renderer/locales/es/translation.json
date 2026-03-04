@@ -341,6 +341,14 @@
           "nearestDescription": "Usa el máximo/mínimo más reciente — objetivos más cortos para operaciones rápidas"
         }
       },
+      "stopMode": {
+        "title": "Posicionamiento del Stop Inicial",
+        "description": "Controla dónde se coloca el stop loss inicial.",
+        "fiboTarget": "Objetivo Fibonacci",
+        "fiboTargetDescription": "Coloca el stop en el mínimo/máximo Fibonacci — stops más amplios para el movimiento completo",
+        "nearestSwing": "Swing Cercano",
+        "nearestSwingDescription": "Coloca el stop en el swing local más reciente — stops más cortos para menor riesgo"
+      },
       "entrySettings": {
         "title": "Configuración de Entrada",
         "description": "Configure el timing de entrada y filtros de riesgo/recompensa",

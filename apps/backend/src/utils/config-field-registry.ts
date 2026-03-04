@@ -24,6 +24,7 @@ const CONFIG_FIELDS: ConfigFieldDef[] = [
   { key: 'fibonacciTargetLevelLong' },
   { key: 'fibonacciTargetLevelShort' },
   { key: 'fibonacciSwingRange' },
+  { key: 'initialStopMode' },
   { key: 'useDynamicSymbolSelection' },
   { key: 'dynamicSymbolRotationInterval' },
   { key: 'dynamicSymbolExcluded', transform: (v) => stringifyDynamicSymbolExcluded(v as string[]) },

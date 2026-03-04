@@ -282,7 +282,8 @@ export class ExitCalculator {
     let rawSwingPrice: number;
     let usedFibonacciSwing = false;
 
-    if (fibonacciSwing) {
+    const useNearestSwing = context.initialStopMode === 'nearest_swing';
+    if (fibonacciSwing && !useNearestSwing) {
       rawSwingPrice = direction === 'SHORT' ? fibonacciSwing.swingHigh.price : fibonacciSwing.swingLow.price;
       usedFibonacciSwing = true;
       logger.trace({

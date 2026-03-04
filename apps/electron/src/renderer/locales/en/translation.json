@@ -304,6 +304,14 @@
           "nearestDescription": "Uses the most recent swing high/low — tighter targets for shorter trades"
         }
       },
+      "stopMode": {
+        "title": "Initial Stop Placement",
+        "description": "Controls where the initial stop loss is placed.",
+        "fiboTarget": "Fibonacci Target",
+        "fiboTargetDescription": "Places stop at the Fibonacci swing low/high — wider stops for the full move",
+        "nearestSwing": "Nearest Swing",
+        "nearestSwingDescription": "Places stop at the most recent local swing — tighter stops for shorter risk"
+      },
       "entrySettings": {
         "title": "Entry Settings",
         "description": "Configure entry timing and risk/reward filters",

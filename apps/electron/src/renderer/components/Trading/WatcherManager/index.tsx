@@ -25,6 +25,7 @@ import { PyramidingSection } from './PyramidingSection';
 import { RiskManagementSection } from './RiskManagementSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
+import { StopModeSection } from './StopModeSection';
 import type { DirectionMode } from './WatchersList';
 import { WatchersList } from './WatchersList';
 import { SetupToggleSection } from '../SetupToggleSection';
@@ -165,6 +166,7 @@ export const WatcherManager = () => {
   const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '3.618';
   const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
   const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
+  const initialStopMode = config?.initialStopMode ?? 'fibo_target';
 
   const [dragSlEnabled, setDragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled, setDragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -184,6 +186,10 @@ export const WatcherManager = () => {
 
   const handleFibonacciSwingRangeChange = (details: { value: string }): void => {
     handleConfigUpdate({ fibonacciSwingRange: details.value as 'extended' | 'nearest' });
+  };
+
+  const handleInitialStopModeChange = (details: { value: string }): void => {
+    handleConfigUpdate({ initialStopMode: details.value as 'fibo_target' | 'nearest_swing' });
   };
 
   const handleFilterToggle = (filterKey: string, value: boolean): void => {
@@ -454,6 +460,16 @@ export const WatcherManager = () => {
         onFibonacciLevelLongChange={handleFibonacciLevelLongChange}
         onFibonacciLevelShortChange={handleFibonacciLevelShortChange}
         onFibonacciSwingRangeChange={handleFibonacciSwingRangeChange}
+        isPending={updateConfig.isPending}
+      />
+
+      <Separator />
+
+      <StopModeSection
+        isExpanded={expandedSections.stopMode}
+        onToggle={() => toggleSection('stopMode')}
+        initialStopMode={initialStopMode}
+        onInitialStopModeChange={handleInitialStopModeChange}
         isPending={updateConfig.isPending}
       />
 

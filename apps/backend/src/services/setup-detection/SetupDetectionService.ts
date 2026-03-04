@@ -14,6 +14,7 @@ export interface SetupDetectionConfig {
   maxFibonacciEntryProgressPercentLong?: number;
   maxFibonacciEntryProgressPercentShort?: number;
   fibonacciSwingRange?: 'extended' | 'nearest';
+  initialStopMode?: 'fibo_target' | 'nearest_swing';
   silent?: boolean;
 }
 
@@ -80,6 +81,7 @@ export class SetupDetectionService {
       maxFibonacciEntryProgressPercentLong: this.config.maxFibonacciEntryProgressPercentLong,
       maxFibonacciEntryProgressPercentShort: this.config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: this.config.fibonacciSwingRange,
+      initialStopMode: this.config.initialStopMode,
       silent: this.config.silent,
     });
 

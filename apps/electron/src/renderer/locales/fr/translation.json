@@ -330,6 +330,14 @@
           "nearestDescription": "Utilise le sommet/creux le plus récent — objectifs plus courts pour les trades rapides"
         }
       },
+      "stopMode": {
+        "title": "Placement du Stop Initial",
+        "description": "Contrôle où est placé le stop loss initial.",
+        "fiboTarget": "Cible Fibonacci",
+        "fiboTargetDescription": "Place le stop au creux/sommet Fibonacci — stops plus larges pour le mouvement complet",
+        "nearestSwing": "Swing Proche",
+        "nearestSwingDescription": "Place le stop au swing local le plus récent — stops plus courts pour un risque réduit"
+      },
       "entrySettings": {
         "title": "Paramètres d'Entrée",
         "description": "Configurez le timing d'entrée et les filtres de risque/récompense",
