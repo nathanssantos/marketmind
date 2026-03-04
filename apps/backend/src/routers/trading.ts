@@ -1449,23 +1449,6 @@ export const tradingRouter = router({
       const { createBinanceFuturesClient, cancelFuturesAlgoOrder, cancelFuturesOrder, submitFuturesAlgoOrder, submitFuturesOrder } = await import('../services/binance-futures-client');
       const apiClient = createBinanceFuturesClient(wallet);
 
-      if (execution.entryOrderId) {
-        try {
-          if (isAlgoEntry) {
-            await cancelFuturesAlgoOrder(apiClient, execution.entryOrderId);
-          } else {
-            await cancelFuturesOrder(apiClient, execution.symbol, execution.entryOrderId);
-          }
-          logger.info({ orderId: execution.entryOrderId, symbol: execution.symbol }, 'Cancelled old entry order for pending entry move');
-        } catch (error) {
-          logger.warn({
-            orderId: execution.entryOrderId,
-            symbol: execution.symbol,
-            error: serializeError(error),
-          }, 'Failed to cancel old entry order (may already be filled/cancelled)');
-        }
-      }
-
       const binarySide = execution.side === 'LONG' ? 'BUY' : 'SELL';
       let newOrderId: number;
 
@@ -1536,6 +1519,23 @@ export const tradingRouter = router({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to create new entry order',
         });
+      }
+
+      if (execution.entryOrderId) {
+        try {
+          if (isAlgoEntry) {
+            await cancelFuturesAlgoOrder(apiClient, execution.entryOrderId);
+          } else {
+            await cancelFuturesOrder(apiClient, execution.symbol, execution.entryOrderId);
+          }
+          logger.info({ orderId: execution.entryOrderId, symbol: execution.symbol }, 'Cancelled old entry order for pending entry move');
+        } catch (error) {
+          logger.warn({
+            orderId: execution.entryOrderId,
+            symbol: execution.symbol,
+            error: serializeError(error),
+          }, 'Failed to cancel old entry order (may already be filled/cancelled)');
+        }
       }
 
       await ctx.db

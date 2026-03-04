@@ -469,15 +469,16 @@ export class OrderSyncService {
         }
       }
 
-      if (result.orphanOrders.length > 0) {
+      const dangerousOrphans = result.orphanOrders.filter((o) => !o.hasPositionOnExchange);
+      if (dangerousOrphans.length > 0) {
         const wsService = getWebSocketService();
         if (wsService) {
           wsService.emitRiskAlert(wallet.id, {
             type: 'ORPHAN_ORDERS',
             level: 'warning',
-            symbol: result.orphanOrders.map((o) => o.symbol).join(', '),
-            message: `${result.orphanOrders.length} orphan order(s) found on Binance not tracked in the system.${this.autoCancelOrphans ? ` ${result.cancelledOrphans} cancelled automatically.` : ' Manual review recommended.'}`,
-            data: { orphanOrders: result.orphanOrders },
+            symbol: dangerousOrphans.map((o) => o.symbol).join(', '),
+            message: `${dangerousOrphans.length} orphan order(s) found on Binance with no open position.${this.autoCancelOrphans ? ` ${result.cancelledOrphans} cancelled automatically.` : ' Manual review recommended.'}`,
+            data: { orphanOrders: dangerousOrphans },
             timestamp: Date.now(),
           });
         }

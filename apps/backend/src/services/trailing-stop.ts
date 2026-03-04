@@ -413,7 +413,7 @@ export class TrailingStopService {
     
     for (const execution of executions) {
       if (!execution.setupId) {
-        logger.warn({ executionId: execution.id }, 'Trade execution missing setupId, skipping trailing stop');
+        logger.trace({ executionId: execution.id }, 'Trade execution missing setupId, skipping trailing stop');
         continue;
       }
 

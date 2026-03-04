@@ -712,7 +712,7 @@ describe('TrailingStopService - Manager Methods', () => {
 
       const result = await processSymbolGroup(service)('BTCUSDT', [exec]);
       expect(result).toEqual([]);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLogger.trace).toHaveBeenCalledWith(
         expect.objectContaining({ executionId: 'exec-1' }),
         expect.stringContaining('missing setupId')
       );

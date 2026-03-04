@@ -5,7 +5,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, positions, orders, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, cancelAllFuturesAlgoOrders, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
 import { createStopLossOrder, createTakeProfitOrder, cancelAllOpenProtectionOrdersOnExchange } from './protection-orders';
 import { generateEntityId } from '../utils/id';
 import { decryptApiKey } from './encryption';
@@ -1318,8 +1318,9 @@ export class BinanceFuturesUserStreamService {
         `[FuturesUserStream] > Algo ${exitReason} order TRIGGERED`
       );
 
+      const apiClient = this.connections.get(walletId)?.apiClient;
+
       if (orderToCancel) {
-        const apiClient = this.connections.get(walletId)?.apiClient;
         if (apiClient) {
           const maxRetries = 3;
           let cancelSuccess = false;
@@ -1384,6 +1385,14 @@ export class BinanceFuturesUserStreamService {
         },
         '[FuturesUserStream] Cleared triggered protection order IDs and unblocked deferral'
       );
+
+      if (apiClient) {
+        try {
+          await cancelAllFuturesAlgoOrders(apiClient, symbol);
+        } catch (sweepError) {
+          logger.warn({ symbol, error: serializeError(sweepError) }, '[FuturesUserStream] Failed to sweep remaining algo orders on position close');
+        }
+      }
 
       const executionId = execution.id;
       const executionSide = execution.side as 'LONG' | 'SHORT';
