@@ -45,7 +45,6 @@ export interface SignalProcessorConfig {
 export class SignalProcessor {
   private processingQueue: string[] = [];
   private isProcessingQueue = false;
-  private processedThisCycle: Set<string> = new Set();
   private batchCounter = 0;
   private cycleCounter = 0;
   private pendingResults: WatcherResult[] = [];
@@ -62,13 +61,10 @@ export class SignalProcessor {
   }
 
   queueWatcherProcessing(watcherId: string): void {
-    if (this.processedThisCycle.has(watcherId)) {
-      return;
-    }
     if (!this.processingQueue.includes(watcherId)) {
       this.processingQueue.push(watcherId);
-      void this.processWatcherQueue();
     }
+    void this.processWatcherQueue();
   }
 
   addToProcessingQueue(watcherIds: string[]): void {
@@ -117,9 +113,6 @@ export class SignalProcessor {
       );
 
       for (const result of results) {
-        if (result.status !== 'pending') {
-          this.processedThisCycle.add(result.watcherId);
-        }
         const existingIndex = this.pendingResults.findIndex(r => r.watcherId === result.watcherId);
         if (existingIndex >= 0) {
           this.pendingResults[existingIndex] = result;
@@ -147,7 +140,6 @@ export class SignalProcessor {
         this.pendingCycleId = null;
         this.pendingCycleStartTime = null;
         this.pendingResults = [];
-        this.processedThisCycle.clear();
       }
     }
 
@@ -293,6 +285,9 @@ export class SignalProcessor {
         targetCount: requiredKlines,
         silent: true,
       });
+      setTimeout(() => {
+        this.queueWatcherProcessing(watcherId);
+      }, AUTO_TRADING_TIMING.BACKFILL_RECHECK_MS);
       return logBuffer.toResult('pending', 'Kline backfill in progress');
     }
 
