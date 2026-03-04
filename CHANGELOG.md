@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.55.0] - 2026-03-04
+
+### Added
+- **Initial Stop Placement Mode**: new setting in WatcherManager to choose between `Fibonacci Target` (stop at Fibonacci swing low/high — existing behavior) and `Nearest Swing` (stop at most recent local swing — tighter stops); available in auto-trading config and backtesting
+- **Max Entry Level LONG/SHORT split**: separate sliders for max Fibonacci entry progress percent per direction (replaces the single unified control)
+- **Data Maintenance tab**: new Settings tab with DB storage usage display and a `Clear Kline Data` action (with confirmation dialog)
+- **Kline integrity detection**: `hasLocalIntegrityIssues()` checks for gaps and misalignments after DB fetch and triggers automatic repair
+
+### Changed
+- **Kline maintenance overhaul**: `getActivePairsWithSubscriptions()` now sources pairs from active watchers, stream subscriptions, and open/pending trade executions; `repairAll()` simplified
+- **About tab**: auto-update section moved from General tab to About tab
+- **Data tab**: uses `TradingTable` component with `px` padding on badges
+
+### Fixed
+- **Pyramid algo order orphans**: all exchange algo orders are cancelled before placing new ones on pyramid to prevent orphaned orders
+- **Kline gap repair**: gaps are now repaired after cache invalidation and temporal alignment issues are detected and corrected
+- **WebSocket reconnection gaps**: kline gaps introduced by WebSocket reconnections are detected and resolved
+- **Futures manual order flow**: margin defaults, alerts, and UX corrections
+- **Order flow**: portfolio position grouping, startup audit service corrections
+
+---
+
 ## [0.54.0] - 2026-02-24
 
 ### Performance
