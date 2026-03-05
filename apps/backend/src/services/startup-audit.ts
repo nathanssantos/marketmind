@@ -9,6 +9,7 @@ import {
   getPositions,
   getOpenOrders,
   getOpenAlgoOrders,
+  cancelFuturesAlgoOrder,
   getAccountInfo,
   getAllTradeFeesForPosition,
 } from './binance-futures-client';
@@ -536,6 +537,34 @@ async function auditWallet(
             updatedAt: new Date(),
           })
           .where(eq(tradeExecutions.id, dbExec.id));
+      }
+
+      summary.fixed++;
+    }
+
+    // === Check 3C — Orphan protection algo orders for symbols with open positions ===
+    // These are stale/duplicate SL or TP orders on Binance that are no longer linked to any DB execution.
+    // Safe to cancel: we only touch orders for symbols that have an open execution, so they cannot
+    // be pending entry orders for a new position. Cancelling them does NOT close the position itself.
+    const openSymbols = new Set(dbOpenExecutions.map((e) => e.symbol));
+
+    for (const algoOrder of openAlgoOrders) {
+      if (linkedAlgoIds.has(algoOrder.algoId)) continue;
+      if (!openSymbols.has(algoOrder.symbol)) continue;
+
+      logger.info(
+        { walletId: wallet.id, symbol: algoOrder.symbol, algoId: algoOrder.algoId, type: algoOrder.type, triggerPrice: algoOrder.triggerPrice },
+        '[startup-audit] Cancelling orphan protection algo order'
+      );
+
+      if (!dryRun) {
+        try {
+          await cancelFuturesAlgoOrder(client, algoOrder.algoId);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          summary.warnings.push(`Failed to cancel orphan algo ${algoOrder.algoId} for ${algoOrder.symbol}: ${msg}`);
+          logger.warn({ walletId: wallet.id, algoId: algoOrder.algoId, symbol: algoOrder.symbol, err: msg }, '[startup-audit] Failed to cancel orphan algo order');
+        }
       }
 
       summary.fixed++;

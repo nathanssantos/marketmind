@@ -412,21 +412,23 @@ export class TrailingStopService {
     const executionsByInterval = new Map<string, TradeExecution[]>();
     
     for (const execution of executions) {
+      let interval: string;
+
       if (!execution.setupId) {
-        logger.trace({ executionId: execution.id }, 'Trade execution missing setupId, skipping trailing stop');
-        continue;
+        interval = '30m';
+      } else {
+        const setup = await db.query.setupDetections.findFirst({
+          where: eq(setupDetections.id, execution.setupId),
+        });
+
+        if (!setup) {
+          logger.warn({ executionId: execution.id, setupId: execution.setupId }, 'Setup not found for execution');
+          continue;
+        }
+
+        interval = setup.interval;
       }
 
-      const setup = await db.query.setupDetections.findFirst({
-        where: eq(setupDetections.id, execution.setupId),
-      });
-
-      if (!setup) {
-        logger.warn({ executionId: execution.id, setupId: execution.setupId }, 'Setup not found for execution');
-        continue;
-      }
-
-      const interval = setup.interval;
       const existing = executionsByInterval.get(interval) ?? [];
       existing.push(execution);
       executionsByInterval.set(interval, existing);

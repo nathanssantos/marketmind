@@ -421,41 +421,49 @@ export class BinanceFuturesUserStreamService {
             const slPrice = existingOpen.stopLoss ? parseFloat(existingOpen.stopLoss) : null;
             const tpPrice = existingOpen.takeProfit ? parseFloat(existingOpen.takeProfit) : null;
 
-            await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
+            if (slPrice || tpPrice) {
+              await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
-            let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
-            let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
+              let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
+              let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
 
-            if (slPrice) {
-              try {
-                newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
-              } catch (e) {
-                logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after LIMIT pyramid');
+              if (slPrice) {
+                try {
+                  newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
+                } catch (e) {
+                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after LIMIT pyramid');
+                }
               }
-            }
-            if (tpPrice) {
-              try {
-                newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
-              } catch (e) {
-                logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after LIMIT pyramid');
+              if (tpPrice) {
+                try {
+                  newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+                } catch (e) {
+                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after LIMIT pyramid');
+                }
               }
-            }
 
-            await db.update(tradeExecutions).set({
-              entryPrice: newAvgPrice.toString(),
-              quantity: newQty.toString(),
-              stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : existingOpen.stopLossAlgoId),
-              takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : existingOpen.takeProfitAlgoId),
-              stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : existingOpen.stopLossOrderId),
-              takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : existingOpen.takeProfitOrderId),
-              stopLossIsAlgo: newSlResult?.isAlgoOrder ?? existingOpen.stopLossIsAlgo ?? false,
-              takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? existingOpen.takeProfitIsAlgo ?? false,
-              updatedAt: new Date(),
-            }).where(eq(tradeExecutions.id, existingOpen.id));
+              await db.update(tradeExecutions).set({
+                entryPrice: newAvgPrice.toString(),
+                quantity: newQty.toString(),
+                stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : existingOpen.stopLossAlgoId),
+                takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : existingOpen.takeProfitAlgoId),
+                stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : existingOpen.stopLossOrderId),
+                takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : existingOpen.takeProfitOrderId),
+                stopLossIsAlgo: newSlResult?.isAlgoOrder ?? existingOpen.stopLossIsAlgo ?? false,
+                takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? existingOpen.takeProfitIsAlgo ?? false,
+                updatedAt: new Date(),
+              }).where(eq(tradeExecutions.id, existingOpen.id));
+            } else {
+              await db.update(tradeExecutions).set({
+                entryPrice: newAvgPrice.toString(),
+                quantity: newQty.toString(),
+                updatedAt: new Date(),
+              }).where(eq(tradeExecutions.id, existingOpen.id));
+            }
 
             await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingExecution.id));
 
-            logger.info({ executionId: existingOpen.id, symbol, newAvgPrice, newQty }, '[FuturesUserStream] Pyramided via LIMIT order into existing position');
+            logger.info({ executionId: existingOpen.id, symbol, newAvgPrice, newQty, autotrade: !!pendingExecution.setupId }, '[FuturesUserStream] Pyramided via LIMIT order into existing position');
             return;
           }
 
@@ -478,8 +486,8 @@ export class BinanceFuturesUserStreamService {
           let activationSlIsAlgo = pendingExecution.stopLossIsAlgo;
           let activationTpIsAlgo = pendingExecution.takeProfitIsAlgo;
 
-          const needsSlPlacement = !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
-          const needsTpPlacement = !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
+          const needsSlPlacement = !!pendingExecution.setupId && !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
+          const needsTpPlacement = !!pendingExecution.setupId && !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
 
           if (needsSlPlacement || needsTpPlacement) {
             const [walletForActivation] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
@@ -587,29 +595,6 @@ export class BinanceFuturesUserStreamService {
           const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
           if (!walletRow) return;
 
-          const stopLossIntent = manualOrder.stopLossIntent ? parseFloat(manualOrder.stopLossIntent) : null;
-          const takeProfitIntent = manualOrder.takeProfitIntent ? parseFloat(manualOrder.takeProfitIntent) : null;
-
-          let slResult: import('./protection-orders').ProtectionOrderResult | null = null;
-          let tpResult: import('./protection-orders').ProtectionOrderResult | null = null;
-
-          if (manualOrder.type !== 'MARKET' && (stopLossIntent || takeProfitIntent)) {
-            if (stopLossIntent) {
-              try {
-                slResult = await createStopLossOrder({ wallet: walletRow, symbol, side: direction, quantity: fillQty, triggerPrice: stopLossIntent, marketType: 'FUTURES' });
-              } catch (e) {
-                logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place SL for manual LIMIT fill');
-              }
-            }
-            if (takeProfitIntent) {
-              try {
-                tpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: direction, quantity: fillQty, triggerPrice: takeProfitIntent, marketType: 'FUTURES' });
-              } catch (e) {
-                logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place TP for manual LIMIT fill');
-              }
-            }
-          }
-
           await db.insert(tradeExecutions).values({
             id: generateEntityId(),
             userId: walletRow.userId,
@@ -619,14 +604,6 @@ export class BinanceFuturesUserStreamService {
             entryOrderId: Number(orderId),
             entryPrice: fillPrice.toString(),
             quantity: fillQty.toString(),
-            stopLoss: stopLossIntent?.toString(),
-            takeProfit: takeProfitIntent?.toString(),
-            stopLossAlgoId: slResult?.isAlgoOrder ? (slResult.algoId ?? null) : null,
-            takeProfitAlgoId: tpResult?.isAlgoOrder ? (tpResult.algoId ?? null) : null,
-            stopLossOrderId: slResult && !slResult.isAlgoOrder ? (slResult.orderId ?? null) : null,
-            takeProfitOrderId: tpResult && !tpResult.isAlgoOrder ? (tpResult.orderId ?? null) : null,
-            stopLossIsAlgo: slResult?.isAlgoOrder ?? false,
-            takeProfitIsAlgo: tpResult?.isAlgoOrder ?? false,
             status: 'open',
             openedAt: new Date(),
             entryOrderType: manualOrder.type === 'MARKET' ? 'MARKET' : 'LIMIT',
@@ -690,37 +667,45 @@ export class BinanceFuturesUserStreamService {
               const slPrice = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
               const tpPrice = execution.takeProfit ? parseFloat(execution.takeProfit) : null;
 
-              await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
+              if (slPrice || tpPrice) {
+                await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
-              let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
-              let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
+                let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
+                let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
 
-              if (slPrice) {
-                try {
-                  newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
-                } catch (e) {
-                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after pyramid');
+                if (slPrice) {
+                  try {
+                    newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
+                  } catch (e) {
+                    logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after pyramid');
+                  }
                 }
-              }
-              if (tpPrice) {
-                try {
-                  newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
-                } catch (e) {
-                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after pyramid');
+                if (tpPrice) {
+                  try {
+                    newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+                  } catch (e) {
+                    logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after pyramid');
+                  }
                 }
-              }
 
-              await db.update(tradeExecutions).set({
-                entryPrice: newAvgPrice.toString(),
-                quantity: newQty.toString(),
-                stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : execution.stopLossAlgoId),
-                takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : execution.takeProfitAlgoId),
-                stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : execution.stopLossOrderId),
-                takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : execution.takeProfitOrderId),
-                stopLossIsAlgo: newSlResult?.isAlgoOrder ?? execution.stopLossIsAlgo ?? false,
-                takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? execution.takeProfitIsAlgo ?? false,
-                updatedAt: new Date(),
-              }).where(eq(tradeExecutions.id, execution.id));
+                await db.update(tradeExecutions).set({
+                  entryPrice: newAvgPrice.toString(),
+                  quantity: newQty.toString(),
+                  stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : execution.stopLossAlgoId),
+                  takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : execution.takeProfitAlgoId),
+                  stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : execution.stopLossOrderId),
+                  takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : execution.takeProfitOrderId),
+                  stopLossIsAlgo: newSlResult?.isAlgoOrder ?? execution.stopLossIsAlgo ?? false,
+                  takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? execution.takeProfitIsAlgo ?? false,
+                  updatedAt: new Date(),
+                }).where(eq(tradeExecutions.id, execution.id));
+              } else {
+                await db.update(tradeExecutions).set({
+                  entryPrice: newAvgPrice.toString(),
+                  quantity: newQty.toString(),
+                  updatedAt: new Date(),
+                }).where(eq(tradeExecutions.id, execution.id));
+              }
 
               logger.info({ executionId: execution.id, symbol, newAvgPrice, newQty }, '[FuturesUserStream] Pyramided into existing position');
               return;
@@ -1195,37 +1180,45 @@ export class BinanceFuturesUserStreamService {
           const slPrice = existingOpen.stopLoss ? parseFloat(existingOpen.stopLoss) : null;
           const tpPrice = existingOpen.takeProfit ? parseFloat(existingOpen.takeProfit) : null;
 
-          await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
+          if (slPrice || tpPrice) {
+            await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
-          let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
-          let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
+            let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
+            let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
 
-          if (slPrice) {
-            try {
-              newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
-            } catch (e) {
-              logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after STOP_MARKET pyramid');
+            if (slPrice) {
+              try {
+                newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
+              } catch (e) {
+                logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after STOP_MARKET pyramid');
+              }
             }
-          }
-          if (tpPrice) {
-            try {
-              newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
-            } catch (e) {
-              logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after STOP_MARKET pyramid');
+            if (tpPrice) {
+              try {
+                newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+              } catch (e) {
+                logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after STOP_MARKET pyramid');
+              }
             }
-          }
 
-          await db.update(tradeExecutions).set({
-            entryPrice: newAvgPrice.toString(),
-            quantity: newQty.toString(),
-            stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : existingOpen.stopLossAlgoId),
-            takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : existingOpen.takeProfitAlgoId),
-            stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : existingOpen.stopLossOrderId),
-            takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : existingOpen.takeProfitOrderId),
-            stopLossIsAlgo: newSlResult?.isAlgoOrder ?? existingOpen.stopLossIsAlgo ?? false,
-            takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? existingOpen.takeProfitIsAlgo ?? false,
-            updatedAt: new Date(),
-          }).where(eq(tradeExecutions.id, existingOpen.id));
+            await db.update(tradeExecutions).set({
+              entryPrice: newAvgPrice.toString(),
+              quantity: newQty.toString(),
+              stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : existingOpen.stopLossAlgoId),
+              takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : existingOpen.takeProfitAlgoId),
+              stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : existingOpen.stopLossOrderId),
+              takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : existingOpen.takeProfitOrderId),
+              stopLossIsAlgo: newSlResult?.isAlgoOrder ?? existingOpen.stopLossIsAlgo ?? false,
+              takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? existingOpen.takeProfitIsAlgo ?? false,
+              updatedAt: new Date(),
+            }).where(eq(tradeExecutions.id, existingOpen.id));
+          } else {
+            await db.update(tradeExecutions).set({
+              entryPrice: newAvgPrice.toString(),
+              quantity: newQty.toString(),
+              updatedAt: new Date(),
+            }).where(eq(tradeExecutions.id, existingOpen.id));
+          }
 
           await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingEntryExecution.id));
 
