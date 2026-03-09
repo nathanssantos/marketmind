@@ -28,6 +28,7 @@ export class BinancePriceStreamService {
   private subscriptionInterval: ReturnType<typeof setInterval> | null = null;
   private lastPositionCheck: Map<string, number> = new Map();
   private openExecutionsCache: Map<string, { executions: TradeExecution[]; timestamp: number }> = new Map();
+  private priceObservers: Array<(symbol: string, price: number, timestamp: number) => void> = [];
 
   start(): void {
     if (this.client) {
@@ -147,11 +148,27 @@ export class BinancePriceStreamService {
     }
   }
 
+  public onPriceUpdate(handler: (symbol: string, price: number, timestamp: number) => void): () => void {
+    this.priceObservers.push(handler);
+    return () => {
+      const idx = this.priceObservers.indexOf(handler);
+      if (idx >= 0) this.priceObservers.splice(idx, 1);
+    };
+  }
+
   private async processPriceUpdate(update: PriceUpdate): Promise<void> {
     try {
       const wsService = getWebSocketService();
       if (wsService) {
         wsService.emitPriceUpdate(update.symbol, update.price, update.timestamp);
+      }
+
+      for (const observer of this.priceObservers) {
+        try {
+          observer(update.symbol, update.price, update.timestamp);
+        } catch (err) {
+          logger.warn({ error: err }, 'Price observer error');
+        }
       }
 
       const now = Date.now();

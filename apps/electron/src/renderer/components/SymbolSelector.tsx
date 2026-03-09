@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuCoins } from 'react-icons/lu';
 import { useActiveChartSymbols } from '../hooks/useActiveChartSymbols';
 import { useActiveWallet } from '../hooks/useActiveWallet';
+import { useBackendCustomSymbols } from '../hooks/useBackendCustomSymbols';
 import { useBackendKlines } from '../hooks/useBackendKlines';
 import { trpc } from '../utils/trpc';
 import { CryptoIcon } from './ui/CryptoIcon';
@@ -119,6 +120,7 @@ export function SymbolSelector({
   const { activeWalletId } = useActiveWallet();
   const openPositionSymbols = useOpenPositionSymbols(activeWalletId ?? undefined);
   const activeChartSymbols = useActiveChartSymbols();
+  const { customSymbols: customSymbolsQuery } = useBackendCustomSymbols();
 
   const marketType = externalMarketType ?? internalMarketType;
   const assetClass = externalAssetClass ?? internalAssetClass;
@@ -437,6 +439,38 @@ export function SymbolSelector({
                   )}
                   {renderSectionHeader(t('symbolSelector.popularSymbols'))}
                   {filteredPopularSymbols.slice(0, 20).map((symbol) => renderSymbolRow(symbol, false))}
+                  {customSymbolsQuery.data && customSymbolsQuery.data.length > 0 && (
+                    <>
+                      {renderSectionHeader(t('symbolSelector.customSymbols'))}
+                      {customSymbolsQuery.data.map((cs) => (
+                        <Box
+                          key={cs.symbol}
+                          px={3}
+                          py={2}
+                          cursor="pointer"
+                          bg={value === cs.symbol ? 'bg.muted' : 'transparent'}
+                          _hover={{ bg: 'bg.muted' }}
+                          onClick={() => handleSelect(cs.symbol)}
+                          borderBottomWidth="1px"
+                          borderColor="border"
+                        >
+                          <Flex align="center" justify="space-between">
+                            <Flex align="center" gap={2}>
+                              <Flex direction="column">
+                                <Text fontWeight={value === cs.symbol ? 'semibold' : 'medium'} fontSize="xs" color="fg">
+                                  {cs.symbol}
+                                </Text>
+                                <Text fontSize="2xs" color="fg.muted">{cs.name}</Text>
+                              </Flex>
+                            </Flex>
+                            <Badge size="xs" colorPalette="purple" variant="subtle" px={2}>
+                              {t('customSymbols.index')}
+                            </Badge>
+                          </Flex>
+                        </Box>
+                      ))}
+                    </>
+                  )}
                 </>
               )}
             </VStack>

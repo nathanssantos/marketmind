@@ -65,7 +65,7 @@ export const TooltipWrapper = memo(({
                   <Tooltip.ArrowTip />
                 </Tooltip.Arrow>
               )}
-              {label}
+              <span style={{ whiteSpace: 'pre-line' }}>{label}</span>
             </Tooltip.Content>
           </Tooltip.Positioner>
         </Portal>

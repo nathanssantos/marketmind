@@ -7,7 +7,6 @@ import { createBinanceClient, isPaperWallet, silentWsLogger } from './binance-cl
 import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
 import { binancePriceStreamService } from './binance-price-stream';
-import { positionMonitorService } from './position-monitor';
 import { TIME_MS } from '../constants';
 
 interface OrderUpdateEvent {
@@ -357,7 +356,6 @@ export class BinanceUserStreamService {
         }, '> Wallet balance updated atomically via user stream');
 
         binancePriceStreamService.invalidateExecutionCache(symbol);
-        positionMonitorService.clearDeferredExit(execution.id);
 
         const wsService = getWebSocketService();
         if (wsService) {

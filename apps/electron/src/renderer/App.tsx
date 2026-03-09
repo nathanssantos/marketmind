@@ -361,7 +361,6 @@ function AppContent(): ReactElement {
   const handleVisibilityRestore = useCallback(async (state: { hiddenDuration: number }) => {
     if (state.hiddenDuration < 5_000) return;
     isRefetchingRef.current = true;
-    setLiveKlines([]);
     await refetchKlines();
     isRefetchingRef.current = false;
   }, [refetchKlines]);

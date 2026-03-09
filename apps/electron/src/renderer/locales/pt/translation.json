@@ -51,7 +51,9 @@
     "in": "em",
     "cryptoOnly": "Crypto",
     "futuresOnly": "Futuros",
-    "stocksOnly": "Ações"
+    "stocksOnly": "Ações",
+    "add": "Adicionar",
+    "remove": "Remover"
   },
   "app": {
     "title": "MarketMind",
@@ -78,7 +80,45 @@
     "openPositions": "POSIÇÕES ABERTAS",
     "crypto": "Cripto",
     "stocks": "Ações",
-    "activeCharts": "GRÁFICOS ABERTOS"
+    "activeCharts": "GRÁFICOS ABERTOS",
+    "customSymbols": "SÍMBOLOS PERSONALIZADOS"
+  },
+  "customSymbols": {
+    "title": "Símbolos Personalizados",
+    "myIndices": "Meus Índices",
+    "createNew": "Criar Novo",
+    "name": "Nome",
+    "newIndex": "Símbolo / Ticker",
+    "components": "Componentes",
+    "weight": "Peso",
+    "category": "Categoria",
+    "baseValue": "Valor Base",
+    "weightingMethod": "Método de Ponderação",
+    "capPercent": "Limite %",
+    "coingeckoId": "CoinGecko ID",
+    "computeWeights": "Calcular Pesos",
+    "createIndex": "Criar Índice",
+    "index": "Índice",
+    "symbolPlaceholder": "ex. POLITIFI",
+    "namePlaceholder": "ex. Political Token Index",
+    "symbolExample": "ex. BTCUSDT",
+    "rebalance": "Rebalancear",
+    "lastRebalanced": "Último rebalanceamento",
+    "deleteConfirm": "Excluir este índice?",
+    "methods": {
+      "EQUAL": "Igual",
+      "MARKET_CAP": "Cap. Mercado",
+      "CAPPED_MARKET_CAP": "Limitado",
+      "SQRT_MARKET_CAP": "Raiz",
+      "MANUAL": "Manual"
+    },
+    "categories": {
+      "politics": "Política",
+      "defi": "DeFi",
+      "gaming": "Gaming",
+      "ai": "IA",
+      "other": "Outro"
+    }
   },
   "marketStatus": {
     "open": "Aberto",
@@ -1045,6 +1085,7 @@
           "11": "Novembro",
           "12": "Dezembro"
         },
+        "week": "Sem.",
         "noData": "Nenhum trade este mês",
         "trades_one": "{{count}} trade",
         "trades_other": "{{count}} trades"

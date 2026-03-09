@@ -9,6 +9,7 @@ import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { MarketSidebar } from '../MarketSidebar';
 import { AnalyticsModal } from '../Analytics';
+import { CustomSymbolsModal } from '../CustomSymbols';
 import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -204,6 +205,7 @@ export const MainLayout = ({
         />
         <ScreenerModal onSymbolClick={onNavigateToSymbol} />
         <AnalyticsModal />
+        <CustomSymbolsModal />
       </Box>
     </GlobalActionsProvider>
   );

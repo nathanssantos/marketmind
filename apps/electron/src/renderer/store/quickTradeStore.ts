@@ -8,7 +8,7 @@ interface QuickTradeState {
 }
 
 export const useQuickTradeStore = create<QuickTradeState>((set) => ({
-  sizePercent: 2.5,
+  sizePercent: 0.3,
   useMinNotional: false,
   setSizePercent: (pct) =>
     set((state) => {

@@ -46,7 +46,7 @@ export const GridOrderPopover = memo(() => {
   }, []);
 
   return (
-    <Box position="relative">
+    <Box position="relative" lineHeight={0}>
       <TooltipWrapper
         label={t('chart.gridOrders.title')}
         showArrow
@@ -57,6 +57,8 @@ export const GridOrderPopover = memo(() => {
           ref={buttonRef}
           aria-label={t('chart.gridOrders.title')}
           size="2xs"
+          h="22px"
+          w="22px"
           variant={isGridModeActive ? 'solid' : 'ghost'}
           colorPalette={isGridModeActive ? 'blue' : 'gray'}
           onClick={handleClick}

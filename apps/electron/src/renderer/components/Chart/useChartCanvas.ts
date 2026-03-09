@@ -6,15 +6,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const VIEWPORT_UPDATE_THROTTLE_MS = 50;
 const SIGNIFICANT_CHANGE_THRESHOLD = 0.5;
-const TARGET_KLINE_WIDTH = 10;
-const KLINE_TOTAL_WIDTH = TARGET_KLINE_WIDTH + CHART_CONFIG.KLINE_SPACING;
-const DEFAULT_VISIBLE_KLINES = 100;
 const NEAR_LEFT_EDGE_THRESHOLD = 100;
 
-const calculateVisibleKlines = (chartWidth?: number): number => {
-  if (!chartWidth || chartWidth <= 0) return DEFAULT_VISIBLE_KLINES;
-  return Math.floor(chartWidth / KLINE_TOTAL_WIDTH);
-};
+const calculateVisibleKlines = (): number => CHART_CONFIG.INITIAL_KLINES_VISIBLE;
 
 export interface UseChartCanvasProps {
   klines: Kline[];
@@ -36,7 +30,7 @@ export interface UseChartCanvasReturn {
 
 const DEFAULT_VIEWPORT: Viewport = {
   start: 0,
-  end: 100,
+  end: CHART_CONFIG.INITIAL_KLINES_VISIBLE,
   klineWidth: CHART_CONFIG.DEFAULT_KLINE_WIDTH,
   klineSpacing: CHART_CONFIG.KLINE_SPACING,
   width: 0,
@@ -98,9 +92,25 @@ export const useChartCanvas = ({
   useEffect(() => {
     if (!canvasRef.current || managerRef.current) return;
 
+    let initialVp = viewport;
+    if (klines.length > 0) {
+      const visibleCount = Math.min(calculateVisibleKlines(), klines.length);
+      const futureSpace = Math.max(
+        CHART_CONFIG.MIN_FUTURE_KLINES,
+        Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
+      );
+      initialVp = {
+        ...DEFAULT_VIEWPORT,
+        start: Math.max(0, klines.length - visibleCount),
+        end: klines.length + futureSpace,
+      };
+      setViewport(initialVp);
+      isInitialLoadRef.current = false;
+    }
+
     const newManager = new CanvasManager(
       canvasRef.current,
-      viewport,
+      initialVp,
       CHART_CONFIG.CANVAS_PADDING,
     );
     newManager.setKlines(klines);
@@ -177,8 +187,7 @@ export const useChartCanvas = ({
         managerRef.current.setViewport(shiftedViewport);
         onViewportChange?.(shiftedViewport);
       } else if (isInitialLoadRef.current && currentCount > 0) {
-        const chartWidth = managerRef.current.getDimensions()?.chartWidth;
-        const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
+        const visibleCount = Math.min(calculateVisibleKlines(), currentCount);
         const futureSpace = Math.max(
           CHART_CONFIG.MIN_FUTURE_KLINES,
           Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
@@ -198,8 +207,7 @@ export const useChartCanvas = ({
       } else if (isCompleteDataChange || isSignificantChange) {
         const isSymbolChange = isCompleteDataChange && lastKlineTimestamp !== prevLastKlineTimestamp;
 
-        const chartWidth = managerRef.current.getDimensions()?.chartWidth;
-        const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
+        const visibleCount = Math.min(calculateVisibleKlines(), currentCount);
         const futureSpace = Math.max(
           CHART_CONFIG.MIN_FUTURE_KLINES,
           Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
@@ -217,8 +225,7 @@ export const useChartCanvas = ({
         wasAtEndRef.current = true;
       } else if (wasAtEnd && currentCount > prevCount) {
         const klinesAdded = currentCount - prevCount;
-        const chartWidth = managerRef.current.getDimensions()?.chartWidth;
-        const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
+        const visibleCount = Math.min(calculateVisibleKlines(), currentCount);
         const futureSpace = Math.max(
           CHART_CONFIG.MIN_FUTURE_KLINES,
           Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),

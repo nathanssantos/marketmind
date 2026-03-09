@@ -43,6 +43,13 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     forRotation = false,
   } = options;
 
+  const { getCustomSymbolService } = await import('./custom-symbol-service');
+  const customSymbolService = getCustomSymbolService();
+  if (customSymbolService?.isCustomSymbolSync(symbol)) {
+    await customSymbolService.ensureKlinesBackfilled(symbol, interval as Interval, marketType, targetCount);
+    return { success: true, downloaded: 0, totalInDb: 0, gaps: 0, alreadyComplete: true };
+  }
+
   if (binanceApiCache.isBanned()) {
     const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
     if (!silent) log.warn('~ Skipping prefetch - IP banned', { symbol, interval, marketType, waitSeconds });

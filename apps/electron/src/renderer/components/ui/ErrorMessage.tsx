@@ -8,13 +8,13 @@ interface ErrorMessageProps {
   onRetry?: () => void;
 }
 
-export const ErrorMessage = ({ 
-  title, 
-  message, 
-  onRetry 
+export const ErrorMessage = ({
+  title,
+  message,
+  onRetry
 }: ErrorMessageProps) => {
   const { t } = useTranslation();
-  
+
   return (
     <Box
       position="absolute"
@@ -30,15 +30,15 @@ export const ErrorMessage = ({
       borderColor="border"
     >
       <Stack gap={4} alignItems="center">
-        <Box 
-          p={3} 
-          borderRadius="full" 
+        <Box
+          p={3}
+          borderRadius="full"
           bg="red.500/10"
           color="red.500"
         >
           <LuTriangleAlert size={32} />
         </Box>
-        
+
         <Stack gap={2}>
           <Text fontSize="xl" fontWeight="bold" color="fg">
             {title || t('common.error')}
@@ -54,6 +54,7 @@ export const ErrorMessage = ({
             colorPalette="blue"
             size="md"
             mt={2}
+            px={3}
           >
             {t('app.retry')}
           </Button>

@@ -557,7 +557,7 @@ export class CanvasManager {
     const initialKlineCount = Math.min(CHART_CONFIG.INITIAL_KLINES_VISIBLE, this.klines.length);
     const futureSpace = Math.max(
       CHART_CONFIG.MIN_FUTURE_KLINES,
-      Math.floor(initialKlineCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+      Math.floor(initialKlineCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
     );
 
     this.viewport = {

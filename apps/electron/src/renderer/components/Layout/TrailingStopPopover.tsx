@@ -1,5 +1,5 @@
 import { Switch } from '@/renderer/components/ui/switch';
-import { Box, Flex, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
+import { Box, HStack, IconButton, Portal, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
@@ -7,7 +7,6 @@ import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuShield } from 'react-icons/lu';
 import { TrailingStopSection } from '../Trading/WatcherManager/TrailingStopSection';
-import { Popover } from '../ui/popover';
 import { TooltipWrapper } from '../ui/Tooltip';
 
 interface TrailingStopPopoverProps {
@@ -18,6 +17,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
   const { t } = useTranslation();
   const { success, info } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const pendingFieldsRef = useRef<Record<string, unknown>>({});
 
@@ -143,113 +143,160 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
     };
   }, [symbolConfig, walletConfig, useIndividualConfig]);
 
+  const isTrailingActive = effectiveValues.trailingStopEnabled;
+
+  const tooltipLabel = useMemo(() => {
+    if (!isTrailingActive) return `${t('positionTrailingStop.title')} - ${t('common.disabled')}`;
+    const longMode = effectiveValues.activationModeLong === 'auto'
+      ? `Auto ${(effectiveValues.trailingActivationPercentLong * 100).toFixed(0)}%`
+      : 'Manual';
+    const shortMode = effectiveValues.activationModeShort === 'auto'
+      ? `Auto ${(effectiveValues.trailingActivationPercentShort * 100).toFixed(0)}%`
+      : 'Manual';
+    return `${t('positionTrailingStop.title')}\nLONG: ${longMode}\nSHORT: ${shortMode}`;
+  }, [isTrailingActive, effectiveValues, t]);
+
+  const handleClick = useCallback(() => {
+    const newEnabled = !isTrailingActive;
+    debouncedUpdate({ trailingStopEnabled: newEnabled, useIndividualConfig: true });
+  }, [isTrailingActive, debouncedUpdate]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsOpen((prev) => !prev);
+  }, []);
+
   if (!walletId) return null;
 
   return (
-    <Popover
-      open={isOpen}
-      onOpenChange={(e) => setIsOpen(e.open)}
-      showArrow={false}
-      width="280px"
-      positioning={{ placement: 'bottom-end', offset: { mainAxis: 8 } }}
-      trigger={
-        <Flex>
-          <TooltipWrapper
-            label={t('positionTrailingStop.title')}
-            showArrow
-            placement="bottom"
-            isDisabled={isOpen}
+    <Box position="relative" lineHeight={0}>
+      <TooltipWrapper
+        label={tooltipLabel}
+        showArrow
+        placement="bottom"
+        isDisabled={isOpen}
+      >
+        <IconButton
+          ref={buttonRef}
+          aria-label={t('positionTrailingStop.title')}
+          size="2xs"
+          h="22px"
+          w="22px"
+          variant={isTrailingActive ? 'solid' : 'ghost'}
+          colorPalette={isTrailingActive ? 'blue' : 'gray'}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+        >
+          <LuShield />
+        </IconButton>
+      </TooltipWrapper>
+
+      {isOpen && (
+        <Portal>
+          <Box
+            position="fixed"
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            zIndex={9998}
+            onClick={() => setIsOpen(false)}
+          />
+          <Box
+            position="absolute"
+            top={buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 8 : 0}
+            left={buttonRef.current ? Math.min(buttonRef.current.getBoundingClientRect().left, window.innerWidth - 290) : 0}
+            zIndex={9999}
+            bg="bg.panel"
+            borderRadius="md"
+            border="1px solid"
+            borderColor="border"
+            boxShadow="lg"
+            width="280px"
+            maxH="80vh"
+            overflowY="auto"
           >
-            <IconButton
-              aria-label={t('positionTrailingStop.title')}
-              size="2xs"
-              variant={isOpen ? 'solid' : 'ghost'}
-              colorPalette={isOpen ? 'blue' : 'gray'}
-            >
-              <LuShield />
-            </IconButton>
-          </TooltipWrapper>
-        </Flex>
-      }
-    >
-      <VStack gap={2} p={3} align="stretch">
-        <Text fontSize="xs" fontWeight="semibold" color="fg">
-          {t('positionTrailingStop.title')} - {symbol}
-        </Text>
+            <VStack gap={2} p={3} align="stretch">
+              <Text fontSize="xs" fontWeight="semibold" color="fg">
+                {t('positionTrailingStop.title')} - {symbol}
+              </Text>
 
-        <HStack justify="space-between" p={1.5} bg="bg.subtle" borderRadius="md">
-          <Box>
-            <Text fontSize="xs" fontWeight="medium">
-              {useIndividualConfig
-                ? t('positionTrailingStop.useIndividualConfig')
-                : t('positionTrailingStop.useGlobalConfig')}
-            </Text>
+              <HStack justify="space-between" p={1.5} bg="bg.subtle" borderRadius="md">
+                <Box>
+                  <Text fontSize="xs" fontWeight="medium">
+                    {useIndividualConfig
+                      ? t('positionTrailingStop.useIndividualConfig')
+                      : t('positionTrailingStop.useGlobalConfig')}
+                  </Text>
+                </Box>
+                <Switch
+                  checked={useIndividualConfig}
+                  onCheckedChange={(checked) => {
+                    debouncedUpdate({ useIndividualConfig: checked });
+                  }}
+                  size="sm"
+                />
+              </HStack>
+
+              <Box opacity={useIndividualConfig ? 1 : 0.5} pointerEvents={useIndividualConfig ? 'auto' : 'none'}>
+                <TrailingStopSection
+                  compact
+                  isExpanded={true}
+                  onToggle={() => {}}
+                  trailingStopEnabled={effectiveValues.trailingStopEnabled}
+                  onTrailingStopEnabledChange={(enabled) => debouncedUpdate({ trailingStopEnabled: enabled })}
+                  trailingActivationPercentLong={effectiveValues.trailingActivationPercentLong}
+                  onTrailingActivationPercentLongChange={(value) => debouncedUpdate({ trailingActivationPercentLong: value.toString() })}
+                  trailingActivationPercentShort={effectiveValues.trailingActivationPercentShort}
+                  onTrailingActivationPercentShortChange={(value) => debouncedUpdate({ trailingActivationPercentShort: value.toString() })}
+                  trailingDistancePercentLong={effectiveValues.trailingDistancePercentLong}
+                  onTrailingDistancePercentLongChange={(value) => debouncedUpdate({ trailingDistancePercentLong: value.toString() })}
+                  trailingDistancePercentShort={effectiveValues.trailingDistancePercentShort}
+                  onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
+                  useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
+                  onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
+                  trailingDistanceMode={effectiveValues.trailingDistanceMode}
+                  onTrailingDistanceModeChange={(mode) => debouncedUpdate({ trailingDistanceMode: mode })}
+                  trailingStopOffsetPercent={effectiveValues.trailingStopOffsetPercent}
+                  onTrailingStopOffsetPercentChange={(value) => debouncedUpdate({ trailingStopOffsetPercent: value.toString() })}
+                  isPending={updateMutation.isPending}
+                  activationModeLong={effectiveValues.activationModeLong}
+                  onActivationModeLongChange={(mode) => debouncedUpdate({ trailingActivationModeLong: mode })}
+                  activationModeShort={effectiveValues.activationModeShort}
+                  onActivationModeShortChange={(mode) => debouncedUpdate({ trailingActivationModeShort: mode })}
+                />
+              </Box>
+
+              {useIndividualConfig && effectiveValues.activationModeLong === 'manual' && (
+                <HStack justify="space-between" p={2} bg="green.subtle" borderRadius="md">
+                  <Text fontSize="xs" fontWeight="medium" color="green.600">
+                    {t('positionTrailingStop.activateTrailingLong')}
+                  </Text>
+                  <Switch
+                    checked={effectiveValues.manualTrailingActivatedLong}
+                    onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedLong: checked })}
+                    size="sm"
+                  />
+                </HStack>
+              )}
+
+              {useIndividualConfig && effectiveValues.activationModeShort === 'manual' && (
+                <HStack justify="space-between" p={2} bg="red.subtle" borderRadius="md">
+                  <Text fontSize="xs" fontWeight="medium" color="red.600">
+                    {t('positionTrailingStop.activateTrailingShort')}
+                  </Text>
+                  <Switch
+                    checked={effectiveValues.manualTrailingActivatedShort}
+                    onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedShort: checked })}
+                    size="sm"
+                  />
+                </HStack>
+              )}
+            </VStack>
           </Box>
-          <Switch
-            checked={useIndividualConfig}
-            onCheckedChange={(checked) => {
-              debouncedUpdate({ useIndividualConfig: checked });
-            }}
-            size="sm"
-          />
-        </HStack>
-
-        <Box opacity={useIndividualConfig ? 1 : 0.5} pointerEvents={useIndividualConfig ? 'auto' : 'none'}>
-          <TrailingStopSection
-            compact
-            isExpanded={true}
-            onToggle={() => {}}
-            trailingStopEnabled={effectiveValues.trailingStopEnabled}
-            onTrailingStopEnabledChange={(enabled) => debouncedUpdate({ trailingStopEnabled: enabled })}
-            trailingActivationPercentLong={effectiveValues.trailingActivationPercentLong}
-            onTrailingActivationPercentLongChange={(value) => debouncedUpdate({ trailingActivationPercentLong: value.toString() })}
-            trailingActivationPercentShort={effectiveValues.trailingActivationPercentShort}
-            onTrailingActivationPercentShortChange={(value) => debouncedUpdate({ trailingActivationPercentShort: value.toString() })}
-            trailingDistancePercentLong={effectiveValues.trailingDistancePercentLong}
-            onTrailingDistancePercentLongChange={(value) => debouncedUpdate({ trailingDistancePercentLong: value.toString() })}
-            trailingDistancePercentShort={effectiveValues.trailingDistancePercentShort}
-            onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
-            useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
-            onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
-            trailingDistanceMode={effectiveValues.trailingDistanceMode}
-            onTrailingDistanceModeChange={(mode) => debouncedUpdate({ trailingDistanceMode: mode })}
-            trailingStopOffsetPercent={effectiveValues.trailingStopOffsetPercent}
-            onTrailingStopOffsetPercentChange={(value) => debouncedUpdate({ trailingStopOffsetPercent: value.toString() })}
-            isPending={updateMutation.isPending}
-            activationModeLong={effectiveValues.activationModeLong}
-            onActivationModeLongChange={(mode) => debouncedUpdate({ trailingActivationModeLong: mode })}
-            activationModeShort={effectiveValues.activationModeShort}
-            onActivationModeShortChange={(mode) => debouncedUpdate({ trailingActivationModeShort: mode })}
-          />
-        </Box>
-
-        {useIndividualConfig && effectiveValues.activationModeLong === 'manual' && (
-          <HStack justify="space-between" p={2} bg="green.subtle" borderRadius="md">
-            <Text fontSize="xs" fontWeight="medium" color="green.600">
-              {t('positionTrailingStop.activateTrailingLong')}
-            </Text>
-            <Switch
-              checked={effectiveValues.manualTrailingActivatedLong}
-              onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedLong: checked })}
-              size="sm"
-            />
-          </HStack>
-        )}
-
-        {useIndividualConfig && effectiveValues.activationModeShort === 'manual' && (
-          <HStack justify="space-between" p={2} bg="red.subtle" borderRadius="md">
-            <Text fontSize="xs" fontWeight="medium" color="red.600">
-              {t('positionTrailingStop.activateTrailingShort')}
-            </Text>
-            <Switch
-              checked={effectiveValues.manualTrailingActivatedShort}
-              onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedShort: checked })}
-              size="sm"
-            />
-          </HStack>
-        )}
-      </VStack>
-    </Popover>
+        </Portal>
+      )}
+    </Box>
   );
 });
 

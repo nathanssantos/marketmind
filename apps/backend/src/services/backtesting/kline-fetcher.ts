@@ -53,11 +53,20 @@ export const fetchKlinesFromDbWithBackfill = async (
   });
 
   if (dbKlines.length < minRequired) {
+    const { getCustomSymbolService } = await import('../custom-symbol-service');
+    const customSymbolService = getCustomSymbolService();
+    const isCustom = customSymbolService?.isCustomSymbolSync(symbol) ?? false;
     const isIB = exchange === 'INTERACTIVE_BROKERS';
-    const backfillResult = isIB
-      ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
-      : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
-    logger.debug({ symbol, interval, exchange: isIB ? 'IB' : 'Binance', downloaded: backfillResult.downloaded, totalInDb: backfillResult.totalInDb }, '[KlineFetcher] Backfill complete');
+
+    if (isCustom) {
+      await customSymbolService!.backfillKlines(symbol, interval, effectiveMarketType, startTime, endTime);
+      logger.debug({ symbol, interval }, '[KlineFetcher] Custom symbol backfill complete');
+    } else {
+      const backfillResult = isIB
+        ? await smartBackfillIBKlines(symbol, interval, expectedKlines, effectiveMarketType)
+        : await smartBackfillKlines(symbol, interval, expectedKlines, marketType);
+      logger.debug({ symbol, interval, exchange: isIB ? 'IB' : 'Binance', downloaded: backfillResult.downloaded, totalInDb: backfillResult.totalInDb }, '[KlineFetcher] Backfill complete');
+    }
 
     dbKlines = await db.query.klines.findMany({
       where: queryWhere,

@@ -84,15 +84,15 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
     subtext?: string;
   }) => (
     <GridItem>
-      <Box px={4} py={3} bg="bg.muted" borderRadius="md" h="100%">
-        <Text fontSize="xs" color="fg.muted" mb={1} textTransform="uppercase">
+      <Box px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
+        <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">
           {label}
         </Text>
-        <Text fontSize="lg" fontWeight="bold" color={valueColor}>
+        <Text fontSize="sm" fontWeight="bold" color={valueColor}>
           {value}
         </Text>
         {subtext && (
-          <Text fontSize="xs" color="fg.muted" mt={1}>
+          <Text fontSize="2xs" color="fg.muted">
             {subtext}
           </Text>
         )}
@@ -101,12 +101,12 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
   );
 
   return (
-    <Stack gap={4}>
+    <Stack gap={3}>
       <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
-        <Text fontSize="lg" fontWeight="bold">
+        <Text fontSize="md" fontWeight="bold">
           {t('trading.analytics.performance.title')}
         </Text>
-        <ButtonGroup size="xs" variant="outline" flexWrap="wrap">
+        <ButtonGroup size="2xs" variant="outline" flexWrap="wrap">
           {periods.map((p) => (
             <Button
               key={p.value}
@@ -120,7 +120,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
         </ButtonGroup>
       </Flex>
 
-      <Grid templateColumns="repeat(auto-fit, 1fr)" gap={3}>
+      <Grid templateColumns="repeat(3, 1fr)" gap={2}>
         <MetricCard
           label={t('trading.analytics.performance.totalReturn')}
           value={formatPercent(performance.totalReturn)}
@@ -130,21 +130,21 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
           label={t('trading.analytics.performance.netPnL')}
           value={formatCurrencyWithBrl(performance.netPnL)}
           valueColor={getValueColor(performance.netPnL)}
-          subtext={`${t('trading.analytics.performance.grossPnL')}: ${formatCurrency(performance.grossPnL)} - ${t('trading.analytics.performance.fees')}: ${formatWalletCurrency(performance.totalFees, currency)}`}
+          subtext={`Gross: ${formatCurrency(performance.grossPnL)} - Fees: ${formatWalletCurrency(performance.totalFees, currency)}`}
         />
         <MetricCard
           label={t('trading.analytics.performance.winRate')}
           value={`${performance.winRate.toFixed(1)}%`}
           subtext={`${performance.winningTrades}W / ${performance.losingTrades}L`}
         />
+      </Grid>
+
+      <Grid templateColumns="repeat(3, 1fr)" gap={2}>
         <MetricCard
           label={t('trading.analytics.performance.profitFactor')}
           value={performance.profitFactor.toFixed(2)}
           valueColor={performance.profitFactor >= 1 ? 'green.500' : 'red.500'}
         />
-      </Grid>
-
-      <Grid templateColumns="repeat(auto-fit, 1fr)" gap={3}>
         <MetricCard
           label={t('trading.analytics.performance.avgWin')}
           value={formatCurrency(performance.avgWin)}
@@ -155,6 +155,9 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
           value={formatCurrency(performance.avgLoss)}
           valueColor="red.500"
         />
+      </Grid>
+
+      <Grid templateColumns="repeat(3, 1fr)" gap={2}>
         <MetricCard
           label={t('trading.analytics.performance.maxDrawdown')}
           value={`-${performance.maxDrawdown.toFixed(2)}%`}

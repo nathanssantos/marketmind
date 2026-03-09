@@ -60,8 +60,6 @@ export class PositionMonitorService {
   private processingExits: Set<string> = new Set();
   private processingGroups: Set<string> = new Set();
   private unprotectedAlerts: Map<string, number> = new Map();
-  private deferredExitTimestamps: Map<string, number> = new Map();
-  private readonly DEFERRED_EXIT_TIMEOUT_MS = 10_000;
 
   start(): void {
     if (this.monitoringTimeout) {
@@ -511,45 +509,14 @@ export class PositionMonitorService {
     return result;
   }
 
-  isExitDeferred(executionId: string): boolean {
-    return this.deferredExitTimestamps.has(`${executionId}-STOP_LOSS`) ||
-      this.deferredExitTimestamps.has(`${executionId}-TAKE_PROFIT`);
-  }
-
-  clearDeferredExit(executionId: string): void {
-    this.deferredExitTimestamps.delete(`${executionId}-STOP_LOSS`);
-    this.deferredExitTimestamps.delete(`${executionId}-TAKE_PROFIT`);
-  }
-
   async executeExit(
     execution: TradeExecution,
     exitPrice: number,
     reason: 'STOP_LOSS' | 'TAKE_PROFIT'
   ): Promise<void> {
-    if (this.processingExits.has(execution.id)) {
-      return;
-    }
+    if (this.processingExits.has(execution.id)) return;
 
     this.processingExits.add(execution.id);
-
-    const deferKey = `${execution.id}-${reason}`;
-    const existingDeferral = this.deferredExitTimestamps.get(deferKey);
-    let forceLocalExit = false;
-    if (existingDeferral !== undefined) {
-      const now = Date.now();
-      if (now - existingDeferral < this.DEFERRED_EXIT_TIMEOUT_MS) {
-        this.processingExits.delete(execution.id);
-        return;
-      }
-      logger.warn({
-        executionId: execution.id,
-        symbol: execution.symbol,
-        reason,
-        deferredForMs: now - existingDeferral,
-      }, 'Exchange-side protection order stale - forcing local exit after timeout');
-      this.deferredExitTimestamps.delete(deferKey);
-      forceLocalExit = true;
-    }
 
     try {
       const currentExecution = await db.query.tradeExecutions.findFirst({
@@ -561,8 +528,6 @@ export class PositionMonitorService {
           executionId: execution.id,
           status: currentExecution?.status,
         }, 'Skipping exit - position already closed or not found');
-        this.deferredExitTimestamps.delete(`${execution.id}-STOP_LOSS`);
-        this.deferredExitTimestamps.delete(`${execution.id}-TAKE_PROFIT`);
         return;
       }
 
@@ -572,27 +537,24 @@ export class PositionMonitorService {
         .where(eq(wallets.id, execution.walletId))
         .limit(1);
 
-      if (!wallet) {
-        throw new Error(`Wallet not found: ${execution.walletId}`);
-      }
+      if (!wallet) throw new Error(`Wallet not found: ${execution.walletId}`);
 
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
-      if (shouldExecuteReal && !forceLocalExit) {
+      if (shouldExecuteReal) {
         const hasExchangeSLProtection = currentExecution.stopLossAlgoId || currentExecution.stopLossOrderId;
         const hasExchangeTPProtection = currentExecution.takeProfitAlgoId || currentExecution.takeProfitOrderId;
 
         if ((reason === 'STOP_LOSS' && hasExchangeSLProtection) ||
           (reason === 'TAKE_PROFIT' && hasExchangeTPProtection)) {
-          this.deferredExitTimestamps.set(deferKey, Date.now());
           logger.trace({
             executionId: execution.id,
             symbol: execution.symbol,
             reason,
             stopLossAlgoId: currentExecution.stopLossAlgoId,
             takeProfitAlgoId: currentExecution.takeProfitAlgoId,
-          }, 'Deferring to exchange-side protection order');
+          }, 'Deferring to exchange-side protection order - exchange will handle exit');
           return;
         }
       }
@@ -786,8 +748,6 @@ export class PositionMonitorService {
           executionId: execution.id,
           symbol: execution.symbol,
         }, '[PositionMonitor] Position already closed by another process - skipping balance update and cleanup');
-        this.deferredExitTimestamps.delete(`${execution.id}-STOP_LOSS`);
-        this.deferredExitTimestamps.delete(`${execution.id}-TAKE_PROFIT`);
         return;
       }
 
@@ -810,8 +770,6 @@ export class PositionMonitorService {
       }, '[PositionMonitor] Wallet balance updated atomically after position exit');
 
       binancePriceStreamService.invalidateExecutionCache(execution.symbol);
-      this.deferredExitTimestamps.delete(`${execution.id}-STOP_LOSS`);
-      this.deferredExitTimestamps.delete(`${execution.id}-TAKE_PROFIT`);
 
       const hasProtectionOrders = execution.stopLossAlgoId || execution.stopLossOrderId ||
         execution.takeProfitAlgoId || execution.takeProfitOrderId;
@@ -1176,17 +1134,6 @@ export class PositionMonitorService {
       return;
     }
 
-    const allDeferred = executions.every(e => this.isExitDeferred(e.id));
-    if (allDeferred) {
-      const now = Date.now();
-      const anyTimedOut = executions.some(e => {
-        const slTs = this.deferredExitTimestamps.get(`${e.id}-STOP_LOSS`);
-        const tpTs = this.deferredExitTimestamps.get(`${e.id}-TAKE_PROFIT`);
-        const oldest = Math.min(slTs ?? Infinity, tpTs ?? Infinity);
-        return oldest !== Infinity && (now - oldest >= this.DEFERRED_EXIT_TIMEOUT_MS);
-      });
-      if (!anyTimedOut) return;
-    }
 
     this.processingGroups.add(groupKey);
 

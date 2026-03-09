@@ -3,7 +3,7 @@ import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { CHART_INITIAL_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
-import { klines, pairMaintenanceLog } from '../db/schema';
+import { customSymbols, klines, pairMaintenanceLog } from '../db/schema';
 import { symbolSearch } from '../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
 import { prefetchKlines, runBatchBackfill } from '../services/kline-prefetch';
@@ -465,6 +465,19 @@ export const klineRouter = router({
         s.quoteAsset.includes(query)
       );
 
-      return filtered.slice(0, 50);
+      const customSymbolRows = await db.query.customSymbols.findMany({
+        where: eq(customSymbols.isActive, true),
+      });
+      const customMatches = customSymbolRows
+        .filter(cs => cs.symbol.includes(query) || cs.name.toUpperCase().includes(query))
+        .map(cs => ({
+          symbol: cs.symbol,
+          baseAsset: cs.symbol,
+          quoteAsset: 'INDEX',
+          displayName: cs.name,
+          isCustom: true,
+        }));
+
+      return [...customMatches, ...filtered.slice(0, 50)];
     }),
 });

@@ -567,12 +567,8 @@ describe('PositionMonitorService', () => {
     });
   });
 
-  describe('deferred exit mechanism', () => {
-    it('should report isExitDeferred as false for unknown execution', () => {
-      expect(service.isExitDeferred('unknown-id')).toBe(false);
-    });
-
-    it('should defer exit when live trading enabled and exchange-side SL protection exists', async () => {
+  describe('exchange-side protection deferral', () => {
+    it('should defer exit to exchange when live trading enabled and exchange-side SL protection exists', async () => {
       const { env } = await import('../../env');
       const originalLiveTrading = env.ENABLE_LIVE_TRADING;
       (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
@@ -592,8 +588,6 @@ describe('PositionMonitorService', () => {
         });
 
         await service.executeExit(execution!, 48900, 'STOP_LOSS');
-
-        expect(service.isExitDeferred(execution!.id)).toBe(true);
 
         const [updatedExecution] = await db
           .select()
@@ -606,71 +600,7 @@ describe('PositionMonitorService', () => {
       }
     });
 
-    it('should return early for deferred exit that has not timed out', async () => {
-      const { env } = await import('../../env');
-      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
-      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
-
-      try {
-        const { user } = await createAuthenticatedUser();
-        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
-
-        const execution = await createTestExecution({
-          userId: user.id,
-          walletId: wallet.id,
-          side: 'LONG',
-          entryPrice: '50000',
-          quantity: '0.1',
-          stopLoss: '49000',
-          stopLossAlgoId: 12345,
-        });
-
-        await service.executeExit(execution!, 48900, 'STOP_LOSS');
-        expect(service.isExitDeferred(execution!.id)).toBe(true);
-
-        await service.executeExit(execution!, 48800, 'STOP_LOSS');
-
-        const [updatedExecution] = await db
-          .select()
-          .from(schema.tradeExecutions)
-          .where(eq(schema.tradeExecutions.id, execution!.id));
-
-        expect(updatedExecution!.status).toBe('open');
-      } finally {
-        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
-      }
-    });
-
-    it('should clear deferred exit via clearDeferredExit', async () => {
-      const { env } = await import('../../env');
-      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
-      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
-
-      try {
-        const { user } = await createAuthenticatedUser();
-        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
-
-        const execution = await createTestExecution({
-          userId: user.id,
-          walletId: wallet.id,
-          side: 'LONG',
-          entryPrice: '50000',
-          quantity: '0.1',
-          stopLoss: '49000',
-          stopLossAlgoId: 12345,
-        });
-
-        await service.executeExit(execution!, 48900, 'STOP_LOSS');
-        expect(service.isExitDeferred(execution!.id)).toBe(true);
-
-        service.clearDeferredExit(execution!.id);
-        expect(service.isExitDeferred(execution!.id)).toBe(false);
-      } finally {
-        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
-      }
-    });
-
-    it('should defer exit for TP when exchange-side TP protection exists', async () => {
+    it('should defer exit to exchange for TP when exchange-side TP protection exists', async () => {
       const { env } = await import('../../env');
       const originalLiveTrading = env.ENABLE_LIVE_TRADING;
       (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
@@ -691,8 +621,6 @@ describe('PositionMonitorService', () => {
 
         await service.executeExit(execution!, 52100, 'TAKE_PROFIT');
 
-        expect(service.isExitDeferred(execution!.id)).toBe(true);
-
         const [updatedExecution] = await db
           .select()
           .from(schema.tradeExecutions)
@@ -706,53 +634,6 @@ describe('PositionMonitorService', () => {
   });
 
   describe('checkPositionGroupByPrice', () => {
-    it('should return silently when all executions are deferred and not timed out', async () => {
-      const { env } = await import('../../env');
-      const originalLiveTrading = env.ENABLE_LIVE_TRADING;
-      (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
-
-      try {
-        const { user } = await createAuthenticatedUser();
-        const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
-
-        const execution1 = await createTestExecution({
-          userId: user.id,
-          walletId: wallet.id,
-          side: 'LONG',
-          entryPrice: '50000',
-          quantity: '0.05',
-          stopLoss: '49000',
-          takeProfit: '52000',
-          stopLossAlgoId: 111,
-        });
-
-        const execution2 = await createTestExecution({
-          userId: user.id,
-          walletId: wallet.id,
-          side: 'LONG',
-          entryPrice: '50100',
-          quantity: '0.05',
-          stopLoss: '49000',
-          takeProfit: '52000',
-          stopLossAlgoId: 222,
-        });
-
-        await service.executeExit(execution1!, 48900, 'STOP_LOSS');
-        await service.executeExit(execution2!, 48900, 'STOP_LOSS');
-
-        expect(service.isExitDeferred(execution1!.id)).toBe(true);
-        expect(service.isExitDeferred(execution2!.id)).toBe(true);
-
-        await service.checkPositionGroupByPrice([execution1!, execution2!], 48500);
-
-        const executions = await db.select().from(schema.tradeExecutions);
-        const openExecutions = executions.filter(e => e.status === 'open');
-        expect(openExecutions.length).toBe(2);
-      } finally {
-        (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
-      }
-    });
-
     it('should close positions in group when SL triggered (no deferral)', async () => {
       const { user } = await createAuthenticatedUser();
       const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });

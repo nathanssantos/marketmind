@@ -8,8 +8,6 @@ import { useUIStore } from '../../store/uiStore';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
 import { PerformanceCalendar } from './PerformanceCalendar';
-import { RiskDisplay } from '../Trading/RiskDisplay';
-import { SetupStatsTable } from '../Trading/SetupStatsTable';
 import {
   DialogBackdrop,
   DialogBody,
@@ -66,13 +64,11 @@ export const AnalyticsModal = memo(() => {
           <DialogBody px={4} py={3} overflowY="auto">
             {activeWalletId ? (
               <Stack gap={4}>
+                <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
                 {marginRequirements && (
                   <MarginInfoPanel requirements={marginRequirements} />
                 )}
-                <RiskDisplay walletId={activeWalletId} />
                 <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
-                <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
-                <SetupStatsTable walletId={activeWalletId} />
               </Stack>
             ) : (
               <Flex justify="center" py={8}>

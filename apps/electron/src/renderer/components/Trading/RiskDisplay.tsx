@@ -2,7 +2,6 @@ import {
   Flex,
   Grid,
   GridItem,
-  Stack,
   Text
 } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
@@ -77,78 +76,53 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
     return null;
   }
 
+  const hasWatchers = metrics.positions.activeWatchers > 0;
+  const columns = hasWatchers ? 4 : 3;
+
   return (
-    <Stack gap={4}>
-      <Grid templateColumns="repeat(auto-fit, 1fr)" gap={4}>
-        <GridItem>
-          <Stack gap={2}>
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
-              Open Positions
-            </Text>
-            <Flex align="baseline" gap={1}>
-              <Text fontSize="2xl" fontWeight="bold">
-                {metrics.positions.open}
-              </Text>
-              {metrics.positions.activeWatchers > 0 && (
-                <Text fontSize="sm" color="gray.500">
-                  / {metrics.positions.activeWatchers} watchers
-                </Text>
-              )}
-            </Flex>
-          </Stack>
-        </GridItem>
+    <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={2}>
+      <GridItem>
+        <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
+          <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">Open Positions</Text>
+          <Flex align="baseline" gap={1}>
+            <Text fontSize="sm" fontWeight="bold">{metrics.positions.open}</Text>
+            {hasWatchers && (
+              <Text fontSize="2xs" color="fg.muted">/ {metrics.positions.activeWatchers} watchers</Text>
+            )}
+          </Flex>
+        </Flex>
+      </GridItem>
 
-        <GridItem>
-          <Stack gap={2}>
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
-              Total Exposure
-            </Text>
-            <Text fontSize="2xl" fontWeight="bold">
-              ${metrics.exposure.current.toFixed(2)}
-            </Text>
-          </Stack>
-        </GridItem>
+      <GridItem>
+        <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
+          <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">Total Exposure</Text>
+          <Text fontSize="sm" fontWeight="bold">${metrics.exposure.current.toFixed(2)}</Text>
+        </Flex>
+      </GridItem>
 
-        <GridItem>
-          <Stack gap={2}>
-            <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
-              Daily PnL
-            </Text>
-            <Text
-              fontSize="2xl"
-              fontWeight="bold"
-              color={
-                metrics.dailyPnL.value > 0
-                  ? 'green.500'
-                  : metrics.dailyPnL.value < 0
-                    ? 'red.500'
-                    : undefined
-              }
-            >
-              {metrics.dailyPnL.value >= 0 ? '+' : ''}${metrics.dailyPnL.value.toFixed(2)}
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              Limit: -{metrics.dailyPnL.limit}%
-            </Text>
-          </Stack>
-        </GridItem>
+      <GridItem>
+        <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
+          <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">Daily PnL</Text>
+          <Text
+            fontSize="sm"
+            fontWeight="bold"
+            color={metrics.dailyPnL.value > 0 ? 'green.500' : metrics.dailyPnL.value < 0 ? 'red.500' : undefined}
+          >
+            {metrics.dailyPnL.value >= 0 ? '+' : ''}${metrics.dailyPnL.value.toFixed(2)}
+          </Text>
+          <Text fontSize="2xs" color="fg.muted">Limit: -{metrics.dailyPnL.limit}%</Text>
+        </Flex>
+      </GridItem>
 
-        {metrics.positions.activeWatchers > 0 && (
-          <GridItem>
-            <Stack gap={2}>
-              <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontWeight="medium">
-                Size per Watcher
-              </Text>
-              <Text fontSize="2xl" fontWeight="bold">
-                {(100 / metrics.positions.activeWatchers).toFixed(1)}%
-              </Text>
-              <Text fontSize="xs" color="gray.500">
-                100% / {metrics.positions.activeWatchers} watchers
-              </Text>
-            </Stack>
-          </GridItem>
-        )}
-      </Grid>
-    </Stack>
+      {hasWatchers && (
+        <GridItem>
+          <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
+            <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">Size per Watcher</Text>
+            <Text fontSize="sm" fontWeight="bold">{(100 / metrics.positions.activeWatchers).toFixed(1)}%</Text>
+            <Text fontSize="2xs" color="fg.muted">100% / {metrics.positions.activeWatchers} watchers</Text>
+          </Flex>
+        </GridItem>
+      )}
+    </Grid>
   );
 };

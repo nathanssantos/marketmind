@@ -722,3 +722,44 @@ export const symbolTrailingStopOverrides = pgTable('symbol_trailing_stop_overrid
 
 export type SymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferSelect;
 export type NewSymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferInsert;
+
+export const customSymbols = pgTable('custom_symbols', {
+  id: serial('id').primaryKey(),
+  symbol: varchar({ length: 30 }).unique().notNull(),
+  name: varchar({ length: 100 }).notNull(),
+  description: text(),
+  category: varchar({ length: 50 }).$type<'politics' | 'defi' | 'gaming' | 'ai' | 'other'>().notNull(),
+  baseValue: numeric('base_value', { precision: 20, scale: 8 }).notNull().default('100'),
+  weightingMethod: varchar('weighting_method', { length: 30 })
+    .$type<'EQUAL' | 'MARKET_CAP' | 'CAPPED_MARKET_CAP' | 'SQRT_MARKET_CAP' | 'MANUAL'>()
+    .notNull().default('CAPPED_MARKET_CAP'),
+  capPercent: numeric('cap_percent', { precision: 5, scale: 2 }).default('40'),
+  rebalanceIntervalDays: integer('rebalance_interval_days').default(30),
+  lastRebalancedAt: timestamp('last_rebalanced_at', { mode: 'date' }),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+});
+
+export const customSymbolComponents = pgTable('custom_symbol_components', {
+  id: serial('id').primaryKey(),
+  customSymbolId: integer('custom_symbol_id')
+    .notNull()
+    .references(() => customSymbols.id, { onDelete: 'cascade' }),
+  symbol: varchar({ length: 20 }).notNull(),
+  marketType: varchar('market_type', { length: 10 })
+    .$type<'SPOT' | 'FUTURES'>().default('SPOT').notNull(),
+  coingeckoId: varchar('coingecko_id', { length: 100 }),
+  weight: numeric({ precision: 10, scale: 8 }).notNull(),
+  basePrice: numeric('base_price', { precision: 20, scale: 8 }),
+  isActive: boolean('is_active').default(true).notNull(),
+  addedAt: timestamp('added_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueComponent: unique().on(table.customSymbolId, table.symbol, table.marketType),
+  customSymbolIdx: index('custom_symbol_components_idx').on(table.customSymbolId),
+}));
+
+export type CustomSymbol = typeof customSymbols.$inferSelect;
+export type NewCustomSymbol = typeof customSymbols.$inferInsert;
+export type CustomSymbolComponent = typeof customSymbolComponents.$inferSelect;
+export type NewCustomSymbolComponent = typeof customSymbolComponents.$inferInsert;

@@ -130,6 +130,10 @@ const start = async (): Promise<void> => {
       positionSyncService.start(),
     ]);
 
+    const { startCustomSymbolService } = await import('./services/custom-symbol-service');
+    await startCustomSymbolService();
+    fastify.log.info('> Custom symbol service started');
+
     const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
     await autoTradingScheduler.restoreWatchersFromDb();
 

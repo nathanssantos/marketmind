@@ -1483,8 +1483,8 @@ describe('PositionMonitorService - Extended Coverage', () => {
     });
   });
 
-  describe('executeExit - deferred exit timeout', () => {
-    it('should force local exit after deferred exit timeout expires', async () => {
+  describe('executeExit - exchange deferral', () => {
+    it('should not close position when exchange-side SL protection exists on live wallet', async () => {
       const { env } = await import('../../env');
       const originalLiveTrading = env.ENABLE_LIVE_TRADING;
       (env as Record<string, unknown>).ENABLE_LIVE_TRADING = true;
@@ -1492,19 +1492,6 @@ describe('PositionMonitorService - Extended Coverage', () => {
       try {
         const { user } = await createAuthenticatedUser();
         const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
-
-        const exitOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: 77777 });
-
-        vi.mocked(getFuturesClient).mockReturnValue({
-          getPosition: vi.fn(),
-          getAllTradeFeesForPosition: vi.fn().mockResolvedValue(null),
-          getLastClosingTrade: vi.fn().mockResolvedValue(null),
-          submitOrder: vi.fn().mockResolvedValue({ orderId: exitOrder.orderId }),
-          cancelOrder: vi.fn(),
-          cancelAllOrders: vi.fn(),
-          getOpenOrders: vi.fn().mockResolvedValue([]),
-          getOrderEntryFee: vi.fn().mockResolvedValue(null),
-        } as unknown as ReturnType<typeof getFuturesClient>);
 
         const execution = await createTestExecution({
           userId: user.id,
@@ -1517,17 +1504,11 @@ describe('PositionMonitorService - Extended Coverage', () => {
         });
 
         await service.executeExit(execution!, 48900, 'STOP_LOSS');
-        expect(service.isExitDeferred(execution!.id)).toBe(true);
-
-        const deferredExitTimestamps = (service as unknown as Record<string, Map<string, number>>).deferredExitTimestamps;
-        const deferKey = `${execution!.id}-STOP_LOSS`;
-        deferredExitTimestamps!.set(deferKey, Date.now() - 15000);
-
         await service.executeExit(execution!, 48800, 'STOP_LOSS');
 
         const [updated] = await db.select().from(schema.tradeExecutions)
           .where(eq(schema.tradeExecutions.id, execution!.id));
-        expect(updated!.status).toBe('closed');
+        expect(updated!.status).toBe('open');
       } finally {
         (env as Record<string, unknown>).ENABLE_LIVE_TRADING = originalLiveTrading;
       }

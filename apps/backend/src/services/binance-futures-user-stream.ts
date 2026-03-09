@@ -18,7 +18,6 @@ import {
 import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
 import { binancePriceStreamService } from './binance-price-stream';
-import { positionMonitorService } from './position-monitor';
 import { getWebSocketService } from './websocket';
 
 interface FuturesAccountUpdate {
@@ -457,6 +456,44 @@ export class BinanceFuturesUserStreamService {
         return;
       }
 
+      if (execType === 'TRADE' && status === 'PARTIALLY_FILLED') {
+        const {
+          o: { q: origQty },
+        } = event;
+        const filledQty = parseFloat(executedQty);
+        const originalQty = parseFloat(origQty);
+
+        const [pendingExec] = await db
+          .select()
+          .from(tradeExecutions)
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.symbol, symbol),
+              eq(tradeExecutions.status, 'pending'),
+              eq(tradeExecutions.marketType, 'FUTURES'),
+              eq(tradeExecutions.entryOrderId, Number(orderId))
+            )
+          )
+          .limit(1);
+
+        if (pendingExec) {
+          await db.update(tradeExecutions).set({
+            quantity: filledQty.toString(),
+            updatedAt: new Date(),
+          }).where(eq(tradeExecutions.id, pendingExec.id));
+
+          logger.info({
+            executionId: pendingExec.id,
+            symbol,
+            filledQty,
+            originalQty,
+            remaining: originalQty - filledQty,
+          }, '[FuturesUserStream] Partial fill - updated quantity with filled amount');
+        }
+        return;
+      }
+
       if (execType === 'TRADE' && status === 'FILLED') {
         const [pendingExecution] = await db
           .select()
@@ -503,10 +540,25 @@ export class BinanceFuturesUserStreamService {
               const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
               if (!freshExec) return;
 
-              const oldQty = parseFloat(freshExec.quantity);
-              const oldPrice = parseFloat(freshExec.entryPrice);
-              const newQty = oldQty + fillQty;
-              const newAvgPrice = ((oldQty * oldPrice) + (fillQty * fillPrice)) / newQty;
+              let newQty = parseFloat(freshExec.quantity) + fillQty;
+              let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (fillQty * fillPrice)) / newQty;
+
+              const connection = this.connections.get(walletId);
+              if (connection) {
+                try {
+                  const exchangePos = await getPosition(connection.apiClient, symbol);
+                  if (exchangePos) {
+                    const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
+                    const exchangePrice = parseFloat(exchangePos.entryPrice);
+                    if (exchangeQty > 0) {
+                      newQty = exchangeQty;
+                      newAvgPrice = exchangePrice;
+                    }
+                  }
+                } catch (e) {
+                  logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after pyramid - using calculated values');
+                }
+              }
 
               await db.update(tradeExecutions).set({
                 entryPrice: newAvgPrice.toString(),
@@ -577,6 +629,7 @@ export class BinanceFuturesUserStreamService {
             .set({
               status: 'open',
               entryPrice: fillPrice.toString(),
+              quantity: fillQty.toString(),
               entryFee: entryFee.toString(),
               commissionAsset: commissionAsset || 'USDT',
               openedAt: new Date(),
@@ -718,10 +771,25 @@ export class BinanceFuturesUserStreamService {
                 const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, execution.id)).limit(1);
                 if (!freshExec) return;
 
-                const oldQty = parseFloat(freshExec.quantity);
-                const oldPrice = parseFloat(freshExec.entryPrice);
-                const newQty = oldQty + fillQty;
-                const newAvgPrice = ((oldQty * oldPrice) + (fillQty * fillPrice)) / newQty;
+                let newQty = parseFloat(freshExec.quantity) + fillQty;
+                let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (fillQty * fillPrice)) / newQty;
+
+                const connection = this.connections.get(walletId);
+                if (connection) {
+                  try {
+                    const exchangePos = await getPosition(connection.apiClient, symbol);
+                    if (exchangePos) {
+                      const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
+                      const exchangePrice = parseFloat(exchangePos.entryPrice);
+                      if (exchangeQty > 0) {
+                        newQty = exchangeQty;
+                        newAvgPrice = exchangePrice;
+                      }
+                    }
+                  } catch (e) {
+                    logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after pyramid - using calculated values');
+                  }
+                }
 
                 await db.update(tradeExecutions).set({
                   entryPrice: newAvgPrice.toString(),
@@ -918,7 +986,6 @@ export class BinanceFuturesUserStreamService {
         );
 
         binancePriceStreamService.invalidateExecutionCache(symbol);
-        positionMonitorService.clearDeferredExit(execution.id);
 
         const wsService = getWebSocketService();
         if (wsService) {
@@ -1201,10 +1268,26 @@ export class BinanceFuturesUserStreamService {
             const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
             if (!freshExec) return;
 
-            const oldQty = parseFloat(freshExec.quantity);
-            const oldPrice = parseFloat(freshExec.entryPrice);
-            const newQty = oldQty + parseFloat(pendingEntryExecution.quantity);
-            const newAvgPrice = ((oldQty * oldPrice) + (parseFloat(pendingEntryExecution.quantity) * parseFloat(pendingEntryExecution.entryPrice))) / newQty;
+            const pendQty = parseFloat(pendingEntryExecution.quantity);
+            let newQty = parseFloat(freshExec.quantity) + pendQty;
+            let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (pendQty * parseFloat(pendingEntryExecution.entryPrice))) / newQty;
+
+            const connection = this.connections.get(walletId);
+            if (connection) {
+              try {
+                const exchangePos = await getPosition(connection.apiClient, symbol);
+                if (exchangePos) {
+                  const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
+                  const exchangePrice = parseFloat(exchangePos.entryPrice);
+                  if (exchangeQty > 0) {
+                    newQty = exchangeQty;
+                    newAvgPrice = exchangePrice;
+                  }
+                }
+              } catch (e) {
+                logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after algo pyramid - using calculated values');
+              }
+            }
 
             await db.update(tradeExecutions).set({
               entryPrice: newAvgPrice.toString(),
@@ -1365,14 +1448,13 @@ export class BinanceFuturesUserStreamService {
         .where(eq(tradeExecutions.id, execution.id));
 
       binancePriceStreamService.invalidateExecutionCache(symbol);
-      positionMonitorService.clearDeferredExit(execution.id);
 
       logger.info(
         {
           executionId: execution.id,
           clearedFields: Object.keys(clearFields),
         },
-        '[FuturesUserStream] Cleared triggered protection order IDs and unblocked deferral'
+        '[FuturesUserStream] Cleared triggered protection order IDs'
       );
 
       const executionId = execution.id;

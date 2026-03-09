@@ -57,10 +57,40 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
 
   const isNextDisabled = year === now.getFullYear() && month === now.getMonth() + 1;
 
-  const cells: (number | null)[] = [
+  const allCells: (number | null)[] = [
     ...Array<null>(firstDayOfMonth).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
+
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < allCells.length; i += 7) {
+    weeks.push(allCells.slice(i, i + 7));
+  }
+  const lastWeek = weeks[weeks.length - 1];
+  if (lastWeek && lastWeek.length < 7) {
+    while (lastWeek.length < 7) lastWeek.push(null);
+  }
+
+  const getWeekPnl = (week: (number | null)[]) => {
+    let pnl = 0;
+    let pnlPercent = 0;
+    let hasTrades = false;
+    for (const day of week) {
+      if (day === null) continue;
+      const entry = dailyMap.get(formatDateKey(day));
+      if (entry) {
+        pnl += entry.pnl;
+        pnlPercent += entry.pnlPercent;
+        hasTrades = true;
+      }
+    }
+    return { pnl, pnlPercent, hasTrades };
+  };
+
+  const monthTotal = data.reduce(
+    (acc, d) => ({ pnl: acc.pnl + d.pnl, pnlPercent: acc.pnlPercent + d.pnlPercent, trades: acc.trades + d.tradesCount }),
+    { pnl: 0, pnlPercent: 0, trades: 0 }
+  );
 
   const formatDateKey = (day: number) => {
     const mm = String(month).padStart(2, '0');
@@ -107,7 +137,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
         </Flex>
       ) : (
         <Box>
-          <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={1}>
+          <Grid templateColumns="repeat(8, 1fr)" gap={1} mb={1}>
             {WEEKDAY_KEYS.map((key) => (
               <GridItem key={key}>
                 <Text fontSize="xs" color="fg.muted" textAlign="center" fontWeight="medium">
@@ -115,69 +145,113 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
                 </Text>
               </GridItem>
             ))}
+            <GridItem>
+              <Text fontSize="xs" color="fg.muted" textAlign="center" fontWeight="medium">
+                {t('trading.analytics.calendar.week')}
+              </Text>
+            </GridItem>
           </Grid>
 
-          <Grid templateColumns="repeat(7, 1fr)" gap={1}>
-            {cells.map((day, idx) => {
-              if (day === null) return <GridItem key={`empty-${idx}`} />;
+          {weeks.map((week, weekIdx) => {
+            const weekSummary = getWeekPnl(week);
+            const weekPnlColor = getSignColor(weekSummary.pnl);
+            const weekBg = getDayBg(weekSummary.pnl);
 
-              const dateKey = formatDateKey(day);
-              const entry = dailyMap.get(dateKey);
+            return (
+              <Grid key={weekIdx} templateColumns="repeat(8, 1fr)" gap={1} mb={1}>
+                {week.map((day, dayIdx) => {
+                  if (day === null) return <GridItem key={`empty-${weekIdx}-${dayIdx}`} />;
 
-              if (!entry) {
-                return (
-                  <GridItem key={dateKey}>
-                    <Box
-                      bg="bg.muted"
-                      borderRadius="sm"
-                      p={1}
-                      minH="52px"
-                      opacity={0.5}
-                    >
-                      <Text fontSize="10px" color="fg.muted" lineHeight="1">
-                        {day}
+                  const dateKey = formatDateKey(day);
+                  const entry = dailyMap.get(dateKey);
+
+                  if (!entry) {
+                    return (
+                      <GridItem key={dateKey}>
+                        <Box bg="bg.muted" borderRadius="sm" p={1} minH="52px" opacity={0.5}>
+                          <Text fontSize="10px" color="fg.muted" lineHeight="1">{day}</Text>
+                        </Box>
+                      </GridItem>
+                    );
+                  }
+
+                  const pnlColor = getSignColor(entry.pnl);
+                  const dayBg = getDayBg(entry.pnl);
+                  const pnlFormatted = formatWalletCurrencyWithSign(entry.pnl, currency);
+                  const percentFormatted = `${entry.pnlPercent >= 0 ? '+' : ''}${entry.pnlPercent.toFixed(2)}%`;
+                  const brlFormatted = showBrlValues
+                    ? formatBRL(convertUsdtToBrl(Math.abs(entry.pnl), usdtBrlRate))
+                    : null;
+
+                  return (
+                    <GridItem key={dateKey}>
+                      <Box
+                        bg={dayBg}
+                        borderRadius="sm"
+                        p={1}
+                        minH="52px"
+                        title={t('trading.analytics.calendar.trades', { count: entry.tradesCount })}
+                      >
+                        <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">{day}</Text>
+                        <Text fontSize="10px" fontWeight="bold" color={pnlColor} lineHeight="1.2">{pnlFormatted}</Text>
+                        <Text fontSize="9px" color={pnlColor} lineHeight="1.2">{percentFormatted}</Text>
+                        {brlFormatted && (
+                          <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
+                            {entry.pnl < 0 ? '-' : ''}{brlFormatted}
+                          </Text>
+                        )}
+                      </Box>
+                    </GridItem>
+                  );
+                })}
+
+                <GridItem>
+                  {weekSummary.hasTrades ? (
+                    <Box bg={weekBg} borderRadius="sm" p={1} minH="52px">
+                      <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">W{weekIdx + 1}</Text>
+                      <Text fontSize="10px" fontWeight="bold" color={weekPnlColor} lineHeight="1.2">
+                        {formatWalletCurrencyWithSign(weekSummary.pnl, currency)}
                       </Text>
+                      <Text fontSize="9px" color={weekPnlColor} lineHeight="1.2">
+                        {weekSummary.pnlPercent >= 0 ? '+' : ''}{weekSummary.pnlPercent.toFixed(2)}%
+                      </Text>
+                      {showBrlValues && (
+                        <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
+                          {weekSummary.pnl < 0 ? '-' : ''}{formatBRL(convertUsdtToBrl(Math.abs(weekSummary.pnl), usdtBrlRate))}
+                        </Text>
+                      )}
                     </Box>
-                  </GridItem>
-                );
-              }
-
-              const pnlColor = getSignColor(entry.pnl);
-              const dayBg = getDayBg(entry.pnl);
-              const pnlFormatted = formatWalletCurrencyWithSign(entry.pnl, currency);
-              const percentFormatted = `${entry.pnlPercent >= 0 ? '+' : ''}${entry.pnlPercent.toFixed(2)}%`;
-              const brlFormatted = showBrlValues
-                ? formatBRL(convertUsdtToBrl(Math.abs(entry.pnl), usdtBrlRate))
-                : null;
-
-              return (
-                <GridItem key={dateKey}>
-                  <Box
-                    bg={dayBg}
-                    borderRadius="sm"
-                    p={1}
-                    minH="52px"
-                    title={t('trading.analytics.calendar.trades', { count: entry.tradesCount })}
-                  >
-                    <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">
-                      {day}
-                    </Text>
-                    <Text fontSize="10px" fontWeight="bold" color={pnlColor} lineHeight="1.2">
-                      {pnlFormatted}
-                    </Text>
-                    <Text fontSize="9px" color={pnlColor} lineHeight="1.2">
-                      {percentFormatted}
-                    </Text>
-                    {brlFormatted && (
-                      <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
-                        {entry.pnl < 0 ? '-' : ''}{brlFormatted}
-                      </Text>
-                    )}
-                  </Box>
+                  ) : (
+                    <Box bg="bg.muted" borderRadius="sm" p={1} minH="52px" opacity={0.5} />
+                  )}
                 </GridItem>
-              );
-            })}
-          </Grid>
+              </Grid>
+            );
+          })}
+
+          {data.length > 0 && (
+            <Grid templateColumns="repeat(8, 1fr)" gap={1} mt={1}>
+              <GridItem colSpan={7} />
+              <GridItem>
+                <Box bg={getDayBg(monthTotal.pnl)} borderRadius="sm" p={1} minH="52px">
+                  <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">
+                    {t(`trading.analytics.calendar.months.${month}`).slice(0, 3)}
+                  </Text>
+                  <Text fontSize="10px" fontWeight="bold" color={getSignColor(monthTotal.pnl)} lineHeight="1.2">
+                    {formatWalletCurrencyWithSign(monthTotal.pnl, currency)}
+                  </Text>
+                  <Text fontSize="9px" color={getSignColor(monthTotal.pnl)} lineHeight="1.2">
+                    {monthTotal.pnlPercent >= 0 ? '+' : ''}{monthTotal.pnlPercent.toFixed(2)}%
+                  </Text>
+                  {showBrlValues && (
+                    <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
+                      {monthTotal.pnl < 0 ? '-' : ''}{formatBRL(convertUsdtToBrl(Math.abs(monthTotal.pnl), usdtBrlRate))}
+                    </Text>
+                  )}
+                </Box>
+              </GridItem>
+            </Grid>
+          )}
 
           {data.length === 0 && (
             <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>

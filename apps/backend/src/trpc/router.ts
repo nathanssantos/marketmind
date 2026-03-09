@@ -3,6 +3,7 @@ import { apiKeyRouter } from '../routers/api-keys';
 import { authRouter } from '../routers/auth';
 import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
+import { customSymbolRouter } from '../routers/custom-symbol';
 import { feesRouter } from '../routers/fees';
 import { futuresTradingRouter } from '../routers/futures-trading';
 import { healthRouter } from '../routers/health';
@@ -39,6 +40,7 @@ export const appRouter = router({
   trade: nestedTradingRouter,
   preferences: preferencesRouter,
   screener: screenerRouter,
+  customSymbol: customSymbolRouter,
 });
 
 export type AppRouter = typeof appRouter;

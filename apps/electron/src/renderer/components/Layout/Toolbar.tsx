@@ -6,6 +6,7 @@ import {
   LuActivity,
   LuChartBar,
   LuDollarSign,
+  LuLayers,
   LuSquareArrowOutUpRight,
   LuScanLine,
   LuSettings,
@@ -59,12 +60,14 @@ export const Toolbar = memo(({
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
-  const { marketSidebarOpen, toggleMarketSidebar, isAnalyticsOpen, toggleAnalytics } = useUIStore(
+  const { marketSidebarOpen, toggleMarketSidebar, isAnalyticsOpen, toggleAnalytics, isCustomSymbolsOpen, toggleCustomSymbols } = useUIStore(
     useShallow((state) => ({
       marketSidebarOpen: state.marketSidebarOpen,
       toggleMarketSidebar: state.toggleMarketSidebar,
       isAnalyticsOpen: state.isAnalyticsOpen,
       toggleAnalytics: state.toggleAnalytics,
+      isCustomSymbolsOpen: state.isCustomSymbolsOpen,
+      toggleCustomSymbols: state.toggleCustomSymbols,
     }))
   );
 
@@ -185,6 +188,17 @@ export const Toolbar = memo(({
                 variant={isAnalyticsOpen ? 'solid' : 'ghost'}
               >
                 <LuChartBar />
+              </IconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('customSymbols.title')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('customSymbols.title')}
+                onClick={toggleCustomSymbols}
+                colorPalette={isCustomSymbolsOpen ? 'blue' : 'gray'}
+                variant={isCustomSymbolsOpen ? 'solid' : 'ghost'}
+              >
+                <LuLayers />
               </IconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('trading.sidebar.title')} showArrow>

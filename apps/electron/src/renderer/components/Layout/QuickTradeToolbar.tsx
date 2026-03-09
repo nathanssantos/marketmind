@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { GridOrderPopover } from './GridOrderPopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
-const SIZE_PRESETS = [0.5, 1, 2.5, 5, 10] as const;
+const SIZE_PRESETS = [0.3, 0.5, 1, 2.5, 5, 10] as const;
 
 interface QuickTradeToolbarProps {
   symbol: string;
@@ -113,7 +113,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
       boxShadow="sm"
       p={1}
     >
-      <VStack gap={0.5} align="stretch">
+      <VStack gap={1} align="stretch">
         <HStack gap={0.5} justify="center">
           <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" colorPalette={useMinNotional ? 'blue' : 'gray'} variant={useMinNotional ? 'solid' : 'ghost'} onClick={handleMinClick}>
             {t('chart.quickTrade.min')}
@@ -132,7 +132,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
           </Text>
         </HStack>
 
-        <HStack gap={0.5}>
+        <HStack gap={1}>
           <Button size="2xs" fontSize="xs" h="22px" colorPalette="green" variant="solid" onClick={handleBuy} flex={1}>
             {t('chart.quickTrade.buy')}
           </Button>

@@ -3,6 +3,21 @@ import { Server as SocketIOServer } from 'socket.io';
 import { binancePriceStreamService } from './binance-price-stream';
 import type { FrontendLogEntry } from './auto-trading-log-buffer';
 
+let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
+let _importPromise: Promise<void> | null = null;
+
+const ensureCustomSymbolImport = (): void => {
+  if (_importPromise) return;
+  _importPromise = import('./custom-symbol-service').then(mod => {
+    _getCustomSymbolService = mod.getCustomSymbolService;
+  });
+};
+
+const isCustomSymbol = (symbol: string): boolean => {
+  if (!_getCustomSymbolService) return false;
+  return _getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
+};
+
 export interface SocketData {
   userId?: number;
   sessionToken?: string;
@@ -71,7 +86,9 @@ export class WebSocketService {
         const room = `prices:${symbol}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          binancePriceStreamService.subscribeSymbol(symbol);
+          if (!isCustomSymbol(symbol)) {
+            binancePriceStreamService.subscribeSymbol(symbol);
+          }
           this.emitActiveSymbolsChanged();
         }
       });
@@ -82,7 +99,9 @@ export class WebSocketService {
           const room = `prices:${symbol}`;
           if (!socket.rooms.has(room)) {
             socket.join(room);
-            binancePriceStreamService.subscribeSymbol(symbol);
+            if (!isCustomSymbol(symbol)) {
+              binancePriceStreamService.subscribeSymbol(symbol);
+            }
           }
         }
       });
@@ -323,6 +342,7 @@ let websocketService: WebSocketService | null = null;
 export const initializeWebSocket = (httpServer: HTTPServer): WebSocketService => {
   if (!websocketService) {
     websocketService = new WebSocketService(httpServer);
+    ensureCustomSymbolImport();
   }
   return websocketService;
 };
