@@ -87,6 +87,11 @@ export const useKlineRenderer = ({
       const highlightedCandle = highlightedIndicesMap.get(actualIndex);
       const isHovered = hoveredKlineIndex === actualIndex || !!highlightedCandle;
 
+      const baseWickWidth = klineWickWidth ?? CHART_CONFIG.KLINE_WICK_WIDTH;
+      const scaledWickWidth = klineWidth > 100
+        ? Math.max(baseWickWidth, Math.round(klineWidth / 30))
+        : baseWickWidth;
+
       drawKline(
         ctx,
         klineX,
@@ -95,7 +100,7 @@ export const useKlineRenderer = ({
         highY,
         lowY,
         klineWidth,
-        klineWickWidth ?? CHART_CONFIG.KLINE_WICK_WIDTH,
+        scaledWickWidth,
         colors.bullish,
         colors.bearish,
         isHovered,

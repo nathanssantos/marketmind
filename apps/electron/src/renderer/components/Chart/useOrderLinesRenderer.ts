@@ -2,7 +2,7 @@ import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { CHART_CONFIG, ORDER_LINE_COLORS } from '@shared/constants';
+import { CHART_CONFIG, ORDER_LINE_COLORS, ORDER_LINE_ANIMATION } from '@shared/constants';
 
 import {
     getKlineClose,
@@ -15,6 +15,7 @@ import {
 } from '@shared/utils';
 import type { RefObject } from 'react';
 import { useMemo, useRef } from 'react';
+import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
 
 const CANVAS_GEOMETRY = {
   FULL_CIRCLE: Math.PI + Math.PI,
@@ -96,6 +97,7 @@ export interface BackendExecution {
   takeProfit: string | null;
   status: string | null;
   setupType: string | null;
+  entryOrderType?: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | null;
   marketType?: 'SPOT' | 'FUTURES' | null;
   openedAt?: string | Date | null;
   triggerKlineOpenTime?: number | null;
@@ -192,6 +194,22 @@ const drawBotIcon = (
   ctx.restore();
 };
 
+const drawSpinner = (
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  timestamp: number
+): void => {
+  const startAngle = timestamp * ORDER_LINE_ANIMATION.SPINNER_SPEED;
+  ctx.strokeStyle = ORDER_LINE_COLORS.SPINNER_COLOR;
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, startAngle, startAngle + ORDER_LINE_ANIMATION.SPINNER_ARC_LENGTH);
+  ctx.stroke();
+};
+
 const drawInfoTag = (
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -199,7 +217,9 @@ const drawInfoTag = (
   fillColor: string,
   hasCloseButton: boolean = false,
   closeButtonRef?: { x: number; y: number; size: number } | null,
-  isAutoTrade: boolean = false
+  isAutoTrade: boolean = false,
+  isLoading: boolean = false,
+  timestamp: number = 0
 ): { width: number; height: number } => {
   const labelPadding = 8;
   const labelHeight = 18;
@@ -214,10 +234,10 @@ const drawInfoTag = (
   const botIconSpace = isAutoTrade ? botIconSize + botIconMargin : 0;
   const totalContentWidth = closeButtonSpace + botIconSpace + textWidth;
   const tagWidth = totalContentWidth + labelPadding * 2;
-  
+
   ctx.save();
   ctx.fillStyle = fillColor;
-  
+
   ctx.beginPath();
   ctx.moveTo(tagWidth + arrowWidth, y);
   ctx.lineTo(tagWidth, y - labelHeight / 2);
@@ -226,31 +246,35 @@ const drawInfoTag = (
   ctx.lineTo(tagWidth, y + labelHeight / 2);
   ctx.closePath();
   ctx.fill();
-  
+
   if (hasCloseButton && closeButtonRef) {
     const closeButtonX = labelPadding;
     const closeButtonY = y - closeButtonSize / 2;
-    
+
     ctx.fillStyle = ORDER_LINE_COLORS.CLOSE_BUTTON_BG;
     ctx.beginPath();
     ctx.roundRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize, 2);
     ctx.fill();
-    
-    ctx.strokeStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-    ctx.lineWidth = 1;
-    const crossPadding = 3;
-    ctx.beginPath();
-    ctx.moveTo(closeButtonX + crossPadding, closeButtonY + crossPadding);
-    ctx.lineTo(closeButtonX + closeButtonSize - crossPadding, closeButtonY + closeButtonSize - crossPadding);
-    ctx.moveTo(closeButtonX + closeButtonSize - crossPadding, closeButtonY + crossPadding);
-    ctx.lineTo(closeButtonX + crossPadding, closeButtonY + closeButtonSize - crossPadding);
-    ctx.stroke();
-    
+
+    if (isLoading) {
+      drawSpinner(ctx, closeButtonX + closeButtonSize / 2, y, closeButtonSize / 2 - 2, timestamp);
+    } else {
+      ctx.strokeStyle = ORDER_LINE_COLORS.TEXT_WHITE;
+      ctx.lineWidth = 1;
+      const crossPadding = 3;
+      ctx.beginPath();
+      ctx.moveTo(closeButtonX + crossPadding, closeButtonY + crossPadding);
+      ctx.lineTo(closeButtonX + closeButtonSize - crossPadding, closeButtonY + closeButtonSize - crossPadding);
+      ctx.moveTo(closeButtonX + closeButtonSize - crossPadding, closeButtonY + crossPadding);
+      ctx.lineTo(closeButtonX + crossPadding, closeButtonY + closeButtonSize - crossPadding);
+      ctx.stroke();
+    }
+
     closeButtonRef.x = closeButtonX;
     closeButtonRef.y = closeButtonY;
     closeButtonRef.size = closeButtonSize;
   }
-  
+
   let currentX = labelPadding + closeButtonSpace;
 
   if (isAutoTrade) {
@@ -314,7 +338,9 @@ export const useOrderLinesRenderer = (
   hoveredOrderIdRef: RefObject<string | null>,
   backendExecutions: BackendExecution[] = [],
   pendingSetups: TradingSetup[] = [],
-  showProfitLossAreas: boolean = true
+  showProfitLossAreas: boolean = true,
+  orderLoadingMapRef?: RefObject<Map<string, boolean>>,
+  orderFlashMapRef?: RefObject<Map<string, number>>
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -337,7 +363,7 @@ export const useOrderLinesRenderer = (
           cummulativeQuoteQty: '0',
           status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
           timeInForce: 'GTC' as const,
-          type: exec.status === 'pending' ? 'LIMIT' as const : 'MARKET' as const,
+          type: (exec.entryOrderType ?? (exec.status === 'pending' ? 'LIMIT' : 'MARKET')) as Order['type'],
           side: exec.side === 'LONG' ? 'BUY' : 'SELL',
           time: openedAtTime,
           updateTime: Date.now(),
@@ -361,22 +387,42 @@ export const useOrderLinesRenderer = (
   const sltpHitboxesRef = useRef<SLTPHitbox[]>([]);
   const sltpCloseButtonsRef = useRef<SLTPCloseButton[]>([]);
 
-  const renderOrderLines = (): void => {
+  const renderOrderLines = (): boolean => {
     const hasOrders = activeOrders.length > 0;
     const hasPendingSetups = pendingSetups.filter(s => s.visible).length > 0;
-    if (!manager || (!hasOrders && !hasPendingSetups)) return;
-    if (!hasTradingEnabled && activeOrders.length === 0 && !hasPendingSetups) return;
+    if (!manager || (!hasOrders && !hasPendingSetups)) return false;
+    if (!hasTradingEnabled && activeOrders.length === 0 && !hasPendingSetups) return false;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
     const klines = manager.getKlines();
-    if (!ctx || !dimensions || !klines.length) return;
+    if (!ctx || !dimensions || !klines.length) return false;
 
     const { chartWidth, chartHeight } = dimensions;
     const lastKline = klines[klines.length - 1];
-    if (!lastKline) return;
+    if (!lastKline) return false;
 
     const currentPrice = getKlineClose(lastKline);
+    const now = performance.now();
+    let needsAnimation = false;
+
+    const isOrderLoading = (orderId: string): boolean =>
+      orderLoadingMapRef?.current?.get(orderId) === true;
+
+    const getFlashAlpha = (orderId: string): number => {
+      const localFlashTime = orderFlashMapRef?.current?.get(orderId);
+      const storeFlashTime = useOrderFlashStore.getState().getFlashTime(orderId);
+      const flashTime = Math.max(localFlashTime ?? 0, storeFlashTime ?? 0) || 0;
+      if (!flashTime) return 0;
+      const elapsed = now - flashTime;
+      if (elapsed >= ORDER_LINE_ANIMATION.FLASH_DURATION_MS) {
+        orderFlashMapRef?.current?.delete(orderId);
+        if (storeFlashTime) useOrderFlashStore.getState().clearFlash(orderId);
+        return 0;
+      }
+      needsAnimation = true;
+      return (1 - elapsed / ORDER_LINE_ANIMATION.FLASH_DURATION_MS) * 0.6;
+    };
 
     closeButtonsRef.current = [];
     orderHitboxesRef.current = [];
@@ -482,11 +528,16 @@ export const useOrderLinesRenderer = (
       const typeLabel = isLong ? 'L' : 'S';
       const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
+      const orderId = getOrderId(order);
+      const loading = isOrderLoading(orderId);
+      if (loading) needsAnimation = true;
+      const flashAlpha = getFlashAlpha(orderId);
+
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade);
+      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade, loading, now);
 
       orderHitboxesRef.current.push({
-        orderId: getOrderId(order),
+        orderId,
         x: 0,
         y: y - infoTagSize.height / 2,
         width: infoTagSize.width,
@@ -495,7 +546,7 @@ export const useOrderLinesRenderer = (
       });
 
       closeButtonsRef.current.push({
-        orderId: getOrderId(order),
+        orderId,
         x: closeButtonRef.x,
         y: closeButtonRef.y,
         width: closeButtonRef.size,
@@ -503,6 +554,18 @@ export const useOrderLinesRenderer = (
       });
 
       ctx.restore();
+
+      if (flashAlpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = flashAlpha;
+        ctx.strokeStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(chartWidth, y);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       const pendingAlpha = 0.35;
       const entryPrice = getOrderPrice(order);
@@ -693,8 +756,24 @@ export const useOrderLinesRenderer = (
       const infoText = `${quantityPrefix}${directionSymbol} (${absQuantity})`;
       const hasAutoTrade = position.orders.some(o => o.isAutoTrade);
 
+      const posLoading = position.orderIds.some(id => isOrderLoading(id));
+      if (posLoading) needsAnimation = true;
+      const posFlash = position.orderIds.reduce((maxAlpha, id) => Math.max(maxAlpha, getFlashAlpha(id)), 0);
+
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
+      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade, posLoading, now);
+
+      if (posFlash > 0) {
+        ctx.save();
+        ctx.globalAlpha = posFlash;
+        ctx.strokeStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(chartWidth, y);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       orderHitboxesRef.current.push({
         orderId: positionId,
@@ -1217,6 +1296,14 @@ export const useOrderLinesRenderer = (
       if (y >= 0 && y <= chartHeight)
         drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
     });
+
+    if (orderLoadingMapRef?.current) {
+      for (const loading of orderLoadingMapRef.current.values()) {
+        if (loading) { needsAnimation = true; break; }
+      }
+    }
+
+    return needsAnimation;
   };
 
   const getClickedOrderId = (x: number, y: number): string | null => {

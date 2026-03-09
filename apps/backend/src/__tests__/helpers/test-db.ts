@@ -23,6 +23,7 @@ DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS symbol_trailing_stop_overrides CASCADE;
 DROP TABLE IF EXISTS auto_trading_config CASCADE;
 DROP TABLE IF EXISTS active_watchers CASCADE;
+DROP TABLE IF EXISTS signal_suggestions CASCADE;
 DROP TABLE IF EXISTS strategy_performance CASCADE;
 DROP TABLE IF EXISTS trade_cooldowns CASCADE;
 DROP TABLE IF EXISTS klines CASCADE;
@@ -79,6 +80,62 @@ CREATE TABLE IF NOT EXISTS trading_profiles (
   max_position_size NUMERIC(10, 2),
   max_concurrent_positions INTEGER,
   is_default BOOLEAN DEFAULT false NOT NULL,
+  trading_mode VARCHAR(20),
+  direction_mode VARCHAR(15),
+  position_size_percent NUMERIC(5, 2),
+  use_trend_filter BOOLEAN,
+  use_adx_filter BOOLEAN,
+  use_choppiness_filter BOOLEAN,
+  use_vwap_filter BOOLEAN,
+  use_stochastic_filter BOOLEAN,
+  use_stochastic_recovery_filter BOOLEAN,
+  use_momentum_timing_filter BOOLEAN,
+  use_btc_correlation_filter BOOLEAN,
+  use_volume_filter BOOLEAN,
+  use_direction_filter BOOLEAN,
+  use_super_trend_filter BOOLEAN,
+  use_market_regime_filter BOOLEAN,
+  use_bollinger_squeeze_filter BOOLEAN,
+  use_mtf_filter BOOLEAN,
+  use_stochastic_htf_filter BOOLEAN,
+  use_stochastic_recovery_htf_filter BOOLEAN,
+  use_funding_filter BOOLEAN,
+  use_fvg_filter BOOLEAN,
+  use_confluence_scoring BOOLEAN,
+  confluence_min_score INTEGER,
+  use_cooldown BOOLEAN,
+  cooldown_minutes INTEGER,
+  fibonacci_target_level_long VARCHAR(10),
+  fibonacci_target_level_short VARCHAR(10),
+  fibonacci_swing_range VARCHAR(10),
+  max_fibonacci_entry_progress_percent_long NUMERIC(5, 1),
+  max_fibonacci_entry_progress_percent_short NUMERIC(5, 1),
+  initial_stop_mode VARCHAR(20),
+  tp_calculation_mode VARCHAR(20),
+  min_risk_reward_ratio_long NUMERIC(4, 2),
+  min_risk_reward_ratio_short NUMERIC(4, 2),
+  trailing_stop_enabled BOOLEAN,
+  trailing_stop_mode VARCHAR(10),
+  trailing_activation_percent_long NUMERIC(5, 4),
+  trailing_activation_percent_short NUMERIC(5, 4),
+  trailing_distance_percent_long NUMERIC(5, 4),
+  trailing_distance_percent_short NUMERIC(5, 4),
+  trailing_distance_mode VARCHAR(10),
+  trailing_stop_offset_percent NUMERIC(5, 4),
+  trailing_activation_mode_long VARCHAR(10),
+  trailing_activation_mode_short VARCHAR(10),
+  use_adaptive_trailing BOOLEAN,
+  max_drawdown_enabled BOOLEAN,
+  max_drawdown_percent NUMERIC(5, 2),
+  daily_loss_limit NUMERIC(10, 2),
+  max_risk_per_stop_enabled BOOLEAN,
+  max_risk_per_stop_percent NUMERIC(5, 2),
+  choppiness_threshold_high NUMERIC(5, 2),
+  choppiness_threshold_low NUMERIC(5, 2),
+  volume_filter_obv_lookback_long INTEGER,
+  volume_filter_obv_lookback_short INTEGER,
+  use_obv_check_long BOOLEAN,
+  use_obv_check_short BOOLEAN,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -264,6 +321,14 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   time_based_stop_tightening_enabled BOOLEAN DEFAULT true NOT NULL,
   time_tighten_after_bars INTEGER DEFAULT 10 NOT NULL,
   time_tighten_percent_per_bar NUMERIC(5, 2) DEFAULT '5' NOT NULL,
+  trading_mode VARCHAR(20) DEFAULT 'auto' NOT NULL,
+  manual_position_size_percent NUMERIC(5, 2) DEFAULT '10.00' NOT NULL,
+  use_fvg_filter BOOLEAN DEFAULT false NOT NULL,
+  use_cooldown BOOLEAN DEFAULT false NOT NULL,
+  cooldown_minutes INTEGER DEFAULT 60 NOT NULL,
+  session_scan_enabled BOOLEAN DEFAULT false NOT NULL,
+  session_scan_markets TEXT DEFAULT '[]' NOT NULL,
+  auto_cancel_orphans BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -367,6 +432,31 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   lowest_price_since_trailing_activation NUMERIC(20, 8),
   opportunity_cost_alert_sent_at TIMESTAMP,
   original_stop_loss NUMERIC(20, 8),
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS signal_suggestions (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  watcher_id VARCHAR(255),
+  symbol VARCHAR(20) NOT NULL,
+  interval VARCHAR(5) NOT NULL,
+  side VARCHAR(10) NOT NULL,
+  setup_type VARCHAR(100) NOT NULL,
+  strategy_id VARCHAR(100),
+  entry_price NUMERIC(20, 8) NOT NULL,
+  stop_loss NUMERIC(20, 8),
+  take_profit NUMERIC(20, 8),
+  risk_reward_ratio NUMERIC(6, 2),
+  confidence INTEGER,
+  fibonacci_projection TEXT,
+  trigger_kline_open_time BIGINT,
+  status VARCHAR(20) DEFAULT 'pending' NOT NULL,
+  position_size_percent NUMERIC(5, 2),
+  trade_execution_id VARCHAR(255) REFERENCES trade_executions(id) ON DELETE SET NULL,
+  expires_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -540,6 +630,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.priceCache);
   await db.delete(schema.klines);
   await db.delete(schema.tradeCooldowns);
+  await db.delete(schema.signalSuggestions);
   await db.delete(schema.strategyPerformance);
   await db.delete(schema.tradeExecutions);
   await db.delete(schema.setupDetections);

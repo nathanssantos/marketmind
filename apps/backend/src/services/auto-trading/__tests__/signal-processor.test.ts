@@ -2029,7 +2029,8 @@ describe('SignalProcessor', () => {
       vi.mocked(deps.getActiveWatchers).mockReturnValue(watcherMap);
       vi.mocked(deps.isWalletPaused).mockReturnValue(false);
 
-      mockDbSelectLimit.mockResolvedValueOnce([{ currentBalance: '0.3', leverage: 5 }]);
+      mockDbSelectLimit.mockResolvedValueOnce([{ currentBalance: '0.3' }]);
+      mockDbSelectLimit.mockResolvedValueOnce([{ leverage: 5 }]);
 
       const now = Date.now();
       const intervalMs = HOUR_MS;

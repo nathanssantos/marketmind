@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { autoTradingConfig, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
 import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './execution-manager';
 import { logger, serializeError } from './logger';
@@ -160,6 +160,12 @@ export class OrderSyncService {
     };
 
     try {
+      const [walletConfig] = await db.select({ autoCancelOrphans: autoTradingConfig.autoCancelOrphans })
+        .from(autoTradingConfig)
+        .where(eq(autoTradingConfig.walletId, wallet.id))
+        .limit(1);
+      const effectiveAutoCancelOrphans = walletConfig?.autoCancelOrphans ?? this.autoCancelOrphans;
+
       const client = createBinanceFuturesClient(wallet);
 
       const [dbOpenPositions, exchangeOrders, exchangePositions] = await Promise.all([
@@ -211,7 +217,7 @@ export class OrderSyncService {
             hasPositionOnExchange,
           });
 
-          const shouldCancel = this.autoCancelOrphans && !hasPositionOnExchange;
+          const shouldCancel = effectiveAutoCancelOrphans && !hasPositionOnExchange;
 
           if (shouldCancel) {
             try {
@@ -226,7 +232,7 @@ export class OrderSyncService {
             } catch (cancelError) {
               logger.warn({ algoId: order.algoId, error: serializeError(cancelError) }, '[OrderSync] Failed to cancel orphan order');
             }
-          } else if (this.autoCancelOrphans && hasPositionOnExchange) {
+          } else if (effectiveAutoCancelOrphans && hasPositionOnExchange) {
             logger.warn(
               { algoId: order.algoId, symbol: order.symbol },
               '[OrderSync] Orphan order has position on exchange - NOT cancelling (database may be out of sync)'
@@ -477,7 +483,7 @@ export class OrderSyncService {
             type: 'ORPHAN_ORDERS',
             level: 'warning',
             symbol: dangerousOrphans.map((o) => o.symbol).join(', '),
-            message: `${dangerousOrphans.length} orphan order(s) found on Binance with no open position.${this.autoCancelOrphans ? ` ${result.cancelledOrphans} cancelled automatically.` : ' Manual review recommended.'}`,
+            message: `${dangerousOrphans.length} orphan order(s) found on Binance with no open position.${effectiveAutoCancelOrphans ? ` ${result.cancelledOrphans} cancelled automatically.` : ' Manual review recommended.'}`,
             data: { orphanOrders: dangerousOrphans },
             timestamp: Date.now(),
           });

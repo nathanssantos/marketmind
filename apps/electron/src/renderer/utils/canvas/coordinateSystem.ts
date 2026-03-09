@@ -147,7 +147,7 @@ export const clampViewport = (
   options: ClampViewportOptions = {},
 ): Viewport => {
   const {
-    minKlinesVisible = 10,
+    minKlinesVisible = CHART_CONFIG.MIN_VISIBLE_KLINES,
     futureExtension = CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION,
   } = options;
 

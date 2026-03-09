@@ -19,18 +19,13 @@ import {
   DialogTitle,
 } from '../ui/dialog';
 import { Select, type SelectOption } from '../ui/select';
+import { SCREENER_INTERVAL_OPTIONS } from './constants';
 import { FilterBuilder } from './FilterBuilder';
 import { FilterChip } from './FilterChip';
 import { PresetBar } from './PresetBar';
 import { SaveScreenerDialog } from './SaveScreenerDialog';
 import { SavedScreenersList } from './SavedScreenersList';
 import { ScreenerResultsTable } from './ScreenerResultsTable';
-
-const INTERVAL_OPTIONS: SelectOption[] = [
-  { value: '1h', label: '1h' },
-  { value: '4h', label: '4h' },
-  { value: '1d', label: '1d' },
-];
 
 const ASSET_CLASS_OPTIONS: SelectOption[] = [
   { value: 'CRYPTO', label: 'Crypto' },
@@ -161,14 +156,14 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                   <Select
                     size="xs"
                     value={interval}
-                    options={INTERVAL_OPTIONS}
+                    options={SCREENER_INTERVAL_OPTIONS}
                     onChange={(v) => setInterval(v as typeof interval)}
                     minWidth="70px"
                   />
+                  <DialogCloseTrigger position="static" />
                 </HStack>
               </Flex>
             </DialogHeader>
-            <DialogCloseTrigger />
 
             <DialogBody px={4} py={3} overflowY="auto">
               <Stack gap={3}>

@@ -3,6 +3,7 @@ import {
   TRADING_DEFAULTS,
   TRAILING_STOP_CONFIG,
   TRAILING_STOP_USER_DEFAULTS,
+  type FibLevel,
 } from '@marketmind/types';
 import { config as dotenvConfig } from 'dotenv';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
@@ -100,7 +101,6 @@ const PRODUCTION_BASE = {
   silent: true,
 };
 
-type FibLevel = 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236';
 
 const PARAM_GRID_FULL = {
   fibonacciTargetLevelLong: ['1.272', '1.618', '2', '2.618', '3.618'] as FibLevel[],

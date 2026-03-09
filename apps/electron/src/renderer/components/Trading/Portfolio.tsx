@@ -10,6 +10,8 @@ import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
 import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
+import { trpc } from '@renderer/utils/trpc';
+import { QUERY_CONFIG } from '@shared/constants';
 import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,7 +52,12 @@ const PortfolioComponent = () => {
   const activeWalletId = rawActiveWallet?.id;
   useOrderUpdates(activeWalletId ?? '');
   usePositionUpdates(activeWalletId || '');
-  const { tradeExecutions, tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
+  const { tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
+  const { data: openTradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
+    { walletId: activeWalletId ?? '', status: 'open', limit: 500 },
+    { enabled: !!activeWalletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+  );
+  const tradeExecutions = openTradeExecutions ?? [];
 
   const {
     filterOption,

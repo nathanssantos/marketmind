@@ -1,6 +1,6 @@
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
-import { orders, tradeExecutions, wallets } from '../db/schema';
+import { autoTradingConfig, orders, tradeExecutions, wallets } from '../db/schema';
 import { calculateTotalFees } from '@marketmind/types';
 import type { FuturesOrder } from '@marketmind/types';
 import {
@@ -30,6 +30,7 @@ const BALANCE_DELTA_THRESHOLD = 1.0;
 const FEES_AUDIT_CAP = 50;
 const FEES_AUDIT_DAYS = 7;
 const FEES_RATE_LIMIT_MS = 200;
+const PENDING_GRACE_PERIOD_MS = 5 * 60 * 1000;
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -253,9 +254,14 @@ async function auditWallet(
     }
 
     // === Check 2A — DB pending execution whose entry order no longer exists on Binance ===
+    const now = Date.now();
     for (const dbPending of dbPendingExecutions) {
       const entryOrderId = dbPending.entryOrderId;
       if (!entryOrderId) continue;
+
+      const createdAt = dbPending.createdAt.getTime();
+      const age = now - createdAt;
+      if (age < PENDING_GRACE_PERIOD_MS) continue;
 
       if (!openOrderIds.has(entryOrderId) && !openAlgoOrderIds.has(entryOrderId)) {
         logger.info(
@@ -544,30 +550,36 @@ async function auditWallet(
 
     // === Check 3C — Orphan protection algo orders for symbols with open positions ===
     // These are stale/duplicate SL or TP orders on Binance that are no longer linked to any DB execution.
-    // Safe to cancel: we only touch orders for symbols that have an open execution, so they cannot
-    // be pending entry orders for a new position. Cancelling them does NOT close the position itself.
-    const openSymbols = new Set(dbOpenExecutions.map((e) => e.symbol));
+    // Only runs if autoCancelOrphans is enabled in the wallet's config.
+    const [walletConfig] = await db.select({ autoCancelOrphans: autoTradingConfig.autoCancelOrphans })
+      .from(autoTradingConfig)
+      .where(eq(autoTradingConfig.walletId, wallet.id))
+      .limit(1);
 
-    for (const algoOrder of openAlgoOrders) {
-      if (linkedAlgoIds.has(algoOrder.algoId)) continue;
-      if (!openSymbols.has(algoOrder.symbol)) continue;
+    if (walletConfig?.autoCancelOrphans) {
+      const openSymbols = new Set(dbOpenExecutions.map((e) => e.symbol));
 
-      logger.info(
-        { walletId: wallet.id, symbol: algoOrder.symbol, algoId: algoOrder.algoId, type: algoOrder.type, triggerPrice: algoOrder.triggerPrice },
-        '[startup-audit] Cancelling orphan protection algo order'
-      );
+      for (const algoOrder of openAlgoOrders) {
+        if (linkedAlgoIds.has(algoOrder.algoId)) continue;
+        if (!openSymbols.has(algoOrder.symbol)) continue;
 
-      if (!dryRun) {
-        try {
-          await cancelFuturesAlgoOrder(client, algoOrder.algoId);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          summary.warnings.push(`Failed to cancel orphan algo ${algoOrder.algoId} for ${algoOrder.symbol}: ${msg}`);
-          logger.warn({ walletId: wallet.id, algoId: algoOrder.algoId, symbol: algoOrder.symbol, err: msg }, '[startup-audit] Failed to cancel orphan algo order');
+        logger.info(
+          { walletId: wallet.id, symbol: algoOrder.symbol, algoId: algoOrder.algoId, type: algoOrder.type, triggerPrice: algoOrder.triggerPrice },
+          '[startup-audit] Cancelling orphan protection algo order'
+        );
+
+        if (!dryRun) {
+          try {
+            await cancelFuturesAlgoOrder(client, algoOrder.algoId);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            summary.warnings.push(`Failed to cancel orphan algo ${algoOrder.algoId} for ${algoOrder.symbol}: ${msg}`);
+            logger.warn({ walletId: wallet.id, algoId: algoOrder.algoId, symbol: algoOrder.symbol, err: msg }, '[startup-audit] Failed to cancel orphan algo order');
+          }
         }
-      }
 
-      summary.fixed++;
+        summary.fixed++;
+      }
     }
 
     // === Check 4 — Recent Fees Correctness (last 7 days) ===

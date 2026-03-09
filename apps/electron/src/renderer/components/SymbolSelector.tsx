@@ -3,6 +3,7 @@ import type { AssetClass, MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuCoins } from 'react-icons/lu';
+import { useActiveChartSymbols } from '../hooks/useActiveChartSymbols';
 import { useActiveWallet } from '../hooks/useActiveWallet';
 import { useBackendKlines } from '../hooks/useBackendKlines';
 import { trpc } from '../utils/trpc';
@@ -117,6 +118,7 @@ export function SymbolSelector({
 
   const { activeWalletId } = useActiveWallet();
   const openPositionSymbols = useOpenPositionSymbols(activeWalletId ?? undefined);
+  const activeChartSymbols = useActiveChartSymbols();
 
   const marketType = externalMarketType ?? internalMarketType;
   const assetClass = externalAssetClass ?? internalAssetClass;
@@ -172,10 +174,36 @@ export function SymbolSelector({
     return items;
   }, [isSearching, openPositionSymbols, isFutures, isStocks]);
 
+  const activeChartItems = useMemo(() => {
+    if (isSearching) return [];
+    const allSymbols = isFutures ? POPULAR_FUTURES_SYMBOLS : isStocks ? POPULAR_STOCK_SYMBOLS : POPULAR_SPOT_SYMBOLS;
+    const symbolMap = new Map(allSymbols.map(s => [s.symbol, s]));
+
+    const items: SymbolInfo[] = [];
+    for (const sym of activeChartSymbols) {
+      if (sym === value || openPositionSymbols.has(sym)) continue;
+      const known = symbolMap.get(sym);
+      if (known) {
+        items.push(known);
+      } else {
+        const baseAsset = isStocks ? sym : sym.replace('USDT', '');
+        const quoteAsset = isStocks ? 'USD' : 'USDT';
+        items.push({
+          symbol: sym,
+          displayName: isStocks ? sym : `${baseAsset} / ${quoteAsset}`,
+          baseAsset,
+          quoteAsset,
+        });
+      }
+    }
+    return items;
+  }, [isSearching, activeChartSymbols, value, openPositionSymbols, isFutures, isStocks]);
+
   const filteredPopularSymbols = useMemo(() => {
-    if (isSearching || openPositionItems.length === 0) return displaySymbols;
-    return displaySymbols.filter((s: SymbolInfo) => !openPositionSymbols.has(s.symbol));
-  }, [isSearching, displaySymbols, openPositionSymbols, openPositionItems.length]);
+    if (isSearching || (openPositionItems.length === 0 && activeChartItems.length === 0)) return displaySymbols;
+    const excludeSet = new Set([...openPositionSymbols, ...activeChartSymbols]);
+    return displaySymbols.filter((s: SymbolInfo) => !excludeSet.has(s.symbol));
+  }, [isSearching, displaySymbols, openPositionSymbols, openPositionItems.length, activeChartSymbols, activeChartItems.length]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -273,7 +301,7 @@ export function SymbolSelector({
 
   const totalItems = isSearching
     ? displaySymbols.length
-    : openPositionItems.length + filteredPopularSymbols.length;
+    : openPositionItems.length + activeChartItems.length + filteredPopularSymbols.length;
 
   return (
     <Popover
@@ -399,6 +427,12 @@ export function SymbolSelector({
                     <>
                       {renderSectionHeader(t('symbolSelector.openPositions'))}
                       {openPositionItems.map((symbol) => renderSymbolRow(symbol, true))}
+                    </>
+                  )}
+                  {activeChartItems.length > 0 && (
+                    <>
+                      {renderSectionHeader(t('symbolSelector.activeCharts'))}
+                      {activeChartItems.map((symbol) => renderSymbolRow(symbol, false))}
                     </>
                   )}
                   {renderSectionHeader(t('symbolSelector.popularSymbols'))}

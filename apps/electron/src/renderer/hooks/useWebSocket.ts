@@ -57,6 +57,22 @@ interface WebSocketEvents {
     };
   }) => void;
   'autoTrading:log': (entry: FrontendLogEntry) => void;
+  'signal-suggestion': (data: {
+    id: string;
+    symbol: string;
+    interval: string;
+    side: 'LONG' | 'SHORT';
+    setupType: string;
+    strategyId: string;
+    entryPrice: number;
+    stopLoss: number;
+    takeProfit: number;
+    riskRewardRatio: number;
+    confidence: number;
+    positionSizePercent: string;
+    expiresAt: string;
+    createdAt: string;
+  }) => void;
 }
 
 export const useWebSocket = (options: UseWebSocketOptions = {}) => {

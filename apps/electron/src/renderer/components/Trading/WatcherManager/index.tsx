@@ -1,6 +1,7 @@
-import { Box, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
+import { Button } from '@renderer/components/ui/button';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
@@ -294,6 +295,12 @@ export const WatcherManager = () => {
     );
   }
 
+  const tradingMode = config?.tradingMode ?? 'auto';
+
+  const handleTradingModeChange = (mode: 'auto' | 'semi_assisted'): void => {
+    handleConfigUpdate({ tradingMode: mode });
+  };
+
   return (
     <Stack gap={4}>
       <EmergencyStopSection
@@ -304,6 +311,37 @@ export const WatcherManager = () => {
         isEmergencyStopping={isEmergencyStopping}
         hasActiveWatchers={activeWatchers.length > 0 || persistedWatchers > 0}
       />
+
+      <Box>
+        <Text fontSize="xs" fontWeight="medium" mb={2}>{t('trading.mode.title')}</Text>
+        <HStack gap={1}>
+          <Button
+            size="2xs"
+            variant={tradingMode === 'auto' ? 'solid' : 'outline'}
+            colorPalette={tradingMode === 'auto' ? 'blue' : 'gray'}
+            onClick={() => handleTradingModeChange('auto')}
+            disabled={updateConfig.isPending}
+            flex={1}
+          >
+            {t('trading.mode.auto')}
+          </Button>
+          <Button
+            size="2xs"
+            variant={tradingMode === 'semi_assisted' ? 'solid' : 'outline'}
+            colorPalette={tradingMode === 'semi_assisted' ? 'yellow' : 'gray'}
+            onClick={() => handleTradingModeChange('semi_assisted')}
+            disabled={updateConfig.isPending}
+            flex={1}
+          >
+            {t('trading.mode.semiAssisted')}
+          </Button>
+        </HStack>
+        <Text fontSize="2xs" color="fg.muted" mt={1}>
+          {tradingMode === 'auto' ? t('trading.mode.autoDescription') : t('trading.mode.semiAssistedDescription')}
+        </Text>
+      </Box>
+
+      <Separator />
 
       <WatchersList
         activeWatchers={activeWatchers}
@@ -389,6 +427,8 @@ export const WatcherManager = () => {
         onToggle={() => toggleSection('positionSize')}
         positionSizePercent={Number(config?.positionSizePercent ?? 10)}
         onPositionSizeChange={(value) => handleConfigUpdate({ positionSizePercent: value.toString() })}
+        manualPositionSizePercent={Number(config?.manualPositionSizePercent ?? 2.5)}
+        onManualPositionSizeChange={(value) => handleConfigUpdate({ manualPositionSizePercent: value.toString() })}
         maxGlobalExposurePercent={Number(config?.maxGlobalExposurePercent ?? 100)}
         onMaxGlobalExposureChange={(value) => handleConfigUpdate({ maxGlobalExposurePercent: value.toString() })}
         isPending={updateConfig.isPending}
@@ -415,6 +455,8 @@ export const WatcherManager = () => {
         onMarginTopUpPercentChange={handleMarginTopUpPercentChange}
         marginTopUpMaxCount={config?.marginTopUpMaxCount ?? 3}
         onMarginTopUpMaxCountChange={handleMarginTopUpMaxCountChange}
+        autoCancelOrphans={config?.autoCancelOrphans ?? false}
+        onAutoCancelOrphansChange={(enabled) => handleConfigUpdate({ autoCancelOrphans: enabled })}
         isPending={updateConfig.isPending}
         isIB={isIB}
       />

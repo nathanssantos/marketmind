@@ -19,6 +19,7 @@ import { cancelAllProtectionOrders, cancelProtectionOrder, updateStopLossOrder, 
 import { protectedProcedure, router } from '../trpc';
 import { serializeError } from '../utils/errors';
 import { generateEntityId } from '../utils/id';
+import { getWebSocketService } from '../services/websocket';
 
 let paperOrderCounter = 0;
 const generatePaperOrderId = (): number => {
@@ -963,6 +964,16 @@ export const tradingRouter = router({
           })
           .where(eq(tradeExecutions.id, input.id));
 
+        const wsService = getWebSocketService();
+        wsService?.emitPositionClosed(execution.walletId, {
+          positionId: execution.id,
+          symbol: execution.symbol,
+          side: execution.side,
+          exitReason: 'MANUAL_CANCEL',
+          pnl: 0,
+          pnlPercent: 0,
+        });
+
         return {
           pnl: '0',
           grossPnl: '0',
@@ -1100,6 +1111,16 @@ export const tradingRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, wallet.id));
+      });
+
+      const wsService = getWebSocketService();
+      wsService?.emitPositionClosed(execution.walletId, {
+        positionId: execution.id,
+        symbol: execution.symbol,
+        side: execution.side,
+        exitReason: 'MANUAL_CLOSE',
+        pnl: netPnl,
+        pnlPercent,
       });
 
       return {
@@ -1425,14 +1446,14 @@ export const tradingRouter = router({
 
       const [config] = await ctx.db.select().from(autoTradingConfig).where(eq(autoTradingConfig.walletId, execution.walletId)).limit(1);
       const balance = parseFloat(wallet.currentBalance ?? '0');
-      const configuredPercent = parseFloat(config?.positionSizePercent ?? '10');
-      const sizePercent = configuredPercent / 200;
+      const configuredPercent = parseFloat(config?.manualPositionSizePercent ?? '2.5');
+      const sizePercent = configuredPercent / 100;
       const targetValue = balance * sizePercent;
       const minNotional = filters?.minNotional ?? 5;
       if (targetValue < minNotional) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Manual order uses half of configured size (${configuredPercent}% / 2 = ${configuredPercent / 2}% of $${balance.toFixed(2)} = $${targetValue.toFixed(2)}) which is below the minimum notional of $${minNotional} for ${execution.symbol}. Increase position size % or deposit more funds.`,
+          message: `Manual position size (${configuredPercent}% of $${balance.toFixed(2)} = $${targetValue.toFixed(2)}) is below the minimum notional of $${minNotional} for ${execution.symbol}. Increase manual position size % or deposit more funds.`,
         });
       }
       const recalculatedQty = balance > 0 && input.newPrice > 0 ? targetValue / input.newPrice : parseFloat(execution.quantity);

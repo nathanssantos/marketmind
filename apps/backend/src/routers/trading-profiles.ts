@@ -4,9 +4,72 @@ import { z } from 'zod';
 import { db } from '../db';
 import { activeWatchers, tradingProfiles } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import type { NewTradingProfileRow } from '../db/schema';
 import { generateEntityId } from '../utils/id';
 import { transformTradingProfile, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
 import { applyProfileFieldsToUpdate } from '../utils/config-field-registry';
+import { FIB_LEVELS } from '@marketmind/types';
+
+const fibLevelSchema = z.enum(FIB_LEVELS);
+
+const profileConfigFields = {
+  tradingMode: z.enum(['auto', 'semi_assisted']).optional().nullable(),
+  directionMode: z.enum(['auto', 'long_only', 'short_only']).optional().nullable(),
+  positionSizePercent: z.number().min(0.1).max(100).optional().nullable(),
+  useTrendFilter: z.boolean().optional().nullable(),
+  useAdxFilter: z.boolean().optional().nullable(),
+  useChoppinessFilter: z.boolean().optional().nullable(),
+  useVwapFilter: z.boolean().optional().nullable(),
+  useStochasticFilter: z.boolean().optional().nullable(),
+  useStochasticRecoveryFilter: z.boolean().optional().nullable(),
+  useMomentumTimingFilter: z.boolean().optional().nullable(),
+  useBtcCorrelationFilter: z.boolean().optional().nullable(),
+  useVolumeFilter: z.boolean().optional().nullable(),
+  useDirectionFilter: z.boolean().optional().nullable(),
+  useSuperTrendFilter: z.boolean().optional().nullable(),
+  useMarketRegimeFilter: z.boolean().optional().nullable(),
+  useBollingerSqueezeFilter: z.boolean().optional().nullable(),
+  useMtfFilter: z.boolean().optional().nullable(),
+  useStochasticHtfFilter: z.boolean().optional().nullable(),
+  useStochasticRecoveryHtfFilter: z.boolean().optional().nullable(),
+  useFundingFilter: z.boolean().optional().nullable(),
+  useFvgFilter: z.boolean().optional().nullable(),
+  useConfluenceScoring: z.boolean().optional().nullable(),
+  confluenceMinScore: z.number().min(0).max(100).optional().nullable(),
+  useCooldown: z.boolean().optional().nullable(),
+  cooldownMinutes: z.number().min(1).max(1440).optional().nullable(),
+  fibonacciTargetLevelLong: fibLevelSchema.optional().nullable(),
+  fibonacciTargetLevelShort: fibLevelSchema.optional().nullable(),
+  fibonacciSwingRange: z.enum(['nearest', 'extended']).optional().nullable(),
+  maxFibonacciEntryProgressPercentLong: z.number().min(0).max(200).optional().nullable(),
+  maxFibonacciEntryProgressPercentShort: z.number().min(0).max(200).optional().nullable(),
+  initialStopMode: z.enum(['fibo_target', 'nearest_swing']).optional().nullable(),
+  tpCalculationMode: z.enum(['default', 'fibonacci']).optional().nullable(),
+  minRiskRewardRatioLong: z.number().min(0).max(10).optional().nullable(),
+  minRiskRewardRatioShort: z.number().min(0).max(10).optional().nullable(),
+  trailingStopEnabled: z.boolean().optional().nullable(),
+  trailingStopMode: z.enum(['local', 'binance']).optional().nullable(),
+  trailingActivationPercentLong: z.number().min(0).max(10).optional().nullable(),
+  trailingActivationPercentShort: z.number().min(0).max(10).optional().nullable(),
+  trailingDistancePercentLong: z.number().min(0).max(10).optional().nullable(),
+  trailingDistancePercentShort: z.number().min(0).max(10).optional().nullable(),
+  trailingDistanceMode: z.enum(['auto', 'fixed']).optional().nullable(),
+  trailingStopOffsetPercent: z.number().min(0).max(1).optional().nullable(),
+  trailingActivationModeLong: z.enum(['auto', 'manual']).optional().nullable(),
+  trailingActivationModeShort: z.enum(['auto', 'manual']).optional().nullable(),
+  useAdaptiveTrailing: z.boolean().optional().nullable(),
+  maxDrawdownEnabled: z.boolean().optional().nullable(),
+  maxDrawdownPercent: z.number().min(1).max(100).optional().nullable(),
+  dailyLossLimit: z.number().min(0.1).max(100).optional().nullable(),
+  maxRiskPerStopEnabled: z.boolean().optional().nullable(),
+  maxRiskPerStopPercent: z.number().min(0.1).max(50).optional().nullable(),
+  choppinessThresholdHigh: z.number().min(30).max(80).optional().nullable(),
+  choppinessThresholdLow: z.number().min(20).max(60).optional().nullable(),
+  volumeFilterObvLookbackLong: z.number().min(1).max(50).optional().nullable(),
+  volumeFilterObvLookbackShort: z.number().min(1).max(50).optional().nullable(),
+  useObvCheckLong: z.boolean().optional().nullable(),
+  useObvCheckShort: z.boolean().optional().nullable(),
+};
 
 const createProfileSchema = z.object({
   name: z.string().min(1).max(100),
@@ -15,6 +78,7 @@ const createProfileSchema = z.object({
   maxPositionSize: z.number().min(1).max(100).optional(),
   maxConcurrentPositions: z.number().min(1).max(10).optional(),
   isDefault: z.boolean().optional(),
+  ...profileConfigFields,
 });
 
 const updateProfileSchema = z.object({
@@ -25,6 +89,14 @@ const updateProfileSchema = z.object({
   maxPositionSize: z.number().min(1).max(100).nullable().optional(),
   maxConcurrentPositions: z.number().min(1).max(10).nullable().optional(),
   isDefault: z.boolean().optional(),
+  ...profileConfigFields,
+});
+
+const importFromBacktestSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+  enabledSetupTypes: z.array(z.string()).min(1),
+  ...profileConfigFields,
 });
 
 export const tradingProfilesRouter = router({
@@ -64,7 +136,7 @@ export const tradingProfilesRouter = router({
         .where(and(eq(tradingProfiles.userId, ctx.user.id), eq(tradingProfiles.isDefault, true)));
     }
 
-    await db.insert(tradingProfiles).values({
+    const values: NewTradingProfileRow = {
       id,
       userId: ctx.user.id,
       name: input.name,
@@ -73,7 +145,17 @@ export const tradingProfilesRouter = router({
       maxPositionSize: input.maxPositionSize?.toString() ?? null,
       maxConcurrentPositions: input.maxConcurrentPositions ?? null,
       isDefault: input.isDefault ?? false,
-    });
+    };
+
+    const configFieldKeys = Object.keys(profileConfigFields) as (keyof typeof profileConfigFields)[];
+    for (const key of configFieldKeys) {
+      const val = (input as Record<string, unknown>)[key];
+      if (val !== undefined) {
+        (values as Record<string, unknown>)[key] = val;
+      }
+    }
+
+    await db.insert(tradingProfiles).values(values);
 
     const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
 
@@ -139,16 +221,44 @@ export const tradingProfilesRouter = router({
 
       const id = generateEntityId();
 
+      const { id: _existingId, userId: _userId, createdAt: _created, updatedAt: _updated, ...fieldsToClone } = existing;
+
       await db.insert(tradingProfiles).values({
+        ...fieldsToClone,
         id,
         userId: ctx.user.id,
         name: input.newName,
-        description: existing.description,
-        enabledSetupTypes: existing.enabledSetupTypes,
-        maxPositionSize: existing.maxPositionSize,
-        maxConcurrentPositions: existing.maxConcurrentPositions,
         isDefault: false,
       });
+
+      const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
+
+      return transformTradingProfile(profile!);
+    }),
+
+  importFromBacktest: protectedProcedure
+    .input(importFromBacktestSchema)
+    .mutation(async ({ ctx, input }) => {
+      const id = generateEntityId();
+
+      const values: NewTradingProfileRow = {
+        id,
+        userId: ctx.user.id,
+        name: input.name,
+        description: input.description ?? null,
+        enabledSetupTypes: stringifyEnabledSetupTypes(input.enabledSetupTypes),
+        isDefault: false,
+      };
+
+      const configFieldKeys = Object.keys(profileConfigFields) as (keyof typeof profileConfigFields)[];
+      for (const key of configFieldKeys) {
+        const val = (input as Record<string, unknown>)[key];
+        if (val !== undefined) {
+          (values as Record<string, unknown>)[key] = val;
+        }
+      }
+
+      await db.insert(tradingProfiles).values(values);
 
       const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
 

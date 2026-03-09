@@ -176,7 +176,13 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
             <TradingTableCell>{formatDate(order.createdAt)}</TradingTableCell>
             <TradingTableCell>{formatDate(order.updateTime)}</TradingTableCell>
             <TradingTableCell>{formatDate(order.closedAt)}</TradingTableCell>
-            <TradingTableCell textAlign="right">{getOrderQuantity(order).toFixed(8)}</TradingTableCell>
+            <TradingTableCell textAlign="right">
+              {order.status === 'PARTIALLY_FILLED' ? (
+                <Text>{parseFloat(order.executedQty).toFixed(8)}/{parseFloat(order.origQty).toFixed(8)}</Text>
+              ) : (
+                getOrderQuantity(order).toFixed(8)
+              )}
+            </TradingTableCell>
             <TradingTableCell textAlign="right">{formatPrice(getOrderPrice(order), currency)}</TradingTableCell>
             <TradingTableCell textAlign="right">
               <Text color="blue.500">{formatPrice(currentPrice, currency)}</Text>

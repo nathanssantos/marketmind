@@ -25,6 +25,7 @@ export const useBackendTradingMutations = () => {
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
@@ -33,6 +34,7 @@ export const useBackendTradingMutations = () => {
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },

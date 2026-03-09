@@ -408,6 +408,8 @@ export const useChartInteraction = ({
       manager.markDirty('overlays');
     }
 
+    const isOverOrderElement = orderDragHandler.isDragging || hoveredOrderButton || hoveredSLTP || hoveredOrder;
+
     if (orderDragHandler.isDragging) {
       updateCursor('ns-resize');
     } else if (hoveredOrderButton) {
@@ -416,8 +418,6 @@ export const useChartInteraction = ({
       updateCursor('ns-resize');
     } else if (hoveredOrder) {
       updateCursor('ns-resize');
-    } else if (cursorManager.getCursor() !== 'crosshair') {
-      updateCursor('crosshair');
     }
 
     mousePositionRef.current = { x: mouseX, y: mouseY };
@@ -426,24 +426,27 @@ export const useChartInteraction = ({
     const dimensions = manager.getDimensions();
     if (!dimensions) return;
 
-    const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
-    const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
-    const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    const lastKlineX = manager.indexToX(klines.length - 1);
-    const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
-    const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
-    const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
-    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
-    const isOnTimeScale = mouseY >= timeScaleTop;
+    if (!isOverOrderElement) {
+      const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
+      const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+      const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+      const lastKlineX = manager.indexToX(klines.length - 1);
+      const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
+      const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
+      const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
+      const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
+      const isOnTimeScale = mouseY >= timeScaleTop;
 
-    const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
+      const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
 
-    if (hoveredTagIndex !== undefined) updateCursor('pointer');
-    else if (isOnPriceScale) updateCursor('ns-resize');
-    else if (isOnTimeScale) updateCursor('crosshair');
-    else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
+      if (hoveredTagIndex !== undefined) updateCursor('pointer');
+      else if (isOnPriceScale) updateCursor('ns-resize');
+      else if (isOnTimeScale) updateCursor('crosshair');
+      else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
+    }
 
-    if ((shiftPressed || altPressed) && mouseY < timeScaleTop) {
+    const timeScaleY = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+    if ((shiftPressed || altPressed) && mouseY < timeScaleY) {
       const price = manager.yToPrice(mouseY);
       orderPreviewRef.current = { price, type: shiftPressed ? 'long' : 'short' };
       manager.markDirty('overlays');

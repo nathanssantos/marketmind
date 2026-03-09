@@ -72,6 +72,7 @@ export class WebSocketService {
         if (!socket.rooms.has(room)) {
           socket.join(room);
           binancePriceStreamService.subscribeSymbol(symbol);
+          this.emitActiveSymbolsChanged();
         }
       });
 
@@ -108,6 +109,7 @@ export class WebSocketService {
 
       socket.on('unsubscribe:prices', (symbol: string) => {
         socket.leave(`prices:${symbol}`);
+        this.emitActiveSymbolsChanged();
       });
 
       socket.on('subscribe:wallet', (walletId: string) => {
@@ -193,6 +195,27 @@ export class WebSocketService {
     this.io.to(`user:${userId}`).emit('setup-detected', data);
   }
 
+  public emitSignalSuggestion(userId: string, suggestion: {
+    id: string;
+    walletId: string;
+    symbol: string;
+    interval: string;
+    side: 'LONG' | 'SHORT';
+    setupType: string;
+    entryPrice: string;
+    stopLoss: string | null;
+    takeProfit: string | null;
+    riskRewardRatio: string | null;
+    confidence: number | null;
+    expiresAt: string | null;
+  }): void {
+    this.io.to(`user:${userId}`).emit('signal-suggestion', suggestion);
+  }
+
+  public emitSessionScanResult(userId: string, sessionId: string, presetId: string, results: unknown): void {
+    this.io.to(`user:${userId}`).emit('session-scan-result', { sessionId, presetId, results });
+  }
+
   public emitRiskAlert(walletId: string, alert: {
     type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP' | 'UNKNOWN_POSITION' | 'ORDER_REJECTED' | 'ORPHAN_ORDERS' | 'ORDER_MISMATCH' | 'UNPROTECTED_POSITION';
     level: 'info' | 'warning' | 'danger' | 'critical';
@@ -266,6 +289,28 @@ export class WebSocketService {
 
   public emitAutoTradingLog(walletId: string, entry: FrontendLogEntry): void {
     this.io.to(`autoTradingLogs:${walletId}`).emit('autoTrading:log', entry);
+  }
+
+  public getActivelyViewedSymbols(): string[] {
+    const symbols = new Set<string>();
+    const rooms = this.io.sockets.adapter.rooms;
+
+    for (const [roomName] of rooms) {
+      if (!roomName.startsWith('prices:')) continue;
+      const symbol = roomName.slice('prices:'.length);
+      if (symbol) symbols.add(symbol);
+    }
+
+    return Array.from(symbols).sort();
+  }
+
+  public emitActiveSymbolsChanged(): void {
+    const symbols = this.getActivelyViewedSymbols();
+    this.io.emit('symbols:active:updated', symbols);
+  }
+
+  public emitBackfillProgress(walletId: string, data: { completed: number; total: number; currentSymbol: string; status: 'in_progress' | 'completed' | 'error'; error?: string }): void {
+    this.io.to(`wallet:${walletId}`).emit('backfill:progress', data);
   }
 
   public getIO(): SocketIOServer {

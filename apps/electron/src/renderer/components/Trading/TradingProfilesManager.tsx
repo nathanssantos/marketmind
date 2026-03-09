@@ -6,7 +6,8 @@ import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChevronDown, LuChevronUp, LuCopy, LuPencil, LuPlus, LuStar, LuTrash2 } from 'react-icons/lu';
+import { LuChevronDown, LuChevronUp, LuCopy, LuPencil, LuPlus, LuStar, LuTrash2, LuUpload } from 'react-icons/lu';
+import { ImportProfileDialog } from './ImportProfileDialog';
 import { ProfileEditorDialog } from './ProfileEditorDialog';
 
 export const TradingProfilesManager = () => {
@@ -20,6 +21,7 @@ export const TradingProfilesManager = () => {
   } = useTradingProfiles();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingProfile, setEditingProfile] = useState<TradingProfile | null>(null);
   const [profilesExpanded, setProfilesExpanded] = useState(false);
 
@@ -70,7 +72,15 @@ export const TradingProfilesManager = () => {
       <Collapsible.Root open={profilesExpanded}>
         <Collapsible.Content>
           <Stack gap={4} mt={4}>
-            <Flex justify="flex-end">
+            <Flex justify="flex-end" gap={2}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowImportDialog(true)}
+              >
+                <LuUpload />
+                {t('tradingProfiles.import.openImport')}
+              </Button>
               <Button
                 size="sm"
                 colorPalette="blue"
@@ -136,6 +146,11 @@ export const TradingProfilesManager = () => {
         isOpen={editingProfile !== null}
         onClose={() => setEditingProfile(null)}
         profile={editingProfile}
+      />
+
+      <ImportProfileDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
       />
     </Box>
   );

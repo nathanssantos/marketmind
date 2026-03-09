@@ -24,6 +24,8 @@ export interface RiskManagementSectionProps {
   onMarginTopUpPercentChange: (value: number) => void;
   marginTopUpMaxCount: number;
   onMarginTopUpMaxCountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  autoCancelOrphans: boolean;
+  onAutoCancelOrphansChange: (enabled: boolean) => void;
   isPending: boolean;
   isIB: boolean;
 }
@@ -47,6 +49,8 @@ export const RiskManagementSection = ({
   onMarginTopUpPercentChange,
   marginTopUpMaxCount,
   onMarginTopUpMaxCountChange,
+  autoCancelOrphans,
+  onAutoCancelOrphansChange,
   isPending: _isPending,
   isIB,
 }: RiskManagementSectionProps) => {
@@ -221,6 +225,23 @@ export const RiskManagementSection = ({
             )}
           </>
         )}
+
+        <Separator />
+
+        <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold">
+              {t('watcherManager.riskManagement.autoCancelOrphans.title')}
+            </Text>
+            <Text fontSize="xs" color="fg.muted">
+              {t('watcherManager.riskManagement.autoCancelOrphans.description')}
+            </Text>
+          </Box>
+          <Switch
+            checked={autoCancelOrphans}
+            onCheckedChange={onAutoCancelOrphansChange}
+          />
+        </HStack>
       </Stack>
     </CollapsibleSection>
   );

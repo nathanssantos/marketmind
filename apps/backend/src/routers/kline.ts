@@ -6,10 +6,12 @@ import { db } from '../db';
 import { klines, pairMaintenanceLog } from '../db/schema';
 import { symbolSearch } from '../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
-import { prefetchKlines } from '../services/kline-prefetch';
+import { prefetchKlines, runBatchBackfill } from '../services/kline-prefetch';
+import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
 import { getKlineMaintenance } from '../services/kline-maintenance';
 import { logger } from '../services/logger';
+import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
 
 const intervalSchema = z.enum([
@@ -367,6 +369,30 @@ export const klineRouter = router({
     await db.execute(sql`TRUNCATE TABLE klines`);
     await db.delete(pairMaintenanceLog);
     return { success: true };
+  }),
+
+  backfillTopSymbols: protectedProcedure
+    .input(z.object({
+      walletId: z.string(),
+      limit: z.number().min(1).max(500).default(100),
+      interval: intervalSchema.default('1h'),
+      marketType: marketTypeSchema,
+    }))
+    .mutation(async ({ input }) => {
+      const scoringService = getOpportunityScoringService();
+      const symbols = await scoringService.getTopSymbolsByScore(input.marketType, input.limit);
+
+      runBatchBackfill(input.walletId, symbols, input.interval, input.marketType).catch(err => {
+        logger.error({ error: err }, 'Batch backfill failed');
+      });
+
+      return { symbolCount: symbols.length };
+    }),
+
+  getActiveSymbols: protectedProcedure.query(() => {
+    const ws = getWebSocketService();
+    if (!ws) return [];
+    return ws.getActivelyViewedSymbols();
   }),
 
   searchSymbols: protectedProcedure

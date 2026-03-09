@@ -40,6 +40,8 @@
     "active": "Activo",
     "type": "Tipo",
     "priority": "Prioridad",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado",
     "source": "Fuente",
     "marketOpen": "Apertura",
     "marketClose": "Cierre",
@@ -75,7 +77,8 @@
     "noSymbolsFound": "No se encontraron símbolos",
     "openPositions": "POSICIONES ABIERTAS",
     "crypto": "Cripto",
-    "stocks": "Acciones"
+    "stocks": "Acciones",
+    "activeCharts": "GRÁFICOS ABIERTOS"
   },
   "marketStatus": {
     "open": "Abierto",
@@ -1053,6 +1056,21 @@
         "trades_one": "{{count}} trade",
         "trades_other": "{{count}} trades"
       }
+    },
+    "mode": {
+      "title": "Modo de Trading",
+      "auto": "Auto",
+      "semiAssisted": "Semi-Asistido",
+      "autoDescription": "Los trades se ejecutan automáticamente cuando se detectan setups.",
+      "semiAssistedDescription": "Los setups se muestran como sugerencias para revisión y aprobación manual."
+    },
+    "suggestions": {
+      "title": "Sugerencias",
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "expired": "Expirada",
+      "positionSize": "Tamaño de Posición",
+      "noSuggestions": "Sin sugerencias pendientes"
     }
   },
   "about": {
@@ -1191,6 +1209,54 @@
       "setAsDefault": "Establecer como perfil predeterminado",
       "setAsDefaultDescription": "Los nuevos watchers usarán este perfil por defecto"
     },
+    "sections": {
+      "basicInfo": "Información Básica",
+      "basicInfoDescription": "Nombre y descripción del perfil",
+      "tradingMode": "Modo de Trading y Dirección",
+      "tradingModeDescription": "Anular modo de ejecución y filtro de dirección",
+      "setupsDescription": "Seleccione qué setups de trading usará este perfil",
+      "filters": "Filtros",
+      "filtersDescription": "Anular filtros de entrada para este perfil",
+      "filtersTrend": "Filtros de Tendencia",
+      "filtersMomentum": "Filtros de Momentum",
+      "filtersStructure": "Estructura de Mercado",
+      "filtersVolume": "Filtros de Volumen",
+      "filtersCorrelation": "Correlación y Multi-Timeframe",
+      "filtersScoring": "Puntuación y Cooldown",
+      "fibEntry": "Fibonacci y Entrada",
+      "fibEntryDescription": "Anular niveles objetivo, swing range y configuración de entrada",
+      "minRR": "R:R Mínimo",
+      "minRRDescription": "Anular ratio R:R mínimo para entradas",
+      "trailingStop": "Trailing Stop",
+      "trailingStopDescription": "Anular comportamiento del trailing stop para este perfil",
+      "riskManagement": "Gestión de Riesgo",
+      "riskManagementDescription": "Anular dimensionamiento de posición y límites de riesgo",
+      "riskDescription": "Anular configuración de riesgo de la billetera para este perfil"
+    },
+    "overrides": {
+      "usingGlobalDefault": "Usando valor global predeterminado",
+      "tradingMode": "Modo de Trading",
+      "directionMode": "Modo de Dirección",
+      "positionSizePercent": "Tamaño de Posición (%)",
+      "fibTargetLevelLong": "Nivel Objetivo LONG",
+      "fibTargetLevelShort": "Nivel Objetivo SHORT",
+      "fibSwingRange": "Swing Range",
+      "entryProgressLong": "Nivel Máx de Entrada (LONG)",
+      "entryProgressShort": "Nivel Máx de Entrada (SHORT)",
+      "initialStopMode": "Posición Inicial del Stop",
+      "tpCalculationMode": "Modo de Cálculo del TP",
+      "trailingStopMode": "Modo del Trailing Stop",
+      "cooldown": "Cooldown de Entrada",
+      "cooldownMinutes": "Cooldown (minutos)",
+      "choppinessThresholdHigh": "Umbral Choppy",
+      "choppinessThresholdLow": "Umbral Trending",
+      "obvCheck": "Confirmación OBV",
+      "obvLookbackLong": "Lookback OBV (Long)",
+      "obvLookbackShort": "Lookback OBV (Short)",
+      "maxDrawdownPercent": "Drawdown Máx (%)",
+      "dailyLossLimit": "Límite de Pérdida Diaria (%)",
+      "maxRiskPerStopPercent": "Riesgo Máx por Stop (%)"
+    },
     "placeholders": {
       "name": "ej: BTC Trend Following",
       "description": "Descripción opcional para este perfil"
@@ -1282,6 +1348,18 @@
       "quickStartDescription": "Iniciar watchers para los mejores símbolos por puntuación",
       "quickStartButton": "Iniciar Top {{count}}",
       "insufficientCapital": "Capital insuficiente para el tamaño mínimo de operación"
+    },
+    "import": {
+      "title": "Importar Perfil desde Backtest",
+      "pasteJson": "Pegue el JSON de salida de la optimización de backtest",
+      "preview": "Vista Previa",
+      "invalidJson": "Formato JSON inválido",
+      "importing": "Importando...",
+      "importSuccess": "Perfil importado exitosamente",
+      "importButton": "Importar",
+      "nameLabel": "Nombre del Perfil",
+      "strategiesCount": "{{count}} estrategias",
+      "openImport": "Importar"
     }
   },
   "watcherManager": {
@@ -1290,8 +1368,10 @@
       "description": "Configure el límite global de exposición y el dimensionamiento por posición",
       "globalExposure": "Límite Global de Exposición (%)",
       "globalExposureDescription": "Exposición total máxima del portafolio como porcentaje del saldo",
-      "sizePercent": "Tamaño por Entrada (%)",
-      "sizePercentDescription": "Porcentaje del capital usado por posición individual"
+      "sizePercent": "Tamaño por Entrada (Auto-Trade) (%)",
+      "sizePercentDescription": "Porcentaje del capital usado por posición para las entradas de auto-trading",
+      "manualSizePercent": "Tamaño por Entrada (Manual) (%)",
+      "manualSizePercentDescription": "Porcentaje del capital usado por posición para las órdenes manuales colocadas en el gráfico"
     },
     "trailingStop": {
       "title": "Trailing Stop",
@@ -1343,6 +1423,10 @@
         "amountDescription": "Porcentaje del margen de la posición a agregar por refuerzo",
         "maxCount": "Máx. Refuerzos por Posición",
         "maxCountDescription": "Número máximo de refuerzos de margen permitidos por posición"
+      },
+      "autoCancelOrphans": {
+        "title": "Cancelar Órdenes Huérfanas Automáticamente",
+        "description": "Cancela automáticamente órdenes en Binance que no tienen posición correspondiente en el sistema"
       }
     },
     "pausedDueToCapital": "Watchers pausados - sin capital libre para nuevas entradas. Se reanudará cuando se cierre una posición.",
@@ -1559,7 +1643,8 @@
     "tabs": {
       "indicators": "Mercado",
       "watchers": "Watchers",
-      "logs": "Logs"
+      "logs": "Logs",
+      "scanner": "Escáner"
     },
     "indicators": {
       "title": "Indicadores de Mercado",
@@ -1706,5 +1791,30 @@
     "trailingShortActivated": "Trailing Stop SHORT activado para {{symbol}}",
     "trailingShortDeactivated": "Trailing Stop SHORT desactivado para {{symbol}}",
     "configSaved": "Config del Trailing Stop guardada para {{symbol}}"
+  },
+  "scanner": {
+    "title": "Escáner de Mercado",
+    "timeframe": "Período",
+    "resultsCount": "{{count}} resultados / {{total}} escaneados",
+    "categories": {
+      "momentum": "Momento",
+      "volume": "Volumen",
+      "volatility": "Volatilidad",
+      "mean_reversion": "Reversión a la Media",
+      "market_data": "Datos de Mercado"
+    },
+    "backfillTopSymbols": "Precargar Top 100",
+    "backfillProgress": "Precargando... {{completed}}/{{total}}",
+    "sessions": {
+      "title": "Sesiones",
+      "US_NYSE": "US NYSE",
+      "CHINA_SSE": "China SSE",
+      "JAPAN_TSE": "Japón TSE",
+      "UK_LSE": "UK LSE",
+      "CRYPTO": "Crypto",
+      "pre_scan": "Pre-Escaneo",
+      "open": "Abierta",
+      "closed": "Cerrada"
+    }
   }
 }

@@ -136,6 +136,7 @@ export const autoTradingRouter = router({
         useObvCheckLong: z.boolean().optional(),
         useObvCheckShort: z.boolean().optional(),
         positionSizePercent: z.string().optional(),
+        manualPositionSizePercent: z.string().optional(),
         maxGlobalExposurePercent: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
@@ -221,6 +222,13 @@ export const autoTradingRouter = router({
         marginTopUpPercent: z.string().optional(),
         marginTopUpMaxCount: z.number().min(1).max(10).optional(),
         positionMode: z.enum(['ONE_WAY', 'HEDGE']).optional(),
+        tradingMode: z.enum(['auto', 'semi_assisted']).optional(),
+        useFvgFilter: z.boolean().optional(),
+        useCooldown: z.boolean().optional(),
+        cooldownMinutes: z.number().min(1).max(1440).optional(),
+        sessionScanEnabled: z.boolean().optional(),
+        sessionScanMarkets: z.string().optional(),
+        autoCancelOrphans: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

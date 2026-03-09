@@ -4,6 +4,7 @@ import { createPlatformAdapter } from '../adapters/factory';
 import { socketService } from '../services/socketService';
 import { QUERY_CONFIGS } from '../services/queryConfig';
 import { trpc } from '../utils/trpc';
+import { useOrderFlashStore } from '../store/orderFlashStore';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
 
@@ -17,7 +18,8 @@ interface PositionUpdate {
 }
 
 interface OrderUpdate {
-  orderId: number;
+  id?: string;
+  orderId?: number;
   status: string;
   symbol: string;
 }
@@ -213,13 +215,22 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       invalidateWallet();
     };
 
-    const handleOrderUpdate = (_order: OrderUpdate) => {
-      invalidateOrders();
+    const handlePositionClosed = (_data: { positionId: string; symbol: string; side: string; exitReason: string; pnl: number; pnlPercent: number }) => {
+      invalidatePositions();
+      invalidateWallet();
     };
 
-    const handleOrderCreated = (_order: OrderUpdate) => {
+    const handleOrderUpdate = (order: OrderUpdate) => {
+      invalidateOrders();
+      const flashId = order.id ?? order.orderId?.toString();
+      if (flashId) useOrderFlashStore.getState().flashOrder(flashId);
+    };
+
+    const handleOrderCreated = (order: OrderUpdate) => {
       invalidateOrders();
       invalidateWallet();
+      const flashId = order.id ?? order.orderId?.toString();
+      if (flashId) useOrderFlashStore.getState().flashOrder(flashId);
     };
 
     const handleOrderCancelled = (_data: { orderId: string }) => {
@@ -299,6 +310,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     socket.on('disconnect', handleDisconnect);
     socket.on('connect_error', handleConnectError);
     socket.on('position:update', handlePositionUpdate);
+    socket.on('position:closed', handlePositionClosed);
     socket.on('order:update', handleOrderUpdate);
     socket.on('order:created', handleOrderCreated);
     socket.on('order:cancelled', handleOrderCancelled);
@@ -318,6 +330,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       socket.off('disconnect', handleDisconnect);
       socket.off('connect_error', handleConnectError);
       socket.off('position:update', handlePositionUpdate);
+      socket.off('position:closed', handlePositionClosed);
       socket.off('order:update', handleOrderUpdate);
       socket.off('order:created', handleOrderCreated);
       socket.off('order:cancelled', handleOrderCancelled);

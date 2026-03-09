@@ -5,7 +5,7 @@ import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const VIEWPORT_UPDATE_THROTTLE_MS = 50;
-const SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
+const SIGNIFICANT_CHANGE_THRESHOLD = 0.5;
 const TARGET_KLINE_WIDTH = 10;
 const KLINE_TOTAL_WIDTH = TARGET_KLINE_WIDTH + CHART_CONFIG.KLINE_SPACING;
 const DEFAULT_VISIBLE_KLINES = 100;
@@ -196,6 +196,8 @@ export const useChartCanvas = ({
         wasAtEndRef.current = true;
         isInitialLoadRef.current = false;
       } else if (isCompleteDataChange || isSignificantChange) {
+        const isSymbolChange = isCompleteDataChange && lastKlineTimestamp !== prevLastKlineTimestamp;
+
         const chartWidth = managerRef.current.getDimensions()?.chartWidth;
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
         const futureSpace = Math.max(
@@ -211,7 +213,7 @@ export const useChartCanvas = ({
         setViewport(newViewport);
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
-        managerRef.current.resetVerticalZoom();
+        if (isSymbolChange) managerRef.current.resetVerticalZoom();
         wasAtEndRef.current = true;
       } else if (wasAtEnd && currentCount > prevCount) {
         const klinesAdded = currentCount - prevCount;

@@ -239,7 +239,11 @@ describe('CanvasManager', () => {
       
       const newWidth = manager.getViewport().klineWidth;
       expect(newWidth).toBeGreaterThanOrEqual(CHART_CONFIG.MIN_KLINE_WIDTH);
-      expect(newWidth).toBeLessThanOrEqual(CHART_CONFIG.MAX_KLINE_WIDTH);
+      const vp = manager.getViewport();
+      const dims = manager.getDimensions();
+      const visibleRange = vp.end - vp.start;
+      const widthPerKline = dims!.chartWidth / visibleRange;
+      expect(vp.klineWidth).toBeCloseTo(widthPerKline * 0.8, 1);
     });
 
   });

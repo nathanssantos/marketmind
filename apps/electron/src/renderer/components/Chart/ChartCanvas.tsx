@@ -25,6 +25,7 @@ import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
+import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
@@ -107,6 +108,7 @@ export const ChartCanvas = ({
   const {
     createOrder: addBackendOrder,
     closeExecution,
+    cancelExecution,
     updateExecutionSLTP,
     cancelProtectionOrder,
     updatePendingEntry,
@@ -115,6 +117,8 @@ export const ChartCanvas = ({
   const hasTradingEnabled = !!backendWalletId;
 
   const [optimisticExecutions, setOptimisticExecutions] = useState<BackendExecution[]>([]);
+  const orderLoadingMapRef = useRef<Map<string, boolean>>(new Map());
+  const orderFlashMapRef = useRef<Map<string, number>>(new Map());
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -177,10 +181,10 @@ export const ChartCanvas = ({
 
   const getOrderQuantity = useCallback((price: number): string => {
     const balance = parseFloat(activeWallet?.currentBalance ?? '0');
-    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 200;
+    const sizePercent = Number(autoConfig?.manualPositionSizePercent ?? 2.5) / 100;
     const qty = balance > 0 && price > 0 ? (balance * sizePercent) / price : 1;
     return roundTradingQty(qty);
-  }, [activeWallet?.currentBalance, autoConfig?.positionSizePercent]);
+  }, [activeWallet?.currentBalance, autoConfig?.manualPositionSizePercent]);
 
   const latestKlinesPriceRef = useRef(klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0);
   latestKlinesPriceRef.current = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
@@ -364,6 +368,28 @@ export const ChartCanvas = ({
     };
   }, [isPanning]);
 
+  const handleOrderCloseRequest = useCallback((orderId: string | null): void => {
+    if (!orderId) {
+      setOrderToClose(null);
+      return;
+    }
+    if (orderId.startsWith('sltp-')) {
+      setOrderToClose(orderId);
+      return;
+    }
+    const exec = allExecutions.find((e) => e.id === orderId);
+    if (exec?.status === 'pending') {
+      orderLoadingMapRef.current.set(exec.id, true);
+      manager?.markDirty('overlays');
+      cancelExecution(exec.id).finally(() => {
+        orderLoadingMapRef.current.delete(exec.id);
+        manager?.markDirty('overlays');
+      });
+      return;
+    }
+    setOrderToClose(orderId);
+  }, [allExecutions, cancelExecution, setOrderToClose, manager]);
+
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
 
@@ -373,7 +399,14 @@ export const ChartCanvas = ({
       const executionIds = parts[2]?.split(',') || [];
 
       if (executionIds.length > 0) {
-        await cancelProtectionOrder(executionIds, type);
+        executionIds.forEach(id => orderLoadingMapRef.current.set(id, true));
+        manager.markDirty('overlays');
+        try {
+          await cancelProtectionOrder(executionIds, type);
+        } finally {
+          executionIds.forEach(id => orderLoadingMapRef.current.delete(id));
+          manager.markDirty('overlays');
+        }
       }
 
       setOrderToClose(null);
@@ -382,10 +415,17 @@ export const ChartCanvas = ({
 
     const exec = allExecutions.find((e) => e.id === orderToClose);
     if (exec) {
-      const klines = manager.getKlines();
-      const lastKline = klines[klines.length - 1];
-      const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
-      await closeExecution(exec.id, exitPrice);
+      orderLoadingMapRef.current.set(exec.id, true);
+      manager.markDirty('overlays');
+      try {
+        const klines = manager.getKlines();
+        const lastKline = klines[klines.length - 1];
+        const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
+        await closeExecution(exec.id, exitPrice);
+      } finally {
+        orderLoadingMapRef.current.delete(exec.id);
+        manager.markDirty('overlays');
+      }
     }
 
     setOrderToClose(null);
@@ -533,7 +573,7 @@ export const ChartCanvas = ({
     fibonacciProjectionData,
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef);
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -563,7 +603,7 @@ export const ChartCanvas = ({
         cummulativeQuoteQty: '0',
         status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
         timeInForce: 'GTC' as const,
-        type: exec.status === 'pending' ? 'LIMIT' as const : 'MARKET' as const,
+        type: (exec.entryOrderType ?? (exec.status === 'pending' ? 'LIMIT' : 'MARKET')) as Order['type'],
         side: exec.side === 'LONG' ? 'BUY' : 'SELL',
         time: Date.now(),
         updateTime: Date.now(),
@@ -585,7 +625,10 @@ export const ChartCanvas = ({
     if (!id) return;
 
     if (updates.entryPrice !== undefined) {
-      updatePendingEntry({ id, newPrice: updates.entryPrice }).catch((error) => {
+      updatePendingEntry({ id, newPrice: updates.entryPrice }).then(() => {
+        orderFlashMapRef.current.set(id, performance.now());
+        manager?.markDirty('overlays');
+      }).catch((error) => {
         toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
       });
       return;
@@ -601,11 +644,14 @@ export const ChartCanvas = ({
     }
 
     if (Object.keys(updatePayload).length > 0) {
-      updateExecutionSLTP(id, updatePayload).catch((error) => {
+      updateExecutionSLTP(id, updatePayload).then(() => {
+        orderFlashMapRef.current.set(id, performance.now());
+        manager?.markDirty('overlays');
+      }).catch((error) => {
         toastError(t('trading.order.slTpUpdateFailed'), error instanceof Error ? error.message : undefined);
       });
     }
-  }, [updateExecutionSLTP, updatePendingEntry]);
+  }, [updateExecutionSLTP, updatePendingEntry, manager]);
 
   const memoizedPriceToY = useCallback((price: number) => manager?.priceToY(price) ?? 0, [manager]);
   const memoizedYToPrice = useCallback((y: number) => manager?.yToPrice(y) ?? 0, [manager]);
@@ -659,7 +705,7 @@ export const ChartCanvas = ({
     setTooltipData,
     setIsMeasuring,
     setMeasurementArea,
-    setOrderToClose,
+    setOrderToClose: handleOrderCloseRequest,
     getHoveredMATag,
     getHoveredOrder,
     getEventAtPosition,
@@ -679,6 +725,29 @@ export const ChartCanvas = ({
     if (!manager) return;
     const interval = setInterval(() => manager.markDirty('overlays'), 1000);
     return () => clearInterval(interval);
+  }, [manager]);
+
+  useEffect(() => {
+    if (!manager) return;
+    let rafId = 0;
+    const animationLoop = () => {
+      const hasLoading = orderLoadingMapRef.current.size > 0;
+      const hasFlash = orderFlashMapRef.current.size > 0 || useOrderFlashStore.getState().flashes.size > 0;
+      if (hasLoading || hasFlash) {
+        manager.markDirty('overlays');
+        rafId = requestAnimationFrame(animationLoop);
+      }
+    };
+    const checkInterval = setInterval(() => {
+      if (orderLoadingMapRef.current.size > 0 || orderFlashMapRef.current.size > 0 || useOrderFlashStore.getState().flashes.size > 0) {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(animationLoop);
+      }
+    }, 100);
+    return () => {
+      clearInterval(checkInterval);
+      cancelAnimationFrame(rafId);
+    };
   }, [manager]);
 
   const handleResetView = (): void => {

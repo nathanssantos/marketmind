@@ -42,6 +42,7 @@ describe('useProfileEditor', () => {
         isDefault: false,
         overridePositionSize: false,
         overrideConcurrentPositions: false,
+        configOverrides: {},
       });
     });
 
@@ -70,6 +71,7 @@ describe('useProfileEditor', () => {
         isDefault: true,
         overridePositionSize: true,
         overrideConcurrentPositions: true,
+        configOverrides: {},
       });
     });
 
@@ -216,6 +218,7 @@ describe('useProfileEditor', () => {
       isDefault: false,
       overridePositionSize: false,
       overrideConcurrentPositions: false,
+      configOverrides: {},
     };
 
     it('should return true for valid state', () => {
@@ -248,6 +251,7 @@ describe('useProfileEditor', () => {
         isDefault: false,
         overridePositionSize: false,
         overrideConcurrentPositions: false,
+        configOverrides: {},
       };
       expect(canSubmitProfile(minimalState, false)).toBe(true);
     });
@@ -264,18 +268,17 @@ describe('useProfileEditor', () => {
         isDefault: false,
         overridePositionSize: false,
         overrideConcurrentPositions: false,
+        configOverrides: {},
       };
 
       const input = buildCreateInput(state);
 
-      expect(input).toEqual({
-        name: 'Test Profile',
-        description: undefined,
-        enabledSetupTypes: ['larry-williams-9-1', 'larry-williams-9-2'],
-        maxPositionSize: undefined,
-        maxConcurrentPositions: undefined,
-        isDefault: false,
-      });
+      expect(input.name).toBe('Test Profile');
+      expect(input.description).toBeUndefined();
+      expect(input.enabledSetupTypes).toEqual(['larry-williams-9-1', 'larry-williams-9-2']);
+      expect(input.maxPositionSize).toBeUndefined();
+      expect(input.maxConcurrentPositions).toBeUndefined();
+      expect(input.isDefault).toBe(false);
     });
 
     it('should include description when provided', () => {
@@ -288,6 +291,7 @@ describe('useProfileEditor', () => {
         isDefault: false,
         overridePositionSize: false,
         overrideConcurrentPositions: false,
+        configOverrides: {},
       };
 
       const input = buildCreateInput(state);
@@ -305,6 +309,7 @@ describe('useProfileEditor', () => {
         isDefault: true,
         overridePositionSize: true,
         overrideConcurrentPositions: true,
+        configOverrides: {},
       };
 
       const input = buildCreateInput(state);
@@ -324,6 +329,7 @@ describe('useProfileEditor', () => {
         isDefault: false,
         overridePositionSize: false,
         overrideConcurrentPositions: false,
+        configOverrides: {},
       };
 
       const input = buildCreateInput(state);
@@ -331,10 +337,29 @@ describe('useProfileEditor', () => {
       expect(input.maxPositionSize).toBeUndefined();
       expect(input.maxConcurrentPositions).toBeUndefined();
     });
+
+    it('should spread config overrides into input', () => {
+      const state: ProfileEditorState = {
+        name: 'Test',
+        description: '',
+        enabledSetupTypes: ['larry-williams-9-1'],
+        maxPositionSize: undefined,
+        maxConcurrentPositions: undefined,
+        isDefault: false,
+        overridePositionSize: false,
+        overrideConcurrentPositions: false,
+        configOverrides: { tradingMode: 'auto', useTrendFilter: true },
+      };
+
+      const input = buildCreateInput(state);
+
+      expect(input.tradingMode).toBe('auto');
+      expect(input.useTrendFilter).toBe(true);
+    });
   });
 
   describe('buildUpdateInput', () => {
-    it('should build update input same as create input', () => {
+    it('should build update input with nulled overrides for unset keys', () => {
       const state: ProfileEditorState = {
         name: 'Updated Profile',
         description: 'Updated description',
@@ -344,18 +369,16 @@ describe('useProfileEditor', () => {
         isDefault: true,
         overridePositionSize: true,
         overrideConcurrentPositions: false,
+        configOverrides: { tradingMode: 'semi_assisted' },
       };
 
       const input = buildUpdateInput(state);
 
-      expect(input).toEqual({
-        name: 'Updated Profile',
-        description: 'Updated description',
-        enabledSetupTypes: ['keltner-breakout-optimized'],
-        maxPositionSize: 20,
-        maxConcurrentPositions: undefined,
-        isDefault: true,
-      });
+      expect(input.name).toBe('Updated Profile');
+      expect(input.description).toBe('Updated description');
+      expect(input.maxPositionSize).toBe(20);
+      expect(input.tradingMode).toBe('semi_assisted');
+      expect(input.useTrendFilter).toBeNull();
     });
   });
 });

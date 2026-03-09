@@ -1,5 +1,5 @@
 import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
-import type { Kline, StrategyDefinition, TimeInterval, TradingSetup } from '@marketmind/types';
+import type { FibLevel, Kline, StrategyDefinition, TimeInterval, TradingSetup } from '@marketmind/types';
 import { FILTER_THRESHOLDS, getDefaultFee } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
@@ -12,9 +12,11 @@ import {
   autoTradingConfig,
   setupDetections,
   tradeExecutions,
+  tradingProfiles,
   wallets,
   type Wallet,
 } from '../../db/schema';
+import { applyProfileOverrides } from '../profile-applicator';
 import { env } from '../../env';
 import { serializeError } from '../../utils/errors';
 import { isDirectionAllowed } from '../../utils/trading-validation';
@@ -140,7 +142,7 @@ export class OrderExecutor {
     klines: Kline[],
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
-    fibonacciTargetLevel: 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236' = '2',
+    fibonacciTargetLevel: FibLevel = '2',
     interval: string = '4h',
     swingRange: 'extended' | 'nearest' = 'nearest'
   ): number | null {
@@ -217,7 +219,12 @@ export class OrderExecutor {
       riskReward: setup.riskRewardRatio ?? undefined,
     });
 
-    const config = await this.deps.getCachedConfig(watcher.walletId, watcher.userId);
+    let config = await this.deps.getCachedConfig(watcher.walletId, watcher.userId);
+    if (config && watcher.profileId) {
+      const [profileRow] = await db.select().from(tradingProfiles)
+        .where(eq(tradingProfiles.id, watcher.profileId)).limit(1);
+      if (profileRow) config = applyProfileOverrides(config, profileRow);
+    }
 
     const tpCalculationMode = config?.tpCalculationMode ?? 'default';
     const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';

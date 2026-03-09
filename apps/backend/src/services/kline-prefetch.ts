@@ -160,6 +160,36 @@ export interface KlineAvailabilityResult {
   apiExhausted: boolean;
 }
 
+export const runBatchBackfill = async (
+  walletId: string,
+  symbols: string[],
+  interval: string,
+  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+): Promise<void> => {
+  const { getWebSocketService } = await import('./websocket');
+  const ws = getWebSocketService();
+  const total = symbols.length;
+  const BATCH_SIZE = 3;
+
+  for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+    const batch = symbols.slice(i, i + BATCH_SIZE);
+    await Promise.allSettled(
+      batch.map(symbol =>
+        prefetchKlines({ symbol, interval, marketType, silent: true, forRotation: true })
+      )
+    );
+
+    const completed = Math.min(i + BATCH_SIZE, total);
+    const currentSymbol = batch[batch.length - 1] ?? '';
+    ws?.emitBackfillProgress(walletId, {
+      completed,
+      total,
+      currentSymbol,
+      status: completed >= total ? 'completed' : 'in_progress',
+    });
+  }
+};
+
 export const checkKlineAvailability = async (
   symbol: string,
   interval: string,

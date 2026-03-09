@@ -34,12 +34,12 @@ interface MainLayoutProps {
 }
 
 const MIN_TRADING_WIDTH = 300;
-const MAX_TRADING_WIDTH = 600;
 const DEFAULT_TRADING_WIDTH = MIN_TRADING_WIDTH;
 
 const MIN_MARKET_WIDTH = 300;
-const MAX_MARKET_WIDTH = 500;
 const DEFAULT_MARKET_WIDTH = MIN_MARKET_WIDTH;
+
+const MAX_SIDEBAR_RATIO = 0.75;
 
 export const MainLayout = ({
   children,
@@ -89,13 +89,14 @@ export const MainLayout = ({
   }, [marketWidth]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
+    const maxWidth = Math.floor(window.innerWidth * MAX_SIDEBAR_RATIO);
     if (isResizing) {
       const deltaX = startXRef.current - e.clientX;
-      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_TRADING_WIDTH), MAX_TRADING_WIDTH);
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_TRADING_WIDTH), maxWidth);
       setTradingWidth(newWidth);
     } else if (isResizingMarket) {
       const deltaX = e.clientX - startXRef.current;
-      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_MARKET_WIDTH), MAX_MARKET_WIDTH);
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_MARKET_WIDTH), maxWidth);
       setMarketWidth(newWidth);
     }
   }, [isResizing, isResizingMarket, setTradingWidth, setMarketWidth]);
