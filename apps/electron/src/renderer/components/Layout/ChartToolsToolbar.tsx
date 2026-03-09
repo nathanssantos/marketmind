@@ -13,16 +13,12 @@ import {
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
-import { TrailingStopPopover } from './TrailingStopPopover';
-
 export interface ChartToolsToolbarProps {
-  symbol?: string;
   movingAverages: MovingAverageConfig[];
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
 }
 
 export const ChartToolsToolbar = memo(({
-  symbol,
   movingAverages,
   onMovingAveragesChange,
 }: ChartToolsToolbarProps) => {
@@ -137,7 +133,6 @@ export const ChartToolsToolbar = memo(({
             <LuCalendarDays />
           </IconButton>
         </TooltipWrapper>
-        {symbol && <TrailingStopPopover symbol={symbol} />}
       </HStack>
     </Box>
   );

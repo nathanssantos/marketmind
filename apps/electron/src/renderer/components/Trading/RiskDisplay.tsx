@@ -35,7 +35,7 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
   );
 
   const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
-    { walletId, limit: 100 },
+    { walletId },
     { enabled: !!walletId, refetchInterval: 60000, staleTime: 30000 }
   );
 

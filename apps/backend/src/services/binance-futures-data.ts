@@ -13,9 +13,8 @@ const RATE_LIMIT_DELAY = 100;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-const fetchWithRetry = async (url: string): Promise<Response> => {
-  return withRetryFetch(url, {}, { timeoutMs: WEBSOCKET_CONFIG.FETCH_TIMEOUT_MS });
-};
+const fetchWithRetry = async (url: string): Promise<Response> =>
+  withRetryFetch(url, {}, { timeoutMs: WEBSOCKET_CONFIG.FETCH_TIMEOUT_MS });
 
 interface BinanceFundingRateResponse {
   symbol: string;

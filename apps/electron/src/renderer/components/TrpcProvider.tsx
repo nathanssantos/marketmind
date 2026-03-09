@@ -28,7 +28,10 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
                     if (error instanceof Error) {
                         if (error.message.includes('UNAUTHORIZED')) return false;
                         if (error.message.includes('NOT_FOUND')) return false;
+                        if (error.message.includes('TOO_MANY_REQUESTS')) return false;
                     }
+                    const errStr = String(error);
+                    if (errStr.includes('TOO_MANY_REQUESTS')) return false;
                     return failureCount < 2;
                 },
                 retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),

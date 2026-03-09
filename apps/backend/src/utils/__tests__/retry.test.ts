@@ -14,6 +14,15 @@ vi.mock('../../constants', () => ({
     BACKOFF_MULTIPLIER: 2,
     FETCH_TIMEOUT_MS: 30000,
   },
+  TIME_MS: {
+    SECOND: 1_000,
+    MINUTE: 60_000,
+    HOUR: 3_600_000,
+    DAY: 86_400_000,
+    WEEK: 604_800_000,
+    MONTH: 2_592_000_000,
+    YEAR: 31_536_000_000,
+  },
 }));
 
 vi.mock('../../services/logger', () => ({

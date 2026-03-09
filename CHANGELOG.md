@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.57.0] - 2026-03-09
+
+### Added
+- **Grid Orders**: click-and-drag on chart to place multiple limit/stop orders at evenly-spaced price levels within a range; configurable order count (2–50), buy/sell side; grid icon button in quick trade toolbar (left-click toggles, right-click opens config)
+- **Price Magnet (Snap)**: mouse snaps to adhesion points (round numbers, existing order entries, SL/TP levels) when drawing grid; configurable snap distance
+- **Quick Trade Toolbar**: new floating toolbar at chart top-left with size presets (MIN, 0.5%–10%), slider, instant Buy/Sell buttons, grid orders, and trailing stop popover
+- **Binance Rate Limiter & IP Ban Protection**: centralized `BinanceRateLimiter` class with ban detection (HTTP 418/429, error -1003), automatic cooldown, and `guardBinanceCall()` wrapper across all Binance API calls
+- **Signal Suggestion Pre-Validation**: `validateSetupFilters()` checks direction, cooldown, filters, and existing positions before creating signal suggestions
+- **Directional Order Line Colors**: SL/TP lines now use distinct colors per direction (long=green/red, short=orange/blue) for better visual clarity
+- **Collapsible Portfolio Summary**: summary section can be collapsed to show only unrealized P&L; state persisted in preferences
+- **Debounced SL/TP Refresh After Pyramid**: 3-second debounce prevents rapid SL/TP cancel/replace during consecutive pyramid fills
+- **Pending Entry Cleanup**: automatically cancels pending entry orders when position closes
+
+### Changed
+- Trailing stop popover no longer requires an open position to display
+- Removed `limit` parameter from active executions queries (fetch all)
+- Shift+Alt order entry enabled by default
+- Leverage/margin only set when no existing position for the symbol
+- Chart constant renamed: `FUTURE_VIEWPORT_EXTENSION` → `INITIAL_FUTURE_EXTENSION`
+- Startup audit caps reduced (50→10 executions, 7→3 days, 200→1500ms rate limit) to minimize API pressure
+- `TOO_MANY_REQUESTS` added to non-retryable tRPC error codes
+
+### Fixed
+- Pending order line colors now use dedicated pending colors instead of reusing SL colors
+
 ## [0.56.0] - 2026-03-08
 
 ### Added

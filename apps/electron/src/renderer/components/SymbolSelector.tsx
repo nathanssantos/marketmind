@@ -81,7 +81,7 @@ const useOpenPositionSymbols = (walletId: string | undefined) => {
   );
 
   const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
-    { walletId: walletId ?? '', limit: 100 },
+    { walletId: walletId ?? '' },
     { enabled: !!walletId }
   );
 

@@ -537,6 +537,17 @@ export class SignalProcessor {
       const expiresAt = new Date(Date.now() + intervalMs * 3);
 
       for (const setup of detectedSetups) {
+        const passesFilters = await this.deps.validateSetupFilters(
+          watcher, setup, filteredStrategies, closedKlines, logBuffer
+        );
+        if (!passesFilters) {
+          logBuffer.log('~', 'Setup filtered out (semi-assisted)', {
+            type: setup.type,
+            direction: setup.direction,
+          });
+          continue;
+        }
+
         const suggestionId = generateEntityId();
 
         await db.insert(signalSuggestions).values({

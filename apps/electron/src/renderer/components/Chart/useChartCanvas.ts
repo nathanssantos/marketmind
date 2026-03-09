@@ -64,7 +64,7 @@ export const useChartCanvas = ({
     const visibleCount = Math.min(calculateVisibleKlines(), klineCount);
     const futureSpace = Math.max(
       CHART_CONFIG.MIN_FUTURE_KLINES,
-      Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+      Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
     );
 
     return {
@@ -181,7 +181,7 @@ export const useChartCanvas = ({
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
         const futureSpace = Math.max(
           CHART_CONFIG.MIN_FUTURE_KLINES,
-          Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+          Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
         );
         const newViewport = {
           ...DEFAULT_VIEWPORT,
@@ -202,7 +202,7 @@ export const useChartCanvas = ({
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
         const futureSpace = Math.max(
           CHART_CONFIG.MIN_FUTURE_KLINES,
-          Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+          Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
         );
         const newViewport = {
           ...DEFAULT_VIEWPORT,
@@ -221,7 +221,7 @@ export const useChartCanvas = ({
         const visibleCount = Math.min(calculateVisibleKlines(chartWidth), currentCount);
         const futureSpace = Math.max(
           CHART_CONFIG.MIN_FUTURE_KLINES,
-          Math.floor(visibleCount * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION),
+          Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
         );
         const newViewport = {
           ...currentViewport,

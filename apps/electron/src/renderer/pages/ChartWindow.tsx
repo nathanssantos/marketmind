@@ -12,6 +12,7 @@ import { PinnedControlsProvider } from '../components/Chart/PinnedControlsContex
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
+import { QuickTradeToolbar } from '../components/Layout/QuickTradeToolbar';
 import { Toolbar } from '../components/Layout/Toolbar';
 import { MarketStatusBar } from '../components/MarketStatusBar';
 import { ErrorMessage } from '../components/ui/ErrorMessage';
@@ -277,8 +278,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       {assetClass === 'STOCKS' && <MarketStatusBar />}
 
       <Box flex="1" position="relative" overflow="hidden">
+        {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
         <ChartToolsToolbar
-          symbol={symbol}
           movingAverages={movingAverages}
           onMovingAveragesChange={setMovingAverages}
         />

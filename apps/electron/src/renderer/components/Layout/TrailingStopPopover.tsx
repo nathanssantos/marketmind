@@ -1,5 +1,5 @@
 import { Switch } from '@/renderer/components/ui/switch';
-import { Box, Flex, HStack, IconButton, Separator, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, HStack, IconButton, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
@@ -24,24 +24,14 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
   const { activeWallet } = useActiveWallet();
   const walletId = activeWallet?.id ?? '';
 
-  const { data: executions } = trpc.autoTrading.getActiveExecutions.useQuery(
-    { walletId, limit: 50 },
-    { enabled: !!walletId && !!symbol, refetchInterval: 10000 }
-  );
-
-  const hasOpenPosition = useMemo(
-    () => executions?.some(e => e.symbol === symbol && e.status === 'open') ?? false,
-    [executions, symbol]
-  );
-
   const { data: symbolConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId, symbol },
-    { enabled: !!walletId && hasOpenPosition, refetchInterval: 30000 }
+    { enabled: !!walletId && !!symbol, refetchInterval: 30000 }
   );
 
   const { data: walletConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
-    { enabled: !!walletId && hasOpenPosition, refetchInterval: 30000 }
+    { enabled: !!walletId, refetchInterval: 30000 }
   );
 
   const utils = trpc.useUtils();
@@ -153,11 +143,9 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
     };
   }, [symbolConfig, walletConfig, useIndividualConfig]);
 
-  if (!walletId || !hasOpenPosition) return null;
+  if (!walletId) return null;
 
   return (
-    <>
-    <Separator orientation="vertical" height="4" />
     <Popover
       open={isOpen}
       onOpenChange={(e) => setIsOpen(e.open)}
@@ -176,7 +164,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
               aria-label={t('positionTrailingStop.title')}
               size="2xs"
               variant={isOpen ? 'solid' : 'ghost'}
-              colorPalette="blue"
+              colorPalette={isOpen ? 'blue' : 'gray'}
             >
               <LuShield />
             </IconButton>
@@ -262,7 +250,6 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         )}
       </VStack>
     </Popover>
-    </>
   );
 });
 

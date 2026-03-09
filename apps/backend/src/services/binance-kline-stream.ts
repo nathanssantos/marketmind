@@ -6,6 +6,7 @@ import { and, eq } from 'drizzle-orm';
 import { WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import { klines } from '../db/schema';
+import { binanceApiCache, binanceRateLimiter } from './binance-api-cache';
 import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
@@ -61,11 +62,19 @@ const fetchKlineFromREST = async (
   takerBuyQuoteVolume: string;
 } | null> => {
   try {
+    if (binanceApiCache.isBanned()) return null;
+    if (binanceRateLimiter.isOverLimit()) return null;
+
     const baseUrl = marketType === 'FUTURES'
       ? 'https://fapi.binance.com/fapi/v1/klines'
       : 'https://api.binance.com/api/v3/klines';
 
+    binanceRateLimiter.recordRequest();
     const response = await fetch(`${baseUrl}?symbol=${symbol}&interval=${interval}&startTime=${openTime}&limit=1`);
+    if (response.status === 418 || response.status === 429) {
+      binanceApiCache.checkAndSetBan(await response.text());
+      return null;
+    }
     if (!response.ok) return null;
 
     const data = await response.json();

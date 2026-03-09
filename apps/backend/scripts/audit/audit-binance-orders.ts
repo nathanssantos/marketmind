@@ -304,49 +304,113 @@ async function main() {
     console.log(`  Closed executions to audit: ${closedExecutions.length}`);
     console.log(`  Currently open positions: ${openExecutions.length}\n`);
 
-    for (const exec of closedExecutions) {
+    const nonOrphaned = closedExecutions.filter(e => !isOrphanedExit(e));
+    const orphaned = closedExecutions.filter(e => isOrphanedExit(e));
+    for (const exec of orphaned) {
       totalAudited++;
-      const isOrphaned = isOrphanedExit(exec);
-
-      const dbEntryPrice = parseFloat(exec.entryPrice);
-      const dbExitPrice = parseFloat(exec.exitPrice || '0');
-      const dbQuantity = parseFloat(exec.quantity);
-      const dbEntryFee = parseFloat(exec.entryFee || '0');
-      const dbExitFee = parseFloat(exec.exitFee || '0');
-      const dbTotalFees = parseFloat(exec.fees || '0');
-      const dbPnl = parseFloat(exec.pnl || '0');
-      const dbPnlPercent = parseFloat(exec.pnlPercent || '0');
-      const dbAccFunding = parseFloat(exec.accumulatedFunding || '0');
-
-      const result: TradeAuditResult = {
-        executionId: exec.id,
-        symbol: exec.symbol,
-        side: exec.side,
-        status: 'MATCH',
-        discrepancies: [],
+      totalSkipped++;
+      allResults.push({
+        executionId: exec.id, symbol: exec.symbol, side: exec.side,
+        status: 'SKIP', skipReason: 'orphaned', discrepancies: [],
         dbData: {
-          entryPrice: dbEntryPrice, exitPrice: dbExitPrice, quantity: dbQuantity,
-          entryFee: dbEntryFee, exitFee: dbExitFee, totalFees: dbTotalFees,
-          pnl: dbPnl, pnlPercent: dbPnlPercent, exitReason: exec.exitReason,
-          exitSource: exec.exitSource, accumulatedFunding: dbAccFunding,
+          entryPrice: parseFloat(exec.entryPrice), exitPrice: parseFloat(exec.exitPrice || '0'),
+          quantity: parseFloat(exec.quantity), entryFee: parseFloat(exec.entryFee || '0'),
+          exitFee: parseFloat(exec.exitFee || '0'), totalFees: parseFloat(exec.fees || '0'),
+          pnl: parseFloat(exec.pnl || '0'), pnlPercent: parseFloat(exec.pnlPercent || '0'),
+          exitReason: exec.exitReason, exitSource: exec.exitSource,
+          accumulatedFunding: parseFloat(exec.accumulatedFunding || '0'),
         },
         binanceData: null,
-      };
+      });
+    }
 
-      if (isOrphaned) {
-        result.status = 'SKIP';
-        result.skipReason = 'orphaned';
-        totalSkipped++;
-        allResults.push(result);
+    const symbolGroups = new Map<string, typeof nonOrphaned>();
+    for (const exec of nonOrphaned) {
+      const group = symbolGroups.get(exec.symbol) ?? [];
+      group.push(exec);
+      symbolGroups.set(exec.symbol, group);
+    }
+
+    console.log(`  Symbols to fetch: ${symbolGroups.size} (${nonOrphaned.length} executions, ${orphaned.length} orphaned skipped)\n`);
+
+    const tradesCache = new Map<string, BinanceTrade[]>();
+    const fundingCache = new Map<string, number>();
+
+    let symbolIdx = 0;
+    for (const [symbol, execsForSymbol] of symbolGroups) {
+      symbolIdx++;
+      const minOpenedAt = Math.min(...execsForSymbol.map(e => e.openedAt?.getTime() || e.createdAt.getTime()));
+      const maxClosedAt = Math.max(...execsForSymbol.map(e => e.closedAt?.getTime() || Date.now()));
+
+      console.log(`  [${symbolIdx}/${symbolGroups.size}] ${symbol} (${execsForSymbol.length} executions, range: ${Math.round((maxClosedAt - minOpenedAt) / 86400000)}d)`);
+
+      try {
+        await sleep(1500);
+        const trades = await fetchAllAccountTrades(client, symbol, minOpenedAt, maxClosedAt);
+        tradesCache.set(symbol, trades);
+
+        await sleep(1500);
+        const funding = await fetchFundingFees(client, symbol, minOpenedAt, maxClosedAt);
+        fundingCache.set(symbol, funding);
+
+        console.log(`    fetched ${trades.length} trades, funding=$${funding.toFixed(4)}`);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : JSON.stringify(error);
+        console.log(`    ERROR: ${msg}`);
+        if (msg.includes('banned') || msg.includes('Too many') || msg.includes('TOO_MANY') || msg.includes('-1003')) {
+          const retryMatch = msg.match(/"retry-after":"(\d+)"/);
+          const waitSec = retryMatch ? Math.min(parseInt(retryMatch[1], 10) + 5, 600) : 120;
+          console.log(`    Rate limited! Waiting ${waitSec}s...`);
+          await sleep(waitSec * 1000);
+        }
+        for (const exec of execsForSymbol) {
+          totalAudited++;
+          totalErrors++;
+          allResults.push({
+            executionId: exec.id, symbol: exec.symbol, side: exec.side,
+            status: 'ERROR', discrepancies: [`Error fetching from Binance: ${msg}`],
+            dbData: {
+              entryPrice: parseFloat(exec.entryPrice), exitPrice: parseFloat(exec.exitPrice || '0'),
+              quantity: parseFloat(exec.quantity), entryFee: parseFloat(exec.entryFee || '0'),
+              exitFee: parseFloat(exec.exitFee || '0'), totalFees: parseFloat(exec.fees || '0'),
+              pnl: parseFloat(exec.pnl || '0'), pnlPercent: parseFloat(exec.pnlPercent || '0'),
+              exitReason: exec.exitReason, exitSource: exec.exitSource,
+              accumulatedFunding: parseFloat(exec.accumulatedFunding || '0'),
+            },
+            binanceData: null,
+          });
+        }
         continue;
       }
 
-      try {
+      for (const exec of execsForSymbol) {
+        totalAudited++;
+        const dbEntryPrice = parseFloat(exec.entryPrice);
+        const dbExitPrice = parseFloat(exec.exitPrice || '0');
+        const dbQuantity = parseFloat(exec.quantity);
+        const dbEntryFee = parseFloat(exec.entryFee || '0');
+        const dbExitFee = parseFloat(exec.exitFee || '0');
+        const dbTotalFees = parseFloat(exec.fees || '0');
+        const dbPnl = parseFloat(exec.pnl || '0');
+        const dbPnlPercent = parseFloat(exec.pnlPercent || '0');
+        const dbAccFunding = parseFloat(exec.accumulatedFunding || '0');
+
+        const result: TradeAuditResult = {
+          executionId: exec.id, symbol: exec.symbol, side: exec.side,
+          status: 'MATCH', discrepancies: [],
+          dbData: {
+            entryPrice: dbEntryPrice, exitPrice: dbExitPrice, quantity: dbQuantity,
+            entryFee: dbEntryFee, exitFee: dbExitFee, totalFees: dbTotalFees,
+            pnl: dbPnl, pnlPercent: dbPnlPercent, exitReason: exec.exitReason,
+            exitSource: exec.exitSource, accumulatedFunding: dbAccFunding,
+          },
+          binanceData: null,
+        };
+
         const openedAt = exec.openedAt?.getTime() || exec.createdAt.getTime();
         const closedAt = exec.closedAt?.getTime() || Date.now();
-
-        await sleep(300);
-        const trades = await fetchAllAccountTrades(client, exec.symbol, openedAt, closedAt);
+        const allSymbolTrades = tradesCache.get(exec.symbol) ?? [];
+        const trades = allSymbolTrades.filter(t => t.time >= openedAt - 10_000 && t.time <= closedAt + 10_000);
 
         if (trades.length === 0) {
           result.status = 'NO_BINANCE_DATA';
@@ -377,13 +441,9 @@ async function main() {
         let totalRealizedPnl = 0;
         for (const t of exitTrades) totalRealizedPnl += parseFloat(t.realizedPnl);
 
-        let fundingFees = 0;
-        try {
-          await sleep(200);
-          fundingFees = await fetchFundingFees(client, exec.symbol, openedAt, closedAt);
-        } catch (_e) {
-          result.discrepancies.push('Failed to fetch funding fees from Binance');
-        }
+        const allFunding = fundingCache.get(exec.symbol) ?? 0;
+        const symbolExecs = execsForSymbol.length;
+        const fundingFees = symbolExecs === 1 ? allFunding : 0;
 
         result.binanceData = {
           entryPrice: entry.avgPrice, exitPrice: exit.avgPrice,
@@ -449,14 +509,9 @@ async function main() {
         } else {
           totalMatches++;
         }
-      } catch (error) {
-        result.status = 'ERROR';
-        const msg = error instanceof Error ? error.message : String(error);
-        result.discrepancies.push(`Error fetching from Binance: ${msg}`);
-        totalErrors++;
-      }
 
-      allResults.push(result);
+        allResults.push(result);
+      }
     }
   }
 

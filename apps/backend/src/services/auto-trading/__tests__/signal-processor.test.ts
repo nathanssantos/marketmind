@@ -218,6 +218,7 @@ const createWatcher = (overrides: Partial<ActiveWatcher> = {}): ActiveWatcher =>
 const createDeps = (): SignalProcessorDeps => ({
   getActiveWatchers: vi.fn(() => new Map<string, ActiveWatcher>()),
   executeSetupSafe: vi.fn().mockResolvedValue(true),
+  validateSetupFilters: vi.fn().mockResolvedValue(true),
   isWatcherRecentlyRotated: vi.fn().mockReturnValue(false),
   getRotationPendingWatcher: vi.fn().mockReturnValue(undefined),
   deleteRotationPendingWatcher: vi.fn(),

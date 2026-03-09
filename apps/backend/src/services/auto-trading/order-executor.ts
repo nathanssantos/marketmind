@@ -48,6 +48,93 @@ export class OrderExecutor {
     this.filterValidator = new FilterValidator(deps);
   }
 
+  async validateSetupFilters(
+    watcher: ActiveWatcher,
+    setup: TradingSetup,
+    strategies: StrategyDefinition[],
+    cycleKlines: Kline[],
+    logBuffer: WatcherLogBuffer
+  ): Promise<boolean> {
+    let config = await this.deps.getCachedConfig(watcher.walletId, watcher.userId);
+    if (config && watcher.profileId) {
+      const [profileRow] = await db.select().from(tradingProfiles)
+        .where(eq(tradingProfiles.id, watcher.profileId)).limit(1);
+      if (profileRow) config = applyProfileOverrides(config, profileRow);
+    }
+
+    const tpCalculationMode = config?.tpCalculationMode ?? 'default';
+    const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
+    const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
+    const effectiveFibLevel = setup.direction === 'LONG' ? fibonacciTargetLevelLong : fibonacciTargetLevelShort;
+    const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
+
+    let effectiveTakeProfit = setup.takeProfit;
+
+    if (tpCalculationMode === 'fibonacci') {
+      const fibTarget = this.calculateFibonacciTakeProfit(
+        cycleKlines, setup.entryPrice, setup.direction,
+        effectiveFibLevel, watcher.interval, fibonacciSwingRange
+      );
+
+      if (fibTarget !== null) {
+        const isValidTarget = setup.direction === 'LONG'
+          ? fibTarget > setup.entryPrice
+          : fibTarget < setup.entryPrice;
+        if (isValidTarget) effectiveTakeProfit = fibTarget;
+        else return false;
+      } else {
+        return false;
+      }
+    }
+
+    const rrValidation = this.validateRiskReward(setup, effectiveTakeProfit, tpCalculationMode, config, logBuffer);
+    if (!rrValidation.valid) return false;
+
+    const cooldownCheck = await cooldownService.checkCooldown(
+      setup.type, watcher.symbol, watcher.interval, watcher.walletId
+    );
+    if (cooldownCheck.inCooldown) return false;
+
+    const directionMode = config?.directionMode ?? 'auto';
+    if (!isDirectionAllowed(directionMode, setup.direction)) return false;
+
+    const filterConfig: FilterValidatorConfig = {
+      ...buildFilterConfigFromDb(config as unknown as Record<string, unknown>),
+      useBtcCorrelationFilter: directionMode === 'auto' && (config?.useBtcCorrelationFilter ?? false),
+      volumeFilterConfig: {
+        longConfig: {
+          useObvCheck: config?.useObvCheckLong ?? false,
+          obvLookback: config?.volumeFilterObvLookbackLong ?? 7,
+        },
+        shortConfig: {
+          useObvCheck: config?.useObvCheckShort ?? true,
+          obvLookback: config?.volumeFilterObvLookbackShort ?? 5,
+        },
+      },
+    } as FilterValidatorConfig;
+
+    const filterValidation = await this.filterValidator.validateFilters(
+      watcher, setup, filterConfig, cycleKlines, strategies, logBuffer
+    );
+    if (!filterValidation.passed) return false;
+
+    const activePositions = await db
+      .select()
+      .from(tradeExecutions)
+      .where(
+        and(
+          eq(tradeExecutions.walletId, watcher.walletId),
+          inArray(tradeExecutions.status, ['open', 'pending'])
+        )
+      );
+    const oppositePosition = activePositions.find(
+      (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
+    );
+    if (oppositePosition) return false;
+
+    return true;
+  }
+
   async executeSetupSafe(
     watcher: ActiveWatcher,
     setup: TradingSetup,

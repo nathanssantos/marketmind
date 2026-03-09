@@ -26,6 +26,8 @@ import { useToast } from '@renderer/hooks/useToast';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
+import { useGridOrderStore } from '@renderer/store/gridOrderStore';
+import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
@@ -39,8 +41,11 @@ import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { useChartCanvas } from './useChartCanvas';
+import { useGridInteraction } from './useGridInteraction';
+import { useGridPreviewRenderer } from './useGridPreviewRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
 import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
+import { usePriceMagnet } from './usePriceMagnet';
 import type { MovingAverageConfig } from './useMovingAverageRenderer';
 import {
   useChartState,
@@ -136,13 +141,8 @@ export const ChartCanvas = ({
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
 
-  const { data: autoConfig } = trpc.autoTrading.getConfig.useQuery(
-    { walletId: backendWalletId! },
-    { enabled: !!backendWalletId }
-  );
-
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
-    { walletId: backendWalletId ?? '', limit: 50 },
+    { walletId: backendWalletId ?? '' },
     {
       enabled: !!backendWalletId && !!symbol,
       refetchInterval: 10000,
@@ -179,12 +179,25 @@ export const ChartCanvas = ({
     return [...filteredBackendExecutions, ...uniqueOptimistic];
   }, [filteredBackendExecutions, optimisticExecutions, symbol]);
 
+  const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
+  const quickTradeUseMinNotional = useQuickTradeStore((s) => s.useMinNotional);
+
+  const { data: symbolFiltersData } = trpc.trading.getSymbolFilters.useQuery(
+    { symbol: symbol!, marketType: marketType ?? 'FUTURES' },
+    { enabled: !!symbol, staleTime: 60 * 60 * 1000 }
+  );
+  const minNotional = symbolFiltersData?.minNotional ?? 5;
+
   const getOrderQuantity = useCallback((price: number): string => {
     const balance = parseFloat(activeWallet?.currentBalance ?? '0');
-    const sizePercent = Number(autoConfig?.manualPositionSizePercent ?? 2.5) / 100;
-    const qty = balance > 0 && price > 0 ? (balance * sizePercent) / price : 1;
+    if (quickTradeUseMinNotional) {
+      const qty = price > 0 ? minNotional / price : 0;
+      return roundTradingQty(qty);
+    }
+    const pct = quickTradeSizePercent / 100;
+    const qty = balance > 0 && price > 0 ? (balance * pct) / price : 1;
     return roundTradingQty(qty);
-  }, [activeWallet?.currentBalance, autoConfig?.manualPositionSizePercent]);
+  }, [activeWallet?.currentBalance, quickTradeSizePercent, quickTradeUseMinNotional, minNotional]);
 
   const latestKlinesPriceRef = useRef(klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0);
   latestKlinesPriceRef.current = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
@@ -322,12 +335,19 @@ export const ChartCanvas = ({
     measurementRaf: measurementRafRef,
   } = chartRefs;
 
+  const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
+
   const { shiftPressed, altPressed } = useTradingShortcuts({
     onLongEntry: handleLongEntry,
     onShortEntry: handleShortEntry,
     onEscape: () => {
       if (orderPreviewRef.current !== null) {
         orderPreviewRef.current = null;
+        manager?.markDirty('overlays');
+      }
+      if (useGridOrderStore.getState().isGridModeActive) {
+        useGridOrderStore.getState().resetDrawing();
+        setGridModeActive(false);
         manager?.markDirty('overlays');
       }
     },
@@ -671,6 +691,70 @@ export const ChartCanvas = ({
     markDirty: memoizedMarkDirty,
   });
 
+  const isGridModeActive = useGridOrderStore((s) => s.isGridModeActive);
+  const gridSnapEnabled = useGridOrderStore((s) => s.snapEnabled);
+  const gridSnapDistancePx = useGridOrderStore((s) => s.snapDistancePx);
+
+  const tickSize = symbolFiltersData?.tickSize ?? 0;
+
+  const { getSnappedPrice } = usePriceMagnet({
+    manager,
+    enabled: isGridModeActive && gridSnapEnabled,
+    snapDistancePx: gridSnapDistancePx,
+    executions: allExecutions,
+    tickSize: tickSize > 0 ? tickSize : undefined,
+  });
+
+  const handleGridConfirm = useCallback(async (prices: number[], side: 'BUY' | 'SELL') => {
+    if (!backendWalletId || !symbol) return;
+
+    const marketPrice = latestKlinesPriceRef.current;
+
+    for (const price of prices) {
+      const quantity = getOrderQuantity(price);
+      if (!quantity || parseFloat(quantity) <= 0) continue;
+
+      const isBuy = side === 'BUY';
+      const isAboveMarket = marketPrice > 0 && price > marketPrice;
+      const isBelowMarket = marketPrice > 0 && price < marketPrice;
+
+      let type: 'LIMIT' | 'STOP_MARKET';
+      if (isBuy) {
+        type = isAboveMarket ? 'STOP_MARKET' : 'LIMIT';
+      } else {
+        type = isBelowMarket ? 'STOP_MARKET' : 'LIMIT';
+      }
+
+      try {
+        await addBackendOrder({
+          walletId: backendWalletId,
+          symbol,
+          side,
+          type,
+          price: type === 'LIMIT' ? roundTradingPrice(price) : undefined,
+          stopPrice: type === 'STOP_MARKET' ? roundTradingPrice(price) : undefined,
+          quantity,
+        });
+      } catch {
+        break;
+      }
+    }
+
+    utils.autoTrading.getActiveExecutions.invalidate();
+  }, [backendWalletId, symbol, getOrderQuantity, addBackendOrder, utils]);
+
+  const gridInteraction = useGridInteraction({
+    manager,
+    enabled: isGridModeActive && hasTradingEnabled,
+    getSnappedPrice,
+    onGridConfirm: handleGridConfirm,
+  });
+
+  const { renderGridPreview } = useGridPreviewRenderer({
+    manager,
+    getPreviewPrices: gridInteraction.getPreviewPrices,
+  });
+
   const {
     handleCanvasMouseMove,
     handleCanvasMouseDown,
@@ -714,6 +798,7 @@ export const ChartCanvas = ({
     onLongEntry: handleLongEntry,
     onShortEntry: handleShortEntry,
     orderDragHandler,
+    gridInteraction: isGridModeActive ? gridInteraction : undefined,
     cursorManager,
     handleMouseMove,
     handleMouseDown,
@@ -868,6 +953,7 @@ export const ChartCanvas = ({
       renderUltimateOsc();
       renderCurrentPriceLine_Line();
       renderOrderLines();
+      renderGridPreview();
 
       const currentDragPreviewPrice = orderDragHandler.getPreviewPrice();
       if (orderDragHandler.isDragging && orderDragHandler.draggedOrder && currentDragPreviewPrice !== null && manager) {
@@ -1109,6 +1195,7 @@ export const ChartCanvas = ({
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,
     renderOrderLines,
+    renderGridPreview,
     chartType,
     measurementArea,
     isMeasuring,

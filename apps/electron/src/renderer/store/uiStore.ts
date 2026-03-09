@@ -174,7 +174,7 @@ export const useUIStore = create<UIState>()(
     showEventRow: false,
     setShowEventRow: (show) => { set({ showEventRow: show }); syncUI('showEventRow', show); },
 
-    enableShiftAltOrderEntry: false,
+    enableShiftAltOrderEntry: true,
     setEnableShiftAltOrderEntry: (enabled) => { set({ enableShiftAltOrderEntry: enabled }); syncUI('enableShiftAltOrderEntry', enabled); },
 
     isAnalyticsOpen: false,

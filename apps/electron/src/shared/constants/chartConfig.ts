@@ -23,7 +23,8 @@ export const CHART_CONFIG = {
   PERCENT_MULTIPLIER: 100,
   PRICE_RANGE_PADDING: 0.5,
 
-  FUTURE_VIEWPORT_EXTENSION: 0.15,
+  FUTURE_VIEWPORT_EXTENSION: 0.9,
+  INITIAL_FUTURE_EXTENSION: 0.05,
   MIN_FUTURE_KLINES: 5,
 
   TIME_LABEL_MIN_GAP: 12,
@@ -87,3 +88,11 @@ export const OSCILLATOR_CONFIG = {
 } as const;
 
 export const PROJECTION_LINE_DASH = [4, 2] as readonly number[];
+
+export const GRID_ORDER_CONFIG = {
+  PREVIEW_LINE_WIDTH: 1,
+  PREVIEW_LINE_DASH: [4, 4] as readonly number[],
+  LABEL_FONT: '10px monospace',
+  LABEL_HEIGHT: 14,
+  LABEL_PADDING: 4,
+} as const;

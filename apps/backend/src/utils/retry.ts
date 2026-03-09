@@ -1,4 +1,5 @@
 import { AUTO_TRADING_RETRY } from '../constants';
+import { binanceApiCache, binanceRateLimiter, BinanceIpBannedError } from '../services/binance-api-cache';
 import { logger } from '../services/logger';
 
 export interface RetryOptions {
@@ -21,7 +22,6 @@ const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'onRetry' | 'retryableErrors'
 
 const BINANCE_RETRYABLE_ERRORS = [
   '-1001',
-  '-1003',
   '-1015',
   '-1021',
   'ETIMEDOUT',
@@ -32,12 +32,12 @@ const BINANCE_RETRYABLE_ERRORS = [
   'socket hang up',
   'network error',
   'timeout',
-  'Too Many Requests',
   'Service Unavailable',
   'Bad Gateway',
 ];
 
 const BINANCE_NON_RETRYABLE_ERRORS = [
+  '-1003',
   '-2010',
   '-2011',
   '-2014',
@@ -49,6 +49,8 @@ const BINANCE_NON_RETRYABLE_ERRORS = [
   '-4003',
   '-4015',
   '-4016',
+  'banned',
+  'Too Many Requests',
   'Insufficient balance',
   'Order would immediately trigger',
   'Invalid symbol',
@@ -63,8 +65,12 @@ const isRetryableError = (
   retryablePatterns: string[] = BINANCE_RETRYABLE_ERRORS,
   nonRetryablePatterns: string[] = BINANCE_NON_RETRYABLE_ERRORS
 ): boolean => {
+  if (error instanceof BinanceIpBannedError) return false;
+
   const cause = 'cause' in error ? String(error.cause) : '';
   const errorString = error.message + cause;
+
+  if (binanceApiCache.checkAndSetBan(errorString)) return false;
 
   for (const pattern of nonRetryablePatterns) {
     if (errorString.includes(pattern)) return false;
@@ -161,6 +167,15 @@ export const withRetryFetch = async (
   fetchOptions: RequestInit = {},
   retryOptions: Partial<RetryOptions> = {}
 ): Promise<Response> => {
+  const isBinance = url.includes('binance.com');
+  if (isBinance) {
+    if (binanceApiCache.isBanned()) {
+      const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
+      throw new BinanceIpBannedError(waitSeconds);
+    }
+    await binanceRateLimiter.acquireSlot();
+  }
+
   const timeoutMs = retryOptions.timeoutMs ?? AUTO_TRADING_RETRY.FETCH_TIMEOUT_MS;
 
   return withRetry(async () => {
@@ -172,6 +187,13 @@ export const withRetryFetch = async (
         ...fetchOptions,
         signal: controller.signal,
       });
+
+      if (response.status === 418 || response.status === 429) {
+        const body = await response.text();
+        binanceApiCache.checkAndSetBan(body);
+        const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
+        throw new BinanceIpBannedError(waitSeconds);
+      }
 
       if (!response.ok && response.status >= 500) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`);

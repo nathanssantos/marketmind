@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { autoTradingConfig, tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
 import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './execution-manager';
 import { logger, serializeError } from './logger';
@@ -115,6 +116,10 @@ export class OrderSyncService {
             }, '[OrderSync] Sync found issues');
           }
         } catch (error) {
+          if (error instanceof BinanceIpBannedError) {
+            logger.warn({ walletId: wallet.id }, '[OrderSync] Skipping wallet sync - IP banned');
+            continue;
+          }
           results.push({
             walletId: wallet.id,
             synced: false,
@@ -142,6 +147,10 @@ export class OrderSyncService {
         }, '[OrderSync] All wallets sync completed');
       }
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) {
+        logger.warn('[OrderSync] Skipping - IP banned');
+        return results;
+      }
       logger.error({ error: serializeError(error) }, '[OrderSync] Failed to sync wallets');
     }
 
@@ -504,6 +513,10 @@ export class OrderSyncService {
         }
       }
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) {
+        logger.warn({ walletId: wallet.id }, '[OrderSync] Skipping wallet sync - IP banned');
+        return result;
+      }
       const errorMsg = serializeError(error);
       result.synced = false;
       result.errors.push(errorMsg);

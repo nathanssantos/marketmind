@@ -10,6 +10,7 @@ import { env } from '../env';
 import { calculateNotional, calculatePnl, formatPrice, formatQuantityForBinance, roundToDecimals } from '../utils/formatters';
 import { getMinNotionalFilterService } from './min-notional-filter';
 import { getFuturesClient, getSpotClient } from '../exchange';
+import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceClientForPrices, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
@@ -75,9 +76,13 @@ export class PositionMonitorService {
         try {
           await this.checkAllPositions();
         } catch (error) {
-          logger.error({
-            error: serializeError(error),
-          }, 'Error in position monitoring loop');
+          if (error instanceof BinanceIpBannedError) {
+            logger.warn('[PositionMonitor] Skipping check cycle - IP banned');
+          } else {
+            logger.error({
+              error: serializeError(error),
+            }, 'Error in position monitoring loop');
+          }
         }
         scheduleNext();
       }, this.CHECK_INTERVAL_MS);
@@ -85,9 +90,13 @@ export class PositionMonitorService {
 
     this.checkAllPositions()
       .catch((error) => {
-        logger.error({
-          error: serializeError(error),
-        }, 'Error in initial position check');
+        if (error instanceof BinanceIpBannedError) {
+          logger.warn('[PositionMonitor] Skipping initial check - IP banned');
+        } else {
+          logger.error({
+            error: serializeError(error),
+          }, 'Error in initial position check');
+        }
       })
       .finally(() => {
         scheduleNext();
@@ -116,9 +125,11 @@ export class PositionMonitorService {
             logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
           }
         } catch (error) {
-          logger.error({
-            error: serializeError(error),
-          }, 'Error updating trailing stops');
+          if (!(error instanceof BinanceIpBannedError)) {
+            logger.error({
+              error: serializeError(error),
+            }, 'Error updating trailing stops');
+          }
         }
         scheduleNext();
       }, this.TRAILING_STOP_INTERVAL_MS);
@@ -172,6 +183,10 @@ export class PositionMonitorService {
       try {
         await this.checkPosition(execution);
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) {
+          logger.warn('[PositionMonitor] Skipping position checks - IP banned');
+          break;
+        }
         logger.error({
           executionId: execution.id,
           symbol: execution.symbol,
@@ -185,9 +200,11 @@ export class PositionMonitorService {
       try {
         await this.checkLiquidationRisk(futuresExecutions);
       } catch (error) {
-        logger.error({
-          error: serializeError(error),
-        }, 'Error checking liquidation risk');
+        if (!(error instanceof BinanceIpBannedError)) {
+          logger.error({
+            error: serializeError(error),
+          }, 'Error checking liquidation risk');
+        }
       }
     }
   }
@@ -825,6 +842,7 @@ export class PositionMonitorService {
         }
       }
 
+
       const expectedNewBalance = roundToDecimals(currentBalance + pnl, 8);
       logger.info({
         executionId: execution.id,
@@ -1029,6 +1047,10 @@ export class PositionMonitorService {
 
       return price;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) {
+        logger.warn({ symbol }, '[PositionMonitor] Skipping price fetch - IP banned');
+        throw error;
+      }
       logger.error({
         symbol,
         marketType,

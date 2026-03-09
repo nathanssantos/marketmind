@@ -121,13 +121,16 @@ export const tradingRouter = router({
             .where(eq(autoTradingConfig.walletId, input.walletId))
             .limit(1);
 
-          const { createBinanceFuturesClient, setLeverage, setMarginType } = await import('../services/binance-futures-client');
+          const { createBinanceFuturesClient, setLeverage, setMarginType, getPosition } = await import('../services/binance-futures-client');
           const futuresClient = createBinanceFuturesClient(wallet);
-          try {
-            await setLeverage(futuresClient, input.symbol, config?.leverage ?? 1);
-            await setMarginType(futuresClient, input.symbol, config?.marginType ?? 'CROSSED');
-          } catch {
-            logger.warn({ symbol: input.symbol }, 'Could not apply leverage/margin type — open position or orders exist, proceeding with current settings');
+          const existingPosition = await getPosition(futuresClient, input.symbol);
+          if (!existingPosition) {
+            try {
+              await setLeverage(futuresClient, input.symbol, config?.leverage ?? 1);
+              await setMarginType(futuresClient, input.symbol, config?.marginType ?? 'CROSSED');
+            } catch {
+              logger.warn({ symbol: input.symbol }, 'Could not apply leverage/margin type — open orders exist, proceeding with current settings');
+            }
           }
         }
 
@@ -933,6 +936,7 @@ export const tradingRouter = router({
                 }, 'Failed to cancel entry order (may already be filled/cancelled)');
               }
             }
+
           } else {
             const client = getSpotClient(wallet);
             for (const orderId of orderIdsToCancel) {
@@ -1020,6 +1024,7 @@ export const tradingRouter = router({
             exitOrderId = order.orderId;
             const filledPrice = parseFloat(order.avgPrice?.toString() || order.price?.toString() || '0');
             if (filledPrice > 0) exitPrice = filledPrice;
+
           } else {
             const client = getSpotClient(wallet);
 
@@ -1197,6 +1202,7 @@ export const tradingRouter = router({
               }, 'Failed to cancel entry order (may already be filled/cancelled)');
             }
           }
+
         } else {
           const client = getSpotClient(wallet);
 
@@ -1441,23 +1447,9 @@ export const tradingRouter = router({
       const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
       const filters = symbolFiltersMap.get(execution.symbol);
       const tickSize = filters?.tickSize?.toString();
-      const stepSize = filters?.stepSize?.toString();
       const formattedPrice = formatPriceForBinance(input.newPrice, tickSize);
 
-      const [config] = await ctx.db.select().from(autoTradingConfig).where(eq(autoTradingConfig.walletId, execution.walletId)).limit(1);
-      const balance = parseFloat(wallet.currentBalance ?? '0');
-      const configuredPercent = parseFloat(config?.manualPositionSizePercent ?? '2.5');
-      const sizePercent = configuredPercent / 100;
-      const targetValue = balance * sizePercent;
-      const minNotional = filters?.minNotional ?? 5;
-      if (targetValue < minNotional) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Manual position size (${configuredPercent}% of $${balance.toFixed(2)} = $${targetValue.toFixed(2)}) is below the minimum notional of $${minNotional} for ${execution.symbol}. Increase manual position size % or deposit more funds.`,
-        });
-      }
-      const recalculatedQty = balance > 0 && input.newPrice > 0 ? targetValue / input.newPrice : parseFloat(execution.quantity);
-      const formattedQty = formatQuantityForBinance(recalculatedQty, stepSize);
+      const formattedQty = execution.quantity;
 
       if (isPaperWallet(wallet) || !env.ENABLE_LIVE_TRADING) {
         await ctx.db
@@ -1935,5 +1927,18 @@ export const tradingRouter = router({
         })
         .returning();
       return created!;
+    }),
+
+  getSymbolFilters: protectedProcedure
+    .input(z.object({
+      symbol: z.string(),
+      marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+    }))
+    .query(async ({ input }) => {
+      const service = getMinNotionalFilterService();
+      const filtersMap = await service.getSymbolFilters(input.marketType);
+      const filters = filtersMap.get(input.symbol);
+      if (!filters) return { minNotional: input.marketType === 'FUTURES' ? 5 : 10, minQty: 0, stepSize: 0, tickSize: 0 };
+      return filters;
     }),
 });

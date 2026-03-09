@@ -13,6 +13,7 @@ import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
+import { QuickTradeToolbar } from './QuickTradeToolbar';
 import { Toolbar } from './Toolbar';
 
 interface MainLayoutProps {
@@ -171,8 +172,8 @@ export const MainLayout = ({
             }
             transition="width 0.2s ease"
           >
+            {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
             <ChartToolsToolbar
-              symbol={symbol}
               movingAverages={movingAverages}
               onMovingAveragesChange={onMovingAveragesChange}
             />

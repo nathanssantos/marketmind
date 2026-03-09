@@ -3,6 +3,7 @@ import { db } from '../db';
 import { autoTradingConfig, orders, tradeExecutions, wallets } from '../db/schema';
 import { calculateTotalFees } from '@marketmind/types';
 import type { FuturesOrder } from '@marketmind/types';
+import { binanceApiCache } from './binance-api-cache';
 import {
   createBinanceFuturesClient,
   isPaperWallet,
@@ -27,9 +28,9 @@ export interface AuditSummary {
 
 const FEES_DELTA_THRESHOLD = 0.01;
 const BALANCE_DELTA_THRESHOLD = 1.0;
-const FEES_AUDIT_CAP = 50;
-const FEES_AUDIT_DAYS = 7;
-const FEES_RATE_LIMIT_MS = 200;
+const FEES_AUDIT_CAP = 10;
+const FEES_AUDIT_DAYS = 3;
+const FEES_RATE_LIMIT_MS = 1500;
 const PENDING_GRACE_PERIOD_MS = 5 * 60 * 1000;
 
 async function sleep(ms: number): Promise<void> {
@@ -599,6 +600,7 @@ async function auditWallet(
     const feesAuditCandidates = recentClosed.slice(0, FEES_AUDIT_CAP);
     for (const exec of feesAuditCandidates) {
       if (!exec.closedAt) continue;
+      if (binanceApiCache.isBanned()) break;
 
       await sleep(FEES_RATE_LIMIT_MS);
 

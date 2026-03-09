@@ -123,4 +123,17 @@ export const signalSuggestionsRouter = router({
 
     return { success: true };
   }),
+
+  clearAll: protectedProcedure
+    .input(z.object({ walletId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db
+        .delete(signalSuggestions)
+        .where(and(
+          eq(signalSuggestions.userId, ctx.user.id),
+          eq(signalSuggestions.walletId, input.walletId),
+        ));
+
+      return { success: true };
+    }),
 });

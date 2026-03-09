@@ -1,7 +1,6 @@
 import { colorize } from '@marketmind/logger';
 import { calculateDynamicExposure } from '@marketmind/risk';
 import type { Kline } from '@marketmind/types';
-import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { AutoTradingConfig, TradeExecution } from '../db/schema';
@@ -408,12 +407,13 @@ export class PyramidingService {
     }
 
     const configMaxPositionSize = parseFloat(tradingConfig.maxPositionSize);
+    const configPositionSizePercent = parseFloat(tradingConfig.positionSizePercent);
 
     const { exposurePerWatcher, maxTotalExposure } = calculateDynamicExposure(
       walletBalance,
       activeWatchersCount ?? 0,
       {
-        positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
+        positionSizePercent: configPositionSizePercent,
         maxPositionSizePercent: configMaxPositionSize,
         maxConcurrentPositions: tradingConfig.maxConcurrentPositions,
       }

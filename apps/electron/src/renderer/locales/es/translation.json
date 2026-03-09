@@ -613,6 +613,25 @@
       "indicators": "Indicadores",
       "quickSettings": "Configuración Rápida"
     },
+    "quickTrade": {
+      "buy": "Comprar",
+      "sell": "Vender",
+      "min": "MÍN",
+      "sizePercent": "Tamaño %",
+      "noPriceError": "No hay precio actual disponible",
+      "invalidQuantityError": "Cantidad inválida"
+    },
+    "gridOrders": {
+      "title": "Órdenes en Cuadrícula",
+      "buy": "Comprar",
+      "sell": "Vender",
+      "orderCount": "Órdenes",
+      "magnet": "Imán de Precio",
+      "snapDistance": "Distancia de Ajuste",
+      "placed": "{{count}} órdenes en cuadrícula colocadas",
+      "failed": "Error al colocar órdenes en cuadrícula",
+      "partialFailed": "{{success}} de {{total}} órdenes colocadas"
+    },
     "indicators": {
       "title": "Indicadores",
       "configure": "Configurar Indicadores",

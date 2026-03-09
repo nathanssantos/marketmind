@@ -15,7 +15,7 @@ import { logger } from './logger';
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
 const SPOT_BASE_URL = 'https://api.binance.com';
 
-interface SymbolFilters {
+export interface SymbolFilters {
   minNotional: number;
   minQty: number;
   stepSize: number;

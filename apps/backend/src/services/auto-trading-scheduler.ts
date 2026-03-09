@@ -181,6 +181,14 @@ export class AutoTradingScheduler {
             cycleKlines,
             logBuffer as WatcherLogBuffer
           ),
+        validateSetupFilters: (watcher, setup, strategies, cycleKlines, logBuffer) =>
+          this.orderExecutor.validateSetupFilters(
+            watcher as ActiveWatcher,
+            setup as TradingSetup,
+            strategies as StrategyDefinition[],
+            cycleKlines,
+            logBuffer as WatcherLogBuffer
+          ),
         isWatcherRecentlyRotated: (watcherId: string) => this.isWatcherRecentlyRotated(watcherId),
         getRotationPendingWatcher: (watcherId: string) => this.rotationPendingWatchers.get(watcherId),
         deleteRotationPendingWatcher: (watcherId: string) => this.rotationPendingWatchers.delete(watcherId),

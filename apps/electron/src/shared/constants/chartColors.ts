@@ -142,8 +142,10 @@ export const ORDER_LINE_COLORS = {
   PROFIT_AREA: 'rgba(34, 197, 94, 0.08)',
   LOSS_AREA: 'rgba(239, 68, 68, 0.08)',
   SL_PROFIT_LINE: 'rgba(34, 197, 94, 0.6)',
-  SL_LOSS_LINE: 'rgba(239, 68, 68, 0.6)',
-  TP_LINE: 'rgba(34, 197, 94, 0.6)',
+  SL_LOSS_LONG_LINE: 'rgba(239, 68, 68, 0.6)',
+  SL_LOSS_SHORT_LINE: 'rgba(220, 38, 38, 0.7)',
+  TP_LONG_LINE: 'rgba(34, 197, 94, 0.6)',
+  TP_SHORT_LINE: 'rgba(251, 146, 60, 0.7)',
   LONG_LINE: 'rgba(34, 197, 94, 0.8)',
   LONG_FILL: 'rgba(34, 197, 94, 0.9)',
   SHORT_LINE: 'rgba(239, 68, 68, 0.8)',
@@ -165,6 +167,16 @@ export const ORDER_LINE_COLORS = {
   CLOSE_BUTTON_BG: 'rgba(0, 0, 0, 0.3)',
   FLASH_OVERLAY: 'rgba(255, 255, 255, 0.6)',
   SPINNER_COLOR: 'rgba(255, 255, 255, 0.9)',
+} as const;
+
+export const GRID_ORDER_COLORS = {
+  BUY_LINE: 'rgba(34, 197, 94, 0.5)',
+  SELL_LINE: 'rgba(239, 68, 68, 0.5)',
+  BUY_RANGE_FILL: 'rgba(34, 197, 94, 0.06)',
+  SELL_RANGE_FILL: 'rgba(239, 68, 68, 0.06)',
+  BUY_LABEL: 'rgba(34, 197, 94, 0.8)',
+  SELL_LABEL: 'rgba(239, 68, 68, 0.8)',
+  SNAP_INDICATOR: 'rgba(59, 130, 246, 0.9)',
 } as const;
 
 export const ORDER_LINE_ANIMATION = {

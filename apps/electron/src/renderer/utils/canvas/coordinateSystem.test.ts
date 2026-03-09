@@ -1,4 +1,5 @@
 import type { Kline, Viewport } from '@marketmind/types';
+import { CHART_CONFIG } from '@shared/constants';
 import { describe, expect, it } from 'vitest';
 import {
     calculateBounds,
@@ -165,7 +166,7 @@ describe('coordinateSystem', () => {
     it('should clamp viewport start to 0 and allow end to extend into future', () => {
       const clamped = clampViewport(createViewport(-10, 100), 50, { minKlinesVisible: 10 });
       const visibleRange = 100 - (-10);
-      const maxFuture = Math.max(5, Math.floor(visibleRange * 0.15));
+      const maxFuture = Math.max(5, Math.floor(visibleRange * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION));
       const maxEnd = 50 + maxFuture;
 
       expect(clamped.start).toBeGreaterThanOrEqual(0);
@@ -187,7 +188,7 @@ describe('coordinateSystem', () => {
     it('should allow viewport to extend past klines into future', () => {
       const clamped = clampViewport(createViewport(40, 60), 50, { minKlinesVisible: 10 });
       const visibleRange = 60 - 40;
-      const maxFuture = Math.max(5, Math.floor(visibleRange * 0.15));
+      const maxFuture = Math.max(5, Math.floor(visibleRange * CHART_CONFIG.FUTURE_VIEWPORT_EXTENSION));
       const maxEnd = 50 + maxFuture;
 
       expect(clamped.end).toBeLessThanOrEqual(maxEnd);

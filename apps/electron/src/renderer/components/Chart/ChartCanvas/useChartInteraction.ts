@@ -52,6 +52,13 @@ export interface UseChartInteractionProps {
     handleMouseUp: () => void;
     handleSLTPMouseDown: (x: number, y: number, sltp: { type: 'stopLoss' | 'takeProfit'; orderId: string; price: number }) => boolean;
   };
+  gridInteraction?: {
+    isDrawing: boolean;
+    handleMouseDown: (x: number, y: number) => boolean;
+    handleMouseMove: (y: number) => void;
+    handleMouseUp: () => void;
+    cancelGrid: () => void;
+  };
   cursorManager: {
     setCursor: (cursor: 'crosshair' | 'ns-resize' | 'grab' | 'grabbing' | 'pointer') => void;
     getCursor: () => string;
@@ -124,6 +131,7 @@ export const useChartInteraction = ({
   onLongEntry,
   onShortEntry,
   orderDragHandler,
+  gridInteraction,
   cursorManager,
   handleMouseMove,
   handleMouseDown,
@@ -342,6 +350,11 @@ export const useChartInteraction = ({
       return;
     }
 
+    if (gridInteraction?.isDrawing) {
+      gridInteraction.handleMouseMove(mouseY);
+      return;
+    }
+
     if (isMeasuring && manager && measurementArea) {
       const viewport = manager.getViewport();
       const dimensions = manager.getDimensions();
@@ -471,12 +484,13 @@ export const useChartInteraction = ({
     mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef,
     measurementAreaRef, measurementRafRef,
     setTooltipData, setMeasurementArea, getHoveredMATag, getHoveredOrder,
-    getClickedOrderId, getSLTPAtPosition, orderDragHandler, cursorManager,
+    getClickedOrderId, getSLTPAtPosition, orderDragHandler, gridInteraction, cursorManager,
     handleMouseMove, updateCursor, processMouseMoveTooltip,
   ]);
 
   const handleCanvasMouseLeave = useCallback((): void => {
     handleMouseLeave();
+    gridInteraction?.cancelGrid();
     mousePositionRef.current = null;
     orderPreviewRef.current = null;
     hoveredOrderIdRef.current = null;
@@ -498,7 +512,7 @@ export const useChartInteraction = ({
     if (manager) {
       manager.markDirty('overlays');
     }
-  }, [handleMouseLeave, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, measurementAreaRef, measurementRafRef, setIsMeasuring, setMeasurementArea, setTooltipData, manager]);
+  }, [handleMouseLeave, gridInteraction, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, measurementAreaRef, measurementRafRef, setIsMeasuring, setMeasurementArea, setTooltipData, manager]);
 
   const handleCanvasMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!manager || !canvasRef.current) return;
@@ -548,6 +562,12 @@ export const useChartInteraction = ({
       return;
     }
 
+    if (gridInteraction && gridInteraction.handleMouseDown(mouseX, mouseY)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if ((showMeasurementRuler || showMeasurementArea) && manager && canvasRef.current) {
       const dimensions = manager.getDimensions();
       if (!dimensions) return;
@@ -578,11 +598,16 @@ export const useChartInteraction = ({
 
     handleMouseDown(event);
     startInteraction();
-  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, showMeasurementRuler, showMeasurementArea, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, measurementAreaRef, setIsMeasuring, setMeasurementArea, handleMouseDown, startInteraction, onLongEntry, onShortEntry]);
+  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, showMeasurementRuler, showMeasurementArea, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, gridInteraction, measurementAreaRef, setIsMeasuring, setMeasurementArea, handleMouseDown, startInteraction, onLongEntry, onShortEntry]);
 
   const handleCanvasMouseUp = useCallback((): void => {
     if (orderDragHandler.isDragging) {
       orderDragHandler.handleMouseUp();
+      return;
+    }
+
+    if (gridInteraction?.isDrawing) {
+      gridInteraction.handleMouseUp();
       return;
     }
 
@@ -602,7 +627,7 @@ export const useChartInteraction = ({
 
     handleMouseUp();
     endInteraction();
-  }, [orderDragHandler, isMeasuring, measurementAreaRef, measurementRafRef, setIsMeasuring, setMeasurementArea, manager, handleMouseUp, endInteraction]);
+  }, [orderDragHandler, gridInteraction, isMeasuring, measurementAreaRef, measurementRafRef, setIsMeasuring, setMeasurementArea, manager, handleMouseUp, endInteraction]);
 
   const handleWheel = useCallback((): void => {
     startInteraction();

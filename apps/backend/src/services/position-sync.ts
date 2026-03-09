@@ -5,6 +5,7 @@ import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
 import { orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculateTotalFees } from '@marketmind/types';
+import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
@@ -142,6 +143,10 @@ export class PositionSyncService {
 
       outputPositionSyncResults(syncResult);
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) {
+        logger.warn('[PositionSync] Skipping - IP banned');
+        return results;
+      }
       logger.error(
         { error: serializeError(error) },
         '[PositionSync] Failed to sync wallets'
@@ -523,6 +528,10 @@ export class PositionSyncService {
         }
       }
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) {
+        logger.warn({ walletId: wallet.id }, '[PositionSync] Skipping wallet sync - IP banned');
+        return result;
+      }
       const errorMsg = serializeError(error);
       result.synced = false;
       result.errors.push(errorMsg);

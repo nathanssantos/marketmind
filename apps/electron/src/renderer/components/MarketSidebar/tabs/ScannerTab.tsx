@@ -57,7 +57,20 @@ const ScannerTabComponent = () => {
     setBackfillProgress({ completed: 0, total: 0 });
     backfillMutation.mutate(
       { walletId: activeWalletId, interval: timeframe, marketType: marketType as 'SPOT' | 'FUTURES' },
-      { onError: () => setIsBackfilling(false) }
+      {
+        onSuccess: (data) => {
+          if (data.symbolCount === 0) {
+            setIsBackfilling(false);
+            setBackfillProgress(null);
+          } else {
+            setBackfillProgress({ completed: 0, total: data.symbolCount });
+          }
+        },
+        onError: () => {
+          setIsBackfilling(false);
+          setBackfillProgress(null);
+        },
+      }
     );
   }, [activeWalletId, isBackfilling, backfillMutation, timeframe, marketType]);
 

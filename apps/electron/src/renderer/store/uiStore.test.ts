@@ -363,9 +363,9 @@ describe('uiStore', () => {
   });
 
   describe('enableShiftAltOrderEntry', () => {
-    it('should initialize with false', () => {
+    it('should initialize with true', () => {
       const state = useUIStore.getState();
-      expect(state.enableShiftAltOrderEntry).toBe(false);
+      expect(state.enableShiftAltOrderEntry).toBe(true);
     });
 
     it('should update to true', () => {

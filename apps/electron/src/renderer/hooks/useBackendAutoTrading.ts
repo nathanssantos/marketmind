@@ -13,7 +13,7 @@ export const useBackendAutoTrading = (walletId: string) => {
 
   const { data: activeExecutions, isLoading: isLoadingActiveExecutions } =
     trpc.autoTrading.getActiveExecutions.useQuery(
-      { walletId, limit: 50 },
+      { walletId },
       { enabled: !!walletId }
     );
 

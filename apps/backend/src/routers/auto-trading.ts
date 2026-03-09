@@ -596,7 +596,6 @@ export const autoTradingRouter = router({
     .input(
       z.object({
         walletId: z.string(),
-        limit: z.number().min(1).max(100).default(50),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -610,8 +609,7 @@ export const autoTradingRouter = router({
             inArray(tradeExecutions.status, ['open', 'pending'])
           )
         )
-        .orderBy(desc(tradeExecutions.openedAt))
-        .limit(input.limit);
+        .orderBy(desc(tradeExecutions.openedAt));
 
       return executions;
     }),

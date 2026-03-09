@@ -602,6 +602,25 @@
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
     },
+    "quickTrade": {
+      "buy": "Acheter",
+      "sell": "Vendre",
+      "min": "MIN",
+      "sizePercent": "Taille %",
+      "noPriceError": "Aucun prix actuel disponible",
+      "invalidQuantityError": "Quantité invalide"
+    },
+    "gridOrders": {
+      "title": "Ordres en Grille",
+      "buy": "Acheter",
+      "sell": "Vendre",
+      "orderCount": "Ordres",
+      "magnet": "Aimant de Prix",
+      "snapDistance": "Distance d'Accrochage",
+      "placed": "{{count}} ordres en grille placés",
+      "failed": "Échec du placement des ordres en grille",
+      "partialFailed": "{{success}} sur {{total}} ordres placés"
+    },
     "indicators": {
       "title": "Indicateurs",
       "configure": "Configurer les Indicateurs",

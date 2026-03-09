@@ -16,6 +16,7 @@ import type {
 import { USDMClient } from 'binance';
 import type { Wallet } from '../db/schema';
 import { formatQuantityForBinance } from '../utils/formatters';
+import { guardBinanceCall } from './binance-api-cache';
 import { getWalletType, isPaperWallet, type WalletType } from './binance-client';
 import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
@@ -50,7 +51,7 @@ export async function setLeverage(
   leverage: number
 ): Promise<FuturesLeverage> {
   try {
-    const result = await client.setLeverage({ symbol, leverage });
+    const result = await guardBinanceCall(() => client.setLeverage({ symbol, leverage }));
     return {
       leverage: result.leverage,
       maxNotionalValue: String(result.maxNotionalValue),
@@ -68,7 +69,7 @@ export async function setMarginType(
   marginType: MarginType
 ): Promise<void> {
   try {
-    await client.setMarginType({ symbol, marginType });
+    await guardBinanceCall(() => client.setMarginType({ symbol, marginType }));
   } catch (error: unknown) {
     const errorCode = (error as { code?: number })?.code;
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -88,12 +89,12 @@ export async function modifyIsolatedPositionMargin(
   positionSide?: 'LONG' | 'SHORT' | 'BOTH'
 ): Promise<{ amount: string; type: number; code: number; msg: string }> {
   try {
-    const result = await client.setIsolatedPositionMargin({
+    const result = await guardBinanceCall(() => client.setIsolatedPositionMargin({
       symbol,
       amount,
       type,
       positionSide,
-    });
+    }));
     logger.info(
       { symbol, amount, type: type === '1' ? 'ADD' : 'REDUCE', positionSide },
       '[Futures] Isolated margin modified successfully'
@@ -115,7 +116,7 @@ export async function modifyIsolatedPositionMargin(
 
 export async function getPositions(client: USDMClient): Promise<FuturesPosition[]> {
   try {
-    const positions = await client.getPositions();
+    const positions = await guardBinanceCall(() => client.getPositions());
     return positions
       .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
       .map((p) => ({
@@ -144,7 +145,7 @@ export async function getPosition(
   symbol: string
 ): Promise<FuturesPosition | null> {
   try {
-    const positions = await client.getPositions({ symbol });
+    const positions = await guardBinanceCall(() => client.getPositions({ symbol }));
     const position = positions.find(
       (p) => p.symbol === symbol && parseFloat(String(p.positionAmt)) !== 0
     );
@@ -174,7 +175,7 @@ export async function getPosition(
 
 export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount> {
   try {
-    const account = await client.getAccountInformation();
+    const account = await guardBinanceCall(() => client.getAccountInformation());
     return {
       feeTier: Number(account.feeTier),
       canTrade: account.canTrade,
@@ -260,7 +261,7 @@ export async function submitFuturesOrder(
 
     logger.info({ params, orderParams }, '[Futures] Submitting order to Binance');
 
-    const result = await client.submitNewOrder(orderParams);
+    const result = await guardBinanceCall(() => client.submitNewOrder(orderParams));
 
     logger.info({
       orderId: result.orderId,
@@ -315,7 +316,7 @@ export async function cancelFuturesOrder(
   orderId: number
 ): Promise<void> {
   try {
-    await client.cancelOrder({ symbol, orderId });
+    await guardBinanceCall(() => client.cancelOrder({ symbol, orderId }));
   } catch (error) {
     const msg = serializeError(error);
     if (msg.includes('Unknown order') || msg.includes('Order does not exist') || msg.includes('not found')) {
@@ -332,7 +333,7 @@ export async function cancelAllFuturesOrders(
   symbol: string
 ): Promise<void> {
   try {
-    await client.cancelAllOpenOrders({ symbol });
+    await guardBinanceCall(() => client.cancelAllOpenOrders({ symbol }));
   } catch (error) {
     logger.error({ error: serializeError(error), symbol }, 'Failed to cancel all futures orders');
     throw error;
@@ -364,8 +365,8 @@ export async function getOpenOrders(
 ): Promise<FuturesOrder[]> {
   try {
     const orders = symbol
-      ? await client.getAllOpenOrders({ symbol })
-      : await client.getAllOpenOrders();
+      ? await guardBinanceCall(() => client.getAllOpenOrders({ symbol }))
+      : await guardBinanceCall(() => client.getAllOpenOrders());
 
     return orders.map((o) => ({
       orderId: o.orderId,
@@ -401,7 +402,7 @@ export async function getSymbolLeverageBrackets(
   symbol: string
 ): Promise<{ bracket: number; initialLeverage: number; notionalCap: number; notionalFloor: number; maintMarginRatio: number; cum: number }[]> {
   try {
-    const brackets = await client.getNotionalAndLeverageBrackets({ symbol });
+    const brackets = await guardBinanceCall(() => client.getNotionalAndLeverageBrackets({ symbol }));
     const symbolBrackets = brackets.find((b) => b.symbol === symbol);
     if (!symbolBrackets) return [];
 
@@ -444,7 +445,7 @@ export async function submitFuturesAlgoOrder(
     if (params.workingType) algoParams.workingType = params.workingType;
     if (params.positionSide) algoParams.positionSide = params.positionSide;
 
-    const result = await client.submitNewAlgoOrder(algoParams);
+    const result = await guardBinanceCall(() => client.submitNewAlgoOrder(algoParams));
 
     logger.info({
       algoId: result.algoId,
@@ -484,7 +485,7 @@ export async function cancelFuturesAlgoOrder(
   algoId: number
 ): Promise<void> {
   try {
-    await client.cancelAlgoOrder({ algoId });
+    await guardBinanceCall(() => client.cancelAlgoOrder({ algoId }));
     logger.info({ algoId }, '[Futures] Algo order cancelled successfully');
   } catch (error) {
     const msg = serializeError(error);
@@ -502,11 +503,25 @@ export async function cancelAllFuturesAlgoOrders(
   symbol: string
 ): Promise<void> {
   try {
-    await client.cancelAllAlgoOpenOrders({ symbol });
+    await guardBinanceCall(() => client.cancelAllAlgoOpenOrders({ symbol }));
     logger.info({ symbol }, '[Futures] All algo orders cancelled successfully');
   } catch (error) {
     logger.error({ error: serializeError(error), symbol }, '[Futures] Failed to cancel all algo orders');
     throw error;
+  }
+}
+
+export async function cancelAllSymbolOrders(client: USDMClient, symbol: string): Promise<void> {
+  const results = await Promise.allSettled([
+    cancelAllFuturesOrders(client, symbol),
+    cancelAllFuturesAlgoOrders(client, symbol),
+  ]);
+  for (const r of results) {
+    if (r.status === 'rejected') {
+      const msg = serializeError(r.reason);
+      if (!msg.includes('No orders') && !msg.includes('not found'))
+        logger.warn({ symbol, error: msg }, '[Futures] Partial failure in cancelAllSymbolOrders');
+    }
   }
 }
 
@@ -515,7 +530,7 @@ export async function getOpenAlgoOrders(
   symbol?: string
 ): Promise<FuturesAlgoOrder[]> {
   try {
-    const orders = await client.getOpenAlgoOrders(symbol ? { symbol } : undefined);
+    const orders = await guardBinanceCall(() => client.getOpenAlgoOrders(symbol ? { symbol } : undefined));
 
     return orders.map((o) => ({
       algoId: o.algoId,
@@ -546,7 +561,7 @@ export async function getAlgoOrder(
   algoId: number
 ): Promise<FuturesAlgoOrder | null> {
   try {
-    const result = await client.getAlgoOrder({ algoId });
+    const result = await guardBinanceCall(() => client.getAlgoOrder({ algoId }));
 
     if (!result) return null;
 
@@ -586,7 +601,7 @@ export async function getIncomeHistory(
   }
 ): Promise<IncomeHistoryRecord[]> {
   try {
-    const result = await client.getIncomeHistory(params as Parameters<typeof client.getIncomeHistory>[0]);
+    const result = await guardBinanceCall(() => client.getIncomeHistory(params as Parameters<typeof client.getIncomeHistory>[0]));
 
     return result.map((r) => ({
       symbol: r.symbol,
@@ -611,7 +626,7 @@ export async function getRecentTrades(
   limit = 10
 ): Promise<AccountTradeRecord[]> {
   try {
-    const trades = await client.getAccountTrades({ symbol, limit });
+    const trades = await guardBinanceCall(() => client.getAccountTrades({ symbol, limit }));
     return trades.map((t) => ({
       symbol: t.symbol,
       id: t.id,
@@ -640,11 +655,11 @@ export async function getLastClosingTrade(
   openedAt: number
 ): Promise<{ price: number; realizedPnl: number; commission: number } | null> {
   try {
-    const trades = await client.getAccountTrades({
+    const trades = await guardBinanceCall(() => client.getAccountTrades({
       symbol,
       startTime: openedAt,
       limit: 100,
-    });
+    }));
 
     const closingSide = side === 'LONG' ? 'SELL' : 'BUY';
     const closingTrades = trades.filter(
@@ -693,12 +708,12 @@ export async function getAllTradeFeesForPosition(
 ): Promise<AllTradeFeesResult | null> {
   try {
     const endTime = closedAt || Date.now();
-    const trades = await client.getAccountTrades({
+    const trades = await guardBinanceCall(() => client.getAccountTrades({
       symbol,
       startTime: openedAt - 5000,
       endTime: endTime + 5000,
       limit: 100,
-    });
+    }));
 
     if (trades.length === 0) return null;
 
@@ -766,11 +781,11 @@ export async function getOrderEntryFee(
   orderId: number
 ): Promise<{ entryFee: number; avgPrice: number; totalQty: number } | null> {
   try {
-    const trades = await client.getAccountTrades({
+    const trades = await guardBinanceCall(() => client.getAccountTrades({
       symbol,
       orderId,
       limit: 50,
-    });
+    }));
 
     if (trades.length === 0) return null;
 

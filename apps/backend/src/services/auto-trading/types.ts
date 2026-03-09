@@ -89,6 +89,13 @@ export interface SignalProcessorDeps {
     cycleKlines: Kline[],
     logBuffer: unknown
   ) => Promise<boolean>;
+  validateSetupFilters: (
+    watcher: ActiveWatcher,
+    setup: unknown,
+    strategies: unknown[],
+    cycleKlines: Kline[],
+    logBuffer: unknown
+  ) => Promise<boolean>;
   isWatcherRecentlyRotated: (watcherId: string) => boolean;
   getRotationPendingWatcher: (watcherId: string) => RotationPendingWatcher | undefined;
   deleteRotationPendingWatcher: (watcherId: string) => void;

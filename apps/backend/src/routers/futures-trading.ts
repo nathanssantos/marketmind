@@ -6,7 +6,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
 import { orders, positions, tradeExecutions } from '../db/schema';
-import { binanceApiCache } from '../services/binance-api-cache';
+import { BinanceIpBannedError, binanceApiCache } from '../services/binance-api-cache';
 import { autoTradingService } from '../services/auto-trading';
 import {
     cancelAllFuturesAlgoOrders,
@@ -53,6 +53,7 @@ export const futuresTradingRouter = router({
         const result = await setLeverage(client, input.symbol, input.leverage);
         return result;
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to set leverage',
@@ -81,6 +82,7 @@ export const futuresTradingRouter = router({
         await setMarginType(client, input.symbol, input.marginType);
         return { success: true, marginType: input.marginType };
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to set margin type',
@@ -363,6 +365,7 @@ export const futuresTradingRouter = router({
           executedQty: futuresOrder.executedQty,
         };
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to create futures order',
@@ -412,6 +415,7 @@ export const futuresTradingRouter = router({
 
         return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to cancel futures order',
@@ -463,6 +467,7 @@ export const futuresTradingRouter = router({
         binanceApiCache.set('POSITIONS', input.walletId, exchangePositions);
         return exchangePositions;
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         if (errorMessage.includes('418') || errorMessage.includes('-1003') || errorMessage.includes('Way too many requests')) {
           const banMatch = errorMessage.match(/until\s+(\d+)/);
@@ -510,6 +515,7 @@ export const futuresTradingRouter = router({
         const client = createBinanceFuturesClient(wallet);
         return await getPosition(client, input.symbol);
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to get futures position',
@@ -708,6 +714,7 @@ export const futuresTradingRouter = router({
 
         return { success: true, orderId: result.orderId };
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to close futures position',
@@ -759,6 +766,7 @@ export const futuresTradingRouter = router({
         binanceApiCache.set('OPEN_ORDERS', input.walletId, openOrders, cacheKey);
         return openOrders;
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         if (errorMessage.includes('418') || errorMessage.includes('banned') || errorMessage.includes('-1003')) {
           const banMatch = errorMessage.match(/until\s+(\d+)/);
@@ -796,6 +804,7 @@ export const futuresTradingRouter = router({
         const client = createBinanceFuturesClient(wallet);
         return await getSymbolLeverageBrackets(client, input.symbol);
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to get leverage brackets',
@@ -841,6 +850,7 @@ export const futuresTradingRouter = router({
         const client = createBinanceFuturesClient(wallet);
         return await getOpenAlgoOrders(client, input.symbol);
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to get open algo orders',
@@ -879,6 +889,7 @@ export const futuresTradingRouter = router({
 
         return { success: true, cancelled: orderCount };
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to cancel algo orders',
