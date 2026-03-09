@@ -171,7 +171,7 @@ export const WatcherManager = () => {
 
   const [dragSlEnabled, setDragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled, setDragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
-  const [slTightenOnly, setSlTightenOnly] = useTradingPref<boolean>('slTightenOnly', true);
+  const [slTightenOnly, setSlTightenOnly] = useTradingPref<boolean>('slTightenOnly', false);
 
   const handleTpModeChange = (details: { value: string }): void => {
     handleConfigUpdate({ tpCalculationMode: details.value as 'default' | 'fibonacci' });

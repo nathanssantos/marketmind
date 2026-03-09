@@ -28,7 +28,6 @@ import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
-import { useVisibilityChange } from './hooks/useVisibilityChange';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useChartPref, useUIPref } from './store/preferencesStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
@@ -358,17 +357,6 @@ function AppContent(): ReactElement {
     }
   }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, refetchKlines]);
 
-  const handleVisibilityRestore = useCallback(async (state: { hiddenDuration: number }) => {
-    if (state.hiddenDuration < 5_000) return;
-    isRefetchingRef.current = true;
-    await refetchKlines();
-    isRefetchingRef.current = false;
-  }, [refetchKlines]);
-
-  useVisibilityChange({
-    onBecameVisible: handleVisibilityRestore,
-    minHiddenDurationForRefresh: 5_000,
-  });
 
   const displayKlines = useMemo(() => {
     if (!marketData?.klines) return [];

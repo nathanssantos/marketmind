@@ -127,7 +127,7 @@ export const ChartCanvas = ({
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
-  const [slTightenOnly] = useTradingPref<boolean>('slTightenOnly', true);
+  const [slTightenOnly] = useTradingPref<boolean>('slTightenOnly', false);
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
 
