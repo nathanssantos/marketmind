@@ -1,7 +1,7 @@
 import { Slider } from '@/renderer/components/ui/slider';
 import { Switch } from '@/renderer/components/ui/switch';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
+import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { useTranslation } from 'react-i18next';
 
 export interface TrailingStopSectionProps {
@@ -291,7 +291,7 @@ export const TrailingStopSection = ({
                 value={[trailingStopOffsetPercent * 100]}
                 onValueChange={(values) => onTrailingStopOffsetPercentChange(values[0]! / 100)}
                 min={0}
-                max={3}
+                max={10}
                 step={0.1}
               />
             </Box>

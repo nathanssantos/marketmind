@@ -7,6 +7,7 @@ import { SidebarContainer } from '../ui/Sidebar';
 import { MarketIndicatorsTab } from './tabs/MarketIndicatorsTab';
 import { WatchersTab } from './tabs/WatchersTab';
 import { LogsTab } from './tabs/LogsTab';
+import { ScannerTab } from './tabs/ScannerTab';
 
 interface MarketSidebarProps {
   width: number;
@@ -52,6 +53,9 @@ const MarketSidebarComponent = ({ width }: MarketSidebarProps) => {
           <Tabs.Trigger value="logs">
             <Text fontSize="xs">{t('marketSidebar.tabs.logs')}</Text>
           </Tabs.Trigger>
+          <Tabs.Trigger value="scanner">
+            <Text fontSize="xs">{t('marketSidebar.tabs.scanner')}</Text>
+          </Tabs.Trigger>
         </Tabs.List>
 
         <Box flex={1} overflowY="auto">
@@ -65,6 +69,10 @@ const MarketSidebarComponent = ({ width }: MarketSidebarProps) => {
 
           <Tabs.Content value="logs">
             <LogsTab />
+          </Tabs.Content>
+
+          <Tabs.Content value="scanner">
+            <ScannerTab />
           </Tabs.Content>
         </Box>
       </Tabs.Root>

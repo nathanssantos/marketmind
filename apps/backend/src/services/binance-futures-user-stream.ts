@@ -3,9 +3,11 @@ import { WebsocketClient } from 'binance';
 import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { tradeExecutions, wallets, positions, type Wallet } from '../db/schema';
+import { tradeExecutions, wallets, positions, orders, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, cancelAllFuturesAlgoOrders, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
+import { createStopLossOrder, createTakeProfitOrder, cancelAllProtectionOrders } from './protection-orders';
+import { generateEntityId } from '../utils/id';
 import { decryptApiKey } from './encryption';
 import {
   detectExitReason,
@@ -139,6 +141,23 @@ export class BinanceFuturesUserStreamService {
   private connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
   private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
+  private pyramidLocks = new Map<string, Promise<void>>();
+
+  private async withPyramidLock<T>(symbol: string, fn: () => Promise<T>): Promise<T> {
+    const key = symbol;
+    while (this.pyramidLocks.has(key)) {
+      await this.pyramidLocks.get(key);
+    }
+    let releaseLock: () => void;
+    const lockPromise = new Promise<void>((resolve) => { releaseLock = resolve; });
+    this.pyramidLocks.set(key, lockPromise);
+    try {
+      return await fn();
+    } finally {
+      releaseLock!();
+      this.pyramidLocks.delete(key);
+    }
+  }
 
   async start(): Promise<void> {
     if (this.isRunning) return;
@@ -352,6 +371,20 @@ export class BinanceFuturesUserStreamService {
         '[FuturesUserStream] Order update received'
       );
 
+      if (status === 'CANCELED') {
+        await db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.status, 'pending'),
+              eq(tradeExecutions.entryOrderId, Number(orderId))
+            )
+          );
+        return;
+      }
+
       if (execType === 'TRADE' && status === 'FILLED') {
         const [pendingExecution] = await db
           .select()
@@ -361,13 +394,15 @@ export class BinanceFuturesUserStreamService {
               eq(tradeExecutions.walletId, walletId),
               eq(tradeExecutions.symbol, symbol),
               eq(tradeExecutions.status, 'pending'),
-              eq(tradeExecutions.marketType, 'FUTURES')
+              eq(tradeExecutions.marketType, 'FUTURES'),
+              eq(tradeExecutions.entryOrderId, Number(orderId))
             )
           )
           .limit(1);
 
-        if (pendingExecution && Number(pendingExecution.entryOrderId) === Number(orderId)) {
+        if (pendingExecution) {
           const fillPrice = parseFloat(avgPrice || lastFilledPrice);
+          const fillQty = parseFloat(executedQty || pendingExecution.quantity);
           let entryFee = parseFloat(commission || '0');
 
           try {
@@ -377,6 +412,85 @@ export class BinanceFuturesUserStreamService {
               if (feeResult && feeResult.entryFee > 0) entryFee = feeResult.entryFee;
             }
           } catch (_e) { /* entry fee fetch is best-effort */ }
+
+          const [existingOpen] = await db
+            .select()
+            .from(tradeExecutions)
+            .where(
+              and(
+                eq(tradeExecutions.walletId, walletId),
+                eq(tradeExecutions.symbol, symbol),
+                eq(tradeExecutions.status, 'open'),
+                eq(tradeExecutions.marketType, 'FUTURES')
+              )
+            )
+            .limit(1);
+
+          if (existingOpen) {
+            await this.withPyramidLock(symbol, async () => {
+              const oldQty = parseFloat(existingOpen.quantity);
+              const oldPrice = parseFloat(existingOpen.entryPrice);
+              const newQty = oldQty + fillQty;
+              const newAvgPrice = ((oldQty * oldPrice) + (fillQty * fillPrice)) / newQty;
+
+              const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+              if (!walletRow) return;
+
+              const slPrice = existingOpen.stopLoss ? parseFloat(existingOpen.stopLoss) : null;
+              const tpPrice = existingOpen.takeProfit ? parseFloat(existingOpen.takeProfit) : null;
+
+              if (slPrice || tpPrice) {
+                await cancelAllProtectionOrders({
+                  wallet: walletRow, symbol, marketType: 'FUTURES',
+                  stopLossAlgoId: existingOpen.stopLossAlgoId,
+                  stopLossOrderId: existingOpen.stopLossOrderId,
+                  takeProfitAlgoId: existingOpen.takeProfitAlgoId,
+                  takeProfitOrderId: existingOpen.takeProfitOrderId,
+                });
+
+                let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
+                let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
+
+                if (slPrice) {
+                  try {
+                    newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
+                  } catch (e) {
+                    logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after LIMIT pyramid');
+                  }
+                }
+                if (tpPrice) {
+                  try {
+                    newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+                  } catch (e) {
+                    logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after LIMIT pyramid');
+                  }
+                }
+
+                await db.update(tradeExecutions).set({
+                  entryPrice: newAvgPrice.toString(),
+                  quantity: newQty.toString(),
+                  stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : existingOpen.stopLossAlgoId),
+                  takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : existingOpen.takeProfitAlgoId),
+                  stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : existingOpen.stopLossOrderId),
+                  takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : existingOpen.takeProfitOrderId),
+                  stopLossIsAlgo: newSlResult?.isAlgoOrder ?? existingOpen.stopLossIsAlgo ?? false,
+                  takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? existingOpen.takeProfitIsAlgo ?? false,
+                  updatedAt: new Date(),
+                }).where(eq(tradeExecutions.id, existingOpen.id));
+              } else {
+                await db.update(tradeExecutions).set({
+                  entryPrice: newAvgPrice.toString(),
+                  quantity: newQty.toString(),
+                  updatedAt: new Date(),
+                }).where(eq(tradeExecutions.id, existingOpen.id));
+              }
+
+              await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingExecution.id));
+
+              logger.info({ executionId: existingOpen.id, symbol, newAvgPrice, newQty, autotrade: !!pendingExecution.setupId }, '[FuturesUserStream] Pyramided via LIMIT order into existing position');
+            });
+            return;
+          }
 
           logger.info(
             {
@@ -390,6 +504,42 @@ export class BinanceFuturesUserStreamService {
             '[FuturesUserStream] ✓ Pending LIMIT order FILLED - activating position'
           );
 
+          let activationSlAlgoId = pendingExecution.stopLossAlgoId;
+          let activationTpAlgoId = pendingExecution.takeProfitAlgoId;
+          let activationSlOrderId = pendingExecution.stopLossOrderId;
+          let activationTpOrderId = pendingExecution.takeProfitOrderId;
+          let activationSlIsAlgo = pendingExecution.stopLossIsAlgo;
+          let activationTpIsAlgo = pendingExecution.takeProfitIsAlgo;
+
+          const needsSlPlacement = !!pendingExecution.setupId && !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
+          const needsTpPlacement = !!pendingExecution.setupId && !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
+
+          if (needsSlPlacement || needsTpPlacement) {
+            const [walletForActivation] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+            if (walletForActivation) {
+              if (needsSlPlacement) {
+                try {
+                  const slRes = await createStopLossOrder({ wallet: walletForActivation, symbol, side: pendingExecution.side, quantity: parseFloat(pendingExecution.quantity), triggerPrice: parseFloat(pendingExecution.stopLoss!), marketType: 'FUTURES' });
+                  activationSlAlgoId = slRes.isAlgoOrder ? (slRes.algoId ?? null) : null;
+                  activationSlOrderId = !slRes.isAlgoOrder ? (slRes.orderId ?? null) : null;
+                  activationSlIsAlgo = slRes.isAlgoOrder;
+                } catch (e) {
+                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place SL on manual LIMIT activation');
+                }
+              }
+              if (needsTpPlacement) {
+                try {
+                  const tpRes = await createTakeProfitOrder({ wallet: walletForActivation, symbol, side: pendingExecution.side, quantity: parseFloat(pendingExecution.quantity), triggerPrice: parseFloat(pendingExecution.takeProfit!), marketType: 'FUTURES' });
+                  activationTpAlgoId = tpRes.isAlgoOrder ? (tpRes.algoId ?? null) : null;
+                  activationTpOrderId = !tpRes.isAlgoOrder ? (tpRes.orderId ?? null) : null;
+                  activationTpIsAlgo = tpRes.isAlgoOrder;
+                } catch (e) {
+                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place TP on manual LIMIT activation');
+                }
+              }
+            }
+          }
+
           await db
             .update(tradeExecutions)
             .set({
@@ -399,6 +549,12 @@ export class BinanceFuturesUserStreamService {
               commissionAsset: commissionAsset || 'USDT',
               openedAt: new Date(),
               updatedAt: new Date(),
+              stopLossAlgoId: activationSlAlgoId,
+              takeProfitAlgoId: activationTpAlgoId,
+              stopLossOrderId: activationSlOrderId,
+              takeProfitOrderId: activationTpOrderId,
+              stopLossIsAlgo: activationSlIsAlgo,
+              takeProfitIsAlgo: activationTpIsAlgo,
             })
             .where(eq(tradeExecutions.id, pendingExecution.id));
 
@@ -440,7 +596,46 @@ export class BinanceFuturesUserStreamService {
         const execution = executionByOrderId || executionByExitReason || openExecutions[0];
 
         if (!execution) {
-          logger.warn({ walletId, symbol, orderId, openCount: openExecutions.length }, '[FuturesUserStream] No open execution found');
+          const rp = parseFloat(realizedProfit || '0');
+          if (rp !== 0) {
+            logger.info({ walletId, symbol, orderId }, '[FuturesUserStream] Untracked close fill - ignoring');
+            return;
+          }
+
+          const [manualOrder] = await db
+            .select()
+            .from(orders)
+            .where(and(eq(orders.walletId, walletId), eq(orders.orderId, Number(orderId))))
+            .limit(1);
+
+          if (!manualOrder) {
+            logger.warn({ walletId, symbol, orderId, openCount: openExecutions.length }, '[FuturesUserStream] No open execution found');
+            return;
+          }
+
+          const direction: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'LONG' : 'SHORT';
+          const fillPrice = parseFloat(avgPrice || lastFilledPrice);
+          const fillQty = parseFloat(executedQty || manualOrder.origQty || '0');
+
+          const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+          if (!walletRow) return;
+
+          await db.insert(tradeExecutions).values({
+            id: generateEntityId(),
+            userId: walletRow.userId,
+            walletId,
+            symbol,
+            side: direction,
+            entryOrderId: Number(orderId),
+            entryPrice: fillPrice.toString(),
+            quantity: fillQty.toString(),
+            status: 'open',
+            openedAt: new Date(),
+            entryOrderType: manualOrder.type === 'MARKET' ? 'MARKET' : 'LIMIT',
+            marketType: 'FUTURES',
+          });
+
+          logger.info({ symbol, orderId, direction, fillPrice, fillQty }, '[FuturesUserStream] Created tradeExecution for manual order fill');
           return;
         }
 
@@ -476,6 +671,79 @@ export class BinanceFuturesUserStreamService {
               '[FuturesUserStream] ! Detected closing order via realizedProfit fallback - ALGO_UPDATE may have been missed'
             );
           } else {
+            const isEntryFill = !isClosingOrder && rpValue === 0;
+
+            if (isEntryFill && execution.entryOrderId && Number(execution.entryOrderId) === Number(orderId)) {
+              logger.info({ executionId: execution.id, orderId }, '[FuturesUserStream] Entry fill for already-tracked manual execution - skipping');
+              return;
+            }
+
+            if (isEntryFill) {
+              await this.withPyramidLock(symbol, async () => {
+                const fillPrice = parseFloat(avgPrice || lastFilledPrice);
+                const fillQty = parseFloat(executedQty || '0');
+                const oldQty = parseFloat(execution.quantity);
+                const oldPrice = parseFloat(execution.entryPrice);
+                const newQty = oldQty + fillQty;
+                const newAvgPrice = ((oldQty * oldPrice) + (fillQty * fillPrice)) / newQty;
+
+                const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+                if (!walletRow) return;
+
+                const slPrice = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
+                const tpPrice = execution.takeProfit ? parseFloat(execution.takeProfit) : null;
+
+                if (slPrice || tpPrice) {
+                  await cancelAllProtectionOrders({
+                    wallet: walletRow, symbol, marketType: 'FUTURES',
+                    stopLossAlgoId: execution.stopLossAlgoId,
+                    stopLossOrderId: execution.stopLossOrderId,
+                    takeProfitAlgoId: execution.takeProfitAlgoId,
+                    takeProfitOrderId: execution.takeProfitOrderId,
+                  });
+
+                  let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
+                  let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
+
+                  if (slPrice) {
+                    try {
+                      newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
+                    } catch (e) {
+                      logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after pyramid');
+                    }
+                  }
+                  if (tpPrice) {
+                    try {
+                      newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+                    } catch (e) {
+                      logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after pyramid');
+                    }
+                  }
+
+                  await db.update(tradeExecutions).set({
+                    entryPrice: newAvgPrice.toString(),
+                    quantity: newQty.toString(),
+                    stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : execution.stopLossAlgoId),
+                    takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : execution.takeProfitAlgoId),
+                    stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : execution.stopLossOrderId),
+                    takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : execution.takeProfitOrderId),
+                    stopLossIsAlgo: newSlResult?.isAlgoOrder ?? execution.stopLossIsAlgo ?? false,
+                    takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? execution.takeProfitIsAlgo ?? false,
+                    updatedAt: new Date(),
+                  }).where(eq(tradeExecutions.id, execution.id));
+                } else {
+                  await db.update(tradeExecutions).set({
+                    entryPrice: newAvgPrice.toString(),
+                    quantity: newQty.toString(),
+                    updatedAt: new Date(),
+                  }).where(eq(tradeExecutions.id, execution.id));
+                }
+
+                logger.info({ executionId: execution.id, symbol, newAvgPrice, newQty }, '[FuturesUserStream] Pyramided into existing position');
+              });
+              return;
+            }
+
             logger.warn(
               { walletId, symbol, orderId, executionId: execution.id },
               '[FuturesUserStream] Order not recognized as SL or TP'
@@ -575,7 +843,7 @@ export class BinanceFuturesUserStreamService {
             const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
             const allFees = await getAllTradeFeesForPosition(connection.apiClient, symbol, execution.side, openedAt);
             if (allFees) {
-              actualExitFee = allFees.exitFee;
+              if (allFees.exitFee > 0) actualExitFee = allFees.exitFee;
               if (allFees.entryFee > 0) actualEntryFee = allFees.entryFee;
               logger.info({
                 walletId, symbol, executionId: execution.id,
@@ -870,11 +1138,166 @@ export class BinanceFuturesUserStreamService {
       '[FuturesUserStream] Algo order update received'
     );
 
-    if (status !== 'TRIGGERED' && status !== 'TRIGGERING') {
+    if (status === 'REJECTED' || status === 'EXPIRED') {
+      await db
+        .update(tradeExecutions)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.status, 'pending'),
+            eq(tradeExecutions.entryOrderId, Number(algoId))
+          )
+        );
+      logger.warn({ walletId, symbol, algoId, status }, '[FuturesUserStream] Algo entry order rejected/expired — pending execution cancelled');
+      const wsService = getWebSocketService();
+      if (wsService) {
+        wsService.emitRiskAlert(walletId, {
+          type: 'ORDER_REJECTED',
+          level: 'critical',
+          symbol,
+          message: status === 'REJECTED'
+            ? `Entry order REJECTED by Binance — insufficient margin or invalid price at trigger time. Order for ${symbol} cancelled.`
+            : `Entry order EXPIRED for ${symbol}. Order was not filled within its validity window.`,
+          data: { algoId, orderType, status },
+          timestamp: Date.now(),
+        });
+        wsService.emitPositionUpdate(walletId, { id: String(algoId), status: 'cancelled' } as Parameters<typeof wsService.emitPositionUpdate>[1]);
+      }
+      return;
+    }
+
+    if (status !== 'TRIGGERED') {
       return;
     }
 
     try {
+      const [pendingEntryExecution] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'pending'),
+            eq(tradeExecutions.marketType, 'FUTURES'),
+            eq(tradeExecutions.entryOrderId, Number(algoId))
+          )
+        )
+        .limit(1);
+
+      if (pendingEntryExecution) {
+        const [existingOpen] = await db
+          .select()
+          .from(tradeExecutions)
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.symbol, symbol),
+              eq(tradeExecutions.status, 'open'),
+              eq(tradeExecutions.marketType, 'FUTURES'),
+              eq(tradeExecutions.side, pendingEntryExecution.side)
+            )
+          )
+          .limit(1);
+
+        if (existingOpen) {
+          await this.withPyramidLock(symbol, async () => {
+            const oldQty = parseFloat(existingOpen.quantity);
+            const oldPrice = parseFloat(existingOpen.entryPrice);
+            const newQty = oldQty + parseFloat(pendingEntryExecution.quantity);
+            const newAvgPrice = ((oldQty * oldPrice) + (parseFloat(pendingEntryExecution.quantity) * parseFloat(pendingEntryExecution.entryPrice))) / newQty;
+
+            const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+            if (!walletRow) return;
+
+            const slPrice = existingOpen.stopLoss ? parseFloat(existingOpen.stopLoss) : null;
+            const tpPrice = existingOpen.takeProfit ? parseFloat(existingOpen.takeProfit) : null;
+
+            if (slPrice || tpPrice) {
+              await cancelAllProtectionOrders({
+                wallet: walletRow, symbol, marketType: 'FUTURES',
+                stopLossAlgoId: existingOpen.stopLossAlgoId,
+                stopLossOrderId: existingOpen.stopLossOrderId,
+                takeProfitAlgoId: existingOpen.takeProfitAlgoId,
+                takeProfitOrderId: existingOpen.takeProfitOrderId,
+              });
+
+              let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
+              let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
+
+              if (slPrice) {
+                try {
+                  newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: slPrice, marketType: 'FUTURES' });
+                } catch (e) {
+                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated SL after STOP_MARKET pyramid');
+                }
+              }
+              if (tpPrice) {
+                try {
+                  newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: existingOpen.side, quantity: newQty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+                } catch (e) {
+                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place updated TP after STOP_MARKET pyramid');
+                }
+              }
+
+              await db.update(tradeExecutions).set({
+                entryPrice: newAvgPrice.toString(),
+                quantity: newQty.toString(),
+                stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : existingOpen.stopLossAlgoId),
+                takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : existingOpen.takeProfitAlgoId),
+                stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : existingOpen.stopLossOrderId),
+                takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : existingOpen.takeProfitOrderId),
+                stopLossIsAlgo: newSlResult?.isAlgoOrder ?? existingOpen.stopLossIsAlgo ?? false,
+                takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? existingOpen.takeProfitIsAlgo ?? false,
+                updatedAt: new Date(),
+              }).where(eq(tradeExecutions.id, existingOpen.id));
+            } else {
+              await db.update(tradeExecutions).set({
+                entryPrice: newAvgPrice.toString(),
+                quantity: newQty.toString(),
+                updatedAt: new Date(),
+              }).where(eq(tradeExecutions.id, existingOpen.id));
+            }
+
+            await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingEntryExecution.id));
+
+            const wsService = getWebSocketService();
+            if (wsService) {
+              const [updated] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
+              if (updated) wsService.emitPositionUpdate(walletId, updated);
+            }
+
+            logger.info({ executionId: existingOpen.id, symbol, newAvgPrice, newQty }, '[FuturesUserStream] Pyramided via STOP_MARKET algo order into existing position');
+          });
+          return;
+        }
+
+        logger.info(
+          { executionId: pendingEntryExecution.id, algoId, symbol },
+          '[FuturesUserStream] Algo entry order TRIGGERED — activating pending execution'
+        );
+
+        await db
+          .update(tradeExecutions)
+          .set({
+            status: 'open',
+            openedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(tradeExecutions.id, pendingEntryExecution.id));
+
+        const wsService = getWebSocketService();
+        if (wsService) {
+          wsService.emitPositionUpdate(walletId, {
+            ...pendingEntryExecution,
+            status: 'open',
+          });
+        }
+
+        return;
+      }
+
       const algoOpenExecutions = await db
         .select()
         .from(tradeExecutions)
@@ -929,8 +1352,9 @@ export class BinanceFuturesUserStreamService {
         `[FuturesUserStream] > Algo ${exitReason} order TRIGGERED`
       );
 
+      const apiClient = this.connections.get(walletId)?.apiClient;
+
       if (orderToCancel) {
-        const apiClient = this.connections.get(walletId)?.apiClient;
         if (apiClient) {
           const maxRetries = 3;
           let cancelSuccess = false;
@@ -995,6 +1419,14 @@ export class BinanceFuturesUserStreamService {
         },
         '[FuturesUserStream] Cleared triggered protection order IDs and unblocked deferral'
       );
+
+      if (apiClient) {
+        try {
+          await cancelAllFuturesAlgoOrders(apiClient, symbol);
+        } catch (sweepError) {
+          logger.warn({ symbol, error: serializeError(sweepError) }, '[FuturesUserStream] Failed to sweep remaining algo orders on position close');
+        }
+      }
 
       const executionId = execution.id;
       const executionSide = execution.side as 'LONG' | 'SHORT';
@@ -1217,6 +1649,34 @@ export class BinanceFuturesUserStreamService {
   private async handleConditionalOrderReject(walletId: string, event: FuturesConditionalOrderReject): Promise<void> {
     const { or: orderReject } = event;
     const { s: symbol, i: orderId, r: reason } = orderReject;
+
+    try {
+      const [pendingEntry] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.status, 'pending'),
+            eq(tradeExecutions.entryOrderId, Number(orderId))
+          )
+        )
+        .limit(1);
+
+      if (pendingEntry) {
+        await db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(eq(tradeExecutions.id, pendingEntry.id));
+        logger.warn(
+          { walletId, symbol, orderId, reason },
+          '[FuturesUserStream] Entry conditional order rejected — pending execution cancelled'
+        );
+        return;
+      }
+    } catch (error) {
+      logger.error({ walletId, orderId, error: serializeError(error) }, '[FuturesUserStream] Error checking entry execution for conditional reject');
+    }
 
     logger.error(
       {

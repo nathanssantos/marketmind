@@ -280,10 +280,11 @@ describe('SignalProcessor', () => {
       ).length).toBe(1);
     });
 
-    it('should skip watcher already processed this cycle', () => {
-      (processor as any).processedThisCycle.add('w1-ETHUSDT-1h-FUTURES');
+    it('should allow re-queueing a watcher already processed this cycle', () => {
       processor.queueWatcherProcessing('w1-ETHUSDT-1h-FUTURES');
-      expect((processor as any).processingQueue).not.toContain('w1-ETHUSDT-1h-FUTURES');
+      (processor as any).processingQueue = [];
+      processor.queueWatcherProcessing('w1-ETHUSDT-1h-FUTURES');
+      expect((processor as any).processingQueue).toContain('w1-ETHUSDT-1h-FUTURES');
     });
   });
 
@@ -1439,7 +1440,6 @@ describe('SignalProcessor', () => {
       await (processor as any).processWatcherQueue();
 
       expect((processor as any).pendingCycleId).toBeNull();
-      expect((processor as any).processedThisCycle.size).toBe(0);
       expect((processor as any).isProcessingQueue).toBe(false);
     });
 
@@ -1545,7 +1545,7 @@ describe('SignalProcessor', () => {
       expect((processor as any).pendingCycleId).not.toBeNull();
     });
 
-    it('should add processed watchers to processedThisCycle when not pending', async () => {
+    it('should accumulate results in pendingResults when not pending', async () => {
       (processor as any).processingQueue = ['watcher-1'];
 
       const watcher = createWatcher();
@@ -1573,7 +1573,7 @@ describe('SignalProcessor', () => {
 
       await (processor as any).processWatcherQueue();
 
-      expect((processor as any).processedThisCycle.has('watcher-1')).toBe(false);
+      expect((processor as any).pendingResults).toHaveLength(0);
     });
   });
 
@@ -1866,17 +1866,18 @@ describe('SignalProcessor', () => {
     });
   });
 
-  describe('processedThisCycle tracking', () => {
-    it('should prevent re-processing in same cycle', () => {
-      (processor as any).processedThisCycle.add('w1-TEST-1h-FUTURES');
+  describe('queueWatcherProcessing deduplication', () => {
+    it('should not add duplicate watcher to queue', () => {
       processor.queueWatcherProcessing('w1-TEST-1h-FUTURES');
-      expect((processor as any).processingQueue.length).toBe(0);
+      processor.queueWatcherProcessing('w1-TEST-1h-FUTURES');
+      expect((processor as any).processingQueue.filter((id: string) => id === 'w1-TEST-1h-FUTURES').length).toBe(1);
     });
 
-    it('should clear on new cycle', () => {
-      (processor as any).processedThisCycle.add('w1-TEST-1h-FUTURES');
-      (processor as any).processedThisCycle.clear();
-      expect((processor as any).processedThisCycle.size).toBe(0);
+    it('should allow re-queueing after watcher is dequeued', () => {
+      processor.queueWatcherProcessing('w1-TEST-1h-FUTURES');
+      (processor as any).processingQueue = [];
+      processor.queueWatcherProcessing('w1-TEST-1h-FUTURES');
+      expect((processor as any).processingQueue).toContain('w1-TEST-1h-FUTURES');
     });
   });
 
@@ -2028,7 +2029,8 @@ describe('SignalProcessor', () => {
       vi.mocked(deps.getActiveWatchers).mockReturnValue(watcherMap);
       vi.mocked(deps.isWalletPaused).mockReturnValue(false);
 
-      mockDbSelectLimit.mockResolvedValueOnce([{ currentBalance: '0.3', leverage: 5 }]);
+      mockDbSelectLimit.mockResolvedValueOnce([{ currentBalance: '0.3' }]);
+      mockDbSelectLimit.mockResolvedValueOnce([{ leverage: 5 }]);
 
       const now = Date.now();
       const intervalMs = HOUR_MS;

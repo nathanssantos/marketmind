@@ -1,15 +1,21 @@
-import { Badge, Box, Button, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Flex, HStack, IconButton, Separator, Stack, Text } from '@chakra-ui/react';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
+import { Select } from '@renderer/components/ui/select';
+import { Slider } from '@renderer/components/ui/slider';
 import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
+import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useSignalSuggestions } from '@renderer/hooks/useSignalSuggestions';
+import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
+import { trpc } from '@renderer/utils/trpc';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@renderer/components/Trading/TradingTable';
 import type { DirectionMode } from '@renderer/components/Trading/WatcherManager/WatchersList';
 import { useUIStore } from '@renderer/store/uiStore';
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuOctagonX, LuPlay, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
+import { LuArrowUpDown, LuCheck, LuOctagonX, LuPlay, LuTrendingDown, LuTrendingUp, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { StartWatchersModal } from '@renderer/components/Trading/StartWatchersModal';
 
@@ -27,17 +33,33 @@ const WatchersTabComponent = () => {
   const globalActions = useGlobalActionsOptional();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const { currentUser } = useBackendAuth();
   const { activeWallet } = useActiveWallet();
   const activeWalletId = activeWallet?.id;
 
   const { watcherStatus, isLoadingWatcherStatus, stopAllWatchers, isStoppingAllWatchers, config, updateConfig, isUpdatingConfig } = useBackendAutoTrading(activeWalletId || '');
+  const utils = trpc.useUtils();
+  const updateConfigFull = trpc.autoTrading.updateConfig.useMutation({
+    onSuccess: () => { void utils.autoTrading.getConfig.invalidate(); },
+  });
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
   const directionMode: DirectionMode = (config?.directionMode as DirectionMode) ?? 'auto';
 
+  const [autoTradePercent, setAutoTradePercent] = useState(10);
+
+  useEffect(() => {
+    setAutoTradePercent(Number(config?.positionSizePercent ?? 10));
+  }, [config?.positionSizePercent]);
+
   const handleDirectionModeChange = (mode: DirectionMode) => {
     if (!activeWalletId) return;
     void updateConfig({ walletId: activeWalletId, directionMode: mode });
+  };
+
+  const handleAutoTradePercentSave = (value: number) => {
+    if (!activeWalletId) return;
+    updateConfigFull.mutate({ walletId: activeWalletId, positionSizePercent: value.toString() });
   };
 
   return (
@@ -104,6 +126,23 @@ const WatchersTabComponent = () => {
         </HStack>
       )}
 
+      {activeWalletId && (
+        <Box>
+          <Flex justify="space-between" align="center" mb={2}>
+            <Text fontSize="xs" fontWeight="medium">{t('watcherManager.positionSize.sizePercent')}</Text>
+            <Text fontSize="xs" color="fg.muted">{autoTradePercent}%</Text>
+          </Flex>
+          <Slider
+            value={[autoTradePercent]}
+            onValueChange={(values) => setAutoTradePercent(values[0] ?? 10)}
+            onValueChangeEnd={(values) => handleAutoTradePercentSave(values[0] ?? 10)}
+            min={1}
+            max={100}
+            step={0.5}
+          />
+        </Box>
+      )}
+
       {!activeWalletId ? (
         <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
           <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>
@@ -153,10 +192,190 @@ const WatchersTabComponent = () => {
         </>
       )}
 
+      {activeWalletId && <SuggestionsSection walletId={activeWalletId} userId={currentUser?.id?.toString()} />}
+
       <StartWatchersModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </Stack>
   );
 };
+
+const SuggestionsSection = memo(({ walletId, userId }: { walletId: string; userId?: string }) => {
+  const { t } = useTranslation();
+  const { suggestions, isLoading, accept, reject, isAccepting, isRejecting } = useSignalSuggestions(walletId, userId);
+  const globalActions = useGlobalActionsOptional();
+
+  if (isLoading || suggestions.length === 0) return null;
+
+  return (
+    <>
+      <Separator />
+      <Flex justify="space-between" align="center">
+        <Flex align="center" gap={2}>
+          <Text fontSize="sm" fontWeight="bold">
+            {t('trading.suggestions.title')}
+          </Text>
+          <Badge colorPalette="yellow" size="xs" px={1}>
+            {suggestions.length}
+          </Badge>
+        </Flex>
+      </Flex>
+      <Stack gap={2}>
+        {suggestions.map((s) => (
+          <SuggestionCard
+            key={s.id}
+            suggestion={s}
+            onAccept={accept}
+            onReject={reject}
+            isAccepting={isAccepting}
+            isRejecting={isRejecting}
+            onNavigate={globalActions?.navigateToSymbol}
+          />
+        ))}
+      </Stack>
+    </>
+  );
+});
+
+SuggestionsSection.displayName = 'SuggestionsSection';
+
+type Suggestion = NonNullable<ReturnType<typeof useSignalSuggestions>['suggestions']>[number];
+
+const formatPrice = (price: string) => {
+  const num = Number(price);
+  return num >= 1 ? num.toFixed(2) : num.toPrecision(4);
+};
+
+interface SuggestionCardProps {
+  suggestion: Suggestion;
+  onAccept: (id: string, positionSizePercent?: number) => Promise<unknown>;
+  onReject: (id: string) => Promise<unknown>;
+  isAccepting: boolean;
+  isRejecting: boolean;
+  onNavigate?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}
+
+const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRejecting, onNavigate }: SuggestionCardProps) => {
+  const { t } = useTranslation();
+  const [sizePercent, setSizePercent] = useState(Number(suggestion.positionSizePercent ?? 10));
+
+  const isLong = suggestion.side === 'LONG';
+  const expiresAt = suggestion.expiresAt ? new Date(suggestion.expiresAt) : null;
+  const isExpired = expiresAt ? expiresAt < new Date() : false;
+
+  const handleAccept = useCallback(() => {
+    void onAccept(suggestion.id, sizePercent);
+  }, [onAccept, suggestion.id, sizePercent]);
+
+  const handleReject = useCallback(() => {
+    void onReject(suggestion.id);
+  }, [onReject, suggestion.id]);
+
+  return (
+    <Box
+      bg="bg.muted"
+      borderRadius="md"
+      p={3}
+      borderLeft="3px solid"
+      borderLeftColor={isLong ? 'green.500' : 'red.500'}
+    >
+      <Flex justify="space-between" align="center" mb={2}>
+        <Flex align="center" gap={2}>
+          <CryptoIcon
+            symbol={suggestion.symbol}
+            size={14}
+            onClick={() => onNavigate?.(suggestion.symbol, 'FUTURES')}
+            cursor={onNavigate ? 'pointer' : 'default'}
+          />
+          <Text
+            fontWeight="bold"
+            fontSize="xs"
+            cursor={onNavigate ? 'pointer' : 'default'}
+            _hover={onNavigate ? { color: 'blue.500' } : undefined}
+            onClick={() => onNavigate?.(suggestion.symbol, 'FUTURES')}
+          >
+            {suggestion.symbol}
+          </Text>
+          <Badge colorPalette={isLong ? 'green' : 'red'} size="xs">
+            {isLong ? t('common.long') : t('common.short')}
+          </Badge>
+          <Badge colorPalette="blue" size="xs">{suggestion.interval}</Badge>
+        </Flex>
+        {isExpired && (
+          <Badge colorPalette="orange" size="xs">{t('trading.suggestions.expired')}</Badge>
+        )}
+      </Flex>
+
+      <Text fontSize="xs" color="fg.muted" mb={1}>{suggestion.setupType}</Text>
+
+      <Flex gap={3} mb={2} wrap="wrap">
+        <Box>
+          <Text fontSize="2xs" color="fg.muted">{t('common.entry')}</Text>
+          <Text fontSize="xs" fontWeight="medium">{formatPrice(suggestion.entryPrice)}</Text>
+        </Box>
+        {suggestion.stopLoss && (
+          <Box>
+            <Text fontSize="2xs" color="fg.muted">{t('common.stopLoss')}</Text>
+            <Text fontSize="xs" fontWeight="medium" color="red.500">{formatPrice(suggestion.stopLoss)}</Text>
+          </Box>
+        )}
+        {suggestion.takeProfit && (
+          <Box>
+            <Text fontSize="2xs" color="fg.muted">{t('common.takeProfit')}</Text>
+            <Text fontSize="xs" fontWeight="medium" color="green.500">{formatPrice(suggestion.takeProfit)}</Text>
+          </Box>
+        )}
+        {suggestion.riskRewardRatio && (
+          <Box>
+            <Text fontSize="2xs" color="fg.muted">R:R</Text>
+            <Text fontSize="xs" fontWeight="medium">{Number(suggestion.riskRewardRatio).toFixed(1)}</Text>
+          </Box>
+        )}
+      </Flex>
+
+      <Box mb={2}>
+        <Flex justify="space-between" align="center" mb={1}>
+          <Text fontSize="2xs" color="fg.muted">{t('trading.suggestions.positionSize')}</Text>
+          <Text fontSize="2xs" color="fg.muted">{sizePercent}%</Text>
+        </Flex>
+        <Slider
+          value={[sizePercent]}
+          onValueChange={(v) => setSizePercent(v[0] ?? 10)}
+          min={1}
+          max={100}
+          step={0.5}
+        />
+      </Box>
+
+      <HStack gap={2}>
+        <Button
+          size="2xs"
+          colorPalette="green"
+          onClick={handleAccept}
+          loading={isAccepting}
+          disabled={isExpired || isRejecting}
+          flex={1}
+        >
+          <LuCheck />
+          {t('trading.suggestions.accept')}
+        </Button>
+        <Button
+          size="2xs"
+          colorPalette="red"
+          variant="outline"
+          onClick={handleReject}
+          loading={isRejecting}
+          disabled={isAccepting}
+          flex={1}
+        >
+          <LuX />
+          {t('trading.suggestions.reject')}
+        </Button>
+      </HStack>
+    </Box>
+  );
+});
+
+SuggestionCard.displayName = 'SuggestionCard';
 
 interface WatchersTableProps {
   watchers: ActiveWatcher[];
@@ -165,6 +384,13 @@ interface WatchersTableProps {
 
 const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps) => {
   const { t } = useTranslation();
+  const { profiles, assignToWatcher } = useTradingProfiles();
+
+  const profileOptions = useMemo(() => [
+    { value: '', label: t('tradingProfiles.watchers.usingDefault') },
+    ...profiles.map((p) => ({ value: p.id, label: p.name })),
+  ], [profiles, t]);
+
   const { sortKey, sortDirection, setWatchersTableSort } = useUIStore(
     useShallow((s) => ({
       sortKey: s.watchersTableSortKey,
@@ -247,9 +473,12 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
             )}
           </TradingTableCell>
           <TradingTableCell>
-            <Text fontSize="xs" color="fg.muted">
-              {watcher.profileName || t('tradingProfiles.watchers.usingDefault')}
-            </Text>
+            <Select
+              value={watcher.profileId ?? ''}
+              options={profileOptions}
+              onChange={(v) => void assignToWatcher(watcher.watcherId, v || null)}
+              size="xs"
+            />
           </TradingTableCell>
         </TradingTableRow>
       ))}

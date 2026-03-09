@@ -1,17 +1,18 @@
-import { Flex, Stack, Text } from '@chakra-ui/react';
+import { Flex, IconButton, Stack, Text } from '@chakra-ui/react';
 import { memo, useCallback, useMemo } from 'react';
+import { LuX } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useUIStore } from '../../store/uiStore';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
+import { PerformanceCalendar } from './PerformanceCalendar';
 import { RiskDisplay } from '../Trading/RiskDisplay';
 import { SetupStatsTable } from '../Trading/SetupStatsTable';
 import {
   DialogBackdrop,
   DialogBody,
-  DialogCloseTrigger,
   DialogContent,
   DialogHeader,
   DialogPositioner,
@@ -48,12 +49,19 @@ export const AnalyticsModal = memo(() => {
       <DialogBackdrop />
       <DialogPositioner>
         <DialogContent maxH="90vh" maxW="900px" w="90vw">
-          <DialogHeader px={4} pt={4}>
+          <DialogHeader px={4} pt={4} pb={3}>
             <Flex justify="space-between" align="center" w="100%">
               <DialogTitle fontSize="md">{t('trading.tabs.analytics')}</DialogTitle>
+              <IconButton
+                size="2xs"
+                variant="ghost"
+                aria-label={t('common.close')}
+                onClick={handleClose}
+              >
+                <LuX />
+              </IconButton>
             </Flex>
           </DialogHeader>
-          <DialogCloseTrigger />
 
           <DialogBody px={4} py={3} overflowY="auto">
             {activeWalletId ? (
@@ -63,6 +71,7 @@ export const AnalyticsModal = memo(() => {
                 )}
                 <RiskDisplay walletId={activeWalletId} />
                 <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
+                <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
                 <SetupStatsTable walletId={activeWalletId} />
               </Stack>
             ) : (

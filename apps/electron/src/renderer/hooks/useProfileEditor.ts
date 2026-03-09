@@ -1,4 +1,5 @@
-import type { CreateTradingProfileInput, StrategyDefinition, TradingProfile, UpdateTradingProfileInput } from '@marketmind/types';
+import type { CreateTradingProfileInput, ProfileConfigOverrides, StrategyDefinition, TradingProfile, UpdateTradingProfileInput } from '@marketmind/types';
+import { PROFILE_CONFIG_KEYS } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStrategyList } from './useSetupDetection';
 
@@ -63,7 +64,19 @@ export interface ProfileEditorState {
   isDefault: boolean;
   overridePositionSize: boolean;
   overrideConcurrentPositions: boolean;
+  configOverrides: Record<string, unknown>;
 }
+
+const extractConfigOverrides = (profile: TradingProfile): Record<string, unknown> => {
+  const overrides: Record<string, unknown> = {};
+  for (const key of PROFILE_CONFIG_KEYS) {
+    const value = profile[key];
+    if (value !== null && value !== undefined) {
+      overrides[key] = value;
+    }
+  }
+  return overrides;
+};
 
 export const getInitialState = (profile: TradingProfile | null): ProfileEditorState => {
   if (profile) {
@@ -76,6 +89,7 @@ export const getInitialState = (profile: TradingProfile | null): ProfileEditorSt
       isDefault: profile.isDefault,
       overridePositionSize: profile.maxPositionSize !== null && profile.maxPositionSize !== undefined,
       overrideConcurrentPositions: profile.maxConcurrentPositions !== null && profile.maxConcurrentPositions !== undefined,
+      configOverrides: extractConfigOverrides(profile),
     };
   }
   return {
@@ -87,7 +101,12 @@ export const getInitialState = (profile: TradingProfile | null): ProfileEditorSt
     isDefault: false,
     overridePositionSize: false,
     overrideConcurrentPositions: false,
+    configOverrides: {},
   };
+};
+
+export const isOverrideActive = (state: ProfileEditorState, key: string): boolean => {
+  return state.configOverrides[key] !== undefined;
 };
 
 export const toggleSetup = (currentSetups: string[], setupId: string): string[] => {
@@ -128,16 +147,28 @@ export const buildCreateInput = (state: ProfileEditorState): CreateTradingProfil
   maxPositionSize: state.overridePositionSize ? state.maxPositionSize : undefined,
   maxConcurrentPositions: state.overrideConcurrentPositions ? state.maxConcurrentPositions : undefined,
   isDefault: state.isDefault,
+  ...(state.configOverrides as Partial<ProfileConfigOverrides>),
 });
 
-export const buildUpdateInput = (state: ProfileEditorState): UpdateTradingProfileInput => ({
-  name: state.name.trim(),
-  description: state.description.trim() || undefined,
-  enabledSetupTypes: state.enabledSetupTypes,
-  maxPositionSize: state.overridePositionSize ? state.maxPositionSize : undefined,
-  maxConcurrentPositions: state.overrideConcurrentPositions ? state.maxConcurrentPositions : undefined,
-  isDefault: state.isDefault,
-});
+export const buildUpdateInput = (state: ProfileEditorState): UpdateTradingProfileInput => {
+  const nulledOverrides: Record<string, unknown> = {};
+  for (const key of PROFILE_CONFIG_KEYS) {
+    nulledOverrides[key] = state.configOverrides[key] !== undefined ? state.configOverrides[key] : null;
+  }
+  return {
+    name: state.name.trim(),
+    description: state.description.trim() || undefined,
+    enabledSetupTypes: state.enabledSetupTypes,
+    maxPositionSize: state.overridePositionSize ? state.maxPositionSize : undefined,
+    maxConcurrentPositions: state.overrideConcurrentPositions ? state.maxConcurrentPositions : undefined,
+    isDefault: state.isDefault,
+    ...(nulledOverrides as Partial<ProfileConfigOverrides>),
+  };
+};
+
+export const countOverridesInKeys = (state: ProfileEditorState, keys: string[]): number => {
+  return keys.filter((key) => state.configOverrides[key] !== undefined).length;
+};
 
 export const useProfileEditor = (profile: TradingProfile | null, isOpen: boolean) => {
   const [state, setState] = useState<ProfileEditorState>(() => getInitialState(profile));
@@ -169,6 +200,18 @@ export const useProfileEditor = (profile: TradingProfile | null, isOpen: boolean
     }));
   }, []);
 
+  const setOverride = useCallback((key: string, value: unknown) => {
+    setState((s) => ({ ...s, configOverrides: { ...s.configOverrides, [key]: value } }));
+  }, []);
+
+  const clearOverride = useCallback((key: string) => {
+    setState((s) => {
+      const next = { ...s.configOverrides };
+      delete next[key];
+      return { ...s, configOverrides: next };
+    });
+  }, []);
+
   const handleToggleSetup = useCallback((setupId: string) => {
     setState((s) => ({ ...s, enabledSetupTypes: toggleSetup(s.enabledSetupTypes, setupId) }));
   }, []);
@@ -195,6 +238,8 @@ export const useProfileEditor = (profile: TradingProfile | null, isOpen: boolean
     setMaxConcurrentPositions,
     setOverridePositionSize,
     setOverrideConcurrentPositions,
+    setOverride,
+    clearOverride,
     handleToggleSetup,
     handleToggleGroup,
     groupsWithStats,

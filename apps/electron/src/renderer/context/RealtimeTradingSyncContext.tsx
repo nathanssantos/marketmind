@@ -4,6 +4,7 @@ import { createPlatformAdapter } from '../adapters/factory';
 import { socketService } from '../services/socketService';
 import { QUERY_CONFIGS } from '../services/queryConfig';
 import { trpc } from '../utils/trpc';
+import { useOrderFlashStore } from '../store/orderFlashStore';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
 
@@ -17,7 +18,8 @@ interface PositionUpdate {
 }
 
 interface OrderUpdate {
-  orderId: number;
+  id?: string;
+  orderId?: number;
   status: string;
   symbol: string;
 }
@@ -25,6 +27,14 @@ interface OrderUpdate {
 interface PriceUpdate {
   symbol: string;
   price: number;
+  timestamp: number;
+}
+
+interface RiskAlert {
+  type: 'LIQUIDATION_RISK' | 'DAILY_LOSS_LIMIT' | 'MAX_DRAWDOWN' | 'POSITION_CLOSED' | 'MARGIN_TOP_UP' | 'UNKNOWN_POSITION' | 'ORDER_REJECTED' | 'ORPHAN_ORDERS' | 'ORDER_MISMATCH' | 'UNPROTECTED_POSITION';
+  level: 'info' | 'warning' | 'danger' | 'critical';
+  symbol?: string;
+  message: string;
   timestamp: number;
 }
 
@@ -63,6 +73,7 @@ interface RealtimeTradingSyncProviderProps {
 export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
   const socketRef = useRef<Socket | null>(null);
   const isConnectedRef = useRef(false);
+  const recentAlertsRef = useRef<Map<string, number>>(new Map());
   const utils = trpc.useUtils();
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
@@ -204,13 +215,22 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       invalidateWallet();
     };
 
-    const handleOrderUpdate = (_order: OrderUpdate) => {
-      invalidateOrders();
+    const handlePositionClosed = (_data: { positionId: string; symbol: string; side: string; exitReason: string; pnl: number; pnlPercent: number }) => {
+      invalidatePositions();
+      invalidateWallet();
     };
 
-    const handleOrderCreated = (_order: OrderUpdate) => {
+    const handleOrderUpdate = (order: OrderUpdate) => {
+      invalidateOrders();
+      const flashId = order.id ?? order.orderId?.toString();
+      if (flashId) useOrderFlashStore.getState().flashOrder(flashId);
+    };
+
+    const handleOrderCreated = (order: OrderUpdate) => {
       invalidateOrders();
       invalidateWallet();
+      const flashId = order.id ?? order.orderId?.toString();
+      if (flashId) useOrderFlashStore.getState().flashOrder(flashId);
     };
 
     const handleOrderCancelled = (_data: { orderId: string }) => {
@@ -228,6 +248,22 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       if (callbacks) {
         callbacks.forEach((callback) => callback(data.price));
       }
+    };
+
+    const handleRiskAlert = (alert: RiskAlert) => {
+      const dedupKey = `${alert.type}:${alert.symbol ?? ''}:${alert.message}`;
+      const lastShown = recentAlertsRef.current.get(dedupKey) ?? 0;
+      const COOLDOWN_MS = 5 * 60 * 1000;
+      if (Date.now() - lastShown < COOLDOWN_MS) return;
+      recentAlertsRef.current.set(dedupKey, Date.now());
+
+      const toastType = alert.level === 'critical' || alert.level === 'danger' ? 'error' : alert.level === 'warning' ? 'warning' : 'info';
+      toaster.create({
+        type: toastType,
+        title: alert.symbol ? `${alert.type.replace(/_/g, ' ')} — ${alert.symbol}` : alert.type.replace(/_/g, ' '),
+        description: alert.message,
+        duration: alert.level === 'critical' ? undefined : 10000,
+      });
     };
 
     const handleTradeNotification = async (notification: TradeNotification) => {
@@ -274,12 +310,14 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     socket.on('disconnect', handleDisconnect);
     socket.on('connect_error', handleConnectError);
     socket.on('position:update', handlePositionUpdate);
+    socket.on('position:closed', handlePositionClosed);
     socket.on('order:update', handleOrderUpdate);
     socket.on('order:created', handleOrderCreated);
     socket.on('order:cancelled', handleOrderCancelled);
     socket.on('wallet:update', handleWalletUpdate);
     socket.on('price:update', handlePriceUpdate);
     socket.on('trade:notification', handleTradeNotification);
+    socket.on('risk:alert', handleRiskAlert);
 
     if (socket.connected) {
       console.log('[RealtimeSync] Socket already connected, subscribing immediately');
@@ -292,12 +330,14 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       socket.off('disconnect', handleDisconnect);
       socket.off('connect_error', handleConnectError);
       socket.off('position:update', handlePositionUpdate);
+      socket.off('position:closed', handlePositionClosed);
       socket.off('order:update', handleOrderUpdate);
       socket.off('order:created', handleOrderCreated);
       socket.off('order:cancelled', handleOrderCancelled);
       socket.off('wallet:update', handleWalletUpdate);
       socket.off('price:update', handlePriceUpdate);
       socket.off('trade:notification', handleTradeNotification);
+      socket.off('risk:alert', handleRiskAlert);
 
       socket.emit('unsubscribe:positions', walletId);
       socket.emit('unsubscribe:wallet', walletId);

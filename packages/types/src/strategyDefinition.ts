@@ -324,6 +324,7 @@ export interface ExitContext {
   indicators: ComputedIndicators;
   params: Record<string, number>;
   fibonacciSwing?: FibonacciSwingData;
+  initialStopMode?: 'fibo_target' | 'nearest_swing';
 }
 
 

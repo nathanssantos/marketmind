@@ -12,6 +12,7 @@ import { preferencesRouter } from '../routers/preferences';
 import { screenerRouter } from '../routers/screener';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
+import { signalSuggestionsRouter } from '../routers/signal-suggestions';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
@@ -32,6 +33,7 @@ export const appRouter = router({
   setupDetection: setupDetectionRouter,
   backtest: backtestRouter,
   tradingProfiles: tradingProfilesRouter,
+  signalSuggestions: signalSuggestionsRouter,
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
   trade: nestedTradingRouter,

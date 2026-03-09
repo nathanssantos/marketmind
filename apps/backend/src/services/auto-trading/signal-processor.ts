@@ -12,6 +12,8 @@ import { db } from '../../db';
 import {
   autoTradingConfig,
   klines,
+  signalSuggestions,
+  tradingProfiles,
   wallets,
 } from '../../db/schema';
 import { prefetchKlines, prefetchKlinesAsync } from '../kline-prefetch';
@@ -27,9 +29,12 @@ import { autoTradingLogBuffer, type FrontendLogEntry } from '../auto-trading-log
 import { getWebSocketService } from '../websocket';
 import { calculateRequiredKlines } from '../../utils/kline-calculator';
 import { serializeError } from '../../utils/errors';
+import { generateEntityId } from '../../utils/id';
 import type { ActiveWatcher, SignalProcessorDeps } from './types';
 import { log, yieldToEventLoop } from './utils';
 import { isDirectionAllowed } from '../../utils/trading-validation';
+import type { AutoTradingConfig } from '../../db/schema';
+import { applyProfileOverrides } from '../profile-applicator';
 
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = AUTO_TRADING_TIMING.CANDLE_CLOSE_SAFETY_BUFFER_MS;
 const BATCH_SIZE = parseInt(
@@ -45,7 +50,6 @@ export interface SignalProcessorConfig {
 export class SignalProcessor {
   private processingQueue: string[] = [];
   private isProcessingQueue = false;
-  private processedThisCycle: Set<string> = new Set();
   private batchCounter = 0;
   private cycleCounter = 0;
   private pendingResults: WatcherResult[] = [];
@@ -62,13 +66,10 @@ export class SignalProcessor {
   }
 
   queueWatcherProcessing(watcherId: string): void {
-    if (this.processedThisCycle.has(watcherId)) {
-      return;
-    }
     if (!this.processingQueue.includes(watcherId)) {
       this.processingQueue.push(watcherId);
-      void this.processWatcherQueue();
     }
+    void this.processWatcherQueue();
   }
 
   addToProcessingQueue(watcherIds: string[]): void {
@@ -117,9 +118,6 @@ export class SignalProcessor {
       );
 
       for (const result of results) {
-        if (result.status !== 'pending') {
-          this.processedThisCycle.add(result.watcherId);
-        }
         const existingIndex = this.pendingResults.findIndex(r => r.watcherId === result.watcherId);
         if (existingIndex >= 0) {
           this.pendingResults[existingIndex] = result;
@@ -147,7 +145,6 @@ export class SignalProcessor {
         this.pendingCycleId = null;
         this.pendingCycleStartTime = null;
         this.pendingResults = [];
-        this.processedThisCycle.clear();
       }
     }
 
@@ -221,23 +218,22 @@ export class SignalProcessor {
 
     logBuffer.log('>', 'Processing watcher');
 
-    const [walletWithConfig] = await db
-      .select({
-        currentBalance: wallets.currentBalance,
-        leverage: autoTradingConfig.leverage,
-        directionMode: autoTradingConfig.directionMode,
-        maxFibonacciEntryProgressPercent: autoTradingConfig.maxFibonacciEntryProgressPercent,
-        fibonacciSwingRange: autoTradingConfig.fibonacciSwingRange,
-        minRiskRewardRatioLong: autoTradingConfig.minRiskRewardRatioLong,
-        minRiskRewardRatioShort: autoTradingConfig.minRiskRewardRatioShort,
-      })
-      .from(wallets)
-      .leftJoin(autoTradingConfig, eq(wallets.id, autoTradingConfig.walletId))
-      .where(eq(wallets.id, watcher.walletId))
-      .limit(1);
+    const [[walletRow], [baseConfig]] = await Promise.all([
+      db.select({ currentBalance: wallets.currentBalance })
+        .from(wallets).where(eq(wallets.id, watcher.walletId)).limit(1),
+      db.select().from(autoTradingConfig)
+        .where(eq(autoTradingConfig.walletId, watcher.walletId)).limit(1),
+    ]);
 
-    const walletBalance = parseFloat(walletWithConfig?.currentBalance ?? '0');
-    const leverage = walletWithConfig?.leverage ?? 1;
+    let effectiveConfig: AutoTradingConfig | null = baseConfig ?? null;
+    if (effectiveConfig && watcher.profileId) {
+      const [profileRow] = await db.select().from(tradingProfiles)
+        .where(eq(tradingProfiles.id, watcher.profileId)).limit(1);
+      if (profileRow) effectiveConfig = applyProfileOverrides(effectiveConfig, profileRow);
+    }
+
+    const walletBalance = parseFloat(walletRow?.currentBalance ?? '0');
+    const leverage = effectiveConfig?.leverage ?? 1;
     const availableCapital = walletBalance * leverage;
     const wasInEconomyMode = this.walletEconomyMode.get(watcher.walletId) ?? false;
 
@@ -260,7 +256,7 @@ export class SignalProcessor {
       await this.deps.checkAllRotationsOnce();
     }
 
-    const directionMode = walletWithConfig?.directionMode ?? 'auto';
+    const directionMode = effectiveConfig?.directionMode ?? 'auto';
 
     const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
     const filteredStrategies = strategies.filter((s) => {
@@ -292,6 +288,9 @@ export class SignalProcessor {
         targetCount: requiredKlines,
         silent: true,
       });
+      setTimeout(() => {
+        this.queueWatcherProcessing(watcherId);
+      }, AUTO_TRADING_TIMING.BACKFILL_RECHECK_MS);
       return logBuffer.toResult('pending', 'Kline backfill in progress');
     }
 
@@ -425,11 +424,11 @@ export class SignalProcessor {
     for (const strategy of filteredStrategies) {
       await yieldToEventLoop();
 
-      const minRRLong = walletWithConfig?.minRiskRewardRatioLong
-        ? parseFloat(walletWithConfig.minRiskRewardRatioLong)
+      const minRRLong = effectiveConfig?.minRiskRewardRatioLong
+        ? parseFloat(effectiveConfig.minRiskRewardRatioLong)
         : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
-      const minRRShort = walletWithConfig?.minRiskRewardRatioShort
-        ? parseFloat(walletWithConfig.minRiskRewardRatioShort)
+      const minRRShort = effectiveConfig?.minRiskRewardRatioShort
+        ? parseFloat(effectiveConfig.minRiskRewardRatioShort)
         : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
 
       const interpreter = new StrategyInterpreter({
@@ -440,8 +439,9 @@ export class SignalProcessor {
         silent: true,
         interval: watcher.interval as TimeInterval,
         directionMode: directionMode !== 'auto' ? directionMode as 'long_only' | 'short_only' : undefined,
-        maxFibonacciEntryProgressPercent: walletWithConfig?.maxFibonacciEntryProgressPercent ? parseFloat(walletWithConfig.maxFibonacciEntryProgressPercent) : undefined,
-        fibonacciSwingRange: walletWithConfig?.fibonacciSwingRange ?? undefined,
+        maxFibonacciEntryProgressPercentLong: effectiveConfig?.maxFibonacciEntryProgressPercentLong ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentLong) : undefined,
+        maxFibonacciEntryProgressPercentShort: effectiveConfig?.maxFibonacciEntryProgressPercentShort ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentShort) : undefined,
+        fibonacciSwingRange: (effectiveConfig?.fibonacciSwingRange as 'nearest' | 'extended' | undefined) ?? undefined,
       });
 
       const result = interpreter.detect(closedKlines, currentIndex);
@@ -523,6 +523,68 @@ export class SignalProcessor {
 
     if (detectedSetups.length === 0) {
       logBuffer.log('·', 'No setups found');
+      watcher.lastProcessedTime = Date.now();
+      return logBuffer.toResult('success', undefined, closedKlines.length);
+    }
+
+    const effectiveTradingMode = effectiveConfig?.tradingMode ?? 'auto';
+
+    if (effectiveTradingMode === 'semi_assisted') {
+      const wsService = getWebSocketService();
+      const userId = effectiveConfig?.userId ?? watcher.userId;
+      const defaultPositionSizePercent = effectiveConfig?.positionSizePercent ?? '10';
+      const intervalMs = this.getIntervalMs(watcher.interval);
+      const expiresAt = new Date(Date.now() + intervalMs * 3);
+
+      for (const setup of detectedSetups) {
+        const suggestionId = generateEntityId();
+
+        await db.insert(signalSuggestions).values({
+          id: suggestionId,
+          userId,
+          walletId: watcher.walletId,
+          watcherId,
+          symbol: watcher.symbol,
+          interval: watcher.interval,
+          side: setup.direction as 'LONG' | 'SHORT',
+          setupType: setup.type,
+          strategyId: setup.type,
+          entryPrice: String(setup.entryPrice ?? 0),
+          stopLoss: setup.stopLoss != null ? String(setup.stopLoss) : null,
+          takeProfit: setup.takeProfit != null ? String(setup.takeProfit) : null,
+          riskRewardRatio: setup.riskRewardRatio != null ? String(setup.riskRewardRatio) : null,
+          confidence: setup.confidence ?? null,
+          fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
+          triggerKlineOpenTime: lastCandle.openTime,
+          status: 'pending',
+          positionSizePercent: defaultPositionSizePercent,
+          expiresAt,
+        });
+
+        logBuffer.log('>', 'Signal suggestion created (semi-assisted)', {
+          type: setup.type,
+          direction: setup.direction,
+          entryPrice: setup.entryPrice,
+        });
+
+        if (wsService) {
+          wsService.emitSignalSuggestion(userId, {
+            id: suggestionId,
+            walletId: watcher.walletId,
+            symbol: watcher.symbol,
+            interval: watcher.interval,
+            side: setup.direction as 'LONG' | 'SHORT',
+            setupType: setup.type,
+            entryPrice: String(setup.entryPrice ?? 0),
+            stopLoss: setup.stopLoss != null ? String(setup.stopLoss) : null,
+            takeProfit: setup.takeProfit != null ? String(setup.takeProfit) : null,
+            riskRewardRatio: setup.riskRewardRatio != null ? String(setup.riskRewardRatio) : null,
+            confidence: setup.confidence ?? null,
+            expiresAt: expiresAt.toISOString(),
+          });
+        }
+      }
+
       watcher.lastProcessedTime = Date.now();
       return logBuffer.toResult('success', undefined, closedKlines.length);
     }

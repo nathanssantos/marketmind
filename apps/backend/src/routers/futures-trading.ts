@@ -5,7 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
-import { orders, positions } from '../db/schema';
+import { orders, positions, tradeExecutions } from '../db/schema';
 import { binanceApiCache } from '../services/binance-api-cache';
 import { autoTradingService } from '../services/auto-trading';
 import {
@@ -21,6 +21,7 @@ import {
     isPaperWallet,
     setLeverage,
     setMarginType,
+    submitFuturesAlgoOrder,
     submitFuturesOrder,
 } from '../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
@@ -28,6 +29,7 @@ import { walletQueries } from '../services/database/walletQueries';
 import { logger } from '../services/logger';
 import { getMinNotionalFilterService } from '../services/min-notional-filter';
 import { protectedProcedure, router } from '../trpc';
+import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { generateEntityId } from '../utils/id';
 
 export const futuresTradingRouter = router({
@@ -101,7 +103,7 @@ export const futuresTradingRouter = router({
         setupId: z.string().optional(),
         setupType: z.string().optional(),
         leverage: z.number().min(1).max(125).default(1),
-        marginType: z.enum(['ISOLATED', 'CROSSED']).default('ISOLATED'),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).default('CROSSED'),
         stopLoss: z.string().optional(),
         takeProfit: z.string().optional(),
       })
@@ -158,13 +160,99 @@ export const futuresTradingRouter = router({
         await setLeverage(client, input.symbol, input.leverage);
         await setMarginType(client, input.symbol, input.marginType);
 
+        const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
+        const filters = symbolFiltersMap.get(input.symbol);
+        const tickSize = filters?.tickSize?.toString();
+        const stepSize = filters?.stepSize?.toString();
+
+        const isConditionalOrder =
+          input.type === 'STOP_MARKET' || input.type === 'TAKE_PROFIT_MARKET';
+
+        if (isConditionalOrder) {
+          if (!input.stopPrice) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'stopPrice is required for STOP_MARKET / TAKE_PROFIT_MARKET orders',
+            });
+          }
+
+          const triggerPrice = formatPriceForBinance(parseFloat(input.stopPrice), tickSize);
+
+          const algoOrder = await submitFuturesAlgoOrder(client, {
+            symbol: input.symbol,
+            side: input.side,
+            type: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+            triggerPrice,
+            quantity: formatQuantityForBinance(parseFloat(input.quantity), stepSize),
+            workingType: 'CONTRACT_PRICE',
+            ...(input.reduceOnly && { reduceOnly: true }),
+          });
+
+          await ctx.db.insert(orders).values({
+            orderId: algoOrder.algoId,
+            userId: ctx.user.id,
+            walletId: input.walletId,
+            symbol: algoOrder.symbol,
+            side: algoOrder.side,
+            type: algoOrder.type,
+            price: algoOrder.triggerPrice ?? triggerPrice,
+            origQty: algoOrder.quantity,
+            executedQty: '0',
+            status: 'NEW',
+            time: algoOrder.createTime,
+            updateTime: algoOrder.updateTime,
+            setupId: input.setupId,
+            setupType: input.setupType,
+            marketType: 'FUTURES',
+            reduceOnly: input.reduceOnly ?? false,
+            stopLossIntent: input.stopLoss,
+            takeProfitIntent: input.takeProfit,
+          });
+
+          if (!input.reduceOnly) {
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: input.side === 'BUY' ? 'LONG' : 'SHORT',
+              entryPrice: algoOrder.triggerPrice ?? triggerPrice,
+              limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
+              quantity: String(algoOrder.quantity || input.quantity),
+              entryOrderId: algoOrder.algoId,
+              entryOrderType: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+              stopLoss: input.stopLoss,
+              takeProfit: input.takeProfit,
+              status: 'pending',
+              openedAt: new Date(),
+              marketType: 'FUTURES',
+              leverage: input.leverage,
+            });
+            logger.info(
+              { symbol: input.symbol, algoId: algoOrder.algoId },
+              '[createOrder] Created pending tradeExecution for manual STOP_MARKET/TP_MARKET order',
+            );
+          }
+
+          return {
+            orderId: algoOrder.algoId,
+            symbol: algoOrder.symbol,
+            side: algoOrder.side,
+            type: algoOrder.type,
+            status: 'NEW',
+            price: algoOrder.triggerPrice ?? triggerPrice,
+            quantity: algoOrder.quantity,
+            executedQty: '0',
+          };
+        }
+
         const futuresOrder = await submitFuturesOrder(client, {
           symbol: input.symbol,
           side: input.side,
           type: input.type,
-          quantity: input.quantity,
-          price: input.price,
-          stopPrice: input.stopPrice,
+          quantity: formatQuantityForBinance(parseFloat(input.quantity), stepSize),
+          price: input.price ? formatPriceForBinance(parseFloat(input.price), tickSize) : undefined,
+          stopPrice: input.stopPrice ? formatPriceForBinance(parseFloat(input.stopPrice), tickSize) : undefined,
           reduceOnly: input.reduceOnly,
           timeInForce: input.type === 'LIMIT' ? 'GTC' : undefined,
         });
@@ -191,22 +279,76 @@ export const futuresTradingRouter = router({
           takeProfitIntent: input.takeProfit,
         });
 
+        const orderDirection = input.side === 'BUY' ? 'LONG' : 'SHORT';
+
+        if (input.type !== 'MARKET' && futuresOrder.status === 'NEW') {
+          await ctx.db.insert(tradeExecutions).values({
+            id: generateEntityId(),
+            userId: ctx.user.id,
+            walletId: input.walletId,
+            symbol: input.symbol,
+            side: orderDirection,
+            entryOrderId: futuresOrder.orderId,
+            entryPrice: input.price ?? '0',
+            limitEntryPrice: input.price,
+            quantity: input.quantity,
+            stopLoss: input.stopLoss,
+            takeProfit: input.takeProfit,
+            status: 'pending',
+            openedAt: new Date(),
+            entryOrderType: 'LIMIT',
+            marketType: 'FUTURES',
+            leverage: input.leverage,
+          });
+          logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created pending tradeExecution for manual LIMIT order');
+        }
+
         if (input.type === 'MARKET') {
-          const direction = input.side === 'BUY' ? 'LONG' : 'SHORT';
           const quantity = parseFloat(input.quantity);
+          let slResult: Awaited<ReturnType<typeof autoTradingService.createStopLossOrder>> | null = null;
+          let tpResult: Awaited<ReturnType<typeof autoTradingService.createTakeProfitOrder>> | null = null;
+
           if (input.stopLoss) {
             try {
-              await autoTradingService.createStopLossOrder(wallet, input.symbol, quantity, parseFloat(input.stopLoss), direction, 'FUTURES');
+              slResult = await autoTradingService.createStopLossOrder(wallet, input.symbol, quantity, parseFloat(input.stopLoss), orderDirection, 'FUTURES');
             } catch (slError) {
               logger.error({ error: slError instanceof Error ? slError.message : String(slError), symbol: input.symbol }, '[createOrder] Failed to place MARKET SL order');
             }
           }
           if (input.takeProfit) {
             try {
-              await autoTradingService.createTakeProfitOrder(wallet, input.symbol, quantity, parseFloat(input.takeProfit), direction, 'FUTURES');
+              tpResult = await autoTradingService.createTakeProfitOrder(wallet, input.symbol, quantity, parseFloat(input.takeProfit), orderDirection, 'FUTURES');
             } catch (tpError) {
               logger.error({ error: tpError instanceof Error ? tpError.message : String(tpError), symbol: input.symbol }, '[createOrder] Failed to place MARKET TP order');
             }
+          }
+
+          if (slResult || tpResult) {
+            const fillPrice = parseFloat((futuresOrder as { avgPrice?: string }).avgPrice || futuresOrder.price || '0');
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: orderDirection,
+              entryOrderId: futuresOrder.orderId,
+              entryPrice: fillPrice > 0 ? fillPrice.toString() : (input.price || '0'),
+              quantity: input.quantity,
+              stopLoss: input.stopLoss,
+              takeProfit: input.takeProfit,
+              stopLossAlgoId: slResult?.isAlgoOrder === true ? slResult.algoId : null,
+              takeProfitAlgoId: tpResult?.isAlgoOrder === true ? tpResult.algoId : null,
+              stopLossOrderId: slResult?.isAlgoOrder === false ? slResult.orderId : null,
+              takeProfitOrderId: tpResult?.isAlgoOrder === false ? tpResult.orderId : null,
+              stopLossIsAlgo: slResult?.isAlgoOrder ?? false,
+              takeProfitIsAlgo: tpResult?.isAlgoOrder ?? false,
+              status: 'open',
+              openedAt: new Date(),
+              entryOrderType: 'MARKET',
+              marketType: 'FUTURES',
+              leverage: input.leverage,
+            });
+            logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created tradeExecution for manual MARKET order with SL/TP');
           }
         }
 
@@ -247,6 +389,11 @@ export const futuresTradingRouter = router({
             .set({ status: 'CANCELED', updateTime: Date.now() })
             .where(eq(orders.orderId, input.orderId));
 
+          await ctx.db
+            .update(tradeExecutions)
+            .set({ status: 'cancelled', updatedAt: new Date() })
+            .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
+
           return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
         }
 
@@ -257,6 +404,11 @@ export const futuresTradingRouter = router({
           .update(orders)
           .set({ status: 'CANCELED', updateTime: Date.now() })
           .where(eq(orders.orderId, input.orderId));
+
+        await ctx.db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
 
         return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
       } catch (error) {
@@ -378,7 +530,7 @@ export const futuresTradingRouter = router({
         takeProfit: z.string().optional(),
         setupId: z.string().optional(),
         leverage: z.number().min(1).max(125).default(1),
-        marginType: z.enum(['ISOLATED', 'CROSSED']).default('ISOLATED'),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).default('CROSSED'),
       })
     )
     .mutation(async ({ input, ctx }) => {

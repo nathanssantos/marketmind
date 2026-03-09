@@ -4,21 +4,23 @@ import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { Button } from '@renderer/components/ui/button';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
+import { Slider } from '@renderer/components/ui/slider';
 import { useChartContext } from '@renderer/context/ChartContext';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
-import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { useTradingPref } from '@renderer/store/preferencesStore';
-import { trpc } from '../../utils/trpc';
-import { getKlineClose } from '@shared/utils';
-import { memo, useEffect, useMemo, useState } from 'react';
+import { useToast } from '@renderer/hooks/useToast';
+import { getKlineClose, roundTradingPrice, roundTradingQty } from '@shared/utils';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { trpc } from '../../utils/trpc';
 
 type OrderDirection = 'long' | 'short';
 type MarketType = 'SPOT' | 'FUTURES';
 
 const OrderTicketComponent = () => {
   const { t } = useTranslation();
+  const { error: toastError } = useToast();
   const { chartData } = useChartContext();
 
   const { currentPrice, symbol } = useMemo(() => {
@@ -40,6 +42,11 @@ const OrderTicketComponent = () => {
     { enabled: !!activeWalletId }
   );
 
+  const utils = trpc.useUtils();
+  const updateConfig = trpc.autoTrading.updateConfig.useMutation({
+    onSuccess: () => { void utils.autoTrading.getConfig.invalidate(); },
+  });
+
   const activeWallet = rawActiveWallet ? {
     id: rawActiveWallet.id,
     name: rawActiveWallet.name,
@@ -49,47 +56,69 @@ const OrderTicketComponent = () => {
     createdAt: new Date(rawActiveWallet.createdAt),
   } : undefined;
 
-  const [quantityBySymbol, setQuantityBySymbol] = useTradingPref<Record<string, number>>('quantityBySymbol', {});
+  const calculateQtyFromPercent = (sizePercent: number, price: number, balance: number) =>
+    balance > 0 && price > 0 ? (balance * sizePercent) / 100 / price : 0;
 
-  const getQuantityForSymbol = (sym: string) => quantityBySymbol[sym] ?? 0;
-  const setQuantityForSymbol = (sym: string, qty: number) => {
-    setQuantityBySymbol((prev) => ({ ...prev, [sym]: qty }));
-  };
-
-  const calculateDefaultQuantity = () => {
-    if (!activeWallet || !currentPrice) return 0;
-    const sizePercent = Number(autoConfig?.positionSizePercent ?? 10) / 100;
-    return (activeWallet.balance * sizePercent) / currentPrice;
-  };
-
-  const symbolQuantity = getQuantityForSymbol(symbol);
-  const defaultQuantity = symbolQuantity > 0 ? symbolQuantity : calculateDefaultQuantity();
+  const calculatePercentFromQty = (qty: number, price: number, balance: number) =>
+    balance > 0 && price > 0 ? (qty * price * 100) / balance : 0;
 
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
   const [orderType, setOrderType] = useState<OrderDirection>('long');
-  const [quantity, setQuantity] = useState(defaultQuantity.toFixed(8));
+  const [quantity, setQuantity] = useState('');
   const [entryPrice, setEntryPrice] = useState('');
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [leverage, setLeverage] = useState(1);
-  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('ISOLATED');
+  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('CROSSED');
+  const [autoTradePercent, setAutoTradePercent] = useState(10);
+  const [manualPercent, setManualPercent] = useState(2.5);
+  const manualPercentRef = useRef(2.5);
 
   useEffect(() => {
     if (isIB) setMarketType('SPOT');
   }, [isIB]);
 
   useEffect(() => {
-    const storedQty = getQuantityForSymbol(symbol);
-    const newQty = storedQty > 0 ? storedQty : calculateDefaultQuantity();
-    setQuantity(newQty.toFixed(8));
+    if (!autoConfig) return;
+    if (autoConfig.leverage) setLeverage(autoConfig.leverage);
+    if (autoConfig.marginType) setMarginType(autoConfig.marginType);
+    setAutoTradePercent(Number(autoConfig.positionSizePercent ?? 10));
+    const newManualPct = Number(autoConfig.manualPositionSizePercent ?? 2.5);
+    manualPercentRef.current = newManualPct;
+    setManualPercent(newManualPct);
+  }, [autoConfig?.leverage, autoConfig?.marginType, autoConfig?.positionSizePercent, autoConfig?.manualPositionSizePercent]);
+
+  useEffect(() => {
+    const balance = activeWallet?.balance ?? 0;
+    const price = currentPrice ?? 0;
+    const qty = calculateQtyFromPercent(manualPercentRef.current, price, balance);
+    if (qty > 0) setQuantity(roundTradingQty(qty));
   }, [symbol, activeWallet?.balance, currentPrice]);
 
   const handleQuantityChange = (value: string) => {
     setQuantity(value);
-    const numValue = Number(value);
-    if (!isNaN(numValue) && numValue > 0) {
-      setQuantityForSymbol(symbol, numValue);
+    const balance = activeWallet?.balance ?? 0;
+    const price = currentPrice ?? 0;
+    const pct = calculatePercentFromQty(Number(value) || 0, price, balance);
+    if (pct > 0 && pct <= 100) {
+      const rounded = Math.round(pct * 10) / 10;
+      manualPercentRef.current = rounded;
+      setManualPercent(rounded);
     }
+  };
+
+  const handleManualPercentChange = (value: number) => {
+    manualPercentRef.current = value;
+    setManualPercent(value);
+    const balance = activeWallet?.balance ?? 0;
+    const price = currentPrice ?? 0;
+    const qty = calculateQtyFromPercent(value, price, balance);
+    if (qty > 0) setQuantity(roundTradingQty(qty));
+  };
+
+  const handleSaveConfig = (patch: { positionSizePercent?: string; manualPositionSizePercent?: string }) => {
+    if (!activeWalletId) return;
+    updateConfig.mutate({ walletId: activeWalletId, ...patch });
   };
 
   const handleSubmit = async () => {
@@ -104,42 +133,51 @@ const OrderTicketComponent = () => {
     if (stop !== undefined && (isNaN(stop) || stop <= 0)) return;
 
     const cost = qty * entry;
-    if (cost > activeWallet.balance) return;
+    const submitEffectiveCost = marketType === 'FUTURES' ? cost / leverage : cost;
+    if (submitEffectiveCost > activeWallet.balance) return;
 
-    if (marketType === 'FUTURES') {
-      await futuresTrading.createOrder({
-        walletId: activeWalletId,
-        symbol,
-        side: orderType === 'long' ? 'BUY' : 'SELL',
-        type: 'LIMIT',
-        quantity: qty.toString(),
-        price: entry.toString(),
-        leverage,
-        marginType,
-        ...(stop !== undefined && { stopPrice: stop.toString() }),
-        stopLoss: stopLoss || undefined,
-        takeProfit: takeProfit || undefined,
-      });
-    } else {
-      await spotTrading.createOrder({
-        walletId: activeWalletId,
-        symbol,
-        side: orderType === 'long' ? 'BUY' : 'SELL',
-        type: 'LIMIT',
-        quantity: qty.toString(),
-        price: entry.toString(),
-        ...(stop !== undefined && { stopPrice: stop.toString() }),
-      });
+    const roundedPrice = roundTradingPrice(entry);
+    const roundedQty = roundTradingQty(qty);
+    const roundedStop = stop !== undefined ? roundTradingPrice(stop) : undefined;
+
+    try {
+      if (marketType === 'FUTURES') {
+        await futuresTrading.createOrder({
+          walletId: activeWalletId,
+          symbol,
+          side: orderType === 'long' ? 'BUY' : 'SELL',
+          type: 'LIMIT',
+          quantity: roundedQty,
+          price: roundedPrice,
+          leverage,
+          marginType,
+          ...(roundedStop !== undefined && { stopPrice: roundedStop }),
+          stopLoss: stopLoss ? roundTradingPrice(Number(stopLoss)) : undefined,
+          takeProfit: takeProfit ? roundTradingPrice(Number(takeProfit)) : undefined,
+        });
+      } else {
+        await spotTrading.createOrder({
+          walletId: activeWalletId,
+          symbol,
+          side: orderType === 'long' ? 'BUY' : 'SELL',
+          type: 'LIMIT',
+          quantity: roundedQty,
+          price: roundedPrice,
+          ...(roundedStop !== undefined && { stopPrice: roundedStop }),
+        });
+      }
+
+      setEntryPrice('');
+      setStopLoss('');
+      setTakeProfit('');
+    } catch (err) {
+      toastError(t('trading.order.failed'), err instanceof Error ? err.message : undefined);
     }
-
-    setEntryPrice('');
-    setStopLoss('');
-    setTakeProfit('');
   };
 
   const handleUseCurrentPrice = () => {
     if (!currentPrice) return;
-    setEntryPrice(currentPrice.toFixed(2));
+    setEntryPrice(roundTradingPrice(currentPrice));
   };
 
   const qty = Number(quantity) || 0;
@@ -267,6 +305,36 @@ const OrderTicketComponent = () => {
                 )}
               </>
             )}
+
+            <Box>
+              <Flex justify="space-between" align="center" mb={2}>
+                <Text fontSize="xs" fontWeight="medium">{t('watcherManager.positionSize.sizePercent')}</Text>
+                <Text fontSize="xs" color="fg.muted">{autoTradePercent}%</Text>
+              </Flex>
+              <Slider
+                value={[autoTradePercent]}
+                onValueChange={(values) => setAutoTradePercent(values[0] ?? 10)}
+                onValueChangeEnd={(values) => handleSaveConfig({ positionSizePercent: String(values[0] ?? 10) })}
+                min={0.1}
+                max={100}
+                step={0.1}
+              />
+            </Box>
+
+            <Box>
+              <Flex justify="space-between" align="center" mb={2}>
+                <Text fontSize="xs" fontWeight="medium">{t('watcherManager.positionSize.manualSizePercent')}</Text>
+                <Text fontSize="xs" color="fg.muted">{manualPercent}%</Text>
+              </Flex>
+              <Slider
+                value={[manualPercent]}
+                onValueChange={(values) => handleManualPercentChange(values[0] ?? 2.5)}
+                onValueChangeEnd={(values) => handleSaveConfig({ manualPositionSizePercent: String(values[0] ?? 2.5) })}
+                min={0.1}
+                max={100}
+                step={0.1}
+              />
+            </Box>
 
             <ChakraField.Root>
               <ChakraField.Label fontSize="xs">{t('trading.ticket.quantity')}</ChakraField.Label>

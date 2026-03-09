@@ -9,6 +9,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.56.0] - 2026-03-08
+
+### Added
+- **Semi-Assisted Trading Mode**: new `tradingMode` option (`auto` / `semi_assisted`) — in semi-assisted mode, signals generate suggestions that the user can accept or reject instead of auto-executing
+- **Signal Suggestions**: new `signalSuggestions` table and full workflow — backend generates pending suggestions with entry/SL/TP/confidence/R:R, frontend displays them in real-time via WebSocket, user can accept (triggers execution) or reject
+- **Session Scanner**: background service that scans crypto/stock market sessions every 5 minutes using screener presets, with 10-min result caching and WebSocket broadcast; new Scanner tab in sidebar with timeframe selector, preset categories, backfill, and live results grid
+- **Trading Profile Overrides**: 56 new override columns on `trading_profiles` — each profile can now override any auto-trading config field (filters, Fibonacci params, trailing stop, risk management, position sizing, direction mode); redesigned ProfileEditorDialog with collapsible sections and override badges
+- **Import Profile from Backtest**: new ImportProfileDialog to import profile configs from JSON (backtest optimization output)
+- **Manual Position Size**: separate `manualPositionSizePercent` config (default 2.5%) for manual orders in OrderTicket, independent from auto-trade position size
+- **Order Flash Store**: client-side visual feedback for recently-updated orders on chart
+- **Active Chart Symbols hook**: `useActiveChartSymbols` tracks symbols displayed on chart via WebSocket for kline optimization
+- **TradingView-style chart zoom**: removed `MAX_KLINE_WIDTH` cap so candle bodies scale proportionally at any zoom level; zoom-in limit reduced to 1 visible candle; wick width scales conservatively only at extreme zoom (100px+ body)
+- **Auto-cancel orphans**: new `autoCancelOrphans` flag in auto-trading config
+
+### Changed
+- **Screener presets tuned**: broadened thresholds for Top Gainers/Losers (1% vs 5%), Oversold/Overbought (RSI 35/65 vs 30/70), Momentum Leaders (ADX 20 vs 25), Volume Surge (1.5x vs 2x), Bollinger Compression (width 0.12 vs 0.04)
+- **Config field registry**: centralized field transformation logic in `config-field-registry.ts`
+- **Profile applicator service**: `profile-applicator.ts` applies profile overrides to base auto-trading configs with null coalescing
+
+### Fixed
+- **Pyramid merge race condition**: per-symbol `pyramidLocks` mutex prevents concurrent pyramid merges on the same symbol (cancel+replace SL/TP, weighted avg update)
+- **Position close notifications**: WebSocket `emitPositionClosed` on manual cancel/close with PnL data
+
+### Database Migrations
+- `0014`: `manual_position_size_percent` column (default 2.5%)
+- `0015`: 56 profile override columns on `trading_profiles`
+- `0016`: `trading_mode` on `auto_trading_config`, new `signal_suggestions` table
+- `0017`: `session_scan_enabled` + `session_scan_markets` on `auto_trading_config`
+- `0018`: `auto_cancel_orphans` flag on `auto_trading_config`
+
+---
+
+## [0.55.3] - 2026-03-04
+
+### Fixed
+- **Orphan orders on position close**: when SL or TP algo triggers, now calls `cancelAllFuturesAlgoOrders` after cancelling the opposite order to sweep any remaining algo orders for the symbol (e.g., old SL/TP from previous pyramid steps that weren't cleaned up)
+- **Orphan order toasts**: `OrderSync` now only emits `ORPHAN_ORDERS` risk alerts for orphans without an active position on exchange; orphans with a position (harmless — leftover from pyramid race) are logged as warnings but no longer trigger user-facing toasts
+- **Pending entry drag**: new entry order is now placed BEFORE cancelling the old one — previously, if Binance rejected the new order (e.g., "Order would immediately trigger"), the old order was already cancelled, causing the pending position to silently disappear from the chart; now the old order is only cancelled after the new one is confirmed
+- **Trailing stop log spam**: reduced "Trade execution missing setupId" from `warn` to `trace` level for manual orders (those without a setup ID) — eliminates noisy log spam for manually-placed positions
+
+---
+
+## [0.55.2] - 2026-03-04
+
+### Fixed
+- **Nearest Swing stop placement**: `nearest_swing` mode was incorrectly calling `findSignificantSwingLow` which returns the lowest ZigZag structural pivot (same as the Fibonacci base swing), giving identical results to `fibo_target` mode; now calls `findMostRecentSwingLow` directly with a 20-candle lookback and fractal period of 2, correctly finding the most recent local pullback swing just before the entry
+
+---
+
+## [0.55.1] - 2026-03-04
+
+### Fixed
+- **Watcher cycle deadlock**: removed `processedThisCycle` guard from `queueWatcherProcessing` — when a single watcher was stuck in `pending` (e.g., kline backfill after rotation), all other watchers were blocked from re-queuing on subsequent candle closes, causing setup detection to silently stop while rotation continued normally
+- **Backfill re-check**: newly rotated symbols in kline backfill state now schedule a re-check after 30s instead of waiting for the next candle close setInterval
+
+---
+
+## [0.55.0] - 2026-03-04
+
+### Added
+- **Initial Stop Placement Mode**: new setting in WatcherManager to choose between `Fibonacci Target` (stop at Fibonacci swing low/high — existing behavior) and `Nearest Swing` (stop at most recent local swing — tighter stops); available in auto-trading config and backtesting
+- **Max Entry Level LONG/SHORT split**: separate sliders for max Fibonacci entry progress percent per direction (replaces the single unified control)
+- **Data Maintenance tab**: new Settings tab with DB storage usage display and a `Clear Kline Data` action (with confirmation dialog)
+- **Kline integrity detection**: `hasLocalIntegrityIssues()` checks for gaps and misalignments after DB fetch and triggers automatic repair
+
+### Changed
+- **Kline maintenance overhaul**: `getActivePairsWithSubscriptions()` now sources pairs from active watchers, stream subscriptions, and open/pending trade executions; `repairAll()` simplified
+- **About tab**: auto-update section moved from General tab to About tab
+- **Data tab**: uses `TradingTable` component with `px` padding on badges
+
+### Fixed
+- **Pyramid algo order orphans**: all exchange algo orders are cancelled before placing new ones on pyramid to prevent orphaned orders
+- **Kline gap repair**: gaps are now repaired after cache invalidation and temporal alignment issues are detected and corrected
+- **WebSocket reconnection gaps**: kline gaps introduced by WebSocket reconnections are detected and resolved
+- **Futures manual order flow**: margin defaults, alerts, and UX corrections
+- **Order flow**: portfolio position grouping, startup audit service corrections
+
+---
+
 ## [0.54.0] - 2026-02-24
 
 ### Performance

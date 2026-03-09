@@ -40,7 +40,8 @@ class ReconnectionGuard {
   }
 }
 
-const reconnectionGuard = new ReconnectionGuard();
+const spotReconnectionGuard = new ReconnectionGuard();
+const futuresReconnectionGuard = new ReconnectionGuard();
 
 const fetchKlineFromREST = async (
   symbol: string,
@@ -302,7 +303,7 @@ export class BinanceKlineStreamService {
         return;
       }
 
-      if (!reconnectionGuard.shouldPersistKline()) {
+      if (!spotReconnectionGuard.shouldPersistKline()) {
         logger.trace({
           symbol: update.symbol,
           interval: update.interval,
@@ -412,7 +413,7 @@ export class BinanceKlineStreamService {
 
   private resubscribeAll(): void {
     logger.warn('SPOT WebSocket reconnected - resubscribing all streams');
-    reconnectionGuard.onReconnect('SPOT');
+    spotReconnectionGuard.onReconnect('SPOT');
 
     const subs = Array.from(this.subscriptions.values());
     this.subscriptions.clear();
@@ -610,7 +611,7 @@ export class BinanceFuturesKlineStreamService {
         return;
       }
 
-      if (!reconnectionGuard.shouldPersistKline()) {
+      if (!futuresReconnectionGuard.shouldPersistKline()) {
         logger.trace({
           symbol: update.symbol,
           interval: update.interval,
@@ -720,7 +721,7 @@ export class BinanceFuturesKlineStreamService {
 
   private resubscribeAll(): void {
     logger.warn('FUTURES WebSocket reconnected - resubscribing all streams');
-    reconnectionGuard.onReconnect('FUTURES');
+    futuresReconnectionGuard.onReconnect('FUTURES');
 
     const subs = Array.from(this.subscriptions.values());
     this.subscriptions.clear();

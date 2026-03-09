@@ -1,5 +1,5 @@
 import type { Interval } from '@marketmind/types';
-import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lte } from 'drizzle-orm';
 import {
   MAINTENANCE_KLINES,
   TIME_MS,
@@ -9,7 +9,7 @@ import {
   API_VALIDATION_RECENT_COUNT,
 } from '../constants';
 import { db } from '../db';
-import { klines, pairMaintenanceLog } from '../db/schema';
+import { klines, pairMaintenanceLog, tradeExecutions } from '../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from './binance-historical';
 import { binanceKlineStreamService, binanceFuturesKlineStreamService } from './binance-kline-stream';
 import { KlineValidator } from './kline-validator';
@@ -48,6 +48,8 @@ export interface KlineMaintenanceStartOptions {
 class KlineMaintenance {
   private checkInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
+  private gapCheckCooldownMs = COOLDOWN_GAP_CHECK;
+  private corruptionCheckCooldownMs = COOLDOWN_CORRUPTION_CHECK;
 
   async start(options: KlineMaintenanceStartOptions = {}): Promise<void> {
     if (this.checkInterval) return;
@@ -135,7 +137,7 @@ class KlineMaintenance {
     if (!log?.lastGapCheck) return true;
 
     const elapsed = Date.now() - log.lastGapCheck.getTime();
-    return elapsed >= COOLDOWN_GAP_CHECK;
+    return elapsed >= this.gapCheckCooldownMs;
   }
 
   private async shouldCheckCorruption(pair: ActivePair): Promise<boolean> {
@@ -150,7 +152,7 @@ class KlineMaintenance {
     if (!log?.lastCorruptionCheck) return true;
 
     const elapsed = Date.now() - log.lastCorruptionCheck.getTime();
-    return elapsed >= COOLDOWN_CORRUPTION_CHECK;
+    return elapsed >= this.corruptionCheckCooldownMs;
   }
 
   private async updateMaintenanceLog(
@@ -365,6 +367,35 @@ class KlineMaintenance {
       }
     } catch (error) {
       logger.trace({ error: serializeError(error) }, '[KlineMaintenance] Stream services not available (expected during startup)');
+    }
+
+    try {
+      const openExecs = await db.query.tradeExecutions.findMany({
+        where: inArray(tradeExecutions.status, ['open', 'pending']),
+        columns: { symbol: true, marketType: true },
+      });
+      const uniqueOpen = [...new Map(
+        openExecs.map(e => [`${e.symbol}@${e.marketType}`, e])
+      ).values()];
+
+      for (const exec of uniqueOpen) {
+        const logEntries = await db.query.pairMaintenanceLog.findMany({
+          where: and(
+            eq(pairMaintenanceLog.symbol, exec.symbol),
+            eq(pairMaintenanceLog.marketType, exec.marketType ?? 'FUTURES')
+          ),
+          columns: { interval: true },
+        });
+        for (const log of logEntries) {
+          const key = `${exec.symbol}@${log.interval}@${exec.marketType}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            pairs.push({ symbol: exec.symbol, interval: log.interval as Interval, marketType: (exec.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES' });
+          }
+        }
+      }
+    } catch (error) {
+      logger.trace({ error: serializeError(error) }, '[KlineMaintenance] Error fetching open executions for active pairs');
     }
 
     return pairs;
@@ -761,11 +792,58 @@ class KlineMaintenance {
     return { corruptedFound: corruptedKlines.length, fixed };
   }
 
+  private async detectAndFixMisalignedKlines(pair: ActivePair): Promise<number> {
+    const intervalMs = getIntervalMilliseconds(pair.interval);
+    const lookbackMs = MAINTENANCE_KLINES * intervalMs;
+    const startTime = new Date(Date.now() - lookbackMs);
+    const ALIGNMENT_TOLERANCE_MS = 1000;
+
+    const recentKlines = await db.query.klines.findMany({
+      where: and(
+        eq(klines.symbol, pair.symbol),
+        eq(klines.interval, pair.interval),
+        eq(klines.marketType, pair.marketType),
+        gte(klines.openTime, startTime),
+      ),
+      orderBy: [asc(klines.openTime)],
+    });
+
+    const misaligned = recentKlines.filter((kline) => {
+      const openTimeMs = kline.openTime.getTime();
+      const alignedTime = Math.round(openTimeMs / intervalMs) * intervalMs;
+      return Math.abs(openTimeMs - alignedTime) > ALIGNMENT_TOLERANCE_MS;
+    });
+
+    if (misaligned.length === 0) return 0;
+
+    let deleted = 0;
+    for (const kline of misaligned) {
+      try {
+        await db.delete(klines).where(
+          and(
+            eq(klines.symbol, pair.symbol),
+            eq(klines.interval, pair.interval),
+            eq(klines.marketType, pair.marketType),
+            eq(klines.openTime, kline.openTime)
+          )
+        );
+        deleted++;
+        logger.info({ symbol: pair.symbol, interval: pair.interval, openTime: kline.openTime.toISOString() }, '[KlineMaintenance] Deleted misaligned kline (temporal gap)');
+      } catch (error) {
+        logger.error({ kline: { openTime: kline.openTime }, error }, '[KlineMaintenance] Error deleting misaligned kline');
+      }
+    }
+
+    return deleted;
+  }
+
   async forceCheckSymbol(symbol: string, interval: Interval, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
     const pair: ActivePair = { symbol, interval, marketType };
 
+    const misalignedDeleted = await this.detectAndFixMisalignedKlines(pair);
+
     const gaps = await this.detectGaps(pair);
-    let gapsFilled = 0;
+    let gapsFilled = misalignedDeleted;
 
     const GAP_BATCH_SIZE = 3;
     for (let i = 0; i < gaps.length; i += GAP_BATCH_SIZE) {
@@ -776,8 +854,7 @@ class KlineMaintenance {
 
     const { fixed: corruptedFixed } = await this.detectAndFixCorruptedKlines(pair, true);
 
-
-    await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
+    await this.updateMaintenanceLog(pair, { gapsFound: gaps.length + misalignedDeleted, checkType: 'gap' });
     await this.updateMaintenanceLog(pair, { corruptedFixed, checkType: 'corruption' });
 
     return { gapsFilled, corruptedFixed };
@@ -902,6 +979,20 @@ class KlineMaintenance {
       }
     }
 
+    for (const pair of activePairs) {
+      try {
+        const gaps = await this.detectGaps(pair);
+        for (let i = 0; i < gaps.length; i += 3) {
+          const batch = gaps.slice(i, i + 3);
+          const results = await Promise.all(batch.map(gap => this.fillGap(gap, true).catch(() => 0)));
+          totalFixed += results.reduce((sum, n) => sum + n, 0);
+        }
+        if (gaps.length > 0) await this.updateMaintenanceLog(pair, { gapsFound: gaps.length, checkType: 'gap' });
+      } catch (error) {
+        logger.error({ pair, error }, '[checkAfterReconnection] Error filling gaps for pair');
+      }
+    }
+
     const result: ReconnectionValidationResult = {
       startTime,
       endTime: new Date(),
@@ -915,6 +1006,63 @@ class KlineMaintenance {
     outputReconnectionValidationResults(result);
 
     return { checked: totalChecked, fixed: totalFixed };
+  }
+
+  getCooldowns(): { gapCheckMs: number; corruptionCheckMs: number } {
+    return { gapCheckMs: this.gapCheckCooldownMs, corruptionCheckMs: this.corruptionCheckCooldownMs };
+  }
+
+  setCooldowns(gapCheckMs: number, corruptionCheckMs: number): void {
+    this.gapCheckCooldownMs = gapCheckMs;
+    this.corruptionCheckCooldownMs = corruptionCheckMs;
+    logger.info({ gapCheckMs, corruptionCheckMs }, '[KlineMaintenance] Cooldowns updated');
+  }
+
+  async repairAll(): Promise<{ pairsChecked: number; gapsFilled: number; corruptedFixed: number }> {
+    const activePairs = await this.getActivePairs();
+    let totalGapsFilled = 0;
+    let totalCorruptedFixed = 0;
+
+    for (const pair of activePairs) {
+      try {
+        const result = await this.forceCheckSymbol(pair.symbol, pair.interval, pair.marketType);
+        totalGapsFilled += result.gapsFilled;
+        totalCorruptedFixed += result.corruptedFixed;
+      } catch (error) {
+        logger.error({ pair, error }, '[repairAll] Error repairing pair');
+      }
+    }
+
+    return { pairsChecked: activePairs.length, gapsFilled: totalGapsFilled, corruptedFixed: totalCorruptedFixed };
+  }
+
+  async getStatusEntries(): Promise<Array<{ symbol: string; interval: string; marketType: string; lastGapCheck: Date | null; lastCorruptionCheck: Date | null; gapsFound: number; corruptedFixed: number; updatedAt: Date }>> {
+    const activePairs = await this.getActivePairs();
+    if (activePairs.length === 0) return [];
+
+    const results = await Promise.all(
+      activePairs.map(async (pair) => {
+        const log = await db.query.pairMaintenanceLog.findFirst({
+          where: and(
+            eq(pairMaintenanceLog.symbol, pair.symbol),
+            eq(pairMaintenanceLog.interval, pair.interval),
+            eq(pairMaintenanceLog.marketType, pair.marketType)
+          ),
+        });
+        return {
+          symbol: pair.symbol,
+          interval: pair.interval,
+          marketType: pair.marketType,
+          lastGapCheck: log?.lastGapCheck ?? null,
+          lastCorruptionCheck: log?.lastCorruptionCheck ?? null,
+          gapsFound: log?.gapsFound ?? 0,
+          corruptedFixed: log?.corruptedFixed ?? 0,
+          updatedAt: log?.updatedAt ?? new Date(0),
+        };
+      })
+    );
+
+    return results.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
   }
 }
 

@@ -18,6 +18,37 @@ vi.mock('@/renderer/components/ui/logo', () => ({
     Logo: ({ size }: { size: number }) => <div data-testid="logo" data-size={size}>Logo</div>,
 }));
 
+vi.mock('@/renderer/store/preferencesStore', () => ({
+    useUIPref: (_key: string, defaultValue: unknown) => [defaultValue, vi.fn()],
+}));
+
+vi.mock('@/renderer/hooks/useAutoUpdate', () => ({
+    useAutoUpdate: () => ({
+        status: 'idle',
+        updateInfo: null,
+        progress: null,
+        error: null,
+        currentVersion: '0.0.0',
+        checkForUpdates: vi.fn(),
+        downloadUpdate: vi.fn(),
+        installUpdate: vi.fn(),
+        startAutoCheck: vi.fn(),
+        stopAutoCheck: vi.fn(),
+    }),
+}));
+
+vi.mock('@/renderer/hooks/useDebounceCallback', () => ({
+    useDebounceCallback: (fn: () => void) => fn,
+}));
+
+vi.mock('@/renderer/constants/defaults', () => ({
+    DEFAULT_AUTO_UPDATE_SETTINGS: {
+        autoCheckUpdates: false,
+        autoDownloadUpdates: false,
+        updateCheckInterval: 6,
+    },
+}));
+
 const renderWithChakra = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>

@@ -287,6 +287,8 @@ export class PositionMonitorService {
           continue;
         }
 
+        if (execution.entryOrderType === 'STOP_MARKET' || execution.entryOrderType === 'TAKE_PROFIT_MARKET') continue;
+
         const marketType = (execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT') as 'SPOT' | 'FUTURES';
         const priceKey = `${execution.symbol}-${marketType}`;
         const currentPrice = priceMap.get(priceKey) ?? await this.getCurrentPrice(execution.symbol, marketType);

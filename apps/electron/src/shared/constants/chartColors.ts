@@ -163,4 +163,12 @@ export const ORDER_LINE_COLORS = {
   PERCENT_NEGATIVE_BG: 'rgba(239, 68, 68, 1)',
   TEXT_WHITE: '#ffffff',
   CLOSE_BUTTON_BG: 'rgba(0, 0, 0, 0.3)',
+  FLASH_OVERLAY: 'rgba(255, 255, 255, 0.6)',
+  SPINNER_COLOR: 'rgba(255, 255, 255, 0.9)',
+} as const;
+
+export const ORDER_LINE_ANIMATION = {
+  FLASH_DURATION_MS: 500,
+  SPINNER_ARC_LENGTH: Math.PI * 1.2,
+  SPINNER_SPEED: 0.003,
 } as const;

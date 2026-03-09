@@ -32,6 +32,8 @@ const {
   DEFAULT_SWING_BUFFER_PERCENT,
   MIN_SWING_BUFFER_ATR,
   SWING_SKIP_RECENT,
+  NEAREST_SWING_LOOKBACK,
+  NEAREST_SWING_FRACTAL_BARS,
   MIN_ENTRY_STOP_SEPARATION_PERCENT,
   BASE_CONFIDENCE,
   VOLUME_CONFIRMATION_BONUS,
@@ -282,7 +284,8 @@ export class ExitCalculator {
     let rawSwingPrice: number;
     let usedFibonacciSwing = false;
 
-    if (fibonacciSwing) {
+    const useNearestSwing = context.initialStopMode === 'nearest_swing';
+    if (fibonacciSwing && !useNearestSwing) {
       rawSwingPrice = direction === 'SHORT' ? fibonacciSwing.swingHigh.price : fibonacciSwing.swingLow.price;
       usedFibonacciSwing = true;
       logger.trace({
@@ -290,6 +293,10 @@ export class ExitCalculator {
         swingPrice: rawSwingPrice.toFixed(4),
         swingType: direction === 'SHORT' ? 'swingHigh' : 'swingLow',
       }, 'Using Fibonacci swing for stop loss calculation');
+    } else if (useNearestSwing) {
+      rawSwingPrice = direction === 'SHORT'
+        ? this.findNearestLocalSwingHigh(klines as Kline[], currentIndex)
+        : this.findNearestLocalSwingLow(klines as Kline[], currentIndex);
     } else {
       rawSwingPrice = direction === 'SHORT'
         ? this.findSwingHigh(klines as Kline[], currentIndex, SWING_SKIP_RECENT)
@@ -603,6 +610,36 @@ export class ExitCalculator {
     if (riskDistance === 0) return 0;
 
     return rewardDistance / riskDistance;
+  }
+
+  private findNearestLocalSwingLow(klines: Kline[], currentIndex: number): number {
+    const searchEndIndex = currentIndex - SWING_SKIP_RECENT;
+    const nearestSwing = findMostRecentSwingLow(klines, searchEndIndex, NEAREST_SWING_LOOKBACK, NEAREST_SWING_FRACTAL_BARS);
+    if (nearestSwing?.price) {
+      logger.trace({
+        currentIndex,
+        swingIndex: nearestSwing.index,
+        swingPrice: nearestSwing.price.toFixed(4),
+        method: 'findNearestLocalSwingLow',
+      }, 'Found nearest local swing low for stop placement');
+      return nearestSwing.price;
+    }
+    return this.findSwingLow(klines, currentIndex, SWING_SKIP_RECENT);
+  }
+
+  private findNearestLocalSwingHigh(klines: Kline[], currentIndex: number): number {
+    const searchEndIndex = currentIndex - SWING_SKIP_RECENT;
+    const nearestSwing = findMostRecentSwingHigh(klines, searchEndIndex, NEAREST_SWING_LOOKBACK, NEAREST_SWING_FRACTAL_BARS);
+    if (nearestSwing?.price) {
+      logger.trace({
+        currentIndex,
+        swingIndex: nearestSwing.index,
+        swingPrice: nearestSwing.price.toFixed(4),
+        method: 'findNearestLocalSwingHigh',
+      }, 'Found nearest local swing high for stop placement');
+      return nearestSwing.price;
+    }
+    return this.findSwingHigh(klines, currentIndex, SWING_SKIP_RECENT);
   }
 
   private findSwingLow(klines: Kline[], currentIndex: number, skipRecent: number = 0): number {

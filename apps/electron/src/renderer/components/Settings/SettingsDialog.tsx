@@ -7,6 +7,7 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { WalletManager } from '../Trading/WalletManager';
 import { AboutTab } from './AboutTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
+import { DataTab } from './DataTab';
 import { GeneralTab } from './GeneralTab';
 import { TradingProfilesTab } from './TradingProfilesTab';
 
@@ -44,6 +45,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="wallets">{t('settings.tabs.wallets')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="autoTrading">{t('settings.tabs.autoTrading')}</Tabs.Trigger>
+                <Tabs.Trigger value="data">{t('settings.tabs.data')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
               </Tabs.List>
 
@@ -65,6 +67,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="autoTrading">
                   <TradingProfilesTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="data">
+                  <DataTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="about">

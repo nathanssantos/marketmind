@@ -95,6 +95,8 @@ export const autoTradingRouter = router({
           dailyLossLimit: '5',
           enabledSetupTypes: defaultEnabledSetups,
           positionSizing: 'percentage',
+          leverage: 1,
+          marginType: 'CROSSED',
         });
 
         [config] = await ctx.db
@@ -134,12 +136,14 @@ export const autoTradingRouter = router({
         useObvCheckLong: z.boolean().optional(),
         useObvCheckShort: z.boolean().optional(),
         positionSizePercent: z.string().optional(),
+        manualPositionSizePercent: z.string().optional(),
         maxGlobalExposurePercent: z.string().optional(),
         tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
         fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciTargetLevelLong: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciTargetLevelShort: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
         fibonacciSwingRange: z.enum(['extended', 'nearest']).optional(),
+        initialStopMode: z.enum(['fibo_target', 'nearest_swing']).optional(),
         useDynamicSymbolSelection: z.boolean().optional(),
         dynamicSymbolRotationInterval: z.enum(['1h', '4h', '1d']).optional(),
         dynamicSymbolExcluded: z.array(z.string()).optional(),
@@ -197,7 +201,8 @@ export const autoTradingRouter = router({
         directionMode: z.enum(['auto', 'long_only', 'short_only']).optional(),
         minRiskRewardRatioLong: z.string().optional(),
         minRiskRewardRatioShort: z.string().optional(),
-        maxFibonacciEntryProgressPercent: z.number().min(0).max(150).optional(),
+        maxFibonacciEntryProgressPercentLong: z.number().min(0).max(150).optional(),
+        maxFibonacciEntryProgressPercentShort: z.number().min(0).max(150).optional(),
         useBtcCorrelationFilter: z.boolean().optional(),
         useFundingFilter: z.boolean().optional(),
         useMtfFilter: z.boolean().optional(),
@@ -217,6 +222,13 @@ export const autoTradingRouter = router({
         marginTopUpPercent: z.string().optional(),
         marginTopUpMaxCount: z.number().min(1).max(10).optional(),
         positionMode: z.enum(['ONE_WAY', 'HEDGE']).optional(),
+        tradingMode: z.enum(['auto', 'semi_assisted']).optional(),
+        useFvgFilter: z.boolean().optional(),
+        useCooldown: z.boolean().optional(),
+        cooldownMinutes: z.number().min(1).max(1440).optional(),
+        sessionScanEnabled: z.boolean().optional(),
+        sessionScanMarkets: z.string().optional(),
+        autoCancelOrphans: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

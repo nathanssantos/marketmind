@@ -1,6 +1,7 @@
-import { Box, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, Separator, Stack, Text } from '@chakra-ui/react';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
+import { Button } from '@renderer/components/ui/button';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
@@ -25,6 +26,7 @@ import { PyramidingSection } from './PyramidingSection';
 import { RiskManagementSection } from './RiskManagementSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
+import { StopModeSection } from './StopModeSection';
 import type { DirectionMode } from './WatchersList';
 import { WatchersList } from './WatchersList';
 import { SetupToggleSection } from '../SetupToggleSection';
@@ -165,6 +167,7 @@ export const WatcherManager = () => {
   const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '3.618';
   const fibonacciTargetLevelShort = config?.fibonacciTargetLevelShort ?? config?.fibonacciTargetLevel ?? '1.272';
   const fibonacciSwingRange = config?.fibonacciSwingRange ?? 'nearest';
+  const initialStopMode = config?.initialStopMode ?? 'fibo_target';
 
   const [dragSlEnabled, setDragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled, setDragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -184,6 +187,10 @@ export const WatcherManager = () => {
 
   const handleFibonacciSwingRangeChange = (details: { value: string }): void => {
     handleConfigUpdate({ fibonacciSwingRange: details.value as 'extended' | 'nearest' });
+  };
+
+  const handleInitialStopModeChange = (details: { value: string }): void => {
+    handleConfigUpdate({ initialStopMode: details.value as 'fibo_target' | 'nearest_swing' });
   };
 
   const handleFilterToggle = (filterKey: string, value: boolean): void => {
@@ -288,6 +295,12 @@ export const WatcherManager = () => {
     );
   }
 
+  const tradingMode = config?.tradingMode ?? 'auto';
+
+  const handleTradingModeChange = (mode: 'auto' | 'semi_assisted'): void => {
+    handleConfigUpdate({ tradingMode: mode });
+  };
+
   return (
     <Stack gap={4}>
       <EmergencyStopSection
@@ -298,6 +311,37 @@ export const WatcherManager = () => {
         isEmergencyStopping={isEmergencyStopping}
         hasActiveWatchers={activeWatchers.length > 0 || persistedWatchers > 0}
       />
+
+      <Box>
+        <Text fontSize="xs" fontWeight="medium" mb={2}>{t('trading.mode.title')}</Text>
+        <HStack gap={1}>
+          <Button
+            size="2xs"
+            variant={tradingMode === 'auto' ? 'solid' : 'outline'}
+            colorPalette={tradingMode === 'auto' ? 'blue' : 'gray'}
+            onClick={() => handleTradingModeChange('auto')}
+            disabled={updateConfig.isPending}
+            flex={1}
+          >
+            {t('trading.mode.auto')}
+          </Button>
+          <Button
+            size="2xs"
+            variant={tradingMode === 'semi_assisted' ? 'solid' : 'outline'}
+            colorPalette={tradingMode === 'semi_assisted' ? 'yellow' : 'gray'}
+            onClick={() => handleTradingModeChange('semi_assisted')}
+            disabled={updateConfig.isPending}
+            flex={1}
+          >
+            {t('trading.mode.semiAssisted')}
+          </Button>
+        </HStack>
+        <Text fontSize="2xs" color="fg.muted" mt={1}>
+          {tradingMode === 'auto' ? t('trading.mode.autoDescription') : t('trading.mode.semiAssistedDescription')}
+        </Text>
+      </Box>
+
+      <Separator />
 
       <WatchersList
         activeWatchers={activeWatchers}
@@ -366,7 +410,7 @@ export const WatcherManager = () => {
             isExpanded={expandedSections.leverageSettings}
             onToggle={() => toggleSection('leverageSettings')}
             leverage={config?.leverage ?? 1}
-            marginType={config?.marginType ?? 'ISOLATED'}
+            marginType={config?.marginType ?? 'CROSSED'}
             onLeverageChange={handleLeverageChange}
             onMarginTypeChange={handleMarginTypeChange}
             positionMode={config?.positionMode ?? 'ONE_WAY'}
@@ -383,6 +427,8 @@ export const WatcherManager = () => {
         onToggle={() => toggleSection('positionSize')}
         positionSizePercent={Number(config?.positionSizePercent ?? 10)}
         onPositionSizeChange={(value) => handleConfigUpdate({ positionSizePercent: value.toString() })}
+        manualPositionSizePercent={Number(config?.manualPositionSizePercent ?? 2.5)}
+        onManualPositionSizeChange={(value) => handleConfigUpdate({ manualPositionSizePercent: value.toString() })}
         maxGlobalExposurePercent={Number(config?.maxGlobalExposurePercent ?? 100)}
         onMaxGlobalExposureChange={(value) => handleConfigUpdate({ maxGlobalExposurePercent: value.toString() })}
         isPending={updateConfig.isPending}
@@ -409,6 +455,8 @@ export const WatcherManager = () => {
         onMarginTopUpPercentChange={handleMarginTopUpPercentChange}
         marginTopUpMaxCount={config?.marginTopUpMaxCount ?? 3}
         onMarginTopUpMaxCountChange={handleMarginTopUpMaxCountChange}
+        autoCancelOrphans={config?.autoCancelOrphans ?? false}
+        onAutoCancelOrphansChange={(enabled) => handleConfigUpdate({ autoCancelOrphans: enabled })}
         isPending={updateConfig.isPending}
         isIB={isIB}
       />
@@ -459,12 +507,24 @@ export const WatcherManager = () => {
 
       <Separator />
 
+      <StopModeSection
+        isExpanded={expandedSections.stopMode}
+        onToggle={() => toggleSection('stopMode')}
+        initialStopMode={initialStopMode}
+        onInitialStopModeChange={handleInitialStopModeChange}
+        isPending={updateConfig.isPending}
+      />
+
+      <Separator />
+
       <EntrySettingsSection
         isExpanded={expandedSections.entrySettings}
         onToggle={() => toggleSection('entrySettings')}
-        maxFibonacciEntryProgressPercent={Number(config?.maxFibonacciEntryProgressPercent ?? 127.2)}
-        onEntryProgressChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercent: value })}
-        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 0.5)}
+        maxFibonacciEntryProgressPercentLong={Number(config?.maxFibonacciEntryProgressPercentLong ?? 127.2)}
+        onEntryProgressLongChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercentLong: value })}
+        maxFibonacciEntryProgressPercentShort={Number(config?.maxFibonacciEntryProgressPercentShort ?? 127.2)}
+        onEntryProgressShortChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercentShort: value })}
+        minRiskRewardRatioLong={Number(config?.minRiskRewardRatioLong ?? 1)}
         onMinRiskRewardLongChange={(value) => handleConfigUpdate({ minRiskRewardRatioLong: value.toString() })}
         minRiskRewardRatioShort={Number(config?.minRiskRewardRatioShort ?? 1)}
         onMinRiskRewardShortChange={(value) => handleConfigUpdate({ minRiskRewardRatioShort: value.toString() })}

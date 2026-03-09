@@ -7,15 +7,15 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
   const utils = trpc.useUtils();
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
-    { walletId, symbol, limit: 50 },
+    { walletId, symbol, limit: 100 },
     { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
-    { walletId, limit: 50 },
+    { walletId, limit: 100 },
     { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
-    { walletId, symbol, limit: 50 },
+    { walletId, symbol, limit: 100 },
     { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
@@ -80,6 +80,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
@@ -88,6 +89,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },

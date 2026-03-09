@@ -70,8 +70,9 @@ export async function setMarginType(
   try {
     await client.setMarginType({ symbol, marginType });
   } catch (error: unknown) {
+    const errorCode = (error as { code?: number })?.code;
     const errorMsg = error instanceof Error ? error.message : String(error);
-    if (errorMsg.includes('No need to change margin type')) {
+    if (errorMsg.includes('No need to change margin type') || errorCode === -4067) {
       return;
     }
     logger.error({ error: serializeError(error), symbol, marginType }, 'Failed to set margin type');
@@ -218,8 +219,8 @@ export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount
           unrealizedPnl: String(p.unrealizedProfit),
           liquidationPrice: '0',
           leverage: Number(p.leverage),
-          marginType: 'ISOLATED' as MarginType,
-          isolatedMargin: '0',
+          marginType: ((p as unknown as { marginType?: string }).marginType as MarginType) ?? 'CROSSED',
+          isolatedMargin: String((p as unknown as { isolatedMargin?: number }).isolatedMargin ?? 0),
           notional: String(p.notional),
           isolatedWallet: String(p.isolatedWallet),
           updateTime: p.updateTime,

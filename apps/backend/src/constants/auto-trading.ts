@@ -15,6 +15,7 @@ import {
 export const AUTO_TRADING_TIMING = {
   ...TIMING,
   ANTICIPATION_CHECK_INTERVAL_MS: 15_000,
+  BACKFILL_RECHECK_MS: 30_000,
 } as const;
 
 export const AUTO_TRADING_CACHE = CORE_CACHE;

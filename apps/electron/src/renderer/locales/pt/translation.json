@@ -40,6 +40,8 @@
     "active": "Ativo",
     "type": "Tipo",
     "priority": "Prioridade",
+    "enabled": "Habilitado",
+    "disabled": "Desabilitado",
     "source": "Fonte",
     "marketOpen": "Abertura",
     "marketClose": "Fechamento",
@@ -75,7 +77,8 @@
     "noSymbolsFound": "Nenhum símbolo encontrado",
     "openPositions": "POSIÇÕES ABERTAS",
     "crypto": "Cripto",
-    "stocks": "Ações"
+    "stocks": "Ações",
+    "activeCharts": "GRÁFICOS ABERTOS"
   },
   "marketStatus": {
     "open": "Aberto",
@@ -125,6 +128,7 @@
       "context": "Contexto",
       "setupDetection": "Detecção de Setups",
       "tradingSimulator": "Simulador de Trading",
+      "data": "Dados",
       "about": "Sobre"
     },
     "contextConfig": {
@@ -184,6 +188,41 @@
       "downloadAutomatically": "Baixar atualizações automaticamente",
       "downloadAutomaticallyDescription": "Baixar automaticamente novas versões quando disponíveis",
       "checkNow": "Verificar Atualizações Agora"
+    },
+    "data": {
+      "maintenance": {
+        "title": "Manutenção de Klines",
+        "description": "Detectar e reparar candles ausentes ou corrompidos em todos os pares ativos",
+        "repairAll": "Reparar Todos os Gaps",
+        "repairing": "Reparando...",
+        "pairsChecked": "{{count}} pares verificados",
+        "gapsFilled": "{{count}} gaps preenchidos",
+        "corruptedFixed": "{{count}} corrompidos corrigidos"
+      },
+      "status": {
+        "title": "Status de Manutenção",
+        "symbol": "Símbolo",
+        "interval": "Intervalo",
+        "market": "Mercado",
+        "lastCheck": "Última Verificação",
+        "gapsFound": "Gaps",
+        "corruptedFixed": "Corrompidos"
+      },
+      "cooldowns": {
+        "title": "Intervalos de Verificação",
+        "description": "Com que frequência o sistema verifica automaticamente gaps e dados corrompidos",
+        "gapCheck": "Intervalo de verificação de gaps: {{hours}}h",
+        "corruptionCheck": "Intervalo de verificação de corrupção: {{hours}}h"
+      },
+      "storage": {
+        "title": "Armazenamento",
+        "description": "Espaço em disco usado pelos dados de kline (candlestick).",
+        "size": "Klines: {{size}}",
+        "clearAll": "Limpar Todos os Klines",
+        "confirmTitle": "Limpar todos os dados de kline?",
+        "confirmDescription": "Todos os dados de candlestick baixados serão excluídos permanentemente. O sistema irá baixar novamente apenas o necessário para gráficos, watchers e posições ativas.",
+        "confirmButton": "Limpar"
+      }
     },
     "chart": {
       "tipsRealtime": "As alterações são aplicadas imediatamente com um debounce de 300ms",
@@ -294,11 +333,20 @@
           "nearestDescription": "Usa o topo/fundo mais recente — alvos mais curtos para trades menores"
         }
       },
+      "stopMode": {
+        "title": "Posicionamento do Stop Inicial",
+        "description": "Controla onde o stop loss inicial é colocado.",
+        "fiboTarget": "Alvo Fibonacci",
+        "fiboTargetDescription": "Coloca o stop no fundo/topo Fibonacci — stops mais largos para o movimento completo",
+        "nearestSwing": "Swing Próximo",
+        "nearestSwingDescription": "Coloca o stop no swing local mais recente — stops mais curtos para menor risco"
+      },
       "entrySettings": {
         "title": "Configurações de Entrada",
         "description": "Configure o timing de entrada e filtros de risco/retorno",
         "entryLevel": {
-          "title": "Nível Máximo de Entrada",
+          "longTitle": "Nível Máximo de Entrada (LONG)",
+          "shortTitle": "Nível Máximo de Entrada (SHORT)",
           "description": "Controla o quanto o preço pode se afastar do nível de pullback antes da entrada ser rejeitada. 0% = apenas pullback profundo, 100% = breakout, >100% = entradas estendidas além do breakout.",
           "deepPullback": "Pullback Profundo",
           "pullback": "Pullback",
@@ -788,7 +836,10 @@
       "stopProtectedOfBalance": "do saldo",
       "tpProjected": "Projetado por TP",
       "tpProjectedOfExposure": "da exposição",
-      "tpProjectedOfBalance": "do saldo"
+      "tpProjectedOfBalance": "do saldo",
+      "source": "Origem",
+      "manual": "Manual",
+      "entriesCount": "{{count}}x"
     },
     "viewMode": {
       "cards": "Visualização em cards",
@@ -901,7 +952,13 @@
     },
     "order": {
       "long": "COMPRA",
-      "short": "VENDA"
+      "short": "VENDA",
+      "failed": "Falha ao criar ordem",
+      "cancelFailed": "Falha ao cancelar ordem",
+      "cancelSuccess": "Ordem cancelada",
+      "closeFailed": "Falha ao fechar ordem",
+      "slTpUpdateFailed": "Falha ao atualizar SL/TP",
+      "entryUpdateFailed": "Falha ao mover ordem pendente"
     },
     "closeOrder": "Fechar Ordem",
     "closeOrderConfirm": "Fechar ordem {{type}} com entrada em {{entry}}? Preço atual: {{current}}",
@@ -943,7 +1000,51 @@
         "week": "Semana",
         "month": "Mês",
         "all": "Tudo"
+      },
+      "calendar": {
+        "title": "Desempenho Diário",
+        "weekdays": {
+          "sun": "Dom",
+          "mon": "Seg",
+          "tue": "Ter",
+          "wed": "Qua",
+          "thu": "Qui",
+          "fri": "Sex",
+          "sat": "Sáb"
+        },
+        "months": {
+          "1": "Janeiro",
+          "2": "Fevereiro",
+          "3": "Março",
+          "4": "Abril",
+          "5": "Maio",
+          "6": "Junho",
+          "7": "Julho",
+          "8": "Agosto",
+          "9": "Setembro",
+          "10": "Outubro",
+          "11": "Novembro",
+          "12": "Dezembro"
+        },
+        "noData": "Nenhum trade este mês",
+        "trades_one": "{{count}} trade",
+        "trades_other": "{{count}} trades"
       }
+    },
+    "mode": {
+      "title": "Modo de Trading",
+      "auto": "Auto",
+      "semiAssisted": "Semi-Assistido",
+      "autoDescription": "Os trades são executados automaticamente quando setups são detectados.",
+      "semiAssistedDescription": "Os setups são mostrados como sugestões para revisão e aprovação manual."
+    },
+    "suggestions": {
+      "title": "Sugestões",
+      "accept": "Aceitar",
+      "reject": "Rejeitar",
+      "expired": "Expirada",
+      "positionSize": "Tamanho da Posição",
+      "noSuggestions": "Sem sugestões pendentes"
     }
   },
   "about": {
@@ -977,7 +1078,12 @@
       "documentation": "Documentação",
       "changelog": "Registro de Alterações"
     },
-    "copyright": "© {{year}} MarketMind. Feito com ❤️ para traders e investidores."
+    "copyright": "© {{year}} MarketMind. Feito com ❤️ para traders e investidores.",
+    "update": {
+      "available": "v{{version}} disponível",
+      "upToDate": "Atualizado",
+      "readyToInstall": "Pronto para instalar"
+    }
   },
   "setupConfig": {
     "configureSetups": "Configurar Setups de Trading",
@@ -1081,6 +1187,54 @@
       "setAsDefault": "Definir como perfil padrão",
       "setAsDefaultDescription": "Novos watchers usarão este perfil por padrão"
     },
+    "sections": {
+      "basicInfo": "Informações Básicas",
+      "basicInfoDescription": "Nome e descrição do perfil",
+      "tradingMode": "Modo de Trading e Direção",
+      "tradingModeDescription": "Substituir modo de execução e filtro de direção",
+      "setupsDescription": "Selecione quais setups de trading este perfil usará",
+      "filters": "Filtros",
+      "filtersDescription": "Substituir filtros de entrada para este perfil",
+      "filtersTrend": "Filtros de Tendência",
+      "filtersMomentum": "Filtros de Momentum",
+      "filtersStructure": "Estrutura de Mercado",
+      "filtersVolume": "Filtros de Volume",
+      "filtersCorrelation": "Correlação e Multi-Timeframe",
+      "filtersScoring": "Pontuação e Cooldown",
+      "fibEntry": "Fibonacci e Entrada",
+      "fibEntryDescription": "Substituir níveis-alvo, swing range e configurações de entrada",
+      "minRR": "R:R Mínimo",
+      "minRRDescription": "Substituir razão R:R mínima para entradas",
+      "trailingStop": "Trailing Stop",
+      "trailingStopDescription": "Substituir comportamento do trailing stop para este perfil",
+      "riskManagement": "Gerenciamento de Risco",
+      "riskManagementDescription": "Substituir dimensionamento de posição e limites de risco",
+      "riskDescription": "Substituir configurações de risco da carteira para este perfil"
+    },
+    "overrides": {
+      "usingGlobalDefault": "Usando padrão global",
+      "tradingMode": "Modo de Trading",
+      "directionMode": "Modo de Direção",
+      "positionSizePercent": "Tamanho da Posição (%)",
+      "fibTargetLevelLong": "Nível Alvo LONG",
+      "fibTargetLevelShort": "Nível Alvo SHORT",
+      "fibSwingRange": "Swing Range",
+      "entryProgressLong": "Nível Máx de Entrada (LONG)",
+      "entryProgressShort": "Nível Máx de Entrada (SHORT)",
+      "initialStopMode": "Posição Inicial do Stop",
+      "tpCalculationMode": "Modo de Cálculo do TP",
+      "trailingStopMode": "Modo do Trailing Stop",
+      "cooldown": "Cooldown de Entrada",
+      "cooldownMinutes": "Cooldown (minutos)",
+      "choppinessThresholdHigh": "Limiar Choppy",
+      "choppinessThresholdLow": "Limiar Trending",
+      "obvCheck": "Confirmação OBV",
+      "obvLookbackLong": "Lookback OBV (Long)",
+      "obvLookbackShort": "Lookback OBV (Short)",
+      "maxDrawdownPercent": "Drawdown Máx (%)",
+      "dailyLossLimit": "Limite de Perda Diária (%)",
+      "maxRiskPerStopPercent": "Risco Máx por Stop (%)"
+    },
     "placeholders": {
       "name": "ex: BTC Trend Following",
       "description": "Descrição opcional para este perfil"
@@ -1172,6 +1326,18 @@
       "quickStartDescription": "Iniciar watchers para os melhores símbolos por score",
       "quickStartButton": "Iniciar Top {{count}}",
       "insufficientCapital": "Capital insuficiente para o tamanho mínimo de operação"
+    },
+    "import": {
+      "title": "Importar Perfil do Backtest",
+      "pasteJson": "Cole o JSON de saída da otimização de backtest",
+      "preview": "Visualização",
+      "invalidJson": "Formato JSON inválido",
+      "importing": "Importando...",
+      "importSuccess": "Perfil importado com sucesso",
+      "importButton": "Importar",
+      "nameLabel": "Nome do Perfil",
+      "strategiesCount": "{{count}} estratégias",
+      "openImport": "Importar"
     }
   },
   "watcherManager": {
@@ -1180,8 +1346,10 @@
       "description": "Configure o limite global de exposição e o dimensionamento por posição",
       "globalExposure": "Limite Global de Exposição (%)",
       "globalExposureDescription": "Exposição total máxima do portfólio como porcentagem do saldo",
-      "sizePercent": "Tamanho por Entrada (%)",
-      "sizePercentDescription": "Porcentagem do capital utilizado por posição individual"
+      "sizePercent": "Tamanho por Entrada (Auto-Trade) (%)",
+      "sizePercentDescription": "Porcentagem do capital utilizado por posição nas entradas do auto-trade",
+      "manualSizePercent": "Tamanho por Entrada (Manual) (%)",
+      "manualSizePercentDescription": "Porcentagem do capital utilizado por posição nas ordens manuais criadas no gráfico"
     },
     "trailingStop": {
       "title": "Trailing Stop",
@@ -1235,6 +1403,10 @@
         "amountDescription": "Percentual da margem da posição a adicionar por reforço",
         "maxCount": "Máx. Reforços por Posição",
         "maxCountDescription": "Número máximo de reforços de margem permitidos por posição"
+      },
+      "autoCancelOrphans": {
+        "title": "Cancelar Ordens Órfãs Automaticamente",
+        "description": "Cancela automaticamente ordens na Binance que não têm posição correspondente no sistema"
       }
     },
     "pausedDueToCapital": "Watchers pausados - sem capital livre para novas entradas. Será retomado quando uma posição for fechada.",
@@ -1451,7 +1623,8 @@
     "tabs": {
       "indicators": "Mercado",
       "watchers": "Watchers",
-      "logs": "Logs"
+      "logs": "Logs",
+      "scanner": "Scanner"
     },
     "indicators": {
       "title": "Indicadores de Mercado",
@@ -1598,5 +1771,30 @@
     "trailingShortActivated": "Trailing Stop SHORT ativado para {{symbol}}",
     "trailingShortDeactivated": "Trailing Stop SHORT desativado para {{symbol}}",
     "configSaved": "Config do Trailing Stop salva para {{symbol}}"
+  },
+  "scanner": {
+    "title": "Scanner de Mercado",
+    "timeframe": "Período",
+    "resultsCount": "{{count}} resultados / {{total}} escaneados",
+    "categories": {
+      "momentum": "Momento",
+      "volume": "Volume",
+      "volatility": "Volatilidade",
+      "mean_reversion": "Reversão à Média",
+      "market_data": "Dados de Mercado"
+    },
+    "backfillTopSymbols": "Precarregar Top 100",
+    "backfillProgress": "Precarregando... {{completed}}/{{total}}",
+    "sessions": {
+      "title": "Sessões",
+      "US_NYSE": "US NYSE",
+      "CHINA_SSE": "China SSE",
+      "JAPAN_TSE": "Japão TSE",
+      "UK_LSE": "UK LSE",
+      "CRYPTO": "Crypto",
+      "pre_scan": "Pré-Scan",
+      "open": "Aberta",
+      "closed": "Fechada"
+    }
   }
 }

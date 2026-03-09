@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 export interface TradingShortcutsConfig {
   onLongEntry: (price: number) => void;
   onShortEntry: (price: number) => void;
+  onEscape?: () => void;
   enabled: boolean;
 }
 
@@ -24,6 +25,11 @@ export const useTradingShortcuts = (config: TradingShortcutsConfig) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShiftPressed(true);
       if (e.key === 'Alt' || e.key === 'Option') setAltPressed(true);
+      if (e.key === 'Escape') {
+        setShiftPressed(false);
+        setAltPressed(false);
+        config.onEscape?.();
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {

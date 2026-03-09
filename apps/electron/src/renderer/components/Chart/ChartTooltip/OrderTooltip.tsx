@@ -95,12 +95,16 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
         </>
       )}
 
-      {!isPosition && order.setupType && (
+      {!isPosition && (
         <HStack justify="space-between" flexWrap="wrap">
-          <Text color="fg.muted">{t('trading.portfolio.setup')}:</Text>
-          <Badge colorScheme="purple" fontSize="2xs">
-            {order.setupType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          </Badge>
+          <Text color="fg.muted">{t('trading.portfolio.source')}:</Text>
+          {order.setupType ? (
+            <Badge colorScheme="purple" fontSize="2xs">
+              {order.setupType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </Badge>
+          ) : (
+            <Badge colorScheme="gray" fontSize="2xs">{t('trading.portfolio.manual')}</Badge>
+          )}
         </HStack>
       )}
 

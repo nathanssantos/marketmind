@@ -78,7 +78,7 @@ export const useScreenerStore = create<ScreenerState>()(
     marketType: 'FUTURES' as MarketType,
     setMarketType: (marketType) => { set({ marketType }); syncUI('screenerMarketType', marketType); },
 
-    interval: '4h' as TimeInterval,
+    interval: '30m' as TimeInterval,
     setInterval: (interval) => { set({ interval }); syncUI('screenerInterval', interval); },
 
     sortBy: 'compositeScore' as ScreenerSortField,

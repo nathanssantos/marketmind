@@ -3,6 +3,7 @@ import { Slider as ChakraSlider } from '@chakra-ui/react';
 export interface SliderProps {
   value: number[];
   onValueChange: (value: number[]) => void;
+  onValueChangeEnd?: (value: number[]) => void;
   min: number;
   max: number;
   step: number;
@@ -12,10 +13,10 @@ export interface SliderProps {
 }
 
 export const Slider = (props: SliderProps) => {
-  const { label, showValue = false, value, onValueChange, min, max, step, width = 'full' } = props;
-  
+  const { label, showValue = false, value, onValueChange, onValueChangeEnd, min, max, step, width = 'full' } = props;
+
   return (
-    <ChakraSlider.Root value={value} onValueChange={(e) => onValueChange(e.value)} min={min} max={max} step={step} width={width}>
+    <ChakraSlider.Root value={value} onValueChange={(e) => onValueChange(e.value)} onValueChangeEnd={onValueChangeEnd ? (e) => onValueChangeEnd(e.value) : undefined} min={min} max={max} step={step} width={width}>
       {label && <ChakraSlider.Label>{label}</ChakraSlider.Label>}
       <ChakraSlider.Control>
         <ChakraSlider.Track>

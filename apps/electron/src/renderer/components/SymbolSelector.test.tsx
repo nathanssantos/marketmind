@@ -29,7 +29,19 @@ vi.mock('../utils/trpc', () => ({
         useQuery: vi.fn(() => ({ data: undefined })),
       },
     },
+    kline: {
+      getActiveSymbols: {
+        useQuery: vi.fn(() => ({ data: [] })),
+      },
+    },
+    useUtils: vi.fn(() => ({
+      kline: { getActiveSymbols: { invalidate: vi.fn() } },
+    })),
   },
+}));
+
+vi.mock('../hooks/useActiveChartSymbols', () => ({
+  useActiveChartSymbols: vi.fn(() => new Set<string>()),
 }));
 
 vi.mock('../hooks/useBackendKlines', () => ({

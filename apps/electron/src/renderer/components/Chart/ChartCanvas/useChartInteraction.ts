@@ -25,8 +25,6 @@ export interface UseChartInteractionProps {
   measurementArea: MeasurementArea | null;
   shiftPressed: boolean;
   altPressed: boolean;
-  hasTradingEnabled: boolean;
-  isAutoTradingActive: boolean;
   tooltipEnabledRef: React.MutableRefObject<boolean>;
   mousePositionRef: React.MutableRefObject<{ x: number; y: number } | null>;
   orderPreviewRef: React.MutableRefObject<{ price: number; type: 'long' | 'short' } | null>;
@@ -45,6 +43,8 @@ export interface UseChartInteractionProps {
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   getClickedOrderId: (x: number, y: number) => string | null;
   getSLTPAtPosition: (x: number, y: number) => { type: 'stopLoss' | 'takeProfit'; orderId: string; price: number } | null;
+  onLongEntry?: (price: number) => void;
+  onShortEntry?: (price: number) => void;
   orderDragHandler: {
     isDragging: boolean;
     handleMouseMove: (y: number) => void;
@@ -103,8 +103,6 @@ export const useChartInteraction = ({
   measurementArea,
   shiftPressed,
   altPressed,
-  hasTradingEnabled,
-  isAutoTradingActive,
   tooltipEnabledRef,
   mousePositionRef,
   orderPreviewRef,
@@ -123,6 +121,8 @@ export const useChartInteraction = ({
   getEventAtPosition,
   getClickedOrderId,
   getSLTPAtPosition,
+  onLongEntry,
+  onShortEntry,
   orderDragHandler,
   cursorManager,
   handleMouseMove,
@@ -408,6 +408,8 @@ export const useChartInteraction = ({
       manager.markDirty('overlays');
     }
 
+    const isOverOrderElement = orderDragHandler.isDragging || hoveredOrderButton || hoveredSLTP || hoveredOrder;
+
     if (orderDragHandler.isDragging) {
       updateCursor('ns-resize');
     } else if (hoveredOrderButton) {
@@ -416,8 +418,6 @@ export const useChartInteraction = ({
       updateCursor('ns-resize');
     } else if (hoveredOrder) {
       updateCursor('ns-resize');
-    } else if (cursorManager.getCursor() !== 'crosshair') {
-      updateCursor('crosshair');
     }
 
     mousePositionRef.current = { x: mouseX, y: mouseY };
@@ -426,24 +426,27 @@ export const useChartInteraction = ({
     const dimensions = manager.getDimensions();
     if (!dimensions) return;
 
-    const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
-    const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
-    const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    const lastKlineX = manager.indexToX(klines.length - 1);
-    const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
-    const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
-    const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
-    const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
-    const isOnTimeScale = mouseY >= timeScaleTop;
+    if (!isOverOrderElement) {
+      const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
+      const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+      const chartAreaRight = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
+      const lastKlineX = manager.indexToX(klines.length - 1);
+      const patternExtensionArea = lastKlineX + CHART_CONFIG.PATTERN_EXTENSION_DISTANCE;
+      const isInChartArea = mouseX < chartAreaRight && mouseY < timeScaleTop;
+      const isInExtendedPatternArea = mouseX >= chartAreaRight && mouseX <= patternExtensionArea && mouseY < timeScaleTop;
+      const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
+      const isOnTimeScale = mouseY >= timeScaleTop;
 
-    const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
+      const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
 
-    if (hoveredTagIndex !== undefined) updateCursor('pointer');
-    else if (isOnPriceScale) updateCursor('ns-resize');
-    else if (isOnTimeScale) updateCursor('crosshair');
-    else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
+      if (hoveredTagIndex !== undefined) updateCursor('pointer');
+      else if (isOnPriceScale) updateCursor('ns-resize');
+      else if (isOnTimeScale) updateCursor('crosshair');
+      else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
+    }
 
-    if (hasTradingEnabled && !isAutoTradingActive && (shiftPressed || altPressed) && mouseY < timeScaleTop) {
+    const timeScaleY = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+    if ((shiftPressed || altPressed) && mouseY < timeScaleY) {
       const price = manager.yToPrice(mouseY);
       orderPreviewRef.current = { price, type: shiftPressed ? 'long' : 'short' };
       manager.markDirty('overlays');
@@ -464,7 +467,7 @@ export const useChartInteraction = ({
     }
   }, [
     canvasRef, manager, klines, advancedConfig, isPanning, isMeasuring, measurementArea,
-    shiftPressed, altPressed, hasTradingEnabled, isAutoTradingActive,
+    shiftPressed, altPressed,
     mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef,
     measurementAreaRef, measurementRafRef,
     setTooltipData, setMeasurementArea, getHoveredMATag, getHoveredOrder,
@@ -524,6 +527,21 @@ export const useChartInteraction = ({
       }
     }
 
+    if ((shiftPressed || altPressed) && manager) {
+      const dimensions = manager.getDimensions();
+      if (dimensions) {
+        const timeScaleTop = dimensions.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+        const priceScaleLeft = dimensions.width - (advancedConfig?.paddingRight ?? CHART_CONFIG.CANVAS_PADDING_RIGHT);
+        if (mouseX < priceScaleLeft && mouseY < timeScaleTop) {
+          const price = manager.yToPrice(mouseY);
+          if (shiftPressed) onLongEntry?.(price);
+          else onShortEntry?.(price);
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+
     if (!shiftPressed && !altPressed && orderDragHandler.handleMouseDown(mouseX, mouseY)) {
       event.preventDefault();
       event.stopPropagation();
@@ -560,7 +578,7 @@ export const useChartInteraction = ({
 
     handleMouseDown(event);
     startInteraction();
-  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, showMeasurementRuler, showMeasurementArea, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, measurementAreaRef, setIsMeasuring, setMeasurementArea, handleMouseDown, startInteraction]);
+  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, showMeasurementRuler, showMeasurementArea, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, measurementAreaRef, setIsMeasuring, setMeasurementArea, handleMouseDown, startInteraction, onLongEntry, onShortEntry]);
 
   const handleCanvasMouseUp = useCallback((): void => {
     if (orderDragHandler.isDragging) {

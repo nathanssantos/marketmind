@@ -604,7 +604,7 @@ export class CanvasManager {
     
     this.viewport.klineWidth = Math.max(
       CHART_CONFIG.MIN_KLINE_WIDTH,
-      Math.min(CHART_CONFIG.MAX_KLINE_WIDTH, calculatedWidth)
+      calculatedWidth
     );
   }
 

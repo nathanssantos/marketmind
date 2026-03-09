@@ -3,6 +3,7 @@ import {
   TRADING_DEFAULTS,
   TRAILING_STOP_CONFIG,
   TRAILING_STOP_USER_DEFAULTS,
+  type FibLevel,
 } from '@marketmind/types';
 import { config as dotenvConfig } from 'dotenv';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
@@ -72,7 +73,8 @@ const PRODUCTION_BASE = {
   fibonacciSwingRange: 'nearest' as const,
   fibonacciTargetLevelLong: FILTER_DEFAULTS.fibonacciTargetLevelLong,
   fibonacciTargetLevelShort: FILTER_DEFAULTS.fibonacciTargetLevelShort,
-  maxFibonacciEntryProgressPercent: FILTER_DEFAULTS.maxFibonacciEntryProgressPercent,
+  maxFibonacciEntryProgressPercentLong: FILTER_DEFAULTS.maxFibonacciEntryProgressPercentLong,
+  maxFibonacciEntryProgressPercentShort: FILTER_DEFAULTS.maxFibonacciEntryProgressPercentShort,
   minRiskRewardRatioLong: FILTER_DEFAULTS.minRiskRewardRatioLong,
   minRiskRewardRatioShort: FILTER_DEFAULTS.minRiskRewardRatioShort,
   useMomentumTimingFilter: FILTER_DEFAULTS.useMomentumTimingFilter,
@@ -99,12 +101,13 @@ const PRODUCTION_BASE = {
   silent: true,
 };
 
-type FibLevel = 'auto' | '1' | '1.272' | '1.382' | '1.618' | '2' | '2.618' | '3' | '3.618' | '4.236';
 
 const PARAM_GRID_FULL = {
   fibonacciTargetLevelLong: ['1.272', '1.618', '2', '2.618', '3.618'] as FibLevel[],
   fibonacciTargetLevelShort: ['1', '1.272', '1.618', '2', '2.618'] as FibLevel[],
   maxFibonacciEntryProgressPercent: [61.8, 78.6, 100, 127.2],
+  maxFibonacciEntryProgressPercentLong: [61.8, 78.6, 100, 127.2],
+  maxFibonacciEntryProgressPercentShort: [61.8, 78.6, 100, 127.2],
   minRiskRewardRatioLong: [0.5, 0.75, 1.0, 1.5],
   minRiskRewardRatioShort: [0.5, 0.75, 1.0, 1.5],
 };
@@ -113,6 +116,8 @@ const PARAM_GRID_QUICK = {
   fibonacciTargetLevelLong: ['1.272', '2', '3.618'] as FibLevel[],
   fibonacciTargetLevelShort: ['1', '1.618', '2.618'] as FibLevel[],
   maxFibonacciEntryProgressPercent: [78.6, 100, 127.2],
+  maxFibonacciEntryProgressPercentLong: [78.6, 100, 127.2],
+  maxFibonacciEntryProgressPercentShort: [78.6, 100, 127.2],
   minRiskRewardRatioLong: [0.5, 1.0, 1.5],
   minRiskRewardRatioShort: [0.5, 1.0, 1.5],
 };
@@ -429,7 +434,7 @@ const buildResultRow = (
     configId,
     fibLong: config.fibonacciTargetLevelLong ?? PRODUCTION_BASE.fibonacciTargetLevelLong,
     fibShort: config.fibonacciTargetLevelShort ?? PRODUCTION_BASE.fibonacciTargetLevelShort,
-    entryProgress: config.maxFibonacciEntryProgressPercent ?? PRODUCTION_BASE.maxFibonacciEntryProgressPercent,
+    entryProgress: config.maxFibonacciEntryProgressPercentLong ?? PRODUCTION_BASE.maxFibonacciEntryProgressPercentLong,
     rrLong: config.minRiskRewardRatioLong ?? PRODUCTION_BASE.minRiskRewardRatioLong,
     rrShort: config.minRiskRewardRatioShort ?? PRODUCTION_BASE.minRiskRewardRatioShort,
     symbol,
@@ -501,7 +506,7 @@ const runStage1 = async (progress: ProgressData): Promise<BacktestResultRow[]> =
     sweepConfigs.push({ name: `fibS-${val}`, overrides: { fibonacciTargetLevelShort: val } });
   }
   for (const val of PARAM_GRID.maxFibonacciEntryProgressPercent) {
-    sweepConfigs.push({ name: `entry-${val}`, overrides: { maxFibonacciEntryProgressPercent: val } });
+    sweepConfigs.push({ name: `entry-${val}`, overrides: { maxFibonacciEntryProgressPercentLong: val, maxFibonacciEntryProgressPercentShort: val } });
   }
   for (const val of PARAM_GRID.minRiskRewardRatioLong) {
     sweepConfigs.push({ name: `rrL-${val}`, overrides: { minRiskRewardRatioLong: val } });
@@ -723,7 +728,8 @@ const runStage2 = async (analysis: Stage1Analysis, progress: ProgressData): Prom
                 fibonacciSwingRange: bestSwingRange,
                 fibonacciTargetLevelLong: fibL,
                 fibonacciTargetLevelShort: fibS,
-                maxFibonacciEntryProgressPercent: entry,
+                maxFibonacciEntryProgressPercentLong: entry,
+                maxFibonacciEntryProgressPercentShort: entry,
                 minRiskRewardRatioLong: rrL,
                 minRiskRewardRatioShort: rrS,
               },
@@ -838,7 +844,8 @@ const getTopStage2Configs = (
       overrides: {
         fibonacciTargetLevelLong: sample.fibLong,
         fibonacciTargetLevelShort: sample.fibShort,
-        maxFibonacciEntryProgressPercent: sample.entryProgress,
+        maxFibonacciEntryProgressPercentLong: sample.entryProgress,
+        maxFibonacciEntryProgressPercentShort: sample.entryProgress,
         minRiskRewardRatioLong: sample.rrLong,
         minRiskRewardRatioShort: sample.rrShort,
       },
@@ -913,7 +920,7 @@ const runStage3 = async (
 
   const configsByEntry = new Map<number, typeof topConfigs>();
   for (const cfg of topConfigs) {
-    const entry = cfg.overrides.maxFibonacciEntryProgressPercent ?? PRODUCTION_BASE.maxFibonacciEntryProgressPercent;
+    const entry = cfg.overrides.maxFibonacciEntryProgressPercentLong ?? PRODUCTION_BASE.maxFibonacciEntryProgressPercentLong;
     if (!configsByEntry.has(entry)) configsByEntry.set(entry, []);
     configsByEntry.get(entry)!.push(cfg);
   }
@@ -1368,7 +1375,7 @@ const generateReports = (
 
     const prodFibL = PRODUCTION_BASE.fibonacciTargetLevelLong;
     const prodFibS = PRODUCTION_BASE.fibonacciTargetLevelShort;
-    const prodEntry = PRODUCTION_BASE.maxFibonacciEntryProgressPercent;
+    const prodEntry = PRODUCTION_BASE.maxFibonacciEntryProgressPercentLong;
     const prodRrL = PRODUCTION_BASE.minRiskRewardRatioLong;
     const prodRrS = PRODUCTION_BASE.minRiskRewardRatioShort;
 
@@ -1500,7 +1507,8 @@ const generateReports = (
     const optimalConfig = {
       fibonacciTargetLevelLong: bestS2.sample.fibLong,
       fibonacciTargetLevelShort: bestS2.sample.fibShort,
-      maxFibonacciEntryProgressPercent: bestS2.sample.entryProgress,
+      maxFibonacciEntryProgressPercentLong: bestS2.sample.entryProgress,
+      maxFibonacciEntryProgressPercentShort: bestS2.sample.entryProgress,
       minRiskRewardRatioLong: bestS2.sample.rrLong,
       minRiskRewardRatioShort: bestS2.sample.rrShort,
       fibonacciSwingRange: analysis.swingRange,

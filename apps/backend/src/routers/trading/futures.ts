@@ -149,7 +149,7 @@ export const futuresRouter = router({
         setupId: z.string().optional(),
         setupType: z.string().optional(),
         leverage: z.number().min(1).max(125).default(1),
-        marginType: z.enum(['ISOLATED', 'CROSSED']).default('ISOLATED'),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).default('CROSSED'),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -378,7 +378,7 @@ export const futuresRouter = router({
         takeProfit: z.string().optional(),
         setupId: z.string().optional(),
         leverage: z.number().min(1).max(125).default(1),
-        marginType: z.enum(['ISOLATED', 'CROSSED']).default('ISOLATED'),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).default('CROSSED'),
       })
     )
     .mutation(async ({ input, ctx }) => {

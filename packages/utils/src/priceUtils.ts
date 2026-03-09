@@ -139,3 +139,18 @@ export const isValidSymbol = (symbol: string): boolean => {
   const normalized = normalizeSymbol(symbol);
   return normalized.length >= MIN_SYMBOL_LENGTH && parseSymbol(symbol) !== null;
 };
+
+export const roundTradingPrice = (price: number): string => {
+  if (price >= 1000) return price.toFixed(2);
+  if (price >= 10) return price.toFixed(3);
+  if (price >= 1) return price.toFixed(4);
+  if (price >= 0.01) return price.toFixed(5);
+  return price.toFixed(6);
+};
+
+export const roundTradingQty = (qty: number): string => {
+  if (qty >= 100) return qty.toFixed(0);
+  if (qty >= 1) return qty.toFixed(2);
+  if (qty >= 0.001) return qty.toFixed(4);
+  return qty.toFixed(6);
+};

@@ -293,6 +293,66 @@ export const analyticsRouter = router({
       return setupStats.sort((a, b) => b.totalPnL - a.totalPnL);
     }),
 
+  getDailyPerformance: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        year: z.number().int().min(2000).max(2100),
+        month: z.number().int().min(1).max(12),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const wallet = await walletQueries.findByIdAndUser(input.walletId, ctx.user.id, { throwIfNotFound: false });
+      if (!wallet) return [];
+
+      const effectiveCapital =
+        parseFloat(wallet.initialBalance || '0') +
+        parseFloat(wallet.totalDeposits || '0') -
+        parseFloat(wallet.totalWithdrawals || '0');
+
+      const allTrades = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'closed')
+          )
+        )
+        .orderBy(tradeExecutions.closedAt);
+
+      const monthStart = new Date(input.year, input.month - 1, 1);
+      const monthEnd = new Date(input.year, input.month, 1);
+
+      let runningBalance = effectiveCapital;
+      const dailyData: Record<string, { pnl: number; trades: number; balanceAtStart: number }> = {};
+
+      for (const trade of allTrades) {
+        if (!trade.closedAt) continue;
+        const closedAt = new Date(trade.closedAt);
+        const pnl = trade.pnl ? parseFloat(trade.pnl) : 0;
+
+        if (closedAt >= monthStart && closedAt < monthEnd) {
+          const dateKey = closedAt.toISOString().slice(0, 10);
+          if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, trades: 0, balanceAtStart: runningBalance };
+          dailyData[dateKey].pnl += pnl;
+          dailyData[dateKey].trades++;
+        }
+
+        runningBalance += pnl;
+      }
+
+      return Object.entries(dailyData).map(([date, data]) => ({
+        date,
+        pnl: parseFloat(data.pnl.toFixed(2)),
+        pnlPercent: data.balanceAtStart > 0
+          ? parseFloat(((data.pnl / data.balanceAtStart) * 100).toFixed(2))
+          : 0,
+        tradesCount: data.trades,
+      }));
+    }),
+
   getEquityCurve: protectedProcedure
     .input(
       z.object({

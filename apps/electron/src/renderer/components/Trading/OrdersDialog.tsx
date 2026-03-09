@@ -18,7 +18,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { OrderCard } from './OrderCard';
 import { OrdersTableContent } from './OrdersTableContent';
 
-const DIALOG_LIMIT = 500;
 const PAGE_SIZE = 25;
 
 const OrdersDialogComponent = () => {
@@ -41,12 +40,12 @@ const OrdersDialogComponent = () => {
   const deferredSearch = useDeferredValue(searchInput);
 
   const { data: ordersData, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
-    { walletId: activeWalletId ?? '', search: deferredSearch || undefined, limit: DIALOG_LIMIT },
+    { walletId: activeWalletId ?? '', search: deferredSearch || undefined, limit: 500 },
     { enabled: !!activeWalletId && isOrdersDialogOpen }
   );
 
   const { data: executionsData, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
-    { walletId: activeWalletId ?? '', search: deferredSearch || undefined, limit: DIALOG_LIMIT },
+    { walletId: activeWalletId ?? '', search: deferredSearch || undefined, limit: 500 },
     { enabled: !!activeWalletId && isOrdersDialogOpen }
   );
 
@@ -118,7 +117,7 @@ const OrdersDialogComponent = () => {
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType || undefined,
       marketType: e.marketType || 'FUTURES',
-      isAutoTrade: true,
+      isAutoTrade: !!e.setupType,
     }));
 
     return [...ordersFromApi, ...ordersFromExecutions].sort((a, b) => (b.updateTime || b.time) - (a.updateTime || a.time));

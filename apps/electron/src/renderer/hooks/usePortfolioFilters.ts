@@ -17,6 +17,7 @@ interface PortfolioPosition {
   status: 'open' | 'pending';
   limitEntryPrice?: number;
   expiresAt?: Date;
+  count: number;
 }
 
 export const filterPositions = (

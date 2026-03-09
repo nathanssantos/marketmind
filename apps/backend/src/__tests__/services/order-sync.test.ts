@@ -2,15 +2,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let mockWalletsData: unknown[] = [];
 let mockExecutionsData: unknown[] = [];
+let mockAutoTradingConfigData: unknown[] = [];
 
 vi.mock('../../db', () => ({
   db: {
     select: () => ({
       from: (table: Record<string, unknown>) => {
         const isWalletsTable = table && 'id' in table && !('walletId' in table);
+        const isAutoTradingConfigTable = table && 'autoCancelOrphans' in table;
         if (isWalletsTable) {
           const result = Promise.resolve(mockWalletsData);
           return result;
+        }
+        if (isAutoTradingConfigTable) {
+          return {
+            where: () => ({
+              limit: () => Promise.resolve(mockAutoTradingConfigData),
+            }),
+          };
         }
         return {
           where: () => Promise.resolve(mockExecutionsData),
@@ -22,6 +31,10 @@ vi.mock('../../db', () => ({
 
 vi.mock('../../db/schema', () => ({
   wallets: { id: 'wallets.id' },
+  autoTradingConfig: {
+    walletId: 'autoTradingConfig.walletId',
+    autoCancelOrphans: 'autoTradingConfig.autoCancelOrphans',
+  },
   tradeExecutions: {
     walletId: 'tradeExecutions.walletId',
     status: 'tradeExecutions.status',
@@ -176,6 +189,7 @@ describe('OrderSyncService', () => {
 
     mockWalletsData = [];
     mockExecutionsData = [];
+    mockAutoTradingConfigData = [];
 
     mockCreateBinanceFuturesClient.mockReturnValue({});
     mockGetOpenAlgoOrders.mockResolvedValue([]);

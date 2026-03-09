@@ -16,6 +16,7 @@ import {
 } from '@shared/utils';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@renderer/hooks/useToast';
 import { BsGrid, BsTable } from 'react-icons/bs';
 import { useShallow } from 'zustand/react/shallow';
 import { OrderCard } from './OrderCard';
@@ -23,6 +24,7 @@ import { OrdersTableContent } from './OrdersTableContent';
 
 const OrdersListComponent = () => {
   const { t } = useTranslation();
+  const { success: toastSuccess, error: toastError } = useToast();
   const globalActions = useGlobalActionsOptional();
 
   const { activeWallet: rawActiveWallet, wallets: backendWallets } = useActiveWallet();
@@ -99,7 +101,7 @@ const OrdersListComponent = () => {
       setupType: e.setupType || undefined,
       marketType: e.marketType || 'FUTURES',
 
-      isAutoTrade: true,
+      isAutoTrade: !!e.setupType,
     }));
 
     return [...ordersFromApi, ...ordersFromExecutions];
@@ -132,7 +134,8 @@ const OrdersListComponent = () => {
 
   const cancelOrder = useCallback(async (id: string) => {
     const order = orders.find(o => o.id === id);
-    if (order && activeWalletId) {
+    if (!order || !activeWalletId) return;
+    try {
       if (order.isAutoTrade) {
         await cancelExecution(id);
       } else {
@@ -142,15 +145,21 @@ const OrdersListComponent = () => {
           orderId: order.orderId || 0,
         });
       }
+      toastSuccess(t('trading.order.cancelSuccess'));
+    } catch (error) {
+      toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
     }
-  }, [orders, activeWalletId, cancelExecution, cancelBackendOrder]);
+  }, [orders, activeWalletId, cancelExecution, cancelBackendOrder, toastSuccess, toastError, t]);
 
   const closeOrder = useCallback(async (id: string, price: number) => {
     const order = orders.find(o => o.id === id);
-    if (order?.isAutoTrade) {
+    if (!order?.isAutoTrade) return;
+    try {
       await closeExecution(id, price.toString());
+    } catch (error) {
+      toastError(t('trading.order.closeFailed'), error instanceof Error ? error.message : undefined);
     }
-  }, [orders, closeExecution]);
+  }, [orders, closeExecution, toastError, t]);
 
   const {
     filterStatus,

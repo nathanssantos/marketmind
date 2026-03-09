@@ -29,19 +29,19 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
     { enabled: !!walletId && !!symbol, refetchInterval: 10000 }
   );
 
-  const hasOpenPositionWithStop = useMemo(
-    () => executions?.some(e => e.symbol === symbol && e.status === 'open' && e.stopLoss) ?? false,
+  const hasOpenPosition = useMemo(
+    () => executions?.some(e => e.symbol === symbol && e.status === 'open') ?? false,
     [executions, symbol]
   );
 
   const { data: symbolConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId, symbol },
-    { enabled: !!walletId && hasOpenPositionWithStop, refetchInterval: 30000 }
+    { enabled: !!walletId && hasOpenPosition, refetchInterval: 30000 }
   );
 
   const { data: walletConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
-    { enabled: !!walletId && hasOpenPositionWithStop, refetchInterval: 30000 }
+    { enabled: !!walletId && hasOpenPosition, refetchInterval: 30000 }
   );
 
   const utils = trpc.useUtils();
@@ -153,7 +153,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
     };
   }, [symbolConfig, walletConfig, useIndividualConfig]);
 
-  if (!walletId || !hasOpenPositionWithStop) return null;
+  if (!walletId || !hasOpenPosition) return null;
 
   return (
     <>

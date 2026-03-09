@@ -1,15 +1,17 @@
 import type { AssetClass, Interval, MarketType } from '@marketmind/types';
-import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { CHART_INITIAL_KLINES, TIME_MS } from '../constants';
 import { db } from '../db';
-import { klines } from '../db/schema';
+import { klines, pairMaintenanceLog } from '../db/schema';
 import { symbolSearch } from '../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../services/binance-historical';
-import { prefetchKlines } from '../services/kline-prefetch';
+import { prefetchKlines, runBatchBackfill } from '../services/kline-prefetch';
+import { getOpportunityScoringService } from '../services/opportunity-scoring';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../services/binance-kline-stream';
 import { getKlineMaintenance } from '../services/kline-maintenance';
 import { logger } from '../services/logger';
+import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
 
 const intervalSchema = z.enum([
@@ -279,6 +281,35 @@ export const klineRouter = router({
       };
     }),
 
+  repairAll: protectedProcedure
+    .mutation(async () => {
+      const maintenance = getKlineMaintenance();
+      return maintenance.repairAll();
+    }),
+
+  getMaintenanceStatus: protectedProcedure
+    .query(async () => {
+      const maintenance = getKlineMaintenance();
+      return maintenance.getStatusEntries();
+    }),
+
+  getCooldowns: protectedProcedure
+    .query(() => {
+      return getKlineMaintenance().getCooldowns();
+    }),
+
+  setCooldowns: protectedProcedure
+    .input(
+      z.object({
+        gapCheckMs: z.number().min(30 * 60 * 1000).max(24 * 60 * 60 * 1000),
+        corruptionCheckMs: z.number().min(30 * 60 * 1000).max(24 * 60 * 60 * 1000),
+      })
+    )
+    .mutation(({ input }) => {
+      getKlineMaintenance().setCooldowns(input.gapCheckMs, input.corruptionCheckMs);
+      return { success: true };
+    }),
+
   sync: protectedProcedure
     .input(
       z.object({
@@ -325,6 +356,44 @@ export const klineRouter = router({
         serverTime: now,
       };
     }),
+
+  getDbSize: protectedProcedure.query(async () => {
+    const result = await db.execute(
+      sql`SELECT pg_total_relation_size('klines') as bytes`
+    );
+    const bytes = Number((result.rows[0] as { bytes: string }).bytes);
+    return { bytes };
+  }),
+
+  clearKlines: protectedProcedure.mutation(async () => {
+    await db.execute(sql`TRUNCATE TABLE klines`);
+    await db.delete(pairMaintenanceLog);
+    return { success: true };
+  }),
+
+  backfillTopSymbols: protectedProcedure
+    .input(z.object({
+      walletId: z.string(),
+      limit: z.number().min(1).max(500).default(100),
+      interval: intervalSchema.default('1h'),
+      marketType: marketTypeSchema,
+    }))
+    .mutation(async ({ input }) => {
+      const scoringService = getOpportunityScoringService();
+      const symbols = await scoringService.getTopSymbolsByScore(input.marketType, input.limit);
+
+      runBatchBackfill(input.walletId, symbols, input.interval, input.marketType).catch(err => {
+        logger.error({ error: err }, 'Batch backfill failed');
+      });
+
+      return { symbolCount: symbols.length };
+    }),
+
+  getActiveSymbols: protectedProcedure.query(() => {
+    const ws = getWebSocketService();
+    if (!ws) return [];
+    return ws.getActivelyViewedSymbols();
+  }),
 
   searchSymbols: protectedProcedure
     .input(
