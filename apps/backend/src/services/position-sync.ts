@@ -4,7 +4,7 @@ import { and, desc, eq, gte, isNotNull, or } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
 import { orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
-import { calculateTotalFees } from '@marketmind/types';
+import { calculatePnl } from '../utils/pnl-calculator';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
@@ -218,22 +218,19 @@ export class PositionSyncService {
               exitPrice = markPriceData.markPrice;
               const leverage = dbPosition.leverage || 1;
 
-              let grossPnl = 0;
-              if (dbPosition.side === 'LONG') {
-                grossPnl = (exitPrice - entryPrice) * quantity;
-              } else {
-                grossPnl = (entryPrice - exitPrice) * quantity;
-              }
-
-              const exitValue = exitPrice * quantity;
-              const { exitFee } = calculateTotalFees(0, exitValue, { marketType: 'FUTURES' });
-              estimatedExitFee = exitFee;
-              totalFees = actualEntryFee + estimatedExitFee;
-              pnl = grossPnl - totalFees + accumulatedFunding;
-
-              const entryValue = entryPrice * quantity;
-              const marginValue = entryValue / leverage;
-              pnlPercent = marginValue > 0 ? (pnl / marginValue) * 100 : 0;
+              const pnlResult = calculatePnl({
+                entryPrice,
+                exitPrice,
+                quantity,
+                side: dbPosition.side,
+                marketType: 'FUTURES',
+                leverage,
+                accumulatedFunding,
+              });
+              pnl = pnlResult.netPnl;
+              pnlPercent = pnlResult.pnlPercent;
+              totalFees = pnlResult.totalFees;
+              estimatedExitFee = totalFees - actualEntryFee;
 
               const currentBalance = parseFloat(wallet.currentBalance || '0');
               const newBalance = currentBalance + pnl;

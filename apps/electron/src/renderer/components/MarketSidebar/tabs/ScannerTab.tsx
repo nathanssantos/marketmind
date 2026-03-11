@@ -4,6 +4,7 @@ import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { trpc } from '@renderer/utils/trpc';
+import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import type { TimeInterval } from '@marketmind/types';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +38,9 @@ const ScannerTabComponent = () => {
 
   useEffect(() => {
     const socket = socketService.getSocket();
-    if (!socket) return;
+    if (!socket || !activeWalletId) return;
+
+    socket.emit('subscribe:wallet', activeWalletId);
 
     const handler = (data: { completed: number; total: number; status: string }) => {
       setBackfillProgress({ completed: data.completed, total: data.total });
@@ -48,8 +51,11 @@ const ScannerTabComponent = () => {
     };
 
     socket.on('backfill:progress', handler);
-    return () => { socket.off('backfill:progress', handler); };
-  }, []);
+    return () => {
+      socket.off('backfill:progress', handler);
+      socket.emit('unsubscribe:wallet', activeWalletId);
+    };
+  }, [activeWalletId]);
 
   const handleBackfill = useCallback(() => {
     if (!activeWalletId || isBackfilling) return;
@@ -154,7 +160,7 @@ const ScannerTabComponent = () => {
             {isBackfilling ? <Spinner size="xs" /> : <LuDownload />}
             {backfillProgress
               ? t('scanner.backfillProgress', { completed: backfillProgress.completed, total: backfillProgress.total })
-              : t('scanner.backfillTopSymbols')}
+              : t('scanner.backfillTopSymbols', { max: AUTO_TRADING_CONFIG.TARGET_COUNT.MAX })}
           </Button>
         </Stack>
       ) : (

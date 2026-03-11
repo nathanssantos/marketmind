@@ -1,3 +1,4 @@
+import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { QUERY_CONFIG } from '@shared/constants';
 import { keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
@@ -265,7 +266,7 @@ export const useFilteredSymbolsForQuickStart = (
   };
 };
 
-export const useTopCoinsByMarketCap = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 100) => {
+export const useTopCoinsByMarketCap = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = AUTO_TRADING_CONFIG.TARGET_COUNT.MAX) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getTopCoinsByMarketCap.useQuery(
     { marketType, limit },
     { staleTime: 5 * 60 * 1000 }

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type TradeExecution, type Wallet } from '../db/schema';
+import { calculatePnl } from '../utils/pnl-calculator';
 import { cancelProtectionOrder } from './protection-orders';
 import { logger } from './logger';
 
@@ -34,21 +35,21 @@ export function calculatePnL(
   quantity: number,
   leverage: number,
   exitFee: number = 0,
-  entryFee: number = 0
+  entryFee: number = 0,
+  accumulatedFunding: number = 0
 ): PnLResult {
-  const priceDiff = side === 'LONG'
-    ? exitPrice - entryPrice
-    : entryPrice - exitPrice;
-
-  const rawPnl = priceDiff * quantity;
-  const totalFees = entryFee + exitFee;
-  const pnl = rawPnl - totalFees;
-
-  const positionValue = entryPrice * quantity;
-  const margin = positionValue / leverage;
-  const pnlPercent = margin > 0 ? (pnl / margin) * 100 : 0;
-
-  return { pnl, pnlPercent };
+  const result = calculatePnl({
+    entryPrice,
+    exitPrice,
+    quantity,
+    side,
+    marketType: 'FUTURES',
+    leverage,
+    accumulatedFunding,
+    entryFee,
+    exitFee,
+  });
+  return { pnl: result.netPnl, pnlPercent: result.pnlPercent };
 }
 
 export async function clearProtectionOrderIds(
@@ -149,7 +150,8 @@ export async function closeExecutionWithPnL(params: CloseExecutionParams): Promi
       parseFloat(execution.quantity),
       execution.leverage || 1,
       exitFee,
-      parseFloat(execution.entryFee || '0')
+      parseFloat(execution.entryFee || '0'),
+      parseFloat(execution.accumulatedFunding || '0')
     );
     pnl = result.pnl;
     pnlPercent = result.pnlPercent;

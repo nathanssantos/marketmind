@@ -158,7 +158,9 @@ export const useChartCanvas = ({
       const prevFirstKlineTimestamp = prevFirstKlineTimestampRef.current;
 
       const currentViewport = managerRef.current.getViewport();
-      const wasAtEnd = wasAtEndRef.current || Math.abs(currentViewport.end - prevCount) < 1;
+      const prevVisibleRange = currentViewport.end - currentViewport.start;
+      const prevOffsetFromEnd = prevCount - currentViewport.end;
+      const wasAtEnd = wasAtEndRef.current || Math.abs(prevOffsetFromEnd) < 1;
 
       managerRef.current.setKlines(klines);
 
@@ -205,24 +207,22 @@ export const useChartCanvas = ({
         wasAtEndRef.current = true;
         isInitialLoadRef.current = false;
       } else if (isCompleteDataChange || isSignificantChange) {
-        const isSymbolChange = isCompleteDataChange && lastKlineTimestamp !== prevLastKlineTimestamp;
-
-        const visibleCount = Math.min(calculateVisibleKlines(), currentCount);
-        const futureSpace = Math.max(
-          CHART_CONFIG.MIN_FUTURE_KLINES,
-          Math.floor(visibleCount * CHART_CONFIG.INITIAL_FUTURE_EXTENSION),
-        );
-        const newViewport = {
-          ...DEFAULT_VIEWPORT,
-          start: Math.max(0, currentCount - visibleCount),
-          end: currentCount + futureSpace,
-        };
-
+        if (prevCount > 0 && prevVisibleRange > 0 && !wasAtEnd) {
+          const newEnd = currentCount - prevOffsetFromEnd;
+          const newStart = newEnd - prevVisibleRange;
+          managerRef.current.setViewport({
+            ...currentViewport,
+            start: Math.max(0, newStart),
+            end: Math.max(newStart + 1, newEnd),
+          });
+          managerRef.current.resetForSymbolChange();
+        } else {
+          managerRef.current.resetToInitialView();
+        }
+        const newViewport = managerRef.current.getViewport();
         setViewport(newViewport);
-        managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
-        if (isSymbolChange) managerRef.current.resetVerticalZoom();
-        wasAtEndRef.current = true;
+        wasAtEndRef.current = wasAtEnd;
       } else if (wasAtEnd && currentCount > prevCount) {
         const klinesAdded = currentCount - prevCount;
         const visibleCount = Math.min(calculateVisibleKlines(), currentCount);

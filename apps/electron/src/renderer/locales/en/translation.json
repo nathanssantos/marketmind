@@ -593,6 +593,15 @@
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
+    "tools": {
+      "pencil": "Pencil",
+      "line": "Line",
+      "rectangle": "Rectangle",
+      "fibonacci": "Fibonacci",
+      "ruler": "Ruler",
+      "area": "Area",
+      "magnet": "OHLC Magnet"
+    },
     "quickTrade": {
       "buy": "Buy",
       "sell": "Sell",
@@ -975,6 +984,7 @@
       "cancelSuccess": "Order cancelled",
       "closeFailed": "Failed to close order",
       "slTpUpdateFailed": "Failed to update SL/TP",
+      "slTpCreateFailed": "Failed to create SL/TP",
       "entryUpdateFailed": "Failed to move pending order"
     },
     "closeOrder": "Close Order",
@@ -1801,7 +1811,7 @@
       "mean_reversion": "Mean Reversion",
       "market_data": "Market Data"
     },
-    "backfillTopSymbols": "Backfill Top 100",
+    "backfillTopSymbols": "Backfill Top {{max}}",
     "backfillProgress": "Backfilling... {{completed}}/{{total}}",
     "sessions": {
       "title": "Sessions",

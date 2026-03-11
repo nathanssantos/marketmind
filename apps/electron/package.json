@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "0.58.0",
+  "version": "0.59.0",
   "description": "MarketMind Electron Desktop App",
   "main": "dist-electron/main/index.js",
   "author": "Nathan Santos",
@@ -37,6 +37,7 @@
   "dependencies": {
     "@chakra-ui/react": "^3.30.0",
     "@emotion/react": "^11.14.0",
+    "@marketmind/chart-studies": "workspace:*",
     "@marketmind/fibonacci": "workspace:*",
     "@marketmind/indicators": "workspace:*",
     "@marketmind/types": "workspace:*",

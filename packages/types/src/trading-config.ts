@@ -234,7 +234,7 @@ export const CONTEXT_AGGREGATOR_CONFIG = {
 export const AUTO_TRADING_CONFIG = {
   TARGET_COUNT: {
     MIN: 1,
-    MAX: 100,
+    MAX: 200,
     DEFAULT: 10,
   },
   LEVERAGE: {

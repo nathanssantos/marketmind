@@ -1,6 +1,6 @@
 import type { Order } from '@marketmind/types';
 import type { DirtyFlags } from '@renderer/utils/canvas/CanvasManager';
-import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending, isOrderShort } from '@shared/utils';
+import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface OrderDragConfig {
@@ -62,13 +62,6 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
         return true;
       }
 
-      if (isOrderActive(order)) {
-        setDraggedOrder(order);
-        setDragType(null);
-        previewPriceRef.current = null;
-        return true;
-      }
-
       return false;
     },
     [config]
@@ -105,26 +98,6 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
           return;
         }
 
-        if (isOrderActive(draggedOrder) && dragType === null) {
-          const entryPrice = getOrderPrice(draggedOrder);
-          const entryY = config.priceToY(entryPrice);
-          const currentY = y;
-
-          const isMovingUp = currentY < entryY;
-
-          const isCreatingTakeProfit =
-            (isOrderLong(draggedOrder) && isMovingUp) ||
-            (isOrderShort(draggedOrder) && !isMovingUp);
-
-          const candidateType = isCreatingTakeProfit ? 'takeProfit' : 'stopLoss';
-          if (candidateType === 'stopLoss' && config.slDragEnabled === false) return;
-          if (candidateType === 'takeProfit' && config.tpDragEnabled === false) return;
-
-          setDragType(candidateType);
-          previewPriceRef.current = currentPrice;
-          config.markDirty?.('overlays');
-          return;
-        }
       });
     },
     [draggedOrder, dragType, config]

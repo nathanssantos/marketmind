@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createTestWallet, createAuthenticatedUser } from '../helpers/test-fixtures';
-import { tradeExecutions, wallets, positions } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { generateEntityId } from '../../utils/id';
 import {
@@ -62,6 +62,7 @@ vi.mock('binance', () => {
 vi.mock('../../services/binance-futures-client', () => ({
   createBinanceFuturesClient: vi.fn(() => ({
     cancelOrder: vi.fn().mockResolvedValue({ status: 'CANCELED' }),
+    getCurrentPositionMode: vi.fn().mockResolvedValue({ dualSidePosition: false }),
   })),
   isPaperWallet: vi.fn((wallet) => wallet.walletType === 'paper'),
   getWalletType: vi.fn((wallet) => wallet.walletType === 'testnet' ? 'testnet' : 'live'),
@@ -407,28 +408,13 @@ describe('BinanceFuturesUserStreamService', () => {
       service.stop();
     });
 
-    it('should update position from account update', async () => {
+    it('should emit wallet update with position data from account update', async () => {
       const { user } = await createAuthenticatedUser();
-      const db = getTestDatabase();
       const wallet = await createTestWallet({
         userId: user.id,
         walletType: 'live',
         apiKey: 'test-api-key',
         apiSecret: 'test-api-secret',
-      });
-
-      const positionId = generateEntityId();
-      await db.insert(positions).values({
-        id: positionId,
-        userId: user.id,
-        walletId: wallet.id,
-        symbol: 'BTCUSDT',
-        side: 'LONG',
-        entryPrice: '50000',
-        entryQty: '0.1',
-        status: 'open',
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
 
       const service = new BinanceFuturesUserStreamService();
@@ -452,13 +438,15 @@ describe('BinanceFuturesUserStreamService', () => {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const [updatedPosition] = await db
-        .select()
-        .from(positions)
-        .where(eq(positions.id, positionId));
-
-      expect(parseFloat(updatedPosition!.currentPrice!)).toBe(51000);
-      expect(parseFloat(updatedPosition!.pnl!)).toBe(100);
+      expect(mockEmitWalletUpdate).toHaveBeenCalledWith(
+        wallet.id,
+        expect.objectContaining({
+          reason: 'ORDER',
+          positions: expect.arrayContaining([
+            expect.objectContaining({ s: 'BTCUSDT' }),
+          ]),
+        })
+      );
 
       service.stop();
     });

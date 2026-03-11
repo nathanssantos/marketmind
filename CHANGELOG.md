@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.59.0] - 2026-03-10
+
+### Added
+- **SL/TP Placement Buttons**: clickable SL/TP buttons on entry order lines — click to enter placement mode, click on chart to set price; replaces drag-from-entry interaction
+- **Unified PnL Calculator**: centralized `calculatePnl` utility used across execution-manager, position-sync, and user-stream for consistent PnL calculation including funding
+- **Pyramid Position Merge**: `mergeIntoExistingPosition` method consolidates pyramid fills with exchange-verified qty/price, replacing scattered inline merge logic
+- **Sibling Execution Close**: manual close now finds and closes all open executions for the same symbol+side (unified position close)
+- **Chart Viewport Persistence**: switching symbols preserves horizontal scroll position for easy cross-symbol comparison; vertical zoom resets automatically
+- **Backfill Progress WebSocket**: scanner backfill progress now properly delivered via wallet room subscription
+- **`resetForSymbolChange` (CanvasManager)**: new public method that resets vertical zoom and recalculates kline width without changing horizontal position
+
+### Changed
+- **Watcher/ranking limit**: increased from 100 to 200 (`AUTO_TRADING_CONFIG.TARGET_COUNT.MAX`); all hardcoded references now use the single source of truth
+- **Backfill button text**: now dynamically shows the configured max (e.g., "Backfill Top 200") via i18n interpolation across all 4 locales
+- **`getTopCoinsByMarketCap` limit**: now uses `AUTO_TRADING_CONFIG.TARGET_COUNT.MAX` instead of hardcoded 100
+- **Portfolio PnL percent**: now accounts for leverage in unrealized PnL percentage calculation
+- **Pyramid lock key**: scoped to `walletId:symbol` instead of just `symbol` to prevent cross-wallet lock collisions
+- **Order drag**: removed drag-from-active-order to create SL/TP (replaced by SL/TP placement buttons)
+
+### Fixed
+- **Chart candle rendering on symbol switch**: candles appeared thin/spaced incorrectly after switching symbols due to missing `updateKlineWidth()` call
+- **Backfill progress stuck at 0**: scanner tab wasn't joining the wallet WebSocket room, so progress events never arrived
+
 ## [0.57.0] - 2026-03-09
 
 ### Added

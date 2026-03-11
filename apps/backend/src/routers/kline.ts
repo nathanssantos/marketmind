@@ -1,4 +1,5 @@
 import type { AssetClass, Interval, MarketType } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { CHART_INITIAL_KLINES, TIME_MS } from '../constants';
@@ -374,7 +375,7 @@ export const klineRouter = router({
   backfillTopSymbols: protectedProcedure
     .input(z.object({
       walletId: z.string(),
-      limit: z.number().min(1).max(500).default(100),
+      limit: z.number().min(1).max(500).default(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX),
       interval: intervalSchema.default('1h'),
       marketType: marketTypeSchema,
     }))

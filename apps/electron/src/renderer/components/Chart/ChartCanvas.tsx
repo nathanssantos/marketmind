@@ -44,8 +44,14 @@ import { useChartCanvas } from './useChartCanvas';
 import { useGridInteraction } from './useGridInteraction';
 import { useGridPreviewRenderer } from './useGridPreviewRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
+import { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
 import { usePriceMagnet } from './usePriceMagnet';
+import { useDrawingInteraction } from './drawings/useDrawingInteraction';
+import { useDrawingsRenderer } from './drawings/useDrawingsRenderer';
+import { useDrawingStore } from '@renderer/store/drawingStore';
+import { useBackendDrawings } from '@renderer/hooks/useBackendDrawings';
 import type { MovingAverageConfig } from './useMovingAverageRenderer';
 import {
   useChartState,
@@ -94,8 +100,6 @@ export const ChartCanvas = ({
   const [showCrosshair] = useChartPref('showCrosshair', true);
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', true);
   const [showFibonacciProjection] = useChartPref('showFibonacciProjection', true);
-  const [showMeasurementRuler] = useChartPref('showMeasurementRuler', false);
-  const [showMeasurementArea] = useChartPref('showMeasurementArea', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
 
@@ -314,11 +318,9 @@ export const ChartCanvas = ({
     movingAverages,
   });
 
-  const { tooltipData, measurementArea, isMeasuring, orderToClose, stochasticData } = chartState;
+  const { tooltipData, orderToClose, stochasticData } = chartState;
   const {
     setTooltip: setTooltipData,
-    setMeasurementArea,
-    setIsMeasuring,
     setOrderToClose,
     setStochasticData,
   } = chartActions;
@@ -331,8 +333,6 @@ export const ChartCanvas = ({
     lastTooltipOrder: lastTooltipOrderRef,
     tooltipEnabled: tooltipEnabledRef,
     tooltipDebounce: tooltipDebounceRef,
-    measurementArea: measurementAreaRef,
-    measurementRaf: measurementRafRef,
   } = chartRefs;
 
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
@@ -348,6 +348,14 @@ export const ChartCanvas = ({
       if (useGridOrderStore.getState().isGridModeActive) {
         useGridOrderStore.getState().resetDrawing();
         setGridModeActive(false);
+        manager?.markDirty('overlays');
+      }
+      const drawingState = useDrawingStore.getState();
+      if (drawingState.activeTool) {
+        drawingState.setActiveTool(null);
+      }
+      if (drawingState.selectedDrawingId) {
+        drawingState.selectDrawing(null);
         manager?.markDirty('overlays');
       }
     },
@@ -593,7 +601,7 @@ export const ChartCanvas = ({
     fibonacciProjectionData,
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef);
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -691,6 +699,8 @@ export const ChartCanvas = ({
     markDirty: memoizedMarkDirty,
   });
 
+  const slTpPlacement = useSlTpPlacementMode();
+
   const isGridModeActive = useGridOrderStore((s) => s.isGridModeActive);
   const gridSnapEnabled = useGridOrderStore((s) => s.snapEnabled);
   const gridSnapDistancePx = useGridOrderStore((s) => s.snapDistancePx);
@@ -755,6 +765,23 @@ export const ChartCanvas = ({
     getPreviewPrices: gridInteraction.getPreviewPrices,
   });
 
+  const drawingInteraction = useDrawingInteraction({
+    manager,
+    klines,
+    symbol: symbol ?? '',
+  });
+
+  useBackendDrawings(symbol ?? '');
+
+  const { render: renderDrawings } = useDrawingsRenderer({
+    manager,
+    symbol: symbol ?? '',
+    colors: { bullish: colors.bullish, bearish: colors.bearish, crosshair: colors.crosshair },
+    themeColors: colors,
+    pendingDrawingRef: drawingInteraction.pendingDrawingRef,
+    lastSnapRef: drawingInteraction.lastSnapRef,
+  });
+
   const {
     handleCanvasMouseMove,
     handleCanvasMouseDown,
@@ -770,11 +797,7 @@ export const ChartCanvas = ({
     advancedConfig,
     showVolume,
     showEventRow,
-    showMeasurementRuler,
-    showMeasurementArea,
     isPanning,
-    isMeasuring,
-    measurementArea,
     shiftPressed,
     altPressed,
     tooltipEnabledRef,
@@ -784,11 +807,7 @@ export const ChartCanvas = ({
     hoveredOrderIdRef,
     lastHoveredOrderRef,
     lastTooltipOrderRef,
-    measurementAreaRef,
-    measurementRafRef,
     setTooltipData,
-    setIsMeasuring,
-    setMeasurementArea,
     setOrderToClose: handleOrderCloseRequest,
     getHoveredMATag,
     getHoveredOrder,
@@ -799,12 +818,117 @@ export const ChartCanvas = ({
     onShortEntry: handleShortEntry,
     orderDragHandler,
     gridInteraction: isGridModeActive ? gridInteraction : undefined,
+    drawingInteraction,
     cursorManager,
     handleMouseMove,
     handleMouseDown,
     handleMouseUp,
     handleMouseLeave,
   });
+
+  const handleCanvasMouseMoveWrapped = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (slTpPlacement.active && manager && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseY = event.clientY - rect.top;
+      slTpPlacement.updatePreviewPrice(manager.yToPrice(mouseY));
+      manager.markDirty('overlays');
+      cursorManager.setCursor('crosshair');
+    }
+    handleCanvasMouseMove(event);
+
+    if (!slTpPlacement.active && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      if (getSlTpButtonAtPosition(mouseX, mouseY)) {
+        cursorManager.setCursor('pointer');
+      }
+    }
+  }, [handleCanvasMouseMove, slTpPlacement, manager, cursorManager, getSlTpButtonAtPosition]);
+
+  const handleCanvasMouseDownWrapped = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!manager || !canvasRef.current) {
+      handleCanvasMouseDown(event);
+      return;
+    }
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    const slTpButton = getSlTpButtonAtPosition(mouseX, mouseY);
+    if (slTpButton) {
+      slTpPlacement.activate(slTpButton.type, slTpButton.executionId);
+      event.preventDefault();
+      return;
+    }
+
+    if (slTpPlacement.active && slTpPlacement.executionId) {
+      const price = manager.yToPrice(mouseY);
+      const execId = slTpPlacement.executionId;
+      const placementType = slTpPlacement.type;
+      slTpPlacement.deactivate();
+
+      const updatePayload: { stopLoss?: number; takeProfit?: number } = {};
+      if (placementType === 'stopLoss') updatePayload.stopLoss = price;
+      else updatePayload.takeProfit = price;
+
+      orderLoadingMapRef.current.set(execId, true);
+      manager.markDirty('overlays');
+
+      updateExecutionSLTP(execId, updatePayload).then(() => {
+        orderLoadingMapRef.current.delete(execId);
+        orderFlashMapRef.current.set(execId, performance.now());
+        manager.markDirty('overlays');
+      }).catch((error) => {
+        orderLoadingMapRef.current.delete(execId);
+        manager.markDirty('overlays');
+        toastError(t('trading.order.slTpCreateFailed'), error instanceof Error ? error.message : undefined);
+      });
+
+      event.preventDefault();
+      return;
+    }
+
+    handleCanvasMouseDown(event);
+  }, [handleCanvasMouseDown, manager, getSlTpButtonAtPosition, slTpPlacement, updateExecutionSLTP, t, toastError]);
+
+  useEffect(() => {
+    if (!slTpPlacement.active) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        slTpPlacement.deactivate();
+        manager?.markDirty('overlays');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [slTpPlacement.active, slTpPlacement.deactivate, manager]);
+
+  useEffect(() => {
+    const handleDeleteDrawing = (event: KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const drawingState = useDrawingStore.getState();
+        if (drawingState.selectedDrawingId && symbol) {
+          drawingState.deleteDrawing(drawingState.selectedDrawingId, symbol);
+          manager?.markDirty('overlays');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleDeleteDrawing);
+    return () => window.removeEventListener('keydown', handleDeleteDrawing);
+  }, [symbol, manager]);
+
+  useEffect(() => {
+    if (!slTpPlacement.active || !slTpPlacement.executionId) return;
+    const targetExec = allExecutions.find(e => e.id === slTpPlacement.executionId);
+    if (!targetExec || targetExec.status !== 'open') {
+      slTpPlacement.deactivate();
+    }
+  }, [allExecutions, slTpPlacement]);
 
   useEffect(() => {
     if (!manager) return;
@@ -930,6 +1054,7 @@ export const ChartCanvas = ({
       renderPivotPoints();
       renderFibonacci();
       renderFibonacciProjection();
+      renderDrawings();
       renderFVG();
       renderLiquidityLevels();
       renderEventScale();
@@ -1032,6 +1157,64 @@ export const ChartCanvas = ({
         ctx.restore();
       }
 
+      if (slTpPlacement.active && slTpPlacement.previewPriceRef.current !== null && manager) {
+        const ctx = manager.getContext();
+        const dimensions = manager.getDimensions();
+        if (ctx && dimensions) {
+          const previewPrice = slTpPlacement.previewPriceRef.current;
+          const y = manager.priceToY(previewPrice);
+          const isStopLoss = slTpPlacement.type === 'stopLoss';
+          const color = isStopLoss ? 'rgba(239, 68, 68, 0.8)' : 'rgba(34, 197, 94, 0.8)';
+
+          const targetExec = allExecutions.find(e => e.id === slTpPlacement.executionId);
+          const entryPrice = targetExec ? parseFloat(targetExec.entryPrice) : 0;
+          const isLong = targetExec?.side === 'LONG';
+          const pctChange = entryPrice > 0
+            ? (isLong
+                ? (previewPrice - entryPrice) / entryPrice
+                : (entryPrice - previewPrice) / entryPrice) * 100
+            : 0;
+          const pctSign = pctChange >= 0 ? '+' : '';
+          const label = `${isStopLoss ? 'SL' : 'TP'} ${formatChartPrice(previewPrice)} (${pctSign}${pctChange.toFixed(2)}%)`;
+
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(dimensions.chartWidth, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = color;
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          const labelPadding = 8;
+          const textWidth = ctx.measureText(label).width;
+          const labelHeight = 18;
+          const arrowWidth = 6;
+          const labelWidth = textWidth + labelPadding * 2;
+
+          ctx.beginPath();
+          ctx.moveTo(labelWidth + arrowWidth, y);
+          ctx.lineTo(labelWidth, y - labelHeight / 2);
+          ctx.lineTo(0, y - labelHeight / 2);
+          ctx.lineTo(0, y + labelHeight / 2);
+          ctx.lineTo(labelWidth, y + labelHeight / 2);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(label, labelPadding, y);
+          ctx.restore();
+        }
+      }
+
       renderCurrentPriceLine_Label();
       renderCrosshairPriceLine();
 
@@ -1088,52 +1271,6 @@ export const ChartCanvas = ({
         ctx.restore();
       }
 
-      const currentMeasurement = measurementAreaRef.current || measurementArea;
-      if (currentMeasurement && isMeasuring) {
-        const ctx = manager.getContext();
-        if (!ctx) return;
-
-        const { startX, startY, endX, endY } = currentMeasurement;
-
-        const startPrice = manager.yToPrice(startY);
-        const endPrice = manager.yToPrice(endY);
-        const priceChange = endPrice - startPrice;
-        const isPositive = priceChange >= 0;
-
-        ctx.save();
-
-        if (showMeasurementArea) {
-          ctx.fillStyle = 'rgba(100, 116, 139, 0.1)';
-          ctx.fillRect(
-            Math.min(startX, endX),
-            Math.min(startY, endY),
-            Math.abs(endX - startX),
-            Math.abs(endY - startY)
-          );
-
-          ctx.strokeStyle = colors.crosshair;
-          ctx.lineWidth = 1;
-          ctx.setLineDash([4, 4]);
-          ctx.strokeRect(
-            Math.min(startX, endX),
-            Math.min(startY, endY),
-            Math.abs(endX - startX),
-            Math.abs(endY - startY)
-          );
-        }
-
-        if (showMeasurementRuler) {
-          ctx.strokeStyle = isPositive ? colors.bullish : colors.bearish;
-          ctx.lineWidth = 2;
-          ctx.setLineDash([6, 3]);
-          ctx.beginPath();
-          ctx.moveTo(startX, startY);
-          ctx.lineTo(endX, endY);
-          ctx.stroke();
-        }
-
-        ctx.restore();
-      }
     };
 
     const renderWithDirtyFlagCleanup = () => {
@@ -1196,14 +1333,12 @@ export const ChartCanvas = ({
     renderCrosshairPriceLine,
     renderOrderLines,
     renderGridPreview,
+    renderDrawings,
     chartType,
-    measurementArea,
-    isMeasuring,
-    showMeasurementArea,
-    showMeasurementRuler,
     colors,
     allExecutions,
     orderDragHandler,
+    slTpPlacement,
     t,
   ]);
 
@@ -1299,8 +1434,8 @@ export const ChartCanvas = ({
       >
         <canvas
           ref={canvasRef}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
+          onMouseDown={handleCanvasMouseDownWrapped}
+          onMouseMove={handleCanvasMouseMoveWrapped}
           onMouseUp={handleCanvasMouseUp}
           onMouseLeave={handleCanvasMouseLeave}
           onWheel={handleWheel}

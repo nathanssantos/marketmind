@@ -8,6 +8,8 @@ export interface PnlCalculationParams {
   marketType: 'FUTURES' | 'SPOT';
   leverage?: number;
   accumulatedFunding?: number;
+  entryFee?: number;
+  exitFee?: number;
 }
 
 export interface PnlCalculationResult {
@@ -26,6 +28,8 @@ export const calculatePnl = ({
   marketType,
   leverage = 1,
   accumulatedFunding = 0,
+  entryFee,
+  exitFee,
 }: PnlCalculationParams): PnlCalculationResult => {
   const grossPnl = side === 'LONG'
     ? (exitPrice - entryPrice) * quantity
@@ -34,7 +38,9 @@ export const calculatePnl = ({
   const entryValue = entryPrice * quantity;
   const exitValue = exitPrice * quantity;
 
-  const { totalFees } = calculateTotalFees(entryValue, exitValue, { marketType });
+  const totalFees = (entryFee !== undefined && exitFee !== undefined)
+    ? entryFee + exitFee
+    : calculateTotalFees(entryValue, exitValue, { marketType }).totalFees;
   const netPnl = grossPnl - totalFees + accumulatedFunding;
 
   const marginValue = entryValue / leverage;

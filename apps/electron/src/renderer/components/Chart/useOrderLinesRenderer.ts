@@ -140,6 +140,15 @@ interface SLTPCloseButton {
   type: 'stopLoss' | 'takeProfit';
 }
 
+interface SlTpButtonHitbox {
+  executionId: string;
+  type: 'stopLoss' | 'takeProfit';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 const PRICE_TAG_WIDTH = CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
 const drawBotIcon = (
@@ -317,6 +326,69 @@ const drawPercentBadge = (
   return { width: badgeWidth, height: percentHeight };
 };
 
+const SLTP_BUTTON = {
+  WIDTH: 20,
+  HEIGHT: 14,
+  GAP: 3,
+  BORDER_RADIUS: 3,
+  FONT_SIZE: 9,
+  SL_BG: 'rgba(239, 68, 68, 0.85)',
+  SL_BORDER: 'rgba(239, 68, 68, 1)',
+  TP_BG: 'rgba(34, 197, 94, 0.85)',
+  TP_BORDER: 'rgba(34, 197, 94, 1)',
+  TEXT_COLOR: '#ffffff',
+} as const;
+
+const drawSlTpButtons = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  hasStopLoss: boolean,
+  hasTakeProfit: boolean,
+): { slButton: { x: number; y: number } | null; tpButton: { x: number; y: number } | null; totalWidth: number } => {
+  let currentX = x;
+  let slButton: { x: number; y: number } | null = null;
+  let tpButton: { x: number; y: number } | null = null;
+
+  ctx.save();
+  ctx.font = `${SLTP_BUTTON.FONT_SIZE}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (!hasStopLoss) {
+    const btnY = y - SLTP_BUTTON.HEIGHT / 2;
+    ctx.fillStyle = SLTP_BUTTON.SL_BG;
+    ctx.strokeStyle = SLTP_BUTTON.SL_BORDER;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(currentX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, SLTP_BUTTON.BORDER_RADIUS);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
+    ctx.fillText('SL', currentX + SLTP_BUTTON.WIDTH / 2, y);
+    slButton = { x: currentX, y: btnY };
+    currentX += SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP;
+  }
+
+  if (!hasTakeProfit) {
+    const btnY = y - SLTP_BUTTON.HEIGHT / 2;
+    ctx.fillStyle = SLTP_BUTTON.TP_BG;
+    ctx.strokeStyle = SLTP_BUTTON.TP_BORDER;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(currentX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, SLTP_BUTTON.BORDER_RADIUS);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
+    ctx.fillText('TP', currentX + SLTP_BUTTON.WIDTH / 2, y);
+    tpButton = { x: currentX, y: btnY };
+    currentX += SLTP_BUTTON.WIDTH;
+  }
+
+  ctx.restore();
+  return { slButton, tpButton, totalWidth: currentX - x };
+};
+
 export interface PendingSetup {
   id: string;
   type: string;
@@ -386,6 +458,7 @@ export const useOrderLinesRenderer = (
   const orderHitboxesRef = useRef<OrderHitbox[]>([]);
   const sltpHitboxesRef = useRef<SLTPHitbox[]>([]);
   const sltpCloseButtonsRef = useRef<SLTPCloseButton[]>([]);
+  const slTpButtonHitboxesRef = useRef<SlTpButtonHitbox[]>([]);
 
   const renderOrderLines = (): boolean => {
     const hasOrders = activeOrders.length > 0;
@@ -428,6 +501,7 @@ export const useOrderLinesRenderer = (
     orderHitboxesRef.current = [];
     sltpHitboxesRef.current = [];
     sltpCloseButtonsRef.current = [];
+    slTpButtonHitboxesRef.current = [];
 
     const priceTags: Array<{ priceText: string; y: number; fillColor: string }> = [];
 
@@ -645,8 +719,8 @@ export const useOrderLinesRenderer = (
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
-        const tpLineColor = isLong ? ORDER_LINE_COLORS.TP_LONG_LINE : ORDER_LINE_COLORS.TP_SHORT_LINE;
-        const tpFillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+        const tpLineColor = ORDER_LINE_COLORS.TP_LONG_LINE;
+        const tpFillColor = ORDER_LINE_COLORS.LONG_FILL;
         ctx.strokeStyle = tpLineColor;
 
         ctx.beginPath();
@@ -807,6 +881,36 @@ export const useOrderLinesRenderer = (
       const badgeX = infoTagSize.width + 6;
       drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
 
+      const percentBadgeWidth = ctx.measureText(percentText).width + 8;
+      const buttonsX = badgeX + percentBadgeWidth + 6;
+      const hasStopLoss = position.orders.some(o => o.stopLoss);
+      const hasTakeProfit = position.orders.some(o => o.takeProfit);
+
+      if (!hasStopLoss || !hasTakeProfit) {
+        const { slButton, tpButton } = drawSlTpButtons(ctx, buttonsX, y, hasStopLoss, hasTakeProfit);
+        const primaryOrderId = position.orderIds[0] || '';
+        if (slButton) {
+          slTpButtonHitboxesRef.current.push({
+            executionId: primaryOrderId,
+            type: 'stopLoss',
+            x: slButton.x,
+            y: slButton.y,
+            width: SLTP_BUTTON.WIDTH,
+            height: SLTP_BUTTON.HEIGHT,
+          });
+        }
+        if (tpButton) {
+          slTpButtonHitboxesRef.current.push({
+            executionId: primaryOrderId,
+            type: 'takeProfit',
+            x: tpButton.x,
+            y: tpButton.y,
+            width: SLTP_BUTTON.WIDTH,
+            height: SLTP_BUTTON.HEIGHT,
+          });
+        }
+      }
+
       ctx.restore();
     });
 
@@ -886,7 +990,7 @@ export const useOrderLinesRenderer = (
           ctx.save();
           ctx.globalAlpha = pendingAlpha;
           ctx.lineWidth = 1;
-          ctx.strokeStyle = isLong ? ORDER_LINE_COLORS.TP_LONG_LINE : ORDER_LINE_COLORS.TP_SHORT_LINE;
+          ctx.strokeStyle = ORDER_LINE_COLORS.TP_LONG_LINE;
 
           ctx.beginPath();
           ctx.moveTo(0, tpY);
@@ -902,7 +1006,7 @@ export const useOrderLinesRenderer = (
             : ((entryPrice - order.takeProfit) / entryPrice) * 100;
           const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
 
-          drawInfoTag(ctx, tpInfoText, tpY, isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL, true, null);
+          drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.LONG_FILL, true, null);
           ctx.restore();
         }
       }
@@ -990,6 +1094,36 @@ export const useOrderLinesRenderer = (
 
         const badgeX = infoTagSize.width + 6;
         drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
+
+        const percentBadgeWidth = ctx.measureText(percentText).width + 8;
+        const buttonsX = badgeX + percentBadgeWidth + 6;
+        const hasStopLoss = hPos.orders.some((o: Order) => o.stopLoss);
+        const hasTakeProfit = hPos.orders.some((o: Order) => o.takeProfit);
+
+        if (!hasStopLoss || !hasTakeProfit) {
+          const { slButton, tpButton } = drawSlTpButtons(ctx, buttonsX, y, hasStopLoss, hasTakeProfit);
+          const primaryOrderId = hPos.orderIds[0] || '';
+          if (slButton) {
+            slTpButtonHitboxesRef.current.push({
+              executionId: primaryOrderId,
+              type: 'stopLoss',
+              x: slButton.x,
+              y: slButton.y,
+              width: SLTP_BUTTON.WIDTH,
+              height: SLTP_BUTTON.HEIGHT,
+            });
+          }
+          if (tpButton) {
+            slTpButtonHitboxesRef.current.push({
+              executionId: primaryOrderId,
+              type: 'takeProfit',
+              x: tpButton.x,
+              y: tpButton.y,
+              width: SLTP_BUTTON.WIDTH,
+              height: SLTP_BUTTON.HEIGHT,
+            });
+          }
+        }
 
         ctx.restore();
       }
@@ -1122,7 +1256,7 @@ export const useOrderLinesRenderer = (
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
-        const tpLineColor = isLongPosition ? ORDER_LINE_COLORS.TP_LONG_LINE : ORDER_LINE_COLORS.TP_SHORT_LINE;
+        const tpLineColor = ORDER_LINE_COLORS.TP_LONG_LINE;
         ctx.strokeStyle = tpLineColor;
 
         ctx.beginPath();
@@ -1134,7 +1268,7 @@ export const useOrderLinesRenderer = (
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        const fillColor = isLongPosition ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+        const tpFillColor = ORDER_LINE_COLORS.LONG_FILL;
         const priceText = formatChartPrice(consolidatedTakeProfit);
         const tpProfitPercent = isLongPosition
           ? ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100
@@ -1142,7 +1276,7 @@ export const useOrderLinesRenderer = (
         const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
         const infoText = `TP (+${tpProfitPercent.toFixed(2)}%)${pendingLabel}`;
 
-        priceTags.push({ priceText, y: tpY, fillColor });
+        priceTags.push({ priceText, y: tpY, fillColor: tpFillColor });
 
         const tagStartX = chartWidth;
         ctx.strokeStyle = tpLineColor;
@@ -1153,7 +1287,7 @@ export const useOrderLinesRenderer = (
         ctx.stroke();
 
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        const tpTagSize = drawInfoTag(ctx, infoText, tpY, fillColor, true, closeButtonRef);
+        const tpTagSize = drawInfoTag(ctx, infoText, tpY, tpFillColor, true, closeButtonRef);
 
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
@@ -1289,7 +1423,7 @@ export const useOrderLinesRenderer = (
           : ((effectiveEntryPrice - setup.takeProfit) / effectiveEntryPrice) * 100;
         const tpInfoText = `TP (+${tpPercent.toFixed(2)}%)`;
 
-        const tpSetupColor = isLong ? ORDER_LINE_COLORS.TP_LONG_LINE : ORDER_LINE_COLORS.TP_SHORT_LINE;
+        const tpSetupColor = ORDER_LINE_COLORS.TP_LONG_LINE;
         priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: tpSetupColor });
         drawInfoTag(ctx, tpInfoText, tpY, tpSetupColor, false, null, false);
       }
@@ -1388,5 +1522,19 @@ export const useOrderLinesRenderer = (
     return null;
   };
 
-  return { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition };
+  const getSlTpButtonAtPosition = (x: number, y: number): { executionId: string; type: 'stopLoss' | 'takeProfit' } | null => {
+    for (const hitbox of slTpButtonHitboxesRef.current) {
+      if (
+        x >= hitbox.x &&
+        x <= hitbox.x + hitbox.width &&
+        y >= hitbox.y &&
+        y <= hitbox.y + hitbox.height
+      ) {
+        return { executionId: hitbox.executionId, type: hitbox.type };
+      }
+    }
+    return null;
+  };
+
+  return { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition };
 };

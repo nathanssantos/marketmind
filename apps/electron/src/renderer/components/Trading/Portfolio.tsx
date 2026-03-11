@@ -108,7 +108,7 @@ const PortfolioComponent = () => {
       const pnl = primary.side === 'LONG'
         ? (currentPrice - avgPrice) * totalQty
         : (avgPrice - currentPrice) * totalQty;
-      const pnlPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+      const pnlPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 * (primary.leverage || 1) : 0;
       const adjustedPnlPercent = primary.side === 'LONG' ? pnlPercent : -pnlPercent;
 
       return {

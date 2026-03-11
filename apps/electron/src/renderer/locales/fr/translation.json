@@ -642,6 +642,15 @@
       "indicators": "Indicateurs",
       "quickSettings": "Paramètres Rapides"
     },
+    "tools": {
+      "pencil": "Crayon",
+      "line": "Ligne",
+      "rectangle": "Rectangle",
+      "fibonacci": "Fibonacci",
+      "ruler": "Règle",
+      "area": "Zone",
+      "magnet": "Aimant OHLC"
+    },
     "quickTrade": {
       "buy": "Acheter",
       "sell": "Vendre",
@@ -1032,6 +1041,7 @@
       "cancelSuccess": "Ordre annulé",
       "closeFailed": "Échec de la fermeture",
       "slTpUpdateFailed": "Échec de la mise à jour SL/TP",
+      "slTpCreateFailed": "Échec de la création du SL/TP",
       "entryUpdateFailed": "Échec du déplacement de l'ordre en attente"
     },
     "closeOrder": "Fermer l'Ordre",
@@ -1852,7 +1862,7 @@
       "mean_reversion": "Retour à la Moyenne",
       "market_data": "Données de Marché"
     },
-    "backfillTopSymbols": "Précharger Top 100",
+    "backfillTopSymbols": "Précharger Top {{max}}",
     "backfillProgress": "Préchargement... {{completed}}/{{total}}",
     "sessions": {
       "title": "Sessions",

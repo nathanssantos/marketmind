@@ -1193,7 +1193,7 @@ export const autoTradingRouter = router({
     .input(
       z.object({
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
-        limit: z.number().min(1).max(100).default(100),
+        limit: z.number().min(1).max(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX).default(AUTO_TRADING_CONFIG.TARGET_COUNT.MAX),
       })
     )
     .query(async ({ input }) => {

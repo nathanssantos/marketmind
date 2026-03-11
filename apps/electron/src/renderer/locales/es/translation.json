@@ -653,6 +653,15 @@
       "indicators": "Indicadores",
       "quickSettings": "Configuración Rápida"
     },
+    "tools": {
+      "pencil": "Lápiz",
+      "line": "Línea",
+      "rectangle": "Rectángulo",
+      "fibonacci": "Fibonacci",
+      "ruler": "Regla",
+      "area": "Área",
+      "magnet": "Imán OHLC"
+    },
     "quickTrade": {
       "buy": "Comprar",
       "sell": "Vender",
@@ -1043,6 +1052,7 @@
       "cancelSuccess": "Orden cancelada",
       "closeFailed": "Error al cerrar orden",
       "slTpUpdateFailed": "Error al actualizar SL/TP",
+      "slTpCreateFailed": "Error al crear SL/TP",
       "entryUpdateFailed": "Error al mover orden pendiente"
     },
     "closeOrder": "Cerrar Orden",
@@ -1863,7 +1873,7 @@
       "mean_reversion": "Reversión a la Media",
       "market_data": "Datos de Mercado"
     },
-    "backfillTopSymbols": "Precargar Top 100",
+    "backfillTopSymbols": "Precargar Top {{max}}",
     "backfillProgress": "Precargando... {{completed}}/{{total}}",
     "sessions": {
       "title": "Sesiones",

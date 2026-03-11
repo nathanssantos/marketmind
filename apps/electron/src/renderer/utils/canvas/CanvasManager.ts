@@ -553,6 +553,12 @@ export class CanvasManager {
     this.markDirty('viewport');
   }
 
+  public resetForSymbolChange(): void {
+    this.resetVerticalZoom();
+    this.updateKlineWidth();
+    this.markDirty('all');
+  }
+
   public resetToInitialView(): void {
     const initialKlineCount = Math.min(CHART_CONFIG.INITIAL_KLINES_VISIBLE, this.klines.length);
     const futureSpace = Math.max(

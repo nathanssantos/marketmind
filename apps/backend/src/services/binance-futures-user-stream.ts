@@ -3,9 +3,10 @@ import { WebsocketClient } from 'binance';
 import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { tradeExecutions, wallets, positions, orders, type Wallet } from '../db/schema';
+import { tradeExecutions, wallets, orders, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
+import { calculatePnl } from '../utils/pnl-calculator';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition, cancelAllSymbolOrders } from './binance-futures-client';
 import { createStopLossOrder, createTakeProfitOrder, cancelAllProtectionOrders } from './protection-orders';
 import { generateEntityId } from '../utils/id';
 import { decryptApiKey } from './encryption';
@@ -145,8 +146,8 @@ export class BinanceFuturesUserStreamService {
 
   private static readonly PYRAMID_SLTP_DEBOUNCE_MS = 3000;
 
-  private async withPyramidLock<T>(symbol: string, fn: () => Promise<T>): Promise<T> {
-    const key = symbol;
+  private async withPyramidLock<T>(walletId: string, symbol: string, fn: () => Promise<T>): Promise<T> {
+    const key = `${walletId}:${symbol}`;
     while (this.pyramidLocks.has(key)) {
       await this.pyramidLocks.get(key);
     }
@@ -230,6 +231,54 @@ export class BinanceFuturesUserStreamService {
     this.pendingSlTpUpdates.set(key, timer);
   }
 
+  private async mergeIntoExistingPosition(
+    walletId: string,
+    symbol: string,
+    existingExecId: string,
+    addedQty: number,
+    addedPrice: number,
+    deleteExecId?: string,
+    logContext?: string
+  ): Promise<void> {
+    const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingExecId)).limit(1);
+    if (!freshExec) return;
+
+    let newQty = parseFloat(freshExec.quantity) + addedQty;
+    let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (addedQty * addedPrice)) / newQty;
+
+    const connection = this.connections.get(walletId);
+    if (connection) {
+      try {
+        const exchangePos = await getPosition(connection.apiClient, symbol);
+        if (exchangePos) {
+          const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
+          const exchangePrice = parseFloat(exchangePos.entryPrice);
+          if (exchangeQty > 0) {
+            newQty = exchangeQty;
+            newAvgPrice = exchangePrice;
+          }
+        }
+      } catch (e) {
+        logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after pyramid - using calculated values');
+      }
+    }
+
+    await db.update(tradeExecutions).set({
+      entryPrice: newAvgPrice.toString(),
+      quantity: newQty.toString(),
+      updatedAt: new Date(),
+    }).where(eq(tradeExecutions.id, freshExec.id));
+
+    if (deleteExecId) {
+      await db.delete(tradeExecutions).where(eq(tradeExecutions.id, deleteExecId));
+    }
+
+    const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
+    if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
+
+    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty }, `[FuturesUserStream] ${logContext || 'Pyramided into existing position'}`);
+  }
+
   async start(): Promise<void> {
     if (this.isRunning) return;
     this.isRunning = true;
@@ -293,6 +342,16 @@ export class BinanceFuturesUserStreamService {
 
     try {
       const apiClient = createBinanceFuturesClient(wallet);
+
+      const positionMode = await apiClient.getCurrentPositionMode();
+      if (positionMode.dualSidePosition) {
+        logger.error(
+          { walletId: wallet.id },
+          '[FuturesUserStream] Wallet is in hedge mode — MarketMind only supports one-way mode. Refusing to subscribe.'
+        );
+        return;
+      }
+
       const walletType = getWalletType(wallet);
 
       const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
@@ -536,42 +595,8 @@ export class BinanceFuturesUserStreamService {
             .limit(1);
 
           if (existingOpen) {
-            await this.withPyramidLock(symbol, async () => {
-              const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
-              if (!freshExec) return;
-
-              let newQty = parseFloat(freshExec.quantity) + fillQty;
-              let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (fillQty * fillPrice)) / newQty;
-
-              const connection = this.connections.get(walletId);
-              if (connection) {
-                try {
-                  const exchangePos = await getPosition(connection.apiClient, symbol);
-                  if (exchangePos) {
-                    const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
-                    const exchangePrice = parseFloat(exchangePos.entryPrice);
-                    if (exchangeQty > 0) {
-                      newQty = exchangeQty;
-                      newAvgPrice = exchangePrice;
-                    }
-                  }
-                } catch (e) {
-                  logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after pyramid - using calculated values');
-                }
-              }
-
-              await db.update(tradeExecutions).set({
-                entryPrice: newAvgPrice.toString(),
-                quantity: newQty.toString(),
-                updatedAt: new Date(),
-              }).where(eq(tradeExecutions.id, freshExec.id));
-
-              await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingExecution.id));
-
-              const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
-              if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
-
-              logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, autotrade: !!pendingExecution.setupId }, '[FuturesUserStream] Pyramided via LIMIT order into existing position');
+            await this.withPyramidLock(walletId, symbol, async () => {
+              await this.mergeIntoExistingPosition(walletId, symbol, existingOpen.id, fillQty, fillPrice, pendingExecution.id, 'Pyramided via LIMIT order into existing position');
             });
             return;
           }
@@ -764,43 +789,10 @@ export class BinanceFuturesUserStreamService {
             }
 
             if (isEntryFill) {
-              await this.withPyramidLock(symbol, async () => {
+              await this.withPyramidLock(walletId, symbol, async () => {
                 const fillPrice = parseFloat(avgPrice || lastFilledPrice);
                 const fillQty = parseFloat(executedQty || '0');
-
-                const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, execution.id)).limit(1);
-                if (!freshExec) return;
-
-                let newQty = parseFloat(freshExec.quantity) + fillQty;
-                let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (fillQty * fillPrice)) / newQty;
-
-                const connection = this.connections.get(walletId);
-                if (connection) {
-                  try {
-                    const exchangePos = await getPosition(connection.apiClient, symbol);
-                    if (exchangePos) {
-                      const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
-                      const exchangePrice = parseFloat(exchangePos.entryPrice);
-                      if (exchangeQty > 0) {
-                        newQty = exchangeQty;
-                        newAvgPrice = exchangePrice;
-                      }
-                    }
-                  } catch (e) {
-                    logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after pyramid - using calculated values');
-                  }
-                }
-
-                await db.update(tradeExecutions).set({
-                  entryPrice: newAvgPrice.toString(),
-                  quantity: newQty.toString(),
-                  updatedAt: new Date(),
-                }).where(eq(tradeExecutions.id, freshExec.id));
-
-                const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
-                if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
-
-                logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty }, '[FuturesUserStream] Pyramided into existing position');
+                await this.mergeIntoExistingPosition(walletId, symbol, execution.id, fillQty, fillPrice, undefined, 'Pyramided into existing position');
               });
               return;
             }
@@ -884,17 +876,73 @@ export class BinanceFuturesUserStreamService {
         }
 
         const exitPrice = parseFloat(avgPrice || lastFilledPrice);
-        const quantity = parseFloat(executedQty);
+        const closedQty = parseFloat(executedQty);
         const entryPrice = parseFloat(execution.entryPrice);
         const leverage = execution.leverage || 1;
+        const executionQty = parseFloat(execution.quantity);
 
-        let grossPnl = 0;
-        if (execution.side === 'LONG') {
-          grossPnl = (exitPrice - entryPrice) * quantity;
-        } else {
-          grossPnl = (entryPrice - exitPrice) * quantity;
+        const connection = this.connections.get(walletId);
+        if (connection) {
+          try {
+            const exchangePos = await getPosition(connection.apiClient, symbol);
+            if (exchangePos) {
+              const remainingQty = Math.abs(parseFloat(exchangePos.positionAmt));
+              const exchangeEntryPrice = parseFloat(exchangePos.entryPrice);
+
+              if (remainingQty > 0 && remainingQty < executionQty) {
+                const partialPnl = execution.side === 'LONG'
+                  ? (exitPrice - entryPrice) * closedQty
+                  : (entryPrice - exitPrice) * closedQty;
+
+                await db
+                  .update(tradeExecutions)
+                  .set({
+                    quantity: remainingQty.toString(),
+                    entryPrice: exchangeEntryPrice.toString(),
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(tradeExecutions.id, execution.id));
+
+                await db
+                  .update(wallets)
+                  .set({
+                    currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(wallets.id, walletId));
+
+                logger.info(
+                  {
+                    executionId: execution.id,
+                    symbol,
+                    closedQty,
+                    remainingQty,
+                    partialPnl: partialPnl.toFixed(4),
+                    newEntryPrice: exchangeEntryPrice,
+                  },
+                  '[FuturesUserStream] Partial close detected — updated quantity, position remains open'
+                );
+
+                binancePriceStreamService.invalidateExecutionCache(symbol);
+
+                const wsService = getWebSocketService();
+                if (wsService) {
+                  wsService.emitPositionUpdate(walletId, {
+                    ...execution,
+                    quantity: remainingQty.toString(),
+                    entryPrice: exchangeEntryPrice.toString(),
+                  });
+                }
+
+                return;
+              }
+            }
+          } catch (_e) {
+            logger.warn({ walletId, symbol }, '[FuturesUserStream] Failed to check exchange position for partial close detection');
+          }
         }
 
+        const quantity = closedQty;
         let actualExitFee = parseFloat(commission || '0');
         let actualEntryFee = parseFloat(execution.entryFee || '0');
 
@@ -927,14 +975,22 @@ export class BinanceFuturesUserStreamService {
           } catch (_e) { /* entry fee fetch is best-effort */ }
         }
 
-        const totalFees = actualEntryFee + actualExitFee;
-
         const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
-        const pnl = grossPnl - totalFees + accumulatedFunding;
 
-        const entryValue = entryPrice * quantity;
-        const marginValue = entryValue / leverage;
-        const pnlPercent = (pnl / marginValue) * 100;
+        const pnlResult = calculatePnl({
+          entryPrice,
+          exitPrice,
+          quantity,
+          side: execution.side,
+          marketType: 'FUTURES',
+          leverage,
+          accumulatedFunding,
+          entryFee: actualEntryFee,
+          exitFee: actualExitFee,
+        });
+        const pnl = pnlResult.netPnl;
+        const pnlPercent = pnlResult.pnlPercent;
+        const totalFees = actualEntryFee + actualExitFee;
 
         const determinedExitReason = isAlgoTriggerFill
           ? execution.exitReason
@@ -1071,31 +1127,6 @@ export class BinanceFuturesUserStreamService {
               '[FuturesUserStream] Wallet balance synced from account update'
             );
           }
-        }
-      }
-
-      for (const posUpdate of positionUpdates) {
-        const [position] = await db
-          .select()
-          .from(positions)
-          .where(
-            and(
-              eq(positions.walletId, walletId),
-              eq(positions.symbol, posUpdate.s),
-              eq(positions.status, 'open')
-            )
-          )
-          .limit(1);
-
-        if (position) {
-          await db
-            .update(positions)
-            .set({
-              currentPrice: posUpdate.ep,
-              pnl: posUpdate.up,
-              updatedAt: new Date(),
-            })
-            .where(eq(positions.id, position.id));
         }
       }
 
@@ -1264,49 +1295,13 @@ export class BinanceFuturesUserStreamService {
           .limit(1);
 
         if (existingOpen) {
-          await this.withPyramidLock(symbol, async () => {
-            const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
-            if (!freshExec) return;
-
-            const pendQty = parseFloat(pendingEntryExecution.quantity);
-            let newQty = parseFloat(freshExec.quantity) + pendQty;
-            let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (pendQty * parseFloat(pendingEntryExecution.entryPrice))) / newQty;
-
-            const connection = this.connections.get(walletId);
-            if (connection) {
-              try {
-                const exchangePos = await getPosition(connection.apiClient, symbol);
-                if (exchangePos) {
-                  const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
-                  const exchangePrice = parseFloat(exchangePos.entryPrice);
-                  if (exchangeQty > 0) {
-                    newQty = exchangeQty;
-                    newAvgPrice = exchangePrice;
-                  }
-                }
-              } catch (e) {
-                logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after algo pyramid - using calculated values');
-              }
-            }
-
-            await db.update(tradeExecutions).set({
-              entryPrice: newAvgPrice.toString(),
-              quantity: newQty.toString(),
-              updatedAt: new Date(),
-            }).where(eq(tradeExecutions.id, freshExec.id));
-
-            await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingEntryExecution.id));
-
-            const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
-            if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
-
+          await this.withPyramidLock(walletId, symbol, async () => {
+            await this.mergeIntoExistingPosition(walletId, symbol, existingOpen.id, parseFloat(pendingEntryExecution.quantity), parseFloat(pendingEntryExecution.entryPrice), pendingEntryExecution.id, 'Pyramided via STOP_MARKET algo order into existing position');
             const wsService = getWebSocketService();
             if (wsService) {
-              const [updated] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, freshExec.id)).limit(1);
+              const [updated] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
               if (updated) wsService.emitPositionUpdate(walletId, updated);
             }
-
-            logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty }, '[FuturesUserStream] Pyramided via STOP_MARKET algo order into existing position');
           });
           return;
         }
@@ -1535,17 +1530,22 @@ export class BinanceFuturesUserStreamService {
         } catch (_e) { /* entry fee fetch is best-effort */ }
       }
 
-      const totalFees = entryFee + exitFee;
       const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
 
-      const grossPnl = side === 'LONG'
-        ? (exitPrice - entryPrice) * quantity
-        : (entryPrice - exitPrice) * quantity;
-
-      const pnl = grossPnl - totalFees + accumulatedFunding;
-      const entryValue = entryPrice * quantity;
-      const marginValue = entryValue / leverage;
-      const pnlPercent = marginValue > 0 ? (pnl / marginValue) * 100 : 0;
+      const pnlResult = calculatePnl({
+        entryPrice,
+        exitPrice,
+        quantity,
+        side,
+        marketType: 'FUTURES',
+        leverage,
+        accumulatedFunding,
+        entryFee: entryFee,
+        exitFee,
+      });
+      const pnl = pnlResult.netPnl;
+      const pnlPercent = pnlResult.pnlPercent;
+      const totalFees = entryFee + exitFee;
 
       const closeResult = await db
         .update(tradeExecutions)
@@ -1669,6 +1669,20 @@ export class BinanceFuturesUserStreamService {
         return;
       }
 
+      if (apiClient) {
+        try {
+          await cancelAllSymbolOrders(apiClient, symbol);
+          logger.info(
+            { walletId, symbol, closedExecutionId },
+            '[FuturesUserStream] Cancelled ALL orders for symbol after position fully closed'
+          );
+        } catch (cancelAllErr) {
+          const msg = serializeError(cancelAllErr);
+          if (!msg.includes('No orders') && !msg.includes('not found'))
+            logger.warn({ walletId, symbol, error: msg }, '[FuturesUserStream] Failed to cancel all symbol orders');
+        }
+      }
+
       const pendingEntries = await db
         .select({ id: tradeExecutions.id, entryOrderId: tradeExecutions.entryOrderId, entryOrderType: tradeExecutions.entryOrderType })
         .from(tradeExecutions)
@@ -1680,31 +1694,6 @@ export class BinanceFuturesUserStreamService {
             eq(tradeExecutions.marketType, 'FUTURES')
           )
         );
-
-      if (pendingEntries.length === 0) return;
-
-      logger.info(
-        { walletId, symbol, closedExecutionId, pendingCount: pendingEntries.length },
-        '[FuturesUserStream] Cancelling pending entry orders after position close'
-      );
-
-      if (apiClient) {
-        for (const entry of pendingEntries) {
-          if (!entry.entryOrderId) continue;
-          try {
-            const isAlgoEntry = entry.entryOrderType === 'STOP_MARKET' || entry.entryOrderType === 'TAKE_PROFIT_MARKET';
-            if (isAlgoEntry) {
-              await cancelFuturesAlgoOrder(apiClient, entry.entryOrderId);
-            } else {
-              await apiClient.cancelOrder({ symbol, orderId: entry.entryOrderId });
-            }
-          } catch (cancelErr) {
-            const msg = serializeError(cancelErr);
-            if (!msg.includes('Unknown order') && !msg.includes('Order does not exist') && !msg.includes('not found'))
-              logger.warn({ entryOrderId: entry.entryOrderId, error: msg }, '[FuturesUserStream] Failed to cancel pending entry on Binance');
-          }
-        }
-      }
 
       const pendingIds = pendingEntries.map(e => e.id);
       for (const id of pendingIds) {
