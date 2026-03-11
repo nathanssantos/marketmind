@@ -254,12 +254,15 @@ export async function cancelAllOpenProtectionOrdersOnExchange(params: {
     const openAlgoOrders = await client.getOpenAlgoOrders(symbol);
     if (openAlgoOrders.length === 0) return;
 
+    const protectionOrders = openAlgoOrders.filter((order) => order.reduceOnly);
+    if (protectionOrders.length === 0) return;
+
     await Promise.allSettled(
-      openAlgoOrders.map((order) =>
+      protectionOrders.map((order) =>
         client.cancelAlgoOrder(order.algoId).catch((_e) => {})
       )
     );
-    logger.info({ symbol, count: openAlgoOrders.length }, '[ProtectionOrders] Cancelled all open algo orders on exchange (pyramid cleanup)');
+    logger.info({ symbol, cancelled: protectionOrders.length, total: openAlgoOrders.length }, '[ProtectionOrders] Cancelled reduceOnly algo orders on exchange (pyramid cleanup)');
   } catch (error) {
     logger.warn({ symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to fetch/cancel open algo orders on exchange');
   }
