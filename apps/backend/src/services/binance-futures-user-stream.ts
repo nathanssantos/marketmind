@@ -143,6 +143,7 @@ export class BinanceFuturesUserStreamService {
   private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
   private pyramidLocks = new Map<string, Promise<void>>();
   private pendingSlTpUpdates = new Map<string, ReturnType<typeof setTimeout>>();
+  private recentAlgoEntrySymbols = new Map<string, number>();
 
   private static readonly PYRAMID_SLTP_DEBOUNCE_MS = 3000;
 
@@ -271,6 +272,45 @@ export class BinanceFuturesUserStreamService {
     if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
 
     logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty }, `[FuturesUserStream] ${logContext || 'Pyramided into existing position'}`);
+  }
+
+  private async syncPositionFromExchange(walletId: string, symbol: string, executionId: string, logContext: string): Promise<boolean> {
+    const connection = this.connections.get(walletId);
+    if (!connection) return false;
+
+    try {
+      const exchangePos = await getPosition(connection.apiClient, symbol);
+      if (!exchangePos) return false;
+
+      const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
+      const exchangePrice = parseFloat(exchangePos.entryPrice);
+      if (exchangeQty === 0) return false;
+
+      const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, executionId)).limit(1);
+      if (!freshExec || freshExec.status !== 'open') return false;
+
+      const currentQty = parseFloat(freshExec.quantity);
+      const currentPrice = parseFloat(freshExec.entryPrice);
+
+      if (Math.abs(currentQty - exchangeQty) < 1e-6 && Math.abs(currentPrice - exchangePrice) < 1e-8) {
+        logger.trace({ executionId, symbol }, `[FuturesUserStream] ${logContext} — already in sync`);
+        return false;
+      }
+
+      await db.update(tradeExecutions).set({
+        quantity: exchangeQty.toString(),
+        entryPrice: exchangePrice.toString(),
+        updatedAt: new Date(),
+      }).where(eq(tradeExecutions.id, executionId));
+
+      if (freshExec.stopLoss || freshExec.takeProfit) this.scheduleDebouncedSlTpUpdate(executionId, walletId, symbol);
+
+      logger.info({ executionId, symbol, oldQty: currentQty, newQty: exchangeQty, oldPrice: currentPrice, newPrice: exchangePrice }, `[FuturesUserStream] ${logContext}`);
+      return true;
+    } catch (e) {
+      logger.warn({ symbol, executionId, error: serializeError(e) }, `[FuturesUserStream] ${logContext} — exchange sync failed`);
+      return false;
+    }
   }
 
   async start(): Promise<void> {
@@ -791,6 +831,16 @@ export class BinanceFuturesUserStreamService {
             }
 
             if (isEntryFill) {
+              const recentKey = `${walletId}:${symbol}`;
+              const recentAlgoTime = this.recentAlgoEntrySymbols.get(recentKey);
+              if (recentAlgoTime && Date.now() - recentAlgoTime < 10000) {
+                this.recentAlgoEntrySymbols.delete(recentKey);
+                await this.withPyramidLock(walletId, symbol, async () => {
+                  await this.syncPositionFromExchange(walletId, symbol, execution.id, 'Synced position from exchange (algo entry fill followup)');
+                });
+                return;
+              }
+
               await this.withPyramidLock(walletId, symbol, async () => {
                 const fillPrice = parseFloat(avgPrice || lastFilledPrice);
                 const fillQty = parseFloat(executedQty || '0');
@@ -1301,13 +1351,15 @@ export class BinanceFuturesUserStreamService {
 
         if (existingOpen) {
           await this.withPyramidLock(walletId, symbol, async () => {
-            await this.mergeIntoExistingPosition(walletId, symbol, existingOpen.id, parseFloat(pendingEntryExecution.quantity), parseFloat(pendingEntryExecution.entryPrice), pendingEntryExecution.id, 'Pyramided via STOP_MARKET algo order into existing position');
+            await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingEntryExecution.id));
+            await this.syncPositionFromExchange(walletId, symbol, existingOpen.id, 'Synced after algo pyramid trigger');
             const wsService = getWebSocketService();
             if (wsService) {
               const [updated] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingOpen.id)).limit(1);
               if (updated) wsService.emitPositionUpdate(walletId, updated);
             }
           });
+          this.recentAlgoEntrySymbols.set(`${walletId}:${symbol}`, Date.now());
           return;
         }
 
@@ -1347,12 +1399,16 @@ export class BinanceFuturesUserStreamService {
           })
           .where(eq(tradeExecutions.id, pendingEntryExecution.id));
 
+        try {
+          await this.syncPositionFromExchange(walletId, symbol, pendingEntryExecution.id, 'Synced fill price after algo activation');
+        } catch (_e) { /* ORDER_TRADE_UPDATE will correct */ }
+
+        this.recentAlgoEntrySymbols.set(`${walletId}:${symbol}`, Date.now());
+
         const wsService = getWebSocketService();
         if (wsService) {
-          wsService.emitPositionUpdate(walletId, {
-            ...pendingEntryExecution,
-            status: 'open',
-          });
+          const [activated] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, pendingEntryExecution.id)).limit(1);
+          if (activated) wsService.emitPositionUpdate(walletId, activated);
         }
 
         return;
