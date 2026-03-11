@@ -1,18 +1,25 @@
 import { Box, HStack, IconButton, Separator } from '@chakra-ui/react';
+import type { DrawingType } from '@marketmind/chart-studies';
 import { useChartPref } from '@renderer/store/preferencesStore';
+import { useDrawingStore } from '@renderer/store/drawingStore';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuCalendarDays,
+  LuMagnet,
   LuMessageSquare,
+  LuMinus,
+  LuPencil,
   LuRectangleHorizontal,
   LuRuler,
   LuScan,
+  LuSquare,
   LuTriangleRight,
 } from 'react-icons/lu';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
+
 export interface ChartToolsToolbarProps {
   movingAverages: MovingAverageConfig[];
   onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
@@ -26,10 +33,13 @@ export const ChartToolsToolbar = memo(({
 
   const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', true);
   const [showFibonacciProjection, setShowFibonacciProjection] = useChartPref('showFibonacciProjection', true);
-  const [showMeasurementRuler, setShowMeasurementRuler] = useChartPref('showMeasurementRuler', false);
-  const [showMeasurementArea, setShowMeasurementArea] = useChartPref('showMeasurementArea', false);
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
+
+  const activeTool = useDrawingStore(s => s.activeTool);
+  const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
+  const setActiveTool = useDrawingStore(s => s.setActiveTool);
+  const setMagnetEnabled = useDrawingStore(s => s.setMagnetEnabled);
 
   const toggleMA = useCallback((index: number): void => {
     const updated = movingAverages.map((ma, i) =>
@@ -40,10 +50,15 @@ export const ChartToolsToolbar = memo(({
 
   const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
   const handleFibToggle = useCallback(() => setShowFibonacciProjection(!showFibonacciProjection), [showFibonacciProjection, setShowFibonacciProjection]);
-  const handleRulerToggle = useCallback(() => setShowMeasurementRuler(!showMeasurementRuler), [showMeasurementRuler, setShowMeasurementRuler]);
-  const handleAreaToggle = useCallback(() => setShowMeasurementArea(!showMeasurementArea), [showMeasurementArea, setShowMeasurementArea]);
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
+  const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
+
+  const handleToolClick = useCallback((tool: DrawingType) => {
+    setActiveTool(tool);
+  }, [setActiveTool]);
+
+  const isToolActive = (tool: DrawingType) => activeTool === tool;
 
   return (
     <Box
@@ -88,26 +103,82 @@ export const ChartToolsToolbar = memo(({
           </IconButton>
         </TooltipWrapper>
         <Separator orientation="vertical" height="4" />
-        <TooltipWrapper label={t('chart.controls.measurementRuler')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.pencil', 'Pencil')} showArrow placement="bottom">
           <IconButton
             size="2xs"
-            aria-label={t('chart.controls.measurementRuler')}
-            onClick={handleRulerToggle}
-            colorPalette={showMeasurementRuler ? 'blue' : 'gray'}
-            variant={showMeasurementRuler ? 'solid' : 'ghost'}
+            aria-label={t('chart.tools.pencil', 'Pencil')}
+            onClick={() => handleToolClick('pencil')}
+            colorPalette={isToolActive('pencil') ? 'blue' : 'gray'}
+            variant={isToolActive('pencil') ? 'solid' : 'ghost'}
+          >
+            <LuPencil />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.tools.line', 'Line')} showArrow placement="bottom">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.tools.line', 'Line')}
+            onClick={() => handleToolClick('line')}
+            colorPalette={isToolActive('line') ? 'blue' : 'gray'}
+            variant={isToolActive('line') ? 'solid' : 'ghost'}
+          >
+            <LuMinus />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.tools.rectangle', 'Rectangle')} showArrow placement="bottom">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.tools.rectangle', 'Rectangle')}
+            onClick={() => handleToolClick('rectangle')}
+            colorPalette={isToolActive('rectangle') ? 'blue' : 'gray'}
+            variant={isToolActive('rectangle') ? 'solid' : 'ghost'}
+          >
+            <LuSquare />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.tools.fibonacci', 'Fibonacci')} showArrow placement="bottom">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.tools.fibonacci', 'Fibonacci')}
+            onClick={() => handleToolClick('fibonacci')}
+            colorPalette={isToolActive('fibonacci') ? 'blue' : 'gray'}
+            variant={isToolActive('fibonacci') ? 'solid' : 'ghost'}
+          >
+            <LuTriangleRight />
+          </IconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.tools.ruler', 'Ruler')} showArrow placement="bottom">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.tools.ruler', 'Ruler')}
+            onClick={() => handleToolClick('ruler')}
+            colorPalette={isToolActive('ruler') ? 'blue' : 'gray'}
+            variant={isToolActive('ruler') ? 'solid' : 'ghost'}
           >
             <LuRuler />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.measurementArea')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.area', 'Area')} showArrow placement="bottom">
           <IconButton
             size="2xs"
-            aria-label={t('chart.controls.measurementArea')}
-            onClick={handleAreaToggle}
-            colorPalette={showMeasurementArea ? 'blue' : 'gray'}
-            variant={showMeasurementArea ? 'solid' : 'ghost'}
+            aria-label={t('chart.tools.area', 'Area')}
+            onClick={() => handleToolClick('area')}
+            colorPalette={isToolActive('area') ? 'blue' : 'gray'}
+            variant={isToolActive('area') ? 'solid' : 'ghost'}
           >
             <LuScan />
+          </IconButton>
+        </TooltipWrapper>
+        <Separator orientation="vertical" height="4" />
+        <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="bottom">
+          <IconButton
+            size="2xs"
+            aria-label={t('chart.tools.magnet', 'OHLC Magnet')}
+            onClick={handleMagnetToggle}
+            colorPalette={magnetEnabled ? 'blue' : 'gray'}
+            variant={magnetEnabled ? 'solid' : 'ghost'}
+          >
+            <LuMagnet />
           </IconButton>
         </TooltipWrapper>
         <Separator orientation="vertical" height="4" />

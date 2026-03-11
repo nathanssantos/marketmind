@@ -188,13 +188,27 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
 export async function updateStopLossOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {
   const { currentAlgoId, currentOrderId, ...createParams } = params;
 
-  await cancelProtectionOrder({
+  const cancelled = await cancelProtectionOrder({
     wallet: params.wallet,
     symbol: params.symbol,
     marketType: params.marketType,
     algoId: currentAlgoId,
     orderId: currentOrderId,
   });
+
+  if (!cancelled && (currentAlgoId || currentOrderId)) {
+    logger.warn({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old SL cancel failed — retrying once before creating new');
+    const retried = await cancelProtectionOrder({
+      wallet: params.wallet,
+      symbol: params.symbol,
+      marketType: params.marketType,
+      algoId: currentAlgoId,
+      orderId: currentOrderId,
+    });
+    if (!retried) {
+      logger.error({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old SL cancel failed after retry — creating new anyway (ghost risk)');
+    }
+  }
 
   return createStopLossOrder(createParams);
 }
@@ -202,13 +216,27 @@ export async function updateStopLossOrder(params: UpdateProtectionOrderParams): 
 export async function updateTakeProfitOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {
   const { currentAlgoId, currentOrderId, ...createParams } = params;
 
-  await cancelProtectionOrder({
+  const cancelled = await cancelProtectionOrder({
     wallet: params.wallet,
     symbol: params.symbol,
     marketType: params.marketType,
     algoId: currentAlgoId,
     orderId: currentOrderId,
   });
+
+  if (!cancelled && (currentAlgoId || currentOrderId)) {
+    logger.warn({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old TP cancel failed — retrying once before creating new');
+    const retried = await cancelProtectionOrder({
+      wallet: params.wallet,
+      symbol: params.symbol,
+      marketType: params.marketType,
+      algoId: currentAlgoId,
+      orderId: currentOrderId,
+    });
+    if (!retried) {
+      logger.error({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old TP cancel failed after retry — creating new anyway (ghost risk)');
+    }
+  }
 
   return createTakeProfitOrder(createParams);
 }

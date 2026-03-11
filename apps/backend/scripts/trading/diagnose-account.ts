@@ -2,6 +2,7 @@ import { db } from '../src/db';
 import { wallets } from '../src/db/schema';
 import { getWalletType } from '../src/services/binance-client';
 import { createBinanceFuturesClient, getAccountInfo, getPositions } from '../src/services/binance-futures-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 async function diagnoseAccount() {
   console.log('🔍 MarketMind Account Diagnostics\n');
@@ -33,7 +34,7 @@ async function diagnoseAccount() {
       const client = createBinanceFuturesClient(wallet);
       
       console.log('\n📊 Fetching account information...\n');
-      const accountInfo = await getAccountInfo(client);
+      const accountInfo = await guardedCall(() => getAccountInfo(client));
 
       console.log('✅ API Connection: SUCCESS\n');
       
@@ -65,7 +66,7 @@ async function diagnoseAccount() {
       }
 
       console.log('\n📊 Open Positions:');
-      const positions = await getPositions(client);
+      const positions = await guardedCall(() => getPositions(client));
       if (positions.length === 0) {
         console.log('   No open positions');
       } else {

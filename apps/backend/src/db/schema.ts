@@ -763,3 +763,23 @@ export type CustomSymbol = typeof customSymbols.$inferSelect;
 export type NewCustomSymbol = typeof customSymbols.$inferInsert;
 export type CustomSymbolComponent = typeof customSymbolComponents.$inferSelect;
 export type NewCustomSymbolComponent = typeof customSymbolComponents.$inferInsert;
+
+export const chartDrawings = pgTable('chart_drawings', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  symbol: varchar({ length: 50 }).notNull(),
+  type: varchar({ length: 20 }).notNull(),
+  data: text().notNull(),
+  visible: boolean().default(true).notNull(),
+  locked: boolean().default(false).notNull(),
+  zIndex: integer('z_index').default(0).notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userSymbolIdx: index('chart_drawings_user_symbol_idx').on(table.userId, table.symbol),
+}));
+
+export type ChartDrawing = typeof chartDrawings.$inferSelect;
+export type NewChartDrawing = typeof chartDrawings.$inferInsert;

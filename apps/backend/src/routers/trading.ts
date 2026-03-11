@@ -134,15 +134,40 @@ export const tradingRouter = router({
           }
         }
 
+        let orderInput = { ...input };
+        if (orderInput.marketType === 'FUTURES' && orderInput.type === 'LIMIT' && orderInput.price) {
+          const { createBinanceFuturesClient } = await import('../services/binance-futures-client');
+          const markClient = createBinanceFuturesClient(wallet);
+          const ticker = await markClient.getMarkPrice({ symbol: orderInput.symbol });
+          const markPrice = parseFloat(String(ticker.markPrice));
+          const orderPrice = parseFloat(orderInput.price);
+
+          if (markPrice > 0) {
+            const wouldCrossSpread =
+              (orderInput.side === 'SELL' && orderPrice < markPrice) ||
+              (orderInput.side === 'BUY' && orderPrice > markPrice);
+
+            if (wouldCrossSpread) {
+              logger.info({ symbol: orderInput.symbol, side: orderInput.side, orderPrice, markPrice }, 'Auto-correcting LIMIT to STOP_MARKET — order would cross spread');
+              orderInput = {
+                ...orderInput,
+                type: 'STOP_MARKET',
+                stopPrice: orderInput.price,
+                price: undefined,
+              };
+            }
+          }
+        }
+
         const isConditionalFuturesOrder =
-          input.marketType === 'FUTURES' &&
-          (input.type === 'STOP_MARKET' || input.type === 'TAKE_PROFIT_MARKET');
+          orderInput.marketType === 'FUTURES' &&
+          (orderInput.type === 'STOP_MARKET' || orderInput.type === 'TAKE_PROFIT_MARKET');
 
         if (isConditionalFuturesOrder) {
-          const triggerPrice = input.stopPrice
-            ? formatPriceForBinance(parseFloat(input.stopPrice), tickSize)
-            : input.price
-              ? formatPriceForBinance(parseFloat(input.price), tickSize)
+          const triggerPrice = orderInput.stopPrice
+            ? formatPriceForBinance(parseFloat(orderInput.stopPrice), tickSize)
+            : orderInput.price
+              ? formatPriceForBinance(parseFloat(orderInput.price), tickSize)
               : undefined;
 
           if (!triggerPrice) {
@@ -153,31 +178,31 @@ export const tradingRouter = router({
           }
 
           const triggerPriceNum = parseFloat(triggerPrice);
-          const requestedQty = parseFloat(input.quantity);
+          const requestedQty = parseFloat(orderInput.quantity);
           const notional = requestedQty * triggerPriceNum;
           const minNotional = filters?.minNotional ?? 5;
           if (notional < minNotional) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${input.symbol}. Increase your position size % or deposit more funds.`,
+              message: `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${orderInput.symbol}. Increase your position size % or deposit more funds.`,
             });
           }
 
           const futuresClient = getFuturesClient(wallet);
           const algoOrder = await futuresClient.submitAlgoOrder({
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+            symbol: orderInput.symbol,
+            side: orderInput.side,
+            type: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
             triggerPrice,
             quantity: formatQuantityForBinance(requestedQty, stepSize),
             workingType: 'CONTRACT_PRICE',
-            ...(input.reduceOnly && { reduceOnly: true }),
+            ...(orderInput.reduceOnly && { reduceOnly: true }),
           });
 
           await ctx.db.insert(orders).values({
             orderId: algoOrder.algoId,
             userId: ctx.user.id,
-            walletId: input.walletId,
+            walletId: orderInput.walletId,
             symbol: algoOrder.symbol,
             side: algoOrder.side,
             type: algoOrder.type,
@@ -187,46 +212,29 @@ export const tradingRouter = router({
             status: 'NEW',
             time: algoOrder.createTime,
             updateTime: algoOrder.updateTime,
-            setupId: input.setupId,
-            setupType: input.setupType,
-            marketType: input.marketType,
-            reduceOnly: input.reduceOnly,
+            setupId: orderInput.setupId,
+            setupType: orderInput.setupType,
+            marketType: orderInput.marketType,
+            reduceOnly: orderInput.reduceOnly,
           });
 
-          if (!input.reduceOnly) {
-            const intendedSide: 'LONG' | 'SHORT' = input.side === 'BUY' ? 'LONG' : 'SHORT';
-            const oppositeSide: 'LONG' | 'SHORT' = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
-            const [existingOpposite] = await ctx.db
-              .select({ id: tradeExecutions.id })
-              .from(tradeExecutions)
-              .where(
-                and(
-                  eq(tradeExecutions.walletId, input.walletId),
-                  eq(tradeExecutions.symbol, input.symbol),
-                  eq(tradeExecutions.status, 'open'),
-                  eq(tradeExecutions.side, oppositeSide),
-                  eq(tradeExecutions.marketType, input.marketType)
-                )
-              )
-              .limit(1);
-
-            if (!existingOpposite) {
-              await ctx.db.insert(tradeExecutions).values({
-                id: generateEntityId(),
-                userId: ctx.user.id,
-                walletId: input.walletId,
-                symbol: input.symbol,
-                side: intendedSide,
-                entryPrice: algoOrder.triggerPrice ?? triggerPrice,
-                limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
-                quantity: String(algoOrder.quantity || input.quantity),
-                entryOrderId: algoOrder.algoId,
-                entryOrderType: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
-                status: 'pending',
-                marketType: input.marketType,
-                openedAt: new Date(),
-              });
-            }
+          if (!orderInput.reduceOnly) {
+            const intendedSide: 'LONG' | 'SHORT' = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: orderInput.walletId,
+              symbol: orderInput.symbol,
+              side: intendedSide,
+              entryPrice: algoOrder.triggerPrice ?? triggerPrice,
+              limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
+              quantity: String(algoOrder.quantity || orderInput.quantity),
+              entryOrderId: algoOrder.algoId,
+              entryOrderType: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+              status: 'pending',
+              marketType: orderInput.marketType,
+              openedAt: new Date(),
+            });
           }
 
           return {
@@ -238,40 +246,40 @@ export const tradingRouter = router({
             price: algoOrder.triggerPrice ?? triggerPrice,
             quantity: algoOrder.quantity,
             executedQty: '0',
-            marketType: input.marketType,
+            marketType: orderInput.marketType,
           };
         }
 
-        const orderQty = parseFloat(input.quantity);
-        const orderPrice = parseFloat(input.price ?? input.stopPrice ?? '0');
+        const orderQty = parseFloat(orderInput.quantity);
+        const orderPrice = parseFloat(orderInput.price ?? orderInput.stopPrice ?? '0');
         if (orderPrice > 0) {
           const notional = orderQty * orderPrice;
           const minNotional = filters?.minNotional ?? 5;
           if (notional < minNotional) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
-              message: `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${input.symbol}. Increase your position size % or deposit more funds.`,
+              message: `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${orderInput.symbol}. Increase your position size % or deposit more funds.`,
             });
           }
         }
 
-        const marketClient = createMarketClient(wallet, input.marketType);
+        const marketClient = createMarketClient(wallet, orderInput.marketType);
 
         const binanceOrder = await marketClient.createOrder({
-          symbol: input.symbol,
-          side: input.side,
-          type: input.type,
+          symbol: orderInput.symbol,
+          side: orderInput.side,
+          type: orderInput.type,
           quantity: parseFloat(formatQuantityForBinance(orderQty, stepSize)),
-          price: input.price ? parseFloat(formatPriceForBinance(parseFloat(input.price), tickSize)) : undefined,
-          stopPrice: input.stopPrice ? parseFloat(formatPriceForBinance(parseFloat(input.stopPrice), tickSize)) : undefined,
-          timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
-          reduceOnly: input.reduceOnly,
+          price: orderInput.price ? parseFloat(formatPriceForBinance(parseFloat(orderInput.price), tickSize)) : undefined,
+          stopPrice: orderInput.stopPrice ? parseFloat(formatPriceForBinance(parseFloat(orderInput.stopPrice), tickSize)) : undefined,
+          timeInForce: orderInput.type.includes('LIMIT') ? 'GTC' : undefined,
+          reduceOnly: orderInput.reduceOnly,
         });
 
         await ctx.db.insert(orders).values({
           orderId: binanceOrder.orderId,
           userId: ctx.user.id,
-          walletId: input.walletId,
+          walletId: orderInput.walletId,
           symbol: binanceOrder.symbol,
           side: binanceOrder.side,
           type: binanceOrder.type,
@@ -282,49 +290,32 @@ export const tradingRouter = router({
           timeInForce: binanceOrder.timeInForce,
           time: binanceOrder.time,
           updateTime: binanceOrder.updateTime,
-          setupId: input.setupId,
-          setupType: input.setupType,
-          marketType: input.marketType,
-          reduceOnly: input.reduceOnly,
+          setupId: orderInput.setupId,
+          setupType: orderInput.setupType,
+          marketType: orderInput.marketType,
+          reduceOnly: orderInput.reduceOnly,
         });
 
-        if (binanceOrder.status === 'NEW' && !input.reduceOnly) {
-          const rawTargetPrice = input.stopPrice ?? input.price ?? binanceOrder.price;
+        if (binanceOrder.status === 'NEW' && !orderInput.reduceOnly) {
+          const rawTargetPrice = orderInput.stopPrice ?? orderInput.price ?? binanceOrder.price;
           const targetPrice = rawTargetPrice && rawTargetPrice !== '0' ? rawTargetPrice : null;
           if (targetPrice) {
-            const intendedSide: 'LONG' | 'SHORT' = input.side === 'BUY' ? 'LONG' : 'SHORT';
-            const oppositeSide: 'LONG' | 'SHORT' = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
-            const [existingOpposite] = await ctx.db
-              .select({ id: tradeExecutions.id })
-              .from(tradeExecutions)
-              .where(
-                and(
-                  eq(tradeExecutions.walletId, input.walletId),
-                  eq(tradeExecutions.symbol, input.symbol),
-                  eq(tradeExecutions.status, 'open'),
-                  eq(tradeExecutions.side, oppositeSide),
-                  eq(tradeExecutions.marketType, input.marketType)
-                )
-              )
-              .limit(1);
-
-            if (!existingOpposite) {
-              await ctx.db.insert(tradeExecutions).values({
-                id: generateEntityId(),
-                userId: ctx.user.id,
-                walletId: input.walletId,
-                symbol: input.symbol,
-                side: intendedSide,
-                entryPrice: String(targetPrice),
-                limitEntryPrice: String(targetPrice),
-                quantity: String(binanceOrder.origQty || input.quantity),
-                entryOrderId: binanceOrder.orderId,
-                entryOrderType: 'LIMIT',
-                status: 'pending',
-                marketType: input.marketType,
-                openedAt: new Date(),
-              });
-            }
+            const intendedSide: 'LONG' | 'SHORT' = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: orderInput.walletId,
+              symbol: orderInput.symbol,
+              side: intendedSide,
+              entryPrice: String(targetPrice),
+              limitEntryPrice: String(targetPrice),
+              quantity: String(binanceOrder.origQty || orderInput.quantity),
+              entryOrderId: binanceOrder.orderId,
+              entryOrderType: 'LIMIT',
+              status: 'pending',
+              marketType: orderInput.marketType,
+              openedAt: new Date(),
+            });
           }
         }
 
@@ -337,7 +328,7 @@ export const tradingRouter = router({
           price: binanceOrder.price,
           quantity: binanceOrder.origQty,
           executedQty: binanceOrder.executedQty,
-          marketType: input.marketType,
+          marketType: orderInput.marketType,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

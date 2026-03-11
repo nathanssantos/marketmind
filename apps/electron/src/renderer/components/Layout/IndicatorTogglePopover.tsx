@@ -251,12 +251,6 @@ export const IndicatorTogglePopover = memo(
                             onToggle: () => toggleIndicator('pivotPoints'),
                         },
                         {
-                            id: 'fibonacci',
-                            label: t('chart.indicators.names.fibonacci', 'Fibonacci'),
-                            isActive: isIndicatorActive('fibonacci'),
-                            onToggle: () => toggleIndicator('fibonacci'),
-                        },
-                        {
                             id: 'fvg',
                             label: t('chart.indicators.names.fvg', 'FVG'),
                             isActive: isIndicatorActive('fvg'),

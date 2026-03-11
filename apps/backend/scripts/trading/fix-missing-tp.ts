@@ -9,6 +9,7 @@ import {
   submitFuturesAlgoOrder,
 } from '../../src/services/binance-futures-client';
 import { USDMClient } from 'binance';
+import { guardedCall, checkBan } from '../utils/binance-script-guard';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -23,7 +24,7 @@ function formatQty(qty: number, stepSize: number): string {
 }
 
 async function getSymbolFilters(client: USDMClient, symbol: string) {
-  const info = await client.getExchangeInfo();
+  const info = await guardedCall(() => client.getExchangeInfo());
   const symbolInfo = (info as { symbols: { symbol: string; filters: { filterType: string; tickSize?: string; stepSize?: string }[] }[] }).symbols.find(s => s.symbol === symbol);
   if (!symbolInfo) throw new Error(`Symbol ${symbol} not found`);
 
@@ -69,7 +70,8 @@ async function main() {
         )
       );
 
-    const algoOrders = await getOpenAlgoOrders(client);
+    checkBan();
+    const algoOrders = await guardedCall(() => getOpenAlgoOrders(client));
     const algoBySymbol = new Map<string, typeof algoOrders>();
     for (const order of algoOrders) {
       const list = algoBySymbol.get(order.symbol) || [];
@@ -111,7 +113,7 @@ async function main() {
 
       console.log(`    Creating TAKE_PROFIT_MARKET ${closeSide} @ ${formattedPrice} qty=${formattedQty}...`);
 
-      const newTpOrder = await submitFuturesAlgoOrder(client, {
+      const newTpOrder = await guardedCall(() => submitFuturesAlgoOrder(client, {
         symbol: pos.symbol,
         side: closeSide,
         type: 'TAKE_PROFIT_MARKET',
@@ -119,7 +121,7 @@ async function main() {
         quantity: formattedQty,
         reduceOnly: true,
         workingType: 'CONTRACT_PRICE',
-      });
+      }));
 
       console.log(`    New TP created: algoId=${newTpOrder.algoId}`);
 

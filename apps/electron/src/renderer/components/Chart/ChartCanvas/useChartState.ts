@@ -30,15 +30,6 @@ export interface TooltipData {
   marketEvent?: MarketEvent;
 }
 
-export interface MeasurementArea {
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-  startIndex: number;
-  endIndex: number;
-}
-
 export interface OrderPreview {
   price: number;
   type: 'long' | 'short';
@@ -46,8 +37,6 @@ export interface OrderPreview {
 
 export interface ChartState {
   tooltipData: TooltipData;
-  measurementArea: MeasurementArea | null;
-  isMeasuring: boolean;
   orderToClose: string | null;
   stochasticData: StochasticResult | null;
 }
@@ -55,8 +44,6 @@ export interface ChartState {
 type ChartAction =
   | { type: 'SET_TOOLTIP'; payload: TooltipData }
   | { type: 'HIDE_TOOLTIP' }
-  | { type: 'SET_MEASUREMENT_AREA'; payload: MeasurementArea | null }
-  | { type: 'SET_IS_MEASURING'; payload: boolean }
   | { type: 'SET_ORDER_TO_CLOSE'; payload: string | null }
   | { type: 'SET_STOCHASTIC_DATA'; payload: StochasticResult | null };
 
@@ -69,8 +56,6 @@ const initialTooltipData: TooltipData = {
 
 const initialState: ChartState = {
   tooltipData: initialTooltipData,
-  measurementArea: null,
-  isMeasuring: false,
   orderToClose: null,
   stochasticData: null,
 };
@@ -81,10 +66,6 @@ const chartReducer = (state: ChartState, action: ChartAction): ChartState => {
       return { ...state, tooltipData: action.payload };
     case 'HIDE_TOOLTIP':
       return { ...state, tooltipData: initialTooltipData };
-    case 'SET_MEASUREMENT_AREA':
-      return { ...state, measurementArea: action.payload };
-    case 'SET_IS_MEASURING':
-      return { ...state, isMeasuring: action.payload };
     case 'SET_ORDER_TO_CLOSE':
       return { ...state, orderToClose: action.payload };
     case 'SET_STOCHASTIC_DATA':
@@ -105,8 +86,6 @@ export interface UseChartStateResult {
   actions: {
     setTooltip: (data: TooltipData) => void;
     hideTooltip: () => void;
-    setMeasurementArea: (area: MeasurementArea | null) => void;
-    setIsMeasuring: (value: boolean) => void;
     setOrderToClose: (orderId: string | null) => void;
     setStochasticData: (data: StochasticResult | null) => void;
   };
@@ -123,8 +102,6 @@ export interface UseChartStateResult {
     pendingMouseEvent: React.MutableRefObject<{ x: number; y: number; rect: DOMRect } | null>;
     tooltipEnabled: React.MutableRefObject<boolean>;
     tooltipDebounce: React.MutableRefObject<NodeJS.Timeout | null>;
-    measurementArea: React.MutableRefObject<MeasurementArea | null>;
-    measurementRaf: React.MutableRefObject<number | null>;
   };
 }
 
@@ -143,16 +120,11 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
   const pendingMouseEventRef = useRef<{ x: number; y: number; rect: DOMRect } | null>(null);
   const tooltipEnabledRef = useRef(true);
   const tooltipDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const measurementAreaRef = useRef<MeasurementArea | null>(null);
-  const measurementRafRef = useRef<number | null>(null);
 
   const actions = useMemo(
     () => ({
       setTooltip: (data: TooltipData) => dispatch({ type: 'SET_TOOLTIP', payload: data }),
       hideTooltip: () => dispatch({ type: 'HIDE_TOOLTIP' }),
-      setMeasurementArea: (area: MeasurementArea | null) =>
-        dispatch({ type: 'SET_MEASUREMENT_AREA', payload: area }),
-      setIsMeasuring: (value: boolean) => dispatch({ type: 'SET_IS_MEASURING', payload: value }),
       setOrderToClose: (orderId: string | null) =>
         dispatch({ type: 'SET_ORDER_TO_CLOSE', payload: orderId }),
       setStochasticData: (data: StochasticResult | null) =>
@@ -175,8 +147,6 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
       pendingMouseEvent: pendingMouseEventRef,
       tooltipEnabled: tooltipEnabledRef,
       tooltipDebounce: tooltipDebounceRef,
-      measurementArea: measurementAreaRef,
-      measurementRaf: measurementRafRef,
     }),
     []
   );
@@ -194,10 +164,6 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
       if (tooltipDebounceRef.current) {
         clearTimeout(tooltipDebounceRef.current);
         tooltipDebounceRef.current = null;
-      }
-      if (measurementRafRef.current !== null) {
-        cancelAnimationFrame(measurementRafRef.current);
-        measurementRafRef.current = null;
       }
     };
   }, []);

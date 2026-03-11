@@ -11,6 +11,7 @@ import {
   getOpenOrders,
   getPositions,
 } from '../../src/services/binance-futures-client';
+import { guardedCall, checkBan } from '../utils/binance-script-guard';
 
 const FIX_FLAG = process.argv.includes('--fix');
 const SEPARATOR = '='.repeat(70);
@@ -99,11 +100,10 @@ async function processWallet(walletId: string) {
   let exchangeAlgoOrders: Awaited<ReturnType<typeof getOpenAlgoOrders>>;
 
   try {
-    [exchangePositions, exchangeOrders, exchangeAlgoOrders] = await Promise.all([
-      getPositions(client),
-      getOpenOrders(client),
-      getOpenAlgoOrders(client),
-    ]);
+    checkBan();
+    exchangePositions = await guardedCall(() => getPositions(client));
+    exchangeOrders = await guardedCall(() => getOpenOrders(client));
+    exchangeAlgoOrders = await guardedCall(() => getOpenAlgoOrders(client));
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.log(`  Failed to query Binance: ${msg}\n`);
@@ -157,12 +157,12 @@ async function processWallet(walletId: string) {
 
       let closingTrade: { price: number; realizedPnl: number; commission: number } | null = null;
       try {
-        closingTrade = await getLastClosingTrade(
+        closingTrade = await guardedCall(() => getLastClosingTrade(
           client,
           exec.symbol,
           exec.side as 'LONG' | 'SHORT',
           exec.openedAt.getTime()
-        );
+        ));
       } catch (_err) {
         console.log(`    Could not fetch closing trade from Binance.\n`);
       }
