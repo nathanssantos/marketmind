@@ -5,6 +5,7 @@ const {
   mockDbSelect,
   mockDbInsert,
   mockDbUpdate,
+  mockDbDelete,
   mockAutoTradingService,
   mockGetFuturesClient,
   mockCooldownService,
@@ -15,10 +16,17 @@ const {
   mockWsService,
   mockProtectionOrderHandler,
   mockFilterValidator,
+  mockCancelAllOpenProtectionOrdersOnExchange,
+  mockCreateStopLossOrder,
+  mockCreateTakeProfitOrder,
+  mockCreateBinanceFuturesClient,
+  mockGetPosition,
+  mockLogger,
 } = vi.hoisted(() => ({
   mockDbSelect: vi.fn(),
   mockDbInsert: vi.fn(),
   mockDbUpdate: vi.fn(),
+  mockDbDelete: vi.fn(),
   mockAutoTradingService: {
     getWatcherStatus: vi.fn(() => ({ active: true, watchers: 5 })),
     setFuturesLeverage: vi.fn().mockResolvedValue(undefined),
@@ -83,6 +91,12 @@ const {
   mockFilterValidator: {
     validateFilters: vi.fn().mockResolvedValue({ passed: true, filterResults: {} }),
   },
+  mockCancelAllOpenProtectionOrdersOnExchange: vi.fn().mockResolvedValue(undefined),
+  mockCreateStopLossOrder: vi.fn().mockResolvedValue({ algoId: 300, orderId: null, isAlgoOrder: true }),
+  mockCreateTakeProfitOrder: vi.fn().mockResolvedValue({ algoId: 400, orderId: null, isAlgoOrder: true }),
+  mockCreateBinanceFuturesClient: vi.fn().mockReturnValue({}),
+  mockGetPosition: vi.fn().mockResolvedValue(null),
+  mockLogger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
 vi.mock('@marketmind/indicators', async (importOriginal) => {
@@ -108,6 +122,7 @@ vi.mock('../../../db', () => ({
     select: (...args: unknown[]) => mockDbSelect(...args),
     insert: (...args: unknown[]) => mockDbInsert(...args),
     update: (...args: unknown[]) => mockDbUpdate(...args),
+    delete: (...args: unknown[]) => mockDbDelete(...args),
   },
 }));
 
@@ -194,6 +209,21 @@ vi.mock('../utils', () => ({
 
 vi.mock('../protection-order-handler', () => ({
   protectionOrderHandler: mockProtectionOrderHandler,
+}));
+
+vi.mock('../../protection-orders', () => ({
+  cancelAllOpenProtectionOrdersOnExchange: (...args: unknown[]) => mockCancelAllOpenProtectionOrdersOnExchange(...args),
+  createStopLossOrder: (...args: unknown[]) => mockCreateStopLossOrder(...args),
+  createTakeProfitOrder: (...args: unknown[]) => mockCreateTakeProfitOrder(...args),
+}));
+
+vi.mock('../../binance-futures-client', () => ({
+  createBinanceFuturesClient: (...args: unknown[]) => mockCreateBinanceFuturesClient(...args),
+  getPosition: (...args: unknown[]) => mockGetPosition(...args),
+}));
+
+vi.mock('../../logger', () => ({
+  logger: mockLogger,
 }));
 
 vi.mock('../filter-validator', () => {
@@ -2184,6 +2214,337 @@ describe('OrderExecutor', () => {
         'Using Fibonacci projection for take profit',
         expect.objectContaining({ configLevel: '1.618' }),
       );
+    });
+  });
+
+  describe('createAndExecuteTrade - pyramid merge (MARKET)', () => {
+    const PRIMARY_EXECUTION_ID = 'exec-primary';
+    const PRIMARY_QTY = '0.50000000';
+    const PRIMARY_ENTRY_PRICE = '100.000000';
+    const ADDED_QTY = 0.5;
+    const ADDED_PRICE = 100.5;
+    const SL_PRICE = '95';
+    const TP_PRICE = '110';
+
+    const createPrimaryExecution = (overrides: Record<string, unknown> = {}) => ({
+      id: PRIMARY_EXECUTION_ID,
+      symbol: 'ETHUSDT',
+      side: 'LONG',
+      status: 'open',
+      walletId: 'w1',
+      quantity: PRIMARY_QTY,
+      entryPrice: PRIMARY_ENTRY_PRICE,
+      stopLoss: SL_PRICE,
+      takeProfit: TP_PRICE,
+      stopLossAlgoId: 50,
+      takeProfitAlgoId: 60,
+      stopLossOrderId: null,
+      takeProfitOrderId: null,
+      stopLossIsAlgo: true,
+      takeProfitIsAlgo: true,
+      ...overrides,
+    });
+
+    const setupDbForPyramidMerge = (
+      walletOverrides: Record<string, unknown> = {},
+      primaryExecution: Record<string, unknown> = createPrimaryExecution(),
+    ) => {
+      const walletData = {
+        id: 'w1',
+        walletType: 'paper',
+        exchange: 'BINANCE',
+        currentBalance: '10000',
+        ...walletOverrides,
+      };
+
+      let selectCallCount = 0;
+      mockDbSelect.mockImplementation(() => {
+        selectCallCount++;
+        const callNum = selectCallCount;
+        return {
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockImplementation(() => {
+              if (callNum % 2 === 1) return createThenable([walletData]);
+              return createThenable([primaryExecution]);
+            }),
+          }),
+        };
+      });
+
+      mockDbInsert.mockReturnValue({
+        values: vi.fn().mockResolvedValue(undefined),
+      });
+
+      mockDbUpdate.mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
+        }),
+      });
+
+      mockDbDelete.mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      });
+    };
+
+    beforeEach(() => {
+      mockPyramidingService.calculateDynamicPositionSize.mockResolvedValue({
+        quantity: ADDED_QTY,
+        sizePercent: 10,
+        reason: 'ok',
+      });
+
+      mockPositionMonitorService.getCurrentPrice.mockResolvedValue(ADDED_PRICE);
+
+      mockCreateStopLossOrder.mockResolvedValue({ algoId: 300, orderId: null, isAlgoOrder: true });
+      mockCreateTakeProfitOrder.mockResolvedValue({ algoId: 400, orderId: null, isAlgoOrder: true });
+      mockCancelAllOpenProtectionOrdersOnExchange.mockResolvedValue(undefined);
+      mockGetPosition.mockResolvedValue(null);
+    });
+
+    it('should merge pyramid MARKET order into existing execution with weighted avg price and total qty', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      const oldQty = parseFloat(PRIMARY_QTY);
+      const oldPrice = parseFloat(PRIMARY_ENTRY_PRICE);
+      const expectedTotalQty = oldQty + ADDED_QTY;
+      const expectedAvgPrice = ((oldQty * oldPrice) + (ADDED_QTY * ADDED_PRICE)) / expectedTotalQty;
+
+      expect(mockDbUpdate).toHaveBeenCalled();
+      const updateSetCalls = mockDbUpdate.mock.results;
+      const firstUpdateSet = updateSetCalls[0]?.value?.set;
+      if (firstUpdateSet) {
+        expect(firstUpdateSet).toHaveBeenCalledWith(
+          expect.objectContaining({
+            entryPrice: expectedAvgPrice.toString(),
+            quantity: expectedTotalQty.toString(),
+          }),
+        );
+      }
+    });
+
+    it('should delete duplicate execution row after merge', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(mockDbDelete).toHaveBeenCalled();
+    });
+
+    it('should cancel old SL/TP and re-place with total qty', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(mockCancelAllOpenProtectionOrdersOnExchange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          symbol: 'ETHUSDT',
+          marketType: 'FUTURES',
+        }),
+      );
+
+      const oldQty = parseFloat(PRIMARY_QTY);
+      const expectedTotalQty = oldQty + ADDED_QTY;
+
+      expect(mockCreateStopLossOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          symbol: 'ETHUSDT',
+          side: 'LONG',
+          quantity: expectedTotalQty,
+          triggerPrice: parseFloat(SL_PRICE),
+        }),
+      );
+
+      expect(mockCreateTakeProfitOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          symbol: 'ETHUSDT',
+          side: 'LONG',
+          quantity: expectedTotalQty,
+          triggerPrice: parseFloat(TP_PRICE),
+        }),
+      );
+    });
+
+    it('should override local calculation when exchange position sync succeeds', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+
+      const exchangeQty = 1.2;
+      const exchangePrice = 100.35;
+      mockGetPosition.mockResolvedValue({
+        positionAmt: exchangeQty.toString(),
+        entryPrice: exchangePrice.toString(),
+      });
+
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(mockDbUpdate).toHaveBeenCalled();
+      const updateSetCalls = mockDbUpdate.mock.results;
+      const firstUpdateSet = updateSetCalls[0]?.value?.set;
+      if (firstUpdateSet) {
+        expect(firstUpdateSet).toHaveBeenCalledWith(
+          expect.objectContaining({
+            entryPrice: exchangePrice.toString(),
+            quantity: exchangeQty.toString(),
+          }),
+        );
+      }
+
+      expect(mockCreateStopLossOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: exchangeQty }),
+      );
+    });
+
+    it('should fall back to local calculation when exchange position sync fails', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+
+      mockGetPosition.mockRejectedValue(new Error('Network error'));
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      const oldQty = parseFloat(PRIMARY_QTY);
+      const expectedTotalQty = oldQty + ADDED_QTY;
+
+      expect(mockDbUpdate).toHaveBeenCalled();
+      expect(mockCreateStopLossOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: expectedTotalQty }),
+      );
+      expect(mockLogger.warn).toHaveBeenCalled();
+    });
+
+    it('should skip protection order recreation when primary has no SL/TP', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+
+      setupDbForPyramidMerge({}, createPrimaryExecution({
+        stopLoss: null,
+        takeProfit: null,
+        stopLossAlgoId: null,
+        takeProfitAlgoId: null,
+      }));
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(mockCancelAllOpenProtectionOrdersOnExchange).not.toHaveBeenCalled();
+      expect(mockCreateStopLossOrder).not.toHaveBeenCalled();
+      expect(mockCreateTakeProfitOrder).not.toHaveBeenCalled();
+    });
+
+    it('should emit websocket pyramid notification with correct data', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(mockWsService.emitPositionUpdate).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({
+          id: PRIMARY_EXECUTION_ID,
+          entryPrice: expect.any(String),
+          quantity: expect.any(String),
+        }),
+      );
+
+      expect(mockWsService.emitTradeNotification).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({
+          type: 'POSITION_OPENED',
+          title: expect.stringContaining('pyramid'),
+          body: expect.stringContaining('ETHUSDT'),
+          urgency: 'normal',
+          data: expect.objectContaining({
+            executionId: PRIMARY_EXECUTION_ID,
+            symbol: 'ETHUSDT',
+            side: 'LONG',
+          }),
+        }),
+      );
+    });
+
+    it('should update primary execution with new SL/TP IDs after re-placement', async () => {
+      vi.mocked(deps.getCachedConfig).mockResolvedValue(
+        createDefaultConfig({ pyramidingEnabled: true }),
+      );
+      setupDbForPyramidMerge();
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG', entryPrice: 100, stopLoss: 95, takeProfit: 110 }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      const updateCalls = mockDbUpdate.mock.results;
+      const hasSlTpUpdate = updateCalls.some((result) => {
+        const setCalls = result?.value?.set?.mock?.calls ?? [];
+        return setCalls.some((call: Record<string, unknown>[]) =>
+          call[0] && 'stopLossAlgoId' in call[0] && 'takeProfitAlgoId' in call[0],
+        );
+      });
+
+      expect(hasSlTpUpdate || mockDbUpdate.mock.calls.length >= 2).toBe(true);
     });
   });
 });

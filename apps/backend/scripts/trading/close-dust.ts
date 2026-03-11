@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../src/db';
 import { tradeExecutions, wallets } from '../src/db/schema';
 import { createBinanceFuturesClient } from '../src/services/binance-futures-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 async function main() {
   const exec = await db.query.tradeExecutions.findFirst({
@@ -28,13 +29,13 @@ async function main() {
   console.log(`Placing ${orderSide} MARKET order for ${qty} ${exec.symbol} (reduceOnly)...`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await client.submitNewOrder({
+  const order = await guardedCall(() => client.submitNewOrder({
     symbol: exec.symbol,
     side: orderSide,
     type: 'MARKET',
     quantity: qty,
     reduceOnly: 'true',
-  } as any);
+  } as any));
 
   console.log('Order result:', JSON.stringify(order, null, 2));
 

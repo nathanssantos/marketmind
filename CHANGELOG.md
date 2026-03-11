@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.60.0] - 2026-03-11
+
+### Added
+- **Chart Drawing Tools**: pencil, line, rectangle, fibonacci retracement, and ruler tools with OHLC magnet snap; drawings persisted via backend (`chart_drawings` table + `drawing` tRPC router)
+- **Drawing Store**: Zustand store for drawing tool state (active tool, magnet toggle, drawing lifecycle)
+- **Chart Studies Package**: new `@marketmind/chart-studies` shared package for drawing types, hit-testing, and constants
+- **Binance Script Rate Limiting**: shared `guardedCall` utility in `scripts/utils/binance-script-guard.ts` — all 10 trading scripts now use centralized rate limiting to prevent IP bans
+- **Auto-trade Pyramid Merge (MARKET)**: `order-executor.ts` now merges MARKET pyramid orders into existing execution (weighted avg price, exchange-synced qty, cancel+replace SL/TP with total qty) instead of creating duplicate open executions
+
+### Changed
+- **Chart Tools Toolbar**: replaced measurement ruler/area toggles with drawing tool buttons (pencil, line, rectangle, fibonacci, ruler) and magnet toggle
+- **OverlayLayer**: removed measurement area rendering code; simplified props
+- **useChartState**: removed `MeasurementArea` type and related state
+- **Quick trade price source**: `ChartCanvas.tsx` now uses real-time WebSocket price (`usePriceStore`) instead of last kline close for order placement accuracy
+
+### Fixed
+- **`cancelPendingEntryOrders` nuclear cancel** (Step 1): replaced `cancelAllSymbolOrders()` with targeted per-order cancellation — only cancels the specific pending execution's entry orders and protection orders, preserving unrelated orders
+- **Ghost SL/TP on drag update** (Step 2): `updateStopLossOrder`/`updateTakeProfitOrder` now retry cancel once before creating replacement order, with explicit ghost risk logging
+- **Partial close SL/TP qty stale** (Step 3): after partial close updates quantity, `scheduleDebouncedSlTpUpdate` is called to recreate SL/TP with reduced qty
+- **Duplicate open executions on pyramid** (Step 4): auto-trade MARKET pyramids no longer create separate `tradeExecutions` rows — merge into primary execution with updated avg price and total qty
+- **Reduce/partial-close orders invisible on chart**: removed `existingOpposite` guard that skipped `tradeExecution` creation for orders placed against an existing position — SELL orders to reduce a LONG (and vice versa) now appear on chart as pending order lines
+- **LIMIT order auto-correction**: `trading.ts` detects LIMIT orders that would cross the spread (immediate fill) and auto-converts to STOP_MARKET for correct pending behavior
+- **`cancelAllOpenProtectionOrdersOnExchange`**: new function cancels all exchange-side protection orders for a symbol without requiring specific order IDs — used in pyramid SL/TP replacement
 
 ---
 

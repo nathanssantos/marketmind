@@ -56,11 +56,9 @@ describe('OverlayLayer', () => {
       manager: manager as never,
       colors: mockColors,
       mousePosition: null,
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: null,
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -81,11 +79,9 @@ describe('OverlayLayer', () => {
       manager: manager as never,
       colors: mockColors,
       mousePosition: null,
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: null,
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -102,18 +98,14 @@ describe('OverlayLayer', () => {
     expect(mockRenderOrderLines).toHaveBeenCalled();
   });
 
-  it('should render measurement area when measuring', () => {
+  it('should render without errors when mouse position is provided', () => {
     const manager = createMockManager();
 
     const layer = createOverlayLayer({
       manager: manager as never,
       colors: mockColors,
       mousePosition: { x: 100, y: 200 },
-      measurementArea: { startX: 100, startY: 200, endX: 300, endY: 400 },
-      isMeasuring: true,
       orderPreview: null,
-      showMeasurementRuler: true,
-      showMeasurementArea: true,
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -131,11 +123,9 @@ describe('OverlayLayer', () => {
       manager: manager as never,
       colors: mockColors,
       mousePosition: { x: 100, y: 200 },
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: { price: 150, type: 'long' },
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -153,11 +143,9 @@ describe('OverlayLayer', () => {
       manager: manager as never,
       colors: mockColors,
       mousePosition: { x: 100, y: 200 },
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: { price: 150, type: 'long' },
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -175,11 +163,9 @@ describe('OverlayLayer', () => {
       manager: manager as never,
       colors: mockColors,
       mousePosition: null,
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: null,
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -202,11 +188,9 @@ describe('OverlayLayer', () => {
       manager: manager as never,
       colors: mockColors,
       mousePosition: null,
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: null,
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,
@@ -222,11 +206,9 @@ describe('OverlayLayer', () => {
       manager: null,
       colors: mockColors,
       mousePosition: null,
-      measurementArea: null,
-      isMeasuring: false,
+
       orderPreview: null,
-      showMeasurementRuler: false,
-      showMeasurementArea: false,
+
       showCrosshair: true,
       showCurrentPriceLine: true,
       showEventRow: false,

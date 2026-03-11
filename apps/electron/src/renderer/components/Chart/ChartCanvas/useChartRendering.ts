@@ -4,7 +4,7 @@ import type { AdvancedControlsConfig } from '../AdvancedControls';
 import type { MovingAverageConfig } from '../useMovingAverageRenderer';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
-import type { TooltipData, MeasurementArea, OrderPreview } from './useChartState';
+import type { TooltipData, OrderPreview } from './useChartState';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { calculateMovingAverage } from '@marketmind/indicators';
 import type { Kline, MarketEvent, Order, MarketType } from '@marketmind/types';
@@ -43,8 +43,6 @@ export interface UseChartRenderingProps {
   showVWAP: boolean;
   showCurrentPriceLine: boolean;
   showFibonacciProjection: boolean;
-  showMeasurementRuler: boolean;
-  showMeasurementArea: boolean;
   showEventRow: boolean;
   timeframe: string;
   symbol?: string;
@@ -55,8 +53,6 @@ export interface UseChartRenderingProps {
   orders?: Order[];
   backendExecutions: BackendExecution[];
   tooltipData: TooltipData;
-  measurementArea: MeasurementArea | null;
-  isMeasuring: boolean;
   orderPreviewRef: React.MutableRefObject<OrderPreview | null>;
   hoveredMAIndexRef: React.MutableRefObject<number | undefined>;
   highlightedCandlesRef: React.MutableRefObject<number[]>;

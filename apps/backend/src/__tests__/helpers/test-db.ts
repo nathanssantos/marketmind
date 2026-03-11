@@ -399,7 +399,7 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   opened_at TIMESTAMP NOT NULL,
   closed_at TIMESTAMP,
   status VARCHAR(20) DEFAULT 'open',
-  entry_order_type VARCHAR(10) DEFAULT 'MARKET',
+  entry_order_type VARCHAR(20) DEFAULT 'MARKET',
   limit_entry_price NUMERIC(20, 8),
   expires_at TIMESTAMP,
   market_type VARCHAR(10) DEFAULT 'FUTURES',

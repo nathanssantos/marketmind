@@ -1,7 +1,6 @@
 export { useChartState, useCursorManager } from './useChartState';
 export type {
   TooltipData,
-  MeasurementArea,
   OrderPreview,
   ChartState,
   UseChartStateProps,

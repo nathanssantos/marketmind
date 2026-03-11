@@ -6,8 +6,8 @@ import { db } from '../db';
 import { tradeExecutions, wallets, orders, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { calculatePnl } from '../utils/pnl-calculator';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition, cancelAllSymbolOrders } from './binance-futures-client';
-import { createStopLossOrder, createTakeProfitOrder, cancelAllProtectionOrders } from './protection-orders';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
+import { createStopLossOrder, createTakeProfitOrder, cancelAllOpenProtectionOrdersOnExchange, cancelAllProtectionOrders } from './protection-orders';
 import { generateEntityId } from '../utils/id';
 import { decryptApiKey } from './encryption';
 import {
@@ -186,13 +186,7 @@ export class BinanceFuturesUserStreamService {
 
         const qty = parseFloat(execution.quantity);
 
-        await cancelAllProtectionOrders({
-          wallet: walletRow, symbol, marketType: 'FUTURES',
-          stopLossAlgoId: execution.stopLossAlgoId,
-          stopLossOrderId: execution.stopLossOrderId,
-          takeProfitAlgoId: execution.takeProfitAlgoId,
-          takeProfitOrderId: execution.takeProfitOrderId,
-        });
+        await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
 
         let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
         let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
@@ -594,90 +588,98 @@ export class BinanceFuturesUserStreamService {
             )
             .limit(1);
 
-          if (existingOpen) {
+          if (existingOpen && existingOpen.side === pendingExecution.side) {
             await this.withPyramidLock(walletId, symbol, async () => {
               await this.mergeIntoExistingPosition(walletId, symbol, existingOpen.id, fillQty, fillPrice, pendingExecution.id, 'Pyramided via LIMIT order into existing position');
             });
             return;
           }
 
-          logger.info(
-            {
-              executionId: pendingExecution.id,
-              symbol,
-              orderId,
-              fillPrice,
-              entryFee,
-              commissionAsset,
-            },
-            '[FuturesUserStream] ✓ Pending LIMIT order FILLED - activating position'
-          );
+          if (existingOpen && existingOpen.side !== pendingExecution.side) {
+            await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingExecution.id));
+            logger.info(
+              { executionId: pendingExecution.id, symbol, orderId, existingSide: existingOpen.side },
+              '[FuturesUserStream] Reduce order filled — deleted pending execution, close handled via rp path'
+            );
+          } else {
+            logger.info(
+              {
+                executionId: pendingExecution.id,
+                symbol,
+                orderId,
+                fillPrice,
+                entryFee,
+                commissionAsset,
+              },
+              '[FuturesUserStream] ✓ Pending LIMIT order FILLED - activating position'
+            );
 
-          let activationSlAlgoId = pendingExecution.stopLossAlgoId;
-          let activationTpAlgoId = pendingExecution.takeProfitAlgoId;
-          let activationSlOrderId = pendingExecution.stopLossOrderId;
-          let activationTpOrderId = pendingExecution.takeProfitOrderId;
-          let activationSlIsAlgo = pendingExecution.stopLossIsAlgo;
-          let activationTpIsAlgo = pendingExecution.takeProfitIsAlgo;
+            let activationSlAlgoId = pendingExecution.stopLossAlgoId;
+            let activationTpAlgoId = pendingExecution.takeProfitAlgoId;
+            let activationSlOrderId = pendingExecution.stopLossOrderId;
+            let activationTpOrderId = pendingExecution.takeProfitOrderId;
+            let activationSlIsAlgo = pendingExecution.stopLossIsAlgo;
+            let activationTpIsAlgo = pendingExecution.takeProfitIsAlgo;
 
-          const needsSlPlacement = !!pendingExecution.setupId && !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
-          const needsTpPlacement = !!pendingExecution.setupId && !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
+            const needsSlPlacement = !!pendingExecution.setupId && !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
+            const needsTpPlacement = !!pendingExecution.setupId && !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
 
-          if (needsSlPlacement || needsTpPlacement) {
-            const [walletForActivation] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
-            if (walletForActivation) {
-              if (needsSlPlacement) {
-                try {
-                  const slRes = await createStopLossOrder({ wallet: walletForActivation, symbol, side: pendingExecution.side, quantity: parseFloat(pendingExecution.quantity), triggerPrice: parseFloat(pendingExecution.stopLoss!), marketType: 'FUTURES' });
-                  activationSlAlgoId = slRes.isAlgoOrder ? (slRes.algoId ?? null) : null;
-                  activationSlOrderId = !slRes.isAlgoOrder ? (slRes.orderId ?? null) : null;
-                  activationSlIsAlgo = slRes.isAlgoOrder;
-                } catch (e) {
-                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place SL on manual LIMIT activation');
+            if (needsSlPlacement || needsTpPlacement) {
+              const [walletForActivation] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+              if (walletForActivation) {
+                if (needsSlPlacement) {
+                  try {
+                    const slRes = await createStopLossOrder({ wallet: walletForActivation, symbol, side: pendingExecution.side, quantity: parseFloat(pendingExecution.quantity), triggerPrice: parseFloat(pendingExecution.stopLoss!), marketType: 'FUTURES' });
+                    activationSlAlgoId = slRes.isAlgoOrder ? (slRes.algoId ?? null) : null;
+                    activationSlOrderId = !slRes.isAlgoOrder ? (slRes.orderId ?? null) : null;
+                    activationSlIsAlgo = slRes.isAlgoOrder;
+                  } catch (e) {
+                    logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place SL on manual LIMIT activation');
+                  }
                 }
-              }
-              if (needsTpPlacement) {
-                try {
-                  const tpRes = await createTakeProfitOrder({ wallet: walletForActivation, symbol, side: pendingExecution.side, quantity: parseFloat(pendingExecution.quantity), triggerPrice: parseFloat(pendingExecution.takeProfit!), marketType: 'FUTURES' });
-                  activationTpAlgoId = tpRes.isAlgoOrder ? (tpRes.algoId ?? null) : null;
-                  activationTpOrderId = !tpRes.isAlgoOrder ? (tpRes.orderId ?? null) : null;
-                  activationTpIsAlgo = tpRes.isAlgoOrder;
-                } catch (e) {
-                  logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place TP on manual LIMIT activation');
+                if (needsTpPlacement) {
+                  try {
+                    const tpRes = await createTakeProfitOrder({ wallet: walletForActivation, symbol, side: pendingExecution.side, quantity: parseFloat(pendingExecution.quantity), triggerPrice: parseFloat(pendingExecution.takeProfit!), marketType: 'FUTURES' });
+                    activationTpAlgoId = tpRes.isAlgoOrder ? (tpRes.algoId ?? null) : null;
+                    activationTpOrderId = !tpRes.isAlgoOrder ? (tpRes.orderId ?? null) : null;
+                    activationTpIsAlgo = tpRes.isAlgoOrder;
+                  } catch (e) {
+                    logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place TP on manual LIMIT activation');
+                  }
                 }
               }
             }
+
+            await db
+              .update(tradeExecutions)
+              .set({
+                status: 'open',
+                entryPrice: fillPrice.toString(),
+                quantity: fillQty.toString(),
+                entryFee: entryFee.toString(),
+                commissionAsset: commissionAsset || 'USDT',
+                openedAt: new Date(),
+                updatedAt: new Date(),
+                stopLossAlgoId: activationSlAlgoId,
+                takeProfitAlgoId: activationTpAlgoId,
+                stopLossOrderId: activationSlOrderId,
+                takeProfitOrderId: activationTpOrderId,
+                stopLossIsAlgo: activationSlIsAlgo,
+                takeProfitIsAlgo: activationTpIsAlgo,
+              })
+              .where(eq(tradeExecutions.id, pendingExecution.id));
+
+            const wsService = getWebSocketService();
+            if (wsService) {
+              wsService.emitPositionUpdate(walletId, {
+                ...pendingExecution,
+                status: 'open',
+                entryPrice: fillPrice.toString(),
+              });
+            }
+
+            return;
           }
-
-          await db
-            .update(tradeExecutions)
-            .set({
-              status: 'open',
-              entryPrice: fillPrice.toString(),
-              quantity: fillQty.toString(),
-              entryFee: entryFee.toString(),
-              commissionAsset: commissionAsset || 'USDT',
-              openedAt: new Date(),
-              updatedAt: new Date(),
-              stopLossAlgoId: activationSlAlgoId,
-              takeProfitAlgoId: activationTpAlgoId,
-              stopLossOrderId: activationSlOrderId,
-              takeProfitOrderId: activationTpOrderId,
-              stopLossIsAlgo: activationSlIsAlgo,
-              takeProfitIsAlgo: activationTpIsAlgo,
-            })
-            .where(eq(tradeExecutions.id, pendingExecution.id));
-
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitPositionUpdate(walletId, {
-              ...pendingExecution,
-              status: 'open',
-              entryPrice: fillPrice.toString(),
-            });
-          }
-
-          return;
         }
 
         const openExecutions = await db
@@ -922,6 +924,9 @@ export class BinanceFuturesUserStreamService {
                   },
                   '[FuturesUserStream] Partial close detected — updated quantity, position remains open'
                 );
+
+                const hasProtection = execution.stopLoss || execution.takeProfit;
+                if (hasProtection) this.scheduleDebouncedSlTpUpdate(execution.id, walletId, symbol);
 
                 binancePriceStreamService.invalidateExecutionCache(symbol);
 
@@ -1306,6 +1311,28 @@ export class BinanceFuturesUserStreamService {
           return;
         }
 
+        const [existingOpposite] = await db
+          .select()
+          .from(tradeExecutions)
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.symbol, symbol),
+              eq(tradeExecutions.status, 'open'),
+              eq(tradeExecutions.marketType, 'FUTURES')
+            )
+          )
+          .limit(1);
+
+        if (existingOpposite && existingOpposite.side !== pendingEntryExecution.side) {
+          await db.delete(tradeExecutions).where(eq(tradeExecutions.id, pendingEntryExecution.id));
+          logger.info(
+            { executionId: pendingEntryExecution.id, algoId, symbol, existingSide: existingOpposite.side },
+            '[FuturesUserStream] Reduce algo order triggered — deleted pending execution, close handled via ORDER_TRADE_UPDATE'
+          );
+          return;
+        }
+
         logger.info(
           { executionId: pendingEntryExecution.id, algoId, symbol },
           '[FuturesUserStream] Algo entry order TRIGGERED — activating pending execution'
@@ -1634,57 +1661,8 @@ export class BinanceFuturesUserStreamService {
 
   private async cancelPendingEntryOrders(walletId: string, symbol: string, closedExecutionId: string): Promise<void> {
     try {
-      const apiClient = this.connections.get(walletId)?.apiClient;
-
-      if (apiClient) {
-        const position = await getPosition(apiClient, symbol);
-        const positionAmt = position ? parseFloat(String(position.positionAmt)) : 0;
-        if (positionAmt !== 0) {
-          logger.info(
-            { walletId, symbol, closedExecutionId, positionAmt },
-            '[FuturesUserStream] Skipping pending entry cancellation — position still open on Binance'
-          );
-          return;
-        }
-      }
-
-      const otherOpen = await db
-        .select({ id: tradeExecutions.id })
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, walletId),
-            eq(tradeExecutions.symbol, symbol),
-            eq(tradeExecutions.status, 'open'),
-            eq(tradeExecutions.marketType, 'FUTURES')
-          )
-        )
-        .limit(1);
-
-      if (otherOpen.length > 0) {
-        logger.info(
-          { walletId, symbol, closedExecutionId },
-          '[FuturesUserStream] Skipping pending entry cancellation — other open execution exists in DB'
-        );
-        return;
-      }
-
-      if (apiClient) {
-        try {
-          await cancelAllSymbolOrders(apiClient, symbol);
-          logger.info(
-            { walletId, symbol, closedExecutionId },
-            '[FuturesUserStream] Cancelled ALL orders for symbol after position fully closed'
-          );
-        } catch (cancelAllErr) {
-          const msg = serializeError(cancelAllErr);
-          if (!msg.includes('No orders') && !msg.includes('not found'))
-            logger.warn({ walletId, symbol, error: msg }, '[FuturesUserStream] Failed to cancel all symbol orders');
-        }
-      }
-
       const pendingEntries = await db
-        .select({ id: tradeExecutions.id, entryOrderId: tradeExecutions.entryOrderId, entryOrderType: tradeExecutions.entryOrderType })
+        .select()
         .from(tradeExecutions)
         .where(
           and(
@@ -1695,24 +1673,46 @@ export class BinanceFuturesUserStreamService {
           )
         );
 
-      const pendingIds = pendingEntries.map(e => e.id);
-      for (const id of pendingIds) {
-        await db
-          .update(tradeExecutions)
-          .set({ status: 'cancelled', updatedAt: new Date() })
-          .where(eq(tradeExecutions.id, id));
+      if (pendingEntries.length === 0) {
+        logger.trace({ walletId, symbol, closedExecutionId }, '[FuturesUserStream] No pending entries to cancel after close');
+        return;
       }
 
-      logger.info(
-        { walletId, symbol, cancelledCount: pendingEntries.length },
-        '[FuturesUserStream] Pending entry orders cancelled after position close'
-      );
+      const apiClient = this.connections.get(walletId)?.apiClient;
+      const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
 
-      const wsService = getWebSocketService();
-      if (wsService) {
-        for (const entry of pendingEntries) {
-          wsService.emitOrderUpdate(walletId, { id: entry.id, symbol, status: 'cancelled' });
+      for (const pending of pendingEntries) {
+        if (apiClient && pending.entryOrderId) {
+          try {
+            const entryOrderType = pending.entryOrderType;
+            const isAlgoEntry = entryOrderType === 'STOP_MARKET' || entryOrderType === 'TAKE_PROFIT_MARKET';
+            if (isAlgoEntry) {
+              await cancelFuturesAlgoOrder(apiClient, pending.entryOrderId);
+            } else {
+              await apiClient.cancelOrder({ symbol, orderId: pending.entryOrderId });
+            }
+            logger.info({ walletId, symbol, entryOrderId: pending.entryOrderId, isAlgoEntry }, '[FuturesUserStream] Cancelled pending entry order');
+          } catch (cancelErr) {
+            const msg = serializeError(cancelErr);
+            if (!msg.includes('Unknown order') && !msg.includes('Order does not exist') && !msg.includes('not found'))
+              logger.warn({ walletId, symbol, entryOrderId: pending.entryOrderId, error: msg }, '[FuturesUserStream] Failed to cancel pending entry order on exchange');
+          }
         }
+
+        if (walletRow && (pending.stopLossAlgoId || pending.stopLossOrderId || pending.takeProfitAlgoId || pending.takeProfitOrderId)) {
+          await cancelAllProtectionOrders({
+            wallet: walletRow,
+            symbol,
+            marketType: 'FUTURES',
+            stopLossAlgoId: pending.stopLossAlgoId,
+            stopLossOrderId: pending.stopLossOrderId,
+            takeProfitAlgoId: pending.takeProfitAlgoId,
+            takeProfitOrderId: pending.takeProfitOrderId,
+          });
+        }
+
+        await db.update(tradeExecutions).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(tradeExecutions.id, pending.id));
+        logger.info({ walletId, symbol, executionId: pending.id, closedExecutionId }, '[FuturesUserStream] Cancelled pending entry execution after position close');
       }
     } catch (error) {
       logger.error(

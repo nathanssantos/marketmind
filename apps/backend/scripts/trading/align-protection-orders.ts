@@ -10,11 +10,12 @@ import {
   submitFuturesAlgoOrder,
 } from '../../src/services/binance-futures-client';
 import type { USDMClient } from 'binance';
+import { guardedCall, checkBan } from '../utils/binance-script-guard';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
 async function getSymbolFilters(client: USDMClient, symbol: string) {
-  const info = await client.getExchangeInfo();
+  const info = await guardedCall(() => client.getExchangeInfo());
   const symbolInfo = (info as { symbols: { symbol: string; filters: { filterType: string; tickSize?: string; stepSize?: string }[] }[] }).symbols.find(s => s.symbol === symbol);
   if (!symbolInfo) throw new Error(`Symbol ${symbol} not found`);
   const priceFilter = symbolInfo.filters.find(f => f.filterType === 'PRICE_FILTER');
@@ -55,16 +56,15 @@ async function main() {
     console.log(`\nWALLET: ${wallet.name} (${wallet.id})\n`);
     const client = createBinanceFuturesClient(wallet);
 
-    const [openPositions, exchangeAlgos] = await Promise.all([
-      db.select().from(tradeExecutions).where(
-        and(
-          eq(tradeExecutions.walletId, wallet.id),
-          eq(tradeExecutions.status, 'open'),
-          eq(tradeExecutions.marketType, 'FUTURES')
-        )
-      ),
-      getOpenAlgoOrders(client),
-    ]);
+    checkBan();
+    const openPositions = await db.select().from(tradeExecutions).where(
+      and(
+        eq(tradeExecutions.walletId, wallet.id),
+        eq(tradeExecutions.status, 'open'),
+        eq(tradeExecutions.marketType, 'FUTURES')
+      )
+    );
+    const exchangeAlgos = await guardedCall(() => getOpenAlgoOrders(client));
 
     console.log(`  DB open positions: ${openPositions.length}`);
     console.log(`  Binance algo orders: ${exchangeAlgos.length}\n`);
@@ -85,7 +85,7 @@ async function main() {
       for (const o of orphans) {
         console.log(`    algoId:${o.algoId}  ${o.symbol}  ${o.type}  trigger=${o.triggerPrice ?? '—'}`);
         if (!DRY_RUN) {
-          await cancelFuturesAlgoOrder(client, o.algoId);
+          await guardedCall(() => cancelFuturesAlgoOrder(client, o.algoId));
           console.log(`    → Cancelled`);
         } else {
           console.log(`    → [DRY RUN] Would cancel`);
@@ -126,7 +126,7 @@ async function main() {
         const formattedQty = formatQty(qty, stepSize);
         console.log(`    → SL missing on exchange — placing STOP_MARKET ${closeSide} @ ${price} qty=${formattedQty}`);
         if (!DRY_RUN) {
-          const result = await submitFuturesAlgoOrder(client, {
+          const result = await guardedCall(() => submitFuturesAlgoOrder(client, {
             symbol: pos.symbol,
             side: closeSide,
             type: 'STOP_MARKET',
@@ -134,7 +134,7 @@ async function main() {
             quantity: formattedQty,
             reduceOnly: true,
             workingType: 'CONTRACT_PRICE',
-          });
+          }));
           slAlgoId = result.algoId;
           changed = true;
           console.log(`    → New SL algoId: ${slAlgoId}`);
@@ -148,7 +148,7 @@ async function main() {
         const formattedQty = formatQty(qty, stepSize);
         console.log(`    → TP missing on exchange — placing TAKE_PROFIT_MARKET ${closeSide} @ ${price} qty=${formattedQty}`);
         if (!DRY_RUN) {
-          const result = await submitFuturesAlgoOrder(client, {
+          const result = await guardedCall(() => submitFuturesAlgoOrder(client, {
             symbol: pos.symbol,
             side: closeSide,
             type: 'TAKE_PROFIT_MARKET',
@@ -156,7 +156,7 @@ async function main() {
             quantity: formattedQty,
             reduceOnly: true,
             workingType: 'CONTRACT_PRICE',
-          });
+          }));
           tpAlgoId = result.algoId;
           changed = true;
           console.log(`    → New TP algoId: ${tpAlgoId}`);

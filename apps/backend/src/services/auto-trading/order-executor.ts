@@ -34,6 +34,9 @@ import { log } from './utils';
 import { buildFilterConfigFromDb } from '../../utils/filters/filter-registry';
 import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from './filter-validator';
 import { protectionOrderHandler } from './protection-order-handler';
+import { cancelAllOpenProtectionOrdersOnExchange, createStopLossOrder, createTakeProfitOrder } from '../protection-orders';
+import { createBinanceFuturesClient, getPosition } from '../binance-futures-client';
+import { logger } from '../logger';
 
 export interface OrderExecutorDeps extends FilterValidatorDeps {
   getCachedConfig: (walletId: string, userId?: string) => Promise<typeof autoTradingConfig.$inferSelect | null>;
@@ -687,7 +690,8 @@ export class OrderExecutor {
           config,
           dynamicSize,
           isLiveExecution,
-          logBuffer
+          logBuffer,
+          sameDirectionPositions
         );
 
         logBuffer.completeSetupValidation('executed', undefined, {
@@ -815,7 +819,8 @@ export class OrderExecutor {
     config: typeof autoTradingConfig.$inferSelect,
     dynamicSize: { quantity: number; sizePercent: number; reason?: string },
     isLiveExecution: boolean,
-    logBuffer: WatcherLogBuffer
+    logBuffer: WatcherLogBuffer,
+    sameDirectionPositions: (typeof tradeExecutions.$inferSelect)[]
   ): Promise<void> {
     const setupId = `setup-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -1026,49 +1031,175 @@ export class OrderExecutor {
         fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
       });
 
-      logBuffer.addTradeExecution({
-        setupType: setup.type,
-        direction: setup.direction,
-        entryPrice: actualEntryPrice.toFixed(6),
-        quantity: actualQuantity.toFixed(8),
-        stopLoss: setup.stopLoss?.toFixed(6),
-        takeProfit: effectiveTakeProfit?.toFixed(6),
-        orderType: useLimit ? 'LIMIT' : 'MARKET',
-        status: 'executed',
-      });
+      const isPyramid = sameDirectionPositions.length > 0;
+      const primaryExecution = isPyramid ? sameDirectionPositions[0]! : null;
 
-      const wsServiceOpen = getWebSocketService();
-      if (wsServiceOpen) {
-        wsServiceOpen.emitPositionUpdate(watcher.walletId, {
-          id: executionId,
-          symbol: watcher.symbol,
-          side: setup.direction,
-          status: 'open',
-          entryPrice: actualEntryPrice.toString(),
-          quantity: actualQuantity.toFixed(8),
-          stopLoss: setup.stopLoss?.toString(),
-          takeProfit: effectiveTakeProfit?.toString(),
+      if (isPyramid && primaryExecution && !useLimit) {
+        const oldQty = parseFloat(primaryExecution.quantity);
+        const oldPrice = parseFloat(primaryExecution.entryPrice);
+        let newTotalQty = oldQty + actualQuantity;
+        let newAvgPrice = ((oldQty * oldPrice) + (actualQuantity * actualEntryPrice)) / newTotalQty;
+
+        try {
+          const rawClient = createBinanceFuturesClient(wallet);
+          const exchangePos = await getPosition(rawClient, watcher.symbol);
+          if (exchangePos) {
+            const exchQty = Math.abs(parseFloat(exchangePos.positionAmt));
+            const exchPrice = parseFloat(exchangePos.entryPrice);
+            if (exchQty > 0) {
+              newTotalQty = exchQty;
+              newAvgPrice = exchPrice;
+            }
+          }
+        } catch (_e) {
+          logger.warn({ symbol: watcher.symbol }, '[OrderExecutor] Failed to sync position from exchange after pyramid');
+        }
+
+        await db.update(tradeExecutions).set({
+          entryPrice: newAvgPrice.toString(),
+          quantity: newTotalQty.toString(),
+          updatedAt: new Date(),
+        }).where(eq(tradeExecutions.id, primaryExecution.id));
+
+        await db.delete(tradeExecutions).where(eq(tradeExecutions.id, executionId));
+
+        if (primaryExecution.stopLoss || primaryExecution.takeProfit) {
+          try {
+            await cancelAllOpenProtectionOrdersOnExchange({ wallet, symbol: watcher.symbol, marketType: watcher.marketType ?? 'FUTURES' });
+          } catch (_e) {
+            logger.warn({ symbol: watcher.symbol }, '[OrderExecutor] Failed to cancel old protection orders after pyramid');
+          }
+
+          let newSlAlgoId: number | null = null;
+          let newSlOrderId: number | null = null;
+          let newSlIsAlgo = false;
+          let newTpAlgoId: number | null = null;
+          let newTpOrderId: number | null = null;
+          let newTpIsAlgo = false;
+
+          if (primaryExecution.stopLoss) {
+            try {
+              const slResult = await createStopLossOrder({ wallet, symbol: watcher.symbol, side: setup.direction, quantity: newTotalQty, triggerPrice: parseFloat(primaryExecution.stopLoss), marketType: watcher.marketType ?? 'FUTURES' });
+              newSlAlgoId = slResult.isAlgoOrder ? (slResult.algoId ?? null) : null;
+              newSlOrderId = !slResult.isAlgoOrder ? (slResult.orderId ?? null) : null;
+              newSlIsAlgo = slResult.isAlgoOrder;
+            } catch (e) {
+              logger.error({ error: serializeError(e), symbol: watcher.symbol }, '[OrderExecutor] Failed to place SL after pyramid merge');
+            }
+          }
+
+          if (primaryExecution.takeProfit) {
+            try {
+              const tpResult = await createTakeProfitOrder({ wallet, symbol: watcher.symbol, side: setup.direction, quantity: newTotalQty, triggerPrice: parseFloat(primaryExecution.takeProfit), marketType: watcher.marketType ?? 'FUTURES' });
+              newTpAlgoId = tpResult.isAlgoOrder ? (tpResult.algoId ?? null) : null;
+              newTpOrderId = !tpResult.isAlgoOrder ? (tpResult.orderId ?? null) : null;
+              newTpIsAlgo = tpResult.isAlgoOrder;
+            } catch (e) {
+              logger.error({ error: serializeError(e), symbol: watcher.symbol }, '[OrderExecutor] Failed to place TP after pyramid merge');
+            }
+          }
+
+          await db.update(tradeExecutions).set({
+            stopLossAlgoId: newSlAlgoId,
+            stopLossOrderId: newSlOrderId,
+            stopLossIsAlgo: newSlIsAlgo,
+            takeProfitAlgoId: newTpAlgoId,
+            takeProfitOrderId: newTpOrderId,
+            takeProfitIsAlgo: newTpIsAlgo,
+            updatedAt: new Date(),
+          }).where(eq(tradeExecutions.id, primaryExecution.id));
+        }
+
+        logBuffer.addTradeExecution({
           setupType: setup.type,
-          fibonacciProjection: setup.fibonacciProjection,
+          direction: setup.direction,
+          entryPrice: newAvgPrice.toFixed(6),
+          quantity: newTotalQty.toFixed(8),
+          stopLoss: primaryExecution.stopLoss ?? undefined,
+          takeProfit: primaryExecution.takeProfit ?? undefined,
+          orderType: 'MARKET',
+          status: 'executed',
         });
 
-        const sideLabel = setup.direction === 'LONG' ? 'Long' : 'Short';
-        wsServiceOpen.emitTradeNotification(watcher.walletId, {
-          type: 'POSITION_OPENED',
-          title: `> ${setup.type} (${sideLabel})`,
-          body: `${sideLabel} ${watcher.symbol} @ ${actualEntryPrice.toFixed(2)}`,
-          urgency: 'normal',
-          data: {
-            executionId,
+        log('✓ Pyramided into existing position', {
+          primaryId: primaryExecution.id,
+          newAvgPrice: newAvgPrice.toFixed(6),
+          newTotalQty: newTotalQty.toFixed(8),
+          addedQty: actualQuantity.toFixed(8),
+          addedPrice: actualEntryPrice.toFixed(6),
+        });
+
+        const wsServicePyramid = getWebSocketService();
+        if (wsServicePyramid) {
+          wsServicePyramid.emitPositionUpdate(watcher.walletId, {
+            ...primaryExecution,
+            entryPrice: newAvgPrice.toString(),
+            quantity: newTotalQty.toString(),
+          });
+
+          const sideLabel = setup.direction === 'LONG' ? 'Long' : 'Short';
+          wsServicePyramid.emitTradeNotification(watcher.walletId, {
+            type: 'POSITION_OPENED',
+            title: `> ${setup.type} pyramid (${sideLabel})`,
+            body: `Added ${actualQuantity.toFixed(4)} ${watcher.symbol} @ ${actualEntryPrice.toFixed(2)} → total ${newTotalQty.toFixed(4)}`,
+            urgency: 'normal',
+            data: {
+              executionId: primaryExecution.id,
+              symbol: watcher.symbol,
+              side: setup.direction,
+              entryPrice: newAvgPrice.toString(),
+              exitPrice: '',
+              pnl: '',
+              pnlPercent: '',
+              exitReason: '',
+            },
+          });
+        }
+      } else {
+        logBuffer.addTradeExecution({
+          setupType: setup.type,
+          direction: setup.direction,
+          entryPrice: actualEntryPrice.toFixed(6),
+          quantity: actualQuantity.toFixed(8),
+          stopLoss: setup.stopLoss?.toFixed(6),
+          takeProfit: effectiveTakeProfit?.toFixed(6),
+          orderType: useLimit ? 'LIMIT' : 'MARKET',
+          status: 'executed',
+        });
+
+        const wsServiceOpen = getWebSocketService();
+        if (wsServiceOpen) {
+          wsServiceOpen.emitPositionUpdate(watcher.walletId, {
+            id: executionId,
             symbol: watcher.symbol,
             side: setup.direction,
+            status: 'open',
             entryPrice: actualEntryPrice.toString(),
-            exitPrice: '',
-            pnl: '',
-            pnlPercent: '',
-            exitReason: '',
-          },
-        });
+            quantity: actualQuantity.toFixed(8),
+            stopLoss: setup.stopLoss?.toString(),
+            takeProfit: effectiveTakeProfit?.toString(),
+            setupType: setup.type,
+            fibonacciProjection: setup.fibonacciProjection,
+          });
+
+          const sideLabel = setup.direction === 'LONG' ? 'Long' : 'Short';
+          wsServiceOpen.emitTradeNotification(watcher.walletId, {
+            type: 'POSITION_OPENED',
+            title: `> ${setup.type} (${sideLabel})`,
+            body: `${sideLabel} ${watcher.symbol} @ ${actualEntryPrice.toFixed(2)}`,
+            urgency: 'normal',
+            data: {
+              executionId,
+              symbol: watcher.symbol,
+              side: setup.direction,
+              entryPrice: actualEntryPrice.toString(),
+              exitPrice: '',
+              pnl: '',
+              pnlPercent: '',
+              exitReason: '',
+            },
+          });
+        }
       }
     } catch (dbError) {
       logBuffer.error('✗', 'Failed to insert trade execution', {

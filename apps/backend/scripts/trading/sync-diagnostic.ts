@@ -10,6 +10,7 @@ import {
   getOpenOrders,
   getPositions,
 } from '../../src/services/binance-futures-client';
+import { guardedCall, checkBan } from '../utils/binance-script-guard';
 
 async function syncDiagnostic() {
   console.log('\n' + '='.repeat(70));
@@ -42,39 +43,31 @@ async function syncDiagnostic() {
     try {
       const client = createBinanceFuturesClient(wallet);
 
-      const [
-        exchangePositions,
-        exchangeOrders,
-        exchangeAlgoOrders,
-        accountInfo,
-        dbOpenPositions,
-        dbPendingPositions,
-      ] = await Promise.all([
-        getPositions(client),
-        getOpenOrders(client),
-        getOpenAlgoOrders(client),
-        getAccountInfo(client),
-        db
-          .select()
-          .from(tradeExecutions)
-          .where(
-            and(
-              eq(tradeExecutions.walletId, wallet.id),
-              eq(tradeExecutions.status, 'open'),
-              eq(tradeExecutions.marketType, 'FUTURES')
-            )
-          ),
-        db
-          .select()
-          .from(tradeExecutions)
-          .where(
-            and(
-              eq(tradeExecutions.walletId, wallet.id),
-              eq(tradeExecutions.status, 'pending'),
-              eq(tradeExecutions.marketType, 'FUTURES')
-            )
-          ),
-      ]);
+      checkBan();
+      const exchangePositions = await guardedCall(() => getPositions(client));
+      const exchangeOrders = await guardedCall(() => getOpenOrders(client));
+      const exchangeAlgoOrders = await guardedCall(() => getOpenAlgoOrders(client));
+      const accountInfo = await guardedCall(() => getAccountInfo(client));
+      const dbOpenPositions = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, wallet.id),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        );
+      const dbPendingPositions = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, wallet.id),
+            eq(tradeExecutions.status, 'pending'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        );
 
       console.log(`\nBinance Wallet Balance: ${accountInfo.totalWalletBalance} USDT`);
       console.log(`Binance Available: ${accountInfo.availableBalance} USDT`);

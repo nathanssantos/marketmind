@@ -28,8 +28,6 @@ describe('useChartState', () => {
 
     expect(result.current.state.tooltipData.visible).toBe(false);
     expect(result.current.state.tooltipData.kline).toBeNull();
-    expect(result.current.state.measurementArea).toBeNull();
-    expect(result.current.state.isMeasuring).toBe(false);
     expect(result.current.state.orderToClose).toBeNull();
     expect(result.current.state.stochasticData).toBeNull();
   });
@@ -82,45 +80,6 @@ describe('useChartState', () => {
 
     expect(result.current.state.tooltipData.visible).toBe(false);
     expect(result.current.state.tooltipData.kline).toBeNull();
-  });
-
-  it('should set measurement area', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
-    );
-
-    const measurementArea = {
-      startX: 10,
-      startY: 20,
-      endX: 100,
-      endY: 200,
-      startIndex: 0,
-      endIndex: 10,
-    };
-
-    act(() => {
-      result.current.actions.setMeasurementArea(measurementArea);
-    });
-
-    expect(result.current.state.measurementArea).toEqual(measurementArea);
-  });
-
-  it('should set isMeasuring flag', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
-    );
-
-    act(() => {
-      result.current.actions.setIsMeasuring(true);
-    });
-
-    expect(result.current.state.isMeasuring).toBe(true);
-
-    act(() => {
-      result.current.actions.setIsMeasuring(false);
-    });
-
-    expect(result.current.state.isMeasuring).toBe(false);
   });
 
   it('should set orderToClose', () => {

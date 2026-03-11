@@ -203,8 +203,10 @@ export const ChartCanvas = ({
     return roundTradingQty(qty);
   }, [activeWallet?.currentBalance, quickTradeSizePercent, quickTradeUseMinNotional, minNotional]);
 
-  const latestKlinesPriceRef = useRef(klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0);
-  latestKlinesPriceRef.current = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
+  const realtimePrice = usePriceStore((s) => symbol ? s.getPrice(symbol) : null);
+  const klinePrice = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
+  const latestKlinesPriceRef = useRef(realtimePrice ?? klinePrice);
+  latestKlinesPriceRef.current = realtimePrice ?? klinePrice;
 
   const handleLongEntry = useCallback(async (price: number) => {
     if (!backendWalletId) {

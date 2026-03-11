@@ -1,6 +1,6 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
-import type { MeasurementArea, OrderPreview } from '../useChartState';
+import type { OrderPreview } from '../useChartState';
 
 export interface OverlayRenderFunctions {
   renderCurrentPriceLine_Line?: () => void;
@@ -14,11 +14,7 @@ export interface OverlayLayerProps {
   manager: CanvasManager | null;
   colors: ChartColors;
   mousePosition: { x: number; y: number } | null;
-  measurementArea: MeasurementArea | null;
-  isMeasuring: boolean;
   orderPreview: OrderPreview | null;
-  showMeasurementRuler: boolean;
-  showMeasurementArea: boolean;
   showCrosshair: boolean;
   showCurrentPriceLine: boolean;
   showEventRow: boolean;
@@ -39,62 +35,11 @@ export interface OverlayLayerResult {
 export const createOverlayLayer = ({
   manager,
   colors,
-  measurementArea,
-  isMeasuring,
   orderPreview,
-  showMeasurementRuler,
-  showMeasurementArea,
   renderFunctions,
   isAutoTradingActive,
   dragPreview,
 }: OverlayLayerProps): OverlayLayerResult => {
-  const renderMeasurement = (): void => {
-    if (!manager || !measurementArea || !isMeasuring) return;
-
-    const ctx = manager.getContext();
-    if (!ctx) return;
-
-    const { startX, startY, endX, endY } = measurementArea;
-    const startPrice = manager.yToPrice(startY);
-    const endPrice = manager.yToPrice(endY);
-    const priceChange = endPrice - startPrice;
-    const isPositive = priceChange >= 0;
-
-    ctx.save();
-
-    if (showMeasurementArea) {
-      ctx.fillStyle = 'rgba(100, 116, 139, 0.1)';
-      ctx.fillRect(
-        Math.min(startX, endX),
-        Math.min(startY, endY),
-        Math.abs(endX - startX),
-        Math.abs(endY - startY)
-      );
-
-      ctx.strokeStyle = colors.crosshair;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(
-        Math.min(startX, endX),
-        Math.min(startY, endY),
-        Math.abs(endX - startX),
-        Math.abs(endY - startY)
-      );
-    }
-
-    if (showMeasurementRuler) {
-      ctx.strokeStyle = isPositive ? colors.bullish : colors.bearish;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 3]);
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  };
-
   const renderOrderPreviewLine = (): void => {
     if (!manager || !orderPreview || isAutoTradingActive) return;
 
@@ -174,7 +119,6 @@ export const createOverlayLayer = ({
     renderFunctions.renderCurrentPriceLine_Label?.();
     renderFunctions.renderCrosshairPriceLine?.();
     renderOrderPreviewLine();
-    renderMeasurement();
     renderFunctions.renderEventScale?.();
   };
 

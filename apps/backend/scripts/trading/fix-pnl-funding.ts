@@ -5,12 +5,11 @@ import { db } from '../../src/db/client';
 import { tradeExecutions, wallets } from '../../src/db/schema';
 import { decryptApiKey } from '../../src/services/encryption';
 import { getWalletType } from '../../src/services/binance-client';
+import { guardedCall, checkBan } from '../utils/binance-script-guard';
 
 const PNL_TOLERANCE = 0.05;
 const DRY_RUN = process.argv.includes('--dry-run');
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000 - 60_000;
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchFundingFees(
   client: USDMClient,
@@ -26,14 +25,13 @@ async function fetchFundingFees(
     let currentStart = windowStart;
 
     while (currentStart < windowEnd) {
-      await sleep(200);
-      const income = await client.getIncomeHistory({
+      const income = await guardedCall(() => client.getIncomeHistory({
         symbol,
         incomeType: 'FUNDING_FEE',
         startTime: currentStart,
         endTime: windowEnd,
         limit: 1000,
-      } as Parameters<typeof client.getIncomeHistory>[0]);
+      } as Parameters<typeof client.getIncomeHistory>[0]));
 
       if (income.length === 0) break;
       for (const item of income) totalFunding += parseFloat(item.income);
@@ -121,7 +119,7 @@ async function fixPnlFunding() {
 
       let binanceFunding: number;
       try {
-        await sleep(300);
+        checkBan();
         binanceFunding = await fetchFundingFees(client, exec.symbol, openedAt, closedAt);
       } catch (err) {
         console.log(`  [SKIP] ${exec.id} ${exec.symbol} — failed to fetch funding: ${err}`);

@@ -14,6 +14,7 @@ import {
   cancelFuturesAlgoOrder,
 } from '../../src/services/binance-futures-client';
 import { decryptApiKey } from '../../src/services/encryption';
+import { guardedCall, checkBan } from '../utils/binance-script-guard';
 
 async function fixSync() {
   console.log('\n' + '='.repeat(70));
@@ -41,19 +42,18 @@ async function fixSync() {
 
     const client = createBinanceFuturesClient(wallet);
 
-    const [exchangePositions, dbOpenPositions] = await Promise.all([
-      getPositions(client),
-      db
-        .select()
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, wallet.id),
-            eq(tradeExecutions.status, 'open'),
-            eq(tradeExecutions.marketType, 'FUTURES')
-          )
-        ),
-    ]);
+    checkBan();
+    const exchangePositions = await guardedCall(() => getPositions(client));
+    const dbOpenPositions = await db
+      .select()
+      .from(tradeExecutions)
+      .where(
+        and(
+          eq(tradeExecutions.walletId, wallet.id),
+          eq(tradeExecutions.status, 'open'),
+          eq(tradeExecutions.marketType, 'FUTURES')
+        )
+      );
 
     const exchangeBySymbol = new Map(exchangePositions.map((p) => [p.symbol, p]));
 
@@ -71,7 +71,7 @@ async function fixSync() {
       if (orphan.takeProfitAlgoId) {
         console.log(`\n    Cancelling orphan TP algo ${orphan.takeProfitAlgoId} on Binance...`);
         try {
-          await cancelFuturesAlgoOrder(client, orphan.takeProfitAlgoId);
+          await guardedCall(() => cancelFuturesAlgoOrder(client, orphan.takeProfitAlgoId!));
           console.log('    TP algo cancelled successfully.');
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -86,7 +86,7 @@ async function fixSync() {
       if (orphan.stopLossAlgoId) {
         console.log(`\n    Cancelling orphan SL algo ${orphan.stopLossAlgoId} on Binance...`);
         try {
-          await cancelFuturesAlgoOrder(client, orphan.stopLossAlgoId);
+          await guardedCall(() => cancelFuturesAlgoOrder(client, orphan.stopLossAlgoId!));
           console.log('    SL algo cancelled successfully.');
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -107,7 +107,7 @@ async function fixSync() {
 
       console.log('\n    Fetching trade data from Binance...');
 
-      const allFees = await getAllTradeFeesForPosition(client, orphan.symbol, orphan.side, openedAt);
+      const allFees = await guardedCall(() => getAllTradeFeesForPosition(client, orphan.symbol, orphan.side, openedAt));
 
       if (allFees) {
         exitPrice = allFees.exitPrice;
@@ -122,7 +122,7 @@ async function fixSync() {
         console.log(`      Total Fees: ${totalFees.toFixed(8)}`);
         console.log(`      Realized PnL (Binance): ${realizedPnl.toFixed(4)}`);
       } else {
-        const closingTrade = await getLastClosingTrade(client, orphan.symbol, orphan.side, openedAt);
+        const closingTrade = await guardedCall(() => getLastClosingTrade(client, orphan.symbol, orphan.side, openedAt));
         if (closingTrade) {
           exitPrice = closingTrade.price;
           exitFee = closingTrade.commission;
@@ -134,7 +134,7 @@ async function fixSync() {
           console.log(`      Realized PnL: ${realizedPnl.toFixed(4)}`);
         } else {
           console.log('    No trade data found. Using recent trades...');
-          const recentTrades = await getRecentTrades(client, orphan.symbol, 50);
+          const recentTrades = await guardedCall(() => getRecentTrades(client, orphan.symbol, 50));
           const closingSide = orphan.side === 'LONG' ? 'SELL' : 'BUY';
           const closingTrades = recentTrades.filter(
             (t) => t.side === closingSide && parseFloat(t.realizedPnl) !== 0
@@ -209,7 +209,7 @@ async function fixSync() {
     console.log('\n' + '-'.repeat(70));
     console.log('  BALANCE SYNC\n');
 
-    const accountInfo = await getAccountInfo(client);
+    const accountInfo = await guardedCall(() => getAccountInfo(client));
     const binanceBalance = parseFloat(accountInfo.totalWalletBalance);
 
     const [updatedWallet] = await db.select().from(wallets).where(eq(wallets.id, wallet.id)).limit(1);
@@ -248,7 +248,7 @@ async function fixSync() {
         )
       );
 
-    const exchangePositionsFinal = await getPositions(client);
+    const exchangePositionsFinal = await guardedCall(() => getPositions(client));
 
     console.log(`  DB Balance: ${finalWallet?.currentBalance} USDT`);
     console.log(`  DB Open Positions: ${openPositions.length}`);

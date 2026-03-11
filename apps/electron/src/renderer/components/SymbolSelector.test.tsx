@@ -44,6 +44,16 @@ vi.mock('../hooks/useActiveChartSymbols', () => ({
   useActiveChartSymbols: vi.fn(() => new Set<string>()),
 }));
 
+vi.mock('../hooks/useBackendCustomSymbols', () => ({
+  useBackendCustomSymbols: vi.fn(() => ({
+    customSymbols: { data: [], isLoading: false },
+    createCustomSymbol: { mutateAsync: vi.fn() },
+    updateCustomSymbol: { mutateAsync: vi.fn() },
+    deleteCustomSymbol: { mutateAsync: vi.fn() },
+    rebalanceCustomSymbol: { mutateAsync: vi.fn() },
+  })),
+}));
+
 vi.mock('../hooks/useBackendKlines', () => ({
   useBackendKlines: vi.fn(() => ({
     useSearchSymbols: vi.fn(() => ({
