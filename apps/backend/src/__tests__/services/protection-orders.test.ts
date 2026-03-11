@@ -106,7 +106,7 @@ const createUpdateParams = (overrides: Partial<UpdateProtectionOrderParams> = {}
 
 describe('protection-orders', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('updateStopLossOrder', () => {
@@ -263,11 +263,11 @@ describe('protection-orders', () => {
       marketType: 'FUTURES' as const,
     };
 
-    it('should cancel all open algo orders for a symbol', async () => {
+    it('should only cancel reduceOnly algo orders (SL/TP), not entry orders', async () => {
       const algoOrders = [
-        { algoId: 111 },
-        { algoId: 222 },
-        { algoId: 333 },
+        { algoId: 111, reduceOnly: true },
+        { algoId: 222, reduceOnly: false },
+        { algoId: 333, reduceOnly: true },
       ];
       mockGetOpenAlgoOrders.mockResolvedValueOnce(algoOrders);
       mockCancelAlgoOrder.mockResolvedValue(undefined);
@@ -275,13 +275,13 @@ describe('protection-orders', () => {
       await cancelAllOpenProtectionOrdersOnExchange(baseParams);
 
       expect(mockGetOpenAlgoOrders).toHaveBeenCalledWith('BTCUSDT');
-      expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(3);
+      expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(2);
       expect(mockCancelAlgoOrder).toHaveBeenCalledWith(111);
-      expect(mockCancelAlgoOrder).toHaveBeenCalledWith(222);
       expect(mockCancelAlgoOrder).toHaveBeenCalledWith(333);
+      expect(mockCancelAlgoOrder).not.toHaveBeenCalledWith(222);
       expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ symbol: 'BTCUSDT', count: 3 }),
-        expect.stringContaining('Cancelled all open algo orders'),
+        expect.objectContaining({ symbol: 'BTCUSDT', cancelled: 2, total: 3 }),
+        expect.stringContaining('Cancelled reduceOnly algo orders'),
       );
     });
 
@@ -296,8 +296,8 @@ describe('protection-orders', () => {
 
     it('should handle individual cancel failures gracefully via Promise.allSettled', async () => {
       const algoOrders = [
-        { algoId: 111 },
-        { algoId: 222 },
+        { algoId: 111, reduceOnly: true },
+        { algoId: 222, reduceOnly: true },
       ];
       mockGetOpenAlgoOrders.mockResolvedValueOnce(algoOrders);
       mockCancelAlgoOrder
@@ -308,8 +308,8 @@ describe('protection-orders', () => {
 
       expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(2);
       expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({ symbol: 'BTCUSDT', count: 2 }),
-        expect.stringContaining('Cancelled all open algo orders'),
+        expect.objectContaining({ symbol: 'BTCUSDT', cancelled: 2, total: 2 }),
+        expect.stringContaining('Cancelled reduceOnly algo orders'),
       );
     });
 
