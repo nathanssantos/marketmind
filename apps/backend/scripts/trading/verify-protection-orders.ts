@@ -1,11 +1,12 @@
 import { and, eq } from 'drizzle-orm';
-import { db } from '../src/db';
-import { tradeExecutions, wallets } from '../src/db/schema';
+import { db } from '../../src/db';
+import { tradeExecutions, wallets } from '../../src/db/schema';
 import {
   createBinanceFuturesClient,
   getOpenAlgoOrders,
   getPositions,
-} from '../src/services/binance-futures-client';
+} from '../../src/services/binance-futures-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 const WALLET_ID = 'kP_efbmZqtTyEJ4p2LLBx';
 
@@ -30,8 +31,8 @@ async function verify() {
           eq(tradeExecutions.marketType, 'FUTURES')
         )
       ),
-    getOpenAlgoOrders(client),
-    getPositions(client),
+    guardedCall(() => getOpenAlgoOrders(client)),
+    guardedCall(() => getPositions(client)),
   ]);
 
   const algoBySymbol = new Map<string, typeof exchangeAlgoOrders>();

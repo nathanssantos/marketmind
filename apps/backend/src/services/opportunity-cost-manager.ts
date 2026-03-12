@@ -1,8 +1,9 @@
 import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
-import { autoTradingConfig, tradeExecutions } from '../db/schema';
+import { autoTradingConfig, realizedPnlEvents, tradeExecutions, wallets } from '../db/schema';
+import { calculatePnl } from '../utils/pnl-calculator';
 import { serializeError } from '../utils/errors';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
@@ -259,13 +260,31 @@ export class OpportunityCostManagerService {
         }
         break;
 
-      case 'CLOSE':
+      case 'CLOSE': {
         logger.info({
           executionId: execution.id,
           symbol: execution.symbol,
           barsInTrade: check.barsInTrade,
           reason: check.reason,
         }, 'Auto-closing stale trade');
+
+        const entryPrice = parseNumeric(execution.entryPrice);
+        const quantity = parseNumeric(execution.quantity);
+        const leverage = execution.leverage || 1;
+        const accumulatedFunding = parseNumeric(execution.accumulatedFunding);
+        const partialClosePnl = parseNumeric(execution.partialClosePnl);
+
+        const pnlResult = calculatePnl({
+          entryPrice,
+          exitPrice: currentPrice,
+          quantity,
+          side: execution.side,
+          marketType: (execution.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES',
+          leverage,
+          accumulatedFunding,
+        });
+
+        const finalPnl = pnlResult.netPnl + partialClosePnl;
 
         await db
           .update(tradeExecutions)
@@ -274,10 +293,33 @@ export class OpportunityCostManagerService {
             exitPrice: currentPrice.toString(),
             exitReason: 'STALE_TRADE',
             exitSource: 'OPPORTUNITY_COST',
+            pnl: finalPnl.toString(),
+            pnlPercent: pnlResult.pnlPercent.toString(),
+            fees: pnlResult.totalFees.toString(),
             closedAt: new Date(),
             updatedAt: new Date(),
           })
           .where(eq(tradeExecutions.id, execution.id));
+
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnlResult.netPnl}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, execution.walletId));
+
+        await db.insert(realizedPnlEvents).values({
+          walletId: execution.walletId,
+          userId: execution.userId,
+          executionId: execution.id,
+          symbol: execution.symbol,
+          eventType: 'full_close',
+          pnl: pnlResult.netPnl.toString(),
+          fees: pnlResult.totalFees.toString(),
+          quantity: quantity.toString(),
+          price: currentPrice.toString(),
+        });
 
         if (wsService) {
           wsService.emitPositionUpdate(execution.walletId, {
@@ -293,6 +335,7 @@ export class OpportunityCostManagerService {
           });
         }
         break;
+      }
     }
   }
 

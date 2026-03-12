@@ -194,7 +194,8 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
     setDragType(null);
     previewPriceRef.current = null;
     initialSlPriceRef.current = null;
-  }, []);
+    config.markDirty?.('overlays');
+  }, [config]);
 
   useEffect(() => {
     return () => {

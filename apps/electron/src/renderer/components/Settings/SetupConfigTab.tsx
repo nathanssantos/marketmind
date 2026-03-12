@@ -1,7 +1,9 @@
 import { Field } from '@/renderer/components/ui/field';
 import { Slider } from '@/renderer/components/ui/slider';
 import { useSetupStore } from '@/renderer/store/setupStore';
-import { Box, Button, HStack, Separator, Stack, Text } from '@chakra-ui/react';
+import { Separator } from '@/renderer/components/ui/separator';
+import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { Button } from '@/renderer/components/ui/button';
 import type React from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';

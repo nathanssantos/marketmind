@@ -1,4 +1,5 @@
-import { Box, ChakraProvider, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
+import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
+import { IconButton } from '../components/ui/icon-button';
 import type { AssetClass, Kline, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
@@ -259,7 +260,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
       overflow="hidden"
       bg="var(--chakra-colors-chakra-body-bg)"
     >
-      <Box flexShrink={0} height="41px">
+      <Box flexShrink={0} height="30px">
         <Toolbar
           symbol={symbol}
           marketType={marketType}
@@ -277,40 +278,43 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
       {assetClass === 'STOCKS' && <MarketStatusBar />}
 
-      <Box flex="1" position="relative" overflow="hidden">
-        {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
+      <Flex flex="1" overflow="hidden">
         <ChartToolsToolbar
           movingAverages={movingAverages}
           onMovingAveragesChange={setMovingAverages}
         />
-        {loading && (
-          <LoadingSpinner message={t('app.loadingMarketData')} />
-        )}
 
-        {error && (
-          <ErrorMessage
-            title={t('app.failedToLoadMarketData')}
-            message={error.message}
-            onRetry={() => window.location.reload()}
-          />
-        )}
+        <Box flex="1" position="relative" overflow="hidden">
+          {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
+          {loading && (
+            <LoadingSpinner message={t('app.loadingMarketData')} />
+          )}
 
-        {marketData && (
-          <ChartCanvas
-            klines={displayKlines}
-            symbol={symbol}
-            marketType={marketType}
-            width="100%"
-            height="100%"
-            chartType={chartType}
-            movingAverages={movingAverages}
-            advancedConfig={debouncedAdvancedConfig}
-            timeframe={timeframe}
-            onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
-            isLoadingMore={isLoadingMore}
-          />
-        )}
-      </Box>
+          {error && (
+            <ErrorMessage
+              title={t('app.failedToLoadMarketData')}
+              message={error.message}
+              onRetry={() => window.location.reload()}
+            />
+          )}
+
+          {marketData && (
+            <ChartCanvas
+              klines={displayKlines}
+              symbol={symbol}
+              marketType={marketType}
+              width="100%"
+              height="100%"
+              chartType={chartType}
+              movingAverages={movingAverages}
+              advancedConfig={debouncedAdvancedConfig}
+              timeframe={timeframe}
+              onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
+              isLoadingMore={isLoadingMore}
+            />
+          )}
+        </Box>
+      </Flex>
     </Box>
   );
 }
@@ -359,11 +363,11 @@ export function ChartWindow({ initialSymbol }: ChartWindowProps): ReactElement {
               >
                 <LuX />
               </IconButton>
-              <ChakraText fontWeight="bold" mb={1} pr={6}>
+              <ChakraText fontWeight="bold" fontSize="sm" mb={1} pr={6}>
                 {toast.title}
               </ChakraText>
               {toast.description && (
-                <ChakraText fontSize="sm">{toast.description}</ChakraText>
+                <ChakraText fontSize="xs">{toast.description}</ChakraText>
               )}
             </Box>
           );

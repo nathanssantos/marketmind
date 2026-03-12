@@ -2,7 +2,7 @@ import { calculatePnl } from '../../utils/pnl-calculator';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions, wallets } from '../../db/schema';
+import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
@@ -246,6 +246,9 @@ export const executionsRouter = router({
         leverage,
       });
 
+      const existingPartialPnl = parseFloat(execution.partialClosePnl || '0');
+      const finalPnl = netPnl + existingPartialPnl;
+
       const currentBalance = parseFloat(wallet.currentBalance || '0');
       const newBalance = currentBalance + netPnl;
 
@@ -256,7 +259,7 @@ export const executionsRouter = router({
             status: 'closed',
             exitPrice: exitPrice.toString(),
             exitOrderId,
-            pnl: netPnl.toString(),
+            pnl: finalPnl.toString(),
             pnlPercent: pnlPercent.toString(),
             fees: totalFees.toString(),
             closedAt: new Date(),
@@ -275,10 +278,22 @@ export const executionsRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, wallet.id));
+
+        await tx.insert(realizedPnlEvents).values({
+          walletId: wallet.id,
+          userId: ctx.user.id,
+          executionId: input.id,
+          symbol: execution.symbol,
+          eventType: 'full_close',
+          pnl: netPnl.toString(),
+          fees: totalFees.toString(),
+          quantity: qty.toString(),
+          price: exitPrice.toString(),
+        });
       });
 
       return {
-        pnl: netPnl.toString(),
+        pnl: finalPnl.toString(),
         grossPnl: grossPnl.toString(),
         fees: totalFees.toString(),
         pnlPercent: pnlPercent.toFixed(2),

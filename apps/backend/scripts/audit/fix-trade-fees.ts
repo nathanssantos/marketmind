@@ -5,6 +5,7 @@ import { db } from '../../src/db/client';
 import { tradeExecutions, wallets } from '../../src/db/schema';
 import { decryptApiKey } from '../../src/services/encryption';
 import { getWalletType } from '../../src/services/binance-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 interface BinanceTrade {
   symbol: string;
@@ -25,7 +26,6 @@ interface ClassifiedTrades {
   canVerifyExit: boolean;
 }
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const DRY_RUN = process.argv.includes('--dry-run');
 const VERBOSE = process.argv.includes('--verbose');
 
@@ -47,9 +47,9 @@ async function fetchAllAccountTrades(
   while (windowStart < paddedEnd) {
     const windowEnd = Math.min(windowStart + SEVEN_DAYS_MS, paddedEnd);
 
-    const firstBatch = await client.getAccountTrades({
+    const firstBatch = await guardedCall(() => client.getAccountTrades({
       symbol, startTime: windowStart, endTime: windowEnd, limit: 1000,
-    });
+    }));
 
     for (const t of firstBatch) {
       allTrades.push({
@@ -62,8 +62,7 @@ async function fetchAllAccountTrades(
     if (firstBatch.length === 1000) {
       let fromId = firstBatch[firstBatch.length - 1]!.id + 1;
       while (true) {
-        await sleep(200);
-        const batch = await client.getAccountTrades({ symbol, fromId, limit: 1000 });
+        const batch = await guardedCall(() => client.getAccountTrades({ symbol, fromId, limit: 1000 }));
         if (batch.length === 0) break;
         const inRange = batch.filter(t => t.time <= windowEnd);
         for (const t of inRange) {
@@ -79,7 +78,6 @@ async function fetchAllAccountTrades(
     }
 
     windowStart = windowEnd + 1;
-    if (windowStart < paddedEnd) await sleep(200);
   }
 
   const uniqueTrades = new Map<number, BinanceTrade>();
@@ -101,10 +99,9 @@ async function fetchFundingFees(
     let currentStart = windowStart;
 
     while (currentStart < windowEnd) {
-      await sleep(200);
-      const income = await client.getIncomeHistory({
+      const income = await guardedCall(() => client.getIncomeHistory({
         symbol, incomeType: 'FUNDING_FEE', startTime: currentStart, endTime: windowEnd, limit: 1000,
-      } as Parameters<typeof client.getIncomeHistory>[0]);
+      } as Parameters<typeof client.getIncomeHistory>[0]));
 
       if (income.length === 0) break;
       for (const item of income) totalFunding += parseFloat(item.income);
@@ -261,7 +258,6 @@ async function main() {
         const openedAt = exec.openedAt?.getTime() || exec.createdAt.getTime();
         const closedAt = exec.closedAt?.getTime() || Date.now();
 
-        await sleep(300);
         const trades = await fetchAllAccountTrades(client, exec.symbol, openedAt, closedAt);
 
         if (trades.length === 0) {
@@ -289,7 +285,6 @@ async function main() {
 
         let fundingFees = 0;
         try {
-          await sleep(200);
           fundingFees = await fetchFundingFees(client, exec.symbol, openedAt, closedAt);
         } catch (_e) { /* best-effort */ }
 
@@ -369,11 +364,10 @@ async function main() {
         }
 
         if (canVerifyEntry && canVerifyExit) {
-          const grossPnl = exec.side === 'LONG'
-            ? (exitPrice - entryPrice) * quantity
-            : (entryPrice - exitPrice) * quantity;
-
-          const correctPnl = roundTo(grossPnl - binanceTotalFees + fundingFees, 8);
+          const totalRealizedPnl = exitTrades.reduce(
+            (sum, t) => sum + parseFloat(t.realizedPnl), 0
+          );
+          const correctPnl = roundTo(totalRealizedPnl - binanceTotalFees + fundingFees, 8);
           const marginValue = (entryPrice * quantity) / leverage;
           const correctPnlPercent = marginValue > 0 ? roundTo((correctPnl / marginValue) * 100, 4) : 0;
 

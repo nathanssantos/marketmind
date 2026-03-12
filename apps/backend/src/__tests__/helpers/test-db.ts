@@ -14,6 +14,9 @@ let testDb: TestDatabase | null = null;
 let tablesCreated = false;
 
 const dropTablesSQL = `
+DROP TABLE IF EXISTS realized_pnl_events CASCADE;
+DROP TABLE IF EXISTS custom_symbol_components CASCADE;
+DROP TABLE IF EXISTS custom_symbols CASCADE;
 DROP TABLE IF EXISTS pyramid_entries CASCADE;
 DROP TABLE IF EXISTS trade_executions CASCADE;
 DROP TABLE IF EXISTS trading_setups CASCADE;
@@ -61,6 +64,7 @@ CREATE TABLE IF NOT EXISTS wallets (
   api_secret_encrypted TEXT NOT NULL,
   initial_balance NUMERIC(20, 8),
   current_balance NUMERIC(20, 8),
+  total_wallet_balance NUMERIC(20, 8),
   total_deposits NUMERIC(20, 8) DEFAULT '0',
   total_withdrawals NUMERIC(20, 8) DEFAULT '0',
   last_transfer_sync_at TIMESTAMP,
@@ -432,6 +436,7 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   lowest_price_since_trailing_activation NUMERIC(20, 8),
   opportunity_cost_alert_sent_at TIMESTAMP,
   original_stop_loss NUMERIC(20, 8),
+  partial_close_pnl NUMERIC(20, 8) DEFAULT '0',
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -577,6 +582,51 @@ CREATE TABLE IF NOT EXISTS symbol_trailing_stop_overrides (
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 CREATE UNIQUE INDEX symbol_ts_override_wallet_symbol_idx ON symbol_trailing_stop_overrides(wallet_id, symbol);
+
+CREATE TABLE IF NOT EXISTS custom_symbols (
+  id SERIAL PRIMARY KEY,
+  symbol VARCHAR(30) UNIQUE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  category VARCHAR(50) NOT NULL,
+  base_value NUMERIC(20, 8) NOT NULL DEFAULT '100',
+  weighting_method VARCHAR(30) NOT NULL DEFAULT 'CAPPED_MARKET_CAP',
+  cap_percent NUMERIC(5, 2) DEFAULT '40',
+  rebalance_interval_days INTEGER DEFAULT 30,
+  last_rebalanced_at TIMESTAMP,
+  is_active BOOLEAN DEFAULT true NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS custom_symbol_components (
+  id SERIAL PRIMARY KEY,
+  custom_symbol_id INTEGER NOT NULL REFERENCES custom_symbols(id) ON DELETE CASCADE,
+  symbol VARCHAR(20) NOT NULL,
+  market_type VARCHAR(10) DEFAULT 'SPOT' NOT NULL,
+  coingecko_id VARCHAR(100),
+  weight NUMERIC(10, 8) NOT NULL,
+  base_price NUMERIC(20, 8),
+  is_active BOOLEAN DEFAULT true NOT NULL,
+  added_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  UNIQUE(custom_symbol_id, symbol, market_type)
+);
+CREATE INDEX custom_symbol_components_idx ON custom_symbol_components(custom_symbol_id);
+
+CREATE TABLE IF NOT EXISTS realized_pnl_events (
+  id SERIAL PRIMARY KEY,
+  wallet_id VARCHAR(255) NOT NULL,
+  user_id VARCHAR(255) NOT NULL,
+  execution_id VARCHAR(255) NOT NULL,
+  symbol VARCHAR(20) NOT NULL,
+  event_type VARCHAR(20) NOT NULL,
+  pnl NUMERIC(20, 8) NOT NULL,
+  fees NUMERIC(20, 8) DEFAULT '0',
+  quantity NUMERIC(20, 8) NOT NULL,
+  price NUMERIC(20, 8) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+CREATE INDEX realized_pnl_events_wallet_date_idx ON realized_pnl_events(wallet_id, created_at);
 `;
 
 export const setupTestDatabase = async (): Promise<TestDatabase> => {
@@ -627,6 +677,9 @@ export const getTestDatabase = (): TestDatabase => {
 export const cleanupTables = async (): Promise<void> => {
   const db = getTestDatabase();
   await db.execute(sql`SET session_replication_role = 'replica'`);
+  await db.delete(schema.realizedPnlEvents);
+  await db.delete(schema.customSymbolComponents);
+  await db.delete(schema.customSymbols);
   await db.delete(schema.priceCache);
   await db.delete(schema.klines);
   await db.delete(schema.tradeCooldowns);

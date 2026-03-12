@@ -887,6 +887,7 @@
       "profitable": "Rentables",
       "losing": "Perdantes",
       "totalExposure": "Exposition Totale",
+      "exposure": "Exposition",
       "unrealizedPnL": "P&P Non Réalisé",
       "pnlVsBalance": "P&P vs Solde",
       "orders": "ordres",
@@ -922,7 +923,9 @@
       "tpProjectedOfBalance": "du solde",
       "source": "Source",
       "manual": "Manuel",
-      "entriesCount": "{{count}}x"
+      "entriesCount": "{{count}}x",
+      "dailyPnl": "P&P du Jour",
+      "trades": "opérations"
     },
     "viewMode": {
       "cards": "Vue en cartes",

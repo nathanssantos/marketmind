@@ -52,6 +52,7 @@ describe('FeeService', () => {
     marketType: 'SPOT',
     initialBalance: null,
     currentBalance: null,
+    totalWalletBalance: null,
     totalDeposits: null,
     totalWithdrawals: null,
     lastTransferSyncAt: null,

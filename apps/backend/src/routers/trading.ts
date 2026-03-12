@@ -4,7 +4,7 @@ import { MainClient, USDMClient } from 'binance';
 import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
-import { autoTradingConfig, orders, positions, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
+import { autoTradingConfig, orders, positions, realizedPnlEvents, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from '../services/auto-trading';
 import { isPaperWallet } from '../services/binance-client';
@@ -220,21 +220,38 @@ export const tradingRouter = router({
 
           if (!orderInput.reduceOnly) {
             const intendedSide: 'LONG' | 'SHORT' = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
-            await ctx.db.insert(tradeExecutions).values({
-              id: generateEntityId(),
-              userId: ctx.user.id,
-              walletId: orderInput.walletId,
-              symbol: orderInput.symbol,
-              side: intendedSide,
-              entryPrice: algoOrder.triggerPrice ?? triggerPrice,
-              limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
-              quantity: String(algoOrder.quantity || orderInput.quantity),
-              entryOrderId: algoOrder.algoId,
-              entryOrderType: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
-              status: 'pending',
-              marketType: orderInput.marketType,
-              openedAt: new Date(),
-            });
+            const oppositeDirection = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
+            const [existingOpposite] = await ctx.db
+              .select({ id: tradeExecutions.id })
+              .from(tradeExecutions)
+              .where(
+                and(
+                  eq(tradeExecutions.walletId, orderInput.walletId),
+                  eq(tradeExecutions.symbol, orderInput.symbol),
+                  eq(tradeExecutions.side, oppositeDirection),
+                  eq(tradeExecutions.status, 'open'),
+                  eq(tradeExecutions.marketType, orderInput.marketType)
+                )
+              )
+              .limit(1);
+
+            if (!existingOpposite) {
+              await ctx.db.insert(tradeExecutions).values({
+                id: generateEntityId(),
+                userId: ctx.user.id,
+                walletId: orderInput.walletId,
+                symbol: orderInput.symbol,
+                side: intendedSide,
+                entryPrice: algoOrder.triggerPrice ?? triggerPrice,
+                limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
+                quantity: String(algoOrder.quantity || orderInput.quantity),
+                entryOrderId: algoOrder.algoId,
+                entryOrderType: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+                status: 'pending',
+                marketType: orderInput.marketType,
+                openedAt: new Date(),
+              });
+            }
           }
 
           return {
@@ -301,21 +318,38 @@ export const tradingRouter = router({
           const targetPrice = rawTargetPrice && rawTargetPrice !== '0' ? rawTargetPrice : null;
           if (targetPrice) {
             const intendedSide: 'LONG' | 'SHORT' = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
-            await ctx.db.insert(tradeExecutions).values({
-              id: generateEntityId(),
-              userId: ctx.user.id,
-              walletId: orderInput.walletId,
-              symbol: orderInput.symbol,
-              side: intendedSide,
-              entryPrice: String(targetPrice),
-              limitEntryPrice: String(targetPrice),
-              quantity: String(binanceOrder.origQty || orderInput.quantity),
-              entryOrderId: binanceOrder.orderId,
-              entryOrderType: 'LIMIT',
-              status: 'pending',
-              marketType: orderInput.marketType,
-              openedAt: new Date(),
-            });
+            const oppositeDirection = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
+            const [existingOpposite] = await ctx.db
+              .select({ id: tradeExecutions.id })
+              .from(tradeExecutions)
+              .where(
+                and(
+                  eq(tradeExecutions.walletId, orderInput.walletId),
+                  eq(tradeExecutions.symbol, orderInput.symbol),
+                  eq(tradeExecutions.side, oppositeDirection),
+                  eq(tradeExecutions.status, 'open'),
+                  eq(tradeExecutions.marketType, orderInput.marketType)
+                )
+              )
+              .limit(1);
+
+            if (!existingOpposite) {
+              await ctx.db.insert(tradeExecutions).values({
+                id: generateEntityId(),
+                userId: ctx.user.id,
+                walletId: orderInput.walletId,
+                symbol: orderInput.symbol,
+                side: intendedSide,
+                entryPrice: String(targetPrice),
+                limitEntryPrice: String(targetPrice),
+                quantity: String(binanceOrder.origQty || orderInput.quantity),
+                entryOrderId: binanceOrder.orderId,
+                entryOrderType: 'LIMIT',
+                status: 'pending',
+                marketType: orderInput.marketType,
+                openedAt: new Date(),
+              });
+            }
           }
         }
 
@@ -1153,15 +1187,20 @@ export const tradingRouter = router({
           totalGrossPnl += grossPnl;
           totalAllFees += totalFees;
 
+          const existingPartialPnl = parseFloat(exec.partialClosePnl || '0');
+          const finalPnl = netPnl + existingPartialPnl;
+
           await tx
             .update(tradeExecutions)
             .set({
               status: 'closed',
               exitPrice: exitPrice.toString(),
               exitOrderId,
-              pnl: netPnl.toString(),
+              pnl: finalPnl.toString(),
               pnlPercent: pnlPercent.toString(),
               fees: totalFees.toString(),
+              exitSource: 'MANUAL',
+              exitReason: 'MANUAL_CLOSE',
               closedAt: new Date(),
               updatedAt: new Date(),
               stopLossAlgoId: null,
@@ -1170,6 +1209,18 @@ export const tradingRouter = router({
               takeProfitOrderId: null,
             })
             .where(eq(tradeExecutions.id, exec.id));
+
+          await tx.insert(realizedPnlEvents).values({
+            walletId: wallet.id,
+            userId: ctx.user.id,
+            executionId: exec.id,
+            symbol: exec.symbol,
+            eventType: 'full_close',
+            pnl: netPnl.toString(),
+            fees: totalFees.toString(),
+            quantity: execQty.toString(),
+            price: exitPrice.toString(),
+          });
         }
 
         const currentBalance = parseFloat(wallet.currentBalance || '0');

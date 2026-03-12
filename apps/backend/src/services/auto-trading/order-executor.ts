@@ -1140,7 +1140,7 @@ export class OrderExecutor {
           const sideLabel = setup.direction === 'LONG' ? 'Long' : 'Short';
           wsServicePyramid.emitTradeNotification(watcher.walletId, {
             type: 'POSITION_OPENED',
-            title: `> ${setup.type} pyramid (${sideLabel})`,
+            title: `${setup.type} pyramid (${sideLabel})`,
             body: `Added ${actualQuantity.toFixed(4)} ${watcher.symbol} @ ${actualEntryPrice.toFixed(2)} → total ${newTotalQty.toFixed(4)}`,
             urgency: 'normal',
             data: {
@@ -1185,7 +1185,7 @@ export class OrderExecutor {
           const sideLabel = setup.direction === 'LONG' ? 'Long' : 'Short';
           wsServiceOpen.emitTradeNotification(watcher.walletId, {
             type: 'POSITION_OPENED',
-            title: `> ${setup.type} (${sideLabel})`,
+            title: `${setup.type} (${sideLabel})`,
             body: `${sideLabel} ${watcher.symbol} @ ${actualEntryPrice.toFixed(2)}`,
             urgency: 'normal',
             data: {

@@ -1,4 +1,5 @@
-import { Badge, Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from './ui/icon-button';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuChevronDown, LuCoins, LuWallet } from 'react-icons/lu';

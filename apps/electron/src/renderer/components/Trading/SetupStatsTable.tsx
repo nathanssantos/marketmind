@@ -1,4 +1,5 @@
-import { Button, ButtonGroup, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
+import { ButtonGroup, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Button } from '@renderer/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';

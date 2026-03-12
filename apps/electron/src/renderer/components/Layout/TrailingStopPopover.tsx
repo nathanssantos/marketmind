@@ -173,7 +173,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
       <TooltipWrapper
         label={tooltipLabel}
         showArrow
-        placement="bottom"
+        placement="left"
         isDisabled={isOpen}
       >
         <IconButton
@@ -205,7 +205,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
           <Box
             position="absolute"
             top={buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 8 : 0}
-            left={buttonRef.current ? Math.min(buttonRef.current.getBoundingClientRect().left, window.innerWidth - 290) : 0}
+            left={buttonRef.current ? buttonRef.current.getBoundingClientRect().left - 280 : 0}
             zIndex={9999}
             bg="bg.panel"
             borderRadius="md"

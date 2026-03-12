@@ -830,6 +830,7 @@
       "profitable": "Profitable",
       "losing": "Losing",
       "totalExposure": "Total Exposure",
+      "exposure": "Exposure",
       "unrealizedPnL": "Unrealized P&L",
       "pnlVsBalance": "P&L vs Balance",
       "orders": "orders",
@@ -865,7 +866,9 @@
       "tpProjectedOfBalance": "of balance",
       "source": "Source",
       "manual": "Manual",
-      "entriesCount": "{{count}}x"
+      "entriesCount": "{{count}}x",
+      "dailyPnl": "Today's P&L",
+      "trades": "trades"
     },
     "viewMode": {
       "cards": "Card view",

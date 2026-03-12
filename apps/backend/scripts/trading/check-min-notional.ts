@@ -1,9 +1,10 @@
 import { USDMClient } from 'binance';
+import { guardedCall } from '../utils/binance-script-guard';
 
 const client = new USDMClient({});
 
 async function check() {
-  const info = await client.getExchangeInfo();
+  const info = await guardedCall(() => client.getExchangeInfo());
   
   const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'PEPEUSDT', 'XRPUSDT', 'ADAUSDT'];
   

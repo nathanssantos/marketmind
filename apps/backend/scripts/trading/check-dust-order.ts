@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../src/db';
 import { tradeExecutions, wallets } from '../src/db/schema';
 import { createBinanceFuturesClient } from '../src/services/binance-futures-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 async function main() {
   const exec = await db.query.tradeExecutions.findFirst({
@@ -21,10 +22,10 @@ async function main() {
 
   const client = createBinanceFuturesClient(wallet);
 
-  const order = await client.getOrder({ symbol: 'FARTCOINUSDT', orderId: 10443659669 });
+  const order = await guardedCall(() => client.getOrder({ symbol: 'FARTCOINUSDT', orderId: 10443659669 }));
   console.log('Order status:', JSON.stringify(order, null, 2));
 
-  const positions = await client.getPositions({ symbol: 'FARTCOINUSDT' });
+  const positions = await guardedCall(() => client.getPositions({ symbol: 'FARTCOINUSDT' }));
   console.log('Positions:', JSON.stringify(positions, null, 2));
 
   if (order.status === 'FILLED') {

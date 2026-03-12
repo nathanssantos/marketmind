@@ -1,4 +1,5 @@
-import { Box, Flex, Group, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui/icon-button';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order } from '@marketmind/types';
 import { Select } from '@renderer/components/ui/select';

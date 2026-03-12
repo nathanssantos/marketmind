@@ -1,5 +1,6 @@
 import { Dialog } from '@/renderer/components/ui/dialog';
-import { CloseButton, Separator, Stack } from '@chakra-ui/react';
+import { Separator } from '@/renderer/components/ui/separator';
+import { CloseButton, Stack } from '@chakra-ui/react';
 import { SetupToggleSection } from '@renderer/components/Trading/SetupToggleSection';
 import { WatcherManager } from '@renderer/components/Trading/WatcherManager';
 import { memo } from 'react';

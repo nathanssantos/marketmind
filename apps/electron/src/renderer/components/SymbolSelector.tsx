@@ -1,4 +1,6 @@
-import { Badge, Box, Button, Flex, IconButton, Input, Spinner, Text, VStack } from '@chakra-ui/react';
+import { Badge, Box, Flex, IconButton, Spinner, Text, VStack } from '@chakra-ui/react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 import type { AssetClass, MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -1,4 +1,5 @@
-import { Box, Button, Flex, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { Button } from './ui/button';
 import type { MarginType } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
 import { LuInfo, LuShield, LuWallet } from 'react-icons/lu';

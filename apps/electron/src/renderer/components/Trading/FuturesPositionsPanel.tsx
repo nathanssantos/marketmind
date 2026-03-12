@@ -1,4 +1,5 @@
-import { Badge, Box, Button, Flex, Progress, Stack, Text, VStack } from '@chakra-ui/react';
+import { Badge, Box, Flex, Progress, Stack, Text, VStack } from '@chakra-ui/react';
+import { Button } from '@renderer/components/ui/button';
 import { wouldLiquidate } from '@marketmind/types';
 import { BrlValue } from '@renderer/components/ui/BrlValue';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';

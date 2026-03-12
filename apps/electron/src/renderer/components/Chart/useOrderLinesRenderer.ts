@@ -23,6 +23,8 @@ const CANVAS_GEOMETRY = {
   DOUBLE: 2,
 } as const;
 
+const LINE_HIT_HEIGHT = 24;
+
 const SVG_BOT_ICON = {
   VIEWBOX_SIZE: 24,
   STROKE_WIDTH_DIVISOR: 12,
@@ -332,10 +334,10 @@ const SLTP_BUTTON = {
   GAP: 3,
   BORDER_RADIUS: 3,
   FONT_SIZE: 9,
-  SL_BG: 'rgba(239, 68, 68, 0.85)',
-  SL_BORDER: 'rgba(239, 68, 68, 1)',
-  TP_BG: 'rgba(34, 197, 94, 0.85)',
-  TP_BORDER: 'rgba(34, 197, 94, 1)',
+  SL_BG: 'rgba(185, 28, 28, 0.85)',
+  SL_BORDER: 'rgba(185, 28, 28, 1)',
+  TP_BG: 'rgba(15, 118, 56, 0.85)',
+  TP_BORDER: 'rgba(15, 118, 56, 1)',
   TEXT_COLOR: '#ffffff',
 } as const;
 
@@ -608,14 +610,14 @@ export const useOrderLinesRenderer = (
       const flashAlpha = getFlashAlpha(orderId);
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade, loading, now);
+      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade, loading, now);
 
       orderHitboxesRef.current.push({
         orderId,
         x: 0,
-        y: y - infoTagSize.height / 2,
-        width: infoTagSize.width,
-        height: infoTagSize.height,
+        y: y - LINE_HIT_HEIGHT / 2,
+        width: chartWidth,
+        height: LINE_HIT_HEIGHT,
         order,
       });
 
@@ -662,9 +664,9 @@ export const useOrderLinesRenderer = (
       if (order.stopLoss) {
         const stopY = manager.priceToY(order.stopLoss);
         const slIsProfit = isSLInProfitZone(isLong, entryPrice, order.stopLoss);
-        const slLossColor = isLong ? ORDER_LINE_COLORS.SL_LOSS_LONG_LINE : ORDER_LINE_COLORS.SL_LOSS_SHORT_LINE;
+        const slLossColor = ORDER_LINE_COLORS.SL_LOSS_LINE;
         const slLineColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : slLossColor;
-        const slTagColor = slIsProfit ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+        const slTagColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL;
 
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
@@ -719,8 +721,8 @@ export const useOrderLinesRenderer = (
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
-        const tpLineColor = ORDER_LINE_COLORS.TP_LONG_LINE;
-        const tpFillColor = ORDER_LINE_COLORS.LONG_FILL;
+        const tpLineColor = ORDER_LINE_COLORS.TP_LINE;
+        const tpFillColor = ORDER_LINE_COLORS.TP_FILL;
         ctx.strokeStyle = tpLineColor;
 
         ctx.beginPath();
@@ -959,11 +961,13 @@ export const useOrderLinesRenderer = (
 
         if (order.stopLoss) {
           const stopY = manager.priceToY(order.stopLoss);
+          const slIsProfit = isSLInProfitZone(isLong, entryPrice, order.stopLoss);
+          const slLossColor = ORDER_LINE_COLORS.SL_LOSS_LINE;
 
           ctx.save();
           ctx.globalAlpha = pendingAlpha;
           ctx.lineWidth = 1;
-          ctx.strokeStyle = isLong ? ORDER_LINE_COLORS.SL_LOSS_LONG_LINE : ORDER_LINE_COLORS.SL_LOSS_SHORT_LINE;
+          ctx.strokeStyle = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : slLossColor;
 
           ctx.beginPath();
           ctx.moveTo(0, stopY);
@@ -980,7 +984,7 @@ export const useOrderLinesRenderer = (
           const slSign = slResultPercent >= 0 ? '+' : '';
           const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
 
-          drawInfoTag(ctx, slInfoText, stopY, ORDER_LINE_COLORS.SHORT_FILL, true, null);
+          drawInfoTag(ctx, slInfoText, stopY, slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL, true, null);
           ctx.restore();
         }
 
@@ -990,7 +994,7 @@ export const useOrderLinesRenderer = (
           ctx.save();
           ctx.globalAlpha = pendingAlpha;
           ctx.lineWidth = 1;
-          ctx.strokeStyle = ORDER_LINE_COLORS.TP_LONG_LINE;
+          ctx.strokeStyle = ORDER_LINE_COLORS.TP_LINE;
 
           ctx.beginPath();
           ctx.moveTo(0, tpY);
@@ -1006,7 +1010,7 @@ export const useOrderLinesRenderer = (
             : ((entryPrice - order.takeProfit) / entryPrice) * 100;
           const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
 
-          drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.LONG_FILL, true, null);
+          drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.TP_FILL, true, null);
           ctx.restore();
         }
       }
@@ -1168,9 +1172,9 @@ export const useOrderLinesRenderer = (
       if (anyOrderHasStopLoss && consolidatedStopLoss) {
         const stopY = manager.priceToY(consolidatedStopLoss);
         const slIsProfit = isSLInProfitZone(isLongPosition, position.avgPrice, consolidatedStopLoss);
-        const slLossColor = isLongPosition ? ORDER_LINE_COLORS.SL_LOSS_LONG_LINE : ORDER_LINE_COLORS.SL_LOSS_SHORT_LINE;
+        const slLossColor = ORDER_LINE_COLORS.SL_LOSS_LINE;
         const slLineColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : slLossColor;
-        const slTagColor = slIsProfit ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+        const slTagColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL;
 
         const firstOrderId = position.orderIds[0] || '';
 
@@ -1256,7 +1260,7 @@ export const useOrderLinesRenderer = (
         ctx.save();
         ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
-        const tpLineColor = ORDER_LINE_COLORS.TP_LONG_LINE;
+        const tpLineColor = ORDER_LINE_COLORS.TP_LINE;
         ctx.strokeStyle = tpLineColor;
 
         ctx.beginPath();
@@ -1268,7 +1272,7 @@ export const useOrderLinesRenderer = (
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
 
-        const tpFillColor = ORDER_LINE_COLORS.LONG_FILL;
+        const tpFillColor = ORDER_LINE_COLORS.TP_FILL;
         const priceText = formatChartPrice(consolidatedTakeProfit);
         const tpProfitPercent = isLongPosition
           ? ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100
@@ -1386,7 +1390,7 @@ export const useOrderLinesRenderer = (
         const slY = manager.priceToY(setup.stopLoss);
         const slIsProfit = isSLInProfitZone(isLong, effectiveEntryPrice, setup.stopLoss);
         const slLineColor = slIsProfit ? ORDER_LINE_COLORS.SETUP_PROFIT_LINE : ORDER_LINE_COLORS.SETUP_LOSS_LINE;
-        const slLossSetupColor = isLong ? ORDER_LINE_COLORS.SL_LOSS_LONG_LINE : ORDER_LINE_COLORS.SL_LOSS_SHORT_LINE;
+        const slLossSetupColor = ORDER_LINE_COLORS.SL_LOSS_LINE;
         const slTagColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : slLossSetupColor;
 
         ctx.globalAlpha = pendingAlpha * 0.7;
@@ -1423,9 +1427,9 @@ export const useOrderLinesRenderer = (
           : ((effectiveEntryPrice - setup.takeProfit) / effectiveEntryPrice) * 100;
         const tpInfoText = `TP (+${tpPercent.toFixed(2)}%)`;
 
-        const tpSetupColor = ORDER_LINE_COLORS.TP_LONG_LINE;
-        priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: tpSetupColor });
-        drawInfoTag(ctx, tpInfoText, tpY, tpSetupColor, false, null, false);
+        const tpSetupFillColor = ORDER_LINE_COLORS.TP_FILL;
+        priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: tpSetupFillColor });
+        drawInfoTag(ctx, tpInfoText, tpY, tpSetupFillColor, false, null, false);
       }
 
       ctx.restore();

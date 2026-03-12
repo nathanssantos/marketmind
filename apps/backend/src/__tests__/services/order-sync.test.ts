@@ -108,6 +108,7 @@ interface TestWallet {
   updatedAt: Date;
   initialBalance: string | null;
   currentBalance: string | null;
+  totalWalletBalance: string | null;
   totalDeposits: string;
   totalWithdrawals: string;
   lastTransferSyncAt: Date | null;
@@ -141,6 +142,7 @@ const createTestWallet = (overrides: Partial<TestWallet> = {}): TestWallet => ({
   updatedAt: new Date(),
   initialBalance: '10000',
   currentBalance: '10000',
+  totalWalletBalance: null,
   totalDeposits: '0',
   totalWithdrawals: '0',
   lastTransferSyncAt: null,

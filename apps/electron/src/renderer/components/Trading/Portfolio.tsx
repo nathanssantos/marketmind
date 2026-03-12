@@ -17,7 +17,7 @@ import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
-import { LuBot, LuChevronDown, LuChevronUp } from 'react-icons/lu';
+import { LuBot, LuChevronDown, LuChevronUp, LuEye, LuEyeOff } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { TooltipWrapper } from '../ui/Tooltip';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
@@ -50,6 +50,8 @@ const PortfolioComponent = () => {
   const globalActions = useGlobalActionsOptional();
   const [summaryExpanded, setSummaryExpanded] = useUIPref('portfolioSummaryExpanded', true);
   const toggleSummary = useCallback(() => setSummaryExpanded(!summaryExpanded), [summaryExpanded, setSummaryExpanded]);
+  const [dailyPnlVisible, setDailyPnlVisible] = useUIPref('portfolioDailyPnlVisible', true);
+  const toggleDailyPnl = useCallback(() => setDailyPnlVisible(!dailyPnlVisible), [dailyPnlVisible, setDailyPnlVisible]);
 
   const { activeWallet: rawActiveWallet, isIB, wallets: backendWallets } = useActiveWallet();
   const activeWalletId = rawActiveWallet?.id;
@@ -61,6 +63,14 @@ const PortfolioComponent = () => {
     { enabled: !!activeWalletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const tradeExecutions = openTradeExecutions ?? [];
+
+  const now = new Date();
+  const { data: dailyPerformance } = trpc.analytics.getDailyPerformance.useQuery(
+    { walletId: activeWalletId ?? '', year: now.getFullYear(), month: now.getMonth() + 1 },
+    { enabled: !!activeWalletId, staleTime: QUERY_CONFIG.STALE_TIME.FAST, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL }
+  );
+  const todayKey = now.toISOString().slice(0, 10);
+  const todayPnl = dailyPerformance?.find((d) => d.date === todayKey);
 
   const {
     filterOption,
@@ -136,6 +146,7 @@ const PortfolioComponent = () => {
     id: w.id,
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
+    walletBalance: parseFloat(w.totalWalletBalance || w.currentBalance || '0'),
     initialBalance: parseFloat(w.initialBalance || '0'),
     totalDeposits: parseFloat(w.totalDeposits || '0'),
     totalWithdrawals: parseFloat(w.totalWithdrawals || '0'),
@@ -203,24 +214,48 @@ const PortfolioComponent = () => {
         </Box>
       ) : (
         <>
+          {activeWallet && (
+            <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">
+              <Stack gap={0}>
+                <Text color="fg.muted" fontWeight="medium">{t('trading.portfolio.dailyPnl')}</Text>
+                <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
+              </Stack>
+              <Flex align="center" gap={2}>
+                {dailyPnlVisible ? (
+                  <Stack gap={0} align="flex-end">
+                    <Text fontWeight="medium" fontSize="sm" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'green.500' : 'red.500'}>
+                      {todayPnl ? `${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnlPercent.toFixed(2)}%)` : '$0.00'}
+                    </Text>
+                    <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
+                  </Stack>
+                ) : (
+                  <Text color="fg.muted">****</Text>
+                )}
+                <IconButton
+                  aria-label="Toggle daily PnL"
+                  size="2xs"
+                  variant="ghost"
+                  colorPalette="gray"
+                  onClick={toggleDailyPnl}
+                >
+                  {dailyPnlVisible ? <LuEye size={12} /> : <LuEyeOff size={12} />}
+                </IconButton>
+              </Flex>
+            </Flex>
+          )}
+
           <Box p={3} bg="bg.muted" borderRadius="md">
             <Stack gap={2.5} fontSize="xs">
               {summaryExpanded && (
                 <>
-                  <Stack gap={1}>
-                    <Flex justify="space-between">
-                      <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
+                  <Flex justify="space-between" align="center">
+                    <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
+                    <Flex gap={3} align="center">
                       <Text fontWeight="medium">{positions.length}</Text>
+                      <Text color="green.500">{profitableCount}W</Text>
+                      <Text color="red.500">{losingCount}L</Text>
                     </Flex>
-                    <Flex justify="space-between">
-                      <Text color="fg.muted">{t('trading.portfolio.profitable')}</Text>
-                      <Text fontWeight="medium" color="green.500">{profitableCount}</Text>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text color="fg.muted">{t('trading.portfolio.losing')}</Text>
-                      <Text fontWeight="medium" color="red.500">{losingCount}</Text>
-                    </Flex>
-                  </Stack>
+                  </Flex>
 
                   <Box h="1px" w="100%" bg="fg.muted" opacity={0.2} />
 
@@ -229,7 +264,7 @@ const PortfolioComponent = () => {
                       <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
                       <Stack gap={0} align="flex-end">
                         <Text fontWeight="medium">
-                          {activeWallet.currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / activeWallet.balance) * 100).toFixed(1)}%)
+                          {activeWallet.currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / activeWallet.walletBalance) * 100).toFixed(1)}%)
                         </Text>
                         <BrlValue usdtValue={totalExposure} />
                       </Stack>
@@ -269,7 +304,7 @@ const PortfolioComponent = () => {
                                 {totalExposure > 0 ? ((stopProtectedValue.total / totalExposure) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfExposure')}
                               </Text>
                               <Text color="orange.500" textAlign="right">
-                                {activeWallet.balance > 0 ? ((stopProtectedValue.total / activeWallet.balance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
+                                {activeWallet.walletBalance > 0 ? ((stopProtectedValue.total / activeWallet.walletBalance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
                               </Text>
                               <BrlValue usdtValue={stopProtectedValue.total} />
                             </Stack>
@@ -288,7 +323,7 @@ const PortfolioComponent = () => {
                                 {totalExposure > 0 ? ((tpProjectedProfit.total / totalExposure) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfExposure')}
                               </Text>
                               <Text color="green.500" textAlign="right">
-                                {activeWallet.balance > 0 ? ((tpProjectedProfit.total / activeWallet.balance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfBalance')}
+                                {activeWallet.walletBalance > 0 ? ((tpProjectedProfit.total / activeWallet.walletBalance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfBalance')}
                               </Text>
                               <BrlValue usdtValue={tpProjectedProfit.total} />
                             </Stack>
@@ -301,12 +336,20 @@ const PortfolioComponent = () => {
               )}
 
               {!summaryExpanded && (
-                <Flex justify="space-between" align="center">
-                  <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
-                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
-                    {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
-                  </Text>
-                </Flex>
+                <Stack gap={1}>
+                  <Flex justify="space-between" align="center">
+                    <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
+                    <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+                      {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
+                    </Text>
+                  </Flex>
+                  <Flex justify="space-between" align="center">
+                    <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
+                    <Text fontWeight="medium">
+                      {activeWallet.currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / activeWallet.walletBalance) * 100).toFixed(1)}%)
+                    </Text>
+                  </Flex>
+                </Stack>
               )}
 
               <Flex justify="center">
@@ -386,11 +429,11 @@ const PortfolioComponent = () => {
           {viewMode === 'cards' ? (
             <Stack gap={2}>
               {filteredPositions.map((position) => (
-                <PositionCard key={position.id} position={position} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
+                <PositionCard key={position.id} position={position} currency={activeWallet.currency} walletBalance={activeWallet.walletBalance} onNavigateToSymbol={globalActions?.navigateToSymbol} />
               ))}
             </Stack>
           ) : (
-            <PortfolioTable positions={filteredPositions} currency={activeWallet.currency} onNavigateToSymbol={globalActions?.navigateToSymbol} />
+            <PortfolioTable positions={filteredPositions} currency={activeWallet.currency} walletBalance={activeWallet.walletBalance} onNavigateToSymbol={globalActions?.navigateToSymbol} />
           )}
         </>
       )}
@@ -401,10 +444,11 @@ const PortfolioComponent = () => {
 interface PortfolioTableProps {
   positions: PortfolioPosition[];
   currency: string;
+  walletBalance: number;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
-const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: PortfolioTableProps) => {
+const PortfolioTable = memo(({ positions, currency, walletBalance, onNavigateToSymbol }: PortfolioTableProps) => {
   const { t } = useTranslation();
   const { sortKey, sortDirection, setPortfolioTableSort } = useUIStore(useShallow((s) => ({
     sortKey: s.portfolioTableSortKey,
@@ -446,6 +490,8 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
           return dir * ((a.stopLoss || 0) - (b.stopLoss || 0));
         case 'takeProfit':
           return dir * ((a.takeProfit || 0) - (b.takeProfit || 0));
+        case 'exposure':
+          return dir * ((a.avgPrice * a.quantity) - (b.avgPrice * b.quantity));
         default:
           return 0;
       }
@@ -458,18 +504,19 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
   };
 
   const columns: TradingTableColumn[] = [
-    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
-    { key: 'pnl', header: t('trading.portfolio.pnl'), textAlign: 'right', minW: '130px' },
-    { key: 'side', header: t('trading.orders.side'), minW: '80px' },
-    { key: 'setup', header: t('trading.orders.setup'), minW: '100px' },
-    { key: 'type', header: t('trading.orders.type'), minW: '90px' },
-    { key: 'opened', header: t('trading.portfolio.opened'), minW: '110px' },
-    { key: 'quantity', header: t('trading.portfolio.quantity'), textAlign: 'right', minW: '100px' },
-    { key: 'avgPrice', header: t('trading.portfolio.avgPrice'), textAlign: 'right', minW: '110px' },
-    { key: 'currentPrice', header: t('trading.portfolio.currentPrice'), textAlign: 'right', minW: '110px' },
-    { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right', minW: '100px' },
-    { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right', minW: '100px' },
-    { key: 'auto', header: '', minW: '40px', sortable: false },
+    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true },
+    { key: 'pnl', header: t('trading.portfolio.pnl'), textAlign: 'right' },
+    { key: 'exposure', header: t('trading.portfolio.exposure'), textAlign: 'right' },
+    { key: 'side', header: t('trading.orders.side') },
+    { key: 'setup', header: t('trading.orders.setup') },
+    { key: 'type', header: t('trading.orders.type') },
+    { key: 'opened', header: t('trading.portfolio.opened') },
+    { key: 'quantity', header: t('trading.portfolio.quantity'), textAlign: 'right' },
+    { key: 'avgPrice', header: t('trading.portfolio.avgPrice'), textAlign: 'right' },
+    { key: 'currentPrice', header: t('trading.portfolio.currentPrice'), textAlign: 'right' },
+    { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
+    { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
+    { key: 'auto', header: '', sortable: false },
   ];
 
   return (
@@ -481,7 +528,7 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
         return (
           <TradingTableRow key={position.id}>
             <TradingTableCell sticky>
-              <Flex align="center" gap={1}>
+              <Flex align="center" gap={1} borderLeft="3px solid" borderColor={isLong ? 'green.500' : 'red.500'} pl={1.5} ml={-1.5} my={-1}>
                 <CryptoIcon
                   symbol={position.symbol}
                   size={14}
@@ -502,6 +549,11 @@ const PortfolioTable = memo(({ positions, currency, onNavigateToSymbol }: Portfo
               <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
                 {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+              </Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text color="fg.muted">
+                {walletBalance > 0 ? ((position.avgPrice * position.quantity / walletBalance) * 100).toFixed(1) : '0.0'}%
               </Text>
             </TradingTableCell>
             <TradingTableCell>
@@ -578,6 +630,7 @@ PortfolioTable.displayName = 'PortfolioTable';
 interface PositionCardProps {
   position: PortfolioPosition;
   currency: string;
+  walletBalance: number;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 

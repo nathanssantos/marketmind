@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { tradeExecutions } from '../../db/schema';
+import { realizedPnlEvents, tradeExecutions } from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtures';
@@ -423,12 +423,13 @@ describe('Analytics Router', () => {
         initialBalance: '10000',
       });
       const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
 
       const date1 = new Date('2024-01-01');
       const date2 = new Date('2024-01-02');
       const date3 = new Date('2024-01-03');
 
-      await createTestTradeExecution({
+      const exec1 = await createTestTradeExecution({
         userId: user.id,
         walletId: wallet.id,
         status: 'closed',
@@ -437,7 +438,7 @@ describe('Analytics Router', () => {
         closedAt: date1,
       });
 
-      await createTestTradeExecution({
+      const exec2 = await createTestTradeExecution({
         userId: user.id,
         walletId: wallet.id,
         status: 'closed',
@@ -446,7 +447,7 @@ describe('Analytics Router', () => {
         closedAt: date2,
       });
 
-      await createTestTradeExecution({
+      const exec3 = await createTestTradeExecution({
         userId: user.id,
         walletId: wallet.id,
         status: 'closed',
@@ -454,6 +455,12 @@ describe('Analytics Router', () => {
         openedAt: date3,
         closedAt: date3,
       });
+
+      await db.insert(realizedPnlEvents).values([
+        { walletId: wallet.id, userId: user.id, executionId: exec1.id, symbol: 'BTCUSDT', eventType: 'full_close', pnl: '100', quantity: '0.01', price: '50000', createdAt: date1 },
+        { walletId: wallet.id, userId: user.id, executionId: exec2.id, symbol: 'BTCUSDT', eventType: 'full_close', pnl: '-50', quantity: '0.01', price: '50000', createdAt: date2 },
+        { walletId: wallet.id, userId: user.id, executionId: exec3.id, symbol: 'BTCUSDT', eventType: 'full_close', pnl: '200', quantity: '0.01', price: '50000', createdAt: date3 },
+      ]);
 
       const result = await caller.analytics.getEquityCurve({
         walletId: wallet.id,

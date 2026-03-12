@@ -3,10 +3,10 @@ import { WebsocketClient } from 'binance';
 import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { tradeExecutions, wallets, orders, type Wallet } from '../db/schema';
+import { realizedPnlEvents, tradeExecutions, wallets, orders, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { calculatePnl } from '../utils/pnl-calculator';
-import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getWalletType, cancelFuturesAlgoOrder, getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition, cancelAllSymbolOrders } from './binance-futures-client';
 import { createStopLossOrder, createTakeProfitOrder, cancelAllOpenProtectionOrdersOnExchange, cancelAllProtectionOrders } from './protection-orders';
 import { generateEntityId } from '../utils/id';
 import { decryptApiKey } from './encryption';
@@ -188,6 +188,7 @@ export class BinanceFuturesUserStreamService {
         const qty = parseFloat(execution.quantity);
 
         await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
+        await new Promise(r => setTimeout(r, 300));
 
         let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
         let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
@@ -196,24 +197,42 @@ export class BinanceFuturesUserStreamService {
           try {
             newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: slPrice, marketType: 'FUTURES' });
           } catch (e) {
-            logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place debounced SL after pyramid');
+            logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced SL — position may be unprotected');
           }
         }
         if (tpPrice) {
           try {
             newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: tpPrice, marketType: 'FUTURES' });
           } catch (e) {
-            logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place debounced TP after pyramid');
+            logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced TP — position may be unprotected');
           }
         }
 
+        const slUpdate: Record<string, unknown> = {};
+        if (newSlResult) {
+          slUpdate.stopLossAlgoId = newSlResult.isAlgoOrder ? (newSlResult.algoId ?? null) : null;
+          slUpdate.stopLossOrderId = newSlResult.isAlgoOrder ? null : (newSlResult.orderId ?? null);
+          slUpdate.stopLossIsAlgo = newSlResult.isAlgoOrder;
+        } else if (slPrice) {
+          slUpdate.stopLossAlgoId = null;
+          slUpdate.stopLossOrderId = null;
+          slUpdate.stopLossIsAlgo = false;
+        }
+
+        const tpUpdate: Record<string, unknown> = {};
+        if (newTpResult) {
+          tpUpdate.takeProfitAlgoId = newTpResult.isAlgoOrder ? (newTpResult.algoId ?? null) : null;
+          tpUpdate.takeProfitOrderId = newTpResult.isAlgoOrder ? null : (newTpResult.orderId ?? null);
+          tpUpdate.takeProfitIsAlgo = newTpResult.isAlgoOrder;
+        } else if (tpPrice) {
+          tpUpdate.takeProfitAlgoId = null;
+          tpUpdate.takeProfitOrderId = null;
+          tpUpdate.takeProfitIsAlgo = false;
+        }
+
         await db.update(tradeExecutions).set({
-          stopLossAlgoId: newSlResult?.isAlgoOrder ? (newSlResult.algoId ?? null) : (slPrice ? null : execution.stopLossAlgoId),
-          takeProfitAlgoId: newTpResult?.isAlgoOrder ? (newTpResult.algoId ?? null) : (tpPrice ? null : execution.takeProfitAlgoId),
-          stopLossOrderId: (newSlResult && !newSlResult.isAlgoOrder) ? (newSlResult.orderId ?? null) : (slPrice ? null : execution.stopLossOrderId),
-          takeProfitOrderId: (newTpResult && !newTpResult.isAlgoOrder) ? (newTpResult.orderId ?? null) : (tpPrice ? null : execution.takeProfitOrderId),
-          stopLossIsAlgo: newSlResult?.isAlgoOrder ?? execution.stopLossIsAlgo ?? false,
-          takeProfitIsAlgo: newTpResult?.isAlgoOrder ?? execution.takeProfitIsAlgo ?? false,
+          ...slUpdate,
+          ...tpUpdate,
           updatedAt: new Date(),
         }).where(eq(tradeExecutions.id, executionId));
 
@@ -538,7 +557,7 @@ export class BinanceFuturesUserStreamService {
       if (status === 'CANCELED') {
         await db
           .update(tradeExecutions)
-          .set({ status: 'cancelled', updatedAt: new Date() })
+          .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
           .where(
             and(
               eq(tradeExecutions.walletId, walletId),
@@ -750,7 +769,170 @@ export class BinanceFuturesUserStreamService {
         if (!execution) {
           const rp = parseFloat(realizedProfit || '0');
           if (rp !== 0) {
-            logger.info({ walletId, symbol, orderId }, '[FuturesUserStream] Untracked close fill - ignoring');
+            const reduceDirection: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'SHORT' : 'LONG';
+            const [oppositeExec] = await db
+              .select()
+              .from(tradeExecutions)
+              .where(
+                and(
+                  eq(tradeExecutions.walletId, walletId),
+                  eq(tradeExecutions.symbol, symbol),
+                  eq(tradeExecutions.side, reduceDirection),
+                  eq(tradeExecutions.status, 'open'),
+                  eq(tradeExecutions.marketType, 'FUTURES')
+                )
+              )
+              .limit(1);
+
+            if (!oppositeExec) {
+              logger.warn({ walletId, symbol, orderId, rp }, '[FuturesUserStream] Untracked close fill — no opposite execution found, ignoring');
+              return;
+            }
+
+            const exitPrice = parseFloat(avgPrice || lastFilledPrice);
+            const closedQty = parseFloat(executedQty);
+            const entryPrice = parseFloat(oppositeExec.entryPrice);
+            const execQty = parseFloat(oppositeExec.quantity);
+
+            const partialPnl = oppositeExec.side === 'LONG'
+              ? (exitPrice - entryPrice) * closedQty
+              : (entryPrice - exitPrice) * closedQty;
+
+            const connection = this.connections.get(walletId);
+            let remainingQty = execQty - closedQty;
+            let exchangeEntryPrice = entryPrice;
+
+            if (connection) {
+              try {
+                const exchangePos = await getPosition(connection.apiClient, symbol);
+                if (exchangePos) {
+                  remainingQty = Math.abs(parseFloat(exchangePos.positionAmt));
+                  exchangeEntryPrice = parseFloat(exchangePos.entryPrice) || entryPrice;
+                }
+              } catch (_e) {
+                logger.warn({ walletId, symbol }, '[FuturesUserStream] Failed to fetch exchange position for untracked reduce fill');
+              }
+            }
+
+            if (remainingQty > 0 && remainingQty < execQty) {
+              const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl || '0');
+              const newPartialClosePnl = existingPartialPnl + partialPnl;
+
+              await db
+                .update(tradeExecutions)
+                .set({
+                  quantity: remainingQty.toString(),
+                  entryPrice: exchangeEntryPrice.toString(),
+                  partialClosePnl: newPartialClosePnl.toString(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(tradeExecutions.id, oppositeExec.id));
+
+              await db
+                .update(wallets)
+                .set({
+                  currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
+                  updatedAt: new Date(),
+                })
+                .where(eq(wallets.id, walletId));
+
+              await db.insert(realizedPnlEvents).values({
+                walletId,
+                userId: oppositeExec.userId,
+                executionId: oppositeExec.id,
+                symbol,
+                eventType: 'partial_close',
+                pnl: partialPnl.toString(),
+                fees: '0',
+                quantity: closedQty.toString(),
+                price: exitPrice.toString(),
+              });
+
+              logger.info(
+                { executionId: oppositeExec.id, symbol, closedQty, remainingQty, partialPnl: partialPnl.toFixed(4) },
+                '[FuturesUserStream] Untracked reduce fill — partial close applied'
+              );
+
+              const hasProtection = oppositeExec.stopLoss || oppositeExec.takeProfit;
+              if (hasProtection) this.scheduleDebouncedSlTpUpdate(oppositeExec.id, walletId, symbol);
+
+              binancePriceStreamService.invalidateExecutionCache(symbol);
+
+              const wsService = getWebSocketService();
+              if (wsService) {
+                wsService.emitPositionUpdate(walletId, {
+                  ...oppositeExec,
+                  quantity: remainingQty.toString(),
+                  entryPrice: exchangeEntryPrice.toString(),
+                });
+              }
+            } else {
+              const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl || '0');
+              const totalPnl = partialPnl + existingPartialPnl;
+              const exitFee = parseFloat(commission || '0');
+
+              await db
+                .update(tradeExecutions)
+                .set({
+                  status: 'closed',
+                  exitPrice: exitPrice.toString(),
+                  closedAt: new Date(),
+                  pnl: totalPnl.toString(),
+                  fees: exitFee.toString(),
+                  exitFee: exitFee.toString(),
+                  exitSource: 'MANUAL',
+                  exitReason: 'REDUCE_ORDER',
+                  stopLossAlgoId: null,
+                  stopLossOrderId: null,
+                  takeProfitAlgoId: null,
+                  takeProfitOrderId: null,
+                  updatedAt: new Date(),
+                })
+                .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
+
+              await db.insert(realizedPnlEvents).values({
+                walletId,
+                userId: oppositeExec.userId,
+                executionId: oppositeExec.id,
+                symbol,
+                eventType: 'full_close',
+                pnl: partialPnl.toString(),
+                fees: exitFee.toString(),
+                quantity: closedQty.toString(),
+                price: exitPrice.toString(),
+              });
+
+              await db
+                .update(wallets)
+                .set({
+                  currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
+                  updatedAt: new Date(),
+                })
+                .where(eq(wallets.id, walletId));
+
+              logger.info(
+                { executionId: oppositeExec.id, symbol, totalPnl: totalPnl.toFixed(4), exitPrice },
+                '[FuturesUserStream] Untracked reduce fill — full close applied'
+              );
+
+              binancePriceStreamService.invalidateExecutionCache(symbol);
+
+              const wsService = getWebSocketService();
+              if (wsService) {
+                wsService.emitPositionUpdate(walletId, {
+                  ...oppositeExec,
+                  status: 'closed',
+                  exitPrice: exitPrice.toString(),
+                  pnl: totalPnl.toString(),
+                });
+              }
+
+              void this.cancelPendingEntryOrders(walletId, symbol, oppositeExec.id);
+              setTimeout(() => {
+                void this.closeResidualPosition(walletId, symbol, oppositeExec.id);
+              }, 3000);
+            }
+
             return;
           }
 
@@ -766,8 +948,28 @@ export class BinanceFuturesUserStreamService {
           }
 
           const direction: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'LONG' : 'SHORT';
+          const oppositeDirection = direction === 'LONG' ? 'SHORT' : 'LONG';
           const fillPrice = parseFloat(avgPrice || lastFilledPrice);
           const fillQty = parseFloat(executedQty || manualOrder.origQty || '0');
+
+          const [existingOpposite] = await db
+            .select({ id: tradeExecutions.id })
+            .from(tradeExecutions)
+            .where(
+              and(
+                eq(tradeExecutions.walletId, walletId),
+                eq(tradeExecutions.symbol, symbol),
+                eq(tradeExecutions.side, oppositeDirection),
+                eq(tradeExecutions.status, 'open'),
+                eq(tradeExecutions.marketType, 'FUTURES')
+              )
+            )
+            .limit(1);
+
+          if (existingOpposite) {
+            logger.info({ symbol, orderId, direction, existingOpposite: existingOpposite.id }, '[FuturesUserStream] Skipped execution creation — reduce fill against existing opposite position');
+            return;
+          }
 
           const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
           if (!walletRow) return;
@@ -946,11 +1148,15 @@ export class BinanceFuturesUserStreamService {
                   ? (exitPrice - entryPrice) * closedQty
                   : (entryPrice - exitPrice) * closedQty;
 
+                const existingPartialPnl = parseFloat(execution.partialClosePnl || '0');
+                const newPartialClosePnl = existingPartialPnl + partialPnl;
+
                 await db
                   .update(tradeExecutions)
                   .set({
                     quantity: remainingQty.toString(),
                     entryPrice: exchangeEntryPrice.toString(),
+                    partialClosePnl: newPartialClosePnl.toString(),
                     updatedAt: new Date(),
                   })
                   .where(eq(tradeExecutions.id, execution.id));
@@ -962,6 +1168,18 @@ export class BinanceFuturesUserStreamService {
                     updatedAt: new Date(),
                   })
                   .where(eq(wallets.id, walletId));
+
+                await db.insert(realizedPnlEvents).values({
+                  walletId,
+                  userId: execution.userId,
+                  executionId: execution.id,
+                  symbol,
+                  eventType: 'partial_close',
+                  pnl: partialPnl.toString(),
+                  fees: '0',
+                  quantity: closedQty.toString(),
+                  price: exitPrice.toString(),
+                });
 
                 logger.info(
                   {
@@ -1043,7 +1261,8 @@ export class BinanceFuturesUserStreamService {
           entryFee: actualEntryFee,
           exitFee: actualExitFee,
         });
-        const pnl = pnlResult.netPnl;
+        const partialClosePnl = parseFloat(execution.partialClosePnl || '0');
+        const pnl = pnlResult.netPnl + partialClosePnl;
         const pnlPercent = pnlResult.pnlPercent;
         const totalFees = actualEntryFee + actualExitFee;
 
@@ -1083,16 +1302,28 @@ export class BinanceFuturesUserStreamService {
           return;
         }
 
+        await db.insert(realizedPnlEvents).values({
+          walletId,
+          userId: execution.userId,
+          executionId: execution.id,
+          symbol,
+          eventType: 'full_close',
+          pnl: pnlResult.netPnl.toString(),
+          fees: totalFees.toString(),
+          quantity: quantity.toString(),
+          price: exitPrice.toString(),
+        });
+
         await db
           .update(wallets)
           .set({
-            currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+            currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnlResult.netPnl}`,
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, walletId));
 
         logger.info(
-          { walletId, pnl: pnl.toFixed(2) },
+          { walletId, pnl: pnl.toFixed(2), partialClosePnl: partialClosePnl.toFixed(2) },
           '[FuturesUserStream] > Wallet balance updated atomically'
         );
 
@@ -1289,7 +1520,7 @@ export class BinanceFuturesUserStreamService {
     if (status === 'REJECTED' || status === 'EXPIRED') {
       await db
         .update(tradeExecutions)
-        .set({ status: 'cancelled', updatedAt: new Date() })
+        .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
         .where(
           and(
             eq(tradeExecutions.walletId, walletId),
@@ -1626,7 +1857,8 @@ export class BinanceFuturesUserStreamService {
         entryFee: entryFee,
         exitFee,
       });
-      const pnl = pnlResult.netPnl;
+      const partialClosePnl = parseFloat(execution.partialClosePnl || '0');
+      const pnl = pnlResult.netPnl + partialClosePnl;
       const pnlPercent = pnlResult.pnlPercent;
       const totalFees = entryFee + exitFee;
 
@@ -1661,10 +1893,22 @@ export class BinanceFuturesUserStreamService {
       await db
         .update(wallets)
         .set({
-          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+          currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnlResult.netPnl}`,
           updatedAt: new Date(),
         })
         .where(eq(wallets.id, walletId));
+
+      await db.insert(realizedPnlEvents).values({
+        walletId,
+        userId: execution.userId,
+        executionId,
+        symbol,
+        eventType: 'full_close',
+        pnl: pnlResult.netPnl.toString(),
+        fees: totalFees.toString(),
+        quantity: quantity.toString(),
+        price: exitPrice.toString(),
+      });
 
       binancePriceStreamService.invalidateExecutionCache(symbol);
 
@@ -1767,7 +2011,7 @@ export class BinanceFuturesUserStreamService {
           });
         }
 
-        await db.update(tradeExecutions).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(tradeExecutions.id, pending.id));
+        await db.update(tradeExecutions).set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() }).where(eq(tradeExecutions.id, pending.id));
         logger.info({ walletId, symbol, executionId: pending.id, closedExecutionId }, '[FuturesUserStream] Cancelled pending entry execution after position close');
       }
     } catch (error) {
@@ -1799,22 +2043,28 @@ export class BinanceFuturesUserStreamService {
       if (otherOpen.length > 0) return;
 
       const position = await getPosition(apiClient, symbol);
-      if (!position) return;
+      const positionAmt = position ? parseFloat(String(position.positionAmt)) : 0;
 
-      const positionAmt = parseFloat(String(position.positionAmt));
-      if (positionAmt === 0) return;
+      if (positionAmt !== 0) {
+        logger.warn(
+          { walletId, symbol, executionId, residualQty: positionAmt },
+          '[FuturesUserStream] Residual position detected after close - closing automatically'
+        );
+        await closePosition(apiClient, symbol, String(positionAmt));
+        logger.info(
+          { walletId, symbol, executionId, closedQty: positionAmt },
+          '[FuturesUserStream] Residual position closed successfully'
+        );
+      }
 
-      logger.warn(
-        { walletId, symbol, executionId, residualQty: positionAmt },
-        '[FuturesUserStream] Residual position detected after close - closing automatically'
-      );
-
-      await closePosition(apiClient, symbol, String(positionAmt));
-
-      logger.info(
-        { walletId, symbol, executionId, closedQty: positionAmt },
-        '[FuturesUserStream] Residual position closed successfully'
-      );
+      try {
+        await cancelAllSymbolOrders(apiClient, symbol);
+        logger.info({ walletId, symbol, executionId }, '[FuturesUserStream] Safety cleanup: cancelled all remaining orders for symbol after close');
+      } catch (cleanupErr) {
+        const msg = serializeError(cleanupErr);
+        if (!msg.includes('No orders') && !msg.includes('not found'))
+          logger.warn({ walletId, symbol, error: msg }, '[FuturesUserStream] Failed to cleanup remaining orders after close');
+      }
     } catch (error) {
       logger.error(
         { walletId, symbol, executionId, error: serializeError(error) },
@@ -1843,7 +2093,7 @@ export class BinanceFuturesUserStreamService {
       if (pendingEntry) {
         await db
           .update(tradeExecutions)
-          .set({ status: 'cancelled', updatedAt: new Date() })
+          .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
           .where(eq(tradeExecutions.id, pendingEntry.id));
         logger.warn(
           { walletId, symbol, orderId, reason },

@@ -76,6 +76,7 @@ const createMockWallet = (overrides: Partial<Wallet> = {}): Wallet => ({
   marketType: 'FUTURES',
   initialBalance: null,
   currentBalance: null,
+  totalWalletBalance: null,
   totalDeposits: null,
   totalWithdrawals: null,
   lastTransferSyncAt: null,
@@ -135,7 +136,7 @@ describe('protection-orders', () => {
       expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(2);
       expect(logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({ symbol: 'BTCUSDT', algoId: MOCK_ALGO_ID }),
-        expect.stringContaining('retrying once'),
+        expect.stringContaining('retrying'),
       );
       expect(result.algoId).toBe(NEW_ALGO_ID);
       expect(result.isAlgoOrder).toBe(true);
@@ -180,7 +181,7 @@ describe('protection-orders', () => {
       expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalledWith(
         expect.anything(),
-        expect.stringContaining('retrying once'),
+        expect.stringContaining('retrying'),
       );
       expect(result.algoId).toBe(NEW_ALGO_ID);
     });
@@ -211,7 +212,7 @@ describe('protection-orders', () => {
       expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(2);
       expect(logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({ symbol: 'BTCUSDT', algoId: MOCK_ALGO_ID }),
-        expect.stringContaining('retrying once'),
+        expect.stringContaining('retrying'),
       );
       expect(result.algoId).toBe(NEW_ALGO_ID);
     });

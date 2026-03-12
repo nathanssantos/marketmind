@@ -3,7 +3,7 @@ import type { FuturesPosition } from '@marketmind/types';
 import { and, desc, eq, gte, isNotNull, or } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
-import { orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { orders, realizedPnlEvents, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition } from './binance-futures-client';
@@ -227,7 +227,8 @@ export class PositionSyncService {
                 leverage,
                 accumulatedFunding,
               });
-              pnl = pnlResult.netPnl;
+              const existingPartialPnl = parseFloat(dbPosition.partialClosePnl || '0');
+              pnl = pnlResult.netPnl + existingPartialPnl;
               pnlPercent = pnlResult.pnlPercent;
               totalFees = pnlResult.totalFees;
               estimatedExitFee = totalFees - actualEntryFee;
@@ -242,6 +243,18 @@ export class PositionSyncService {
                   updatedAt: new Date(),
                 })
                 .where(eq(wallets.id, wallet.id));
+
+              await db.insert(realizedPnlEvents).values({
+                walletId: wallet.id,
+                userId: wallet.userId,
+                executionId: dbPosition.id,
+                symbol: dbPosition.symbol,
+                eventType: 'full_close',
+                pnl: pnlResult.netPnl.toString(),
+                fees: totalFees.toString(),
+                quantity: quantity.toString(),
+                price: exitPrice.toString(),
+              });
 
               result.changes.balanceUpdated = true;
             }

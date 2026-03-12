@@ -1,4 +1,5 @@
-import { Box, ChakraProvider, Flex, Text as ChakraText, IconButton, Toaster } from '@chakra-ui/react';
+import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
+import { IconButton } from './components/ui/icon-button';
 import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
@@ -102,16 +103,16 @@ function App(): ReactElement {
                         onClick={canNavigate ? () => navigate(symbol, marketType) : undefined}
                         _hover={canNavigate ? { opacity: 0.8 } : undefined}
                       >
-                        <CryptoIcon symbol={symbol} size={18} />
-                        <ChakraText fontWeight="bold">{toast.title}</ChakraText>
+                        <CryptoIcon symbol={symbol} size={24} />
+                        <ChakraText fontWeight="bold" fontSize="sm">{toast.title}</ChakraText>
                       </Flex>
                     ) : (
-                      <ChakraText fontWeight="bold" mb={1} pr={6}>
+                      <ChakraText fontWeight="bold" fontSize="sm" mb={1} pr={6}>
                         {toast.title}
                       </ChakraText>
                     )}
                     {toast.description && (
-                      <ChakraText fontSize="sm" pl={symbol ? 7 : 0}>{toast.description}</ChakraText>
+                      <ChakraText fontSize="xs" pl={symbol ? 8 : 0}>{toast.description}</ChakraText>
                     )}
                   </Box>
                 );
@@ -187,12 +188,6 @@ function AppContent(): ReactElement {
     migrateMovingAverages();
   }, []);
 
-  useEffect(() => {
-    const updates: Partial<typeof advancedConfig> = {};
-    if (advancedConfig.currentPriceLineStyle === 'dashed') updates.currentPriceLineStyle = 'solid';
-    if (advancedConfig.currentPriceLineWidth !== 1) updates.currentPriceLineWidth = 1;
-    if (Object.keys(updates).length > 0) setAdvancedConfig({ ...advancedConfig, ...updates });
-  }, []);
 
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);

@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
-import { positions, wallets } from '../../db/schema';
+import { positions, realizedPnlEvents, wallets } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
@@ -258,6 +258,18 @@ export const positionsRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, wallet.id));
+
+        await tx.insert(realizedPnlEvents).values({
+          walletId: wallet.id,
+          userId: ctx.user.id,
+          executionId: input.id,
+          symbol: position.symbol,
+          eventType: 'full_close',
+          pnl: netPnl.toString(),
+          fees: totalFees.toString(),
+          quantity: qty.toString(),
+          price: exitPrice.toString(),
+        });
       });
 
       return {
