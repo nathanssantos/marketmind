@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.61.0] - 2026-03-12
+
+### Added
+- **Realized PnL Events**: all close paths (manual close, algo verify fallback, opportunity-cost stale close) now insert `realized_pnl_events` so daily P&L stays accurate
+- **Untracked Reduce Order Handling**: BUY-against-SHORT and SELL-against-LONG fills from untracked exchange orders now trigger partial close (qty update + PnL recording) or full close with wallet balance update
+- **Exchange Order Chart Visibility**: untracked exchange orders (not linked to any execution) now appear as draggable order lines on the chart with cancel and cancel+replace (drag) support
+- **`totalWalletBalance` Column**: wallets schema extended with `total_wallet_balance`, synced from Binance account info for accurate exposure calculation
+- **Audit Scripts**: `backfill-realized-pnl-events`, `cancel-orphan-orders`, `check-yesterday-pnl`, `find-ghost-trades`
+- **UI Components**: `icon-button` and `separator` primitives
+
+### Fixed
+- **Daily P&L not updating**: 3 close paths were missing `realized_pnl_events` inserts — manual close, algo verify timeout fallback, and opportunity-cost stale close
+- **Phantom opposite-side positions**: reduce orders (BUY against SHORT) no longer create phantom LONG pending executions — all create-pending paths (STOP_MARKET, TP_MARKET, LIMIT in both `trading.ts` and `futures-trading.ts`) now check for existing opposite-side position
+- **Exposure % incorrect**: calculation now uses `totalWalletBalance` (without unrealized PnL) instead of `marginBalance` as denominator, matching Binance's actual exposure
+- **Phantom SL/TP order lines on chart**: `trackedOrderIds` now collects IDs from ALL executions (not just those with `entryOrderId`), preventing SL/TP algo orders from appearing as orphan entries
+- **SL/TP drag race condition**: exchange order queries now invalidate alongside execution data after SL/TP updates, preventing brief phantom order line flicker
+- **Pending entry disappearing on chart drag**: fixed order drag handler for pending entries
+- **Double-pyramid on STOP_MARKET algo entry fills**: prevented duplicate execution creation
+- **`cancelAllOpenProtectionOrdersOnExchange` scope**: now only cancels `reduceOnly` orders
+
+---
+
 ## [0.60.0] - 2026-03-11
 
 ### Added
