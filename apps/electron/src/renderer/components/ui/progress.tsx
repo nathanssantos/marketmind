@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 interface ProgressRootProps {
   value: number;
+  max?: number;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   colorPalette?: string;
   children: ReactNode;
@@ -11,9 +12,9 @@ interface ProgressRootProps {
 interface ProgressBarProps {
 }
 
-export const ProgressRoot = ({ value, size = 'md', colorPalette = 'blue', children }: ProgressRootProps) => {
+export const ProgressRoot = ({ value, max, size = 'md', colorPalette = 'blue', children }: ProgressRootProps) => {
   return (
-    <ChakraProgress.Root value={value} size={size} colorPalette={colorPalette}>
+    <ChakraProgress.Root value={value} max={max} size={size} colorPalette={colorPalette}>
       {children}
     </ChakraProgress.Root>
   );

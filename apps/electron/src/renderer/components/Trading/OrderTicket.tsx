@@ -1,10 +1,7 @@
-import { Badge, Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import { BrlValue } from '@renderer/components/ui/BrlValue';
-import { Button } from '@renderer/components/ui/button';
-import { NumberInput } from '@renderer/components/ui/number-input';
-import { Select } from '@renderer/components/ui/select';
-import { Slider } from '@renderer/components/ui/slider';
+import { Badge, Button, NumberInput, Select, Slider } from '@renderer/components/ui';
+import { BrlValue } from '@renderer/components/BrlValue';
 import { useChartContext } from '@renderer/context/ChartContext';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
@@ -205,20 +202,20 @@ const OrderTicketComponent = () => {
           <HStack gap={1}>
             <Badge
               size="sm"
-              colorPalette={marketType === 'SPOT' ? 'blue' : 'gray'}
+              variant="subtle"
+              color={marketType === 'SPOT' ? 'blue.500' : 'fg.muted'}
               cursor="pointer"
               onClick={() => setMarketType('SPOT')}
-              variant={marketType === 'SPOT' ? 'solid' : 'subtle'}
               px={3}
             >
               SPOT
             </Badge>
             <Badge
               size="sm"
-              colorPalette={marketType === 'FUTURES' ? 'orange' : 'gray'}
+              variant="subtle"
+              color={marketType === 'FUTURES' ? 'orange.500' : 'fg.muted'}
               cursor="pointer"
               onClick={() => setMarketType('FUTURES')}
-              variant={marketType === 'FUTURES' ? 'solid' : 'subtle'}
               px={3}
             >
               FUTURES
@@ -357,7 +354,6 @@ const OrderTicketComponent = () => {
                   onClick={handleUseCurrentPrice}
                   disabled={!currentPrice}
                   fontSize="xs"
-                  colorPalette="blue"
                 >
                   {t('trading.ticket.useCurrent')}
                 </Button>

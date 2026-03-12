@@ -1,4 +1,5 @@
-import { Box, Flex, IconButton, Text } from '@chakra-ui/react';
+import { Box, Flex, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui';
 import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import type { FrontendLogEntry } from '@renderer/hooks/useWebSocket';

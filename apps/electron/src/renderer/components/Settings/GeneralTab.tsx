@@ -1,8 +1,7 @@
-import { Button } from '@/renderer/components/ui/button';
+import { Button, useColorMode } from '@renderer/components/ui';
 import { Box, Grid, HStack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuMoon, LuSun } from 'react-icons/lu';
-import { useColorMode } from '../ui/color-mode';
 import { LanguageSelector } from './LanguageSelector';
 
 export const GeneralTab = () => {
@@ -23,8 +22,8 @@ export const GeneralTab = () => {
         <HStack gap={2}>
           <Button
             flex={1}
-            variant={colorMode === 'light' ? 'solid' : 'outline'}
-            colorPalette={colorMode === 'light' ? 'blue' : 'gray'}
+            variant="ghost"
+            color={colorMode === 'light' ? 'blue.500' : 'fg.muted'}
             onClick={() => setColorMode('light')}
           >
             <LuSun />
@@ -32,8 +31,8 @@ export const GeneralTab = () => {
           </Button>
           <Button
             flex={1}
-            variant={colorMode === 'dark' ? 'solid' : 'outline'}
-            colorPalette={colorMode === 'dark' ? 'blue' : 'gray'}
+            variant="ghost"
+            color={colorMode === 'dark' ? 'blue.500' : 'fg.muted'}
             onClick={() => setColorMode('dark')}
           >
             <LuMoon />

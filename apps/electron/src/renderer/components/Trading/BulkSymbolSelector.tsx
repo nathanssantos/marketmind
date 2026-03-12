@@ -1,8 +1,6 @@
 import { Box, Flex, Group, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import type { MarketType } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { Checkbox } from '@renderer/components/ui/checkbox';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
+import { Button, Checkbox, CryptoIcon } from '@renderer/components/ui';
 import { useTopCoinsByMarketCap } from '@renderer/hooks/useBackendAutoTrading';
 import { useTranslation } from 'react-i18next';
 

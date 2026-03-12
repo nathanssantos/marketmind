@@ -1,10 +1,8 @@
-import { useColorMode } from '@/renderer/components/ui/color-mode';
-import { Logo } from '@/renderer/components/ui/logo';
-import { Flex, IconButton, Text } from '@chakra-ui/react';
+import { IconButton, Logo, TooltipWrapper, useColorMode } from '@renderer/components/ui';
+import { Flex, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuMoon, LuSettings, LuSun } from 'react-icons/lu';
-import { TooltipWrapper } from '../ui/Tooltip';
 
 interface HeaderProps {
   onSettingsClick?: () => void;

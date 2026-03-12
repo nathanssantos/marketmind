@@ -1,6 +1,6 @@
 import { Text } from '@chakra-ui/react';
-import { useColorMode } from '@/renderer/components/ui/color-mode';
 import { getPnLColor } from '@/renderer/theme';
+import { useColorMode } from './color-mode';
 import type { ReactNode } from 'react';
 
 type PnLFormat = 'currency' | 'percent' | 'number';

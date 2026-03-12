@@ -1,5 +1,5 @@
-import { Badge, Box, Flex, Skeleton, Stack, Text } from '@chakra-ui/react';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
+import { Badge, CryptoIcon, Skeleton } from '@renderer/components/ui';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';

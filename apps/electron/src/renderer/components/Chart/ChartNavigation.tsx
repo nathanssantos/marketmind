@@ -1,4 +1,5 @@
-import { HStack, IconButton } from '@chakra-ui/react';
+import { HStack } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronRight, LuChevronsRight } from 'react-icons/lu';

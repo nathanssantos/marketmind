@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
-import { IconButton } from './components/ui/icon-button';
+import { CryptoIcon, ErrorMessage, IconButton, LoadingSpinner } from './components/ui';
 import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
@@ -15,9 +15,6 @@ import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainLayout } from './components/Layout/MainLayout';
-import { CryptoIcon } from './components/ui/CryptoIcon';
-import { ErrorMessage } from './components/ui/ErrorMessage';
-import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { UpdateNotification } from './components/Update/UpdateNotification';
 import { DEFAULT_MOVING_AVERAGES, DEFAULT_TIMEFRAME, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';

@@ -1,6 +1,6 @@
-import { Badge, Box, Flex, Spinner, Stack, Table, Text } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import type { StrategyVisualizationData } from '@marketmind/types';
-import { Popover } from '@renderer/components/ui/popover';
+import { Badge, Popover, Table } from '@renderer/components/ui';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/services/trpc';
 import { useQuery } from '@tanstack/react-query';

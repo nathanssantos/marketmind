@@ -1,5 +1,5 @@
-import { Badge, Box, Flex, Text } from '@chakra-ui/react';
-import { Switch } from '@renderer/components/ui/switch';
+import { Box, Flex, Text } from '@chakra-ui/react';
+import { Badge, Switch } from '@renderer/components/ui';
 
 export interface FilterToggleProps {
   label: string;

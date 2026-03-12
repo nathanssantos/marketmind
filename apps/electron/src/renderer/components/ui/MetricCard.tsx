@@ -1,8 +1,8 @@
 import { Box, Flex, Icon, Text } from '@chakra-ui/react';
+import { getPnLColor } from '@/renderer/theme';
 import type { ReactNode } from 'react';
 import { LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { useColorMode } from './color-mode';
-import { getPnLColor } from '@/renderer/theme';
 
 type MetricFormat = 'currency' | 'percent' | 'number';
 type TrendDirection = 'up' | 'down' | 'neutral';

@@ -67,23 +67,39 @@
 14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
 15. **🔴 CRITICAL - All Tests Must Pass:** NEVER commit code with failing tests. ALWAYS run `npm run test:run` before committing. If tests fail, FIX THEM FIRST. Breaking tests is NEVER acceptable. Zero tolerance for broken tests in commits.
 
-### UI Component Standards
+### UI Component Standards (`@renderer/components/ui`)
 
-All frontend UI code must follow the standards defined in `docs/UI_STYLE_GUIDE.md` and `apps/electron/src/renderer/components/ui/README.md`. These documents are living references and must be updated whenever components are created, modified, or deprecated.
+The `apps/electron/src/renderer/components/ui/` directory is the **single source of truth** for all reusable UI components. It is designed for future extraction into a standalone `@marketmind/ui` package.
 
-**Import rules:**
-- Interactive/composite components (`Button`, `Input`, `Switch`, `Slider`, `Select`, `CollapsibleSection`, `Dialog`, `Tabs`, etc.) must come from `@/renderer/components/ui/` or `@renderer/components/ui/`
-- Layout primitives (`Box`, `Flex`, `Stack`, `Text`, `Grid`, etc.) come from `@chakra-ui/react`
-- Never import `Button`, `Input`, `Switch`, or other interactive components directly from `@chakra-ui/react`
+**🔴 CRITICAL - Before creating ANY new UI component:**
+1. Check `apps/electron/src/renderer/components/ui/index.ts` — the component may already exist
+2. Check `docs/UI_STYLE_GUIDE.md` for the full component catalog
+3. If it doesn't exist, create it as a wrapper in `ui/` first, then use it
 
-**Style rules:**
-- All colors via semantic tokens (never hardcoded)
-- Use theme recipes for repeated patterns (badge variants, collapsible sections)
-- Inline style props only for layout-specific context (spacing, dimensions)
-- Consult `docs/UI_STYLE_GUIDE.md` for the full style hierarchy
+**Import rules (single canonical path):**
+```tsx
+import { Button, IconButton, Switch, Badge, Tabs } from '@renderer/components/ui';
+```
+- **ALL** interactive/visual components must come from `@renderer/components/ui` (barrel import via `index.ts`)
+- This includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`
+- **Only layout primitives** come directly from `@chakra-ui/react`: `Box`, `Flex`, `Stack`, `HStack`, `VStack`, `Grid`, `GridItem`, `Text`, `Heading`, `Spinner`, `Portal`, `Group`
+- **NEVER** import `Button`, `IconButton`, `Badge`, `Tabs`, `Table`, `Menu`, `Input`, `Switch`, or any interactive component directly from `@chakra-ui/react` — only the `ui/` wrappers may do that internally
+
+**Theming rules (mandatory for future multi-theme support):**
+- All colors via **semantic tokens** — never hardcode hex/rgb values
+- Use `colorPalette` prop (not `color="blue.500"`) when Chakra supports it
+- Use theme **recipes** for repeated visual patterns
+- Inline style props only for layout-specific context (spacing, positioning, dimensions)
+- Components in `ui/` must be theme-agnostic: they receive colors from Chakra's token system, never define their own palette
+
+**When creating a new wrapper in `ui/`:**
+1. Create the file following the existing pattern (re-export from Chakra with `forwardRef`)
+2. Export it from `ui/index.ts`
+3. Update `docs/UI_STYLE_GUIDE.md` (component catalog)
+4. Update `apps/electron/src/renderer/components/ui/README.md` (usage examples)
 
 **Documentation maintenance:**
-- When adding/modifying UI components, update `docs/UI_STYLE_GUIDE.md` and `apps/electron/src/renderer/components/ui/README.md`
+- `docs/UI_STYLE_GUIDE.md` and `ui/README.md` are **living documents** — update whenever components are created, modified, or deprecated
 - When adding new recipes to the theme, document them in the Style Guide
 
 ### Git Workflow

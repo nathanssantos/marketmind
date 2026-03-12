@@ -2,7 +2,7 @@ import type { ScreenerPreset } from '@marketmind/types';
 import { Box, Flex, HStack } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '../ui/button';
+import { Button } from '@renderer/components/ui';
 
 interface PresetBarProps {
   presets: ScreenerPreset[];
@@ -23,8 +23,8 @@ export const PresetBar = memo(({ presets, activePresetId, onSelectPreset }: Pres
       <Flex gap={1} flexWrap="wrap">
         <Button
           size="2xs"
-          variant={activePresetId === null ? 'solid' : 'outline'}
-          colorPalette={activePresetId === null ? 'blue' : 'gray'}
+          variant="ghost"
+          color={activePresetId === null ? 'blue.500' : 'fg.muted'}
           onClick={() => onSelectPreset(null)}
         >
           {t('screener.presets.custom')}
@@ -33,8 +33,8 @@ export const PresetBar = memo(({ presets, activePresetId, onSelectPreset }: Pres
           <HStack key={preset.id} gap={0}>
             <Button
               size="2xs"
-              variant={activePresetId === preset.id ? 'solid' : 'outline'}
-              colorPalette={activePresetId === preset.id ? 'blue' : 'gray'}
+              variant="ghost"
+              color={activePresetId === preset.id ? 'blue.500' : 'fg.muted'}
               onClick={() => onSelectPreset(preset.id)}
               title={t(`screener.presets.descriptions.${preset.id}`, preset.description)}
             >

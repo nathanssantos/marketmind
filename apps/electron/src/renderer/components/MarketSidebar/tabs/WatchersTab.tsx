@@ -1,10 +1,5 @@
-import { Badge, Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
-import { Separator } from '@renderer/components/ui/separator';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
-import { Select } from '@renderer/components/ui/select';
-import { Slider } from '@renderer/components/ui/slider';
-import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
+import { Badge, Button, CryptoIcon, IconButton, Select, Separator, Slider, TooltipWrapper } from '@renderer/components/ui';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
@@ -162,7 +157,7 @@ const WatchersTabComponent = () => {
           </Text>
           <Button
             size="sm"
-            colorPalette="blue"
+            variant="outline"
             mt={3}
             px={4}
             onClick={() => setIsModalOpen(true)}

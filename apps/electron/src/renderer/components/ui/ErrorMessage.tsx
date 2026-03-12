@@ -52,7 +52,7 @@ export const ErrorMessage = ({
         {onRetry && (
           <Button
             onClick={onRetry}
-            colorPalette="blue"
+            variant="outline"
             size="md"
             mt={2}
             px={3}

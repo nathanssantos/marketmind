@@ -1,5 +1,4 @@
-import { Slider } from '@/renderer/components/ui/slider';
-import { Button } from '@renderer/components/ui/button';
+import { Button, Slider } from '@renderer/components/ui';
 import {
   Box,
   Flex,

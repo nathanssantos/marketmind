@@ -1,8 +1,7 @@
-import { Badge, Box, Flex, Progress, Stack, Text, VStack } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
+import { Badge, Button, CryptoIcon, ProgressBar, ProgressRoot } from '@renderer/components/ui';
+import { BrlValue } from '@renderer/components/BrlValue';
+import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
-import { BrlValue } from '@renderer/components/ui/BrlValue';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -199,16 +198,14 @@ const FuturesPositionCard = memo(({
               </Text>
             </Flex>
 
-            <Progress.Root
+            <ProgressRoot
               value={100 - liquidationDistance}
               max={100}
               size="xs"
               colorPalette={getLiquidationColor()}
             >
-              <Progress.Track>
-                <Progress.Range />
-              </Progress.Track>
-            </Progress.Root>
+              <ProgressBar />
+            </ProgressRoot>
 
             <Flex justify="space-between" mt={0.5}>
               <Text fontSize="2xs" color="fg.muted">Distance to liq.</Text>

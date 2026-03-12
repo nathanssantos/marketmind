@@ -1,9 +1,4 @@
-import { Button } from '@/renderer/components/ui/button';
-import { Checkbox } from '@/renderer/components/ui/checkbox';
-import { Field } from '@/renderer/components/ui/field';
-import { Switch } from '@/renderer/components/ui/switch';
-import { NumberInput } from '@/renderer/components/ui/number-input';
-import { Select } from '@/renderer/components/ui/select';
+import { Button, Checkbox, Field, NumberInput, Select, Switch } from '@renderer/components/ui';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useChartPref } from '@/renderer/store/preferencesStore';

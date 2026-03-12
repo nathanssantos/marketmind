@@ -1,9 +1,9 @@
-import { Badge, Box, Flex, Progress, Text, VStack } from '@chakra-ui/react';
+import { Badge, CryptoIcon, ProgressBar, ProgressRoot } from '@renderer/components/ui';
+import { Box, Flex, Text, VStack } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY, type FuturesPosition } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTrendingDown, LuTrendingUp, LuTriangleAlert } from 'react-icons/lu';
-import { CryptoIcon } from './ui/CryptoIcon';
 import { formatWalletCurrencyWithSign } from '../utils/currencyFormatter';
 
 interface FuturesPositionInfoProps {
@@ -152,16 +152,14 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
             </Text>
           </Flex>
 
-          <Progress.Root
+          <ProgressRoot
             value={100 - liquidationDistance}
             max={100}
             size="sm"
             colorPalette={getLiquidationColor()}
           >
-            <Progress.Track>
-              <Progress.Range />
-            </Progress.Track>
-          </Progress.Root>
+            <ProgressBar />
+          </ProgressRoot>
 
           <Flex justify="space-between" mt={1}>
             <Text fontSize="2xs" color="fg.muted">

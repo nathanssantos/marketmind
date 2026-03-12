@@ -40,7 +40,7 @@ export const ConfirmationDialog = ({
 }: ConfirmationDialogProps) => {
   const { t } = useTranslation();
 
-  const resolvedColorPalette = colorPalette ?? (isDestructive ? 'red' : 'blue');
+  const resolvedColorPalette = colorPalette ?? (isDestructive ? 'red' : undefined);
 
   const handleOpenChange = (e: { open: boolean }) => {
     if (!e.open && !isLoading) onClose();
@@ -79,6 +79,7 @@ export const ConfirmationDialog = ({
             </Button>
             <Button
               size="2xs"
+              variant={resolvedColorPalette ? 'solid' : 'outline'}
               colorPalette={resolvedColorPalette}
               onClick={handleConfirm}
               loading={isLoading}

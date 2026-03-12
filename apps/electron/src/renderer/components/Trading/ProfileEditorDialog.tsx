@@ -1,5 +1,8 @@
-import { Box, Flex, HStack, SimpleGrid, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Box, Flex, HStack, SimpleGrid, Spinner, Stack, Text } from '@chakra-ui/react';
 import {
+  Button,
+  Checkbox,
+  CollapsibleSection,
   DialogBackdrop,
   DialogBody,
   DialogCloseTrigger,
@@ -9,17 +12,15 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from '@renderer/components/ui/dialog';
+  Field,
+  Input,
+  NumberInput,
+  Select,
+  Slider,
+  Switch,
+  Textarea,
+} from '@renderer/components/ui';
 import type { CreateTradingProfileInput, TradingProfile, UpdateTradingProfileInput } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { Checkbox } from '@renderer/components/ui/checkbox';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
-import { Field } from '@renderer/components/ui/field';
-import { Input } from '@renderer/components/ui/input';
-import { NumberInput } from '@renderer/components/ui/number-input';
-import { Select } from '@renderer/components/ui/select';
-import { Slider } from '@renderer/components/ui/slider';
-import { Switch } from '@renderer/components/ui/switch';
 import { useAvailableSetups } from '@renderer/hooks/useProfileEditor';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -1174,7 +1175,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
             </Button>
             <Button
               size="2xs"
-              colorPalette="blue"
+              variant="outline"
               onClick={() => void handleSubmit()}
               loading={isSubmitting}
               disabled={!canSubmit}

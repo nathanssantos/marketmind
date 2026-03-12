@@ -1,5 +1,5 @@
+import { Table } from '@renderer/components/ui';
 import { Box, Flex } from '@chakra-ui/react';
-import { Table } from '@renderer/components/ui/table';
 import type { ReactNode } from 'react';
 import { LuArrowDown, LuArrowUp, LuArrowUpDown } from 'react-icons/lu';
 

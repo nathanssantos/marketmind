@@ -1,9 +1,9 @@
-import { Box, Tabs, Text } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
-import { SidebarContainer } from '../ui/Sidebar';
+import { SidebarContainer, Tabs } from '../ui';
 import { OrdersList } from './OrdersList';
 import { OrdersDialog } from './OrdersDialog';
 import { OrderTicket } from './OrderTicket';

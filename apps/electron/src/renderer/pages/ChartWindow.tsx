@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
-import { IconButton } from '../components/ui/icon-button';
+import { ErrorMessage, IconButton, LoadingSpinner } from '../components/ui';
 import type { AssetClass, Kline, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
@@ -16,8 +16,6 @@ import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
 import { QuickTradeToolbar } from '../components/Layout/QuickTradeToolbar';
 import { Toolbar } from '../components/Layout/Toolbar';
 import { MarketStatusBar } from '../components/MarketStatusBar';
-import { ErrorMessage } from '../components/ui/ErrorMessage';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, DEFAULT_TIMEFRAME } from '../constants/defaults';
 import { ChartProvider } from '../context/ChartContext';
 import { useKlineStream } from '../hooks/useBackendKlines';

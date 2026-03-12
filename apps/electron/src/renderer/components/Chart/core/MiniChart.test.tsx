@@ -1,7 +1,7 @@
 import type { Kline } from '@marketmind/types';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ColorModeProvider } from '../../ui/color-mode';
+import { ColorModeProvider } from '@renderer/components/ui';
 import { MiniChart } from './MiniChart';
 
 const mockKlines: Kline[] = Array.from({ length: 100 }, (_, i) => ({

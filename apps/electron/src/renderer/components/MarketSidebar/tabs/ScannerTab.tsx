@@ -1,7 +1,5 @@
-import { Badge, Box, Flex, Grid, IconButton, Spinner, Stack, Text } from '@chakra-ui/react';
-import { Separator } from '@renderer/components/ui/separator';
-import { Button } from '@renderer/components/ui/button';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
+import { Badge, Button, CryptoIcon, IconButton, Separator } from '@renderer/components/ui';
+import { Box, Flex, Grid, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { trpc } from '@renderer/utils/trpc';
@@ -109,8 +107,8 @@ const ScannerTabComponent = () => {
           <Button
             key={opt.value}
             size="2xs"
-            variant={timeframe === opt.value ? 'solid' : 'outline'}
-            colorPalette={timeframe === opt.value ? 'blue' : 'gray'}
+            variant="ghost"
+            color={timeframe === opt.value ? 'blue.500' : 'fg.muted'}
             onClick={() => setTimeframe(opt.value)}
           >
             {opt.label}

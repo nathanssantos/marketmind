@@ -1,8 +1,8 @@
 import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import type { MarketType } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import {
+  Button,
+  CryptoIcon,
   DialogActionTrigger,
   DialogBackdrop,
   DialogBody,
@@ -13,7 +13,7 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from '@renderer/components/ui/dialog';
+} from '@renderer/components/ui';
 import {
   useBackendAutoTrading,
   useDynamicSymbolScores,

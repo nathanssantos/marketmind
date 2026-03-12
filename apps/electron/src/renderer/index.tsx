@@ -6,7 +6,7 @@ import type { PlatformAdapter } from './adapters/types';
 import App from './App';
 import { LanguageSyncProvider } from './components/LanguageSyncProvider';
 import { TrpcProvider } from './components/TrpcProvider';
-import { ColorModeProvider } from './components/ui/color-mode';
+import { ColorModeProvider } from './components/ui';
 import { PRE_REACT_COLORS } from './constants/preReactColors';
 import { PlatformProvider } from './context/PlatformContext';
 import './global.d.ts';

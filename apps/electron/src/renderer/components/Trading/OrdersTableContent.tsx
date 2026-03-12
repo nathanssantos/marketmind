@@ -1,8 +1,7 @@
-import { Badge, Box, Flex, IconButton, Portal, Text } from '@chakra-ui/react';
+import { Box, Flex, Portal, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Order, WalletCurrency } from '@marketmind/types';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
-import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
+import { Badge, CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIStore } from '@renderer/store/uiStore';
 import { getOrderId, getOrderPrice, getOrderQuantity, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';

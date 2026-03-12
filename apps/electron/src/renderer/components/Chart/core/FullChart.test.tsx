@@ -3,7 +3,7 @@ import type { Kline } from '@marketmind/types';
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ChartProvider } from '../../../context/ChartContext';
-import { ColorModeProvider } from '../../ui/color-mode';
+import { ColorModeProvider } from '@renderer/components/ui';
 import { PinnedControlsProvider } from '../PinnedControlsContext';
 import { FullChart } from './FullChart';
 

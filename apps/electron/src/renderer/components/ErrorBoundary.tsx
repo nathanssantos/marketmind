@@ -1,5 +1,5 @@
 import { Box, Heading, Text, VStack } from '@chakra-ui/react';
-import { Button } from './ui/button';
+import { Button } from '@renderer/components/ui';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';

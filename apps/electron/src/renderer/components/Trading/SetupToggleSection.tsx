@@ -1,3 +1,4 @@
+import { Checkbox } from '@renderer/components/ui';
 import { Box, Collapsible, Flex, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -6,7 +7,6 @@ import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
-import { Checkbox } from '../ui/checkbox';
 
 export const SetupToggleSection = memo(() => {
   const { t } = useTranslation();

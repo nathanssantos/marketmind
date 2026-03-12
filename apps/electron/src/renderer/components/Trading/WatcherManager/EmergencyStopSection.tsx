@@ -1,5 +1,5 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
+import { Button } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuTriangleAlert } from 'react-icons/lu';
 

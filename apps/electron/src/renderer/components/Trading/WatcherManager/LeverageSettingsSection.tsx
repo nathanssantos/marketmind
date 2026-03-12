@@ -1,7 +1,5 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
-import { NumberInput } from '@renderer/components/ui/number-input';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { Button, CollapsibleSection, NumberInput } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface LeverageSettingsSectionProps {

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.62.0] - 2026-03-12
+
+### Added
+- **ToggleIconButton component**: new `ui/toggle-icon-button.tsx` — ghost-only toggle with `active` prop, replaces 26+ verbose toggle patterns
+- **8 new UI wrappers**: `Badge`, `CloseButton`, `Link`, `Alert`, `Skeleton`, `Textarea`, `Menu`, `Image` — all following Chakra theming system
+- **UI barrel export**: single canonical import path `@renderer/components/ui` for all 40+ components
+- **UI Components Standardization Plan**: `docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`
+
+### Changed
+- **Blue button removal**: all solid blue buttons replaced — toggles use `variant="ghost"` with `color` prop, action buttons use `variant="outline"`
+- **Import standardization**: ~100 files migrated from fragmented imports to single barrel path
+- **BrlValue moved**: from `ui/` to `components/` (domain component, not pure UI)
+- **UI internal imports**: changed to relative paths to avoid circular barrel dependencies
+- **Documentation updated**: `CLAUDE.md`, `docs/UI_STYLE_GUIDE.md`, `ui/README.md` with full component catalog and theming rules
+
+### Removed
+- Legacy direct Chakra imports of interactive components outside `ui/` wrappers
+- Obsolete fragmented import paths (`../ui/button`, `@/renderer/components/ui/slider`, etc.)
+
+---
+
 ## [0.61.0] - 2026-03-12
 
 ### Added

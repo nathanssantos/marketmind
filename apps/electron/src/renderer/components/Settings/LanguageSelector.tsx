@@ -1,4 +1,4 @@
-import { Select } from '@/renderer/components/ui/select';
+import { Select } from '@renderer/components/ui';
 import { useUIPreferences } from '@/renderer/hooks/useUserPreferences';
 import { Box, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useRef } from 'react';

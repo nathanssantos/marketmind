@@ -1,10 +1,7 @@
-import { Box, Flex, Group, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Button, Dialog, IconButton, Input, Select } from '@renderer/components/ui';
+import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { Dialog } from '@renderer/components/ui/dialog';
-import { Input } from '@renderer/components/ui/input';
-import { Select } from '@renderer/components/ui/select';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { trpc } from '@renderer/utils/trpc';

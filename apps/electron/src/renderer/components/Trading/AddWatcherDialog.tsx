@@ -1,10 +1,6 @@
 import { Box, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { Checkbox } from '@renderer/components/ui/checkbox';
-import { Field } from '@renderer/components/ui/field';
-import { FormDialog } from '@renderer/components/ui/FormDialog';
-import { Select } from '@renderer/components/ui/select';
+import { Button, Checkbox, Field, FormDialog, Select } from '@renderer/components/ui';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';

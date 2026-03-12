@@ -1,4 +1,4 @@
-import { useColorMode } from '@/renderer/components/ui/color-mode';
+import { useColorMode } from './color-mode';
 import { Portal, Tooltip } from '@chakra-ui/react';
 import type { CSSProperties } from 'react';
 import { memo, useMemo, useState, type ReactElement, type ReactNode } from 'react';

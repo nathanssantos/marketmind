@@ -1,7 +1,7 @@
-import { Box, Collapsible, Flex, Grid, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { Button, IconButton } from '@renderer/components/ui';
+import { Box, Collapsible, Flex, Grid, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { TradingProfile } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -83,7 +83,7 @@ export const TradingProfilesManager = () => {
               </Button>
               <Button
                 size="sm"
-                colorPalette="blue"
+                variant="outline"
                 onClick={() => setShowCreateDialog(true)}
               >
                 <LuPlus />

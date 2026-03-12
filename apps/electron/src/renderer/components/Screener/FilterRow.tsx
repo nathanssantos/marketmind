@@ -1,10 +1,9 @@
 import type { IndicatorMeta, ScreenerFilterCondition, ScreenerIndicatorId, ScreenerOperator } from '@marketmind/types';
-import { Flex, IconButton } from '@chakra-ui/react';
-import { Input } from '../ui/input';
+import { Flex } from '@chakra-ui/react';
+import { IconButton, Input, Select, type SelectOption } from '@renderer/components/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTrash2 } from 'react-icons/lu';
-import { Select, type SelectOption } from '../ui/select';
 
 const OPERATORS: ScreenerOperator[] = ['ABOVE', 'BELOW', 'BETWEEN', 'CROSSES_ABOVE', 'CROSSES_BELOW', 'INCREASING', 'DECREASING'];
 

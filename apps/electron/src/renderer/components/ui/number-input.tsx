@@ -1,5 +1,5 @@
-import type { InputProps } from '@/renderer/components/ui/input';
-import { Input } from '@/renderer/components/ui/input';
+import type { InputProps } from './input';
+import { Input } from './input';
 import { forwardRef } from 'react';
 
 export interface NumberInputProps extends Omit<InputProps, 'type'> {

@@ -1,8 +1,5 @@
-import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
-import { NumberInput } from '@renderer/components/ui/number-input';
-import { Switch } from '@renderer/components/ui/switch';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { CollapsibleSection, NumberInput, Radio, RadioGroup, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { FilterToggle } from './FilterToggle';
 import type { WatcherConfig } from './types';

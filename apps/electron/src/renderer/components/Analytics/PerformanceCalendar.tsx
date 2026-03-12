@@ -6,7 +6,7 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { formatBRL, formatWalletCurrencyWithSign } from '../../utils/currencyFormatter';
 import { trpc } from '../../utils/trpc';
-import { Button } from '../ui/button';
+import { Button } from '@renderer/components/ui';
 
 interface PerformanceCalendarProps {
   walletId: string;

@@ -1,4 +1,5 @@
-import { Menu, Portal } from '@chakra-ui/react';
+import { Portal } from '@chakra-ui/react';
+import { Menu } from '@renderer/components/ui';
 import type { TradingSetup } from '@marketmind/types';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';

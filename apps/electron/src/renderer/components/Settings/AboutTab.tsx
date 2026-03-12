@@ -1,13 +1,9 @@
-import { Button } from '@/renderer/components/ui/button';
-import { Logo } from '@/renderer/components/ui/logo';
-import { Slider } from '@/renderer/components/ui/slider';
-import { Switch } from '@/renderer/components/ui/switch';
+import { Badge, Button, Link, Logo, Separator, Slider, Switch } from '@renderer/components/ui';
 import { DEFAULT_AUTO_UPDATE_SETTINGS } from '@/renderer/constants/defaults';
 import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useUIPref } from '@/renderer/store/preferencesStore';
-import { Separator } from '@/renderer/components/ui/separator';
-import { Badge, Box, Flex, HStack, Link, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { APP_VERSION } from '@shared/constants';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

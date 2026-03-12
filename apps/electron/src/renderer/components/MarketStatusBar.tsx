@@ -1,8 +1,8 @@
-import { Badge, Flex, Text } from '@chakra-ui/react';
+import { Flex, Text } from '@chakra-ui/react';
+import { Badge, TooltipWrapper } from '@renderer/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuClock, LuMoon, LuSun } from 'react-icons/lu';
-import { TooltipWrapper } from './ui/Tooltip';
 
 type MarketSession = 'PRE_MARKET' | 'REGULAR' | 'AFTER_HOURS' | 'CLOSED';
 

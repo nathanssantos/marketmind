@@ -1,5 +1,6 @@
 import { formatDateTimeTooltip } from '@/renderer/utils/formatters';
-import { Badge, HStack, Stack, Text } from '@chakra-ui/react';
+import { HStack, Stack, Text } from '@chakra-ui/react';
+import { Badge } from '@renderer/components/ui';
 import type { Order } from '@marketmind/types';
 import {
   getOrderCreatedAt,

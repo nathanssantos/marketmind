@@ -1,6 +1,6 @@
-import { Box, Flex, IconButton, Portal, Text } from '@chakra-ui/react';
+import { Box, Flex, Portal, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
+import { CryptoIcon, IconButton } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuPause } from 'react-icons/lu';

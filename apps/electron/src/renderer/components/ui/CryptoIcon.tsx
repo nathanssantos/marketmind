@@ -1,4 +1,5 @@
-import { Box, Image } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
+import { Image } from './image';
 import { memo, useState } from 'react';
 
 interface CryptoIconProps {

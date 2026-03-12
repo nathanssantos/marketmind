@@ -1,9 +1,9 @@
-import { Box, Tabs, Text } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { type MarketSidebarTab, useUIStore } from '../../store/uiStore';
-import { SidebarContainer } from '../ui/Sidebar';
+import { SidebarContainer, Tabs } from '../ui';
 import { MarketIndicatorsTab } from './tabs/MarketIndicatorsTab';
 import { WatchersTab } from './tabs/WatchersTab';
 import { LogsTab } from './tabs/LogsTab';
