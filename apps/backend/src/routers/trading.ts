@@ -1614,22 +1614,7 @@ export const tradingRouter = router({
         });
       }
 
-      if (execution.entryOrderId) {
-        try {
-          if (isAlgoEntry) {
-            await cancelFuturesAlgoOrder(apiClient, execution.entryOrderId);
-          } else {
-            await cancelFuturesOrder(apiClient, execution.symbol, execution.entryOrderId);
-          }
-          logger.info({ orderId: execution.entryOrderId, symbol: execution.symbol }, 'Cancelled old entry order for pending entry move');
-        } catch (error) {
-          logger.warn({
-            orderId: execution.entryOrderId,
-            symbol: execution.symbol,
-            error: serializeError(error),
-          }, 'Failed to cancel old entry order (may already be filled/cancelled)');
-        }
-      }
+      const oldEntryOrderId = execution.entryOrderId;
 
       await ctx.db
         .update(tradeExecutions)
@@ -1641,6 +1626,23 @@ export const tradingRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(tradeExecutions.id, input.id));
+
+      if (oldEntryOrderId) {
+        try {
+          if (isAlgoEntry) {
+            await cancelFuturesAlgoOrder(apiClient, oldEntryOrderId);
+          } else {
+            await cancelFuturesOrder(apiClient, execution.symbol, oldEntryOrderId);
+          }
+          logger.info({ orderId: oldEntryOrderId, symbol: execution.symbol }, 'Cancelled old entry order for pending entry move');
+        } catch (error) {
+          logger.warn({
+            orderId: oldEntryOrderId,
+            symbol: execution.symbol,
+            error: serializeError(error),
+          }, 'Failed to cancel old entry order (may already be filled/cancelled)');
+        }
+      }
 
       logger.info({
         executionId: execution.id,
