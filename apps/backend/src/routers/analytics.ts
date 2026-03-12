@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions } from '../db/schema';
+import { realizedPnlEvents, tradeExecutions } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 import { walletQueries } from '../services/database/walletQueries';
 
@@ -105,10 +105,27 @@ export const analyticsRouter = router({
         return pnl < 0;
       });
 
-      const totalPnL = trades.reduce((sum, t) => {
+      let totalPnL = trades.reduce((sum, t) => {
         const pnl = t.pnl ? parseFloat(t.pnl) : 0;
         return sum + pnl;
       }, 0);
+
+      if (input.period === 'day') {
+        const dayStart = new Date();
+        dayStart.setDate(dayStart.getDate() - 1);
+        const dayEvents = await ctx.db
+          .select({ pnl: realizedPnlEvents.pnl })
+          .from(realizedPnlEvents)
+          .where(
+            and(
+              eq(realizedPnlEvents.walletId, input.walletId),
+              eq(realizedPnlEvents.userId, ctx.user.id),
+              gte(realizedPnlEvents.createdAt, dayStart),
+            )
+          );
+        const eventPnl = dayEvents.reduce((sum, e) => sum + parseFloat(e.pnl || '0'), 0);
+        if (eventPnl !== 0) totalPnL = eventPnl;
+      }
 
       const totalFees = trades.reduce((sum, t) => {
         const fees = t.fees ? parseFloat(t.fees) : 0;
@@ -310,36 +327,46 @@ export const analyticsRouter = router({
         parseFloat(wallet.totalDeposits || '0') -
         parseFloat(wallet.totalWithdrawals || '0');
 
-      const allTrades = await ctx.db
-        .select()
-        .from(tradeExecutions)
-        .where(
-          and(
-            eq(tradeExecutions.walletId, input.walletId),
-            eq(tradeExecutions.userId, ctx.user.id),
-            eq(tradeExecutions.status, 'closed')
-          )
-        )
-        .orderBy(tradeExecutions.closedAt);
-
       const monthStart = new Date(input.year, input.month - 1, 1);
       const monthEnd = new Date(input.year, input.month, 1);
 
+      const priorEvents = await ctx.db
+        .select({ pnl: realizedPnlEvents.pnl })
+        .from(realizedPnlEvents)
+        .where(
+          and(
+            eq(realizedPnlEvents.walletId, input.walletId),
+            eq(realizedPnlEvents.userId, ctx.user.id),
+            lt(realizedPnlEvents.createdAt, monthStart),
+          )
+        );
+
       let runningBalance = effectiveCapital;
-      const dailyData: Record<string, { pnl: number; trades: number; balanceAtStart: number }> = {};
+      for (const e of priorEvents) {
+        runningBalance += parseFloat(e.pnl || '0');
+      }
 
-      for (const trade of allTrades) {
-        if (!trade.closedAt) continue;
-        const closedAt = new Date(trade.closedAt);
-        const pnl = trade.pnl ? parseFloat(trade.pnl) : 0;
+      const events = await ctx.db
+        .select()
+        .from(realizedPnlEvents)
+        .where(
+          and(
+            eq(realizedPnlEvents.walletId, input.walletId),
+            eq(realizedPnlEvents.userId, ctx.user.id),
+            gte(realizedPnlEvents.createdAt, monthStart),
+            lt(realizedPnlEvents.createdAt, monthEnd),
+          )
+        )
+        .orderBy(realizedPnlEvents.createdAt);
 
-        if (closedAt >= monthStart && closedAt < monthEnd) {
-          const dateKey = closedAt.toISOString().slice(0, 10);
-          if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, trades: 0, balanceAtStart: runningBalance };
-          dailyData[dateKey].pnl += pnl;
-          dailyData[dateKey].trades++;
-        }
+      const dailyData: Record<string, { pnl: number; events: number; balanceAtStart: number }> = {};
 
+      for (const event of events) {
+        const dateKey = event.createdAt.toISOString().slice(0, 10);
+        if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, events: 0, balanceAtStart: runningBalance };
+        const pnl = parseFloat(event.pnl || '0');
+        dailyData[dateKey].pnl += pnl;
+        dailyData[dateKey].events++;
         runningBalance += pnl;
       }
 
@@ -349,7 +376,7 @@ export const analyticsRouter = router({
         pnlPercent: data.balanceAtStart > 0
           ? parseFloat(((data.pnl / data.balanceAtStart) * 100).toFixed(2))
           : 0,
-        tradesCount: data.trades,
+        tradesCount: data.events,
       }));
     }),
 
@@ -363,16 +390,16 @@ export const analyticsRouter = router({
     .query(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      const trades = await ctx.db
+      const events = await ctx.db
         .select()
-        .from(tradeExecutions)
+        .from(realizedPnlEvents)
         .where(
           and(
-            eq(tradeExecutions.walletId, input.walletId),
-            eq(tradeExecutions.status, 'closed')
+            eq(realizedPnlEvents.walletId, input.walletId),
+            eq(realizedPnlEvents.userId, ctx.user.id),
           )
         )
-        .orderBy(tradeExecutions.closedAt);
+        .orderBy(realizedPnlEvents.createdAt);
 
       const initialBalance = parseFloat(wallet.initialBalance || '0');
       const curveDeposits = parseFloat(wallet.totalDeposits || '0');
@@ -388,14 +415,12 @@ export const analyticsRouter = router({
         },
       ];
 
-      for (const trade of trades) {
-        if (!trade.closedAt) continue;
-
-        const pnl = trade.pnl ? parseFloat(trade.pnl) : 0;
+      for (const event of events) {
+        const pnl = parseFloat(event.pnl || '0');
         runningBalance += pnl;
 
         equityPoints.push({
-          timestamp: trade.closedAt.toISOString(),
+          timestamp: event.createdAt.toISOString(),
           balance: parseFloat(runningBalance.toFixed(2)),
           pnl: parseFloat(pnl.toFixed(2)),
         });

@@ -1,4 +1,5 @@
-import { Box, HStack, IconButton, Separator } from '@chakra-ui/react';
+import { Box, IconButton, VStack } from '@chakra-ui/react';
+import { Separator } from '../ui/separator';
 import type { DrawingType } from '@marketmind/chart-studies';
 import { useChartPref } from '@renderer/store/preferencesStore';
 import { useDrawingStore } from '@renderer/store/drawingStore';
@@ -62,25 +63,21 @@ export const ChartToolsToolbar = memo(({
 
   return (
     <Box
-      position="absolute"
-      top={2}
-      left="50%"
-      transform="translateX(-50%)"
-      zIndex={10}
+      flexShrink={0}
       bg="bg.panel"
-      borderRadius="md"
-      border="1px solid"
+      borderRight="1px solid"
       borderColor="border"
-      boxShadow="sm"
-      p={1}
+      py={1}
+      px={0.5}
+      overflowY="auto"
     >
-      <HStack gap={1}>
+      <VStack gap={0.5}>
         <IndicatorTogglePopover
           movingAverages={movingAverages}
           onMovingAverageToggle={toggleMA}
         />
-        <Separator orientation="vertical" height="4" />
-        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="bottom">
+        <Separator orientation="horizontal" width="100%" />
+        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.profitLossAreas')}
@@ -91,7 +88,7 @@ export const ChartToolsToolbar = memo(({
             <LuRectangleHorizontal />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.fibonacciProjection')}
@@ -102,8 +99,8 @@ export const ChartToolsToolbar = memo(({
             <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
           </IconButton>
         </TooltipWrapper>
-        <Separator orientation="vertical" height="4" />
-        <TooltipWrapper label={t('chart.tools.pencil', 'Pencil')} showArrow placement="bottom">
+        <Separator orientation="horizontal" width="100%" />
+        <TooltipWrapper label={t('chart.tools.pencil', 'Pencil')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.pencil', 'Pencil')}
@@ -114,7 +111,7 @@ export const ChartToolsToolbar = memo(({
             <LuPencil />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.line', 'Line')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.line', 'Line')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.line', 'Line')}
@@ -125,7 +122,7 @@ export const ChartToolsToolbar = memo(({
             <LuMinus />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.rectangle', 'Rectangle')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.rectangle', 'Rectangle')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.rectangle', 'Rectangle')}
@@ -136,7 +133,7 @@ export const ChartToolsToolbar = memo(({
             <LuSquare />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.fibonacci', 'Fibonacci')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.fibonacci', 'Fibonacci')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.fibonacci', 'Fibonacci')}
@@ -147,7 +144,7 @@ export const ChartToolsToolbar = memo(({
             <LuTriangleRight />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.ruler', 'Ruler')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.ruler', 'Ruler')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.ruler', 'Ruler')}
@@ -158,7 +155,7 @@ export const ChartToolsToolbar = memo(({
             <LuRuler />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.area', 'Area')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.tools.area', 'Area')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.area', 'Area')}
@@ -169,8 +166,8 @@ export const ChartToolsToolbar = memo(({
             <LuScan />
           </IconButton>
         </TooltipWrapper>
-        <Separator orientation="vertical" height="4" />
-        <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="bottom">
+        <Separator orientation="horizontal" width="100%" />
+        <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.tools.magnet', 'OHLC Magnet')}
@@ -181,8 +178,8 @@ export const ChartToolsToolbar = memo(({
             <LuMagnet />
           </IconButton>
         </TooltipWrapper>
-        <Separator orientation="vertical" height="4" />
-        <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="bottom">
+        <Separator orientation="horizontal" width="100%" />
+        <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.tooltip')}
@@ -193,7 +190,7 @@ export const ChartToolsToolbar = memo(({
             <LuMessageSquare />
           </IconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="bottom">
+        <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="right">
           <IconButton
             size="2xs"
             aria-label={t('chart.controls.marketEvents')}
@@ -204,7 +201,7 @@ export const ChartToolsToolbar = memo(({
             <LuCalendarDays />
           </IconButton>
         </TooltipWrapper>
-      </HStack>
+      </VStack>
     </Box>
   );
 });

@@ -77,6 +77,7 @@ describe('BinanceFuturesClient Service', () => {
     marketType: 'FUTURES',
     initialBalance: null,
     currentBalance: null,
+    totalWalletBalance: null,
     totalDeposits: null,
     totalWithdrawals: null,
     lastTransferSyncAt: null,

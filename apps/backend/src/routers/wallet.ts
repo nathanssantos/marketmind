@@ -21,6 +21,7 @@ const WALLET_SAFE_COLUMNS = {
   exchange: wallets.exchange,
   initialBalance: wallets.initialBalance,
   currentBalance: wallets.currentBalance,
+  totalWalletBalance: wallets.totalWalletBalance,
   totalDeposits: wallets.totalDeposits,
   totalWithdrawals: wallets.totalWithdrawals,
   isActive: wallets.isActive,
@@ -296,12 +297,17 @@ export const walletRouter = router({
         let currentBalance = 0;
         let debugInfo: Record<string, string> = {};
 
+        let walletBalance = 0;
+
         if (wallet.marketType === 'FUTURES') {
           const client = getFuturesClient(wallet);
           const accountInfo = await client.getAccountInfo();
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
           currentBalance = usdtAsset?.marginBalance
             ? parseFloat(String(usdtAsset.marginBalance))
+            : 0;
+          walletBalance = usdtAsset?.walletBalance
+            ? parseFloat(String(usdtAsset.walletBalance))
             : 0;
 
           debugInfo = {
@@ -322,12 +328,14 @@ export const walletRouter = router({
           currentBalance = usdtBalance?.free
             ? parseFloat(usdtBalance.free.toString())
             : 0;
+          walletBalance = currentBalance;
         }
 
         await ctx.db
           .update(wallets)
           .set({
             currentBalance: currentBalance.toString(),
+            totalWalletBalance: walletBalance > 0 ? walletBalance.toString() : null,
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, input.id));
@@ -338,11 +346,13 @@ export const walletRouter = router({
             id: wallet.id,
             name: wallet.name,
             currentBalance: currentBalance.toString(),
+            totalWalletBalance: walletBalance > 0 ? walletBalance.toString() : null,
           });
         }
 
         return {
           currentBalance: currentBalance.toString(),
+          totalWalletBalance: walletBalance > 0 ? walletBalance.toString() : null,
           currency: wallet.currency ?? DEFAULT_CURRENCY,
           walletType: wallet.walletType,
           debug: debugInfo,

@@ -1,5 +1,6 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
+import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 import type { OrderPreview } from '../useChartState';
 
 export interface OverlayRenderFunctions {
@@ -34,7 +35,6 @@ export interface OverlayLayerResult {
 
 export const createOverlayLayer = ({
   manager,
-  colors,
   orderPreview,
   renderFunctions,
   isAutoTradingActive,
@@ -49,7 +49,7 @@ export const createOverlayLayer = ({
 
     const y = manager.priceToY(orderPreview.price);
     const isLong = orderPreview.type === 'long';
-    const color = isLong ? colors.bullish : colors.bearish;
+    const color = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
     const opacity = 0.5;
 
     ctx.save();

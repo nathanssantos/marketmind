@@ -5,6 +5,7 @@ import { db } from '../../src/db/client';
 import { tradeExecutions, wallets } from '../../src/db/schema';
 import { decryptApiKey } from '../../src/services/encryption';
 import { getWalletType } from '../../src/services/binance-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 interface AlgoOrder {
   algoId: number;
@@ -31,8 +32,6 @@ interface ExchangePosition {
   notional: string;
   updateTime: number;
 }
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function main() {
   console.log('\n' + '='.repeat(80));
@@ -96,11 +95,9 @@ async function main() {
         )
       );
 
-    await sleep(200);
-
     let exchangePositions: ExchangePosition[] = [];
     try {
-      const accountInfo = await client.getAccountInformation();
+      const accountInfo = await guardedCall(() => client.getAccountInformation());
       exchangePositions = (accountInfo.positions as ExchangePosition[])
         .filter(p => parseFloat(p.positionAmt) !== 0);
     } catch (error) {
@@ -198,10 +195,9 @@ async function main() {
       console.log('');
     }
 
-    await sleep(200);
     console.log('  PROTECTION ORDERS CHECK (Conditional/Algo Orders):');
     try {
-      const algoOrdersResponse = await client.getOpenAlgoOrders();
+      const algoOrdersResponse = await guardedCall(() => client.getOpenAlgoOrders());
       const algoOrders = Array.isArray(algoOrdersResponse) ? algoOrdersResponse : (algoOrdersResponse as { orders: AlgoOrder[] }).orders || [];
 
       console.log(`    Total conditional orders on exchange: ${algoOrders.length}\n`);
@@ -300,8 +296,7 @@ async function main() {
 
     const dbBalance = parseFloat(wallet.currentBalance || '0');
     try {
-      await sleep(200);
-      const account = await client.getBalance();
+      const account = await guardedCall(() => client.getBalance());
       const usdtBalance = account.find(b => b.asset === 'USDT');
       if (usdtBalance) {
         const exchangeBalance = parseFloat(usdtBalance.balance);

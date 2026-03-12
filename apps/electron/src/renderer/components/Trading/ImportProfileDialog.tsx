@@ -1,5 +1,6 @@
-import { Box, Input, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Box, Stack, Text, Textarea } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui/button';
+import { Input } from '@renderer/components/ui/input';
 import {
   DialogBackdrop,
   DialogBody,

@@ -1,5 +1,6 @@
 import type { IndicatorMeta, ScreenerFilterCondition, ScreenerIndicatorId, ScreenerOperator } from '@marketmind/types';
-import { Flex, IconButton, Input } from '@chakra-ui/react';
+import { Flex, IconButton } from '@chakra-ui/react';
+import { Input } from '../ui/input';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTrash2 } from 'react-icons/lu';

@@ -1,4 +1,5 @@
-import { Badge, Box, Flex, IconButton, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Portal, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui/icon-button';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Order, WalletCurrency } from '@marketmind/types';
 import { BrlValue } from '@renderer/components/ui/BrlValue';

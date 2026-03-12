@@ -1,4 +1,5 @@
-import { Badge, Box, Flex, Grid, IconButton, Separator, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, Grid, IconButton, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Separator } from '@renderer/components/ui/separator';
 import { Button } from '@renderer/components/ui/button';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';

@@ -1,4 +1,5 @@
-import { Box, Button, Stack, Text } from '@chakra-ui/react';
+import { Box, Stack, Text } from '@chakra-ui/react';
+import { Button } from './button';
 import { useTranslation } from 'react-i18next';
 import { LuTriangleAlert } from 'react-icons/lu';
 

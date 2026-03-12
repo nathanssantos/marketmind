@@ -898,6 +898,7 @@
       "profitable": "Rentables",
       "losing": "Perdiendo",
       "totalExposure": "Exposición Total",
+      "exposure": "Exposición",
       "unrealizedPnL": "PyG No Realizado",
       "pnlVsBalance": "PyG vs Saldo",
       "orders": "órdenes",
@@ -933,7 +934,9 @@
       "tpProjectedOfBalance": "del saldo",
       "source": "Origen",
       "manual": "Manual",
-      "entriesCount": "{{count}}x"
+      "entriesCount": "{{count}}x",
+      "dailyPnl": "PyG del Día",
+      "trades": "operaciones"
     },
     "viewMode": {
       "cards": "Vista de tarjetas",

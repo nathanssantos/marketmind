@@ -1,4 +1,5 @@
-import { Flex, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Flex, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from '../ui/icon-button';
 import { memo, useCallback, useMemo } from 'react';
 import { LuX } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';

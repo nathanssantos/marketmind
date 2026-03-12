@@ -5,6 +5,7 @@ import { db } from '../../src/db/client';
 import { tradeExecutions, wallets } from '../../src/db/schema';
 import { decryptApiKey } from '../../src/services/encryption';
 import { getWalletType } from '../../src/services/binance-client';
+import { guardedCall } from '../utils/binance-script-guard';
 
 interface BinanceTrade {
   symbol: string;
@@ -74,7 +75,6 @@ const DUST_QTY_VALUE_THRESHOLD = 1.0;
 const OVERLAP_RATIO_THRESHOLD = 1.5;
 const EXIT_RELIABILITY_THRESHOLD = 0.5;
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000 - 60_000;
 
 async function fetchAllAccountTrades(
@@ -91,9 +91,9 @@ async function fetchAllAccountTrades(
   while (windowStart < paddedEnd) {
     const windowEnd = Math.min(windowStart + SEVEN_DAYS_MS, paddedEnd);
 
-    const firstBatch = await client.getAccountTrades({
+    const firstBatch = await guardedCall(() => client.getAccountTrades({
       symbol, startTime: windowStart, endTime: windowEnd, limit: 1000,
-    });
+    }));
 
     for (const t of firstBatch) {
       allTrades.push({
@@ -107,8 +107,7 @@ async function fetchAllAccountTrades(
     if (firstBatch.length === 1000) {
       let fromId = firstBatch[firstBatch.length - 1]!.id + 1;
       while (true) {
-        await sleep(200);
-        const batch = await client.getAccountTrades({ symbol, fromId, limit: 1000 });
+        const batch = await guardedCall(() => client.getAccountTrades({ symbol, fromId, limit: 1000 }));
         if (batch.length === 0) break;
         const inRange = batch.filter(t => t.time <= windowEnd);
         for (const t of inRange) {
@@ -125,7 +124,6 @@ async function fetchAllAccountTrades(
     }
 
     windowStart = windowEnd + 1;
-    if (windowStart < paddedEnd) await sleep(200);
   }
 
   const uniqueTrades = new Map<number, BinanceTrade>();
@@ -147,10 +145,9 @@ async function fetchFundingFees(
     let currentStart = windowStart;
 
     while (currentStart < windowEnd) {
-      await sleep(200);
-      const income = await client.getIncomeHistory({
+      const income = await guardedCall(() => client.getIncomeHistory({
         symbol, incomeType: 'FUNDING_FEE', startTime: currentStart, endTime: windowEnd, limit: 1000,
-      } as Parameters<typeof client.getIncomeHistory>[0]);
+      } as Parameters<typeof client.getIncomeHistory>[0]));
 
       if (income.length === 0) break;
       for (const item of income) totalFunding += parseFloat(item.income);
@@ -345,11 +342,9 @@ async function main() {
       console.log(`  [${symbolIdx}/${symbolGroups.size}] ${symbol} (${execsForSymbol.length} executions, range: ${Math.round((maxClosedAt - minOpenedAt) / 86400000)}d)`);
 
       try {
-        await sleep(1500);
         const trades = await fetchAllAccountTrades(client, symbol, minOpenedAt, maxClosedAt);
         tradesCache.set(symbol, trades);
 
-        await sleep(1500);
         const funding = await fetchFundingFees(client, symbol, minOpenedAt, maxClosedAt);
         fundingCache.set(symbol, funding);
 
@@ -357,12 +352,6 @@ async function main() {
       } catch (error) {
         const msg = error instanceof Error ? error.message : JSON.stringify(error);
         console.log(`    ERROR: ${msg}`);
-        if (msg.includes('banned') || msg.includes('Too many') || msg.includes('TOO_MANY') || msg.includes('-1003')) {
-          const retryMatch = msg.match(/"retry-after":"(\d+)"/);
-          const waitSec = retryMatch ? Math.min(parseInt(retryMatch[1], 10) + 5, 600) : 120;
-          console.log(`    Rate limited! Waiting ${waitSec}s...`);
-          await sleep(waitSec * 1000);
-        }
         for (const exec of execsForSymbol) {
           totalAudited++;
           totalErrors++;
@@ -443,7 +432,7 @@ async function main() {
 
         const allFunding = fundingCache.get(exec.symbol) ?? 0;
         const symbolExecs = execsForSymbol.length;
-        const fundingFees = symbolExecs === 1 ? allFunding : 0;
+        const fundingFees = symbolExecs === 1 ? allFunding : dbAccFunding;
 
         result.binanceData = {
           entryPrice: entry.avgPrice, exitPrice: exit.avgPrice,
@@ -456,41 +445,47 @@ async function main() {
 
         const bn = result.binanceData;
 
+        const isPartialClose = dbQuantity < entry.totalQty && entry.totalQty > 0;
+
         if (canVerifyEntry) {
           if (entry.avgPrice > 0 && percentDiff(dbEntryPrice, entry.avgPrice) > PRICE_TOLERANCE) {
             result.discrepancies.push(`ENTRY PRICE: db=${dbEntryPrice.toFixed(8)} vs binance=${entry.avgPrice.toFixed(8)}`);
           }
-          if (entry.totalQty > 0 && Math.abs(dbQuantity - entry.totalQty) > QTY_TOLERANCE) {
+          if (entry.totalQty > 0 && Math.abs(dbQuantity - entry.totalQty) > QTY_TOLERANCE && !isPartialClose) {
             result.discrepancies.push(`ENTRY QTY: db=${dbQuantity} vs binance=${entry.totalQty}`);
           }
-          if (dbEntryFee > 0 && entry.totalFee > 0 && Math.abs(dbEntryFee - entry.totalFee) > FEE_TOLERANCE) {
-            result.discrepancies.push(`ENTRY FEE: db=${dbEntryFee.toFixed(8)} vs binance=${entry.totalFee.toFixed(8)}`);
-          }
-          if (dbEntryFee === 0 && entry.totalFee > 0.001) {
-            result.discrepancies.push(`MISSING ENTRY FEE: db has 0 but Binance shows $${entry.totalFee.toFixed(8)}`);
+          if (!isPartialClose) {
+            if (dbEntryFee > 0 && entry.totalFee > 0 && Math.abs(dbEntryFee - entry.totalFee) > FEE_TOLERANCE) {
+              result.discrepancies.push(`ENTRY FEE: db=${dbEntryFee.toFixed(8)} vs binance=${entry.totalFee.toFixed(8)}`);
+            }
+            if (dbEntryFee === 0 && entry.totalFee > 0.001) {
+              result.discrepancies.push(`MISSING ENTRY FEE: db has 0 but Binance shows $${entry.totalFee.toFixed(8)}`);
+            }
           }
         }
 
         if (canVerifyExit) {
-          if (exit.avgPrice > 0 && percentDiff(dbExitPrice, exit.avgPrice) > PRICE_TOLERANCE) {
+          if (!isPartialClose && exit.avgPrice > 0 && percentDiff(dbExitPrice, exit.avgPrice) > PRICE_TOLERANCE) {
             result.discrepancies.push(`EXIT PRICE: db=${dbExitPrice.toFixed(8)} vs binance=${exit.avgPrice.toFixed(8)}`);
           }
-          if (exit.totalQty > 0 && Math.abs(dbQuantity - exit.totalQty) > QTY_TOLERANCE) {
+          if (exit.totalQty > 0 && Math.abs(dbQuantity - exit.totalQty) > QTY_TOLERANCE && !isPartialClose) {
             const qtyDiffValue = Math.abs(dbQuantity - exit.totalQty) * dbEntryPrice;
             if (qtyDiffValue > DUST_QTY_VALUE_THRESHOLD) {
               result.discrepancies.push(`EXIT QTY: db=${dbQuantity} vs binance_exit=${exit.totalQty} ($${qtyDiffValue.toFixed(2)})`);
             }
           }
-          if (dbExitFee > 0 && exit.totalFee > 0 && Math.abs(dbExitFee - exit.totalFee) > FEE_TOLERANCE) {
-            result.discrepancies.push(`EXIT FEE: db=${dbExitFee.toFixed(8)} vs binance=${exit.totalFee.toFixed(8)}`);
-          }
-          if (dbExitFee === 0 && exit.totalFee > 0.001) {
-            result.discrepancies.push(`MISSING EXIT FEE: db has 0 but Binance shows $${exit.totalFee.toFixed(8)}`);
+          if (!isPartialClose) {
+            if (dbExitFee > 0 && exit.totalFee > 0 && Math.abs(dbExitFee - exit.totalFee) > FEE_TOLERANCE) {
+              result.discrepancies.push(`EXIT FEE: db=${dbExitFee.toFixed(8)} vs binance=${exit.totalFee.toFixed(8)}`);
+            }
+            if (dbExitFee === 0 && exit.totalFee > 0.001) {
+              result.discrepancies.push(`MISSING EXIT FEE: db has 0 but Binance shows $${exit.totalFee.toFixed(8)}`);
+            }
           }
         }
 
         if (canVerifyEntry && canVerifyExit) {
-          if (dbTotalFees > 0 && bn.totalFees > 0 && Math.abs(dbTotalFees - bn.totalFees) > FEE_TOLERANCE) {
+          if (!isPartialClose && dbTotalFees > 0 && bn.totalFees > 0 && Math.abs(dbTotalFees - bn.totalFees) > FEE_TOLERANCE) {
             result.discrepancies.push(`TOTAL FEES: db=${dbTotalFees.toFixed(8)} vs binance=${bn.totalFees.toFixed(8)}`);
           }
           if (bn.realizedPnl !== 0) {

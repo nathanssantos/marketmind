@@ -83,8 +83,8 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
   }, [orders, sortKey, sortDirection]);
 
   const columns: TradingTableColumn[] = [
-    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },
-    { key: 'pnl', header: t('trading.orders.pnl'), textAlign: 'right', minW: '130px' },
+    { key: 'symbol', header: t('trading.orders.symbol'), sticky: true },
+    { key: 'pnl', header: t('trading.orders.pnl'), textAlign: 'right' },
     { key: 'side', header: t('trading.orders.side') },
     { key: 'status', header: t('trading.orders.status') },
     { key: 'setup', header: t('trading.orders.setup') },
@@ -97,7 +97,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
     { key: 'currentPrice', header: t('trading.orders.currentPrice'), textAlign: 'right' },
     { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
     { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
-    { key: 'auto', header: '', minW: '40px', sortable: false },
+    { key: 'auto', header: '', sortable: false },
     { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center', sortable: false },
   ];
 
@@ -114,7 +114,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
         return (
           <TradingTableRow key={getOrderId(order)}>
             <TradingTableCell sticky>
-              <Flex align="center" gap={1}>
+              <Flex align="center" gap={1} borderLeft="3px solid" borderColor={isOrderLong(order) ? 'green.500' : 'red.500'} pl={1.5} ml={-1.5} my={-1}>
                 <CryptoIcon
                   symbol={order.symbol}
                   size={14}

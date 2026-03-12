@@ -104,7 +104,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     <Box
       position="absolute"
       top={2}
-      left={2}
+      right="74px"
       zIndex={10}
       bg="bg.panel"
       borderRadius="md"

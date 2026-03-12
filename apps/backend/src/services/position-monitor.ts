@@ -341,7 +341,7 @@ export class PositionMonitorService {
 
             wsServiceFill.emitTradeNotification(execution.walletId, {
               type: 'LIMIT_FILLED',
-              title: '> Limit Order Filled',
+              title: 'Limit Order Filled',
               body: `${sideLabel} ${execution.symbol} @ ${formatPrice(currentPrice)}`,
               urgency: 'normal',
               data: {
@@ -827,7 +827,7 @@ export class PositionMonitorService {
 
         let title: string;
         if (reason === 'TAKE_PROFIT') {
-          title = '> Take Profit';
+          title = 'Take Profit';
         } else if (isProfit) {
           title = '✓ Stop Loss (Profit)';
         } else {

@@ -44,6 +44,8 @@ export const useBackendTradingMutations = () => {
     onSuccess: () => {
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
+      utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      utils.futuresTrading.getOpenOrders.invalidate();
     },
   });
 
@@ -69,6 +71,7 @@ export const useBackendTradingMutations = () => {
       quantity: string;
       price?: string;
       stopPrice?: string;
+      reduceOnly?: boolean;
       setupId?: string;
       setupType?: string;
     }) => {

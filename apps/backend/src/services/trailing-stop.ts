@@ -781,7 +781,7 @@ export class TrailingStopService {
 
       wsService.emitTradeNotification(execution.walletId, {
         type: 'TRAILING_STOP_UPDATED',
-        title: '> Trailing Stop',
+        title: 'Trailing Stop',
         body: `${sideLabel} ${execution.symbol}: ${oldStopLoss ? formatPrice(oldStopLoss) : '-'} → ${formatPrice(newStopLoss)}`,
         urgency: 'low',
         data: {

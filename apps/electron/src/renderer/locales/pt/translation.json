@@ -872,6 +872,7 @@
       "profitable": "Lucrativas",
       "losing": "Perdendo",
       "totalExposure": "Exposição Total",
+      "exposure": "Exposição",
       "unrealizedPnL": "L&P Não Realizado",
       "pnlVsBalance": "L&P vs Saldo",
       "orders": "ordens",
@@ -907,7 +908,9 @@
       "tpProjectedOfBalance": "do saldo",
       "source": "Origem",
       "manual": "Manual",
-      "entriesCount": "{{count}}x"
+      "entriesCount": "{{count}}x",
+      "dailyPnl": "L&P do Dia",
+      "trades": "operações"
     },
     "viewMode": {
       "cards": "Visualização em cards",

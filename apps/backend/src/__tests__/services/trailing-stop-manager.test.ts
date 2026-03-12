@@ -707,15 +707,12 @@ describe('TrailingStopService - Manager Methods', () => {
     const processSymbolGroup = (svc: TrailingStopService) =>
       (svc as unknown as Record<string, ProcessFn>)['processSymbolGroup']!.bind(svc);
 
-    it('should skip executions without setupId', async () => {
+    it('should use default 30m interval for executions without setupId', async () => {
       const exec = makeExecution({ setupId: null });
+      mockDbQuery.klines.findMany.mockResolvedValue(makeKlineRows(5));
 
       const result = await processSymbolGroup(service)('BTCUSDT', [exec]);
       expect(result).toEqual([]);
-      expect(mockLogger.trace).toHaveBeenCalledWith(
-        expect.objectContaining({ executionId: 'exec-1' }),
-        expect.stringContaining('missing setupId')
-      );
     });
 
     it('should skip executions where setup is not found', async () => {
@@ -1297,7 +1294,7 @@ describe('TrailingStopService - Manager Methods', () => {
 
       expect(mockEmitTradeNotification).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
         type: 'TRAILING_STOP_UPDATED',
-        title: '> Trailing Stop',
+        title: 'Trailing Stop',
         urgency: 'low',
       }));
 

@@ -185,60 +185,78 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
   return { orderId: order.orderId, isAlgoOrder: false };
 }
 
+async function cancelWithRetry(params: CancelProtectionOrderParams, label: string): Promise<boolean> {
+  const cancelled = await cancelProtectionOrder(params);
+  if (cancelled || (!params.algoId && !params.orderId)) return true;
+
+  logger.warn({ symbol: params.symbol, algoId: params.algoId, orderId: params.orderId }, `[ProtectionOrders] Old ${label} cancel failed — retrying`);
+  const retried = await cancelProtectionOrder(params);
+  if (!retried) {
+    logger.error({ symbol: params.symbol, algoId: params.algoId, orderId: params.orderId }, `[ProtectionOrders] Old ${label} cancel failed after retry — creating new anyway (ghost risk)`);
+  }
+  return retried;
+}
+
+const MARGIN_RELEASE_DELAY_MS = 300;
+
 export async function updateStopLossOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {
   const { currentAlgoId, currentOrderId, ...createParams } = params;
 
-  const cancelled = await cancelProtectionOrder({
+  await cancelWithRetry({
     wallet: params.wallet,
     symbol: params.symbol,
     marketType: params.marketType,
     algoId: currentAlgoId,
     orderId: currentOrderId,
-  });
+  }, 'SL');
 
-  if (!cancelled && (currentAlgoId || currentOrderId)) {
-    logger.warn({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old SL cancel failed — retrying once before creating new');
-    const retried = await cancelProtectionOrder({
-      wallet: params.wallet,
-      symbol: params.symbol,
-      marketType: params.marketType,
-      algoId: currentAlgoId,
-      orderId: currentOrderId,
-    });
-    if (!retried) {
-      logger.error({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old SL cancel failed after retry — creating new anyway (ghost risk)');
+  if (currentAlgoId || currentOrderId) await new Promise(r => setTimeout(r, MARGIN_RELEASE_DELAY_MS));
+
+  try {
+    return await createStopLossOrder(createParams);
+  } catch (error) {
+    const msg = serializeError(error);
+    if (msg.includes('margin') || msg.includes('Margin') || msg.includes('insufficient')) {
+      logger.warn({ symbol: params.symbol, error: msg }, '[ProtectionOrders] SL creation failed (margin) — retrying after delay');
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        return await createStopLossOrder(createParams);
+      } catch (_retryErr) {
+        logger.error({ symbol: params.symbol }, '[ProtectionOrders] SL creation retry failed — position may be unprotected');
+      }
     }
+    throw error;
   }
-
-  return createStopLossOrder(createParams);
 }
 
 export async function updateTakeProfitOrder(params: UpdateProtectionOrderParams): Promise<ProtectionOrderResult> {
   const { currentAlgoId, currentOrderId, ...createParams } = params;
 
-  const cancelled = await cancelProtectionOrder({
+  await cancelWithRetry({
     wallet: params.wallet,
     symbol: params.symbol,
     marketType: params.marketType,
     algoId: currentAlgoId,
     orderId: currentOrderId,
-  });
+  }, 'TP');
 
-  if (!cancelled && (currentAlgoId || currentOrderId)) {
-    logger.warn({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old TP cancel failed — retrying once before creating new');
-    const retried = await cancelProtectionOrder({
-      wallet: params.wallet,
-      symbol: params.symbol,
-      marketType: params.marketType,
-      algoId: currentAlgoId,
-      orderId: currentOrderId,
-    });
-    if (!retried) {
-      logger.error({ symbol: params.symbol, algoId: currentAlgoId, orderId: currentOrderId }, '[ProtectionOrders] Old TP cancel failed after retry — creating new anyway (ghost risk)');
+  if (currentAlgoId || currentOrderId) await new Promise(r => setTimeout(r, MARGIN_RELEASE_DELAY_MS));
+
+  try {
+    return await createTakeProfitOrder(createParams);
+  } catch (error) {
+    const msg = serializeError(error);
+    if (msg.includes('margin') || msg.includes('Margin') || msg.includes('insufficient')) {
+      logger.warn({ symbol: params.symbol, error: msg }, '[ProtectionOrders] TP creation failed (margin) — retrying after delay');
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        return await createTakeProfitOrder(createParams);
+      } catch (_retryErr) {
+        logger.error({ symbol: params.symbol }, '[ProtectionOrders] TP creation retry failed — position may be unprotected');
+      }
     }
+    throw error;
   }
-
-  return createTakeProfitOrder(createParams);
 }
 
 export async function cancelAllOpenProtectionOrdersOnExchange(params: {

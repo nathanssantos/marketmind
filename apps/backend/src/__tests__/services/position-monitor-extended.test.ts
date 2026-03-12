@@ -893,7 +893,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         wallet.id,
         expect.objectContaining({
           type: 'POSITION_CLOSED',
-          title: '> Take Profit',
+          title: 'Take Profit',
           urgency: 'normal',
         })
       );
@@ -1642,7 +1642,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         wallet.id,
         expect.objectContaining({
           type: 'LIMIT_FILLED',
-          title: '> Limit Order Filled',
+          title: 'Limit Order Filled',
         })
       );
 

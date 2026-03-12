@@ -88,12 +88,13 @@ export const Toolbar = memo(({
       top={0}
       left={0}
       right={0}
-      height="41px"
-      px={4}
-      py={1}
+      height="30px"
+      pl={0}
+      pr={2}
+      py={0}
       align="center"
       justifyContent="space-between"
-      gap={4}
+      gap={2}
       bg="bg.panel"
       borderBottom="1px solid"
       borderColor="border"
@@ -113,12 +114,13 @@ export const Toolbar = memo(({
         },
       }}
     >
-      <Flex align="center" gap={4} flex={1} overflowX="auto">
-        <Box flexShrink={0}>
-          <Logo size={24} />
-        </Box>
-
-        <Box w="1px" h="32px" bg="border" flexShrink={0} />
+      <Flex align="center" gap={2} flex={1} overflowX="auto">
+        <Flex flexShrink={0} align="center" gap={0}>
+          <Flex w="28px" align="center" justify="center">
+            <Logo size={18} />
+          </Flex>
+          <Box w="1px" h="22px" bg="border" flexShrink={0} />
+        </Flex>
 
         <Box flexShrink={0}>
           <SymbolSelector
@@ -144,7 +146,7 @@ export const Toolbar = memo(({
           </TooltipWrapper>
         )}
 
-        <Box w="1px" h="32px" bg="border" flexShrink={0} />
+        <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
         <Box flexShrink={0}>
           <TimeframeSelector
@@ -153,7 +155,7 @@ export const Toolbar = memo(({
           />
         </Box>
 
-        <Box w="1px" h="32px" bg="border" flexShrink={0} />
+        <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
         {showSidebarButtons && (
           <HStack gap={1} flexShrink={0}>
@@ -217,7 +219,7 @@ export const Toolbar = memo(({
 
         {showZoomControls && (
           <>
-            {showSidebarButtons && <Box w="1px" h="32px" bg="border" flexShrink={0} />}
+            {showSidebarButtons && <Box w="1px" h="22px" bg="border" flexShrink={0} />}
             <HStack gap={1} flexShrink={0}>
               <TooltipWrapper label={t('header.zoomOut')} showArrow>
                 <IconButton
@@ -252,7 +254,7 @@ export const Toolbar = memo(({
 
         {showSidebarButtons && (
           <>
-            <Box w="1px" h="32px" bg="border" flexShrink={0} />
+            <Box w="1px" h="22px" bg="border" flexShrink={0} />
             <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
               <IconButton
                 aria-label={t('header.settings')}

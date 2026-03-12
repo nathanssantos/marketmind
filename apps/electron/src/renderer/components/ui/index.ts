@@ -1,10 +1,12 @@
 export { Button } from './button';
+export { Checkbox } from './checkbox';
 export { CollapsibleSection } from './CollapsibleSection';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { Dialog } from './dialog';
 export { EmptyState } from './EmptyState';
 export { Field } from './field';
 export { FormDialog } from './FormDialog';
+export { IconButton } from './icon-button';
 export { Input } from './input';
 export { Logo } from './logo';
 export { MetricCard } from './MetricCard';
@@ -12,12 +14,18 @@ export { NumberInput } from './number-input';
 export { PasswordInput } from './password-input';
 export { PnLDisplay } from './PnLDisplay';
 export { Popover } from './popover';
+export { Radio, RadioGroup } from './radio';
 export { Select } from './select';
+export { Separator } from './separator';
 export { Slider } from './slider';
 export { Switch } from './switch';
 export { Tabs } from './tabs';
+export { TooltipWrapper } from './Tooltip';
 
+export type { CheckboxProps } from './checkbox';
+export type { IconButtonProps } from './icon-button';
 export type { NumberInputProps } from './number-input';
 export type { PasswordInputProps } from './password-input';
+export type { RadioGroupProps, RadioProps } from './radio';
 export type { SelectOption, SelectProps } from './select';
-
+export type { SeparatorProps } from './separator';

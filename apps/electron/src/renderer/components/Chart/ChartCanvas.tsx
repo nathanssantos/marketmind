@@ -31,7 +31,7 @@ import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, ORDER_LINE_COLORS } from '@shared/constants';
 import { getKlineClose, getOrderPrice, isOrderLong, isOrderPending, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -153,6 +153,18 @@ export const ChartCanvas = ({
     }
   );
 
+  const isFuturesChart = (marketType || 'FUTURES') === 'FUTURES';
+
+  const { data: exchangeOpenOrders } = trpc.futuresTrading.getOpenOrders.useQuery(
+    { walletId: backendWalletId ?? '', symbol },
+    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: 10000, staleTime: 5000 }
+  );
+
+  const { data: exchangeAlgoOrders } = trpc.futuresTrading.getOpenAlgoOrders.useQuery(
+    { walletId: backendWalletId ?? '', symbol },
+    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: 10000, staleTime: 5000 }
+  );
+
   const filteredBackendExecutions = useMemo((): BackendExecution[] => {
     if (!backendExecutions || !symbol) return [];
     const currentMarketType = marketType || 'FUTURES';
@@ -175,13 +187,72 @@ export const ChartCanvas = ({
       }));
   }, [backendExecutions, symbol, marketType]);
 
+  const orphanOrderExecutions = useMemo((): BackendExecution[] => {
+    if (!symbol) return [];
+    const trackedOrderIds = new Set(
+      (backendExecutions ?? [])
+        .flatMap(e => {
+          const ids: number[] = [];
+          if (e.entryOrderId) ids.push(Number(e.entryOrderId));
+          if (e.stopLossOrderId) ids.push(Number(e.stopLossOrderId));
+          if (e.stopLossAlgoId) ids.push(Number(e.stopLossAlgoId));
+          if (e.takeProfitOrderId) ids.push(Number(e.takeProfitOrderId));
+          if (e.takeProfitAlgoId) ids.push(Number(e.takeProfitAlgoId));
+          if (e.trailingStopAlgoId) ids.push(Number(e.trailingStopAlgoId));
+          return ids;
+        })
+    );
+
+    const orphans: BackendExecution[] = [];
+
+    for (const order of exchangeOpenOrders ?? []) {
+      const oid = Number(order.orderId);
+      if (trackedOrderIds.has(oid)) continue;
+      orphans.push({
+        id: `exchange-order-${oid}`,
+        symbol: String(order.symbol),
+        side: order.side === 'BUY' ? 'LONG' : 'SHORT',
+        entryPrice: String(order.price),
+        quantity: String(order.origQty),
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending',
+        setupType: null,
+        marketType: 'FUTURES',
+        openedAt: order.time ? new Date(Number(order.time)) : null,
+        entryOrderType: order.type as BackendExecution['entryOrderType'],
+      });
+    }
+
+    for (const algo of exchangeAlgoOrders ?? []) {
+      const aid = Number(algo.algoId);
+      if (trackedOrderIds.has(aid)) continue;
+      orphans.push({
+        id: `exchange-algo-${aid}`,
+        symbol: String(algo.symbol),
+        side: algo.side === 'BUY' ? 'LONG' : 'SHORT',
+        entryPrice: String((algo as { triggerPrice?: string }).triggerPrice ?? '0'),
+        quantity: String(algo.quantity ?? '0'),
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending',
+        setupType: null,
+        marketType: 'FUTURES',
+        openedAt: algo.createTime ? new Date(Number(algo.createTime)) : null,
+        entryOrderType: algo.type as BackendExecution['entryOrderType'],
+      });
+    }
+
+    return orphans;
+  }, [symbol, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders]);
+
   const allExecutions = useMemo((): BackendExecution[] => {
     const realIds = new Set(filteredBackendExecutions.map(e => e.id));
     const uniqueOptimistic = optimisticExecutions.filter(
       o => o.symbol === symbol && !realIds.has(o.id)
     );
-    return [...filteredBackendExecutions, ...uniqueOptimistic];
-  }, [filteredBackendExecutions, optimisticExecutions, symbol]);
+    return [...filteredBackendExecutions, ...uniqueOptimistic, ...orphanOrderExecutions];
+  }, [filteredBackendExecutions, optimisticExecutions, symbol, orphanOrderExecutions]);
 
   const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
   const quickTradeUseMinNotional = useQuickTradeStore((s) => s.useMinNotional);
@@ -398,6 +469,14 @@ export const ChartCanvas = ({
     };
   }, [isPanning]);
 
+  const cancelFuturesOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getOpenOrders.invalidate();
+      utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+    },
+  });
+
   const handleOrderCloseRequest = useCallback((orderId: string | null): void => {
     if (!orderId) {
       setOrderToClose(null);
@@ -407,8 +486,20 @@ export const ChartCanvas = ({
       setOrderToClose(orderId);
       return;
     }
+    if (orderId.startsWith('exchange-order-') || orderId.startsWith('exchange-algo-')) {
+      const exchangeOrderId = parseInt(orderId.replace(/^exchange-(order|algo)-/, ''), 10);
+      if (!backendWalletId || !symbol || isNaN(exchangeOrderId)) return;
+      orderLoadingMapRef.current.set(orderId, true);
+      manager?.markDirty('overlays');
+      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId }).finally(() => {
+        orderLoadingMapRef.current.delete(orderId);
+        manager?.markDirty('overlays');
+      });
+      return;
+    }
     const exec = allExecutions.find((e) => e.id === orderId);
-    if (exec?.status === 'pending') {
+    if (!exec) return;
+    if (exec.status === 'pending') {
       orderLoadingMapRef.current.set(exec.id, true);
       manager?.markDirty('overlays');
       cancelExecution(exec.id).finally(() => {
@@ -418,7 +509,7 @@ export const ChartCanvas = ({
       return;
     }
     setOrderToClose(orderId);
-  }, [allExecutions, cancelExecution, setOrderToClose, manager]);
+  }, [allExecutions, cancelExecution, setOrderToClose, manager, backendWalletId, symbol, cancelFuturesOrderMutation]);
 
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
@@ -654,6 +745,46 @@ export const ChartCanvas = ({
   const handleUpdateOrder = useCallback((id: string, updates: Partial<Order>) => {
     if (!id) return;
 
+    if (id.startsWith('exchange-') && updates.entryPrice !== undefined && backendWalletId && symbol) {
+      const isAlgo = id.startsWith('exchange-algo-');
+      const exchangeOrderId = parseInt(id.replace(/^exchange-(order|algo)-/, ''), 10);
+      if (isNaN(exchangeOrderId)) return;
+
+      const exec = allExecutions.find(e => e.id === id);
+      if (!exec) return;
+
+      orderLoadingMapRef.current.set(id, true);
+      manager?.markDirty('overlays');
+
+      const newPrice = roundTradingPrice(updates.entryPrice).toString();
+      const side = exec.side === 'LONG' ? 'BUY' as const : 'SELL' as const;
+      const orderType = isAlgo
+        ? (exec.entryOrderType as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET') ?? 'STOP_MARKET' as const
+        : 'LIMIT' as const;
+
+      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
+        .then(() => addBackendOrder({
+          walletId: backendWalletId,
+          symbol,
+          side,
+          type: orderType,
+          quantity: exec.quantity,
+          ...(isAlgo ? { stopPrice: newPrice } : { price: newPrice }),
+          reduceOnly: true,
+        }))
+        .then(() => {
+          orderFlashMapRef.current.set(id, performance.now());
+        })
+        .catch((error) => {
+          toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
+        })
+        .finally(() => {
+          orderLoadingMapRef.current.delete(id);
+          manager?.markDirty('overlays');
+        });
+      return;
+    }
+
     if (updates.entryPrice !== undefined) {
       updatePendingEntry({ id, newPrice: updates.entryPrice }).then(() => {
         orderFlashMapRef.current.set(id, performance.now());
@@ -681,7 +812,7 @@ export const ChartCanvas = ({
         toastError(t('trading.order.slTpUpdateFailed'), error instanceof Error ? error.message : undefined);
       });
     }
-  }, [updateExecutionSLTP, updatePendingEntry, manager]);
+  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t]);
 
   const memoizedPriceToY = useCallback((price: number) => manager?.priceToY(price) ?? 0, [manager]);
   const memoizedYToPrice = useCallback((y: number) => manager?.yToPrice(y) ?? 0, [manager]);
@@ -910,6 +1041,16 @@ export const ChartCanvas = ({
   }, [slTpPlacement.active, slTpPlacement.deactivate, manager]);
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (orderDragHandler.isDragging) orderDragHandler.cancelDrag();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [orderDragHandler.isDragging, orderDragHandler.cancelDrag]);
+
+  useEffect(() => {
     const handleDeleteDrawing = (event: KeyboardEvent) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
         const drawingState = useDrawingStore.getState();
@@ -1097,26 +1238,21 @@ export const ChartCanvas = ({
 
         if (dragType === 'entry' && isOrderPending(draggedOrder)) {
           const isLong = isOrderLong(draggedOrder);
-          const currentPriceValue = currentPriceRef.current;
-          const willExecuteImmediately =
-            (isLong && previewPrice <= currentPriceValue) ||
-            (!isLong && previewPrice >= currentPriceValue);
-
-          if (willExecuteImmediately) {
-            color = 'rgba(59, 130, 246, 0.9)';
-            label = `${isLong ? 'L' : 'S'} ${currentPriceValue.toFixed(2)} [MARKET]`;
-          } else {
-            color = 'rgba(100, 116, 139, 0.7)';
-            label = `${isLong ? 'L' : 'S'} ${previewPrice.toFixed(2)} [PENDING]`;
-          }
+          color = isLong ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+          label = `${isLong ? 'L' : 'S'} ${previewPrice.toFixed(2)}`;
         } else {
           const isStopLoss = dragType === 'stopLoss';
-          color = isStopLoss ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
           const entryPrice = getOrderPrice(draggedOrder);
           const isLong = isOrderLong(draggedOrder);
           const pctChange = isStopLoss
             ? (isLong ? (previewPrice - entryPrice) / entryPrice : (entryPrice - previewPrice) / entryPrice) * 100
             : (isLong ? (previewPrice - entryPrice) / entryPrice : (entryPrice - previewPrice) / entryPrice) * 100;
+          if (isStopLoss) {
+            const slInProfit = isLong ? previewPrice > entryPrice : previewPrice < entryPrice;
+            color = slInProfit ? 'rgba(15, 118, 56, 0.8)' : 'rgba(185, 28, 28, 0.8)';
+          } else {
+            color = 'rgba(15, 118, 56, 0.8)';
+          }
           const pctSign = pctChange >= 0 ? '+' : '';
           label = `${isStopLoss ? 'SL' : 'TP'} ${previewPrice.toFixed(2)} (${pctSign}${pctChange.toFixed(2)}%)`;
         }
@@ -1166,7 +1302,6 @@ export const ChartCanvas = ({
           const previewPrice = slTpPlacement.previewPriceRef.current;
           const y = manager.priceToY(previewPrice);
           const isStopLoss = slTpPlacement.type === 'stopLoss';
-          const color = isStopLoss ? 'rgba(239, 68, 68, 0.8)' : 'rgba(34, 197, 94, 0.8)';
 
           const targetExec = allExecutions.find(e => e.id === slTpPlacement.executionId);
           const entryPrice = targetExec ? parseFloat(targetExec.entryPrice) : 0;
@@ -1176,6 +1311,15 @@ export const ChartCanvas = ({
                 ? (previewPrice - entryPrice) / entryPrice
                 : (entryPrice - previewPrice) / entryPrice) * 100
             : 0;
+
+          let color: string;
+          if (isStopLoss) {
+            const slInProfit = entryPrice > 0 && (isLong ? previewPrice > entryPrice : previewPrice < entryPrice);
+            color = slInProfit ? 'rgba(15, 118, 56, 0.8)' : 'rgba(185, 28, 28, 0.8)';
+          } else {
+            color = 'rgba(15, 118, 56, 0.8)';
+          }
+
           const pctSign = pctChange >= 0 ? '+' : '';
           const label = `${isStopLoss ? 'SL' : 'TP'} ${formatChartPrice(previewPrice)} (${pctSign}${pctChange.toFixed(2)}%)`;
 
@@ -1231,7 +1375,7 @@ export const ChartCanvas = ({
 
         const willBeActive = false;
 
-        const color = isLong ? colors.bullish : colors.bearish;
+        const color = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
         const opacity = willBeActive ? 0.8 : 0.5; ctx.save();
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;

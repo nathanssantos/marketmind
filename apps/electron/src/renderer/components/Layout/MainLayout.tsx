@@ -139,8 +139,8 @@ export const MainLayout = ({
           top={0}
           left={0}
           right={0}
-          height="calc(100vh - 41px)"
-          marginTop="41px"
+          height="calc(100vh - 30px)"
+          marginTop="30px"
           overflow="hidden"
         >
           {marketSidebarOpen && (
@@ -158,6 +158,11 @@ export const MainLayout = ({
             </>
           )}
 
+          <ChartToolsToolbar
+            movingAverages={movingAverages}
+            onMovingAveragesChange={onMovingAveragesChange}
+          />
+
           <Box
             flex={1}
             position="relative"
@@ -174,10 +179,6 @@ export const MainLayout = ({
             transition="width 0.2s ease"
           >
             {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
-            <ChartToolsToolbar
-              movingAverages={movingAverages}
-              onMovingAveragesChange={onMovingAveragesChange}
-            />
             {children}
           </Box>
 

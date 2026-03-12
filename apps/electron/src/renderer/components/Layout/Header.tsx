@@ -21,7 +21,7 @@ export const Header = memo(({ onSettingsClick }: HeaderProps) => {
       top={0}
       left={0}
       right={0}
-      height="41px"
+      height="30px"
       px={4}
       py={1}
       align="center"

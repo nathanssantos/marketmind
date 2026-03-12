@@ -10,6 +10,7 @@ import { BinanceIpBannedError, binanceApiCache } from '../services/binance-api-c
 import { autoTradingService } from '../services/auto-trading';
 import {
     cancelAllFuturesAlgoOrders,
+    cancelFuturesAlgoOrder,
     cancelFuturesOrder,
     closePosition as closeExchangePosition,
     createBinanceFuturesClient,
@@ -27,6 +28,7 @@ import {
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { walletQueries } from '../services/database/walletQueries';
 import { logger } from '../services/logger';
+import { getWebSocketService } from '../services/websocket';
 import { getMinNotionalFilterService } from '../services/min-notional-filter';
 import { protectedProcedure, router } from '../trpc';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
@@ -212,28 +214,50 @@ export const futuresTradingRouter = router({
           });
 
           if (!input.reduceOnly) {
-            await ctx.db.insert(tradeExecutions).values({
-              id: generateEntityId(),
-              userId: ctx.user.id,
-              walletId: input.walletId,
-              symbol: input.symbol,
-              side: input.side === 'BUY' ? 'LONG' : 'SHORT',
-              entryPrice: algoOrder.triggerPrice ?? triggerPrice,
-              limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
-              quantity: String(algoOrder.quantity || input.quantity),
-              entryOrderId: algoOrder.algoId,
-              entryOrderType: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
-              stopLoss: input.stopLoss,
-              takeProfit: input.takeProfit,
-              status: 'pending',
-              openedAt: new Date(),
-              marketType: 'FUTURES',
-              leverage: input.leverage,
-            });
-            logger.info(
-              { symbol: input.symbol, algoId: algoOrder.algoId },
-              '[createOrder] Created pending tradeExecution for manual STOP_MARKET/TP_MARKET order',
-            );
+            const oppositeDirection = input.side === 'BUY' ? 'SHORT' : 'LONG';
+            const [existingOpposite] = await ctx.db
+              .select({ id: tradeExecutions.id })
+              .from(tradeExecutions)
+              .where(
+                and(
+                  eq(tradeExecutions.walletId, input.walletId),
+                  eq(tradeExecutions.symbol, input.symbol),
+                  eq(tradeExecutions.side, oppositeDirection),
+                  eq(tradeExecutions.status, 'open'),
+                  eq(tradeExecutions.marketType, 'FUTURES')
+                )
+              )
+              .limit(1);
+
+            if (!existingOpposite) {
+              await ctx.db.insert(tradeExecutions).values({
+                id: generateEntityId(),
+                userId: ctx.user.id,
+                walletId: input.walletId,
+                symbol: input.symbol,
+                side: input.side === 'BUY' ? 'LONG' : 'SHORT',
+                entryPrice: algoOrder.triggerPrice ?? triggerPrice,
+                limitEntryPrice: algoOrder.triggerPrice ?? triggerPrice,
+                quantity: String(algoOrder.quantity || input.quantity),
+                entryOrderId: algoOrder.algoId,
+                entryOrderType: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+                stopLoss: input.stopLoss,
+                takeProfit: input.takeProfit,
+                status: 'pending',
+                openedAt: new Date(),
+                marketType: 'FUTURES',
+                leverage: input.leverage,
+              });
+              logger.info(
+                { symbol: input.symbol, algoId: algoOrder.algoId },
+                '[createOrder] Created pending tradeExecution for manual STOP_MARKET/TP_MARKET order',
+              );
+            } else {
+              logger.info(
+                { symbol: input.symbol, algoId: algoOrder.algoId, existingOpposite: existingOpposite.id },
+                '[createOrder] Skipped pending execution — reduce order against existing opposite position',
+              );
+            }
           }
 
           return {
@@ -282,27 +306,48 @@ export const futuresTradingRouter = router({
         });
 
         const orderDirection = input.side === 'BUY' ? 'LONG' : 'SHORT';
+        const oppositeDirection = orderDirection === 'LONG' ? 'SHORT' : 'LONG';
 
         if (input.type !== 'MARKET' && futuresOrder.status === 'NEW') {
-          await ctx.db.insert(tradeExecutions).values({
-            id: generateEntityId(),
-            userId: ctx.user.id,
-            walletId: input.walletId,
-            symbol: input.symbol,
-            side: orderDirection,
-            entryOrderId: futuresOrder.orderId,
-            entryPrice: input.price ?? '0',
-            limitEntryPrice: input.price,
-            quantity: input.quantity,
-            stopLoss: input.stopLoss,
-            takeProfit: input.takeProfit,
-            status: 'pending',
-            openedAt: new Date(),
-            entryOrderType: 'LIMIT',
-            marketType: 'FUTURES',
-            leverage: input.leverage,
-          });
-          logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created pending tradeExecution for manual LIMIT order');
+          const [existingOpposite] = await ctx.db
+            .select({ id: tradeExecutions.id })
+            .from(tradeExecutions)
+            .where(
+              and(
+                eq(tradeExecutions.walletId, input.walletId),
+                eq(tradeExecutions.symbol, input.symbol),
+                eq(tradeExecutions.side, oppositeDirection),
+                eq(tradeExecutions.status, 'open'),
+                eq(tradeExecutions.marketType, 'FUTURES')
+              )
+            )
+            .limit(1);
+
+          const isReduceOrder = input.reduceOnly || !!existingOpposite;
+
+          if (!isReduceOrder) {
+            await ctx.db.insert(tradeExecutions).values({
+              id: generateEntityId(),
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: orderDirection,
+              entryOrderId: futuresOrder.orderId,
+              entryPrice: input.price ?? '0',
+              limitEntryPrice: input.price,
+              quantity: input.quantity,
+              stopLoss: input.stopLoss,
+              takeProfit: input.takeProfit,
+              status: 'pending',
+              openedAt: new Date(),
+              entryOrderType: 'LIMIT',
+              marketType: 'FUTURES',
+              leverage: input.leverage,
+            });
+            logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created pending tradeExecution for manual LIMIT order');
+          } else {
+            logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId, existingOpposite: existingOpposite?.id }, '[createOrder] Skipped pending execution — reduce order against existing position');
+          }
         }
 
         if (input.type === 'MARKET') {
@@ -354,7 +399,7 @@ export const futuresTradingRouter = router({
           }
         }
 
-        return {
+        const orderResult = {
           orderId: futuresOrder.orderId,
           symbol: futuresOrder.symbol,
           side: futuresOrder.side,
@@ -364,6 +409,11 @@ export const futuresTradingRouter = router({
           quantity: futuresOrder.origQty,
           executedQty: futuresOrder.executedQty,
         };
+
+        const wsService = getWebSocketService();
+        if (wsService) wsService.emitOrderCreated(input.walletId, orderResult);
+
+        return orderResult;
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
@@ -400,8 +450,15 @@ export const futuresTradingRouter = router({
           return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
         }
 
+        const [dbOrder] = await ctx.db.select().from(orders).where(eq(orders.orderId, input.orderId)).limit(1);
+        const isAlgoOrder = dbOrder && (dbOrder.type === 'STOP_MARKET' || dbOrder.type === 'TAKE_PROFIT_MARKET');
+
         const client = createBinanceFuturesClient(wallet);
-        await cancelFuturesOrder(client, input.symbol, input.orderId);
+        if (isAlgoOrder) {
+          await cancelFuturesAlgoOrder(client, input.orderId);
+        } else {
+          await cancelFuturesOrder(client, input.symbol, input.orderId);
+        }
 
         await ctx.db
           .update(orders)
@@ -410,7 +467,7 @@ export const futuresTradingRouter = router({
 
         await ctx.db
           .update(tradeExecutions)
-          .set({ status: 'cancelled', updatedAt: new Date() })
+          .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
           .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
 
         return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };

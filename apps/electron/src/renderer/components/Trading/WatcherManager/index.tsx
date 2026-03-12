@@ -1,4 +1,5 @@
-import { Box, HStack, Separator, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { Separator } from '@renderer/components/ui/separator';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { Button } from '@renderer/components/ui/button';

@@ -1,4 +1,5 @@
-import { Box, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui/icon-button';
 import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';

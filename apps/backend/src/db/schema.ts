@@ -43,6 +43,7 @@ export const wallets = pgTable('wallets', {
   apiSecretEncrypted: text('api_secret_encrypted').notNull(),
   initialBalance: numeric('initial_balance', { precision: 20, scale: 8 }),
   currentBalance: numeric('current_balance', { precision: 20, scale: 8 }),
+  totalWalletBalance: numeric('total_wallet_balance', { precision: 20, scale: 8 }),
   totalDeposits: numeric('total_deposits', { precision: 20, scale: 8 }).default('0'),
   totalWithdrawals: numeric('total_withdrawals', { precision: 20, scale: 8 }).default('0'),
   lastTransferSyncAt: timestamp('last_transfer_sync_at', { mode: 'date' }),
@@ -394,6 +395,7 @@ export const tradeExecutions = pgTable('trade_executions', {
   lowestPriceSinceTrailingActivation: numeric('lowest_price_since_trailing_activation', { precision: 20, scale: 8 }),
   opportunityCostAlertSentAt: timestamp('opportunity_cost_alert_sent_at', { mode: 'date' }),
   originalStopLoss: numeric('original_stop_loss', { precision: 20, scale: 8 }),
+  partialClosePnl: numeric('partial_close_pnl', { precision: 20, scale: 8 }).default('0'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -783,3 +785,22 @@ export const chartDrawings = pgTable('chart_drawings', {
 
 export type ChartDrawing = typeof chartDrawings.$inferSelect;
 export type NewChartDrawing = typeof chartDrawings.$inferInsert;
+
+export const realizedPnlEvents = pgTable('realized_pnl_events', {
+  id: serial('id').primaryKey(),
+  walletId: varchar('wallet_id', { length: 255 }).notNull(),
+  userId: varchar('user_id', { length: 255 }).notNull(),
+  executionId: varchar('execution_id', { length: 255 }).notNull(),
+  symbol: varchar({ length: 20 }).notNull(),
+  eventType: varchar('event_type', { length: 20 }).notNull().$type<'partial_close' | 'full_close'>(),
+  pnl: numeric({ precision: 20, scale: 8 }).notNull(),
+  fees: numeric({ precision: 20, scale: 8 }).default('0'),
+  quantity: numeric({ precision: 20, scale: 8 }).notNull(),
+  price: numeric({ precision: 20, scale: 8 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  walletDateIdx: index('realized_pnl_events_wallet_date_idx').on(table.walletId, table.createdAt),
+}));
+
+export type RealizedPnlEvent = typeof realizedPnlEvents.$inferSelect;
+export type NewRealizedPnlEvent = typeof realizedPnlEvents.$inferInsert;

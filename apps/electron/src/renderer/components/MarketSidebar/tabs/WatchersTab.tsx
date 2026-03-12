@@ -1,4 +1,6 @@
-import { Badge, Box, Button, Flex, HStack, IconButton, Separator, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Button } from '@renderer/components/ui/button';
+import { Separator } from '@renderer/components/ui/separator';
 import { CryptoIcon } from '@renderer/components/ui/CryptoIcon';
 import { Select } from '@renderer/components/ui/select';
 import { Slider } from '@renderer/components/ui/slider';

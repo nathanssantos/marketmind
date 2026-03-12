@@ -340,13 +340,13 @@ export const IndicatorTogglePopover = memo(
                 onOpenChange={(e) => setIsOpen(e.open)}
                 showArrow={false}
                 width="320px"
-                positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
+                positioning={{ placement: 'right-start', offset: { mainAxis: 8 } }}
                 trigger={
                     <Flex>
                         <TooltipWrapper
                             label={t('chart.indicators.configure')}
                             showArrow
-                            placement="top"
+                            placement="right"
                             isDisabled={isOpen}
                         >
                             <IconButton

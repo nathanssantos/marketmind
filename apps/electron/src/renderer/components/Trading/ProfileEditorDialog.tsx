@@ -1,4 +1,4 @@
-import { Box, Flex, HStack, Input, SimpleGrid, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Box, Flex, HStack, SimpleGrid, Spinner, Stack, Text, Textarea } from '@chakra-ui/react';
 import {
   DialogBackdrop,
   DialogBody,
@@ -15,6 +15,7 @@ import { Button } from '@renderer/components/ui/button';
 import { Checkbox } from '@renderer/components/ui/checkbox';
 import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
 import { Field } from '@renderer/components/ui/field';
+import { Input } from '@renderer/components/ui/input';
 import { NumberInput } from '@renderer/components/ui/number-input';
 import { Select } from '@renderer/components/ui/select';
 import { Slider } from '@renderer/components/ui/slider';

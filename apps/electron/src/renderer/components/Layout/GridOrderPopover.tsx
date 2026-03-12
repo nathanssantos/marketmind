@@ -50,7 +50,7 @@ export const GridOrderPopover = memo(() => {
       <TooltipWrapper
         label={t('chart.gridOrders.title')}
         showArrow
-        placement="bottom"
+        placement="left"
         isDisabled={isOpen}
       >
         <IconButton
@@ -82,7 +82,7 @@ export const GridOrderPopover = memo(() => {
           <Box
             position="absolute"
             top={buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 8 : 0}
-            left={buttonRef.current ? buttonRef.current.getBoundingClientRect().left : 0}
+            left={buttonRef.current ? buttonRef.current.getBoundingClientRect().left - 220 : 0}
             zIndex={9999}
             bg="bg.panel"
             borderRadius="md"
