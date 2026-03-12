@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Box, HStack, Text, Progress, Stack } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
+import { Box, HStack, Text, Stack } from '@chakra-ui/react';
+import { Button, ProgressRoot, ProgressBar } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useAutoUpdate } from '@renderer/hooks/useAutoUpdate';
 
@@ -92,7 +92,7 @@ export const UpdateNotification = () => {
             )}
 
             <HStack gap={2}>
-              <Button size="sm" colorPalette="blue" onClick={handleDownload}>
+              <Button size="sm" variant="outline" onClick={handleDownload}>
                 {t('update.downloadUpdate')}
               </Button>
               <Button size="sm" variant="ghost" onClick={handleDismiss}>
@@ -114,11 +114,9 @@ export const UpdateNotification = () => {
             </Box>
 
             <Box>
-              <Progress.Root value={progress.percent} size="sm">
-                <Progress.Track>
-                  <Progress.Range />
-                </Progress.Track>
-              </Progress.Root>
+              <ProgressRoot value={progress.percent} size="sm">
+                <ProgressBar />
+              </ProgressRoot>
               <HStack justify="space-between" mt={1}>
                 <Text fontSize="xs" color="fg.muted">
                   {t('update.percent', { percent: progress.percent })}

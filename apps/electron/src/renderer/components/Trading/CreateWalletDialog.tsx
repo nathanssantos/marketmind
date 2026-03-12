@@ -1,10 +1,6 @@
-import { Alert, Box, Flex, Link, Stack, Text } from '@chakra-ui/react';
-import { Field } from '@renderer/components/ui/field';
-import { FormDialog } from '@renderer/components/ui/FormDialog';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Alert, Field, FormDialog, Input, Link, NumberInput, Select } from '@renderer/components/ui';
 import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type WalletCurrency, type ExchangeId } from '@marketmind/types';
-import { Input } from '@renderer/components/ui/input';
-import { NumberInput } from '@renderer/components/ui/number-input';
-import { Select } from '@renderer/components/ui/select';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink, LuInfo } from 'react-icons/lu';

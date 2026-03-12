@@ -1,10 +1,9 @@
-import { Badge, Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { IconButton } from './ui/icon-button';
+import { Badge, IconButton, Popover } from '@renderer/components/ui';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuChevronDown, LuCoins, LuWallet } from 'react-icons/lu';
 import { useActiveWallet } from '../hooks/useActiveWallet';
-import { Popover } from './ui/popover';
 
 const WalletSelectorComponent = () => {
   const { t } = useTranslation();

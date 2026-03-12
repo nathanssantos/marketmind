@@ -1,7 +1,7 @@
 import { Text } from '@chakra-ui/react';
 import { memo } from 'react';
-import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
-import { formatBRL } from '../../utils/currencyFormatter';
+import { convertUsdtToBrl, useCurrencyStore } from '../store/currencyStore';
+import { formatBRL } from '../utils/currencyFormatter';
 
 interface BrlValueProps {
     usdtValue: number;

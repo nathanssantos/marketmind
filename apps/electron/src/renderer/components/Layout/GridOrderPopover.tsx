@@ -1,12 +1,10 @@
-import { Slider } from '@/renderer/components/ui/slider';
-import { Switch } from '@/renderer/components/ui/switch';
-import { Box, HStack, IconButton, Portal, Text, VStack } from '@chakra-ui/react';
-import { Button } from '@/renderer/components/ui/button';
+import { Box, HStack, Portal, Text, VStack } from '@chakra-ui/react';
+import { Button, Slider, Switch, ToggleIconButton } from '@renderer/components/ui';
 import { GRID_ORDER_LIMITS, useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { memo, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuGrid3X3 } from 'react-icons/lu';
-import { TooltipWrapper } from '../ui/Tooltip';
+import { TooltipWrapper } from '@renderer/components/ui';
 
 export const GridOrderPopover = memo(() => {
   const { t } = useTranslation();
@@ -53,19 +51,18 @@ export const GridOrderPopover = memo(() => {
         placement="left"
         isDisabled={isOpen}
       >
-        <IconButton
+        <ToggleIconButton
           ref={buttonRef}
+          active={isGridModeActive}
           aria-label={t('chart.gridOrders.title')}
           size="2xs"
           h="22px"
           w="22px"
-          variant={isGridModeActive ? 'solid' : 'ghost'}
-          colorPalette={isGridModeActive ? 'blue' : 'gray'}
           onClick={handleClick}
           onContextMenu={handleContextMenu}
         >
           <LuGrid3X3 />
-        </IconButton>
+        </ToggleIconButton>
       </TooltipWrapper>
 
       {isOpen && (

@@ -1,7 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ColorModeProvider } from '../ui/color-mode';
+import { ColorModeProvider } from '@renderer/components/ui';
 import { GeneralTab } from './GeneralTab';
 
 vi.mock('react-i18next', () => ({

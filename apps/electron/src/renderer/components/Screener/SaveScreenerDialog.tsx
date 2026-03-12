@@ -1,8 +1,7 @@
 import { Stack, Text } from '@chakra-ui/react';
-import { Input } from '../ui/input';
+import { FormDialog, Input } from '@renderer/components/ui';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormDialog } from '../ui/FormDialog';
 
 interface SaveScreenerDialogProps {
   isOpen: boolean;

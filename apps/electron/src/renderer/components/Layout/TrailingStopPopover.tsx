@@ -1,5 +1,5 @@
-import { Switch } from '@/renderer/components/ui/switch';
-import { Box, HStack, IconButton, Portal, Text, VStack } from '@chakra-ui/react';
+import { Box, HStack, Portal, Text, VStack } from '@chakra-ui/react';
+import { Switch, ToggleIconButton } from '@renderer/components/ui';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
@@ -7,7 +7,7 @@ import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuShield } from 'react-icons/lu';
 import { TrailingStopSection } from '../Trading/WatcherManager/TrailingStopSection';
-import { TooltipWrapper } from '../ui/Tooltip';
+import { TooltipWrapper } from '@renderer/components/ui';
 
 interface TrailingStopPopoverProps {
   symbol: string;
@@ -176,19 +176,18 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         placement="left"
         isDisabled={isOpen}
       >
-        <IconButton
+        <ToggleIconButton
           ref={buttonRef}
+          active={isTrailingActive}
           aria-label={t('positionTrailingStop.title')}
           size="2xs"
           h="22px"
           w="22px"
-          variant={isTrailingActive ? 'solid' : 'ghost'}
-          colorPalette={isTrailingActive ? 'blue' : 'gray'}
           onClick={handleClick}
           onContextMenu={handleContextMenu}
         >
           <LuShield />
-        </IconButton>
+        </ToggleIconButton>
       </TooltipWrapper>
 
       {isOpen && (

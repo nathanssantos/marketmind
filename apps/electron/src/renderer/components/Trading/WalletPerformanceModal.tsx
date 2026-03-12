@@ -9,7 +9,7 @@ import {
   Text,
   useToken,
 } from '@chakra-ui/react';
-import { Dialog } from '@renderer/components/ui/dialog';
+import { Dialog } from '@renderer/components/ui';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTranslation } from 'react-i18next';

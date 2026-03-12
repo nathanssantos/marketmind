@@ -1,4 +1,4 @@
-import { Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useCallback, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,7 +9,7 @@ import {
   LuDollarSign,
   LuGrid3X3
 } from 'react-icons/lu';
-import { TooltipWrapper } from '../ui/Tooltip';
+import { ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ControlPanel } from './ControlPanel';
 import { PinnableControl } from './PinnableControl';
@@ -104,26 +104,24 @@ export const ChartControls = ({
           </Text>
           <HStack gap={2}>
             <TooltipWrapper label={t('chart.controls.klineChart')}>
-              <IconButton
+              <ToggleIconButton
+                active={chartType === 'kline'}
                 size="sm"
                 aria-label={t('chart.controls.klineChart')}
                 onClick={() => onChartTypeChange('kline')}
-                colorPalette={chartType === 'kline' ? 'blue' : 'gray'}
-                variant={chartType === 'kline' ? 'solid' : 'ghost'}
               >
                 <LuChartCandlestick />
-              </IconButton>
+              </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.lineChart')}>
-              <IconButton
+              <ToggleIconButton
+                active={chartType === 'line'}
                 size="sm"
                 aria-label={t('chart.controls.lineChart')}
                 onClick={() => onChartTypeChange('line')}
-                colorPalette={chartType === 'line' ? 'blue' : 'gray'}
-                variant={chartType === 'line' ? 'solid' : 'ghost'}
               >
                 <LuChartLine />
-              </IconButton>
+              </ToggleIconButton>
             </TooltipWrapper>
           </HStack>
         </Box>
@@ -134,48 +132,44 @@ export const ChartControls = ({
           </Text>
           <HStack gap={2}>
             <TooltipWrapper label={t('chart.controls.volume')}>
-              <IconButton
+              <ToggleIconButton
+                active={showVolume}
                 size="sm"
                 aria-label={t('chart.controls.volume')}
                 onClick={() => onShowVolumeChange(!showVolume)}
-                colorPalette={showVolume ? 'blue' : 'gray'}
-                variant={showVolume ? 'solid' : 'ghost'}
               >
                 <LuChartBar />
-              </IconButton>
+              </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.grid')}>
-              <IconButton
+              <ToggleIconButton
+                active={showGrid}
                 size="sm"
                 aria-label={t('chart.controls.grid')}
                 onClick={() => onShowGridChange(!showGrid)}
-                colorPalette={showGrid ? 'blue' : 'gray'}
-                variant={showGrid ? 'solid' : 'ghost'}
               >
                 <LuGrid3X3 />
-              </IconButton>
+              </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.currentPrice')}>
-              <IconButton
+              <ToggleIconButton
+                active={showCurrentPriceLine}
                 size="sm"
                 aria-label={t('chart.controls.currentPrice')}
                 onClick={() => onShowCurrentPriceLineChange(!showCurrentPriceLine)}
-                colorPalette={showCurrentPriceLine ? 'blue' : 'gray'}
-                variant={showCurrentPriceLine ? 'solid' : 'ghost'}
               >
                 <LuDollarSign />
-              </IconButton>
+              </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('chart.controls.crosshair')}>
-              <IconButton
+              <ToggleIconButton
+                active={showCrosshair}
                 size="sm"
                 aria-label={t('chart.controls.crosshair')}
                 onClick={() => onShowCrosshairChange(!showCrosshair)}
-                colorPalette={showCrosshair ? 'blue' : 'gray'}
-                variant={showCrosshair ? 'solid' : 'ghost'}
               >
                 <LuCrosshair />
-              </IconButton>
+              </ToggleIconButton>
             </TooltipWrapper>
           </HStack>
         </Box>
@@ -188,12 +182,11 @@ export const ChartControls = ({
             <HStack gap={2} flexWrap="wrap">
               {movingAverages.map((ma, index) => (
                 <TooltipWrapper key={index} label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}>
-                  <IconButton
+                  <ToggleIconButton
+                    active={ma.visible !== false}
                     size="sm"
                     aria-label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
                     onClick={() => toggleMA(index)}
-                    colorPalette={ma.visible !== false ? 'blue' : 'gray'}
-                    variant={ma.visible !== false ? 'solid' : 'ghost'}
                     style={{
                       position: 'relative',
                       borderLeft: ma.visible !== false ? `3px solid ${ma.color}` : undefined
@@ -202,7 +195,7 @@ export const ChartControls = ({
                     <Text fontSize="xs" fontWeight="medium">
                       {ma.type === 'EMA' ? 'EMA' : 'SMA'}{ma.period}
                     </Text>
-                  </IconButton>
+                  </ToggleIconButton>
                 </TooltipWrapper>
               ))}
             </HStack>

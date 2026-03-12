@@ -1,5 +1,5 @@
-import { Button } from '@/renderer/components/ui/button';
 import {
+  Button,
   DialogActionTrigger,
   DialogBackdrop,
   DialogBody,
@@ -10,7 +10,7 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from '@/renderer/components/ui/dialog';
+} from '@renderer/components/ui';
 import { Box, Portal } from '@chakra-ui/react';
 import { calculateFibonacciProjection, calculateProjectionLevels } from '@marketmind/indicators';
 import type { Kline, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';

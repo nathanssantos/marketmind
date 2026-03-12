@@ -1,9 +1,8 @@
-import { Badge, Box, Flex, IconButton, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { BrlValue } from '@renderer/components/ui/BrlValue';
-import { Button } from '@renderer/components/ui/button';
-import { TooltipWrapper } from '@renderer/components/ui/Tooltip';
+import { Badge, Button, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
 import { useWalletUpdates } from '@renderer/hooks/useWalletUpdates';
@@ -122,7 +121,7 @@ export const WalletManager = () => {
       <Flex justify="flex-end" align="center" mb={2}>
         <Button
           size="2xs"
-          colorPalette="blue"
+          variant="outline"
           onClick={() => setShowCreateDialog(true)}
           loading={isCreatingPaper || isCreating}
         >

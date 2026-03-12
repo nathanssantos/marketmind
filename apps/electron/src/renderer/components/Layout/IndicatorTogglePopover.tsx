@@ -1,13 +1,11 @@
-import { Box, Flex, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Checkbox, IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { useIndicatorStore, type IndicatorId } from '@renderer/store';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
-import { Checkbox } from '../ui/checkbox';
-import { Popover } from '../ui/popover';
-import { TooltipWrapper } from '../ui/Tooltip';
 
 interface IndicatorCategory {
     title: string;
@@ -352,8 +350,7 @@ export const IndicatorTogglePopover = memo(
                             <IconButton
                                 aria-label={t('chart.indicators.configure')}
                                 size="2xs"
-                                variant="solid"
-                                colorPalette="blue"
+                                variant="outline"
                             >
                                 <LuGauge />
                             </IconButton>

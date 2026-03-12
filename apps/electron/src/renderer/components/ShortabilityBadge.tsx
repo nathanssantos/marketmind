@@ -1,7 +1,7 @@
-import { Badge, Flex, Text } from '@chakra-ui/react';
+import { Badge, TooltipWrapper } from '@renderer/components/ui';
+import { Flex, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuCheck, LuMinus, LuX } from 'react-icons/lu';
-import { TooltipWrapper } from './ui/Tooltip';
 
 type ShortDifficulty = 'easy' | 'hard' | 'unavailable';
 

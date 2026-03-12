@@ -1,8 +1,7 @@
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import { Separator } from '@renderer/components/ui/separator';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
+import { Button, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
@@ -318,8 +317,8 @@ export const WatcherManager = () => {
         <HStack gap={1}>
           <Button
             size="2xs"
-            variant={tradingMode === 'auto' ? 'solid' : 'outline'}
-            colorPalette={tradingMode === 'auto' ? 'blue' : 'gray'}
+            variant="ghost"
+            color={tradingMode === 'auto' ? 'blue.500' : 'fg.muted'}
             onClick={() => handleTradingModeChange('auto')}
             disabled={updateConfig.isPending}
             flex={1}
@@ -328,8 +327,8 @@ export const WatcherManager = () => {
           </Button>
           <Button
             size="2xs"
-            variant={tradingMode === 'semi_assisted' ? 'solid' : 'outline'}
-            colorPalette={tradingMode === 'semi_assisted' ? 'yellow' : 'gray'}
+            variant="ghost"
+            color={tradingMode === 'semi_assisted' ? 'yellow.500' : 'fg.muted'}
             onClick={() => handleTradingModeChange('semi_assisted')}
             disabled={updateConfig.isPending}
             flex={1}

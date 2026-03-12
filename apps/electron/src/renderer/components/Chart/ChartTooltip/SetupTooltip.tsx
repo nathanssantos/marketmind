@@ -1,5 +1,6 @@
 import { formatPriceDisplay } from '@/renderer/utils/formatters';
-import { Badge, HStack, Text } from '@chakra-ui/react';
+import { HStack, Text } from '@chakra-ui/react';
+import { Badge } from '@renderer/components/ui';
 import type { TradingSetup } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
 import { TooltipContainer } from './TooltipContainer';

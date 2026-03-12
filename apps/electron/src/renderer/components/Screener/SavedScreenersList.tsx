@@ -1,5 +1,6 @@
 import type { SavedScreener, ScreenerFilterCondition } from '@marketmind/types';
-import { Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuPlay, LuTrash2 } from 'react-icons/lu';
@@ -41,7 +42,6 @@ export const SavedScreenersList = memo(({ savedScreeners, onLoad, onDelete, isDe
             <IconButton
               size="2xs"
               variant="ghost"
-              colorPalette="blue"
               aria-label={t('screener.saved.load')}
               onClick={() => handleLoad(screener)}
             >

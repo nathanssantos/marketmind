@@ -1,6 +1,6 @@
-import { Button } from '@/renderer/components/ui/button';
-import type { InputProps } from '@/renderer/components/ui/input';
-import { Input } from '@/renderer/components/ui/input';
+import { Button } from './button';
+import type { InputProps } from './input';
+import { Input } from './input';
 import { Box } from '@chakra-ui/react';
 import { forwardRef, useState } from 'react';
 import { LuEye, LuEyeOff } from 'react-icons/lu';

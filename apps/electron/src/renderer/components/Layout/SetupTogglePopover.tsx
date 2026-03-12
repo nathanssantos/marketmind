@@ -1,3 +1,4 @@
+import { Checkbox, Popover, TooltipWrapper } from '@renderer/components/ui';
 import {
     Box,
     Flex,
@@ -12,9 +13,6 @@ import { HiAdjustmentsHorizontal } from 'react-icons/hi2';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
-import { Checkbox } from '../ui/checkbox';
-import { Popover } from '../ui/popover';
-import { TooltipWrapper } from '../ui/Tooltip';
 
 export const SetupTogglePopover = memo(() => {
     const { t } = useTranslation();
@@ -96,8 +94,7 @@ export const SetupTogglePopover = memo(() => {
                         <IconButton
                             aria-label={t('setupConfig.configureSetups')}
                             size="2xs"
-                            variant="solid"
-                            colorPalette="blue"
+                            variant="outline"
                         >
                             <HiAdjustmentsHorizontal />
                         </IconButton>

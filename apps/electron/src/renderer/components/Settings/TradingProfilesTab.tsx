@@ -1,4 +1,4 @@
-import { Separator } from '@renderer/components/ui/separator';
+import { Separator } from '@renderer/components/ui';
 import { Stack } from '@chakra-ui/react';
 import { TradingProfilesManager } from '@renderer/components/Trading/TradingProfilesManager';
 import { WatcherManager } from '@renderer/components/Trading/WatcherManager';

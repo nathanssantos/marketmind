@@ -1,8 +1,6 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
-import { Switch } from '@renderer/components/ui/switch';
+import { Button, CollapsibleSection, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuRefreshCw, LuZap } from 'react-icons/lu';
 import type { DirectionMode } from './WatchersList';

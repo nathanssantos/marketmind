@@ -3,7 +3,7 @@ import { Box, Flex, Stack } from '@chakra-ui/react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChevronDown, LuChevronUp, LuPlus } from 'react-icons/lu';
-import { Button } from '../ui/button';
+import { Button } from '@renderer/components/ui';
 import { FilterRow } from './FilterRow';
 
 const MAX_FILTERS = 10;
@@ -44,7 +44,7 @@ export const FilterBuilder = memo(({ filters, indicators, onAdd, onUpdate, onRem
           {t('screener.filters.title')} ({filters.length})
         </Button>
         {filters.length < MAX_FILTERS && (
-          <Button size="2xs" variant="ghost" colorPalette="blue" onClick={handleAdd}>
+          <Button size="2xs" variant="ghost" onClick={handleAdd}>
             <LuPlus />
             {t('screener.filters.add')}
           </Button>

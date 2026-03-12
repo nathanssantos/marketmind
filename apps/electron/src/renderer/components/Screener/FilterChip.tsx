@@ -1,9 +1,9 @@
 import type { ScreenerFilterCondition } from '@marketmind/types';
-import { Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { Flex, HStack, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
-import { Button } from '../ui/button';
+import { Button, IconButton } from '@renderer/components/ui';
 
 interface FilterChipProps {
   filters: ScreenerFilterCondition[];

@@ -1,11 +1,8 @@
-import { Button } from '@/renderer/components/ui/button';
-import { ConfirmationDialog } from '@/renderer/components/ui/ConfirmationDialog';
-import { Slider } from '@/renderer/components/ui/slider';
+import { Badge, Button, ConfirmationDialog, Separator, Slider } from '@renderer/components/ui';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { trpc } from '@/renderer/utils/trpc';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@/renderer/components/Trading/TradingTable';
-import { Separator } from '@/renderer/components/ui/separator';
-import { Badge, Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw, LuTrash2, LuWrench } from 'react-icons/lu';

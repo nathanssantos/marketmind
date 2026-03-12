@@ -1,5 +1,5 @@
-import { Input } from '@/renderer/components/ui/input';
-import { Box, HStack, IconButton, Text } from '@chakra-ui/react';
+import { Box, HStack, Text } from '@chakra-ui/react';
+import { Input, ToggleIconButton } from '@renderer/components/ui';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { LuStar } from 'react-icons/lu';
@@ -37,18 +37,17 @@ export const PinnableControl = ({
       <HStack justify="space-between">
         <Text fontSize="xs" color="gray.300">{label}</Text>
         <HStack gap={1}>
-          <IconButton
+          <ToggleIconButton
+            active={pinned}
             size="xs"
             aria-label={pinned ? 'Unpin control' : 'Pin control'}
             onClick={() => togglePin(controlKey)}
-            variant="ghost"
-            colorPalette={pinned ? 'blue' : 'gray'}
             opacity={isHovered || pinned ? 1 : 0}
             transition="opacity 0.2s"
             color={pinned ? 'blue.400' : 'gray.400'}
           >
             <LuStar size={12} fill={pinned ? 'currentColor' : 'none'} />
-          </IconButton>
+          </ToggleIconButton>
           <Input
             size="xs"
             type="number"

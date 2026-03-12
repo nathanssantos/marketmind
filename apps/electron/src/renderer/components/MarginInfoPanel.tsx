@@ -1,8 +1,8 @@
-import { Badge, Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { Badge, TooltipWrapper } from '@renderer/components/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuPercent, LuShield, LuTrendingUp, LuTriangleAlert } from 'react-icons/lu';
-import { TooltipWrapper } from './ui/Tooltip';
 
 interface MarginRequirements {
   initialMargin: number;

@@ -1,8 +1,5 @@
-import { Slider } from '@/renderer/components/ui/slider';
-import { Separator } from '@/renderer/components/ui/separator';
 import { Box, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { Button, CollapsibleSection, Separator, Slider } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { FilterToggle } from './FilterToggle';

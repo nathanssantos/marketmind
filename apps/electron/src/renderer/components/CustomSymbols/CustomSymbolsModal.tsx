@@ -1,4 +1,4 @@
-import { Badge, Box, Flex, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
@@ -6,18 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { useUIStore } from '../../store/uiStore';
 import { toaster } from '../../utils/toaster';
-import { Button } from '../ui/button';
-import {
-  DialogBackdrop,
-  DialogBody,
-  DialogContent,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
-} from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Tabs } from '../ui/tabs';
+import { Badge, Button, DialogBackdrop, DialogBody, DialogContent, DialogHeader, DialogPositioner, DialogRoot, DialogTitle, IconButton, Input, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -270,8 +259,8 @@ export const CustomSymbolsModal = memo(() => {
                           <Button
                             key={m}
                             size="2xs"
-                            variant={formMethod === m ? 'solid' : 'outline'}
-                            colorPalette={formMethod === m ? 'blue' : 'gray'}
+                            variant="ghost"
+                            color={formMethod === m ? 'blue.500' : 'fg.muted'}
                             onClick={() => setFormMethod(m)}
                           >
                             {t(`customSymbols.methods.${m}`)}
@@ -319,7 +308,6 @@ export const CustomSymbolsModal = memo(() => {
                           <Button
                             size="2xs"
                             variant={comp.marketType === 'SPOT' ? 'solid' : 'outline'}
-                            colorPalette="blue"
                             onClick={() => updateComponent(i, 'marketType', comp.marketType === 'SPOT' ? 'FUTURES' : 'SPOT')}
                           >
                             {comp.marketType}
@@ -342,7 +330,7 @@ export const CustomSymbolsModal = memo(() => {
 
                   <Button
                     size="sm"
-                    colorPalette="blue"
+                    variant="outline"
                     onClick={handleCreate}
                     disabled={!formSymbol || !formName || formComponents.some(c => !c.symbol) || createCustomSymbol.isPending}
                   >

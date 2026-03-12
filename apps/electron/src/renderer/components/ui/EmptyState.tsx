@@ -50,7 +50,8 @@ export const EmptyState = ({
       {action && (
         <Button
           size={size === 'sm' ? '2xs' : 'xs'}
-          colorPalette={action.colorPalette ?? 'blue'}
+          variant="outline"
+          colorPalette={action.colorPalette}
           onClick={action.onClick}
         >
           {action.label}

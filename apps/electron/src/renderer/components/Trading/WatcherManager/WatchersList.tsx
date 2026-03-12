@@ -1,7 +1,6 @@
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import type { TradingProfile } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { Button, CollapsibleSection } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuPause, LuPlus, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import type { ActiveWatcher } from './types';
@@ -109,7 +108,7 @@ export const WatchersList = ({
           )}
           <Button
             size="sm"
-            colorPalette="blue"
+            variant="outline"
             onClick={onAddWatcher}
           >
             <LuPlus />

@@ -1,5 +1,5 @@
 import { Box, Flex, Stack, Text, Wrap, WrapItem } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
+import { Button } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuPlay } from 'react-icons/lu';
 

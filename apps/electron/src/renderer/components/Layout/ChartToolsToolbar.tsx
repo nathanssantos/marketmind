@@ -1,5 +1,5 @@
-import { Box, IconButton, VStack } from '@chakra-ui/react';
-import { Separator } from '../ui/separator';
+import { Box, VStack } from '@chakra-ui/react';
+import { Separator, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import type { DrawingType } from '@marketmind/chart-studies';
 import { useChartPref } from '@renderer/store/preferencesStore';
 import { useDrawingStore } from '@renderer/store/drawingStore';
@@ -18,7 +18,6 @@ import {
   LuTriangleRight,
 } from 'react-icons/lu';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
-import { TooltipWrapper } from '../ui/Tooltip';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 export interface ChartToolsToolbarProps {
@@ -78,128 +77,117 @@ export const ChartToolsToolbar = memo(({
         />
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={showProfitLossAreas}
             size="2xs"
             aria-label={t('chart.controls.profitLossAreas')}
             onClick={handleProfitLossToggle}
-            colorPalette={showProfitLossAreas ? 'blue' : 'gray'}
-            variant={showProfitLossAreas ? 'solid' : 'ghost'}
           >
             <LuRectangleHorizontal />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={showFibonacciProjection}
             size="2xs"
             aria-label={t('chart.controls.fibonacciProjection')}
             onClick={handleFibToggle}
-            colorPalette={showFibonacciProjection ? 'blue' : 'gray'}
-            variant={showFibonacciProjection ? 'solid' : 'ghost'}
           >
             <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.tools.pencil', 'Pencil')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={isToolActive('pencil')}
             size="2xs"
             aria-label={t('chart.tools.pencil', 'Pencil')}
             onClick={() => handleToolClick('pencil')}
-            colorPalette={isToolActive('pencil') ? 'blue' : 'gray'}
-            variant={isToolActive('pencil') ? 'solid' : 'ghost'}
           >
             <LuPencil />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.tools.line', 'Line')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={isToolActive('line')}
             size="2xs"
             aria-label={t('chart.tools.line', 'Line')}
             onClick={() => handleToolClick('line')}
-            colorPalette={isToolActive('line') ? 'blue' : 'gray'}
-            variant={isToolActive('line') ? 'solid' : 'ghost'}
           >
             <LuMinus />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.tools.rectangle', 'Rectangle')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={isToolActive('rectangle')}
             size="2xs"
             aria-label={t('chart.tools.rectangle', 'Rectangle')}
             onClick={() => handleToolClick('rectangle')}
-            colorPalette={isToolActive('rectangle') ? 'blue' : 'gray'}
-            variant={isToolActive('rectangle') ? 'solid' : 'ghost'}
           >
             <LuSquare />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.tools.fibonacci', 'Fibonacci')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={isToolActive('fibonacci')}
             size="2xs"
             aria-label={t('chart.tools.fibonacci', 'Fibonacci')}
             onClick={() => handleToolClick('fibonacci')}
-            colorPalette={isToolActive('fibonacci') ? 'blue' : 'gray'}
-            variant={isToolActive('fibonacci') ? 'solid' : 'ghost'}
           >
             <LuTriangleRight />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.tools.ruler', 'Ruler')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={isToolActive('ruler')}
             size="2xs"
             aria-label={t('chart.tools.ruler', 'Ruler')}
             onClick={() => handleToolClick('ruler')}
-            colorPalette={isToolActive('ruler') ? 'blue' : 'gray'}
-            variant={isToolActive('ruler') ? 'solid' : 'ghost'}
           >
             <LuRuler />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.tools.area', 'Area')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={isToolActive('area')}
             size="2xs"
             aria-label={t('chart.tools.area', 'Area')}
             onClick={() => handleToolClick('area')}
-            colorPalette={isToolActive('area') ? 'blue' : 'gray'}
-            variant={isToolActive('area') ? 'solid' : 'ghost'}
           >
             <LuScan />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={magnetEnabled}
             size="2xs"
             aria-label={t('chart.tools.magnet', 'OHLC Magnet')}
             onClick={handleMagnetToggle}
-            colorPalette={magnetEnabled ? 'blue' : 'gray'}
-            variant={magnetEnabled ? 'solid' : 'ghost'}
           >
             <LuMagnet />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={showTooltip}
             size="2xs"
             aria-label={t('chart.controls.tooltip')}
             onClick={handleTooltipToggle}
-            colorPalette={showTooltip ? 'blue' : 'gray'}
-            variant={showTooltip ? 'solid' : 'ghost'}
           >
             <LuMessageSquare />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="right">
-          <IconButton
+          <ToggleIconButton
+            active={showEventRow}
             size="2xs"
             aria-label={t('chart.controls.marketEvents')}
             onClick={handleEventRowToggle}
-            colorPalette={showEventRow ? 'blue' : 'gray'}
-            variant={showEventRow ? 'solid' : 'ghost'}
           >
             <LuCalendarDays />
-          </IconButton>
+          </ToggleIconButton>
         </TooltipWrapper>
       </VStack>
     </Box>

@@ -1,8 +1,4 @@
-import { Slider } from '@/renderer/components/ui/slider';
-import { Switch } from '@/renderer/components/ui/switch';
-import { NumberInput } from '@renderer/components/ui/number-input';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
-import { Separator } from '@/renderer/components/ui/separator';
+import { CollapsibleSection, NumberInput, Separator, Slider, Switch } from '@renderer/components/ui';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 

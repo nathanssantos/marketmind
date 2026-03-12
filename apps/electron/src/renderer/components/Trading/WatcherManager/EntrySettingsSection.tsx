@@ -1,7 +1,5 @@
-import { Slider } from '@/renderer/components/ui/slider';
-import { Switch } from '@/renderer/components/ui/switch';
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { CollapsibleSection, Slider, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface EntrySettingsSectionProps {

@@ -1,4 +1,5 @@
-import { Menu, Portal } from '@chakra-ui/react';
+import { Portal } from '@chakra-ui/react';
+import { Menu } from '@renderer/components/ui';
 import type { ReactNode } from 'react';
 import { LuEye, LuEyeOff, LuTrash2 } from 'react-icons/lu';
 

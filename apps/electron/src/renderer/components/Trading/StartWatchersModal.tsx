@@ -1,10 +1,8 @@
-import { Dialog } from '@/renderer/components/ui/dialog';
-import { Box, CloseButton, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
+import { Button, CloseButton, Dialog, NumberInput } from '@renderer/components/ui';
 import type { MarketType, TimeInterval } from '@marketmind/types';
 import { DEFAULT_TIMEFRAME } from '@renderer/constants/defaults';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { NumberInput } from '@renderer/components/ui/number-input';
 import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
 import type { DirectionMode } from '@renderer/components/Trading/WatcherManager/WatchersList';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart } from '@renderer/hooks/useBackendAutoTrading';

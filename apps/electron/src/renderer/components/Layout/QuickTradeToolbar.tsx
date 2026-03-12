@@ -1,6 +1,5 @@
-import { Slider } from '@/renderer/components/ui/slider';
+import { Button, Slider } from '@renderer/components/ui';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
-import { Button } from '@/renderer/components/ui/button';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useToast } from '@renderer/hooks/useToast';
@@ -115,11 +114,11 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     >
       <VStack gap={1} align="stretch">
         <HStack gap={0.5} justify="center">
-          <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" colorPalette={useMinNotional ? 'blue' : 'gray'} variant={useMinNotional ? 'solid' : 'ghost'} onClick={handleMinClick}>
+          <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="ghost" color={useMinNotional ? 'blue.500' : 'fg.muted'} onClick={handleMinClick}>
             {t('chart.quickTrade.min')}
           </Button>
           {SIZE_PRESETS.map((pct) => (
-            <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" colorPalette={!useMinNotional && sizePercent === pct ? 'blue' : 'gray'} variant={!useMinNotional && sizePercent === pct ? 'solid' : 'ghost'} onClick={() => setSizePercent(pct)}>
+            <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="ghost" color={!useMinNotional && sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
               {pct}%
             </Button>
           ))}

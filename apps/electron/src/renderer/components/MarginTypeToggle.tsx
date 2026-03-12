@@ -1,9 +1,8 @@
 import { Box, Flex, Text, VStack } from '@chakra-ui/react';
-import { Button } from './ui/button';
+import { Button, TooltipWrapper } from '@renderer/components/ui';
 import type { MarginType } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
 import { LuInfo, LuShield, LuWallet } from 'react-icons/lu';
-import { TooltipWrapper } from './ui/Tooltip';
 
 interface MarginTypeToggleProps {
   value: MarginType;
@@ -36,8 +35,8 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         <Button
           flex={1}
           size="sm"
-          variant={value === 'ISOLATED' ? 'solid' : 'outline'}
-          colorPalette={value === 'ISOLATED' ? 'blue' : 'gray'}
+          variant="ghost"
+          color={value === 'ISOLATED' ? 'blue.500' : 'fg.muted'}
           onClick={() => onChange('ISOLATED')}
           disabled={disabled}
         >
@@ -49,8 +48,8 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         <Button
           flex={1}
           size="sm"
-          variant={value === 'CROSSED' ? 'solid' : 'outline'}
-          colorPalette={value === 'CROSSED' ? 'orange' : 'gray'}
+          variant="ghost"
+          color={value === 'CROSSED' ? 'orange.500' : 'fg.muted'}
           onClick={() => onChange('CROSSED')}
           disabled={disabled}
         >

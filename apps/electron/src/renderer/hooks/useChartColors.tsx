@@ -1,4 +1,4 @@
-import { useColorMode } from '@/renderer/components/ui/color-mode';
+import { useColorMode } from '@renderer/components/ui';
 import { getChartColors } from '@/renderer/theme';
 import type { ChartColors as BaseChartColors } from '@marketmind/types';
 import { useMemo } from 'react';

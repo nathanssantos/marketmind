@@ -1,6 +1,5 @@
-import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, HStack, Text } from '@chakra-ui/react';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { CollapsibleSection, Radio, RadioGroup } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface StopModeSectionProps {

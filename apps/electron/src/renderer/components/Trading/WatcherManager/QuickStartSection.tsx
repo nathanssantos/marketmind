@@ -1,8 +1,7 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
-import { Button } from '@renderer/components/ui/button';
-import { NumberInput } from '@renderer/components/ui/number-input';
+import { Button, NumberInput } from '@renderer/components/ui';
 import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
 import type { DirectionMode } from '@renderer/components/Trading/WatcherManager/WatchersList';
 import { DirectionBadge } from '@renderer/components/Trading/DirectionBadge';

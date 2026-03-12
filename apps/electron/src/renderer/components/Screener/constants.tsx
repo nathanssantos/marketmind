@@ -1,5 +1,5 @@
 import type { TimeInterval, ScreenerPresetCategory } from '@marketmind/types';
-import type { SelectOption } from '../ui/select';
+import type { SelectOption } from '@renderer/components/ui';
 import {
   LuArrowDownRight,
   LuArrowUpRight,

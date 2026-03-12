@@ -1,4 +1,5 @@
-import { Box, HStack, IconButton, Stack, Text } from '@chakra-ui/react';
+import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui';
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';

@@ -5,6 +5,7 @@ import { forwardRef } from 'react';
 export interface SeparatorProps extends ChakraSeparatorProps {}
 
 export const Separator = forwardRef<HTMLHRElement, SeparatorProps>((props, ref) => {
+  // @ts-expect-error
   return <ChakraSeparator ref={ref} {...props} />;
 });
 

@@ -1,6 +1,5 @@
-import { Dialog } from '@/renderer/components/ui/dialog';
-import { Tabs } from '@/renderer/components/ui/tabs';
-import { Box, CloseButton } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
+import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';

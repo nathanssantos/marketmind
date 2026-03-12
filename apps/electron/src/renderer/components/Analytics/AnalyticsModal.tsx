@@ -1,5 +1,14 @@
 import { Flex, Stack, Text } from '@chakra-ui/react';
-import { IconButton } from '../ui/icon-button';
+import {
+  DialogBackdrop,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+  IconButton,
+} from '@renderer/components/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { LuX } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
@@ -9,15 +18,6 @@ import { useUIStore } from '../../store/uiStore';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
 import { PerformanceCalendar } from './PerformanceCalendar';
-import {
-  DialogBackdrop,
-  DialogBody,
-  DialogContent,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
-} from '../ui/dialog';
 
 export const AnalyticsModal = memo(() => {
   const { t } = useTranslation();

@@ -1,263 +1,140 @@
-# UI Components
+# UI Components (`@renderer/components/ui`)
 
 > **Living Document:** Update this file whenever components are created, modified, or deprecated.
 
-Reusable components based on Chakra UI v3 with consistent default configuration.
+Single source of truth for all reusable UI components. Designed for future extraction into `@marketmind/ui`.
 
-## Import Rules
+## Import Rule
 
-Always import interactive/composite components from this library, not from `@chakra-ui/react` directly.
+Always use the barrel import:
 
 ```tsx
-import { Button } from '@renderer/components/ui/button';
-import { Switch } from '@renderer/components/ui/switch';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { Button, IconButton, Badge, Switch, Tabs } from '@renderer/components/ui';
 ```
+
+Never import interactive components directly from `@chakra-ui/react`. Only layout primitives (`Box`, `Flex`, `Stack`, `Text`, `Grid`, `Spinner`, `Portal`) come from Chakra directly.
 
 See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 
-## Available Components
+## Component Catalog
 
-### Button
+### Buttons
 
-Button with loading, variant, and size support.
+| Component | Description |
+|-----------|-------------|
+| `Button` | Button with loading, variant, size, colorPalette support |
+| `IconButton` | Icon-only button |
+| `ToggleIconButton` | Toggle button for toolbars (`active` prop controls `variant`/`colorPalette`) |
+| `CloseButton` | Close/dismiss button |
 
-```tsx
-import { Button } from '@renderer/components/ui/button';
+### Form Inputs
 
-<Button>Click me</Button>
-<Button loading loadingText="Saving...">Save</Button>
-<Button variant="outline">Outline</Button>
-<Button variant="ghost">Ghost</Button>
-<Button size="xs" | "sm" | "md" | "lg">Sized</Button>
-<Button colorPalette="blue" | "green" | "red">Colored</Button>
-```
+| Component | Description |
+|-----------|-------------|
+| `Input` | Text input (default `px={3}`) |
+| `NumberInput` | Numeric input with min/max/step |
+| `PasswordInput` | Password with show/hide toggle |
+| `Textarea` | Multi-line text input |
+| `Select` | Custom select with search, loading, sections |
+| `Slider` | Range slider |
+| `Switch` | Toggle switch |
+| `Checkbox` | Checkbox |
+| `Radio` / `RadioGroup` | Radio button group |
+| `Field` | Input wrapper with label, helper, error text |
 
-### Input
+### Data Display
 
-Text input with default padding (px={3}).
+| Component | Description |
+|-----------|-------------|
+| `Badge` | Status/category badge |
+| `Card` | Card container (`Card.Root`, `Card.Header`, `Card.Body`) |
+| `Table` | Data table (`Table.Root`, `Table.Header`, `Table.Body`, `Table.Row`, `Table.ColumnHeader`, `Table.Cell`) |
+| `Stat` / `StatRow` | Statistic display |
+| `PnLDisplay` | Profit/loss colored display |
+| `MetricCard` | Metric card with label/value |
+| `CryptoIcon` | Cryptocurrency icon |
 
-```tsx
-import { Input } from '@renderer/components/ui/input';
+### Feedback
 
-<Input placeholder="Type something..." />
-<Input variant="outline" | "subtle" | "flushed" />
-<Input size="xs" | "sm" | "md" | "lg" />
-```
+| Component | Description |
+|-----------|-------------|
+| `Alert` | Alert/notification banner |
+| `Skeleton` | Loading placeholder |
+| `ProgressRoot` / `ProgressBar` | Progress indicator |
+| `LoadingSpinner` | Spinner with optional label |
+| `ErrorMessage` | Error display |
+| `EmptyState` | Empty state placeholder |
 
-### PasswordInput
+### Navigation
 
-Password input with show/hide toggle button.
+| Component | Description |
+|-----------|-------------|
+| `Tabs` | Tab system (`Tabs.Root`, `Tabs.List`, `Tabs.Trigger`, `Tabs.Content`, `Tabs.Indicator`) |
+| `Menu` | Dropdown menu (`Menu.Root`, `Menu.Trigger`, `Menu.Positioner`, `Menu.Content`, `Menu.Item`) |
+| `Link` | Anchor/link element |
 
-```tsx
-import { PasswordInput } from '@renderer/components/ui/password-input';
+### Overlay
 
-<PasswordInput placeholder="Enter password" />
-```
+| Component | Description |
+|-----------|-------------|
+| `Dialog` | Modal dialog (compound: `Root`, `Backdrop`, `Positioner`, `Content`, `Header`, `Title`, `Body`, `Footer`, `CloseTrigger`, `ActionTrigger`) |
+| `FormDialog` | Form-specific dialog |
+| `ConfirmationDialog` | Confirm/cancel dialog |
+| `Popover` | Popover overlay |
+| `TooltipWrapper` | Tooltip on hover |
 
-### NumberInput
+### Layout
 
-Numeric input with min/max/step validation.
+| Component | Description |
+|-----------|-------------|
+| `CollapsibleSection` | Expandable section with title, badge, header action |
+| `Separator` | Visual divider |
+| `SidebarContainer` / `SidebarHeader` | Sidebar layout components |
 
-```tsx
-import { NumberInput } from '@renderer/components/ui/number-input';
+### Media & Theme
 
-<NumberInput min={0} max={100} value={value} onChange={handleChange} />
-```
+| Component | Description |
+|-----------|-------------|
+| `Image` | Image element |
+| `Logo` | App logo |
+| `useColorMode` / `ColorModeProvider` | Theme mode management |
 
-### Select
+## Theming
 
-Custom select with search, loading, and section support.
+All components follow Chakra's theming system:
+- Colors via **semantic tokens** (never hardcoded)
+- Variants via **`colorPalette`** prop
+- Repeated patterns via **theme recipes**
 
-```tsx
-import { Select, type SelectOption } from '@renderer/components/ui/Select';
+### Available Recipes
 
-const options: SelectOption[] = [
-  { value: 'btc', label: 'Bitcoin', description: 'BTC' },
-];
+| Recipe | Type | Variants |
+|--------|------|----------|
+| `badge` | recipe | `interval`, `futures`, `spot`, `count`, `active`, `autoRotation` |
+| `collapsibleSection` | slot recipe | `root`, `trigger`, `title`, `description`, `content` |
+| `filterToggle` | slot recipe | `root`, `label`, `description` |
 
-<Select value={selected} options={options} onChange={setSelected} enableSearch />
-```
-
-### Slider
-
-Range slider component.
-
-```tsx
-import { Slider } from '@renderer/components/ui/slider';
-
-<Slider value={[50]} onValueChange={(values) => setValue(values[0])} min={0} max={100} step={1} />
-```
-
-### Switch
-
-Toggle switch component.
-
-```tsx
-import { Switch } from '@renderer/components/ui/switch';
-
-<Switch checked={value} onCheckedChange={setValue} />
-```
-
-### Radio / RadioGroup
-
-Radio button group.
-
-```tsx
-import { Radio, RadioGroup } from '@renderer/components/ui/radio';
-
-<RadioGroup value={value} onValueChange={onChange}>
-  <Radio value="a">Option A</Radio>
-  <Radio value="b">Option B</Radio>
-</RadioGroup>
-```
-
-### Checkbox
-
-Checkbox component.
-
-```tsx
-import { Checkbox } from '@renderer/components/ui/checkbox';
-
-<Checkbox checked={value} onCheckedChange={setValue}>Label</Checkbox>
-```
-
-### Field
-
-Wrapper for inputs with label, helper text, and error text.
+## Creating a New Wrapper
 
 ```tsx
-import { Field } from '@renderer/components/ui/field';
+import type { XProps as ChakraXProps } from '@chakra-ui/react';
+import { X as ChakraX } from '@chakra-ui/react';
+import { forwardRef } from 'react';
 
-<Field label="Email" helperText="We'll never share your email">
-  <Input type="email" />
-</Field>
+export interface XProps extends ChakraXProps {}
+
+export const X = forwardRef<HTMLElement, XProps>((props, ref) => {
+  return <ChakraX ref={ref} {...props} />;
+});
+
+X.displayName = 'X';
 ```
 
-### CollapsibleSection
-
-Expandable section with title, description, badge, and header action slots. Supports controlled and uncontrolled modes.
-
-**Props:**
-- `title` (string) - Section title
-- `description?` (string) - Subtitle text
-- `open?` (boolean) - Controlled open state
-- `onOpenChange?` (fn) - Controlled toggle callback
-- `defaultOpen?` (boolean) - Initial state for uncontrolled mode
-- `size?` ('sm' | 'md' | 'lg') - Size variant (default: 'md')
-- `badge?` (ReactNode) - Badge element next to title
-- `headerAction?` (ReactNode) - Action element in header (click doesn't toggle)
-- `onToggle?` (fn) - Legacy toggle callback
-
-```tsx
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
-
-// Controlled mode
-<CollapsibleSection
-  title={t('section.title')}
-  description={t('section.description')}
-  open={isExpanded}
-  onOpenChange={onToggle}
-  size="lg"
->
-  <Stack gap={6}>{content}</Stack>
-</CollapsibleSection>
-
-// Uncontrolled mode
-<CollapsibleSection title="Settings" defaultOpen={false} size="md">
-  {content}
-</CollapsibleSection>
-```
-
-### Dialog / FormDialog / ConfirmationDialog
-
-Modal dialog components.
-
-```tsx
-import { Dialog } from '@renderer/components/ui/dialog';
-
-<Dialog.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-  <Dialog.Backdrop />
-  <Dialog.Positioner>
-    <Dialog.Content>
-      <Dialog.Header><Dialog.Title>Title</Dialog.Title></Dialog.Header>
-      <Dialog.CloseTrigger />
-      <Dialog.Body>Content</Dialog.Body>
-      <Dialog.Footer>
-        <Dialog.ActionTrigger asChild><Button variant="outline">Cancel</Button></Dialog.ActionTrigger>
-        <Button colorPalette="blue">Save</Button>
-      </Dialog.Footer>
-    </Dialog.Content>
-  </Dialog.Positioner>
-</Dialog.Root>
-```
-
-### Tabs
-
-Tab system with variants and visual indicator.
-
-```tsx
-import { Tabs } from '@renderer/components/ui/tabs';
-
-<Tabs.Root defaultValue="tab1">
-  <Tabs.List>
-    <Tabs.Trigger value="tab1">Tab 1</Tabs.Trigger>
-    <Tabs.Trigger value="tab2">Tab 2</Tabs.Trigger>
-    <Tabs.Indicator />
-  </Tabs.List>
-  <Tabs.Content value="tab1">Content 1</Tabs.Content>
-  <Tabs.Content value="tab2">Content 2</Tabs.Content>
-</Tabs.Root>
-```
-
-### TooltipWrapper
-
-Tooltip component for hover information.
-
-```tsx
-import { TooltipWrapper } from '@renderer/components/ui/tooltip';
-
-<TooltipWrapper label="Tooltip text">
-  <Button>Hover me</Button>
-</TooltipWrapper>
-```
-
-## Theme Recipes
-
-Recipes are defined in `theme/index.ts` and provide consistent styling for common patterns.
-
-### badge (recipe)
-
-Variants: `interval`, `futures`, `spot`, `count`, `active`, `autoRotation`
-
-```tsx
-import { useRecipe } from '@chakra-ui/react';
-import { badgeRecipe } from '@renderer/theme';
-
-const badge = useRecipe({ recipe: badgeRecipe });
-<Box css={badge({ variant: 'interval' })}>{interval}</Box>
-```
-
-### collapsibleSection (slot recipe)
-
-Consumed internally by `CollapsibleSection` component. Slots: `root`, `trigger`, `title`, `description`, `content`.
-
-### filterToggle (slot recipe)
-
-Consumed internally by `FilterToggle` component. Slots: `root`, `label`, `description`.
-
-## Chakra UI v3 Direct Imports
-
-These are imported directly from `@chakra-ui/react` (not from the UI library):
-
-- **Layout:** `Box`, `Flex`, `Stack`, `HStack`, `VStack`, `Grid`
-- **Typography:** `Text`
-- **Visual:** `Separator`, `Badge`, `Spinner`, `Portal`
-- **Menu:** `MenuRoot`, `MenuTrigger`, `MenuContent`, `MenuItem`
-- **Other:** `IconButton`, `Group`, `Collapsible`
+After creating: export from `index.ts`, update this file, update `docs/UI_STYLE_GUIDE.md`.
 
 ## References
 
 - [Chakra UI v3 Docs](https://www.chakra-ui.com/docs/components)
 - Style Guide: `docs/UI_STYLE_GUIDE.md`
 - Theme: `src/renderer/theme/index.ts`
+- Standardization Plan: `docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`

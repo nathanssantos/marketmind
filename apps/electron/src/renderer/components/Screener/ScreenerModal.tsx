@@ -6,8 +6,8 @@ import { LuRefreshCw, LuSave } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useScreener } from '../../hooks/useScreener';
 import { useScreenerStore } from '../../store/screenerStore';
-import { Button } from '../ui/button';
 import {
+  Button,
   DialogBackdrop,
   DialogBody,
   DialogCloseTrigger,
@@ -17,8 +17,9 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from '../ui/dialog';
-import { Select, type SelectOption } from '../ui/select';
+  Select,
+  type SelectOption,
+} from '@renderer/components/ui';
 import { SCREENER_INTERVAL_OPTIONS } from './constants';
 import { FilterBuilder } from './FilterBuilder';
 import { FilterChip } from './FilterChip';
@@ -245,7 +246,6 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                   <Button
                     size="2xs"
                     variant="outline"
-                    colorPalette="blue"
                     onClick={() => setIsSaveOpen(true)}
                     disabled={customFilters.length === 0 && activePresetId === null}
                   >

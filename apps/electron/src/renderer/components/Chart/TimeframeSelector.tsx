@@ -1,12 +1,11 @@
+import { IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
 import type { TimeInterval } from '@marketmind/types';
 import { UI_INTERVALS } from '@marketmind/types';
-import { Box, Flex, IconButton, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Text, VStack } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuClock } from 'react-icons/lu';
-import { Popover } from '../ui/popover';
-import { TooltipWrapper } from '../ui/Tooltip';
 
 export type Timeframe = TimeInterval;
 
@@ -40,8 +39,7 @@ export const TimeframeSelector = ({
             <IconButton
               aria-label={t('chart.controls.timeframe')}
               size="2xs"
-              variant="solid"
-              colorPalette="blue"
+              variant="outline"
             >
               <LuClock />
             </IconButton>

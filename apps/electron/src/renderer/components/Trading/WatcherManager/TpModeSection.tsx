@@ -1,6 +1,5 @@
-import { Radio, RadioGroup } from '@/renderer/components/ui/radio';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection } from '@renderer/components/ui/CollapsibleSection';
+import { CollapsibleSection, Radio, RadioGroup } from '@renderer/components/ui';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { useTranslation } from 'react-i18next';
 

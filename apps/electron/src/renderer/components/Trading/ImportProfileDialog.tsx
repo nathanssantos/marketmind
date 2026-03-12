@@ -1,7 +1,6 @@
-import { Box, Stack, Text, Textarea } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui/button';
-import { Input } from '@renderer/components/ui/input';
+import { Box, Stack, Text } from '@chakra-ui/react';
 import {
+  Button,
   DialogBackdrop,
   DialogBody,
   DialogCloseTrigger,
@@ -11,8 +10,10 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from '@renderer/components/ui/dialog';
-import { Field } from '@renderer/components/ui/field';
+  Field,
+  Input,
+  Textarea,
+} from '@renderer/components/ui';
 import { trpc } from '@renderer/utils/trpc';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -169,7 +170,7 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
               {t('common.cancel')}
             </Button>
             <Button
-              colorPalette="blue"
+              variant="outline"
               onClick={handleImport}
               disabled={!parsedData || !profileName.trim()}
               loading={importMutation.isPending}
