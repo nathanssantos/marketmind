@@ -2,6 +2,7 @@ import { Badge, Button, CryptoIcon, IconButton, Separator } from '@renderer/comp
 import { Box, Flex, Grid, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
+import { useScannerPreset } from '@renderer/hooks/useScreener';
 import { trpc } from '@renderer/utils/trpc';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import type { TimeInterval } from '@marketmind/types';
@@ -23,14 +24,9 @@ const ScannerTabComponent = () => {
   const assetClass = isIB ? 'STOCKS' : 'CRYPTO';
   const marketType = isIB ? 'SPOT' : 'FUTURES';
 
-  const { data: presets } = trpc.screener.getPresets.useQuery(
-    { assetClass },
-    { staleTime: 300_000 }
-  );
-
-  const { data: results, isLoading: isLoadingResults, isFetching } = trpc.screener.runPreset.useQuery(
-    { presetId: selectedPresetId!, assetClass, marketType, interval: timeframe },
-    { enabled: !!selectedPresetId, staleTime: 120_000 }
+  const { presets, results, isLoading: isLoadingResults, isFetching } = useScannerPreset(
+    selectedPresetId,
+    { assetClass, marketType, interval: timeframe, staleTime: 120_000 },
   );
 
   const backfillMutation = trpc.kline.backfillTopSymbols.useMutation();
@@ -107,7 +103,7 @@ const ScannerTabComponent = () => {
           <Button
             key={opt.value}
             size="2xs"
-            variant="ghost"
+            variant="outline"
             color={timeframe === opt.value ? 'blue.500' : 'fg.muted'}
             onClick={() => setTimeframe(opt.value)}
           >

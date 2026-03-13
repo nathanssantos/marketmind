@@ -351,6 +351,7 @@ export const IndicatorTogglePopover = memo(
                                 aria-label={t('chart.indicators.configure')}
                                 size="2xs"
                                 variant="outline"
+                                color="fg.muted"
                             >
                                 <LuGauge />
                             </IconButton>

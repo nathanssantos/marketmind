@@ -170,11 +170,11 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     >
       <VStack gap={1} align="stretch">
         <HStack gap={0.5} justify="center">
-          <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="ghost" color={useMinNotional ? 'blue.500' : 'fg.muted'} onClick={handleMinClick}>
+          <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={useMinNotional ? 'blue.500' : 'fg.muted'} onClick={handleMinClick}>
             {t('chart.quickTrade.min')}
           </Button>
           {SIZE_PRESETS.map((pct) => (
-            <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="ghost" color={!useMinNotional && sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
+            <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={!useMinNotional && sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
               {pct}%
             </Button>
           ))}

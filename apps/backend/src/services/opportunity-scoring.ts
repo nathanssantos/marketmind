@@ -4,10 +4,8 @@ import { TIME_MS } from '../constants';
 import { db } from '../db';
 import { setupDetections, strategyPerformance } from '../db/schema';
 import { get24hrTickerData, type Ticker24hr } from './binance-exchange-info';
-import { getFilterPreValidator } from './filter-pre-validator';
 import { logger } from './logger';
 import { getMarketCapDataService, type TopCoin } from './market-cap-data';
-import { getSetupPreScanner } from './setup-pre-scanner';
 
 export interface ScoringWeights {
   marketCapRank: number;
@@ -17,20 +15,16 @@ export interface ScoringWeights {
   setupFrequency: number;
   winRate: number;
   profitFactor: number;
-  pendingSetup?: number;
-  filterPassRate?: number;
 }
 
 const DEFAULT_WEIGHTS: ScoringWeights = {
-  marketCapRank: 0.10,
-  volume: 0.15,
+  marketCapRank: 0.15,
+  volume: 0.20,
   volatility: 0.10,
   priceChange: 0.05,
   setupFrequency: 0.15,
-  winRate: 0.10,
-  profitFactor: 0.10,
-  pendingSetup: 0.15,
-  filterPassRate: 0.10,
+  winRate: 0.15,
+  profitFactor: 0.20,
 };
 
 export interface SymbolScore {
@@ -45,8 +39,6 @@ export interface SymbolScore {
     setupFrequencyScore: number;
     winRateScore: number;
     profitFactorScore: number;
-    pendingSetupScore?: number;
-    filterPassRateScore?: number;
   };
   rawData: {
     marketCap: number;
@@ -55,8 +47,6 @@ export interface SymbolScore {
     setupCount7d: number;
     winRate: number | null;
     profitFactor: number | null;
-    hasPendingSetup?: boolean;
-    filterPassRate?: number;
   };
 }
 
@@ -65,15 +55,8 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-export interface EnhancedScoringOptions {
-  interval?: string;
-  includeSetupScanning?: boolean;
-  includeFilterValidation?: boolean;
-}
-
 export class OpportunityScoringService {
   private scoreCache: Map<MarketType, CacheEntry<SymbolScore[]>> = new Map();
-  private enhancedScoreCache: Map<string, CacheEntry<SymbolScore[]>> = new Map();
   private cacheTTL = 10 * TIME_MS.MINUTE;
   private weights: ScoringWeights = DEFAULT_WEIGHTS;
 
@@ -96,24 +79,6 @@ export class OpportunityScoringService {
 
     const scores = await this.calculateScores(marketType, limit);
     this.setCache(marketType, scores);
-    return scores;
-  }
-
-  async getEnhancedSymbolScores(
-    marketType: MarketType = 'FUTURES',
-    limit: number = 100,
-    options: EnhancedScoringOptions = {}
-  ): Promise<SymbolScore[]> {
-    const interval = options.interval ?? '12h';
-    const cacheKey = `${marketType}-${interval}-${options.includeSetupScanning}-${options.includeFilterValidation}`;
-    const cached = this.enhancedScoreCache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
-      return cached.data.slice(0, limit);
-    }
-
-    const scores = await this.calculateEnhancedScores(marketType, limit, options);
-    this.enhancedScoreCache.set(cacheKey, { data: scores, timestamp: Date.now() });
     return scores;
   }
 
@@ -201,93 +166,6 @@ export class OpportunityScoringService {
 
     scores.sort((a, b) => b.compositeScore - a.compositeScore);
     return scores;
-  }
-
-  private async calculateEnhancedScores(
-    marketType: MarketType,
-    limit: number,
-    options: EnhancedScoringOptions
-  ): Promise<SymbolScore[]> {
-    const interval = options.interval ?? '12h';
-    const baseScores = await this.calculateScores(marketType, limit * 2);
-
-    if (!options.includeSetupScanning && !options.includeFilterValidation) {
-      return baseScores.slice(0, limit);
-    }
-
-    const symbols = baseScores.map(s => s.symbol);
-    const setupScanner = getSetupPreScanner();
-    const filterValidator = getFilterPreValidator();
-
-    let setupResults: Map<string, { hasPendingSetup: boolean; score: number }> = new Map();
-    let filterResults: Map<string, { passRate: number }> = new Map();
-
-    if (options.includeSetupScanning) {
-      try {
-        const scanResults = await setupScanner.scanSymbols(symbols, { interval, marketType });
-        for (const [symbol, result] of scanResults) {
-          setupResults.set(symbol, {
-            hasPendingSetup: result.hasPendingSetup,
-            score: result.score,
-          });
-        }
-      } catch (error) {
-        logger.warn({ error }, '[OpportunityScoring] Setup scanning failed, skipping');
-      }
-    }
-
-    if (options.includeFilterValidation) {
-      try {
-        const validationResults = await filterValidator.validateSymbols(symbols, 'LONG', {
-          interval,
-          marketType,
-          filters: {
-            useBtcCorrelationFilter: true,
-            useVolumeFilter: true,
-            useTrendFilter: true,
-          },
-        });
-        for (const [symbol, result] of validationResults) {
-          filterResults.set(symbol, { passRate: result.confluenceScore });
-        }
-      } catch (error) {
-        logger.warn({ error }, '[OpportunityScoring] Filter validation failed, skipping');
-      }
-    }
-
-    const enhancedScores = baseScores.map(score => {
-      const setupData = setupResults.get(score.symbol);
-      const filterData = filterResults.get(score.symbol);
-
-      const pendingSetupScore = setupData?.hasPendingSetup ? setupData.score : 50;
-      const filterPassRateScore = filterData?.passRate ?? 50;
-
-      const pendingSetupWeight = this.weights.pendingSetup ?? 0;
-      const filterPassRateWeight = this.weights.filterPassRate ?? 0;
-
-      const enhancedCompositeScore =
-        score.compositeScore +
-        pendingSetupScore * pendingSetupWeight +
-        filterPassRateScore * filterPassRateWeight;
-
-      return {
-        ...score,
-        compositeScore: enhancedCompositeScore,
-        breakdown: {
-          ...score.breakdown,
-          pendingSetupScore,
-          filterPassRateScore,
-        },
-        rawData: {
-          ...score.rawData,
-          hasPendingSetup: setupData?.hasPendingSetup ?? false,
-          filterPassRate: filterData?.passRate,
-        },
-      };
-    });
-
-    enhancedScores.sort((a, b) => b.compositeScore - a.compositeScore);
-    return enhancedScores.slice(0, limit);
   }
 
   private calculateMarketCapScore(rank: number): number {
@@ -425,14 +303,8 @@ export class OpportunityScoringService {
   clearCache(marketType?: MarketType): void {
     if (marketType) {
       this.scoreCache.delete(marketType);
-      for (const key of this.enhancedScoreCache.keys()) {
-        if (key.startsWith(marketType)) {
-          this.enhancedScoreCache.delete(key);
-        }
-      }
     } else {
       this.scoreCache.clear();
-      this.enhancedScoreCache.clear();
     }
   }
 }

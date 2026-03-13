@@ -1852,7 +1852,12 @@
     "trailingLongDeactivated": "Trailing Stop LONG désactivé pour {{symbol}}",
     "trailingShortActivated": "Trailing Stop SHORT activé pour {{symbol}}",
     "trailingShortDeactivated": "Trailing Stop SHORT désactivé pour {{symbol}}",
-    "configSaved": "Config du Trailing Stop sauvegardée pour {{symbol}}"
+    "configSaved": "Config du Trailing Stop sauvegardée pour {{symbol}}",
+    "placeOnChart": "Placer sur le Graphique",
+    "placementActive": "Cliquez sur le graphique pour définir le prix d'activation du TS",
+    "activationPlaced": "Activation du Trailing Stop définie à {{price}} pour {{symbol}}",
+    "noPositionForPlacement": "Aucune position ouverte pour définir l'activation du trailing stop",
+    "activationFailed": "Échec de la définition de l'activation du trailing stop"
   },
   "scanner": {
     "title": "Scanner de Marché",

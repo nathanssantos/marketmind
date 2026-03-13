@@ -70,11 +70,8 @@ const CryptoIconComponent = ({ symbol, size = 16, onClick, cursor }: CryptoIconP
             alt={`${symbol} icon`}
             w={`${size}px`}
             h={`${size}px`}
-            minW={`${size}px`}
-            minH={`${size}px`}
             borderRadius="full"
             objectFit="cover"
-            aspectRatio="1"
             onError={handleError}
             flexShrink={0}
             onClick={onClick}

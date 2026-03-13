@@ -12,7 +12,7 @@ export const ToggleIconButton = forwardRef<HTMLButtonElement, ToggleIconButtonPr
     // @ts-expect-error
     <IconButton
       ref={ref}
-      variant="ghost"
+      variant="outline"
       color={active ? activeColor : 'fg.muted'}
       {...props}
     />

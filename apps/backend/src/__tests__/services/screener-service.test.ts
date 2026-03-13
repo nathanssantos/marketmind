@@ -48,11 +48,25 @@ vi.mock('../../services/ib-historical', () => ({
   smartBackfillIBKlines: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../services/screener/indicator-evaluator', () => ({
-  evaluateIndicator: vi.fn().mockReturnValue(50),
-  evaluateIndicators: vi.fn().mockReturnValue({ RSI: 55, ADX: 30, ATR_PERCENT: 2, VOLUME_RATIO: 1.5 }),
-  getPreviousValue: vi.fn().mockReturnValue(45),
-  isTickerBasedIndicator: vi.fn().mockReturnValue(false),
+const {
+  mockEvaluateScreenerIndicator,
+  mockEvaluateScreenerIndicators,
+  mockGetScreenerPreviousValue,
+  mockIsTickerBasedIndicator,
+} = vi.hoisted(() => ({
+  mockEvaluateScreenerIndicator: vi.fn().mockReturnValue(50),
+  mockEvaluateScreenerIndicators: vi.fn().mockReturnValue({ RSI: 55, ADX: 30, ATR_PERCENT: 2, VOLUME_RATIO: 1.5 }),
+  mockGetScreenerPreviousValue: vi.fn().mockReturnValue(45),
+  mockIsTickerBasedIndicator: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock('../../services/indicator-engine', () => ({
+  IndicatorEngine: class {
+    evaluateScreenerIndicator = mockEvaluateScreenerIndicator;
+    evaluateScreenerIndicators = mockEvaluateScreenerIndicators;
+    getScreenerPreviousValue = mockGetScreenerPreviousValue;
+  },
+  isTickerBasedIndicator: mockIsTickerBasedIndicator,
 }));
 
 vi.mock('../../services/screener/filter-evaluator', () => ({
@@ -75,12 +89,10 @@ import { getMarketCapDataService, type TopCoin } from '../../services/market-cap
 import { get24hrTickerData, type Ticker24hr } from '../../services/binance-exchange-info';
 import { smartBackfillKlines } from '../../services/binance-historical';
 import { smartBackfillIBKlines } from '../../services/ib-historical';
-import {
-  evaluateIndicator,
-  evaluateIndicators,
-  getPreviousValue,
-  isTickerBasedIndicator,
-} from '../../services/screener/indicator-evaluator';
+const evaluateIndicator = mockEvaluateScreenerIndicator;
+const evaluateIndicators = mockEvaluateScreenerIndicators;
+const getPreviousValue = mockGetScreenerPreviousValue;
+const isTickerBasedIndicator = mockIsTickerBasedIndicator;
 import { evaluateFilters, needsPreviousValues, getLookbackBars } from '../../services/screener/filter-evaluator';
 import { mapDbKlinesReversed } from '../../utils/kline-mapper';
 import {

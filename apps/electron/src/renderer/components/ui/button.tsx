@@ -4,7 +4,7 @@ import { forwardRef } from 'react';
 
 export interface ButtonProps extends ChakraButtonProps {}
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ px = 4, ...props }, ref) => {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ px = 2, ...props }, ref) => {
   // @ts-expect-error
   return <ChakraButton ref={ref} px={px} {...props} />;
 });

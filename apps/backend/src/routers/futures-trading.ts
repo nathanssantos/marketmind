@@ -916,6 +916,145 @@ export const futuresTradingRouter = router({
       }
     }),
 
+  reversePosition: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        positionId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      try {
+        if (isPaperWallet(wallet)) {
+          if (!input.positionId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'positionId is required for paper wallets' });
+
+          const [position] = await ctx.db
+            .select()
+            .from(positions)
+            .where(
+              and(
+                eq(positions.id, input.positionId),
+                eq(positions.userId, ctx.user.id),
+                eq(positions.status, 'open')
+              )
+            )
+            .limit(1);
+
+          if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
+
+          const dataService = getBinanceFuturesDataService();
+          const markPriceData = await dataService.getMarkPrice(position.symbol);
+          const exitPrice = markPriceData ? markPriceData.markPrice : parseFloat(position.currentPrice ?? position.entryPrice);
+
+          const entryPrice = parseFloat(position.entryPrice);
+          const quantity = parseFloat(position.entryQty);
+          const leverage = position.leverage ?? 1;
+          const accumulatedFunding = parseFloat(position.accumulatedFunding ?? '0');
+
+          const { netPnl, pnlPercent } = calculatePnl({
+            entryPrice,
+            exitPrice,
+            quantity,
+            side: position.side as 'LONG' | 'SHORT',
+            marketType: 'FUTURES',
+            leverage,
+            accumulatedFunding,
+          });
+
+          await ctx.db
+            .update(positions)
+            .set({
+              status: 'closed',
+              closedAt: new Date(),
+              updatedAt: new Date(),
+              currentPrice: exitPrice.toString(),
+              pnl: netPnl.toString(),
+              pnlPercent: pnlPercent.toString(),
+            })
+            .where(eq(positions.id, input.positionId));
+
+          const newSide = position.side === 'LONG' ? 'SHORT' : 'LONG';
+          const newPositionId = generateEntityId();
+          const newLiquidationPrice = calculateLiquidationPrice(exitPrice, leverage, newSide);
+
+          await ctx.db.insert(positions).values({
+            id: newPositionId,
+            userId: ctx.user.id,
+            walletId: input.walletId,
+            symbol: position.symbol,
+            side: newSide,
+            entryPrice: exitPrice.toString(),
+            entryQty: position.entryQty,
+            currentPrice: exitPrice.toString(),
+            status: 'open',
+            marketType: 'FUTURES',
+            leverage,
+            marginType: position.marginType,
+            liquidationPrice: newLiquidationPrice.toString(),
+            accumulatedFunding: '0',
+          });
+
+          logger.info({
+            positionId: input.positionId,
+            newPositionId,
+            symbol: position.symbol,
+            oldSide: position.side,
+            newSide,
+            exitPrice,
+            closedPnl: netPnl.toFixed(4),
+          }, 'Paper futures position reversed');
+
+          return { success: true, closedPnl: netPnl, newPositionId, newSide };
+        }
+
+        const client = createBinanceFuturesClient(wallet);
+        const position = await getPosition(client, input.symbol);
+
+        if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
+
+        const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
+        const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
+
+        const positionAmt = parseFloat(position.positionAmt);
+        const quantity = Math.abs(positionAmt);
+        const reverseSide = positionAmt > 0 ? 'SELL' : 'BUY';
+        const reverseQuantity = formatQuantityForBinance(quantity * 2, stepSize);
+
+        const result = await submitFuturesOrder(client, {
+          symbol: input.symbol,
+          side: reverseSide,
+          type: 'MARKET',
+          quantity: reverseQuantity,
+        });
+
+        logger.info({
+          walletId: input.walletId,
+          symbol: input.symbol,
+          orderId: result.orderId,
+          newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
+          reverseQuantity,
+        }, 'Position reversed with single 2x order');
+
+        return {
+          success: true,
+          closeOrderId: result.orderId,
+          openOrderId: result.orderId,
+          newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to reverse position',
+          cause: error,
+        });
+      }
+    }),
+
   cancelAllAlgoOrders: protectedProcedure
     .input(
       z.object({

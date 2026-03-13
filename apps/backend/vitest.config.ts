@@ -76,7 +76,6 @@ export default defineConfig({
         'src/services/market-cap-data.ts',
         'src/services/altcoin-season-index.ts',
         'src/services/btc-dominance-data.ts',
-        'src/services/setup-pre-scanner.ts',
         'src/services/order-archiver.ts',
         'src/services/screener/presets.ts',
         'src/services/screener/screener-metadata.ts',
@@ -87,7 +86,6 @@ export default defineConfig({
         'src/services/binance-futures-user-stream.ts',
         'src/services/binance-price-stream.ts',
         'src/utils/filters/sub-filter-types.ts',
-        'src/services/filter-pre-validator.ts',
         'src/services/min-notional-filter.ts',
       ],
       thresholds: {

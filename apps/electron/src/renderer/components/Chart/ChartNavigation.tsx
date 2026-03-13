@@ -25,33 +25,19 @@ export const ChartNavigation = ({ onResetView, onNextKline, totalPanelHeight = 0
                 aria-label={t('chart.navigation.nextKline')}
                 onClick={onNextKline}
                 size="2xs"
-                variant="ghost"
-                bg="blackAlpha.600"
-                color="whiteAlpha.900"
-                _hover={{ bg: 'blackAlpha.800', transform: 'scale(1.05)' }}
-                transition="all 0.2s"
-                backdropFilter="blur(4px)"
-                minW="20px"
-                h="20px"
-                p={0}
+                variant="outline"
+                color="fg.muted"
             >
-                <LuChevronRight size={12} />
+                <LuChevronRight />
             </IconButton>
             <IconButton
                 aria-label={t('chart.navigation.resetView')}
                 onClick={onResetView}
                 size="2xs"
-                variant="ghost"
-                bg="blackAlpha.600"
-                color="whiteAlpha.900"
-                _hover={{ bg: 'blackAlpha.800', transform: 'scale(1.05)' }}
-                transition="all 0.2s"
-                backdropFilter="blur(4px)"
-                minW="20px"
-                h="20px"
-                p={0}
+                variant="outline"
+                color="fg.muted"
             >
-                <LuChevronsRight size={12} />
+                <LuChevronsRight />
             </IconButton>
         </HStack>
     );

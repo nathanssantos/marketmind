@@ -7,12 +7,14 @@ import type {
   TriggerIndicatorValues,
 } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
+import { IndicatorEngine } from '../services/indicator-engine';
 import { and, desc, eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { klines, strategyPerformance, tradeExecutions } from '../db/schema';
-import { StrategyInterpreter, StrategyLoader } from '../services/setup-detection/dynamic';
+import { detectSetups as detectSetupsUnified } from '../services/indicator-engine';
+import { StrategyLoader } from '../services/setup-detection/dynamic';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import { mapDbKlinesToApi } from '../utils/kline-mapper';
 
@@ -110,25 +112,16 @@ export const setupDetectionRouter = router({
         ? strategies.filter((s) => enabledStrategies.includes(s.id))
         : strategies;
 
-      const setups: TradingSetup[] = [];
-      const currentIndex = mappedKlines.length - 1;
+      const results = detectSetupsUnified({
+        klines: mappedKlines,
+        strategies: filteredStrategies,
+        config: { minConfidence, minRiskReward },
+      });
 
-      for (const strategy of filteredStrategies) {
-        const interpreter = new StrategyInterpreter({
-          enabled: true,
-          minConfidence,
-          minRiskReward,
-          strategy,
-        });
-
-        const result = interpreter.detect(mappedKlines, currentIndex);
-
-        if (result.setup && result.confidence >= minConfidence) {
-          setups.push(result.setup);
-        }
-      }
-
-      setups.sort((a, b) => b.confidence - a.confidence);
+      const setups = results
+        .filter((r) => r.setup && r.confidence >= minConfidence)
+        .map((r) => r.setup!)
+        .sort((a, b) => b.confidence - a.confidence);
 
       return {
         setups,
@@ -177,27 +170,30 @@ export const setupDetectionRouter = router({
         ? strategies.filter((s) => enabledStrategies.includes(s.id))
         : strategies;
 
-      const setups: TradingSetup[] = [];
-
       const startIdx = mappedKlines.findIndex((k) => k.openTime >= startTime);
       const endIdx = mappedKlines.findIndex((k) => k.openTime > endTime);
 
       const actualStartIdx = startIdx === -1 ? 0 : startIdx;
       const actualEndIdx = endIdx === -1 ? mappedKlines.length - 1 : endIdx - 1;
 
+      const setups: TradingSetup[] = [];
+      const sharedEngine = new IndicatorEngine();
+
       for (let i = actualStartIdx; i <= actualEndIdx; i += 1) {
-        for (const strategy of filteredStrategies) {
-          const interpreter = new StrategyInterpreter({
-            enabled: true,
+        const results = detectSetupsUnified({
+          klines: mappedKlines,
+          strategies: filteredStrategies,
+          currentIndex: i,
+          config: {
             minConfidence,
             minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
-            strategy,
-          });
+          },
+          indicatorEngine: sharedEngine,
+        });
 
-          const result = interpreter.detect(mappedKlines, i);
-
-          if (result.setup && result.confidence >= minConfidence) {
-            setups.push(result.setup);
+        for (const r of results) {
+          if (r.setup && r.confidence >= minConfidence) {
+            setups.push(r.setup);
           }
         }
       }

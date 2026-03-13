@@ -22,7 +22,7 @@ export const GeneralTab = () => {
         <HStack gap={2}>
           <Button
             flex={1}
-            variant="ghost"
+            variant="outline"
             color={colorMode === 'light' ? 'blue.500' : 'fg.muted'}
             onClick={() => setColorMode('light')}
           >
@@ -31,7 +31,7 @@ export const GeneralTab = () => {
           </Button>
           <Button
             flex={1}
-            variant="ghost"
+            variant="outline"
             color={colorMode === 'dark' ? 'blue.500' : 'fg.muted'}
             onClick={() => setColorMode('dark')}
           >

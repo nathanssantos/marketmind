@@ -121,15 +121,13 @@ export const Toolbar = memo(({
           <Box w="1px" h="22px" bg="border" flexShrink={0} />
         </Flex>
 
-        <Box flexShrink={0}>
-          <SymbolSelector
-            value={symbol}
-            marketType={marketType}
-            onMarketTypeChange={onMarketTypeChange}
-            onChange={onSymbolChange}
-            showMarketTypeToggle
-          />
-        </Box>
+        <SymbolSelector
+          value={symbol}
+          marketType={marketType}
+          onMarketTypeChange={onMarketTypeChange}
+          onChange={onSymbolChange}
+          showMarketTypeToggle
+        />
 
         {showNewWindowButton && (
           <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
@@ -137,7 +135,8 @@ export const Toolbar = memo(({
               size="2xs"
               aria-label={t('chart.controls.newWindow')}
               onClick={handleOpenNewWindow}
-              variant="ghost"
+              variant="outline"
+              color="fg.muted"
             >
               <LuSquareArrowOutUpRight />
             </IconButton>
@@ -146,12 +145,10 @@ export const Toolbar = memo(({
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
-        <Box flexShrink={0}>
-          <TimeframeSelector
-            selectedTimeframe={timeframe}
-            onTimeframeChange={onTimeframeChange}
-          />
-        </Box>
+        <TimeframeSelector
+          selectedTimeframe={timeframe}
+          onTimeframeChange={onTimeframeChange}
+        />
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
@@ -220,6 +217,7 @@ export const Toolbar = memo(({
                   aria-label={t('header.zoomOut')}
                   onClick={zoomOut}
                   variant="outline"
+                  color="fg.muted"
                   disabled={zoomLevel <= ZOOM_MIN}
                 >
                   <LuZoomOut />
@@ -234,6 +232,7 @@ export const Toolbar = memo(({
                   aria-label={t('header.zoomIn')}
                   onClick={zoomIn}
                   variant="outline"
+                  color="fg.muted"
                   disabled={zoomLevel >= ZOOM_MAX}
                 >
                   <LuZoomIn />
@@ -251,6 +250,7 @@ export const Toolbar = memo(({
                 aria-label={t('header.settings')}
                 onClick={globalActions?.openSettings}
                 variant="outline"
+                color="fg.muted"
                 size="2xs"
               >
                 <LuSettings />

@@ -23,7 +23,7 @@ export const PresetBar = memo(({ presets, activePresetId, onSelectPreset }: Pres
       <Flex gap={1} flexWrap="wrap">
         <Button
           size="2xs"
-          variant="ghost"
+          variant="outline"
           color={activePresetId === null ? 'blue.500' : 'fg.muted'}
           onClick={() => onSelectPreset(null)}
         >
@@ -33,7 +33,7 @@ export const PresetBar = memo(({ presets, activePresetId, onSelectPreset }: Pres
           <HStack key={preset.id} gap={0}>
             <Button
               size="2xs"
-              variant="ghost"
+              variant="outline"
               color={activePresetId === preset.id ? 'blue.500' : 'fg.muted'}
               onClick={() => onSelectPreset(preset.id)}
               title={t(`screener.presets.descriptions.${preset.id}`, preset.description)}

@@ -35,7 +35,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         <Button
           flex={1}
           size="sm"
-          variant="ghost"
+          variant="outline"
           color={value === 'ISOLATED' ? 'blue.500' : 'fg.muted'}
           onClick={() => onChange('ISOLATED')}
           disabled={disabled}
@@ -48,7 +48,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         <Button
           flex={1}
           size="sm"
-          variant="ghost"
+          variant="outline"
           color={value === 'CROSSED' ? 'orange.500' : 'fg.muted'}
           onClick={() => onChange('CROSSED')}
           disabled={disabled}
