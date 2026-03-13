@@ -1,14 +1,16 @@
-import { Button, Slider } from '@renderer/components/ui';
+import { Button, ConfirmationDialog, IconButton, Slider, TooltipWrapper } from '@renderer/components/ui';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { trpc } from '@renderer/utils/trpc';
 import { roundTradingQty } from '@shared/utils';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LuArrowUpDown } from 'react-icons/lu';
 import { GridOrderPopover } from './GridOrderPopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
@@ -23,8 +25,62 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
-  const { createOrder } = useBackendTradingMutations();
+  const { createOrder, isCreatingOrder } = useBackendTradingMutations();
   const { sizePercent, useMinNotional, setSizePercent, setMinNotional } = useQuickTradeStore();
+
+  const { positions, reversePosition, isReversingPosition } = useBackendFuturesTrading(activeWallet?.id || '');
+  const [showReverseConfirm, setShowReverseConfirm] = useState(false);
+
+  const currentPosition = useMemo(() => {
+    if (marketType !== 'FUTURES' || !Array.isArray(positions)) return null;
+    const found = positions.find((p) => {
+      if (p === null || typeof p !== 'object' || !('symbol' in p)) return false;
+      if ((p as { symbol: string }).symbol !== symbol) return false;
+      if ('status' in p && 'id' in p) return (p as { status: string }).status === 'open';
+      if ('positionAmt' in p) return parseFloat(String((p as { positionAmt: string }).positionAmt)) !== 0;
+      return false;
+    });
+    if (!found) return null;
+    return found as { id?: string; side?: string; positionAmt?: string };
+  }, [positions, symbol, marketType]);
+
+  const positionSide = useMemo(() => {
+    if (!currentPosition) return '';
+    if ('side' in currentPosition && currentPosition.side) return String(currentPosition.side).toUpperCase();
+    if ('positionAmt' in currentPosition) return parseFloat(String(currentPosition.positionAmt)) > 0 ? 'LONG' : 'SHORT';
+    return '';
+  }, [currentPosition]);
+
+  const positionQty = useMemo(() => {
+    if (!currentPosition) return '0';
+    if ('positionAmt' in currentPosition) return Math.abs(parseFloat(String(currentPosition.positionAmt))).toFixed(4);
+    return '0';
+  }, [currentPosition]);
+
+  const handleReverseClick = useCallback(() => {
+    if (!currentPosition) return;
+    setShowReverseConfirm(true);
+  }, [currentPosition]);
+
+  const handleReverseConfirm = useCallback(async () => {
+    if (!activeWallet?.id || !currentPosition) return;
+    try {
+      const result = await reversePosition({
+        walletId: activeWallet.id,
+        symbol,
+        positionId: 'id' in currentPosition ? String(currentPosition.id) : undefined,
+      });
+      if (result && 'success' in result && !result.success) {
+        const errorMsg = 'error' in result && typeof result.error === 'string' ? result.error : undefined;
+        toastError(t('futures.reverseFailed', 'Failed to reverse position'), errorMsg);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toastError(t('futures.reverseFailed', 'Failed to reverse position'), msg);
+    } finally {
+      setShowReverseConfirm(false);
+    }
+  }, [activeWallet?.id, currentPosition, symbol, reversePosition, toastError, t]);
 
   const { data: symbolFilters } = trpc.trading.getSymbolFilters.useQuery(
     { symbol, marketType },
@@ -103,7 +159,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     <Box
       position="absolute"
       top={2}
-      right="74px"
+      left={2}
       zIndex={10}
       bg="bg.panel"
       borderRadius="md"
@@ -132,16 +188,51 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
         </HStack>
 
         <HStack gap={1}>
-          <Button size="2xs" fontSize="xs" h="22px" colorPalette="green" variant="solid" onClick={handleBuy} flex={1}>
+          <Button size="2xs" fontSize="xs" h="22px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
             {t('chart.quickTrade.buy')}
           </Button>
-          <Button size="2xs" fontSize="xs" h="22px" colorPalette="red" variant="solid" onClick={handleSell} flex={1}>
+          {marketType === 'FUTURES' && (
+            <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
+              <IconButton
+                size="2xs"
+                h="22px"
+                w="22px"
+                minW="22px"
+                variant="solid"
+                colorPalette="orange"
+                color="white"
+                onClick={handleReverseClick}
+                loading={isReversingPosition}
+                disabled={!currentPosition}
+                aria-label={t('futures.reversePosition', 'Reverse Position')}
+              >
+                <LuArrowUpDown size={12} />
+              </IconButton>
+            </TooltipWrapper>
+          )}
+          <Button size="2xs" fontSize="xs" h="22px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
             {t('chart.quickTrade.sell')}
           </Button>
           <GridOrderPopover />
           <TrailingStopPopover symbol={symbol} />
         </HStack>
       </VStack>
+
+      <ConfirmationDialog
+        isOpen={showReverseConfirm}
+        onClose={() => setShowReverseConfirm(false)}
+        onConfirm={handleReverseConfirm}
+        title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
+        description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
+          side: positionSide,
+          quantity: positionQty,
+          symbol,
+          newSide: positionSide === 'LONG' ? 'SHORT' : 'LONG',
+        })}
+        confirmLabel={t('futures.reversePosition', 'Reverse Position')}
+        colorPalette="orange"
+        isLoading={isReversingPosition}
+      />
     </Box>
   );
 });

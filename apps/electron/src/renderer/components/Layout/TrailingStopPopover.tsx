@@ -1,13 +1,13 @@
-import { Box, HStack, Portal, Text, VStack } from '@chakra-ui/react';
-import { Switch, ToggleIconButton } from '@renderer/components/ui';
+import { Box, HStack, Text, VStack } from '@chakra-ui/react';
+import { Button, Popover, Switch, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useToast } from '@renderer/hooks/useToast';
+import { useTrailingStopPlacementStore } from '@renderer/store/trailingStopPlacementStore';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuShield } from 'react-icons/lu';
+import { LuCrosshair, LuShield } from 'react-icons/lu';
 import { TrailingStopSection } from '../Trading/WatcherManager/TrailingStopSection';
-import { TooltipWrapper } from '@renderer/components/ui';
 
 interface TrailingStopPopoverProps {
   symbol: string;
@@ -17,7 +17,6 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
   const { t } = useTranslation();
   const { success, info } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const pendingFieldsRef = useRef<Record<string, unknown>>({});
 
@@ -104,7 +103,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
             ? parseFloat(walletConfig.trailingDistancePercentShort)
             : 0.3,
         useAdaptiveTrailing: symbolConfig.useAdaptiveTrailing ?? walletConfig?.useAdaptiveTrailing ?? true,
-                trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+        trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
         trailingStopOffsetPercent: symbolConfig.trailingStopOffsetPercent
           ? parseFloat(symbolConfig.trailingStopOffsetPercent)
           : walletConfig?.trailingStopOffsetPercent
@@ -132,7 +131,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         ? parseFloat(walletConfig.trailingDistancePercentShort)
         : 0.3,
       useAdaptiveTrailing: walletConfig?.useAdaptiveTrailing ?? true,
-            trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+      trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
       trailingStopOffsetPercent: walletConfig?.trailingStopOffsetPercent
         ? parseFloat(walletConfig.trailingStopOffsetPercent)
         : 0,
@@ -166,135 +165,139 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
     setIsOpen((prev) => !prev);
   }, []);
 
+  const activatePlacement = useTrailingStopPlacementStore((s) => s.activate);
+
+  const handlePlaceOnChart = useCallback(() => {
+    setIsOpen(false);
+    activatePlacement();
+  }, [activatePlacement]);
+
   if (!walletId) return null;
 
   return (
     <Box position="relative" lineHeight={0}>
-      <TooltipWrapper
-        label={tooltipLabel}
-        showArrow
-        placement="left"
-        isDisabled={isOpen}
-      >
-        <ToggleIconButton
-          ref={buttonRef}
-          active={isTrailingActive}
-          aria-label={t('positionTrailingStop.title')}
-          size="2xs"
-          h="22px"
-          w="22px"
-          onClick={handleClick}
-          onContextMenu={handleContextMenu}
-        >
-          <LuShield />
-        </ToggleIconButton>
-      </TooltipWrapper>
-
-      {isOpen && (
-        <Portal>
-          <Box
-            position="fixed"
-            top={0}
-            left={0}
-            right={0}
-            bottom={0}
-            zIndex={9998}
-            onClick={() => setIsOpen(false)}
-          />
-          <Box
-            position="absolute"
-            top={buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 8 : 0}
-            left={buttonRef.current ? buttonRef.current.getBoundingClientRect().left - 280 : 0}
-            zIndex={9999}
-            bg="bg.panel"
-            borderRadius="md"
-            border="1px solid"
-            borderColor="border"
-            boxShadow="lg"
-            width="280px"
-            maxH="80vh"
-            overflowY="auto"
-          >
-            <VStack gap={2} p={3} align="stretch">
-              <Text fontSize="xs" fontWeight="semibold" color="fg">
-                {t('positionTrailingStop.title')} - {symbol}
-              </Text>
-
-              <HStack justify="space-between" p={1.5} bg="bg.subtle" borderRadius="md">
-                <Box>
-                  <Text fontSize="xs" fontWeight="medium">
-                    {useIndividualConfig
-                      ? t('positionTrailingStop.useIndividualConfig')
-                      : t('positionTrailingStop.useGlobalConfig')}
-                  </Text>
-                </Box>
-                <Switch
-                  checked={useIndividualConfig}
-                  onCheckedChange={(checked) => {
-                    debouncedUpdate({ useIndividualConfig: checked });
-                  }}
-                  size="sm"
-                />
-              </HStack>
-
-              <Box opacity={useIndividualConfig ? 1 : 0.5} pointerEvents={useIndividualConfig ? 'auto' : 'none'}>
-                <TrailingStopSection
-                  compact
-                  isExpanded={true}
-                  onToggle={() => {}}
-                  trailingStopEnabled={effectiveValues.trailingStopEnabled}
-                  onTrailingStopEnabledChange={(enabled) => debouncedUpdate({ trailingStopEnabled: enabled })}
-                  trailingActivationPercentLong={effectiveValues.trailingActivationPercentLong}
-                  onTrailingActivationPercentLongChange={(value) => debouncedUpdate({ trailingActivationPercentLong: value.toString() })}
-                  trailingActivationPercentShort={effectiveValues.trailingActivationPercentShort}
-                  onTrailingActivationPercentShortChange={(value) => debouncedUpdate({ trailingActivationPercentShort: value.toString() })}
-                  trailingDistancePercentLong={effectiveValues.trailingDistancePercentLong}
-                  onTrailingDistancePercentLongChange={(value) => debouncedUpdate({ trailingDistancePercentLong: value.toString() })}
-                  trailingDistancePercentShort={effectiveValues.trailingDistancePercentShort}
-                  onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
-                  useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
-                  onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
-                  trailingDistanceMode={effectiveValues.trailingDistanceMode}
-                  onTrailingDistanceModeChange={(mode) => debouncedUpdate({ trailingDistanceMode: mode })}
-                  trailingStopOffsetPercent={effectiveValues.trailingStopOffsetPercent}
-                  onTrailingStopOffsetPercentChange={(value) => debouncedUpdate({ trailingStopOffsetPercent: value.toString() })}
-                  isPending={updateMutation.isPending}
-                  activationModeLong={effectiveValues.activationModeLong}
-                  onActivationModeLongChange={(mode) => debouncedUpdate({ trailingActivationModeLong: mode })}
-                  activationModeShort={effectiveValues.activationModeShort}
-                  onActivationModeShortChange={(mode) => debouncedUpdate({ trailingActivationModeShort: mode })}
-                />
-              </Box>
-
-              {useIndividualConfig && effectiveValues.activationModeLong === 'manual' && (
-                <HStack justify="space-between" p={2} bg="green.subtle" borderRadius="md">
-                  <Text fontSize="xs" fontWeight="medium" color="green.600">
-                    {t('positionTrailingStop.activateTrailingLong')}
-                  </Text>
-                  <Switch
-                    checked={effectiveValues.manualTrailingActivatedLong}
-                    onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedLong: checked })}
-                    size="sm"
-                  />
-                </HStack>
-              )}
-
-              {useIndividualConfig && effectiveValues.activationModeShort === 'manual' && (
-                <HStack justify="space-between" p={2} bg="red.subtle" borderRadius="md">
-                  <Text fontSize="xs" fontWeight="medium" color="red.600">
-                    {t('positionTrailingStop.activateTrailingShort')}
-                  </Text>
-                  <Switch
-                    checked={effectiveValues.manualTrailingActivatedShort}
-                    onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedShort: checked })}
-                    size="sm"
-                  />
-                </HStack>
-              )}
-            </VStack>
+      <Popover
+        open={isOpen}
+        onOpenChange={(details) => setIsOpen(details.open)}
+        width="280px"
+        positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
+        trigger={
+          <Box>
+            <TooltipWrapper
+              label={tooltipLabel}
+              showArrow
+              placement="bottom"
+              isDisabled={isOpen}
+            >
+              <ToggleIconButton
+                active={isTrailingActive}
+                aria-label={t('positionTrailingStop.title')}
+                size="2xs"
+                h="22px"
+                w="22px"
+                onClick={handleClick}
+                onContextMenu={handleContextMenu}
+              >
+                <LuShield />
+              </ToggleIconButton>
+            </TooltipWrapper>
           </Box>
-        </Portal>
-      )}
+        }
+      >
+        <VStack gap={2} p={3} align="stretch" maxH="80vh" overflowY="auto">
+          <HStack justify="space-between">
+            <Text fontSize="xs" fontWeight="semibold" color="fg">
+              {t('positionTrailingStop.title')} - {symbol}
+            </Text>
+            <TooltipWrapper label={t('positionTrailingStop.placeOnChart')}>
+              <Button
+                size="2xs"
+                variant="outline"
+                colorPalette="orange"
+                onClick={handlePlaceOnChart}
+                h="20px"
+                px={2}
+                fontSize="xs"
+              >
+                <LuCrosshair size={12} />
+                {t('positionTrailingStop.placeOnChart')}
+              </Button>
+            </TooltipWrapper>
+          </HStack>
+
+          <HStack justify="space-between" p={1.5} bg="bg.subtle" borderRadius="md">
+            <Box>
+              <Text fontSize="xs" fontWeight="medium">
+                {useIndividualConfig
+                  ? t('positionTrailingStop.useIndividualConfig')
+                  : t('positionTrailingStop.useGlobalConfig')}
+              </Text>
+            </Box>
+            <Switch
+              checked={useIndividualConfig}
+              onCheckedChange={(checked) => {
+                debouncedUpdate({ useIndividualConfig: checked });
+              }}
+              size="sm"
+            />
+          </HStack>
+
+          <Box opacity={useIndividualConfig ? 1 : 0.5} pointerEvents={useIndividualConfig ? 'auto' : 'none'}>
+            <TrailingStopSection
+              compact
+              isExpanded={true}
+              onToggle={() => {}}
+              trailingStopEnabled={effectiveValues.trailingStopEnabled}
+              onTrailingStopEnabledChange={(enabled) => debouncedUpdate({ trailingStopEnabled: enabled })}
+              trailingActivationPercentLong={effectiveValues.trailingActivationPercentLong}
+              onTrailingActivationPercentLongChange={(value) => debouncedUpdate({ trailingActivationPercentLong: value.toString() })}
+              trailingActivationPercentShort={effectiveValues.trailingActivationPercentShort}
+              onTrailingActivationPercentShortChange={(value) => debouncedUpdate({ trailingActivationPercentShort: value.toString() })}
+              trailingDistancePercentLong={effectiveValues.trailingDistancePercentLong}
+              onTrailingDistancePercentLongChange={(value) => debouncedUpdate({ trailingDistancePercentLong: value.toString() })}
+              trailingDistancePercentShort={effectiveValues.trailingDistancePercentShort}
+              onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
+              useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
+              onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
+              trailingDistanceMode={effectiveValues.trailingDistanceMode}
+              onTrailingDistanceModeChange={(mode) => debouncedUpdate({ trailingDistanceMode: mode })}
+              trailingStopOffsetPercent={effectiveValues.trailingStopOffsetPercent}
+              onTrailingStopOffsetPercentChange={(value) => debouncedUpdate({ trailingStopOffsetPercent: value.toString() })}
+              isPending={updateMutation.isPending}
+              activationModeLong={effectiveValues.activationModeLong}
+              onActivationModeLongChange={(mode) => debouncedUpdate({ trailingActivationModeLong: mode })}
+              activationModeShort={effectiveValues.activationModeShort}
+              onActivationModeShortChange={(mode) => debouncedUpdate({ trailingActivationModeShort: mode })}
+            />
+          </Box>
+
+          {useIndividualConfig && effectiveValues.activationModeLong === 'manual' && (
+            <HStack justify="space-between" p={2} bg="green.subtle" borderRadius="md">
+              <Text fontSize="xs" fontWeight="medium" color="green.600">
+                {t('positionTrailingStop.activateTrailingLong')}
+              </Text>
+              <Switch
+                checked={effectiveValues.manualTrailingActivatedLong}
+                onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedLong: checked })}
+                size="sm"
+              />
+            </HStack>
+          )}
+
+          {useIndividualConfig && effectiveValues.activationModeShort === 'manual' && (
+            <HStack justify="space-between" p={2} bg="red.subtle" borderRadius="md">
+              <Text fontSize="xs" fontWeight="medium" color="red.600">
+                {t('positionTrailingStop.activateTrailingShort')}
+              </Text>
+              <Switch
+                checked={effectiveValues.manualTrailingActivatedShort}
+                onCheckedChange={(checked) => debouncedUpdate({ manualTrailingActivatedShort: checked })}
+                size="sm"
+              />
+            </HStack>
+          )}
+        </VStack>
+      </Popover>
     </Box>
   );
 });
