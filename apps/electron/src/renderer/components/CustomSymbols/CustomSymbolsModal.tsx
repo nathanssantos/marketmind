@@ -259,7 +259,7 @@ export const CustomSymbolsModal = memo(() => {
                           <Button
                             key={m}
                             size="2xs"
-                            variant="ghost"
+                            variant="outline"
                             color={formMethod === m ? 'blue.500' : 'fg.muted'}
                             onClick={() => setFormMethod(m)}
                           >

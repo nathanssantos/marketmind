@@ -1,4 +1,4 @@
-import type { ScreenerConfig, ScreenerPreset, ScreenerResponse } from '@marketmind/types';
+import type { AssetClass, MarketType, ScreenerConfig, ScreenerPreset, ScreenerResponse, TimeInterval } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { useScreenerStore } from '../store/screenerStore';
@@ -111,5 +111,38 @@ export const useScreener = () => {
     deleteScreener,
     isSaving: saveMutation.isPending,
     isDeleting: deleteMutation.isPending,
+  };
+};
+
+export const useScannerPreset = (
+  presetId: string | null,
+  options: {
+    assetClass: AssetClass;
+    marketType: MarketType;
+    interval: TimeInterval;
+    enabled?: boolean;
+    staleTime?: number;
+  },
+) => {
+  const presetsQuery = trpc.screener.getPresets.useQuery(
+    { assetClass: options.assetClass },
+    { staleTime: QUERY_CONFIG.STALE_TIME.LONG },
+  );
+
+  const resultsQuery = trpc.screener.runPreset.useQuery(
+    { presetId: presetId!, assetClass: options.assetClass, marketType: options.marketType, interval: options.interval },
+    {
+      enabled: !!presetId && (options.enabled ?? true),
+      staleTime: options.staleTime ?? QUERY_CONFIG.STALE_TIME.SLOW,
+    },
+  );
+
+  return {
+    presets: (presetsQuery.data as ScreenerPreset[] | undefined) ?? [],
+    results: resultsQuery.data as ScreenerResponse | undefined,
+    isLoading: resultsQuery.isLoading,
+    isFetching: resultsQuery.isFetching,
+    error: resultsQuery.error,
+    refetch: resultsQuery.refetch,
   };
 };

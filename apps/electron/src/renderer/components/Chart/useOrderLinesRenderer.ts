@@ -1,5 +1,6 @@
 import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { drawBotIcon, drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG, ORDER_LINE_COLORS, ORDER_LINE_ANIMATION } from '@shared/constants';
@@ -17,34 +18,8 @@ import type { RefObject } from 'react';
 import { useMemo, useRef } from 'react';
 import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
 
-const CANVAS_GEOMETRY = {
-  FULL_CIRCLE: Math.PI + Math.PI,
-  HALF: 0.5,
-  DOUBLE: 2,
-} as const;
 
 const LINE_HIT_HEIGHT = 24;
-
-const SVG_BOT_ICON = {
-  VIEWBOX_SIZE: 24,
-  STROKE_WIDTH_DIVISOR: 12,
-  ANTENNA_CENTER_X: 12,
-  ANTENNA_TOP_Y: 4,
-  ANTENNA_BOTTOM_Y: 8,
-  ANTENNA_LEFT_X: 8,
-  BODY_X: 4,
-  BODY_Y: 8,
-  BODY_WIDTH: 16,
-  BODY_HEIGHT: 12,
-  LEFT_EAR_X: 2,
-  RIGHT_EAR_START_X: 20,
-  RIGHT_EAR_END_X: 22,
-  EAR_Y: 14,
-  LEFT_EYE_X: 9,
-  RIGHT_EYE_X: 15,
-  EYE_TOP_Y: 13,
-  EYE_BOTTOM_Y: 15,
-} as const;
 
 
 const isSLInProfitZone = (isLong: boolean, entryPrice: number, slPrice: number): boolean =>
@@ -153,58 +128,6 @@ interface SlTpButtonHitbox {
 
 const PRICE_TAG_WIDTH = CHART_CONFIG.CANVAS_PADDING_RIGHT;
 
-const drawBotIcon = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number
-): void => {
-  ctx.save();
-  ctx.strokeStyle = ORDER_LINE_COLORS.BOT_ICON_STROKE;
-  ctx.lineWidth = size / SVG_BOT_ICON.STROKE_WIDTH_DIVISOR;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  const scale = size / SVG_BOT_ICON.VIEWBOX_SIZE;
-
-  ctx.beginPath();
-  ctx.moveTo(x + SVG_BOT_ICON.ANTENNA_CENTER_X * scale, y + SVG_BOT_ICON.ANTENNA_BOTTOM_Y * scale);
-  ctx.lineTo(x + SVG_BOT_ICON.ANTENNA_CENTER_X * scale, y + SVG_BOT_ICON.ANTENNA_TOP_Y * scale);
-  ctx.lineTo(x + SVG_BOT_ICON.ANTENNA_LEFT_X * scale, y + SVG_BOT_ICON.ANTENNA_TOP_Y * scale);
-  ctx.stroke();
-
-  const bodyX = x + SVG_BOT_ICON.BODY_X * scale;
-  const bodyY = y + SVG_BOT_ICON.BODY_Y * scale;
-  const bodyW = SVG_BOT_ICON.BODY_WIDTH * scale;
-  const bodyH = SVG_BOT_ICON.BODY_HEIGHT * scale;
-  const radius = CANVAS_GEOMETRY.DOUBLE * scale;
-  ctx.beginPath();
-  ctx.roundRect(bodyX, bodyY, bodyW, bodyH, radius);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(x + SVG_BOT_ICON.LEFT_EAR_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
-  ctx.lineTo(x + SVG_BOT_ICON.BODY_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(x + SVG_BOT_ICON.RIGHT_EAR_START_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
-  ctx.lineTo(x + SVG_BOT_ICON.RIGHT_EAR_END_X * scale, y + SVG_BOT_ICON.EAR_Y * scale);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(x + SVG_BOT_ICON.RIGHT_EYE_X * scale, y + SVG_BOT_ICON.EYE_TOP_Y * scale);
-  ctx.lineTo(x + SVG_BOT_ICON.RIGHT_EYE_X * scale, y + SVG_BOT_ICON.EYE_BOTTOM_Y * scale);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(x + SVG_BOT_ICON.LEFT_EYE_X * scale, y + SVG_BOT_ICON.EYE_TOP_Y * scale);
-  ctx.lineTo(x + SVG_BOT_ICON.LEFT_EYE_X * scale, y + SVG_BOT_ICON.EYE_BOTTOM_Y * scale);
-  ctx.stroke();
-
-  ctx.restore();
-};
-
 const drawSpinner = (
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -228,7 +151,7 @@ const drawInfoTag = (
   fillColor: string,
   hasCloseButton: boolean = false,
   closeButtonRef?: { x: number; y: number; size: number } | null,
-  isAutoTrade: boolean = false,
+  icon: 'bot' | 'shield' | null = null,
   isLoading: boolean = false,
   timestamp: number = 0
 ): { width: number; height: number } => {
@@ -237,13 +160,13 @@ const drawInfoTag = (
   const arrowWidth = 6;
   const closeButtonSize = 14;
   const closeButtonMargin = 4;
-  const botIconSize = 12;
-  const botIconMargin = 3;
+  const iconSize = 12;
+  const iconMargin = 3;
 
   const textWidth = ctx.measureText(text).width;
   const closeButtonSpace = hasCloseButton ? closeButtonSize + closeButtonMargin : 0;
-  const botIconSpace = isAutoTrade ? botIconSize + botIconMargin : 0;
-  const totalContentWidth = closeButtonSpace + botIconSpace + textWidth;
+  const iconSpace = icon ? iconSize + iconMargin : 0;
+  const totalContentWidth = closeButtonSpace + iconSpace + textWidth;
   const tagWidth = totalContentWidth + labelPadding * 2;
 
   ctx.save();
@@ -288,9 +211,12 @@ const drawInfoTag = (
 
   let currentX = labelPadding + closeButtonSpace;
 
-  if (isAutoTrade) {
-    drawBotIcon(ctx, currentX, y - botIconSize / 2, botIconSize);
-    currentX += botIconSize + botIconMargin;
+  if (icon === 'bot') {
+    drawBotIcon(ctx, currentX, y - iconSize / 2, iconSize);
+    currentX += iconSize + iconMargin;
+  } else if (icon === 'shield') {
+    drawShieldIcon(ctx, currentX, y - iconSize / 2, iconSize);
+    currentX += iconSize + iconMargin;
   }
 
   ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
@@ -406,6 +332,12 @@ export interface PendingSetup {
   label?: string;
 }
 
+export interface TrailingStopLineConfig {
+  enabled: boolean;
+  activationPercentLong: number;
+  activationPercentShort: number;
+}
+
 export const useOrderLinesRenderer = (
   manager: CanvasManager | null,
   hasTradingEnabled: boolean,
@@ -413,8 +345,9 @@ export const useOrderLinesRenderer = (
   backendExecutions: BackendExecution[] = [],
   pendingSetups: TradingSetup[] = [],
   showProfitLossAreas: boolean = true,
-  orderLoadingMapRef?: RefObject<Map<string, boolean>>,
-  orderFlashMapRef?: RefObject<Map<string, number>>
+  orderLoadingMapRef?: RefObject<Map<string, number>>,
+  orderFlashMapRef?: RefObject<Map<string, number>>,
+  trailingStopConfig?: TrailingStopLineConfig | null
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -482,7 +415,7 @@ export const useOrderLinesRenderer = (
     let needsAnimation = false;
 
     const isOrderLoading = (orderId: string): boolean =>
-      orderLoadingMapRef?.current?.get(orderId) === true;
+      orderLoadingMapRef?.current?.has(orderId) ?? false;
 
     const getFlashAlpha = (orderId: string): number => {
       const localFlashTime = orderFlashMapRef?.current?.get(orderId);
@@ -610,7 +543,7 @@ export const useOrderLinesRenderer = (
       const flashAlpha = getFlashAlpha(orderId);
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade, loading, now);
+      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, now);
 
       orderHitboxesRef.current.push({
         orderId,
@@ -691,7 +624,9 @@ export const useOrderLinesRenderer = (
         priceTags.push({ priceText: formatChartPrice(order.stopLoss), y: stopY, fillColor: slTagColor });
 
         const slCloseButtonRef = { x: 0, y: 0, size: 14 };
-        const slTagSize = drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef);
+        const slLoading = isOrderLoading(orderId);
+        if (slLoading) needsAnimation = true;
+        const slTagSize = drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef, null, slLoading, now);
 
         sltpHitboxesRef.current.push({
           orderId: getOrderId(order),
@@ -742,7 +677,9 @@ export const useOrderLinesRenderer = (
         priceTags.push({ priceText: formatChartPrice(order.takeProfit), y: tpY, fillColor: tpFillColor });
 
         const tpCloseButtonRef = { x: 0, y: 0, size: 14 };
-        const tpTagSize = drawInfoTag(ctx, tpInfoText, tpY, tpFillColor, true, tpCloseButtonRef);
+        const tpLoading = isOrderLoading(orderId);
+        if (tpLoading) needsAnimation = true;
+        const tpTagSize = drawInfoTag(ctx, tpInfoText, tpY, tpFillColor, true, tpCloseButtonRef, null, tpLoading, now);
 
         sltpHitboxesRef.current.push({
           orderId: getOrderId(order),
@@ -840,7 +777,7 @@ export const useOrderLinesRenderer = (
       const posFlash = position.orderIds.reduce((maxAlpha, id) => Math.max(maxAlpha, getFlashAlpha(id)), 0);
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade, posLoading, now);
+      const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade ? 'bot' : null, posLoading, now);
 
       if (posFlash > 0) {
         ctx.save();
@@ -943,11 +880,14 @@ export const useOrderLinesRenderer = (
         const typeLabel = isLong ? 'L' : 'S';
         const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
+        const hoveredOrderId = getOrderId(order);
+        const hoveredLoading = isOrderLoading(hoveredOrderId);
+        if (hoveredLoading) needsAnimation = true;
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade);
+        drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, now);
 
         closeButtonsRef.current.push({
-          orderId: getOrderId(order),
+          orderId: hoveredOrderId,
           x: closeButtonRef.x,
           y: closeButtonRef.y,
           width: closeButtonRef.size,
@@ -1068,8 +1008,10 @@ export const useOrderLinesRenderer = (
         const infoText = `${quantityPrefix}${typeLabel} (${absQuantity})`;
         const hasAutoTrade = hPos.orders.some((o: Order) => o.isAutoTrade);
 
+        const hPosLoading = hPos.orderIds.some((id: string) => isOrderLoading(id));
+        if (hPosLoading) needsAnimation = true;
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade);
+        const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade ? 'bot' : null, hPosLoading, now);
 
         orderHitboxesRef.current.push({
           orderId: positionId,
@@ -1210,8 +1152,10 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(tagStartX, stopY);
         ctx.stroke();
 
+        const slConsLoading = position.orderIds.some((id: string) => isOrderLoading(id));
+        if (slConsLoading) needsAnimation = true;
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        const slTagSize = drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef);
+        const slTagSize = drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef, null, slConsLoading, now);
 
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
@@ -1290,8 +1234,10 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(tagStartX, tpY);
         ctx.stroke();
 
+        const tpConsLoading = position.orderIds.some((id: string) => isOrderLoading(id));
+        if (tpConsLoading) needsAnimation = true;
         const closeButtonRef = { x: 0, y: 0, size: 14 };
-        const tpTagSize = drawInfoTag(ctx, infoText, tpY, tpFillColor, true, closeButtonRef);
+        const tpTagSize = drawInfoTag(ctx, infoText, tpY, tpFillColor, true, closeButtonRef, null, tpConsLoading, now);
 
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
@@ -1384,7 +1330,7 @@ export const useOrderLinesRenderer = (
       const orderTypeLabel = isLimitOrder ? 'LIMIT' : 'MKT';
       const infoText = `${directionSymbol} ${setupLabel} (${orderTypeLabel})`;
 
-      drawInfoTag(ctx, infoText, entryY, fillColor, false, null, true);
+      drawInfoTag(ctx, infoText, entryY, fillColor, false, null, 'bot');
 
       if (setup.stopLoss) {
         const slY = manager.priceToY(setup.stopLoss);
@@ -1408,7 +1354,7 @@ export const useOrderLinesRenderer = (
         const slInfoText = `SL (${slPercent.toFixed(2)}%)`;
 
         priceTags.push({ priceText: slPriceText, y: slY, fillColor: slTagColor });
-        drawInfoTag(ctx, slInfoText, slY, slTagColor, false, null, false);
+        drawInfoTag(ctx, slInfoText, slY, slTagColor, false, null, null);
       }
 
       if (setup.takeProfit) {
@@ -1429,13 +1375,67 @@ export const useOrderLinesRenderer = (
 
         const tpSetupFillColor = ORDER_LINE_COLORS.TP_FILL;
         priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: tpSetupFillColor });
-        drawInfoTag(ctx, tpInfoText, tpY, tpSetupFillColor, false, null, false);
+        drawInfoTag(ctx, tpInfoText, tpY, tpSetupFillColor, false, null, null);
       }
 
       ctx.restore();
     });
 
     ctx.restore();
+
+    if (trailingStopConfig?.enabled) {
+      const openPositions = activeOrders.filter(o => isOrderActive(o));
+      const positionsByKey = new Map<string, { side: 'long' | 'short'; avgPrice: number; totalQty: number }>();
+      for (const order of openPositions) {
+        const side = isOrderLong(order) ? 'long' as const : 'short' as const;
+        const qty = getOrderQuantity(order);
+        const existing = positionsByKey.get(side);
+        if (existing) {
+          const newTotalQty = existing.totalQty + qty;
+          existing.avgPrice = (existing.avgPrice * existing.totalQty + getOrderPrice(order) * qty) / newTotalQty;
+          existing.totalQty = newTotalQty;
+        } else {
+          positionsByKey.set(side, { side, avgPrice: getOrderPrice(order), totalQty: qty });
+        }
+      }
+
+      for (const pos of positionsByKey.values()) {
+        const activationPercent = pos.side === 'long'
+          ? trailingStopConfig.activationPercentLong
+          : trailingStopConfig.activationPercentShort;
+        if (activationPercent <= 0) continue;
+
+        const activationPrice = pos.avgPrice * activationPercent;
+        const tsY = manager.priceToY(activationPrice);
+        if (tsY < 0 || tsY > chartHeight) continue;
+
+        const activationPctDisplay = ((activationPercent - 1) * 100);
+        const pctSign = activationPctDisplay >= 0 ? '+' : '';
+        const tsLabel = `TS ${pos.side === 'long' ? '↑' : '↓'} (${pctSign}${activationPctDisplay.toFixed(1)}%)`;
+
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.strokeStyle = ORDER_LINE_COLORS.TRAILING_STOP_LINE;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, tsY);
+        ctx.lineTo(chartWidth, tsY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, false, null, 'shield');
+
+        const tsPriceText = formatChartPrice(activationPrice);
+        priceTags.push({ priceText: tsPriceText, y: tsY, fillColor: ORDER_LINE_COLORS.TRAILING_STOP_FILL });
+
+        ctx.restore();
+      }
+    }
 
     priceTags.forEach(({ priceText, y, fillColor }) => {
       if (y >= 0 && y <= chartHeight)

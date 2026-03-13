@@ -28,6 +28,7 @@ import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
+import { useTrailingStopPlacementStore } from '@renderer/store/trailingStopPlacementStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
@@ -45,8 +46,9 @@ import { useGridInteraction } from './useGridInteraction';
 import { useGridPreviewRenderer } from './useGridPreviewRenderer';
 import { useOrderDragHandler } from './useOrderDragHandler';
 import { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode';
+import { drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { useOrderLinesRenderer, type BackendExecution } from './useOrderLinesRenderer';
+import { useOrderLinesRenderer, type BackendExecution, type TrailingStopLineConfig } from './useOrderLinesRenderer';
 import { usePriceMagnet } from './usePriceMagnet';
 import { useDrawingInteraction } from './drawings/useDrawingInteraction';
 import { useDrawingsRenderer } from './drawings/useDrawingsRenderer';
@@ -123,10 +125,19 @@ export const ChartCanvas = ({
     updatePendingEntry,
   } = useBackendTradingMutations();
 
+  const updateTsConfig = trpc.trading.updateSymbolTrailingConfig.useMutation({
+    onSuccess: () => {
+      void utils.trading.getSymbolTrailingConfig.invalidate();
+    },
+    onError: (error) => {
+      toastError(t('positionTrailingStop.activationFailed'), error.message);
+    },
+  });
+
   const hasTradingEnabled = !!backendWalletId;
 
   const [optimisticExecutions, setOptimisticExecutions] = useState<BackendExecution[]>([]);
-  const orderLoadingMapRef = useRef<Map<string, boolean>>(new Map());
+  const orderLoadingMapRef = useRef<Map<string, number>>(new Map());
   const orderFlashMapRef = useRef<Map<string, number>>(new Map());
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
@@ -164,6 +175,36 @@ export const ChartCanvas = ({
     { walletId: backendWalletId ?? '', symbol },
     { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: 10000, staleTime: 5000 }
   );
+
+  const { data: symbolTrailingConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
+    { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
+    { enabled: !!backendWalletId && !!symbol, refetchInterval: 30000 }
+  );
+
+  const { data: walletAutoTradingConfig } = trpc.autoTrading.getConfig.useQuery(
+    { walletId: backendWalletId ?? '' },
+    { enabled: !!backendWalletId, refetchInterval: 30000 }
+  );
+
+  const trailingStopLineConfig = useMemo((): TrailingStopLineConfig | null => {
+    const useOverride = symbolTrailingConfig?.useIndividualConfig ?? false;
+    const src = useOverride ? symbolTrailingConfig : walletAutoTradingConfig;
+    const enabled = (useOverride ? symbolTrailingConfig?.trailingStopEnabled : walletAutoTradingConfig?.trailingStopEnabled) ?? true;
+    if (!enabled) return null;
+    return {
+      enabled: true,
+      activationPercentLong: src?.trailingActivationPercentLong
+        ? parseFloat(src.trailingActivationPercentLong)
+        : walletAutoTradingConfig?.trailingActivationPercentLong
+          ? parseFloat(walletAutoTradingConfig.trailingActivationPercentLong)
+          : 0.9,
+      activationPercentShort: src?.trailingActivationPercentShort
+        ? parseFloat(src.trailingActivationPercentShort)
+        : walletAutoTradingConfig?.trailingActivationPercentShort
+          ? parseFloat(walletAutoTradingConfig.trailingActivationPercentShort)
+          : 0.8,
+    };
+  }, [symbolTrailingConfig, walletAutoTradingConfig]);
 
   const filteredBackendExecutions = useMemo((): BackendExecution[] => {
     if (!backendExecutions || !symbol) return [];
@@ -489,23 +530,17 @@ export const ChartCanvas = ({
     if (orderId.startsWith('exchange-order-') || orderId.startsWith('exchange-algo-')) {
       const exchangeOrderId = parseInt(orderId.replace(/^exchange-(order|algo)-/, ''), 10);
       if (!backendWalletId || !symbol || isNaN(exchangeOrderId)) return;
-      orderLoadingMapRef.current.set(orderId, true);
+      orderLoadingMapRef.current.set(orderId, Date.now());
       manager?.markDirty('overlays');
-      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId }).finally(() => {
-        orderLoadingMapRef.current.delete(orderId);
-        manager?.markDirty('overlays');
-      });
+      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId });
       return;
     }
     const exec = allExecutions.find((e) => e.id === orderId);
     if (!exec) return;
     if (exec.status === 'pending') {
-      orderLoadingMapRef.current.set(exec.id, true);
+      orderLoadingMapRef.current.set(exec.id, Date.now());
       manager?.markDirty('overlays');
-      cancelExecution(exec.id).finally(() => {
-        orderLoadingMapRef.current.delete(exec.id);
-        manager?.markDirty('overlays');
-      });
+      cancelExecution(exec.id);
       return;
     }
     setOrderToClose(orderId);
@@ -520,14 +555,9 @@ export const ChartCanvas = ({
       const executionIds = parts[2]?.split(',') || [];
 
       if (executionIds.length > 0) {
-        executionIds.forEach(id => orderLoadingMapRef.current.set(id, true));
+        executionIds.forEach(id => orderLoadingMapRef.current.set(id, Date.now()));
         manager.markDirty('overlays');
-        try {
-          await cancelProtectionOrder(executionIds, type);
-        } finally {
-          executionIds.forEach(id => orderLoadingMapRef.current.delete(id));
-          manager.markDirty('overlays');
-        }
+        await cancelProtectionOrder(executionIds, type);
       }
 
       setOrderToClose(null);
@@ -536,17 +566,12 @@ export const ChartCanvas = ({
 
     const exec = allExecutions.find((e) => e.id === orderToClose);
     if (exec) {
-      orderLoadingMapRef.current.set(exec.id, true);
+      orderLoadingMapRef.current.set(exec.id, Date.now());
       manager.markDirty('overlays');
-      try {
-        const klines = manager.getKlines();
-        const lastKline = klines[klines.length - 1];
-        const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
-        await closeExecution(exec.id, exitPrice);
-      } finally {
-        orderLoadingMapRef.current.delete(exec.id);
-        manager.markDirty('overlays');
-      }
+      const klines = manager.getKlines();
+      const lastKline = klines[klines.length - 1];
+      const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
+      await closeExecution(exec.id, exitPrice);
     }
 
     setOrderToClose(null);
@@ -694,7 +719,7 @@ export const ChartCanvas = ({
     fibonacciProjectionData,
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig);
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -753,7 +778,7 @@ export const ChartCanvas = ({
       const exec = allExecutions.find(e => e.id === id);
       if (!exec) return;
 
-      orderLoadingMapRef.current.set(id, true);
+      orderLoadingMapRef.current.set(id, Date.now());
       manager?.markDirty('overlays');
 
       const newPrice = roundTradingPrice(updates.entryPrice).toString();
@@ -833,6 +858,11 @@ export const ChartCanvas = ({
   });
 
   const slTpPlacement = useSlTpPlacementMode();
+
+  const tsPlacementActive = useTrailingStopPlacementStore((s) => s.isPlacing);
+  const tsPlacementPreviewPrice = useTrailingStopPlacementStore((s) => s.previewPrice);
+  const tsPlacementDeactivate = useTrailingStopPlacementStore((s) => s.deactivate);
+  const tsPlacementSetPreview = useTrailingStopPlacementStore((s) => s.setPreviewPrice);
 
   const isGridModeActive = useGridOrderStore((s) => s.isGridModeActive);
   const gridSnapEnabled = useGridOrderStore((s) => s.snapEnabled);
@@ -967,9 +997,18 @@ export const ChartCanvas = ({
       manager.markDirty('overlays');
       cursorManager.setCursor('crosshair');
     }
+
+    if (tsPlacementActive && manager && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseY = event.clientY - rect.top;
+      tsPlacementSetPreview(manager.yToPrice(mouseY));
+      manager.markDirty('overlays');
+      cursorManager.setCursor('crosshair');
+    }
+
     handleCanvasMouseMove(event);
 
-    if (!slTpPlacement.active && canvasRef.current) {
+    if (!slTpPlacement.active && !tsPlacementActive && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
@@ -977,7 +1016,7 @@ export const ChartCanvas = ({
         cursorManager.setCursor('pointer');
       }
     }
-  }, [handleCanvasMouseMove, slTpPlacement, manager, cursorManager, getSlTpButtonAtPosition]);
+  }, [handleCanvasMouseMove, slTpPlacement, tsPlacementActive, tsPlacementSetPreview, manager, cursorManager, getSlTpButtonAtPosition]);
 
   const handleCanvasMouseDownWrapped = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!manager || !canvasRef.current) {
@@ -1006,7 +1045,7 @@ export const ChartCanvas = ({
       if (placementType === 'stopLoss') updatePayload.stopLoss = price;
       else updatePayload.takeProfit = price;
 
-      orderLoadingMapRef.current.set(execId, true);
+      orderLoadingMapRef.current.set(execId, Date.now());
       manager.markDirty('overlays');
 
       updateExecutionSLTP(execId, updatePayload).then(() => {
@@ -1023,8 +1062,53 @@ export const ChartCanvas = ({
       return;
     }
 
+    if (tsPlacementActive) {
+      const price = manager.yToPrice(mouseY);
+      tsPlacementDeactivate();
+
+      const openExecs = allExecutions.filter(e => e.status === 'open');
+      if (openExecs.length === 0) {
+        warning(t('positionTrailingStop.noPositionForPlacement'));
+        event.preventDefault();
+        return;
+      }
+
+      const sumByDir = new Map<string, { totalValue: number; totalQty: number }>();
+      for (const ex of openExecs) {
+        const entry = parseFloat(ex.entryPrice);
+        const qty = parseFloat(ex.quantity);
+        const prev = sumByDir.get(ex.side) ?? { totalValue: 0, totalQty: 0 };
+        sumByDir.set(ex.side, { totalValue: prev.totalValue + entry * qty, totalQty: prev.totalQty + qty });
+      }
+      const avgEntryByDir = new Map<string, number>();
+      for (const [side, { totalValue, totalQty }] of sumByDir) {
+        if (totalQty > 0) avgEntryByDir.set(side, totalValue / totalQty);
+      }
+
+      const longEntry = avgEntryByDir.get('LONG');
+      const shortEntry = avgEntryByDir.get('SHORT');
+      const updateFields: Record<string, unknown> = { useIndividualConfig: true };
+
+      if (longEntry && price > longEntry) {
+        updateFields['trailingActivationPercentLong'] = (price / longEntry).toString();
+      } else if (shortEntry && price < shortEntry) {
+        updateFields['trailingActivationPercentShort'] = (price / shortEntry).toString();
+      } else if (longEntry) {
+        updateFields['trailingActivationPercentLong'] = (price / longEntry).toString();
+      } else if (shortEntry) {
+        updateFields['trailingActivationPercentShort'] = (price / shortEntry).toString();
+      }
+
+      if (backendWalletId && symbol) {
+        updateTsConfig.mutate({ walletId: backendWalletId, symbol, ...updateFields });
+      }
+
+      event.preventDefault();
+      return;
+    }
+
     handleCanvasMouseDown(event);
-  }, [handleCanvasMouseDown, manager, getSlTpButtonAtPosition, slTpPlacement, updateExecutionSLTP, t, toastError]);
+  }, [handleCanvasMouseDown, manager, getSlTpButtonAtPosition, slTpPlacement, updateExecutionSLTP, tsPlacementActive, tsPlacementDeactivate, allExecutions, backendWalletId, symbol, updateTsConfig, warning, t, toastError]);
 
   useEffect(() => {
     if (!slTpPlacement.active) return;
@@ -1039,6 +1123,24 @@ export const ChartCanvas = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [slTpPlacement.active, slTpPlacement.deactivate, manager]);
+
+  useEffect(() => {
+    if (!tsPlacementActive) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        tsPlacementDeactivate();
+        manager?.markDirty('overlays');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [tsPlacementActive, tsPlacementDeactivate, manager]);
+
+  useEffect(() => {
+    if (tsPlacementActive) tsPlacementDeactivate();
+  }, [symbol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1072,6 +1174,22 @@ export const ChartCanvas = ({
       slTpPlacement.deactivate();
     }
   }, [allExecutions, slTpPlacement]);
+
+  const ORDER_LOADING_TIMEOUT_MS = 15_000;
+
+  useEffect(() => {
+    if (orderLoadingMapRef.current.size === 0) return;
+    const activeIds = new Set(allExecutions.map(e => e.id));
+    const now = Date.now();
+    let cleared = false;
+    for (const [loadingId, startTime] of orderLoadingMapRef.current.entries()) {
+      if (now - startTime > ORDER_LOADING_TIMEOUT_MS || activeIds.has(loadingId) === false) {
+        orderLoadingMapRef.current.delete(loadingId);
+        cleared = true;
+      }
+    }
+    if (cleared) manager?.markDirty('overlays');
+  }, [allExecutions, manager]);
 
   useEffect(() => {
     if (!manager) return;
@@ -1361,6 +1479,56 @@ export const ChartCanvas = ({
         }
       }
 
+      if (tsPlacementActive && tsPlacementPreviewPrice !== null && manager) {
+        const ctx = manager.getContext();
+        const dimensions = manager.getDimensions();
+        if (ctx && dimensions) {
+          const y = manager.priceToY(tsPlacementPreviewPrice);
+          const color = ORDER_LINE_COLORS.TRAILING_STOP_LINE;
+          const fillColor = ORDER_LINE_COLORS.TRAILING_STOP_FILL;
+          const label = `TS ${formatChartPrice(tsPlacementPreviewPrice)}`;
+
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.globalAlpha = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(dimensions.chartWidth, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = fillColor;
+          ctx.font = '11px monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          const iconSize = 12;
+          const iconPadding = 4;
+          const labelPadding = 8;
+          const textWidth = ctx.measureText(label).width;
+          const labelHeight = 18;
+          const arrowWidth = 6;
+          const totalLabelWidth = iconSize + iconPadding + textWidth + labelPadding * 2;
+
+          ctx.beginPath();
+          ctx.moveTo(totalLabelWidth + arrowWidth, y);
+          ctx.lineTo(totalLabelWidth, y - labelHeight / 2);
+          ctx.lineTo(0, y - labelHeight / 2);
+          ctx.lineTo(0, y + labelHeight / 2);
+          ctx.lineTo(totalLabelWidth, y + labelHeight / 2);
+          ctx.closePath();
+          ctx.fill();
+
+          drawShieldIcon(ctx, labelPadding, y - iconSize / 2, iconSize, ORDER_LINE_COLORS.TRAILING_STOP_ICON_STROKE);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(label, labelPadding + iconSize + iconPadding, y);
+          ctx.restore();
+        }
+      }
+
       renderCurrentPriceLine_Label();
       renderCrosshairPriceLine();
 
@@ -1485,6 +1653,8 @@ export const ChartCanvas = ({
     allExecutions,
     orderDragHandler,
     slTpPlacement,
+    tsPlacementActive,
+    tsPlacementPreviewPrice,
     t,
   ]);
 

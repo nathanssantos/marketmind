@@ -1,6 +1,11 @@
 import type { Kline } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
-import { evaluateIndicator, evaluateIndicators, getPreviousValue, isTickerBasedIndicator, type TickerData, type ExtraData } from '../../services/screener/indicator-evaluator';
+import { IndicatorEngine, isTickerBasedIndicator, type ScreenerTickerData as TickerData, type ScreenerExtraData as ExtraData } from '../../services/indicator-engine';
+
+const engine = new IndicatorEngine();
+const evaluateIndicator: typeof engine.evaluateScreenerIndicator = engine.evaluateScreenerIndicator.bind(engine);
+const evaluateIndicators: typeof engine.evaluateScreenerIndicators = engine.evaluateScreenerIndicators.bind(engine);
+const getPreviousValue: typeof engine.getScreenerPreviousValue = engine.getScreenerPreviousValue.bind(engine);
 
 const makeKline = (close: number, open?: number, high?: number, low?: number, volume?: number, index?: number): Kline => ({
   openTime: 1700000000000 + (index ?? 0) * 3600000,

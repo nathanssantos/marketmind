@@ -40,6 +40,7 @@ export interface StrategyInterpreterConfig extends SetupDetectorConfig {
   initialStopMode?: 'fibo_target' | 'nearest_swing';
   interval?: TimeInterval;
   directionMode?: 'long_only' | 'short_only';
+  indicatorEngine?: IndicatorEngine;
 }
 
 export class StrategyInterpreter extends BaseSetupDetector {
@@ -65,7 +66,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
 
     this.strategy = config.strategy;
     this.resolvedParams = this.resolveParameters(config.parameterOverrides);
-    this.indicatorEngine = new IndicatorEngine();
+    this.indicatorEngine = config.indicatorEngine ?? new IndicatorEngine();
     this.conditionEvaluator = new ConditionEvaluator(this.indicatorEngine);
     this.exitCalculator = new ExitCalculator(this.indicatorEngine);
     this.silent = config.silent ?? false;

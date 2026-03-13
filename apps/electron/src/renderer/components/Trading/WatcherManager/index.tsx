@@ -317,7 +317,7 @@ export const WatcherManager = () => {
         <HStack gap={1}>
           <Button
             size="2xs"
-            variant="ghost"
+            variant="outline"
             color={tradingMode === 'auto' ? 'blue.500' : 'fg.muted'}
             onClick={() => handleTradingModeChange('auto')}
             disabled={updateConfig.isPending}
@@ -327,7 +327,7 @@ export const WatcherManager = () => {
           </Button>
           <Button
             size="2xs"
-            variant="ghost"
+            variant="outline"
             color={tradingMode === 'semi_assisted' ? 'yellow.500' : 'fg.muted'}
             onClick={() => handleTradingModeChange('semi_assisted')}
             disabled={updateConfig.isPending}

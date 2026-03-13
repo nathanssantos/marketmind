@@ -1801,7 +1801,12 @@
     "trailingLongDeactivated": "LONG Trailing Stop deactivated for {{symbol}}",
     "trailingShortActivated": "SHORT Trailing Stop activated for {{symbol}}",
     "trailingShortDeactivated": "SHORT Trailing Stop deactivated for {{symbol}}",
-    "configSaved": "Trailing Stop config saved for {{symbol}}"
+    "configSaved": "Trailing Stop config saved for {{symbol}}",
+    "placeOnChart": "Place on Chart",
+    "placementActive": "Click on chart to set TS activation price",
+    "activationPlaced": "Trailing Stop activation set at {{price}} for {{symbol}}",
+    "noPositionForPlacement": "No open position to set trailing stop activation",
+    "activationFailed": "Failed to set trailing stop activation"
   },
   "scanner": {
     "title": "Market Scanner",

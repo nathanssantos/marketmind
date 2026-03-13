@@ -693,4 +693,140 @@ describe('Futures Trading Router', () => {
       expect(exchangeInfo).toHaveProperty('symbols');
     });
   });
+
+  describe('reversePosition', () => {
+    it('should reverse LONG to SHORT for paper wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const positionId = generateEntityId();
+      await db.insert(schema.positions).values({
+        id: positionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '48000',
+        entryQty: '0.1',
+        currentPrice: '50000',
+        status: 'open',
+        marketType: 'FUTURES',
+        leverage: 10,
+        marginType: 'CROSSED',
+        accumulatedFunding: '0',
+      });
+
+      const result = await caller.futuresTrading.reversePosition({
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        positionId,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.newSide).toBe('SHORT');
+      expect(result.newPositionId).toBeDefined();
+      expect(typeof result.closedPnl).toBe('number');
+
+      const [oldPosition] = await db
+        .select()
+        .from(schema.positions)
+        .where(eq(schema.positions.id, positionId))
+        .limit(1);
+      expect(oldPosition!.status).toBe('closed');
+
+      const [newPosition] = await db
+        .select()
+        .from(schema.positions)
+        .where(eq(schema.positions.id, result.newPositionId!))
+        .limit(1);
+      expect(newPosition).toBeDefined();
+      expect(newPosition!.side).toBe('SHORT');
+      expect(newPosition!.status).toBe('open');
+      expect(parseFloat(newPosition!.entryQty)).toBe(0.1);
+      expect(newPosition!.leverage).toBe(10);
+    });
+
+    it('should reverse SHORT to LONG for paper wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const positionId = generateEntityId();
+      await db.insert(schema.positions).values({
+        id: positionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'ETHUSDT',
+        side: 'SHORT',
+        entryPrice: '3000',
+        entryQty: '1.0',
+        currentPrice: '2900',
+        status: 'open',
+        marketType: 'FUTURES',
+        leverage: 5,
+        marginType: 'ISOLATED',
+        accumulatedFunding: '0',
+      });
+
+      const result = await caller.futuresTrading.reversePosition({
+        walletId: wallet.id,
+        symbol: 'ETHUSDT',
+        positionId,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.newSide).toBe('LONG');
+
+      const [newPosition] = await db
+        .select()
+        .from(schema.positions)
+        .where(eq(schema.positions.id, result.newPositionId!))
+        .limit(1);
+      expect(newPosition!.side).toBe('LONG');
+      expect(newPosition!.marginType).toBe('ISOLATED');
+    });
+
+    it('should throw NOT_FOUND when position does not exist', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.futuresTrading.reversePosition({
+          walletId: wallet.id,
+          symbol: 'BTCUSDT',
+          positionId: 'nonexistent',
+        })
+      ).rejects.toThrow('Position not found');
+    });
+
+    it('should reject if wallet does not belong to user', async () => {
+      const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'owner@test.com' });
+      const { user: user2 } = await createAuthenticatedUser({ email: 'other@test.com' });
+      const wallet = await createTestWallet({ userId: user2.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user1, session1);
+
+      await expect(
+        caller.futuresTrading.reversePosition({
+          walletId: wallet.id,
+          symbol: 'BTCUSDT',
+          positionId: 'any',
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should require positionId for paper wallets', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.futuresTrading.reversePosition({
+          walletId: wallet.id,
+          symbol: 'BTCUSDT',
+        })
+      ).rejects.toThrow('positionId is required');
+    });
+  });
 });

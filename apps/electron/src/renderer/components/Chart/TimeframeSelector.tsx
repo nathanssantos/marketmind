@@ -1,4 +1,4 @@
-import { IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { Button, Popover } from '@renderer/components/ui';
 import type { TimeInterval } from '@marketmind/types';
 import { UI_INTERVALS } from '@marketmind/types';
 import { Box, Flex, Text, VStack } from '@chakra-ui/react';
@@ -34,20 +34,15 @@ export const TimeframeSelector = ({
       width="200px"
       positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
       trigger={
-        <Flex align="center" gap={2}>
-          <TooltipWrapper label={t('chart.controls.timeframe')} showArrow isDisabled={isOpen}>
-            <IconButton
-              aria-label={t('chart.controls.timeframe')}
-              size="2xs"
-              variant="outline"
-            >
-              <LuClock />
-            </IconButton>
-          </TooltipWrapper>
-          <Text fontSize="xs" fontWeight="semibold" color="fg">
-            {selectedTimeframe}
-          </Text>
-        </Flex>
+        <Button
+          aria-label={t('chart.controls.timeframe')}
+          size="2xs"
+          variant="outline"
+          color="fg.muted"
+        >
+          <LuClock />
+          {selectedTimeframe}
+        </Button>
       }
     >
       <Flex direction="column" maxH="300px">

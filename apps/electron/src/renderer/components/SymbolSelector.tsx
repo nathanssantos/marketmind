@@ -1,4 +1,4 @@
-import { Badge, Button, CryptoIcon, IconButton, Input, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, CryptoIcon, Input, Popover } from '@renderer/components/ui';
 import { Box, Flex, Spinner, Text, VStack } from '@chakra-ui/react';
 import type { AssetClass, MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
@@ -311,32 +311,15 @@ export function SymbolSelector({
       width="320px"
       positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
       trigger={
-        <Flex align="center" gap={2}>
-          <TooltipWrapper label={t('symbolSelector.label')} showArrow isDisabled={isOpen}>
-            <IconButton
-              aria-label={t('symbolSelector.label')}
-              size="2xs"
-              variant="outline"
-              color={isStocks ? 'green.500' : 'fg.muted'}
-            >
-              {isStocks ? <LuBuilding2 /> : <LuCoins />}
-            </IconButton>
-          </TooltipWrapper>
-          {!isStocks && <CryptoIcon symbol={value} size={16} />}
-          <Text fontSize="xs" fontWeight="semibold" color="fg">
-            {currentSymbol}
-          </Text>
-          {isStocks && (
-            <Badge size="xs" colorPalette="green" variant="subtle" px={1}>
-              STK
-            </Badge>
-          )}
-          {!isStocks && isFutures && (
-            <Badge size="xs" colorPalette="orange" variant="subtle" px={1}>
-              FUT
-            </Badge>
-          )}
-        </Flex>
+        <Button
+          aria-label={t('symbolSelector.label')}
+          size="2xs"
+          variant="outline"
+          color="fg.muted"
+        >
+          <CryptoIcon symbol={value} size={12} />
+          {currentSymbol}
+        </Button>
       }
     >
       <Flex direction="column" maxH="400px">
@@ -344,7 +327,7 @@ export function SymbolSelector({
           <Flex p={2} gap={1} borderBottomWidth="1px" borderColor="border" flexShrink={0}>
             <Button
               size="2xs"
-              variant="ghost"
+              variant="outline"
               color={!isStocks ? 'blue.500' : 'fg.muted'}
               onClick={() => handleAssetClassToggle('CRYPTO')}
               flex={1}
@@ -354,7 +337,7 @@ export function SymbolSelector({
             </Button>
             <Button
               size="2xs"
-              variant="ghost"
+              variant="outline"
               color={isStocks ? 'green.500' : 'fg.muted'}
               onClick={() => handleAssetClassToggle('STOCKS')}
               flex={1}
@@ -368,7 +351,7 @@ export function SymbolSelector({
           <Flex p={2} gap={1} borderBottomWidth="1px" borderColor="border" flexShrink={0}>
             <Button
               size="2xs"
-              variant="ghost"
+              variant="outline"
               color={!isFutures ? 'blue.500' : 'fg.muted'}
               onClick={() => handleMarketTypeToggle('SPOT')}
               flex={1}
@@ -377,7 +360,7 @@ export function SymbolSelector({
             </Button>
             <Button
               size="2xs"
-              variant="ghost"
+              variant="outline"
               color={isFutures ? 'orange.500' : 'fg.muted'}
               onClick={() => handleMarketTypeToggle('FUTURES')}
               flex={1}

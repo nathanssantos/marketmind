@@ -9,7 +9,7 @@ const {
   mockPrefetchKlines,
   mockPrefetchKlinesAsync,
   mockMeetsKlineRequirement,
-  mockDetect,
+  mockDetectSetups,
   mockLoadAll,
   mockToResult,
   mockAddLog,
@@ -24,7 +24,7 @@ const {
   const mockPrefetchKlines = vi.fn().mockResolvedValue({ success: true, downloaded: 0, totalInDb: 100, gaps: 0, alreadyComplete: false });
   const mockPrefetchKlinesAsync = vi.fn();
   const mockMeetsKlineRequirement = vi.fn(() => true);
-  const mockDetect = vi.fn().mockReturnValue({ setup: null, confidence: 0 });
+  const mockDetectSetups = vi.fn().mockReturnValue([]);
   const mockLoadAll = vi.fn().mockResolvedValue([]);
   const mockToResult: ReturnType<typeof vi.fn> = vi.fn(
     (status: string, reason?: string, klinesCount?: number) => ({
@@ -58,7 +58,7 @@ const {
     mockPrefetchKlines,
     mockPrefetchKlinesAsync,
     mockMeetsKlineRequirement,
-    mockDetect,
+    mockDetectSetups,
     mockLoadAll,
     mockToResult,
     mockAddLog,
@@ -124,14 +124,14 @@ vi.mock('../../setup-detection/dynamic', () => {
   class MockStrategyLoader {
     loadAll = mockLoadAll;
   }
-  class MockStrategyInterpreter {
-    detect = mockDetect;
-  }
   return {
-    StrategyInterpreter: MockStrategyInterpreter,
     StrategyLoader: MockStrategyLoader,
   };
 });
+
+vi.mock('../../indicator-engine', () => ({
+  detectSetups: mockDetectSetups,
+}));
 
 vi.mock('../../watcher-batch-logger', () => {
   class MockWatcherLogBuffer {
@@ -894,7 +894,7 @@ describe('SignalProcessor', () => {
     it('should return success with no setups when none detected', async () => {
       setupForDetection();
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({ setup: null, confidence: 0 });
+      mockDetectSetups.mockReturnValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -925,7 +925,7 @@ describe('SignalProcessor', () => {
         { id: 'strategy-1', name: 'Enabled Strategy' },
         { id: 'strategy-2', name: 'Disabled Strategy' },
       ]);
-      mockDetect.mockReturnValue({ setup: null, confidence: 0 });
+      mockDetectSetups.mockReturnValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -945,14 +945,16 @@ describe('SignalProcessor', () => {
 
       await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
 
-      expect(mockDetect).toHaveBeenCalledTimes(1);
+      expect(mockDetectSetups).toHaveBeenCalledWith(expect.objectContaining({
+        strategies: [expect.objectContaining({ id: 'strategy-1' })],
+      }));
     });
 
     it('should detect and execute setups with sufficient confidence', async () => {
       const { lastCandleOpen: _lastCandleOpen } = setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -962,10 +964,11 @@ describe('SignalProcessor', () => {
           riskRewardRatio: 2.0,
         },
         confidence: 80,
+        strategyId: 'strategy-1',
         triggerKlineIndex: 59,
         triggerCandleData: {},
         triggerIndicatorValues: {},
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -993,7 +996,7 @@ describe('SignalProcessor', () => {
       setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1003,7 +1006,8 @@ describe('SignalProcessor', () => {
           riskRewardRatio: 2.0,
         },
         confidence: 30,
-      });
+        strategyId: 'strategy-1',
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -1030,9 +1034,10 @@ describe('SignalProcessor', () => {
       setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: null,
         confidence: 0,
+        strategyId: 'strategy-1',
         rejection: {
           reason: 'Trend filter: wrong direction',
           details: {
@@ -1041,7 +1046,7 @@ describe('SignalProcessor', () => {
             trendStrength: 0.3,
           },
         },
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -1068,14 +1073,15 @@ describe('SignalProcessor', () => {
       setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: null,
         confidence: 0,
+        strategyId: 'strategy-1',
         rejection: {
           reason: 'Not enough data',
           details: {},
         },
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -1100,14 +1106,15 @@ describe('SignalProcessor', () => {
       setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: null,
         confidence: 0,
+        strategyId: 'strategy-1',
         rejection: {
           reason: 'Volume too low',
           details: { direction: '-' },
         },
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -1200,8 +1207,8 @@ describe('SignalProcessor', () => {
         { id: 'strategy-2', name: 'Strategy B' },
       ]);
 
-      mockDetect
-        .mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([
+        {
           setup: {
             type: 'Strategy A',
             direction: 'LONG',
@@ -1211,11 +1218,12 @@ describe('SignalProcessor', () => {
             riskRewardRatio: 2.0,
           },
           confidence: 80,
+          strategyId: 'strategy-1',
           triggerKlineIndex: 59,
           triggerCandleData: {},
           triggerIndicatorValues: {},
-        })
-        .mockReturnValueOnce({
+        },
+        {
           setup: {
             type: 'Strategy B',
             direction: 'SHORT',
@@ -1225,10 +1233,12 @@ describe('SignalProcessor', () => {
             riskRewardRatio: 2.0,
           },
           confidence: 75,
+          strategyId: 'strategy-2',
           triggerKlineIndex: 59,
           triggerCandleData: {},
           triggerIndicatorValues: {},
-        });
+        },
+      ]);
 
       vi.mocked(deps.executeSetupSafe).mockResolvedValue(true);
 
@@ -1257,7 +1267,7 @@ describe('SignalProcessor', () => {
       setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1267,10 +1277,11 @@ describe('SignalProcessor', () => {
           riskRewardRatio: 2.0,
         },
         confidence: 80,
+        strategyId: 'strategy-1',
         triggerKlineIndex: 59,
         triggerCandleData: {},
         triggerIndicatorValues: {},
-      });
+      }]);
 
       vi.mocked(deps.executeSetupSafe).mockResolvedValueOnce(false);
 
@@ -1299,7 +1310,7 @@ describe('SignalProcessor', () => {
       const { watcher } = setupForDetection();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1309,10 +1320,11 @@ describe('SignalProcessor', () => {
           riskRewardRatio: 2.0,
         },
         confidence: 80,
+        strategyId: 'strategy-1',
         triggerKlineIndex: 59,
         triggerCandleData: {},
         triggerIndicatorValues: {},
-      });
+      }]);
 
       vi.mocked(deps.executeSetupSafe).mockResolvedValueOnce(true);
 
@@ -1915,13 +1927,14 @@ describe('SignalProcessor', () => {
       setupForRejectionTest();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: null,
         confidence: 0,
+        strategyId: 'strategy-1',
         rejection: {
           reason: 'No signal',
         },
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -1946,9 +1959,10 @@ describe('SignalProcessor', () => {
       setupForRejectionTest();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: null,
         confidence: 45,
+        strategyId: 'strategy-1',
         rejection: {
           reason: 'Risk/Reward: below minimum',
           details: {
@@ -1958,7 +1972,7 @@ describe('SignalProcessor', () => {
             minRequired: 1.5,
           },
         },
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -1983,16 +1997,17 @@ describe('SignalProcessor', () => {
       setupForRejectionTest();
 
       mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetect.mockReturnValueOnce({
+      mockDetectSetups.mockReturnValueOnce([{
         setup: null,
         confidence: 60,
+        strategyId: 'strategy-1',
         rejection: {
           reason: 'Trend filter blocked',
           details: {
             direction: 'SHORT',
           },
         },
-      });
+      }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',

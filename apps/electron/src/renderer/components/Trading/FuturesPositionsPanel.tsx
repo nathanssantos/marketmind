@@ -1,13 +1,13 @@
-import { Badge, Button, CryptoIcon, ProgressBar, ProgressRoot } from '@renderer/components/ui';
+import { Badge, Button, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuBot, LuTrendingDown, LuTrendingUp, LuTriangleAlert, LuX } from 'react-icons/lu';
+import { LuArrowLeftRight, LuBot, LuTrendingDown, LuTrendingUp, LuTriangleAlert, LuX } from 'react-icons/lu';
 
 interface FuturesPosition {
   id: string;
@@ -30,15 +30,20 @@ const FuturesPositionCard = memo(({
   currentPrice,
   onClose,
   isClosing,
+  onReverse,
+  isReversing,
   onNavigateToSymbol,
 }: {
   position: FuturesPosition;
   currentPrice?: number;
   onClose: () => void;
   isClosing: boolean;
+  onReverse: () => void;
+  isReversing: boolean;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }) => {
   const { t } = useTranslation();
+  const [showReverseConfirm, setShowReverseConfirm] = useState(false);
 
   const entryPrice = parseFloat(position.entryPrice);
   const markPrice = currentPrice || parseFloat(position.currentPrice ?? position.entryPrice);
@@ -130,15 +135,29 @@ const FuturesPositionCard = memo(({
               </Flex>
             </Badge>
           </Flex>
-          <Button
-            size="2xs"
-            variant="ghost"
-            colorPalette="red"
-            onClick={onClose}
-            loading={isClosing}
-          >
-            <LuX size={12} />
-          </Button>
+          <Flex gap={1}>
+            <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
+              <IconButton
+                size="2xs"
+                variant="ghost"
+                colorPalette="orange"
+                onClick={() => setShowReverseConfirm(true)}
+                loading={isReversing}
+                aria-label={t('futures.reversePosition', 'Reverse Position')}
+              >
+                <LuArrowLeftRight size={12} />
+              </IconButton>
+            </TooltipWrapper>
+            <Button
+              size="2xs"
+              variant="ghost"
+              colorPalette="red"
+              onClick={onClose}
+              loading={isClosing}
+            >
+              <LuX size={12} />
+            </Button>
+          </Flex>
         </Flex>
 
         <Stack gap={1} fontSize="xs">
@@ -231,6 +250,25 @@ const FuturesPositionCard = memo(({
           </Box>
         )}
       </VStack>
+
+      <ConfirmationDialog
+        isOpen={showReverseConfirm}
+        onClose={() => setShowReverseConfirm(false)}
+        onConfirm={() => {
+          setShowReverseConfirm(false);
+          onReverse();
+        }}
+        title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
+        description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
+          side,
+          quantity: quantity.toFixed(4),
+          symbol: position.symbol,
+          newSide: side === 'LONG' ? 'SHORT' : 'LONG',
+        })}
+        confirmLabel={t('futures.reversePosition', 'Reverse Position')}
+        colorPalette="orange"
+        isLoading={isReversing}
+      />
     </Box>
   );
 });
@@ -249,6 +287,8 @@ const FuturesPositionsPanelComponent = () => {
     isLoadingPositions,
     closePosition,
     isClosingPosition,
+    reversePosition,
+    isReversingPosition,
   } = useBackendFuturesTrading(activeWalletId || '');
 
   const openPositions = useMemo((): FuturesPosition[] => {
@@ -283,6 +323,14 @@ const FuturesPositionsPanelComponent = () => {
     await closePosition({ walletId: activeWalletId, symbol, positionId });
   };
 
+  const handleReversePosition = async (positionId: string, positionSymbol: string) => {
+    if (!activeWalletId) return;
+    const result = await reversePosition({ walletId: activeWalletId, symbol: positionSymbol, positionId });
+    if (result && 'success' in result && !result.success && 'error' in result && typeof result.error === 'string') {
+      throw new Error(result.error);
+    }
+  };
+
   if (!activeWalletId) return null;
 
   if (isLoadingPositions) {
@@ -314,6 +362,8 @@ const FuturesPositionsPanelComponent = () => {
             currentPrice={realtimePrices[position.symbol]}
             onClose={() => handleClosePosition(position.id, position.symbol)}
             isClosing={isClosingPosition}
+            onReverse={() => handleReversePosition(position.id, position.symbol)}
+            isReversing={isReversingPosition}
             onNavigateToSymbol={globalActions?.navigateToSymbol}
           />
         ))}

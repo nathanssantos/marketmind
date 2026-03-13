@@ -3,13 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   mockGetTopCoinsByMarketCap,
   mockGet24hrTickerData,
-  mockScanSymbols,
-  mockValidateSymbols,
 } = vi.hoisted(() => ({
   mockGetTopCoinsByMarketCap: vi.fn(),
   mockGet24hrTickerData: vi.fn(),
-  mockScanSymbols: vi.fn(),
-  mockValidateSymbols: vi.fn(),
 }));
 
 vi.mock('../../db', () => ({
@@ -46,18 +42,6 @@ vi.mock('../../services/market-cap-data', () => ({
 
 vi.mock('../../services/binance-exchange-info', () => ({
   get24hrTickerData: mockGet24hrTickerData,
-}));
-
-vi.mock('../../services/setup-pre-scanner', () => ({
-  getSetupPreScanner: vi.fn(() => ({
-    scanSymbols: mockScanSymbols,
-  })),
-}));
-
-vi.mock('../../services/filter-pre-validator', () => ({
-  getFilterPreValidator: vi.fn(() => ({
-    validateSymbols: mockValidateSymbols,
-  })),
 }));
 
 vi.mock('../../services/logger', () => ({
@@ -135,15 +119,13 @@ describe('OpportunityScoringService', () => {
   describe('DEFAULT_WEIGHTS', () => {
     it('should have weights that sum to approximately 1.0', () => {
       const weights: ScoringWeights = {
-        marketCapRank: 0.10,
-        volume: 0.15,
+        marketCapRank: 0.15,
+        volume: 0.20,
         volatility: 0.10,
         priceChange: 0.05,
         setupFrequency: 0.15,
-        winRate: 0.10,
-        profitFactor: 0.10,
-        pendingSetup: 0.15,
-        filterPassRate: 0.10,
+        winRate: 0.15,
+        profitFactor: 0.20,
       };
 
       const sum = Object.values(weights).reduce((a, b) => a + (b ?? 0), 0);
@@ -579,154 +561,6 @@ describe('OpportunityScoringService', () => {
 
       expect(symbols).toEqual(expect.arrayContaining(['BTCUSDT', 'ETHUSDT']));
       symbols.forEach((s) => expect(typeof s).toBe('string'));
-    });
-  });
-
-  describe('getEnhancedSymbolScores', () => {
-    const setupBaseScores = () => {
-      const coins = [
-        createTopCoin({ binanceSymbol: 'BTCUSDT', marketCapRank: 1 }),
-        createTopCoin({ binanceSymbol: 'ETHUSDT', marketCapRank: 2 }),
-      ];
-      const tickerMap = new Map([
-        ['BTCUSDT', createTickerData('BTCUSDT')],
-        ['ETHUSDT', createTickerData('ETHUSDT')],
-      ]);
-
-      mockGetTopCoinsByMarketCap.mockResolvedValue(coins);
-      mockGet24hrTickerData.mockResolvedValue(tickerMap);
-      mockDbChainTwoCalls([], []);
-    };
-
-    it('should return base scores when no enhanced options enabled', async () => {
-      setupBaseScores();
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 100, {});
-
-      expect(scores.length).toBeGreaterThan(0);
-      expect(scores[0]!.breakdown.pendingSetupScore).toBeUndefined();
-      expect(scores[0]!.breakdown.filterPassRateScore).toBeUndefined();
-    });
-
-    it('should include setup scanning results when enabled', async () => {
-      setupBaseScores();
-
-      const scanResults = new Map([
-        ['BTCUSDT', { hasPendingSetup: true, score: 85, pendingSetups: [], alignedWithBTC: true, btcTrend: 'BULLISH' }],
-        ['ETHUSDT', { hasPendingSetup: false, score: 40, pendingSetups: [], alignedWithBTC: false, btcTrend: 'NEUTRAL' }],
-      ]);
-      mockScanSymbols.mockResolvedValue(scanResults);
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 100, {
-        includeSetupScanning: true,
-        interval: '4h',
-      });
-
-      const btcScore = scores.find((s) => s.symbol === 'BTCUSDT');
-      expect(btcScore!.breakdown.pendingSetupScore).toBe(85);
-      expect(btcScore!.rawData.hasPendingSetup).toBe(true);
-
-      const ethScore = scores.find((s) => s.symbol === 'ETHUSDT');
-      expect(ethScore!.breakdown.pendingSetupScore).toBe(50);
-      expect(ethScore!.rawData.hasPendingSetup).toBe(false);
-    });
-
-    it('should include filter validation results when enabled', async () => {
-      setupBaseScores();
-
-      const validationResults = new Map([
-        ['BTCUSDT', { confluenceScore: 90, wouldPassFilters: true, passedFilters: [], failingFilters: [], filterResults: {} }],
-        ['ETHUSDT', { confluenceScore: 60, wouldPassFilters: true, passedFilters: [], failingFilters: [], filterResults: {} }],
-      ]);
-      mockValidateSymbols.mockResolvedValue(validationResults);
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 100, {
-        includeFilterValidation: true,
-      });
-
-      const btcScore = scores.find((s) => s.symbol === 'BTCUSDT');
-      expect(btcScore!.breakdown.filterPassRateScore).toBe(90);
-      expect(btcScore!.rawData.filterPassRate).toBe(90);
-    });
-
-    it('should handle setup scanning failure gracefully', async () => {
-      setupBaseScores();
-      mockScanSymbols.mockRejectedValue(new Error('scan failed'));
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 100, {
-        includeSetupScanning: true,
-      });
-
-      expect(scores.length).toBeGreaterThan(0);
-      expect(scores[0]!.breakdown.pendingSetupScore).toBe(50);
-    });
-
-    it('should handle filter validation failure gracefully', async () => {
-      setupBaseScores();
-      mockValidateSymbols.mockRejectedValue(new Error('validation failed'));
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 100, {
-        includeFilterValidation: true,
-      });
-
-      expect(scores.length).toBeGreaterThan(0);
-      expect(scores[0]!.breakdown.filterPassRateScore).toBe(50);
-    });
-
-    it('should sort enhanced scores by compositeScore descending', async () => {
-      setupBaseScores();
-
-      const scanResults = new Map([
-        ['BTCUSDT', { hasPendingSetup: false, score: 10, pendingSetups: [], alignedWithBTC: false, btcTrend: 'NEUTRAL' }],
-        ['ETHUSDT', { hasPendingSetup: true, score: 100, pendingSetups: [], alignedWithBTC: true, btcTrend: 'BULLISH' }],
-      ]);
-      mockScanSymbols.mockResolvedValue(scanResults);
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 100, {
-        includeSetupScanning: true,
-      });
-
-      for (let i = 0; i < scores.length - 1; i++) {
-        expect(scores[i]!.compositeScore).toBeGreaterThanOrEqual(scores[i + 1]!.compositeScore);
-      }
-    });
-
-    it('should respect limit on enhanced scores', async () => {
-      const coins = Array.from({ length: 10 }, (_, i) =>
-        createTopCoin({ binanceSymbol: `COIN${i}USDT`, marketCapRank: i + 1 })
-      );
-      const tickerMap = new Map(
-        coins.map((c) => [c.binanceSymbol, createTickerData(c.binanceSymbol)])
-      );
-
-      mockGetTopCoinsByMarketCap.mockResolvedValue(coins);
-      mockGet24hrTickerData.mockResolvedValue(tickerMap);
-      mockDbChainTwoCalls([], []);
-
-      const scores = await service.getEnhancedSymbolScores('FUTURES', 3, {});
-      expect(scores).toHaveLength(3);
-    });
-
-    it('should use cached enhanced scores on repeated calls', async () => {
-      setupBaseScores();
-
-      await service.getEnhancedSymbolScores('FUTURES', 100, { interval: '12h' });
-
-      const secondResult = await service.getEnhancedSymbolScores('FUTURES', 100, { interval: '12h' });
-      expect(secondResult.length).toBeGreaterThan(0);
-      expect(mockGetTopCoinsByMarketCap).toHaveBeenCalledTimes(1);
-    });
-
-    it('should default to 12h interval', async () => {
-      setupBaseScores();
-      mockScanSymbols.mockResolvedValue(new Map());
-
-      await service.getEnhancedSymbolScores('FUTURES', 100, { includeSetupScanning: true });
-
-      expect(mockScanSymbols).toHaveBeenCalledWith(
-        expect.arrayContaining(['BTCUSDT', 'ETHUSDT']),
-        expect.objectContaining({ interval: '12h' })
-      );
     });
   });
 

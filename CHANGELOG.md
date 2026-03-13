@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.63.0] - 2026-03-13
+
+### Added
+- **Reverse position**: one-click position reversal (close + open opposite side) with confirmation dialog, supports both paper and live Binance futures
+- **Trailing stop chart placement**: click on chart to set trailing stop activation price per symbol, with shield icon and dashed preview line
+- **Trailing stop activation lines**: open positions show trailing stop activation level on chart with shield icon
+- **Canvas icons module**: extracted `drawBotIcon` and `drawShieldIcon` to `canvasIcons.ts` for reuse across chart renderers
+- **Trailing stop placement store**: Zustand store for chart-based TS activation placement mode
+- **Order loading timeout**: loading spinners auto-clear after 15s to prevent stuck UI states
+
+### Changed
+- **Unified indicator engine**: moved `IndicatorEngine` to `services/indicator-engine/` with per-indicator caching (`singleCache`) — cross-strategy indicator deduplication
+- **Unified detection entry point**: single `detectSetups()` function replaces per-strategy interpreter creation in signal-processor and setup-detection router
+- **Shared IndicatorEngine in range detection**: `detectSetupsInRange` shares one engine across all candle iterations
+- **Signal processor refactored**: replaced manual strategy loop with unified `detectSetups()` call
+- **Screener uses IndicatorEngine**: `screener-service.ts` delegates to `IndicatorEngine.evaluateScreenerIndicator()` instead of standalone evaluator
+- **Constants relocated**: `indicator-metadata.ts` and `screener-presets.ts` moved to `constants/` directory
+- **Exit utils extracted**: `checkStopLossAndTakeProfit` and `applySlippage` extracted to shared `exitUtils.ts`, used by `ExitManager`
+- **Default MA presets**: updated default moving average periods and visibility (EMA 7, 9, 21 visible by default)
+- **Order loading map**: changed from `boolean` to `timestamp` for timeout-based cleanup
+- **Order line icon system**: generalized from `isAutoTrade` boolean to `icon: 'bot' | 'shield' | null` for extensibility
+
+### Removed
+- **Pre-detection system**: deleted `SetupPreScanner` (236 lines) and `FilterPreValidator` (228 lines) — added latency without meaningful value
+- **Enhanced scoring**: removed `getEnhancedSymbolScores()`, `pendingSetup`/`filterPassRate` weights from `OpportunityScoringService`
+- **Standalone indicator evaluator**: deleted `screener/indicator-evaluator.ts` (302 lines), replaced by unified `IndicatorEngine`
+
+---
+
 ## [0.62.0] - 2026-03-12
 
 ### Added

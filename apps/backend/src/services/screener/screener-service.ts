@@ -17,13 +17,11 @@ import { get24hrTickerData, type Ticker24hr } from '../binance-exchange-info';
 import { smartBackfillKlines } from '../binance-historical';
 import { smartBackfillIBKlines } from '../ib-historical';
 import {
-  evaluateIndicator,
-  evaluateIndicators,
-  getPreviousValue,
+  IndicatorEngine,
   isTickerBasedIndicator,
-  type TickerData,
-  type ExtraData,
-} from './indicator-evaluator';
+  type ScreenerTickerData as TickerData,
+  type ScreenerExtraData as ExtraData,
+} from '../indicator-engine';
 import { evaluateFilters, needsPreviousValues, getLookbackBars } from './filter-evaluator';
 
 interface CacheEntry {
@@ -212,6 +210,7 @@ export class ScreenerService {
     const lookbackBars = getLookbackBars(config.filters);
 
     const results: ScreenerResultRow[] = [];
+    const engine = new IndicatorEngine();
 
     for (const symbol of tickerFilteredSymbols) {
       const klineData = klineMap.get(symbol);
@@ -225,8 +224,8 @@ export class ScreenerService {
         fundingRate: null,
       };
 
-      const indicators = evaluateIndicators(
-        requiredIds as Parameters<typeof evaluateIndicators>[0],
+      const indicators = engine.evaluateScreenerIndicators(
+        requiredIds as Parameters<typeof engine.evaluateScreenerIndicators>[0],
         klineData ?? [],
         paramsMap,
         tickerD,
@@ -238,7 +237,7 @@ export class ScreenerService {
         previousValues = {};
         for (const cond of config.filters) {
           if (['CROSSES_ABOVE', 'CROSSES_BELOW', 'INCREASING', 'DECREASING'].includes(cond.operator)) {
-            previousValues[cond.indicator] = getPreviousValue(
+            previousValues[cond.indicator] = engine.getScreenerPreviousValue(
               cond.indicator,
               klineData,
               lookbackBars,
@@ -251,7 +250,7 @@ export class ScreenerService {
       if (config.filters.length > 0) {
         for (const cond of config.filters) {
           if (cond.compareIndicator && indicators[cond.compareIndicator] === undefined) {
-            indicators[cond.compareIndicator] = evaluateIndicator(
+            indicators[cond.compareIndicator] = engine.evaluateScreenerIndicator(
               cond.compareIndicator,
               klineData ?? [],
               cond.compareIndicatorParams ?? {},

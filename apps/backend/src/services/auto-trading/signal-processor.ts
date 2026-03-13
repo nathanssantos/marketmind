@@ -17,7 +17,8 @@ import {
   wallets,
 } from '../../db/schema';
 import { prefetchKlines, prefetchKlinesAsync } from '../kline-prefetch';
-import { StrategyInterpreter, StrategyLoader } from '../setup-detection/dynamic';
+import { StrategyLoader } from '../setup-detection/dynamic';
+import { detectSetups } from '../indicator-engine';
 import {
   createBatchResult,
   outputBatchResults,
@@ -421,30 +422,32 @@ export class SignalProcessor {
     const detectedSetups: TradingSetup[] = [];
     const currentIndex = closedKlines.length - 1;
 
-    for (const strategy of filteredStrategies) {
-      await yieldToEventLoop();
+    const minRRLong = effectiveConfig?.minRiskRewardRatioLong
+      ? parseFloat(effectiveConfig.minRiskRewardRatioLong)
+      : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
+    const minRRShort = effectiveConfig?.minRiskRewardRatioShort
+      ? parseFloat(effectiveConfig.minRiskRewardRatioShort)
+      : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
 
-      const minRRLong = effectiveConfig?.minRiskRewardRatioLong
-        ? parseFloat(effectiveConfig.minRiskRewardRatioLong)
-        : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
-      const minRRShort = effectiveConfig?.minRiskRewardRatioShort
-        ? parseFloat(effectiveConfig.minRiskRewardRatioShort)
-        : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
-
-      const interpreter = new StrategyInterpreter({
-        enabled: true,
+    const detectionResults = detectSetups({
+      klines: closedKlines,
+      strategies: filteredStrategies,
+      currentIndex,
+      config: {
         minConfidence: 50,
         minRiskReward: Math.min(minRRLong, minRRShort),
-        strategy,
         silent: true,
         interval: watcher.interval as TimeInterval,
         directionMode: directionMode !== 'auto' ? directionMode as 'long_only' | 'short_only' : undefined,
         maxFibonacciEntryProgressPercentLong: effectiveConfig?.maxFibonacciEntryProgressPercentLong ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentLong) : undefined,
         maxFibonacciEntryProgressPercentShort: effectiveConfig?.maxFibonacciEntryProgressPercentShort ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentShort) : undefined,
         fibonacciSwingRange: (effectiveConfig?.fibonacciSwingRange as 'nearest' | 'extended' | undefined) ?? undefined,
-      });
+      },
+    });
 
-      const result = interpreter.detect(closedKlines, currentIndex);
+    for (const result of detectionResults) {
+      const strategy = filteredStrategies.find(s => s.id === result.strategyId);
+      const strategyName = strategy?.name ?? result.strategyId;
 
       if (result.rejection) {
         const rejectionDirection = result.rejection.details?.['direction'] as string | undefined;
@@ -455,7 +458,7 @@ export class SignalProcessor {
           const currentPrice = lastKline ? parseFloat(lastKline.close) : 0;
 
           logBuffer.startSetupValidation({
-            type: strategy.name,
+            type: strategyName,
             direction: rejectionDirection as 'LONG' | 'SHORT',
             entryPrice: entryPrice ?? currentPrice,
             confidence: result.confidence ?? 0,
@@ -479,7 +482,7 @@ export class SignalProcessor {
         }
 
         logBuffer.addRejection({
-          setupType: strategy.name,
+          setupType: strategyName,
           direction: rejectionDirection ?? '-',
           reason: result.rejection.reason,
           details: result.rejection.details,
