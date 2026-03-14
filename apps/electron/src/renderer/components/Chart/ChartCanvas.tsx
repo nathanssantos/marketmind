@@ -66,6 +66,14 @@ import {
   type IndicatorId,
 } from './ChartCanvas/index';
 
+interface OptimisticOverride {
+  patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice' | 'status'>>;
+  previousValues: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice' | 'status'>>;
+  timestamp: number;
+}
+
+const OPTIMISTIC_OVERRIDE_TTL_MS = 30_000;
+
 export interface ChartCanvasProps {
   klines: Kline[];
   symbol?: string;
@@ -139,6 +147,38 @@ export const ChartCanvas = ({
   const [optimisticExecutions, setOptimisticExecutions] = useState<BackendExecution[]>([]);
   const orderLoadingMapRef = useRef<Map<string, number>>(new Map());
   const orderFlashMapRef = useRef<Map<string, number>>(new Map());
+  const closingSnapshotsRef = useRef<Map<string, BackendExecution>>(new Map());
+  const [closingVersion, setClosingVersion] = useState(0);
+
+  const optimisticOverridesRef = useRef<Map<string, OptimisticOverride>>(new Map());
+  const [overrideVersion, setOverrideVersion] = useState(0);
+
+  const applyOptimistic = useCallback((
+    id: string,
+    patches: OptimisticOverride['patches'],
+    previousValues: OptimisticOverride['previousValues']
+  ) => {
+    const existing = optimisticOverridesRef.current.get(id);
+    optimisticOverridesRef.current.set(id, {
+      patches: existing ? { ...existing.patches, ...patches } : patches,
+      previousValues: existing ? existing.previousValues : previousValues,
+      timestamp: Date.now(),
+    });
+    setOverrideVersion(v => v + 1);
+  }, []);
+
+  const clearOptimistic = useCallback((id: string, expectedPatches?: OptimisticOverride['patches']) => {
+    if (expectedPatches) {
+      const current = optimisticOverridesRef.current.get(id);
+      if (current) {
+        const patchKeys = Object.keys(expectedPatches) as (keyof OptimisticOverride['patches'])[];
+        const stillMatches = patchKeys.every(k => current.patches[k] === expectedPatches[k]);
+        if (!stillMatches) return;
+      }
+    }
+    optimisticOverridesRef.current.delete(id);
+    setOverrideVersion(v => v + 1);
+  }, []);
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -289,11 +329,82 @@ export const ChartCanvas = ({
 
   const allExecutions = useMemo((): BackendExecution[] => {
     const realIds = new Set(filteredBackendExecutions.map(e => e.id));
-    const uniqueOptimistic = optimisticExecutions.filter(
-      o => o.symbol === symbol && !realIds.has(o.id)
-    );
-    return [...filteredBackendExecutions, ...uniqueOptimistic, ...orphanOrderExecutions];
-  }, [filteredBackendExecutions, optimisticExecutions, symbol, orphanOrderExecutions]);
+    const uniqueOptimistic = optimisticExecutions.filter(o => {
+      if (o.symbol !== symbol || realIds.has(o.id)) return false;
+      const optPrice = parseFloat(o.entryPrice);
+      const matchesOrphan = orphanOrderExecutions.some(
+        orph => orph.symbol === o.symbol && orph.side === o.side &&
+          Math.abs(parseFloat(orph.entryPrice) - optPrice) / optPrice < 0.01
+      );
+      return !matchesOrphan;
+    });
+    const merged = [...filteredBackendExecutions, ...uniqueOptimistic, ...orphanOrderExecutions];
+    closingSnapshotsRef.current.forEach((snapshot, id) => {
+      if (!realIds.has(id)) merged.push(snapshot);
+    });
+    const overrides = optimisticOverridesRef.current;
+    if (overrides.size === 0) return merged;
+    return merged
+      .filter(e => {
+        const ov = overrides.get(e.id);
+        if (!ov) return true;
+        if (orderLoadingMapRef.current.has(e.id)) return true;
+        return ov.patches.status !== 'cancelled' && ov.patches.status !== 'closed';
+      })
+      .map(e => {
+        const ov = overrides.get(e.id);
+        if (!ov) return e;
+        return { ...e, ...ov.patches };
+      });
+  }, [filteredBackendExecutions, optimisticExecutions, symbol, orphanOrderExecutions, overrideVersion, closingVersion]);
+
+  useEffect(() => {
+    const overrides = optimisticOverridesRef.current;
+    if (overrides.size === 0) return;
+    const now = Date.now();
+    let changed = false;
+    for (const [id, ov] of overrides) {
+      if (now - ov.timestamp > OPTIMISTIC_OVERRIDE_TTL_MS) {
+        overrides.delete(id);
+        changed = true;
+        continue;
+      }
+      const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions];
+      const serverExec = allReal.find(e => e.id === id);
+      if (!serverExec) continue;
+      const patchKeys = Object.keys(ov.patches) as (keyof OptimisticOverride['patches'])[];
+      const serverMatches = patchKeys.every(k => {
+        const patchVal = ov.patches[k];
+        const serverVal = serverExec[k];
+        if (patchVal === null || patchVal === undefined) return serverVal === null || serverVal === undefined;
+        return String(serverVal) === String(patchVal);
+      });
+      if (serverMatches) {
+        overrides.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) setOverrideVersion(v => v + 1);
+  }, [filteredBackendExecutions, orphanOrderExecutions]);
+
+  useEffect(() => {
+    if (optimisticExecutions.length === 0) return;
+    const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions];
+    const now = Date.now();
+    const remaining = optimisticExecutions.filter(opt => {
+      const openedMs = opt.openedAt instanceof Date ? opt.openedAt.getTime() : opt.openedAt ? new Date(opt.openedAt).getTime() : now;
+      if (now - openedMs > OPTIMISTIC_OVERRIDE_TTL_MS) return false;
+      const optPrice = parseFloat(opt.entryPrice);
+      const matchingReal = allReal.find(real =>
+        real.symbol === opt.symbol &&
+        real.side === opt.side &&
+        Math.abs(parseFloat(real.entryPrice) - optPrice) / optPrice < 0.01
+      );
+      if (matchingReal) return false;
+      return true;
+    });
+    if (remaining.length !== optimisticExecutions.length) setOptimisticExecutions(remaining);
+  }, [filteredBackendExecutions, orphanOrderExecutions, optimisticExecutions]);
 
   const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
   const quickTradeUseMinNotional = useQuickTradeStore((s) => s.useMinNotional);
@@ -361,7 +472,6 @@ export const ChartCanvas = ({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
-    } finally {
       setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
     }
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
@@ -407,7 +517,6 @@ export const ChartCanvas = ({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
-    } finally {
       setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
     }
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
@@ -449,6 +558,7 @@ export const ChartCanvas = ({
     tooltipDebounce: tooltipDebounceRef,
   } = chartRefs;
 
+  const draggedOrderIdRef = useRef<string | null>(null);
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
@@ -523,6 +633,16 @@ export const ChartCanvas = ({
       setOrderToClose(null);
       return;
     }
+    if (orderId === 'ts-disable') {
+      if (!backendWalletId || !symbol) return;
+      updateTsConfig.mutate({
+        walletId: backendWalletId,
+        symbol,
+        useIndividualConfig: true,
+        trailingStopEnabled: false,
+      });
+      return;
+    }
     if (orderId.startsWith('sltp-')) {
       setOrderToClose(orderId);
       return;
@@ -530,52 +650,94 @@ export const ChartCanvas = ({
     if (orderId.startsWith('exchange-order-') || orderId.startsWith('exchange-algo-')) {
       const exchangeOrderId = parseInt(orderId.replace(/^exchange-(order|algo)-/, ''), 10);
       if (!backendWalletId || !symbol || isNaN(exchangeOrderId)) return;
+      const cancelPatches = { status: 'cancelled' as const };
+      applyOptimistic(orderId, cancelPatches, { status: 'pending' });
       orderLoadingMapRef.current.set(orderId, Date.now());
-      manager?.markDirty('overlays');
-      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId });
+      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
+        .catch((error) => {
+          clearOptimistic(orderId, cancelPatches);
+          toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
+        })
+        .finally(() => {
+          orderLoadingMapRef.current.delete(orderId);
+          manager?.markDirty('overlays');
+        });
       return;
     }
     const exec = allExecutions.find((e) => e.id === orderId);
     if (!exec) return;
     if (exec.status === 'pending') {
+      const cancelPatches = { status: 'cancelled' as const };
+      applyOptimistic(exec.id, cancelPatches, { status: exec.status });
       orderLoadingMapRef.current.set(exec.id, Date.now());
-      manager?.markDirty('overlays');
-      cancelExecution(exec.id);
+      cancelExecution(exec.id).catch((error: unknown) => {
+        clearOptimistic(exec.id, cancelPatches);
+        toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
+      }).finally(() => {
+        orderLoadingMapRef.current.delete(exec.id);
+        manager?.markDirty('overlays');
+      });
       return;
     }
     setOrderToClose(orderId);
-  }, [allExecutions, cancelExecution, setOrderToClose, manager, backendWalletId, symbol, cancelFuturesOrderMutation]);
+  }, [allExecutions, cancelExecution, setOrderToClose, manager, backendWalletId, symbol, cancelFuturesOrderMutation, applyOptimistic, clearOptimistic, toastError, t, updateTsConfig]);
 
   const handleConfirmCloseOrder = useCallback(async (): Promise<void> => {
     if (!orderToClose || !manager) return;
+    const closingOrderId = orderToClose;
+    setOrderToClose(null);
 
-    if (orderToClose.startsWith('sltp-')) {
-      const parts = orderToClose.split('-');
+    if (closingOrderId.startsWith('sltp-')) {
+      const parts = closingOrderId.split('-');
       const type = parts[1] as 'stopLoss' | 'takeProfit';
       const executionIds = parts[2]?.split(',') || [];
 
       if (executionIds.length > 0) {
-        executionIds.forEach(id => orderLoadingMapRef.current.set(id, Date.now()));
-        manager.markDirty('overlays');
-        await cancelProtectionOrder(executionIds, type);
+        const patchField = type === 'stopLoss' ? 'stopLoss' : 'takeProfit';
+        executionIds.forEach(id => {
+          const exec = allExecutions.find(e => e.id === id);
+          applyOptimistic(id, { [patchField]: null }, { [patchField]: exec?.[patchField] });
+          orderLoadingMapRef.current.set(id, Date.now());
+        });
+        try {
+          await cancelProtectionOrder(executionIds, type);
+          executionIds.forEach(id => {
+            const flashKey = `${id}-${type === 'stopLoss' ? 'sl' : 'tp'}`;
+            orderFlashMapRef.current.set(flashKey, performance.now());
+          });
+        } catch (error) {
+          executionIds.forEach(id => clearOptimistic(id, { [patchField]: null }));
+          toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
+        } finally {
+          executionIds.forEach(id => orderLoadingMapRef.current.delete(id));
+          manager.markDirty('overlays');
+        }
       }
 
-      setOrderToClose(null);
       return;
     }
 
-    const exec = allExecutions.find((e) => e.id === orderToClose);
+    const exec = allExecutions.find((e) => e.id === closingOrderId);
     if (exec) {
+      closingSnapshotsRef.current.set(exec.id, exec);
+      setClosingVersion(v => v + 1);
       orderLoadingMapRef.current.set(exec.id, Date.now());
       manager.markDirty('overlays');
-      const klines = manager.getKlines();
-      const lastKline = klines[klines.length - 1];
-      const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
-      await closeExecution(exec.id, exitPrice);
+      try {
+        const klines = manager.getKlines();
+        const lastKline = klines[klines.length - 1];
+        const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
+        await closeExecution(exec.id, exitPrice);
+      } catch (error) {
+        toastError(t('trading.order.closeFailed'), error instanceof Error ? error.message : undefined);
+      } finally {
+        closingSnapshotsRef.current.delete(exec.id);
+        setClosingVersion(v => v + 1);
+        orderLoadingMapRef.current.delete(exec.id);
+        manager.markDirty('overlays');
+      }
     }
-
-    setOrderToClose(null);
-  }, [orderToClose, manager, allExecutions, closeExecution, cancelProtectionOrder]);
+  }, [orderToClose, manager, allExecutions, closeExecution, cancelProtectionOrder, toastError, t]);
 
   const {
     renderGrid,
@@ -719,7 +881,7 @@ export const ChartCanvas = ({
     fibonacciProjectionData,
   });
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
 
   const currentKlines = manager?.getKlines() ?? [];
   const lastKline = currentKlines[currentKlines.length - 1];
@@ -778,10 +940,27 @@ export const ChartCanvas = ({
       const exec = allExecutions.find(e => e.id === id);
       if (!exec) return;
 
-      orderLoadingMapRef.current.set(id, Date.now());
-      manager?.markDirty('overlays');
-
       const newPrice = roundTradingPrice(updates.entryPrice).toString();
+      const cancelPatches = { status: 'cancelled' as const };
+      applyOptimistic(id, cancelPatches, { status: 'pending' });
+      orderLoadingMapRef.current.set(id, Date.now());
+
+      const optimisticId = `opt-exchange-${Date.now()}`;
+      setOptimisticExecutions(prev => [...prev, {
+        id: optimisticId,
+        symbol: exec.symbol,
+        side: exec.side,
+        entryPrice: newPrice,
+        quantity: exec.quantity,
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending',
+        setupType: null,
+        marketType: exec.marketType ?? 'FUTURES',
+        openedAt: new Date(),
+        entryOrderType: exec.entryOrderType,
+      }]);
+
       const side = exec.side === 'LONG' ? 'BUY' as const : 'SELL' as const;
       const orderType = isAlgo
         ? (exec.entryOrderType as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET') ?? 'STOP_MARKET' as const
@@ -797,10 +976,9 @@ export const ChartCanvas = ({
           ...(isAlgo ? { stopPrice: newPrice } : { price: newPrice }),
           reduceOnly: true,
         }))
-        .then(() => {
-          orderFlashMapRef.current.set(id, performance.now());
-        })
         .catch((error) => {
+          clearOptimistic(id, cancelPatches);
+          setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
           toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
         })
         .finally(() => {
@@ -811,33 +989,60 @@ export const ChartCanvas = ({
     }
 
     if (updates.entryPrice !== undefined) {
+      const exec = allExecutions.find(e => e.id === id);
+      const newPrice = roundTradingPrice(updates.entryPrice).toString();
+      const prevValues = { entryPrice: exec?.entryPrice };
+      const patches = { entryPrice: newPrice };
+      applyOptimistic(id, patches, prevValues);
+      orderLoadingMapRef.current.set(id, Date.now());
+
       updatePendingEntry({ id, newPrice: updates.entryPrice }).then(() => {
         orderFlashMapRef.current.set(id, performance.now());
-        manager?.markDirty('overlays');
       }).catch((error) => {
+        clearOptimistic(id, patches);
         toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
+      }).finally(() => {
+        orderLoadingMapRef.current.delete(id);
+        manager?.markDirty('overlays');
       });
       return;
     }
 
     const updatePayload: { stopLoss?: number; takeProfit?: number } = {};
-
-    if (updates.stopLoss !== undefined) {
-      updatePayload.stopLoss = updates.stopLoss;
-    }
-    if (updates.takeProfit !== undefined) {
-      updatePayload.takeProfit = updates.takeProfit;
-    }
+    if (updates.stopLoss !== undefined) updatePayload.stopLoss = updates.stopLoss;
+    if (updates.takeProfit !== undefined) updatePayload.takeProfit = updates.takeProfit;
 
     if (Object.keys(updatePayload).length > 0) {
+      const exec = allExecutions.find(e => e.id === id);
+      const patches: OptimisticOverride['patches'] = {};
+      const prevValues: OptimisticOverride['previousValues'] = {};
+      let flashKey = id;
+
+      if (updatePayload.stopLoss !== undefined) {
+        patches.stopLoss = updatePayload.stopLoss.toString();
+        prevValues.stopLoss = exec?.stopLoss;
+        flashKey = `${id}-sl`;
+      }
+      if (updatePayload.takeProfit !== undefined) {
+        patches.takeProfit = updatePayload.takeProfit.toString();
+        prevValues.takeProfit = exec?.takeProfit;
+        flashKey = `${id}-tp`;
+      }
+
+      applyOptimistic(id, patches, prevValues);
+      orderLoadingMapRef.current.set(id, Date.now());
+
       updateExecutionSLTP(id, updatePayload).then(() => {
-        orderFlashMapRef.current.set(id, performance.now());
-        manager?.markDirty('overlays');
+        orderFlashMapRef.current.set(flashKey, performance.now());
       }).catch((error) => {
+        clearOptimistic(id, patches);
         toastError(t('trading.order.slTpUpdateFailed'), error instanceof Error ? error.message : undefined);
+      }).finally(() => {
+        orderLoadingMapRef.current.delete(id);
+        manager?.markDirty('overlays');
       });
     }
-  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t]);
+  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t, applyOptimistic, clearOptimistic]);
 
   const memoizedPriceToY = useCallback((price: number) => manager?.priceToY(price) ?? 0, [manager]);
   const memoizedYToPrice = useCallback((y: number) => manager?.yToPrice(y) ?? 0, [manager]);
@@ -855,6 +1060,7 @@ export const ChartCanvas = ({
     slTightenOnly: dragSlEnabled ? slTightenOnly : false,
     getOrderAtPosition: memoizedGetOrderAtPosition,
     markDirty: memoizedMarkDirty,
+    draggedOrderIdRef,
   });
 
   const slTpPlacement = useSlTpPlacementMode();
@@ -1041,21 +1247,27 @@ export const ChartCanvas = ({
       const placementType = slTpPlacement.type;
       slTpPlacement.deactivate();
 
+      const exec = allExecutions.find(e => e.id === execId);
+      const patchField = placementType === 'stopLoss' ? 'stopLoss' : 'takeProfit';
+      const priceStr = price.toString();
+      const patches = { [patchField]: priceStr } as OptimisticOverride['patches'];
+      const prevValues = { [patchField]: exec?.[patchField] } as OptimisticOverride['previousValues'];
+      applyOptimistic(execId, patches, prevValues);
+      orderLoadingMapRef.current.set(execId, Date.now());
+
       const updatePayload: { stopLoss?: number; takeProfit?: number } = {};
       if (placementType === 'stopLoss') updatePayload.stopLoss = price;
       else updatePayload.takeProfit = price;
 
-      orderLoadingMapRef.current.set(execId, Date.now());
-      manager.markDirty('overlays');
-
       updateExecutionSLTP(execId, updatePayload).then(() => {
-        orderLoadingMapRef.current.delete(execId);
-        orderFlashMapRef.current.set(execId, performance.now());
-        manager.markDirty('overlays');
+        const flashKey = `${execId}-${placementType === 'stopLoss' ? 'sl' : 'tp'}`;
+        orderFlashMapRef.current.set(flashKey, performance.now());
       }).catch((error) => {
+        clearOptimistic(execId, patches);
+        toastError(t('trading.order.slTpCreateFailed'), error instanceof Error ? error.message : undefined);
+      }).finally(() => {
         orderLoadingMapRef.current.delete(execId);
         manager.markDirty('overlays');
-        toastError(t('trading.order.slTpCreateFailed'), error instanceof Error ? error.message : undefined);
       });
 
       event.preventDefault();
@@ -1108,7 +1320,7 @@ export const ChartCanvas = ({
     }
 
     handleCanvasMouseDown(event);
-  }, [handleCanvasMouseDown, manager, getSlTpButtonAtPosition, slTpPlacement, updateExecutionSLTP, tsPlacementActive, tsPlacementDeactivate, allExecutions, backendWalletId, symbol, updateTsConfig, warning, t, toastError]);
+  }, [handleCanvasMouseDown, manager, getSlTpButtonAtPosition, slTpPlacement, updateExecutionSLTP, tsPlacementActive, tsPlacementDeactivate, allExecutions, backendWalletId, symbol, updateTsConfig, warning, t, toastError, applyOptimistic, clearOptimistic]);
 
   useEffect(() => {
     if (!slTpPlacement.active) return;

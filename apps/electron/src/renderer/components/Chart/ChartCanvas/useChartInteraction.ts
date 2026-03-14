@@ -364,7 +364,7 @@ export const useChartInteraction = ({
     const hoveredOrder = hoveredSLTP ? null : getHoveredOrder(mouseX, mouseY);
 
     const newHoveredId = hoveredOrder?.id || null;
-    if (newHoveredId !== lastHoveredOrderRef.current) {
+    if (newHoveredId !== lastHoveredOrderRef.current && !orderDragHandler.isDragging) {
       lastHoveredOrderRef.current = newHoveredId;
       hoveredOrderIdRef.current = newHoveredId;
       manager.markDirty('overlays');
@@ -497,6 +497,7 @@ export const useChartInteraction = ({
           const price = manager.yToPrice(mouseY);
           if (shiftPressed) onLongEntry?.(price);
           else onShortEntry?.(price);
+          manager.markDirty('overlays');
           event.preventDefault();
           return;
         }
