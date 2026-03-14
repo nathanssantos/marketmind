@@ -5,18 +5,17 @@ export const useBackendTradingMutations = () => {
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
-
       utils.trading.getOrders.invalidate();
       utils.trading.getPositions.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
     },
   });
 
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
     onSuccess: () => {
-
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -25,17 +24,16 @@ export const useBackendTradingMutations = () => {
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
-
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
+      utils.analytics.getDailyPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
   });
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
-
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();

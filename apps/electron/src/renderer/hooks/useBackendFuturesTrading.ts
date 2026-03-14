@@ -54,9 +54,10 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const createOrderMutation = trpc.futuresTrading.createOrder.useMutation({
     onSuccess: () => {
-
       utils.futuresTrading.getOpenOrders.invalidate();
       utils.futuresTrading.getPositions.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
@@ -64,16 +65,17 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const cancelOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
     onSuccess: () => {
-
       utils.futuresTrading.getOpenOrders.invalidate();
+      utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
     },
   });
 
   const createPositionMutation = trpc.futuresTrading.createPosition.useMutation({
     onSuccess: () => {
-
       utils.futuresTrading.getPositions.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
@@ -81,18 +83,21 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const closePositionMutation = trpc.futuresTrading.closePosition.useMutation({
     onSuccess: () => {
-
       utils.futuresTrading.getPositions.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
+      utils.analytics.getDailyPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
   });
 
   const reversePositionMutation = trpc.futuresTrading.reversePosition.useMutation({
     onSuccess: () => {
-
       utils.futuresTrading.getPositions.invalidate();
       utils.futuresTrading.getOpenOrders.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
