@@ -1,9 +1,10 @@
-import type { CoordinateMapper, Drawing } from '@marketmind/chart-studies';
+import type { CoordinateMapper, Drawing, LineDrawing, RulerDrawing, RectangleDrawing, AreaDrawing, PencilDrawing, FibonacciDrawing } from '@marketmind/chart-studies';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import type React from 'react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { renderLine } from './renderers/renderLine';
 import { renderRectangle } from './renderers/renderRectangle';
 import { renderPencil } from './renderers/renderPencil';
@@ -30,6 +31,7 @@ const OHLC_LABELS: Record<OHLCSnapIndicator['ohlcType'], string> = {
 interface UseDrawingsRendererProps {
   manager: CanvasManager | null;
   symbol: string;
+  klines: Kline[];
   colors: {
     bullish: string;
     bearish: string;
@@ -39,6 +41,45 @@ interface UseDrawingsRendererProps {
   pendingDrawingRef: React.MutableRefObject<Drawing | null>;
   lastSnapRef: React.MutableRefObject<OHLCSnapIndicator | null>;
 }
+
+const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
+  if (klines.length === 0) return drawing;
+
+  const timeToIdx = (time: number | undefined, fallbackIdx: number): number => {
+    if (time === undefined) return fallbackIdx;
+    let lo = 0;
+    let hi = klines.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      const mt = klines[mid]?.openTime ?? 0;
+      if (mt < time) lo = mid + 1;
+      else if (mt > time) hi = mid - 1;
+      else return mid;
+    }
+    return Math.max(0, Math.min(lo, klines.length - 1));
+  };
+
+  switch (drawing.type) {
+    case 'line':
+    case 'ruler':
+    case 'rectangle':
+    case 'area': {
+      const d = drawing as LineDrawing | RulerDrawing | RectangleDrawing | AreaDrawing;
+      if (!d.startTime && !d.endTime) return drawing;
+      return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex) };
+    }
+    case 'pencil': {
+      const d = drawing as PencilDrawing;
+      if (!d.points.some(p => p.time !== undefined)) return drawing;
+      return { ...d, points: d.points.map(p => ({ ...p, index: timeToIdx(p.time, p.index) })) };
+    }
+    case 'fibonacci': {
+      const d = drawing as FibonacciDrawing;
+      if (!d.swingLowTime && !d.swingHighTime) return drawing;
+      return { ...d, swingLowIndex: timeToIdx(d.swingLowTime, d.swingLowIndex), swingHighIndex: timeToIdx(d.swingHighTime, d.swingHighIndex) };
+    }
+  }
+};
 
 const createMapper = (manager: CanvasManager): CoordinateMapper => ({
   priceToY: (price: number) => manager.priceToY(price),
@@ -111,11 +152,14 @@ const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndica
 export const useDrawingsRenderer = ({
   manager,
   symbol,
+  klines,
   colors,
   themeColors,
   pendingDrawingRef,
   lastSnapRef,
 }: UseDrawingsRendererProps): { render: () => void } => {
+  const klinesRef = useRef(klines);
+  klinesRef.current = klines;
   useEffect(() => {
     if (!manager || !symbol) return;
     const unsubscribe = useDrawingStore.subscribe((state, prevState) => {
@@ -134,19 +178,21 @@ export const useDrawingsRenderer = ({
     if (!ctx || !dimensions) return;
 
     const store = useDrawingStore.getState();
-    const drawings = store.getDrawingsForSymbol(symbol);
+    const rawDrawings = store.getDrawingsForSymbol(symbol);
     const pendingDrawing = pendingDrawingRef.current;
     const snapIndicator = lastSnapRef.current;
 
-    if (drawings.length === 0 && !pendingDrawing && !snapIndicator) return;
+    if (rawDrawings.length === 0 && !pendingDrawing && !snapIndicator) return;
 
+    const currentKlines = klinesRef.current;
     const selectedId = store.selectedDrawingId;
     const mapper = createMapper(manager);
     const viewport = manager.getViewport();
 
-    const sorted = [...drawings].sort((a, b) => a.zIndex - b.zIndex);
+    const sorted = [...rawDrawings].sort((a, b) => a.zIndex - b.zIndex);
 
-    for (const drawing of sorted) {
+    for (const raw of sorted) {
+      const drawing = resolveDrawingIndices(raw, currentKlines);
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
       renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
     }

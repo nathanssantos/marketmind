@@ -1086,6 +1086,7 @@ export const ChartCanvas = ({
   const { render: renderDrawings } = useDrawingsRenderer({
     manager,
     symbol: symbol ?? '',
+    klines,
     colors: { bullish: colors.bullish, bearish: colors.bearish, crosshair: colors.crosshair },
     themeColors: colors,
     pendingDrawingRef: drawingInteraction.pendingDrawingRef,

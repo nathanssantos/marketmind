@@ -78,11 +78,14 @@ export const useDrawingInteraction = ({
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
   const { snap } = useOHLCMagnet({ manager, klines, enabled: magnetEnabled });
 
-  const getIndexAndPrice = useCallback((x: number, y: number): { index: number; price: number } => {
+  const getIndexAndPrice = useCallback((x: number, y: number): { index: number; price: number; time?: number } => {
     if (!manager) return { index: 0, price: 0 };
     const result = snap(x, y);
-    return { index: result.snappedIndex, price: result.snappedPrice };
-  }, [manager, snap]);
+    const idx = result.snappedIndex;
+    const clamped = Math.max(0, Math.min(idx, klines.length - 1));
+    const time = klines[Math.round(clamped)]?.openTime;
+    return { index: idx, price: result.snappedPrice, time };
+  }, [manager, snap, klines]);
 
   const handleMouseDown = useCallback((x: number, y: number): boolean => {
     if (!manager) return false;
@@ -120,13 +123,13 @@ export const useDrawingInteraction = ({
       return false;
     }
 
-    const { index, price } = getIndexAndPrice(x, y);
+    const { index, price, time } = getIndexAndPrice(x, y);
 
     if (activeTool === 'pencil') {
       const drawing: Drawing = {
         id: generateId(), type: 'pencil', symbol, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
-        points: [{ index, price }],
+        points: [{ index, price, time }],
       };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'drawing-freeform';
@@ -138,6 +141,7 @@ export const useDrawingInteraction = ({
         id: generateId(), type: activeTool, symbol, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
+        startTime: time, endTime: time,
       } as Drawing;
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
@@ -154,6 +158,7 @@ export const useDrawingInteraction = ({
           createdAt: Date.now(), updatedAt: Date.now(),
           swingLowIndex: index, swingLowPrice: price,
           swingHighIndex: index, swingHighPrice: price,
+          swingLowTime: time, swingHighTime: time,
           direction: 'up', levels: [],
         };
         pendingDrawingRef.current = drawing;
@@ -165,6 +170,7 @@ export const useDrawingInteraction = ({
         id: generateId(), type: drawingType as 'line' | 'ruler', symbol, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
+        startTime: time, endTime: time,
       } as Drawing;
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
@@ -181,7 +187,7 @@ export const useDrawingInteraction = ({
     const pending = pendingDrawingRef.current;
 
     if (phase === 'placing-second' && pending) {
-      const { index, price } = getIndexAndPrice(x, y);
+      const { index, price, time } = getIndexAndPrice(x, y);
       if (pending.type === 'fibonacci') {
         const lowPrice = Math.min(pending.swingLowPrice, price);
         const highPrice = Math.max(pending.swingLowPrice, price);
@@ -190,21 +196,22 @@ export const useDrawingInteraction = ({
           ...pending,
           swingHighIndex: index,
           swingHighPrice: price,
+          swingHighTime: time,
           direction: dir,
           levels: computeFibLevels(lowPrice, highPrice, dir),
         };
       } else if (pending.type === 'line' || pending.type === 'ruler' || pending.type === 'rectangle' || pending.type === 'area') {
-        pendingDrawingRef.current = { ...pending, endIndex: index, endPrice: price } as Drawing;
+        pendingDrawingRef.current = { ...pending, endIndex: index, endPrice: price, endTime: time } as Drawing;
       }
       manager.markDirty('overlays');
       return true;
     }
 
     if (phase === 'drawing-freeform' && pending && pending.type === 'pencil') {
-      const { index, price } = getIndexAndPrice(x, y);
+      const { index, price, time } = getIndexAndPrice(x, y);
       pendingDrawingRef.current = {
         ...pending,
-        points: [...pending.points, { index, price }],
+        points: [...pending.points, { index, price, time }],
       };
       manager.markDirty('overlays');
       return true;
@@ -213,45 +220,55 @@ export const useDrawingInteraction = ({
     if (phase === 'dragging' && dragStartRef.current) {
       const store = useDrawingStore.getState();
       const { handleType, originalDrawing } = dragStartRef.current;
-      const { index: newIndex, price: newPrice } = getIndexAndPrice(x, y);
+      const { index: newIndex, price: newPrice, time: newTime } = getIndexAndPrice(x, y);
       const { index: startDragIndex, price: startDragPrice } = getIndexAndPrice(dragStartRef.current.x, dragStartRef.current.y);
 
       const deltaIndex = newIndex - startDragIndex;
       const deltaPrice = newPrice - startDragPrice;
 
+      const timeAt = (idx: number) => {
+        const c = Math.round(Math.max(0, Math.min(idx, klines.length - 1)));
+        return klines[c]?.openTime;
+      };
+
       if (handleType === 'body' || handleType === null) {
         if (originalDrawing.type === 'line' || originalDrawing.type === 'ruler' || originalDrawing.type === 'rectangle' || originalDrawing.type === 'area') {
+          const si = originalDrawing.startIndex + deltaIndex;
+          const ei = originalDrawing.endIndex + deltaIndex;
           store.updateDrawing(originalDrawing.id, {
-            startIndex: originalDrawing.startIndex + deltaIndex,
-            startPrice: originalDrawing.startPrice + deltaPrice,
-            endIndex: originalDrawing.endIndex + deltaIndex,
-            endPrice: originalDrawing.endPrice + deltaPrice,
+            startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
+            endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
+            startTime: timeAt(si), endTime: timeAt(ei),
           } as Partial<Drawing>);
         } else if (originalDrawing.type === 'fibonacci') {
           const lowPrice = originalDrawing.swingLowPrice + deltaPrice;
           const highPrice = originalDrawing.swingHighPrice + deltaPrice;
+          const sli = originalDrawing.swingLowIndex + deltaIndex;
+          const shi = originalDrawing.swingHighIndex + deltaIndex;
           store.updateDrawing(originalDrawing.id, {
-            swingLowIndex: originalDrawing.swingLowIndex + deltaIndex,
-            swingLowPrice: lowPrice,
-            swingHighIndex: originalDrawing.swingHighIndex + deltaIndex,
-            swingHighPrice: highPrice,
+            swingLowIndex: sli, swingLowPrice: lowPrice,
+            swingHighIndex: shi, swingHighPrice: highPrice,
+            swingLowTime: timeAt(sli), swingHighTime: timeAt(shi),
             levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), originalDrawing.direction),
           } as Partial<Drawing>);
         } else if (originalDrawing.type === 'pencil') {
           store.updateDrawing(originalDrawing.id, {
-            points: originalDrawing.points.map(p => ({ index: p.index + deltaIndex, price: p.price + deltaPrice })),
+            points: originalDrawing.points.map(p => {
+              const ni = p.index + deltaIndex;
+              return { index: ni, price: p.price + deltaPrice, time: timeAt(ni) };
+            }),
           } as Partial<Drawing>);
         }
       } else if (handleType === 'start' && (originalDrawing.type === 'line' || originalDrawing.type === 'ruler' || originalDrawing.type === 'rectangle' || originalDrawing.type === 'area')) {
-        store.updateDrawing(originalDrawing.id, { startIndex: newIndex, startPrice: newPrice } as Partial<Drawing>);
+        store.updateDrawing(originalDrawing.id, { startIndex: newIndex, startPrice: newPrice, startTime: newTime } as Partial<Drawing>);
       } else if (handleType === 'end' && (originalDrawing.type === 'line' || originalDrawing.type === 'ruler' || originalDrawing.type === 'rectangle' || originalDrawing.type === 'area')) {
-        store.updateDrawing(originalDrawing.id, { endIndex: newIndex, endPrice: newPrice } as Partial<Drawing>);
+        store.updateDrawing(originalDrawing.id, { endIndex: newIndex, endPrice: newPrice, endTime: newTime } as Partial<Drawing>);
       } else if (handleType === 'swingLow' && originalDrawing.type === 'fibonacci') {
         const lowPrice = newPrice;
         const highPrice = originalDrawing.swingHighPrice;
         const dir = highPrice >= lowPrice ? 'up' : 'down';
         store.updateDrawing(originalDrawing.id, {
-          swingLowIndex: newIndex, swingLowPrice: newPrice, direction: dir,
+          swingLowIndex: newIndex, swingLowPrice: newPrice, swingLowTime: newTime, direction: dir,
           levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), dir),
         } as Partial<Drawing>);
       } else if (handleType === 'swingHigh' && originalDrawing.type === 'fibonacci') {
@@ -259,7 +276,7 @@ export const useDrawingInteraction = ({
         const highPrice = newPrice;
         const dir = newPrice >= originalDrawing.swingLowPrice ? 'up' : 'down';
         store.updateDrawing(originalDrawing.id, {
-          swingHighIndex: newIndex, swingHighPrice: newPrice, direction: dir,
+          swingHighIndex: newIndex, swingHighPrice: newPrice, swingHighTime: newTime, direction: dir,
           levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), dir),
         } as Partial<Drawing>);
       }

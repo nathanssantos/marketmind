@@ -17,6 +17,8 @@ export interface LineDrawing extends DrawingBase {
   startPrice: number;
   endIndex: number;
   endPrice: number;
+  startTime?: number;
+  endTime?: number;
 }
 
 export interface RulerDrawing extends DrawingBase {
@@ -25,6 +27,8 @@ export interface RulerDrawing extends DrawingBase {
   startPrice: number;
   endIndex: number;
   endPrice: number;
+  startTime?: number;
+  endTime?: number;
 }
 
 export interface RectangleDrawing extends DrawingBase {
@@ -33,6 +37,8 @@ export interface RectangleDrawing extends DrawingBase {
   startPrice: number;
   endIndex: number;
   endPrice: number;
+  startTime?: number;
+  endTime?: number;
 }
 
 export interface AreaDrawing extends DrawingBase {
@@ -41,11 +47,13 @@ export interface AreaDrawing extends DrawingBase {
   startPrice: number;
   endIndex: number;
   endPrice: number;
+  startTime?: number;
+  endTime?: number;
 }
 
 export interface PencilDrawing extends DrawingBase {
   type: 'pencil';
-  points: Array<{ index: number; price: number }>;
+  points: Array<{ index: number; price: number; time?: number }>;
 }
 
 export interface FibonacciLevel {
@@ -60,6 +68,8 @@ export interface FibonacciDrawing extends DrawingBase {
   swingLowPrice: number;
   swingHighIndex: number;
   swingHighPrice: number;
+  swingLowTime?: number;
+  swingHighTime?: number;
   direction: 'up' | 'down';
   levels: FibonacciLevel[];
 }
