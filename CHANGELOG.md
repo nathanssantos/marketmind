@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.66.0] - 2026-03-14
+
+### Added
+- **Close Position button**: closes position at market and cancels all orders (SL, TP, entries) for the symbol
+- **Cancel Orders button**: cancels all pending entry orders (regular orders only, preserves SL/TP)
+- **Enter key support**: ConfirmationDialog now supports pressing Enter to confirm for speed
+
+### Changed
+- **Reverse position flow**: sequential cancel → close → open instead of single 2x order, freeing margin between steps
+- **QuickTradeToolbar layout**: moved GridOrderPopover and TrailingStopPopover to slider row; button row is now [Reverse] [Close] [Cancel] [Buy] [Sell]
+- **Reverse button color**: changed from orange to blue
+- **Toolbar spacing**: increased gaps and padding for better visual harmony
+
 ## [0.65.0] - 2026-03-14
 
 ### Performance
