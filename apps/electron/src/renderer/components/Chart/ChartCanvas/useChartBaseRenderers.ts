@@ -19,7 +19,7 @@ export interface UseChartBaseRenderersProps {
   manager: CanvasManager | null;
   klines: Kline[];
   colors: ChartThemeColors;
-  chartType: 'kline' | 'line';
+  chartType: string;
   advancedConfig?: AdvancedControlsConfig;
   movingAverages: MovingAverageConfig[];
   showGrid: boolean;

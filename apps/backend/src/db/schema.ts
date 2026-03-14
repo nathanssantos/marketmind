@@ -807,3 +807,63 @@ export const realizedPnlEvents = pgTable('realized_pnl_events', {
 
 export type RealizedPnlEvent = typeof realizedPnlEvents.$inferSelect;
 export type NewRealizedPnlEvent = typeof realizedPnlEvents.$inferInsert;
+
+export const aggTrades = pgTable('agg_trades', {
+  symbol: varchar({ length: 20 }).notNull(),
+  tradeId: bigint('trade_id', { mode: 'number' }).notNull(),
+  price: numeric({ precision: 20, scale: 8 }).notNull(),
+  quantity: numeric({ precision: 20, scale: 8 }).notNull(),
+  quoteQuantity: numeric('quote_quantity', { precision: 20, scale: 8 }).notNull(),
+  isBuyerMaker: boolean('is_buyer_maker').notNull(),
+  marketType: varchar('market_type', { length: 10 }).notNull().default('FUTURES').$type<'FUTURES' | 'SPOT'>(),
+  timestamp: timestamp({ mode: 'date' }).notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.symbol, table.tradeId, table.marketType, table.timestamp] }),
+  lookupIdx: index('agg_trades_lookup_idx').on(table.symbol, table.marketType, table.timestamp),
+}));
+
+export type AggTradeRecord = typeof aggTrades.$inferSelect;
+export type NewAggTradeRecord = typeof aggTrades.$inferInsert;
+
+export const scalpingConfig = pgTable('scalping_config', {
+  id: varchar({ length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  isEnabled: boolean('is_enabled').default(false).notNull(),
+  symbols: text().default('[]').notNull(),
+  enabledStrategies: text('enabled_strategies').default('["imbalance"]').notNull(),
+  executionMode: varchar('execution_mode', { length: 20 })
+    .default('POST_ONLY')
+    .$type<'POST_ONLY' | 'IOC' | 'MARKET'>(),
+  positionSizePercent: numeric('position_size_percent', { precision: 5, scale: 2 }).default('1.00'),
+  maxConcurrentPositions: integer('max_concurrent_positions').default(1),
+  maxDailyTrades: integer('max_daily_trades').default(50),
+  maxDailyLossPercent: numeric('max_daily_loss_percent', { precision: 5, scale: 2 }).default('2.00'),
+  leverage: integer().default(5),
+  marginType: varchar('margin_type', { length: 10 }).default('CROSSED').$type<'CROSSED' | 'ISOLATED'>(),
+  imbalanceThreshold: numeric('imbalance_threshold', { precision: 5, scale: 3 }).default('0.600'),
+  cvdDivergenceBars: integer('cvd_divergence_bars').default(10),
+  vwapDeviationSigma: numeric('vwap_deviation_sigma', { precision: 4, scale: 2 }).default('2.00'),
+  largeTradeMult: numeric('large_trade_mult', { precision: 4, scale: 1 }).default('5.0'),
+  absorptionThreshold: numeric('absorption_threshold', { precision: 4, scale: 1 }).default('3.0'),
+  maxSpreadPercent: numeric('max_spread_percent', { precision: 5, scale: 4 }).default('0.0500'),
+  microTrailingTicks: integer('micro_trailing_ticks').default(3),
+  ticksPerBar: integer('ticks_per_bar').default(233),
+  volumePerBar: numeric('volume_per_bar', { precision: 20, scale: 8 }).default('1000'),
+  depthLevels: integer('depth_levels').default(20),
+  circuitBreakerEnabled: boolean('circuit_breaker_enabled').default(true).notNull(),
+  circuitBreakerLossPercent: numeric('circuit_breaker_loss_percent', { precision: 5, scale: 2 }).default('2.00'),
+  circuitBreakerMaxTrades: integer('circuit_breaker_max_trades').default(50),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index('scalping_config_user_idx').on(table.userId),
+  walletIdx: uniqueIndex('scalping_config_wallet_idx').on(table.walletId),
+}));
+
+export type ScalpingConfig = typeof scalpingConfig.$inferSelect;
+export type NewScalpingConfig = typeof scalpingConfig.$inferInsert;

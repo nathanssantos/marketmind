@@ -1,4 +1,3 @@
-export { OrderTicket } from './OrderTicket';
 export { OrdersList } from './OrdersList';
 export { OrdersDialog } from './OrdersDialog';
 export { Portfolio } from './Portfolio';

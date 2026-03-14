@@ -7,16 +7,16 @@ import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
-import { trpc } from '@renderer/utils/trpc';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuBan, LuGripVertical, LuX } from 'react-icons/lu';
 import { GridOrderPopover } from './GridOrderPopover';
+import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
-const SIZE_PRESETS = [0.3, 0.5, 1, 2.5, 5, 10] as const;
+const SIZE_PRESETS = [0.1, 0.25, 0.5, 1, 2.5, 5, 10] as const;
 const SNAP_THRESHOLD = 16;
 const EDGE_PADDING = 8;
 
@@ -30,7 +30,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
   const { createOrder, isCreatingOrder } = useBackendTradingMutations();
-  const { sizePercent, useMinNotional, setSizePercent, setMinNotional } = useQuickTradeStore();
+  const { sizePercent, setSizePercent } = useQuickTradeStore();
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -194,46 +194,14 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     }
   }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
-  const { data: symbolFilters } = trpc.trading.getSymbolFilters.useQuery(
-    { symbol, marketType },
-    { enabled: !!symbol, staleTime: 60 * 60 * 1000 }
-  );
-  const minNotional = symbolFilters?.minNotional ?? (marketType === 'FUTURES' ? 5 : 10);
-  const stepSize = symbolFilters?.stepSize ?? 0;
   const balance = parseFloat(activeWallet?.currentBalance ?? '0');
   const currentPrice = usePriceStore((s) => s.prices[symbol]?.price ?? 0);
 
-  const minNotionalPercent = useMemo(() => {
-    if (balance <= 0 || currentPrice <= 0) return 0.1;
-    const rawQty = minNotional / currentPrice;
-    let qtyStep: number;
-    if (rawQty >= 100) qtyStep = 1;
-    else if (rawQty >= 1) qtyStep = 0.01;
-    else if (rawQty >= 0.001) qtyStep = 0.0001;
-    else qtyStep = 0.000001;
-    const minQty = Math.ceil(rawQty / qtyStep) * qtyStep;
-    const requiredBalance = minQty * currentPrice;
-    return Math.max(0.1, Math.ceil((requiredBalance / balance) * 1000) / 10);
-  }, [balance, currentPrice, minNotional]);
-
-  const roundQtyUp = useMemo(() => {
-    if (stepSize <= 0) return roundTradingQty;
-    return (qty: number): string => {
-      const rounded = Math.ceil(qty / stepSize) * stepSize;
-      const decimals = stepSize.toString().split('.')[1]?.length ?? 0;
-      return rounded.toFixed(decimals);
-    };
-  }, [stepSize]);
-
   const getQuantity = useCallback((price: number): string => {
-    if (useMinNotional) {
-      const qty = price > 0 ? (minNotional * 1.01) / price : 0;
-      return roundQtyUp(qty);
-    }
     const pct = sizePercent / 100;
     const qty = balance > 0 && price > 0 ? (balance * pct) / price : 0;
     return roundTradingQty(qty);
-  }, [balance, sizePercent, useMinNotional, minNotional, roundQtyUp]);
+  }, [balance, sizePercent]);
 
   const handleQuickOrder = useCallback(async (side: 'BUY' | 'SELL') => {
     if (!activeWallet?.id) {
@@ -265,7 +233,6 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     const v = value[0];
     if (v !== undefined && v !== sizePercent) setSizePercent(v);
   }, [setSizePercent, sizePercent]);
-  const handleMinClick = useCallback(() => setMinNotional(minNotionalPercent), [setMinNotional, minNotionalPercent]);
 
   return (
     <Box ref={containerRef} position="absolute" inset={0} zIndex={10} pointerEvents="none">
@@ -297,23 +264,21 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
             >
               <LuGripVertical size={12} />
             </Box>
-            <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={useMinNotional ? 'blue.500' : 'fg.muted'} onClick={handleMinClick}>
-              {t('chart.quickTrade.min')}
-            </Button>
             {SIZE_PRESETS.map((pct) => (
-              <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={!useMinNotional && sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
+              <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
                 {pct}%
               </Button>
             ))}
           </HStack>
 
           <HStack gap={1.5} px={0.5}>
-            <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.3} max={25} step={0.1} />
+            <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.1} max={25} step={0.1} />
             <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
               {`${Math.round(sizePercent * 10) / 10}%`}
             </Text>
             <GridOrderPopover />
             <TrailingStopPopover symbol={symbol} />
+            {marketType === 'FUTURES' && <LeveragePopover />}
           </HStack>
 
           <HStack gap={1.5}>

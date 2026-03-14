@@ -18,10 +18,10 @@ describe('uiStore', () => {
       expect(state.tradingSidebarTab).toBe('portfolio');
     });
 
-    it('should update to ticket tab', () => {
+    it('should update to orders tab', () => {
       const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('ticket');
-      expect(useUIStore.getState().tradingSidebarTab).toBe('ticket');
+      setTradingSidebarTab('orders');
+      expect(useUIStore.getState().tradingSidebarTab).toBe('orders');
     });
 
     it('should update to portfolio tab', () => {
@@ -30,10 +30,10 @@ describe('uiStore', () => {
       expect(useUIStore.getState().tradingSidebarTab).toBe('portfolio');
     });
 
-    it('should update to analytics tab', () => {
+    it('should update to scalping tab', () => {
       const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('analytics');
-      expect(useUIStore.getState().tradingSidebarTab).toBe('analytics');
+      setTradingSidebarTab('scalping');
+      expect(useUIStore.getState().tradingSidebarTab).toBe('scalping');
     });
   });
 

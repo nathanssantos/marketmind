@@ -1,0 +1,31 @@
+import { SCALPING_DEFAULTS } from '@marketmind/types';
+
+export { SCALPING_DEFAULTS };
+
+export const SCALPING_STREAM = {
+  RECONNECT_DELAY_MS: 5_000,
+  MAX_RECONNECT_ATTEMPTS: 10,
+  SUBSCRIPTION_CHECK_INTERVAL_MS: 30_000,
+  PRICE_THROTTLE_MS: 50,
+} as const;
+
+export const SCALPING_ENGINE = {
+  SIGNAL_COOLDOWN_MS: 5_000,
+  CVD_HISTORY_BARS: 300,
+  METRICS_HISTORY_SIZE: 1_500,
+  VOLUME_PROFILE_TICK_SIZE: 0.01,
+  VOLUME_PROFILE_MAX_LEVELS: 500,
+  EXHAUSTION_LOOKBACK: 20,
+  EXHAUSTION_THRESHOLD: 0.3,
+} as const;
+
+export const SCALPING_EXECUTION = {
+  ORDER_TIMEOUT_MS: 5_000,
+  CANCEL_RETRY_ATTEMPTS: 3,
+  CANCEL_RETRY_DELAY_MS: 200,
+  POSITION_VERIFY_DELAY_MS: 500,
+} as const;
+
+export type ScalpingStreamConstants = typeof SCALPING_STREAM;
+export type ScalpingEngineConstants = typeof SCALPING_ENGINE;
+export type ScalpingExecutionConstants = typeof SCALPING_EXECUTION;

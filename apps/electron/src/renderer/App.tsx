@@ -1,6 +1,6 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
 import { CryptoIcon, ErrorMessage, IconButton, LoadingSpinner } from './components/ui';
-import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
+import type { Kline, MarketType, TimeInterval, ChartType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
@@ -146,9 +146,10 @@ function AppContent(): ReactElement {
   useCurrencyAutoRefresh();
   useOrderNotifications();
 
-  const [chartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [chartType, setChartType] = useChartPref<ChartType>('chartType', 'kline');
   const [timeframe, setTimeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);
   const [isTradingOpen, setIsTradingOpen] = useUIPref('tradingSidebarOpen', true);
+  const [isAutoTradingOpen, setIsAutoTradingOpen] = useUIPref('autoTradingSidebarOpen', false);
   const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
     'movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -189,6 +190,10 @@ function AppContent(): ReactElement {
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);
   }, [setIsTradingOpen]);
+
+  const toggleAutoTrading = useCallback(() => {
+    setIsAutoTradingOpen((prev) => !prev);
+  }, [setIsAutoTradingOpen]);
 
   const {
     allKlines: paginatedKlines,
@@ -411,11 +416,15 @@ function AppContent(): ReactElement {
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
         isTradingOpen={isTradingOpen}
+        isAutoTradingOpen={isAutoTradingOpen}
         onToggleTrading={toggleTrading}
+        onToggleAutoTrading={toggleAutoTrading}
         symbol={symbol}
         marketType={marketType}
         onMarketTypeChange={setMarketType}
         timeframe={timeframe}
+        chartType={chartType}
+        onChartTypeChange={setChartType}
         movingAverages={movingAverages}
         onSymbolChange={handleSymbolChange}
         onTimeframeChange={setTimeframe}

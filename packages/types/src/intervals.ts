@@ -136,6 +136,8 @@ export const BATCH_BACKTEST_TIMEFRAMES: TimeInterval[] = [
   '1w',
 ];
 
+export const SCALPING_INTERVALS: TimeInterval[] = ['1s', '1m', '5m'];
+
 export type TimeMsConstants = typeof TIME_MS;
 export type IntervalMsConstants = typeof INTERVAL_MS;
 export type IntervalMinutesConstants = typeof INTERVAL_MINUTES;

@@ -1,6 +1,6 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { MarketEvent } from '@marketmind/types';
+import type { FootprintBar, MarketEvent, VolumeProfile } from '@marketmind/types';
 import type { StochasticResult } from '@marketmind/indicators';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
 import { useStochasticRenderer } from '../useStochasticRenderer';
@@ -40,6 +40,10 @@ import { useFibonacciRenderer } from '../useFibonacciRenderer';
 import { useFVGRenderer } from '../useFVGRenderer';
 import { useLiquidityLevelsRenderer } from '../useLiquidityLevelsRenderer';
 import { useEventScaleRenderer } from '../useEventScaleRenderer';
+import { useCVDRenderer } from '../useCVDRenderer';
+import { useImbalanceRenderer } from '../useImbalanceRenderer';
+import { useVolumeProfileRenderer } from '../useVolumeProfileRenderer';
+import { useFootprintRenderer } from '../useFootprintRenderer';
 export interface UseChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
@@ -47,6 +51,10 @@ export interface UseChartIndicatorRenderersProps {
   stochasticData: StochasticResult | null;
   showEventRow: boolean;
   marketEvents: MarketEvent[];
+  cvdValues?: (number | null)[];
+  imbalanceValues?: (number | null)[];
+  volumeProfile?: VolumeProfile | null;
+  footprintBars?: FootprintBar[];
 }
 
 export interface UseChartIndicatorRenderersResult {
@@ -87,6 +95,10 @@ export interface UseChartIndicatorRenderersResult {
   renderFVG: () => void;
   renderLiquidityLevels: () => void;
   renderEventScale: () => void;
+  renderCVD: () => void;
+  renderImbalance: () => void;
+  renderVolumeProfile: () => void;
+  renderFootprint: () => void;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   renderAllOverlayIndicators: () => void;
   renderAllPanelIndicators: () => void;
@@ -99,6 +111,10 @@ export const useChartIndicatorRenderers = ({
   stochasticData,
   showEventRow,
   marketEvents,
+  cvdValues = [],
+  imbalanceValues = [],
+  volumeProfile = null,
+  footprintBars = [],
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
   const { isIndicatorActive } = indicatorData;
 
@@ -357,6 +373,34 @@ export const useChartIndicatorRenderers = ({
     enabled: showEventRow,
   });
 
+  const { render: renderCVD } = useCVDRenderer({
+    manager,
+    cvdValues,
+    colors,
+    enabled: isIndicatorActive('cvd'),
+  });
+
+  const { render: renderImbalance } = useImbalanceRenderer({
+    manager,
+    imbalanceValues,
+    colors,
+    enabled: isIndicatorActive('bookImbalance'),
+  });
+
+  const { render: renderVolumeProfile } = useVolumeProfileRenderer({
+    manager,
+    volumeProfile,
+    colors,
+    enabled: isIndicatorActive('volumeProfile'),
+  });
+
+  const { render: renderFootprint } = useFootprintRenderer({
+    manager,
+    footprintBars,
+    colors,
+    enabled: isIndicatorActive('footprint'),
+  });
+
   const renderAllOverlayIndicators = (): void => {
     renderBollingerBands();
     renderATR();
@@ -375,6 +419,8 @@ export const useChartIndicatorRenderers = ({
     renderFVG();
     renderLiquidityLevels();
     renderEventScale();
+    renderVolumeProfile();
+    renderFootprint();
   };
 
   const renderAllPanelIndicators = (): void => {
@@ -398,6 +444,8 @@ export const useChartIndicatorRenderers = ({
     renderPPO();
     renderCMO();
     renderUltimateOsc();
+    renderCVD();
+    renderImbalance();
   };
 
   return {
@@ -438,6 +486,10 @@ export const useChartIndicatorRenderers = ({
     renderFVG,
     renderLiquidityLevels,
     renderEventScale,
+    renderCVD,
+    renderImbalance,
+    renderVolumeProfile,
+    renderFootprint,
     getEventAtPosition,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,

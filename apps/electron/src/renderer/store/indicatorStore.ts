@@ -40,7 +40,11 @@ export type IndicatorId =
   | 'tema'
   | 'wma'
   | 'hma'
-  | 'activityIndicator';
+  | 'activityIndicator'
+  | 'cvd'
+  | 'bookImbalance'
+  | 'volumeProfile'
+  | 'footprint';
 
 export type IndicatorCategory =
   | 'oscillators'
@@ -50,7 +54,8 @@ export type IndicatorCategory =
   | 'volume'
   | 'movingAverages'
   | 'priceStructure'
-  | 'crypto';
+  | 'crypto'
+  | 'orderFlow';
 
 export interface IndicatorParams {
   macd?: { fast: number; slow: number; signal: number };
@@ -119,6 +124,7 @@ export const INDICATOR_CATEGORIES: Record<IndicatorCategory, IndicatorId[]> = {
   movingAverages: ['dema', 'tema', 'wma', 'hma'],
   priceStructure: ['ichimoku', 'pivotPoints', 'fibonacci', 'fvg', 'liquidityLevels'],
   crypto: [],
+  orderFlow: ['cvd', 'bookImbalance', 'volumeProfile', 'footprint'],
 };
 
 export const PANEL_INDICATORS: IndicatorId[] = [
@@ -142,6 +148,8 @@ export const PANEL_INDICATORS: IndicatorId[] = [
   'cmf',
   'klinger',
   'elderRay',
+  'cvd',
+  'bookImbalance',
 ];
 
 export const OVERLAY_INDICATORS: IndicatorId[] = [
@@ -163,6 +171,8 @@ export const OVERLAY_INDICATORS: IndicatorId[] = [
   'wma',
   'hma',
   'activityIndicator',
+  'volumeProfile',
+  'footprint',
 ];
 
 const syncToPreferences = (activeIndicators: IndicatorId[], indicatorParams: IndicatorParams) => {

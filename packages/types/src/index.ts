@@ -20,5 +20,6 @@ export * from './trading';
 export * from './trading-config';
 export * from './tradingProfile';
 export * from './tradingSetup';
+export * from './scalping';
 export * from './screener';
 

@@ -1883,5 +1883,14 @@
       "open": "Ouvert",
       "closed": "Fermé"
     }
+  },
+  "scalping": {
+    "config": { "title": "Configuration Scalping", "strategies": "Stratégies", "execution": "Exécution", "risk": "Gestion des Risques", "symbols": "Symboles", "chart": "Graphique", "noSymbols": "Aucun symbole configuré" },
+    "strategy": { "imbalance": "Déséquilibre", "cvd-divergence": "Divergence CVD", "mean-reversion": "Retour à la Moyenne", "momentum-burst": "Burst de Momentum", "absorption-reversal": "Renversement par Absorption" },
+    "dashboard": { "title": "Scalping" },
+    "status": { "running": "En cours", "stopped": "Arrêté" },
+    "metric": { "sessionPnl": "P&L Session", "trades": "Trades", "winRate": "Taux de Réussite", "orderFlow": "Flux d'Ordres", "imbalance": "Déséquilibre", "spread": "Spread", "absorption": "Absorption" },
+    "signals": { "title": "Signaux" },
+    "circuitBreaker": { "tripped": "CB Déclenché", "reset": "Réinitialiser" }
   }
 }

@@ -65,6 +65,11 @@ import {
   useChartInteraction,
   type IndicatorId,
 } from './ChartCanvas/index';
+import { useAggTrades } from '@renderer/hooks/useAggTrades';
+import { useTickChart } from '@renderer/hooks/useTickChart';
+import { useVolumeChart } from '@renderer/hooks/useVolumeChart';
+import { useScalpingMetrics } from '@renderer/hooks/useScalpingMetrics';
+import type { FootprintBar, FootprintLevel, VolumeProfile } from '@marketmind/types';
 
 interface OptimisticOverride {
   patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice' | 'status'>>;
@@ -83,7 +88,7 @@ export interface ChartCanvasProps {
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
   movingAverages?: MovingAverageConfig[];
-  chartType?: 'kline' | 'line';
+  chartType?: 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
   advancedConfig?: AdvancedControlsConfig;
   timeframe?: string;
   onNearLeftEdge?: () => void;
@@ -409,24 +414,18 @@ export const ChartCanvas = ({
   }, [filteredBackendExecutions, orphanOrderExecutions, optimisticExecutions]);
 
   const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
-  const quickTradeUseMinNotional = useQuickTradeStore((s) => s.useMinNotional);
 
   const { data: symbolFiltersData } = trpc.trading.getSymbolFilters.useQuery(
     { symbol: symbol!, marketType: marketType ?? 'FUTURES' },
     { enabled: !!symbol, staleTime: 60 * 60 * 1000 }
   );
-  const minNotional = symbolFiltersData?.minNotional ?? 5;
 
   const getOrderQuantity = useCallback((price: number): string => {
     const balance = parseFloat(activeWallet?.currentBalance ?? '0');
-    if (quickTradeUseMinNotional) {
-      const qty = price > 0 ? minNotional / price : 0;
-      return roundTradingQty(qty);
-    }
     const pct = quickTradeSizePercent / 100;
     const qty = balance > 0 && price > 0 ? (balance * pct) / price : 1;
     return roundTradingQty(qty);
-  }, [activeWallet?.currentBalance, quickTradeSizePercent, quickTradeUseMinNotional, minNotional]);
+  }, [activeWallet?.currentBalance, quickTradeSizePercent]);
 
   const realtimePrice = usePriceStore((s) => symbol ? s.getPrice(symbol) : null);
   const klinePrice = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
@@ -523,6 +522,85 @@ export const ChartCanvas = ({
     }
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
 
+  const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
+  const needsAggTrades = isTickOrVolumeChart || chartType === 'footprint';
+  const { trades: aggTrades } = useAggTrades(needsAggTrades ? (symbol ?? null) : null, needsAggTrades);
+  const tickKlines = useTickChart(chartType === 'tick' ? aggTrades : [], 100);
+  const volumeKlines = useVolumeChart(chartType === 'volume' ? aggTrades : [], 50);
+
+  const effectiveKlines = useMemo(() => {
+    if (chartType === 'tick') return tickKlines;
+    if (chartType === 'volume') return volumeKlines;
+    return klines;
+  }, [chartType, klines, tickKlines, volumeKlines]);
+
+  const needsScalpingMetrics = useIndicatorStore((s) =>
+    s.activeIndicators.includes('cvd') || s.activeIndicators.includes('bookImbalance') || s.activeIndicators.includes('volumeProfile')
+  );
+  const scalpingMetrics = useScalpingMetrics(needsScalpingMetrics ? (symbol ?? null) : null, needsScalpingMetrics);
+
+  const cvdValues = useMemo((): (number | null)[] => {
+    if (!needsScalpingMetrics || effectiveKlines.length === 0) return [];
+    const values: (number | null)[] = new Array(effectiveKlines.length).fill(null);
+    values[values.length - 1] = scalpingMetrics.cvd;
+    return values;
+  }, [needsScalpingMetrics, effectiveKlines.length, scalpingMetrics.cvd]);
+
+  const imbalanceValues = useMemo((): (number | null)[] => {
+    if (!needsScalpingMetrics || effectiveKlines.length === 0) return [];
+    const values: (number | null)[] = new Array(effectiveKlines.length).fill(null);
+    values[values.length - 1] = scalpingMetrics.imbalanceRatio;
+    return values;
+  }, [needsScalpingMetrics, effectiveKlines.length, scalpingMetrics.imbalanceRatio]);
+
+  const volumeProfileData = useMemo((): VolumeProfile | null => {
+    if (!needsScalpingMetrics || !scalpingMetrics.microprice) return null;
+    return null;
+  }, [needsScalpingMetrics, scalpingMetrics.microprice]);
+
+  const footprintBars = useMemo((): FootprintBar[] => {
+    if (chartType !== 'footprint' || aggTrades.length === 0 || effectiveKlines.length === 0) return [];
+    const bars: FootprintBar[] = [];
+
+    for (const kline of effectiveKlines) {
+      const klineStart = kline.openTime;
+      const klineEnd = kline.closeTime;
+      const levels = new Map<number, FootprintLevel>();
+
+      for (const trade of aggTrades) {
+        if (trade.timestamp < klineStart || trade.timestamp > klineEnd) continue;
+        const priceKey = Math.round(trade.price * 100) / 100;
+        const existing = levels.get(priceKey);
+        if (existing) {
+          if (trade.isBuyerMaker) {
+            existing.bidVol += trade.quantity;
+          } else {
+            existing.askVol += trade.quantity;
+          }
+          existing.delta = existing.askVol - existing.bidVol;
+        } else {
+          levels.set(priceKey, {
+            bidVol: trade.isBuyerMaker ? trade.quantity : 0,
+            askVol: trade.isBuyerMaker ? 0 : trade.quantity,
+            delta: trade.isBuyerMaker ? -trade.quantity : trade.quantity,
+          });
+        }
+      }
+
+      bars.push({
+        openTime: klineStart,
+        closeTime: klineEnd,
+        open: parseFloat(String(kline.open)),
+        high: parseFloat(String(kline.high)),
+        low: parseFloat(String(kline.low)),
+        close: parseFloat(String(kline.close)),
+        levels,
+      });
+    }
+
+    return bars;
+  }, [chartType, aggTrades, effectiveKlines]);
+
   const {
     canvasRef,
     manager,
@@ -532,14 +610,14 @@ export const ChartCanvas = ({
     handleMouseUp,
     handleMouseLeave,
   } = useChartCanvas({
-    klines,
+    klines: effectiveKlines,
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
     onNearLeftEdge,
   });
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({
-    klines,
+    klines: effectiveKlines,
     movingAverages,
   });
 
@@ -812,6 +890,10 @@ export const ChartCanvas = ({
     renderFVG,
     renderLiquidityLevels,
     renderEventScale,
+    renderCVD,
+    renderImbalance,
+    renderVolumeProfile,
+    renderFootprint,
     getEventAtPosition,
   } = useChartIndicatorRenderers({
     manager,
@@ -820,6 +902,10 @@ export const ChartCanvas = ({
     stochasticData,
     showEventRow,
     marketEvents,
+    cvdValues,
+    imbalanceValues,
+    volumeProfile: volumeProfileData,
+    footprintBars,
   });
 
   const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
@@ -1446,7 +1532,7 @@ export const ChartCanvas = ({
       renderWatermark();
       renderGrid();
       renderVolume();
-      if (chartType === 'kline') {
+      if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
         renderKlines();
       } else {
         renderLineChart();
@@ -1490,6 +1576,10 @@ export const ChartCanvas = ({
       renderPPO();
       renderCMO();
       renderUltimateOsc();
+      renderCVD();
+      renderImbalance();
+      renderVolumeProfile();
+      renderFootprint();
       renderCurrentPriceLine_Line();
       renderOrderLines();
       renderGridPreview();
@@ -1795,6 +1885,10 @@ export const ChartCanvas = ({
     renderFVG,
     renderLiquidityLevels,
     renderEventScale,
+    renderCVD,
+    renderImbalance,
+    renderVolumeProfile,
+    renderFootprint,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,

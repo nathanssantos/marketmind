@@ -163,6 +163,24 @@ const start = async (): Promise<void> => {
     const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
     await indicatorSchedulerService.start();
 
+    const { binanceBookTickerStreamService } = await import('./services/binance-book-ticker-stream');
+    const { binanceAggTradeStreamService } = await import('./services/binance-agg-trade-stream');
+    const { binanceDepthStreamService } = await import('./services/binance-depth-stream');
+    const { createBinanceClientForPrices } = await import('./services/binance-client');
+
+    binanceBookTickerStreamService.start();
+    binanceAggTradeStreamService.start();
+    binanceDepthStreamService.start(createBinanceClientForPrices());
+
+    setTimeout(async () => {
+      try {
+        const { getScalpingScheduler } = await import('./services/scalping/scalping-scheduler');
+        await getScalpingScheduler().restoreFromDb();
+      } catch (err) {
+        fastify.log.error({ err }, '[scalping-scheduler] Failed to restore from DB');
+      }
+    }, STARTUP_CONFIG.AUDIT_DELAY_MS);
+
     fastify.log.info(`> Backend server running on http://localhost:${port}`);
     fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
     fastify.log.info(`> WebSocket server initialized`);
