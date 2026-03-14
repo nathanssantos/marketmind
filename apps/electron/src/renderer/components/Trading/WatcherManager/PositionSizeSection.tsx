@@ -49,7 +49,7 @@ export const PositionSizeSection = ({
               onValueChange={(values) => onMaxGlobalExposureChange(values[0] ?? 100)}
               min={1}
               max={100}
-              step={0.5}
+              step={0.1}
               width="full"
             />
             <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
@@ -73,7 +73,7 @@ export const PositionSizeSection = ({
             <Slider
               value={[positionSizePercent]}
               onValueChange={(values) => onPositionSizeChange(values[0] ?? 10)}
-              min={1}
+              min={0.3}
               max={100}
               step={0.1}
               width="full"
@@ -83,7 +83,7 @@ export const PositionSizeSection = ({
             </Text>
           </HStack>
           <HStack justify="space-between" mt={2}>
-            <Text fontSize="xs" color="fg.muted">1%</Text>
+            <Text fontSize="xs" color="fg.muted">0.3%</Text>
             <Text fontSize="xs" color="fg.muted">100%</Text>
           </HStack>
         </Box>
@@ -99,7 +99,7 @@ export const PositionSizeSection = ({
             <Slider
               value={[manualPositionSizePercent]}
               onValueChange={(values) => onManualPositionSizeChange(values[0] ?? 2.5)}
-              min={0.1}
+              min={0.3}
               max={100}
               step={0.1}
               width="full"
@@ -109,7 +109,7 @@ export const PositionSizeSection = ({
             </Text>
           </HStack>
           <HStack justify="space-between" mt={2}>
-            <Text fontSize="xs" color="fg.muted">0.1%</Text>
+            <Text fontSize="xs" color="fg.muted">0.3%</Text>
             <Text fontSize="xs" color="fg.muted">100%</Text>
           </HStack>
         </Box>

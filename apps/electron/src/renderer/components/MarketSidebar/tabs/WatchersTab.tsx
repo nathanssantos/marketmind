@@ -133,9 +133,9 @@ const WatchersTabComponent = () => {
             value={[autoTradePercent]}
             onValueChange={(values) => setAutoTradePercent(values[0] ?? 10)}
             onValueChangeEnd={(values) => handleAutoTradePercentSave(values[0] ?? 10)}
-            min={1}
+            min={0.3}
             max={100}
-            step={0.5}
+            step={0.1}
           />
         </Box>
       )}
@@ -337,9 +337,9 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
         <Slider
           value={[sizePercent]}
           onValueChange={(v) => setSizePercent(v[0] ?? 10)}
-          min={1}
+          min={0.3}
           max={100}
-          step={0.5}
+          step={0.1}
         />
       </Box>
 

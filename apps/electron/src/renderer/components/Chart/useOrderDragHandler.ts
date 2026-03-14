@@ -1,6 +1,7 @@
 import type { Order } from '@marketmind/types';
 import type { DirtyFlags } from '@renderer/utils/canvas/CanvasManager';
 import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
+import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface OrderDragConfig {
@@ -14,6 +15,7 @@ interface OrderDragConfig {
   slTightenOnly?: boolean;
   getOrderAtPosition: (x: number, y: number) => Order | null;
   markDirty?: (layer: keyof DirtyFlags) => void;
+  draggedOrderIdRef?: RefObject<string | null>;
 }
 
 export type DragType = 'entry' | 'stopLoss' | 'takeProfit';
@@ -24,6 +26,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
   const previewPriceRef = useRef<number | null>(null);
   const initialSlPriceRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const draggedOrderIdRef = config.draggedOrderIdRef ?? { current: null };
 
   const handleSLTPMouseDown = useCallback(
     (
@@ -39,6 +42,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       const order = config.orders.find((o) => getOrderId(o) === sltpInfo.orderId);
       if (!order || !isOrderActive(order)) return false;
 
+      draggedOrderIdRef.current = getOrderId(order);
       setDraggedOrder(order);
       setDragType(sltpInfo.type);
       previewPriceRef.current = config.yToPrice(y);
@@ -57,8 +61,10 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       if (!order) return false;
 
       if (isOrderPending(order)) {
+        draggedOrderIdRef.current = getOrderId(order);
         setDraggedOrder(order);
         setDragType('entry');
+        config.markDirty?.('overlays');
         return true;
       }
 
@@ -111,19 +117,21 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
     const previewPrice = previewPriceRef.current;
 
-    if (!draggedOrder || !dragType) {
+    const clearDragState = () => {
+      draggedOrderIdRef.current = null;
       setDraggedOrder(null);
       setDragType(null);
       previewPriceRef.current = null;
       initialSlPriceRef.current = null;
+    };
+
+    if (!draggedOrder || !dragType) {
+      clearDragState();
       return;
     }
 
     if (!previewPrice) {
-      setDraggedOrder(null);
-      setDragType(null);
-      previewPriceRef.current = null;
-      initialSlPriceRef.current = null;
+      clearDragState();
       return;
     }
 
@@ -132,10 +140,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
         entryPrice: previewPrice,
       });
 
-      setDraggedOrder(null);
-      setDragType(null);
-      previewPriceRef.current = null;
-      initialSlPriceRef.current = null;
+      clearDragState();
       return;
     }
 
@@ -146,10 +151,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       const isValidTp = dragType === 'takeProfit' && (isLong ? previewPrice > entryPrice : previewPrice < entryPrice);
 
       if (!isValidSl && !isValidTp) {
-        setDraggedOrder(null);
-        setDragType(null);
-        previewPriceRef.current = null;
-        initialSlPriceRef.current = null;
+        clearDragState();
         return;
       }
 
@@ -157,10 +159,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
         const initialSl = initialSlPriceRef.current;
         const isTighter = isLong ? previewPrice >= initialSl : previewPrice <= initialSl;
         if (!isTighter) {
-          setDraggedOrder(null);
-          setDragType(null);
-          previewPriceRef.current = null;
-          initialSlPriceRef.current = null;
+          clearDragState();
           return;
         }
       }
@@ -179,10 +178,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       });
     }
 
-    setDraggedOrder(null);
-    setDragType(null);
-    previewPriceRef.current = null;
-    initialSlPriceRef.current = null;
+    clearDragState();
   }, [draggedOrder, dragType, config]);
 
   const cancelDrag = useCallback((): void => {
@@ -190,6 +186,7 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    draggedOrderIdRef.current = null;
     setDraggedOrder(null);
     setDragType(null);
     previewPriceRef.current = null;

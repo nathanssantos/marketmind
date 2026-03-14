@@ -41,6 +41,30 @@ const findKlineIndexByTime = (
   return klines.length - 1;
 };
 
+const drawInfoTagFlash = (
+  ctx: CanvasRenderingContext2D,
+  tagSize: { width: number; height: number },
+  y: number,
+  flashAlpha: number
+): void => {
+  if (flashAlpha <= 0) return;
+  const arrowWidth = 6;
+  const bodyEnd = tagSize.width - arrowWidth;
+  const halfH = tagSize.height / 2;
+  ctx.save();
+  ctx.globalAlpha = flashAlpha;
+  ctx.fillStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+  ctx.beginPath();
+  ctx.moveTo(tagSize.width, y);
+  ctx.lineTo(bodyEnd, y - halfH);
+  ctx.lineTo(0, y - halfH);
+  ctx.lineTo(0, y + halfH);
+  ctx.lineTo(bodyEnd, y + halfH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+};
+
 const drawProfitLossArea = (
   ctx: CanvasRenderingContext2D,
   y1: number,
@@ -215,7 +239,7 @@ const drawInfoTag = (
     drawBotIcon(ctx, currentX, y - iconSize / 2, iconSize);
     currentX += iconSize + iconMargin;
   } else if (icon === 'shield') {
-    drawShieldIcon(ctx, currentX, y - iconSize / 2, iconSize);
+    drawShieldIcon(ctx, currentX, y - iconSize / 2 - 1, iconSize);
     currentX += iconSize + iconMargin;
   }
 
@@ -347,7 +371,8 @@ export const useOrderLinesRenderer = (
   showProfitLossAreas: boolean = true,
   orderLoadingMapRef?: RefObject<Map<string, number>>,
   orderFlashMapRef?: RefObject<Map<string, number>>,
-  trailingStopConfig?: TrailingStopLineConfig | null
+  trailingStopConfig?: TrailingStopLineConfig | null,
+  draggedOrderIdRef?: RefObject<string | null>
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -394,6 +419,7 @@ export const useOrderLinesRenderer = (
   const sltpHitboxesRef = useRef<SLTPHitbox[]>([]);
   const sltpCloseButtonsRef = useRef<SLTPCloseButton[]>([]);
   const slTpButtonHitboxesRef = useRef<SlTpButtonHitbox[]>([]);
+  const tsCloseButtonsRef = useRef<Array<{ x: number; y: number; size: number }>>([]);
 
   const renderOrderLines = (): boolean => {
     const hasOrders = activeOrders.length > 0;
@@ -437,8 +463,9 @@ export const useOrderLinesRenderer = (
     sltpHitboxesRef.current = [];
     sltpCloseButtonsRef.current = [];
     slTpButtonHitboxesRef.current = [];
+    tsCloseButtonsRef.current = [];
 
-    const priceTags: Array<{ priceText: string; y: number; fillColor: string }> = [];
+    const priceTags: Array<{ priceText: string; y: number; fillColor: string; flashAlpha?: number }> = [];
 
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));
     const activeOrdersList = activeOrders.filter((order) => isOrderActive(order));
@@ -524,7 +551,6 @@ export const useOrderLinesRenderer = (
       const fillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
 
       const priceText = formatChartPrice(getOrderPrice(order));
-      priceTags.push({ priceText, y, fillColor });
 
       const tagStartX = chartWidth;
       ctx.strokeStyle = lineColor;
@@ -541,9 +567,11 @@ export const useOrderLinesRenderer = (
       const loading = isOrderLoading(orderId);
       if (loading) needsAnimation = true;
       const flashAlpha = getFlashAlpha(orderId);
+      priceTags.push({ priceText, y, fillColor, flashAlpha });
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
-      drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, now);
+      const entryTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, now);
+      drawInfoTagFlash(ctx, entryTagSize, y, flashAlpha);
 
       orderHitboxesRef.current.push({
         orderId,
@@ -576,7 +604,6 @@ export const useOrderLinesRenderer = (
         ctx.restore();
       }
 
-      const pendingAlpha = 0.35;
       const entryPrice = getOrderPrice(order);
 
       if (showProfitLossAreas && (order.stopLoss || order.takeProfit)) {
@@ -602,7 +629,6 @@ export const useOrderLinesRenderer = (
         const slTagColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL;
 
         ctx.save();
-        ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
         ctx.strokeStyle = slLineColor;
 
@@ -621,12 +647,14 @@ export const useOrderLinesRenderer = (
         const slSign = slResultPercent >= 0 ? '+' : '';
         const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
 
-        priceTags.push({ priceText: formatChartPrice(order.stopLoss), y: stopY, fillColor: slTagColor });
+        const slFlashAlphaVal = getFlashAlpha(`${orderId}-sl`);
+        priceTags.push({ priceText: formatChartPrice(order.stopLoss), y: stopY, fillColor: slTagColor, flashAlpha: slFlashAlphaVal });
 
         const slCloseButtonRef = { x: 0, y: 0, size: 14 };
         const slLoading = isOrderLoading(orderId);
         if (slLoading) needsAnimation = true;
         const slTagSize = drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef, null, slLoading, now);
+        drawInfoTagFlash(ctx, slTagSize, stopY, slFlashAlphaVal);
 
         sltpHitboxesRef.current.push({
           orderId: getOrderId(order),
@@ -648,13 +676,25 @@ export const useOrderLinesRenderer = (
         });
 
         ctx.restore();
+
+        const slFlashAlpha = getFlashAlpha(`${orderId}-sl`);
+        if (slFlashAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = slFlashAlpha;
+          ctx.strokeStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, stopY);
+          ctx.lineTo(chartWidth, stopY);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
 
       if (order.takeProfit) {
         const tpY = manager.priceToY(order.takeProfit);
 
         ctx.save();
-        ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
         const tpLineColor = ORDER_LINE_COLORS.TP_LINE;
         const tpFillColor = ORDER_LINE_COLORS.TP_FILL;
@@ -674,12 +714,14 @@ export const useOrderLinesRenderer = (
           : ((entryPrice - order.takeProfit) / entryPrice) * 100;
         const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
 
-        priceTags.push({ priceText: formatChartPrice(order.takeProfit), y: tpY, fillColor: tpFillColor });
+        const tpFlashAlphaVal = getFlashAlpha(`${orderId}-tp`);
+        priceTags.push({ priceText: formatChartPrice(order.takeProfit), y: tpY, fillColor: tpFillColor, flashAlpha: tpFlashAlphaVal });
 
         const tpCloseButtonRef = { x: 0, y: 0, size: 14 };
         const tpLoading = isOrderLoading(orderId);
         if (tpLoading) needsAnimation = true;
         const tpTagSize = drawInfoTag(ctx, tpInfoText, tpY, tpFillColor, true, tpCloseButtonRef, null, tpLoading, now);
+        drawInfoTagFlash(ctx, tpTagSize, tpY, tpFlashAlphaVal);
 
         sltpHitboxesRef.current.push({
           orderId: getOrderId(order),
@@ -701,6 +743,19 @@ export const useOrderLinesRenderer = (
         });
 
         ctx.restore();
+
+        const tpFlashAlpha = getFlashAlpha(`${orderId}-tp`);
+        if (tpFlashAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = tpFlashAlpha;
+          ctx.strokeStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, tpY);
+          ctx.lineTo(chartWidth, tpY);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     });
 
@@ -747,8 +802,7 @@ export const useOrderLinesRenderer = (
       const fillColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_FILL : ORDER_LINE_COLORS.POSITION_SHORT_FILL;
       
       const priceText = formatChartPrice(position.avgPrice);
-      priceTags.push({ priceText, y, fillColor });
-      
+
       const tagStartX = chartWidth;
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1;
@@ -756,7 +810,7 @@ export const useOrderLinesRenderer = (
       ctx.moveTo(0, y);
       ctx.lineTo(tagStartX, y);
       ctx.stroke();
-      
+
       const priceChange = currentPrice - position.avgPrice;
       const percentChange = isLong 
         ? (priceChange / position.avgPrice) * 100
@@ -775,9 +829,11 @@ export const useOrderLinesRenderer = (
       const posLoading = position.orderIds.some(id => isOrderLoading(id));
       if (posLoading) needsAnimation = true;
       const posFlash = position.orderIds.reduce((maxAlpha, id) => Math.max(maxAlpha, getFlashAlpha(id)), 0);
+      priceTags.push({ priceText, y, fillColor, flashAlpha: posFlash });
 
       const closeButtonRef = { x: 0, y: 0, size: 14 };
       const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade ? 'bot' : null, posLoading, now);
+      drawInfoTagFlash(ctx, infoTagSize, y, posFlash);
 
       if (posFlash > 0) {
         ctx.save();
@@ -853,7 +909,8 @@ export const useOrderLinesRenderer = (
       ctx.restore();
     });
 
-    if (hoveredPendingOrder) {
+    const isDraggedOrder = hoveredPendingOrder && draggedOrderIdRef?.current === getOrderId(hoveredPendingOrder);
+    if (hoveredPendingOrder && !isDraggedOrder) {
       const order = hoveredPendingOrder;
       const y = manager.priceToY(getOrderPrice(order));
       if (y >= 0 && y <= chartHeight) {
@@ -886,6 +943,15 @@ export const useOrderLinesRenderer = (
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, now);
 
+        orderHitboxesRef.current.push({
+          orderId: hoveredOrderId,
+          x: 0,
+          y: y - LINE_HIT_HEIGHT / 2,
+          width: chartWidth,
+          height: LINE_HIT_HEIGHT,
+          order,
+        });
+
         closeButtonsRef.current.push({
           orderId: hoveredOrderId,
           x: closeButtonRef.x,
@@ -896,7 +962,6 @@ export const useOrderLinesRenderer = (
 
         ctx.restore();
 
-        const pendingAlpha = 0.35;
         const entryPrice = getOrderPrice(order);
 
         if (order.stopLoss) {
@@ -905,7 +970,6 @@ export const useOrderLinesRenderer = (
           const slLossColor = ORDER_LINE_COLORS.SL_LOSS_LINE;
 
           ctx.save();
-          ctx.globalAlpha = pendingAlpha;
           ctx.lineWidth = 1;
           ctx.strokeStyle = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : slLossColor;
 
@@ -932,7 +996,6 @@ export const useOrderLinesRenderer = (
           const tpY = manager.priceToY(order.takeProfit);
 
           ctx.save();
-          ctx.globalAlpha = pendingAlpha;
           ctx.lineWidth = 1;
           ctx.strokeStyle = ORDER_LINE_COLORS.TP_LINE;
 
@@ -1077,7 +1140,6 @@ export const useOrderLinesRenderer = (
 
     allPositions.forEach((position) => {
       const isPendingPosition = position.orders.some(o => (o as Order & { isPendingLimitOrder?: boolean }).isPendingLimitOrder);
-      const pendingAlpha = isPendingPosition ? 0.35 : 1;
       const isLongPosition = position.netQuantity > 0;
       const entryY = manager.priceToY(position.avgPrice);
 
@@ -1121,7 +1183,6 @@ export const useOrderLinesRenderer = (
         const firstOrderId = position.orderIds[0] || '';
 
         ctx.save();
-        ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
         ctx.strokeStyle = slLineColor;
 
@@ -1142,7 +1203,8 @@ export const useOrderLinesRenderer = (
         const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
         const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)${pendingLabel}`;
 
-        priceTags.push({ priceText, y: stopY, fillColor: slTagColor });
+        const slFlash = position.orderIds.reduce((max: number, id: string) => Math.max(max, getFlashAlpha(`${id}-sl`)), 0);
+        priceTags.push({ priceText, y: stopY, fillColor: slTagColor, flashAlpha: slFlash });
 
         const tagStartX = chartWidth;
         ctx.strokeStyle = slLineColor;
@@ -1156,6 +1218,7 @@ export const useOrderLinesRenderer = (
         if (slConsLoading) needsAnimation = true;
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         const slTagSize = drawInfoTag(ctx, infoText, stopY, slTagColor, true, closeButtonRef, null, slConsLoading, now);
+        drawInfoTagFlash(ctx, slTagSize, stopY, slFlash);
 
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
@@ -1193,6 +1256,18 @@ export const useOrderLinesRenderer = (
         });
 
         ctx.restore();
+
+        if (slFlash > 0) {
+          ctx.save();
+          ctx.globalAlpha = slFlash;
+          ctx.strokeStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, stopY);
+          ctx.lineTo(chartWidth, stopY);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
 
       const anyOrderHasTakeProfit = takeProfitOrders.length > 0;
@@ -1202,7 +1277,6 @@ export const useOrderLinesRenderer = (
         const firstOrderId = position.orderIds[0] || '';
 
         ctx.save();
-        ctx.globalAlpha = pendingAlpha;
         ctx.lineWidth = 1;
         const tpLineColor = ORDER_LINE_COLORS.TP_LINE;
         ctx.strokeStyle = tpLineColor;
@@ -1224,7 +1298,8 @@ export const useOrderLinesRenderer = (
         const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
         const infoText = `TP (+${tpProfitPercent.toFixed(2)}%)${pendingLabel}`;
 
-        priceTags.push({ priceText, y: tpY, fillColor: tpFillColor });
+        const tpFlash = position.orderIds.reduce((max: number, id: string) => Math.max(max, getFlashAlpha(`${id}-tp`)), 0);
+        priceTags.push({ priceText, y: tpY, fillColor: tpFillColor, flashAlpha: tpFlash });
 
         const tagStartX = chartWidth;
         ctx.strokeStyle = tpLineColor;
@@ -1238,6 +1313,7 @@ export const useOrderLinesRenderer = (
         if (tpConsLoading) needsAnimation = true;
         const closeButtonRef = { x: 0, y: 0, size: 14 };
         const tpTagSize = drawInfoTag(ctx, infoText, tpY, tpFillColor, true, closeButtonRef, null, tpConsLoading, now);
+        drawInfoTagFlash(ctx, tpTagSize, tpY, tpFlash);
 
         orderHitboxesRef.current.push({
           orderId: firstOrderId,
@@ -1275,6 +1351,18 @@ export const useOrderLinesRenderer = (
         });
 
         ctx.restore();
+
+        if (tpFlash > 0) {
+          ctx.save();
+          ctx.globalAlpha = tpFlash;
+          ctx.strokeStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, tpY);
+          ctx.lineTo(chartWidth, tpY);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     });
 
@@ -1290,7 +1378,6 @@ export const useOrderLinesRenderer = (
 
       const isLong = setup.direction === 'LONG';
       const isLimitOrder = setup.entryOrderType === 'LIMIT';
-      const pendingAlpha = 0.5;
 
       if (showProfitLossAreas && (setup.stopLoss || setup.takeProfit)) {
         const entryX = manager.indexToX(setup.klineIndex);
@@ -1307,7 +1394,6 @@ export const useOrderLinesRenderer = (
       }
 
       ctx.save();
-      ctx.globalAlpha = pendingAlpha;
       ctx.font = '11px monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
@@ -1339,8 +1425,6 @@ export const useOrderLinesRenderer = (
         const slLossSetupColor = ORDER_LINE_COLORS.SL_LOSS_LINE;
         const slTagColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : slLossSetupColor;
 
-        ctx.globalAlpha = pendingAlpha * 0.7;
-
         ctx.strokeStyle = slLineColor;
         ctx.beginPath();
         ctx.moveTo(0, slY);
@@ -1359,8 +1443,6 @@ export const useOrderLinesRenderer = (
 
       if (setup.takeProfit) {
         const tpY = manager.priceToY(setup.takeProfit);
-        ctx.globalAlpha = pendingAlpha * 0.7;
-
         ctx.strokeStyle = ORDER_LINE_COLORS.SETUP_PROFIT_LINE;
         ctx.beginPath();
         ctx.moveTo(0, tpY);
@@ -1414,7 +1496,6 @@ export const useOrderLinesRenderer = (
         const tsLabel = `TS ${pos.side === 'long' ? '↑' : '↓'} (${pctSign}${activationPctDisplay.toFixed(1)}%)`;
 
         ctx.save();
-        ctx.globalAlpha = 0.7;
         ctx.strokeStyle = ORDER_LINE_COLORS.TRAILING_STOP_LINE;
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 4]);
@@ -1423,12 +1504,13 @@ export const useOrderLinesRenderer = (
         ctx.lineTo(chartWidth, tsY);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
 
         ctx.font = '11px monospace';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, false, null, 'shield');
+        const tsCloseBtn = { x: 0, y: 0, size: 14 };
+        drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, true, tsCloseBtn, 'shield');
+        tsCloseButtonsRef.current.push(tsCloseBtn);
 
         const tsPriceText = formatChartPrice(activationPrice);
         priceTags.push({ priceText: tsPriceText, y: tsY, fillColor: ORDER_LINE_COLORS.TRAILING_STOP_FILL });
@@ -1437,9 +1519,27 @@ export const useOrderLinesRenderer = (
       }
     }
 
-    priceTags.forEach(({ priceText, y, fillColor }) => {
-      if (y >= 0 && y <= chartHeight)
-        drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
+    priceTags.forEach(({ priceText, y, fillColor, flashAlpha: tagFlash }) => {
+      if (y < 0 || y > chartHeight) return;
+      const tagSize = drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
+      if (tagFlash && tagFlash > 0) {
+        const arrowWidth = 6;
+        const tagX = chartWidth;
+        const tagEndX = tagX + PRICE_TAG_WIDTH;
+        ctx.save();
+        ctx.globalAlpha = tagFlash;
+        ctx.fillStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
+        ctx.beginPath();
+        ctx.moveTo(tagX - arrowWidth, y);
+        ctx.lineTo(tagX, y - tagSize.height / 2);
+        ctx.lineTo(tagEndX, y - tagSize.height / 2);
+        ctx.lineTo(tagEndX, y + tagSize.height / 2);
+        ctx.lineTo(tagX, y + tagSize.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        needsAnimation = true;
+      }
     });
 
     if (orderLoadingMapRef?.current) {
@@ -1452,6 +1552,10 @@ export const useOrderLinesRenderer = (
   };
 
   const getClickedOrderId = (x: number, y: number): string | null => {
+    for (const btn of tsCloseButtonsRef.current) {
+      if (x >= btn.x && x <= btn.x + btn.size && y >= btn.y && y <= btn.y + btn.size) return 'ts-disable';
+    }
+
     for (const button of sltpCloseButtonsRef.current) {
       if (
         x >= button.x &&

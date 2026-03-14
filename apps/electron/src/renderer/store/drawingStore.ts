@@ -24,7 +24,7 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
   drawingsBySymbol: {},
   activeTool: null,
   selectedDrawingId: null,
-  magnetEnabled: false,
+  magnetEnabled: true,
 
   setActiveTool: (tool) => set((state) => ({
     activeTool: state.activeTool === tool ? null : tool,

@@ -734,7 +734,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('maxFibonacciEntryProgressPercentLong', v[0])}
                         min={0}
                         max={200}
-                        step={5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'maxFibonacciEntryProgressPercentLong', 100)}%
@@ -753,7 +753,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('maxFibonacciEntryProgressPercentShort', v[0])}
                         min={0}
                         max={200}
-                        step={5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'maxFibonacciEntryProgressPercentShort', 100)}%
@@ -877,7 +877,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('trailingActivationPercentLong', v[0])}
                         min={5}
                         max={100}
-                        step={5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'trailingActivationPercentLong', 50)}%
@@ -896,7 +896,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('trailingActivationPercentShort', v[0])}
                         min={5}
                         max={100}
-                        step={5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'trailingActivationPercentShort', 50)}%
@@ -915,7 +915,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('trailingDistancePercentLong', v[0])}
                         min={10}
                         max={95}
-                        step={5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'trailingDistancePercentLong', 70)}%
@@ -934,7 +934,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('trailingDistancePercentShort', v[0])}
                         min={10}
                         max={95}
-                        step={5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'trailingDistancePercentShort', 70)}%
@@ -966,7 +966,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                         onValueChange={(v) => setOv('trailingStopOffsetPercent', v[0])}
                         min={0.05}
                         max={2}
-                        step={0.05}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'trailingStopOffsetPercent', 0.3).toFixed(2)}%
@@ -1078,9 +1078,9 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       <Slider
                         value={[ovNum(co, 'positionSizePercent', 5)]}
                         onValueChange={(v) => setOv('positionSizePercent', v[0])}
-                        min={1}
+                        min={0.3}
                         max={100}
-                        step={1}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'positionSizePercent', 5)}%
@@ -1107,9 +1107,9 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                             size="sm"
                             value={ovNum(co, 'maxDrawdownPercent', 10)}
                             onChange={(e) => setOv('maxDrawdownPercent', e.target.value ? Number(e.target.value) : 10)}
-                            min={1}
+                            min={0.3}
                             max={50}
-                            step={0.5}
+                            step={0.1}
                             px={3}
                           />
                         </Field>
@@ -1126,9 +1126,9 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       <Slider
                         value={[ovNum(co, 'dailyLossLimit', 5)]}
                         onValueChange={(v) => setOv('dailyLossLimit', v[0])}
-                        min={1}
+                        min={0.3}
                         max={25}
-                        step={0.5}
+                        step={0.1}
                       />
                       <Text fontSize="xs" color="fg.muted" textAlign="right">
                         {ovNum(co, 'dailyLossLimit', 5)}%

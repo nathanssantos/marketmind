@@ -4,7 +4,6 @@ import { createPlatformAdapter } from '../adapters/factory';
 import { socketService } from '../services/socketService';
 import { QUERY_CONFIGS } from '../services/queryConfig';
 import { trpc } from '../utils/trpc';
-import { useOrderFlashStore } from '../store/orderFlashStore';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
 
@@ -220,17 +219,13 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       invalidateWallet();
     };
 
-    const handleOrderUpdate = (order: OrderUpdate) => {
+    const handleOrderUpdate = (_order: OrderUpdate) => {
       invalidateOrders();
-      const flashId = order.id ?? order.orderId?.toString();
-      if (flashId) useOrderFlashStore.getState().flashOrder(flashId);
     };
 
-    const handleOrderCreated = (order: OrderUpdate) => {
+    const handleOrderCreated = (_order: OrderUpdate) => {
       invalidateOrders();
       invalidateWallet();
-      const flashId = order.id ?? order.orderId?.toString();
-      if (flashId) useOrderFlashStore.getState().flashOrder(flashId);
     };
 
     const handleOrderCancelled = (_data: { orderId: string }) => {

@@ -117,7 +117,7 @@ export const EntrySettingsSection = ({
                 onValueChange={(values) => onMinRiskRewardLongChange(values[0] ?? 0.75)}
                 min={0.5}
                 max={3}
-                step={0.05}
+                step={0.1}
               />
               <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
                 {minRiskRewardRatioLong.toFixed(2)}
@@ -138,7 +138,7 @@ export const EntrySettingsSection = ({
                 onValueChange={(values) => onMinRiskRewardShortChange(values[0] ?? 0.75)}
                 min={0.5}
                 max={3}
-                step={0.05}
+                step={0.1}
               />
               <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
                 {minRiskRewardRatioShort.toFixed(2)}

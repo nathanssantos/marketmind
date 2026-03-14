@@ -204,44 +204,44 @@ const PortfolioComponent = () => {
             {t('trading.portfolio.noWallet')}
           </Text>
         </Box>
-      ) : positions.length === 0 ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">
-            {t('trading.portfolio.empty')}
-          </Text>
-        </Box>
       ) : (
         <>
-          {activeWallet && (
-            <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">
-              <Stack gap={0}>
-                <Text color="fg.muted" fontWeight="medium">{t('trading.portfolio.dailyPnl')}</Text>
-                <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
-              </Stack>
-              <Flex align="center" gap={2}>
-                {dailyPnlVisible ? (
-                  <Stack gap={0} align="flex-end">
-                    <Text fontWeight="medium" fontSize="sm" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'green.500' : 'red.500'}>
-                      {todayPnl ? `${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnlPercent.toFixed(2)}%)` : '$0.00'}
-                    </Text>
-                    <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
-                  </Stack>
-                ) : (
-                  <Text color="fg.muted">****</Text>
-                )}
-                <IconButton
-                  aria-label="Toggle daily PnL"
-                  size="2xs"
-                  variant="ghost"
-                  colorPalette="gray"
-                  onClick={toggleDailyPnl}
-                >
-                  {dailyPnlVisible ? <LuEye size={12} /> : <LuEyeOff size={12} />}
-                </IconButton>
-              </Flex>
+          <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">
+            <Stack gap={0}>
+              <Text color="fg.muted" fontWeight="medium">{t('trading.portfolio.dailyPnl')}</Text>
+              <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
+            </Stack>
+            <Flex align="center" gap={2}>
+              {dailyPnlVisible ? (
+                <Stack gap={0} align="flex-end">
+                  <Text fontWeight="medium" fontSize="sm" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'green.500' : 'red.500'}>
+                    {todayPnl ? `${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnlPercent.toFixed(2)}%)` : '$0.00'}
+                  </Text>
+                  <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
+                </Stack>
+              ) : (
+                <Text color="fg.muted">****</Text>
+              )}
+              <IconButton
+                aria-label="Toggle daily PnL"
+                size="2xs"
+                variant="ghost"
+                colorPalette="gray"
+                onClick={toggleDailyPnl}
+              >
+                {dailyPnlVisible ? <LuEye size={12} /> : <LuEyeOff size={12} />}
+              </IconButton>
             </Flex>
-          )}
+          </Flex>
 
+          {positions.length === 0 ? (
+            <Box p={4} textAlign="center">
+              <Text fontSize="sm" color="fg.muted">
+                {t('trading.portfolio.empty')}
+              </Text>
+            </Box>
+          ) : (
+          <>
           <Box p={3} bg="bg.muted" borderRadius="md">
             <Stack gap={2.5} fontSize="xs">
               {summaryExpanded && (
@@ -432,6 +432,8 @@ const PortfolioComponent = () => {
             </Stack>
           ) : (
             <PortfolioTable positions={filteredPositions} currency={activeWallet.currency} walletBalance={activeWallet.walletBalance} onNavigateToSymbol={globalActions?.navigateToSymbol} />
+          )}
+          </>
           )}
         </>
       )}

@@ -245,7 +245,7 @@ export const FiltersSection = ({
                       onValueChange={(values) => onConfluenceMinScoreChange(values[0] ?? 60)}
                       min={0}
                       max={100}
-                      step={5}
+                      step={0.1}
                       width="full"
                     />
                     <Text fontSize="sm" fontWeight="medium" minW="40px" textAlign="right">

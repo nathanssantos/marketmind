@@ -59,6 +59,8 @@ export const useBackendTradingMutations = () => {
   const updatePendingEntryMutation = trpc.trading.updatePendingEntry.useMutation({
     onSuccess: () => {
       utils.autoTrading.getActiveExecutions.invalidate();
+      utils.futuresTrading.getOpenOrders.invalidate();
+      utils.futuresTrading.getOpenAlgoOrders.invalidate();
     },
   });
 

@@ -10,6 +10,7 @@ import { useToast } from '@renderer/hooks/useToast';
 import { getKlineClose, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { trpc } from '../../utils/trpc';
 
 type OrderDirection = 'long' | 'short';
@@ -67,7 +68,6 @@ const OrderTicketComponent = () => {
   const [takeProfit, setTakeProfit] = useState('');
   const [leverage, setLeverage] = useState(1);
   const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSSED'>('CROSSED');
-  const [autoTradePercent, setAutoTradePercent] = useState(10);
   const [manualPercent, setManualPercent] = useState(2.5);
   const manualPercentRef = useRef(2.5);
 
@@ -79,11 +79,24 @@ const OrderTicketComponent = () => {
     if (!autoConfig) return;
     if (autoConfig.leverage) setLeverage(autoConfig.leverage);
     if (autoConfig.marginType) setMarginType(autoConfig.marginType);
-    setAutoTradePercent(Number(autoConfig.positionSizePercent ?? 10));
     const newManualPct = Number(autoConfig.manualPositionSizePercent ?? 2.5);
     manualPercentRef.current = newManualPct;
     setManualPercent(newManualPct);
-  }, [autoConfig?.leverage, autoConfig?.marginType, autoConfig?.positionSizePercent, autoConfig?.manualPositionSizePercent]);
+    useQuickTradeStore.getState().setSizePercent(newManualPct);
+  }, [autoConfig?.leverage, autoConfig?.marginType, autoConfig?.manualPositionSizePercent]);
+
+  useEffect(() => {
+    const unsub = useQuickTradeStore.subscribe((state) => {
+      if (Math.abs(state.sizePercent - manualPercentRef.current) < 0.01) return;
+      manualPercentRef.current = state.sizePercent;
+      setManualPercent(state.sizePercent);
+      const balance = activeWallet?.balance ?? 0;
+      const price = currentPrice ?? 0;
+      const qty = calculateQtyFromPercent(state.sizePercent, price, balance);
+      if (qty > 0) setQuantity(roundTradingQty(qty));
+    });
+    return unsub;
+  }, [activeWallet?.balance, currentPrice]);
 
   useEffect(() => {
     const balance = activeWallet?.balance ?? 0;
@@ -107,6 +120,7 @@ const OrderTicketComponent = () => {
   const handleManualPercentChange = (value: number) => {
     manualPercentRef.current = value;
     setManualPercent(value);
+    useQuickTradeStore.getState().setSizePercent(value);
     const balance = activeWallet?.balance ?? 0;
     const price = currentPrice ?? 0;
     const qty = calculateQtyFromPercent(value, price, balance);
@@ -305,21 +319,6 @@ const OrderTicketComponent = () => {
 
             <Box>
               <Flex justify="space-between" align="center" mb={2}>
-                <Text fontSize="xs" fontWeight="medium">{t('watcherManager.positionSize.sizePercent')}</Text>
-                <Text fontSize="xs" color="fg.muted">{autoTradePercent}%</Text>
-              </Flex>
-              <Slider
-                value={[autoTradePercent]}
-                onValueChange={(values) => setAutoTradePercent(values[0] ?? 10)}
-                onValueChangeEnd={(values) => handleSaveConfig({ positionSizePercent: String(values[0] ?? 10) })}
-                min={0.1}
-                max={100}
-                step={0.1}
-              />
-            </Box>
-
-            <Box>
-              <Flex justify="space-between" align="center" mb={2}>
                 <Text fontSize="xs" fontWeight="medium">{t('watcherManager.positionSize.manualSizePercent')}</Text>
                 <Text fontSize="xs" color="fg.muted">{manualPercent}%</Text>
               </Flex>
@@ -327,7 +326,7 @@ const OrderTicketComponent = () => {
                 value={[manualPercent]}
                 onValueChange={(values) => handleManualPercentChange(values[0] ?? 2.5)}
                 onValueChangeEnd={(values) => handleSaveConfig({ manualPositionSizePercent: String(values[0] ?? 2.5) })}
-                min={0.1}
+                min={0.3}
                 max={100}
                 step={0.1}
               />

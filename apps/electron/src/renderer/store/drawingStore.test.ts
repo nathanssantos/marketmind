@@ -24,7 +24,7 @@ describe('drawingStore', () => {
       drawingsBySymbol: {},
       activeTool: null,
       selectedDrawingId: null,
-      magnetEnabled: false,
+      magnetEnabled: true,
     });
   });
 

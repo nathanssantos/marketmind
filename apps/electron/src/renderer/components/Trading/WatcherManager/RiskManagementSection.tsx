@@ -85,7 +85,7 @@ export const RiskManagementSection = ({
                 onValueChange={(values) => onMaxDrawdownChange(values[0] ?? 15)}
                 min={5}
                 max={50}
-                step={1}
+                step={0.1}
                 width="full"
               />
               <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
@@ -124,7 +124,7 @@ export const RiskManagementSection = ({
                 onValueChange={(values) => onMaxRiskPerStopChange(values[0] ?? 2)}
                 min={0.5}
                 max={10}
-                step={0.5}
+                step={0.1}
                 width="full"
               />
               <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
@@ -172,7 +172,7 @@ export const RiskManagementSection = ({
                       onValueChange={(values) => onMarginTopUpThresholdChange(values[0] ?? 30)}
                       min={10}
                       max={80}
-                      step={5}
+                      step={0.1}
                       width="full"
                     />
                     <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">
@@ -194,7 +194,7 @@ export const RiskManagementSection = ({
                       onValueChange={(values) => onMarginTopUpPercentChange(values[0] ?? 10)}
                       min={1}
                       max={50}
-                      step={1}
+                      step={0.1}
                       width="full"
                     />
                     <Text fontSize="sm" fontWeight="medium" minW="50px" textAlign="right">

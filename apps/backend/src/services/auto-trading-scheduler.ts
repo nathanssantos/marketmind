@@ -962,19 +962,50 @@ export class AutoTradingScheduler {
       }
     }
 
+    const { getKlineStreamService } = await import('./exchange-stream-factory');
+    const unsubscribedIntervals = new Set<string>();
+
     for (const watcherId of watchersToStop) {
       const watcher = this.activeWatchers.get(watcherId);
       if (watcher) {
         clearInterval(watcher.intervalId);
+        const streamService = await getKlineStreamService(watcher.exchange, watcher.marketType);
+        streamService.unsubscribe(watcher.symbol, watcher.interval);
+        unsubscribedIntervals.add(`${watcher.interval}-${watcher.marketType}`);
         this.activeWatchers.delete(watcherId);
       }
+    }
+
+    for (const key of unsubscribedIntervals) {
+      const [interval, marketType] = key.split('-') as [string, MarketType];
+      await this.cleanupBtcKlineStreamIfNeeded(interval, marketType);
     }
 
     await db
       .delete(activeWatchersTable)
       .where(eq(activeWatchersTable.walletId, walletId));
 
-    log('✗ All watchers stopped for wallet', { walletId, count: watchersToStop.length });
+    const rotationKeysToDelete: string[] = [];
+    for (const key of this.rotationStates.keys()) {
+      if (key.startsWith(`${walletId}:`)) rotationKeysToDelete.push(key);
+    }
+    for (const key of rotationKeysToDelete) {
+      this.rotationStates.delete(key);
+      this.isCheckingRotation.delete(key);
+    }
+
+    for (const key of this.rotationPendingWatchers.keys()) {
+      if (key.startsWith(`${walletId}-`)) this.rotationPendingWatchers.delete(key);
+    }
+    for (const key of this.recentlyRotatedWatchers.keys()) {
+      if (key.startsWith(`${walletId}-`)) this.recentlyRotatedWatchers.delete(key);
+    }
+
+    if (this.rotationStates.size === 0) this.stopAnticipationTimer();
+
+    this.invalidateConfigCache(walletId);
+
+    log('✗ All watchers stopped for wallet', { walletId, count: watchersToStop.length, rotationsCleaned: rotationKeysToDelete.length });
 
     if (this.activeWatchers.size === 0) {
       this.clearCaches();

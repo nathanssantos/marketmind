@@ -181,7 +181,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
         </HStack>
 
         <HStack gap={1} px={0.5}>
-          <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.1} max={25} step={0.1} />
+          <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.3} max={25} step={0.1} />
           <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
             {`${Math.round(sizePercent * 10) / 10}%`}
           </Text>

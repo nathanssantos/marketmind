@@ -308,7 +308,7 @@ export const TrailingStopSection = ({
                 )}
               </Box>
               <Text fontSize={labelSize} fontWeight="bold" color="green.500">
-                {(trailingDistancePercentLong * 100).toFixed(0)}%
+                {(trailingDistancePercentLong * 100).toFixed(1)}%
               </Text>
             </Flex>
             <Slider
@@ -316,7 +316,7 @@ export const TrailingStopSection = ({
               onValueChange={(values) => onTrailingDistancePercentLongChange(values[0]! / 100)}
               min={10}
               max={80}
-              step={5}
+              step={0.1}
             />
           </Box>
 
@@ -333,7 +333,7 @@ export const TrailingStopSection = ({
                 )}
               </Box>
               <Text fontSize={labelSize} fontWeight="bold" color="red.500">
-                {(trailingDistancePercentShort * 100).toFixed(0)}%
+                {(trailingDistancePercentShort * 100).toFixed(1)}%
               </Text>
             </Flex>
             <Slider
@@ -341,7 +341,7 @@ export const TrailingStopSection = ({
               onValueChange={(values) => onTrailingDistancePercentShortChange(values[0]! / 100)}
               min={10}
               max={80}
-              step={5}
+              step={0.1}
             />
           </Box>
 
