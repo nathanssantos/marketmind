@@ -97,6 +97,7 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
       locked?: boolean;
       zIndex?: number;
     }) => trpc.drawing.update.mutate(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drawings', symbol] }),
   });
 
   const deleteMutation = useMutation({
