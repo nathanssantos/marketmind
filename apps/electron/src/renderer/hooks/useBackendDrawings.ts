@@ -1,7 +1,7 @@
 import type { Drawing, DrawingType } from '@marketmind/chart-studies';
 import { deserializeDrawingData, serializeDrawingData } from '@marketmind/chart-studies';
 import type { KlineTimeLookup, TimeToIndexLookup } from '@marketmind/chart-studies';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { trpc } from '@renderer/services/trpc';
 import { useDrawingStore } from '@renderer/store/drawingStore';
@@ -59,13 +59,13 @@ const extractBackendId = (frontendId: string): number | null => {
 };
 
 export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
-  const queryClient = useQueryClient();
   const backendIdMapRef = useRef<Map<string, number>>(new Map());
   const pendingCreatesRef = useRef<Set<string>>(new Set());
   const suppressSyncRef = useRef(false);
   const updateTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const prevDrawingsRef = useRef<Drawing[]>([]);
   const klinesRef = useRef<Kline[]>(klines);
+  const hydratedRef = useRef(false);
   klinesRef.current = klines;
 
   const setDrawingsForSymbol = useDrawingStore((s) => s.setDrawingsForSymbol);
@@ -74,8 +74,7 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
     queryKey: ['drawings', symbol],
     queryFn: () => trpc.drawing.listBySymbol.query({ symbol }),
     enabled: !!symbol,
-    staleTime: 5000,
-    refetchInterval: 10_000,
+    staleTime: Infinity,
   });
 
   const createMutation = useMutation({
@@ -87,7 +86,6 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
       locked: boolean;
       zIndex: number;
     }) => trpc.drawing.create.mutate(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drawings', symbol] }),
   });
 
   const updateMutation = useMutation({
@@ -102,13 +100,12 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => trpc.drawing.delete.mutate({ id }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drawings', symbol] }),
   });
 
   useEffect(() => {
-    if (!backendDrawings || !symbol || klines.length === 0) return;
-    if (updateTimersRef.current.size > 0) return;
+    if (!backendDrawings || !symbol || klines.length === 0 || hydratedRef.current) return;
 
+    hydratedRef.current = true;
     suppressSyncRef.current = true;
     const newIdMap = new Map<string, number>();
     const drawings: Drawing[] = [];
@@ -142,6 +139,10 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
       suppressSyncRef.current = false;
     });
   }, [backendDrawings, symbol, klines.length, setDrawingsForSymbol]);
+
+  useEffect(() => {
+    hydratedRef.current = false;
+  }, [symbol]);
 
   const getOpenTime = useCallback((): KlineTimeLookup => buildGetOpenTime(klinesRef.current), []);
 
