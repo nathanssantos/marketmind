@@ -1,6 +1,8 @@
 import { useConnectionStore } from '../store/connectionStore';
 
-export const usePollingInterval = (fallbackMs: number): number | false => {
+const WS_CONNECTED_POLLING_MS = 30_000;
+
+export const usePollingInterval = (fallbackMs: number): number => {
   const wsConnected = useConnectionStore((s) => s.wsConnected);
-  return wsConnected ? false : fallbackMs;
+  return wsConnected ? WS_CONNECTED_POLLING_MS : fallbackMs;
 };

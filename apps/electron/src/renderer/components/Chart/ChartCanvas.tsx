@@ -202,6 +202,7 @@ export const ChartCanvas = ({
     {
       enabled: !!backendWalletId && !!symbol,
       refetchInterval: tradingPolling,
+      staleTime: 5000,
     }
   );
 

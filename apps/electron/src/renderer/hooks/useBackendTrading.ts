@@ -3,12 +3,9 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 import { usePollingInterval } from './usePollingInterval';
-import { useConnectionStore } from '../store/connectionStore';
-
 export const useBackendTrading = (walletId: string, symbol?: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES') => {
   const utils = trpc.useUtils();
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
-  const wsConnected = useConnectionStore((s) => s.wsConnected);
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 100 },
@@ -52,7 +49,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getOrders.invalidate();
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -62,7 +59,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -71,7 +68,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const syncOrdersMutation = trpc.trading.syncOrders.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -80,7 +77,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const createPositionMutation = trpc.trading.createPosition.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -89,7 +86,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const closePositionMutation = trpc.trading.closePosition.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -98,7 +95,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -108,7 +105,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -118,7 +115,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
     onSuccess: () => {
-      if (wsConnected) return;
+
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
     },
