@@ -220,12 +220,12 @@ export const ChartCanvas = ({
 
   const { data: symbolTrailingConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
-    { enabled: !!backendWalletId && !!symbol, refetchInterval: 30000 }
+    { enabled: !!backendWalletId && !!symbol, refetchInterval: tradingPolling, staleTime: 5000 }
   );
 
   const { data: walletAutoTradingConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId: backendWalletId ?? '' },
-    { enabled: !!backendWalletId, refetchInterval: 30000 }
+    { enabled: !!backendWalletId, refetchInterval: tradingPolling, staleTime: 5000 }
   );
 
   const trailingStopLineConfig = useMemo((): TrailingStopLineConfig | null => {

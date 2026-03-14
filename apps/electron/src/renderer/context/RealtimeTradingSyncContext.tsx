@@ -126,6 +126,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     if (keys.has('wallet')) {
       utils.wallet.list.invalidate();
       utils.analytics.getPerformance.invalidate({ walletId: wId });
+      utils.analytics.getDailyPerformance.invalidate();
     }
     if (keys.has('setupStats')) utils.analytics.getSetupStats.invalidate();
     if (keys.has('equityCurve')) utils.analytics.getEquityCurve.invalidate();

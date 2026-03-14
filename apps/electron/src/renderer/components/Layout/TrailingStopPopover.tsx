@@ -1,6 +1,7 @@
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { Button, Popover, Switch, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTrailingStopPlacementStore } from '@renderer/store/trailingStopPlacementStore';
 import { trpc } from '@renderer/utils/trpc';
@@ -22,15 +23,16 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
 
   const { activeWallet } = useActiveWallet();
   const walletId = activeWallet?.id ?? '';
+  const pollingInterval = usePollingInterval(10_000);
 
   const { data: symbolConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId, symbol },
-    { enabled: !!walletId && !!symbol, refetchInterval: 30000 }
+    { enabled: !!walletId && !!symbol, refetchInterval: pollingInterval, staleTime: 5000 }
   );
 
   const { data: walletConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: 30000 }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: 5000 }
   );
 
   const utils = trpc.useUtils();

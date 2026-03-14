@@ -341,7 +341,7 @@ export const useCapitalLimits = (
 ) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getCapitalLimits.useQuery(
     { walletId, marketType },
-    { enabled: !!walletId, staleTime: 30000 }
+    { enabled: !!walletId, staleTime: 5000 }
   );
 
   const capitalLimits: CapitalLimits | null = data ? {

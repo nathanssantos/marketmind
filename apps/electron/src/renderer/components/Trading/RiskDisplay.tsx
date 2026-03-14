@@ -28,21 +28,21 @@ interface RiskMetrics {
 
 export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
   const [metrics, setMetrics] = useState<RiskMetrics | null>(null);
-  const executionsPolling = usePollingInterval(60_000);
+  const pollingInterval = usePollingInterval(10_000);
 
   const { data: config } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: 30000 }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: 5000 }
   );
 
   const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: executionsPolling, staleTime: 30000 }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: 5000 }
   );
 
   const { data: watcherStatus } = trpc.autoTrading.getWatcherStatus.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: 60000, staleTime: 30000 }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: 5000 }
   );
 
   useEffect(() => {
