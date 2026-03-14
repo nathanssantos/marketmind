@@ -1,6 +1,9 @@
 import type { Drawing, DrawingType } from '@marketmind/chart-studies';
 import { create } from 'zustand';
 
+const hydratedSymbols = new Set<string>();
+const backendIdMaps = new Map<string, Map<string, number>>();
+
 interface DrawingState {
   drawingsBySymbol: Record<string, Drawing[]>;
   activeTool: DrawingType | null;
@@ -18,6 +21,13 @@ interface DrawingState {
 
   setDrawingsForSymbol: (symbol: string, drawings: Drawing[]) => void;
   clearAll: () => void;
+
+  markHydrated: (symbol: string) => void;
+  isHydrated: (symbol: string) => boolean;
+  setBackendIdMap: (symbol: string, map: Map<string, number>) => void;
+  getBackendId: (frontendId: string, symbol: string) => number | undefined;
+  setBackendId: (frontendId: string, symbol: string, backendId: number) => void;
+  removeBackendId: (frontendId: string, symbol: string) => void;
 }
 
 export const useDrawingStore = create<DrawingState>((set, get) => ({
@@ -80,5 +90,32 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
     },
   })),
 
-  clearAll: () => set({ drawingsBySymbol: {}, selectedDrawingId: null, activeTool: null }),
+  clearAll: () => {
+    hydratedSymbols.clear();
+    backendIdMaps.clear();
+    set({ drawingsBySymbol: {}, selectedDrawingId: null, activeTool: null });
+  },
+
+  markHydrated: (symbol) => { hydratedSymbols.add(symbol); },
+  isHydrated: (symbol) => hydratedSymbols.has(symbol),
+
+  setBackendIdMap: (symbol, map) => { backendIdMaps.set(symbol, map); },
+
+  getBackendId: (frontendId, symbol) => {
+    const map = backendIdMaps.get(symbol);
+    return map?.get(frontendId);
+  },
+
+  setBackendId: (frontendId, symbol, backendId) => {
+    let map = backendIdMaps.get(symbol);
+    if (!map) {
+      map = new Map();
+      backendIdMaps.set(symbol, map);
+    }
+    map.set(frontendId, backendId);
+  },
+
+  removeBackendId: (frontendId, symbol) => {
+    backendIdMaps.get(symbol)?.delete(frontendId);
+  },
 }));

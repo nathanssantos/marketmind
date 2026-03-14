@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.64.0] - 2026-03-14
+
+### Fixed
+- **Indicator X-coordinate alignment on zoom**: fixed 30 indicator renderers (Parabolic SAR, Supertrend, Ichimoku, Donchian, Keltner, HMA, DEMA, TEMA, WMA, FVG, Fibonacci, Liquidity Levels, Pivot Points, ROC, ADX, Aroon, MFI, TSI, Elder Ray, PPO, Vortex, AO, Klinger, CCI, Ultimate Osc, CMO, Williams %R, OBV, CMF, ATR) that drifted out of alignment with candles when zooming — root cause was using `effectiveWidth` (chartWidth - margin) instead of `chartWidth` for X position calculations
+- **Drawing sync refactor**: extracted drawing sync logic to `drawingSyncManager` service, moved backend ID maps and hydration state to `drawingStore`, simplified `useBackendDrawings` hook to eliminate race conditions and stale ref issues
+
+### Changed
+- **Bollinger Bands enabled by default**: added to default active indicators alongside Volume and Parabolic SAR
+- **Hardcoded margin values replaced**: replaced hardcoded `72` with `CHART_CONFIG.CHART_RIGHT_MARGIN` in Fibonacci, FVG, Liquidity Levels, and Pivot Points renderers
+
 ## [0.63.0] - 2026-03-13
 
 ### Added

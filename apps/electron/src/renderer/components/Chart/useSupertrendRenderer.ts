@@ -26,19 +26,12 @@ export const useSupertrendRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
-
     ctx.save();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
     const priceToY = (price: number): number => manager.priceToY(price);
-
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
 
     const upColor = colors.supertrend?.up ?? INDICATOR_COLORS.SUPERTREND_UP;
     const downColor = colors.supertrend?.down ?? INDICATOR_COLORS.SUPERTREND_DOWN;
@@ -61,7 +54,7 @@ export const useSupertrendRenderer = ({
         continue;
       }
 
-      const x = indexToX(i);
+      const x = manager.indexToCenterX(i);
       const y = priceToY(value);
 
       if (currentTrend !== trend) {

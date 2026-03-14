@@ -26,19 +26,12 @@ export const useDonchianRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
-
     ctx.save();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
     const priceToY = (price: number): number => manager.priceToY(price);
-
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
 
     const drawLine = (values: (number | null)[], color: string, lineWidth: number): void => {
       ctx.strokeStyle = color;
@@ -51,7 +44,7 @@ export const useDonchianRenderer = ({
         const value = values[i];
         if (value === null || value === undefined) continue;
 
-        const x = indexToX(i);
+        const x = manager.indexToCenterX(i);
         const y = priceToY(value);
 
         if (isFirstPoint) {
@@ -79,7 +72,7 @@ export const useDonchianRenderer = ({
         const u = upper[i];
         const l = lower[i];
         if (u !== null && u !== undefined && l !== null && l !== undefined) {
-          points.push({ x: indexToX(i), upper: priceToY(u), lower: priceToY(l) });
+          points.push({ x: manager.indexToCenterX(i), upper: priceToY(u), lower: priceToY(l) });
         }
       }
 

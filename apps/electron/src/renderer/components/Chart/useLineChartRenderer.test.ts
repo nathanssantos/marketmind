@@ -72,6 +72,7 @@ describe('useLineChartRenderer', () => {
       getViewport: vi.fn(() => ({ start: 0, end: 3, klineWidth: 10, klineSpacing: 2 })),
       getVisibleKlines: vi.fn(() => mockKlines),
       indexToX: vi.fn((index: number) => 100 + index * 50),
+      indexToCenterX: vi.fn((index: number) => 100 + index * 50 + 25),
       priceToY: vi.fn((price: number) => 200 - price),
       getKlines: vi.fn(() => mockKlines),
     } as unknown as CanvasManager;

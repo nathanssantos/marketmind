@@ -26,19 +26,12 @@ export const useIchimokuRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
-
     ctx.save();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
     const priceToY = (price: number): number => manager.priceToY(price);
-
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
 
     const fillCloud = (): void => {
       const senkouAColor = colors.ichimoku?.senkouAFill ?? INDICATOR_COLORS.ICHIMOKU_SENKOU_A_FILL;
@@ -57,8 +50,8 @@ export const useIchimokuRenderer = ({
           senkouB2 === null || senkouB2 === undefined
         ) continue;
 
-        const x1 = indexToX(i);
-        const x2 = indexToX(i + 1);
+        const x1 = manager.indexToCenterX(i);
+        const x2 = manager.indexToCenterX(i + 1);
         const ya1 = priceToY(senkouA1);
         const yb1 = priceToY(senkouB1);
         const ya2 = priceToY(senkouA2);
@@ -87,7 +80,7 @@ export const useIchimokuRenderer = ({
         const value = values[i];
         if (value === null || value === undefined) continue;
 
-        const x = indexToX(i);
+        const x = manager.indexToCenterX(i);
         const y = priceToY(value);
 
         if (isFirstPoint) {

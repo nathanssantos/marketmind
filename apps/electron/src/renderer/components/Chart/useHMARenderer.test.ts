@@ -62,6 +62,7 @@ describe('useHMARenderer', () => {
       })),
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 5),
       indexToX: vi.fn((index: number) => index * 140),
+      indexToCenterX: vi.fn((index: number) => index * 140 + 70),
     } as unknown as CanvasManager;
   });
 

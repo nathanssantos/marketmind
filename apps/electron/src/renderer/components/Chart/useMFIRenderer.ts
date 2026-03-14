@@ -1,7 +1,6 @@
 import type { MFIResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -30,8 +29,6 @@ export const useMFIRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
@@ -43,9 +40,6 @@ export const useMFIRenderer = ({
       const normalizedValue = value / 100;
       return panelY + panelHeight - normalizedValue * panelHeight;
     };
-
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
 
     const overboughtY = valueToY(80);
     const oversoldY = valueToY(20);
@@ -64,7 +58,7 @@ export const useMFIRenderer = ({
       const value = mfiData[i];
       if (value === null || value === undefined) continue;
 
-      const x = indexToX(i);
+      const x = manager.indexToCenterX(i);
       const y = valueToY(value);
 
       if (isFirstPoint) {

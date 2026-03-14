@@ -1,7 +1,6 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 import { useCallback, useMemo } from 'react';
 
@@ -97,9 +96,6 @@ export const useATRRenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const effectiveWidth = dimensions.chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
-
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
@@ -112,7 +108,7 @@ export const useATRRenderer = ({
       const data = trailingStopData[i];
       if (!data || data.stopPrice === 0) continue;
 
-      const x = (i - viewport.start) * klineWidth + klineWidth / 2;
+      const x = manager.indexToCenterX(i);
       const y = manager.priceToY(data.stopPrice);
 
       if (currentIsLong === null) {

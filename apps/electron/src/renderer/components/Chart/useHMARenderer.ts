@@ -26,17 +26,12 @@ export const useHMARenderer = ({
 
     if (!ctx || !dimensions) return;
 
-    const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - 72;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
+    const { chartHeight } = dimensions;
 
     ctx.save();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
-
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
 
     ctx.strokeStyle = colors.hma?.line ?? INDICATOR_COLORS.HMA_LINE;
     ctx.lineWidth = 1;
@@ -48,7 +43,7 @@ export const useHMARenderer = ({
       const value = hmaData.values[i];
       if (value === null || value === undefined) continue;
 
-      const x = indexToX(i);
+      const x = manager.indexToCenterX(i);
       const y = manager.priceToY(value);
 
       if (y < 0 || y > chartHeight) continue;

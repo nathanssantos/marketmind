@@ -69,6 +69,7 @@ describe('useFVGRenderer', () => {
       })),
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 5),
       indexToX: vi.fn((index: number) => index * 35),
+      indexToCenterX: vi.fn((index: number) => index * 35 + 17.5),
     } as unknown as CanvasManager;
   });
 
@@ -151,6 +152,7 @@ describe('useFVGRenderer', () => {
         ...mockManager,
         getViewport: vi.fn(() => ({ start: 50, end: 80, klineWidth: 35 })),
         indexToX: vi.fn((index: number) => (index - 50) * 35),
+        indexToCenterX: vi.fn((index: number) => (index - 50) * 35 + 17.5),
       } as unknown as CanvasManager;
 
       const oldGapData = {

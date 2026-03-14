@@ -2,6 +2,7 @@ import type { FibonacciResult } from '@marketmind/indicators';
 import { getLevelColor as getFibonacciLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseFibonacciRendererProps {
@@ -34,7 +35,7 @@ export const useFibonacciRenderer = ({
     if (!ctx || !dimensions) return;
 
     const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - 72;
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
 

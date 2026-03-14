@@ -1,7 +1,7 @@
 import type { CMFResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
+import { INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -32,8 +32,7 @@ export const useCMFRenderer = ({
 
     const { chartWidth } = dimensions;
     const panelTop = manager.getPanelTop(PANEL_ID);
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
+    const widthPerKline = chartWidth / (viewport.end - viewport.start);
     const padding = 4;
     const innerHeight = PANEL_HEIGHT - padding * 2;
 
@@ -55,13 +54,13 @@ export const useCMFRenderer = ({
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
-    const barWidth = klineWidth * 0.6;
+    const barWidth = widthPerKline * 0.6;
 
     for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
       const value = cmfData.values[i];
       if (value === null || value === undefined) continue;
 
-      const x = (i - viewport.start) * klineWidth + (klineWidth - barWidth) / 2;
+      const x = manager.indexToCenterX(i) - barWidth / 2;
       const y = valueToY(value);
 
       ctx.fillStyle = value >= 0 ? (colors.cmf?.positive ?? '#4caf50') : (colors.cmf?.negative ?? '#f44336');

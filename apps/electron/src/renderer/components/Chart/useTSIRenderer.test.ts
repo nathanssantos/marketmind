@@ -72,6 +72,7 @@ describe('useTSIRenderer', () => {
         height: 80,
       })),
       indexToX: vi.fn((index: number) => index * 140),
+      indexToCenterX: vi.fn((index: number) => index * 140 + 70),
     } as unknown as CanvasManager;
   });
 

@@ -31,8 +31,6 @@ export const useOBVRenderer = ({
 
     const { chartWidth } = dimensions;
     const panelTop = manager.getPanelTop(PANEL_ID);
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
     const padding = 4;
     const innerHeight = PANEL_HEIGHT - padding * 2;
 
@@ -71,9 +69,6 @@ export const useOBVRenderer = ({
       return panelTop + padding + innerHeight - normalized * innerHeight;
     };
 
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
-
     ctx.strokeStyle = colors.obv?.line ?? '#2196f3';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -84,7 +79,7 @@ export const useOBVRenderer = ({
       const value = obvData.values[i];
       if (value === undefined) continue;
 
-      const x = indexToX(i);
+      const x = manager.indexToCenterX(i);
       const y = valueToY(value);
 
       if (isFirstPoint) {
@@ -108,7 +103,7 @@ export const useOBVRenderer = ({
         const value = obvData.sma[i];
         if (value === null || value === undefined) continue;
 
-        const x = indexToX(i);
+        const x = manager.indexToCenterX(i);
         const y = valueToY(value);
 
         if (isFirstPoint) {

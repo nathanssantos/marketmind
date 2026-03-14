@@ -1,7 +1,6 @@
 import type { AOResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -30,8 +29,7 @@ export const useAORenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
+    const widthPerKline = chartWidth / (viewport.end - viewport.start);
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
@@ -55,12 +53,9 @@ export const useAORenderer = ({
       return panelY + panelHeight - normalizedValue * panelHeight;
     };
 
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
-
     const zeroY = valueToY(0);
 
-    const barWidth = Math.max(1, klineWidth * 0.6);
+    const barWidth = Math.max(1, widthPerKline * 0.6);
     let prevValue: number | null = null;
 
     for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
@@ -70,7 +65,7 @@ export const useAORenderer = ({
         continue;
       }
 
-      const x = indexToX(i);
+      const x = manager.indexToCenterX(i);
       const y = valueToY(value);
       const height = Math.abs(y - zeroY);
 

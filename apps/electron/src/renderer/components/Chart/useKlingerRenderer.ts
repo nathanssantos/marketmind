@@ -1,7 +1,6 @@
 import type { KlingerResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
 import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -30,8 +29,6 @@ export const useKlingerRenderer = ({
 
     const { y: panelY, height: panelHeight } = panelInfo;
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
@@ -71,9 +68,6 @@ export const useKlingerRenderer = ({
       return panelY + panelHeight - normalizedValue * panelHeight;
     };
 
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
-
     const zeroY = valueToY(0);
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
@@ -88,7 +82,7 @@ export const useKlingerRenderer = ({
         const value = values[i];
         if (value === null || value === undefined) continue;
 
-        const x = indexToX(i);
+        const x = manager.indexToCenterX(i);
         const y = valueToY(value);
 
         if (isFirstPoint) {

@@ -64,6 +64,7 @@ describe('useMovingAverageRenderer', () => {
       })),
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 10),
       indexToX: vi.fn((index: number) => index * 20),
+      indexToCenterX: vi.fn((index: number) => index * 20 + 10),
       getVisibleKlines: vi.fn(() => klines),
     } as unknown as CanvasManager;
 

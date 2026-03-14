@@ -27,8 +27,7 @@ export const useParabolicSARRenderer = ({
     if (!ctx || !dimensions) return;
 
     const { chartWidth } = dimensions;
-    const effectiveWidth = chartWidth - 72;
-    const klineWidth = effectiveWidth / (viewport.end - viewport.start);
+    const widthPerKline = chartWidth / (viewport.end - viewport.start);
 
     ctx.save();
 
@@ -37,10 +36,7 @@ export const useParabolicSARRenderer = ({
 
     const priceToY = (price: number): number => manager.priceToY(price);
 
-    const indexToX = (index: number): number =>
-      (index - viewport.start) * klineWidth + klineWidth / 2;
-
-    const dotRadius = Math.max(2, Math.min(4, klineWidth * 0.15));
+    const dotRadius = Math.max(2, Math.min(4, widthPerKline * 0.15));
 
     for (let i = visibleStartIndex; i < visibleEndIndex; i++) {
       const sarValue = parabolicSarData.sar[i];
@@ -48,7 +44,7 @@ export const useParabolicSARRenderer = ({
 
       if (sarValue === null || sarValue === undefined || trend === null) continue;
 
-      const x = indexToX(i);
+      const x = manager.indexToCenterX(i);
       const y = priceToY(sarValue);
 
       ctx.beginPath();

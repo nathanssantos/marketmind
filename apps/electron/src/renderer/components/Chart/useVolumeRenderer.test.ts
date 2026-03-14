@@ -67,6 +67,7 @@ describe('useVolumeRenderer', () => {
       getVisibleKlines: vi.fn(() => klines),
       getKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
+      indexToCenterX: vi.fn((index: number) => index * 145.6 + 72.8),
     } as unknown as CanvasManager;
 
     mockColors = {

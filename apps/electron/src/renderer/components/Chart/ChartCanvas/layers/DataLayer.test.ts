@@ -8,6 +8,7 @@ const createMockManager = () => ({
   getViewport: vi.fn(() => ({ start: 0, end: 100, klineWidth: 10 })),
   getBounds: vi.fn(() => ({ maxIndex: 1000, minPrice: 100, maxPrice: 200, maxVolume: 1000 })),
   indexToX: vi.fn((index: number) => index * 10),
+  indexToCenterX: vi.fn((index: number) => index * 10 + 5),
   priceToY: vi.fn((price: number) => 600 - price * 3),
 });
 

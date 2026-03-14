@@ -34,7 +34,7 @@ export const createPanelContext = (
   const { chartWidth } = dimensions;
   const panelTop = manager.getPanelTop(panelId);
   const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
-  const klineWidth = effectiveWidth / (viewport.end - viewport.start);
+  const klineWidth = chartWidth / (viewport.end - viewport.start);
   const padding = 4;
   const innerHeight = panelHeight - padding * 2;
 
