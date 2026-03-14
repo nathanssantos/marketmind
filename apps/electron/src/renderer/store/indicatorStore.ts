@@ -192,7 +192,7 @@ interface IndicatorState {
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
-    activeIndicators: ['volume'],
+    activeIndicators: ['volume', 'parabolicSar'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
     hydrate: (data) => {
