@@ -1081,7 +1081,7 @@ export const ChartCanvas = ({
     symbol: symbol ?? '',
   });
 
-  useBackendDrawings(symbol ?? '');
+  useBackendDrawings(symbol ?? '', klines);
 
   const { render: renderDrawings } = useDrawingsRenderer({
     manager,

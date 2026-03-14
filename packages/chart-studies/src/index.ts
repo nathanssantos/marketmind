@@ -38,3 +38,4 @@ export {
   serializeDrawingData,
   deserializeDrawingData,
 } from './serialization';
+export type { KlineTimeLookup, TimeToIndexLookup } from './serialization';

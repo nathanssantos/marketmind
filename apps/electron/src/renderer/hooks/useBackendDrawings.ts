@@ -1,9 +1,11 @@
 import type { Drawing, DrawingType } from '@marketmind/chart-studies';
 import { deserializeDrawingData, serializeDrawingData } from '@marketmind/chart-studies';
+import type { KlineTimeLookup, TimeToIndexLookup } from '@marketmind/chart-studies';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { trpc } from '@renderer/services/trpc';
 import { useDrawingStore } from '@renderer/store/drawingStore';
+import type { Kline } from '@marketmind/types';
 
 const DEBOUNCE_DELAY = 300;
 
@@ -20,16 +22,35 @@ interface BackendDrawing {
   updatedAt: Date;
 }
 
-const backendToFrontend = (bd: BackendDrawing): Drawing | null =>
-  deserializeDrawingData(bd.type as DrawingType, bd.data, {
-    id: `backend-${bd.id}`,
-    symbol: bd.symbol,
-    visible: bd.visible,
-    locked: bd.locked,
-    zIndex: bd.zIndex,
-    createdAt: new Date(bd.createdAt).getTime(),
-    updatedAt: new Date(bd.updatedAt).getTime(),
-  });
+const buildTimeToIndex = (klines: Kline[]): TimeToIndexLookup => {
+  const timeMap = new Map<number, number>();
+  for (let i = 0; i < klines.length; i++) {
+    const k = klines[i];
+    if (k) timeMap.set(k.openTime, i);
+  }
+
+  return (time: number): number => {
+    const exact = timeMap.get(time);
+    if (exact !== undefined) return exact;
+
+    let lo = 0;
+    let hi = klines.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      const midTime = klines[mid]?.openTime ?? 0;
+      if (midTime < time) lo = mid + 1;
+      else if (midTime > time) hi = mid - 1;
+      else return mid;
+    }
+    return Math.max(0, Math.min(lo, klines.length - 1));
+  };
+};
+
+const buildGetOpenTime = (klines: Kline[]): KlineTimeLookup =>
+  (index: number): number | undefined => {
+    const clamped = Math.round(Math.max(0, Math.min(index, klines.length - 1)));
+    return klines[clamped]?.openTime;
+  };
 
 const extractBackendId = (frontendId: string): number | null => {
   if (!frontendId.startsWith('backend-')) return null;
@@ -37,13 +58,15 @@ const extractBackendId = (frontendId: string): number | null => {
   return isNaN(num) ? null : num;
 };
 
-export const useBackendDrawings = (symbol: string) => {
+export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
   const queryClient = useQueryClient();
   const backendIdMapRef = useRef<Map<string, number>>(new Map());
   const pendingCreatesRef = useRef<Set<string>>(new Set());
   const suppressSyncRef = useRef(false);
   const updateTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const prevDrawingsRef = useRef<Drawing[]>([]);
+  const klinesRef = useRef<Kline[]>(klines);
+  klinesRef.current = klines;
 
   const setDrawingsForSymbol = useDrawingStore((s) => s.setDrawingsForSymbol);
 
@@ -51,7 +74,7 @@ export const useBackendDrawings = (symbol: string) => {
     queryKey: ['drawings', symbol],
     queryFn: () => trpc.drawing.listBySymbol.query({ symbol }),
     enabled: !!symbol,
-    staleTime: 60_000,
+    staleTime: 5000,
   });
 
   const createMutation = useMutation({
@@ -82,14 +105,28 @@ export const useBackendDrawings = (symbol: string) => {
   });
 
   useEffect(() => {
-    if (!backendDrawings || !symbol) return;
+    if (!backendDrawings || !symbol || klines.length === 0) return;
 
     suppressSyncRef.current = true;
     const newIdMap = new Map<string, number>();
     const drawings: Drawing[] = [];
+    const timeToIndex = buildTimeToIndex(klines);
 
     for (const bd of backendDrawings) {
-      const drawing = backendToFrontend(bd as BackendDrawing);
+      const drawing = deserializeDrawingData(
+        bd.type as DrawingType,
+        (bd as BackendDrawing).data,
+        {
+          id: `backend-${bd.id}`,
+          symbol: (bd as BackendDrawing).symbol,
+          visible: (bd as BackendDrawing).visible,
+          locked: (bd as BackendDrawing).locked,
+          zIndex: (bd as BackendDrawing).zIndex,
+          createdAt: new Date((bd as BackendDrawing).createdAt).getTime(),
+          updatedAt: new Date((bd as BackendDrawing).updatedAt).getTime(),
+        },
+        timeToIndex,
+      );
       if (!drawing) continue;
       newIdMap.set(drawing.id, bd.id);
       drawings.push(drawing);
@@ -102,7 +139,9 @@ export const useBackendDrawings = (symbol: string) => {
     requestAnimationFrame(() => {
       suppressSyncRef.current = false;
     });
-  }, [backendDrawings, symbol, setDrawingsForSymbol]);
+  }, [backendDrawings, symbol, klines.length, setDrawingsForSymbol]);
+
+  const getOpenTime = useCallback((): KlineTimeLookup => buildGetOpenTime(klinesRef.current), []);
 
   const debouncedUpdate = useCallback(
     (drawingId: string, drawing: Drawing) => {
@@ -117,7 +156,7 @@ export const useBackendDrawings = (symbol: string) => {
         try {
           updateMutation.mutate({
             id: backendId,
-            data: serializeDrawingData(drawing),
+            data: serializeDrawingData(drawing, getOpenTime()),
             visible: drawing.visible,
             locked: drawing.locked,
             zIndex: drawing.zIndex,
@@ -128,7 +167,7 @@ export const useBackendDrawings = (symbol: string) => {
 
       updateTimersRef.current.set(drawingId, timer);
     },
-    [updateMutation]
+    [updateMutation, getOpenTime]
   );
 
   const handleCreate = useCallback(
@@ -140,7 +179,7 @@ export const useBackendDrawings = (symbol: string) => {
         const result = await createMutation.mutateAsync({
           symbol: drawing.symbol,
           type: drawing.type,
-          data: serializeDrawingData(drawing),
+          data: serializeDrawingData(drawing, getOpenTime()),
           visible: drawing.visible,
           locked: drawing.locked,
           zIndex: drawing.zIndex,
@@ -153,7 +192,7 @@ export const useBackendDrawings = (symbol: string) => {
         pendingCreatesRef.current.delete(drawing.id);
       }
     },
-    [createMutation]
+    [createMutation, getOpenTime]
   );
 
   const handleDelete = useCallback(
