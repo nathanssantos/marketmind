@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import type React from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { renderLine } from './renderers/renderLine';
 import { renderRectangle } from './renderers/renderRectangle';
 import { renderPencil } from './renderers/renderPencil';
@@ -116,17 +116,12 @@ export const useDrawingsRenderer = ({
   pendingDrawingRef,
   lastSnapRef,
 }: UseDrawingsRendererProps): { render: () => void } => {
-  const prevDrawingsHashRef = useRef('');
-
   useEffect(() => {
     if (!manager || !symbol) return;
-    const unsubscribe = useDrawingStore.subscribe((state) => {
-      const drawings = state.drawingsBySymbol[symbol] ?? [];
-      const hash = drawings.map((d) => `${d.id}:${d.updatedAt}`).join(',');
-      if (hash !== prevDrawingsHashRef.current) {
-        prevDrawingsHashRef.current = hash;
-        manager.markDirty('overlays');
-      }
+    const unsubscribe = useDrawingStore.subscribe((state, prevState) => {
+      const curr = state.drawingsBySymbol[symbol];
+      const prev = prevState.drawingsBySymbol[symbol];
+      if (curr !== prev) manager.markDirty('overlays');
     });
     return unsubscribe;
   }, [manager, symbol]);
