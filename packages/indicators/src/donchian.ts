@@ -1,9 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_DONCHIAN_PERIOD = 20;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export interface DonchianResult {
   upper: (number | null)[];

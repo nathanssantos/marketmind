@@ -1,11 +1,9 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_AF_START = 0.02;
 const DEFAULT_AF_INCREMENT = 0.02;
 const DEFAULT_AF_MAX = 0.2;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export interface ParabolicSARResult {
   sar: (number | null)[];

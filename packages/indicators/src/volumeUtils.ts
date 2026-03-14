@@ -1,11 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineVolume = (kline: Kline): number => {
-  const vol = kline.volume;
-  if (typeof vol === 'number') return vol;
-  if (typeof vol === 'string') return parseFloat(vol);
-  return 0;
-};
+import { getKlineVolume } from '@marketmind/types';
 
 export interface VolumeAnalysis {
   average: number;

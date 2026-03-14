@@ -1,10 +1,8 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_FAST_PERIOD = 5;
 const DEFAULT_SLOW_PERIOD = 34;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export interface AOResult {
   values: (number | null)[];

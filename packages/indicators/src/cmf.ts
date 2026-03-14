@@ -1,11 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@marketmind/types';
 
 const DEFAULT_CMF_PERIOD = 20;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineVolume = (kline: Kline): number => parseFloat(kline.volume);
 
 export interface CMFResult {
   values: (number | null)[];

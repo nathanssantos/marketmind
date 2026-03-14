@@ -1,28 +1,18 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
+import { getKlineClose } from '@marketmind/types';
 
 export const calculateSMA = (klines: Kline[], period: number): (number | null)[] => {
-  if (period <= 0 || klines.length === 0) {
-    return [];
-  }
+  if (period <= 0 || klines.length === 0) return [];
 
-  const result: (number | null)[] = [];
+  const result: (number | null)[] = new Array(klines.length);
+  let windowSum = 0;
 
   for (let i = 0; i < klines.length; i++) {
-    if (i < period - 1) {
-      result.push(null);
-      continue;
-    }
+    windowSum += getKlineClose(klines[i]!);
 
-    let sum = 0;
-    for (let j = 0; j < period; j++) {
-      const kline = klines[i - j];
-      if (!kline) continue;
-      sum += getKlineClose(kline);
-    }
+    if (i >= period) windowSum -= getKlineClose(klines[i - period]!);
 
-    result.push(sum / period);
+    result[i] = i < period - 1 ? null : windowSum / period;
   }
 
   return result;

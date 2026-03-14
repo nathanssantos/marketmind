@@ -405,6 +405,8 @@ export const tradeExecutions = pgTable('trade_executions', {
   openedAtIdx: index('trade_executions_opened_at_idx').on(table.openedAt),
   setupTypeIdx: index('trade_executions_setup_type_idx').on(table.setupType),
   marketTypeIdx: index('trade_executions_market_type_idx').on(table.marketType),
+  walletStatusIdx: index('trade_executions_wallet_status_idx').on(table.walletId, table.status),
+  walletClosedIdx: index('trade_executions_wallet_closed_idx').on(table.walletId, table.status, table.closedAt),
 }));
 
 export const priceCache = pgTable('price_cache', {
@@ -759,6 +761,7 @@ export const customSymbolComponents = pgTable('custom_symbol_components', {
 }, (table) => ({
   uniqueComponent: unique().on(table.customSymbolId, table.symbol, table.marketType),
   customSymbolIdx: index('custom_symbol_components_idx').on(table.customSymbolId),
+  activeIdx: index('custom_symbol_components_active_idx').on(table.customSymbolId, table.isActive),
 }));
 
 export type CustomSymbol = typeof customSymbols.$inferSelect;

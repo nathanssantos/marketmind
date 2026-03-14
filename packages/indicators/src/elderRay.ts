@@ -1,10 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_ELDER_PERIOD = 13;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface ElderRayResult {
   bullPower: (number | null)[];

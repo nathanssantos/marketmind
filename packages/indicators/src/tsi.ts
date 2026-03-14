@@ -1,10 +1,9 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 
 const DEFAULT_LONG_PERIOD = 25;
 const DEFAULT_SHORT_PERIOD = 13;
 const DEFAULT_SIGNAL_PERIOD = 13;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface TSIResult {
   tsi: (number | null)[];

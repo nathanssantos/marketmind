@@ -1,12 +1,10 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 import { calculateATR } from './atr';
 
 const DEFAULT_CHOPPINESS_PERIOD = 14;
 const HIGH_THRESHOLD = 61.8;
 const LOW_THRESHOLD = 38.2;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export const CHOPPINESS_FILTER = {
   DEFAULT_PERIOD: DEFAULT_CHOPPINESS_PERIOD,

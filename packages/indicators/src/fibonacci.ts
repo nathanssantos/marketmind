@@ -1,4 +1,5 @@
 import type { Kline, TimeInterval } from '@marketmind/types';
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 import { FILTER_THRESHOLDS, INTERVAL_MS, TIME_MS } from '@marketmind/types';
 import {
   FIBONACCI_ALL_LEVELS,
@@ -59,9 +60,6 @@ export {
   type SwingPointWithIndex,
   type FibonacciProjectionResult,
 } from '@marketmind/fibonacci';
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export const FIBONACCI_LEVELS = FIBONACCI_RETRACEMENT_LEVELS;
 export const FIBONACCI_EXTENSION_LEVELS = FIBONACCI_ALL_LEVELS;

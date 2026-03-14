@@ -160,6 +160,9 @@ export const useDrawingsRenderer = ({
 }: UseDrawingsRendererProps): { render: () => void } => {
   const klinesRef = useRef(klines);
   klinesRef.current = klines;
+  const drawingIndexCache = useRef(new Map<string, Drawing>());
+  const lastKlinesLengthRef = useRef(0);
+  const lastFirstKlineTimeRef = useRef(0);
   useEffect(() => {
     if (!manager || !symbol) return;
     const unsubscribe = useDrawingStore.subscribe((state, prevState) => {
@@ -191,8 +194,20 @@ export const useDrawingsRenderer = ({
 
     const sorted = [...rawDrawings].sort((a, b) => a.zIndex - b.zIndex);
 
+    const firstTime = currentKlines[0]?.openTime ?? 0;
+    if (currentKlines.length !== lastKlinesLengthRef.current || firstTime !== lastFirstKlineTimeRef.current) {
+      drawingIndexCache.current.clear();
+      lastKlinesLengthRef.current = currentKlines.length;
+      lastFirstKlineTimeRef.current = firstTime;
+    }
+
     for (const raw of sorted) {
-      const drawing = resolveDrawingIndices(raw, currentKlines);
+      const cacheKey = `${raw.id}-${raw.updatedAt}`;
+      let drawing = drawingIndexCache.current.get(cacheKey);
+      if (!drawing) {
+        drawing = resolveDrawingIndices(raw, currentKlines);
+        drawingIndexCache.current.set(cacheKey, drawing);
+      }
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
       renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
     }

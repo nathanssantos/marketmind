@@ -1,9 +1,8 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 import { calculateWMAFromValues } from './wma';
 
 const DEFAULT_HMA_PERIOD = 20;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface HMAResult {
   values: (number | null)[];

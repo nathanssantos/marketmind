@@ -1,11 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@marketmind/types';
 
 const DEFAULT_MFI_PERIOD = 14;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineVolume = (kline: Kline): number => parseFloat(kline.volume);
 
 const getTypicalPrice = (kline: Kline): number => {
   return (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / 3;

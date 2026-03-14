@@ -21,6 +21,7 @@ import { mapDbKlinesToApi } from '../utils/kline-mapper';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const STRATEGIES_DIR = path.join(__dirname, '../../strategies/builtin');
+const sharedStrategyLoader = new StrategyLoader([STRATEGIES_DIR]);
 
 const strategyStatusSchema = z.enum(['active', 'experimental', 'deprecated', 'unprofitable']);
 
@@ -47,8 +48,7 @@ export const setupDetectionRouter = router({
   listStrategies: publicProcedure
     .input(listStrategiesInputSchema.optional())
     .query(async ({ input }) => {
-      const loader = new StrategyLoader([STRATEGIES_DIR]);
-      const strategies = await loader.loadAll({
+      const strategies = await sharedStrategyLoader.loadAllCached({
         includeStatuses: input?.includeStatuses,
         excludeStatuses: input?.excludeStatuses,
         includeUnprofitable: input?.includeUnprofitable ?? false,
@@ -71,8 +71,7 @@ export const setupDetectionRouter = router({
   getStrategyDetails: publicProcedure
     .input(getStrategyDetailsInputSchema)
     .query(async ({ input }) => {
-      const loader = new StrategyLoader([STRATEGIES_DIR]);
-      const strategies = await loader.loadAll({ includeUnprofitable: true });
+      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: true });
       const strategy = strategies.find((s) => s.id === input.strategyId);
 
       if (!strategy) {
@@ -105,8 +104,7 @@ export const setupDetectionRouter = router({
 
       const mappedKlines = mapDbKlinesToApi(klinesData);
 
-      const loader = new StrategyLoader([STRATEGIES_DIR]);
-      const strategies = await loader.loadAll({ includeUnprofitable: false });
+      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: false });
 
       const filteredStrategies = enabledStrategies
         ? strategies.filter((s) => enabledStrategies.includes(s.id))
@@ -163,8 +161,7 @@ export const setupDetectionRouter = router({
 
       const mappedKlines = mapDbKlinesToApi(klinesData);
 
-      const loader = new StrategyLoader([STRATEGIES_DIR]);
-      const strategies = await loader.loadAll({ includeUnprofitable: false });
+      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: false });
 
       const filteredStrategies = enabledStrategies
         ? strategies.filter((s) => enabledStrategies.includes(s.id))
@@ -237,8 +234,7 @@ export const setupDetectionRouter = router({
   getStrategyEducation: publicProcedure
     .input(z.object({ strategyId: z.string() }))
     .query(async ({ input }): Promise<{ education: StrategyEducation | null; strategyName: string }> => {
-      const loader = new StrategyLoader([STRATEGIES_DIR]);
-      const strategies = await loader.loadAll({ includeUnprofitable: true });
+      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: true });
       const strategy = strategies.find((s) => s.id === input.strategyId);
 
       if (!strategy) {
@@ -267,8 +263,7 @@ export const setupDetectionRouter = router({
 
       if (!execution) return null;
 
-      const loader = new StrategyLoader([STRATEGIES_DIR]);
-      const strategies = await loader.loadAll({ includeUnprofitable: true });
+      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: true });
       const strategy = strategies.find((s) => s.id === execution.setupType);
 
       let patternCandles: TriggerCandleSnapshot[] = [];

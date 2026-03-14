@@ -1,10 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_ATR_PERIOD = 14;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 /**
  * Average True Range (ATR)

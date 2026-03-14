@@ -11,6 +11,7 @@ interface PriceEntry {
 interface PriceState {
   prices: Record<string, PriceEntry>;
   updatePrice: (symbol: string, price: number, source: PriceEntry['source']) => void;
+  updatePriceBatch: (updates: Map<string, number>) => void;
   getPrice: (symbol: string) => number | null;
   getPriceEntry: (symbol: string) => PriceEntry | null;
   cleanupStaleSymbols: () => void;
@@ -44,6 +45,17 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
         state.prices[symbol] = { price, timestamp: now, source };
       });
     }
+  },
+
+  updatePriceBatch: (updates) => {
+    const now = Date.now();
+    set((state) => {
+      for (const [symbol, price] of updates) {
+        const current = state.prices[symbol];
+        if (current && current.source === 'chart' && now - current.timestamp <= PRICE_STALENESS_MS) continue;
+        state.prices[symbol] = { price, timestamp: now, source: 'websocket' };
+      }
+    });
   },
 
   getPrice: (symbol) => {
@@ -81,7 +93,7 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   },
 })));
 
-const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 1000;
+const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
 
 export const useFastPriceForSymbol = (symbol: string): number | null =>
   usePriceStore((state) => state.prices[symbol]?.price ?? null);

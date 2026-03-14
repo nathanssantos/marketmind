@@ -259,7 +259,7 @@ export class SignalProcessor {
 
     const directionMode = effectiveConfig?.directionMode ?? 'auto';
 
-    const strategies = await this.strategyLoader.loadAll({ includeUnprofitable: false });
+    const strategies = await this.strategyLoader.loadAllCached({ includeUnprofitable: false });
     const filteredStrategies = strategies.filter((s) => {
       if (!watcher.enabledStrategies.includes(s.id)) return false;
       if (!isDirectionAllowed(directionMode, 'SHORT') && !s.entry.long) return false;

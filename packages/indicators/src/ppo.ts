@@ -1,10 +1,9 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 
 const DEFAULT_FAST_PERIOD = 12;
 const DEFAULT_SLOW_PERIOD = 26;
 const DEFAULT_SIGNAL_PERIOD = 9;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface PPOResult {
   ppo: (number | null)[];

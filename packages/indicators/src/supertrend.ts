@@ -1,12 +1,9 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 import { calculateATR } from './atr';
 
 const DEFAULT_PERIOD = 10;
 const DEFAULT_MULTIPLIER = 3;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface SupertrendResult {
   trend: ('up' | 'down' | null)[];

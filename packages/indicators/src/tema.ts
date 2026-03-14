@@ -1,8 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 
 const DEFAULT_TEMA_PERIOD = 21;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface TEMAResult {
   values: (number | null)[];

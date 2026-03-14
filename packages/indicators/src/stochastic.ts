@@ -1,8 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 
 /**
  * Stochastic Oscillator calculation result

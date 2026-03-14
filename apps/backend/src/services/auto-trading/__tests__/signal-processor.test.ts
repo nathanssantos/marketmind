@@ -123,6 +123,7 @@ vi.mock('../../kline-prefetch', () => ({
 vi.mock('../../setup-detection/dynamic', () => {
   class MockStrategyLoader {
     loadAll = mockLoadAll;
+    loadAllCached = mockLoadAll;
   }
   return {
     StrategyLoader: MockStrategyLoader,

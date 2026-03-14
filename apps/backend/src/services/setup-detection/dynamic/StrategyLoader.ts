@@ -36,12 +36,15 @@ export class StrategyLoader {
   private strategies: Map<string, StrategyFile> = new Map();
   private strategyPaths: string[];
   private watchHandlers: fs.FSWatcher[] = [];
+  private cachedDefinitions: StrategyDefinition[] | null = null;
+  private dirMtimeCache = new Map<string, number>();
 
   constructor(strategyPaths: string[]) {
     this.strategyPaths = strategyPaths;
   }
 
   async loadAll(options: StrategyLoadOptions = {}): Promise<StrategyDefinition[]> {
+    this.cachedDefinitions = null;
     this.strategies.clear();
     const definitions: StrategyDefinition[] = [];
 
@@ -55,16 +58,38 @@ export class StrategyLoader {
       for (const filePath of files) {
         try {
           const definition = await this.loadStrategy(filePath);
-          if (this.shouldIncludeStrategy(definition, options)) {
-            definitions.push(definition);
-          }
+          definitions.push(definition);
         } catch (error) {
           logger.error({ filePath, error: serializeError(error) }, 'Failed to load strategy');
         }
       }
     }
 
-    return definitions;
+    this.cachedDefinitions = definitions;
+    return definitions.filter((d) => this.shouldIncludeStrategy(d, options));
+  }
+
+  async loadAllCached(options: StrategyLoadOptions = {}): Promise<StrategyDefinition[]> {
+    if (this.cachedDefinitions && !this.hasDirectoryChanged()) {
+      return this.cachedDefinitions.filter((d) => this.shouldIncludeStrategy(d, options));
+    }
+    return this.loadAll(options);
+  }
+
+  private hasDirectoryChanged(): boolean {
+    for (const basePath of this.strategyPaths) {
+      try {
+        const stat = fs.statSync(basePath);
+        const cached = this.dirMtimeCache.get(basePath);
+        if (!cached || stat.mtimeMs !== cached) {
+          this.dirMtimeCache.set(basePath, stat.mtimeMs);
+          return true;
+        }
+      } catch {
+        return true;
+      }
+    }
+    return false;
   }
 
   private shouldIncludeStrategy(

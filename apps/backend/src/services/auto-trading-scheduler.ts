@@ -22,6 +22,7 @@ import {
 } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { calculateRequiredKlines } from '../utils/kline-calculator';
+import { mapDbKlinesReversed } from '../utils/kline-mapper';
 import { parseDynamicSymbolExcluded } from '../utils/profile-transformers';
 import {
     getDynamicSymbolRotationService,
@@ -157,6 +158,9 @@ export class AutoTradingScheduler {
   private recentlyRotatedWatchers = new Map<string, number>();
   private anticipationCheckIntervalId: ReturnType<typeof setInterval> | null = null;
   private readonly ANTICIPATION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.ANTICIPATION_CHECK_INTERVAL_MS;
+  private static readonly MAP_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+  private static readonly MAP_ENTRY_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+  private lastMapCleanup = Date.now();
 
   private signalProcessor: SignalProcessor;
   private orderExecutor: OrderExecutor;
@@ -257,21 +261,7 @@ export class AutoTradingScheduler {
       limit: 100,
     });
 
-    const mappedKlines: Kline[] = btcKlines.reverse().map((k) => ({
-      symbol: k.symbol,
-      interval: k.interval as Interval,
-      openTime: k.openTime.getTime(),
-      closeTime: k.closeTime.getTime(),
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-      volume: k.volume,
-      quoteVolume: k.quoteVolume ?? '0',
-      trades: k.trades ?? 0,
-      takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-      takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-    }));
+    const mappedKlines = mapDbKlinesReversed(btcKlines);
 
     this.btcKlinesCache.set(cacheKey, { data: mappedKlines, timestamp: Date.now() });
     return mappedKlines;
@@ -295,21 +285,7 @@ export class AutoTradingScheduler {
       limit: 300,
     });
 
-    const mappedKlines: Kline[] = htfKlines.reverse().map((k) => ({
-      symbol: k.symbol,
-      interval: k.interval as Interval,
-      openTime: k.openTime.getTime(),
-      closeTime: k.closeTime.getTime(),
-      open: k.open,
-      high: k.high,
-      low: k.low,
-      close: k.close,
-      volume: k.volume,
-      quoteVolume: k.quoteVolume ?? '0',
-      trades: k.trades ?? 0,
-      takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
-      takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
-    }));
+    const mappedKlines = mapDbKlinesReversed(htfKlines);
 
     this.htfKlinesCache.set(cacheKey, { data: mappedKlines, timestamp: Date.now() });
     return mappedKlines;
@@ -459,7 +435,22 @@ export class AutoTradingScheduler {
     log('✗ [DynamicRotation] Stopped anticipation timer');
   }
 
+  private cleanupStaleMaps(): void {
+    const now = Date.now();
+    if (now - this.lastMapCleanup < AutoTradingScheduler.MAP_CLEANUP_INTERVAL_MS) return;
+    this.lastMapCleanup = now;
+
+    for (const [key, timestamp] of this.recentlyRotatedWatchers) {
+      if (now - timestamp > AutoTradingScheduler.MAP_ENTRY_MAX_AGE_MS) this.recentlyRotatedWatchers.delete(key);
+    }
+
+    for (const [key, entry] of this.rotationPendingWatchers) {
+      if (now - entry.addedAt > AutoTradingScheduler.MAP_ENTRY_MAX_AGE_MS) this.rotationPendingWatchers.delete(key);
+    }
+  }
+
   private async checkAnticipatedRotations(): Promise<void> {
+    this.cleanupStaleMaps();
     if (this.rotationStates.size === 0) return;
 
     const now = Date.now();

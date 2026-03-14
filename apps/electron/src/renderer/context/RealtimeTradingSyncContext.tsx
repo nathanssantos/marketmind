@@ -75,6 +75,8 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
   const currentWalletIdRef = useRef<string | undefined>(undefined);
+  const pendingPriceUpdates = useRef(new Map<string, number>());
+  const priceFlushScheduled = useRef(false);
 
   const { data: tradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId: walletId ?? '', limit: 100 },
@@ -170,10 +172,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     }
 
     if (newSymbols.length > 0) {
-      console.log('[RealtimeSync] Auto-subscribed to:', newSymbols);
+      if (import.meta.env.DEV) console.log('[RealtimeSync] Auto-subscribed to:', newSymbols);
     }
     if (removedSymbols.length > 0) {
-      console.log('[RealtimeSync] Auto-unsubscribed from:', removedSymbols);
+      if (import.meta.env.DEV) console.log('[RealtimeSync] Auto-unsubscribed from:', removedSymbols);
     }
   }, [allRequiredSymbols]);
 
@@ -194,26 +196,26 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       }
       const symbolsToSubscribe = [...subscribedSymbolsRef.current];
       if (symbolsToSubscribe.length > 0) {
-        console.log('[RealtimeSync] Batch subscribing to prices:', symbolsToSubscribe);
+        if (import.meta.env.DEV) console.log('[RealtimeSync] Batch subscribing to prices:', symbolsToSubscribe);
         socket.emit('subscribe:prices:batch', symbolsToSubscribe);
       }
     };
 
     const handleConnect = () => {
-      console.log('[RealtimeSync] WebSocket connected');
+      if (import.meta.env.DEV) console.log('[RealtimeSync] WebSocket connected');
       subscribeAll();
     };
 
     const handleDisconnect = (reason: string) => {
-      console.log('[RealtimeSync] WebSocket disconnected:', reason);
+      if (import.meta.env.DEV) console.log('[RealtimeSync] WebSocket disconnected:', reason);
     };
 
     const handleConnectError = (err: Error) => {
-      console.error('[RealtimeSync] Connection error:', err.message);
+      if (import.meta.env.DEV) console.error('[RealtimeSync] Connection error:', err.message);
     };
 
     const handlePositionUpdate = (position: PositionUpdate) => {
-      console.log('[RealtimeSync] Position update received:', position.id, position.status);
+      if (import.meta.env.DEV) console.log('[RealtimeSync] Position update received:', position.id, position.status);
       scheduleRef.current('positions', 'wallet');
     };
 
@@ -237,11 +239,28 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       scheduleRef.current('wallet');
     };
 
+    const flushPriceUpdates = () => {
+      priceFlushScheduled.current = false;
+      const updates = pendingPriceUpdates.current;
+      if (updates.size === 0) return;
+
+      const batch = new Map(updates);
+      updates.clear();
+
+      usePriceStore.getState().updatePriceBatch(batch);
+
+      for (const [sym, price] of batch) {
+        const callbacks = priceCallbacksRef.current.get(sym);
+        if (callbacks) callbacks.forEach((cb) => cb(price));
+      }
+    };
+
     const handlePriceUpdate = (data: PriceUpdate) => {
-      usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
-      const callbacks = priceCallbacksRef.current.get(data.symbol);
-      if (callbacks) {
-        callbacks.forEach((callback) => callback(data.price));
+      pendingPriceUpdates.current.set(data.symbol, data.price);
+
+      if (!priceFlushScheduled.current) {
+        priceFlushScheduled.current = true;
+        requestAnimationFrame(flushPriceUpdates);
       }
     };
 
@@ -262,7 +281,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     };
 
     const handleTradeNotification = async (notification: TradeNotification) => {
-      console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
+      if (import.meta.env.DEV) console.log('[RealtimeSync] Trade notification received:', notification.type, notification.title);
 
       if (notification.type !== 'TRAILING_STOP_UPDATED') {
         const toastType = notification.type === 'POSITION_CLOSED'
@@ -280,21 +299,21 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
       try {
         const adapter = await createPlatformAdapter();
-        console.log('[RealtimeSync] Platform adapter created:', adapter.platform);
+        if (import.meta.env.DEV) console.log('[RealtimeSync] Platform adapter created:', adapter.platform);
         const isSupported = await adapter.notification.isSupported();
-        console.log('[RealtimeSync] Notification isSupported:', isSupported);
+        if (import.meta.env.DEV) console.log('[RealtimeSync] Notification isSupported:', isSupported);
         if (isSupported) {
           const result = await adapter.notification.show({
             title: notification.title,
             body: notification.body,
             urgency: notification.urgency,
           });
-          console.log('[RealtimeSync] Notification show result:', result);
+          if (import.meta.env.DEV) console.log('[RealtimeSync] Notification show result:', result);
         } else {
-          console.warn('[RealtimeSync] Native notifications not supported on this system');
+          if (import.meta.env.DEV) console.warn('[RealtimeSync] Native notifications not supported on this system');
         }
       } catch (err) {
-        console.error('[RealtimeSync] Native notification error:', err);
+        if (import.meta.env.DEV) console.error('[RealtimeSync] Native notification error:', err);
       }
 
       scheduleRef.current('positions', 'wallet');
@@ -314,7 +333,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     socket.on('risk:alert', handleRiskAlert);
 
     if (socket.connected) {
-      console.log('[RealtimeSync] Socket already connected, subscribing immediately');
+      if (import.meta.env.DEV) console.log('[RealtimeSync] Socket already connected, subscribing immediately');
       subscribeAll();
     }
 

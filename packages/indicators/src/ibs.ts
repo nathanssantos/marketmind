@@ -1,8 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 
 export interface IBSResult {
   values: (number | null)[];

@@ -1,13 +1,9 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@marketmind/types';
 
 const DEFAULT_FAST_PERIOD = 34;
 const DEFAULT_SLOW_PERIOD = 55;
 const DEFAULT_SIGNAL_PERIOD = 13;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineVolume = (kline: Kline): number => parseFloat(kline.volume);
 
 export interface KlingerResult {
   kvo: (number | null)[];

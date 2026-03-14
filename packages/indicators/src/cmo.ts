@@ -1,8 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 
 const DEFAULT_CMO_PERIOD = 14;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface CMOResult {
   values: (number | null)[];

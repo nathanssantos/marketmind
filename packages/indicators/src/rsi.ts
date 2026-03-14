@@ -1,6 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
+import { getKlineClose } from '@marketmind/types';
 
 /**
  * RSI calculation result

@@ -107,6 +107,17 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: isWeb ? 'dist-web' : 'dist',
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react/jsx-runtime'],
+            'vendor-chakra': ['@chakra-ui/react'],
+            'vendor-query': ['@tanstack/react-query'],
+            'vendor-i18n': ['i18next', 'react-i18next'],
+            'vendor-zustand': ['zustand', 'immer'],
+          },
+        },
+      },
     },
     server: {
       port: isWeb ? 5174 : 5173,

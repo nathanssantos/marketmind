@@ -1,10 +1,8 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_MASS_PERIOD = 25;
 const DEFAULT_EMA_PERIOD = 9;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export interface MassIndexResult {
   values: (number | null)[];

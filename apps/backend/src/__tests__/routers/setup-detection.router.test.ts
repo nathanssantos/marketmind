@@ -48,6 +48,10 @@ vi.mock('../../services/setup-detection/dynamic', () => {
         return Promise.resolve(filtered);
       }
 
+      loadAllCached(options: any = {}) {
+        return this.loadAll(options);
+      }
+
       loadFromString(json: string) {
         return JSON.parse(json);
       }

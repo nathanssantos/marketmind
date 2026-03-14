@@ -55,7 +55,7 @@ export const QUERY_CONFIGS: Record<QueryConfigKey, QueryConfigOptions> = {
     staleTime: QUERY_STALE_TIMES.REAL_TIME,
     gcTime: QUERY_GC_TIMES.SHORT,
     refetchOnWindowFocus: false,
-    refetchInterval: 30 * SECOND,
+    refetchInterval: 5 * MINUTE,
   },
 
   wallets: {

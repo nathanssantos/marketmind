@@ -1,4 +1,5 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 import { calculateADX } from './adx';
 import { calculateEMA } from './movingAverages';
 import { calculateSupertrend } from './supertrend';
@@ -46,8 +47,6 @@ export const TREND_CORE_DEFAULTS = {
   RSI_PERIOD: 14,
   MIN_KLINES: 50,
 } as const;
-
-const getKlineClose = (kline: Kline): number => parseFloat(String(kline.close));
 
 const createNeutralResult = (method: TrendMethod, price: number): TrendDetectionResult => ({
   direction: 'NEUTRAL',

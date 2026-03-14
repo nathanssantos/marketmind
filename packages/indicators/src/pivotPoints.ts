@@ -1,15 +1,11 @@
 import type { Kline, PivotPoint } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@marketmind/types';
 
 const DEFAULT_PIVOT_LOOKBACK = 5;
 const DEFAULT_PIVOT_LOOKAHEAD = 2;
 const DEFAULT_VOLUME_LOOKBACK = 20;
 const VOLUME_CONFIRMATION_MULTIPLIER = 1.2;
 const STRENGTH_THRESHOLDS = { WEAK: 0.3, MEDIUM: 0.6, STRONG: 0.8 };
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineVolume = (kline: Kline): number => parseFloat(kline.volume);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export type PivotStrength = 'weak' | 'medium' | 'strong';
 

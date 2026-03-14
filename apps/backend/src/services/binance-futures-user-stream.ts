@@ -141,26 +141,70 @@ export class BinanceFuturesUserStreamService {
   private connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
   private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
-  private pyramidLocks = new Map<string, Promise<void>>();
+  private pyramidQueues = new Map<string, Array<{ resolve: () => void; timer: ReturnType<typeof setTimeout> }>>();
+  private pyramidActive = new Set<string>();
   private pendingSlTpUpdates = new Map<string, ReturnType<typeof setTimeout>>();
   private recentAlgoEntrySymbols = new Map<string, number>();
+  private walletCache = new Map<string, { wallet: Wallet; cachedAt: number }>();
 
   private static readonly PYRAMID_SLTP_DEBOUNCE_MS = 3000;
+  private static readonly PYRAMID_LOCK_TIMEOUT_MS = 30_000;
+  private static readonly WALLET_CACHE_TTL_MS = 60_000;
+
+  private async getCachedWallet(walletId: string): Promise<Wallet | null> {
+    const cached = this.walletCache.get(walletId);
+    if (cached && Date.now() - cached.cachedAt < BinanceFuturesUserStreamService.WALLET_CACHE_TTL_MS) return cached.wallet;
+    const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+    if (walletRow) this.walletCache.set(walletId, { wallet: walletRow, cachedAt: Date.now() });
+    return walletRow ?? null;
+  }
+
+  private invalidateWalletCache(walletId: string): void {
+    this.walletCache.delete(walletId);
+  }
 
   private async withPyramidLock<T>(walletId: string, symbol: string, fn: () => Promise<T>): Promise<T> {
     const key = `${walletId}:${symbol}`;
-    while (this.pyramidLocks.has(key)) {
-      await this.pyramidLocks.get(key);
+
+    if (this.pyramidActive.has(key)) {
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+          const queue = this.pyramidQueues.get(key);
+          if (queue) {
+            const idx = queue.findIndex(item => item.resolve === resolve);
+            if (idx !== -1) queue.splice(idx, 1);
+            if (queue.length === 0) this.pyramidQueues.delete(key);
+          }
+          resolve();
+        }, BinanceFuturesUserStreamService.PYRAMID_LOCK_TIMEOUT_MS);
+
+        const queue = this.pyramidQueues.get(key) ?? [];
+        queue.push({ resolve, timer });
+        this.pyramidQueues.set(key, queue);
+      });
     }
-    let releaseLock: () => void;
-    const lockPromise = new Promise<void>((resolve) => { releaseLock = resolve; });
-    this.pyramidLocks.set(key, lockPromise);
+
+    this.pyramidActive.add(key);
     try {
       return await fn();
     } finally {
-      releaseLock!();
-      this.pyramidLocks.delete(key);
+      this.pyramidActive.delete(key);
+      const queue = this.pyramidQueues.get(key);
+      if (queue && queue.length > 0) {
+        const next = queue.shift()!;
+        clearTimeout(next.timer);
+        if (queue.length === 0) this.pyramidQueues.delete(key);
+        next.resolve();
+      }
     }
+  }
+
+  shutdown(): void {
+    for (const [, timer] of this.pendingSlTpUpdates) clearTimeout(timer);
+    this.pendingSlTpUpdates.clear();
+    this.pyramidQueues.clear();
+    this.pyramidActive.clear();
+    this.walletCache.clear();
   }
 
   private scheduleDebouncedSlTpUpdate(executionId: string, walletId: string, symbol: string): void {
@@ -178,7 +222,7 @@ export class BinanceFuturesUserStreamService {
           .limit(1);
         if (!execution) return;
 
-        const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+        const walletRow = await this.getCachedWallet(walletId);
         if (!walletRow) return;
 
         const slPrice = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
@@ -188,7 +232,6 @@ export class BinanceFuturesUserStreamService {
         const qty = parseFloat(execution.quantity);
 
         await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
-        await new Promise(r => setTimeout(r, 300));
 
         let newSlResult: import('./protection-orders').ProtectionOrderResult | null = null;
         let newTpResult: import('./protection-orders').ProtectionOrderResult | null = null;
@@ -196,15 +239,35 @@ export class BinanceFuturesUserStreamService {
         if (slPrice) {
           try {
             newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: slPrice, marketType: 'FUTURES' });
-          } catch (e) {
-            logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced SL — position may be unprotected');
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg.includes('Unknown order') || msg.includes('-2011')) {
+              await new Promise(r => setTimeout(r, 100));
+              try {
+                newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: slPrice, marketType: 'FUTURES' });
+              } catch (retryErr) {
+                logger.error({ error: serializeError(retryErr), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced SL after retry');
+              }
+            } else {
+              logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced SL — position may be unprotected');
+            }
           }
         }
         if (tpPrice) {
           try {
             newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: tpPrice, marketType: 'FUTURES' });
-          } catch (e) {
-            logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced TP — position may be unprotected');
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg.includes('Unknown order') || msg.includes('-2011')) {
+              await new Promise(r => setTimeout(r, 100));
+              try {
+                newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: tpPrice, marketType: 'FUTURES' });
+              } catch (retryErr) {
+                logger.error({ error: serializeError(retryErr), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced TP after retry');
+              }
+            } else {
+              logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced TP — position may be unprotected');
+            }
           }
         }
 
@@ -356,6 +419,8 @@ export class BinanceFuturesUserStreamService {
       connection.wsClient.closeAll(true);
       this.connections.delete(walletId);
     }
+
+    this.shutdown();
     logger.info('[FuturesUserStream] Service stopped');
   }
 
@@ -434,7 +499,8 @@ export class BinanceFuturesUserStreamService {
 
         void (async () => {
           try {
-            const [currentWallet] = await db.select().from(wallets).where(eq(wallets.id, wallet.id)).limit(1);
+            this.invalidateWalletCache(wallet.id);
+            const currentWallet = await this.getCachedWallet(wallet.id);
             if (currentWallet) {
               const syncResult = await positionSyncService.syncWallet(currentWallet);
               logger.info(
@@ -684,7 +750,7 @@ export class BinanceFuturesUserStreamService {
             const needsTpPlacement = !!pendingExecution.setupId && !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
 
             if (needsSlPlacement || needsTpPlacement) {
-              const [walletForActivation] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+              const walletForActivation = await this.getCachedWallet(walletId);
               if (walletForActivation) {
                 if (needsSlPlacement) {
                   try {
@@ -971,7 +1037,7 @@ export class BinanceFuturesUserStreamService {
             return;
           }
 
-          const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+          const walletRow = await this.getCachedWallet(walletId);
           if (!walletRow) return;
 
           await db.insert(tradeExecutions).values({
@@ -1070,7 +1136,7 @@ export class BinanceFuturesUserStreamService {
           );
         }
 
-        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+        const wallet = await this.getCachedWallet(walletId);
 
         if (!wallet) {
           throw new Error(`Wallet not found: ${walletId}`);
@@ -1118,7 +1184,7 @@ export class BinanceFuturesUserStreamService {
                   { error: errorMessage, orderToCancel, attempt, maxRetries },
                   '[FuturesUserStream] Retry cancelling opposite order'
                 );
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                await new Promise(resolve => setTimeout(resolve, 100 * attempt));
               } else {
                 logger.error(
                   { error: errorMessage, orderToCancel, isAlgoOrder: oppositeIsAlgo },
@@ -1396,10 +1462,11 @@ export class BinanceFuturesUserStreamService {
 
       for (const balance of balances) {
         if (balance.a === 'USDT') {
-          const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+          const wallet = await this.getCachedWallet(walletId);
 
           if (wallet) {
             const newBalance = parseFloat(balance.wb);
+            this.invalidateWalletCache(walletId);
             await db
               .update(wallets)
               .set({
@@ -1731,7 +1798,7 @@ export class BinanceFuturesUserStreamService {
                   { error: errorMessage, orderToCancel, attempt, maxRetries },
                   '[FuturesUserStream] Retry cancelling opposite algo order'
                 );
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                await new Promise(resolve => setTimeout(resolve, 100 * attempt));
               } else {
                 logger.error(
                   { error: errorMessage, orderToCancel },
@@ -1815,7 +1882,7 @@ export class BinanceFuturesUserStreamService {
       const apiClient = this.connections.get(walletId)?.apiClient;
       if (!apiClient) {
         logger.error({ walletId, executionId }, '[FuturesUserStream] No API client for delayed verification - falling back to position sync');
-        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+        const wallet = await this.getCachedWallet(walletId);
         if (wallet) await positionSyncService.syncWallet(wallet);
         return;
       }
@@ -1979,7 +2046,7 @@ export class BinanceFuturesUserStreamService {
       }
 
       const apiClient = this.connections.get(walletId)?.apiClient;
-      const [walletRow] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+      const walletRow = await this.getCachedWallet(walletId);
 
       for (const pending of pendingEntries) {
         if (apiClient && pending.entryOrderId) {
@@ -2176,7 +2243,8 @@ export class BinanceFuturesUserStreamService {
       this.unsubscribeWallet(walletId);
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+      this.invalidateWalletCache(walletId);
+      const wallet = await this.getCachedWallet(walletId);
       if (wallet && wallet.isActive && !isPaperWallet(wallet) && wallet.marketType === 'FUTURES') {
         await this.subscribeWallet(wallet as Wallet);
         logger.info({ walletId }, '[FuturesUserStream] Successfully resubscribed after listenKey expiry');

@@ -1,7 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineVolume = (kline: Kline): number => parseFloat(kline.volume);
+import { getKlineClose, getKlineVolume } from '@marketmind/types';
 
 export interface OBVResult {
   values: number[];

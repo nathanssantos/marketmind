@@ -1,4 +1,5 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 import { calculateADX } from './adx';
 import { calculateEMA } from './movingAverages';
 import { calculateRSI } from './rsi';
@@ -11,8 +12,6 @@ const DEFAULT_RSI_PERIOD = 14;
 const DEFAULT_RSI_LOWER_BOUND = 30;
 const DEFAULT_RSI_UPPER_BOUND = 70;
 const MIN_KLINES_REQUIRED = 50;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface TrendAlignmentConfig {
   adxPeriod?: number;

@@ -1,8 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 
 const EMA_MULTIPLIER_NUMERATOR = 2;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 /**
  * MACD calculation result

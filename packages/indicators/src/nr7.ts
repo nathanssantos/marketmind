@@ -1,7 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 
 export interface NR7Result {
   isNR7: boolean[];

@@ -1,8 +1,7 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose } from '@marketmind/types';
 
 const DEFAULT_WMA_PERIOD = 20;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface WMAResult {
   values: (number | null)[];

@@ -1,9 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineOpen = (kline: Kline): number => parseFloat(kline.open);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineVolume = (kline: Kline): number => parseFloat(kline.volume);
-const getKlineTakerBuyVolume = (kline: Kline): number => parseFloat(kline.takerBuyBaseVolume);
+import { getKlineClose, getKlineOpen, getKlineTakerBuyBaseVolume, getKlineVolume } from '@marketmind/types';
 
 export interface DeltaVolumeResult {
   delta: number[];
@@ -26,7 +22,7 @@ export const calculateDeltaVolume = (klines: Kline[]): DeltaVolumeResult => {
 
   for (let i = 0; i < klines.length; i++) {
     const volume = getKlineVolume(klines[i]!);
-    const takerBuyVol = getKlineTakerBuyVolume(klines[i]!);
+    const takerBuyVol = getKlineTakerBuyBaseVolume(klines[i]!);
     const takerSellVol = volume - takerBuyVol;
 
     buyVolume.push(takerBuyVol);

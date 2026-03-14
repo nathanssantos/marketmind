@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.65.0] - 2026-03-14
+
+### Performance
+- **Order execution latency**: removed 300ms hard `setTimeout` delays in futures user stream, reduced backoff from 1000ms to 100ms per attempt — order round-trip reduced from ~1.5s to ~200ms
+- **Wallet lookup cache**: in-memory 60s TTL cache replaces ~10 DB queries per order event in `BinanceFuturesUserStreamService`
+- **Pyramid lock**: replaced spin-wait pattern with queue-based async mutex with 30s timeout and FIFO ordering
+- **Price update batching**: `requestAnimationFrame`-based batching reduces WebSocket price store writes from 100/sec to ~60/sec (one per frame)
+- **Sidebar price throttle**: reduced from 1000ms to 250ms for smoother real-time price display
+- **Canvas layer invalidation**: kline updates no longer invalidate static background layer (grid, labels)
+- **Incremental MA calculation**: detects append-only kline updates and reuses cached prefix instead of full recalculation
+- **Drawing index cache**: binary search results cached per drawing, invalidated only when klines change
+- **Strategy loader cache**: `loadAllCached()` with directory mtime check eliminates 105 file reads per cycle
+- **Custom symbol N+1 fix**: batch query with in-memory grouping replaces N+1 per-symbol component queries
+- **SMA sliding window**: O(n) single-pass instead of O(n*p) — 200x faster for period=200
+- **FVG single-pass**: integrated gap detection and fill checking in one forward pass instead of O(n²)
+- **klinesLatest polling**: reduced from 30s to 5min fallback (WebSocket already delivers real-time)
+- **Vite code splitting**: `manualChunks` for vendor splitting (react, chakra, query, i18n, zustand)
+
+### Added
+- **`updatePriceBatch()`**: new price store method for batched WebSocket updates with single Zustand notification
+- **Direction utilities**: `sideToDirection`, `directionToSide`, `sideToBias`, `biasToSide`, `directionToBias`, `biasToDirection` in `@marketmind/types`
+- **EMA utility**: `emaMultiplier()` and `calculateEmaStep()` in `packages/indicators/src/utils/ema.ts`
+- **Compound DB indexes**: `trade_executions_wallet_status_idx`, `trade_executions_wallet_closed_idx`, `custom_symbol_components_active_idx`
+- **`shutdown()` method**: clean resource cleanup for `BinanceFuturesUserStreamService`
+
+### Changed
+- **getKlineClose deduplication**: replaced 41 local definitions across indicator files with single import from `@marketmind/types`
+- **Kline mapper dedup**: `auto-trading-scheduler.ts` uses `mapDbKlinesReversed` instead of inline mapping
+- **Strategy loader singleton**: setup-detection router uses shared `StrategyLoader` instance with `loadAllCached()`
+- **Console.log cleanup**: 14 debug statements in `RealtimeTradingSyncContext` guarded with `import.meta.env.DEV`
+- **Map cleanup**: hourly pruning of `recentlyRotatedWatchers` and `rotationPendingWatchers` in auto-trading scheduler
+
 ## [0.64.0] - 2026-03-14
 
 ### Fixed

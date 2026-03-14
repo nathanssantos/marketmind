@@ -1,7 +1,5 @@
 import type { Kline } from '@marketmind/types';
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
+import { getKlineHigh, getKlineLow } from '@marketmind/types';
 
 export interface FairValueGap {
   index: number;
@@ -19,18 +17,14 @@ export interface FVGResult {
 }
 
 export const calculateFVG = (klines: Kline[]): FVGResult => {
-  if (klines.length < 3) {
-    return { gaps: [], bullishFVG: [], bearishFVG: [] };
-  }
+  if (klines.length < 3) return { gaps: [], bullishFVG: [], bearishFVG: [] };
 
   const gaps: FairValueGap[] = [];
-  const bullishFVG: (FairValueGap | null)[] = [];
-  const bearishFVG: (FairValueGap | null)[] = [];
+  const bullishFVG: (FairValueGap | null)[] = new Array(klines.length).fill(null);
+  const bearishFVG: (FairValueGap | null)[] = new Array(klines.length).fill(null);
+  const unfilledGaps: FairValueGap[] = [];
 
   for (let i = 0; i < klines.length; i++) {
-    bullishFVG.push(null);
-    bearishFVG.push(null);
-
     if (i < 2) continue;
 
     const k1 = klines[i - 2]!;
@@ -42,6 +36,17 @@ export const calculateFVG = (klines: Kline[]): FVGResult => {
     const k3High = getKlineHigh(k3);
     const k3Low = getKlineLow(k3);
 
+    for (let g = unfilledGaps.length - 1; g >= 0; g--) {
+      const gap = unfilledGaps[g]!;
+      if (gap.type === 'bullish' && k3Low <= gap.low) {
+        gap.filled = true;
+        unfilledGaps.splice(g, 1);
+      } else if (gap.type === 'bearish' && k3High >= gap.high) {
+        gap.filled = true;
+        unfilledGaps.splice(g, 1);
+      }
+    }
+
     if (k3Low > k1High) {
       const gap: FairValueGap = {
         index: i - 1,
@@ -52,6 +57,7 @@ export const calculateFVG = (klines: Kline[]): FVGResult => {
         timestamp: k2.openTime,
       };
       gaps.push(gap);
+      unfilledGaps.push(gap);
       bullishFVG[i - 1] = gap;
     }
 
@@ -65,24 +71,8 @@ export const calculateFVG = (klines: Kline[]): FVGResult => {
         timestamp: k2.openTime,
       };
       gaps.push(gap);
+      unfilledGaps.push(gap);
       bearishFVG[i - 1] = gap;
-    }
-  }
-
-  for (const gap of gaps) {
-    for (let i = gap.index + 2; i < klines.length; i++) {
-      const high = getKlineHigh(klines[i]!);
-      const low = getKlineLow(klines[i]!);
-
-      if (gap.type === 'bullish' && low <= gap.low) {
-        gap.filled = true;
-        break;
-      }
-
-      if (gap.type === 'bearish' && high >= gap.high) {
-        gap.filled = true;
-        break;
-      }
     }
   }
 

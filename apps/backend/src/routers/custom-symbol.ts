@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { customSymbolComponents, customSymbols } from '../db/schema';
@@ -47,27 +47,29 @@ export const customSymbolRouter = router({
       where: eq(customSymbols.isActive, true),
     });
 
-    return Promise.all(
-      symbols.map(async (cs) => {
-        const components = await db.query.customSymbolComponents.findMany({
-          where: and(
-            eq(customSymbolComponents.customSymbolId, cs.id),
-            eq(customSymbolComponents.isActive, true),
-          ),
-        });
+    if (symbols.length === 0) return [];
 
-        return {
-          ...cs,
-          baseValue: parseFloat(cs.baseValue),
-          capPercent: cs.capPercent ? parseFloat(cs.capPercent) : null,
-          components: components.map(c => ({
-            ...c,
-            weight: parseFloat(c.weight),
-            basePrice: c.basePrice ? parseFloat(c.basePrice) : null,
-          })),
-        };
-      })
-    );
+    const allComponents = await db.query.customSymbolComponents.findMany({
+      where: eq(customSymbolComponents.isActive, true),
+    });
+
+    const componentsBySymbolId = new Map<number, typeof allComponents>();
+    for (const c of allComponents) {
+      const existing = componentsBySymbolId.get(c.customSymbolId) ?? [];
+      existing.push(c);
+      componentsBySymbolId.set(c.customSymbolId, existing);
+    }
+
+    return symbols.map((cs) => ({
+      ...cs,
+      baseValue: parseFloat(cs.baseValue),
+      capPercent: cs.capPercent ? parseFloat(cs.capPercent) : null,
+      components: (componentsBySymbolId.get(cs.id) ?? []).map(c => ({
+        ...c,
+        weight: parseFloat(c.weight),
+        basePrice: c.basePrice ? parseFloat(c.basePrice) : null,
+      })),
+    }));
   }),
 
   computeWeights: protectedProcedure

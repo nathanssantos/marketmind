@@ -205,9 +205,15 @@ export const useOptimizedRendering = ({
   });
 
   useEffect(() => {
+    invalidateLayer('data');
+    invalidateLayer('indicators');
+    requestRender();
+  }, [klines]);
+
+  useEffect(() => {
     invalidateAll();
     requestRender();
-  }, [klines, colors, chartType, showGrid, showVolume]);
+  }, [colors, chartType, showGrid, showVolume]);
 
   useEffect(() => {
     if (!manager) return;

@@ -64,7 +64,7 @@ export class SetupDetectionService {
 
   async loadStrategiesFromDirectory(directory: string): Promise<void> {
     this.strategyLoader = new StrategyLoader([directory]);
-    const strategies = await this.strategyLoader.loadAll();
+    const strategies = await this.strategyLoader.loadAllCached();
     for (const strategy of strategies) {
       this.loadStrategy(strategy);
     }

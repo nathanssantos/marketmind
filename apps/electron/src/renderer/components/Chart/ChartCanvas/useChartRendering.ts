@@ -86,13 +86,35 @@ export const useChartRendering = (props: UseChartRenderingProps): UseChartRender
     interaction: 0,
   });
 
+  const prevKlinesRef = useRef<Kline[]>([]);
+  const prevMaCacheRef = useRef<Map<string, (number | null)[]>>(new Map());
+
   const maValuesCache = useMemo(() => {
+    const prev = prevKlinesRef.current;
     const cache = new Map<string, (number | null)[]>();
+    const isAppend = klines.length > prev.length &&
+      klines.length - prev.length <= 5 &&
+      prev.length > 0 &&
+      klines[prev.length - 1]?.openTime === prev[prev.length - 1]?.openTime;
+
     for (const ma of movingAverages) {
       if (ma.visible === false) continue;
       const key = `${ma.type}-${ma.period}`;
-      cache.set(key, calculateMovingAverage(klines, ma.period, ma.type));
+      const prevValues = prevMaCacheRef.current.get(key);
+
+      if (isAppend && prevValues && prevValues.length === prev.length) {
+        const recalcStart = Math.max(0, prev.length - 1);
+        const fullValues = calculateMovingAverage(klines, ma.period, ma.type);
+        const merged = prevValues.slice(0, recalcStart);
+        for (let i = recalcStart; i < fullValues.length; i++) merged.push(fullValues[i]!);
+        cache.set(key, merged);
+      } else {
+        cache.set(key, calculateMovingAverage(klines, ma.period, ma.type));
+      }
     }
+
+    prevKlinesRef.current = klines;
+    prevMaCacheRef.current = cache;
     return cache;
   }, [klines, movingAverages]);
 

@@ -5,6 +5,7 @@ export * from './filter-defaults';
 export * from './events';
 export * from './filters';
 export * from './chart';
+export * from './direction';
 export * from './fees';
 export * from './binance-fees';
 export * from './futures';

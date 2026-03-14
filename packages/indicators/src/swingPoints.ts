@@ -1,14 +1,11 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 import { calculateATR } from './atr';
 
 const DEFAULT_SWING_LOOKBACK = 5;
 const DEFAULT_FRACTAL_BARS = 2;
 const DEFAULT_ATR_MULTIPLIER = 2.0;
 const DEFAULT_PERCENT_THRESHOLD = 3.0;
-
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
 
 export interface SwingPoint {
   index: number;

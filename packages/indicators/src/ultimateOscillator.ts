@@ -1,4 +1,5 @@
 import type { Kline } from '@marketmind/types';
+import { getKlineClose, getKlineHigh, getKlineLow } from '@marketmind/types';
 
 const DEFAULT_SHORT_PERIOD = 7;
 const DEFAULT_MID_PERIOD = 14;
@@ -6,10 +7,6 @@ const DEFAULT_LONG_PERIOD = 28;
 const DEFAULT_SHORT_WEIGHT = 4;
 const DEFAULT_MID_WEIGHT = 2;
 const DEFAULT_LONG_WEIGHT = 1;
-
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
 
 export interface UltimateOscillatorResult {
   values: (number | null)[];

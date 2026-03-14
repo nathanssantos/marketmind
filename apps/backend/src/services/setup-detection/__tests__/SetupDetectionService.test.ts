@@ -12,6 +12,7 @@ vi.mock('../dynamic', () => ({
   },
   StrategyLoader: class MockStrategyLoader {
     loadAll = mockLoadAll;
+    loadAllCached = mockLoadAll;
     loadFromString = mockLoadFromString;
     constructor() {}
   },
