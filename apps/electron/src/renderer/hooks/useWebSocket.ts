@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Socket } from 'socket.io-client';
 import { BACKEND_URL } from '@shared/constants/api';
 import { socketService } from '../services/socketService';
+import { useConnectionStore } from '../store/connectionStore';
 
 interface UseWebSocketOptions {
   url?: string;
@@ -83,43 +84,15 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   } = options;
 
   const socketRef = useRef<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const isConnected = useConnectionStore((s) => s.wsConnected);
 
   useEffect(() => {
     if (!autoConnect) return;
 
     const socket = socketService.connect();
-
-    const handleConnect = () => {
-      setIsConnected(true);
-      setError(null);
-    };
-
-    const handleDisconnect = () => {
-      setIsConnected(false);
-    };
-
-    const handleConnectError = (err: Error) => {
-      setError(err);
-      setIsConnected(false);
-    };
-
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('connect_error', handleConnectError);
-
     socketRef.current = socket;
 
-    if (socket.connected) {
-      setIsConnected(true);
-    }
-
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('connect_error', handleConnectError);
-      
       socketService.disconnect();
       socketRef.current = null;
     };
@@ -206,7 +179,6 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
   return {
     socket: socketRef.current,
     isConnected,
-    error,
     subscribe,
     unsubscribe,
     on,

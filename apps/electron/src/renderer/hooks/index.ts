@@ -47,14 +47,11 @@ export { useExecutionNotifications } from './useExecutionNotifications';
 
 export { useNotification } from './useNotification';
 export { useOrderNotifications } from './useOrderNotifications';
-export { useOrderUpdates } from './useOrderUpdates';
+export { usePollingInterval } from './usePollingInterval';
 export { usePortfolioFilters } from './usePortfolioFilters';
-export { usePositionUpdates } from './usePositionUpdates';
 export { useProfileEditor } from './useProfileEditor';
 export { useTradingProfiles } from './useTradingProfiles';
 export { useTradingShortcuts } from './useTradingShortcuts';
-export { useWalletUpdates } from './useWalletUpdates';
-
 export { useBackendAutoTrading, useCapitalLimits, useTopSymbols } from './useBackendAutoTrading';
 export { useBackendKlines, useKlineStream } from './useBackendKlines';
 export { useBackendTradingMutations } from './useBackendTradingMutations';

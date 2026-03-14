@@ -5,7 +5,6 @@ import type { Order } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { trpc } from '@renderer/utils/trpc';
 import { useUIStore, type OrdersFilterOption, type OrdersSortOption } from '@renderer/store/uiStore';
 import {
@@ -28,7 +27,6 @@ const OrdersListComponent = () => {
 
   const { activeWallet: rawActiveWallet, wallets: backendWallets } = useActiveWallet();
   const activeWalletId = rawActiveWallet?.id;
-  useOrderUpdates(activeWalletId ?? '');
   const {
     orders: backendOrdersData,
     tradeExecutions,

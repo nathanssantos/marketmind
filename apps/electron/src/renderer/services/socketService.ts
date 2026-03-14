@@ -1,6 +1,7 @@
 import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
 import { BACKEND_URL } from '@shared/constants/api';
+import { useConnectionStore } from '../store/connectionStore';
 
 class SocketService {
   private socket: Socket | null = null;
@@ -23,15 +24,15 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-
+      useConnectionStore.getState().setWsConnected(true);
     });
 
     this.socket.on('disconnect', () => {
-
+      useConnectionStore.getState().setWsConnected(false);
     });
 
     this.socket.on('connect_error', () => {
-
+      useConnectionStore.getState().setWsConnected(false);
     });
 
     this.socket.on('reconnect_failed', () => {
@@ -44,11 +45,12 @@ class SocketService {
 
   disconnect(): void {
     this.connectionCount--;
-    
+
     if (this.connectionCount <= 0) {
       this.socket?.disconnect();
       this.socket = null;
       this.connectionCount = 0;
+      useConnectionStore.getState().setWsConnected(false);
     }
   }
 

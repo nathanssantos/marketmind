@@ -2,16 +2,18 @@ import { useCallback, useEffect } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
+import { usePollingInterval } from './usePollingInterval';
 
 export const useSignalSuggestions = (walletId: string, userId?: string) => {
   const utils = trpc.useUtils();
   const { on, off } = useWebSocket();
+  const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
 
   const { data: suggestions, isLoading } = trpc.signalSuggestions.list.useQuery(
     { walletId, status: 'pending' },
     {
       enabled: !!walletId,
-      refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL,
+      refetchInterval: pollingInterval,
       staleTime: QUERY_CONFIG.STALE_TIME.FAST,
     }
   );

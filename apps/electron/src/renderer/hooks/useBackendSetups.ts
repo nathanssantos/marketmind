@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { useWebSocket } from './useWebSocket';
+import { usePollingInterval } from './usePollingInterval';
 
 type SetupType =
   | 'setup91'
@@ -36,11 +37,12 @@ interface GetStatsParams {
 
 export const useBackendSetups = () => {
   const utils = trpc.useUtils();
+  const detectPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.SLOW);
 
   const useDetectCurrent = (params: DetectCurrentParams) =>
     trpc.setup.detectCurrent.useQuery(params, {
       enabled: !!params.symbol && !!params.interval,
-      refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.SLOW,
+      refetchInterval: detectPolling,
     });
 
   const useDetectRange = (

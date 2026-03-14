@@ -65,7 +65,7 @@ describe('Trading Core Constants', () => {
     });
 
     it('should have position check throttle', () => {
-      expect(TIMING.POSITION_CHECK_THROTTLE_MS).toBe(2_000);
+      expect(TIMING.POSITION_CHECK_THROTTLE_MS).toBe(500);
     });
 
     it('should have subscription check interval', () => {

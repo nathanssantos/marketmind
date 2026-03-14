@@ -5,12 +5,11 @@ import { BrlValue } from '@renderer/components/BrlValue';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { useOrderUpdates } from '@renderer/hooks/useOrderUpdates';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
-import { usePositionUpdates } from '@renderer/hooks/usePositionUpdates';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants';
+import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
 import { memo, useCallback, useMemo } from 'react';
@@ -53,19 +52,18 @@ const PortfolioComponent = () => {
 
   const { activeWallet: rawActiveWallet, isIB, wallets: backendWallets } = useActiveWallet();
   const activeWalletId = rawActiveWallet?.id;
-  useOrderUpdates(activeWalletId ?? '');
-  usePositionUpdates(activeWalletId || '');
+  const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
   const { tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
   const { data: openTradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId: activeWalletId ?? '', status: 'open', limit: 500 },
-    { enabled: !!activeWalletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+    { enabled: !!activeWalletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const tradeExecutions = openTradeExecutions ?? [];
 
   const now = new Date();
   const { data: dailyPerformance } = trpc.analytics.getDailyPerformance.useQuery(
     { walletId: activeWalletId ?? '', year: now.getFullYear(), month: now.getMonth() + 1 },
-    { enabled: !!activeWalletId, staleTime: QUERY_CONFIG.STALE_TIME.FAST, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL }
+    { enabled: !!activeWalletId, staleTime: QUERY_CONFIG.STALE_TIME.FAST, refetchInterval: pollingInterval }
   );
   const todayKey = now.toISOString().slice(0, 10);
   const todayPnl = dailyPerformance?.find((d) => d.date === todayKey);

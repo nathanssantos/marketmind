@@ -8,6 +8,7 @@ import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { trpc } from '@renderer/utils/trpc';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -267,16 +268,18 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
           </HStack>
 
           <HStack gap={1}>
-            <Button size="2xs" fontSize="xs" h="22px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
-              {t('chart.quickTrade.buy')}
+            <Button size="2xs" fontSize="2xs" h="34px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
+              <VStack gap={0} lineHeight="1">
+                <Text fontSize="2xs">{t('chart.quickTrade.buy')}</Text>
+                <Text fontSize="2xs" fontWeight="bold">{currentPrice > 0 ? formatChartPrice(currentPrice) : '—'}</Text>
+              </VStack>
             </Button>
             {marketType === 'FUTURES' && (
               <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
                 <IconButton
                   size="2xs"
-                  h="22px"
-                  w="22px"
-                  minW="22px"
+                  h="34px"
+                  w="34px"
                   variant="solid"
                   colorPalette="orange"
                   color="white"
@@ -289,8 +292,11 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
                 </IconButton>
               </TooltipWrapper>
             )}
-            <Button size="2xs" fontSize="xs" h="22px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
-              {t('chart.quickTrade.sell')}
+            <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
+              <VStack gap={0} lineHeight="1">
+                <Text fontSize="2xs">{t('chart.quickTrade.sell')}</Text>
+                <Text fontSize="2xs" fontWeight="bold">{currentPrice > 0 ? formatChartPrice(currentPrice) : '—'}</Text>
+              </VStack>
             </Button>
             <GridOrderPopover />
             <TrailingStopPopover symbol={symbol} />

@@ -80,31 +80,31 @@ export const QUERY_CONFIGS: Record<QueryConfigKey, QueryConfigOptions> = {
   },
 
   tradeExecutions: {
-    staleTime: QUERY_STALE_TIMES.SHORT,
+    staleTime: QUERY_STALE_TIMES.REAL_TIME,
     gcTime: QUERY_GC_TIMES.MEDIUM,
     refetchOnWindowFocus: false,
-    refetchInterval: 1 * MINUTE,
+    refetchInterval: false,
   },
 
   positions: {
     staleTime: QUERY_STALE_TIMES.REAL_TIME,
     gcTime: QUERY_GC_TIMES.SHORT,
     refetchOnWindowFocus: false,
-    refetchInterval: 30 * SECOND,
+    refetchInterval: false,
   },
 
   orders: {
-    staleTime: QUERY_STALE_TIMES.SHORT,
+    staleTime: QUERY_STALE_TIMES.REAL_TIME,
     gcTime: QUERY_GC_TIMES.MEDIUM,
     refetchOnWindowFocus: false,
-    refetchInterval: 1 * MINUTE,
+    refetchInterval: false,
   },
 
   priceCache: {
     staleTime: QUERY_STALE_TIMES.REAL_TIME,
     gcTime: QUERY_GC_TIMES.SHORT,
     refetchOnWindowFocus: false,
-    refetchInterval: 10 * SECOND,
+    refetchInterval: false,
   },
 
   setupDetections: {

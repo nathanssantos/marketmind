@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useConnectionStore } from '../store/connectionStore';
 
 const mockSocket = {
   on: vi.fn(),
@@ -23,6 +24,9 @@ describe('useWebSocket', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSocket.connected = false;
+    act(() => {
+      useConnectionStore.getState().setWsConnected(false);
+    });
   });
 
   describe('initialization', () => {
@@ -37,14 +41,6 @@ describe('useWebSocket', () => {
 
       expect(socketService.connect).not.toHaveBeenCalled();
     });
-
-    it('should register event handlers on mount', () => {
-      renderHook(() => useWebSocket());
-
-      expect(mockSocket.on).toHaveBeenCalledWith('connect', expect.any(Function));
-      expect(mockSocket.on).toHaveBeenCalledWith('disconnect', expect.any(Function));
-      expect(mockSocket.on).toHaveBeenCalledWith('connect_error', expect.any(Function));
-    });
   });
 
   describe('connection state', () => {
@@ -54,78 +50,35 @@ describe('useWebSocket', () => {
       expect(result.current.isConnected).toBe(false);
     });
 
-    it('should return isConnected true when socket is already connected', () => {
-      mockSocket.connected = true;
+    it('should return isConnected true when connectionStore is connected', () => {
+      act(() => {
+        useConnectionStore.getState().setWsConnected(true);
+      });
       const { result } = renderHook(() => useWebSocket());
 
       expect(result.current.isConnected).toBe(true);
     });
 
-    it('should return error as null initially', () => {
+    it('should reflect connectionStore changes', () => {
       const { result } = renderHook(() => useWebSocket());
-
-      expect(result.current.error).toBeNull();
-    });
-  });
-
-  describe('event handlers', () => {
-    it('should set isConnected true on connect event', () => {
-      const { result } = renderHook(() => useWebSocket());
-
-      const connectHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'connect'
-      )?.[1];
-
-      act(() => {
-        connectHandler?.();
-      });
-
-      expect(result.current.isConnected).toBe(true);
-    });
-
-    it('should set isConnected false on disconnect event', () => {
-      mockSocket.connected = true;
-      const { result } = renderHook(() => useWebSocket());
-
-      const disconnectHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'disconnect'
-      )?.[1];
-
-      act(() => {
-        disconnectHandler?.();
-      });
 
       expect(result.current.isConnected).toBe(false);
-    });
-
-    it('should set error on connect_error event', () => {
-      const { result } = renderHook(() => useWebSocket());
-      const testError = new Error('Connection failed');
-
-      const errorHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'connect_error'
-      )?.[1];
 
       act(() => {
-        errorHandler?.(testError);
+        useConnectionStore.getState().setWsConnected(true);
       });
 
-      expect(result.current.error).toBe(testError);
+      expect(result.current.isConnected).toBe(true);
+
+      act(() => {
+        useConnectionStore.getState().setWsConnected(false);
+      });
+
       expect(result.current.isConnected).toBe(false);
     });
   });
 
   describe('cleanup', () => {
-    it('should remove event handlers on unmount', () => {
-      const { unmount } = renderHook(() => useWebSocket());
-
-      unmount();
-
-      expect(mockSocket.off).toHaveBeenCalledWith('connect', expect.any(Function));
-      expect(mockSocket.off).toHaveBeenCalledWith('disconnect', expect.any(Function));
-      expect(mockSocket.off).toHaveBeenCalledWith('connect_error', expect.any(Function));
-    });
-
     it('should disconnect on unmount', () => {
       const { unmount } = renderHook(() => useWebSocket());
 
