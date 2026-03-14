@@ -75,6 +75,7 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
     queryFn: () => trpc.drawing.listBySymbol.query({ symbol }),
     enabled: !!symbol,
     staleTime: 5000,
+    refetchInterval: 10_000,
   });
 
   const createMutation = useMutation({
@@ -97,7 +98,6 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
       locked?: boolean;
       zIndex?: number;
     }) => trpc.drawing.update.mutate(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drawings', symbol] }),
   });
 
   const deleteMutation = useMutation({
@@ -107,6 +107,7 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
 
   useEffect(() => {
     if (!backendDrawings || !symbol || klines.length === 0) return;
+    if (updateTimersRef.current.size > 0) return;
 
     suppressSyncRef.current = true;
     const newIdMap = new Map<string, number>();
