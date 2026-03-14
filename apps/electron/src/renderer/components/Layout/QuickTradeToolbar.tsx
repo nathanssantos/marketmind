@@ -12,7 +12,7 @@ import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuGripVertical } from 'react-icons/lu';
+import { LuArrowUpDown, LuBan, LuGripVertical, LuX } from 'react-icons/lu';
 import { GridOrderPopover } from './GridOrderPopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
@@ -93,8 +93,18 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
     };
   }, [isDragging, snapToEdges, setSavedPosition]);
 
-  const { positions, reversePosition, isReversingPosition } = useBackendFuturesTrading(activeWallet?.id || '');
+  const {
+    positions,
+    reversePosition,
+    isReversingPosition,
+    closePositionAndCancelOrders,
+    isClosingPositionAndCancellingOrders,
+    cancelAllOrders,
+    isCancellingAllOrders,
+  } = useBackendFuturesTrading(activeWallet?.id || '');
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showCancelOrdersConfirm, setShowCancelOrdersConfirm] = useState(false);
 
   const currentPosition = useMemo(() => {
     if (marketType !== 'FUTURES' || !Array.isArray(positions)) return null;
@@ -146,6 +156,43 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
       setShowReverseConfirm(false);
     }
   }, [activeWallet?.id, currentPosition, symbol, reversePosition, toastError, t]);
+
+  const handleClosePositionClick = useCallback(() => {
+    if (!currentPosition) return;
+    setShowCloseConfirm(true);
+  }, [currentPosition]);
+
+  const handleClosePositionConfirm = useCallback(async () => {
+    if (!activeWallet?.id || !currentPosition) return;
+    try {
+      await closePositionAndCancelOrders({
+        walletId: activeWallet.id,
+        symbol,
+        positionId: 'id' in currentPosition ? String(currentPosition.id) : undefined,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toastError(t('futures.closePositionFailed', 'Failed to close position'), msg);
+    } finally {
+      setShowCloseConfirm(false);
+    }
+  }, [activeWallet?.id, currentPosition, symbol, closePositionAndCancelOrders, toastError, t]);
+
+  const handleCancelOrdersClick = useCallback(() => {
+    setShowCancelOrdersConfirm(true);
+  }, []);
+
+  const handleCancelOrdersConfirm = useCallback(async () => {
+    if (!activeWallet?.id) return;
+    try {
+      await cancelAllOrders({ walletId: activeWallet.id, symbol });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toastError(t('futures.cancelOrdersFailed', 'Failed to cancel orders'), msg);
+    } finally {
+      setShowCancelOrdersConfirm(false);
+    }
+  }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
   const { data: symbolFilters } = trpc.trading.getSymbolFilters.useQuery(
     { symbol, marketType },
@@ -233,12 +280,12 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
         border="1px solid"
         borderColor="border"
         boxShadow="sm"
-        p={1}
+        p={1.5}
         pointerEvents="auto"
         userSelect={isDragging ? 'none' : 'auto'}
       >
-        <VStack gap={1} align="stretch">
-          <HStack gap={0.5} justify="center">
+        <VStack gap={1.5} align="stretch">
+          <HStack gap={1} justify="center">
             <Box
               onMouseDown={handleDragStart}
               cursor={isDragging ? 'grabbing' : 'grab'}
@@ -260,46 +307,79 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
             ))}
           </HStack>
 
-          <HStack gap={1} px={0.5}>
+          <HStack gap={1.5} px={0.5}>
             <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.3} max={25} step={0.1} />
             <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
               {`${Math.round(sizePercent * 10) / 10}%`}
             </Text>
+            <GridOrderPopover />
+            <TrailingStopPopover symbol={symbol} />
           </HStack>
 
-          <HStack gap={1}>
+          <HStack gap={1.5}>
+            {marketType === 'FUTURES' && (
+              <>
+                <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
+                  <IconButton
+                    size="2xs"
+                    h="34px"
+                    w="34px"
+                    variant="solid"
+                    colorPalette="blue"
+                    color="white"
+                    onClick={handleReverseClick}
+                    loading={isReversingPosition}
+                    disabled={!currentPosition}
+                    aria-label={t('futures.reversePosition', 'Reverse Position')}
+                  >
+                    <LuArrowUpDown size={12} />
+                  </IconButton>
+                </TooltipWrapper>
+                <TooltipWrapper label={t('futures.closePosition', 'Close Position')}>
+                  <IconButton
+                    size="2xs"
+                    h="34px"
+                    w="34px"
+                    variant="solid"
+                    colorPalette="red"
+                    color="white"
+                    onClick={handleClosePositionClick}
+                    loading={isClosingPositionAndCancellingOrders}
+                    disabled={!currentPosition}
+                    aria-label={t('futures.closePosition', 'Close Position')}
+                  >
+                    <LuX size={12} />
+                  </IconButton>
+                </TooltipWrapper>
+                <TooltipWrapper label={t('futures.cancelOrders', 'Cancel Orders')}>
+                  <IconButton
+                    size="2xs"
+                    h="34px"
+                    w="34px"
+                    variant="solid"
+                    colorPalette="orange"
+                    color="white"
+                    onClick={handleCancelOrdersClick}
+                    loading={isCancellingAllOrders}
+                    aria-label={t('futures.cancelOrders', 'Cancel Orders')}
+                  >
+                    <LuBan size={12} />
+                  </IconButton>
+                </TooltipWrapper>
+              </>
+            )}
             <Button size="2xs" fontSize="2xs" h="34px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
               <VStack gap={0} lineHeight="1">
                 <Text fontSize="2xs">{t('chart.quickTrade.buy')}</Text>
                 <Text fontSize="2xs" fontWeight="bold">{currentPrice > 0 ? formatChartPrice(currentPrice) : '—'}</Text>
               </VStack>
             </Button>
-            {marketType === 'FUTURES' && (
-              <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
-                <IconButton
-                  size="2xs"
-                  h="34px"
-                  w="34px"
-                  variant="solid"
-                  colorPalette="orange"
-                  color="white"
-                  onClick={handleReverseClick}
-                  loading={isReversingPosition}
-                  disabled={!currentPosition}
-                  aria-label={t('futures.reversePosition', 'Reverse Position')}
-                >
-                  <LuArrowUpDown size={12} />
-                </IconButton>
-              </TooltipWrapper>
-            )}
             <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
               <VStack gap={0} lineHeight="1">
                 <Text fontSize="2xs">{t('chart.quickTrade.sell')}</Text>
                 <Text fontSize="2xs" fontWeight="bold">{currentPrice > 0 ? formatChartPrice(currentPrice) : '—'}</Text>
               </VStack>
             </Button>
-            <GridOrderPopover />
-            <TrailingStopPopover symbol={symbol} />
           </HStack>
         </VStack>
 
@@ -315,8 +395,34 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
             newSide: positionSide === 'LONG' ? 'SHORT' : 'LONG',
           })}
           confirmLabel={t('futures.reversePosition', 'Reverse Position')}
-          colorPalette="orange"
+          colorPalette="blue"
           isLoading={isReversingPosition}
+        />
+
+        <ConfirmationDialog
+          isOpen={showCloseConfirm}
+          onClose={() => setShowCloseConfirm(false)}
+          onConfirm={handleClosePositionConfirm}
+          title={t('futures.closePositionConfirmTitle', 'Close Position?')}
+          description={t('futures.closePositionConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} at market price and cancel all orders (SL, TP, entries)?', {
+            side: positionSide,
+            quantity: positionQty,
+            symbol,
+          })}
+          confirmLabel={t('futures.closePosition', 'Close Position')}
+          colorPalette="red"
+          isLoading={isClosingPositionAndCancellingOrders}
+        />
+
+        <ConfirmationDialog
+          isOpen={showCancelOrdersConfirm}
+          onClose={() => setShowCancelOrdersConfirm(false)}
+          onConfirm={handleCancelOrdersConfirm}
+          title={t('futures.cancelOrdersConfirmTitle', 'Cancel All Orders?')}
+          description={t('futures.cancelOrdersConfirmDescription', 'Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected.', { symbol })}
+          confirmLabel={t('futures.cancelOrders', 'Cancel Orders')}
+          colorPalette="orange"
+          isLoading={isCancellingAllOrders}
         />
       </Box>
     </Box>
