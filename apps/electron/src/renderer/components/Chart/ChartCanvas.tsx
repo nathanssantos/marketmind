@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from '@renderer/components/ui';
 import { Box, Portal } from '@chakra-ui/react';
-import { calculateFibonacciProjection, calculateProjectionLevels } from '@marketmind/indicators';
 import type { Kline, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
@@ -32,6 +31,7 @@ import { useTrailingStopPlacementStore } from '@renderer/store/trailingStopPlace
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { trpc } from '@renderer/utils/trpc';
+import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { CHART_CONFIG, ORDER_LINE_COLORS } from '@shared/constants';
 import { getKlineClose, getOrderPrice, isOrderLong, isOrderPending, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import type { ReactElement } from 'react';
@@ -108,8 +108,7 @@ export const ChartCanvas = ({
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair] = useChartPref('showCrosshair', true);
-  const [showProfitLossAreas] = useChartPref('showProfitLossAreas', true);
-  const [showFibonacciProjection] = useChartPref('showFibonacciProjection', true);
+  const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
 
@@ -196,11 +195,13 @@ export const ChartCanvas = ({
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
 
+  const tradingPolling = usePollingInterval(10_000);
+
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId: backendWalletId ?? '' },
     {
       enabled: !!backendWalletId && !!symbol,
-      refetchInterval: 10000,
+      refetchInterval: tradingPolling,
     }
   );
 
@@ -208,12 +209,12 @@ export const ChartCanvas = ({
 
   const { data: exchangeOpenOrders } = trpc.futuresTrading.getOpenOrders.useQuery(
     { walletId: backendWalletId ?? '', symbol },
-    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: 10000, staleTime: 5000 }
+    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 5000 }
   );
 
   const { data: exchangeAlgoOrders } = trpc.futuresTrading.getOpenAlgoOrders.useQuery(
     { walletId: backendWalletId ?? '', symbol },
-    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: 10000, staleTime: 5000 }
+    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 5000 }
   );
 
   const { data: symbolTrailingConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
@@ -772,64 +773,6 @@ export const ChartCanvas = ({
     marketType,
   });
 
-  const fibonacciProjectionData = useMemo(() => {
-    const activePosition = allExecutions.find(
-      exec => (exec.status === 'open' || exec.status === 'pending')
-    );
-
-    if (activePosition) {
-      if (activePosition.fibonacciProjection) {
-        const saved = activePosition.fibonacciProjection;
-        const direction = activePosition.side as 'LONG' | 'SHORT';
-        const levels = calculateProjectionLevels(saved.swingLow, saved.swingHigh, direction);
-        return {
-          ...saved,
-          levels,
-        };
-      }
-
-      if (manager) {
-        const klinesData = manager.getKlines();
-        if (klinesData.length > 0) {
-          const triggerTime = activePosition.triggerKlineOpenTime;
-          let entryIndex = -1;
-
-          if (triggerTime) {
-            const triggerTimestamp = typeof triggerTime === 'number' ? triggerTime : new Date(triggerTime).getTime();
-            entryIndex = klinesData.findIndex(k => k.openTime === triggerTimestamp);
-          }
-
-          if (entryIndex !== -1) {
-            const direction = activePosition.side as 'LONG' | 'SHORT';
-            const projection = calculateFibonacciProjection(klinesData, entryIndex, timeframe as TimeInterval, direction);
-
-            if (projection) {
-              return {
-                swingLow: projection.swingLow,
-                swingHigh: projection.swingHigh,
-                levels: projection.levels,
-                primaryLevel: 2,
-                range: projection.range,
-              };
-            }
-          }
-        }
-      }
-    }
-
-    const visibleSetup = detectedSetups.find(s => s.visible && s.fibonacciProjection);
-    if (visibleSetup?.fibonacciProjection) {
-      const saved = visibleSetup.fibonacciProjection;
-      const direction = visibleSetup.direction === 'LONG' ? 'LONG' : 'SHORT';
-      const levels = calculateProjectionLevels(saved.swingLow, saved.swingHigh, direction);
-      return {
-        ...saved,
-        levels,
-      };
-    }
-    return null;
-  }, [allExecutions, detectedSetups, manager]);
-
   const {
     renderStochastic,
     renderRSI,
@@ -868,17 +811,14 @@ export const ChartCanvas = ({
     renderFVG,
     renderLiquidityLevels,
     renderEventScale,
-    renderFibonacciProjection,
     getEventAtPosition,
   } = useChartIndicatorRenderers({
     manager,
     colors,
     indicatorData,
     stochasticData,
-    showFibonacciProjection,
     showEventRow,
     marketEvents,
-    fibonacciProjectionData,
   });
 
   const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
@@ -1526,7 +1466,6 @@ export const ChartCanvas = ({
       renderHMA();
       renderPivotPoints();
       renderFibonacci();
-      renderFibonacciProjection();
       renderDrawings();
       renderFVG();
       renderLiquidityLevels();

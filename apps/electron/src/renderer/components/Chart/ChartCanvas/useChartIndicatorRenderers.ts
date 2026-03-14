@@ -40,18 +40,13 @@ import { useFibonacciRenderer } from '../useFibonacciRenderer';
 import { useFVGRenderer } from '../useFVGRenderer';
 import { useLiquidityLevelsRenderer } from '../useLiquidityLevelsRenderer';
 import { useEventScaleRenderer } from '../useEventScaleRenderer';
-import type { FibonacciProjectionData } from '@marketmind/types';
-import { useFibonacciProjectionRenderer } from '../useFibonacciProjectionRenderer';
-
 export interface UseChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   indicatorData: UseChartIndicatorsResult;
   stochasticData: StochasticResult | null;
-  showFibonacciProjection: boolean;
   showEventRow: boolean;
   marketEvents: MarketEvent[];
-  fibonacciProjectionData: FibonacciProjectionData | null;
 }
 
 export interface UseChartIndicatorRenderersResult {
@@ -92,7 +87,6 @@ export interface UseChartIndicatorRenderersResult {
   renderFVG: () => void;
   renderLiquidityLevels: () => void;
   renderEventScale: () => void;
-  renderFibonacciProjection: () => void;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   renderAllOverlayIndicators: () => void;
   renderAllPanelIndicators: () => void;
@@ -103,10 +97,8 @@ export const useChartIndicatorRenderers = ({
   colors,
   indicatorData,
   stochasticData,
-  showFibonacciProjection,
   showEventRow,
   marketEvents,
-  fibonacciProjectionData,
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
   const { isIndicatorActive } = indicatorData;
 
@@ -365,13 +357,6 @@ export const useChartIndicatorRenderers = ({
     enabled: showEventRow,
   });
 
-  const { render: renderFibonacciProjection } = useFibonacciProjectionRenderer({
-    manager,
-    projectionData: fibonacciProjectionData,
-    colors,
-    enabled: showFibonacciProjection,
-  });
-
   const renderAllOverlayIndicators = (): void => {
     renderBollingerBands();
     renderATR();
@@ -387,7 +372,6 @@ export const useChartIndicatorRenderers = ({
     renderHMA();
     renderPivotPoints();
     renderFibonacci();
-    renderFibonacciProjection();
     renderFVG();
     renderLiquidityLevels();
     renderEventScale();
@@ -454,7 +438,6 @@ export const useChartIndicatorRenderers = ({
     renderFVG,
     renderLiquidityLevels,
     renderEventScale,
-    renderFibonacciProjection,
     getEventAtPosition,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,

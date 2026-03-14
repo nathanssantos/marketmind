@@ -31,8 +31,7 @@ export const ChartToolsToolbar = memo(({
 }: ChartToolsToolbarProps) => {
   const { t } = useTranslation();
 
-  const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', true);
-  const [showFibonacciProjection, setShowFibonacciProjection] = useChartPref('showFibonacciProjection', true);
+  const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
 
@@ -49,7 +48,6 @@ export const ChartToolsToolbar = memo(({
   }, [movingAverages, onMovingAveragesChange]);
 
   const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
-  const handleFibToggle = useCallback(() => setShowFibonacciProjection(!showFibonacciProjection), [showFibonacciProjection, setShowFibonacciProjection]);
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
   const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
@@ -75,27 +73,6 @@ export const ChartToolsToolbar = memo(({
           movingAverages={movingAverages}
           onMovingAverageToggle={toggleMA}
         />
-        <Separator orientation="horizontal" width="100%" />
-        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
-          <ToggleIconButton
-            active={showProfitLossAreas}
-            size="2xs"
-            aria-label={t('chart.controls.profitLossAreas')}
-            onClick={handleProfitLossToggle}
-          >
-            <LuRectangleHorizontal />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.fibonacciProjection')} showArrow placement="right">
-          <ToggleIconButton
-            active={showFibonacciProjection}
-            size="2xs"
-            aria-label={t('chart.controls.fibonacciProjection')}
-            onClick={handleFibToggle}
-          >
-            <LuTriangleRight style={{ transform: 'scaleX(-1)' }} />
-          </ToggleIconButton>
-        </TooltipWrapper>
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.tools.pencil', 'Pencil')} showArrow placement="right">
           <ToggleIconButton
@@ -155,6 +132,16 @@ export const ChartToolsToolbar = memo(({
             onClick={() => handleToolClick('area')}
           >
             <LuScan />
+          </ToggleIconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
+          <ToggleIconButton
+            active={showProfitLossAreas}
+            size="2xs"
+            aria-label={t('chart.controls.profitLossAreas')}
+            onClick={handleProfitLossToggle}
+          >
+            <LuRectangleHorizontal />
           </ToggleIconButton>
         </TooltipWrapper>
         <Separator orientation="horizontal" width="100%" />
