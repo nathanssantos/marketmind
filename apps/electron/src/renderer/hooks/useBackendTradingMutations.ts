@@ -1,11 +1,14 @@
 import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
+import { useConnectionStore } from '../store/connectionStore';
 
 export const useBackendTradingMutations = () => {
   const utils = trpc.useUtils();
+  const wsConnected = useConnectionStore((s) => s.wsConnected);
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getOrders.invalidate();
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -16,6 +19,7 @@ export const useBackendTradingMutations = () => {
 
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -24,6 +28,7 @@ export const useBackendTradingMutations = () => {
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -33,6 +38,7 @@ export const useBackendTradingMutations = () => {
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -42,6 +48,7 @@ export const useBackendTradingMutations = () => {
 
   const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.futuresTrading.getOpenAlgoOrders.invalidate();
@@ -51,6 +58,7 @@ export const useBackendTradingMutations = () => {
 
   const cancelProtectionOrderMutation = trpc.trading.cancelIndividualProtectionOrder.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
     },
@@ -58,6 +66,7 @@ export const useBackendTradingMutations = () => {
 
   const updatePendingEntryMutation = trpc.trading.updatePendingEntry.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.futuresTrading.getOpenOrders.invalidate();
       utils.futuresTrading.getOpenAlgoOrders.invalidate();

@@ -1,22 +1,26 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
+import { usePollingInterval } from './usePollingInterval';
+import { useConnectionStore } from '../store/connectionStore';
 
 export const useBackendTrading = (walletId: string, symbol?: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES') => {
   const utils = trpc.useUtils();
+  const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
+  const wsConnected = useConnectionStore((s) => s.wsConnected);
 
   const { data: orders, isLoading: isLoadingOrders } = trpc.trading.getOrders.useQuery(
     { walletId, symbol, limit: 100 },
-    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const { data: positions, isLoading: isLoadingPositions } = trpc.trading.getPositions.useQuery(
     { walletId, limit: 100 },
-    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const { data: tradeExecutions, isLoading: isLoadingExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId, symbol, limit: 100 },
-    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+    { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const openPositionSymbols = useMemo(() => {
@@ -28,49 +32,64 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
     { symbols: openPositionSymbols, marketType },
-    { enabled: openPositionSymbols.length > 0, refetchInterval: QUERY_CONFIG.BACKUP_POLLING_INTERVAL, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+    { enabled: openPositionSymbols.length > 0, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
+
+  const prevMergedRef = useRef<Record<string, number>>({});
 
   const mergedTickerPrices = useMemo(() => {
     const base = tickerPrices ?? {};
-    return { ...base, ...realtimePrices };
+    const merged: Record<string, number> = {};
+    for (const [k, v] of Object.entries(base)) merged[k] = typeof v === 'string' ? parseFloat(v) : v;
+    for (const [k, v] of Object.entries(realtimePrices)) merged[k] = v;
+    const prev = prevMergedRef.current;
+    const keys = Object.keys(merged);
+    if (keys.length === Object.keys(prev).length && keys.every((k) => prev[k] === merged[k]))
+      return prev;
+    prevMergedRef.current = merged;
+    return merged;
   }, [tickerPrices, realtimePrices]);
-  
+
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getOrders.invalidate();
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
   });
-  
+
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
   });
-  
+
   const syncOrdersMutation = trpc.trading.syncOrders.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
   });
-  
+
   const createPositionMutation = trpc.trading.createPosition.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
     },
   });
-  
+
   const closePositionMutation = trpc.trading.closePosition.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getPositions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -79,6 +98,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -88,6 +108,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
@@ -97,6 +118,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
 
   const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
     onSuccess: () => {
+      if (wsConnected) return;
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
     },
@@ -118,21 +140,21 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
     },
     [createOrderMutation]
   );
-  
+
   const cancelOrder = useCallback(
     async (data: { walletId: string; symbol: string; orderId: number }) => {
       return cancelOrderMutation.mutateAsync(data);
     },
     [cancelOrderMutation]
   );
-  
+
   const syncOrders = useCallback(
     async (walletId: string, symbol: string) => {
       return syncOrdersMutation.mutateAsync({ walletId, symbol });
     },
     [syncOrdersMutation]
   );
-  
+
   const createPosition = useCallback(
     async (data: {
       walletId: string;
@@ -148,7 +170,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
     },
     [createPositionMutation]
   );
-  
+
   const closePosition = useCallback(
     async (id: string, exitPrice: string) => {
       return closePositionMutation.mutateAsync({ id, exitPrice });

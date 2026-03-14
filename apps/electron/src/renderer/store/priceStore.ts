@@ -83,6 +83,9 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
 
 const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 1000;
 
+export const useFastPriceForSymbol = (symbol: string): number | null =>
+  usePriceStore((state) => state.prices[symbol]?.price ?? null);
+
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');
   const symbolsKey = useMemo(

@@ -59,7 +59,6 @@ interface TradeNotification {
 interface RealtimeTradingSyncContextValue {
   subscribeToPrice: (symbol: string, onUpdate: (price: number) => void) => () => void;
   forceRefresh: () => void;
-  isConnected: boolean;
 }
 
 const RealtimeTradingSyncContext = createContext<RealtimeTradingSyncContextValue | null>(null);
@@ -71,7 +70,6 @@ interface RealtimeTradingSyncProviderProps {
 
 export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
   const socketRef = useRef<Socket | null>(null);
-  const isConnectedRef = useRef(false);
   const recentAlertsRef = useRef<Map<string, number>>(new Map());
   const utils = trpc.useUtils();
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
@@ -88,51 +86,59 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     { enabled: !!walletId, staleTime: QUERY_CONFIGS.orders.staleTime }
   );
 
+  const stableSymbolsRef = useRef<Set<string>>(new Set());
+  const allRequiredSymbolsRef = useRef<Set<string>>(new Set());
+
   const allRequiredSymbols = useMemo(() => {
     const symbols = new Set<string>();
 
-    const openExecutions = tradeExecutions?.filter((e) => e.status === 'open' || e.status === 'pending') ?? [];
-    for (const exec of openExecutions) {
-      symbols.add(exec.symbol);
-    }
+    for (const exec of (tradeExecutions ?? []))
+      if (exec.status === 'open' || exec.status === 'pending') symbols.add(exec.symbol);
 
-    const activeOrders = orders?.filter((o) => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED') ?? [];
-    for (const order of activeOrders) {
-      symbols.add(order.symbol);
-    }
+    for (const order of (orders ?? []))
+      if (order.status === 'NEW' || order.status === 'PARTIALLY_FILLED') symbols.add(order.symbol);
 
+    const newKey = [...symbols].sort().join(',');
+    const oldKey = [...stableSymbolsRef.current].sort().join(',');
+    if (newKey === oldKey) return stableSymbolsRef.current;
+    stableSymbolsRef.current = symbols;
+    allRequiredSymbolsRef.current = symbols;
     return symbols;
   }, [tradeExecutions, orders]);
 
-  const invalidatePositions = useCallback(() => {
-    if (!currentWalletIdRef.current) return;
-    utils.trading.getTradeExecutions.invalidate({ walletId: currentWalletIdRef.current });
-    utils.trading.getPositions.invalidate({ walletId: currentWalletIdRef.current });
-    utils.autoTrading.getActiveExecutions.invalidate({ walletId: currentWalletIdRef.current });
-    utils.autoTrading.getExecutionHistory.invalidate({ walletId: currentWalletIdRef.current });
+  const pendingInvalidations = useRef(new Set<string>());
+  const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushInvalidations = useCallback(() => {
+    const wId = currentWalletIdRef.current;
+    if (!wId) return;
+    const keys = pendingInvalidations.current;
+    pendingInvalidations.current = new Set();
+    flushTimeoutRef.current = null;
+
+    if (keys.has('positions')) {
+      utils.trading.getTradeExecutions.invalidate({ walletId: wId });
+      utils.trading.getPositions.invalidate({ walletId: wId });
+      utils.autoTrading.getActiveExecutions.invalidate({ walletId: wId });
+      utils.autoTrading.getExecutionHistory.invalidate({ walletId: wId });
+    }
+    if (keys.has('orders')) utils.trading.getOrders.invalidate({ walletId: wId });
+    if (keys.has('wallet')) {
+      utils.wallet.list.invalidate();
+      utils.analytics.getPerformance.invalidate({ walletId: wId });
+    }
+    if (keys.has('setupStats')) utils.analytics.getSetupStats.invalidate();
+    if (keys.has('equityCurve')) utils.analytics.getEquityCurve.invalidate();
   }, [utils]);
 
-  const invalidateOrders = useCallback(() => {
-    if (!currentWalletIdRef.current) return;
-    utils.trading.getOrders.invalidate({ walletId: currentWalletIdRef.current });
-  }, [utils]);
+  const scheduleInvalidation = useCallback((...keys: string[]) => {
+    for (const key of keys) pendingInvalidations.current.add(key);
+    if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+    flushTimeoutRef.current = setTimeout(flushInvalidations, 50);
+  }, [flushInvalidations]);
 
-  const invalidateWallet = useCallback(() => {
-    if (!currentWalletIdRef.current) return;
-    utils.wallet.list.invalidate();
-    utils.analytics.getPerformance.invalidate({ walletId: currentWalletIdRef.current });
-  }, [utils]);
-
-  const invalidateTradingData = useCallback(() => {
-    if (!currentWalletIdRef.current) return;
-    utils.trading.getTradeExecutions.invalidate({ walletId: currentWalletIdRef.current });
-    utils.trading.getOrders.invalidate({ walletId: currentWalletIdRef.current });
-    utils.trading.getPositions.invalidate({ walletId: currentWalletIdRef.current });
-    utils.autoTrading.getActiveExecutions.invalidate({ walletId: currentWalletIdRef.current });
-    utils.autoTrading.getExecutionHistory.invalidate({ walletId: currentWalletIdRef.current });
-    utils.wallet.list.invalidate();
-    utils.analytics.getPerformance.invalidate({ walletId: currentWalletIdRef.current });
-  }, [utils]);
+  const scheduleRef = useRef(scheduleInvalidation);
+  useEffect(() => { scheduleRef.current = scheduleInvalidation; });
 
   useEffect(() => {
     currentWalletIdRef.current = walletId;
@@ -179,10 +185,11 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
     const subscribeAll = () => {
       if (currentWalletIdRef.current) {
+        socket.emit('subscribe:orders', currentWalletIdRef.current);
         socket.emit('subscribe:positions', currentWalletIdRef.current);
         socket.emit('subscribe:wallet', currentWalletIdRef.current);
       }
-      for (const symbol of allRequiredSymbols) {
+      for (const symbol of allRequiredSymbolsRef.current) {
         subscribedSymbolsRef.current.add(symbol);
       }
       const symbolsToSubscribe = [...subscribedSymbolsRef.current];
@@ -194,47 +201,40 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
     const handleConnect = () => {
       console.log('[RealtimeSync] WebSocket connected');
-      isConnectedRef.current = true;
       subscribeAll();
     };
 
     const handleDisconnect = (reason: string) => {
       console.log('[RealtimeSync] WebSocket disconnected:', reason);
-      isConnectedRef.current = false;
     };
 
     const handleConnectError = (err: Error) => {
       console.error('[RealtimeSync] Connection error:', err.message);
-      isConnectedRef.current = false;
     };
 
     const handlePositionUpdate = (position: PositionUpdate) => {
       console.log('[RealtimeSync] Position update received:', position.id, position.status);
-      invalidatePositions();
-      invalidateWallet();
+      scheduleRef.current('positions', 'wallet');
     };
 
     const handlePositionClosed = (_data: { positionId: string; symbol: string; side: string; exitReason: string; pnl: number; pnlPercent: number }) => {
-      invalidatePositions();
-      invalidateWallet();
+      scheduleRef.current('positions', 'wallet', 'setupStats', 'equityCurve');
     };
 
     const handleOrderUpdate = (_order: OrderUpdate) => {
-      invalidateOrders();
+      scheduleRef.current('orders');
     };
 
     const handleOrderCreated = (_order: OrderUpdate) => {
-      invalidateOrders();
-      invalidateWallet();
+      scheduleRef.current('orders', 'wallet');
     };
 
     const handleOrderCancelled = (_data: { orderId: string }) => {
-      invalidateOrders();
-      invalidateWallet();
+      scheduleRef.current('orders', 'wallet');
     };
 
     const handleWalletUpdate = () => {
-      invalidateWallet();
+      scheduleRef.current('wallet');
     };
 
     const handlePriceUpdate = (data: PriceUpdate) => {
@@ -297,8 +297,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
         console.error('[RealtimeSync] Native notification error:', err);
       }
 
-      invalidatePositions();
-      invalidateWallet();
+      scheduleRef.current('positions', 'wallet');
     };
 
     socket.on('connect', handleConnect);
@@ -316,7 +315,6 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
     if (socket.connected) {
       console.log('[RealtimeSync] Socket already connected, subscribing immediately');
-      isConnectedRef.current = true;
       subscribeAll();
     }
 
@@ -334,16 +332,17 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       socket.off('trade:notification', handleTradeNotification);
       socket.off('risk:alert', handleRiskAlert);
 
+      socket.emit('unsubscribe:orders', walletId);
       socket.emit('unsubscribe:positions', walletId);
       socket.emit('unsubscribe:wallet', walletId);
     };
-  }, [walletId, allRequiredSymbols, invalidatePositions, invalidateOrders, invalidateWallet]);
+  }, [walletId]);
 
   useEffect(() => {
     return () => {
+      if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
       socketService.disconnect();
       socketRef.current = null;
-      isConnectedRef.current = false;
     };
   }, []);
 
@@ -378,13 +377,15 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, []);
 
   const forceRefresh = useCallback(() => {
-    invalidateTradingData();
-  }, [invalidateTradingData]);
+    for (const key of ['positions', 'orders', 'wallet', 'setupStats', 'equityCurve']) {
+      pendingInvalidations.current.add(key);
+    }
+    flushInvalidations();
+  }, [flushInvalidations]);
 
   const value: RealtimeTradingSyncContextValue = {
     subscribeToPrice,
     forceRefresh,
-    isConnected: isConnectedRef.current,
   };
 
   return (
@@ -400,7 +401,6 @@ export const useRealtimeTradingSyncContext = (): RealtimeTradingSyncContextValue
     return {
       subscribeToPrice: () => () => {},
       forceRefresh: () => {},
-      isConnected: false,
     };
   }
   return context;
