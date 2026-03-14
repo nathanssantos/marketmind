@@ -6,15 +6,18 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
+import { useUIPref } from '@renderer/store/preferencesStore';
 import { trpc } from '@renderer/utils/trpc';
 import { roundTradingQty } from '@shared/utils';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown } from 'react-icons/lu';
+import { LuArrowUpDown, LuGripVertical } from 'react-icons/lu';
 import { GridOrderPopover } from './GridOrderPopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
 const SIZE_PRESETS = [0.3, 0.5, 1, 2.5, 5, 10] as const;
+const SNAP_THRESHOLD = 16;
+const EDGE_PADDING = 8;
 
 interface QuickTradeToolbarProps {
   symbol: string;
@@ -27,6 +30,67 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
   const { activeWallet } = useActiveWallet();
   const { createOrder, isCreatingOrder } = useBackendTradingMutations();
   const { sizePercent, useMinNotional, setSizePercent, setMinNotional } = useQuickTradeStore();
+  const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef({ dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 });
+  const [position, setPosition] = useState(savedPosition);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (!dragState.current.dragging) setPosition(savedPosition);
+  }, [savedPosition]);
+
+  const snapToEdges = useCallback((x: number, y: number, containerW: number, containerH: number, panelW: number, panelH: number) => {
+    let snappedX = x;
+    let snappedY = y;
+    if (x < SNAP_THRESHOLD + EDGE_PADDING) snappedX = EDGE_PADDING;
+    else if (x + panelW > containerW - SNAP_THRESHOLD - EDGE_PADDING) snappedX = containerW - panelW - EDGE_PADDING;
+    if (y < SNAP_THRESHOLD + EDGE_PADDING) snappedY = EDGE_PADDING;
+    else if (y + panelH > containerH - SNAP_THRESHOLD - EDGE_PADDING) snappedY = containerH - panelH - EDGE_PADDING;
+    snappedX = Math.max(EDGE_PADDING, Math.min(snappedX, containerW - panelW - EDGE_PADDING));
+    snappedY = Math.max(EDGE_PADDING, Math.min(snappedY, containerH - panelH - EDGE_PADDING));
+    return { x: snappedX, y: snappedY };
+  }, []);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragState.current = { dragging: true, startX: e.clientX, startY: e.clientY, originX: position.x, originY: position.y };
+    setIsDragging(true);
+  }, [position]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const ds = dragState.current;
+      if (!ds.dragging || !containerRef.current || !panelRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const panelRect = panelRef.current.getBoundingClientRect();
+      const rawX = ds.originX + (e.clientX - ds.startX);
+      const rawY = ds.originY + (e.clientY - ds.startY);
+      const snapped = snapToEdges(rawX, rawY, containerRect.width, containerRect.height, panelRect.width, panelRect.height);
+      setPosition(snapped);
+    };
+
+    const handleMouseUp = () => {
+      dragState.current.dragging = false;
+      setIsDragging(false);
+      setPosition((pos) => {
+        setSavedPosition(pos);
+        return pos;
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, snapToEdges, setSavedPosition]);
 
   const { positions, reversePosition, isReversingPosition } = useBackendFuturesTrading(activeWallet?.id || '');
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
@@ -156,83 +220,99 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
   const handleMinClick = useCallback(() => setMinNotional(minNotionalPercent), [setMinNotional, minNotionalPercent]);
 
   return (
-    <Box
-      position="absolute"
-      top={2}
-      left={2}
-      zIndex={10}
-      bg="bg.panel"
-      borderRadius="md"
-      border="1px solid"
-      borderColor="border"
-      boxShadow="sm"
-      p={1}
-    >
-      <VStack gap={1} align="stretch">
-        <HStack gap={0.5} justify="center">
-          <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={useMinNotional ? 'blue.500' : 'fg.muted'} onClick={handleMinClick}>
-            {t('chart.quickTrade.min')}
-          </Button>
-          {SIZE_PRESETS.map((pct) => (
-            <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={!useMinNotional && sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
-              {pct}%
+    <Box ref={containerRef} position="absolute" inset={0} zIndex={10} pointerEvents="none">
+      <Box
+        ref={panelRef}
+        position="absolute"
+        top={`${position.y}px`}
+        left={`${position.x}px`}
+        zIndex={10}
+        bg="bg.panel"
+        borderRadius="md"
+        border="1px solid"
+        borderColor="border"
+        boxShadow="sm"
+        p={1}
+        pointerEvents="auto"
+        userSelect={isDragging ? 'none' : 'auto'}
+      >
+        <VStack gap={1} align="stretch">
+          <HStack gap={0.5} justify="center">
+            <Box
+              onMouseDown={handleDragStart}
+              cursor={isDragging ? 'grabbing' : 'grab'}
+              display="flex"
+              alignItems="center"
+              px={0.5}
+              color="fg.muted"
+              _hover={{ color: 'fg' }}
+            >
+              <LuGripVertical size={12} />
+            </Box>
+            <Button size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={useMinNotional ? 'blue.500' : 'fg.muted'} onClick={handleMinClick}>
+              {t('chart.quickTrade.min')}
             </Button>
-          ))}
-        </HStack>
+            {SIZE_PRESETS.map((pct) => (
+              <Button key={pct} size="2xs" fontSize="xs" px={1} minW={0} h="20px" variant="outline" color={!useMinNotional && sizePercent === pct ? 'blue.500' : 'fg.muted'} onClick={() => setSizePercent(pct)}>
+                {pct}%
+              </Button>
+            ))}
+          </HStack>
 
-        <HStack gap={1} px={0.5}>
-          <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.3} max={25} step={0.1} />
-          <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
-            {`${Math.round(sizePercent * 10) / 10}%`}
-          </Text>
-        </HStack>
+          <HStack gap={1} px={0.5}>
+            <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.3} max={25} step={0.1} />
+            <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
+              {`${Math.round(sizePercent * 10) / 10}%`}
+            </Text>
+          </HStack>
 
-        <HStack gap={1}>
-          <Button size="2xs" fontSize="xs" h="22px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
-            {t('chart.quickTrade.buy')}
-          </Button>
-          {marketType === 'FUTURES' && (
-            <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
-              <IconButton
-                size="2xs"
-                h="22px"
-                w="22px"
-                minW="22px"
-                variant="solid"
-                colorPalette="orange"
-                color="white"
-                onClick={handleReverseClick}
-                loading={isReversingPosition}
-                disabled={!currentPosition}
-                aria-label={t('futures.reversePosition', 'Reverse Position')}
-              >
-                <LuArrowUpDown size={12} />
-              </IconButton>
-            </TooltipWrapper>
-          )}
-          <Button size="2xs" fontSize="xs" h="22px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
-            {t('chart.quickTrade.sell')}
-          </Button>
-          <GridOrderPopover />
-          <TrailingStopPopover symbol={symbol} />
-        </HStack>
-      </VStack>
+          <HStack gap={1}>
+            <Button size="2xs" fontSize="xs" h="22px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
+              {t('chart.quickTrade.buy')}
+            </Button>
+            {marketType === 'FUTURES' && (
+              <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
+                <IconButton
+                  size="2xs"
+                  h="22px"
+                  w="22px"
+                  minW="22px"
+                  variant="solid"
+                  colorPalette="orange"
+                  color="white"
+                  onClick={handleReverseClick}
+                  loading={isReversingPosition}
+                  disabled={!currentPosition}
+                  aria-label={t('futures.reversePosition', 'Reverse Position')}
+                >
+                  <LuArrowUpDown size={12} />
+                </IconButton>
+              </TooltipWrapper>
+            )}
+            <Button size="2xs" fontSize="xs" h="22px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
+              {t('chart.quickTrade.sell')}
+            </Button>
+            <GridOrderPopover />
+            <TrailingStopPopover symbol={symbol} />
+          </HStack>
+        </VStack>
 
-      <ConfirmationDialog
-        isOpen={showReverseConfirm}
-        onClose={() => setShowReverseConfirm(false)}
-        onConfirm={handleReverseConfirm}
-        title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
-        description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
-          side: positionSide,
-          quantity: positionQty,
-          symbol,
-          newSide: positionSide === 'LONG' ? 'SHORT' : 'LONG',
-        })}
-        confirmLabel={t('futures.reversePosition', 'Reverse Position')}
-        colorPalette="orange"
-        isLoading={isReversingPosition}
-      />
+        <ConfirmationDialog
+          isOpen={showReverseConfirm}
+          onClose={() => setShowReverseConfirm(false)}
+          onConfirm={handleReverseConfirm}
+          title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
+          description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
+            side: positionSide,
+            quantity: positionQty,
+            symbol,
+            newSide: positionSide === 'LONG' ? 'SHORT' : 'LONG',
+          })}
+          confirmLabel={t('futures.reversePosition', 'Reverse Position')}
+          colorPalette="orange"
+          isLoading={isReversingPosition}
+        />
+      </Box>
     </Box>
   );
 });

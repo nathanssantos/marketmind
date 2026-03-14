@@ -21,7 +21,7 @@ export const useToast = () => {
         title: options.title,
         description: options.description,
         type: options.type || 'info',
-        duration: options.duration === null ? undefined : (options.duration || 5000),
+        duration: options.duration === null ? undefined : (options.duration || 3000),
         meta: options.meta,
       });
     });
@@ -32,7 +32,7 @@ export const useToast = () => {
   }, [showToast]);
 
   const error = useCallback((title: string, description?: string, meta?: ToastMeta) => {
-    showToast({ title, ...(description && { description }), type: 'error', duration: 8000, meta });
+    showToast({ title, ...(description && { description }), type: 'error', duration: 5000, meta });
   }, [showToast]);
 
   const warning = useCallback((title: string, description?: string, meta?: ToastMeta) => {
