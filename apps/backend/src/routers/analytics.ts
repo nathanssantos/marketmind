@@ -359,14 +359,14 @@ export const analyticsRouter = router({
         )
         .orderBy(realizedPnlEvents.createdAt);
 
-      const dailyData: Record<string, { pnl: number; events: number; balanceAtStart: number }> = {};
+      const dailyData: Record<string, { pnl: number; closedPositions: number; balanceAtStart: number }> = {};
 
       for (const event of events) {
         const dateKey = event.createdAt.toISOString().slice(0, 10);
-        if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, events: 0, balanceAtStart: runningBalance };
+        if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, closedPositions: 0, balanceAtStart: runningBalance };
         const pnl = parseFloat(event.pnl || '0');
         dailyData[dateKey].pnl += pnl;
-        dailyData[dateKey].events++;
+        if (event.eventType === 'full_close') dailyData[dateKey].closedPositions++;
         runningBalance += pnl;
       }
 
@@ -376,7 +376,7 @@ export const analyticsRouter = router({
         pnlPercent: data.balanceAtStart > 0
           ? parseFloat(((data.pnl / data.balanceAtStart) * 100).toFixed(2))
           : 0,
-        tradesCount: data.events,
+        tradesCount: data.closedPositions,
       }));
     }),
 

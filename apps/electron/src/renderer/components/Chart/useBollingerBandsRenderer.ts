@@ -110,6 +110,7 @@ export const useBollingerBandsRenderer = ({
 
     ctx.strokeStyle = colors.bollingerBands?.middle ?? INDICATOR_COLORS.BOLLINGER_MIDDLE;
     ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
     ctx.beginPath();
     if (middlePoints.length > 0) {
       ctx.moveTo(middlePoints[0]!.x, middlePoints[0]!.y);
@@ -118,6 +119,7 @@ export const useBollingerBandsRenderer = ({
       }
     }
     ctx.stroke();
+    ctx.setLineDash([]);
 
     ctx.restore();
   }, [manager, enabled, bollingerData, colors, rightMargin]);
