@@ -110,22 +110,21 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flushInvalidations = useCallback(() => {
-    const wId = currentWalletIdRef.current;
-    if (!wId) return;
+    if (!currentWalletIdRef.current) return;
     const keys = pendingInvalidations.current;
     pendingInvalidations.current = new Set();
     flushTimeoutRef.current = null;
 
     if (keys.has('positions')) {
-      utils.trading.getTradeExecutions.invalidate({ walletId: wId });
-      utils.trading.getPositions.invalidate({ walletId: wId });
-      utils.autoTrading.getActiveExecutions.invalidate({ walletId: wId });
-      utils.autoTrading.getExecutionHistory.invalidate({ walletId: wId });
+      utils.trading.getTradeExecutions.invalidate();
+      utils.trading.getPositions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+      utils.autoTrading.getExecutionHistory.invalidate();
     }
-    if (keys.has('orders')) utils.trading.getOrders.invalidate({ walletId: wId });
+    if (keys.has('orders')) utils.trading.getOrders.invalidate();
     if (keys.has('wallet')) {
       utils.wallet.list.invalidate();
-      utils.analytics.getPerformance.invalidate({ walletId: wId });
+      utils.analytics.getPerformance.invalidate();
       utils.analytics.getDailyPerformance.invalidate();
     }
     if (keys.has('setupStats')) utils.analytics.getSetupStats.invalidate();
@@ -135,7 +134,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const scheduleInvalidation = useCallback((...keys: string[]) => {
     for (const key of keys) pendingInvalidations.current.add(key);
     if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
-    flushTimeoutRef.current = setTimeout(flushInvalidations, 50);
+    flushTimeoutRef.current = setTimeout(flushInvalidations, 16);
   }, [flushInvalidations]);
 
   const scheduleRef = useRef(scheduleInvalidation);
