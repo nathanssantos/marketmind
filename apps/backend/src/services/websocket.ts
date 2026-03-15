@@ -1,7 +1,11 @@
 import type { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { binancePriceStreamService } from './binance-price-stream';
+import { binanceAggTradeStreamService } from './binance-agg-trade-stream';
+import { binanceBookTickerStreamService } from './binance-book-ticker-stream';
+import { binanceDepthStreamService } from './binance-depth-stream';
 import type { FrontendLogEntry } from './auto-trading-log-buffer';
+import type { AggTrade, BookTickerUpdate, DepthUpdate, ScalpingMetrics, ScalpingSignal } from '@marketmind/types';
 
 let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
 let _importPromise: Promise<void> | null = null;
@@ -164,6 +168,60 @@ export class WebSocketService {
         socket.leave(`autoTradingLogs:${walletId}`);
       });
 
+      socket.on('subscribe:bookTicker', (symbol: string) => {
+        const room = `bookTicker:${symbol}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          if (!isCustomSymbol(symbol)) binanceBookTickerStreamService.subscribe(symbol);
+        }
+      });
+
+      socket.on('unsubscribe:bookTicker', (symbol: string) => {
+        socket.leave(`bookTicker:${symbol}`);
+      });
+
+      socket.on('subscribe:aggTrades', (symbol: string) => {
+        const room = `aggTrades:${symbol}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          if (!isCustomSymbol(symbol)) binanceAggTradeStreamService.subscribe(symbol);
+        }
+      });
+
+      socket.on('unsubscribe:aggTrades', (symbol: string) => {
+        socket.leave(`aggTrades:${symbol}`);
+      });
+
+      socket.on('subscribe:depth', (symbol: string) => {
+        const room = `depth:${symbol}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          if (!isCustomSymbol(symbol)) binanceDepthStreamService.subscribe(symbol);
+        }
+      });
+
+      socket.on('unsubscribe:depth', (symbol: string) => {
+        socket.leave(`depth:${symbol}`);
+      });
+
+      socket.on('subscribe:scalpingMetrics', (symbol: string) => {
+        const room = `scalpingMetrics:${symbol}`;
+        if (!socket.rooms.has(room)) socket.join(room);
+      });
+
+      socket.on('unsubscribe:scalpingMetrics', (symbol: string) => {
+        socket.leave(`scalpingMetrics:${symbol}`);
+      });
+
+      socket.on('subscribe:scalpingSignals', (walletId: string) => {
+        const room = `scalpingSignals:${walletId}`;
+        if (!socket.rooms.has(room)) socket.join(room);
+      });
+
+      socket.on('unsubscribe:scalpingSignals', (walletId: string) => {
+        socket.leave(`scalpingSignals:${walletId}`);
+      });
+
       socket.on('disconnect', () => {
       });
     });
@@ -308,6 +366,26 @@ export class WebSocketService {
 
   public emitAutoTradingLog(walletId: string, entry: FrontendLogEntry): void {
     this.io.to(`autoTradingLogs:${walletId}`).emit('autoTrading:log', entry);
+  }
+
+  public emitBookTickerUpdate(symbol: string, update: BookTickerUpdate): void {
+    this.io.to(`bookTicker:${symbol}`).emit('bookTicker:update', update);
+  }
+
+  public emitAggTradeUpdate(symbol: string, trade: AggTrade, isLargeTrade: boolean): void {
+    this.io.to(`aggTrades:${symbol}`).emit('aggTrade:update', { ...trade, isLargeTrade });
+  }
+
+  public emitDepthUpdate(symbol: string, update: DepthUpdate): void {
+    this.io.to(`depth:${symbol}`).emit('depth:update', update);
+  }
+
+  public emitScalpingMetrics(symbol: string, metrics: ScalpingMetrics): void {
+    this.io.to(`scalpingMetrics:${symbol}`).emit('scalpingMetrics:update', metrics);
+  }
+
+  public emitScalpingSignal(walletId: string, signal: ScalpingSignal): void {
+    this.io.to(`scalpingSignals:${walletId}`).emit('scalpingSignal:new', signal);
   }
 
   public getActivelyViewedSymbols(): string[] {

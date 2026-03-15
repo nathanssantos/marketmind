@@ -1,8 +1,8 @@
-import { Badge, IconButton, Popover } from '@renderer/components/ui';
+import { Badge, Button, Popover } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuBuilding2, LuChevronDown, LuCoins, LuWallet } from 'react-icons/lu';
+import { LuBuilding2, LuCoins, LuWallet } from 'react-icons/lu';
 import { useActiveWallet } from '../hooks/useActiveWallet';
 
 const WalletSelectorComponent = () => {
@@ -28,22 +28,19 @@ const WalletSelectorComponent = () => {
     <Popover
       open={isOpen}
       onOpenChange={(details) => setIsOpen(details.open)}
+      showArrow={false}
       width="280px"
-      positioning={{ placement: 'bottom-end' }}
+      positioning={{ placement: 'bottom-end', offset: { mainAxis: 8 } }}
       trigger={
-        <IconButton
+        <Button
           size="2xs"
-          variant="ghost"
+          variant="outline"
+          color="fg.muted"
           aria-label={t('walletSelector.title')}
         >
-          <HStack gap={1}>
-            <LuWallet size={14} />
-            <Text fontSize="xs" fontWeight="medium" maxW="120px" truncate>
-              {activeWallet?.name ?? t('walletSelector.title')}
-            </Text>
-            <LuChevronDown size={12} />
-          </HStack>
-        </IconButton>
+          <LuWallet />
+          {activeWallet?.name ?? t('walletSelector.title')}
+        </Button>
       }
     >
       <Stack gap={0} py={1}>

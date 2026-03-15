@@ -8,7 +8,7 @@ interface UseChartDataParams {
   klines: Kline[];
   symbol: string;
   timeframe: Timeframe;
-  chartType: 'kline' | 'line';
+  chartType: string;
   showVolume: boolean;
   movingAverages: MovingAverageConfig[];
   marketType?: MarketType;

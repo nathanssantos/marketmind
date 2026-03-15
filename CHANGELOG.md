@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.67.0] - 2026-03-14
+
+### Added
+- **Scalping system end-to-end**: complete real-time scalping pipeline from UI → tRPC → Scheduler → Binance streams → Signal evaluation → Order execution → Position close → Metrics display
+- **5 scalping strategies**: imbalance, CVD divergence, mean reversion (VWAP), momentum burst, absorption reversal — each with configurable SL/TP and confidence scoring
+- **3 Binance real-time streams**: aggTrade, bookTicker, and depth20 streams with auto-reconnect and subscription management
+- **Order book analysis**: OrderBookManager with imbalance ratio, microprice, spread, wall detection, and absorption detection
+- **Volume profile**: real-time POC (Point of Control), value area high/low with 70% coverage (Market Profile standard)
+- **CVD tracking**: cumulative volume delta with 300-bar history, exhaustion detection (momentum tapering)
+- **Execution engine**: MARKET/LIMIT/IOC order modes, SL/TP protection orders, micro-trailing stop (8 ticks), emergency close on protection failure
+- **Circuit breaker**: session loss limit (2%), daily loss limit (2%), max daily trades (50), max session trades (50)
+- **Consecutive loss cooldown**: pauses signals for 15 minutes after 3 consecutive losses, resets on first win
+- **PositionEventBus**: event-driven position close propagation from Binance user stream to scalping engine
+- **ScalpingConfig DB table**: per-wallet configuration with 25+ tunable parameters (leverage, position size, strategies, thresholds)
+- **Scalping tRPC router**: 9 endpoints — getConfig, upsertConfig, start, stop, getStatus, getMetrics, getVolumeProfile, getAggTradeHistory, resetCircuitBreaker
+- **Scalping dashboard UI**: real-time metrics display, signal feed, circuit breaker status, volume profile visualization
+- **ScalpingConfig UI**: full configuration panel with strategy toggles, risk parameters, execution mode, chart settings
+- **Chart overlays**: CVD renderer, imbalance heatmap, volume profile overlay with POC/value area lines
+- **Tick & volume charts**: configurable ticks-per-bar and volume-per-bar from scalping config
+- **Metrics history mapping**: maps scalping metrics history to kline timestamps for chart overlay alignment
+- **AutoTradingSidebar**: reorganized layout separating auto-trading and scalping controls
+- **Comprehensive test suite**: 163 new tests covering SignalEngine (52), OrderBookManager (26), MetricsComputer (28), PositionEventBus (4), ExecutionEngine (24), constants (29)
+
+### Changed
+- **Scalping parameter optimization**: LARGE_TRADE_MULTIPLIER 5.0→4.0, MAX_SPREAD_PERCENT 0.05→0.03, MICRO_TRAILING_TICKS 3→8, SIGNAL_COOLDOWN_MS 5s→8s, CVD_DIVERGENCE_TP 0.4%→0.5%, MOMENTUM_BURST_MIN_IMBALANCE 0.3→0.4
+- **DB defaults optimized for crypto scalping**: executionMode POST_ONLY→MARKET, positionSizePercent 1%→2%, maxConcurrentPositions 1→2, leverage 5x→3x
+- **Scheduler uses SCALPING_DEFAULTS constants**: replaced hardcoded fallback values with centralized constant references
+- **Sidebar layout reorganized**: trading sidebar split into auto-trading and scalping sections
+
+### Fixed
+- **Circuit breaker daily reset ordering**: `checkDailyReset()` now runs before trip status check in `evaluate()`, ensuring the circuit breaker properly clears at midnight UTC instead of staying permanently tripped
+- **Position close events**: Binance futures user stream now emits PositionEventBus events on SL/TP fills, enabling scalping engine to track trade outcomes
+
+## [0.66.0] - 2026-03-14
+
+### Added
+- **Close Position button**: closes position at market and cancels all orders (SL, TP, entries) for the symbol
+- **Cancel Orders button**: cancels all pending entry orders (regular orders only, preserves SL/TP)
+- **Enter key support**: ConfirmationDialog now supports pressing Enter to confirm for speed
+
+### Changed
+- **Reverse position flow**: sequential cancel → close → open instead of single 2x order, freeing margin between steps
+- **QuickTradeToolbar layout**: moved GridOrderPopover and TrailingStopPopover to slider row; button row is now [Reverse] [Close] [Cancel] [Buy] [Sell]
+- **Reverse button color**: changed from orange to blue
+- **Toolbar spacing**: increased gaps and padding for better visual harmony
+
 ## [0.65.0] - 2026-03-14
 
 ### Performance

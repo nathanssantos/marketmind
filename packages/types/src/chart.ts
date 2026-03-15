@@ -1,4 +1,4 @@
-export type ChartType = 'kline' | 'line';
+export type ChartType = 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
 
 export interface MovingAverage {
   period: number;

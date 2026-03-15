@@ -171,11 +171,44 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     [closePositionMutation]
   );
 
+  const cancelAllOrdersMutation = trpc.futuresTrading.cancelAllOrders.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getOpenOrders.invalidate();
+      utils.trading.getOrders.invalidate();
+    },
+  });
+
+  const closePositionAndCancelOrdersMutation = trpc.futuresTrading.closePositionAndCancelOrders.useMutation({
+    onSuccess: () => {
+      utils.futuresTrading.getPositions.invalidate();
+      utils.futuresTrading.getOpenOrders.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+      utils.analytics.getPerformance.invalidate();
+      utils.analytics.getDailyPerformance.invalidate();
+      utils.wallet.list.invalidate();
+    },
+  });
+
   const reversePosition = useCallback(
     async (data: { walletId: string; symbol: string; positionId?: string }) => {
       return reversePositionMutation.mutateAsync(data);
     },
     [reversePositionMutation]
+  );
+
+  const cancelAllOrders = useCallback(
+    async (data: { walletId: string; symbol: string }) => {
+      return cancelAllOrdersMutation.mutateAsync(data);
+    },
+    [cancelAllOrdersMutation]
+  );
+
+  const closePositionAndCancelOrders = useCallback(
+    async (data: { walletId: string; symbol: string; positionId?: string }) => {
+      return closePositionAndCancelOrdersMutation.mutateAsync(data);
+    },
+    [closePositionAndCancelOrdersMutation]
   );
 
   return {
@@ -195,6 +228,8 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     createPosition,
     closePosition,
     reversePosition,
+    cancelAllOrders,
+    closePositionAndCancelOrders,
     isSettingLeverage: setLeverageMutation.isPending,
     isSettingMarginType: setMarginTypeMutation.isPending,
     isCreatingOrder: createOrderMutation.isPending,
@@ -202,6 +237,8 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     isCreatingPosition: createPositionMutation.isPending,
     isClosingPosition: closePositionMutation.isPending,
     isReversingPosition: reversePositionMutation.isPending,
+    isCancellingAllOrders: cancelAllOrdersMutation.isPending,
+    isClosingPositionAndCancellingOrders: closePositionAndCancelOrdersMutation.isPending,
     setLeverageError: setLeverageMutation.error,
     setMarginTypeError: setMarginTypeMutation.error,
     createOrderError: createOrderMutation.error,
@@ -209,5 +246,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     createPositionError: createPositionMutation.error,
     closePositionError: closePositionMutation.error,
     reversePositionError: reversePositionMutation.error,
+    cancelAllOrdersError: cancelAllOrdersMutation.error,
+    closePositionAndCancelOrdersError: closePositionAndCancelOrdersMutation.error,
   };
 };

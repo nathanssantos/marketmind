@@ -10,6 +10,8 @@ import { BinanceIpBannedError, binanceApiCache } from '../services/binance-api-c
 import { autoTradingService } from '../services/auto-trading';
 import {
     cancelAllFuturesAlgoOrders,
+    cancelAllFuturesOrders,
+    cancelAllSymbolOrders,
     cancelFuturesAlgoOrder,
     cancelFuturesOrder,
     closePosition as closeExchangePosition,
@@ -1020,28 +1022,39 @@ export const futuresTradingRouter = router({
 
         const positionAmt = parseFloat(position.positionAmt);
         const quantity = Math.abs(positionAmt);
-        const reverseSide = positionAmt > 0 ? 'SELL' : 'BUY';
-        const reverseQuantity = formatQuantityForBinance(quantity * 2, stepSize);
+        const closeSide = positionAmt > 0 ? 'SELL' : 'BUY';
+        const openSide = positionAmt > 0 ? 'BUY' : 'SELL';
+        const formattedQty = formatQuantityForBinance(quantity, stepSize);
 
-        const result = await submitFuturesOrder(client, {
+        await cancelAllSymbolOrders(client, input.symbol);
+
+        const closeResult = await submitFuturesOrder(client, {
           symbol: input.symbol,
-          side: reverseSide,
+          side: closeSide,
           type: 'MARKET',
-          quantity: reverseQuantity,
+          quantity: formattedQty,
+        });
+
+        const openResult = await submitFuturesOrder(client, {
+          symbol: input.symbol,
+          side: openSide,
+          type: 'MARKET',
+          quantity: formattedQty,
         });
 
         logger.info({
           walletId: input.walletId,
           symbol: input.symbol,
-          orderId: result.orderId,
+          closeOrderId: closeResult.orderId,
+          openOrderId: openResult.orderId,
           newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
-          reverseQuantity,
-        }, 'Position reversed with single 2x order');
+          quantity: formattedQty,
+        }, 'Position reversed: cancel orders → close → open');
 
         return {
           success: true,
-          closeOrderId: result.orderId,
-          openOrderId: result.orderId,
+          closeOrderId: closeResult.orderId,
+          openOrderId: openResult.orderId,
           newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
         };
       } catch (error) {
@@ -1089,6 +1102,150 @@ export const futuresTradingRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error instanceof Error ? error.message : 'Failed to cancel algo orders',
+          cause: error,
+        });
+      }
+    }),
+
+  cancelAllOrders: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      if (isPaperWallet(wallet)) {
+        const cancelled = await ctx.db
+          .update(orders)
+          .set({ status: 'CANCELED', updateTime: Date.now() })
+          .where(
+            and(
+              eq(orders.walletId, input.walletId),
+              eq(orders.symbol, input.symbol),
+              eq(orders.status, 'NEW')
+            )
+          )
+          .returning();
+
+        logger.info({ symbol: input.symbol, cancelled: cancelled.length }, 'Paper wallet - cancelled pending orders');
+        return { success: true, cancelled: cancelled.length };
+      }
+
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        await cancelAllFuturesOrders(client, input.symbol);
+        logger.info({ symbol: input.symbol }, 'Cancelled all regular orders for symbol');
+        return { success: true };
+      } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to cancel orders',
+          cause: error,
+        });
+      }
+    }),
+
+  closePositionAndCancelOrders: protectedProcedure
+    .input(
+      z.object({
+        walletId: z.string(),
+        symbol: z.string(),
+        positionId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      try {
+        if (isPaperWallet(wallet) && input.positionId) {
+          await ctx.db
+            .update(orders)
+            .set({ status: 'CANCELED', updateTime: Date.now() })
+            .where(
+              and(
+                eq(orders.walletId, input.walletId),
+                eq(orders.symbol, input.symbol),
+                eq(orders.status, 'NEW')
+              )
+            );
+
+          const [position] = await ctx.db
+            .select()
+            .from(positions)
+            .where(
+              and(
+                eq(positions.id, input.positionId),
+                eq(positions.userId, ctx.user.id),
+                eq(positions.status, 'open')
+              )
+            )
+            .limit(1);
+
+          if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
+
+          const dataService = getBinanceFuturesDataService();
+          const markPriceData = await dataService.getMarkPrice(position.symbol);
+          const exitPrice = markPriceData ? markPriceData.markPrice : parseFloat(position.currentPrice ?? position.entryPrice);
+
+          const entryPrice = parseFloat(position.entryPrice);
+          const quantity = parseFloat(position.entryQty);
+          const leverage = position.leverage ?? 1;
+          const accumulatedFunding = parseFloat(position.accumulatedFunding ?? '0');
+
+          const { netPnl, pnlPercent } = calculatePnl({
+            entryPrice,
+            exitPrice,
+            quantity,
+            side: position.side as 'LONG' | 'SHORT',
+            marketType: 'FUTURES',
+            leverage,
+            accumulatedFunding,
+          });
+
+          await ctx.db
+            .update(positions)
+            .set({
+              status: 'closed',
+              closedAt: new Date(),
+              updatedAt: new Date(),
+              currentPrice: exitPrice.toString(),
+              pnl: netPnl.toString(),
+              pnlPercent: pnlPercent.toString(),
+            })
+            .where(eq(positions.id, input.positionId));
+
+          logger.info({ positionId: input.positionId, symbol: input.symbol, netPnl: netPnl.toFixed(4) }, 'Paper position closed and orders cancelled');
+          return { success: true, pnl: netPnl, pnlPercent };
+        }
+
+        const client = createBinanceFuturesClient(wallet);
+        const position = await getPosition(client, input.symbol);
+
+        if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
+
+        await cancelAllSymbolOrders(client, input.symbol);
+
+        const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
+        const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
+        const result = await closeExchangePosition(client, input.symbol, position.positionAmt, stepSize);
+
+        logger.info({
+          walletId: input.walletId,
+          symbol: input.symbol,
+          orderId: result.orderId,
+        }, 'Position closed and all orders cancelled');
+
+        return { success: true, orderId: result.orderId };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to close position and cancel orders',
           cause: error,
         });
       }

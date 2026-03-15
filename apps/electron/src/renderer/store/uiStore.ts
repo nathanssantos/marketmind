@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { usePreferencesStore } from './preferencesStore';
 
-export type TradingSidebarTab = 'ticket' | 'orders' | 'portfolio';
-export type MarketSidebarTab = 'indicators' | 'watchers' | 'logs' | 'scanner';
+export type TradingSidebarTab = 'orders' | 'portfolio';
+export type MarketSidebarTab = 'indicators' | 'scanner';
+export type AutoTradingSidebarTab = 'watchers' | 'scalping' | 'logs';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
@@ -18,7 +19,7 @@ const syncUI = (key: string, value: unknown) => {
 };
 
 const HYDRATE_KEYS = [
-  'activeWalletId', 'tradingSidebarTab', 'marketSidebarOpen', 'marketSidebarTab',
+  'activeWalletId', 'tradingSidebarTab', 'marketSidebarOpen', 'marketSidebarTab', 'autoTradingSidebarOpen', 'autoTradingSidebarTab',
   'ordersFilterStatus', 'ordersSortBy', 'performancePeriod', 'setupStatsPeriod',
   'portfolioFilterOption', 'portfolioSortBy', 'ordersViewMode', 'portfolioViewMode',
   'ordersTableSortKey', 'ordersTableSortDirection', 'portfolioTableSortKey', 'portfolioTableSortDirection',
@@ -41,6 +42,13 @@ interface UIState {
 
   marketSidebarTab: MarketSidebarTab;
   setMarketSidebarTab: (tab: MarketSidebarTab) => void;
+
+  autoTradingSidebarOpen: boolean;
+  setAutoTradingSidebarOpen: (open: boolean) => void;
+  toggleAutoTradingSidebar: () => void;
+
+  autoTradingSidebarTab: AutoTradingSidebarTab;
+  setAutoTradingSidebarTab: (tab: AutoTradingSidebarTab) => void;
 
   ordersFilterStatus: OrdersFilterOption;
   setOrdersFilterStatus: (filter: OrdersFilterOption) => void;
@@ -126,6 +134,17 @@ export const useUIStore = create<UIState>()(
 
     marketSidebarTab: 'indicators',
     setMarketSidebarTab: (tab) => { set({ marketSidebarTab: tab }); syncUI('marketSidebarTab', tab); },
+
+    autoTradingSidebarOpen: false,
+    setAutoTradingSidebarOpen: (open) => { set({ autoTradingSidebarOpen: open }); syncUI('autoTradingSidebarOpen', open); },
+    toggleAutoTradingSidebar: () => set((state) => {
+      const val = !state.autoTradingSidebarOpen;
+      syncUI('autoTradingSidebarOpen', val);
+      return { autoTradingSidebarOpen: val };
+    }),
+
+    autoTradingSidebarTab: 'watchers',
+    setAutoTradingSidebarTab: (tab) => { set({ autoTradingSidebarTab: tab }); syncUI('autoTradingSidebarTab', tab); },
 
     ordersFilterStatus: 'closed',
     setOrdersFilterStatus: (filter) => { set({ ordersFilterStatus: filter }); syncUI('ordersFilterStatus', filter); },

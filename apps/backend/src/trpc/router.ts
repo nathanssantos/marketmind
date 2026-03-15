@@ -19,6 +19,7 @@ import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
 import { nestedTradingRouter } from '../routers/trading/index';
+import { scalpingRouter } from '../routers/scalping';
 import { router } from '../trpc';
 
 export const appRouter = router({
@@ -43,6 +44,7 @@ export const appRouter = router({
   screener: screenerRouter,
   customSymbol: customSymbolRouter,
   drawing: drawingRouter,
+  scalping: scalpingRouter,
 });
 
 export type AppRouter = typeof appRouter;

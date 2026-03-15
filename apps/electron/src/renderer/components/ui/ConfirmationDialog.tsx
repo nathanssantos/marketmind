@@ -1,5 +1,5 @@
 import { Text, VStack } from '@chakra-ui/react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './button';
 import {
@@ -49,6 +49,18 @@ export const ConfirmationDialog = ({
   const handleConfirm = () => {
     onConfirm();
   };
+
+  useEffect(() => {
+    if (!isOpen || isLoading) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onConfirm();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onConfirm]);
 
   return (
     <DialogRoot open={isOpen} onOpenChange={handleOpenChange} size="sm">

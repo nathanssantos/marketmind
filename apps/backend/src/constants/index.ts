@@ -176,3 +176,10 @@ export const STARTUP_CONFIG = {
 } as const;
 
 export type StartupConfigConstants = typeof STARTUP_CONFIG;
+
+export {
+  SCALPING_DEFAULTS,
+  SCALPING_STREAM,
+  SCALPING_ENGINE,
+  SCALPING_EXECUTION,
+} from './scalping';

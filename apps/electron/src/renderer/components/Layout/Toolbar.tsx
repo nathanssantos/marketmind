@@ -5,6 +5,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
+  LuBot,
   LuChartBar,
   LuDollarSign,
   LuLayers,
@@ -21,6 +22,8 @@ import { useChartWindows } from '../../hooks/useChartWindows';
 import { useUIZoom } from '../../hooks/useUIZoom';
 import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
+import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
+import type { ChartType } from '@marketmind/types';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { WalletSelector } from '../WalletSelector';
@@ -30,14 +33,18 @@ export interface ToolbarProps {
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
+  chartType: ChartType;
+  onChartTypeChange: (type: ChartType) => void;
   movingAverages: MovingAverageConfig[];
   isTradingOpen: boolean;
+  isAutoTradingOpen: boolean;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
   showZoomControls?: boolean;
   onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onToggleTrading: () => void;
+  onToggleAutoTrading: () => void;
 }
 
 export const Toolbar = memo(({
@@ -45,14 +52,18 @@ export const Toolbar = memo(({
   marketType,
   onMarketTypeChange,
   timeframe,
+  chartType,
+  onChartTypeChange,
   movingAverages: _movingAverages,
   isTradingOpen,
+  isAutoTradingOpen,
   showNewWindowButton = true,
   showSidebarButtons = true,
   showZoomControls = true,
   onSymbolChange,
   onTimeframeChange,
   onToggleTrading,
+  onToggleAutoTrading,
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
@@ -152,6 +163,13 @@ export const Toolbar = memo(({
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
+        <ChartTypeSelector
+          chartType={chartType}
+          onChartTypeChange={onChartTypeChange}
+        />
+
+        <Box w="1px" h="22px" bg="border" flexShrink={0} />
+
         {showSidebarButtons && (
           <HStack gap={1} flexShrink={0}>
             <TooltipWrapper label={t('marketSidebar.title')} showArrow>
@@ -202,6 +220,16 @@ export const Toolbar = memo(({
                 onClick={onToggleTrading}
               >
                 <LuDollarSign />
+              </ToggleIconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('autoTrading.sidebar.title', 'Auto Trading')} showArrow>
+              <ToggleIconButton
+                active={isAutoTradingOpen}
+                size="2xs"
+                aria-label={t('autoTrading.sidebar.title', 'Auto Trading')}
+                onClick={onToggleAutoTrading}
+              >
+                <LuBot />
               </ToggleIconButton>
             </TooltipWrapper>
           </HStack>

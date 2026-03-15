@@ -19,7 +19,7 @@ export interface UseChartBaseRenderersProps {
   manager: CanvasManager | null;
   klines: Kline[];
   colors: ChartThemeColors;
-  chartType: 'kline' | 'line';
+  chartType: string;
   advancedConfig?: AdvancedControlsConfig;
   movingAverages: MovingAverageConfig[];
   showGrid: boolean;
@@ -92,7 +92,7 @@ export const useChartBaseRenderers = ({
   const { render: renderKlines } = useKlineRenderer({
     manager,
     colors,
-    enabled: chartType === 'kline',
+    enabled: chartType !== 'line',
     showActivityIndicator,
     ...(advancedConfig?.rightMargin !== undefined && {
       rightMargin: advancedConfig.rightMargin,

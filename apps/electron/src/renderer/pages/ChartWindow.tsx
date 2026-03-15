@@ -43,7 +43,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
 
   useCurrencyAutoRefresh();
 
-  const [chartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [chartType, setChartType] = useChartPref<string>('chartType', 'kline');
   const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
     'movingAverages',
     DEFAULT_MOVING_AVERAGES
@@ -265,12 +265,16 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           onMarketTypeChange={setMarketType}
           onSymbolChange={handleSymbolChange}
           timeframe={timeframe}
+          chartType={chartType as import('@marketmind/types').ChartType}
+          onChartTypeChange={setChartType}
           onTimeframeChange={setTimeframe}
           movingAverages={movingAverages}
           showNewWindowButton={false}
           showSidebarButtons={false}
           isTradingOpen={false}
+          isAutoTradingOpen={false}
           onToggleTrading={() => { }}
+          onToggleAutoTrading={() => { }}
         />
       </Box>
 
@@ -303,7 +307,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
               marketType={marketType}
               width="100%"
               height="100%"
-              chartType={chartType}
+              chartType={chartType as 'kline' | 'line' | 'tick' | 'volume' | 'footprint'}
               movingAverages={movingAverages}
               advancedConfig={debouncedAdvancedConfig}
               timeframe={timeframe}

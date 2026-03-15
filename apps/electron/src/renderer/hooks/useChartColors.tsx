@@ -191,6 +191,12 @@ export interface ChartThemeColors extends BaseChartColors {
     supportBg: string;
     resistanceBg: string;
   };
+  scalping?: {
+    cvdLine: string;
+    imbalanceLine: string;
+    pocLine: string;
+    valueAreaFill: string;
+  };
   indicatorZone?: string;
 }
 

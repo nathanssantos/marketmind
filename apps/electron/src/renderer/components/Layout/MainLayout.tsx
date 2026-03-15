@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
+import type { ChartType } from '@marketmind/types';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { MarketSidebar } from '../MarketSidebar';
 import { AnalyticsModal } from '../Analytics';
@@ -13,6 +14,7 @@ import { CustomSymbolsModal } from '../CustomSymbols';
 import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
+import { AutoTradingSidebar } from '../AutoTrading/AutoTradingSidebar';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
 import { QuickTradeToolbar } from './QuickTradeToolbar';
 import { Toolbar } from './Toolbar';
@@ -23,11 +25,15 @@ interface MainLayoutProps {
   advancedConfig: AdvancedControlsConfig;
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
   isTradingOpen: boolean;
+  isAutoTradingOpen: boolean;
   onToggleTrading: () => void;
+  onToggleAutoTrading: () => void;
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
   onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
   timeframe: Timeframe;
+  chartType: ChartType;
+  onChartTypeChange: (type: ChartType) => void;
   movingAverages: MovingAverageConfig[];
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
@@ -49,11 +55,15 @@ export const MainLayout = ({
   advancedConfig,
   onAdvancedConfigChange,
   isTradingOpen,
+  isAutoTradingOpen,
   onToggleTrading,
+  onToggleAutoTrading,
   symbol,
   marketType,
   onMarketTypeChange,
   timeframe,
+  chartType,
+  onChartTypeChange,
   movingAverages,
   onSymbolChange,
   onTimeframeChange,
@@ -61,10 +71,11 @@ export const MainLayout = ({
   onNavigateToSymbol,
 }: MainLayoutProps) => {
   const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
+  const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [marketWidth, setMarketWidth] = useUIPref('marketSidebarWidth', DEFAULT_MARKET_WIDTH);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isResizingMarket, setIsResizingMarket] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const resizingRef = useRef<'trading' | 'autoTrading' | 'market' | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
@@ -76,40 +87,43 @@ export const MainLayout = ({
     navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => onNavigateToSymbol?.(symbol, marketType),
   }), [onOpenSymbolSelector, onNavigateToSymbol]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const startResize = useCallback((e: React.MouseEvent, target: 'trading' | 'autoTrading' | 'market', currentWidth: number) => {
     e.preventDefault();
+    resizingRef.current = target;
+    startXRef.current = e.clientX;
+    startWidthRef.current = currentWidth;
     setIsResizing(true);
-    startXRef.current = e.clientX;
-    startWidthRef.current = tradingWidth;
-  }, [tradingWidth]);
+  }, []);
 
-  const handleMarketMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingMarket(true);
-    startXRef.current = e.clientX;
-    startWidthRef.current = marketWidth;
-  }, [marketWidth]);
+  const handleMouseDown = useCallback((e: React.MouseEvent) => startResize(e, 'trading', tradingWidth), [startResize, tradingWidth]);
+  const handleMarketMouseDown = useCallback((e: React.MouseEvent) => startResize(e, 'market', marketWidth), [startResize, marketWidth]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
+    const target = resizingRef.current;
+    if (!target) return;
     const maxWidth = Math.floor(window.innerWidth * MAX_SIDEBAR_RATIO);
-    if (isResizing) {
-      const deltaX = startXRef.current - e.clientX;
-      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_TRADING_WIDTH), maxWidth);
-      setTradingWidth(newWidth);
-    } else if (isResizingMarket) {
+    if (target === 'market') {
       const deltaX = e.clientX - startXRef.current;
       const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_MARKET_WIDTH), maxWidth);
       setMarketWidth(newWidth);
+    } else if (target === 'trading') {
+      const deltaX = startXRef.current - e.clientX;
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_TRADING_WIDTH), maxWidth);
+      setTradingWidth(newWidth);
+    } else if (target === 'autoTrading') {
+      const deltaX = startXRef.current - e.clientX;
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_TRADING_WIDTH), maxWidth);
+      setAutoTradingWidth(newWidth);
     }
-  }, [isResizing, isResizingMarket, setTradingWidth, setMarketWidth]);
+  }, [setTradingWidth, setMarketWidth, setAutoTradingWidth]);
 
   const handleMouseUp = useCallback(() => {
+    resizingRef.current = null;
     setIsResizing(false);
-    setIsResizingMarket(false);
   }, []);
 
   useEffect(() => {
-    if (!isResizing && !isResizingMarket) return;
+    if (!isResizing) return;
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -118,7 +132,7 @@ export const MainLayout = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isResizing, isResizingMarket, handleMouseMove, handleMouseUp]);
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
     <GlobalActionsProvider actions={globalActions}>
@@ -128,11 +142,15 @@ export const MainLayout = ({
           marketType={marketType}
           onMarketTypeChange={onMarketTypeChange}
           timeframe={timeframe}
+          chartType={chartType}
+          onChartTypeChange={onChartTypeChange}
           movingAverages={movingAverages}
           isTradingOpen={isTradingOpen}
+          isAutoTradingOpen={isAutoTradingOpen}
           onSymbolChange={onSymbolChange}
           onTimeframeChange={onTimeframeChange}
           onToggleTrading={onToggleTrading}
+          onToggleAutoTrading={onToggleAutoTrading}
         />
         <Flex
           position="relative"
@@ -167,20 +185,34 @@ export const MainLayout = ({
             flex={1}
             position="relative"
             overflow="hidden"
-            width={
-              marketSidebarOpen && isTradingOpen
-                ? `calc(100% - ${marketWidth}px - ${tradingWidth}px)`
-                : marketSidebarOpen
-                  ? `calc(100% - ${marketWidth}px)`
-                  : isTradingOpen
-                    ? `calc(100% - ${tradingWidth}px)`
-                    : '100%'
-            }
+            width={(() => {
+              let rightWidth = 0;
+              if (isTradingOpen) rightWidth += tradingWidth;
+              if (isAutoTradingOpen) rightWidth += autoTradingWidth;
+              const leftWidth = marketSidebarOpen ? marketWidth : 0;
+              const totalSidebar = leftWidth + rightWidth;
+              return totalSidebar > 0 ? `calc(100% - ${totalSidebar}px)` : '100%';
+            })()}
             transition="width 0.2s ease"
           >
             {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
             {children}
           </Box>
+
+          {isAutoTradingOpen && (
+            <>
+              <Box
+                position="relative"
+                width="4px"
+                bg="border"
+                cursor="col-resize"
+                _hover={{ bg: 'green.500' }}
+                onMouseDown={(e) => startResize(e, 'autoTrading', autoTradingWidth)}
+                userSelect="none"
+              />
+              <AutoTradingSidebar width={autoTradingWidth} onClose={onToggleAutoTrading} />
+            </>
+          )}
 
           {isTradingOpen && (
             <>
@@ -193,7 +225,7 @@ export const MainLayout = ({
                 onMouseDown={handleMouseDown}
                 userSelect="none"
               />
-              <TradingSidebar width={tradingWidth} />
+              <TradingSidebar width={tradingWidth} onClose={onToggleTrading} />
             </>
           )}
         </Flex>

@@ -20,6 +20,7 @@ import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
 import { binancePriceStreamService } from './binance-price-stream';
 import { getWebSocketService } from './websocket';
+import { getPositionEventBus } from './scalping/position-event-bus';
 
 interface FuturesAccountUpdate {
   e: 'ACCOUNT_UPDATE';
@@ -993,6 +994,14 @@ export class BinanceFuturesUserStreamService {
                 });
               }
 
+              getPositionEventBus().emitPositionClosed({
+                walletId,
+                symbol,
+                side: oppositeExec.side as 'LONG' | 'SHORT',
+                pnl: totalPnl,
+                executionId: oppositeExec.id,
+              });
+
               void this.cancelPendingEntryOrders(walletId, symbol, oppositeExec.id);
               setTimeout(() => {
                 void this.closeResidualPosition(walletId, symbol, oppositeExec.id);
@@ -1415,6 +1424,14 @@ export class BinanceFuturesUserStreamService {
             exitReason: isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT',
           });
         }
+
+        getPositionEventBus().emitPositionClosed({
+          walletId,
+          symbol,
+          side: execution.side as 'LONG' | 'SHORT',
+          pnl,
+          executionId: execution.id,
+        });
 
         logger.info(
           {
@@ -2000,6 +2017,14 @@ export class BinanceFuturesUserStreamService {
           exitReason,
         });
       }
+
+      getPositionEventBus().emitPositionClosed({
+        walletId,
+        symbol,
+        side: execution.side as 'LONG' | 'SHORT',
+        pnl,
+        executionId,
+      });
 
       logger.warn(
         {

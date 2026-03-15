@@ -593,6 +593,13 @@
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
     },
+    "type": {
+      "candle": "Candle",
+      "line": "Line",
+      "tick": "Tick",
+      "volume": "Volume",
+      "footprint": "Footprint"
+    },
     "tools": {
       "pencil": "Pencil",
       "line": "Line",
@@ -765,7 +772,8 @@
       "ticket": "Ticket",
       "portfolio": "Portfolio",
       "orders": "Orders",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "scalping": "Scalping"
     },
     "wallets": {
       "title": "Wallets",
@@ -1831,6 +1839,66 @@
       "pre_scan": "Pre-Scan",
       "open": "Open",
       "closed": "Closed"
+    }
+  },
+  "scalping": {
+    "config": {
+      "title": "Scalping Configuration",
+      "strategies": "Strategies",
+      "execution": "Execution",
+      "risk": "Risk Management",
+      "symbols": "Symbols",
+      "chart": "Chart Settings",
+      "imbalanceThreshold": "Imbalance Threshold",
+      "cvdDivergenceBars": "CVD Divergence Bars",
+      "vwapDeviationSigma": "VWAP Deviation Sigma",
+      "absorptionThreshold": "Absorption Threshold",
+      "executionMode": "Execution Mode",
+      "microTrailingTicks": "Micro Trailing Ticks",
+      "maxSpreadPercent": "Max Spread %",
+      "positionSize": "Position Size %",
+      "maxConcurrent": "Max Concurrent Positions",
+      "maxDailyTrades": "Max Daily Trades",
+      "maxDailyLoss": "Max Daily Loss %",
+      "leverage": "Leverage",
+      "circuitBreaker": "Circuit Breaker",
+      "cbLossPercent": "CB Loss %",
+      "cbMaxTrades": "CB Max Trades",
+      "ticksPerBar": "Ticks per Bar",
+      "volumePerBar": "Volume per Bar",
+      "depthLevels": "Depth Levels",
+      "noSymbols": "No symbols configured"
+    },
+    "strategy": {
+      "imbalance": "Imbalance",
+      "cvd-divergence": "CVD Divergence",
+      "mean-reversion": "Mean Reversion",
+      "momentum-burst": "Momentum Burst",
+      "absorption-reversal": "Absorption Reversal"
+    },
+    "dashboard": {
+      "title": "Scalping"
+    },
+    "status": {
+      "running": "Running",
+      "stopped": "Stopped"
+    },
+    "metric": {
+      "sessionPnl": "Session P&L",
+      "trades": "Trades",
+      "winRate": "Win Rate",
+      "orderFlow": "Order Flow",
+      "imbalance": "Imbalance",
+      "spread": "Spread",
+      "absorption": "Absorption",
+      "domLadder": "DOM Ladder"
+    },
+    "signals": {
+      "title": "Signals"
+    },
+    "circuitBreaker": {
+      "tripped": "CB Tripped",
+      "reset": "Reset"
     }
   }
 }

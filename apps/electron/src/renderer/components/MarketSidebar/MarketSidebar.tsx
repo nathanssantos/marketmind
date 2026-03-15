@@ -1,12 +1,11 @@
-import { Box, Text } from '@chakra-ui/react';
+import { Box, Flex, Text } from '@chakra-ui/react';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { type MarketSidebarTab, useUIStore } from '../../store/uiStore';
-import { SidebarContainer, Tabs } from '../ui';
+import { IconButton, SidebarContainer, Tabs } from '../ui';
 import { MarketIndicatorsTab } from './tabs/MarketIndicatorsTab';
-import { WatchersTab } from './tabs/WatchersTab';
-import { LogsTab } from './tabs/LogsTab';
 import { ScannerTab } from './tabs/ScannerTab';
 
 interface MarketSidebarProps {
@@ -43,32 +42,23 @@ const MarketSidebarComponent = ({ width }: MarketSidebarProps) => {
         display="flex"
         flexDirection="column"
       >
-        <Tabs.List>
-          <Tabs.Trigger value="indicators">
-            <Text fontSize="xs">{t('marketSidebar.tabs.indicators')}</Text>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="watchers">
-            <Text fontSize="xs">{t('marketSidebar.tabs.watchers')}</Text>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="logs">
-            <Text fontSize="xs">{t('marketSidebar.tabs.logs')}</Text>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="scanner">
-            <Text fontSize="xs">{t('marketSidebar.tabs.scanner')}</Text>
-          </Tabs.Trigger>
-        </Tabs.List>
+        <Flex>
+          <Tabs.List flex={1}>
+            <Tabs.Trigger value="indicators">
+              <Text fontSize="xs">{t('marketSidebar.tabs.indicators')}</Text>
+            </Tabs.Trigger>
+            <Tabs.Trigger value="scanner">
+              <Text fontSize="xs">{t('marketSidebar.tabs.scanner')}</Text>
+            </Tabs.Trigger>
+          </Tabs.List>
+          <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Close" onClick={() => useUIStore.getState().toggleMarketSidebar()} mr={1} mt={0.5}>
+            <LuX />
+          </IconButton>
+        </Flex>
 
         <Box flex={1} overflowY="auto">
           <Tabs.Content value="indicators">
             <MarketIndicatorsTab />
-          </Tabs.Content>
-
-          <Tabs.Content value="watchers">
-            <WatchersTab />
-          </Tabs.Content>
-
-          <Tabs.Content value="logs">
-            <LogsTab />
           </Tabs.Content>
 
           <Tabs.Content value="scanner">

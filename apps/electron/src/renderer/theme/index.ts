@@ -770,6 +770,30 @@ const customConfig = defineConfig({
             _dark: 'rgba(239, 68, 68, 0.1)',
           },
         },
+        'chart.scalping.cvdLine': {
+          value: {
+            base: '#2196F3',
+            _dark: '#2196F3',
+          },
+        },
+        'chart.scalping.imbalanceLine': {
+          value: {
+            base: '#FF9800',
+            _dark: '#FF9800',
+          },
+        },
+        'chart.scalping.pocLine': {
+          value: {
+            base: '#FFD700',
+            _dark: '#FFD700',
+          },
+        },
+        'chart.scalping.valueAreaFill': {
+          value: {
+            base: 'rgba(128, 128, 128, 0.15)',
+            _dark: 'rgba(128, 128, 128, 0.15)',
+          },
+        },
         'chart.indicator.zone': {
           value: {
             base: 'rgba(128, 128, 128, 0.7)',
@@ -1151,6 +1175,12 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
       resistance: resolveValue(tokens['chart.liquidityLevels.resistance']),
       supportBg: resolveValue(tokens['chart.liquidityLevels.supportBg']),
       resistanceBg: resolveValue(tokens['chart.liquidityLevels.resistanceBg']),
+    },
+    scalping: {
+      cvdLine: resolveValue(tokens['chart.scalping.cvdLine']),
+      imbalanceLine: resolveValue(tokens['chart.scalping.imbalanceLine']),
+      pocLine: resolveValue(tokens['chart.scalping.pocLine']),
+      valueAreaFill: resolveValue(tokens['chart.scalping.valueAreaFill']),
     },
     indicatorZone: resolveValue(tokens['chart.indicator.zone']),
     panel: {

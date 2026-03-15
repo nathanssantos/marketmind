@@ -623,6 +623,7 @@
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
     },
+    "type": { "candle": "Vela", "line": "Linha", "tick": "Tick", "volume": "Volume", "footprint": "Footprint" },
     "tools": {
       "pencil": "Lápis",
       "line": "Linha",
@@ -1873,6 +1874,66 @@
       "pre_scan": "Pré-Scan",
       "open": "Aberta",
       "closed": "Fechada"
+    }
+  },
+  "scalping": {
+    "config": {
+      "title": "Configuração de Scalping",
+      "strategies": "Estratégias",
+      "execution": "Execução",
+      "risk": "Gestão de Risco",
+      "symbols": "Símbolos",
+      "chart": "Configurações do Gráfico",
+      "imbalanceThreshold": "Limiar de Desequilíbrio",
+      "cvdDivergenceBars": "Barras de Divergência CVD",
+      "vwapDeviationSigma": "Desvio VWAP Sigma",
+      "absorptionThreshold": "Limiar de Absorção",
+      "executionMode": "Modo de Execução",
+      "microTrailingTicks": "Micro Trailing Ticks",
+      "maxSpreadPercent": "Spread Máximo %",
+      "positionSize": "Tamanho da Posição %",
+      "maxConcurrent": "Posições Concorrentes Máx",
+      "maxDailyTrades": "Trades Diários Máx",
+      "maxDailyLoss": "Perda Diária Máx %",
+      "leverage": "Alavancagem",
+      "circuitBreaker": "Circuit Breaker",
+      "cbLossPercent": "CB Perda %",
+      "cbMaxTrades": "CB Trades Máx",
+      "ticksPerBar": "Ticks por Barra",
+      "volumePerBar": "Volume por Barra",
+      "depthLevels": "Níveis de Profundidade",
+      "noSymbols": "Nenhum símbolo configurado"
+    },
+    "strategy": {
+      "imbalance": "Desequilíbrio",
+      "cvd-divergence": "Divergência CVD",
+      "mean-reversion": "Reversão à Média",
+      "momentum-burst": "Burst de Momento",
+      "absorption-reversal": "Reversão por Absorção"
+    },
+    "dashboard": {
+      "title": "Scalping"
+    },
+    "status": {
+      "running": "Rodando",
+      "stopped": "Parado"
+    },
+    "metric": {
+      "sessionPnl": "P&L da Sessão",
+      "trades": "Trades",
+      "winRate": "Taxa de Acerto",
+      "orderFlow": "Fluxo de Ordens",
+      "imbalance": "Desequilíbrio",
+      "spread": "Spread",
+      "absorption": "Absorção",
+      "domLadder": "Livro de Ofertas"
+    },
+    "signals": {
+      "title": "Sinais"
+    },
+    "circuitBreaker": {
+      "tripped": "CB Ativado",
+      "reset": "Resetar"
     }
   }
 }
