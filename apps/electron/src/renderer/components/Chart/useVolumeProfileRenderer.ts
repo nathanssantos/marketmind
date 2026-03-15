@@ -43,7 +43,7 @@ export const useVolumeProfileRenderer = ({
       const vaTopY = priceToY(volumeProfile.valueAreaHigh, viewport.priceMin, viewport.priceMax, chartHeight);
       const vaBottomY = priceToY(volumeProfile.valueAreaLow, viewport.priceMin, viewport.priceMax, chartHeight);
 
-      ctx.fillStyle = `rgba(128, 128, 128, ${VALUE_AREA_OPACITY})`;
+      ctx.fillStyle = colors.scalping?.valueAreaFill ?? `rgba(128, 128, 128, ${VALUE_AREA_OPACITY})`;
       ctx.fillRect(chartWidth - MAX_BAR_WIDTH, vaTopY, MAX_BAR_WIDTH, vaBottomY - vaTopY);
     }
 
@@ -70,7 +70,7 @@ export const useVolumeProfileRenderer = ({
       ctx.fillRect(x + buyWidth, y - barHeight / 2, sellWidth, barHeight);
 
       if (isPOC) {
-        ctx.strokeStyle = '#FFD700';
+        ctx.strokeStyle = colors.scalping?.pocLine ?? '#FFD700';
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 2]);
         ctx.beginPath();

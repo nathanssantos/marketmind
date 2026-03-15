@@ -1890,7 +1890,8 @@
       "orderFlow": "Order Flow",
       "imbalance": "Imbalance",
       "spread": "Spread",
-      "absorption": "Absorption"
+      "absorption": "Absorption",
+      "domLadder": "DOM Ladder"
     },
     "signals": {
       "title": "Signals"

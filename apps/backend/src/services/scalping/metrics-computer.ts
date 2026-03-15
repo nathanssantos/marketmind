@@ -66,7 +66,7 @@ export class MetricsComputer {
     const buffer = this.tradeBuffer.get(symbol);
     if (buffer) {
       buffer.push(trade);
-      const cutoff = Date.now() - 5 * 60 * 1000;
+      const cutoff = Date.now() - SCALPING_ENGINE.TRADE_BUFFER_RETENTION_MS;
       while (buffer.length > 0 && (buffer[0]?.timestamp ?? 0) < cutoff) buffer.shift();
     }
 
@@ -74,9 +74,9 @@ export class MetricsComputer {
     if (avg) {
       avg.sum += trade.quantity;
       avg.count += 1;
-      if (avg.count > 2000) {
-        avg.sum = (avg.sum / avg.count) * 1000;
-        avg.count = 1000;
+      if (avg.count > SCALPING_ENGINE.AVG_OVERFLOW_THRESHOLD) {
+        avg.sum = (avg.sum / avg.count) * SCALPING_ENGINE.AVG_REBALANCE_COUNT;
+        avg.count = SCALPING_ENGINE.AVG_REBALANCE_COUNT;
       }
     }
 
@@ -93,7 +93,7 @@ export class MetricsComputer {
 
     const profile = this.volumeProfiles.get(symbol);
     if (profile) {
-      const tickSize = SCALPING_ENGINE.VOLUME_PROFILE_TICK_SIZE;
+      const tickSize = SCALPING_ENGINE.DEFAULT_TICK_SIZE;
       const bucket = Math.round(trade.price / tickSize) * tickSize;
       const existing = profile.get(bucket) ?? { buy: 0, sell: 0 };
       if (trade.isBuyerMaker) existing.sell += trade.quantity;
@@ -163,7 +163,7 @@ export class MetricsComputer {
     levels.sort((a, b) => a.price - b.price);
 
     let valueAreaVolume = 0;
-    const targetVolume = totalVolume * 0.7;
+    const targetVolume = totalVolume * SCALPING_ENGINE.VALUE_AREA_COVERAGE;
     const sortedByVol = [...levels].sort((a, b) => b.volume - a.volume);
     const valueAreaPrices: number[] = [];
 
@@ -205,7 +205,7 @@ export class MetricsComputer {
     const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
     const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
 
-    if (Math.abs(avgFirst) < 0.001) return 0;
+    if (Math.abs(avgFirst) < SCALPING_ENGINE.EXHAUSTION_MIN_DELTA) return 0;
 
     const tapering = 1 - Math.abs(avgSecond) / Math.abs(avgFirst);
     return Math.max(0, Math.min(1, tapering));

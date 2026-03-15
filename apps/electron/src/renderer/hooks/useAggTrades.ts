@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { AggTrade } from '@marketmind/types';
 import { socketService } from '../services/socketService';
+import { trpc } from '../utils/trpc';
 
 const MAX_BUFFER_SIZE = 5000;
+const PRELOAD_WINDOW_MS = 30 * 60 * 1000;
 
 interface AggTradeWithLarge extends AggTrade {
   isLargeTrade?: boolean;
@@ -14,6 +16,9 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
   const [isConnected, setIsConnected] = useState(false);
   const bufferRef = useRef<AggTradeWithLarge[]>([]);
   const frameRef = useRef<number | null>(null);
+  const preloadedRef = useRef<string | null>(null);
+
+  const utils = trpc.useUtils();
 
   const flush = useCallback(() => {
     if (bufferRef.current.length === 0) return;
@@ -42,6 +47,28 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
     setTrades([]);
     setLargeTrades([]);
     bufferRef.current = [];
+
+    if (preloadedRef.current !== symbol) {
+      const now = Date.now();
+      utils.scalping.getAggTradeHistory.fetch({
+        symbol,
+        from: now - PRELOAD_WINDOW_MS,
+        to: now,
+        limit: 5000,
+      }).then((historical) => {
+        if (historical.length > 0) {
+          setTrades((prev) => {
+            if (prev.length === 0) return historical as AggTradeWithLarge[];
+            const lastHistTs = historical[historical.length - 1]!.timestamp;
+            const newOnly = prev.filter((t) => t.timestamp > lastHistTs);
+            const merged = [...(historical as AggTradeWithLarge[]), ...newOnly];
+            return merged.length > MAX_BUFFER_SIZE ? merged.slice(-MAX_BUFFER_SIZE) : merged;
+          });
+        }
+        preloadedRef.current = symbol;
+      }).catch(() => {});
+    }
+
     socket.emit('subscribe:aggTrades', symbol);
     setIsConnected(true);
 
@@ -66,7 +93,7 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
         frameRef.current = null;
       }
     };
-  }, [symbol, enabled, flush]);
+  }, [symbol, enabled, flush, utils]);
 
   return { trades, largeTrades, isConnected };
 };

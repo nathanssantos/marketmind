@@ -33,6 +33,7 @@ export interface StrategyContext {
   currentPrice: number;
   vwap: number;
   avgVolume: number;
+  walletBalance: number;
 }
 
 export interface StrategyResult {
@@ -49,12 +50,17 @@ export interface CircuitBreakerState {
   tripped: boolean;
   tradeCount: number;
   sessionPnl: number;
+  winCount: number;
+  lossCount: number;
   lastResetTime: number;
+  dailyTradeCount: number;
+  dailyPnl: number;
+  dailyResetTime: number;
+  consecutiveLosses: number;
+  cooldownUntil: number;
 }
 
-export interface ScalpingSessionState {
-  isRunning: boolean;
-  symbols: string[];
-  circuitBreaker: CircuitBreakerState;
-  activeSignals: Map<string, number>;
+export interface BalanceCache {
+  balance: number;
+  timestamp: number;
 }

@@ -1889,7 +1889,7 @@
     "strategy": { "imbalance": "Déséquilibre", "cvd-divergence": "Divergence CVD", "mean-reversion": "Retour à la Moyenne", "momentum-burst": "Burst de Momentum", "absorption-reversal": "Renversement par Absorption" },
     "dashboard": { "title": "Scalping" },
     "status": { "running": "En cours", "stopped": "Arrêté" },
-    "metric": { "sessionPnl": "P&L Session", "trades": "Trades", "winRate": "Taux de Réussite", "orderFlow": "Flux d'Ordres", "imbalance": "Déséquilibre", "spread": "Spread", "absorption": "Absorption" },
+    "metric": { "sessionPnl": "P&L Session", "trades": "Trades", "winRate": "Taux de Réussite", "orderFlow": "Flux d'Ordres", "imbalance": "Déséquilibre", "spread": "Spread", "absorption": "Absorption", "domLadder": "Carnet d'Ordres" },
     "signals": { "title": "Signaux" },
     "circuitBreaker": { "tripped": "CB Déclenché", "reset": "Réinitialiser" }
   }

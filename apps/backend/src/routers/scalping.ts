@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, desc, gte, lte } from 'drizzle-orm';
+import { eq, and, asc, gte, lte } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../trpc';
@@ -153,12 +153,20 @@ export const scalpingRouter = router({
       return scheduler.getMetrics(input.walletId, input.symbol);
     }),
 
+  getVolumeProfile: protectedProcedure
+    .input(z.object({ walletId: z.string(), symbol: z.string() }))
+    .query(async ({ ctx, input }) => {
+      await verifyWalletOwnership(input.walletId, ctx.user.id);
+      const scheduler = getScalpingScheduler();
+      return scheduler.getVolumeProfile(input.walletId, input.symbol);
+    }),
+
   getAggTradeHistory: protectedProcedure
     .input(z.object({
       symbol: z.string(),
       from: z.number(),
       to: z.number(),
-      limit: z.number().int().min(1).max(10000).default(1000),
+      limit: z.number().int().min(1).max(10000).default(5000),
     }))
     .query(async ({ input }) => {
       const trades = await db.select()
@@ -168,7 +176,7 @@ export const scalpingRouter = router({
           gte(aggTradesTable.timestamp, new Date(input.from)),
           lte(aggTradesTable.timestamp, new Date(input.to)),
         ))
-        .orderBy(desc(aggTradesTable.timestamp))
+        .orderBy(asc(aggTradesTable.timestamp))
         .limit(input.limit);
 
       return trades.map((t) => ({

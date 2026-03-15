@@ -47,6 +47,7 @@ import { useFootprintRenderer } from '../useFootprintRenderer';
 export interface UseChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
+  chartType?: string;
   indicatorData: UseChartIndicatorsResult;
   stochasticData: StochasticResult | null;
   showEventRow: boolean;
@@ -107,6 +108,7 @@ export interface UseChartIndicatorRenderersResult {
 export const useChartIndicatorRenderers = ({
   manager,
   colors,
+  chartType,
   indicatorData,
   stochasticData,
   showEventRow,
@@ -398,7 +400,7 @@ export const useChartIndicatorRenderers = ({
     manager,
     footprintBars,
     colors,
-    enabled: isIndicatorActive('footprint'),
+    enabled: isIndicatorActive('footprint') || chartType === 'footprint',
   });
 
   const renderAllOverlayIndicators = (): void => {

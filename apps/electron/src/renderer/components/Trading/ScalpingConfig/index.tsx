@@ -25,7 +25,7 @@ const buildParams = (data: Record<string, unknown> | null | undefined) => ({
   positionSizePercent: parseFloat(String(get(data, 'positionSizePercent', 1))),
   maxConcurrentPositions: Number(get(data, 'maxConcurrentPositions', 1)),
   maxDailyTrades: Number(get(data, 'maxDailyTrades', 50)),
-  maxDailyLossPercent: parseFloat(String(get(data, 'maxDailyLossPercent', SCALPING_DEFAULTS.CIRCUIT_BREAKER_LOSS_PERCENT))),
+  maxDailyLossPercent: parseFloat(String(get(data, 'maxDailyLossPercent', SCALPING_DEFAULTS.MAX_DAILY_LOSS_PERCENT))),
   leverage: Number(get(data, 'leverage', 5)),
   imbalanceThreshold: parseFloat(String(get(data, 'imbalanceThreshold', SCALPING_DEFAULTS.IMBALANCE_THRESHOLD))),
   cvdDivergenceBars: Number(get(data, 'cvdDivergenceBars', SCALPING_DEFAULTS.CVD_DIVERGENCE_BARS)),

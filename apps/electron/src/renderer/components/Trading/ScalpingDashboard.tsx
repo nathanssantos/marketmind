@@ -1,9 +1,14 @@
 import { VStack, HStack, Text, Box } from '@chakra-ui/react';
-import { Button, Badge } from '@renderer/components/ui';
+import { Button, Badge, CollapsibleSection } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useBackendScalping } from '@renderer/hooks/useBackendScalping';
 import { useScalpingMetrics } from '@renderer/hooks/useScalpingMetrics';
 import { useScalpingSignals } from '@renderer/hooks/useScalpingSignals';
+import { useDepth } from '@renderer/hooks/useDepth';
+import { DomLadder } from '@renderer/components/Chart/DomLadder';
+import { useState } from 'react';
+
+const DOM_LADDER_HEIGHT = 250;
 
 interface ScalpingDashboardProps {
   walletId: string;
@@ -16,6 +21,8 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
   const { status, start, stop, resetCircuitBreaker } = useBackendScalping(walletId);
   const metrics = useScalpingMetrics(symbol);
   const { signals } = useScalpingSignals(walletId);
+  const [showDom, setShowDom] = useState(false);
+  const { bids, asks } = useDepth(showDom ? symbol : null, showDom);
 
   const statusData = status.data;
   const isRunning = statusData?.isRunning ?? false;
@@ -67,6 +74,22 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
           <MetricRow label={t('scalping.metric.absorption', 'Absorption')} value={metrics.absorptionScore.toFixed(2)} />
         </VStack>
       </Box>
+
+      <CollapsibleSection
+        title={t('scalping.metric.domLadder', 'DOM Ladder')}
+        open={showDom}
+        onToggle={(open) => setShowDom(open)}
+        size="sm"
+      >
+        {showDom && bids.length > 0 && (
+          <DomLadder
+            bids={bids}
+            asks={asks}
+            currentPrice={metrics.microprice || 0}
+            height={DOM_LADDER_HEIGHT}
+          />
+        )}
+      </CollapsibleSection>
 
       {signals.length > 0 && (
         <Box borderTop="1px solid" borderColor="border.muted" pt={2}>

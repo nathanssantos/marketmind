@@ -13,6 +13,7 @@ import {
 } from '@renderer/components/ui';
 import { Box, Portal } from '@chakra-ui/react';
 import type { Kline, MarketType, Order, TimeInterval, Viewport } from '@marketmind/types';
+import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -68,8 +69,8 @@ import {
 import { useAggTrades } from '@renderer/hooks/useAggTrades';
 import { useTickChart } from '@renderer/hooks/useTickChart';
 import { useVolumeChart } from '@renderer/hooks/useVolumeChart';
-import { useScalpingMetrics } from '@renderer/hooks/useScalpingMetrics';
-import type { FootprintBar, FootprintLevel, VolumeProfile } from '@marketmind/types';
+import { useScalpingMetrics, type ScalpingMetricsHistoryEntry } from '@renderer/hooks/useScalpingMetrics';
+import type { FootprintBar, FootprintLevel } from '@marketmind/types';
 
 interface OptimisticOverride {
   patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice' | 'status'>>;
@@ -78,6 +79,29 @@ interface OptimisticOverride {
 }
 
 const OPTIMISTIC_OVERRIDE_TTL_MS = 30_000;
+
+const mapHistoryToKlineValues = (
+  history: ScalpingMetricsHistoryEntry[],
+  klines: Kline[],
+  selector: (entry: ScalpingMetricsHistoryEntry) => number,
+  fallback: number,
+): (number | null)[] => {
+  if (history.length === 0 || klines.length === 0) return [];
+  const values: (number | null)[] = new Array(klines.length).fill(null);
+  let histIdx = 0;
+  for (let i = 0; i < klines.length && histIdx < history.length; i++) {
+    const kline = klines[i];
+    if (!kline) continue;
+    let lastMatch: number | null = null;
+    while (histIdx < history.length && history[histIdx]!.timestamp <= kline.closeTime) {
+      if (history[histIdx]!.timestamp >= kline.openTime) lastMatch = selector(history[histIdx]!);
+      histIdx++;
+    }
+    if (lastMatch !== null) values[i] = lastMatch;
+  }
+  if (values[values.length - 1] === null) values[values.length - 1] = fallback;
+  return values;
+};
 
 export interface ChartCanvasProps {
   klines: Kline[];
@@ -525,8 +549,14 @@ export const ChartCanvas = ({
   const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
   const needsAggTrades = isTickOrVolumeChart || chartType === 'footprint';
   const { trades: aggTrades } = useAggTrades(needsAggTrades ? (symbol ?? null) : null, needsAggTrades);
-  const tickKlines = useTickChart(chartType === 'tick' ? aggTrades : [], 100);
-  const volumeKlines = useVolumeChart(chartType === 'volume' ? aggTrades : [], 50);
+  const { data: scalpingCfg } = trpc.scalping.getConfig.useQuery(
+    { walletId: backendWalletId ?? '' },
+    { enabled: isTickOrVolumeChart && !!backendWalletId },
+  );
+  const resolvedTicksPerBar = scalpingCfg?.ticksPerBar ?? SCALPING_DEFAULTS.TICK_SIZE;
+  const resolvedVolumePerBar = scalpingCfg?.volumePerBar ? Number(scalpingCfg.volumePerBar) : SCALPING_DEFAULTS.VOLUME_BAR_SIZE;
+  const tickKlines = useTickChart(chartType === 'tick' ? aggTrades : [], resolvedTicksPerBar);
+  const volumeKlines = useVolumeChart(chartType === 'volume' ? aggTrades : [], resolvedVolumePerBar);
 
   const effectiveKlines = useMemo(() => {
     if (chartType === 'tick') return tickKlines;
@@ -541,22 +571,19 @@ export const ChartCanvas = ({
 
   const cvdValues = useMemo((): (number | null)[] => {
     if (!needsScalpingMetrics || effectiveKlines.length === 0) return [];
-    const values: (number | null)[] = new Array(effectiveKlines.length).fill(null);
-    values[values.length - 1] = scalpingMetrics.cvd;
-    return values;
-  }, [needsScalpingMetrics, effectiveKlines.length, scalpingMetrics.cvd]);
+    return mapHistoryToKlineValues(scalpingMetrics.metricsHistory(), effectiveKlines, (e) => e.cvd, scalpingMetrics.cvd);
+  }, [needsScalpingMetrics, effectiveKlines, scalpingMetrics.cvd, scalpingMetrics.metricsHistory]);
 
   const imbalanceValues = useMemo((): (number | null)[] => {
     if (!needsScalpingMetrics || effectiveKlines.length === 0) return [];
-    const values: (number | null)[] = new Array(effectiveKlines.length).fill(null);
-    values[values.length - 1] = scalpingMetrics.imbalanceRatio;
-    return values;
-  }, [needsScalpingMetrics, effectiveKlines.length, scalpingMetrics.imbalanceRatio]);
+    return mapHistoryToKlineValues(scalpingMetrics.metricsHistory(), effectiveKlines, (e) => e.imbalanceRatio, scalpingMetrics.imbalanceRatio);
+  }, [needsScalpingMetrics, effectiveKlines, scalpingMetrics.imbalanceRatio, scalpingMetrics.metricsHistory]);
 
-  const volumeProfileData = useMemo((): VolumeProfile | null => {
-    if (!needsScalpingMetrics || !scalpingMetrics.microprice) return null;
-    return null;
-  }, [needsScalpingMetrics, scalpingMetrics.microprice]);
+  const needsVolumeProfile = useIndicatorStore((s) => s.activeIndicators.includes('volumeProfile'));
+  const { data: volumeProfileData } = trpc.scalping.getVolumeProfile.useQuery(
+    { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
+    { enabled: needsVolumeProfile && !!backendWalletId && !!symbol, refetchInterval: SCALPING_DEFAULTS.BOOK_SNAPSHOT_INTERVAL_MS },
+  );
 
   const footprintBars = useMemo((): FootprintBar[] => {
     if (chartType !== 'footprint' || aggTrades.length === 0 || effectiveKlines.length === 0) return [];
@@ -833,7 +860,7 @@ export const ChartCanvas = ({
     maValuesCache,
   } = useChartBaseRenderers({
     manager,
-    klines,
+    klines: effectiveKlines,
     colors,
     chartType,
     advancedConfig,
@@ -898,13 +925,14 @@ export const ChartCanvas = ({
   } = useChartIndicatorRenderers({
     manager,
     colors,
+    chartType,
     indicatorData,
     stochasticData,
     showEventRow,
     marketEvents,
     cvdValues,
     imbalanceValues,
-    volumeProfile: volumeProfileData,
+    volumeProfile: volumeProfileData ?? null,
     footprintBars,
   });
 

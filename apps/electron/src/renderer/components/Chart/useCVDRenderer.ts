@@ -58,7 +58,7 @@ export const useCVDRenderer = ({
     }
 
     ctx.beginPath();
-    ctx.strokeStyle = colors.rsi?.line ?? '#2196F3';
+    ctx.strokeStyle = colors.scalping?.cvdLine ?? '#2196F3';
     ctx.lineWidth = OSCILLATOR_CONFIG.LINE_WIDTH;
 
     let started = false;

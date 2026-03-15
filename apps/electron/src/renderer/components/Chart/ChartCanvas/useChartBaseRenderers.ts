@@ -92,7 +92,7 @@ export const useChartBaseRenderers = ({
   const { render: renderKlines } = useKlineRenderer({
     manager,
     colors,
-    enabled: chartType === 'kline',
+    enabled: chartType !== 'line',
     showActivityIndicator,
     ...(advancedConfig?.rightMargin !== undefined && {
       rightMargin: advancedConfig.rightMargin,
