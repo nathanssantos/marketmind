@@ -417,10 +417,14 @@ export class AutoTradingService {
           marketType: 'FUTURES',
         }, 'Futures order executed');
 
+        const effectivePrice = parseFloat(order.price?.toString() || '0') > 0
+          ? order.price?.toString() || '0'
+          : order.avgPrice?.toString() || '0';
+
         return {
           orderId: order.orderId,
           executedQty: order.executedQty?.toString() || '0',
-          price: order.price?.toString() || '0',
+          price: effectivePrice,
         };
       }
 

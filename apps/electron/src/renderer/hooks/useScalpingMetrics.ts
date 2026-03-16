@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import type { ScalpingMetrics } from '@marketmind/types';
 import { socketService } from '../services/socketService';
 
@@ -19,8 +19,7 @@ export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
   useEffect(() => {
     if (!symbol || !enabled) return;
 
-    const socket = socketService.getSocket();
-    if (!socket) return;
+    const socket = socketService.connect();
 
     setMetrics(null);
     historyRef.current = [];
@@ -54,12 +53,13 @@ export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
+      socketService.disconnect();
     };
   }, [symbol, enabled]);
 
   const getHistory = useCallback(() => historyRef.current, []);
 
-  return {
+  return useMemo(() => ({
     cvd: metrics?.cvd ?? 0,
     imbalanceRatio: metrics?.imbalanceRatio ?? 0,
     microprice: metrics?.microprice ?? 0,
@@ -70,5 +70,5 @@ export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
     absorptionScore: metrics?.absorptionScore ?? 0,
     exhaustionScore: metrics?.exhaustionScore ?? 0,
     metricsHistory: getHistory,
-  };
+  }), [metrics, getHistory]);
 };

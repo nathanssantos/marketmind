@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { FootprintBar, MarketEvent, VolumeProfile } from '@marketmind/types';
@@ -52,8 +53,8 @@ export interface UseChartIndicatorRenderersProps {
   stochasticData: StochasticResult | null;
   showEventRow: boolean;
   marketEvents: MarketEvent[];
-  cvdValues?: (number | null)[];
-  imbalanceValues?: (number | null)[];
+  cvdValuesRef: RefObject<(number | null)[]>;
+  imbalanceValuesRef: RefObject<(number | null)[]>;
   volumeProfile?: VolumeProfile | null;
   footprintBars?: FootprintBar[];
 }
@@ -113,8 +114,8 @@ export const useChartIndicatorRenderers = ({
   stochasticData,
   showEventRow,
   marketEvents,
-  cvdValues = [],
-  imbalanceValues = [],
+  cvdValuesRef,
+  imbalanceValuesRef,
   volumeProfile = null,
   footprintBars = [],
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
@@ -377,14 +378,14 @@ export const useChartIndicatorRenderers = ({
 
   const { render: renderCVD } = useCVDRenderer({
     manager,
-    cvdValues,
+    cvdValuesRef,
     colors,
     enabled: isIndicatorActive('cvd'),
   });
 
   const { render: renderImbalance } = useImbalanceRenderer({
     manager,
-    imbalanceValues,
+    imbalanceValuesRef,
     colors,
     enabled: isIndicatorActive('bookImbalance'),
   });

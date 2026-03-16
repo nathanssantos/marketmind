@@ -213,14 +213,6 @@ export const WatcherManager = () => {
     handleConfigUpdate({ leverage });
   };
 
-  const handleMarginTypeChange = (value: 'ISOLATED' | 'CROSSED'): void => {
-    handleConfigUpdate({ marginType: value });
-  };
-
-  const handlePositionModeChange = (mode: 'ONE_WAY' | 'HEDGE'): void => {
-    handleConfigUpdate({ positionMode: mode });
-  };
-
   const handleMaxDrawdownEnabledChange = (enabled: boolean): void => {
     handleConfigUpdate({ maxDrawdownEnabled: enabled });
   };
@@ -410,11 +402,7 @@ export const WatcherManager = () => {
             isExpanded={expandedSections.leverageSettings}
             onToggle={() => toggleSection('leverageSettings')}
             leverage={config?.leverage ?? 1}
-            marginType={config?.marginType ?? 'CROSSED'}
             onLeverageChange={handleLeverageChange}
-            onMarginTypeChange={handleMarginTypeChange}
-            positionMode={config?.positionMode ?? 'ONE_WAY'}
-            onPositionModeChange={handlePositionModeChange}
             isPending={updateConfig.isPending}
           />
 

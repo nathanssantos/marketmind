@@ -133,7 +133,7 @@ export const scalpingRouter = router({
     .mutation(async ({ ctx, input }) => {
       await verifyWalletOwnership(input.walletId, ctx.user.id);
       const scheduler = getScalpingScheduler();
-      scheduler.stopScalping(input.walletId);
+      await scheduler.stopScalping(input.walletId);
       return { success: true };
     }),
 

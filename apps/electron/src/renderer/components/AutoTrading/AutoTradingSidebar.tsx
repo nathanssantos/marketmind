@@ -10,6 +10,9 @@ import { WatchersTab } from '../MarketSidebar/tabs/WatchersTab';
 import { LogsTab } from '../MarketSidebar/tabs/LogsTab';
 import { ScalpingDashboard } from '../Trading/ScalpingDashboard';
 import { ScalpingConfigDialog } from '../Trading/ScalpingConfig';
+import { DomLadder } from '../Chart/DomLadder';
+import { useDepth } from '../../hooks/useDepth';
+import { usePriceStore } from '../../store/priceStore';
 
 interface AutoTradingSidebarProps {
   width: number;
@@ -21,6 +24,8 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
   const { chartData } = useChartContext();
   const currentSymbol = chartData?.symbol ?? 'BTCUSDT';
   const [scalpingConfigOpen, setScalpingConfigOpen] = useState(false);
+  const { bids, asks } = useDepth(currentSymbol);
+  const currentPrice = usePriceStore((s) => s.prices[currentSymbol]?.price ?? 0);
 
   const { autoTradingSidebarTab, setAutoTradingSidebarTab, activeWalletId } = useUIStore(useShallow((s) => ({
     autoTradingSidebarTab: s.autoTradingSidebarTab,
@@ -54,12 +59,12 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
           </Tabs.List>
         </Flex>
 
-        <Box flex={1} overflowY="auto">
-          <Tabs.Content value="watchers">
+        <Box flex={1} minH={0} display="flex" flexDirection="column" overflow="hidden">
+          <Tabs.Content value="watchers" overflowY="auto">
             <WatchersTab />
           </Tabs.Content>
 
-          <Tabs.Content value="scalping">
+          <Tabs.Content value="scalping" overflowY="auto">
             {activeWalletId ? (
               <ScalpingDashboard
                 walletId={activeWalletId}
@@ -73,9 +78,15 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
                 </Text>
               </Box>
             )}
+            {bids.length > 0 && (
+              <Box p={3} bg="bg.muted" borderRadius="md" mx={4} mb={4} gap={2.5} display="flex" flexDirection="column" flexShrink={0}>
+                <Text fontSize="xs" color="fg.muted" fontWeight="medium">{t('scalping.metric.domLadder', 'DOM Ladder')}</Text>
+                <DomLadder bids={bids} asks={asks} currentPrice={currentPrice} />
+              </Box>
+            )}
           </Tabs.Content>
 
-          <Tabs.Content value="logs">
+          <Tabs.Content value="logs" flex={1} display="flex" flexDirection="column" minH={0}>
             <LogsTab />
           </Tabs.Content>
         </Box>

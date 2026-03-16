@@ -5,6 +5,7 @@ export interface PositionData {
   avgPrice: number;
   totalQuantity: number;
   totalPnL: number;
+  leverage?: number;
 }
 
 export interface OrderPnlOptions {
@@ -28,7 +29,8 @@ export const calculateOrderPnl = ({
 }: OrderPnlOptions): OrderPnlResult => {
   if (isPosition && positionData) {
     const totalInvestment = positionData.avgPrice * positionData.totalQuantity;
-    const pnlPercent = totalInvestment > 0 ? (positionData.totalPnL / totalInvestment) * 100 : 0;
+    const leverage = positionData.leverage ?? 1;
+    const pnlPercent = totalInvestment > 0 ? (positionData.totalPnL / totalInvestment) * 100 * leverage : 0;
 
     return {
       pnl: positionData.totalPnL,

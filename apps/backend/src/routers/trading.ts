@@ -4,7 +4,7 @@ import { MainClient, USDMClient } from 'binance';
 import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
-import { autoTradingConfig, orders, positions, realizedPnlEvents, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
+import { orders, positions, realizedPnlEvents, symbolTrailingStopOverrides, tradeExecutions, wallets } from '../db/schema';
 import { env } from '../env';
 import { autoTradingService } from '../services/auto-trading';
 import { isPaperWallet } from '../services/binance-client';
@@ -114,23 +114,22 @@ export const tradingRouter = router({
         const tickSize = filters?.tickSize?.toString();
         const stepSize = filters?.stepSize?.toString();
 
+        let futuresLeverage = 1;
         if (input.marketType === 'FUTURES') {
-          const [config] = await ctx.db
-            .select()
-            .from(autoTradingConfig)
-            .where(eq(autoTradingConfig.walletId, input.walletId))
-            .limit(1);
-
-          const { createBinanceFuturesClient, setLeverage, setMarginType, getPosition } = await import('../services/binance-futures-client');
+          const { createBinanceFuturesClient, setMarginType } = await import('../services/binance-futures-client');
+          const { guardBinanceCall } = await import('../services/binance-api-cache');
           const futuresClient = createBinanceFuturesClient(wallet);
-          const existingPosition = await getPosition(futuresClient, input.symbol);
-          if (!existingPosition) {
-            try {
-              await setLeverage(futuresClient, input.symbol, config?.leverage ?? 1);
-              await setMarginType(futuresClient, input.symbol, config?.marginType ?? 'CROSSED');
-            } catch {
-              logger.warn({ symbol: input.symbol }, 'Could not apply leverage/margin type — open orders exist, proceeding with current settings');
-            }
+          try {
+            await setMarginType(futuresClient, input.symbol, 'CROSSED');
+          } catch {
+            logger.warn({ symbol: input.symbol }, 'Could not apply margin type — proceeding with current settings');
+          }
+          try {
+            const positionsForLev = await guardBinanceCall(() => futuresClient.getPositions({ symbol: input.symbol }));
+            const posForLev = positionsForLev.find(p => p.symbol === input.symbol);
+            if (posForLev) futuresLeverage = Number(posForLev.leverage);
+          } catch {
+            logger.warn({ symbol: input.symbol }, 'Could not read leverage from exchange');
           }
         }
 
@@ -250,6 +249,7 @@ export const tradingRouter = router({
                 status: 'pending',
                 marketType: orderInput.marketType,
                 openedAt: new Date(),
+                leverage: futuresLeverage,
               });
             }
           }
@@ -348,6 +348,7 @@ export const tradingRouter = router({
                 status: 'pending',
                 marketType: orderInput.marketType,
                 openedAt: new Date(),
+                leverage: futuresLeverage,
               });
             }
           }

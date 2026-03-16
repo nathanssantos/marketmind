@@ -5,8 +5,9 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../constants';
+import { getScalpingScheduler } from '../services/scalping/scalping-scheduler';
 import { orders, positions, tradeExecutions } from '../db/schema';
-import { BinanceIpBannedError, binanceApiCache } from '../services/binance-api-cache';
+import { BinanceIpBannedError, binanceApiCache, guardBinanceCall } from '../services/binance-api-cache';
 import { autoTradingService } from '../services/auto-trading';
 import {
     cancelAllFuturesAlgoOrders,
@@ -55,6 +56,7 @@ export const futuresTradingRouter = router({
       try {
         const client = createBinanceFuturesClient(wallet);
         const result = await setLeverage(client, input.symbol, input.leverage);
+        binanceApiCache.invalidate('SYMBOL_LEVERAGE', input.walletId, input.symbol);
         return result;
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
@@ -95,6 +97,32 @@ export const futuresTradingRouter = router({
       }
     }),
 
+  getSymbolLeverage: protectedProcedure
+    .input(z.object({ walletId: z.string(), symbol: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      if (isPaperWallet(wallet)) return { leverage: 1 };
+
+      const cached = binanceApiCache.get<{ leverage: number }>('SYMBOL_LEVERAGE', input.walletId, input.symbol);
+      if (cached) return cached;
+
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        const positions = await guardBinanceCall(() => client.getPositions({ symbol: input.symbol }));
+        const pos = positions.find(p => p.symbol === input.symbol);
+        const result = { leverage: pos ? Number(pos.leverage) : 1 };
+        binanceApiCache.set('SYMBOL_LEVERAGE', input.walletId, result, input.symbol);
+        return result;
+      } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to get symbol leverage',
+          cause: error,
+        });
+      }
+    }),
+
   createOrder: protectedProcedure
     .input(
       z.object({
@@ -108,8 +136,8 @@ export const futuresTradingRouter = router({
         reduceOnly: z.boolean().optional(),
         setupId: z.string().optional(),
         setupType: z.string().optional(),
-        leverage: z.number().min(1).max(125).default(1),
-        marginType: z.enum(['ISOLATED', 'CROSSED']).default('CROSSED'),
+        leverage: z.number().min(1).max(125).optional(),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
         stopLoss: z.string().optional(),
         takeProfit: z.string().optional(),
       })
@@ -119,6 +147,13 @@ export const futuresTradingRouter = router({
 
       if (!wallet.isActive) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Wallet is inactive' });
+      }
+
+      if (!input.reduceOnly && getScalpingScheduler().isSymbolBeingScalped(input.walletId, input.symbol)) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `Cannot trade ${input.symbol}: scalping is active on this symbol. Stop scalping first.`,
+        });
       }
 
       try {
@@ -163,8 +198,12 @@ export const futuresTradingRouter = router({
 
         const client = createBinanceFuturesClient(wallet);
 
-        await setLeverage(client, input.symbol, input.leverage);
-        await setMarginType(client, input.symbol, input.marginType);
+        if (input.leverage) await setLeverage(client, input.symbol, input.leverage);
+        await setMarginType(client, input.symbol, 'CROSSED');
+
+        const positionsForLeverage = await guardBinanceCall(() => client.getPositions({ symbol: input.symbol }));
+        const posForLeverage = positionsForLeverage.find(p => p.symbol === input.symbol);
+        const actualLeverage = posForLeverage ? Number(posForLeverage.leverage) : (input.leverage ?? 1);
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
         const filters = symbolFiltersMap.get(input.symbol);
@@ -248,7 +287,7 @@ export const futuresTradingRouter = router({
                 status: 'pending',
                 openedAt: new Date(),
                 marketType: 'FUTURES',
-                leverage: input.leverage,
+                leverage: actualLeverage,
               });
               logger.info(
                 { symbol: input.symbol, algoId: algoOrder.algoId },
@@ -344,7 +383,7 @@ export const futuresTradingRouter = router({
               openedAt: new Date(),
               entryOrderType: 'LIMIT',
               marketType: 'FUTURES',
-              leverage: input.leverage,
+              leverage: actualLeverage,
             });
             logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created pending tradeExecution for manual LIMIT order');
           } else {
@@ -395,7 +434,7 @@ export const futuresTradingRouter = router({
               openedAt: new Date(),
               entryOrderType: 'MARKET',
               marketType: 'FUTURES',
-              leverage: input.leverage,
+              leverage: actualLeverage,
             });
             logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created tradeExecution for manual MARKET order with SL/TP');
           }
@@ -594,12 +633,14 @@ export const futuresTradingRouter = router({
         stopLoss: z.string().optional(),
         takeProfit: z.string().optional(),
         setupId: z.string().optional(),
-        leverage: z.number().min(1).max(125).default(1),
-        marginType: z.enum(['ISOLATED', 'CROSSED']).default('CROSSED'),
+        leverage: z.number().min(1).max(125).optional(),
+        marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
       await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+
+      const leverage = input.leverage ?? 1;
 
       if (input.stopLoss && input.takeProfit) {
         const entryPrice = parseFloat(input.entryPrice);
@@ -636,14 +677,14 @@ export const futuresTradingRouter = router({
         logger.info({
           symbol: input.symbol,
           side: input.side,
-          leverage: input.leverage,
+          leverage,
           riskRewardRatio: riskRewardRatio.toFixed(2),
         }, '✓ Risk/Reward ratio validated for futures position');
       }
 
       const positionId = generateEntityId();
       const entryPrice = parseFloat(input.entryPrice);
-      const liquidationPrice = calculateLiquidationPrice(entryPrice, input.leverage, input.side);
+      const liquidationPrice = calculateLiquidationPrice(entryPrice, leverage, input.side);
 
       await ctx.db.insert(positions).values({
         id: positionId,
@@ -659,8 +700,8 @@ export const futuresTradingRouter = router({
         setupId: input.setupId,
         status: 'open',
         marketType: 'FUTURES',
-        leverage: input.leverage,
-        marginType: input.marginType,
+        leverage,
+        marginType: 'CROSSED',
         liquidationPrice: liquidationPrice.toString(),
         accumulatedFunding: '0',
       });
@@ -875,20 +916,35 @@ export const futuresTradingRouter = router({
   getMarkPrice: protectedProcedure
     .input(z.object({ symbol: z.string() }))
     .query(async ({ input }) => {
-      const dataService = getBinanceFuturesDataService();
-      return dataService.getMarkPrice(input.symbol);
+      try {
+        const dataService = getBinanceFuturesDataService();
+        return await dataService.getMarkPrice(input.symbol);
+      } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+        throw error;
+      }
     }),
 
   getFundingRate: protectedProcedure
     .input(z.object({ symbol: z.string() }))
     .query(async ({ input }) => {
-      const dataService = getBinanceFuturesDataService();
-      return dataService.getCurrentFundingRate(input.symbol);
+      try {
+        const dataService = getBinanceFuturesDataService();
+        return await dataService.getCurrentFundingRate(input.symbol);
+      } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+        throw error;
+      }
     }),
 
   getExchangeInfo: protectedProcedure.query(async () => {
-    const dataService = getBinanceFuturesDataService();
-    return dataService.getExchangeInfo();
+    try {
+      const dataService = getBinanceFuturesDataService();
+      return await dataService.getExchangeInfo();
+    } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+      throw error;
+    }
   }),
 
   getOpenAlgoOrders: protectedProcedure

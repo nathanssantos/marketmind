@@ -890,6 +890,7 @@ describe('OrderExecutor', () => {
         side: 'SHORT',
         status: 'open',
         walletId: 'w1',
+        setupType: 'golden-cross-sma',
       };
 
       setupDbForPaperTrading({}, [existingPosition]);
@@ -908,6 +909,58 @@ describe('OrderExecutor', () => {
     });
   });
 
+  describe('executeSetupInternal - manual position guard', () => {
+    it('should block when a manual position exists on the symbol', async () => {
+      const manualPosition = {
+        id: 'manual-1',
+        symbol: 'ETHUSDT',
+        side: 'LONG',
+        status: 'open',
+        walletId: 'w1',
+        setupType: null,
+      };
+
+      setupDbForPaperTrading({}, [manualPosition]);
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG' }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(logBuffer.addRejection).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'Manual position exists on symbol' }),
+      );
+    });
+
+    it('should allow auto-trade when manual position is on a different symbol', async () => {
+      const manualPosition = {
+        id: 'manual-1',
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        status: 'open',
+        walletId: 'w1',
+        setupType: null,
+      };
+
+      setupDbForPaperTrading({}, [manualPosition]);
+
+      await executor.executeSetupSafe(
+        createWatcher(),
+        createSetup({ direction: 'LONG' }),
+        [],
+        createKlines(50),
+        logBuffer,
+      );
+
+      expect(logBuffer.addRejection).not.toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'Manual position exists on symbol' }),
+      );
+    });
+  });
+
   describe('executeSetupInternal - pyramiding checks', () => {
     const setupForPyramiding = () => {
       const existingPosition = {
@@ -916,6 +969,7 @@ describe('OrderExecutor', () => {
         side: 'LONG',
         status: 'open',
         walletId: 'w1',
+        setupType: 'golden-cross-sma',
       };
 
       setupDbForPaperTrading({}, [existingPosition]);
@@ -1432,7 +1486,7 @@ describe('OrderExecutor', () => {
       expect(mockAutoTradingService.setFuturesMarginType).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'w1' }),
         'ETHUSDT',
-        'ISOLATED',
+        'CROSSED',
       );
     });
 
@@ -2232,6 +2286,7 @@ describe('OrderExecutor', () => {
       side: 'LONG',
       status: 'open',
       walletId: 'w1',
+      setupType: 'golden-cross-sma',
       quantity: PRIMARY_QTY,
       entryPrice: PRIMARY_ENTRY_PRICE,
       stopLoss: SL_PRICE,

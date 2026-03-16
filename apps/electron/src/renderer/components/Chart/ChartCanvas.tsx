@@ -79,6 +79,7 @@ interface OptimisticOverride {
 }
 
 const OPTIMISTIC_OVERRIDE_TTL_MS = 30_000;
+const TOOLTIP_DEBOUNCE_MS = 150;
 
 const mapHistoryToKlineValues = (
   history: ScalpingMetricsHistoryEntry[],
@@ -231,7 +232,7 @@ export const ChartCanvas = ({
     {
       enabled: !!backendWalletId && !!symbol,
       refetchInterval: tradingPolling,
-      staleTime: 5000,
+      staleTime: 1000,
     }
   );
 
@@ -239,22 +240,22 @@ export const ChartCanvas = ({
 
   const { data: exchangeOpenOrders } = trpc.futuresTrading.getOpenOrders.useQuery(
     { walletId: backendWalletId ?? '', symbol },
-    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 5000 }
+    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 1000 }
   );
 
   const { data: exchangeAlgoOrders } = trpc.futuresTrading.getOpenAlgoOrders.useQuery(
     { walletId: backendWalletId ?? '', symbol },
-    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 5000 }
+    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 1000 }
   );
 
   const { data: symbolTrailingConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
-    { enabled: !!backendWalletId && !!symbol, refetchInterval: tradingPolling, staleTime: 5000 }
+    { enabled: !!backendWalletId && !!symbol, refetchInterval: tradingPolling, staleTime: 1000 }
   );
 
   const { data: walletAutoTradingConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId: backendWalletId ?? '' },
-    { enabled: !!backendWalletId, refetchInterval: tradingPolling, staleTime: 5000 }
+    { enabled: !!backendWalletId, refetchInterval: tradingPolling, staleTime: 1000 }
   );
 
   const trailingStopLineConfig = useMemo((): TrailingStopLineConfig | null => {
@@ -296,6 +297,7 @@ export const ChartCanvas = ({
         openedAt: exec.openedAt,
         triggerKlineOpenTime: exec.triggerKlineOpenTime,
         fibonacciProjection: exec.fibonacciProjection ? JSON.parse(exec.fibonacciProjection) : null,
+        leverage: exec.leverage ?? 1,
       }));
   }, [backendExecutions, symbol, marketType]);
 
@@ -569,15 +571,8 @@ export const ChartCanvas = ({
   );
   const scalpingMetrics = useScalpingMetrics(needsScalpingMetrics ? (symbol ?? null) : null, needsScalpingMetrics);
 
-  const cvdValues = useMemo((): (number | null)[] => {
-    if (!needsScalpingMetrics || effectiveKlines.length === 0) return [];
-    return mapHistoryToKlineValues(scalpingMetrics.metricsHistory(), effectiveKlines, (e) => e.cvd, scalpingMetrics.cvd);
-  }, [needsScalpingMetrics, effectiveKlines, scalpingMetrics.cvd, scalpingMetrics.metricsHistory]);
-
-  const imbalanceValues = useMemo((): (number | null)[] => {
-    if (!needsScalpingMetrics || effectiveKlines.length === 0) return [];
-    return mapHistoryToKlineValues(scalpingMetrics.metricsHistory(), effectiveKlines, (e) => e.imbalanceRatio, scalpingMetrics.imbalanceRatio);
-  }, [needsScalpingMetrics, effectiveKlines, scalpingMetrics.imbalanceRatio, scalpingMetrics.metricsHistory]);
+  const cvdValuesRef = useRef<(number | null)[]>([]);
+  const imbalanceValuesRef = useRef<(number | null)[]>([]);
 
   const needsVolumeProfile = useIndicatorStore((s) => s.activeIndicators.includes('volumeProfile'));
   const { data: volumeProfileData } = trpc.scalping.getVolumeProfile.useQuery(
@@ -642,6 +637,32 @@ export const ChartCanvas = ({
     ...(onViewportChange !== undefined && { onViewportChange }),
     onNearLeftEdge,
   });
+
+  useEffect(() => {
+    manager?.markDirty('overlays');
+  }, [backendExecutions, manager]);
+
+  useEffect(() => {
+    manager?.markDirty('overlays');
+  }, [exchangeOpenOrders, exchangeAlgoOrders, manager]);
+
+  useEffect(() => {
+    if (!needsScalpingMetrics || effectiveKlines.length === 0) {
+      cvdValuesRef.current = [];
+      return;
+    }
+    cvdValuesRef.current = mapHistoryToKlineValues(scalpingMetrics.metricsHistory(), effectiveKlines, (e) => e.cvd, scalpingMetrics.cvd);
+    manager?.markDirty('overlays');
+  }, [needsScalpingMetrics, effectiveKlines, scalpingMetrics.cvd, scalpingMetrics.metricsHistory, manager]);
+
+  useEffect(() => {
+    if (!needsScalpingMetrics || effectiveKlines.length === 0) {
+      imbalanceValuesRef.current = [];
+      return;
+    }
+    imbalanceValuesRef.current = mapHistoryToKlineValues(scalpingMetrics.metricsHistory(), effectiveKlines, (e) => e.imbalanceRatio, scalpingMetrics.imbalanceRatio);
+    manager?.markDirty('overlays');
+  }, [needsScalpingMetrics, effectiveKlines, scalpingMetrics.imbalanceRatio, scalpingMetrics.metricsHistory, manager]);
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({
     klines: effectiveKlines,
@@ -720,7 +741,7 @@ export const ChartCanvas = ({
     } else {
       tooltipDebounceRef.current = setTimeout(() => {
         tooltipEnabledRef.current = true;
-      }, 150);
+      }, TOOLTIP_DEBOUNCE_MS);
     }
     return () => {
       if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current);
@@ -750,7 +771,7 @@ export const ChartCanvas = ({
       });
       return;
     }
-    if (orderId.startsWith('sltp-')) {
+    if (orderId.startsWith('sltp:')) {
       setOrderToClose(orderId);
       return;
     }
@@ -760,6 +781,7 @@ export const ChartCanvas = ({
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(orderId, cancelPatches, { status: 'pending' });
       orderLoadingMapRef.current.set(orderId, Date.now());
+      manager?.markDirty('overlays');
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
         .catch((error) => {
           clearOptimistic(orderId, cancelPatches);
@@ -777,6 +799,7 @@ export const ChartCanvas = ({
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(exec.id, cancelPatches, { status: exec.status });
       orderLoadingMapRef.current.set(exec.id, Date.now());
+      manager?.markDirty('overlays');
       cancelExecution(exec.id).catch((error: unknown) => {
         clearOptimistic(exec.id, cancelPatches);
         toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
@@ -794,10 +817,11 @@ export const ChartCanvas = ({
     const closingOrderId = orderToClose;
     setOrderToClose(null);
 
-    if (closingOrderId.startsWith('sltp-')) {
-      const parts = closingOrderId.split('-');
-      const type = parts[1] as 'stopLoss' | 'takeProfit';
-      const executionIds = parts[2]?.split(',') || [];
+    if (closingOrderId.startsWith('sltp:')) {
+      const firstColon = closingOrderId.indexOf(':');
+      const secondColon = closingOrderId.indexOf(':', firstColon + 1);
+      const type = closingOrderId.substring(firstColon + 1, secondColon) as 'stopLoss' | 'takeProfit';
+      const executionIds = closingOrderId.substring(secondColon + 1).split(',').filter(Boolean);
 
       if (executionIds.length > 0) {
         const patchField = type === 'stopLoss' ? 'stopLoss' : 'takeProfit';
@@ -806,6 +830,7 @@ export const ChartCanvas = ({
           applyOptimistic(id, { [patchField]: null }, { [patchField]: exec?.[patchField] });
           orderLoadingMapRef.current.set(id, Date.now());
         });
+        manager.markDirty('overlays');
         try {
           await cancelProtectionOrder(executionIds, type);
           executionIds.forEach(id => {
@@ -930,8 +955,8 @@ export const ChartCanvas = ({
     stochasticData,
     showEventRow,
     marketEvents,
-    cvdValues,
-    imbalanceValues,
+    cvdValuesRef,
+    imbalanceValuesRef,
     volumeProfile: volumeProfileData ?? null,
     footprintBars,
   });
@@ -999,6 +1024,7 @@ export const ChartCanvas = ({
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(id, cancelPatches, { status: 'pending' });
       orderLoadingMapRef.current.set(id, Date.now());
+      manager?.markDirty('overlays');
 
       const optimisticId = `opt-exchange-${Date.now()}`;
       setOptimisticExecutions(prev => [...prev, {
@@ -1050,6 +1076,7 @@ export const ChartCanvas = ({
       const patches = { entryPrice: newPrice };
       applyOptimistic(id, patches, prevValues);
       orderLoadingMapRef.current.set(id, Date.now());
+      manager?.markDirty('overlays');
 
       updatePendingEntry({ id, newPrice: updates.entryPrice }).then(() => {
         orderFlashMapRef.current.set(id, performance.now());
@@ -1086,6 +1113,7 @@ export const ChartCanvas = ({
 
       applyOptimistic(id, patches, prevValues);
       orderLoadingMapRef.current.set(id, Date.now());
+      manager?.markDirty('overlays');
 
       updateExecutionSLTP(id, updatePayload).then(() => {
         orderFlashMapRef.current.set(flashKey, performance.now());
@@ -1355,16 +1383,20 @@ export const ChartCanvas = ({
 
       const longEntry = avgEntryByDir.get('LONG');
       const shortEntry = avgEntryByDir.get('SHORT');
-      const updateFields: Record<string, unknown> = { useIndividualConfig: true };
+      const updateFields: Record<string, unknown> = { useIndividualConfig: true, trailingStopEnabled: true };
 
       if (longEntry && price > longEntry) {
         updateFields['trailingActivationPercentLong'] = (price / longEntry).toString();
+        updateFields['trailingActivationModeLong'] = 'manual';
       } else if (shortEntry && price < shortEntry) {
         updateFields['trailingActivationPercentShort'] = (price / shortEntry).toString();
+        updateFields['trailingActivationModeShort'] = 'manual';
       } else if (longEntry) {
         updateFields['trailingActivationPercentLong'] = (price / longEntry).toString();
+        updateFields['trailingActivationModeLong'] = 'manual';
       } else if (shortEntry) {
         updateFields['trailingActivationPercentShort'] = (price / shortEntry).toString();
+        updateFields['trailingActivationModeShort'] = 'manual';
       }
 
       if (backendWalletId && symbol) {
@@ -1633,9 +1665,10 @@ export const ChartCanvas = ({
           const isStopLoss = dragType === 'stopLoss';
           const entryPrice = getOrderPrice(draggedOrder);
           const isLong = isOrderLong(draggedOrder);
-          const pctChange = isStopLoss
-            ? (isLong ? (previewPrice - entryPrice) / entryPrice : (entryPrice - previewPrice) / entryPrice) * 100
-            : (isLong ? (previewPrice - entryPrice) / entryPrice : (entryPrice - previewPrice) / entryPrice) * 100;
+          const dragExecLeverage = (draggedOrder as Order & { leverage?: number }).leverage ?? 1;
+          const pctChange = (isLong
+            ? (previewPrice - entryPrice) / entryPrice
+            : (entryPrice - previewPrice) / entryPrice) * 100 * dragExecLeverage;
           if (isStopLoss) {
             const slInProfit = isLong ? previewPrice > entryPrice : previewPrice < entryPrice;
             color = slInProfit ? 'rgba(15, 118, 56, 0.8)' : 'rgba(185, 28, 28, 0.8)';
@@ -1695,10 +1728,11 @@ export const ChartCanvas = ({
           const targetExec = allExecutions.find(e => e.id === slTpPlacement.executionId);
           const entryPrice = targetExec ? parseFloat(targetExec.entryPrice) : 0;
           const isLong = targetExec?.side === 'LONG';
+          const execLeverage = targetExec?.leverage ?? 1;
           const pctChange = entryPrice > 0
             ? (isLong
                 ? (previewPrice - entryPrice) / entryPrice
-                : (entryPrice - previewPrice) / entryPrice) * 100
+                : (entryPrice - previewPrice) / entryPrice) * 100 * execLeverage
             : 0;
 
           let color: string;
@@ -1950,9 +1984,10 @@ export const ChartCanvas = ({
               </DialogHeader>
               <DialogBody>
                 {orderToClose && (() => {
-                  if (orderToClose.startsWith('sltp-')) {
-                    const parts = orderToClose.split('-');
-                    const type = parts[1];
+                  if (orderToClose.startsWith('sltp:')) {
+                    const firstColon = orderToClose.indexOf(':');
+                    const secondColon = orderToClose.indexOf(':', firstColon + 1);
+                    const type = orderToClose.substring(firstColon + 1, secondColon);
                     const typeLabel = type === 'stopLoss' ? 'Stop Loss' : 'Take Profit';
 
                     return (

@@ -3,9 +3,11 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
+import { usePollingInterval } from './usePollingInterval';
 
 export const useBackendAutoTrading = (walletId: string) => {
   const utils = trpc.useUtils();
+  const realtimePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.REALTIME);
 
   const { data: config, isLoading: isLoadingConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId },
@@ -86,7 +88,7 @@ export const useBackendAutoTrading = (walletId: string) => {
   const { data: watcherStatus, isLoading: isLoadingWatcherStatus } =
     trpc.autoTrading.getWatcherStatus.useQuery(
       { walletId },
-      { enabled: !!walletId, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.REALTIME }
+      { enabled: !!walletId, refetchInterval: realtimePolling }
     );
 
   const updateConfig = useCallback(
@@ -281,9 +283,10 @@ export const useTopCoinsByMarketCap = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES
 };
 
 export const useRotationStatus = (walletId: string) => {
+  const rotationPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.REALTIME);
   const { data, isLoading, error, refetch } = trpc.autoTrading.getRotationStatus.useQuery(
     { walletId },
-    { enabled: !!walletId, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.REALTIME }
+    { enabled: !!walletId, refetchInterval: rotationPolling }
   );
 
   return {

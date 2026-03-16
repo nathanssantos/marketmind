@@ -321,25 +321,12 @@ export class BinanceFuturesUserStreamService {
     const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingExecId)).limit(1);
     if (!freshExec) return;
 
-    let newQty = parseFloat(freshExec.quantity) + addedQty;
-    let newAvgPrice = ((parseFloat(freshExec.quantity) * parseFloat(freshExec.entryPrice)) + (addedQty * addedPrice)) / newQty;
-
-    const connection = this.connections.get(walletId);
-    if (connection) {
-      try {
-        const exchangePos = await getPosition(connection.apiClient, symbol);
-        if (exchangePos) {
-          const exchangeQty = Math.abs(parseFloat(exchangePos.positionAmt));
-          const exchangePrice = parseFloat(exchangePos.entryPrice);
-          if (exchangeQty > 0) {
-            newQty = exchangeQty;
-            newAvgPrice = exchangePrice;
-          }
-        }
-      } catch (e) {
-        logger.warn({ symbol, error: serializeError(e) }, '[FuturesUserStream] Failed to sync position from exchange after pyramid - using calculated values');
-      }
-    }
+    const existingQty = parseFloat(freshExec.quantity);
+    const existingPrice = parseFloat(freshExec.entryPrice);
+    const newQty = existingQty + addedQty;
+    const newAvgPrice = existingPrice > 0 && newQty > 0
+      ? ((existingQty * existingPrice) + (addedQty * addedPrice)) / newQty
+      : addedPrice;
 
     await db.update(tradeExecutions).set({
       entryPrice: newAvgPrice.toString(),
@@ -374,6 +361,19 @@ export class BinanceFuturesUserStreamService {
 
       const currentQty = parseFloat(freshExec.quantity);
       const currentPrice = parseFloat(freshExec.entryPrice);
+
+      const otherOpenExecs = await db.select().from(tradeExecutions).where(
+        and(
+          eq(tradeExecutions.walletId, walletId),
+          eq(tradeExecutions.symbol, symbol),
+          eq(tradeExecutions.status, 'open'),
+        )
+      );
+
+      if (otherOpenExecs.length > 1) {
+        logger.info({ executionId, symbol, openCount: otherOpenExecs.length }, `[FuturesUserStream] ${logContext} — multiple open executions, skipping exchange sync to avoid qty overwrite`);
+        return false;
+      }
 
       if (Math.abs(currentQty - exchangeQty) < 1e-6 && Math.abs(currentPrice - exchangePrice) < 1e-8) {
         logger.trace({ executionId, symbol }, `[FuturesUserStream] ${logContext} — already in sync`);
@@ -1049,6 +1049,15 @@ export class BinanceFuturesUserStreamService {
           const walletRow = await this.getCachedWallet(walletId);
           if (!walletRow) return;
 
+          let manualLeverage = 1;
+          const conn = this.connections.get(walletId);
+          if (conn) {
+            try {
+              const pos = await getPosition(conn.apiClient, symbol);
+              if (pos) manualLeverage = Number(pos.leverage) || 1;
+            } catch {}
+          }
+
           await db.insert(tradeExecutions).values({
             id: generateEntityId(),
             userId: walletRow.userId,
@@ -1062,6 +1071,7 @@ export class BinanceFuturesUserStreamService {
             openedAt: new Date(),
             entryOrderType: manualOrder.type === 'MARKET' ? 'MARKET' : 'LIMIT',
             marketType: 'FUTURES',
+            leverage: manualLeverage,
           });
 
           logger.info({ symbol, orderId, direction, fillPrice, fillQty }, '[FuturesUserStream] Created tradeExecution for manual order fill');
@@ -1564,14 +1574,29 @@ export class BinanceFuturesUserStreamService {
 
   private handleConfigUpdate(walletId: string, event: FuturesAccountConfigUpdate): void {
     if (event.ac) {
+      const newLeverage = event.ac.l;
+      const symbol = event.ac.s;
       logger.info(
-        {
-          walletId,
-          symbol: event.ac.s,
-          leverage: event.ac.l,
-        },
+        { walletId, symbol, leverage: newLeverage },
         '[FuturesUserStream] Leverage updated'
       );
+
+      void db.update(tradeExecutions)
+        .set({ leverage: newLeverage })
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES')
+          )
+        )
+        .then((result) => {
+          logger.info({ walletId, symbol, newLeverage, rowsUpdated: result.rowCount }, '[FuturesUserStream] Updated leverage on open executions');
+        })
+        .catch((err) => {
+          logger.error({ walletId, symbol, error: serializeError(err) }, '[FuturesUserStream] Failed to update leverage on open executions');
+        });
     }
 
     if (event.ai) {

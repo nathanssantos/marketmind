@@ -88,7 +88,7 @@ describe('SignalEngine', () => {
   describe('evaluate - spread filter', () => {
     it('should return null when spread exceeds max', () => {
       const ctx = makeContext({
-        metrics: makeMetrics({ spreadPercent: 0.1, imbalanceRatio: 0.9 }),
+        metrics: makeMetrics({ spreadPercent: 0.2, imbalanceRatio: 0.9 }),
       });
       const signal = engine.evaluate(ctx);
       expect(signal).toBeNull();
@@ -131,7 +131,7 @@ describe('SignalEngine', () => {
         enabledStrategies: ['imbalance'],
       });
       const ctx = makeContext({
-        metrics: makeMetrics({ imbalanceRatio: 0.3, spreadPercent: 0.001 }),
+        metrics: makeMetrics({ imbalanceRatio: 0.1, spreadPercent: 0.001 }),
       });
       const signal = singleStrategyEngine.evaluate(ctx);
       expect(signal).toBeNull();
@@ -355,7 +355,7 @@ describe('SignalEngine', () => {
         avgVolume: 100,
         metrics: makeMetrics({
           spreadPercent: 0.001,
-          imbalanceRatio: 0.2,
+          imbalanceRatio: 0.05,
           largeBuyVol: 600,
           largeSellVol: 0,
         }),
@@ -396,7 +396,7 @@ describe('SignalEngine', () => {
       const ctx = makeContext({
         metrics: makeMetrics({
           spreadPercent: 0.001,
-          absorptionScore: 2.0,
+          absorptionScore: 1.0,
           imbalanceRatio: 0.5,
         }),
       });
@@ -406,7 +406,7 @@ describe('SignalEngine', () => {
   });
 
   describe('signal cooldown', () => {
-    it('should respect per-symbol-strategy cooldown', () => {
+    it('should respect per-symbol-strategy-direction cooldown', () => {
       const ctx = makeContext({
         metrics: makeMetrics({ imbalanceRatio: 0.8, spreadPercent: 0.001 }),
       });
@@ -449,6 +449,27 @@ describe('SignalEngine', () => {
 
       const signal2 = engine.evaluate(ctx2);
       expect(signal2).not.toBeNull();
+    });
+
+    it('should include direction in cooldown key', () => {
+      const singleEng = new SignalEngine({
+        ...defaultConfig,
+        enabledStrategies: ['imbalance'],
+      });
+
+      const ctxLong = makeContext({
+        metrics: makeMetrics({ imbalanceRatio: 0.8, spreadPercent: 0.001 }),
+      });
+      const signal1 = singleEng.evaluate(ctxLong);
+      expect(signal1).not.toBeNull();
+      expect(signal1!.direction).toBe('LONG');
+
+      const ctxShort = makeContext({
+        metrics: makeMetrics({ imbalanceRatio: -0.8, spreadPercent: 0.001 }),
+      });
+      const signal2 = singleEng.evaluate(ctxShort);
+      expect(signal2).not.toBeNull();
+      expect(signal2!.direction).toBe('SHORT');
     });
   });
 

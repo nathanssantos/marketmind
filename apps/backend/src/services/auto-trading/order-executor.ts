@@ -130,6 +130,12 @@ export class OrderExecutor {
           inArray(tradeExecutions.status, ['open', 'pending'])
         )
       );
+
+    const manualPosition = activePositions.find(
+      (pos) => pos.symbol === watcher.symbol && !pos.setupType
+    );
+    if (manualPosition) return false;
+
     const oppositePosition = activePositions.find(
       (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
     );
@@ -178,6 +184,11 @@ export class OrderExecutor {
     this.executingSetups.add(executionLockKey);
 
     try {
+      const { getScalpingScheduler } = await import('../scalping/scalping-scheduler');
+      if (getScalpingScheduler().isSymbolBeingScalped(watcher.walletId, watcher.symbol)) {
+        logBuffer.log('~', 'Skipping: symbol is being scalped', { symbol: watcher.symbol });
+        return;
+      }
       await this.executeSetupInternal(watcher, setup, strategies, cycleKlines, logBuffer);
     } finally {
       this.executingSetups.delete(executionLockKey);
@@ -537,6 +548,27 @@ export class OrderExecutor {
         return;
       }
       logBuffer.addValidationCheck({ name: 'Position Conflict', passed: true, reason: 'No conflict' });
+
+      const manualPosition = openPositions.find(
+        (pos) => pos.symbol === watcher.symbol && !pos.setupType
+      );
+      if (manualPosition) {
+        logBuffer.addValidationCheck({
+          name: 'Manual Position Guard',
+          passed: false,
+          value: manualPosition.side,
+          reason: 'Manual position exists on symbol',
+        });
+        logBuffer.addRejection({
+          setupType: setup.type,
+          direction: setup.direction,
+          reason: 'Manual position exists on symbol',
+          details: { manualPositionSide: manualPosition.side },
+        });
+        logBuffer.completeSetupValidation('blocked', 'Manual position exists on symbol');
+        return;
+      }
+      logBuffer.addValidationCheck({ name: 'Manual Position Guard', passed: true, reason: 'No manual position' });
 
       const sameDirectionPositions = openPositions.filter(
         (pos) => pos.symbol === watcher.symbol && pos.side === setup.direction
@@ -1265,7 +1297,6 @@ export class OrderExecutor {
     if (watcher.marketType === 'FUTURES') {
       try {
         const configLeverage = config.leverage ?? 1;
-        const configMarginType = config.marginType ?? 'CROSSED';
 
         await autoTradingService.setFuturesLeverage(
           wallet,
@@ -1276,13 +1307,13 @@ export class OrderExecutor {
         await autoTradingService.setFuturesMarginType(
           wallet,
           watcher.symbol,
-          configMarginType
+          'CROSSED'
         );
 
         log('> Futures leverage/margin configured', {
           symbol: watcher.symbol,
           leverage: configLeverage,
-          marginType: configMarginType,
+          marginType: 'CROSSED',
         });
       } catch (leverageError) {
         const errorMsg = serializeError(leverageError);

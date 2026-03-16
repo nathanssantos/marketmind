@@ -90,7 +90,7 @@ export const DEFAULT_INDICATOR_PARAMS: IndicatorParams = {
   macd: { fast: 12, slow: 26, signal: 9 },
   adx: { period: 14 },
   williamsR: { period: 14 },
-  cci: { period: 20 },
+  cci: { period: 14 },
   stochRsi: { rsiPeriod: 14, stochPeriod: 14, kPeriod: 3, dPeriod: 3 },
   cmo: { period: 14 },
   mfi: { period: 14 },
@@ -103,7 +103,7 @@ export const DEFAULT_INDICATOR_PARAMS: IndicatorParams = {
   vortex: { period: 14 },
   ichimoku: { tenkan: 9, kijun: 26, senkou: 52 },
   supertrend: { period: 10, multiplier: 3 },
-  parabolicSar: { step: 0.02, max: 0.2 },
+  parabolicSar: { step: 0.03, max: 0.3 },
   keltner: { period: 20, multiplier: 2 },
   donchian: { period: 20 },
   obv: { smaPeriod: 20 },
@@ -202,7 +202,7 @@ interface IndicatorState {
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
-    activeIndicators: ['volume', 'parabolicSar', 'bollingerBands'],
+    activeIndicators: ['volume', 'parabolicSar', 'cci'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
     hydrate: (data) => {

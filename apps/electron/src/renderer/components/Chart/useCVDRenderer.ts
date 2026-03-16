@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
@@ -11,18 +12,19 @@ import {
 
 interface UseCVDRendererProps {
   manager: CanvasManager | null;
-  cvdValues: (number | null)[];
+  cvdValuesRef: RefObject<(number | null)[]>;
   colors: ChartThemeColors;
   enabled?: boolean;
 }
 
 export const useCVDRenderer = ({
   manager,
-  cvdValues,
+  cvdValuesRef,
   colors,
   enabled = true,
 }: UseCVDRendererProps) => {
   const render = useCallback((): void => {
+    const cvdValues = cvdValuesRef.current;
     const setup = getOscillatorSetup(manager, enabled && cvdValues.length > 0, 'cvd');
     if (!setup) return;
 
@@ -77,7 +79,7 @@ export const useCVDRenderer = ({
     ctx.stroke();
 
     ctx.restore();
-  }, [manager, cvdValues, enabled, colors]);
+  }, [manager, cvdValuesRef, enabled, colors]);
 
   return { render };
 };

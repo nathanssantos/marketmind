@@ -79,12 +79,12 @@ export class SignalEngine {
     if (context.metrics.spreadPercent > this.config.maxSpreadPercent) return null;
 
     for (const strategy of this.config.enabledStrategies) {
-      const cooldownKey = `${context.symbol}:${strategy}`;
-      const lastSignal = this.signalCooldowns.get(cooldownKey) ?? 0;
-      if (Date.now() - lastSignal < SCALPING_ENGINE.SIGNAL_COOLDOWN_MS) continue;
-
       const result = this.evaluateStrategy(strategy, context);
       if (!result || !result.shouldTrade) continue;
+
+      const cooldownKey = `${context.symbol}:${strategy}:${result.direction}`;
+      const lastSignal = this.signalCooldowns.get(cooldownKey) ?? 0;
+      if (Date.now() - lastSignal < SCALPING_ENGINE.SIGNAL_COOLDOWN_MS) continue;
 
       const signal: ScalpingSignal = {
         id: randomUUID(),

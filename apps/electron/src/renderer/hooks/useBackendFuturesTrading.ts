@@ -17,14 +17,17 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     { enabled: !!walletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
+  const markPricePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.FAST);
+  const fundingRatePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.SLOW);
+
   const { data: markPrice, isLoading: isLoadingMarkPrice } = trpc.futuresTrading.getMarkPrice.useQuery(
     { symbol: symbol ?? 'BTCUSDT' },
-    { enabled: !!symbol, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.FAST, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
+    { enabled: !!symbol, refetchInterval: markPricePolling, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
 
   const { data: fundingRate, isLoading: isLoadingFundingRate } = trpc.futuresTrading.getFundingRate.useQuery(
     { symbol: symbol ?? 'BTCUSDT' },
-    { enabled: !!symbol, refetchInterval: QUERY_CONFIG.REFETCH_INTERVAL.SLOW, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
+    { enabled: !!symbol, refetchInterval: fundingRatePolling, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
   const openPositionSymbols = useMemo(() => {
@@ -130,7 +133,6 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       setupId?: string;
       setupType?: string;
       leverage?: number;
-      marginType?: 'ISOLATED' | 'CROSSED';
       stopLoss?: string;
       takeProfit?: string;
     }) => {
@@ -157,7 +159,6 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       takeProfit?: string;
       setupId?: string;
       leverage?: number;
-      marginType?: 'ISOLATED' | 'CROSSED';
     }) => {
       return createPositionMutation.mutateAsync(data);
     },

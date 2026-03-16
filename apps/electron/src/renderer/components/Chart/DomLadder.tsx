@@ -1,46 +1,48 @@
 import { Box, VStack, HStack, Text } from '@chakra-ui/react';
 import type { DepthLevel } from '@marketmind/types';
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
 interface DomLadderProps {
   bids: DepthLevel[];
   asks: DepthLevel[];
   currentPrice: number;
   onPriceClick?: (price: number) => void;
-  height?: number;
 }
 
 const LEVEL_HEIGHT = 20;
+const MAX_VISIBLE_LEVELS = 10;
 
-export function DomLadder({ bids, asks, currentPrice, onPriceClick, height = 400 }: DomLadderProps) {
+export const DomLadder = memo(function DomLadder({ bids, asks, currentPrice, onPriceClick }: DomLadderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const visibleAsks = asks.slice(-MAX_VISIBLE_LEVELS);
+  const visibleBids = bids.slice(0, MAX_VISIBLE_LEVELS);
   const maxQty = Math.max(
-    ...bids.map((b) => b.quantity),
-    ...asks.map((a) => a.quantity),
+    ...visibleBids.map((b) => b.quantity),
+    ...visibleAsks.map((a) => a.quantity),
     1,
   );
 
   useEffect(() => {
     if (containerRef.current) {
-      const midIndex = asks.length;
-      const scrollTo = midIndex * LEVEL_HEIGHT - height / 2;
+      const midIndex = visibleAsks.length;
+      const containerHeight = containerRef.current.clientHeight;
+      const scrollTo = midIndex * LEVEL_HEIGHT - containerHeight / 2;
       containerRef.current.scrollTop = Math.max(0, scrollTo);
     }
-  }, [currentPrice, asks.length, height]);
+  }, [currentPrice, visibleAsks.length]);
 
   return (
     <Box
       ref={containerRef}
       overflow="auto"
-      height={`${height}px`}
-      width="160px"
-      borderLeft="1px solid"
-      borderColor="border.muted"
+      flex={1}
+      minH={0}
+      width="100%"
       fontSize="xs"
       fontFamily="mono"
     >
       <VStack gap={0}>
-        {[...asks].reverse().map((level, i) => (
+        {[...visibleAsks].reverse().map((level, i) => (
           <HStack
             key={`ask-${i}`}
             width="100%"
@@ -79,7 +81,7 @@ export function DomLadder({ bids, asks, currentPrice, onPriceClick, height = 400
           </Text>
         </HStack>
 
-        {bids.map((level, i) => (
+        {visibleBids.map((level, i) => (
           <HStack
             key={`bid-${i}`}
             width="100%"
@@ -108,7 +110,7 @@ export function DomLadder({ bids, asks, currentPrice, onPriceClick, height = 400
       </VStack>
     </Box>
   );
-}
+});
 
 const formatQty = (qty: number): string => {
   if (qty >= 1000) return `${(qty / 1000).toFixed(1)}k`;

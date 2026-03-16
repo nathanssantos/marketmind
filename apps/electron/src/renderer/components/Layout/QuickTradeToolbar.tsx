@@ -278,7 +278,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
             </Text>
             <GridOrderPopover />
             <TrailingStopPopover symbol={symbol} />
-            {marketType === 'FUTURES' && <LeveragePopover />}
+            {marketType === 'FUTURES' && <LeveragePopover symbol={symbol} />}
           </HStack>
 
           <HStack gap={1.5}>

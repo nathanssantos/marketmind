@@ -12,8 +12,7 @@ export const useScalpingSignals = (walletId: string | null, enabled = true) => {
   useEffect(() => {
     if (!walletId || !enabled) return;
 
-    const socket = socketService.getSocket();
-    if (!socket) return;
+    const socket = socketService.connect();
 
     socket.emit('subscribe:scalpingSignals', walletId);
 
@@ -29,6 +28,7 @@ export const useScalpingSignals = (walletId: string | null, enabled = true) => {
     return () => {
       socket.off('scalpingSignal:new', handler);
       socket.emit('unsubscribe:scalpingSignals', walletId);
+      socketService.disconnect();
     };
   }, [walletId, enabled]);
 

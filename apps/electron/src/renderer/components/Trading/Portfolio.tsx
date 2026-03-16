@@ -40,6 +40,7 @@ interface PortfolioPosition {
   marketType?: 'SPOT' | 'FUTURES';
   isAutoTrade?: boolean;
   count: number;
+  leverage: number;
 }
 
 const PortfolioComponent = () => {
@@ -134,6 +135,7 @@ const PortfolioComponent = () => {
         marketType: primary.marketType || 'FUTURES',
         isAutoTrade: !!primary.setupType,
         count: group.length,
+        leverage: primary.leverage || 1,
       };
     });
   }, [tradeExecutions, tickerPrices, centralizedPrices]);
@@ -160,17 +162,14 @@ const PortfolioComponent = () => {
     ? activeWallet.initialBalance + activeWallet.totalDeposits - activeWallet.totalWithdrawals
     : 0;
 
-  const stopProtectedValue = useMemo(() => {
+  const stopProtectedPnl = useMemo(() => {
     let total = 0;
     let positionsWithStops = 0;
     for (const pos of positions) {
       if (!pos.stopLoss) continue;
       positionsWithStops++;
-      if (pos.side === 'LONG') {
-        total += pos.stopLoss * pos.quantity;
-      } else {
-        total += (2 * pos.avgPrice - pos.stopLoss) * pos.quantity;
-      }
+      if (pos.side === 'LONG') total += (pos.stopLoss - pos.avgPrice) * pos.quantity;
+      else total += (pos.avgPrice - pos.stopLoss) * pos.quantity;
     }
     return { total, positionsWithStops };
   }, [positions]);
@@ -189,6 +188,16 @@ const PortfolioComponent = () => {
 
   const totalExposure = useMemo(
     () => positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0),
+    [positions]
+  );
+
+  const totalMargin = useMemo(
+    () => positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity) / (pos.leverage || 1), 0),
+    [positions]
+  );
+
+  const hasLeverage = useMemo(
+    () => positions.some((pos) => pos.leverage > 1),
     [positions]
   );
 
@@ -262,6 +271,11 @@ const PortfolioComponent = () => {
                         <Text fontWeight="medium">
                           {activeWallet.currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / activeWallet.walletBalance) * 100).toFixed(1)}%)
                         </Text>
+                        {hasLeverage && (
+                          <Text color="fg.muted">
+                            {t('trading.portfolio.margin')}: {activeWallet.currency} {totalMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalMargin / activeWallet.walletBalance) * 100).toFixed(1)}%)
+                          </Text>
+                        )}
                         <BrlValue usdtValue={totalExposure} />
                       </Stack>
                     </Flex>
@@ -282,27 +296,27 @@ const PortfolioComponent = () => {
                     </Flex>
                   </Stack>
 
-                  {(stopProtectedValue.positionsWithStops > 0 || tpProjectedProfit.positionsWithTp > 0) && (
+                  {(stopProtectedPnl.positionsWithStops > 0 || tpProjectedProfit.positionsWithTp > 0) && (
                     <>
                       <Box h="1px" w="100%" bg="fg.muted" opacity={0.2} />
 
                       <Stack gap={1}>
-                        {stopProtectedValue.positionsWithStops > 0 && (
+                        {stopProtectedPnl.positionsWithStops > 0 && (
                           <Flex justify="space-between">
                             <Text color="fg.muted" flexShrink={0}>
-                              {t('trading.portfolio.stopProtected')} ({stopProtectedValue.positionsWithStops}/{positions.length})
+                              {t('trading.portfolio.stopProtected')} ({stopProtectedPnl.positionsWithStops}/{positions.length})
                             </Text>
                             <Stack gap={0} align="flex-end">
-                              <Text fontWeight="medium" color="orange.500" textAlign="right">
-                                {activeWallet.currency} {stopProtectedValue.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              <Text fontWeight="medium" color={stopProtectedPnl.total >= 0 ? 'green.500' : 'red.500'} textAlign="right">
+                                {stopProtectedPnl.total >= 0 ? '+' : ''}{activeWallet.currency} {stopProtectedPnl.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </Text>
-                              <Text color="orange.500" textAlign="right">
-                                {totalExposure > 0 ? ((stopProtectedValue.total / totalExposure) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfExposure')}
+                              <Text color={stopProtectedPnl.total >= 0 ? 'green.500' : 'red.500'} textAlign="right">
+                                {totalMargin > 0 ? `${stopProtectedPnl.total >= 0 ? '+' : ''}${((stopProtectedPnl.total / totalMargin) * 100).toFixed(1)}` : '0.0'}% {t('trading.portfolio.stopProtectedOfMargin')}
                               </Text>
-                              <Text color="orange.500" textAlign="right">
-                                {activeWallet.walletBalance > 0 ? ((stopProtectedValue.total / activeWallet.walletBalance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
+                              <Text color={stopProtectedPnl.total >= 0 ? 'green.500' : 'red.500'} textAlign="right">
+                                {activeWallet.walletBalance > 0 ? `${stopProtectedPnl.total >= 0 ? '+' : ''}${((stopProtectedPnl.total / activeWallet.walletBalance) * 100).toFixed(1)}` : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
                               </Text>
-                              <BrlValue usdtValue={stopProtectedValue.total} />
+                              <BrlValue usdtValue={stopProtectedPnl.total} />
                             </Stack>
                           </Flex>
                         )}
@@ -316,7 +330,7 @@ const PortfolioComponent = () => {
                                 +{activeWallet.currency} {tpProjectedProfit.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </Text>
                               <Text color="green.500" textAlign="right">
-                                {totalExposure > 0 ? ((tpProjectedProfit.total / totalExposure) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfExposure')}
+                                {totalMargin > 0 ? ((tpProjectedProfit.total / totalMargin) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfMargin')}
                               </Text>
                               <Text color="green.500" textAlign="right">
                                 {activeWallet.walletBalance > 0 ? ((tpProjectedProfit.total / activeWallet.walletBalance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfBalance')}
@@ -550,9 +564,14 @@ const PortfolioTable = memo(({ positions, currency, walletBalance, onNavigateToS
               </Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="fg.muted">
-                {walletBalance > 0 ? ((position.avgPrice * position.quantity / walletBalance) * 100).toFixed(1) : '0.0'}%
-              </Text>
+              <Flex align="center" gap={1} justify="flex-end">
+                <Text color="fg.muted">
+                  {walletBalance > 0 ? ((position.avgPrice * position.quantity / walletBalance) * 100).toFixed(1) : '0.0'}%
+                </Text>
+                {position.leverage > 1 && (
+                  <Badge colorPalette="purple" size="xs" px={1}>{position.leverage}x</Badge>
+                )}
+              </Flex>
             </TradingTableCell>
             <TradingTableCell>
               <Flex align="center" gap={1}>
@@ -693,6 +712,11 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
           {position.marketType === 'FUTURES' && (
             <Badge colorPalette="orange" size="xs" px={1}>
               FUTURES
+            </Badge>
+          )}
+          {position.leverage > 1 && (
+            <Badge colorPalette="purple" size="xs" px={1}>
+              {position.leverage}x
             </Badge>
           )}
           {position.setupType && (

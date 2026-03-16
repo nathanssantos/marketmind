@@ -10,7 +10,7 @@ import { env } from '../env';
 import { calculateNotional, calculatePnl, formatPrice, formatQuantityForBinance, roundToDecimals } from '../utils/formatters';
 import { getMinNotionalFilterService } from './min-notional-filter';
 import { getFuturesClient, getSpotClient } from '../exchange';
-import { BinanceIpBannedError } from './binance-api-cache';
+import { BinanceIpBannedError, binanceApiCache } from './binance-api-cache';
 import { createBinanceClientForPrices, createBinanceFuturesClientForPrices, isPaperWallet } from './binance-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
@@ -118,6 +118,7 @@ export class PositionMonitorService {
     const scheduleNext = () => {
       this.trailingStopTimeout = setTimeout(async () => {
         try {
+          if (binanceApiCache.isBanned()) { scheduleNext(); return; }
           const trailingUpdates = await trailingStopService.updateTrailingStops();
           if (trailingUpdates.length > 0) {
             logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
@@ -146,6 +147,7 @@ export class PositionMonitorService {
     const scheduleNext = () => {
       this.opportunityCostTimeout = setTimeout(async () => {
         try {
+          if (binanceApiCache.isBanned()) { scheduleNext(); return; }
           await opportunityCostManagerService.checkAllPositions();
         } catch (error) {
           logger.error({
@@ -166,6 +168,7 @@ export class PositionMonitorService {
   }
 
   async checkAllPositions(): Promise<void> {
+    if (binanceApiCache.isBanned()) return;
     await this.checkPendingOrders();
 
     const openExecutions = await db
