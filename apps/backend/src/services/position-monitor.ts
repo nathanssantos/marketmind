@@ -1137,6 +1137,15 @@ export class PositionMonitorService {
       return;
     }
 
+    const allDeferredToExchange = executions.every((e) => {
+      if (slTriggered) return !!(e.stopLossAlgoId || e.stopLossOrderId);
+      return !!(e.takeProfitAlgoId || e.takeProfitOrderId);
+    });
+
+    if (allDeferredToExchange) {
+      logger.trace({ groupKey, slTriggered, tpTriggered }, 'All executions have exchange-side protection - skipping consolidated check');
+      return;
+    }
 
     this.processingGroups.add(groupKey);
 
