@@ -7,7 +7,6 @@ interface RiskSectionProps {
   maxConcurrentPositions: number;
   maxDailyTrades: number;
   maxDailyLossPercent: number;
-  leverage: number;
   circuitBreakerEnabled: boolean;
   circuitBreakerLossPercent: number;
   circuitBreakerMaxTrades: number;
@@ -19,7 +18,6 @@ export function RiskSection({
   maxConcurrentPositions,
   maxDailyTrades,
   maxDailyLossPercent,
-  leverage,
   circuitBreakerEnabled,
   circuitBreakerLossPercent,
   circuitBreakerMaxTrades,
@@ -73,17 +71,6 @@ export function RiskSection({
           onValueChange={(values) => onParamChange('maxDailyLossPercent', values[0] ?? 0)}
         />
         <Text fontSize="xs" color="fg.muted">{maxDailyLossPercent.toFixed(1)}%</Text>
-      </Field>
-
-      <Field label={t('scalping.config.leverage', 'Leverage')}>
-        <Slider
-          min={1}
-          max={50}
-          step={1}
-          value={[leverage]}
-          onValueChange={(values) => onParamChange('leverage', values[0] ?? 0)}
-        />
-        <Text fontSize="xs" color="fg.muted">{leverage}x</Text>
       </Field>
 
       <Switch

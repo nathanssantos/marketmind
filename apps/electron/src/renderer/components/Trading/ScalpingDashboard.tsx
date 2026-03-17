@@ -1,5 +1,5 @@
 import { HStack, Flex, Stack, Text, Box } from '@chakra-ui/react';
-import { Button, Badge, IconButton } from '@renderer/components/ui';
+import { Button, Badge, IconButton, DirectionModeSelector, type DirectionMode } from '@renderer/components/ui';
 import { LuSettings } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useBackendScalping } from '@renderer/hooks/useBackendScalping';
@@ -14,15 +14,20 @@ interface ScalpingDashboardProps {
 
 export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingDashboardProps) {
   const { t } = useTranslation();
-  const { status, start, stop, resetCircuitBreaker } = useBackendScalping(walletId);
+  const { config, status, start, stop, resetCircuitBreaker, upsertConfig } = useBackendScalping(walletId);
   const metrics = useScalpingMetrics(symbol);
   const { signals } = useScalpingSignals(walletId);
   const statusData = status.data;
   const isRunning = statusData?.isRunning ?? false;
+  const directionMode = (config.data?.directionMode as DirectionMode) ?? 'auto';
 
   const handleToggle = () => {
     if (isRunning) stop.mutate({ walletId });
     else start.mutate({ walletId });
+  };
+
+  const handleDirectionChange = (mode: DirectionMode) => {
+    upsertConfig.mutate({ walletId, directionMode: mode });
   };
 
   return (
@@ -43,6 +48,13 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
           </Badge>
         </Flex>
       </Flex>
+
+      <DirectionModeSelector
+        value={directionMode}
+        onChange={handleDirectionChange}
+        disabled={upsertConfig.isPending}
+        size="2xs"
+      />
 
       <HStack>
         <Button size="xs" colorPalette={isRunning ? 'red' : 'green'} onClick={handleToggle} flex={1}>

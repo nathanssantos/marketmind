@@ -80,8 +80,11 @@ export class ExecutionEngine {
         return;
       }
 
-      await autoTradingService.setFuturesLeverage(wallet as Wallet, signal.symbol, this.config.leverage);
       await autoTradingService.setFuturesMarginType(wallet as Wallet, signal.symbol, this.config.marginType);
+
+      const client = (await import('../../exchange')).getFuturesClient(wallet as Wallet);
+      const pos = await client.getPosition(signal.symbol);
+      const actualLeverage = pos ? Number(pos.leverage) : 1;
 
       const positionValue = (walletBalance * this.config.positionSizePercent) / 100;
       const quantity = positionValue / signal.entryPrice;
@@ -103,7 +106,7 @@ export class ExecutionEngine {
         status: 'pending',
         setupType,
         marketType: 'FUTURES',
-        leverage: this.config.leverage,
+        leverage: actualLeverage,
         entryOrderType: orderParams.type as 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
         openedAt: new Date(),
       });
@@ -211,7 +214,7 @@ export class ExecutionEngine {
         direction: signal.direction,
         entryPrice: orderResult.price,
         quantity: executedQty,
-        leverage: this.config.leverage,
+        leverage: actualLeverage,
         mode: this.config.executionMode,
         orderId: orderResult.orderId,
         slFailed,

@@ -1,12 +1,13 @@
-import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
 import type { TradingProfile } from '@marketmind/types';
-import { Button, CollapsibleSection } from '@renderer/components/ui';
+import { Button, CollapsibleSection, DirectionModeSelector } from '@renderer/components/ui';
+import type { DirectionMode } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuPause, LuPlus, LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
+import { LuPause, LuPlus } from 'react-icons/lu';
 import type { ActiveWatcher } from './types';
 import { WatcherCardCompact } from './WatcherCardCompact';
 
-export type DirectionMode = 'auto' | 'long_only' | 'short_only';
+export type { DirectionMode } from '@renderer/components/ui';
 
 export interface WatchersListProps {
   activeWatchers: ActiveWatcher[];
@@ -57,41 +58,7 @@ export const WatchersList = ({
       ) : undefined}
     >
       <Stack gap={4}>
-        <HStack gap={1}>
-          <Button
-            size="xs"
-            variant={directionMode === 'short_only' ? 'solid' : 'outline'}
-            colorPalette={directionMode === 'short_only' ? 'red' : 'gray'}
-            onClick={() => onDirectionModeChange(directionMode === 'short_only' ? 'auto' : 'short_only')}
-            disabled={isPendingConfig}
-            flex={1}
-          >
-            <LuTrendingDown />
-            {t('settings.algorithmicAutoTrading.directionMode.shortOnly')}
-          </Button>
-          <Button
-            size="xs"
-            variant={directionMode === 'auto' ? 'solid' : 'outline'}
-            colorPalette={directionMode === 'auto' ? 'gray' : 'gray'}
-            onClick={() => onDirectionModeChange('auto')}
-            disabled={isPendingConfig}
-            flex={1}
-          >
-            <LuArrowUpDown />
-            {t('settings.algorithmicAutoTrading.directionMode.auto')}
-          </Button>
-          <Button
-            size="xs"
-            variant={directionMode === 'long_only' ? 'solid' : 'outline'}
-            colorPalette={directionMode === 'long_only' ? 'green' : 'gray'}
-            onClick={() => onDirectionModeChange(directionMode === 'long_only' ? 'auto' : 'long_only')}
-            disabled={isPendingConfig}
-            flex={1}
-          >
-            <LuTrendingUp />
-            {t('settings.algorithmicAutoTrading.directionMode.longOnly')}
-          </Button>
-        </HStack>
+        <DirectionModeSelector value={directionMode} onChange={onDirectionModeChange} disabled={isPendingConfig} />
 
         <Flex justify="flex-end" gap={2}>
           {activeWatchers.length > 0 && (

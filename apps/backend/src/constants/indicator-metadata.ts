@@ -28,6 +28,7 @@ export const INDICATOR_CATALOG: IndicatorMeta[] = [
   { id: 'PRICE_CHANGE_24H', name: 'Price Change 24h', category: 'price', defaultParams: {}, requiresKlines: false },
   { id: 'PRICE_CHANGE_PERCENT_24H', name: 'Price Change % 24h', category: 'price', defaultParams: {}, requiresKlines: false },
   { id: 'VOLUME_24H', name: 'Volume 24h', category: 'market_data', defaultParams: {}, requiresKlines: false },
+  { id: 'QUOTE_VOLUME_24H', name: 'Quote Volume 24h', category: 'market_data', defaultParams: {}, requiresKlines: false },
   { id: 'VOLUME_RATIO', name: 'Volume Ratio', category: 'volume', defaultParams: { period: 20 }, paramLabels: { period: 'Period' }, requiresKlines: true },
   { id: 'MARKET_CAP_RANK', name: 'Market Cap Rank', category: 'market_data', defaultParams: {}, requiresKlines: false },
   { id: 'BTC_CORRELATION', name: 'BTC Correlation', category: 'crypto', defaultParams: { period: 30 }, paramLabels: { period: 'Period' }, valueRange: { min: -1, max: 1 }, requiresKlines: true, assetClassRestriction: 'CRYPTO' },

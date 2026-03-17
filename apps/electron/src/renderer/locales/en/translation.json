@@ -1729,7 +1729,10 @@
         "volume-spike": "Volume Spike",
         "breakout-candidates": "Breakout Candidates",
         "mean-reversion": "Mean Reversion",
-        "high-volatility": "High Volatility"
+        "high-volatility": "High Volatility",
+        "best-for-scalping": "Best for Scalping",
+        "cci-scalping-long": "CCI Scalping Long",
+        "cci-scalping-short": "CCI Scalping Short"
       },
       "descriptions": {
         "top-gainers": "Biggest price gainers in the last 24h",
@@ -1741,7 +1744,10 @@
         "volume-spike": "Unusual volume activity above 2x average",
         "breakout-candidates": "Tight Bollinger Bands with rising volume",
         "mean-reversion": "Extreme RSI readings for potential reversals",
-        "high-volatility": "High ATR% with strong volume and trend"
+        "high-volatility": "High ATR% with strong volume and trend",
+        "best-for-scalping": "High liquidity, moderate volatility — ideal for scalping",
+        "cci-scalping-long": "CCI oversold with high liquidity — look for EMA cross long entry",
+        "cci-scalping-short": "CCI overbought with high liquidity — look for EMA cross short entry"
       }
     },
     "filters": {
@@ -1828,6 +1834,7 @@
       "volume": "Volume",
       "volatility": "Volatility",
       "mean_reversion": "Mean Reversion",
+      "scalping": "Scalping",
       "market_data": "Market Data"
     },
     "backfillTopSymbols": "Backfill Top {{max}}",
@@ -1870,14 +1877,16 @@
       "ticksPerBar": "Ticks per Bar",
       "volumePerBar": "Volume per Bar",
       "depthLevels": "Depth Levels",
-      "noSymbols": "No symbols configured"
+      "noSymbols": "No symbols configured",
+      "signalInterval": "Signal Interval"
     },
     "strategy": {
       "imbalance": "Imbalance",
       "cvd-divergence": "CVD Divergence",
       "mean-reversion": "Mean Reversion",
       "momentum-burst": "Momentum Burst",
-      "absorption-reversal": "Absorption Reversal"
+      "absorption-reversal": "Absorption Reversal",
+      "ema-cross": "EMA Cross"
     },
     "dashboard": {
       "title": "Scalping"

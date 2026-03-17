@@ -13,6 +13,8 @@ export { CollapsibleSection } from './CollapsibleSection';
 export { ColorModeProvider, useColorMode } from './color-mode';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { CryptoIcon } from './CryptoIcon';
+export { DirectionModeSelector } from './DirectionModeSelector';
+export type { DirectionMode } from './DirectionModeSelector';
 export { Dialog, DialogActionTrigger, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogPositioner, DialogRoot, DialogTitle } from './dialog';
 export { EmptyState } from './EmptyState';
 export { ErrorMessage } from './ErrorMessage';

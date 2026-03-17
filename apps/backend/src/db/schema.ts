@@ -858,6 +858,8 @@ export const scalpingConfig = pgTable('scalping_config', {
   circuitBreakerEnabled: boolean('circuit_breaker_enabled').default(true).notNull(),
   circuitBreakerLossPercent: numeric('circuit_breaker_loss_percent', { precision: 5, scale: 2 }).default('2.00'),
   circuitBreakerMaxTrades: integer('circuit_breaker_max_trades').default(50),
+  signalInterval: varchar('signal_interval', { length: 5 }).default('3m'),
+  directionMode: varchar('direction_mode', { length: 15 }).$type<'auto' | 'long_only' | 'short_only'>().default('auto').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

@@ -1,12 +1,13 @@
 import { randomUUID } from 'crypto';
 import type { ScalpingSignal, ScalpingStrategy } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
-import { SCALPING_ENGINE, SCALPING_STRATEGY } from '../../constants/scalping';
-import type { CircuitBreakerState, StrategyContext, StrategyResult } from './types';
+import { SCALPING_ENGINE, SCALPING_STRATEGY, SCALPING_ATR } from '../../constants/scalping';
+import type { CircuitBreakerState, IndicatorState, StrategyContext, StrategyResult } from './types';
 import { logger } from '../logger';
 
 export interface SignalEngineConfig {
   enabledStrategies: ScalpingStrategy[];
+  directionMode: 'auto' | 'long_only' | 'short_only';
   imbalanceThreshold: number;
   cvdDivergenceBars: number;
   vwapDeviationSigma: number;
@@ -81,6 +82,9 @@ export class SignalEngine {
     for (const strategy of this.config.enabledStrategies) {
       const result = this.evaluateStrategy(strategy, context);
       if (!result || !result.shouldTrade) continue;
+
+      if (this.config.directionMode === 'long_only' && result.direction === 'SHORT') continue;
+      if (this.config.directionMode === 'short_only' && result.direction === 'LONG') continue;
 
       const cooldownKey = `${context.symbol}:${strategy}:${result.direction}`;
       const lastSignal = this.signalCooldowns.get(cooldownKey) ?? 0;
@@ -217,8 +221,23 @@ export class SignalEngine {
       case 'mean-reversion': return this.evaluateMeanReversion(ctx);
       case 'momentum-burst': return this.evaluateMomentumBurst(ctx);
       case 'absorption-reversal': return this.evaluateAbsorptionReversal(ctx);
+      case 'ema-cross': return this.evaluateEmaCross(ctx);
       default: return null;
     }
+  }
+
+  private static computeAtrExit(
+    atrPercent: number | null,
+    slAtrMult: number,
+    tpAtrMult: number,
+    fallbackSlPercent: number,
+    fallbackTpPercent: number,
+  ): { slPercent: number; tpPercent: number } {
+    if (!atrPercent || atrPercent <= 0) return { slPercent: fallbackSlPercent, tpPercent: fallbackTpPercent };
+    return {
+      slPercent: Math.max(SCALPING_ATR.MIN_SL_PERCENT, Math.min(atrPercent * slAtrMult, SCALPING_ATR.MAX_SL_PERCENT)),
+      tpPercent: Math.max(SCALPING_ATR.MIN_TP_PERCENT, Math.min(atrPercent * tpAtrMult, SCALPING_ATR.MAX_TP_PERCENT)),
+    };
   }
 
   private buildResult(
@@ -227,17 +246,25 @@ export class SignalEngine {
     confidence: number,
     price: number,
     slPercent: number,
-    tpDistance: number,
+    tpPercent: number,
   ): StrategyResult {
+    const slDistance = price * slPercent;
+    const tpDistance = price * tpPercent;
     return {
       shouldTrade: true,
       direction,
       confidence,
       strategy,
       entryPrice: price,
-      stopLoss: direction === 'LONG' ? price - price * slPercent : price + price * slPercent,
+      stopLoss: direction === 'LONG' ? price - slDistance : price + slDistance,
       takeProfit: direction === 'LONG' ? price + tpDistance : price - tpDistance,
     };
+  }
+
+  private getAtrPercent(ctx: StrategyContext): number | null {
+    const atr = ctx.indicators?.atr;
+    if (!atr || atr <= 0 || ctx.currentPrice <= 0) return null;
+    return atr / ctx.currentPrice;
   }
 
   private evaluateImbalance(ctx: StrategyContext): StrategyResult | null {
@@ -250,11 +277,13 @@ export class SignalEngine {
       SCALPING_STRATEGY.IMBALANCE_BASE_CONFIDENCE + Math.abs(imbalanceRatio) * 50,
     );
 
-    return this.buildResult(
-      direction, 'imbalance', confidence, ctx.currentPrice,
-      SCALPING_STRATEGY.IMBALANCE_SL_PERCENT,
-      ctx.currentPrice * SCALPING_STRATEGY.IMBALANCE_TP_PERCENT,
+    const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
+      this.getAtrPercent(ctx),
+      SCALPING_STRATEGY.IMBALANCE_SL_ATR_MULT, SCALPING_STRATEGY.IMBALANCE_TP_ATR_MULT,
+      SCALPING_STRATEGY.IMBALANCE_SL_PERCENT, SCALPING_STRATEGY.IMBALANCE_TP_PERCENT,
     );
+
+    return this.buildResult(direction, 'imbalance', confidence, ctx.currentPrice, slPercent, tpPercent);
   }
 
   private evaluateCVDDivergence(ctx: StrategyContext): StrategyResult | null {
@@ -276,11 +305,13 @@ export class SignalEngine {
 
     const direction: 'LONG' | 'SHORT' = cvdDirection > 0 ? 'LONG' : 'SHORT';
 
-    return this.buildResult(
-      direction, 'cvd-divergence', SCALPING_STRATEGY.CVD_DIVERGENCE_CONFIDENCE, ctx.currentPrice,
-      SCALPING_STRATEGY.CVD_DIVERGENCE_SL_PERCENT,
-      ctx.currentPrice * SCALPING_STRATEGY.CVD_DIVERGENCE_TP_PERCENT,
+    const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
+      this.getAtrPercent(ctx),
+      SCALPING_STRATEGY.CVD_DIVERGENCE_SL_ATR_MULT, SCALPING_STRATEGY.CVD_DIVERGENCE_TP_ATR_MULT,
+      SCALPING_STRATEGY.CVD_DIVERGENCE_SL_PERCENT, SCALPING_STRATEGY.CVD_DIVERGENCE_TP_PERCENT,
     );
+
+    return this.buildResult(direction, 'cvd-divergence', SCALPING_STRATEGY.CVD_DIVERGENCE_CONFIDENCE, ctx.currentPrice, slPercent, tpPercent);
   }
 
   private evaluateMeanReversion(ctx: StrategyContext): StrategyResult | null {
@@ -296,11 +327,18 @@ export class SignalEngine {
       SCALPING_STRATEGY.MEAN_REVERSION_BASE_CONFIDENCE + Math.abs(deviation) / sigma * 15,
     );
 
-    return this.buildResult(
-      direction, 'mean-reversion', confidence, ctx.currentPrice,
-      SCALPING_STRATEGY.MEAN_REVERSION_SL_PERCENT,
-      Math.abs(ctx.currentPrice - ctx.vwap) * SCALPING_STRATEGY.MEAN_REVERSION_TP_RATIO,
+    const atrPercent = this.getAtrPercent(ctx);
+    const slPercent = atrPercent && atrPercent > 0
+      ? Math.max(SCALPING_ATR.MIN_SL_PERCENT, Math.min(atrPercent * SCALPING_STRATEGY.MEAN_REVERSION_SL_ATR_MULT, SCALPING_ATR.MAX_SL_PERCENT))
+      : SCALPING_STRATEGY.MEAN_REVERSION_SL_PERCENT;
+
+    const vwapDistance = Math.abs(ctx.currentPrice - ctx.vwap) / ctx.currentPrice;
+    const tpPercent = Math.max(
+      SCALPING_ATR.MIN_TP_PERCENT,
+      Math.min(vwapDistance * SCALPING_STRATEGY.MEAN_REVERSION_TP_RATIO, SCALPING_ATR.MAX_TP_PERCENT),
     );
+
+    return this.buildResult(direction, 'mean-reversion', confidence, ctx.currentPrice, slPercent, tpPercent);
   }
 
   private evaluateMomentumBurst(ctx: StrategyContext): StrategyResult | null {
@@ -312,11 +350,13 @@ export class SignalEngine {
 
     const direction: 'LONG' | 'SHORT' = ctx.metrics.imbalanceRatio > 0 ? 'LONG' : 'SHORT';
 
-    return this.buildResult(
-      direction, 'momentum-burst', SCALPING_STRATEGY.MOMENTUM_BURST_CONFIDENCE, ctx.currentPrice,
-      SCALPING_STRATEGY.MOMENTUM_BURST_SL_PERCENT,
-      ctx.currentPrice * SCALPING_STRATEGY.MOMENTUM_BURST_TP_PERCENT,
+    const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
+      this.getAtrPercent(ctx),
+      SCALPING_STRATEGY.MOMENTUM_BURST_SL_ATR_MULT, SCALPING_STRATEGY.MOMENTUM_BURST_TP_ATR_MULT,
+      SCALPING_STRATEGY.MOMENTUM_BURST_SL_PERCENT, SCALPING_STRATEGY.MOMENTUM_BURST_TP_PERCENT,
     );
+
+    return this.buildResult(direction, 'momentum-burst', SCALPING_STRATEGY.MOMENTUM_BURST_CONFIDENCE, ctx.currentPrice, slPercent, tpPercent);
   }
 
   private evaluateAbsorptionReversal(ctx: StrategyContext): StrategyResult | null {
@@ -324,10 +364,66 @@ export class SignalEngine {
 
     const direction: 'LONG' | 'SHORT' = ctx.metrics.imbalanceRatio > 0 ? 'LONG' : 'SHORT';
 
-    return this.buildResult(
-      direction, 'absorption-reversal', SCALPING_STRATEGY.ABSORPTION_CONFIDENCE, ctx.currentPrice,
-      SCALPING_STRATEGY.ABSORPTION_SL_PERCENT,
-      ctx.currentPrice * SCALPING_STRATEGY.ABSORPTION_TP_PERCENT,
+    const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
+      this.getAtrPercent(ctx),
+      SCALPING_STRATEGY.ABSORPTION_SL_ATR_MULT, SCALPING_STRATEGY.ABSORPTION_TP_ATR_MULT,
+      SCALPING_STRATEGY.ABSORPTION_SL_PERCENT, SCALPING_STRATEGY.ABSORPTION_TP_PERCENT,
     );
+
+    return this.buildResult(direction, 'absorption-reversal', SCALPING_STRATEGY.ABSORPTION_CONFIDENCE, ctx.currentPrice, slPercent, tpPercent);
+  }
+
+  private evaluateEmaCross(ctx: StrategyContext): StrategyResult | null {
+    if (!ctx.indicators) return null;
+    return SignalEngine.checkEmaCross(ctx.indicators, ctx.currentPrice);
+  }
+
+  static checkEmaCross(indicators: IndicatorState, currentPrice: number): StrategyResult | null {
+    const { ema7, ema9, cci, sarTrend } = indicators;
+    if (ema7.length < 2 || ema9.length < 2 || cci.length < 1) return null;
+
+    const currEma7 = ema7[ema7.length - 1]!;
+    const prevEma7 = ema7[ema7.length - 2]!;
+    const currEma9 = ema9[ema9.length - 1]!;
+    const prevEma9 = ema9[ema9.length - 2]!;
+    const currCci = cci[cci.length - 1]!;
+
+    const bullishCross = prevEma7 <= prevEma9 && currEma7 > currEma9;
+    const bearishCross = prevEma7 >= prevEma9 && currEma7 < currEma9;
+
+    if (!bullishCross && !bearishCross) return null;
+
+    if (bullishCross && sarTrend !== 'UP') return null;
+    if (bearishCross && sarTrend !== 'DOWN') return null;
+
+    if (bullishCross && currCci > 150) return null;
+    if (bearishCross && currCci < -150) return null;
+
+    const direction: 'LONG' | 'SHORT' = bullishCross ? 'LONG' : 'SHORT';
+
+    let confidence: number = SCALPING_STRATEGY.EMA_CROSS_BASE_CONFIDENCE;
+    if (bullishCross && currCci < -50) confidence += 15;
+    if (bearishCross && currCci > 50) confidence += 15;
+    confidence = Math.min(confidence, SCALPING_STRATEGY.EMA_CROSS_MAX_CONFIDENCE);
+
+    const atrPercent = indicators.atr && indicators.atr > 0 ? indicators.atr / currentPrice : null;
+    const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
+      atrPercent,
+      SCALPING_STRATEGY.EMA_CROSS_SL_ATR_MULT, SCALPING_STRATEGY.EMA_CROSS_TP_ATR_MULT,
+      SCALPING_STRATEGY.EMA_CROSS_FALLBACK_SL_PERCENT, SCALPING_STRATEGY.EMA_CROSS_FALLBACK_TP_PERCENT,
+    );
+
+    const slDistance = currentPrice * slPercent;
+    const tpDistance = currentPrice * tpPercent;
+
+    return {
+      shouldTrade: true,
+      direction,
+      confidence,
+      strategy: 'ema-cross',
+      entryPrice: currentPrice,
+      stopLoss: direction === 'LONG' ? currentPrice - slDistance : currentPrice + slDistance,
+      takeProfit: direction === 'LONG' ? currentPrice + tpDistance : currentPrice - tpDistance,
+    };
   }
 }

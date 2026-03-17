@@ -6,10 +6,12 @@ import { eq } from 'drizzle-orm';
 import { MetricsComputer } from './metrics-computer';
 import { SignalEngine } from './signal-engine';
 import { ExecutionEngine } from './execution-engine';
+import { KlineIndicatorManager } from './kline-indicator-manager';
 import { getPositionEventBus } from './position-event-bus';
 import { binanceBookTickerStreamService } from '../binance-book-ticker-stream';
 import { binanceAggTradeStreamService } from '../binance-agg-trade-stream';
 import { binanceDepthStreamService } from '../binance-depth-stream';
+import { binanceFuturesKlineStreamService } from '../binance-kline-stream';
 import { getWebSocketService } from '../websocket';
 import { logger } from '../logger';
 import { walletQueries } from '../database/walletQueries';
@@ -28,6 +30,9 @@ interface ActiveSession {
   metricsComputer: MetricsComputer;
   signalEngine: SignalEngine;
   executionEngine: ExecutionEngine | null;
+  klineIndicatorManager: KlineIndicatorManager | null;
+  signalInterval: string | null;
+  directionMode: 'auto' | 'long_only' | 'short_only';
   unsubscribers: Array<() => void>;
   isAutoTrading: boolean;
   balanceCache: BalanceCache | null;
@@ -71,6 +76,7 @@ export class ScalpingScheduler {
     const metricsComputer = new MetricsComputer();
     const signalEngine = new SignalEngine({
       enabledStrategies,
+      directionMode: (config.directionMode as 'auto' | 'long_only' | 'short_only') ?? 'auto',
       imbalanceThreshold: parseFloat(config.imbalanceThreshold ?? String(SCALPING_DEFAULTS.IMBALANCE_THRESHOLD)),
       cvdDivergenceBars: config.cvdDivergenceBars ?? SCALPING_DEFAULTS.CVD_DIVERGENCE_BARS,
       vwapDeviationSigma: parseFloat(config.vwapDeviationSigma ?? String(SCALPING_DEFAULTS.VWAP_DEVIATION_SIGMA)),
@@ -158,6 +164,21 @@ export class ScalpingScheduler {
       binanceDepthStreamService.subscribe(symbol);
     }
 
+    const signalInterval = config.signalInterval ?? SCALPING_DEFAULTS.SIGNAL_INTERVAL;
+    const klineIndicatorManager = new KlineIndicatorManager();
+
+    for (const symbol of symbols) {
+      await klineIndicatorManager.initialize(symbol, signalInterval);
+      binanceFuturesKlineStreamService.subscribe(symbol, signalInterval);
+    }
+
+    const klineUnsub = binanceFuturesKlineStreamService.onKlineClose((update) => {
+      if (update.interval !== signalInterval) return;
+      if (!symbols.includes(update.symbol)) return;
+      klineIndicatorManager.processKlineClose(update);
+    });
+    unsubscribers.push(klineUnsub);
+
     this.sessions.set(walletId, {
       walletId,
       userId: config.userId,
@@ -165,6 +186,9 @@ export class ScalpingScheduler {
       metricsComputer,
       signalEngine,
       executionEngine,
+      klineIndicatorManager,
+      signalInterval,
+      directionMode: (config.directionMode as 'auto' | 'long_only' | 'short_only') ?? 'auto',
       unsubscribers,
       isAutoTrading,
       balanceCache: null,
@@ -198,9 +222,14 @@ export class ScalpingScheduler {
       binanceAggTradeStreamService.unsubscribe(symbol);
       binanceDepthStreamService.unsubscribe(symbol);
 
+      if (session.signalInterval) {
+        binanceFuturesKlineStreamService.unsubscribe(symbol, session.signalInterval);
+      }
+
       this.lastEvaluation.delete(`${walletId}:${symbol}`);
     }
 
+    session.klineIndicatorManager?.clear();
     session.executionEngine?.stop();
     this.sessions.delete(walletId);
 
@@ -337,6 +366,8 @@ export class ScalpingScheduler {
 
     const cachedBalance = session.balanceCache?.balance ?? 0;
 
+    const indicators = session.klineIndicatorManager?.getIndicators(symbol) ?? undefined;
+
     const context: StrategyContext = {
       symbol,
       metrics,
@@ -345,6 +376,7 @@ export class ScalpingScheduler {
       vwap,
       avgVolume,
       walletBalance: cachedBalance,
+      indicators,
     };
 
     session.signalEngine.evaluate(context);

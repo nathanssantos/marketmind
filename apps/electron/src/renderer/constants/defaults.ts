@@ -24,10 +24,10 @@ export const getDefaultMovingAverages = (colorMode: 'light' | 'dark'): MovingAve
     { period: 19, type: 'EMA', color: '#ff00ff', lineWidth: 2, visible: false },
     { period: 20, type: 'EMA', color: ma[0] ?? '#2196f3', lineWidth: 2, visible: false },
     { period: 21, type: 'EMA', color: '#00e676', lineWidth: 2, visible: true },
-    { period: 50, type: 'EMA', color: '#ffd700', lineWidth: 2, visible: true },
+    { period: 50, type: 'EMA', color: '#607d8b', lineWidth: 2, visible: true },
     { period: 70, type: 'EMA', color: ma[2] ?? '#9c27b0', lineWidth: 2, visible: false },
-    { period: 100, type: 'EMA', color: colors.bearish, lineWidth: 2, visible: false },
-    { period: 200, type: 'EMA', color: '#607d8b', lineWidth: 2, visible: false },
+    { period: 100, type: 'EMA', color: '#607d8b', lineWidth: 3, visible: false },
+    { period: 200, type: 'EMA', color: '#607d8b', lineWidth: 4, visible: false },
   ];
 };
 

@@ -301,6 +301,7 @@ export const SCALPING_DEFAULTS = {
   AGG_TRADE_RETENTION_DAYS: 30,
   MAX_CONSECUTIVE_LOSSES: 3,
   CONSECUTIVE_LOSS_COOLDOWN_MS: 30 * 60 * 1_000,
+  SIGNAL_INTERVAL: '3m' as const,
 } as const;
 
 export type ScalpingDefaultsConstants = typeof SCALPING_DEFAULTS;

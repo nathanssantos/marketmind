@@ -88,6 +88,7 @@ const getSortValue = (row: ScreenerResultRow, field: ScreenerSortField): number 
     case 'atrPercent': return row.indicators['ATR_PERCENT'] ?? 0;
     case 'compositeScore': return row.compositeScore;
     case 'volumeRatio': return row.indicators['VOLUME_RATIO'] ?? 0;
+    case 'quoteVolume24h': return row.quoteVolume24h;
     default: return 0;
   }
 };
@@ -376,6 +377,9 @@ export class ScreenerService {
             break;
           case 'VOLUME_24H':
             value = ticker?.volume ?? null;
+            break;
+          case 'QUOTE_VOLUME_24H':
+            value = ticker?.quoteVolume ?? null;
             break;
           case 'MARKET_CAP_RANK':
             value = topCoin?.marketCapRank ?? null;

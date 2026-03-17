@@ -992,6 +992,15 @@ export class BinanceFuturesUserStreamService {
                   exitPrice: exitPrice.toString(),
                   pnl: totalPnl.toString(),
                 });
+
+                wsService.emitPositionClosed(walletId, {
+                  positionId: oppositeExec.id,
+                  symbol,
+                  side: oppositeExec.side,
+                  exitReason: 'REDUCE_ORDER',
+                  pnl: totalPnl,
+                  pnlPercent: 0,
+                });
               }
 
               getPositionEventBus().emitPositionClosed({
@@ -1432,6 +1441,15 @@ export class BinanceFuturesUserStreamService {
             pnl: pnl.toString(),
             pnlPercent: pnlPercent.toString(),
             exitReason: isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT',
+          });
+
+          wsService.emitPositionClosed(walletId, {
+            positionId: execution.id,
+            symbol,
+            side: execution.side,
+            exitReason: determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT'),
+            pnl,
+            pnlPercent,
           });
         }
 
@@ -2040,6 +2058,15 @@ export class BinanceFuturesUserStreamService {
           pnl: pnl.toString(),
           pnlPercent: pnlPercent.toString(),
           exitReason,
+        });
+
+        wsService.emitPositionClosed(walletId, {
+          positionId: execution.id,
+          symbol,
+          side: execution.side,
+          exitReason: exitReason ?? 'STOP_LOSS',
+          pnl,
+          pnlPercent,
         });
       }
 

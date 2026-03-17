@@ -30,6 +30,7 @@ export type ScreenerIndicatorId =
   | 'PRICE_CHANGE_24H'
   | 'PRICE_CHANGE_PERCENT_24H'
   | 'VOLUME_24H'
+  | 'QUOTE_VOLUME_24H'
   | 'VOLUME_RATIO'
   | 'MARKET_CAP_RANK'
   | 'BTC_CORRELATION'
@@ -66,7 +67,8 @@ export type ScreenerSortField =
   | 'adx'
   | 'atrPercent'
   | 'compositeScore'
-  | 'volumeRatio';
+  | 'volumeRatio'
+  | 'quoteVolume24h';
 
 export interface ScreenerConfig {
   id?: string;
@@ -114,6 +116,7 @@ export type ScreenerPresetCategory =
   | 'volatility'
   | 'volume'
   | 'trend'
+  | 'scalping'
   | 'market_data';
 
 export interface ScreenerPreset {

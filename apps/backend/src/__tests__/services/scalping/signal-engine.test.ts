@@ -11,6 +11,7 @@ vi.mock('../../../services/logger', () => ({
 
 const defaultConfig: SignalEngineConfig = {
   enabledStrategies: ['imbalance', 'cvd-divergence', 'mean-reversion', 'momentum-burst', 'absorption-reversal'],
+  directionMode: 'auto',
   imbalanceThreshold: SCALPING_DEFAULTS.IMBALANCE_THRESHOLD,
   cvdDivergenceBars: SCALPING_DEFAULTS.CVD_DIVERGENCE_BARS,
   vwapDeviationSigma: SCALPING_DEFAULTS.VWAP_DEVIATION_SIGMA,

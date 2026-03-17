@@ -60,7 +60,13 @@ vi.mock('../../../services/min-notional-filter', () => ({
   }),
 }));
 
+const mockGetPosition = vi.fn().mockResolvedValue({ symbol: 'BTCUSDT', leverage: 10 });
 
+vi.mock('../../../exchange', () => ({
+  getFuturesClient: () => ({
+    getPosition: (...args: unknown[]) => mockGetPosition(...args),
+  }),
+}));
 
 const mockDbInsert = vi.fn().mockReturnValue({
   values: vi.fn().mockResolvedValue(undefined),
@@ -113,6 +119,7 @@ const defaultEngineConfig: ExecutionEngineConfig = {
 
 const defaultSignalConfig: SignalEngineConfig = {
   enabledStrategies: ['imbalance'],
+  directionMode: 'auto',
   imbalanceThreshold: 0.6,
   cvdDivergenceBars: 10,
   vwapDeviationSigma: 2.0,
@@ -160,6 +167,7 @@ describe('ExecutionEngine', () => {
     mockDbQueryFind.mockReset().mockResolvedValue(null);
     mockDbQueryFindMany.mockReset().mockResolvedValue([]);
     mockUpdateStopLoss.mockReset().mockResolvedValue({ algoId: 101, orderId: null });
+    mockGetPosition.mockReset().mockResolvedValue({ symbol: 'BTCUSDT', leverage: 10 });
     signalEngine = new SignalEngine({ ...defaultSignalConfig });
     engine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
   });
@@ -168,8 +176,8 @@ describe('ExecutionEngine', () => {
     it('should execute a signal and track active position', async () => {
       await engine.executeSignal(makeSignal());
 
-      expect(mockSetFuturesLeverage).toHaveBeenCalledTimes(1);
       expect(mockSetFuturesMarginType).toHaveBeenCalledTimes(1);
+      expect(mockGetPosition).toHaveBeenCalledTimes(1);
       expect(mockExecuteBinanceOrder).toHaveBeenCalledTimes(1);
       expect(mockCreateStopLoss).toHaveBeenCalledTimes(1);
       expect(mockCreateTakeProfit).toHaveBeenCalledTimes(1);
@@ -178,23 +186,19 @@ describe('ExecutionEngine', () => {
       expect(engine.getActivePositionCount()).toBe(1);
     });
 
-    it('should set leverage and margin type before placing order', async () => {
+    it('should read leverage from exchange and set margin type before placing order', async () => {
       await engine.executeSignal(makeSignal());
 
-      expect(mockSetFuturesLeverage).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'wallet-1' }),
-        'BTCUSDT',
-        3,
-      );
+      expect(mockGetPosition).toHaveBeenCalledWith('BTCUSDT');
       expect(mockSetFuturesMarginType).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'wallet-1' }),
         'BTCUSDT',
         'CROSSED',
       );
 
-      const leverageCallOrder = mockSetFuturesLeverage.mock.invocationCallOrder[0];
+      const marginCallOrder = mockSetFuturesMarginType.mock.invocationCallOrder[0];
       const orderCallOrder = mockExecuteBinanceOrder.mock.invocationCallOrder[0];
-      expect(leverageCallOrder).toBeLessThan(orderCallOrder!);
+      expect(marginCallOrder).toBeLessThan(orderCallOrder!);
     });
 
     it('should block execution when any active position exists for symbol', async () => {
