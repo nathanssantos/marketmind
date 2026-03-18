@@ -1,9 +1,11 @@
 import { Button, Checkbox, Field, NumberInput, Select, Switch } from '@renderer/components/ui';
+import { useColorMode } from '@renderer/components/ui';
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
+import { PALETTE_IDS, getPalette } from '@/renderer/constants/chartPalettes';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useChartPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
-import { Box, Grid, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw } from 'react-icons/lu';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
@@ -15,7 +17,9 @@ interface ChartSettingsTabProps {
 
 export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabProps) => {
   const { t } = useTranslation();
+  const { colorMode } = useColorMode();
   const [chartType, setChartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [colorPalette, setColorPalette] = useChartPref<string>('chartColorPalette', 'default');
   const [showGrid, setShowGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair, setShowCrosshair] = useChartPref('showCrosshair', true);
@@ -81,6 +85,47 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             {t('chart.controls.crosshair')}
           </Switch>
         </Stack>
+      </Box>
+
+      <Box>
+        <Text fontSize="md" fontWeight="medium" mb={3}>
+          {t('settings.chart.colorPalette')}
+        </Text>
+        <Grid templateColumns="repeat(5, 1fr)" gap={3}>
+          {PALETTE_IDS.map((id) => {
+            const palette = getPalette(id, colorMode);
+            const isSelected = colorPalette === id;
+            return (
+              <Box
+                key={id}
+                cursor="pointer"
+                borderWidth={2}
+                borderColor={isSelected ? 'blue.400' : 'transparent'}
+                borderRadius="md"
+                p={2}
+                bg={palette.background}
+                onClick={() => setColorPalette(id)}
+                transition="border-color 0.15s"
+                _hover={{ borderColor: isSelected ? 'blue.400' : 'gray.500' }}
+              >
+                <Flex gap={1} mb={1.5} justify="center">
+                  <Box w="14px" h="28px" bg={palette.bullish} borderRadius="sm" />
+                  <Box w="14px" h="28px" bg={palette.bearish} borderRadius="sm" />
+                  <Box w="14px" h="28px" bg={palette.bullish} borderRadius="sm" />
+                  <Box w="14px" h="28px" bg={palette.bearish} borderRadius="sm" />
+                </Flex>
+                <HStack gap={0} justify="center">
+                  {[0, 1, 2].map((i) => (
+                    <Box key={i} flex={1} h="1px" bg={palette.grid} />
+                  ))}
+                </HStack>
+                <Text fontSize="2xs" textAlign="center" mt={1} color={colorMode === 'dark' ? 'gray.300' : 'gray.600'}>
+                  {palette.name}
+                </Text>
+              </Box>
+            );
+          })}
+        </Grid>
       </Box>
 
       <Box>

@@ -14,7 +14,7 @@ const screenerIndicatorIdSchema = z.enum([
   'CCI', 'MFI', 'CMF', 'OBV', 'VWAP', 'ROC',
   'WILLIAMS_R', 'CHOPPINESS', 'TSI', 'SUPERTREND',
   'PRICE_CLOSE', 'PRICE_CHANGE_24H', 'PRICE_CHANGE_PERCENT_24H',
-  'VOLUME_24H', 'VOLUME_RATIO', 'MARKET_CAP_RANK',
+  'VOLUME_24H', 'QUOTE_VOLUME_24H', 'VOLUME_RATIO', 'MARKET_CAP_RANK',
   'BTC_CORRELATION', 'FUNDING_RATE',
 ]);
 
@@ -45,7 +45,7 @@ const screenerConfigSchema = z.object({
   filters: z.array(filterConditionSchema).max(SCREENER.MAX_FILTERS),
   sortBy: z.enum([
     'symbol', 'price', 'priceChange24h', 'volume24h', 'marketCapRank',
-    'rsi', 'adx', 'atrPercent', 'compositeScore', 'volumeRatio',
+    'rsi', 'adx', 'atrPercent', 'compositeScore', 'volumeRatio', 'quoteVolume24h',
   ]).optional(),
   sortDirection: z.enum(['asc', 'desc']).optional(),
   limit: z.number().min(1).max(SCREENER.MAX_SYMBOLS_PER_SCAN).optional(),

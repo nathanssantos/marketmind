@@ -1,5 +1,5 @@
 import { VStack } from '@chakra-ui/react';
-import { FormDialog } from '@renderer/components/ui';
+import { DirectionModeSelector, FormDialog, type DirectionMode } from '@renderer/components/ui';
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScalpingStrategy, ScalpingExecutionMode } from '@marketmind/types';
@@ -26,7 +26,6 @@ const buildParams = (data: Record<string, unknown> | null | undefined) => ({
   maxConcurrentPositions: Number(get(data, 'maxConcurrentPositions', 1)),
   maxDailyTrades: Number(get(data, 'maxDailyTrades', 50)),
   maxDailyLossPercent: parseFloat(String(get(data, 'maxDailyLossPercent', SCALPING_DEFAULTS.MAX_DAILY_LOSS_PERCENT))),
-  leverage: Number(get(data, 'leverage', 5)),
   imbalanceThreshold: parseFloat(String(get(data, 'imbalanceThreshold', SCALPING_DEFAULTS.IMBALANCE_THRESHOLD))),
   cvdDivergenceBars: Number(get(data, 'cvdDivergenceBars', SCALPING_DEFAULTS.CVD_DIVERGENCE_BARS)),
   vwapDeviationSigma: parseFloat(String(get(data, 'vwapDeviationSigma', SCALPING_DEFAULTS.VWAP_DEVIATION_SIGMA))),
@@ -39,6 +38,7 @@ const buildParams = (data: Record<string, unknown> | null | undefined) => ({
   circuitBreakerEnabled: Boolean(get(data, 'circuitBreakerEnabled', true)),
   circuitBreakerLossPercent: parseFloat(String(get(data, 'circuitBreakerLossPercent', SCALPING_DEFAULTS.CIRCUIT_BREAKER_LOSS_PERCENT))),
   circuitBreakerMaxTrades: Number(get(data, 'circuitBreakerMaxTrades', SCALPING_DEFAULTS.CIRCUIT_BREAKER_MAX_TRADES)),
+  signalInterval: String(get(data, 'signalInterval', SCALPING_DEFAULTS.SIGNAL_INTERVAL)),
 });
 
 export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConfigDialogProps) {
@@ -49,12 +49,14 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
 
   const [symbols, setSymbols] = useState<string[]>([]);
   const [enabledStrategies, setEnabledStrategies] = useState<ScalpingStrategy[]>(['imbalance']);
+  const [directionMode, setDirectionMode] = useState<DirectionMode>('auto');
   const [params, setParams] = useState(buildParams(null));
 
   useEffect(() => {
     if (!data) return;
     setSymbols(data.symbols as string[] ?? []);
     setEnabledStrategies((data.enabledStrategies ?? ['imbalance']) as ScalpingStrategy[]);
+    setDirectionMode((data.directionMode as DirectionMode) ?? 'auto');
     setParams(buildParams(data as unknown as Record<string, unknown>));
   }, [data]);
 
@@ -73,12 +75,12 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
       walletId,
       symbols,
       enabledStrategies,
+      directionMode,
       executionMode: params.executionMode as ScalpingExecutionMode,
       positionSizePercent: params.positionSizePercent,
       maxConcurrentPositions: params.maxConcurrentPositions,
       maxDailyTrades: params.maxDailyTrades,
       maxDailyLossPercent: params.maxDailyLossPercent,
-      leverage: params.leverage,
       imbalanceThreshold: params.imbalanceThreshold,
       cvdDivergenceBars: params.cvdDivergenceBars,
       vwapDeviationSigma: params.vwapDeviationSigma,
@@ -91,6 +93,7 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
       circuitBreakerEnabled: params.circuitBreakerEnabled,
       circuitBreakerLossPercent: params.circuitBreakerLossPercent,
       circuitBreakerMaxTrades: params.circuitBreakerMaxTrades,
+      signalInterval: params.signalInterval as '1m' | '3m' | '5m' | '15m',
     }, { onSuccess: onClose });
   };
 
@@ -107,6 +110,8 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
       <VStack gap={6} align="stretch" maxH="70vh" overflowY="auto">
         <SymbolSection symbols={symbols} onSymbolsChange={setSymbols} />
 
+        <DirectionModeSelector value={directionMode} onChange={setDirectionMode} />
+
         <StrategySection
           enabledStrategies={enabledStrategies}
           imbalanceThreshold={params.imbalanceThreshold}
@@ -121,6 +126,7 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
           executionMode={params.executionMode as ScalpingExecutionMode}
           microTrailingTicks={params.microTrailingTicks}
           maxSpreadPercent={params.maxSpreadPercent}
+          signalInterval={params.signalInterval}
           onModeChange={(mode) => handleParamChange('executionMode', mode)}
           onParamChange={handleParamChange}
         />
@@ -130,7 +136,6 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
           maxConcurrentPositions={params.maxConcurrentPositions}
           maxDailyTrades={params.maxDailyTrades}
           maxDailyLossPercent={params.maxDailyLossPercent}
-          leverage={params.leverage}
           circuitBreakerEnabled={params.circuitBreakerEnabled}
           circuitBreakerLossPercent={params.circuitBreakerLossPercent}
           circuitBreakerMaxTrades={params.circuitBreakerMaxTrades}

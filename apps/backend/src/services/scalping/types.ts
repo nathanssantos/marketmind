@@ -26,6 +26,14 @@ export interface CVDState {
   priceHistory: Array<{ price: number; timestamp: number }>;
 }
 
+export interface IndicatorState {
+  ema7: number[];
+  ema9: number[];
+  cci: number[];
+  sarTrend: 'UP' | 'DOWN' | null;
+  atr: number | null;
+}
+
 export interface StrategyContext {
   symbol: string;
   metrics: ScalpingMetrics;
@@ -34,6 +42,7 @@ export interface StrategyContext {
   vwap: number;
   avgVolume: number;
   walletBalance: number;
+  indicators?: IndicatorState;
 }
 
 export interface StrategyResult {

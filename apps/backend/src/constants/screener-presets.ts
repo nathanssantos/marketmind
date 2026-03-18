@@ -204,6 +204,57 @@ export const SCREENER_PRESETS: ScreenerPreset[] = [
     },
   },
   {
+    id: 'best-for-scalping',
+    name: 'Best for Scalping',
+    description: 'High liquidity, moderate volatility — ideal for scalping',
+    icon: 'Crosshair',
+    category: 'scalping',
+    assetClassRestriction: 'CRYPTO',
+    config: {
+      filters: [
+        { id: 'sc-1', indicator: 'QUOTE_VOLUME_24H', operator: 'ABOVE', value: 100_000_000 },
+        { id: 'sc-2', indicator: 'ATR_PERCENT', operator: 'BETWEEN', value: 1.5, valueMax: 10 },
+        { id: 'sc-3', indicator: 'VOLUME_RATIO', operator: 'ABOVE', value: 0.5 },
+      ],
+      sortBy: 'quoteVolume24h',
+      sortDirection: 'desc',
+    },
+  },
+  {
+    id: 'cci-scalping-long',
+    name: 'CCI Scalping Long',
+    description: 'CCI oversold with high liquidity — look for EMA cross long entry',
+    icon: 'Crosshair',
+    category: 'scalping',
+    assetClassRestriction: 'CRYPTO',
+    config: {
+      filters: [
+        { id: 'csl-1', indicator: 'CCI', operator: 'BETWEEN', value: -150, valueMax: -50 },
+        { id: 'csl-2', indicator: 'QUOTE_VOLUME_24H', operator: 'ABOVE', value: 100_000_000 },
+        { id: 'csl-3', indicator: 'VOLUME_RATIO', operator: 'ABOVE', value: 0.5 },
+      ],
+      sortBy: 'quoteVolume24h',
+      sortDirection: 'desc',
+    },
+  },
+  {
+    id: 'cci-scalping-short',
+    name: 'CCI Scalping Short',
+    description: 'CCI overbought with high liquidity — look for EMA cross short entry',
+    icon: 'Crosshair',
+    category: 'scalping',
+    assetClassRestriction: 'CRYPTO',
+    config: {
+      filters: [
+        { id: 'css-1', indicator: 'CCI', operator: 'BETWEEN', value: 50, valueMax: 150 },
+        { id: 'css-2', indicator: 'QUOTE_VOLUME_24H', operator: 'ABOVE', value: 100_000_000 },
+        { id: 'css-3', indicator: 'VOLUME_RATIO', operator: 'ABOVE', value: 0.5 },
+      ],
+      sortBy: 'quoteVolume24h',
+      sortDirection: 'desc',
+    },
+  },
+  {
     id: 'session-openers',
     name: 'Session Openers',
     description: 'Most active assets at session opens with significant price moves',

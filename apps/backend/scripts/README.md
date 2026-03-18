@@ -9,11 +9,59 @@ scripts/
 ├── backtest/          # Backtest optimization
 ├── data/              # Kline data management
 ├── trading/           # Position & order management
-├── audit/             # Trade fee auditing & reconciliation
+├── audit/             # Trade reconciliation & sync
 ├── maintenance/       # Database maintenance
 ├── debug/             # Debugging tools
 ├── sql/               # Raw SQL migrations
 └── ensure-docker.sh   # Docker container setup
+```
+
+## audit/
+
+The **startup-audit** is the single source of truth for reconciling the app state with Binance. It replaces all previous audit/fix/sync scripts.
+
+### startup-audit.ts
+
+Full audit and sync of positions, orders, fees, balance, and PnL events with Binance.
+
+```bash
+# Full audit (all checks)
+pnpm tsx scripts/audit/startup-audit.ts
+
+# Preview changes without writing
+pnpm tsx scripts/audit/startup-audit.ts --dry-run
+
+# Run specific checks only
+pnpm tsx scripts/audit/startup-audit.ts --only balance
+pnpm tsx scripts/audit/startup-audit.ts --only fees,pnl-events
+pnpm tsx scripts/audit/startup-audit.ts --only positions,protection
+
+# Audit a specific wallet
+pnpm tsx scripts/audit/startup-audit.ts --wallet-id <id>
+
+# Show help
+pnpm tsx scripts/audit/startup-audit.ts --help
+```
+
+Available checks:
+
+| Check | What it fixes | Binance API calls |
+|-------|--------------|-------------------|
+| `positions` | Orphaned DB positions, unknown Binance positions | 0 (uses initial fetch) |
+| `pending` | Stale pending entries, untracked LIMIT/algo orders | 0 (uses initial fetch) |
+| `protection` | Stale/missing SL/TP IDs, orphan algo orders | 0-N (cancel orphans) |
+| `fees` | Fee discrepancies on recent closed trades (last 3 days) | 1 per trade (max 10) |
+| `balance` | DB balance vs Binance wallet balance | 0 (uses initial fetch) |
+| `pnl-events` | Missing/incorrect realizedPnlEvents (last 7 days) | 0 (DB only) |
+
+Rate limiting: initial data fetched via `Promise.all` (5 requests), fees check uses 1.5s delay between API calls, respects IP ban detection.
+
+### apply-optimizations.ts
+
+Apply optimized backtest parameters to production strategy JSON files.
+
+```bash
+pnpm tsx scripts/audit/apply-optimizations.ts
 ```
 
 ## backtest/
@@ -23,69 +71,14 @@ Full-pipeline parameter optimization for trading strategies.
 | Script | Description |
 |--------|-------------|
 | `run-optimization.ts` | Production-parity 3-stage optimization (sensitivity sweep, cross-product, trailing stop) |
+| `rank-strategies.ts` | Rank all 105 strategies on BTC/ETH/SOL |
+| `rank-strategies-with-filters.ts` | Test each strategy against 6 filter presets |
 
 ```bash
-# Run the full optimization pipeline
 pnpm optimize:full
-
-# Or directly
 pnpm tsx scripts/backtest/run-optimization.ts
-
-# Quick validation mode (1 symbol, 2 TFs, no Stage 3)
 pnpm tsx scripts/backtest/run-optimization.ts --quick
 ```
-
-The optimization script runs 3 stages:
-1. **Stage 1** - Parameter sensitivity sweeps + filter sensitivity analysis
-   - Fibonacci targets, entry progress, R:R ratios (one-at-a-time sweeps)
-   - Filter toggle sweeps (8 filters ON vs OFF: stochastic recovery, stochastic, momentum timing,
-     BTC correlation, volume, direction, ADX, trend)
-   - Fibonacci swing range comparison (nearest vs extended)
-2. **Stage 2** - Cross-product of top parameters from Stage 1, using optimal filters from Stage 1
-3. **Stage 3** - Trailing stop optimization on top Stage 2 configs
-
-Features: progress resume, SIGINT/SIGTERM handling, ETA display, kline gap warnings, per-symbol stats,
-quick validation mode.
-
-### Quick mode (`--quick`)
-
-Runs a fast sanity check before committing to a full optimization:
-- 1 symbol (BTCUSDT) instead of 3
-- 2 timeframes (4h, 1d) instead of 7
-- Smaller parameter grids (3 values per dimension instead of 4-5)
-- Skips Stage 3 (trailing stop optimization)
-- Estimated runtime: ~5 minutes
-
-### Performance architecture
-
-Stage 2 uses `BacktestEngine.runBatch()` to avoid redundant work. Setup detection and indicator
-computation are the most expensive steps (~80% of runtime) and only depend on `{symbol, timeframe,
-maxFibonacciEntryProgressPercent}`. Parameters like `fibonacciTargetLevel*` and `minRiskRewardRatio*`
-only affect the trade execution loop (TP calculation, R:R filtering).
-
-`runBatch()` groups configs sharing the same `maxFibonacciEntryProgressPercent`, runs setup detection
-once per group, then iterates only the trade execution for each fib/RR variation. This reduces
-Stage 2 from days to hours.
-
-Key constants in the script:
-- `TOP_N` (default: 2) - Top parameter values selected from Stage 1 per dimension. Controls the
-  cross-product explosion in Stage 2 (TOP_N^5 combos). Increasing to 3 raises combos from 32 to 243.
-- `TIMEFRAMES` - 1h through 1d (7 timeframes). 30m and 15m were removed due to disproportionate
-  kline counts (17K+) and runtime.
-- `FILTER_GRID` - 8 boolean filters tested ON vs OFF in Stage 1. The best state for each filter
-  is carried forward into Stage 2 and Stage 3.
-
-### Kline cache behavior
-
-Klines are cached in memory per `{symbol, timeframe}` and reused across all stages. The cache is NOT
-cleared between stages to avoid redundant DB queries. Memory usage for 3 symbols × 7 TFs is ~50-100MB.
-
-Output saved to `/tmp/prod-parity-optimization-run/`:
-- `summary.txt` - Human-readable report with parameter and filter recommendations
-- `full-results.csv` - All backtest results (S1 + S2)
-- `trailing-stop-results.csv` - Stage 3 trailing stop results
-- `optimal-config.json` - Best config parameters, filter states, and swing range
-- `progress.json` - Resume checkpoint
 
 ## data/
 
@@ -112,52 +105,45 @@ pnpm tsx scripts/data/verify-recent-klines.ts
 
 Position sync, order management, and exchange operations.
 
+### Diagnostic & Reporting
+
 | Script | Description |
 |--------|-------------|
-| `sync-positions.ts` | Sync DB positions with exchange |
-| `sync-diagnostic.ts` | Diagnose sync discrepancies |
-| `diagnose-account.ts` | Full account diagnostic report |
-| `close-dust.ts` | Close dust positions |
-| `check-dust-order.ts` | Check for dust order issues |
-| `check-min-notional.ts` | Verify minimum notional requirements |
-| `fix-sync.ts` | Fix position sync issues |
-| `verify-protection-orders.ts` | Verify SL/TP orders are in place |
-| `cancel-all-algo-orders.mjs` | Cancel all algorithmic orders |
-| `cancel-old-orders.mjs` | Cancel stale orders |
-| `check-algo-orders.mjs` | Check algo order status |
+| `sync-diagnostic.ts` | Full diagnostic: compare DB vs Binance (positions, orders, balance) |
+| `diagnose-account.ts` | Account health check (wallets, leverage, margin) |
+| `find-ghost-trades.ts` | Find closed trades with anomalies (no exit price) |
+| `check-min-notional.ts` | Verify Binance MIN_NOTIONAL for symbols |
+| `check-algo-orders.mjs` | List algo orders for a symbol |
 | `check-algo-status.mjs` | Check algo execution status |
 | `check-all-algo-orders.mjs` | List all algo orders |
 | `check-all-orders.mjs` | List all open orders |
 | `check-fees.mjs` | Check current fee tier |
 | `check-positions.mjs` | List open positions |
-| `cleanup-orders.mjs` | Clean up orphaned orders |
-| `cleanup-duplicate-orders.mjs` | Remove duplicate orders |
-| `recreate-protection-orders.mjs` | Recreate SL/TP protection orders |
-| `recreate-sl-tp.mjs` | Recreate stop-loss and take-profit |
-| `fix-tp-orders.mjs` | Fix take-profit order issues |
-| `recalc-fibonacci-tp.mjs` | Recalculate Fibonacci take-profit levels |
-| `update-sl-tp-fibonacci.mjs` | Update SL/TP with Fibonacci levels |
 
-```bash
-pnpm tsx scripts/trading/sync-positions.ts
-pnpm tsx scripts/trading/diagnose-account.ts
-node scripts/trading/check-positions.mjs
-```
-
-## audit/
-
-Trade fee auditing, order reconciliation, and optimization application.
+### Sync & Fix
 
 | Script | Description |
 |--------|-------------|
-| `fix-trade-fees.ts` | Correct trade fee records |
-| `audit-trade-fees.ts` | Audit trade fees against exchange |
-| `audit-binance-orders.ts` | Reconcile orders with Binance |
-| `apply-optimizations.ts` | Apply optimized parameters to production config |
+| `sync-positions.ts` | Sync DB positions with exchange state |
+| `fix-sync.ts` | Fix ghost positions, stale orders, balance (`--fix` flag) |
+| `fix-missing-tp.ts` | Recreate missing TP algo orders |
+| `align-protection-orders.ts` | Realign SL/TP orders with DB state (`--dry-run`) |
+
+### Emergency Operations
+
+| Script | Description |
+|--------|-------------|
+| `cancel-all-orders.ts` | Cancel all open orders for symbols with positions |
+| `cancel-orphan-orders.ts` | Cancel orders for symbols with no open execution |
+| `close-all-positions.ts` | Market close all open FUTURES positions |
+| `cancel-all-algo-orders.mjs` | Cancel all algo orders |
+| `cancel-old-orders.mjs` | Cancel orders older than N hours |
 
 ```bash
-pnpm tsx scripts/audit/audit-trade-fees.ts
-pnpm tsx scripts/audit/apply-optimizations.ts
+pnpm tsx scripts/trading/sync-diagnostic.ts
+pnpm tsx scripts/trading/diagnose-account.ts
+pnpm tsx scripts/trading/fix-sync.ts --fix
+node scripts/trading/check-positions.mjs
 ```
 
 ## maintenance/
@@ -182,12 +168,8 @@ Debugging and investigation tools.
 
 | Script | Description |
 |--------|-------------|
-| `debug-fibonacci.mjs` | Debug Fibonacci level calculations |
-| `debug-orders.mjs` | Debug order execution flow |
-
-```bash
-node scripts/debug/debug-fibonacci.mjs
-```
+| `dump-scalping-config.ts` | Print all scalping configs as JSON |
+| `check-open-positions.ts` | List all open/pending executions with full state |
 
 ## sql/
 
@@ -198,13 +180,7 @@ Raw SQL scripts for one-off migrations.
 | `backfill-fees.sql` | Backfill missing fee records |
 | `migrate-auto-trading.sql` | Auto-trading tables migration |
 
-```bash
-psql -U postgres -d marketmind -f scripts/sql/migrate-auto-trading.sql
-```
-
 ## CLI Commands (via package.json)
-
-These commands use the CLI interface in `src/cli/`:
 
 | Command | Description |
 |---------|-------------|

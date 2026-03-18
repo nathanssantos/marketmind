@@ -297,6 +297,7 @@
       "bottomPadding": "Relleno Inferior",
       "leftPadding": "Relleno Izquierdo",
       "rightPadding": "Relleno Derecho",
+      "colorPalette": "Paleta de Colores",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Habilitar Entrada de Órdenes con Shift/Alt",
       "enableShiftAltOrderEntryHelper": "Mantén Shift para previsualizar órdenes long o Alt/Option para previsualizar órdenes short al hacer clic en el gráfico",
@@ -928,10 +929,13 @@
       "opened": "Apertura",
       "stopProtected": "Protegido por Stop",
       "stopProtectedOfExposure": "de exposición",
+      "stopProtectedOfMargin": "del margen",
       "stopProtectedOfBalance": "del saldo",
       "tpProjected": "Proyectado por TP",
       "tpProjectedOfExposure": "de exposición",
+      "tpProjectedOfMargin": "del margen",
       "tpProjectedOfBalance": "del saldo",
+      "margin": "Margen",
       "source": "Origen",
       "manual": "Manual",
       "entriesCount": "{{count}}x",
@@ -1780,7 +1784,10 @@
         "volume-spike": "Pico de Volumen",
         "breakout-candidates": "Candidatos a Ruptura",
         "mean-reversion": "Reversión a la Media",
-        "high-volatility": "Alta Volatilidad"
+        "high-volatility": "Alta Volatilidad",
+        "best-for-scalping": "Mejores para Scalping",
+        "cci-scalping-long": "CCI Scalping Long",
+        "cci-scalping-short": "CCI Scalping Short"
       },
       "descriptions": {
         "top-gainers": "Mayores ganancias de precio en las últimas 24h",
@@ -1792,7 +1799,10 @@
         "volume-spike": "Actividad de volumen inusual por encima de 2x el promedio",
         "breakout-candidates": "Bandas de Bollinger estrechas con volumen creciente",
         "mean-reversion": "Lecturas extremas de RSI para posibles reversiones",
-        "high-volatility": "Alto ATR% con volumen y tendencia fuertes"
+        "high-volatility": "Alto ATR% con volumen y tendencia fuertes",
+        "best-for-scalping": "Alta liquidez, volatilidad moderada — ideal para scalping",
+        "cci-scalping-long": "CCI sobrevendido con alta liquidez — buscar entrada long por cruce EMA",
+        "cci-scalping-short": "CCI sobrecomprado con alta liquidez — buscar entrada short por cruce EMA"
       }
     },
     "filters": {
@@ -1879,6 +1889,7 @@
       "volume": "Volumen",
       "volatility": "Volatilidad",
       "mean_reversion": "Reversión a la Media",
+      "scalping": "Scalping",
       "market_data": "Datos de Mercado"
     },
     "backfillTopSymbols": "Precargar Top {{max}}",
@@ -1896,8 +1907,8 @@
     }
   },
   "scalping": {
-    "config": { "title": "Configuración de Scalping", "strategies": "Estrategias", "execution": "Ejecución", "risk": "Gestión de Riesgo", "symbols": "Símbolos", "chart": "Gráfico", "noSymbols": "Ningún símbolo configurado" },
-    "strategy": { "imbalance": "Desequilibrio", "cvd-divergence": "Divergencia CVD", "mean-reversion": "Reversión a la Media", "momentum-burst": "Explosión de Momento", "absorption-reversal": "Reversión por Absorción" },
+    "config": { "title": "Configuración de Scalping", "strategies": "Estrategias", "execution": "Ejecución", "risk": "Gestión de Riesgo", "symbols": "Símbolos", "chart": "Gráfico", "noSymbols": "Ningún símbolo configurado", "signalInterval": "Intervalo de Señal" },
+    "strategy": { "imbalance": "Desequilibrio", "cvd-divergence": "Divergencia CVD", "mean-reversion": "Reversión a la Media", "momentum-burst": "Explosión de Momento", "absorption-reversal": "Reversión por Absorción", "ema-cross": "Cruce EMA" },
     "dashboard": { "title": "Scalping" },
     "status": { "running": "Ejecutando", "stopped": "Detenido" },
     "metric": { "sessionPnl": "P&L Sesión", "trades": "Trades", "winRate": "Tasa de Acierto", "orderFlow": "Flujo de Órdenes", "imbalance": "Desequilibrio", "spread": "Spread", "absorption": "Absorción", "domLadder": "Libro de Órdenes" },

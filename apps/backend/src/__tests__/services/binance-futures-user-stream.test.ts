@@ -75,6 +75,7 @@ vi.mock('../../services/binance-futures-client', () => ({
   getAllTradeFeesForPosition: vi.fn().mockResolvedValue(null),
   getPosition: (...args: unknown[]) => mockGetPosition(...args),
   closePosition: vi.fn().mockResolvedValue(undefined),
+  cancelAllSymbolOrders: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockCancelAllProtectionOrders = vi.fn().mockResolvedValue(undefined);
@@ -109,6 +110,7 @@ const mockEmitRiskAlert = vi.fn();
 const mockEmitWalletUpdate = vi.fn();
 const mockEmitPositionUpdate = vi.fn();
 const mockEmitOrderUpdate = vi.fn();
+const mockEmitPositionClosed = vi.fn();
 
 vi.mock('../../services/websocket', () => ({
   getWebSocketService: vi.fn(() => ({
@@ -116,6 +118,13 @@ vi.mock('../../services/websocket', () => ({
     emitWalletUpdate: mockEmitWalletUpdate,
     emitPositionUpdate: mockEmitPositionUpdate,
     emitOrderUpdate: mockEmitOrderUpdate,
+    emitPositionClosed: mockEmitPositionClosed,
+  })),
+}));
+
+vi.mock('../../services/scalping/position-event-bus', () => ({
+  getPositionEventBus: vi.fn(() => ({
+    emitPositionClosed: vi.fn(),
   })),
 }));
 

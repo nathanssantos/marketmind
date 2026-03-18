@@ -204,6 +204,13 @@ export class BinanceDepthStreamService {
       book.lastSnapshotTime = Date.now();
       logger.trace({ symbol, bids: book.bids.size, asks: book.asks.size }, 'Depth snapshot loaded');
     } catch (error) {
+      const errStr = JSON.stringify(error);
+      if (errStr.includes('Invalid symbol') || (error && typeof error === 'object' && 'code' in error && (error as Record<string, unknown>)['code'] === -1121)) {
+        logger.warn({ symbol }, 'Invalid symbol for depth, unsubscribing');
+        this.subscribedSymbols.delete(symbol);
+        this.books.delete(symbol);
+        return;
+      }
       logger.error({ error: serializeError(error), symbol }, 'Failed to fetch depth snapshot');
     }
   }

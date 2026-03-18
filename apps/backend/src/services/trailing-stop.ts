@@ -8,6 +8,7 @@ import { autoTradingConfig, klines, priceCache, setupDetections, symbolTrailingS
 import { serializeError } from '../utils/errors';
 import { formatPrice } from '../utils/formatters';
 import { logger } from './logger';
+import { BinanceIpBannedError } from './binance-api-cache';
 import { updateStopLossOrder } from './protection-orders';
 import {
     calculateProfitPercent,
@@ -513,10 +514,51 @@ export class TrailingStopService {
               : walletConfig?.trailingActivationModeShort ?? 'auto');
 
         if (activationMode === 'manual') {
-          const manualFlag = execution.side === 'LONG'
+          const isLong = execution.side === 'LONG';
+          const manualFlag = isLong
             ? (symbolOverride?.manualTrailingActivatedLong ?? false)
             : (symbolOverride?.manualTrailingActivatedShort ?? false);
-          if (!manualFlag) continue;
+
+          if (!manualFlag) {
+            const activationPercent = isLong
+              ? (symbolOverride?.trailingActivationPercentLong ? parseFloat(symbolOverride.trailingActivationPercentLong) : null)
+              : (symbolOverride?.trailingActivationPercentShort ? parseFloat(symbolOverride.trailingActivationPercentShort) : null);
+
+            if (activationPercent && activationPercent > 0 && symbolOverride) {
+              const entryPrice = parseFloat(execution.entryPrice);
+              const activationPrice = entryPrice * activationPercent;
+              const crossed = isLong ? currentPrice >= activationPrice : currentPrice <= activationPrice;
+
+              if (crossed) {
+                const flagField = isLong ? 'manualTrailingActivatedLong' : 'manualTrailingActivatedShort';
+                await db.update(symbolTrailingStopOverrides)
+                  .set({ [flagField]: true, updatedAt: new Date() })
+                  .where(eq(symbolTrailingStopOverrides.id, symbolOverride.id));
+
+                logger.info({
+                  symbol,
+                  side: execution.side,
+                  activationPrice,
+                  currentPrice,
+                  activationPercent,
+                }, 'Trailing stop auto-activated: price crossed activation line');
+
+                const wsService = getWebSocketService();
+                wsService?.emitRiskAlert(execution.walletId, {
+                  type: 'TRAILING_ACTIVATED',
+                  level: 'info',
+                  symbol,
+                  message: `Trailing stop ${execution.side} activated for ${symbol} — price crossed ${formatPrice(activationPrice)}`,
+                  data: { side: execution.side, activationPrice, currentPrice },
+                  timestamp: Date.now(),
+                });
+              } else {
+                continue;
+              }
+            } else {
+              continue;
+            }
+          }
         }
 
         let fibonacciProjection: FibonacciProjectionData | null = null;
@@ -726,6 +768,7 @@ export class TrailingStopService {
           logger.info({ algoId: newAlgoId, executionId: execution.id }, '[TrailingStop] SL order updated via protection-orders service');
         }
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw error;
         logger.error({ error: serializeError(error), executionId: execution.id }, '[TrailingStop] Failed to update SL order on Binance');
       }
     }

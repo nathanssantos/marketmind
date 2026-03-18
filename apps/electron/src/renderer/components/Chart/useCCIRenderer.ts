@@ -52,8 +52,8 @@ export const useCCIRenderer = ({
       return panelY + panelHeight - normalizedValue * panelHeight;
     };
 
-    const oversoldY = valueToY(-100);
-    const overboughtY = valueToY(100);
+    const oversoldY = valueToY(-150);
+    const overboughtY = valueToY(150);
     const zeroY = valueToY(0);
 
     drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: overboughtY, bottomY: oversoldY });

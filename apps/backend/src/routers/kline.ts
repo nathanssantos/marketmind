@@ -95,8 +95,8 @@ export const klineRouter = router({
         symbol: z.string(),
         interval: intervalSchema,
         marketType: marketTypeSchema,
-        startTime: z.date().optional(),
-        endTime: z.date().optional(),
+        startTime: z.coerce.date().optional(),
+        endTime: z.coerce.date().optional(),
         limit: z.number().min(1).max(50_000).default(CHART_INITIAL_KLINES),
       })
     )

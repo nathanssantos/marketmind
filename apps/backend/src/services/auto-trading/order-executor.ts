@@ -1,6 +1,6 @@
 import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
 import type { FibLevel, Kline, StrategyDefinition, TimeInterval, TradingSetup } from '@marketmind/types';
-import { FILTER_THRESHOLDS, getDefaultFee } from '@marketmind/types';
+import { FILTER_THRESHOLDS, getDefaultFee, calculateLiquidationPrice } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
   BACKTEST_DEFAULTS,
@@ -130,6 +130,12 @@ export class OrderExecutor {
           inArray(tradeExecutions.status, ['open', 'pending'])
         )
       );
+
+    const manualPosition = activePositions.find(
+      (pos) => pos.symbol === watcher.symbol && !pos.setupType
+    );
+    if (manualPosition) return false;
+
     const oppositePosition = activePositions.find(
       (pos) => pos.symbol === watcher.symbol && pos.side !== setup.direction
     );
@@ -178,6 +184,11 @@ export class OrderExecutor {
     this.executingSetups.add(executionLockKey);
 
     try {
+      const { getScalpingScheduler } = await import('../scalping/scalping-scheduler');
+      if (getScalpingScheduler().isSymbolBeingScalped(watcher.walletId, watcher.symbol)) {
+        logBuffer.log('~', 'Skipping: symbol is being scalped', { symbol: watcher.symbol });
+        return;
+      }
       await this.executeSetupInternal(watcher, setup, strategies, cycleKlines, logBuffer);
     } finally {
       this.executingSetups.delete(executionLockKey);
@@ -537,6 +548,27 @@ export class OrderExecutor {
         return;
       }
       logBuffer.addValidationCheck({ name: 'Position Conflict', passed: true, reason: 'No conflict' });
+
+      const manualPosition = openPositions.find(
+        (pos) => pos.symbol === watcher.symbol && !pos.setupType
+      );
+      if (manualPosition) {
+        logBuffer.addValidationCheck({
+          name: 'Manual Position Guard',
+          passed: false,
+          value: manualPosition.side,
+          reason: 'Manual position exists on symbol',
+        });
+        logBuffer.addRejection({
+          setupType: setup.type,
+          direction: setup.direction,
+          reason: 'Manual position exists on symbol',
+          details: { manualPositionSide: manualPosition.side },
+        });
+        logBuffer.completeSetupValidation('blocked', 'Manual position exists on symbol');
+        return;
+      }
+      logBuffer.addValidationCheck({ name: 'Manual Position Guard', passed: true, reason: 'No manual position' });
 
       const sameDirectionPositions = openPositions.filter(
         (pos) => pos.symbol === watcher.symbol && pos.side === setup.direction
@@ -994,6 +1026,12 @@ export class OrderExecutor {
     try {
       const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
       const openedAtDate = new Date();
+      const leverage = config.leverage ?? 1;
+      const isFutures = watcher.marketType === 'FUTURES';
+      const liqPrice = isFutures && leverage > 1
+        ? calculateLiquidationPrice(actualEntryPrice, leverage, setup.direction).toString()
+        : undefined;
+
       await db.insert(tradeExecutions).values({
         id: executionId,
         userId: watcher.userId,
@@ -1019,7 +1057,7 @@ export class OrderExecutor {
         status: 'open',
         entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
         marketType: watcher.marketType,
-        leverage: config.leverage ?? 1,
+        leverage,
         entryInterval: watcher.interval,
         originalStopLoss: setup.stopLoss?.toString(),
         highestPriceSinceEntry: actualEntryPrice.toString(),
@@ -1029,6 +1067,7 @@ export class OrderExecutor {
         triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
         triggerIndicatorValues: setup.triggerIndicatorValues ? JSON.stringify(setup.triggerIndicatorValues) : null,
         fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
+        liquidationPrice: liqPrice,
       });
 
       const isPyramid = sameDirectionPositions.length > 0;
@@ -1040,6 +1079,7 @@ export class OrderExecutor {
         let newTotalQty = oldQty + actualQuantity;
         let newAvgPrice = ((oldQty * oldPrice) + (actualQuantity * actualEntryPrice)) / newTotalQty;
 
+        let pyramidLiqPrice: string | undefined;
         try {
           const rawClient = createBinanceFuturesClient(wallet);
           const exchangePos = await getPosition(rawClient, watcher.symbol);
@@ -1050,6 +1090,8 @@ export class OrderExecutor {
               newTotalQty = exchQty;
               newAvgPrice = exchPrice;
             }
+            const lp = parseFloat(exchangePos.liquidationPrice || '0');
+            if (lp > 0) pyramidLiqPrice = lp.toString();
           }
         } catch (_e) {
           logger.warn({ symbol: watcher.symbol }, '[OrderExecutor] Failed to sync position from exchange after pyramid');
@@ -1058,6 +1100,7 @@ export class OrderExecutor {
         await db.update(tradeExecutions).set({
           entryPrice: newAvgPrice.toString(),
           quantity: newTotalQty.toString(),
+          liquidationPrice: pyramidLiqPrice ?? primaryExecution.liquidationPrice,
           updatedAt: new Date(),
         }).where(eq(tradeExecutions.id, primaryExecution.id));
 
@@ -1265,7 +1308,6 @@ export class OrderExecutor {
     if (watcher.marketType === 'FUTURES') {
       try {
         const configLeverage = config.leverage ?? 1;
-        const configMarginType = config.marginType ?? 'CROSSED';
 
         await autoTradingService.setFuturesLeverage(
           wallet,
@@ -1276,13 +1318,13 @@ export class OrderExecutor {
         await autoTradingService.setFuturesMarginType(
           wallet,
           watcher.symbol,
-          configMarginType
+          'CROSSED'
         );
 
         log('> Futures leverage/margin configured', {
           symbol: watcher.symbol,
           leverage: configLeverage,
-          marginType: configMarginType,
+          marginType: 'CROSSED',
         });
       } catch (leverageError) {
         const errorMsg = serializeError(leverageError);

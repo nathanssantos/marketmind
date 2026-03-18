@@ -1,6 +1,6 @@
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
-import { autoTradingConfig, orders, tradeExecutions, wallets } from '../db/schema';
+import { autoTradingConfig, orders, realizedPnlEvents, tradeExecutions, wallets } from '../db/schema';
 import { calculateTotalFees } from '@marketmind/types';
 import type { FuturesOrder } from '@marketmind/types';
 import { binanceApiCache } from './binance-api-cache';
@@ -30,6 +30,8 @@ const FEES_DELTA_THRESHOLD = 0.01;
 const BALANCE_DELTA_THRESHOLD = 1.0;
 const FEES_AUDIT_CAP = 10;
 const FEES_AUDIT_DAYS = 3;
+const PNL_EVENTS_AUDIT_DAYS = 7;
+const PNL_DELTA_THRESHOLD = 0.005;
 const FEES_RATE_LIMIT_MS = 1500;
 const PENDING_GRACE_PERIOD_MS = 5 * 60 * 1000;
 
@@ -58,7 +60,8 @@ function findProtectionOrders(
 
 async function auditWallet(
   wallet: (typeof wallets.$inferSelect),
-  dryRun: boolean
+  dryRun: boolean,
+  enabledChecks: Set<AuditCheck>
 ): Promise<AuditSummary> {
   const start = Date.now();
   const summary: AuditSummary = {
@@ -114,7 +117,7 @@ async function auditWallet(
     }
 
     // === Check 1 — Open Positions Reconciliation ===
-    for (const dbExec of dbOpenExecutions) {
+    if (enabledChecks.has('positions')) for (const dbExec of dbOpenExecutions) {
       const exchangePos = exchangePositionsBySymbol.get(dbExec.symbol);
 
       if (!exchangePos) {
@@ -204,7 +207,7 @@ async function auditWallet(
     }
 
     // Fix B — Unknown positions (Binance has, DB does not)
-    for (const [symbol, position] of exchangePositionsBySymbol) {
+    if (enabledChecks.has('positions')) for (const [symbol, position] of exchangePositionsBySymbol) {
       const positionAmt = parseFloat(String(position.positionAmt));
       const entryPrice = parseFloat(String(position.entryPrice));
       const side: 'LONG' | 'SHORT' = positionAmt > 0 ? 'LONG' : 'SHORT';
@@ -256,7 +259,7 @@ async function auditWallet(
 
     // === Check 2A — DB pending execution whose entry order no longer exists on Binance ===
     const now = Date.now();
-    for (const dbPending of dbPendingExecutions) {
+    if (enabledChecks.has('pending')) for (const dbPending of dbPendingExecutions) {
       const entryOrderId = dbPending.entryOrderId;
       if (!entryOrderId) continue;
 
@@ -290,7 +293,7 @@ async function auditWallet(
       (o) => !o.reduceOnly && !o.closePosition && o.type === 'LIMIT'
     );
 
-    for (const openOrder of entryLimitOrders) {
+    if (enabledChecks.has('pending')) for (const openOrder of entryLimitOrders) {
       if (pendingEntryOrderIds.has(openOrder.orderId)) continue;
 
       // Verify no pending execution already exists by entryOrderId
@@ -377,7 +380,7 @@ async function auditWallet(
         !linkedAlgoIds.has(o.algoId)
     );
 
-    for (const algoOrder of algoEntryOrders) {
+    if (enabledChecks.has('pending')) for (const algoOrder of algoEntryOrders) {
       if (pendingAlgoEntryIds.has(algoOrder.algoId)) continue;
 
       const [existingPending] = await db
@@ -449,7 +452,7 @@ async function auditWallet(
     }
 
     // === Check 3A — Stale protection order IDs (in DB but no longer on Binance) ===
-    for (const dbExec of dbOpenExecutions) {
+    if (enabledChecks.has('protection')) for (const dbExec of dbOpenExecutions) {
       let hasStaleIds = false;
       const protectionUpdates: {
         stopLossAlgoId?: null;
@@ -518,7 +521,7 @@ async function auditWallet(
         !e.takeProfitOrderId
     );
 
-    for (const dbExec of executionsWithNoProtection) {
+    if (enabledChecks.has('protection')) for (const dbExec of executionsWithNoProtection) {
       const { slAlgoId, tpAlgoId } = findProtectionOrders(dbExec.symbol, openAlgoOrders);
       const slToLink = slAlgoId && openAlgoOrderIds.has(slAlgoId) && !linkedAlgoIds.has(slAlgoId) ? slAlgoId : null;
       const tpToLink = tpAlgoId && openAlgoOrderIds.has(tpAlgoId) && !linkedAlgoIds.has(tpAlgoId) ? tpAlgoId : null;
@@ -557,7 +560,7 @@ async function auditWallet(
       .where(eq(autoTradingConfig.walletId, wallet.id))
       .limit(1);
 
-    if (walletConfig?.autoCancelOrphans) {
+    if (enabledChecks.has('protection') && walletConfig?.autoCancelOrphans) {
       const openSymbols = new Set(dbOpenExecutions.map((e) => e.symbol));
 
       for (const algoOrder of openAlgoOrders) {
@@ -584,6 +587,7 @@ async function auditWallet(
     }
 
     // === Check 4 — Recent Fees Correctness (last 7 days) ===
+    if (enabledChecks.has('fees')) {
     const sevenDaysAgo = new Date(Date.now() - FEES_AUDIT_DAYS * 24 * 60 * 60 * 1000);
     const recentClosed = await db
       .select()
@@ -679,20 +683,139 @@ async function auditWallet(
 
       summary.fixed++;
     }
+    }
 
-    // === Check 5 — Wallet Balance Comparison (warn only) ===
+    // === Check 5 — Wallet Balance Sync ===
+    if (enabledChecks.has('balance')) {
     const dbBalance = parseFloat(wallet.currentBalance || '0');
+    const exchangeTotalWalletBalance = parseFloat(accountInfo.totalWalletBalance);
     const exchangeAvailableBalance = parseFloat(accountInfo.availableBalance);
-    const balanceDelta = Math.abs(dbBalance - exchangeAvailableBalance);
+    const hasOpenPositions = dbOpenExecutions.length > 0;
+    const exchangeBalance = hasOpenPositions ? exchangeTotalWalletBalance : exchangeAvailableBalance;
+    const balanceDelta = Math.abs(dbBalance - exchangeBalance);
 
     if (balanceDelta > BALANCE_DELTA_THRESHOLD) {
-      const warning = `Balance discrepancy: DB=${dbBalance.toFixed(4)} Binance=${exchangeAvailableBalance.toFixed(4)} delta=${balanceDelta.toFixed(4)}`;
-      summary.warnings.push(warning);
-      logger.warn(
-        { walletId: wallet.id, dbBalance, exchangeAvailableBalance, balanceDelta },
-        `[startup-audit] ${warning}`
+      logger.info(
+        { walletId: wallet.id, dbBalance, exchangeBalance, exchangeTotalWalletBalance, exchangeAvailableBalance, balanceDelta, hasOpenPositions },
+        '[startup-audit] Balance discrepancy detected — syncing to exchange value'
+      );
+
+      if (!dryRun) {
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: exchangeBalance.toString(),
+            totalWalletBalance: exchangeTotalWalletBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, wallet.id));
+        wallet.currentBalance = exchangeBalance.toString();
+      }
+
+      summary.fixed++;
+      logger.info(
+        { walletId: wallet.id, oldBalance: dbBalance.toFixed(4), newBalance: exchangeBalance.toFixed(4), delta: balanceDelta.toFixed(4), dryRun },
+        '[startup-audit] Balance synced'
       );
     }
+    }
+
+    // === Check 6 — Reconcile realizedPnlEvents with tradeExecutions ===
+    if (enabledChecks.has('pnl-events')) {
+    const pnlAuditStart = new Date(Date.now() - PNL_EVENTS_AUDIT_DAYS * 24 * 60 * 60 * 1000);
+    const recentClosedForPnl = await db
+      .select()
+      .from(tradeExecutions)
+      .where(
+        and(
+          eq(tradeExecutions.walletId, wallet.id),
+          eq(tradeExecutions.status, 'closed'),
+          gte(tradeExecutions.closedAt, pnlAuditStart)
+        )
+      );
+
+    const allPnlEvents = await db
+      .select()
+      .from(realizedPnlEvents)
+      .where(
+        and(
+          eq(realizedPnlEvents.walletId, wallet.id),
+          gte(realizedPnlEvents.createdAt, pnlAuditStart)
+        )
+      );
+
+    const eventsByExecId = new Map<string, typeof allPnlEvents>();
+    for (const evt of allPnlEvents) {
+      const list = eventsByExecId.get(evt.executionId) ?? [];
+      list.push(evt);
+      eventsByExecId.set(evt.executionId, list);
+    }
+
+    for (const exec of recentClosedForPnl) {
+      const execPnl = parseFloat(exec.pnl || '0');
+      const execFees = parseFloat(exec.fees || '0');
+      const events = eventsByExecId.get(exec.id) ?? [];
+      const eventPnlSum = events.reduce((s, e) => s + parseFloat(e.pnl || '0'), 0);
+
+      if (events.length === 0) {
+        logger.info(
+          { walletId: wallet.id, executionId: exec.id, symbol: exec.symbol, pnl: execPnl },
+          '[startup-audit] Missing realizedPnlEvent — creating'
+        );
+
+        if (!dryRun) {
+          await db.insert(realizedPnlEvents).values({
+            walletId: exec.walletId,
+            userId: exec.userId,
+            executionId: exec.id,
+            symbol: exec.symbol,
+            eventType: 'full_close',
+            pnl: execPnl.toString(),
+            fees: execFees.toString(),
+            quantity: exec.quantity,
+            price: exec.exitPrice || '0',
+            createdAt: exec.closedAt || new Date(),
+          });
+        }
+
+        summary.fixed++;
+        continue;
+      }
+
+      const delta = Math.abs(execPnl - eventPnlSum);
+      if (delta <= PNL_DELTA_THRESHOLD) continue;
+
+      const fullCloseEvent = events.find((e) => e.eventType === 'full_close');
+      if (!fullCloseEvent) continue;
+
+      const partialSum = events
+        .filter((e) => e.eventType === 'partial_close')
+        .reduce((s, e) => s + parseFloat(e.pnl || '0'), 0);
+      const correctFullClosePnl = execPnl - partialSum;
+
+      logger.info(
+        {
+          walletId: wallet.id,
+          executionId: exec.id,
+          symbol: exec.symbol,
+          oldEventPnl: parseFloat(fullCloseEvent.pnl || '0'),
+          correctPnl: correctFullClosePnl,
+          delta,
+        },
+        '[startup-audit] Correcting realizedPnlEvent PnL'
+      );
+
+      if (!dryRun) {
+        await db
+          .update(realizedPnlEvents)
+          .set({ pnl: correctFullClosePnl.toString(), fees: execFees.toString() })
+          .where(eq(realizedPnlEvents.id, fullCloseEvent.id));
+      }
+
+      summary.fixed++;
+    }
+    }
+
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     summary.errors.push(msg);
@@ -703,9 +826,14 @@ async function auditWallet(
   return summary;
 }
 
+export type AuditCheck = 'positions' | 'pending' | 'protection' | 'fees' | 'balance' | 'pnl-events';
+
+export const ALL_AUDIT_CHECKS: AuditCheck[] = ['positions', 'pending', 'protection', 'fees', 'balance', 'pnl-events'];
+
 export async function runStartupAudit(options?: {
   dryRun?: boolean;
   walletId?: string;
+  checks?: AuditCheck[];
 }): Promise<AuditSummary[]> {
   const dryRun = options?.dryRun ?? false;
   const filterWalletId = options?.walletId;
@@ -731,8 +859,10 @@ export async function runStartupAudit(options?: {
   let totalFixed = 0;
   let totalWarnings = 0;
 
+  const enabledChecks = new Set(options?.checks ?? ALL_AUDIT_CHECKS);
+
   for (const wallet of targetWallets) {
-    const summary = await auditWallet(wallet, dryRun);
+    const summary = await auditWallet(wallet, dryRun, enabledChecks);
     summaries.push(summary);
     totalFixed += summary.fixed;
     totalWarnings += summary.warnings.length;

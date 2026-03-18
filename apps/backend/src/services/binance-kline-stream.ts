@@ -448,9 +448,12 @@ export class BinanceKlineStreamService {
 
 export const binanceKlineStreamService = new BinanceKlineStreamService();
 
+type KlineCloseHandler = (update: KlineUpdate) => void;
+
 export class BinanceFuturesKlineStreamService {
   private client: WebsocketClient | null = null;
   private subscriptions: Map<string, KlineStreamSubscription> = new Map();
+  private klineCloseHandlers: KlineCloseHandler[] = [];
 
   start(): void {
     if (this.client) {
@@ -486,6 +489,15 @@ export class BinanceFuturesKlineStreamService {
       this.client = null;
       this.subscriptions.clear();
     }
+    this.klineCloseHandlers = [];
+  }
+
+  onKlineClose(handler: KlineCloseHandler): () => void {
+    this.klineCloseHandlers.push(handler);
+    return () => {
+      const idx = this.klineCloseHandlers.indexOf(handler);
+      if (idx >= 0) this.klineCloseHandlers.splice(idx, 1);
+    };
   }
 
   subscribe(symbol: string, interval: string): void {
@@ -599,6 +611,13 @@ export class BinanceFuturesKlineStreamService {
       }
 
       if (update.isClosed) {
+        for (const handler of this.klineCloseHandlers) {
+          try {
+            handler(update);
+          } catch (err) {
+            logger.warn({ error: err }, 'Kline close handler error');
+          }
+        }
         await this.persistKline(update);
       }
     } catch (error) {

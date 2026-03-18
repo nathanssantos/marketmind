@@ -39,6 +39,8 @@ const scalpingConfigSchema = z.object({
   circuitBreakerEnabled: z.boolean().optional(),
   circuitBreakerLossPercent: z.number().min(0.1).max(100).optional(),
   circuitBreakerMaxTrades: z.number().int().min(1).max(1000).optional(),
+  signalInterval: z.enum(['1m', '3m', '5m', '15m']).optional(),
+  directionMode: z.enum(['auto', 'long_only', 'short_only']).optional(),
 });
 
 export const scalpingRouter = router({
@@ -97,6 +99,8 @@ export const scalpingRouter = router({
         ...(input.circuitBreakerEnabled !== undefined && { circuitBreakerEnabled: input.circuitBreakerEnabled }),
         ...(input.circuitBreakerLossPercent !== undefined && { circuitBreakerLossPercent: String(input.circuitBreakerLossPercent) }),
         ...(input.circuitBreakerMaxTrades !== undefined && { circuitBreakerMaxTrades: input.circuitBreakerMaxTrades }),
+        ...(input.signalInterval && { signalInterval: input.signalInterval }),
+        ...(input.directionMode && { directionMode: input.directionMode }),
         updatedAt: new Date(),
       };
 
@@ -133,7 +137,7 @@ export const scalpingRouter = router({
     .mutation(async ({ ctx, input }) => {
       await verifyWalletOwnership(input.walletId, ctx.user.id);
       const scheduler = getScalpingScheduler();
-      scheduler.stopScalping(input.walletId);
+      await scheduler.stopScalping(input.walletId);
       return { success: true };
     }),
 

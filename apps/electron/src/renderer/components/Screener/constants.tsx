@@ -15,6 +15,7 @@ import {
   LuZap,
   LuArrowDownLeft,
   LuArrowUpLeft,
+  LuCrosshair,
 } from 'react-icons/lu';
 
 export const SCANNER_ICON_MAP: Record<string, React.ReactNode> = {
@@ -32,6 +33,7 @@ export const SCANNER_ICON_MAP: Record<string, React.ReactNode> = {
   ArrowDownRight: <LuArrowDownRight />,
   MoveRight: <LuMoveRight />,
   Clock: <LuClock />,
+  Crosshair: <LuCrosshair />,
 };
 
 export const SCANNER_TIMEFRAME_OPTIONS: { value: TimeInterval; label: string }[] = [
@@ -51,5 +53,6 @@ export const SCANNER_CATEGORY_ORDER: ScreenerPresetCategory[] = [
   'volume',
   'volatility',
   'mean_reversion',
+  'scalping',
   'market_data',
 ];

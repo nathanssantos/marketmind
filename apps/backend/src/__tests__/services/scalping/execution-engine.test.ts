@@ -1,6 +1,7 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { ExecutionEngine, type ExecutionEngineConfig } from '../../../services/scalping/execution-engine';
 import { SignalEngine, type SignalEngineConfig } from '../../../services/scalping/signal-engine';
+import { BinanceIpBannedError } from '../../../services/binance-api-cache';
 import type { ScalpingSignal } from '@marketmind/types';
 
 vi.mock('../../../services/logger', () => ({
@@ -18,9 +19,14 @@ const mockExecuteBinanceOrder = vi.fn().mockResolvedValue({
   status: 'FILLED',
 });
 
+const mockSetFuturesLeverage = vi.fn().mockResolvedValue(undefined);
+const mockSetFuturesMarginType = vi.fn().mockResolvedValue(undefined);
+
 vi.mock('../../../services/auto-trading', () => ({
   autoTradingService: {
     executeBinanceOrder: (...args: unknown[]) => mockExecuteBinanceOrder(...args),
+    setFuturesLeverage: (...args: unknown[]) => mockSetFuturesLeverage(...args),
+    setFuturesMarginType: (...args: unknown[]) => mockSetFuturesMarginType(...args),
   },
 }));
 
@@ -54,11 +60,11 @@ vi.mock('../../../services/min-notional-filter', () => ({
   }),
 }));
 
-const mockGetAccountInfo = vi.fn().mockResolvedValue({ availableBalance: '10000' });
+const mockGetPosition = vi.fn().mockResolvedValue({ symbol: 'BTCUSDT', leverage: 10 });
 
 vi.mock('../../../exchange', () => ({
   getFuturesClient: () => ({
-    getAccountInfo: (...args: unknown[]) => mockGetAccountInfo(...args),
+    getPosition: (...args: unknown[]) => mockGetPosition(...args),
   }),
 }));
 
@@ -70,6 +76,9 @@ const mockDbUpdate = vi.fn().mockReturnValue({
     where: vi.fn().mockResolvedValue(undefined),
   }),
 });
+const mockDbDelete = vi.fn().mockReturnValue({
+  where: vi.fn().mockResolvedValue(undefined),
+});
 const mockDbQueryFind = vi.fn().mockResolvedValue(null);
 const mockDbQueryFindMany = vi.fn().mockResolvedValue([]);
 
@@ -77,6 +86,7 @@ vi.mock('../../../db', () => ({
   db: {
     insert: (...args: unknown[]) => mockDbInsert(...args),
     update: (...args: unknown[]) => mockDbUpdate(...args),
+    delete: (...args: unknown[]) => mockDbDelete(...args),
     query: {
       tradeExecutions: {
         findFirst: (...args: unknown[]) => mockDbQueryFind(...args),
@@ -87,12 +97,13 @@ vi.mock('../../../db', () => ({
 }));
 
 vi.mock('../../../db/schema', () => ({
-  tradeExecutions: { id: 'id', walletId: 'walletId', status: 'status' },
+  tradeExecutions: { id: 'id', walletId: 'walletId', symbol: 'symbol', status: 'status', setupType: 'setupType' },
 }));
 
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((_col: unknown, val: unknown) => ({ type: 'eq', val })),
   and: vi.fn((...args: unknown[]) => ({ type: 'and', args })),
+  inArray: vi.fn((_col: unknown, vals: unknown) => ({ type: 'inArray', vals })),
 }));
 
 const defaultEngineConfig: ExecutionEngineConfig = {
@@ -101,12 +112,14 @@ const defaultEngineConfig: ExecutionEngineConfig = {
   executionMode: 'MARKET',
   positionSizePercent: 2,
   leverage: 3,
+  marginType: 'CROSSED',
   maxConcurrentPositions: 2,
   microTrailingTicks: 8,
 };
 
 const defaultSignalConfig: SignalEngineConfig = {
   enabledStrategies: ['imbalance'],
+  directionMode: 'auto',
   imbalanceThreshold: 0.6,
   cvdDivergenceBars: 10,
   vwapDeviationSigma: 2.0,
@@ -151,6 +164,10 @@ describe('ExecutionEngine', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDbQueryFind.mockReset().mockResolvedValue(null);
+    mockDbQueryFindMany.mockReset().mockResolvedValue([]);
+    mockUpdateStopLoss.mockReset().mockResolvedValue({ algoId: 101, orderId: null });
+    mockGetPosition.mockReset().mockResolvedValue({ symbol: 'BTCUSDT', leverage: 10 });
     signalEngine = new SignalEngine({ ...defaultSignalConfig });
     engine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
   });
@@ -159,12 +176,37 @@ describe('ExecutionEngine', () => {
     it('should execute a signal and track active position', async () => {
       await engine.executeSignal(makeSignal());
 
+      expect(mockSetFuturesMarginType).toHaveBeenCalledTimes(1);
+      expect(mockGetPosition).toHaveBeenCalledTimes(1);
       expect(mockExecuteBinanceOrder).toHaveBeenCalledTimes(1);
       expect(mockCreateStopLoss).toHaveBeenCalledTimes(1);
       expect(mockCreateTakeProfit).toHaveBeenCalledTimes(1);
       expect(mockDbInsert).toHaveBeenCalledTimes(1);
       expect(engine.hasActivePosition('BTCUSDT')).toBe(true);
       expect(engine.getActivePositionCount()).toBe(1);
+    });
+
+    it('should read leverage from exchange and set margin type before placing order', async () => {
+      await engine.executeSignal(makeSignal());
+
+      expect(mockGetPosition).toHaveBeenCalledWith('BTCUSDT');
+      expect(mockSetFuturesMarginType).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'wallet-1' }),
+        'BTCUSDT',
+        'CROSSED',
+      );
+
+      const marginCallOrder = mockSetFuturesMarginType.mock.invocationCallOrder[0];
+      const orderCallOrder = mockExecuteBinanceOrder.mock.invocationCallOrder[0];
+      expect(marginCallOrder).toBeLessThan(orderCallOrder!);
+    });
+
+    it('should block execution when any active position exists for symbol', async () => {
+      mockDbQueryFind.mockResolvedValueOnce({ id: 'existing-1', setupType: 'scalping-imbalance' });
+
+      await engine.executeSignal(makeSignal());
+
+      expect(mockExecuteBinanceOrder).not.toHaveBeenCalled();
     });
 
     it('should not exceed max concurrent positions', async () => {
@@ -256,7 +298,14 @@ describe('ExecutionEngine', () => {
     });
 
     it('should not execute when wallet balance is zero', async () => {
-      mockGetAccountInfo.mockResolvedValueOnce({ availableBalance: '0' });
+      const { walletQueries } = await import('../../../services/database/walletQueries');
+      vi.mocked(walletQueries.getByIdAndUser).mockResolvedValueOnce({
+        id: 'wallet-1',
+        userId: 'user-1',
+        currentBalance: '0',
+        apiKey: 'key',
+        apiSecret: 'secret',
+      } as unknown as Awaited<ReturnType<typeof walletQueries.getByIdAndUser>>);
 
       const freshEngine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
       await freshEngine.executeSignal(makeSignal());
@@ -313,6 +362,10 @@ describe('ExecutionEngine', () => {
   });
 
   describe('checkMicroTrailing', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('should not trail when microTrailingTicks is 0', async () => {
       const noTrailEngine = new ExecutionEngine(
         { ...defaultEngineConfig, microTrailingTicks: 0 },
@@ -343,7 +396,7 @@ describe('ExecutionEngine', () => {
         stopLossOrderId: null,
       });
 
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(4000);
       await freshEngine.checkMicroTrailing('BTCUSDT', 50200);
 
       expect(mockUpdateStopLoss).toHaveBeenCalledTimes(1);
@@ -368,8 +421,138 @@ describe('ExecutionEngine', () => {
         stopLossOrderId: null,
       });
 
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(4000);
       await freshEngine.checkMicroTrailing('BTCUSDT', 50050);
+      expect(mockUpdateStopLoss).not.toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it('should skip when in-flight for same symbol', async () => {
+      vi.useFakeTimers({ now: 1000 });
+      const freshEngine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
+      await freshEngine.executeSignal(makeSignal());
+
+      let resolveDbQuery: (val: unknown) => void;
+      const dbPromise = new Promise(resolve => { resolveDbQuery = resolve; });
+      mockDbQueryFind.mockReturnValueOnce(dbPromise);
+
+      vi.advanceTimersByTime(4000);
+      const firstCall = freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+      const secondCall = freshEngine.checkMicroTrailing('BTCUSDT', 50300);
+
+      resolveDbQuery!({
+        id: 'exec-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open',
+        quantity: '0.001', stopLoss: '49900', stopLossAlgoId: '100', stopLossOrderId: null,
+      });
+
+      await Promise.all([firstCall, secondCall]);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+    });
+
+    it('should apply exponential backoff on consecutive errors', async () => {
+      vi.useFakeTimers({ now: 1000 });
+      const freshEngine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
+      await freshEngine.executeSignal(makeSignal());
+
+      const makeExecResult = () => ({
+        id: 'exec-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open',
+        quantity: '0.001', stopLoss: '49900', stopLossAlgoId: '100', stopLossOrderId: null,
+      });
+
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      mockUpdateStopLoss.mockRejectedValueOnce(new Error('API error'));
+
+      vi.advanceTimersByTime(4000);
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(5000);
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(9000);
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(2);
+    });
+
+    it('should reset error count on successful trailing', async () => {
+      vi.useFakeTimers({ now: 1000 });
+      const freshEngine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
+      await freshEngine.executeSignal(makeSignal());
+
+      const makeExecResult = () => ({
+        id: 'exec-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open',
+        quantity: '0.001', stopLoss: '49900', stopLossAlgoId: '100', stopLossOrderId: null,
+      });
+
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      mockUpdateStopLoss.mockRejectedValueOnce(new Error('API error'));
+      vi.advanceTimersByTime(4000);
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+
+      vi.advanceTimersByTime(14000);
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      mockUpdateStopLoss.mockResolvedValueOnce({ algoId: 101, orderId: null });
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50300);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(2);
+
+      vi.advanceTimersByTime(4000);
+      mockDbQueryFind.mockResolvedValueOnce({ ...makeExecResult(), stopLoss: '50200' });
+      mockUpdateStopLoss.mockResolvedValueOnce({ algoId: 102, orderId: null });
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50400);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(3);
+    });
+
+    it('should pause for 5 minutes on IP ban', async () => {
+      vi.useFakeTimers({ now: 0 });
+      const freshEngine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
+      await freshEngine.executeSignal(makeSignal());
+
+      const makeExecResult = () => ({
+        id: 'exec-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open',
+        quantity: '0.001', stopLoss: '49900', stopLossAlgoId: '100', stopLossOrderId: null,
+      });
+
+      vi.advanceTimersByTime(5000);
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      mockUpdateStopLoss.mockRejectedValueOnce(new BinanceIpBannedError(300));
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(100_000);
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50300);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(210_000);
+      mockDbQueryFind.mockResolvedValueOnce(makeExecResult());
+      await freshEngine.checkMicroTrailing('BTCUSDT', 50300);
+      expect(mockUpdateStopLoss).toHaveBeenCalledTimes(2);
+    });
+
+    it('should detect closed position after DB query', async () => {
+      vi.useFakeTimers({ now: 1000 });
+      const freshEngine = new ExecutionEngine({ ...defaultEngineConfig }, signalEngine);
+      await freshEngine.executeSignal(makeSignal());
+
+      let resolveDbQuery: (val: unknown) => void;
+      const dbPromise = new Promise(resolve => { resolveDbQuery = resolve; });
+      mockDbQueryFind.mockReturnValueOnce(dbPromise);
+
+      vi.advanceTimersByTime(4000);
+      const trailingPromise = freshEngine.checkMicroTrailing('BTCUSDT', 50200);
+
+      await freshEngine.handlePositionClosed('BTCUSDT', 50);
+
+      resolveDbQuery!({
+        id: 'exec-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open',
+        quantity: '0.001', stopLoss: '49900', stopLossAlgoId: '100', stopLossOrderId: null,
+      });
+
+      await trailingPromise;
       expect(mockUpdateStopLoss).not.toHaveBeenCalled();
       vi.useRealTimers();
     });
@@ -388,11 +571,84 @@ describe('ExecutionEngine', () => {
   });
 
   describe('stop', () => {
-    it('should clear all active positions', async () => {
+    it('should clear all active positions and trailing state', async () => {
       await engine.executeSignal(makeSignal());
       expect(engine.getActivePositionCount()).toBe(1);
       engine.stop();
       expect(engine.getActivePositionCount()).toBe(0);
+      expect(engine.getActiveSymbols()).toEqual([]);
+    });
+  });
+
+  describe('blockedSymbols', () => {
+    it('should block symbols with pre-existing non-scalping positions on restore', async () => {
+      mockDbQueryFindMany.mockResolvedValueOnce([
+        { id: 'exec-1', symbol: 'BTCUSDT', setupType: 'breakout-retest', status: 'open' },
+        { id: 'exec-2', symbol: 'ETHUSDT', setupType: 'scalping-imbalance', status: 'open' },
+      ]);
+
+      await engine.restoreActivePositions();
+
+      expect(engine.isSymbolBlocked('BTCUSDT')).toBe(true);
+      expect(engine.isSymbolBlocked('ETHUSDT')).toBe(false);
+      expect(engine.hasActivePosition('ETHUSDT')).toBe(true);
+      expect(engine.hasActivePosition('BTCUSDT')).toBe(false);
+    });
+
+    it('should reject signals for blocked symbols', async () => {
+      mockDbQueryFindMany.mockResolvedValueOnce([
+        { id: 'exec-1', symbol: 'BTCUSDT', setupType: 'manual-trade', status: 'open' },
+      ]);
+      await engine.restoreActivePositions();
+
+      await engine.executeSignal(makeSignal({ symbol: 'BTCUSDT' }));
+      expect(mockExecuteBinanceOrder).not.toHaveBeenCalled();
+      expect(engine.hasActivePosition('BTCUSDT')).toBe(false);
+    });
+
+    it('should unblock symbol when pre-existing position closes', async () => {
+      mockDbQueryFindMany.mockResolvedValueOnce([
+        { id: 'exec-1', symbol: 'BTCUSDT', setupType: 'breakout-retest', status: 'open' },
+      ]);
+      await engine.restoreActivePositions();
+      expect(engine.isSymbolBlocked('BTCUSDT')).toBe(true);
+
+      await engine.handlePositionClosed('BTCUSDT', 50);
+      expect(engine.isSymbolBlocked('BTCUSDT')).toBe(false);
+    });
+
+    it('should allow scalping after blocked symbol is unblocked', async () => {
+      mockDbQueryFindMany.mockResolvedValueOnce([
+        { id: 'exec-1', symbol: 'BTCUSDT', setupType: 'manual-trade', status: 'open' },
+      ]);
+      await engine.restoreActivePositions();
+
+      await engine.executeSignal(makeSignal({ symbol: 'BTCUSDT' }));
+      expect(mockExecuteBinanceOrder).not.toHaveBeenCalled();
+
+      await engine.handlePositionClosed('BTCUSDT', 50);
+
+      await engine.executeSignal(makeSignal({ symbol: 'BTCUSDT' }));
+      expect(mockExecuteBinanceOrder).toHaveBeenCalledTimes(1);
+    });
+
+    it('should block pending positions too', async () => {
+      mockDbQueryFindMany.mockResolvedValueOnce([
+        { id: 'exec-1', symbol: 'BTCUSDT', setupType: 'golden-cross-sma', status: 'pending' },
+      ]);
+      await engine.restoreActivePositions();
+      expect(engine.isSymbolBlocked('BTCUSDT')).toBe(true);
+    });
+
+    it('should clear blocked symbols on stop', async () => {
+      mockDbQueryFindMany.mockResolvedValueOnce([
+        { id: 'exec-1', symbol: 'BTCUSDT', setupType: 'breakout-retest', status: 'open' },
+      ]);
+      await engine.restoreActivePositions();
+      expect(engine.isSymbolBlocked('BTCUSDT')).toBe(true);
+
+      engine.stop();
+      expect(engine.isSymbolBlocked('BTCUSDT')).toBe(false);
     });
   });
 

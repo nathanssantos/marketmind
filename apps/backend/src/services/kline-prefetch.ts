@@ -167,6 +167,15 @@ export interface KlineAvailabilityResult {
   apiExhausted: boolean;
 }
 
+const SCANNER_BACKFILL_TARGET = 2_000;
+const SYMBOL_TIMEOUT_MS = 90_000;
+
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Symbol backfill timeout')), ms)),
+  ]);
+
 export const runBatchBackfill = async (
   walletId: string,
   symbols: string[],
@@ -179,10 +188,18 @@ export const runBatchBackfill = async (
   const BATCH_SIZE = 3;
 
   for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+    if (binanceApiCache.isBanned()) {
+      ws?.emitBackfillProgress(walletId, { completed: total, total, currentSymbol: '', status: 'error', error: 'IP banned' });
+      return;
+    }
+
     const batch = symbols.slice(i, i + BATCH_SIZE);
     await Promise.allSettled(
       batch.map(symbol =>
-        prefetchKlines({ symbol, interval, marketType, silent: true, forRotation: true })
+        withTimeout(
+          prefetchKlines({ symbol, interval, marketType, silent: true, forRotation: true, targetCount: SCANNER_BACKFILL_TARGET }),
+          SYMBOL_TIMEOUT_MS,
+        )
       )
     );
 

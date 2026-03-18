@@ -11,8 +11,7 @@ export const useDepth = (symbol: string | null, enabled = true) => {
   useEffect(() => {
     if (!symbol || !enabled) return;
 
-    const socket = socketService.getSocket();
-    if (!socket) return;
+    const socket = socketService.connect();
 
     setBids([]);
     setAsks([]);
@@ -40,6 +39,7 @@ export const useDepth = (symbol: string | null, enabled = true) => {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
+      socketService.disconnect();
     };
   }, [symbol, enabled]);
 

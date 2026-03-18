@@ -60,7 +60,8 @@ export type ScalpingStrategy =
   | 'cvd-divergence'
   | 'mean-reversion'
   | 'momentum-burst'
-  | 'absorption-reversal';
+  | 'absorption-reversal'
+  | 'ema-cross';
 
 export type ScalpingExecutionMode = 'POST_ONLY' | 'IOC' | 'MARKET';
 
@@ -129,6 +130,7 @@ export const SCALPING_STRATEGIES: ScalpingStrategy[] = [
   'mean-reversion',
   'momentum-burst',
   'absorption-reversal',
+  'ema-cross',
 ];
 
 export const SCALPING_SETUP_PREFIX = 'scalping-' as const;

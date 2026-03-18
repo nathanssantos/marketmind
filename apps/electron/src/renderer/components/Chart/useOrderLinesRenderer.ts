@@ -3,7 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawBotIcon, drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { CHART_CONFIG, ORDER_LINE_COLORS, ORDER_LINE_ANIMATION } from '@shared/constants';
+import { CHART_CONFIG, ORDER_LINE_COLORS, ORDER_LINE_LAYOUT, ORDER_LINE_ANIMATION } from '@shared/constants';
 
 import {
     getKlineClose,
@@ -19,9 +19,6 @@ import { useMemo, useRef } from 'react';
 import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
 
 
-const LINE_HIT_HEIGHT = 24;
-
-
 const isSLInProfitZone = (isLong: boolean, entryPrice: number, slPrice: number): boolean =>
   isLong ? slPrice > entryPrice : slPrice < entryPrice;
 
@@ -30,15 +27,15 @@ const findKlineIndexByTime = (
   targetTime: number
 ): number => {
   if (klines.length === 0) return 0;
-
-  for (let i = 0; i < klines.length; i++) {
-    const kline = klines[i];
-    if (kline && kline.openTime >= targetTime) {
-      return Math.max(0, i - 1);
-    }
+  let low = 0;
+  let high = klines.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >>> 1;
+    if (klines[mid]!.openTime < targetTime) low = mid + 1;
+    else if (klines[mid]!.openTime > targetTime) high = mid - 1;
+    else return mid;
   }
-
-  return klines.length - 1;
+  return Math.max(0, high);
 };
 
 const drawInfoTagFlash = (
@@ -48,8 +45,7 @@ const drawInfoTagFlash = (
   flashAlpha: number
 ): void => {
   if (flashAlpha <= 0) return;
-  const arrowWidth = 6;
-  const bodyEnd = tagSize.width - arrowWidth;
+  const bodyEnd = tagSize.width - ORDER_LINE_LAYOUT.ARROW_WIDTH;
   const halfH = tagSize.height / 2;
   ctx.save();
   ctx.globalAlpha = flashAlpha;
@@ -103,6 +99,7 @@ export interface BackendExecution {
   openedAt?: string | Date | null;
   triggerKlineOpenTime?: number | null;
   fibonacciProjection?: import('@marketmind/types').FibonacciProjectionData | null;
+  leverage?: number;
 }
 
 interface OrderCloseButton {
@@ -179,75 +176,68 @@ const drawInfoTag = (
   isLoading: boolean = false,
   timestamp: number = 0
 ): { width: number; height: number } => {
-  const labelPadding = 8;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const closeButtonSize = 14;
-  const closeButtonMargin = 4;
-  const iconSize = 12;
-  const iconMargin = 3;
+  const { LABEL_PADDING, LABEL_HEIGHT, ARROW_WIDTH, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_MARGIN, ICON_SIZE, ICON_MARGIN, CLOSE_CROSS_PADDING } = ORDER_LINE_LAYOUT;
 
   const textWidth = ctx.measureText(text).width;
-  const closeButtonSpace = hasCloseButton ? closeButtonSize + closeButtonMargin : 0;
-  const iconSpace = icon ? iconSize + iconMargin : 0;
+  const closeButtonSpace = hasCloseButton ? CLOSE_BUTTON_SIZE + CLOSE_BUTTON_MARGIN : 0;
+  const iconSpace = icon ? ICON_SIZE + ICON_MARGIN : 0;
   const totalContentWidth = closeButtonSpace + iconSpace + textWidth;
-  const tagWidth = totalContentWidth + labelPadding * 2;
+  const tagWidth = totalContentWidth + LABEL_PADDING * 2;
 
   ctx.save();
   ctx.fillStyle = fillColor;
 
   ctx.beginPath();
-  ctx.moveTo(tagWidth + arrowWidth, y);
-  ctx.lineTo(tagWidth, y - labelHeight / 2);
-  ctx.lineTo(0, y - labelHeight / 2);
-  ctx.lineTo(0, y + labelHeight / 2);
-  ctx.lineTo(tagWidth, y + labelHeight / 2);
+  ctx.moveTo(tagWidth + ARROW_WIDTH, y);
+  ctx.lineTo(tagWidth, y - LABEL_HEIGHT / 2);
+  ctx.lineTo(0, y - LABEL_HEIGHT / 2);
+  ctx.lineTo(0, y + LABEL_HEIGHT / 2);
+  ctx.lineTo(tagWidth, y + LABEL_HEIGHT / 2);
   ctx.closePath();
   ctx.fill();
 
   if (hasCloseButton && closeButtonRef) {
-    const closeButtonX = labelPadding;
-    const closeButtonY = y - closeButtonSize / 2;
+    const closeButtonX = LABEL_PADDING;
+    const closeButtonY = y - CLOSE_BUTTON_SIZE / 2;
 
     ctx.fillStyle = ORDER_LINE_COLORS.CLOSE_BUTTON_BG;
     ctx.beginPath();
-    ctx.roundRect(closeButtonX, closeButtonY, closeButtonSize, closeButtonSize, 2);
+    ctx.roundRect(closeButtonX, closeButtonY, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE, 2);
     ctx.fill();
 
     if (isLoading) {
-      drawSpinner(ctx, closeButtonX + closeButtonSize / 2, y, closeButtonSize / 2 - 2, timestamp);
+      drawSpinner(ctx, closeButtonX + CLOSE_BUTTON_SIZE / 2, y, CLOSE_BUTTON_SIZE / 2 - 2, timestamp);
     } else {
       ctx.strokeStyle = ORDER_LINE_COLORS.TEXT_WHITE;
       ctx.lineWidth = 1;
-      const crossPadding = 3;
       ctx.beginPath();
-      ctx.moveTo(closeButtonX + crossPadding, closeButtonY + crossPadding);
-      ctx.lineTo(closeButtonX + closeButtonSize - crossPadding, closeButtonY + closeButtonSize - crossPadding);
-      ctx.moveTo(closeButtonX + closeButtonSize - crossPadding, closeButtonY + crossPadding);
-      ctx.lineTo(closeButtonX + crossPadding, closeButtonY + closeButtonSize - crossPadding);
+      ctx.moveTo(closeButtonX + CLOSE_CROSS_PADDING, closeButtonY + CLOSE_CROSS_PADDING);
+      ctx.lineTo(closeButtonX + CLOSE_BUTTON_SIZE - CLOSE_CROSS_PADDING, closeButtonY + CLOSE_BUTTON_SIZE - CLOSE_CROSS_PADDING);
+      ctx.moveTo(closeButtonX + CLOSE_BUTTON_SIZE - CLOSE_CROSS_PADDING, closeButtonY + CLOSE_CROSS_PADDING);
+      ctx.lineTo(closeButtonX + CLOSE_CROSS_PADDING, closeButtonY + CLOSE_BUTTON_SIZE - CLOSE_CROSS_PADDING);
       ctx.stroke();
     }
 
     closeButtonRef.x = closeButtonX;
     closeButtonRef.y = closeButtonY;
-    closeButtonRef.size = closeButtonSize;
+    closeButtonRef.size = CLOSE_BUTTON_SIZE;
   }
 
-  let currentX = labelPadding + closeButtonSpace;
+  let currentX = LABEL_PADDING + closeButtonSpace;
 
   if (icon === 'bot') {
-    drawBotIcon(ctx, currentX, y - iconSize / 2, iconSize);
-    currentX += iconSize + iconMargin;
+    drawBotIcon(ctx, currentX, y - ICON_SIZE / 2, ICON_SIZE);
+    currentX += ICON_SIZE + ICON_MARGIN;
   } else if (icon === 'shield') {
-    drawShieldIcon(ctx, currentX, y - iconSize / 2 - 1, iconSize);
-    currentX += iconSize + iconMargin;
+    drawShieldIcon(ctx, currentX, y - ICON_SIZE / 2 - 1, ICON_SIZE);
+    currentX += ICON_SIZE + ICON_MARGIN;
   }
 
   ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
   ctx.fillText(text, currentX, y);
 
   ctx.restore();
-  return { width: tagWidth + arrowWidth, height: labelHeight };
+  return { width: tagWidth + ARROW_WIDTH, height: LABEL_HEIGHT };
 };
 
 const drawPercentBadge = (
@@ -410,6 +400,7 @@ export const useOrderLinesRenderer = (
           walletId: '',
           setupType: exec.setupType ?? undefined,
           isPendingLimitOrder: exec.status === 'pending',
+          leverage: exec.leverage ?? 1,
         } as Order;
       });
   }, [backendExecutions]);
@@ -490,6 +481,7 @@ export const useOrderLinesRenderer = (
       orderIds: string[];
       orders: Order[];
       totalPnL: number;
+      leverage: number;
     };
 
     const groupedPositions = new Map<string, GroupedPosition>();
@@ -531,6 +523,7 @@ export const useOrderLinesRenderer = (
           orderIds: [getOrderId(order)],
           orders: [order],
           totalPnL: orderPnL,
+          leverage: (order as Order & { leverage?: number }).leverage ?? 1,
         });
       }
     });
@@ -576,9 +569,9 @@ export const useOrderLinesRenderer = (
       orderHitboxesRef.current.push({
         orderId,
         x: 0,
-        y: y - LINE_HIT_HEIGHT / 2,
+        y: y - ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT / 2,
         width: chartWidth,
-        height: LINE_HIT_HEIGHT,
+        height: ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT,
         order,
       });
 
@@ -712,7 +705,7 @@ export const useOrderLinesRenderer = (
         const tpProfitPercent = isLong
           ? ((order.takeProfit - entryPrice) / entryPrice) * 100
           : ((entryPrice - order.takeProfit) / entryPrice) * 100;
-        const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
+        const tpInfoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%) [PENDING]`;
 
         const tpFlashAlphaVal = getFlashAlpha(`${orderId}-tp`);
         priceTags.push({ priceText: formatChartPrice(order.takeProfit), y: tpY, fillColor: tpFillColor, flashAlpha: tpFlashAlphaVal });
@@ -787,6 +780,7 @@ export const useOrderLinesRenderer = (
         avgPrice: position.avgPrice,
         totalQuantity: absQuantity,
         totalPnL: position.totalPnL,
+        leverage: position.leverage,
         orders: position.orders,
         setupTypes,
       };
@@ -812,18 +806,16 @@ export const useOrderLinesRenderer = (
       ctx.stroke();
 
       const priceChange = currentPrice - position.avgPrice;
-      const percentChange = isLong 
+      const percentChange = (isLong
         ? (priceChange / position.avgPrice) * 100
-        : (-priceChange / position.avgPrice) * 100;
+        : (-priceChange / position.avgPrice) * 100) * position.leverage;
       
       const percentSign = percentChange >= 0 ? '+' : '';
       const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
       
-      const quantityPrefix = position.orders.length > 1
-        ? `(${position.orders.length}x) `
-        : '';
+      const leveragePrefix = position.leverage > 1 ? `${position.leverage}x ` : '';
       const directionSymbol = isLong ? '↑' : '↓';
-      const infoText = `${quantityPrefix}${directionSymbol} (${absQuantity})`;
+      const infoText = `${leveragePrefix}${directionSymbol} (${absQuantity})`;
       const hasAutoTrade = position.orders.some(o => o.isAutoTrade);
 
       const posLoading = position.orderIds.some(id => isOrderLoading(id));
@@ -946,9 +938,9 @@ export const useOrderLinesRenderer = (
         orderHitboxesRef.current.push({
           orderId: hoveredOrderId,
           x: 0,
-          y: y - LINE_HIT_HEIGHT / 2,
+          y: y - ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT / 2,
           width: chartWidth,
-          height: LINE_HIT_HEIGHT,
+          height: ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT,
           order,
         });
 
@@ -1011,7 +1003,7 @@ export const useOrderLinesRenderer = (
           const tpProfitPercent = isLong
             ? ((order.takeProfit - entryPrice) / entryPrice) * 100
             : ((entryPrice - order.takeProfit) / entryPrice) * 100;
-          const tpInfoText = `TP (+${tpProfitPercent.toFixed(2)}%) [PENDING]`;
+          const tpInfoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%) [PENDING]`;
 
           drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.TP_FILL, true, null);
           ctx.restore();
@@ -1034,6 +1026,7 @@ export const useOrderLinesRenderer = (
           avgPrice: hPos.avgPrice,
           totalQuantity: absQuantity,
           totalPnL: hPos.totalPnL,
+          leverage: hPos.leverage,
           orders: hPos.orders,
           setupTypes,
         };
@@ -1196,9 +1189,9 @@ export const useOrderLinesRenderer = (
         ctx.textBaseline = 'middle';
 
         const priceText = formatChartPrice(consolidatedStopLoss);
-        const slResultPercent = isLongPosition
+        const slResultPercent = (isLongPosition
           ? ((consolidatedStopLoss - position.avgPrice) / position.avgPrice) * 100
-          : ((position.avgPrice - consolidatedStopLoss) / position.avgPrice) * 100;
+          : ((position.avgPrice - consolidatedStopLoss) / position.avgPrice) * 100) * position.leverage;
         const slSign = slResultPercent >= 0 ? '+' : '';
         const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
         const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)${pendingLabel}`;
@@ -1292,11 +1285,11 @@ export const useOrderLinesRenderer = (
 
         const tpFillColor = ORDER_LINE_COLORS.TP_FILL;
         const priceText = formatChartPrice(consolidatedTakeProfit);
-        const tpProfitPercent = isLongPosition
+        const tpProfitPercent = (isLongPosition
           ? ((consolidatedTakeProfit - position.avgPrice) / position.avgPrice) * 100
-          : ((position.avgPrice - consolidatedTakeProfit) / position.avgPrice) * 100;
+          : ((position.avgPrice - consolidatedTakeProfit) / position.avgPrice) * 100) * position.leverage;
         const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
-        const infoText = `TP (+${tpProfitPercent.toFixed(2)}%)${pendingLabel}`;
+        const infoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%)${pendingLabel}`;
 
         const tpFlash = position.orderIds.reduce((max: number, id: string) => Math.max(max, getFlashAlpha(`${id}-tp`)), 0);
         priceTags.push({ priceText, y: tpY, fillColor: tpFillColor, flashAlpha: tpFlash });
@@ -1453,7 +1446,7 @@ export const useOrderLinesRenderer = (
         const tpPercent = isLong
           ? ((setup.takeProfit - effectiveEntryPrice) / effectiveEntryPrice) * 100
           : ((effectiveEntryPrice - setup.takeProfit) / effectiveEntryPrice) * 100;
-        const tpInfoText = `TP (+${tpPercent.toFixed(2)}%)`;
+        const tpInfoText = `TP (${tpPercent >= 0 ? '+' : ''}${tpPercent.toFixed(2)}%)`;
 
         const tpSetupFillColor = ORDER_LINE_COLORS.TP_FILL;
         priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: tpSetupFillColor });
@@ -1563,7 +1556,7 @@ export const useOrderLinesRenderer = (
         y >= button.y &&
         y <= button.y + button.height
       ) {
-        return `sltp-${button.type}-${button.orderIds.join(',')}`;
+        return `sltp:${button.type}:${button.orderIds.join(',')}`;
       }
     }
     

@@ -3,8 +3,8 @@ import type { AggTrade } from '@marketmind/types';
 import { socketService } from '../services/socketService';
 import { trpc } from '../utils/trpc';
 
-const MAX_BUFFER_SIZE = 5000;
-const PRELOAD_WINDOW_MS = 30 * 60 * 1000;
+const MAX_BUFFER_SIZE = 10_000;
+const PRELOAD_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 interface AggTradeWithLarge extends AggTrade {
   isLargeTrade?: boolean;
@@ -54,7 +54,7 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
         symbol,
         from: now - PRELOAD_WINDOW_MS,
         to: now,
-        limit: 5000,
+        limit: MAX_BUFFER_SIZE,
       }).then((historical) => {
         if (historical.length > 0) {
           setTrades((prev) => {

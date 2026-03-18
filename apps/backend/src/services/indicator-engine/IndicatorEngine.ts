@@ -1564,6 +1564,7 @@ const SCREENER_TICKER_EVALUATORS: Partial<Record<ScreenerIndicatorId, ScreenerEv
   PRICE_CHANGE_24H: (_klines, _params, ticker) => ticker?.priceChange ?? null,
   PRICE_CHANGE_PERCENT_24H: (_klines, _params, ticker) => ticker?.priceChangePercent ?? null,
   VOLUME_24H: (_klines, _params, ticker) => ticker?.volume ?? null,
+  QUOTE_VOLUME_24H: (_klines, _params, ticker) => ticker?.quoteVolume ?? null,
   MARKET_CAP_RANK: (_klines, _params, _ticker, extra) => extra?.marketCapRank ?? null,
   FUNDING_RATE: (_klines, _params, _ticker, extra) => extra?.fundingRate ?? null,
 };
@@ -1572,6 +1573,7 @@ export const TICKER_BASED_INDICATORS: Set<ScreenerIndicatorId> = new Set([
   'PRICE_CHANGE_24H',
   'PRICE_CHANGE_PERCENT_24H',
   'VOLUME_24H',
+  'QUOTE_VOLUME_24H',
   'MARKET_CAP_RANK',
   'FUNDING_RATE',
 ]);

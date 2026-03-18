@@ -10,12 +10,14 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuDownload, LuX, LuZap } from 'react-icons/lu';
 import { socketService } from '@renderer/services/socketService';
+import { useConnectionStore } from '@renderer/store/connectionStore';
 import { SCANNER_ICON_MAP, SCANNER_TIMEFRAME_OPTIONS, SCANNER_CATEGORY_ORDER } from '@renderer/components/Screener/constants';
 
 const ScannerTabComponent = () => {
   const { t } = useTranslation();
   const { isIB, activeWalletId } = useActiveWallet();
   const globalActions = useGlobalActionsOptional();
+  const wsConnected = useConnectionStore((s) => s.wsConnected);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<TimeInterval>('30m');
   const [isBackfilling, setIsBackfilling] = useState(false);
@@ -50,7 +52,7 @@ const ScannerTabComponent = () => {
       socket.off('backfill:progress', handler);
       socket.emit('unsubscribe:wallet', activeWalletId);
     };
-  }, [activeWalletId]);
+  }, [activeWalletId, wsConnected]);
 
   const handleBackfill = useCallback(() => {
     if (!activeWalletId || isBackfilling) return;

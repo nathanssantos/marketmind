@@ -1,4 +1,4 @@
-import { Badge, Button, CryptoIcon, IconButton, Select, Separator, Slider, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
@@ -8,11 +8,10 @@ import { useSignalSuggestions } from '@renderer/hooks/useSignalSuggestions';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@renderer/components/Trading/TradingTable';
-import type { DirectionMode } from '@renderer/components/Trading/WatcherManager/WatchersList';
 import { useUIStore } from '@renderer/store/uiStore';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuCheck, LuOctagonX, LuPlay, LuTrendingDown, LuTrendingUp, LuX } from 'react-icons/lu';
+import { LuCheck, LuOctagonX, LuPlay, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { StartWatchersModal } from '@renderer/components/Trading/StartWatchersModal';
 
@@ -86,41 +85,7 @@ const WatchersTabComponent = () => {
       </Flex>
 
       {activeWalletId && (
-        <HStack gap={1}>
-          <Button
-            size="2xs"
-            variant={directionMode === 'short_only' ? 'solid' : 'outline'}
-            colorPalette={directionMode === 'short_only' ? 'red' : 'gray'}
-            onClick={() => handleDirectionModeChange(directionMode === 'short_only' ? 'auto' : 'short_only')}
-            disabled={isUpdatingConfig}
-            flex={1}
-          >
-            <LuTrendingDown />
-            {t('settings.algorithmicAutoTrading.directionMode.shortOnly')}
-          </Button>
-          <Button
-            size="2xs"
-            variant={directionMode === 'auto' ? 'solid' : 'outline'}
-            colorPalette={directionMode === 'auto' ? 'gray' : 'gray'}
-            onClick={() => handleDirectionModeChange('auto')}
-            disabled={isUpdatingConfig}
-            flex={1}
-          >
-            <LuArrowUpDown />
-            {t('settings.algorithmicAutoTrading.directionMode.auto')}
-          </Button>
-          <Button
-            size="2xs"
-            variant={directionMode === 'long_only' ? 'solid' : 'outline'}
-            colorPalette={directionMode === 'long_only' ? 'green' : 'gray'}
-            onClick={() => handleDirectionModeChange(directionMode === 'long_only' ? 'auto' : 'long_only')}
-            disabled={isUpdatingConfig}
-            flex={1}
-          >
-            <LuTrendingUp />
-            {t('settings.algorithmicAutoTrading.directionMode.longOnly')}
-          </Button>
-        </HStack>
+        <DirectionModeSelector value={directionMode} onChange={handleDirectionModeChange} disabled={isUpdatingConfig} size="2xs" />
       )}
 
       {activeWalletId && (

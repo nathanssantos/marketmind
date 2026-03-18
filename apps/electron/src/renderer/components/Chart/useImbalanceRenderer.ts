@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
@@ -13,18 +14,19 @@ import {
 
 interface UseImbalanceRendererProps {
   manager: CanvasManager | null;
-  imbalanceValues: (number | null)[];
+  imbalanceValuesRef: RefObject<(number | null)[]>;
   colors: ChartThemeColors;
   enabled?: boolean;
 }
 
 export const useImbalanceRenderer = ({
   manager,
-  imbalanceValues,
+  imbalanceValuesRef,
   colors,
   enabled = true,
 }: UseImbalanceRendererProps) => {
   const render = useCallback((): void => {
+    const imbalanceValues = imbalanceValuesRef.current;
     const setup = getOscillatorSetup(manager, enabled && imbalanceValues.length > 0, 'bookImbalance');
     if (!setup) return;
 
@@ -67,7 +69,7 @@ export const useImbalanceRenderer = ({
     ctx.stroke();
 
     ctx.restore();
-  }, [manager, imbalanceValues, enabled, colors]);
+  }, [manager, imbalanceValuesRef, enabled, colors]);
 
   return { render };
 };

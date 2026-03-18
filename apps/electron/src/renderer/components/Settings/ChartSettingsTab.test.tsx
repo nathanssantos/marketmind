@@ -13,6 +13,22 @@ vi.mock('@/renderer/hooks/useDebounceCallback', () => ({
     useDebounceCallback: (fn: (...args: unknown[]) => void) => fn,
 }));
 
+vi.mock('@renderer/components/ui', async (importOriginal) => {
+    const actual = await importOriginal() as Record<string, unknown>;
+    return {
+        ...actual,
+        useColorMode: () => ({ colorMode: 'dark', setColorMode: vi.fn(), toggleColorMode: vi.fn() }),
+    };
+});
+
+const mockSetChartPref = vi.fn();
+
+vi.mock('@/renderer/store/preferencesStore', () => ({
+    usePreferencesStore: (selector: (state: Record<string, unknown>) => unknown) =>
+        selector({ chart: { chartColorPalette: 'default' }, ui: {}, trading: {} }),
+    useChartPref: (_key: string, defaultValue: unknown) => [defaultValue, mockSetChartPref],
+}));
+
 const mockSetEnableShiftAltOrderEntry = vi.fn();
 
 vi.mock('@/renderer/store/uiStore', () => ({
@@ -344,6 +360,19 @@ describe('ChartSettingsTab', () => {
         expect(screen.getByText('settings.chart.trading')).toBeDefined();
         expect(screen.getByText('settings.chart.enableShiftAltOrderEntry')).toBeDefined();
         expect(screen.getByText('settings.chart.enableShiftAltOrderEntryHelper')).toBeDefined();
+    });
+
+    it('renders color palette section with all palettes', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        expect(screen.getByText('settings.chart.colorPalette')).toBeDefined();
+        expect(screen.getByText('TradingView')).toBeDefined();
+        expect(screen.getByText('Classic B&W')).toBeDefined();
+        expect(screen.getByText('Binance')).toBeDefined();
+        expect(screen.getByText('Blue & Orange')).toBeDefined();
+        expect(screen.getByText('Night Owl')).toBeDefined();
     });
 
     it('renders shift/alt order entry checkbox', () => {

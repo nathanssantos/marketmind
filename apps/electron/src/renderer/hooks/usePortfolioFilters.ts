@@ -18,6 +18,7 @@ interface PortfolioPosition {
   limitEntryPrice?: number;
   expiresAt?: Date;
   count: number;
+  leverage: number;
 }
 
 export const filterPositions = (
@@ -65,7 +66,8 @@ export const sortPositions = (
 export const calculateStats = (positions: PortfolioPosition[]) => {
   const totalPnL = positions.reduce((sum, pos) => sum + pos.pnl, 0);
   const totalExposure = positions.reduce((sum, pos) => sum + pos.avgPrice * pos.quantity, 0);
-  const totalPnLPercent = totalExposure > 0 ? (totalPnL / totalExposure) * 100 : 0;
+  const totalMargin = positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity) / (pos.leverage || 1), 0);
+  const totalPnLPercent = totalMargin > 0 ? (totalPnL / totalMargin) * 100 : 0;
   const profitableCount = positions.filter((p) => p.pnl > 0).length;
   const losingCount = positions.filter((p) => p.pnl < 0).length;
 

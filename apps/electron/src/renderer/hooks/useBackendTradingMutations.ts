@@ -53,9 +53,10 @@ export const useBackendTradingMutations = () => {
 
   const cancelProtectionOrderMutation = trpc.trading.cancelIndividualProtectionOrder.useMutation({
     onSuccess: () => {
-
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
+      utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      utils.futuresTrading.getOpenOrders.invalidate();
     },
   });
 

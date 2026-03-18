@@ -6,6 +6,7 @@ import type {
 import type { FuturesSymbolInfo, FuturesContractType } from '@marketmind/types';
 import { WEBSOCKET_CONFIG } from '../constants';
 import { withRetryFetch } from '../utils/retry';
+import { BinanceIpBannedError } from './binance-api-cache';
 import { logger, serializeError } from './logger';
 
 const FUTURES_BASE_URL = 'https://fapi.binance.com';
@@ -79,6 +80,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching funding rate');
       return [];
     }
@@ -102,6 +104,7 @@ export class BinanceFuturesDataService {
         markPrice: parseFloat(premiumData.markPrice),
       };
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching current funding rate');
       return null;
     }
@@ -132,6 +135,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching open interest');
       return [];
     }
@@ -162,6 +166,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching current open interest');
       return null;
     }
@@ -213,6 +218,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching liquidations');
       return [];
     }
@@ -250,6 +256,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching long/short ratio');
       return [];
     }
@@ -287,6 +294,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching top trader long/short ratio');
       return [];
     }
@@ -324,6 +332,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching taker buy/sell volume');
       return [];
     }
@@ -436,6 +445,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error }, 'Error fetching futures exchange info');
       return [];
     }
@@ -474,6 +484,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching historical funding rates');
       return [];
     }
@@ -526,6 +537,7 @@ export class BinanceFuturesDataService {
         takerBuyQuoteVolume: parseFloat(k[10] as string),
       }));
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol, interval }, 'Error fetching futures klines');
       return [];
     }
@@ -559,6 +571,7 @@ export class BinanceFuturesDataService {
         time: data.time,
       };
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error: serializeError(error), symbol }, 'Error fetching mark price');
       return null;
     }
@@ -612,6 +625,7 @@ export class BinanceFuturesDataService {
       this.setCache(cacheKey, result);
       return result;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError) throw error;
       logger.error({ error }, 'Error fetching all mark prices');
       return [];
     }

@@ -1,14 +1,10 @@
-import { VStack, HStack, Text, Box } from '@chakra-ui/react';
-import { Button, Badge, CollapsibleSection } from '@renderer/components/ui';
+import { HStack, Flex, Stack, Text, Box } from '@chakra-ui/react';
+import { Button, Badge, IconButton, DirectionModeSelector, type DirectionMode } from '@renderer/components/ui';
+import { LuSettings } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useBackendScalping } from '@renderer/hooks/useBackendScalping';
 import { useScalpingMetrics } from '@renderer/hooks/useScalpingMetrics';
 import { useScalpingSignals } from '@renderer/hooks/useScalpingSignals';
-import { useDepth } from '@renderer/hooks/useDepth';
-import { DomLadder } from '@renderer/components/Chart/DomLadder';
-import { useState } from 'react';
-
-const DOM_LADDER_HEIGHT = 250;
 
 interface ScalpingDashboardProps {
   walletId: string;
@@ -18,36 +14,55 @@ interface ScalpingDashboardProps {
 
 export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingDashboardProps) {
   const { t } = useTranslation();
-  const { status, start, stop, resetCircuitBreaker } = useBackendScalping(walletId);
+  const { config, status, start, stop, resetCircuitBreaker, upsertConfig } = useBackendScalping(walletId);
   const metrics = useScalpingMetrics(symbol);
   const { signals } = useScalpingSignals(walletId);
-  const [showDom, setShowDom] = useState(false);
-  const { bids, asks } = useDepth(showDom ? symbol : null, showDom);
-
   const statusData = status.data;
   const isRunning = statusData?.isRunning ?? false;
+  const directionMode = (config.data?.directionMode as DirectionMode) ?? 'auto';
 
   const handleToggle = () => {
     if (isRunning) stop.mutate({ walletId });
     else start.mutate({ walletId });
   };
 
+  const handleDirectionChange = (mode: DirectionMode) => {
+    upsertConfig.mutate({ walletId, directionMode: mode });
+  };
+
   return (
-    <VStack gap={3} align="stretch" p={3}>
-      <HStack justify="space-between">
-        <Text fontWeight="bold" fontSize="sm">{t('scalping.dashboard.title', 'Scalping')}</Text>
-        <Badge colorPalette={isRunning ? 'green' : 'gray'} px={2}>
-          {isRunning ? t('scalping.status.running', 'Running') : t('scalping.status.stopped', 'Stopped')}
-        </Badge>
-      </HStack>
+    <Stack gap={3} align="stretch" p={4}>
+      <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">
+        <Stack gap={0}>
+          <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.sessionPnl', 'Session P&L')}</Text>
+          <Text color="fg.muted" fontSize="2xs">
+            {statusData?.tradeCount ?? 0} {t('trading.portfolio.trades', 'trades')} · {t('scalping.metric.winRate', 'Win Rate')} {((statusData?.winRate ?? 0) * 100).toFixed(1)}%
+          </Text>
+        </Stack>
+        <Flex align="center" gap={2}>
+          <Text fontWeight="medium" fontSize="sm" color={pnlColor(statusData?.sessionPnl ?? 0)}>
+            {formatPnl(statusData?.sessionPnl ?? 0)}
+          </Text>
+          <Badge colorPalette={isRunning ? 'green' : 'gray'} px={2}>
+            {isRunning ? t('scalping.status.running', 'Running') : t('scalping.status.stopped', 'Stopped')}
+          </Badge>
+        </Flex>
+      </Flex>
+
+      <DirectionModeSelector
+        value={directionMode}
+        onChange={handleDirectionChange}
+        disabled={upsertConfig.isPending}
+        size="2xs"
+      />
 
       <HStack>
         <Button size="xs" colorPalette={isRunning ? 'red' : 'green'} onClick={handleToggle} flex={1}>
           {isRunning ? t('common.stop', 'Stop') : t('common.start', 'Start')}
         </Button>
-        <Button size="xs" variant="outline" onClick={onConfigClick}>
-          {t('common.settings', 'Settings')}
-        </Button>
+        <IconButton aria-label={t('common.settings', 'Settings')} size="xs" variant="outline" onClick={onConfigClick}>
+          <LuSettings />
+        </IconButton>
       </HStack>
 
       {statusData?.circuitBreakerTripped && (
@@ -59,64 +74,71 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
         </HStack>
       )}
 
-      <VStack gap={1} align="stretch" fontSize="xs">
-        <MetricRow label={t('scalping.metric.sessionPnl', 'Session P&L')} value={formatPnl(statusData?.sessionPnl ?? 0)} color={pnlColor(statusData?.sessionPnl ?? 0)} />
-        <MetricRow label={t('scalping.metric.trades', 'Trades')} value={String(statusData?.tradeCount ?? 0)} />
-        <MetricRow label={t('scalping.metric.winRate', 'Win Rate')} value={`${((statusData?.winRate ?? 0) * 100).toFixed(1)}%`} />
-      </VStack>
+      {!statusData?.circuitBreakerTripped && (statusData?.cooldownUntil ?? 0) > Date.now() && (
+        <HStack>
+          <Badge colorPalette="orange">{t('scalping.cooldown.active', 'Cooldown')}</Badge>
+          <Text fontSize="2xs" color="fg.muted">
+            {Math.ceil(((statusData?.cooldownUntil ?? 0) - Date.now()) / 60_000)}m
+          </Text>
+          <Button size="xs" variant="ghost" onClick={() => resetCircuitBreaker.mutate({ walletId })}>
+            {t('scalping.circuitBreaker.reset', 'Reset')}
+          </Button>
+        </HStack>
+      )}
 
-      <Box borderTop="1px solid" borderColor="border.muted" pt={2}>
-        <Text fontSize="xs" fontWeight="semibold" mb={1}>{t('scalping.metric.orderFlow', 'Order Flow')}</Text>
-        <VStack gap={1} align="stretch" fontSize="xs">
-          <MetricRow label="CVD" value={metrics.cvd.toFixed(2)} />
-          <MetricRow label={t('scalping.metric.imbalance', 'Imbalance')} value={metrics.imbalanceRatio.toFixed(3)} />
-          <MetricRow label={t('scalping.metric.spread', 'Spread')} value={`${(metrics.spreadPercent).toFixed(4)}%`} />
-          <MetricRow label={t('scalping.metric.absorption', 'Absorption')} value={metrics.absorptionScore.toFixed(2)} />
-        </VStack>
-      </Box>
+      {isRunning && (
+        <Box p={3} bg="bg.muted" borderRadius="md">
+          <Stack gap={2.5} fontSize="xs">
+            <Flex justify="space-between" align="center">
+              <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.orderFlow', 'Order Flow')}</Text>
+            </Flex>
 
-      <CollapsibleSection
-        title={t('scalping.metric.domLadder', 'DOM Ladder')}
-        open={showDom}
-        onToggle={(open) => setShowDom(open)}
-        size="sm"
-      >
-        {showDom && bids.length > 0 && (
-          <DomLadder
-            bids={bids}
-            asks={asks}
-            currentPrice={metrics.microprice || 0}
-            height={DOM_LADDER_HEIGHT}
-          />
-        )}
-      </CollapsibleSection>
+            <Stack gap={1}>
+              <Flex justify="space-between">
+                <Text color="fg.muted">CVD</Text>
+                <Text fontWeight="medium" fontFamily="mono">{metrics.cvd.toFixed(2)}</Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('scalping.metric.imbalance', 'Imbalance')}</Text>
+                <Text fontWeight="medium" fontFamily="mono">{metrics.imbalanceRatio.toFixed(3)}</Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('scalping.metric.spread', 'Spread')}</Text>
+                <Text fontWeight="medium" fontFamily="mono">{metrics.spreadPercent.toFixed(4)}%</Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('scalping.metric.absorption', 'Absorption')}</Text>
+                <Text fontWeight="medium" fontFamily="mono">{metrics.absorptionScore.toFixed(2)}</Text>
+              </Flex>
+            </Stack>
 
-      {signals.length > 0 && (
-        <Box borderTop="1px solid" borderColor="border.muted" pt={2}>
-          <Text fontSize="xs" fontWeight="semibold" mb={1}>{t('scalping.signals.title', 'Signals')}</Text>
-          <VStack gap={1} align="stretch" maxH="120px" overflowY="auto">
-            {signals.slice(0, 5).map((signal) => (
-              <HStack key={signal.id} fontSize="xs" justify="space-between">
-                <Badge size="sm" colorPalette={signal.direction === 'LONG' ? 'green' : 'red'}>
-                  {signal.direction}
-                </Badge>
-                <Text>{signal.strategy}</Text>
-                <Text color="fg.muted">{signal.confidence}%</Text>
-              </HStack>
-            ))}
-          </VStack>
+          </Stack>
         </Box>
       )}
-    </VStack>
-  );
-}
 
-function MetricRow({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <HStack justify="space-between">
-      <Text color="fg.muted">{label}</Text>
-      <Text fontWeight="medium" fontFamily="mono" color={color}>{value}</Text>
-    </HStack>
+      {isRunning && signals.length > 0 && (
+        <Box p={3} bg="bg.muted" borderRadius="md">
+          <Stack gap={2.5} fontSize="xs">
+            <Flex justify="space-between" align="center">
+              <Text color="fg.muted" fontWeight="medium">{t('scalping.signals.title', 'Signals')}</Text>
+            </Flex>
+
+            <Stack gap={1} maxH="120px" overflowY="auto">
+              {signals.slice(0, 5).map((signal) => (
+                <Flex key={signal.id} justify="space-between" align="center">
+                  <Badge size="sm" px={2} colorPalette={signal.direction === 'LONG' ? 'green' : 'red'}>
+                    {signal.direction === 'LONG' ? 'L' : 'S'}
+                  </Badge>
+                  <Text>{signal.strategy}</Text>
+                  <Text color="fg.muted">{Number(signal.confidence).toFixed(0)}%</Text>
+                </Flex>
+              ))}
+            </Stack>
+          </Stack>
+        </Box>
+      )}
+
+    </Stack>
   );
 }
 

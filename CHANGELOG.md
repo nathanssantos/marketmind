@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.70.0] - 2026-03-18
+
+### Added
+- **Chart color palettes**: configurable chart palettes (Default, TradingView, Monokai, Night Owl, Solarized) in Settings > Chart
+- **Liquidation price on execution creation**: auto-calculated via `calculateLiquidationPrice` when opening futures positions, also synced on pyramid entries
+- **Quick trade size presets expanded**: added 25%, 50%, 100% presets, slider max raised to 100%
+
+### Fixed
+- **Orphaned sibling executions after SL close**: when Binance closes an entire position (consolidated group) via one SL algo order, remaining sibling executions now get properly closed by checking Binance position=0 in `closeResidualPosition`
+- **Position sync orphan handling**: `processedSymbols` skip now only applies to the update path, allowing all orphaned executions for the same symbol to be closed in a single sync cycle
+- **User stream test mocks**: added missing `emitPositionClosed`, `getPositionEventBus`, and `cancelAllSymbolOrders` mocks that prevented `cancelPendingEntryOrders` tests from passing
+
+### Changed
+- **Liquidation alert thresholds tightened**: WARNING 50%→15%, DANGER 25%→8%, CRITICAL 10%→3% (closer to actual liquidation)
+- **Liquidation alert cooldown**: increased from 60s to 5min to reduce alert spam
+- **Volume renderer simplified**: removed buy-pressure (taker) coloring from volume bars for cleaner rendering
+
+## [0.69.0] - 2026-03-16
+
+### Added
+- **EMA cross scalping strategy**: EMA 7/9 crossover with CCI + Parabolic SAR trend confirmation, ATR-based SL/TP
+- **ATR-based SL/TP for all scalping strategies**: dynamic exit levels clamped within min/max bounds, replacing fixed percentages
+- **Direction mode**: scalping config supports `auto`, `long_only`, `short_only` filtering
+- **DirectionModeSelector UI component**: reusable direction mode picker in `@renderer/components/ui`
+- **KlineIndicatorManager service**: centralized indicator state management for scalping
+- **Screener presets**: "Best for Scalping", "CCI Scalping Long", "CCI Scalping Short"
+- **Scalping DB columns**: `directionMode`, extended strategy enum with `ema-cross`
+
+### Changed
+- **Scalping signal engine**: all strategies now use `computeAtrExit()` with ATR multipliers and fallback percentages
+- **buildResult**: simplified — receives `slPercent`/`tpPercent` instead of raw distances
+- **Scalping constants**: added ATR multipliers and bounds (`SCALPING_ATR`), EMA cross constants
+- **Startup audit**: expanded validation for scalping state consistency
+- **WatchersList**: shows direction mode badge, improved scalping status display
+
+### Fixed
+- **Position monitor SL/TP log spam**: consolidated check was firing every tick when exchange-side protection existed — now skips silently if all executions have exchange SL/TP orders
+
+### Removed
+- **28 obsolete scripts**: one-time audit, debug, and trading fix scripts no longer needed
+
+## [0.68.0] - 2026-03-15
+
+### Added
+- **Portfolio margin-based metrics**: Stop-Protected and TP-Projected now show PnL at SL/TP level as % of margin (leverage-adjusted ROI) instead of raw notional value
+- **Portfolio margin line**: Total Exposure section shows margin amount when positions have leverage > 1
+- **Translation keys**: `stopProtectedOfMargin`, `tpProjectedOfMargin`, `margin` in all 4 locales (en/pt/es/fr)
+
+### Changed
+- **Default indicators**: removed MACD and Bollinger Bands from defaults; added CCI (period 14)
+- **CCI overbought/oversold levels**: ±100 → ±150 for fewer, higher-quality signals
+- **Parabolic SAR defaults**: step 0.02/max 0.2 → 0.03/0.3 for faster reaction on lower timeframes
+- **Default EMAs**: EMA 7 (cyan), EMA 9 (magenta), EMA 21 (green), EMA 50 (gold) active by default; EMA 200 disabled; EMA 19 color changed to magenta
+- **Scalping execution engine**: improved position management, scheduler robustness, signal engine tuning
+- **Leverage storage**: backend now correctly stores and propagates leverage across all trade execution paths
+- **LeveragePopover**: simplified, reads actual leverage from exchange
+- **Kline prefetch**: improved reliability and error handling
+- **Trailing stop**: enhanced with better leverage awareness
+- **Protection orders**: improved error handling and retry logic
+- **TrpcProvider**: improved cache management
+- **DomLadder**: rendering improvements
+- **API ban detection**: new apiBanStore for tracking rate limit bans
+
+### Fixed
+- **Stop-Protected display**: was showing notional value at SL (e.g., 994% of margin); now shows actual PnL at SL level with correct sign (red for loss, green for locked profit)
+- **Portfolio PnL%**: already correctly multiplied by leverage (verified)
+- **Chart drag preview**: already correctly applies leverage to SL/TP percentage preview (verified)
+- **Order executor**: leverage correctly passed through auto-trading pipeline
+
 ## [0.67.0] - 2026-03-14
 
 ### Added

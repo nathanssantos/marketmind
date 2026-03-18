@@ -3,8 +3,10 @@ import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { getFuturesClient, getSpotClient } from '../exchange';
+import { BinanceIpBannedError } from './binance-api-cache';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
+import { SCALPING_EXECUTION } from '../constants/scalping';
 
 export interface ProtectionOrderParams {
   wallet: Wallet;
@@ -55,6 +57,7 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
         logger.info({ algoId, symbol }, '[ProtectionOrders] Cancelled futures algo order');
         return true;
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw error;
         const errorMessage = serializeError(error);
         if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
           logger.info({ algoId, symbol }, '[ProtectionOrders] Futures algo order already executed or cancelled');
@@ -72,6 +75,7 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
         logger.info({ orderId, symbol }, '[ProtectionOrders] Cancelled futures regular order');
         return true;
       } catch (error) {
+        if (error instanceof BinanceIpBannedError) throw error;
         const errorMessage = serializeError(error);
         if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
           logger.info({ orderId, symbol }, '[ProtectionOrders] Futures order already executed or cancelled');
@@ -93,6 +97,7 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
     logger.info({ orderId, symbol }, '[ProtectionOrders] Cancelled spot order');
     return true;
   } catch (error) {
+    if (error instanceof BinanceIpBannedError) throw error;
     const errorMessage = serializeError(error);
     if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
       logger.info({ orderId, symbol }, '[ProtectionOrders] Spot order already executed or cancelled');
@@ -186,15 +191,20 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
 }
 
 async function cancelWithRetry(params: CancelProtectionOrderParams, label: string): Promise<boolean> {
-  const cancelled = await cancelProtectionOrder(params);
-  if (cancelled || (!params.algoId && !params.orderId)) return true;
+  try {
+    const cancelled = await cancelProtectionOrder(params);
+    if (cancelled || (!params.algoId && !params.orderId)) return true;
 
-  logger.warn({ symbol: params.symbol, algoId: params.algoId, orderId: params.orderId }, `[ProtectionOrders] Old ${label} cancel failed — retrying`);
-  const retried = await cancelProtectionOrder(params);
-  if (!retried) {
-    logger.error({ symbol: params.symbol, algoId: params.algoId, orderId: params.orderId }, `[ProtectionOrders] Old ${label} cancel failed after retry — creating new anyway (ghost risk)`);
+    logger.warn({ symbol: params.symbol, algoId: params.algoId, orderId: params.orderId }, `[ProtectionOrders] Old ${label} cancel failed — retrying`);
+    const retried = await cancelProtectionOrder(params);
+    if (!retried) {
+      logger.error({ symbol: params.symbol, algoId: params.algoId, orderId: params.orderId }, `[ProtectionOrders] Old ${label} cancel failed after retry — creating new anyway (ghost risk)`);
+    }
+    return retried;
+  } catch (error) {
+    if (error instanceof BinanceIpBannedError) throw error;
+    throw error;
   }
-  return retried;
 }
 
 const MARGIN_RELEASE_DELAY_MS = 300;
@@ -218,7 +228,7 @@ export async function updateStopLossOrder(params: UpdateProtectionOrderParams): 
     const msg = serializeError(error);
     if (msg.includes('margin') || msg.includes('Margin') || msg.includes('insufficient')) {
       logger.warn({ symbol: params.symbol, error: msg }, '[ProtectionOrders] SL creation failed (margin) — retrying after delay');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, SCALPING_EXECUTION.MARGIN_RETRY_DELAY_MS));
       try {
         return await createStopLossOrder(createParams);
       } catch (_retryErr) {
@@ -248,7 +258,7 @@ export async function updateTakeProfitOrder(params: UpdateProtectionOrderParams)
     const msg = serializeError(error);
     if (msg.includes('margin') || msg.includes('Margin') || msg.includes('insufficient')) {
       logger.warn({ symbol: params.symbol, error: msg }, '[ProtectionOrders] TP creation failed (margin) — retrying after delay');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, SCALPING_EXECUTION.MARGIN_RETRY_DELAY_MS));
       try {
         return await createTakeProfitOrder(createParams);
       } catch (_retryErr) {

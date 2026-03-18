@@ -6,16 +6,20 @@ import { eq } from 'drizzle-orm';
 import { MetricsComputer } from './metrics-computer';
 import { SignalEngine } from './signal-engine';
 import { ExecutionEngine } from './execution-engine';
+import { KlineIndicatorManager } from './kline-indicator-manager';
 import { getPositionEventBus } from './position-event-bus';
 import { binanceBookTickerStreamService } from '../binance-book-ticker-stream';
 import { binanceAggTradeStreamService } from '../binance-agg-trade-stream';
 import { binanceDepthStreamService } from '../binance-depth-stream';
+import { binanceFuturesKlineStreamService } from '../binance-kline-stream';
 import { getWebSocketService } from '../websocket';
 import { logger } from '../logger';
 import { walletQueries } from '../database/walletQueries';
 import { getFuturesClient } from '../../exchange';
 import { serializeError } from '../../utils/errors';
 import { SCALPING_ENGINE } from '../../constants/scalping';
+import { BinanceIpBannedError } from '../binance-api-cache';
+import { getAvailableSymbols } from '../binance-exchange-info';
 import type { Wallet } from '../../db/schema';
 import type { StrategyContext, BalanceCache } from './types';
 
@@ -26,6 +30,9 @@ interface ActiveSession {
   metricsComputer: MetricsComputer;
   signalEngine: SignalEngine;
   executionEngine: ExecutionEngine | null;
+  klineIndicatorManager: KlineIndicatorManager | null;
+  signalInterval: string | null;
+  directionMode: 'auto' | 'long_only' | 'short_only';
   unsubscribers: Array<() => void>;
   isAutoTrading: boolean;
   balanceCache: BalanceCache | null;
@@ -47,14 +54,29 @@ export class ScalpingScheduler {
 
     if (!config) throw new Error('Scalping config not found for wallet');
 
-    const symbols: string[] = JSON.parse(config.symbols);
+    const rawSymbols: string[] = JSON.parse(config.symbols);
     const enabledStrategies: ScalpingStrategy[] = JSON.parse(config.enabledStrategies);
 
-    if (symbols.length === 0) throw new Error('No symbols configured for scalping');
+    if (rawSymbols.length === 0) throw new Error('No symbols configured for scalping');
+
+    const availableSymbols = await getAvailableSymbols('FUTURES');
+    const availableSet = new Set(availableSymbols);
+    const symbols = rawSymbols.filter((s) => availableSet.has(s));
+    const invalidSymbols = rawSymbols.filter((s) => !availableSet.has(s));
+
+    if (invalidSymbols.length > 0) {
+      logger.warn({ walletId, invalidSymbols }, 'Scalping: removed unavailable symbols from config');
+      await db.update(scalpingConfig)
+        .set({ symbols: JSON.stringify(symbols), updatedAt: new Date() })
+        .where(eq(scalpingConfig.walletId, walletId));
+    }
+
+    if (symbols.length === 0) throw new Error('No valid symbols remaining after validation');
 
     const metricsComputer = new MetricsComputer();
     const signalEngine = new SignalEngine({
       enabledStrategies,
+      directionMode: (config.directionMode as 'auto' | 'long_only' | 'short_only') ?? 'auto',
       imbalanceThreshold: parseFloat(config.imbalanceThreshold ?? String(SCALPING_DEFAULTS.IMBALANCE_THRESHOLD)),
       cvdDivergenceBars: config.cvdDivergenceBars ?? SCALPING_DEFAULTS.CVD_DIVERGENCE_BARS,
       vwapDeviationSigma: parseFloat(config.vwapDeviationSigma ?? String(SCALPING_DEFAULTS.VWAP_DEVIATION_SIGMA)),
@@ -80,6 +102,7 @@ export class ScalpingScheduler {
           executionMode: (config.executionMode ?? 'POST_ONLY') as ScalpingExecutionMode,
           positionSizePercent: parseFloat(config.positionSizePercent ?? '1'),
           leverage: config.leverage ?? 5,
+          marginType: (config.marginType as 'ISOLATED' | 'CROSSED') ?? 'CROSSED',
           maxConcurrentPositions: config.maxConcurrentPositions ?? 1,
           microTrailingTicks: config.microTrailingTicks ?? SCALPING_DEFAULTS.MICRO_TRAILING_TICKS,
         },
@@ -114,6 +137,7 @@ export class ScalpingScheduler {
     const aggTradeUnsub = binanceAggTradeStreamService.onAggTradeUpdate((trade: AggTrade) => {
       if (!symbols.includes(trade.symbol)) return;
       metricsComputer.processAggTrade(trade);
+      if (executionEngine?.isSymbolBlocked(trade.symbol)) return;
       this.evaluateSignal(walletId, trade.symbol, trade.price);
       if (executionEngine?.hasActivePosition(trade.symbol)) {
         void executionEngine.checkMicroTrailing(trade.symbol, trade.price);
@@ -140,6 +164,21 @@ export class ScalpingScheduler {
       binanceDepthStreamService.subscribe(symbol);
     }
 
+    const signalInterval = config.signalInterval ?? SCALPING_DEFAULTS.SIGNAL_INTERVAL;
+    const klineIndicatorManager = new KlineIndicatorManager();
+
+    for (const symbol of symbols) {
+      await klineIndicatorManager.initialize(symbol, signalInterval);
+      binanceFuturesKlineStreamService.subscribe(symbol, signalInterval);
+    }
+
+    const klineUnsub = binanceFuturesKlineStreamService.onKlineClose((update) => {
+      if (update.interval !== signalInterval) return;
+      if (!symbols.includes(update.symbol)) return;
+      klineIndicatorManager.processKlineClose(update);
+    });
+    unsubscribers.push(klineUnsub);
+
     this.sessions.set(walletId, {
       walletId,
       userId: config.userId,
@@ -147,10 +186,21 @@ export class ScalpingScheduler {
       metricsComputer,
       signalEngine,
       executionEngine,
+      klineIndicatorManager,
+      signalInterval,
+      directionMode: (config.directionMode as 'auto' | 'long_only' | 'short_only') ?? 'auto',
       unsubscribers,
       isAutoTrading,
       balanceCache: null,
     });
+
+    try {
+      await db.update(scalpingConfig)
+        .set({ isEnabled: true, updatedAt: new Date() })
+        .where(eq(scalpingConfig.walletId, walletId));
+    } catch (error) {
+      logger.error({ error, walletId }, 'Failed to enable scalping config in DB');
+    }
 
     logger.info({
       walletId,
@@ -160,7 +210,7 @@ export class ScalpingScheduler {
     }, 'Scalping started');
   }
 
-  stopScalping(walletId: string): void {
+  async stopScalping(walletId: string): Promise<void> {
     const session = this.sessions.get(walletId);
     if (!session) return;
 
@@ -172,11 +222,24 @@ export class ScalpingScheduler {
       binanceAggTradeStreamService.unsubscribe(symbol);
       binanceDepthStreamService.unsubscribe(symbol);
 
+      if (session.signalInterval) {
+        binanceFuturesKlineStreamService.unsubscribe(symbol, session.signalInterval);
+      }
+
       this.lastEvaluation.delete(`${walletId}:${symbol}`);
     }
 
+    session.klineIndicatorManager?.clear();
     session.executionEngine?.stop();
     this.sessions.delete(walletId);
+
+    try {
+      await db.update(scalpingConfig)
+        .set({ isEnabled: false, updatedAt: new Date() })
+        .where(eq(scalpingConfig.walletId, walletId));
+    } catch (error) {
+      logger.error({ error, walletId }, 'Failed to disable scalping config in DB');
+    }
 
     logger.info({ walletId }, 'Scalping stopped');
   }
@@ -187,10 +250,11 @@ export class ScalpingScheduler {
     tradeCount: number;
     winRate: number;
     circuitBreakerTripped: boolean;
+    cooldownUntil: number;
   } {
     const session = this.sessions.get(walletId);
     if (!session) {
-      return { isRunning: false, sessionPnl: 0, tradeCount: 0, winRate: 0, circuitBreakerTripped: false };
+      return { isRunning: false, sessionPnl: 0, tradeCount: 0, winRate: 0, circuitBreakerTripped: false, cooldownUntil: 0 };
     }
 
     const cb = session.signalEngine.getCircuitBreakerState();
@@ -200,6 +264,7 @@ export class ScalpingScheduler {
       tradeCount: cb.tradeCount,
       winRate: cb.tradeCount > 0 ? cb.winCount / cb.tradeCount : 0,
       circuitBreakerTripped: cb.tripped,
+      cooldownUntil: cb.cooldownUntil,
     };
   }
 
@@ -227,17 +292,30 @@ export class ScalpingScheduler {
     });
 
     for (const config of configs) {
+      const symbols: string[] = JSON.parse(config.symbols);
       try {
         await this.startScalping(config.walletId);
-        logger.info({ walletId: config.walletId }, 'Scalping restored from DB');
+        logger.info({ walletId: config.walletId, symbols }, 'Scalping restored from DB');
       } catch (error) {
-        logger.error({ walletId: config.walletId, error }, 'Failed to restore scalping session');
+        logger.error({ walletId: config.walletId, symbols, error }, 'Failed to restore scalping session');
       }
     }
   }
 
   isRunning(walletId: string): boolean {
     return this.sessions.has(walletId);
+  }
+
+  isSymbolBeingScalped(walletId: string, symbol: string): boolean {
+    const session = this.sessions.get(walletId);
+    if (!session) return false;
+    return session.symbols.includes(symbol);
+  }
+
+  getScalpingSymbols(walletId: string): string[] {
+    const session = this.sessions.get(walletId);
+    if (!session) return [];
+    return [...session.symbols];
   }
 
   private async getCachedBalance(session: ActiveSession): Promise<number> {
@@ -254,6 +332,11 @@ export class ScalpingScheduler {
       session.balanceCache = { balance, timestamp: now };
       return balance;
     } catch (error) {
+      if (error instanceof BinanceIpBannedError && session.balanceCache) {
+        session.balanceCache.timestamp = now + SCALPING_ENGINE.IP_BAN_PAUSE_MS;
+        logger.warn({ walletId: session.walletId }, 'IP banned — extending balance cache TTL');
+        return session.balanceCache.balance;
+      }
       logger.warn({ error: serializeError(error), walletId: session.walletId }, 'Failed to fetch balance for signal eval');
       return session.balanceCache?.balance ?? 0;
     }
@@ -283,6 +366,8 @@ export class ScalpingScheduler {
 
     const cachedBalance = session.balanceCache?.balance ?? 0;
 
+    const indicators = session.klineIndicatorManager?.getIndicators(symbol) ?? undefined;
+
     const context: StrategyContext = {
       symbol,
       metrics,
@@ -291,6 +376,7 @@ export class ScalpingScheduler {
       vwap,
       avgVolume,
       walletBalance: cachedBalance,
+      indicators,
     };
 
     session.signalEngine.evaluate(context);

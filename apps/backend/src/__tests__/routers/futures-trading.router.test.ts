@@ -401,7 +401,6 @@ describe('Futures Trading Router', () => {
         entryPrice: '50000',
         entryQty: '0.1',
         leverage: 10,
-        marginType: 'ISOLATED',
       });
 
       expect(result.id).toBeDefined();
@@ -415,7 +414,7 @@ describe('Futures Trading Router', () => {
 
       expect(position).toBeDefined();
       expect(position!.leverage).toBe(10);
-      expect(position!.marginType).toBe('ISOLATED');
+      expect(position!.marginType).toBe('CROSSED');
       expect(position!.marketType).toBe('FUTURES');
     });
 

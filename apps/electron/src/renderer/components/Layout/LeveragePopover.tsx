@@ -7,28 +7,35 @@ import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
 
-export const LeveragePopover = memo(() => {
+interface LeveragePopoverProps {
+  symbol: string;
+}
+
+export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const { activeWallet } = useActiveWallet();
   const walletId = activeWallet?.id;
 
-  const { data: autoConfig } = trpc.autoTrading.getConfig.useQuery(
-    { walletId: walletId! },
-    { enabled: !!walletId },
+  const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
+    { walletId: walletId!, symbol },
+    { enabled: !!walletId && !!symbol },
   );
 
   const utils = trpc.useUtils();
-  const updateConfig = trpc.autoTrading.updateConfig.useMutation({
-    onSuccess: () => { void utils.autoTrading.getConfig.invalidate(); },
+  const setLeverageMutation = trpc.futuresTrading.setLeverage.useMutation({
+    onSuccess: () => {
+      void utils.futuresTrading.getSymbolLeverage.invalidate({ walletId: walletId!, symbol });
+      void utils.futuresTrading.getPositions.invalidate();
+    },
   });
 
-  const leverage = autoConfig?.leverage ?? 1;
+  const leverage = symbolLeverage?.leverage ?? 1;
 
   const handleLeverageChange = useCallback((newLeverage: number) => {
-    if (!walletId) return;
-    updateConfig.mutate({ walletId, leverage: newLeverage });
-  }, [walletId, updateConfig]);
+    if (!walletId || !symbol) return;
+    setLeverageMutation.mutate({ walletId, symbol, leverage: newLeverage });
+  }, [walletId, symbol, setLeverageMutation]);
 
   return (
     <Box position="relative" lineHeight={0}>
@@ -66,7 +73,7 @@ export const LeveragePopover = memo(() => {
           <LeverageSelector
             value={leverage}
             onChange={handleLeverageChange}
-            disabled={!walletId}
+            disabled={!walletId || !symbol}
           />
         </Box>
       </Popover>
