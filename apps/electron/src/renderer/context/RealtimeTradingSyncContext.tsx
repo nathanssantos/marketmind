@@ -265,6 +265,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     };
 
     const handleRiskAlert = (alert: RiskAlert) => {
+      if (alert.type === 'ORPHAN_ORDERS') return;
       const dedupKey = `${alert.type}:${alert.symbol ?? ''}:${alert.message}`;
       const lastShown = recentAlertsRef.current.get(dedupKey) ?? 0;
       const COOLDOWN_MS = 5 * 60 * 1000;

@@ -929,7 +929,12 @@
       "manual": "Manuel",
       "entriesCount": "{{count}}x",
       "dailyPnl": "P&P du Jour",
-      "trades": "opérations"
+      "trades": "opérations",
+      "positionsTitle": "Positions",
+      "orphanOrdersTitle": "Ordres Orphelins",
+      "orphanOrdersCancel": "Annuler",
+      "orphanOrdersCancelSuccess": "Ordre annulé",
+      "orphanOrdersCancelFailed": "Échec de l'annulation"
     },
     "viewMode": {
       "cards": "Vue en cartes",

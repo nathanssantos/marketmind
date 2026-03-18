@@ -47,6 +47,8 @@ export { useExecutionNotifications } from './useExecutionNotifications';
 
 export { useNotification } from './useNotification';
 export { useOrderNotifications } from './useOrderNotifications';
+export { useOrphanOrders } from './useOrphanOrders';
+export type { OrphanOrder } from './useOrphanOrders';
 export { usePollingInterval } from './usePollingInterval';
 export { usePortfolioFilters } from './usePortfolioFilters';
 export { useProfileEditor } from './useProfileEditor';

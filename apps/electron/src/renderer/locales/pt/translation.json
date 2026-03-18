@@ -915,7 +915,12 @@
       "manual": "Manual",
       "entriesCount": "{{count}}x",
       "dailyPnl": "L&P do Dia",
-      "trades": "operações"
+      "trades": "operações",
+      "positionsTitle": "Posições",
+      "orphanOrdersTitle": "Ordens Órfãs",
+      "orphanOrdersCancel": "Cancelar",
+      "orphanOrdersCancelSuccess": "Ordem cancelada",
+      "orphanOrdersCancelFailed": "Falha ao cancelar ordem"
     },
     "viewMode": {
       "cards": "Visualização em cards",

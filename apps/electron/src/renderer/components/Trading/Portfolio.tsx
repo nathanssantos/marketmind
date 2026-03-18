@@ -12,10 +12,13 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
-import { LuBot, LuChevronDown, LuChevronUp, LuEye, LuEyeOff } from 'react-icons/lu';
+import { LuBot, LuChevronDown, LuChevronUp, LuEye, LuEyeOff, LuX } from 'react-icons/lu';
+import { useOrphanOrders, type OrphanOrder } from '@renderer/hooks/useOrphanOrders';
+import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
+import { useToast } from '@renderer/hooks/useToast';
 import { useShallow } from 'zustand/react/shallow';
 import { FuturesPositionsPanel } from './FuturesPositionsPanel';
 import { StrategyInfoPopover } from './StrategyInfoPopover';
@@ -60,6 +63,10 @@ const PortfolioComponent = () => {
     { enabled: !!activeWalletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const tradeExecutions = openTradeExecutions ?? [];
+
+  const { cancelOrder: cancelFuturesOrder } = useBackendFuturesTrading(activeWalletId ?? '');
+  const { orphanOrders } = useOrphanOrders(activeWalletId ?? '', tradeExecutions);
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const now = new Date();
   const { data: dailyPerformance } = trpc.analytics.getDailyPerformance.useQuery(
@@ -241,13 +248,15 @@ const PortfolioComponent = () => {
             </Flex>
           </Flex>
 
-          {positions.length === 0 ? (
+          {positions.length === 0 && orphanOrders.length === 0 ? (
             <Box p={4} textAlign="center">
               <Text fontSize="sm" color="fg.muted">
                 {t('trading.portfolio.empty')}
               </Text>
             </Box>
           ) : (
+          <>
+          {positions.length > 0 && (
           <>
           <Box p={3} bg="bg.muted" borderRadius="md">
             <Stack gap={2.5} fontSize="xs">
@@ -378,6 +387,10 @@ const PortfolioComponent = () => {
             </Stack>
           </Box>
 
+          <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="wide">
+            {t('trading.portfolio.positionsTitle')} ({filteredPositions.length})
+          </Text>
+
           <Flex gap={2} align="center">
             <ChakraField.Root flex={1}>
               <Select
@@ -444,6 +457,43 @@ const PortfolioComponent = () => {
             </Stack>
           ) : (
             <PortfolioTable positions={filteredPositions} currency={activeWallet.currency} walletBalance={activeWallet.walletBalance} onNavigateToSymbol={globalActions?.navigateToSymbol} />
+          )}
+          </>
+          )}
+
+          {orphanOrders.length > 0 && (
+            <>
+              <Text fontSize="xs" fontWeight="semibold" color="orange.500" textTransform="uppercase" letterSpacing="wide">
+                {t('trading.portfolio.orphanOrdersTitle')} ({orphanOrders.length})
+              </Text>
+
+              {viewMode === 'cards' ? (
+                <Stack gap={2}>
+                  {orphanOrders.map((orphan) => (
+                    <OrphanOrderCard
+                      key={orphan.id}
+                      orphan={orphan}
+                      onCancel={async () => {
+                        try {
+                          await cancelFuturesOrder({ walletId: activeWalletId!, symbol: orphan.symbol, orderId: orphan.exchangeOrderId, isAlgo: orphan.isAlgo });
+                          toastSuccess(t('trading.portfolio.orphanOrdersCancelSuccess'));
+                        } catch {
+                          toastError(t('trading.portfolio.orphanOrdersCancelFailed'));
+                        }
+                      }}
+                      onNavigateToSymbol={globalActions?.navigateToSymbol}
+                    />
+                  ))}
+                </Stack>
+              ) : (
+                <OrphanOrdersTable
+                  orphans={orphanOrders}
+                  walletId={activeWalletId!}
+                  cancelFuturesOrder={cancelFuturesOrder}
+                  onNavigateToSymbol={globalActions?.navigateToSymbol}
+                />
+              )}
+            </>
           )}
           </>
           )}
@@ -792,5 +842,138 @@ const PositionCard = memo(({ position, currency, onNavigateToSymbol }: PositionC
 });
 
 PositionCard.displayName = 'PositionCard';
+
+const OrphanOrderCard = memo(({ orphan, onCancel, onNavigateToSymbol }: {
+  orphan: OrphanOrder;
+  onCancel: () => Promise<void>;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}) => {
+  const { t } = useTranslation();
+  const [cancelling, setCancelling] = useState(false);
+  const isBuy = orphan.side === 'BUY';
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    try { await onCancel(); } finally { setCancelling(false); }
+  };
+
+  return (
+    <Box
+      borderRadius="md"
+      borderLeftWidth="3px"
+      borderLeftColor="orange.500"
+      bg="bg.muted"
+      px={3}
+      py={2}
+      cursor={onNavigateToSymbol ? 'pointer' : undefined}
+      onClick={() => onNavigateToSymbol?.(orphan.symbol, 'FUTURES')}
+      _hover={onNavigateToSymbol ? { bg: 'bg.subtle' } : undefined}
+    >
+      <Flex justify="space-between" align="center">
+        <Flex align="center" gap={2}>
+          <CryptoIcon symbol={orphan.symbol} size={18} />
+          <Text fontSize="sm" fontWeight="semibold">{orphan.symbol}</Text>
+          <Badge colorPalette={isBuy ? 'green' : 'red'} size="xs">{orphan.side}</Badge>
+          <Badge colorPalette="gray" size="xs">{orphan.type.replace(/_/g, ' ')}</Badge>
+        </Flex>
+        <IconButton
+          aria-label={t('trading.portfolio.orphanOrdersCancel')}
+          size="2xs"
+          variant="ghost"
+          colorPalette="red"
+          loading={cancelling}
+          onClick={(e) => { e.stopPropagation(); handleCancel(); }}
+        >
+          <LuX />
+        </IconButton>
+      </Flex>
+      <Flex gap={4} mt={1} fontSize="xs" color="fg.muted">
+        <Text>{parseFloat(orphan.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+        <Text>Qty: {parseFloat(orphan.quantity).toLocaleString()}</Text>
+        {orphan.createdAt && <Text>{orphan.createdAt.toLocaleTimeString()}</Text>}
+      </Flex>
+    </Box>
+  );
+});
+
+OrphanOrderCard.displayName = 'OrphanOrderCard';
+
+const OrphanOrdersTable = memo(({ orphans, walletId, cancelFuturesOrder, onNavigateToSymbol }: {
+  orphans: OrphanOrder[];
+  walletId: string;
+  cancelFuturesOrder: (data: { walletId: string; symbol: string; orderId: string; isAlgo?: boolean }) => Promise<unknown>;
+  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+}) => {
+  const { t } = useTranslation();
+  const { success: toastSuccess, error: toastError } = useToast();
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const columns: TradingTableColumn[] = useMemo(() => [
+    { key: 'symbol', header: 'SYMBOL', sticky: true },
+    { key: 'side', header: 'SIDE' },
+    { key: 'type', header: 'TYPE' },
+    { key: 'price', header: 'PRICE', textAlign: 'right' as const },
+    { key: 'quantity', header: 'QTY', textAlign: 'right' as const },
+    { key: 'actions', header: '' },
+  ], []);
+
+  return (
+    <TradingTable columns={columns}>
+      {orphans.map((orphan) => {
+        const isBuy = orphan.side === 'BUY';
+        return (
+          <TradingTableRow
+            key={orphan.id}
+            onClick={() => onNavigateToSymbol?.(orphan.symbol, 'FUTURES')}
+          >
+            <TradingTableCell sticky>
+              <Flex align="center" gap={1.5}>
+                <CryptoIcon symbol={orphan.symbol} size={16} />
+                <Text fontWeight="medium" fontSize="xs">{orphan.symbol}</Text>
+              </Flex>
+            </TradingTableCell>
+            <TradingTableCell>
+              <Badge colorPalette={isBuy ? 'green' : 'red'} size="xs">{orphan.side}</Badge>
+            </TradingTableCell>
+            <TradingTableCell>
+              <Text fontSize="xs">{orphan.type.replace(/_/g, ' ')}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text fontSize="xs">{parseFloat(orphan.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              <Text fontSize="xs">{parseFloat(orphan.quantity).toLocaleString()}</Text>
+            </TradingTableCell>
+            <TradingTableCell>
+              <IconButton
+                aria-label={t('trading.portfolio.orphanOrdersCancel')}
+                size="2xs"
+                variant="ghost"
+                colorPalette="red"
+                loading={cancellingId === orphan.id}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setCancellingId(orphan.id);
+                  try {
+                    await cancelFuturesOrder({ walletId, symbol: orphan.symbol, orderId: orphan.exchangeOrderId, isAlgo: orphan.isAlgo });
+                    toastSuccess(t('trading.portfolio.orphanOrdersCancelSuccess'));
+                  } catch {
+                    toastError(t('trading.portfolio.orphanOrdersCancelFailed'));
+                  } finally {
+                    setCancellingId(null);
+                  }
+                }}
+              >
+                <LuX />
+              </IconButton>
+            </TradingTableCell>
+          </TradingTableRow>
+        );
+      })}
+    </TradingTable>
+  );
+});
+
+OrphanOrdersTable.displayName = 'OrphanOrdersTable';
 
 export const Portfolio = memo(PortfolioComponent);

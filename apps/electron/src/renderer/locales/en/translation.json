@@ -880,7 +880,12 @@
       "manual": "Manual",
       "entriesCount": "{{count}}x",
       "dailyPnl": "Today's P&L",
-      "trades": "trades"
+      "trades": "trades",
+      "positionsTitle": "Positions",
+      "orphanOrdersTitle": "Orphan Orders",
+      "orphanOrdersCancel": "Cancel",
+      "orphanOrdersCancelSuccess": "Order cancelled",
+      "orphanOrdersCancelFailed": "Failed to cancel order"
     },
     "viewMode": {
       "cards": "Card view",

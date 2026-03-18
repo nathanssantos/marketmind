@@ -940,7 +940,12 @@
       "manual": "Manual",
       "entriesCount": "{{count}}x",
       "dailyPnl": "PyG del Día",
-      "trades": "operaciones"
+      "trades": "operaciones",
+      "positionsTitle": "Posiciones",
+      "orphanOrdersTitle": "Órdenes Huérfanas",
+      "orphanOrdersCancel": "Cancelar",
+      "orphanOrdersCancelSuccess": "Orden cancelada",
+      "orphanOrdersCancelFailed": "Error al cancelar orden"
     },
     "viewMode": {
       "cards": "Vista de tarjetas",
