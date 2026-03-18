@@ -271,6 +271,7 @@
       "bottomPadding": "Bottom Padding",
       "leftPadding": "Left Padding",
       "rightPadding": "Right Padding",
+      "colorPalette": "Color Palette",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Enable Shift/Alt Order Entry",
       "enableShiftAltOrderEntryHelper": "Hold Shift to preview long orders or Alt/Option to preview short orders when clicking on the chart"

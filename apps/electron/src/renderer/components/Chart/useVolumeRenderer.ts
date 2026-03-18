@@ -3,7 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { calculateVolumeMA, getVolumeMAPeriod } from '@renderer/utils/indicators/volume';
 import { CHART_CONFIG } from '@shared/constants';
-import { getKlineBuyPressure, getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
+import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { useCallback } from 'react';
 
 export interface UseVolumeRendererProps {
@@ -74,30 +74,12 @@ export const useVolumeRenderer = ({
       const isHovered = hoveredKlineIndex === actualIndex;
       const isLastKline = actualIndex === lastKlineIndex;
 
-      const buyPressure = getKlineBuyPressure(kline);
-      const hasTakerData = parseFloat(kline.takerBuyBaseVolume) > 0;
-
-      let finalColor: string;
       const volumeOpacity = isHovered ? opacity * 2.5 : opacity;
 
       const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-      const fallbackColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
+      const finalColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
         ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
         : `rgba(120, 120, 120, ${volumeOpacity})`;
-
-      if (!hasTakerData) {
-        finalColor = fallbackColor;
-      } else if (buyPressure > 0.55) {
-        const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);
-        const greenIntensity = Math.floor(100 + intensity * 155);
-        finalColor = `rgba(34, ${greenIntensity}, 84, ${volumeOpacity})`;
-      } else if (buyPressure < 0.45) {
-        const intensity = Math.min((0.45 - buyPressure) / 0.45, 1);
-        const redIntensity = Math.floor(100 + intensity * 155);
-        finalColor = `rgba(${redIntensity}, 34, 34, ${volumeOpacity})`;
-      } else {
-        finalColor = fallbackColor;
-      }
 
       if (isHovered) {
         ctx.save();
@@ -126,24 +108,9 @@ export const useVolumeRenderer = ({
           const projectedHeight = Math.min(projectedRatio * volumeOverlayHeight, volumeOverlayHeight);
 
           if (projectedHeight > barHeight) {
-            let projectionColor: string;
-            const projectionFallback = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
+            const projectionColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
               ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${opacity * 0.8})`
               : `rgba(120, 120, 120, ${opacity * 0.8})`;
-
-            if (!hasTakerData) {
-              projectionColor = projectionFallback;
-            } else if (buyPressure > 0.55) {
-              const intensity = Math.min((buyPressure - 0.55) / 0.45, 1);
-              const greenIntensity = Math.floor(100 + intensity * 155);
-              projectionColor = `rgba(34, ${greenIntensity}, 84, ${opacity * 0.8})`;
-            } else if (buyPressure < 0.45) {
-              const intensity = Math.min((0.45 - buyPressure) / 0.45, 1);
-              const redIntensity = Math.floor(100 + intensity * 155);
-              projectionColor = `rgba(${redIntensity}, 34, 34, ${opacity * 0.8})`;
-            } else {
-              projectionColor = projectionFallback;
-            }
 
             ctx.save();
             ctx.setLineDash([4, 2]);

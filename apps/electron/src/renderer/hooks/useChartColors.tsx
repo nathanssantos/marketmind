@@ -1,5 +1,7 @@
 import { useColorMode } from '@renderer/components/ui';
 import { getChartColors } from '@/renderer/theme';
+import { getPalette } from '@/renderer/constants/chartPalettes';
+import { usePreferencesStore } from '@/renderer/store/preferencesStore';
 import type { ChartColors as BaseChartColors } from '@marketmind/types';
 import { useMemo } from 'react';
 
@@ -204,12 +206,13 @@ export type ChartColors = ChartThemeColors;
 
 export const useChartColors = (): ChartThemeColors => {
   const { colorMode } = useColorMode();
+  const paletteId = usePreferencesStore((s) => s.chart['chartColorPalette'] as string | undefined) ?? 'default';
 
   const colors = useMemo(() => {
-    const themeColors = getChartColors(colorMode);
-
+    const palette = paletteId !== 'default' ? getPalette(paletteId, colorMode) : undefined;
+    const themeColors = getChartColors(colorMode, palette);
     return themeColors as ChartThemeColors;
-  }, [colorMode]);
+  }, [colorMode, paletteId]);
 
   return colors;
 };

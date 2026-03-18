@@ -16,7 +16,7 @@ import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
-const SIZE_PRESETS = [0.1, 0.25, 0.5, 1, 2.5, 5, 10] as const;
+const SIZE_PRESETS = [0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25, 50, 100] as const;
 const SNAP_THRESHOLD = 16;
 const EDGE_PADDING = 8;
 
@@ -272,7 +272,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
           </HStack>
 
           <HStack gap={1.5} px={0.5}>
-            <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.1} max={25} step={0.1} />
+            <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.1} max={100} step={0.1} />
             <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
               {`${Math.round(sizePercent * 10) / 10}%`}
             </Text>

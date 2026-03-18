@@ -328,9 +328,22 @@ export class BinanceFuturesUserStreamService {
       ? ((existingQty * existingPrice) + (addedQty * addedPrice)) / newQty
       : addedPrice;
 
+    let pyramidLiquidationPrice: string | undefined;
+    const pyramidConn = this.connections.get(walletId);
+    if (pyramidConn) {
+      try {
+        const pos = await getPosition(pyramidConn.apiClient, symbol);
+        if (pos) {
+          const lp = parseFloat(pos.liquidationPrice || '0');
+          if (lp > 0) pyramidLiquidationPrice = lp.toString();
+        }
+      } catch {}
+    }
+
     await db.update(tradeExecutions).set({
       entryPrice: newAvgPrice.toString(),
       quantity: newQty.toString(),
+      liquidationPrice: pyramidLiquidationPrice ?? freshExec.liquidationPrice,
       updatedAt: new Date(),
     }).where(eq(tradeExecutions.id, freshExec.id));
 
@@ -380,9 +393,13 @@ export class BinanceFuturesUserStreamService {
         return false;
       }
 
+      const lp = parseFloat(exchangePos.liquidationPrice || '0');
+      const syncLiquidationPrice = lp > 0 ? lp.toString() : freshExec.liquidationPrice;
+
       await db.update(tradeExecutions).set({
         quantity: exchangeQty.toString(),
         entryPrice: exchangePrice.toString(),
+        liquidationPrice: syncLiquidationPrice,
         updatedAt: new Date(),
       }).where(eq(tradeExecutions.id, executionId));
 
@@ -776,6 +793,18 @@ export class BinanceFuturesUserStreamService {
               }
             }
 
+            let activationLiquidationPrice: string | undefined;
+            const activationConn = this.connections.get(walletId);
+            if (activationConn) {
+              try {
+                const pos = await getPosition(activationConn.apiClient, symbol);
+                if (pos) {
+                  const lp = parseFloat(pos.liquidationPrice || '0');
+                  if (lp > 0) activationLiquidationPrice = lp.toString();
+                }
+              } catch {}
+            }
+
             await db
               .update(tradeExecutions)
               .set({
@@ -792,6 +821,7 @@ export class BinanceFuturesUserStreamService {
                 takeProfitOrderId: activationTpOrderId,
                 stopLossIsAlgo: activationSlIsAlgo,
                 takeProfitIsAlgo: activationTpIsAlgo,
+                liquidationPrice: activationLiquidationPrice,
               })
               .where(eq(tradeExecutions.id, pendingExecution.id));
 
@@ -1059,11 +1089,16 @@ export class BinanceFuturesUserStreamService {
           if (!walletRow) return;
 
           let manualLeverage = 1;
+          let manualLiquidationPrice: string | undefined;
           const conn = this.connections.get(walletId);
           if (conn) {
             try {
               const pos = await getPosition(conn.apiClient, symbol);
-              if (pos) manualLeverage = Number(pos.leverage) || 1;
+              if (pos) {
+                manualLeverage = Number(pos.leverage) || 1;
+                const lp = parseFloat(pos.liquidationPrice || '0');
+                if (lp > 0) manualLiquidationPrice = lp.toString();
+              }
             } catch {}
           }
 
@@ -1081,6 +1116,7 @@ export class BinanceFuturesUserStreamService {
             entryOrderType: manualOrder.type === 'MARKET' ? 'MARKET' : 'LIMIT',
             marketType: 'FUTURES',
             leverage: manualLeverage,
+            liquidationPrice: manualLiquidationPrice,
           });
 
           logger.info({ symbol, orderId, direction, fillPrice, fillQty }, '[FuturesUserStream] Created tradeExecution for manual order fill');
@@ -2172,7 +2208,7 @@ export class BinanceFuturesUserStreamService {
       if (!apiClient) return;
 
       const otherOpen = await db
-        .select({ id: tradeExecutions.id })
+        .select()
         .from(tradeExecutions)
         .where(
           and(
@@ -2181,13 +2217,142 @@ export class BinanceFuturesUserStreamService {
             eq(tradeExecutions.status, 'open'),
             eq(tradeExecutions.marketType, 'FUTURES')
           )
-        )
-        .limit(1);
-
-      if (otherOpen.length > 0) return;
+        );
 
       const position = await getPosition(apiClient, symbol);
       const positionAmt = position ? parseFloat(String(position.positionAmt)) : 0;
+
+      if (otherOpen.length > 0 && positionAmt === 0) {
+        logger.warn(
+          { walletId, symbol, executionId, orphanedCount: otherOpen.length },
+          '[FuturesUserStream] Binance position is zero but sibling executions remain open - closing all'
+        );
+
+        let actualExitPrice: number | null = null;
+        try {
+          const firstOrphan = otherOpen[0]!;
+          const side = firstOrphan.side === 'LONG' ? 'LONG' : 'SHORT';
+          const openedAt = firstOrphan.createdAt ? new Date(firstOrphan.createdAt).getTime() : Date.now() - 86_400_000;
+          const fees = await getAllTradeFeesForPosition(apiClient, symbol, side, openedAt);
+          if (fees && fees.exitPrice > 0) actualExitPrice = fees.exitPrice;
+        } catch (feeErr) {
+          logger.warn({ walletId, symbol, error: serializeError(feeErr) }, '[FuturesUserStream] Failed to fetch trade fees for orphaned siblings');
+        }
+
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+
+        for (const orphan of otherOpen) {
+          try {
+            const entryPrice = parseFloat(orphan.entryPrice);
+            const quantity = parseFloat(orphan.quantity);
+            const exitPrice = actualExitPrice ?? entryPrice;
+            const accumulatedFunding = parseFloat(orphan.accumulatedFunding || '0');
+            const actualEntryFee = parseFloat(orphan.entryFee || '0');
+
+            const pnlResult = calculatePnl({
+              entryPrice,
+              exitPrice,
+              quantity,
+              side: orphan.side,
+              marketType: 'FUTURES',
+              leverage: orphan.leverage || 1,
+              accumulatedFunding,
+            });
+            const partialClosePnl = parseFloat(orphan.partialClosePnl || '0');
+            const pnl = pnlResult.netPnl + partialClosePnl;
+            const totalFees = pnlResult.totalFees;
+
+            const closeResult = await db
+              .update(tradeExecutions)
+              .set({
+                status: 'closed',
+                exitPrice: exitPrice.toString(),
+                closedAt: new Date(),
+                pnl: pnl.toString(),
+                pnlPercent: pnlResult.pnlPercent.toString(),
+                fees: totalFees.toString(),
+                entryFee: actualEntryFee.toString(),
+                exitFee: (totalFees - actualEntryFee).toString(),
+                exitSource: 'EXCHANGE_SYNC',
+                exitReason: 'STOP_LOSS',
+                stopLossAlgoId: null,
+                stopLossOrderId: null,
+                takeProfitAlgoId: null,
+                takeProfitOrderId: null,
+                updatedAt: new Date(),
+              })
+              .where(and(eq(tradeExecutions.id, orphan.id), eq(tradeExecutions.status, 'open')))
+              .returning({ id: tradeExecutions.id });
+
+            if (closeResult.length === 0) continue;
+
+            if (wallet) {
+              await db.insert(realizedPnlEvents).values({
+                walletId,
+                userId: wallet.userId,
+                executionId: orphan.id,
+                symbol,
+                eventType: 'full_close',
+                pnl: pnlResult.netPnl.toString(),
+                fees: totalFees.toString(),
+                quantity: quantity.toString(),
+                price: exitPrice.toString(),
+              });
+
+              await db
+                .update(wallets)
+                .set({
+                  currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
+                  updatedAt: new Date(),
+                })
+                .where(eq(wallets.id, walletId));
+            }
+
+            binancePriceStreamService.invalidateExecutionCache(symbol);
+
+            const wsService = getWebSocketService();
+            if (wsService) {
+              wsService.emitPositionUpdate(walletId, {
+                ...orphan,
+                status: 'closed',
+                exitPrice: exitPrice.toString(),
+                pnl: pnl.toString(),
+                pnlPercent: pnlResult.pnlPercent.toString(),
+              });
+
+              wsService.emitPositionClosed(walletId, {
+                positionId: orphan.id,
+                symbol,
+                side: orphan.side,
+                exitReason: 'STOP_LOSS',
+                pnl,
+                pnlPercent: pnlResult.pnlPercent,
+              });
+            }
+
+            getPositionEventBus().emitPositionClosed({
+              walletId,
+              symbol,
+              side: orphan.side as 'LONG' | 'SHORT',
+              pnl,
+              executionId: orphan.id,
+            });
+
+            logger.info(
+              { executionId: orphan.id, symbol, exitPrice: exitPrice.toFixed(2), pnl: pnl.toFixed(2) },
+              '[FuturesUserStream] Orphaned sibling execution closed (Binance position was zero)'
+            );
+          } catch (orphanErr) {
+            logger.error(
+              { executionId: orphan.id, symbol, error: serializeError(orphanErr) },
+              '[FuturesUserStream] Failed to close orphaned sibling execution'
+            );
+          }
+        }
+        return;
+      }
+
+      if (otherOpen.length > 0) return;
 
       if (positionAmt !== 0) {
         logger.warn(

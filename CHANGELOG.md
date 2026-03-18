@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.70.0] - 2026-03-18
+
+### Added
+- **Chart color palettes**: configurable chart palettes (Default, TradingView, Monokai, Night Owl, Solarized) in Settings > Chart
+- **Liquidation price on execution creation**: auto-calculated via `calculateLiquidationPrice` when opening futures positions, also synced on pyramid entries
+- **Quick trade size presets expanded**: added 25%, 50%, 100% presets, slider max raised to 100%
+
+### Fixed
+- **Orphaned sibling executions after SL close**: when Binance closes an entire position (consolidated group) via one SL algo order, remaining sibling executions now get properly closed by checking Binance position=0 in `closeResidualPosition`
+- **Position sync orphan handling**: `processedSymbols` skip now only applies to the update path, allowing all orphaned executions for the same symbol to be closed in a single sync cycle
+- **User stream test mocks**: added missing `emitPositionClosed`, `getPositionEventBus`, and `cancelAllSymbolOrders` mocks that prevented `cancelPendingEntryOrders` tests from passing
+
+### Changed
+- **Liquidation alert thresholds tightened**: WARNING 50%→15%, DANGER 25%→8%, CRITICAL 10%→3% (closer to actual liquidation)
+- **Liquidation alert cooldown**: increased from 60s to 5min to reduce alert spam
+- **Volume renderer simplified**: removed buy-pressure (taker) coloring from volume bars for cleaner rendering
+
 ## [0.69.0] - 2026-03-16
 
 ### Added

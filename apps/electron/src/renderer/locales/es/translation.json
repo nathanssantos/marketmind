@@ -297,6 +297,7 @@
       "bottomPadding": "Relleno Inferior",
       "leftPadding": "Relleno Izquierdo",
       "rightPadding": "Relleno Derecho",
+      "colorPalette": "Paleta de Colores",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Habilitar Entrada de Órdenes con Shift/Alt",
       "enableShiftAltOrderEntryHelper": "Mantén Shift para previsualizar órdenes long o Alt/Option para previsualizar órdenes short al hacer clic en el gráfico",

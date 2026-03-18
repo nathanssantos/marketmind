@@ -964,9 +964,9 @@ const customConfig = defineConfig({
 
 export const system = createSystem(defaultConfig, customConfig);
 
-export const getChartColors = (colorMode: 'light' | 'dark') => {
+export const getChartColors = (colorMode: 'light' | 'dark', paletteOverride?: { bullish: string; bearish: string; background: string; grid: string }) => {
   const tokens = customConfig.theme?.semanticTokens?.colors || {};
-  
+
   const resolveValue = (token: unknown): string => {
     if (!token || typeof token !== 'object' || !('value' in token)) return '';
     const tokenValue = (token as { value: string | { base: string; _dark?: string } }).value;
@@ -975,11 +975,11 @@ export const getChartColors = (colorMode: 'light' | 'dark') => {
   };
 
   return {
-    background: resolveValue(tokens['chart.background']),
-    bullish: resolveValue(tokens['chart.bullish']),
-    bearish: resolveValue(tokens['chart.bearish']),
+    background: paletteOverride?.background ?? resolveValue(tokens['chart.background']),
+    bullish: paletteOverride?.bullish ?? resolveValue(tokens['chart.bullish']),
+    bearish: paletteOverride?.bearish ?? resolveValue(tokens['chart.bearish']),
     volume: resolveValue(tokens['chart.volume']),
-    grid: resolveValue(tokens['chart.grid']),
+    grid: paletteOverride?.grid ?? resolveValue(tokens['chart.grid']),
     text: resolveValue(tokens['chart.axis.label']),
     axisLabel: resolveValue(tokens['chart.axis.label']),
     axisLine: resolveValue(tokens['chart.axis.line']),

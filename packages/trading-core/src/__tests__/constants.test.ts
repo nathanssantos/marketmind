@@ -75,15 +75,15 @@ describe('Trading Core Constants', () => {
 
   describe('LIQUIDATION_THRESHOLDS', () => {
     it('should have warning threshold', () => {
-      expect(LIQUIDATION_THRESHOLDS.WARNING).toBe(0.5);
+      expect(LIQUIDATION_THRESHOLDS.WARNING).toBe(0.15);
     });
 
     it('should have danger threshold', () => {
-      expect(LIQUIDATION_THRESHOLDS.DANGER).toBe(0.25);
+      expect(LIQUIDATION_THRESHOLDS.DANGER).toBe(0.08);
     });
 
     it('should have critical threshold', () => {
-      expect(LIQUIDATION_THRESHOLDS.CRITICAL).toBe(0.1);
+      expect(LIQUIDATION_THRESHOLDS.CRITICAL).toBe(0.03);
     });
 
     it('should have thresholds in correct order', () => {

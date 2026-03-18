@@ -193,10 +193,8 @@ export class PositionSyncService {
         exchangePositions.map((p) => [p.symbol, p])
       );
 
-      const processedSymbols = new Set<string>();
+      const processedSymbolsForUpdate = new Set<string>();
       for (const dbPosition of dbOpenPositions) {
-        if (processedSymbols.has(dbPosition.symbol)) continue;
-        processedSymbols.add(dbPosition.symbol);
         const exchangePosition = exchangePositionsBySymbol.get(dbPosition.symbol);
 
         if (!exchangePosition) {
@@ -330,6 +328,9 @@ export class PositionSyncService {
             });
           }
         } else {
+          if (processedSymbolsForUpdate.has(dbPosition.symbol)) continue;
+          processedSymbolsForUpdate.add(dbPosition.symbol);
+
           const dbQty = parseFloat(dbPosition.quantity);
           const exchangeQty = Math.abs(parseFloat(String(exchangePosition.positionAmt)));
           const dbEntryPrice = parseFloat(dbPosition.entryPrice);
@@ -337,16 +338,20 @@ export class PositionSyncService {
 
           const qtyChanged = Math.abs(dbQty - exchangeQty) > 0.00001;
           const priceChanged = Math.abs(dbEntryPrice - exchangeEntryPrice) > 0.01;
+          const exchangeLiqPrice = exchangePosition.liquidationPrice?.toString();
+          const liqPriceMissing = !dbPosition.liquidationPrice && !!exchangeLiqPrice;
 
-          if (qtyChanged || priceChanged) {
+          if (qtyChanged || priceChanged || liqPriceMissing) {
+            const updateSet: Record<string, unknown> = {
+              liquidationPrice: exchangeLiqPrice,
+              updatedAt: new Date(),
+            };
+            if (qtyChanged) updateSet.quantity = exchangeQty.toString();
+            if (priceChanged) updateSet.entryPrice = exchangeEntryPrice.toString();
+
             await db
               .update(tradeExecutions)
-              .set({
-                quantity: exchangeQty.toString(),
-                entryPrice: exchangeEntryPrice.toString(),
-                liquidationPrice: exchangePosition.liquidationPrice?.toString(),
-                updatedAt: new Date(),
-              })
+              .set(updateSet)
               .where(eq(tradeExecutions.id, dbPosition.id));
 
             result.changes.updatedPositions.push(dbPosition.id);

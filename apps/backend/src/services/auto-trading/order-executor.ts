@@ -1,6 +1,6 @@
 import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
 import type { FibLevel, Kline, StrategyDefinition, TimeInterval, TradingSetup } from '@marketmind/types';
-import { FILTER_THRESHOLDS, getDefaultFee } from '@marketmind/types';
+import { FILTER_THRESHOLDS, getDefaultFee, calculateLiquidationPrice } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
   BACKTEST_DEFAULTS,
@@ -1026,6 +1026,12 @@ export class OrderExecutor {
     try {
       const triggerCandle = setup.triggerCandleData?.find(c => c.offset === 0);
       const openedAtDate = new Date();
+      const leverage = config.leverage ?? 1;
+      const isFutures = watcher.marketType === 'FUTURES';
+      const liqPrice = isFutures && leverage > 1
+        ? calculateLiquidationPrice(actualEntryPrice, leverage, setup.direction).toString()
+        : undefined;
+
       await db.insert(tradeExecutions).values({
         id: executionId,
         userId: watcher.userId,
@@ -1051,7 +1057,7 @@ export class OrderExecutor {
         status: 'open',
         entryOrderType: useLimit ? 'LIMIT' : 'MARKET',
         marketType: watcher.marketType,
-        leverage: config.leverage ?? 1,
+        leverage,
         entryInterval: watcher.interval,
         originalStopLoss: setup.stopLoss?.toString(),
         highestPriceSinceEntry: actualEntryPrice.toString(),
@@ -1061,6 +1067,7 @@ export class OrderExecutor {
         triggerCandleData: setup.triggerCandleData ? JSON.stringify(setup.triggerCandleData) : null,
         triggerIndicatorValues: setup.triggerIndicatorValues ? JSON.stringify(setup.triggerIndicatorValues) : null,
         fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
+        liquidationPrice: liqPrice,
       });
 
       const isPyramid = sameDirectionPositions.length > 0;
@@ -1072,6 +1079,7 @@ export class OrderExecutor {
         let newTotalQty = oldQty + actualQuantity;
         let newAvgPrice = ((oldQty * oldPrice) + (actualQuantity * actualEntryPrice)) / newTotalQty;
 
+        let pyramidLiqPrice: string | undefined;
         try {
           const rawClient = createBinanceFuturesClient(wallet);
           const exchangePos = await getPosition(rawClient, watcher.symbol);
@@ -1082,6 +1090,8 @@ export class OrderExecutor {
               newTotalQty = exchQty;
               newAvgPrice = exchPrice;
             }
+            const lp = parseFloat(exchangePos.liquidationPrice || '0');
+            if (lp > 0) pyramidLiqPrice = lp.toString();
           }
         } catch (_e) {
           logger.warn({ symbol: watcher.symbol }, '[OrderExecutor] Failed to sync position from exchange after pyramid');
@@ -1090,6 +1100,7 @@ export class OrderExecutor {
         await db.update(tradeExecutions).set({
           entryPrice: newAvgPrice.toString(),
           quantity: newTotalQty.toString(),
+          liquidationPrice: pyramidLiqPrice ?? primaryExecution.liquidationPrice,
           updatedAt: new Date(),
         }).where(eq(tradeExecutions.id, primaryExecution.id));
 
