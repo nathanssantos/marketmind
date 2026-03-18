@@ -115,8 +115,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 101, isAlgoOrder: false } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 201, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '101', isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '201', isAlgoOrder: false } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
@@ -136,8 +136,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { algoId: 301, isAlgoOrder: true } })
-        .mockResolvedValueOnce({ success: true, result: { algoId: 401, isAlgoOrder: true } });
+        .mockResolvedValueOnce({ success: true, result: { algoId: '301', isAlgoOrder: true } })
+        .mockResolvedValueOnce({ success: true, result: { algoId: '401', isAlgoOrder: true } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
@@ -156,8 +156,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 101, isAlgoOrder: false } })
-        .mockResolvedValueOnce({ success: true, result: { algoId: 401, isAlgoOrder: true } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '101', isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { algoId: '401', isAlgoOrder: true } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
@@ -175,7 +175,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe
         .mockResolvedValueOnce({ success: false, lastError: new Error('SL placement failed') })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 201, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '201', isAlgoOrder: false } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 48000, wallet, 0.1);
 
@@ -204,7 +204,7 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 101, isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '101', isAlgoOrder: false } })
         .mockResolvedValueOnce({ success: false, lastError: new Error('TP placement failed') });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
@@ -256,8 +256,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 101, isAlgoOrder: false } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 201, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '101', isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '201', isAlgoOrder: false } });
 
       await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.5);
 
@@ -272,8 +272,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { algoId: 301, isAlgoOrder: true } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 201, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { algoId: '301', isAlgoOrder: true } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '201', isAlgoOrder: false } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
@@ -307,9 +307,9 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockOcoOrderService.createExitOCO.mockResolvedValueOnce({
-        orderListId: 500,
-        stopLossOrderId: 501,
-        takeProfitOrderId: 502,
+        orderListId: '500',
+        stopLossOrderId: '501',
+        takeProfitOrderId: '502',
       });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
@@ -332,9 +332,9 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockOcoOrderService.createExitOCO.mockResolvedValueOnce({
-        orderListId: 600,
-        stopLossOrderId: 601,
-        takeProfitOrderId: 602,
+        orderListId: '600',
+        stopLossOrderId: '601',
+        takeProfitOrderId: '602',
       });
 
       await handler.placeProtectionOrders(watcher, setup, 48000, wallet, 0.2);
@@ -352,8 +352,8 @@ describe('ProtectionOrderHandler', () => {
       mockOcoOrderService.createExitOCO.mockResolvedValueOnce(null);
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 701, isAlgoOrder: false } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 801, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '701', isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '801', isAlgoOrder: false } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
@@ -371,8 +371,8 @@ describe('ProtectionOrderHandler', () => {
       mockOcoOrderService.createExitOCO.mockRejectedValueOnce(new Error('OCO API error'));
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { algoId: 901, isAlgoOrder: true } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 1001, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { algoId: '901', isAlgoOrder: true } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '1001', isAlgoOrder: false } });
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
@@ -389,9 +389,9 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockOcoOrderService.createExitOCO.mockResolvedValueOnce({
-        orderListId: 123,
-        stopLossOrderId: 124,
-        takeProfitOrderId: 125,
+        orderListId: '123',
+        stopLossOrderId: '124',
+        takeProfitOrderId: '125',
       });
 
       await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
@@ -427,8 +427,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 1100, isAlgoOrder: false } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 1200, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '1100', isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '1200', isAlgoOrder: false } });
 
       const result = await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 52000, 0.5);
 
@@ -446,8 +446,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { algoId: 1300, isAlgoOrder: true } })
-        .mockResolvedValueOnce({ success: true, result: { algoId: 1400, isAlgoOrder: true } });
+        .mockResolvedValueOnce({ success: true, result: { algoId: '1300', isAlgoOrder: true } })
+        .mockResolvedValueOnce({ success: true, result: { algoId: '1400', isAlgoOrder: true } });
 
       const result = await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 52000, 0.5);
 
@@ -465,7 +465,7 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 1500, isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '1500', isAlgoOrder: false } })
         .mockResolvedValueOnce({ success: false, lastError: new Error('TP failed') });
 
       const result = await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 52000, 0.5);
@@ -482,7 +482,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe
         .mockResolvedValueOnce({ success: false, lastError: new Error('SL failed') })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 1600, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '1600', isAlgoOrder: false } });
 
       const result = await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 52000, 0.5);
 
@@ -516,8 +516,8 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { orderId: 10, isAlgoOrder: false } })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 20, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '10', isAlgoOrder: false } })
+        .mockResolvedValueOnce({ success: true, result: { orderId: '20', isAlgoOrder: false } });
 
       await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 2800, 1.5);
 
@@ -546,7 +546,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe.mockResolvedValueOnce({
         success: true,
-        result: { orderId: 2001, isAlgoOrder: false },
+        result: { orderId: '2001', isAlgoOrder: false },
       });
 
       const result = await handler.placeSingleStopLoss(wallet, watcher, setup, 0.3);
@@ -563,7 +563,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe.mockResolvedValueOnce({
         success: true,
-        result: { algoId: 2002, isAlgoOrder: true },
+        result: { algoId: '2002', isAlgoOrder: true },
       });
 
       const result = await handler.placeSingleStopLoss(wallet, watcher, setup, 0.3);
@@ -597,7 +597,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe.mockResolvedValueOnce({
         success: true,
-        result: { orderId: 2003, isAlgoOrder: false },
+        result: { orderId: '2003', isAlgoOrder: false },
       });
 
       await handler.placeSingleStopLoss(wallet, watcher, setup, 10);
@@ -623,13 +623,13 @@ describe('ProtectionOrderHandler', () => {
       actualQuantity: 0.1,
       executionId: 'exec-123',
       setupId: 'setup-456',
-      entryOrderId: 789,
+      entryOrderId: '789',
     });
 
     it('should close position and return shouldReturn true on successful compensation', async () => {
       const args = defaultArgs();
       mockAutoTradingService.closePosition.mockResolvedValueOnce({
-        orderId: 3001,
+        orderId: '3001',
         avgPrice: 49950,
       });
 
@@ -649,7 +649,7 @@ describe('ProtectionOrderHandler', () => {
       const args = defaultArgs();
       args.setup = createSetup({ direction: 'SHORT' });
       mockAutoTradingService.closePosition.mockResolvedValueOnce({
-        orderId: 3002,
+        orderId: '3002',
         avgPrice: 50100,
       });
 
@@ -667,7 +667,7 @@ describe('ProtectionOrderHandler', () => {
     it('should emit WARNING risk alert on successful compensation', async () => {
       const args = defaultArgs();
       mockAutoTradingService.closePosition.mockResolvedValueOnce({
-        orderId: 3003,
+        orderId: '3003',
         avgPrice: 49800,
       });
 
@@ -696,7 +696,7 @@ describe('ProtectionOrderHandler', () => {
     it('should insert trade execution record on successful compensation', async () => {
       const args = defaultArgs();
       mockAutoTradingService.closePosition.mockResolvedValueOnce({
-        orderId: 3004,
+        orderId: '3004',
         avgPrice: 49900,
       });
 
@@ -787,7 +787,7 @@ describe('ProtectionOrderHandler', () => {
       const args = defaultArgs();
       args.effectiveTakeProfit = undefined;
       mockAutoTradingService.closePosition.mockResolvedValueOnce({
-        orderId: 3005,
+        orderId: '3005',
         avgPrice: 49850,
       });
 
@@ -809,7 +809,7 @@ describe('ProtectionOrderHandler', () => {
       const wallet = createWallet();
 
       mockWithRetrySafe
-        .mockResolvedValueOnce({ success: true, result: { algoId: 5001, isAlgoOrder: true } })
+        .mockResolvedValueOnce({ success: true, result: { algoId: '5001', isAlgoOrder: true } })
         .mockResolvedValueOnce({ success: false, lastError: new Error('TP failed') });
 
       await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
@@ -818,7 +818,7 @@ describe('ProtectionOrderHandler', () => {
         'w1',
         expect.objectContaining({
           data: expect.objectContaining({
-            stopLossAlgoId: 5001,
+            stopLossAlgoId: '5001',
             takeProfitAlgoId: null,
             hasSL: true,
             hasTP: false,
@@ -834,7 +834,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe
         .mockResolvedValueOnce({ success: false, lastError: new Error('SL failed') })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 5002, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '5002', isAlgoOrder: false } });
 
       await handler.placeProtectionOrders(watcher, setup, 48000, wallet, 1.0);
 
@@ -855,7 +855,7 @@ describe('ProtectionOrderHandler', () => {
 
       mockWithRetrySafe
         .mockResolvedValueOnce({ success: false, lastError: new Error('SL failed') })
-        .mockResolvedValueOnce({ success: true, result: { orderId: 5003, isAlgoOrder: false } });
+        .mockResolvedValueOnce({ success: true, result: { orderId: '5003', isAlgoOrder: false } });
 
       await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 

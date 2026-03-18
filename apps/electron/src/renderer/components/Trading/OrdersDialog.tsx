@@ -61,7 +61,7 @@ const OrdersDialogComponent = () => {
     const ordersFromApi = (ordersData ?? []).map((o): Order => ({
       symbol: o.symbol,
       orderId: o.orderId,
-      orderListId: 0,
+      orderListId: '0',
       clientOrderId: '',
       price: o.price || '0',
       origQty: o.origQty || '0',
@@ -86,8 +86,8 @@ const OrdersDialogComponent = () => {
 
     const ordersFromExecutions = (executionsData ?? []).map((e): Order => ({
       symbol: e.symbol,
-      orderId: 0,
-      orderListId: 0,
+      orderId: '0',
+      orderListId: '0',
       clientOrderId: e.id,
       price: e.entryPrice,
       origQty: e.quantity,

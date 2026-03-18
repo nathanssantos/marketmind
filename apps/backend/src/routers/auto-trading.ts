@@ -659,7 +659,7 @@ export const autoTradingRouter = router({
       z.object({
         executionId: z.string(),
         exitPrice: z.string(),
-        exitOrderId: z.number().optional(),
+        exitOrderId: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

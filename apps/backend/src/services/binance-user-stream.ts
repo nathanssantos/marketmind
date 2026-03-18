@@ -184,7 +184,8 @@ export class BinanceUserStreamService {
 
   private async handleOrderUpdate(walletId: string, event: OrderUpdateEvent): Promise<void> {
     try {
-      const { s: symbol, X: status, x: execType, i: orderId, L: lastFilledPrice, z: executedQty, o: orderType, n: commissionAmount, N: commissionAsset } = event;
+      const { s: symbol, X: status, x: execType, i: rawOrderId, L: lastFilledPrice, z: executedQty, o: orderType, n: commissionAmount, N: commissionAsset } = event;
+      const orderId = String(rawOrderId);
 
       logger.info({
         walletId,
@@ -284,7 +285,7 @@ export class BinanceUserStreamService {
 
         if (orderToCancel) {
           try {
-            await client.cancelOrder({ symbol, orderId: orderToCancel });
+            await client.cancelOrder({ symbol, orderId: Number(orderToCancel) });
             logger.info({
               executionId: execution.id,
               cancelledOrderId: orderToCancel,

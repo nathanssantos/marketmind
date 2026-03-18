@@ -896,17 +896,17 @@ export class OrderExecutor {
     const slippageFactor = setup.direction === 'LONG' ? (1 + SLIPPAGE_PERCENT / 100) : (1 - SLIPPAGE_PERCENT / 100);
     const expectedEntryWithSlippage = setup.entryPrice * slippageFactor;
 
-    let entryOrderId: number | null = null;
+    let entryOrderId: string | null = null;
     let actualEntryPrice = isLiveExecution ? setup.entryPrice : expectedEntryWithSlippage;
     let actualQuantity = dynamicSize.quantity;
     let actualEntryFee: number | null = null;
-    let stopLossOrderId: number | null = null;
-    let takeProfitOrderId: number | null = null;
-    let stopLossAlgoId: number | null = null;
-    let takeProfitAlgoId: number | null = null;
+    let stopLossOrderId: string | null = null;
+    let takeProfitOrderId: string | null = null;
+    let stopLossAlgoId: string | null = null;
+    let takeProfitAlgoId: string | null = null;
     let stopLossIsAlgo = false;
     let takeProfitIsAlgo = false;
-    let orderListId: number | null = null;
+    let orderListId: string | null = null;
 
     if (isLiveExecution) {
       log('> Live execution - will use actual fill price from Binance', {
@@ -1113,11 +1113,11 @@ export class OrderExecutor {
             logger.warn({ symbol: watcher.symbol }, '[OrderExecutor] Failed to cancel old protection orders after pyramid');
           }
 
-          let newSlAlgoId: number | null = null;
-          let newSlOrderId: number | null = null;
+          let newSlAlgoId: string | null = null;
+          let newSlOrderId: string | null = null;
           let newSlIsAlgo = false;
-          let newTpAlgoId: number | null = null;
-          let newTpOrderId: number | null = null;
+          let newTpAlgoId: string | null = null;
+          let newTpOrderId: string | null = null;
           let newTpIsAlgo = false;
 
           if (primaryExecution.stopLoss) {
@@ -1281,29 +1281,29 @@ export class OrderExecutor {
     useLimit: boolean,
     _logBuffer: WatcherLogBuffer
   ): Promise<{
-    entryOrderId: number | null;
+    entryOrderId: string | null;
     actualEntryPrice: number;
     actualQuantity: number;
     actualEntryFee: number | null;
-    stopLossOrderId: number | null;
-    takeProfitOrderId: number | null;
-    stopLossAlgoId: number | null;
-    takeProfitAlgoId: number | null;
+    stopLossOrderId: string | null;
+    takeProfitOrderId: string | null;
+    stopLossAlgoId: string | null;
+    takeProfitAlgoId: string | null;
     stopLossIsAlgo: boolean;
     takeProfitIsAlgo: boolean;
-    orderListId: number | null;
+    orderListId: string | null;
   } | null> {
-    let entryOrderId: number | null = null;
+    let entryOrderId: string | null = null;
     let actualEntryPrice = setup.entryPrice;
     let actualQuantity = dynamicSize.quantity;
     let actualEntryFee: number | null = null;
-    let stopLossOrderId: number | null = null;
-    let takeProfitOrderId: number | null = null;
-    let stopLossAlgoId: number | null = null;
-    let takeProfitAlgoId: number | null = null;
+    let stopLossOrderId: string | null = null;
+    let takeProfitOrderId: string | null = null;
+    let stopLossAlgoId: string | null = null;
+    let takeProfitAlgoId: string | null = null;
     let stopLossIsAlgo = false;
     let takeProfitIsAlgo = false;
-    let orderListId: number | null = null;
+    let orderListId: string | null = null;
 
     if (watcher.marketType === 'FUTURES') {
       try {

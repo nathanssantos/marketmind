@@ -584,7 +584,7 @@ export class PositionMonitorService {
       const pnlPercent = roundToDecimals(((exitPrice - entryPrice) / entryPrice) * 100, 4);
       const adjustedPnlPercent = execution.side === 'LONG' ? pnlPercent : -pnlPercent;
 
-      let exitOrderId: number | null = null;
+      let exitOrderId: string | null = null;
       let positionSyncedFromExchange = false;
 
       if (!shouldExecuteReal) {
@@ -670,7 +670,7 @@ export class PositionMonitorService {
                 try {
                   const entryFeeResult = await client.getOrderEntryFee(
                     execution.symbol,
-                    Number(execution.entryOrderId)
+                    execution.entryOrderId
                   );
                   if (entryFeeResult) actualEntryFee = entryFeeResult.entryFee;
                 } catch (_e) { /* entry fee fetch is best-effort */ }
@@ -708,7 +708,7 @@ export class PositionMonitorService {
           const client = getFuturesClient(wallet);
           const entryFeeResult = await client.getOrderEntryFee(
             execution.symbol,
-            Number(execution.entryOrderId)
+            execution.entryOrderId
           );
           if (entryFeeResult) {
             actualEntryFee = entryFeeResult.entryFee;
@@ -892,7 +892,7 @@ export class PositionMonitorService {
     _price: number,
     side: 'LONG' | 'SHORT',
     marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
-  ): Promise<number> {
+  ): Promise<string> {
     const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 
     const minNotionalFilter = getMinNotionalFilterService();

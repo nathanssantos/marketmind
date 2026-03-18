@@ -109,7 +109,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
     return submitFuturesOrder(this.client, params);
   }
 
-  async cancelOrder(symbol: string, orderId: number): Promise<void> {
+  async cancelOrder(symbol: string, orderId: string): Promise<void> {
     return cancelFuturesOrder(this.client, symbol, orderId);
   }
 
@@ -133,7 +133,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
     return submitFuturesAlgoOrder(this.client, params);
   }
 
-  async cancelAlgoOrder(algoId: number): Promise<void> {
+  async cancelAlgoOrder(algoId: string): Promise<void> {
     return cancelFuturesAlgoOrder(this.client, algoId);
   }
 
@@ -145,7 +145,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
     return binanceGetOpenAlgoOrders(this.client, symbol);
   }
 
-  async getAlgoOrder(algoId: number): Promise<FuturesAlgoOrder | null> {
+  async getAlgoOrder(algoId: string): Promise<FuturesAlgoOrder | null> {
     return binanceGetAlgoOrder(this.client, algoId);
   }
 
@@ -176,7 +176,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
 
   async getOrderEntryFee(
     symbol: string,
-    orderId: number
+    orderId: string
   ): Promise<OrderEntryFeeResult | null> {
     return binanceGetOrderEntryFee(this.client, symbol, orderId);
   }

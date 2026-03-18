@@ -20,12 +20,12 @@ import { getMinNotionalFilterService } from './min-notional-filter';
 import { createStopLossOrder as createSLOrder, createTakeProfitOrder as createTPOrder } from './protection-orders';
 
 export interface AlgoOrderResult {
-  algoId: number;
+  algoId: string;
   isAlgoOrder: true;
 }
 
 export interface RegularOrderResult {
-  orderId: number;
+  orderId: string;
   isAlgoOrder: false;
 }
 
@@ -340,7 +340,7 @@ export class AutoTradingService {
     wallet: Wallet,
     orderParams: OrderParams,
     marketType: MarketType = 'FUTURES'
-  ): Promise<{ orderId: number; executedQty: string; price: string }> {
+  ): Promise<{ orderId: string; executedQty: string; price: string }> {
     if (isPaperWallet(wallet)) {
       throw new Error('Paper wallets cannot execute real orders on Binance');
     }
@@ -572,10 +572,10 @@ export class AutoTradingService {
     quantity: number,
     side: 'BUY' | 'SELL',
     marketType: MarketType
-  ): Promise<{ orderId: number; avgPrice: number } | null> {
+  ): Promise<{ orderId: string; avgPrice: number } | null> {
     if (isPaperWallet(wallet)) {
       logger.info({ symbol, quantity, side, marketType }, 'Paper wallet: simulating position close');
-      return { orderId: 0, avgPrice: 0 };
+      return { orderId: '0', avgPrice: 0 };
     }
 
     try {

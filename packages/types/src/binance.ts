@@ -36,8 +36,8 @@ export interface BinanceOrderFill {
 
 export interface BinanceNewOrderResult {
   symbol: string;
-  orderId: number;
-  orderListId?: number;
+  orderId: string;
+  orderListId?: string;
   clientOrderId: string;
   transactTime: number;
   price?: string;
@@ -55,8 +55,8 @@ export interface BinanceNewOrderResult {
 
 export interface BinanceOrderQueryResult {
   symbol: string;
-  orderId: number;
-  orderListId?: number;
+  orderId: string;
+  orderListId?: string;
   clientOrderId: string;
   price: string;
   origQty: string;
@@ -77,7 +77,7 @@ export interface BinanceOrderQueryResult {
 }
 
 export interface BinanceOrderList {
-  orderListId: number;
+  orderListId: string;
   contingencyType: BinanceContingencyType;
   listStatusType: BinanceListStatusType;
   listOrderStatus: BinanceListOrderStatus;
@@ -86,7 +86,7 @@ export interface BinanceOrderList {
   symbol: string;
   orders: Array<{
     symbol: string;
-    orderId: number;
+    orderId: string;
     clientOrderId: string;
   }>;
 }

@@ -748,7 +748,7 @@ export class TrailingStopService {
     isFirstActivation?: boolean,
     currentExtremePrice?: number
   ): Promise<void> {
-    let newAlgoId: number | null = null;
+    let newAlgoId: string | null = null;
 
     if (execution.marketType === 'FUTURES' && execution.stopLossAlgoId && execution.stopLossIsAlgo) {
       try {

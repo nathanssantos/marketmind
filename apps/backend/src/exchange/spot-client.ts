@@ -11,7 +11,7 @@ export interface SpotOrderParams {
 }
 
 export interface SpotOrderResult {
-  orderId: number;
+  orderId: string;
   symbol: string;
   side: 'BUY' | 'SELL';
   type: string;
@@ -25,7 +25,7 @@ export interface SpotOrderResult {
 }
 
 export interface CancelOrderResult {
-  orderId: number;
+  orderId: string;
   symbol: string;
   status: string;
 }
@@ -41,12 +41,12 @@ export interface OcoOrderParams {
 }
 
 export interface OcoOrderResult {
-  orderListId: number;
+  orderListId: string;
   contingencyType: string;
   listStatusType: string;
   listOrderStatus: string;
   symbol: string;
-  orders: Array<{ symbol: string; orderId: number; clientOrderId: string }>;
+  orders: Array<{ symbol: string; orderId: string; clientOrderId: string }>;
 }
 
 export interface SpotAccountInfo {
@@ -66,7 +66,7 @@ export interface IExchangeSpotClient {
   readonly exchangeId: ExchangeId;
 
   submitOrder(params: SpotOrderParams): Promise<SpotOrderResult>;
-  cancelOrder(symbol: string, orderId: number): Promise<CancelOrderResult>;
+  cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult>;
   getOpenOrders(symbol?: string): Promise<SpotOrderResult[]>;
   getAllOrders(symbol: string, limit?: number): Promise<SpotOrderResult[]>;
   submitOcoOrder(params: OcoOrderParams): Promise<OcoOrderResult>;

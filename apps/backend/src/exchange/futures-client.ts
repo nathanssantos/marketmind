@@ -39,7 +39,7 @@ export interface FuturesAlgoOrderParams {
 }
 
 export interface FuturesAlgoOrder {
-  algoId: number;
+  algoId: string;
   clientAlgoId: string;
   symbol: string;
   side: 'BUY' | 'SELL';
@@ -86,7 +86,7 @@ export interface IncomeHistoryRecord {
 export interface AccountTradeRecord {
   symbol: string;
   id: number;
-  orderId: number;
+  orderId: string;
   side: 'BUY' | 'SELL';
   price: string;
   qty: string;
@@ -152,16 +152,16 @@ export interface IExchangeFuturesClient {
   ): Promise<MarginModifyResult>;
 
   submitOrder(params: FuturesOrderParams): Promise<FuturesOrder>;
-  cancelOrder(symbol: string, orderId: number): Promise<void>;
+  cancelOrder(symbol: string, orderId: string): Promise<void>;
   cancelAllOrders(symbol: string): Promise<void>;
   getOpenOrders(symbol?: string): Promise<FuturesOrder[]>;
   closePosition(symbol: string, positionAmt: string, stepSize?: string): Promise<FuturesOrder>;
 
   submitAlgoOrder(params: FuturesAlgoOrderParams): Promise<FuturesAlgoOrder>;
-  cancelAlgoOrder(algoId: number): Promise<void>;
+  cancelAlgoOrder(algoId: string): Promise<void>;
   cancelAllAlgoOrders(symbol: string): Promise<void>;
   getOpenAlgoOrders(symbol?: string): Promise<FuturesAlgoOrder[]>;
-  getAlgoOrder(algoId: number): Promise<FuturesAlgoOrder | null>;
+  getAlgoOrder(algoId: string): Promise<FuturesAlgoOrder | null>;
 
   getIncomeHistory(params?: IncomeHistoryParams): Promise<IncomeHistoryRecord[]>;
   getRecentTrades(symbol: string, limit?: number): Promise<AccountTradeRecord[]>;
@@ -176,7 +176,7 @@ export interface IExchangeFuturesClient {
     openedAt: number,
     closedAt?: number
   ): Promise<AllTradeFeesResult | null>;
-  getOrderEntryFee(symbol: string, orderId: number): Promise<OrderEntryFeeResult | null>;
+  getOrderEntryFee(symbol: string, orderId: string): Promise<OrderEntryFeeResult | null>;
 
   getLeverageBrackets(symbol: string): Promise<LeverageBracket[]>;
   getCommissionRate(): Promise<CommissionRate>;

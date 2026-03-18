@@ -81,6 +81,7 @@ export const useBackendTradingMutations = () => {
       reduceOnly?: boolean;
       setupId?: string;
       setupType?: string;
+      marketType?: 'SPOT' | 'FUTURES';
     }) => {
       return createOrderMutation.mutateAsync(data);
     },
@@ -88,7 +89,7 @@ export const useBackendTradingMutations = () => {
   );
 
   const cancelOrder = useCallback(
-    async (data: { walletId: string; symbol: string; orderId: number }) => {
+    async (data: { walletId: string; symbol: string; orderId: string }) => {
       return cancelOrderMutation.mutateAsync(data);
     },
     [cancelOrderMutation]

@@ -158,7 +158,8 @@ export const futuresTradingRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          const simulatedOrderId = Date.now();
+          const simulatedTimestamp = Date.now();
+          const simulatedOrderId = String(simulatedTimestamp);
           const price = input.price || '0';
           const quantity = input.quantity;
 
@@ -174,8 +175,8 @@ export const futuresTradingRouter = router({
             executedQty: input.type === 'MARKET' ? quantity : '0',
             status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
             timeInForce: input.type === 'LIMIT' ? 'GTC' : undefined,
-            time: simulatedOrderId,
-            updateTime: simulatedOrderId,
+            time: simulatedTimestamp,
+            updateTime: simulatedTimestamp,
             setupId: input.setupId,
             setupType: input.setupType,
             marketType: 'FUTURES',
@@ -470,7 +471,8 @@ export const futuresTradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string(),
-        orderId: z.number(),
+        orderId: z.string(),
+        isAlgo: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -492,7 +494,7 @@ export const futuresTradingRouter = router({
         }
 
         const [dbOrder] = await ctx.db.select().from(orders).where(eq(orders.orderId, input.orderId)).limit(1);
-        const isAlgoOrder = dbOrder && (dbOrder.type === 'STOP_MARKET' || dbOrder.type === 'TAKE_PROFIT_MARKET');
+        const isAlgoOrder = input.isAlgo || (dbOrder && (dbOrder.type === 'STOP_MARKET' || dbOrder.type === 'TAKE_PROFIT_MARKET'));
 
         const client = createBinanceFuturesClient(wallet);
         if (isAlgoOrder) {

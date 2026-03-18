@@ -80,8 +80,8 @@ vi.mock('../../services/binance-futures-client', () => ({
 
 const mockCancelAllProtectionOrders = vi.fn().mockResolvedValue(undefined);
 const mockCancelAllOpenProtectionOrdersOnExchange = vi.fn().mockResolvedValue(undefined);
-const mockCreateStopLossOrder = vi.fn().mockResolvedValue({ orderId: null, algoId: 999001, isAlgoOrder: true });
-const mockCreateTakeProfitOrder = vi.fn().mockResolvedValue({ orderId: null, algoId: 999002, isAlgoOrder: true });
+const mockCreateStopLossOrder = vi.fn().mockResolvedValue({ orderId: null, algoId: '999001', isAlgoOrder: true });
+const mockCreateTakeProfitOrder = vi.fn().mockResolvedValue({ orderId: null, algoId: '999002', isAlgoOrder: true });
 
 vi.mock('../../services/protection-orders', () => ({
   cancelAllProtectionOrders: (...args: unknown[]) => mockCancelAllProtectionOrders(...args),
@@ -261,8 +261,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 123456789,
-        takeProfitOrderId: 987654321,
+        stopLossOrderId: '123456789',
+        takeProfitOrderId: '987654321',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -320,8 +320,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 123456789,
-        takeProfitOrderId: 987654321,
+        stopLossOrderId: '123456789',
+        takeProfitOrderId: '987654321',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -378,8 +378,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 123456789,
-        takeProfitOrderId: 987654321,
+        stopLossOrderId: '123456789',
+        takeProfitOrderId: '987654321',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -623,8 +623,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossAlgoId: 111111,
-        takeProfitAlgoId: 222222,
+        stopLossAlgoId: '111111',
+        takeProfitAlgoId: '222222',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -676,8 +676,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossAlgoId: 111111,
-        takeProfitAlgoId: 222222,
+        stopLossAlgoId: '111111',
+        takeProfitAlgoId: '222222',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -729,8 +729,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossAlgoId: 111111,
-        takeProfitAlgoId: 222222,
+        stopLossAlgoId: '111111',
+        takeProfitAlgoId: '222222',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -784,8 +784,8 @@ describe('BinanceFuturesUserStreamService', () => {
         status: 'open',
         marketType: 'FUTURES',
         stopLoss: '49000',
-        stopLossAlgoId: 111111,
-        takeProfitAlgoId: 222222,
+        stopLossAlgoId: '111111',
+        takeProfitAlgoId: '222222',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -840,10 +840,10 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 111111,
-        stopLossAlgoId: 333333,
-        takeProfitOrderId: 222222,
-        takeProfitAlgoId: 444444,
+        stopLossOrderId: '111111',
+        stopLossAlgoId: '333333',
+        takeProfitOrderId: '222222',
+        takeProfitAlgoId: '444444',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -904,12 +904,12 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 500001,
+        stopLossOrderId: '500001',
         leverage: 10,
         openedAt: new Date(),
       });
 
-      const limitEntryOrderId = 600001;
+      const limitEntryOrderId = '600001';
       await db.insert(orders).values({
         orderId: limitEntryOrderId,
         symbol: 'ETHUSDT',
@@ -989,12 +989,12 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '10',
         status: 'open',
         marketType: 'FUTURES',
-        takeProfitOrderId: 700001,
+        takeProfitOrderId: '700001',
         leverage: 5,
         openedAt: new Date(),
       });
 
-      const algoEntryOrderId = 800001;
+      const algoEntryOrderId = '800001';
       await db.insert(orders).values({
         orderId: algoEntryOrderId,
         symbol: 'SOLUSDT',
@@ -1077,7 +1077,7 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 900001,
+        stopLossOrderId: '900001',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -1093,8 +1093,8 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.05',
         status: 'pending',
         marketType: 'FUTURES',
-        stopLossAlgoId: 910001,
-        takeProfitAlgoId: 910002,
+        stopLossAlgoId: '910001',
+        takeProfitAlgoId: '910002',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -1121,8 +1121,8 @@ describe('BinanceFuturesUserStreamService', () => {
         expect.objectContaining({
           symbol: 'BTCUSDT',
           marketType: 'FUTURES',
-          stopLossAlgoId: 910001,
-          takeProfitAlgoId: 910002,
+          stopLossAlgoId: '910001',
+          takeProfitAlgoId: '910002',
         })
       );
 
@@ -1151,12 +1151,12 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 950001,
+        stopLossOrderId: '950001',
         leverage: 10,
         openedAt: new Date(),
       });
 
-      const failingEntryOrderId = 960001;
+      const failingEntryOrderId = '960001';
       await db.insert(orders).values({
         orderId: failingEntryOrderId,
         symbol: 'BTCUSDT',
@@ -1235,7 +1235,7 @@ describe('BinanceFuturesUserStreamService', () => {
         quantity: '0.1',
         status: 'open',
         marketType: 'FUTURES',
-        stopLossOrderId: 970001,
+        stopLossOrderId: '970001',
         leverage: 10,
         openedAt: new Date(),
       });
@@ -1319,8 +1319,8 @@ describe('BinanceFuturesUserStreamService', () => {
         marketType: 'FUTURES',
         stopLoss: slPrice,
         takeProfit: tpPrice,
-        stopLossOrderId: 555001,
-        takeProfitOrderId: 555002,
+        stopLossOrderId: '555001',
+        takeProfitOrderId: '555002',
         leverage: 10,
         openedAt: new Date(),
       });

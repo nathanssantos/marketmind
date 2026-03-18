@@ -646,7 +646,7 @@ export class BinanceFuturesUserStreamService {
             and(
               eq(tradeExecutions.walletId, walletId),
               eq(tradeExecutions.status, 'pending'),
-              eq(tradeExecutions.entryOrderId, Number(orderId))
+              eq(tradeExecutions.entryOrderId, String(orderId))
             )
           );
         return;
@@ -668,7 +668,7 @@ export class BinanceFuturesUserStreamService {
               eq(tradeExecutions.symbol, symbol),
               eq(tradeExecutions.status, 'pending'),
               eq(tradeExecutions.marketType, 'FUTURES'),
-              eq(tradeExecutions.entryOrderId, Number(orderId))
+              eq(tradeExecutions.entryOrderId, String(orderId))
             )
           )
           .limit(1);
@@ -700,7 +700,7 @@ export class BinanceFuturesUserStreamService {
               eq(tradeExecutions.symbol, symbol),
               eq(tradeExecutions.status, 'pending'),
               eq(tradeExecutions.marketType, 'FUTURES'),
-              eq(tradeExecutions.entryOrderId, Number(orderId))
+              eq(tradeExecutions.entryOrderId, String(orderId))
             )
           )
           .limit(1);
@@ -713,7 +713,7 @@ export class BinanceFuturesUserStreamService {
           try {
             const connection = this.connections.get(walletId);
             if (connection) {
-              const feeResult = await getOrderEntryFee(connection.apiClient, symbol, Number(orderId));
+              const feeResult = await getOrderEntryFee(connection.apiClient, symbol, String(orderId));
               if (feeResult && feeResult.entryFee > 0) entryFee = feeResult.entryFee;
             }
           } catch (_e) { /* entry fee fetch is best-effort */ }
@@ -850,11 +850,12 @@ export class BinanceFuturesUserStreamService {
             )
           );
 
+        const orderIdStr = String(orderId);
         const executionByOrderId = openExecutions.find(e =>
-          (e.stopLossOrderId && Number(e.stopLossOrderId) === Number(orderId)) ||
-          (e.stopLossAlgoId && Number(e.stopLossAlgoId) === Number(orderId)) ||
-          (e.takeProfitOrderId && Number(e.takeProfitOrderId) === Number(orderId)) ||
-          (e.takeProfitAlgoId && Number(e.takeProfitAlgoId) === Number(orderId))
+          (e.stopLossOrderId && e.stopLossOrderId === orderIdStr) ||
+          (e.stopLossAlgoId && e.stopLossAlgoId === orderIdStr) ||
+          (e.takeProfitOrderId && e.takeProfitOrderId === orderIdStr) ||
+          (e.takeProfitAlgoId && e.takeProfitAlgoId === orderIdStr)
         );
 
         const executionByExitReason = !executionByOrderId
@@ -1053,7 +1054,7 @@ export class BinanceFuturesUserStreamService {
           const [manualOrder] = await db
             .select()
             .from(orders)
-            .where(and(eq(orders.walletId, walletId), eq(orders.orderId, Number(orderId))))
+            .where(and(eq(orders.walletId, walletId), eq(orders.orderId, String(orderId))))
             .limit(1);
 
           if (!manualOrder) {
@@ -1108,7 +1109,7 @@ export class BinanceFuturesUserStreamService {
             walletId,
             symbol,
             side: direction,
-            entryOrderId: Number(orderId),
+            entryOrderId: String(orderId),
             entryPrice: fillPrice.toString(),
             quantity: fillQty.toString(),
             status: 'open',
@@ -1123,10 +1124,10 @@ export class BinanceFuturesUserStreamService {
           return;
         }
 
-        let isSLOrder = (execution.stopLossOrderId && Number(execution.stopLossOrderId) === Number(orderId)) ||
-          (execution.stopLossAlgoId && Number(execution.stopLossAlgoId) === Number(orderId));
-        let isTPOrder = (execution.takeProfitOrderId && Number(execution.takeProfitOrderId) === Number(orderId)) ||
-          (execution.takeProfitAlgoId && Number(execution.takeProfitAlgoId) === Number(orderId));
+        let isSLOrder = (execution.stopLossOrderId && execution.stopLossOrderId === orderIdStr) ||
+          (execution.stopLossAlgoId && execution.stopLossAlgoId === orderIdStr);
+        let isTPOrder = (execution.takeProfitOrderId && execution.takeProfitOrderId === orderIdStr) ||
+          (execution.takeProfitAlgoId && execution.takeProfitAlgoId === orderIdStr);
         const isAlgoTriggerFill = !isSLOrder && !isTPOrder && execution.exitReason;
 
         if (!isSLOrder && !isTPOrder && !isAlgoTriggerFill) {
@@ -1157,7 +1158,7 @@ export class BinanceFuturesUserStreamService {
           } else {
             const isEntryFill = !isClosingOrder && rpValue === 0;
 
-            if (isEntryFill && execution.entryOrderId && Number(execution.entryOrderId) === Number(orderId)) {
+            if (isEntryFill && execution.entryOrderId && execution.entryOrderId === orderIdStr) {
               logger.info({ executionId: execution.id, orderId }, '[FuturesUserStream] Entry fill for already-tracked manual execution - skipping');
               return;
             }
@@ -1223,7 +1224,7 @@ export class BinanceFuturesUserStreamService {
               if (oppositeIsAlgo) {
                 await cancelFuturesAlgoOrder(apiClient, orderToCancel);
               } else {
-                await apiClient.cancelOrder({ symbol, orderId: orderToCancel });
+                await apiClient.cancelOrder({ symbol, orderId: Number(orderToCancel) });
               }
               cancelSuccess = true;
               logger.info(
@@ -1372,7 +1373,7 @@ export class BinanceFuturesUserStreamService {
           try {
             const connection = this.connections.get(walletId);
             if (connection) {
-              const feeResult = await getOrderEntryFee(connection.apiClient, symbol, Number(execution.entryOrderId));
+              const feeResult = await getOrderEntryFee(connection.apiClient, symbol, execution.entryOrderId);
               if (feeResult) actualEntryFee = feeResult.entryFee;
             }
           } catch (_e) { /* entry fee fetch is best-effort */ }
@@ -1688,7 +1689,7 @@ export class BinanceFuturesUserStreamService {
           and(
             eq(tradeExecutions.walletId, walletId),
             eq(tradeExecutions.status, 'pending'),
-            eq(tradeExecutions.entryOrderId, Number(algoId))
+            eq(tradeExecutions.entryOrderId, String(algoId))
           )
         );
       logger.warn({ walletId, symbol, algoId, status }, '[FuturesUserStream] Algo entry order rejected/expired — pending execution cancelled');
@@ -1723,7 +1724,7 @@ export class BinanceFuturesUserStreamService {
             eq(tradeExecutions.symbol, symbol),
             eq(tradeExecutions.status, 'pending'),
             eq(tradeExecutions.marketType, 'FUTURES'),
-            eq(tradeExecutions.entryOrderId, Number(algoId))
+            eq(tradeExecutions.entryOrderId, String(algoId))
           )
         )
         .limit(1);
@@ -1820,11 +1821,12 @@ export class BinanceFuturesUserStreamService {
           )
         );
 
+      const algoIdStr = String(algoId);
       const executionByAlgoId = algoOpenExecutions.find(e =>
-        Number(e.stopLossAlgoId) === Number(algoId) ||
-        Number(e.stopLossOrderId) === Number(algoId) ||
-        Number(e.takeProfitAlgoId) === Number(algoId) ||
-        Number(e.takeProfitOrderId) === Number(algoId)
+        e.stopLossAlgoId === algoIdStr ||
+        e.stopLossOrderId === algoIdStr ||
+        e.takeProfitAlgoId === algoIdStr ||
+        e.takeProfitOrderId === algoIdStr
       );
 
       const execution = executionByAlgoId || algoOpenExecutions[0];
@@ -1834,8 +1836,8 @@ export class BinanceFuturesUserStreamService {
         return;
       }
 
-      const isSLOrder = Number(execution.stopLossAlgoId) === Number(algoId) || Number(execution.stopLossOrderId) === Number(algoId);
-      const isTPOrder = Number(execution.takeProfitAlgoId) === Number(algoId) || Number(execution.takeProfitOrderId) === Number(algoId);
+      const isSLOrder = execution.stopLossAlgoId === algoIdStr || execution.stopLossOrderId === algoIdStr;
+      const isTPOrder = execution.takeProfitAlgoId === algoIdStr || execution.takeProfitOrderId === algoIdStr;
 
       if (!isSLOrder && !isTPOrder) {
         logger.trace(
@@ -2002,7 +2004,7 @@ export class BinanceFuturesUserStreamService {
 
       if (entryFee === 0 && execution.entryOrderId) {
         try {
-          const feeResult = await getOrderEntryFee(apiClient, symbol, Number(execution.entryOrderId));
+          const feeResult = await getOrderEntryFee(apiClient, symbol, execution.entryOrderId);
           if (feeResult && feeResult.entryFee > 0) entryFee = feeResult.entryFee;
         } catch (_e) { /* entry fee fetch is best-effort */ }
       }
@@ -2169,7 +2171,7 @@ export class BinanceFuturesUserStreamService {
             if (isAlgoEntry) {
               await cancelFuturesAlgoOrder(apiClient, pending.entryOrderId);
             } else {
-              await apiClient.cancelOrder({ symbol, orderId: pending.entryOrderId });
+              await apiClient.cancelOrder({ symbol, orderId: Number(pending.entryOrderId) });
             }
             logger.info({ walletId, symbol, entryOrderId: pending.entryOrderId, isAlgoEntry }, '[FuturesUserStream] Cancelled pending entry order');
           } catch (cancelErr) {
@@ -2394,7 +2396,7 @@ export class BinanceFuturesUserStreamService {
           and(
             eq(tradeExecutions.walletId, walletId),
             eq(tradeExecutions.status, 'pending'),
-            eq(tradeExecutions.entryOrderId, Number(orderId))
+            eq(tradeExecutions.entryOrderId, String(orderId))
           )
         )
         .limit(1);
@@ -2451,8 +2453,9 @@ export class BinanceFuturesUserStreamService {
         .limit(1);
 
       if (execution) {
-        const isSLReject = Number(execution.stopLossOrderId) === Number(orderId) || Number(execution.stopLossAlgoId) === Number(orderId);
-        const isTPReject = Number(execution.takeProfitOrderId) === Number(orderId) || Number(execution.takeProfitAlgoId) === Number(orderId);
+        const rejectOrderIdStr = String(orderId);
+        const isSLReject = execution.stopLossOrderId === rejectOrderIdStr || execution.stopLossAlgoId === rejectOrderIdStr;
+        const isTPReject = execution.takeProfitOrderId === rejectOrderIdStr || execution.takeProfitAlgoId === rejectOrderIdStr;
 
         if (isSLReject || isTPReject) {
           const field: ProtectionOrderField = isSLReject ? 'stopLoss' : 'takeProfit';

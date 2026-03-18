@@ -299,7 +299,7 @@ describe('BinanceFuturesClient Service', () => {
   describe('submitFuturesOrder', () => {
     it('should submit market order', async () => {
       mockMethods.submitNewOrder.mockResolvedValue({
-        orderId: 123,
+        orderId: '123',
         symbol: 'BTCUSDT',
         status: 'NEW',
         clientOrderId: 'test-id',
@@ -330,7 +330,7 @@ describe('BinanceFuturesClient Service', () => {
 
     it('should submit limit order with price', async () => {
       mockMethods.submitNewOrder.mockResolvedValue({
-        orderId: 124,
+        orderId: '124',
         symbol: 'BTCUSDT',
         status: 'NEW',
         clientOrderId: 'test-id',
@@ -366,8 +366,8 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.cancelOrder.mockResolvedValue({});
 
       const client = createBinanceFuturesClientForPrices();
-      await expect(cancelFuturesOrder(client, 'BTCUSDT', 123)).resolves.not.toThrow();
-      expect(mockMethods.cancelOrder).toHaveBeenCalledWith({ symbol: 'BTCUSDT', orderId: 123 });
+      await expect(cancelFuturesOrder(client, 'BTCUSDT', '123')).resolves.not.toThrow();
+      expect(mockMethods.cancelOrder).toHaveBeenCalledWith({ symbol: 'BTCUSDT', orderId: '123' });
     });
   });
 
@@ -384,7 +384,7 @@ describe('BinanceFuturesClient Service', () => {
   describe('closePosition', () => {
     it('should close long position with sell order', async () => {
       mockMethods.submitNewOrder.mockResolvedValue({
-        orderId: 125,
+        orderId: '125',
         symbol: 'BTCUSDT',
         status: 'NEW',
         clientOrderId: 'test-id',
@@ -413,7 +413,7 @@ describe('BinanceFuturesClient Service', () => {
 
     it('should close short position with buy order', async () => {
       mockMethods.submitNewOrder.mockResolvedValue({
-        orderId: 126,
+        orderId: '126',
         symbol: 'BTCUSDT',
         status: 'NEW',
         clientOrderId: 'test-id',
@@ -442,7 +442,7 @@ describe('BinanceFuturesClient Service', () => {
   describe('getOpenOrders', () => {
     it('should get open orders for symbol', async () => {
       mockMethods.getAllOpenOrders.mockResolvedValue([
-        { orderId: 127, symbol: 'BTCUSDT', status: 'NEW', type: 'LIMIT', side: 'BUY', price: 50000, avgPrice: 0, origQty: 0.1, executedQty: 0, cumQuote: 0, timeInForce: 'GTC', reduceOnly: false, closePosition: false, time: Date.now(), updateTime: Date.now() },
+        { orderId: '127', symbol: 'BTCUSDT', status: 'NEW', type: 'LIMIT', side: 'BUY', price: 50000, avgPrice: 0, origQty: 0.1, executedQty: 0, cumQuote: 0, timeInForce: 'GTC', reduceOnly: false, closePosition: false, time: Date.now(), updateTime: Date.now() },
       ]);
 
       const client = createBinanceFuturesClientForPrices();

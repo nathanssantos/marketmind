@@ -142,7 +142,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   );
 
   const cancelOrder = useCallback(
-    async (data: { walletId: string; symbol: string; orderId: number }) => {
+    async (data: { walletId: string; symbol: string; orderId: string; isAlgo?: boolean }) => {
       return cancelOrderMutation.mutateAsync(data);
     },
     [cancelOrderMutation]

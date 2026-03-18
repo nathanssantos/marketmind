@@ -18,7 +18,7 @@ vi.mock('../../services/binance-client', () => ({
 vi.mock('../../services/binance-futures-client', () => ({
   createBinanceFuturesClient: vi.fn(() => ({
     get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
-    submitNewOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    submitNewOrder: vi.fn().mockResolvedValue({ orderId: '12345' }),
   })),
   createBinanceFuturesClientForPrices: vi.fn(() => ({
     get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
@@ -76,13 +76,13 @@ vi.mock('../../exchange', () => ({
     getPosition: vi.fn(),
     getAllTradeFeesForPosition: vi.fn(),
     getLastClosingTrade: vi.fn(),
-    submitOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    submitOrder: vi.fn().mockResolvedValue({ orderId: '12345' }),
     cancelOrder: vi.fn(),
     cancelAllOrders: vi.fn(),
     getOpenOrders: vi.fn().mockResolvedValue([]),
   })),
   getSpotClient: vi.fn(() => ({
-    submitOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    submitOrder: vi.fn().mockResolvedValue({ orderId: '12345' }),
     getAccountInfo: vi.fn().mockResolvedValue({ balances: [] }),
   })),
 }));
@@ -126,8 +126,8 @@ describe('PositionMonitorService', () => {
     marketType?: 'SPOT' | 'FUTURES';
     limitEntryPrice?: string | null;
     expiresAt?: Date | null;
-    stopLossAlgoId?: number | null;
-    takeProfitAlgoId?: number | null;
+    stopLossAlgoId?: string | null;
+    takeProfitAlgoId?: string | null;
     entryFee?: string | null;
   }) => {
     const executionId = generateEntityId();
@@ -584,7 +584,7 @@ describe('PositionMonitorService', () => {
           entryPrice: '50000',
           quantity: '0.1',
           stopLoss: '49000',
-          stopLossAlgoId: 12345,
+          stopLossAlgoId: '12345',
         });
 
         await service.executeExit(execution!, 48900, 'STOP_LOSS');
@@ -616,7 +616,7 @@ describe('PositionMonitorService', () => {
           entryPrice: '50000',
           quantity: '0.1',
           takeProfit: '52000',
-          takeProfitAlgoId: 67890,
+          takeProfitAlgoId: '67890',
         });
 
         await service.executeExit(execution!, 52100, 'TAKE_PROFIT');

@@ -126,8 +126,8 @@ export class ExecutionEngine {
 
       const executedQty = parseFloat(orderResult.executedQty);
 
-      let slResult: { algoId?: number | null; orderId?: number | null } = {};
-      let tpResult: { algoId?: number | null; orderId?: number | null } = {};
+      let slResult: { algoId?: string | null; orderId?: string | null } = {};
+      let tpResult: { algoId?: string | null; orderId?: string | null } = {};
       let slFailed = false;
       let tpFailed = false;
 
@@ -421,8 +421,8 @@ export class ExecutionEngine {
         quantity,
         triggerPrice: newSL,
         marketType: 'FUTURES',
-        currentAlgoId: execution.stopLossAlgoId ? Number(execution.stopLossAlgoId) : null,
-        currentOrderId: execution.stopLossOrderId ? Number(execution.stopLossOrderId) : null,
+        currentAlgoId: execution.stopLossAlgoId,
+        currentOrderId: execution.stopLossOrderId,
       });
 
       await db.update(tradeExecutions)

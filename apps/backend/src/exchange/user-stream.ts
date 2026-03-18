@@ -4,7 +4,7 @@ import type { ExchangeId } from './types';
 export interface OrderFillEvent {
   walletId: string;
   symbol: string;
-  orderId: number;
+  orderId: string;
   side: 'BUY' | 'SELL';
   status: string;
   price: number;

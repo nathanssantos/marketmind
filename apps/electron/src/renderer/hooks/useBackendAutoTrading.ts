@@ -122,7 +122,7 @@ export const useBackendAutoTrading = (walletId: string) => {
   );
 
   const closeExecution = useCallback(
-    async (executionId: string, exitPrice: string, exitOrderId?: number) => {
+    async (executionId: string, exitPrice: string, exitOrderId?: string) => {
       return closeExecutionMutation.mutateAsync({
         executionId,
         exitPrice,

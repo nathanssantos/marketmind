@@ -49,8 +49,8 @@ export type ListOrderStatus = 'EXECUTING' | 'ALL_DONE' | 'REJECT';
 
 export interface Order {
   symbol: string;
-  orderId: number;
-  orderListId: number;
+  orderId: string;
+  orderListId: string;
   clientOrderId: string;
   price: string;
   origQty: string;
@@ -104,7 +104,7 @@ export interface Order {
 }
 
 export interface OrderList {
-  orderListId: number;
+  orderListId: string;
   contingencyType: ContingencyType;
   listStatusType: ListStatusType;
   listOrderStatus: ListOrderStatus;
@@ -113,7 +113,7 @@ export interface OrderList {
   symbol: string;
   orders: Array<{
     symbol: string;
-    orderId: number;
+    orderId: string;
     clientOrderId: string;
   }>;
 }
@@ -180,8 +180,8 @@ export interface Position {
   realizedPnlPercent?: string;
   pnl: number;
   pnlPercent: number;
-  orderIds?: number[];
-  orderListId?: number;
+  orderIds?: string[];
+  orderListId?: string;
   orders: string[];
 }
 

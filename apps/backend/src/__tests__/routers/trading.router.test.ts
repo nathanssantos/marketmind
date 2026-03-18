@@ -228,7 +228,7 @@ describe('Trading Router', () => {
       await expect(
         caller.trading.getOrderById({
           walletId: wallet.id,
-          orderId: 999999999,
+          orderId: '999999999',
         })
       ).rejects.toThrow(TRPCError);
     });
@@ -845,7 +845,7 @@ describe('Trading Router', () => {
         side: 'LONG',
         entryPrice: '50000',
         stopLoss: '48000',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         status: 'open',
       });
 
@@ -881,7 +881,7 @@ describe('Trading Router', () => {
         side: 'LONG',
         entryPrice: '50000',
         takeProfit: '55000',
-        takeProfitAlgoId: 67890,
+        takeProfitAlgoId: '67890',
         status: 'open',
       });
 
@@ -915,7 +915,7 @@ describe('Trading Router', () => {
         walletId: wallet.id,
         symbol: 'BTCUSDT',
         stopLoss: '48000',
-        stopLossAlgoId: 11111,
+        stopLossAlgoId: '11111',
         status: 'open',
       });
 
@@ -924,7 +924,7 @@ describe('Trading Router', () => {
         walletId: wallet.id,
         symbol: 'ETHUSDT',
         stopLoss: '2000',
-        stopLossAlgoId: 22222,
+        stopLossAlgoId: '22222',
         status: 'open',
       });
 
@@ -975,7 +975,7 @@ describe('Trading Router', () => {
         userId: user.id,
         walletId: wallet.id,
         stopLoss: '48000',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         status: 'closed',
       });
 
@@ -1018,7 +1018,7 @@ describe('Trading Router', () => {
         userId: user1.id,
         walletId: wallet.id,
         stopLoss: '48000',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         status: 'open',
       });
 

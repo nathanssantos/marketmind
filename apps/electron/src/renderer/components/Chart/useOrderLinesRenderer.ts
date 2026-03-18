@@ -376,8 +376,8 @@ export const useOrderLinesRenderer = (
         return {
           id: exec.id,
           symbol: exec.symbol,
-          orderId: 0,
-          orderListId: -1,
+          orderId: '0',
+          orderListId: '-1',
           clientOrderId: exec.id,
           price: exec.entryPrice,
           origQty: exec.quantity,

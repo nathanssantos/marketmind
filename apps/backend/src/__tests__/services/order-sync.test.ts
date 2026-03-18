@@ -124,8 +124,8 @@ interface TestExecution {
   side: string;
   stopLoss: string | null;
   takeProfit: string | null;
-  stopLossAlgoId: number | null;
-  takeProfitAlgoId: number | null;
+  stopLossAlgoId: string | null;
+  takeProfitAlgoId: string | null;
 }
 
 const createTestWallet = (overrides: Partial<TestWallet> = {}): TestWallet => ({
@@ -159,13 +159,13 @@ const createTestExecution = (overrides: Partial<TestExecution> = {}): TestExecut
   side: 'LONG',
   stopLoss: '45000',
   takeProfit: '55000',
-  stopLossAlgoId: 100,
-  takeProfitAlgoId: 200,
+  stopLossAlgoId: '100',
+  takeProfitAlgoId: '200',
   ...overrides,
 });
 
 const createAlgoOrder = (overrides: Partial<FuturesAlgoOrder> = {}): FuturesAlgoOrder => ({
-  algoId: 100,
+  algoId: '100',
   clientAlgoId: 'client-100',
   symbol: 'BTCUSDT',
   side: 'SELL',
@@ -247,7 +247,7 @@ describe('OrderSyncService', () => {
       mockWalletsData = [wallet];
       mockExecutionsData = [];
 
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
       mockGetOpenAlgoOrders.mockResolvedValue([orphanOrder]);
 
       await service.start({ autoCancelOrphans: true });
@@ -376,7 +376,7 @@ describe('OrderSyncService', () => {
 
     it('should detect orphan orders not tracked in DB', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
 
       mockExecutionsData = [];
       mockGetOpenAlgoOrders.mockResolvedValue([orphanOrder]);
@@ -391,7 +391,7 @@ describe('OrderSyncService', () => {
 
     it('should mark orphan orders that have positions on exchange', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'BTCUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'BTCUSDT' });
 
       mockExecutionsData = [];
       mockGetOpenAlgoOrders.mockResolvedValue([orphanOrder]);
@@ -406,8 +406,8 @@ describe('OrderSyncService', () => {
 
     it('should not flag matched orders as orphans', async () => {
       const wallet = createTestWallet();
-      const execution = createTestExecution({ stopLossAlgoId: 100, takeProfitAlgoId: null });
-      const matchedOrder = createAlgoOrder({ algoId: 100, type: 'STOP_MARKET', triggerPrice: '45000' });
+      const execution = createTestExecution({ stopLossAlgoId: '100', takeProfitAlgoId: null });
+      const matchedOrder = createAlgoOrder({ algoId: '100', type: 'STOP_MARKET', triggerPrice: '45000' });
 
       mockExecutionsData = [execution];
       mockGetOpenAlgoOrders.mockResolvedValue([matchedOrder]);
@@ -420,7 +420,7 @@ describe('OrderSyncService', () => {
     it('should detect SL mismatch when SL order not found on exchange', async () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
 
@@ -438,7 +438,7 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLossAlgoId: null,
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
 
       mockExecutionsData = [execution];
@@ -454,10 +454,10 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLoss: '45000',
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
-      const slOrder = createAlgoOrder({ algoId: 100, type: 'STOP_MARKET', triggerPrice: '44000' });
+      const slOrder = createAlgoOrder({ algoId: '100', type: 'STOP_MARKET', triggerPrice: '44000' });
 
       mockExecutionsData = [execution];
       mockGetOpenAlgoOrders.mockResolvedValue([slOrder]);
@@ -475,10 +475,10 @@ describe('OrderSyncService', () => {
       const execution = createTestExecution({
         stopLossAlgoId: null,
         takeProfit: '55000',
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
       const tpOrder = createAlgoOrder({
-        algoId: 200,
+        algoId: '200',
         type: 'TAKE_PROFIT_MARKET',
         triggerPrice: '56000',
       });
@@ -498,10 +498,10 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLoss: '45000',
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
-      const slOrder = createAlgoOrder({ algoId: 100, type: 'STOP_MARKET', triggerPrice: '45000' });
+      const slOrder = createAlgoOrder({ algoId: '100', type: 'STOP_MARKET', triggerPrice: '45000' });
 
       mockExecutionsData = [execution];
       mockGetOpenAlgoOrders.mockResolvedValue([slOrder]);
@@ -513,7 +513,7 @@ describe('OrderSyncService', () => {
 
     it('should emit risk alert via websocket when orphan orders found', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'SOLUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'SOLUSDT' });
 
       mockExecutionsData = [];
       mockGetOpenAlgoOrders.mockResolvedValue([orphanOrder]);
@@ -531,7 +531,7 @@ describe('OrderSyncService', () => {
 
     it('should emit risk alert for mismatched orders', async () => {
       const wallet = createTestWallet();
-      const execution = createTestExecution({ stopLossAlgoId: 100, takeProfitAlgoId: null });
+      const execution = createTestExecution({ stopLossAlgoId: '100', takeProfitAlgoId: null });
 
       mockExecutionsData = [execution];
 
@@ -558,7 +558,7 @@ describe('OrderSyncService', () => {
 
     it('should handle null websocket service gracefully', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999 });
+      const orphanOrder = createAlgoOrder({ algoId: '999' });
 
       mockGetWebSocketService.mockReturnValue(null);
       mockExecutionsData = [];
@@ -586,7 +586,7 @@ describe('OrderSyncService', () => {
   describe('orphan order auto-cancellation', () => {
     it('should cancel orphan orders without exchange positions when autoCancelOrphans enabled', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [];
@@ -599,15 +599,15 @@ describe('OrderSyncService', () => {
           wallet,
           symbol: 'ETHUSDT',
           marketType: 'FUTURES',
-          algoId: 999,
+          algoId: '999',
         })
       );
     });
 
     it('should increment cancelledOrphans count on successful cancellation', async () => {
       const wallet = createTestWallet();
-      const orphan1 = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
-      const orphan2 = createAlgoOrder({ algoId: 888, symbol: 'SOLUSDT' });
+      const orphan1 = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
+      const orphan2 = createAlgoOrder({ algoId: '888', symbol: 'SOLUSDT' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [];
@@ -621,7 +621,7 @@ describe('OrderSyncService', () => {
 
     it('should NOT cancel orphan orders that have exchange positions', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'BTCUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'BTCUSDT' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [];
@@ -638,7 +638,7 @@ describe('OrderSyncService', () => {
 
     it('should not cancel orphan orders when autoCancelOrphans is disabled', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [];
@@ -653,7 +653,7 @@ describe('OrderSyncService', () => {
 
     it('should handle cancellation errors gracefully', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [];
@@ -672,11 +672,11 @@ describe('OrderSyncService', () => {
     it('should auto-fix SL by syncing from exchange when alternative SL exists', async () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
       const alternativeSl = createAlgoOrder({
-        algoId: 150,
+        algoId: '150',
         type: 'STOP_MARKET',
         triggerPrice: '44500',
       });
@@ -703,10 +703,10 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLossAlgoId: null,
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
       const alternativeTp = createAlgoOrder({
-        algoId: 250,
+        algoId: '250',
         type: 'TAKE_PROFIT_MARKET',
         triggerPrice: '56000',
       });
@@ -731,7 +731,7 @@ describe('OrderSyncService', () => {
     it('should clear stale SL order ID when no matching SL on exchange', async () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
 
@@ -750,7 +750,7 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLossAlgoId: null,
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
 
       mockWalletsData = [wallet];
@@ -768,10 +768,10 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLoss: '45000',
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
-      const slOrder = createAlgoOrder({ algoId: 100, type: 'STOP_MARKET', triggerPrice: '44000' });
+      const slOrder = createAlgoOrder({ algoId: '100', type: 'STOP_MARKET', triggerPrice: '44000' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [execution];
@@ -794,10 +794,10 @@ describe('OrderSyncService', () => {
       const execution = createTestExecution({
         stopLossAlgoId: null,
         takeProfit: '55000',
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
       const tpOrder = createAlgoOrder({
-        algoId: 200,
+        algoId: '200',
         type: 'TAKE_PROFIT_MARKET',
         triggerPrice: '56000',
       });
@@ -821,11 +821,11 @@ describe('OrderSyncService', () => {
     it('should record mismatch when auto-fix of SL sync fails', async () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
       const alternativeSl = createAlgoOrder({
-        algoId: 150,
+        algoId: '150',
         type: 'STOP_MARKET',
         triggerPrice: '44500',
       });
@@ -847,10 +847,10 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLossAlgoId: null,
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
       const alternativeTp = createAlgoOrder({
-        algoId: 250,
+        algoId: '250',
         type: 'TAKE_PROFIT_MARKET',
         triggerPrice: '56000',
       });
@@ -871,7 +871,7 @@ describe('OrderSyncService', () => {
     it('should record mismatch when clearing stale SL fails', async () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
 
@@ -890,7 +890,7 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLossAlgoId: null,
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
 
       mockWalletsData = [wallet];
@@ -909,10 +909,10 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLoss: '45000',
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
-      const slOrder = createAlgoOrder({ algoId: 100, type: 'STOP_MARKET', triggerPrice: '44000' });
+      const slOrder = createAlgoOrder({ algoId: '100', type: 'STOP_MARKET', triggerPrice: '44000' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [execution];
@@ -932,10 +932,10 @@ describe('OrderSyncService', () => {
       const execution = createTestExecution({
         stopLossAlgoId: null,
         takeProfit: '55000',
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
       const tpOrder = createAlgoOrder({
-        algoId: 200,
+        algoId: '200',
         type: 'TAKE_PROFIT_MARKET',
         triggerPrice: '56000',
       });
@@ -963,7 +963,7 @@ describe('OrderSyncService', () => {
 
     it('should temporarily override autoCancelOrphans', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
 
       mockWalletsData = [wallet];
       mockExecutionsData = [];
@@ -988,7 +988,7 @@ describe('OrderSyncService', () => {
     it('should temporarily override autoFixMismatches', async () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
 
@@ -1017,9 +1017,9 @@ describe('OrderSyncService', () => {
       await service.start({ autoCancelOrphans: true, autoFixMismatches: true });
 
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'ETHUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'ETHUSDT' });
       const execution = createTestExecution({
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
 
@@ -1052,7 +1052,7 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLoss: null,
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
 
@@ -1068,7 +1068,7 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         takeProfit: null,
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
         stopLossAlgoId: null,
       });
 
@@ -1085,18 +1085,18 @@ describe('OrderSyncService', () => {
       const exec1 = createTestExecution({
         id: 'exec-1',
         symbol: 'BTCUSDT',
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfitAlgoId: null,
       });
       const exec2 = createTestExecution({
         id: 'exec-2',
         symbol: 'ETHUSDT',
         stopLoss: '3000',
-        stopLossAlgoId: 300,
+        stopLossAlgoId: '300',
         takeProfitAlgoId: null,
       });
-      const slBtc = createAlgoOrder({ algoId: 100, symbol: 'BTCUSDT', type: 'STOP_MARKET', triggerPrice: '45000' });
-      const slEth = createAlgoOrder({ algoId: 300, symbol: 'ETHUSDT', type: 'STOP_MARKET', triggerPrice: '3000' });
+      const slBtc = createAlgoOrder({ algoId: '100', symbol: 'BTCUSDT', type: 'STOP_MARKET', triggerPrice: '45000' });
+      const slEth = createAlgoOrder({ algoId: '300', symbol: 'ETHUSDT', type: 'STOP_MARKET', triggerPrice: '3000' });
 
       mockExecutionsData = [exec1, exec2];
       mockGetOpenAlgoOrders.mockResolvedValue([slBtc, slEth]);
@@ -1109,7 +1109,7 @@ describe('OrderSyncService', () => {
 
     it('should handle positions with zero positionAmt as no position', async () => {
       const wallet = createTestWallet();
-      const orphanOrder = createAlgoOrder({ algoId: 999, symbol: 'BTCUSDT' });
+      const orphanOrder = createAlgoOrder({ algoId: '999', symbol: 'BTCUSDT' });
 
       mockExecutionsData = [];
       mockGetOpenAlgoOrders.mockResolvedValue([orphanOrder]);
@@ -1140,7 +1140,7 @@ describe('OrderSyncService', () => {
     it('should handle triggerPrice with empty string', async () => {
       const wallet = createTestWallet();
       const orphanOrder = createAlgoOrder({
-        algoId: 999,
+        algoId: '999',
         symbol: 'ETHUSDT',
         triggerPrice: '',
       });
@@ -1157,9 +1157,9 @@ describe('OrderSyncService', () => {
       const wallet = createTestWallet();
       const execution = createTestExecution({
         stopLoss: '45000',
-        stopLossAlgoId: 100,
+        stopLossAlgoId: '100',
         takeProfit: '55000',
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
 
       mockExecutionsData = [execution];
@@ -1175,7 +1175,7 @@ describe('OrderSyncService', () => {
     it('should populate orphan order details correctly', async () => {
       const wallet = createTestWallet();
       const orphanOrder = createAlgoOrder({
-        algoId: 777,
+        algoId: '777',
         symbol: 'DOGEUSDT',
         type: 'TAKE_PROFIT_MARKET',
         side: 'BUY',
@@ -1189,7 +1189,7 @@ describe('OrderSyncService', () => {
       const result = await service.syncWallet(wallet);
 
       expect(result.orphanOrders[0]).toEqual(expect.objectContaining({
-        algoId: 777,
+        algoId: '777',
         symbol: 'DOGEUSDT',
         type: 'TAKE_PROFIT_MARKET',
         side: 'BUY',
@@ -1202,7 +1202,7 @@ describe('OrderSyncService', () => {
     it('should handle undefined triggerPrice on algo order', async () => {
       const wallet = createTestWallet();
       const orphanOrder = createAlgoOrder({
-        algoId: 999,
+        algoId: '999',
         symbol: 'ETHUSDT',
         triggerPrice: undefined,
       });
@@ -1220,10 +1220,10 @@ describe('OrderSyncService', () => {
       const execution = createTestExecution({
         stopLossAlgoId: null,
         takeProfit: '55000',
-        takeProfitAlgoId: 200,
+        takeProfitAlgoId: '200',
       });
       const tpOrder = createAlgoOrder({
-        algoId: 200,
+        algoId: '200',
         type: 'TAKE_PROFIT_MARKET',
         triggerPrice: '55000',
       });

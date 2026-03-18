@@ -36,7 +36,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
     });
 
     return {
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: ('side' in order ? order.side : params.side) as 'BUY' | 'SELL',
       type: 'type' in order ? order.type : params.type,
@@ -50,10 +50,10 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
     };
   }
 
-  async cancelOrder(symbol: string, orderId: number): Promise<CancelOrderResult> {
-    const canceledOrder = await this.client.cancelOrder({ symbol, orderId });
+  async cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult> {
+    const canceledOrder = await this.client.cancelOrder({ symbol, orderId: Number(orderId) });
     return {
-      orderId: canceledOrder.orderId,
+      orderId: String(canceledOrder.orderId),
       symbol: canceledOrder.symbol,
       status: 'CANCELED',
     };
@@ -64,7 +64,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
       ? await this.client.getOpenOrders({ symbol })
       : await this.client.getOpenOrders();
     return orders.map((order) => ({
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: order.side as 'BUY' | 'SELL',
       type: order.type,
@@ -81,7 +81,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   async getAllOrders(symbol: string, limit = 100): Promise<SpotOrderResult[]> {
     const orders = await this.client.getAllOrders({ symbol, limit });
     return orders.map((order) => ({
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: order.side as 'BUY' | 'SELL',
       type: order.type,
@@ -106,14 +106,14 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
       stopLimitTimeInForce: params.stopLimitTimeInForce,
     });
     return {
-      orderListId: result.orderListId,
+      orderListId: String(result.orderListId),
       contingencyType: result.contingencyType,
       listStatusType: result.listStatusType,
       listOrderStatus: result.listOrderStatus,
       symbol: result.symbol,
       orders: result.orders.map((o: { symbol: string; orderId: number; clientOrderId: string }) => ({
         symbol: o.symbol,
-        orderId: o.orderId,
+        orderId: String(o.orderId),
         clientOrderId: o.clientOrderId,
       })),
     };

@@ -22,9 +22,9 @@ import { generateEntityId } from '../utils/id';
 import { getWebSocketService } from '../services/websocket';
 
 let paperOrderCounter = 0;
-const generatePaperOrderId = (): number => {
+const generatePaperOrderId = (): string => {
   paperOrderCounter = (paperOrderCounter + 1) % 10000;
-  return Date.now() * 10000 + paperOrderCounter;
+  return String(Date.now() * 10000 + paperOrderCounter);
 };
 
 export const tradingRouter = router({
@@ -72,6 +72,7 @@ export const tradingRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
+          const simulatedTimestamp = Date.now();
           const simulatedOrderId = generatePaperOrderId();
           const price = input.price || '0';
           const quantity = input.quantity;
@@ -88,8 +89,8 @@ export const tradingRouter = router({
             executedQty: input.type === 'MARKET' ? quantity : '0',
             status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
             timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
-            time: simulatedOrderId,
-            updateTime: simulatedOrderId,
+            time: simulatedTimestamp,
+            updateTime: simulatedTimestamp,
             setupId: input.setupId,
             setupType: input.setupType,
             marketType: input.marketType,
@@ -382,7 +383,7 @@ export const tradingRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string(),
-        orderId: z.number(),
+        orderId: z.string(),
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
@@ -519,7 +520,7 @@ export const tradingRouter = router({
     .input(
       z.object({
         walletId: z.string(),
-        orderId: z.number(),
+        orderId: z.string(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -754,7 +755,7 @@ export const tradingRouter = router({
       const entryPrice = parseFloat(position.entryPrice);
       const qty = parseFloat(position.entryQty);
       let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
-      let exitOrderId: number | null = null;
+      let exitOrderId: string | null = null;
 
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
@@ -964,7 +965,7 @@ export const tradingRouter = router({
             execution.entryOrderId,
             execution.stopLossOrderId,
             execution.takeProfitOrderId,
-          ].filter((id): id is number => id !== null);
+          ].filter((id): id is string => id !== null);
 
           if (isFutures) {
             const { createBinanceFuturesClient, cancelFuturesAlgoOrder } = await import('../services/binance-futures-client');
@@ -1073,7 +1074,7 @@ export const tradingRouter = router({
       ) / (totalQty || 1);
 
       let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
-      let exitOrderId: number | null = null;
+      let exitOrderId: string | null = null;
 
       if (shouldExecuteReal) {
         try {
@@ -1300,7 +1301,7 @@ export const tradingRouter = router({
           execution.entryOrderId,
           execution.stopLossOrderId,
           execution.takeProfitOrderId,
-        ].filter((id): id is number => id !== null);
+        ].filter((id): id is string => id !== null);
 
         if (isFutures) {
           const { createBinanceFuturesClient, cancelFuturesAlgoOrder } = await import('../services/binance-futures-client');
@@ -1355,7 +1356,7 @@ export const tradingRouter = router({
             try {
               const { createBinanceClient } = await import('../services/binance-client');
               const binanceClient = createBinanceClient(wallet);
-              await binanceClient.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
+              await binanceClient.cancelOCO({ symbol: execution.symbol, orderListId: Number(execution.orderListId) });
               logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
             } catch (error) {
               logger.warn({
@@ -1428,10 +1429,10 @@ export const tradingRouter = router({
       const qty = parseFloat(execution.quantity);
       const side = execution.side as 'LONG' | 'SHORT';
 
-      let newStopLossOrderId: number | null = execution.stopLossOrderId;
-      let newStopLossAlgoId: number | null = execution.stopLossAlgoId;
-      let newTakeProfitOrderId: number | null = execution.takeProfitOrderId;
-      let newTakeProfitAlgoId: number | null = execution.takeProfitAlgoId;
+      let newStopLossOrderId: string | null = execution.stopLossOrderId;
+      let newStopLossAlgoId: string | null = execution.stopLossAlgoId;
+      let newTakeProfitOrderId: string | null = execution.takeProfitOrderId;
+      let newTakeProfitAlgoId: string | null = execution.takeProfitAlgoId;
 
       if (shouldExecuteReal) {
         try {
@@ -1488,11 +1489,11 @@ export const tradingRouter = router({
       const updateData: {
         updatedAt: Date;
         stopLoss?: string;
-        stopLossOrderId?: number | null;
-        stopLossAlgoId?: number | null;
+        stopLossOrderId?: string | null;
+        stopLossAlgoId?: string | null;
         takeProfit?: string;
-        takeProfitOrderId?: number | null;
-        takeProfitAlgoId?: number | null;
+        takeProfitOrderId?: string | null;
+        takeProfitAlgoId?: string | null;
       } = {
         updatedAt: new Date(),
       };
@@ -1595,7 +1596,7 @@ export const tradingRouter = router({
       const apiClient = createBinanceFuturesClient(wallet);
 
       const binarySide = execution.side === 'LONG' ? 'BUY' : 'SELL';
-      let newOrderId: number;
+      let newOrderId: string;
 
       try {
         if (isAlgoEntry) {

@@ -14,7 +14,7 @@ vi.mock('../../services/binance-futures-client', () => ({
   getPositions: vi.fn().mockResolvedValue([]),
   getPosition: vi.fn().mockResolvedValue(null),
   submitFuturesOrder: vi.fn().mockResolvedValue({
-    orderId: 123456789,
+    orderId: '123456789',
     symbol: 'BTCUSDT',
     side: 'BUY',
     type: 'MARKET',
@@ -28,7 +28,7 @@ vi.mock('../../services/binance-futures-client', () => ({
     reduceOnly: false,
   }),
   cancelFuturesOrder: vi.fn().mockResolvedValue({ status: 'CANCELED' }),
-  closePosition: vi.fn().mockResolvedValue({ orderId: 123456789, side: 'SELL', origQty: '0.1' }),
+  closePosition: vi.fn().mockResolvedValue({ orderId: '123456789', side: 'SELL', origQty: '0.1' }),
   getOpenOrders: vi.fn().mockResolvedValue([]),
   getSymbolLeverageBrackets: vi.fn().mockResolvedValue([
     { bracket: 1, initialLeverage: 125, notionalCap: 50000, notionalFloor: 0, maintMarginRatio: 0.004, cum: 0 },
@@ -569,7 +569,7 @@ describe('Futures Trading Router', () => {
 
       await db.insert(schema.orders).values([
         {
-          orderId: 1,
+          orderId: '1',
           userId: user.id,
           walletId: wallet.id,
           symbol: 'BTCUSDT',
@@ -581,7 +581,7 @@ describe('Futures Trading Router', () => {
           marketType: 'FUTURES',
         },
         {
-          orderId: 2,
+          orderId: '2',
           userId: user.id,
           walletId: wallet.id,
           symbol: 'BTCUSDT',
@@ -607,7 +607,7 @@ describe('Futures Trading Router', () => {
 
       await db.insert(schema.orders).values([
         {
-          orderId: 1,
+          orderId: '1',
           userId: user.id,
           walletId: wallet.id,
           symbol: 'BTCUSDT',
@@ -617,7 +617,7 @@ describe('Futures Trading Router', () => {
           marketType: 'FUTURES',
         },
         {
-          orderId: 2,
+          orderId: '2',
           userId: user.id,
           walletId: wallet.id,
           symbol: 'ETHUSDT',

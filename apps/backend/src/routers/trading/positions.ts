@@ -144,7 +144,7 @@ export const positionsRouter = router({
       const entryPrice = parseFloat(position.entryPrice);
       const qty = parseFloat(position.entryQty);
       let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
-      let exitOrderId: number | null = null;
+      let exitOrderId: string | null = null;
 
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;

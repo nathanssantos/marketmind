@@ -60,8 +60,8 @@ import {
 } from '../../services/protection-orders';
 import { logger } from '../../services/logger';
 
-const MOCK_ALGO_ID = 12345;
-const MOCK_ORDER_ID = 67890;
+const MOCK_ALGO_ID = '12345';
+const MOCK_ORDER_ID = '67890';
 const NEW_ALGO_ID = 99999;
 const TRIGGER_PRICE = 50000;
 const QUANTITY = 0.1;
@@ -266,9 +266,9 @@ describe('protection-orders', () => {
 
     it('should only cancel reduceOnly algo orders (SL/TP), not entry orders', async () => {
       const algoOrders = [
-        { algoId: 111, reduceOnly: true },
-        { algoId: 222, reduceOnly: false },
-        { algoId: 333, reduceOnly: true },
+        { algoId: '111', reduceOnly: true },
+        { algoId: '222', reduceOnly: false },
+        { algoId: '333', reduceOnly: true },
       ];
       mockGetOpenAlgoOrders.mockResolvedValueOnce(algoOrders);
       mockCancelAlgoOrder.mockResolvedValue(undefined);
@@ -297,8 +297,8 @@ describe('protection-orders', () => {
 
     it('should handle individual cancel failures gracefully via Promise.allSettled', async () => {
       const algoOrders = [
-        { algoId: 111, reduceOnly: true },
-        { algoId: 222, reduceOnly: true },
+        { algoId: '111', reduceOnly: true },
+        { algoId: '222', reduceOnly: true },
       ];
       mockGetOpenAlgoOrders.mockResolvedValueOnce(algoOrders);
       mockCancelAlgoOrder
@@ -517,9 +517,9 @@ describe('protection-orders', () => {
         wallet: createMockWallet(),
         symbol: 'BTCUSDT',
         marketType: 'FUTURES',
-        stopLossAlgoId: 111,
+        stopLossAlgoId: '111',
         stopLossOrderId: null,
-        takeProfitAlgoId: 222,
+        takeProfitAlgoId: '222',
         takeProfitOrderId: null,
       });
 

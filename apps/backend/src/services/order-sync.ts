@@ -9,7 +9,7 @@ import { cancelProtectionOrder } from './protection-orders';
 import { getWebSocketService } from './websocket';
 
 export interface OrphanOrder {
-  algoId: number;
+  algoId: string;
   symbol: string;
   type: string;
   side: string;
@@ -23,8 +23,8 @@ export interface MismatchedOrder {
   symbol: string;
   field: 'stopLoss' | 'takeProfit';
   dbValue: number | null;
-  dbAlgoId: number | null;
-  exchangeAlgoId: number | null;
+  dbAlgoId: string | null;
+  exchangeAlgoId: string | null;
   exchangeTriggerPrice: string | null;
 }
 
@@ -32,8 +32,8 @@ export interface FixedOrder {
   executionId: string;
   symbol: string;
   field: 'stopLoss' | 'takeProfit';
-  oldAlgoId: number | null;
-  newAlgoId: number;
+  oldAlgoId: string | null;
+  newAlgoId: string;
   newTriggerPrice: string;
 }
 
@@ -196,7 +196,7 @@ export class OrderSyncService {
         exchangePositions.filter(p => parseFloat(p.positionAmt) !== 0).map(p => p.symbol)
       );
 
-      const dbAlgoIds = new Set<number>();
+      const dbAlgoIds = new Set<string>();
       const dbOrdersBySymbol = new Map<string, typeof dbOpenPositions[0]>();
 
       for (const position of dbOpenPositions) {
@@ -298,7 +298,7 @@ export class OrderSyncService {
                   symbol,
                   field: 'stopLoss',
                   oldAlgoId: position.stopLossAlgoId,
-                  newAlgoId: 0,
+                  newAlgoId: '',
                   newTriggerPrice: '',
                 });
                 logger.info({ executionId: position.id, symbol, oldAlgoId: position.stopLossAlgoId }, '[OrderSync] Cleared stale SL order ID (no matching order on exchange)');
@@ -413,7 +413,7 @@ export class OrderSyncService {
                   symbol,
                   field: 'takeProfit',
                   oldAlgoId: position.takeProfitAlgoId,
-                  newAlgoId: 0,
+                  newAlgoId: '',
                   newTriggerPrice: '',
                 });
                 logger.info({ executionId: position.id, symbol, oldAlgoId: position.takeProfitAlgoId }, '[OrderSync] Cleared stale TP order ID (no matching order on exchange)');

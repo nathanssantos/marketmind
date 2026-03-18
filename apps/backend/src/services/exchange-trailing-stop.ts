@@ -22,14 +22,14 @@ export interface FuturesTrailingStopParams extends TrailingStopParams {
 }
 
 export interface TrailingStopResult {
-  orderId: number;
+  orderId: string;
   symbol: string;
   status: string;
   clientOrderId: string;
 }
 
 export interface FuturesTrailingStopResult {
-  algoId: number;
+  algoId: string;
   symbol: string;
   status: string;
 }
@@ -89,7 +89,13 @@ export class ExchangeTrailingStopService {
         callbackRate: params.callbackRate,
       }, 'Exchange trailing stop placed');
 
-      return result as TrailingStopResult;
+      const response = result as unknown as Record<string, unknown>;
+      return {
+        orderId: String(result.orderId),
+        symbol: result.symbol,
+        status: String(response.status ?? 'NEW'),
+        clientOrderId: result.clientOrderId ?? '',
+      };
     } catch (error) {
       logger.error({
         error: serializeError(error),
@@ -102,7 +108,7 @@ export class ExchangeTrailingStopService {
   async cancelTrailingStop(
     wallet: Wallet,
     symbol: string,
-    orderId: number
+    orderId: string
   ): Promise<boolean> {
     if (!this.enabled) {
       return false;
@@ -113,7 +119,7 @@ export class ExchangeTrailingStopService {
 
       await client.cancelOrder({
         symbol,
-        orderId,
+        orderId: Number(orderId),
       });
 
       logger.info({
@@ -184,7 +190,7 @@ export class ExchangeTrailingStopService {
 
   async cancelTrailingStopFutures(
     wallet: Wallet,
-    algoId: number
+    algoId: string
   ): Promise<boolean> {
     const cancelled = await cancelProtectionOrder({
       wallet,

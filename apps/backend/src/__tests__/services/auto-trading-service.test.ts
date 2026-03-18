@@ -88,7 +88,7 @@ vi.mock('../../exchange', () => ({
   })),
   getSpotClient: vi.fn(() => ({
     submitOrder: vi.fn().mockResolvedValue({
-      orderId: 200,
+      orderId: '200',
       symbol: 'BTCUSDT',
       side: 'BUY',
       origQty: '0.001',
@@ -718,7 +718,7 @@ describe('AutoTradingService', () => {
     it('should execute futures order with correct params', async () => {
       const wallet = createMockWallet();
       mockFuturesSubmitOrder.mockResolvedValue({
-        orderId: 100,
+        orderId: '100',
         symbol: 'BTCUSDT',
         side: 'BUY',
         origQty: '0.01',
@@ -761,7 +761,7 @@ describe('AutoTradingService', () => {
     it('should include stopPrice for stop orders', async () => {
       const wallet = createMockWallet();
       mockFuturesSubmitOrder.mockResolvedValue({
-        orderId: 101,
+        orderId: '101',
         symbol: 'BTCUSDT',
         side: 'SELL',
         origQty: '0.01',
@@ -805,7 +805,7 @@ describe('AutoTradingService', () => {
     it('should not include price for MARKET orders', async () => {
       const wallet = createMockWallet();
       mockFuturesSubmitOrder.mockResolvedValue({
-        orderId: 102,
+        orderId: '102',
         symbol: 'BTCUSDT',
         side: 'BUY',
         origQty: '0.01',
@@ -829,11 +829,11 @@ describe('AutoTradingService', () => {
 
   describe('createStopLossOrder', () => {
     it('should use protection order service for FUTURES', async () => {
-      mockCreateSLOrder.mockResolvedValue({ algoId: 42 });
+      mockCreateSLOrder.mockResolvedValue({ algoId: '42' });
       const wallet = createMockWallet();
 
       const result = await service.createStopLossOrder(wallet as any, 'BTCUSDT', 0.01, 49000, 'LONG', 'FUTURES');
-      expect(result).toEqual({ algoId: 42, isAlgoOrder: true });
+      expect(result).toEqual({ algoId: '42', isAlgoOrder: true });
       expect(mockCreateSLOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           symbol: 'BTCUSDT',
@@ -847,7 +847,7 @@ describe('AutoTradingService', () => {
 
     it('should create STOP_LOSS_LIMIT order for SPOT LONG', async () => {
       mockFuturesSubmitOrder.mockResolvedValue({
-        orderId: 300,
+        orderId: '300',
         symbol: 'BTCUSDT',
         side: 'SELL',
         origQty: '0.01',
@@ -864,7 +864,7 @@ describe('AutoTradingService', () => {
     it('should set price below stop for SELL side (LONG close)', async () => {
       const wallet = createMockWallet();
       const executeSpy = vi.spyOn(service, 'executeBinanceOrder').mockResolvedValue({
-        orderId: 301,
+        orderId: '301',
         executedQty: '0.01',
         price: '49000',
       });
@@ -879,7 +879,7 @@ describe('AutoTradingService', () => {
     it('should set price above stop for BUY side (SHORT close)', async () => {
       const wallet = createMockWallet();
       const executeSpy = vi.spyOn(service, 'executeBinanceOrder').mockResolvedValue({
-        orderId: 302,
+        orderId: '302',
         executedQty: '0.01',
         price: '51000',
       });
@@ -894,17 +894,17 @@ describe('AutoTradingService', () => {
 
   describe('createTakeProfitOrder', () => {
     it('should use protection order service for FUTURES', async () => {
-      mockCreateTPOrder.mockResolvedValue({ algoId: 55 });
+      mockCreateTPOrder.mockResolvedValue({ algoId: '55' });
       const wallet = createMockWallet();
 
       const result = await service.createTakeProfitOrder(wallet as any, 'BTCUSDT', 0.01, 55000, 'LONG', 'FUTURES');
-      expect(result).toEqual({ algoId: 55, isAlgoOrder: true });
+      expect(result).toEqual({ algoId: '55', isAlgoOrder: true });
     });
 
     it('should create LIMIT order for SPOT', async () => {
       const wallet = createMockWallet();
       const executeSpy = vi.spyOn(service, 'executeBinanceOrder').mockResolvedValue({
-        orderId: 400,
+        orderId: '400',
         executedQty: '0.01',
         price: '55000',
       });
@@ -925,13 +925,13 @@ describe('AutoTradingService', () => {
       const wallet = createMockWallet({ walletType: 'PAPER' });
 
       const result = await service.closePosition(wallet as any, 'BTCUSDT', 0.01, 'SELL', 'FUTURES');
-      expect(result).toEqual({ orderId: 0, avgPrice: 0 });
+      expect(result).toEqual({ orderId: '0', avgPrice: 0 });
     });
 
     it('should close futures position with reduceOnly', async () => {
       const wallet = createMockWallet();
       mockFuturesSubmitOrder.mockResolvedValue({
-        orderId: 500,
+        orderId: '500',
         avgPrice: '50500',
         price: '50500',
       });

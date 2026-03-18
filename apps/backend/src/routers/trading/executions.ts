@@ -91,7 +91,7 @@ export const executionsRouter = router({
             execution.entryOrderId,
             execution.stopLossOrderId,
             execution.takeProfitOrderId,
-          ].filter((id): id is number => id !== null);
+          ].filter((id): id is string => id !== null);
 
           if (isFutures) {
             const client = getFuturesClient(wallet);
@@ -152,7 +152,7 @@ export const executionsRouter = router({
       const entryPrice = parseFloat(execution.entryPrice);
       const qty = parseFloat(execution.quantity);
       let exitPrice = input.exitPrice ? parseFloat(input.exitPrice) : 0;
-      let exitOrderId: number | null = null;
+      let exitOrderId: string | null = null;
 
       if (shouldExecuteReal) {
         try {
@@ -325,7 +325,7 @@ export const executionsRouter = router({
           execution.entryOrderId,
           execution.stopLossOrderId,
           execution.takeProfitOrderId,
-        ].filter((id): id is number => id !== null);
+        ].filter((id): id is string => id !== null);
 
         if (isFutures) {
           const client = getFuturesClient(wallet);
@@ -346,7 +346,7 @@ export const executionsRouter = router({
           const algoIdsToCancel = [
             execution.stopLossAlgoId,
             execution.takeProfitAlgoId,
-          ].filter((id): id is number => id !== null && id !== undefined);
+          ].filter((id): id is string => id !== null && id !== undefined);
 
           for (const algoId of algoIdsToCancel) {
             try {
@@ -380,7 +380,7 @@ export const executionsRouter = router({
             try {
               const { createBinanceClient } = await import('../../services/binance-client');
               const binanceClient = createBinanceClient(wallet);
-              await binanceClient.cancelOCO({ symbol: execution.symbol, orderListId: execution.orderListId });
+              await binanceClient.cancelOCO({ symbol: execution.symbol, orderListId: Number(execution.orderListId) });
               logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
             } catch (error) {
               logger.warn({
@@ -447,10 +447,10 @@ export const executionsRouter = router({
       const qty = parseFloat(execution.quantity);
       const side = execution.side as 'LONG' | 'SHORT';
 
-      let newStopLossOrderId: number | null = execution.stopLossOrderId;
-      let newStopLossAlgoId: number | null = execution.stopLossAlgoId;
-      let newTakeProfitOrderId: number | null = execution.takeProfitOrderId;
-      let newTakeProfitAlgoId: number | null = execution.takeProfitAlgoId;
+      let newStopLossOrderId: string | null = execution.stopLossOrderId;
+      let newStopLossAlgoId: string | null = execution.stopLossAlgoId;
+      let newTakeProfitOrderId: string | null = execution.takeProfitOrderId;
+      let newTakeProfitAlgoId: string | null = execution.takeProfitAlgoId;
 
       if (shouldExecuteReal) {
         try {
@@ -507,11 +507,11 @@ export const executionsRouter = router({
       const updateData: {
         updatedAt: Date;
         stopLoss?: string;
-        stopLossOrderId?: number | null;
-        stopLossAlgoId?: number | null;
+        stopLossOrderId?: string | null;
+        stopLossAlgoId?: string | null;
         takeProfit?: string;
-        takeProfitOrderId?: number | null;
-        takeProfitAlgoId?: number | null;
+        takeProfitOrderId?: string | null;
+        takeProfitAlgoId?: string | null;
       } = {
         updatedAt: new Date(),
       };

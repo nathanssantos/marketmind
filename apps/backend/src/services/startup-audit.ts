@@ -46,7 +46,7 @@ function generateExecutionId(): string {
 function findProtectionOrders(
   symbol: string,
   openAlgoOrders: FuturesAlgoOrder[]
-): { slAlgoId: number | null; tpAlgoId: number | null } {
+): { slAlgoId: string | null; tpAlgoId: string | null } {
   const symbolAlgoOrders = openAlgoOrders.filter(
     (o) => o.symbol === symbol && !o.reduceOnly && !o.closePosition
   );
@@ -106,11 +106,10 @@ async function auditWallet(
       ]);
 
     const exchangePositionsBySymbol = new Map(exchangePositions.map((p) => [p.symbol, p]));
-    const openOrderIds = new Set(openOrders.map((o) => o.orderId));
-    const openAlgoOrderIds = new Set(openAlgoOrders.map((o) => o.algoId));
+    const openOrderIds = new Set<string>(openOrders.map((o) => o.orderId));
+    const openAlgoOrderIds = new Set<string>(openAlgoOrders.map((o) => o.algoId));
 
-    // Build set of algo IDs already linked to open executions (protection orders)
-    const linkedAlgoIds = new Set<number>();
+    const linkedAlgoIds = new Set<string>();
     for (const exec of dbOpenExecutions) {
       if (exec.stopLossAlgoId) linkedAlgoIds.add(exec.stopLossAlgoId);
       if (exec.takeProfitAlgoId) linkedAlgoIds.add(exec.takeProfitAlgoId);
@@ -286,7 +285,7 @@ async function auditWallet(
 
     // === Check 2B — Binance has open LIMIT entry orders with no pending execution in DB ===
     const pendingEntryOrderIds = new Set(
-      dbPendingExecutions.map((e) => e.entryOrderId).filter(Boolean) as number[]
+      dbPendingExecutions.map((e) => e.entryOrderId).filter(Boolean) as string[]
     );
 
     const entryLimitOrders: FuturesOrder[] = openOrders.filter(
@@ -369,7 +368,7 @@ async function auditWallet(
 
     // === Check 2C — Binance has open algo ENTRY orders (non-reduceOnly) with no pending execution ===
     const pendingAlgoEntryIds = new Set(
-      dbPendingExecutions.map((e) => e.entryOrderId).filter(Boolean) as number[]
+      dbPendingExecutions.map((e) => e.entryOrderId).filter(Boolean) as string[]
     );
 
     const algoEntryOrders: FuturesAlgoOrder[] = openAlgoOrders.filter(

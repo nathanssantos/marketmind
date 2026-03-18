@@ -477,10 +477,10 @@ export class PositionSyncService {
 
               if (intentOrder) {
                 const qty = Math.abs(positionAmt);
-                let stopLossAlgoId: number | null = null;
-                let takeProfitAlgoId: number | null = null;
-                let stopLossOrderId: number | null = null;
-                let takeProfitOrderId: number | null = null;
+                let stopLossAlgoId: string | null = null;
+                let takeProfitAlgoId: string | null = null;
+                let stopLossOrderId: string | null = null;
+                let takeProfitOrderId: string | null = null;
                 let stopLossIsAlgo = false;
                 let takeProfitIsAlgo = false;
 

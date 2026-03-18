@@ -15,7 +15,7 @@ export interface OrderParams {
 }
 
 export interface OrderResult {
-  orderId: number;
+  orderId: string;
   symbol: string;
   side: 'BUY' | 'SELL';
   type: string;
@@ -30,7 +30,7 @@ export interface OrderResult {
 }
 
 export interface CancelOrderResult {
-  orderId: number;
+  orderId: string;
   symbol: string;
   status: string;
 }
@@ -38,7 +38,7 @@ export interface CancelOrderResult {
 export interface MarketClient {
   readonly marketType: MarketType;
   createOrder(params: OrderParams): Promise<OrderResult>;
-  cancelOrder(symbol: string, orderId: number): Promise<CancelOrderResult>;
+  cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult>;
   getAllOrders(symbol: string, limit?: number): Promise<OrderResult[]>;
 }
 
@@ -62,7 +62,7 @@ class SpotClient implements MarketClient {
     });
 
     return {
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: ('side' in order ? order.side : params.side) as 'BUY' | 'SELL',
       type: 'type' in order ? order.type : params.type,
@@ -76,10 +76,10 @@ class SpotClient implements MarketClient {
     };
   }
 
-  async cancelOrder(symbol: string, orderId: number): Promise<CancelOrderResult> {
-    const canceledOrder = await this.client.cancelOrder({ symbol, orderId });
+  async cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult> {
+    const canceledOrder = await this.client.cancelOrder({ symbol, orderId: Number(orderId) });
     return {
-      orderId: canceledOrder.orderId,
+      orderId: String(canceledOrder.orderId),
       symbol: canceledOrder.symbol,
       status: 'CANCELED',
     };
@@ -88,7 +88,7 @@ class SpotClient implements MarketClient {
   async getAllOrders(symbol: string, limit = 100): Promise<OrderResult[]> {
     const orders = await this.client.getAllOrders({ symbol, limit });
     return orders.map((order) => ({
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: order.side as 'BUY' | 'SELL',
       type: order.type,
@@ -126,7 +126,7 @@ class FuturesClient implements MarketClient {
     const order = await this.client.submitNewOrder(orderParams);
 
     return {
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: order.side as 'BUY' | 'SELL',
       type: order.type,
@@ -141,10 +141,10 @@ class FuturesClient implements MarketClient {
     };
   }
 
-  async cancelOrder(symbol: string, orderId: number): Promise<CancelOrderResult> {
-    const canceledOrder = await this.client.cancelOrder({ symbol, orderId });
+  async cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult> {
+    const canceledOrder = await this.client.cancelOrder({ symbol, orderId: Number(orderId) });
     return {
-      orderId: canceledOrder.orderId,
+      orderId: String(canceledOrder.orderId),
       symbol: canceledOrder.symbol,
       status: 'CANCELED',
     };
@@ -153,7 +153,7 @@ class FuturesClient implements MarketClient {
   async getAllOrders(symbol: string, limit = 100): Promise<OrderResult[]> {
     const orders = await this.client.getAllOrders({ symbol, limit });
     return orders.map((order) => ({
-      orderId: order.orderId,
+      orderId: String(order.orderId),
       symbol: order.symbol,
       side: order.side as 'BUY' | 'SELL',
       type: order.type,

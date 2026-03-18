@@ -26,7 +26,7 @@ vi.mock('../../services/binance-client', () => ({
 vi.mock('../../services/binance-futures-client', () => ({
   createBinanceFuturesClient: vi.fn(() => ({
     get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
-    submitNewOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    submitNewOrder: vi.fn().mockResolvedValue({ orderId: '12345' }),
   })),
   createBinanceFuturesClientForPrices: vi.fn(() => ({
     get24hrChangeStatistics: vi.fn().mockResolvedValue({ lastPrice: '50000' }),
@@ -86,14 +86,14 @@ vi.mock('../../exchange', () => ({
     getPosition: vi.fn(),
     getAllTradeFeesForPosition: vi.fn().mockResolvedValue(null),
     getLastClosingTrade: vi.fn().mockResolvedValue(null),
-    submitOrder: vi.fn().mockResolvedValue({ orderId: 12345 }),
+    submitOrder: vi.fn().mockResolvedValue({ orderId: '12345' }),
     cancelOrder: vi.fn(),
     cancelAllOrders: vi.fn(),
     getOpenOrders: vi.fn().mockResolvedValue([]),
     getOrderEntryFee: vi.fn().mockResolvedValue(null),
   })),
   getSpotClient: vi.fn(() => ({
-    submitOrder: vi.fn().mockResolvedValue({ orderId: 67890 }),
+    submitOrder: vi.fn().mockResolvedValue({ orderId: '67890' }),
     getAccountInfo: vi.fn().mockResolvedValue({ balances: [] }),
   })),
 }));
@@ -185,12 +185,12 @@ describe('PositionMonitorService - Extended Coverage', () => {
     marketType?: 'SPOT' | 'FUTURES';
     limitEntryPrice?: string | null;
     expiresAt?: Date | null;
-    stopLossAlgoId?: number | null;
-    stopLossOrderId?: number | null;
-    takeProfitAlgoId?: number | null;
-    takeProfitOrderId?: number | null;
+    stopLossAlgoId?: string | null;
+    stopLossOrderId?: string | null;
+    takeProfitAlgoId?: string | null;
+    takeProfitOrderId?: string | null;
     entryFee?: string | null;
-    entryOrderId?: number | null;
+    entryOrderId?: string | null;
     accumulatedFunding?: string | null;
     liquidationPrice?: string | null;
   }) => {
@@ -1000,8 +1000,8 @@ describe('PositionMonitorService - Extended Coverage', () => {
         const execution = await createTestExecution({
           userId: user.id,
           walletId: wallet.id,
-          stopLossAlgoId: 111,
-          takeProfitAlgoId: 222,
+          stopLossAlgoId: '111',
+          takeProfitAlgoId: '222',
         });
 
         await service.executeExit(execution!, 49000, 'STOP_LOSS');
@@ -1009,8 +1009,8 @@ describe('PositionMonitorService - Extended Coverage', () => {
         expect(cancelAllProtectionOrders).toHaveBeenCalledWith(
           expect.objectContaining({
             symbol: 'BTCUSDT',
-            stopLossAlgoId: 111,
-            takeProfitAlgoId: 222,
+            stopLossAlgoId: '111',
+            takeProfitAlgoId: '222',
           })
         );
       } finally {
@@ -1027,7 +1027,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
       const execution = await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
-        stopLossAlgoId: 111,
+        stopLossAlgoId: '111',
       });
 
       await service.executeExit(execution!, 49000, 'STOP_LOSS');
@@ -1044,7 +1044,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
       const execution = await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
-        stopLossAlgoId: 111,
+        stopLossAlgoId: '111',
       });
 
       await service.executeExit(execution!, 49000, 'STOP_LOSS');
@@ -1119,7 +1119,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         const { user } = await createAuthenticatedUser();
         const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
 
-        const order = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: 12345 });
+        const order = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: '12345' });
 
         vi.mocked(getFuturesClient).mockReturnValueOnce({
           getPosition: vi.fn(),
@@ -1159,7 +1159,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         const { user } = await createAuthenticatedUser();
         const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
 
-        const order = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: 67890 });
+        const order = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: '67890' });
 
         vi.mocked(getSpotClient).mockReturnValueOnce({
           submitOrder: vi.fn().mockResolvedValue({ orderId: order.orderId }),
@@ -1378,7 +1378,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         const { user } = await createAuthenticatedUser();
         const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
 
-        const entryOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: 99999 });
+        const entryOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: '99999' });
 
         const execution = await createTestExecution({
           userId: user.id,
@@ -1448,7 +1448,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         const { user } = await createAuthenticatedUser();
         const wallet = await createTestWallet({ userId: user.id, walletType: 'live', initialBalance: '10000' });
 
-        const exitOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: 55555 });
+        const exitOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: '55555' });
 
         vi.mocked(getFuturesClient).mockReturnValue({
           getPosition: vi.fn(),
@@ -1461,7 +1461,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
           getOrderEntryFee: vi.fn().mockResolvedValue({ entryFee: 3.0 }),
         } as unknown as ReturnType<typeof getFuturesClient>);
 
-        const entryOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: 88888 });
+        const entryOrder = await createTestOrder({ userId: user.id, walletId: wallet.id, orderId: '88888' });
 
         const execution = await createTestExecution({
           userId: user.id,
@@ -1500,7 +1500,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
           entryPrice: '50000',
           quantity: '0.1',
           stopLoss: '49000',
-          stopLossAlgoId: 12345,
+          stopLossAlgoId: '12345',
         });
 
         await service.executeExit(execution!, 48900, 'STOP_LOSS');

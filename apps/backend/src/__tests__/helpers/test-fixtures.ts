@@ -52,11 +52,11 @@ export interface CreateTradeExecutionOptions {
   entryPrice?: string;
   quantity?: string;
   stopLoss?: string | null;
-  stopLossAlgoId?: number | null;
-  stopLossOrderId?: number | null;
+  stopLossAlgoId?: string | null;
+  stopLossOrderId?: string | null;
   takeProfit?: string | null;
-  takeProfitAlgoId?: number | null;
-  takeProfitOrderId?: number | null;
+  takeProfitAlgoId?: string | null;
+  takeProfitOrderId?: string | null;
   status?: 'pending' | 'open' | 'closed' | 'cancelled';
   setupType?: string;
   marketType?: 'SPOT' | 'FUTURES';
@@ -98,7 +98,7 @@ export interface CreateSetupDetectionOptions {
 export interface CreateOrderOptions {
   userId: string;
   walletId: string;
-  orderId?: number;
+  orderId?: string;
   symbol?: string;
   side?: 'BUY' | 'SELL';
   type?: string;
@@ -308,7 +308,7 @@ export const createTestOrder = async (options: CreateOrderOptions): Promise<Orde
   const {
     userId,
     walletId,
-    orderId = Date.now(),
+    orderId = String(Date.now()),
     symbol = 'BTCUSDT',
     side = 'BUY',
     type = 'MARKET',

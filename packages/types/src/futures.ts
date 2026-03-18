@@ -81,7 +81,7 @@ export interface FuturesAccountAsset {
 }
 
 export interface FuturesOrder {
-  orderId: number;
+  orderId: string;
   symbol: string;
   status: string;
   clientOrderId: string;

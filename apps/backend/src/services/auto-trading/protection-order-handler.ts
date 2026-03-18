@@ -16,18 +16,18 @@ import type { ActiveWatcher } from './types';
 import { log } from './utils';
 
 export interface ProtectionOrderResult {
-  stopLossOrderId: number | null;
-  takeProfitOrderId: number | null;
-  stopLossAlgoId: number | null;
-  takeProfitAlgoId: number | null;
+  stopLossOrderId: string | null;
+  takeProfitOrderId: string | null;
+  stopLossAlgoId: string | null;
+  takeProfitAlgoId: string | null;
   stopLossIsAlgo: boolean;
   takeProfitIsAlgo: boolean;
-  orderListId: number | null;
+  orderListId: string | null;
 }
 
 export interface SingleStopLossResult {
-  stopLossOrderId: number | null;
-  stopLossAlgoId: number | null;
+  stopLossOrderId: string | null;
+  stopLossAlgoId: string | null;
   stopLossIsAlgo: boolean;
 }
 
@@ -39,13 +39,13 @@ export class ProtectionOrderHandler {
     wallet: Wallet,
     actualQuantity: number
   ): Promise<ProtectionOrderResult> {
-    let stopLossOrderId: number | null = null;
-    let takeProfitOrderId: number | null = null;
-    let stopLossAlgoId: number | null = null;
-    let takeProfitAlgoId: number | null = null;
+    let stopLossOrderId: string | null = null;
+    let takeProfitOrderId: string | null = null;
+    let stopLossAlgoId: string | null = null;
+    let takeProfitAlgoId: string | null = null;
     let stopLossIsAlgo = false;
     let takeProfitIsAlgo = false;
-    let orderListId: number | null = null;
+    let orderListId: string | null = null;
 
     const useSeparateOrders = watcher.marketType === 'FUTURES';
 
@@ -209,10 +209,10 @@ export class ProtectionOrderHandler {
     effectiveTakeProfit: number,
     actualQuantity: number
   ): Promise<Omit<ProtectionOrderResult, 'orderListId'>> {
-    let stopLossOrderId: number | null = null;
-    let takeProfitOrderId: number | null = null;
-    let stopLossAlgoId: number | null = null;
-    let takeProfitAlgoId: number | null = null;
+    let stopLossOrderId: string | null = null;
+    let takeProfitOrderId: string | null = null;
+    let stopLossAlgoId: string | null = null;
+    let takeProfitAlgoId: string | null = null;
     let stopLossIsAlgo = false;
     let takeProfitIsAlgo = false;
 
@@ -286,8 +286,8 @@ export class ProtectionOrderHandler {
     setup: TradingSetup,
     actualQuantity: number
   ): Promise<SingleStopLossResult> {
-    let stopLossOrderId: number | null = null;
-    let stopLossAlgoId: number | null = null;
+    let stopLossOrderId: string | null = null;
+    let stopLossAlgoId: string | null = null;
     let stopLossIsAlgo = false;
 
     const slOnlyResult = await withRetrySafe(
@@ -329,7 +329,7 @@ export class ProtectionOrderHandler {
     actualQuantity: number,
     executionId: string,
     setupId: string,
-    entryOrderId: number
+    entryOrderId: string
   ): Promise<{ shouldReturn: boolean }> {
     log('! CRITICAL: SL creation failed - attempting to close entry position', {
       executionId,
@@ -427,8 +427,8 @@ export class ProtectionOrderHandler {
     setup: TradingSetup,
     hasSL: boolean,
     hasTP: boolean,
-    stopLossAlgoId: number | null,
-    takeProfitAlgoId: number | null
+    stopLossAlgoId: string | null,
+    takeProfitAlgoId: string | null
   ): void {
     log('! CRITICAL: Incomplete protection orders - emitting alert', {
       symbol: watcher.symbol,

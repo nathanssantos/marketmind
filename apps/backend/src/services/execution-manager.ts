@@ -81,7 +81,7 @@ export async function clearProtectionOrderIds(
 export async function updateProtectionOrderId(
   executionId: string,
   field: ProtectionOrderField,
-  newAlgoId: number | null,
+  newAlgoId: string | null,
   newTriggerPrice?: number
 ): Promise<void> {
   const updates: Partial<TradeExecution> = { updatedAt: new Date() };
@@ -286,7 +286,7 @@ export function isClosingSide(executionSide: 'LONG' | 'SHORT', orderSide: 'BUY' 
 export async function syncProtectionOrderIdFromExchange(
   executionId: string,
   field: ProtectionOrderField,
-  exchangeAlgoId: number,
+  exchangeAlgoId: string,
   exchangeTriggerPrice: number
 ): Promise<void> {
   await updateProtectionOrderId(executionId, field, exchangeAlgoId, exchangeTriggerPrice);

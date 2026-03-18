@@ -1164,7 +1164,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should update stop loss on Binance for live FUTURES wallet with algo order', async () => {
       const exec = makeExecution({
         marketType: 'FUTURES',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         stopLossIsAlgo: true,
         walletId: 'wallet-live',
       });
@@ -1186,7 +1186,7 @@ describe('TrailingStopService - Manager Methods', () => {
         }),
       });
 
-      mockUpdateStopLossOrder.mockResolvedValue({ algoId: 99999 });
+      mockUpdateStopLossOrder.mockResolvedValue({ algoId: '99999' });
       setupUpdateChain();
 
       await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
@@ -1205,7 +1205,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should skip Binance order update for paper wallets', async () => {
       const exec = makeExecution({
         marketType: 'FUTURES',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         stopLossIsAlgo: true,
         walletId: 'wallet-paper',
       });
@@ -1229,7 +1229,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should skip Binance order update when stopLossIsAlgo is false', async () => {
       const exec = makeExecution({
         marketType: 'FUTURES',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         stopLossIsAlgo: false,
       });
 
@@ -1255,7 +1255,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should log error but continue when Binance order update fails', async () => {
       const exec = makeExecution({
         marketType: 'FUTURES',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         stopLossIsAlgo: true,
         walletId: 'wallet-live',
       });
@@ -1366,7 +1366,7 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should include algoId in update when Binance order returns new algoId', async () => {
       const exec = makeExecution({
         marketType: 'FUTURES',
-        stopLossAlgoId: 12345,
+        stopLossAlgoId: '12345',
         stopLossIsAlgo: true,
         walletId: 'wallet-live',
       });
@@ -1380,7 +1380,7 @@ describe('TrailingStopService - Manager Methods', () => {
         }),
       });
 
-      mockUpdateStopLossOrder.mockResolvedValue({ algoId: 99999 });
+      mockUpdateStopLossOrder.mockResolvedValue({ algoId: '99999' });
       const updateChain = setupUpdateChain();
 
       await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
@@ -1388,7 +1388,7 @@ describe('TrailingStopService - Manager Methods', () => {
       expect(updateChain.setFn).toHaveBeenCalledWith(
         expect.objectContaining({
           stopLoss: '101',
-          stopLossAlgoId: 99999,
+          stopLossAlgoId: '99999',
         })
       );
     });

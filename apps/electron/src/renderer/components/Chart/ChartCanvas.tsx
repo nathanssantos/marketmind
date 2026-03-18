@@ -55,6 +55,7 @@ import { useDrawingInteraction } from './drawings/useDrawingInteraction';
 import { useDrawingsRenderer } from './drawings/useDrawingsRenderer';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import { useBackendDrawings } from '@renderer/hooks/useBackendDrawings';
+import { useOrphanOrders } from '@renderer/hooks/useOrphanOrders';
 import type { MovingAverageConfig } from './useMovingAverageRenderer';
 import {
   useChartState,
@@ -236,16 +237,10 @@ export const ChartCanvas = ({
     }
   );
 
-  const isFuturesChart = (marketType || 'FUTURES') === 'FUTURES';
-
-  const { data: exchangeOpenOrders } = trpc.futuresTrading.getOpenOrders.useQuery(
-    { walletId: backendWalletId ?? '', symbol },
-    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 1000 }
-  );
-
-  const { data: exchangeAlgoOrders } = trpc.futuresTrading.getOpenAlgoOrders.useQuery(
-    { walletId: backendWalletId ?? '', symbol },
-    { enabled: !!backendWalletId && !!symbol && isFuturesChart, refetchInterval: tradingPolling, staleTime: 1000 }
+  const { orphanOrders: orphanOrdersRaw, exchangeOpenOrders, exchangeAlgoOrders } = useOrphanOrders(
+    backendWalletId ?? '',
+    backendExecutions ?? [],
+    symbol,
   );
 
   const { data: symbolTrailingConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
@@ -301,64 +296,23 @@ export const ChartCanvas = ({
       }));
   }, [backendExecutions, symbol, marketType]);
 
-  const orphanOrderExecutions = useMemo((): BackendExecution[] => {
-    if (!symbol) return [];
-    const trackedOrderIds = new Set(
-      (backendExecutions ?? [])
-        .flatMap(e => {
-          const ids: number[] = [];
-          if (e.entryOrderId) ids.push(Number(e.entryOrderId));
-          if (e.stopLossOrderId) ids.push(Number(e.stopLossOrderId));
-          if (e.stopLossAlgoId) ids.push(Number(e.stopLossAlgoId));
-          if (e.takeProfitOrderId) ids.push(Number(e.takeProfitOrderId));
-          if (e.takeProfitAlgoId) ids.push(Number(e.takeProfitAlgoId));
-          if (e.trailingStopAlgoId) ids.push(Number(e.trailingStopAlgoId));
-          return ids;
-        })
-    );
-
-    const orphans: BackendExecution[] = [];
-
-    for (const order of exchangeOpenOrders ?? []) {
-      const oid = Number(order.orderId);
-      if (trackedOrderIds.has(oid)) continue;
-      orphans.push({
-        id: `exchange-order-${oid}`,
-        symbol: String(order.symbol),
-        side: order.side === 'BUY' ? 'LONG' : 'SHORT',
-        entryPrice: String(order.price),
-        quantity: String(order.origQty),
-        stopLoss: null,
-        takeProfit: null,
-        status: 'pending',
-        setupType: null,
-        marketType: 'FUTURES',
-        openedAt: order.time ? new Date(Number(order.time)) : null,
-        entryOrderType: order.type as BackendExecution['entryOrderType'],
-      });
-    }
-
-    for (const algo of exchangeAlgoOrders ?? []) {
-      const aid = Number(algo.algoId);
-      if (trackedOrderIds.has(aid)) continue;
-      orphans.push({
-        id: `exchange-algo-${aid}`,
-        symbol: String(algo.symbol),
-        side: algo.side === 'BUY' ? 'LONG' : 'SHORT',
-        entryPrice: String((algo as { triggerPrice?: string }).triggerPrice ?? '0'),
-        quantity: String(algo.quantity ?? '0'),
-        stopLoss: null,
-        takeProfit: null,
-        status: 'pending',
-        setupType: null,
-        marketType: 'FUTURES',
-        openedAt: algo.createTime ? new Date(Number(algo.createTime)) : null,
-        entryOrderType: algo.type as BackendExecution['entryOrderType'],
-      });
-    }
-
-    return orphans;
-  }, [symbol, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders]);
+  const orphanOrderExecutions = useMemo((): BackendExecution[] =>
+    orphanOrdersRaw.map((o) => ({
+      id: o.id,
+      symbol: o.symbol,
+      side: o.side === 'BUY' ? 'LONG' as const : 'SHORT' as const,
+      entryPrice: o.price,
+      quantity: o.quantity,
+      stopLoss: null,
+      takeProfit: null,
+      status: 'pending' as const,
+      setupType: null,
+      marketType: 'FUTURES' as const,
+      openedAt: o.createdAt,
+      entryOrderType: o.type as BackendExecution['entryOrderType'],
+    })),
+    [orphanOrdersRaw]
+  );
 
   const allExecutions = useMemo((): BackendExecution[] => {
     const realIds = new Set(filteredBackendExecutions.map(e => e.id));
@@ -776,8 +730,8 @@ export const ChartCanvas = ({
       return;
     }
     if (orderId.startsWith('exchange-order-') || orderId.startsWith('exchange-algo-')) {
-      const exchangeOrderId = parseInt(orderId.replace(/^exchange-(order|algo)-/, ''), 10);
-      if (!backendWalletId || !symbol || isNaN(exchangeOrderId)) return;
+      const exchangeOrderId = orderId.replace(/^exchange-(order|algo)-/, '');
+      if (!backendWalletId || !symbol || !exchangeOrderId) return;
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(orderId, cancelPatches, { status: 'pending' });
       orderLoadingMapRef.current.set(orderId, Date.now());
@@ -982,8 +936,8 @@ export const ChartCanvas = ({
       .map(exec => ({
         id: exec.id,
         symbol: exec.symbol,
-        orderId: 0,
-        orderListId: -1,
+        orderId: '0',
+        orderListId: '-1',
         clientOrderId: exec.id,
         price: exec.entryPrice,
         origQty: exec.quantity,
@@ -1014,8 +968,8 @@ export const ChartCanvas = ({
 
     if (id.startsWith('exchange-') && updates.entryPrice !== undefined && backendWalletId && symbol) {
       const isAlgo = id.startsWith('exchange-algo-');
-      const exchangeOrderId = parseInt(id.replace(/^exchange-(order|algo)-/, ''), 10);
-      if (isNaN(exchangeOrderId)) return;
+      const exchangeOrderId = id.replace(/^exchange-(order|algo)-/, '');
+      if (!exchangeOrderId) return;
 
       const exec = allExecutions.find(e => e.id === id);
       if (!exec) return;
@@ -1193,6 +1147,7 @@ export const ChartCanvas = ({
           symbol,
           side,
           type,
+          marketType: marketType ?? 'FUTURES',
           price: type === 'LIMIT' ? roundTradingPrice(price) : undefined,
           stopPrice: type === 'STOP_MARKET' ? roundTradingPrice(price) : undefined,
           quantity,
@@ -1203,7 +1158,7 @@ export const ChartCanvas = ({
     }
 
     utils.autoTrading.getActiveExecutions.invalidate();
-  }, [backendWalletId, symbol, getOrderQuantity, addBackendOrder, utils]);
+  }, [backendWalletId, symbol, marketType, getOrderQuantity, addBackendOrder, utils]);
 
   const gridInteraction = useGridInteraction({
     manager,
@@ -1221,13 +1176,15 @@ export const ChartCanvas = ({
     manager,
     klines,
     symbol: symbol ?? '',
+    interval: timeframe,
   });
 
-  useBackendDrawings(symbol ?? '', klines);
+  useBackendDrawings(symbol ?? '', timeframe, klines);
 
   const { render: renderDrawings } = useDrawingsRenderer({
     manager,
     symbol: symbol ?? '',
+    interval: timeframe,
     klines,
     colors: { bullish: colors.bullish, bearish: colors.bearish, crosshair: colors.crosshair },
     themeColors: colors,
@@ -1457,7 +1414,7 @@ export const ChartCanvas = ({
       if (event.key === 'Delete' || event.key === 'Backspace') {
         const drawingState = useDrawingStore.getState();
         if (drawingState.selectedDrawingId && symbol) {
-          drawingState.deleteDrawing(drawingState.selectedDrawingId, symbol);
+          drawingState.deleteDrawing(drawingState.selectedDrawingId, symbol, timeframe);
           manager?.markDirty('overlays');
         }
       }

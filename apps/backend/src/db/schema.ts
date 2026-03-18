@@ -55,7 +55,7 @@ export const wallets = pgTable('wallets', {
 });
 
 export const orders = pgTable('orders', {
-  orderId: bigint('order_id', { mode: 'number' }).primaryKey(),
+  orderId: varchar('order_id', { length: 40 }).primaryKey(),
   symbol: varchar({ length: 20 }).notNull(),
   side: varchar({ length: 10 }).$type<'BUY' | 'SELL'>().notNull(),
   type: varchar({ length: 30 }).notNull(),
@@ -151,7 +151,7 @@ export const tradingSetups = pgTable('trading_setups', {
   takeProfit: numeric('take_profit', { precision: 20, scale: 8 }).notNull(),
   confidence: integer().notNull(),
   detectedAt: timestamp('detected_at', { mode: 'date' }).defaultNow().notNull(),
-  orderId: bigint('order_id', { mode: 'number' }).references(() => orders.orderId),
+  orderId: varchar('order_id', { length: 40 }).references(() => orders.orderId),
   status: varchar({ length: 20 }).default('pending'),
   pnl: numeric({ precision: 20, scale: 8 }),
   pnlPercent: numeric('pnl_percent', { precision: 10, scale: 2 }),
@@ -344,11 +344,11 @@ export const tradeExecutions = pgTable('trade_executions', {
   setupType: varchar('setup_type', { length: 100 }),
   symbol: varchar({ length: 20 }).notNull(),
   side: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
-  entryOrderId: bigint('entry_order_id', { mode: 'number' }).references(() => orders.orderId),
-  stopLossOrderId: bigint('stop_loss_order_id', { mode: 'number' }),
-  takeProfitOrderId: bigint('take_profit_order_id', { mode: 'number' }),
-  orderListId: bigint('order_list_id', { mode: 'number' }),
-  exitOrderId: bigint('exit_order_id', { mode: 'number' }).references(() => orders.orderId),
+  entryOrderId: varchar('entry_order_id', { length: 40 }).references(() => orders.orderId),
+  stopLossOrderId: varchar('stop_loss_order_id', { length: 40 }),
+  takeProfitOrderId: varchar('take_profit_order_id', { length: 40 }),
+  orderListId: varchar('order_list_id', { length: 40 }),
+  exitOrderId: varchar('exit_order_id', { length: 40 }).references(() => orders.orderId),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
   exitPrice: numeric('exit_price', { precision: 20, scale: 8 }),
   quantity: numeric({ precision: 20, scale: 8 }).notNull(),
@@ -379,10 +379,10 @@ export const tradeExecutions = pgTable('trade_executions', {
   entryFee: numeric('entry_fee', { precision: 20, scale: 8 }),
   exitFee: numeric('exit_fee', { precision: 20, scale: 8 }),
   commissionAsset: varchar('commission_asset', { length: 20 }),
-  trailingStopAlgoId: bigint('trailing_stop_algo_id', { mode: 'number' }),
+  trailingStopAlgoId: varchar('trailing_stop_algo_id', { length: 40 }),
   trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>(),
-  stopLossAlgoId: bigint('stop_loss_algo_id', { mode: 'number' }),
-  takeProfitAlgoId: bigint('take_profit_algo_id', { mode: 'number' }),
+  stopLossAlgoId: varchar('stop_loss_algo_id', { length: 40 }),
+  takeProfitAlgoId: varchar('take_profit_algo_id', { length: 40 }),
   stopLossIsAlgo: boolean('stop_loss_is_algo').default(false),
   takeProfitIsAlgo: boolean('take_profit_is_algo').default(false),
   entryInterval: varchar('entry_interval', { length: 10 }),
@@ -775,6 +775,7 @@ export const chartDrawings = pgTable('chart_drawings', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   symbol: varchar({ length: 50 }).notNull(),
+  interval: varchar({ length: 10 }).default('1h').notNull(),
   type: varchar({ length: 20 }).notNull(),
   data: text().notNull(),
   visible: boolean().default(true).notNull(),
@@ -783,7 +784,7 @@ export const chartDrawings = pgTable('chart_drawings', {
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
-  userSymbolIdx: index('chart_drawings_user_symbol_idx').on(table.userId, table.symbol),
+  userSymbolIntervalIdx: index('chart_drawings_user_symbol_interval_idx').on(table.userId, table.symbol, table.interval),
 }));
 
 export type ChartDrawing = typeof chartDrawings.$inferSelect;

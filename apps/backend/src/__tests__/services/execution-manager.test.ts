@@ -212,8 +212,8 @@ describe('Execution Manager - Database Operations', () => {
       stopLoss: '48000',
       takeProfit: '55000',
       entryFee: '5',
-      stopLossAlgoId: 12345,
-      takeProfitAlgoId: 67890,
+      stopLossAlgoId: '12345',
+      takeProfitAlgoId: '67890',
       ...overrides,
     };
 
@@ -292,30 +292,30 @@ describe('Execution Manager - Database Operations', () => {
     it('should update stopLoss algo ID and price', async () => {
       const executionId = await createTestExecution();
 
-      await updateProtectionOrderId(executionId, 'stopLoss', 99999, 47000);
+      await updateProtectionOrderId(executionId, 'stopLoss', '99999', 47000);
 
       const execution = await getExecutionById(executionId);
-      expect(execution?.stopLossAlgoId).toBe(99999);
+      expect(execution?.stopLossAlgoId).toBe('99999');
       expect(parseFloat(execution?.stopLoss || '0')).toBe(47000);
     });
 
     it('should update takeProfit algo ID and price', async () => {
       const executionId = await createTestExecution();
 
-      await updateProtectionOrderId(executionId, 'takeProfit', 88888, 56000);
+      await updateProtectionOrderId(executionId, 'takeProfit', '88888', 56000);
 
       const execution = await getExecutionById(executionId);
-      expect(execution?.takeProfitAlgoId).toBe(88888);
+      expect(execution?.takeProfitAlgoId).toBe('88888');
       expect(parseFloat(execution?.takeProfit || '0')).toBe(56000);
     });
 
     it('should update only algo ID when price not provided', async () => {
       const executionId = await createTestExecution();
 
-      await updateProtectionOrderId(executionId, 'stopLoss', 99999);
+      await updateProtectionOrderId(executionId, 'stopLoss', '99999');
 
       const execution = await getExecutionById(executionId);
-      expect(execution?.stopLossAlgoId).toBe(99999);
+      expect(execution?.stopLossAlgoId).toBe('99999');
       expect(parseFloat(execution?.stopLoss || '0')).toBe(48000);
     });
 
@@ -453,20 +453,20 @@ describe('Execution Manager - Database Operations', () => {
     it('should sync stopLoss order ID from exchange', async () => {
       const executionId = await createTestExecution();
 
-      await syncProtectionOrderIdFromExchange(executionId, 'stopLoss', 111111, 47500);
+      await syncProtectionOrderIdFromExchange(executionId, 'stopLoss', '111111', 47500);
 
       const execution = await getExecutionById(executionId);
-      expect(execution?.stopLossAlgoId).toBe(111111);
+      expect(execution?.stopLossAlgoId).toBe('111111');
       expect(parseFloat(execution?.stopLoss || '0')).toBe(47500);
     });
 
     it('should sync takeProfit order ID from exchange', async () => {
       const executionId = await createTestExecution();
 
-      await syncProtectionOrderIdFromExchange(executionId, 'takeProfit', 222222, 56500);
+      await syncProtectionOrderIdFromExchange(executionId, 'takeProfit', '222222', 56500);
 
       const execution = await getExecutionById(executionId);
-      expect(execution?.takeProfitAlgoId).toBe(222222);
+      expect(execution?.takeProfitAlgoId).toBe('222222');
       expect(parseFloat(execution?.takeProfit || '0')).toBe(56500);
     });
   });

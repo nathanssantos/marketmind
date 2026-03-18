@@ -52,7 +52,8 @@ export const ordersRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          const simulatedOrderId = Date.now();
+          const now = Date.now();
+          const simulatedOrderId = String(now);
           const price = input.price || '0';
           const quantity = input.quantity;
 
@@ -68,8 +69,8 @@ export const ordersRouter = router({
             executedQty: input.type === 'MARKET' ? quantity : '0',
             status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
             timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
-            time: simulatedOrderId,
-            updateTime: simulatedOrderId,
+            time: now,
+            updateTime: now,
             setupId: input.setupId,
             setupType: input.setupType,
             marketType: input.marketType,
@@ -147,7 +148,7 @@ export const ordersRouter = router({
       z.object({
         walletId: z.string(),
         symbol: z.string(),
-        orderId: z.number(),
+        orderId: z.string(),
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
       })
     )
@@ -221,7 +222,7 @@ export const ordersRouter = router({
     .input(
       z.object({
         walletId: z.string(),
-        orderId: z.number(),
+        orderId: z.string(),
       })
     )
     .query(async ({ input, ctx }) => {

@@ -13,16 +13,16 @@ export interface OCOOrderParams {
 }
 
 export interface OCOOrderResult {
-  orderListId: number;
+  orderListId: string;
   contingencyType: string;
   listStatusType: string;
   listOrderStatus: string;
   orders: Array<{
-    orderId: number;
+    orderId: string;
     symbol: string;
   }>;
   orderReports: Array<{
-    orderId: number;
+    orderId: string;
     clientOrderId: string;
     type: string;
     side: string;
@@ -33,9 +33,9 @@ export interface OCOOrderResult {
 }
 
 export interface ExitOCOResult {
-  orderListId: number;
-  stopLossOrderId: number;
-  takeProfitOrderId: number;
+  orderListId: string;
+  stopLossOrderId: string;
+  takeProfitOrderId: string;
 }
 
 export class OCOOrderService {
@@ -103,9 +103,9 @@ export class OCOOrderService {
       }, '[OCO] Exit orders placed successfully');
 
       return {
-        orderListId: ocoResult.orderListId,
-        stopLossOrderId: stopLossOrder?.orderId ?? 0,
-        takeProfitOrderId: takeProfitOrder?.orderId ?? 0,
+        orderListId: String(ocoResult.orderListId),
+        stopLossOrderId: stopLossOrder?.orderId ? String(stopLossOrder.orderId) : '0',
+        takeProfitOrderId: takeProfitOrder?.orderId ? String(takeProfitOrder.orderId) : '0',
       };
     } catch (error) {
       logger.error({
@@ -123,7 +123,7 @@ export class OCOOrderService {
   async cancelOCO(
     wallet: Wallet,
     symbol: string,
-    orderListId: number
+    orderListId: string
   ): Promise<boolean> {
     if (isPaperWallet(wallet)) {
       return false;
@@ -134,7 +134,7 @@ export class OCOOrderService {
 
       await client.cancelOCO({
         symbol,
-        orderListId,
+        orderListId: Number(orderListId),
       });
 
       logger.info({

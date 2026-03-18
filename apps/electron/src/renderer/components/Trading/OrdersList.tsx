@@ -44,7 +44,7 @@ const OrdersListComponent = () => {
     const ordersFromApi = backendOrdersData.map((o): Order => ({
       symbol: o.symbol,
       orderId: o.orderId,
-      orderListId: 0,
+      orderListId: '0',
       clientOrderId: '',
       price: o.price || '0',
       origQty: o.origQty || '0',
@@ -58,7 +58,7 @@ const OrdersListComponent = () => {
       updateTime: typeof o.updateTime === 'number' ? o.updateTime : Date.now(),
       isWorking: o.status === 'NEW' || o.status === 'PARTIALLY_FILLED',
       origQuoteOrderQty: '0',
-      id: o.orderId.toString(),
+      id: o.orderId,
       walletId: o.walletId,
       orderDirection: o.side === 'BUY' ? ('long' as const) : ('short' as const),
       entryPrice: parseFloat(o.price || '0'),
@@ -69,8 +69,8 @@ const OrdersListComponent = () => {
 
     const ordersFromExecutions = tradeExecutions.map((e): Order => ({
       symbol: e.symbol,
-      orderId: 0,
-      orderListId: 0,
+      orderId: '0',
+      orderListId: '0',
       clientOrderId: e.id,
       price: e.entryPrice,
       origQty: e.quantity,
@@ -139,7 +139,7 @@ const OrdersListComponent = () => {
         await cancelBackendOrder({
           walletId: activeWalletId,
           symbol: order.symbol,
-          orderId: order.orderId || 0,
+          orderId: order.orderId || '0',
         });
       }
       toastSuccess(t('trading.order.cancelSuccess'));

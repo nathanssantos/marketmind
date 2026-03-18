@@ -282,7 +282,7 @@ export async function submitFuturesOrder(
     }, '[Futures] Order submitted - Binance response');
 
     return {
-      orderId: result.orderId,
+      orderId: String(result.orderId),
       symbol: result.symbol,
       status: result.status,
       clientOrderId: result.clientOrderId,
@@ -313,10 +313,10 @@ export async function submitFuturesOrder(
 export async function cancelFuturesOrder(
   client: USDMClient,
   symbol: string,
-  orderId: number
+  orderId: string
 ): Promise<void> {
   try {
-    await guardBinanceCall(() => client.cancelOrder({ symbol, orderId }));
+    await guardBinanceCall(() => client.cancelOrder({ symbol, orderId: Number(orderId) }));
   } catch (error) {
     const msg = serializeError(error);
     if (msg.includes('Unknown order') || msg.includes('Order does not exist') || msg.includes('not found')) {
@@ -369,7 +369,7 @@ export async function getOpenOrders(
       : await guardBinanceCall(() => client.getAllOpenOrders());
 
     return orders.map((o) => ({
-      orderId: o.orderId,
+      orderId: String(o.orderId),
       symbol: o.symbol,
       status: o.status,
       clientOrderId: o.clientOrderId,
@@ -457,7 +457,7 @@ export async function submitFuturesAlgoOrder(
     }, '[Futures] Algo order submitted successfully');
 
     return {
-      algoId: result.algoId,
+      algoId: String(result.algoId),
       clientAlgoId: result.clientAlgoId,
       symbol: result.symbol,
       side: result.side as 'BUY' | 'SELL',
@@ -482,10 +482,10 @@ export async function submitFuturesAlgoOrder(
 
 export async function cancelFuturesAlgoOrder(
   client: USDMClient,
-  algoId: number
+  algoId: string
 ): Promise<void> {
   try {
-    await guardBinanceCall(() => client.cancelAlgoOrder({ algoId }));
+    await guardBinanceCall(() => client.cancelAlgoOrder({ algoId: Number(algoId) }));
     logger.info({ algoId }, '[Futures] Algo order cancelled successfully');
   } catch (error) {
     const msg = serializeError(error);
@@ -533,7 +533,7 @@ export async function getOpenAlgoOrders(
     const orders = await guardBinanceCall(() => client.getOpenAlgoOrders(symbol ? { symbol } : undefined));
 
     return orders.map((o) => ({
-      algoId: o.algoId,
+      algoId: String(o.algoId),
       clientAlgoId: o.clientAlgoId,
       symbol: o.symbol,
       side: o.side as 'BUY' | 'SELL',
@@ -558,15 +558,15 @@ export async function getOpenAlgoOrders(
 
 export async function getAlgoOrder(
   client: USDMClient,
-  algoId: number
+  algoId: string
 ): Promise<FuturesAlgoOrder | null> {
   try {
-    const result = await guardBinanceCall(() => client.getAlgoOrder({ algoId }));
+    const result = await guardBinanceCall(() => client.getAlgoOrder({ algoId: Number(algoId) }));
 
     if (!result) return null;
 
     return {
-      algoId: result.algoId,
+      algoId: String(result.algoId),
       clientAlgoId: result.clientAlgoId,
       symbol: result.symbol,
       side: result.side as 'BUY' | 'SELL',
@@ -630,7 +630,7 @@ export async function getRecentTrades(
     return trades.map((t) => ({
       symbol: t.symbol,
       id: t.id,
-      orderId: t.orderId,
+      orderId: String(t.orderId),
       side: t.side as 'BUY' | 'SELL',
       price: String(t.price),
       qty: String(t.qty),
@@ -778,12 +778,12 @@ export async function getAllTradeFeesForPosition(
 export async function getOrderEntryFee(
   client: USDMClient,
   symbol: string,
-  orderId: number
+  orderId: string
 ): Promise<{ entryFee: number; avgPrice: number; totalQty: number } | null> {
   try {
     const trades = await guardBinanceCall(() => client.getAccountTrades({
       symbol,
-      orderId,
+      orderId: Number(orderId),
       limit: 50,
     }));
 

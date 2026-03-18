@@ -93,7 +93,7 @@ export class IBStockClient implements IExchangeSpotClient {
     const orderId = await this.connectionManager.client.placeNewOrder(contract, order);
 
     return {
-      orderId,
+      orderId: String(orderId),
       symbol: params.symbol,
       side: params.side,
       type: params.type,
@@ -107,10 +107,10 @@ export class IBStockClient implements IExchangeSpotClient {
     };
   }
 
-  async cancelOrder(symbol: string, orderId: number): Promise<CancelOrderResult> {
+  async cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult> {
     await this.ensureConnected();
 
-    this.connectionManager.client.cancelOrder(orderId);
+    this.connectionManager.client.cancelOrder(Number(orderId));
 
     return {
       orderId,
@@ -129,7 +129,7 @@ export class IBStockClient implements IExchangeSpotClient {
       : openOrders;
 
     return filtered.map((o) => ({
-      orderId: o.orderId,
+      orderId: String(o.orderId),
       symbol: o.contract.symbol ?? '',
       side: (o.order.action === OrderAction.BUY ? 'BUY' : 'SELL') as 'BUY' | 'SELL',
       type: o.order.orderType ?? 'LIMIT',
@@ -180,14 +180,14 @@ export class IBStockClient implements IExchangeSpotClient {
     const stopOrderId = await this.connectionManager.client.placeNewOrder(contract, stopOrder);
 
     return {
-      orderListId: Date.now(),
+      orderListId: String(Date.now()),
       contingencyType: 'OCO',
       listStatusType: 'EXEC_STARTED',
       listOrderStatus: 'EXECUTING',
       symbol: params.symbol,
       orders: [
-        { symbol: params.symbol, orderId: limitOrderId, clientOrderId: `limit_${limitOrderId}` },
-        { symbol: params.symbol, orderId: stopOrderId, clientOrderId: `stop_${stopOrderId}` },
+        { symbol: params.symbol, orderId: String(limitOrderId), clientOrderId: `limit_${limitOrderId}` },
+        { symbol: params.symbol, orderId: String(stopOrderId), clientOrderId: `stop_${stopOrderId}` },
       ],
     };
   }

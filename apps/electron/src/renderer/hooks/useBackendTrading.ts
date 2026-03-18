@@ -140,7 +140,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
   );
 
   const cancelOrder = useCallback(
-    async (data: { walletId: string; symbol: string; orderId: number }) => {
+    async (data: { walletId: string; symbol: string; orderId: string }) => {
       return cancelOrderMutation.mutateAsync(data);
     },
     [cancelOrderMutation]

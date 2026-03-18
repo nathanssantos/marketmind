@@ -183,7 +183,7 @@ describe('OCOOrderService', () => {
       const result = await service.cancelOCO(
         paperWallet as never,
         'BTCUSDT',
-        12345
+        '12345'
       );
 
       expect(result).toBe(false);

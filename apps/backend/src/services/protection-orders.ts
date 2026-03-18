@@ -18,13 +18,13 @@ export interface ProtectionOrderParams {
 }
 
 export interface UpdateProtectionOrderParams extends ProtectionOrderParams {
-  currentAlgoId?: number | null;
-  currentOrderId?: number | null;
+  currentAlgoId?: string | null;
+  currentOrderId?: string | null;
 }
 
 export interface ProtectionOrderResult {
-  algoId?: number | null;
-  orderId?: number | null;
+  algoId?: string | null;
+  orderId?: string | null;
   isAlgoOrder: boolean;
 }
 
@@ -32,8 +32,8 @@ export interface CancelProtectionOrderParams {
   wallet: Wallet;
   symbol: string;
   marketType: MarketType;
-  algoId?: number | null;
-  orderId?: number | null;
+  algoId?: string | null;
+  orderId?: string | null;
 }
 
 async function getSymbolFilters(symbol: string, marketType: MarketType) {
@@ -300,10 +300,10 @@ export async function cancelAllProtectionOrders(params: {
   wallet: Wallet;
   symbol: string;
   marketType: MarketType;
-  stopLossAlgoId?: number | null;
-  stopLossOrderId?: number | null;
-  takeProfitAlgoId?: number | null;
-  takeProfitOrderId?: number | null;
+  stopLossAlgoId?: string | null;
+  stopLossOrderId?: string | null;
+  takeProfitAlgoId?: string | null;
+  takeProfitOrderId?: string | null;
 }): Promise<void> {
   const { wallet, symbol, marketType, stopLossAlgoId, stopLossOrderId, takeProfitAlgoId, takeProfitOrderId } = params;
 
