@@ -5,6 +5,7 @@ import type { LineDrawing, PencilDrawing, FibonacciDrawing } from '../types';
 const baseProps = {
   id: 'test-1',
   symbol: 'BTCUSDT',
+  interval: '1h',
   visible: true,
   locked: false,
   zIndex: 0,

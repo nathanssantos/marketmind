@@ -4,7 +4,7 @@ import type { KlineTimeLookup } from '@marketmind/chart-studies';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { trpc } from '@renderer/services/trpc';
-import { useDrawingStore } from '@renderer/store/drawingStore';
+import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { drawingSyncManager } from '@renderer/services/drawingSyncManager';
 import type { Kline } from '@marketmind/types';
 
@@ -12,6 +12,7 @@ interface BackendDrawing {
   id: number;
   userId: string;
   symbol: string;
+  interval: string;
   type: string;
   data: string;
   visible: boolean;
@@ -51,24 +52,25 @@ const buildGetOpenTime = (klines: Kline[]): KlineTimeLookup =>
     return klines[clamped]?.openTime;
   };
 
-export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
+export const useBackendDrawings = (symbol: string, interval: string, klines: Kline[]) => {
   const klinesRef = useRef<Kline[]>(klines);
   klinesRef.current = klines;
 
   const { data: backendDrawings, isLoading } = useQuery({
-    queryKey: ['drawings', symbol],
-    queryFn: () => trpc.drawing.listBySymbol.query({ symbol }),
-    enabled: !!symbol,
+    queryKey: ['drawings', symbol, interval],
+    queryFn: () => trpc.drawing.listBySymbol.query({ symbol, interval }),
+    enabled: !!symbol && !!interval,
     staleTime: Infinity,
   });
 
   useEffect(() => {
-    if (!backendDrawings || !symbol || klines.length === 0) return;
+    if (!backendDrawings || !symbol || !interval || klines.length === 0) return;
     const store = useDrawingStore.getState();
-    if (store.isHydrated(symbol)) return;
+    if (store.isHydrated(symbol, interval)) return;
 
-    store.markHydrated(symbol);
-    drawingSyncManager.setSuppressSync(symbol, true);
+    store.markHydrated(symbol, interval);
+    const syncKey = compositeKey(symbol, interval);
+    drawingSyncManager.setSuppressSync(syncKey, true);
 
     const timeToIndex = buildTimeToIndex(klines);
     const newIdMap = new Map<string, number>();
@@ -81,6 +83,7 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
         {
           id: `backend-${bd.id}`,
           symbol: (bd as BackendDrawing).symbol,
+          interval: (bd as BackendDrawing).interval,
           visible: (bd as BackendDrawing).visible,
           locked: (bd as BackendDrawing).locked,
           zIndex: (bd as BackendDrawing).zIndex,
@@ -94,13 +97,13 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
       drawings.push(drawing);
     }
 
-    store.setBackendIdMap(symbol, newIdMap);
-    store.setDrawingsForSymbol(symbol, drawings);
+    store.setBackendIdMap(symbol, interval, newIdMap);
+    store.setDrawingsForSymbol(symbol, interval, drawings);
 
     requestAnimationFrame(() => {
-      drawingSyncManager.setSuppressSync(symbol, false);
+      drawingSyncManager.setSuppressSync(syncKey, false);
     });
-  }, [backendDrawings, symbol, klines.length]);
+  }, [backendDrawings, symbol, interval, klines.length]);
 
   const getOpenTime = useCallback(
     (): KlineTimeLookup => buildGetOpenTime(klinesRef.current),
@@ -108,15 +111,17 @@ export const useBackendDrawings = (symbol: string, klines: Kline[]) => {
   );
 
   useEffect(() => {
-    if (!symbol) return;
-    drawingSyncManager.registerSymbol(symbol, getOpenTime());
-    return () => drawingSyncManager.unregisterSymbol(symbol);
-  }, [symbol, getOpenTime]);
+    if (!symbol || !interval) return;
+    const syncKey = compositeKey(symbol, interval);
+    drawingSyncManager.registerSymbol(syncKey, getOpenTime());
+    return () => drawingSyncManager.unregisterSymbol(syncKey);
+  }, [symbol, interval, getOpenTime]);
 
   useEffect(() => {
-    if (!symbol) return;
-    drawingSyncManager.setOpenTimeLookup(symbol, getOpenTime());
-  }, [symbol, klines.length, getOpenTime]);
+    if (!symbol || !interval) return;
+    const syncKey = compositeKey(symbol, interval);
+    drawingSyncManager.setOpenTimeLookup(syncKey, getOpenTime());
+  }, [symbol, interval, klines.length, getOpenTime]);
 
   return { isLoading };
 };

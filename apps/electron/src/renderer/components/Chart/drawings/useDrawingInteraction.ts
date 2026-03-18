@@ -13,6 +13,7 @@ interface UseDrawingInteractionProps {
   manager: CanvasManager | null;
   klines: Kline[];
   symbol: string;
+  interval: string;
 }
 
 export interface OHLCSnapIndicator {
@@ -63,6 +64,7 @@ export const useDrawingInteraction = ({
   manager,
   klines,
   symbol,
+  interval,
 }: UseDrawingInteractionProps): UseDrawingInteractionResult => {
   const phaseRef = useRef<InteractionPhase>('idle');
   const pendingDrawingRef = useRef<Drawing | null>(null);
@@ -96,7 +98,7 @@ export const useDrawingInteraction = ({
 
     if (!activeTool) {
       const mapper = createMapper(manager);
-      const drawings = store.getDrawingsForSymbol(symbol);
+      const drawings = store.getDrawingsForSymbol(symbol, interval);
       const hit = hitTestDrawings(x, y, drawings, mapper, selectedId);
 
       if (hit) {
@@ -127,7 +129,7 @@ export const useDrawingInteraction = ({
 
     if (activeTool === 'pencil') {
       const drawing: Drawing = {
-        id: generateId(), type: 'pencil', symbol, visible: true, locked: false, zIndex: 0,
+        id: generateId(), type: 'pencil', symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         points: [{ index, price, time }],
       };
@@ -138,7 +140,7 @@ export const useDrawingInteraction = ({
 
     if (activeTool === 'rectangle' || activeTool === 'area') {
       const drawing: Drawing = {
-        id: generateId(), type: activeTool, symbol, visible: true, locked: false, zIndex: 0,
+        id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
@@ -154,7 +156,7 @@ export const useDrawingInteraction = ({
 
       if (drawingType === 'fibonacci') {
         const drawing: Drawing = {
-          id: generateId(), type: 'fibonacci', symbol, visible: true, locked: false, zIndex: 0,
+          id: generateId(), type: 'fibonacci', symbol, interval, visible: true, locked: false, zIndex: 0,
           createdAt: Date.now(), updatedAt: Date.now(),
           swingLowIndex: index, swingLowPrice: price,
           swingHighIndex: index, swingHighPrice: price,
@@ -167,7 +169,7 @@ export const useDrawingInteraction = ({
       }
 
       const drawing: Drawing = {
-        id: generateId(), type: drawingType as 'line' | 'ruler', symbol, visible: true, locked: false, zIndex: 0,
+        id: generateId(), type: drawingType as 'line' | 'ruler', symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
@@ -178,7 +180,7 @@ export const useDrawingInteraction = ({
     }
 
     return false;
-  }, [manager, symbol, getIndexAndPrice]);
+  }, [manager, symbol, interval, getIndexAndPrice]);
 
   const handleMouseMove = useCallback((x: number, y: number): boolean => {
     if (!manager) return false;
@@ -287,14 +289,14 @@ export const useDrawingInteraction = ({
 
     if (!useDrawingStore.getState().activeTool) {
       const mapper = createMapper(manager);
-      const drawings = useDrawingStore.getState().getDrawingsForSymbol(symbol);
+      const drawings = useDrawingStore.getState().getDrawingsForSymbol(symbol, interval);
       const selectedId = useDrawingStore.getState().selectedDrawingId;
       const hit = hitTestDrawings(x, y, drawings, mapper, selectedId);
       return hit !== null;
     }
 
     return false;
-  }, [manager, symbol, getIndexAndPrice]);
+  }, [manager, symbol, interval, getIndexAndPrice]);
 
   const handleMouseUp = useCallback((x: number, y: number): boolean => {
     const phase = phaseRef.current;

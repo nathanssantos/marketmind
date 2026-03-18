@@ -6,6 +6,7 @@ const createTestDrawing = (overrides: Partial<LineDrawing> = {}): LineDrawing =>
   id: 'test-1',
   type: 'line',
   symbol: 'BTCUSDT',
+  interval: '1h',
   createdAt: Date.now(),
   updatedAt: Date.now(),
   visible: true,
@@ -21,7 +22,7 @@ const createTestDrawing = (overrides: Partial<LineDrawing> = {}): LineDrawing =>
 describe('drawingStore', () => {
   beforeEach(() => {
     useDrawingStore.setState({
-      drawingsBySymbol: {},
+      drawingsByKey: {},
       activeTool: null,
       selectedDrawingId: null,
       magnetEnabled: true,
@@ -48,16 +49,22 @@ describe('drawingStore', () => {
   });
 
   describe('addDrawing', () => {
-    it('adds drawing to correct symbol', () => {
+    it('adds drawing to correct symbol+interval key', () => {
       const drawing = createTestDrawing();
       useDrawingStore.getState().addDrawing(drawing);
-      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT')).toHaveLength(1);
+      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(1);
     });
 
     it('does not affect other symbols', () => {
       const drawing = createTestDrawing();
       useDrawingStore.getState().addDrawing(drawing);
-      expect(useDrawingStore.getState().getDrawingsForSymbol('ETHUSDT')).toHaveLength(0);
+      expect(useDrawingStore.getState().getDrawingsForSymbol('ETHUSDT', '1h')).toHaveLength(0);
+    });
+
+    it('does not affect other intervals', () => {
+      const drawing = createTestDrawing();
+      useDrawingStore.getState().addDrawing(drawing);
+      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT', '5m')).toHaveLength(0);
     });
   });
 
@@ -66,7 +73,7 @@ describe('drawingStore', () => {
       const drawing = createTestDrawing();
       useDrawingStore.getState().addDrawing(drawing);
       useDrawingStore.getState().updateDrawing('test-1', { visible: false });
-      const drawings = useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT');
+      const drawings = useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT', '1h');
       expect(drawings[0]!.visible).toBe(false);
     });
   });
@@ -75,15 +82,15 @@ describe('drawingStore', () => {
     it('removes drawing', () => {
       const drawing = createTestDrawing();
       useDrawingStore.getState().addDrawing(drawing);
-      useDrawingStore.getState().deleteDrawing('test-1', 'BTCUSDT');
-      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT')).toHaveLength(0);
+      useDrawingStore.getState().deleteDrawing('test-1', 'BTCUSDT', '1h');
+      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(0);
     });
 
     it('clears selection if deleting selected drawing', () => {
       const drawing = createTestDrawing();
       useDrawingStore.getState().addDrawing(drawing);
       useDrawingStore.getState().selectDrawing('test-1');
-      useDrawingStore.getState().deleteDrawing('test-1', 'BTCUSDT');
+      useDrawingStore.getState().deleteDrawing('test-1', 'BTCUSDT', '1h');
       expect(useDrawingStore.getState().selectedDrawingId).toBeNull();
     });
   });
@@ -105,11 +112,11 @@ describe('drawingStore', () => {
   });
 
   describe('setDrawingsForSymbol', () => {
-    it('replaces drawings for a symbol', () => {
+    it('replaces drawings for a symbol+interval', () => {
       const d1 = createTestDrawing({ id: '1' });
       const d2 = createTestDrawing({ id: '2' });
-      useDrawingStore.getState().setDrawingsForSymbol('BTCUSDT', [d1, d2]);
-      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT')).toHaveLength(2);
+      useDrawingStore.getState().setDrawingsForSymbol('BTCUSDT', '1h', [d1, d2]);
+      expect(useDrawingStore.getState().getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(2);
     });
   });
 
@@ -120,7 +127,7 @@ describe('drawingStore', () => {
       useDrawingStore.getState().selectDrawing('test-1');
       useDrawingStore.getState().clearAll();
       const state = useDrawingStore.getState();
-      expect(state.drawingsBySymbol).toEqual({});
+      expect(state.drawingsByKey).toEqual({});
       expect(state.activeTool).toBeNull();
       expect(state.selectedDrawingId).toBeNull();
     });

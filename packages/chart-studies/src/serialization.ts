@@ -63,7 +63,7 @@ const resolveIndex = (storedIndex: number, storedTime: number | undefined, timeT
 export const deserializeDrawingData = (
   type: DrawingType,
   dataStr: string,
-  base: { id: string; symbol: string; visible: boolean; locked: boolean; zIndex: number; createdAt: number; updatedAt: number },
+  base: { id: string; symbol: string; interval: string; visible: boolean; locked: boolean; zIndex: number; createdAt: number; updatedAt: number },
   timeToIndex?: TimeToIndexLookup,
 ): Drawing | null => {
   try {

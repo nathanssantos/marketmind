@@ -8,6 +8,7 @@ const DEBOUNCE_DELAY = 300;
 interface BackendDrawing {
   id: number;
   symbol: string;
+  interval: string;
   type: string;
   data: string;
   visible: boolean;
@@ -42,6 +43,7 @@ const handleCreate = async (drawing: Drawing, sync: SymbolSync) => {
   try {
     const result = await trpc.drawing.create.mutate({
       symbol: drawing.symbol,
+      interval: drawing.interval,
       type: drawing.type as DrawingType,
       data: serializeDrawingData(drawing, sync.getOpenTime),
       visible: drawing.visible,
@@ -50,7 +52,7 @@ const handleCreate = async (drawing: Drawing, sync: SymbolSync) => {
     });
 
     const created = result as BackendDrawing;
-    useDrawingStore.getState().setBackendId(drawing.id, drawing.symbol, created.id);
+    useDrawingStore.getState().setBackendId(drawing.id, drawing.symbol, drawing.interval, created.id);
   } catch (_e) {
   } finally {
     sync.pendingCreates.delete(drawing.id);
@@ -64,7 +66,7 @@ const handleUpdate = (drawingId: string, drawing: Drawing, sync: SymbolSync) => 
   const timer = setTimeout(() => {
     sync.updateTimers.delete(drawingId);
     const store = useDrawingStore.getState();
-    const backendId = store.getBackendId(drawingId, drawing.symbol);
+    const backendId = store.getBackendId(drawingId, drawing.symbol, drawing.interval);
     if (!backendId) return;
 
     try {
@@ -82,12 +84,12 @@ const handleUpdate = (drawingId: string, drawing: Drawing, sync: SymbolSync) => 
   sync.updateTimers.set(drawingId, timer);
 };
 
-const handleDelete = (drawingId: string, symbol: string) => {
+const handleDelete = (drawingId: string, drawing: Drawing) => {
   const store = useDrawingStore.getState();
-  const backendId = store.getBackendId(drawingId, symbol) ?? extractBackendId(drawingId);
+  const backendId = store.getBackendId(drawingId, drawing.symbol, drawing.interval) ?? extractBackendId(drawingId);
   if (!backendId) return;
 
-  store.removeBackendId(drawingId, symbol);
+  store.removeBackendId(drawingId, drawing.symbol, drawing.interval);
 
   try {
     trpc.drawing.delete.mutate({ id: backendId });
@@ -95,11 +97,11 @@ const handleDelete = (drawingId: string, symbol: string) => {
   }
 };
 
-const startSubscription = (symbol: string, sync: SymbolSync) => {
+const startSubscription = (syncKey: string, sync: SymbolSync) => {
   sync.unsubscribe = useDrawingStore.subscribe((state) => {
-    if (sync.suppressed || !symbol) return;
+    if (sync.suppressed || !syncKey) return;
 
-    const currentDrawings = state.drawingsBySymbol[symbol] ?? [];
+    const currentDrawings = state.drawingsByKey[syncKey] ?? [];
     const prevDrawings = sync.prevDrawings;
 
     const prevIds = new Set(prevDrawings.map((d) => d.id));
@@ -117,7 +119,7 @@ const startSubscription = (symbol: string, sync: SymbolSync) => {
     }
 
     for (const prevDrawing of prevDrawings) {
-      if (!currentIds.has(prevDrawing.id)) handleDelete(prevDrawing.id, symbol);
+      if (!currentIds.has(prevDrawing.id)) handleDelete(prevDrawing.id, prevDrawing);
     }
 
     sync.prevDrawings = currentDrawings;
@@ -125,8 +127,8 @@ const startSubscription = (symbol: string, sync: SymbolSync) => {
 };
 
 export const drawingSyncManager = {
-  registerSymbol(symbol: string, getOpenTime: KlineTimeLookup) {
-    const existing = symbolSyncs.get(symbol);
+  registerSymbol(syncKey: string, getOpenTime: KlineTimeLookup) {
+    const existing = symbolSyncs.get(syncKey);
     if (existing) {
       existing.refCount++;
       existing.getOpenTime = getOpenTime;
@@ -136,19 +138,19 @@ export const drawingSyncManager = {
     const sync: SymbolSync = {
       refCount: 1,
       unsubscribe: null,
-      prevDrawings: useDrawingStore.getState().drawingsBySymbol[symbol] ?? [],
+      prevDrawings: useDrawingStore.getState().drawingsByKey[syncKey] ?? [],
       updateTimers: new Map(),
       pendingCreates: new Set(),
       getOpenTime,
       suppressed: false,
     };
 
-    symbolSyncs.set(symbol, sync);
-    startSubscription(symbol, sync);
+    symbolSyncs.set(syncKey, sync);
+    startSubscription(syncKey, sync);
   },
 
-  unregisterSymbol(symbol: string) {
-    const sync = symbolSyncs.get(symbol);
+  unregisterSymbol(syncKey: string) {
+    const sync = symbolSyncs.get(syncKey);
     if (!sync) return;
 
     sync.refCount--;
@@ -157,19 +159,19 @@ export const drawingSyncManager = {
     sync.unsubscribe?.();
     for (const timer of sync.updateTimers.values()) clearTimeout(timer);
     sync.updateTimers.clear();
-    symbolSyncs.delete(symbol);
+    symbolSyncs.delete(syncKey);
   },
 
-  setSuppressSync(symbol: string, suppressed: boolean) {
-    const sync = symbolSyncs.get(symbol);
+  setSuppressSync(syncKey: string, suppressed: boolean) {
+    const sync = symbolSyncs.get(syncKey);
     if (sync) {
       sync.suppressed = suppressed;
-      if (!suppressed) sync.prevDrawings = useDrawingStore.getState().drawingsBySymbol[symbol] ?? [];
+      if (!suppressed) sync.prevDrawings = useDrawingStore.getState().drawingsByKey[syncKey] ?? [];
     }
   },
 
-  setOpenTimeLookup(symbol: string, getOpenTime: KlineTimeLookup) {
-    const sync = symbolSyncs.get(symbol);
+  setOpenTimeLookup(syncKey: string, getOpenTime: KlineTimeLookup) {
+    const sync = symbolSyncs.get(syncKey);
     if (sync) sync.getOpenTime = getOpenTime;
   },
 };

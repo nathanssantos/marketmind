@@ -31,6 +31,7 @@ const OHLC_LABELS: Record<OHLCSnapIndicator['ohlcType'], string> = {
 interface UseDrawingsRendererProps {
   manager: CanvasManager | null;
   symbol: string;
+  interval: string;
   klines: Kline[];
   colors: {
     bullish: string;
@@ -152,6 +153,7 @@ const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndica
 export const useDrawingsRenderer = ({
   manager,
   symbol,
+  interval,
   klines,
   colors,
   themeColors,
@@ -165,13 +167,14 @@ export const useDrawingsRenderer = ({
   const lastFirstKlineTimeRef = useRef(0);
   useEffect(() => {
     if (!manager || !symbol) return;
+    const key = `${symbol}:${interval}`;
     const unsubscribe = useDrawingStore.subscribe((state, prevState) => {
-      const curr = state.drawingsBySymbol[symbol];
-      const prev = prevState.drawingsBySymbol[symbol];
+      const curr = state.drawingsByKey[key];
+      const prev = prevState.drawingsByKey[key];
       if (curr !== prev) manager.markDirty('overlays');
     });
     return unsubscribe;
-  }, [manager, symbol]);
+  }, [manager, symbol, interval]);
 
   const render = useCallback((): void => {
     if (!manager) return;
@@ -181,7 +184,7 @@ export const useDrawingsRenderer = ({
     if (!ctx || !dimensions) return;
 
     const store = useDrawingStore.getState();
-    const rawDrawings = store.getDrawingsForSymbol(symbol);
+    const rawDrawings = store.getDrawingsForSymbol(symbol, interval);
     const pendingDrawing = pendingDrawingRef.current;
     const snapIndicator = lastSnapRef.current;
 

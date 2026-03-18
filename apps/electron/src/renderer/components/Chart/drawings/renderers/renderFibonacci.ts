@@ -14,6 +14,16 @@ const LABEL_FONT = '10px monospace';
 const LABEL_OFFSET_X = 4;
 const LABEL_OFFSET_Y = 10;
 const HIDDEN_LEVELS = new Set([0.886, 1.382]);
+const GOLDEN_LEVEL = 1.618;
+const GOLDEN_COLOR = 'rgba(255, 215, 0, 0.8)';
+const KEY_LEVEL_COLOR = 'rgba(180, 180, 180, 0.55)';
+const KEY_LEVELS = new Set([0, 0.5, 1]);
+const BUY_ZONE_COLOR = 'rgba(34, 197, 94, 0.08)';
+const DANGER_ZONE_COLOR = 'rgba(239, 68, 68, 0.08)';
+const BUY_ZONE_TOP = 0.382;
+const BUY_ZONE_BOTTOM = 0.236;
+const DANGER_ZONE_TOP = 0.236;
+const DANGER_ZONE_BOTTOM = 0;
 
 export const renderFibonacci = (
   ctx: CanvasRenderingContext2D,
@@ -51,14 +61,41 @@ export const renderFibonacci = (
   ctx.arc(highX, highY, SWING_POINT_RADIUS, 0, FULL_CIRCLE);
   ctx.fill();
 
+  const zonePrices: Record<number, number> = {};
+  for (const level of drawing.levels) {
+    if (level.level === BUY_ZONE_TOP || level.level === BUY_ZONE_BOTTOM || level.level === DANGER_ZONE_BOTTOM)
+      zonePrices[level.level] = mapper.priceToY(level.price);
+  }
+
+  const drawZone = (topLevel: number, bottomLevel: number, color: string) => {
+    const topY = zonePrices[topLevel];
+    const bottomY = zonePrices[bottomLevel];
+    if (topY === undefined || bottomY === undefined) return;
+    const y1 = Math.min(topY, bottomY);
+    const y2 = Math.max(topY, bottomY);
+    if (y2 > 0 && y1 < chartHeight) {
+      ctx.fillStyle = color;
+      ctx.fillRect(fibStartX, y1, chartWidth - fibStartX, y2 - y1);
+    }
+  };
+
+  drawZone(BUY_ZONE_TOP, BUY_ZONE_BOTTOM, BUY_ZONE_COLOR);
+  drawZone(DANGER_ZONE_TOP, DANGER_ZONE_BOTTOM, DANGER_ZONE_COLOR);
+
   for (const level of drawing.levels) {
     if (HIDDEN_LEVELS.has(level.level)) continue;
     const y = mapper.priceToY(level.price);
     if (y < 0 || y > chartHeight) continue;
 
-    const color = themeColors
-      ? getFibLevelColor(level.level, themeColors.fibonacci, FIBONACCI_DEFAULT_COLOR)
-      : `hsl(${level.level * 240}, 70%, 50%)`;
+    const isGolden = level.level === GOLDEN_LEVEL;
+
+    const color = isGolden
+      ? GOLDEN_COLOR
+      : KEY_LEVELS.has(level.level)
+        ? KEY_LEVEL_COLOR
+        : themeColors
+          ? getFibLevelColor(level.level, themeColors.fibonacci, FIBONACCI_DEFAULT_COLOR)
+          : `hsl(${level.level * 240}, 70%, 50%)`;
 
     ctx.strokeStyle = color;
     ctx.lineWidth = LINE_WIDTH;

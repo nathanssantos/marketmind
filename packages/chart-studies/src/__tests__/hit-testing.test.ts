@@ -20,6 +20,7 @@ const createMapper = (): CoordinateMapper => ({
 
 const baseDrawing = {
   symbol: 'BTCUSDT',
+  interval: '1h',
   createdAt: Date.now(),
   updatedAt: Date.now(),
   visible: true,

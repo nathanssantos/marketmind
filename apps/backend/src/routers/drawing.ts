@@ -8,12 +8,13 @@ const drawingTypeSchema = z.enum(['line', 'rectangle', 'pencil', 'fibonacci', 'r
 
 export const drawingRouter = router({
   listBySymbol: protectedProcedure
-    .input(z.object({ symbol: z.string() }))
+    .input(z.object({ symbol: z.string(), interval: z.string() }))
     .query(async ({ ctx, input }) => {
       return db.query.chartDrawings.findMany({
         where: and(
           eq(chartDrawings.userId, ctx.user.id),
           eq(chartDrawings.symbol, input.symbol),
+          eq(chartDrawings.interval, input.interval),
         ),
         orderBy: (t, { asc }) => [asc(t.zIndex)],
       });
@@ -22,6 +23,7 @@ export const drawingRouter = router({
   create: protectedProcedure
     .input(z.object({
       symbol: z.string(),
+      interval: z.string(),
       type: drawingTypeSchema,
       data: z.string(),
       visible: z.boolean().default(true),
@@ -32,6 +34,7 @@ export const drawingRouter = router({
       const [drawing] = await db.insert(chartDrawings).values({
         userId: ctx.user.id,
         symbol: input.symbol,
+        interval: input.interval,
         type: input.type,
         data: input.data,
         visible: input.visible,

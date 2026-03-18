@@ -1,11 +1,13 @@
 import type { Drawing, DrawingType } from '@marketmind/chart-studies';
 import { create } from 'zustand';
 
-const hydratedSymbols = new Set<string>();
+export const compositeKey = (symbol: string, interval: string) => `${symbol}:${interval}`;
+
+const hydratedKeys = new Set<string>();
 const backendIdMaps = new Map<string, Map<string, number>>();
 
 interface DrawingState {
-  drawingsBySymbol: Record<string, Drawing[]>;
+  drawingsByKey: Record<string, Drawing[]>;
   activeTool: DrawingType | null;
   selectedDrawingId: string | null;
   magnetEnabled: boolean;
@@ -16,22 +18,22 @@ interface DrawingState {
 
   addDrawing: (drawing: Drawing) => void;
   updateDrawing: (id: string, updates: Partial<Drawing>) => void;
-  deleteDrawing: (id: string, symbol: string) => void;
-  getDrawingsForSymbol: (symbol: string) => Drawing[];
+  deleteDrawing: (id: string, symbol: string, interval: string) => void;
+  getDrawingsForSymbol: (symbol: string, interval: string) => Drawing[];
 
-  setDrawingsForSymbol: (symbol: string, drawings: Drawing[]) => void;
+  setDrawingsForSymbol: (symbol: string, interval: string, drawings: Drawing[]) => void;
   clearAll: () => void;
 
-  markHydrated: (symbol: string) => void;
-  isHydrated: (symbol: string) => boolean;
-  setBackendIdMap: (symbol: string, map: Map<string, number>) => void;
-  getBackendId: (frontendId: string, symbol: string) => number | undefined;
-  setBackendId: (frontendId: string, symbol: string, backendId: number) => void;
-  removeBackendId: (frontendId: string, symbol: string) => void;
+  markHydrated: (symbol: string, interval: string) => void;
+  isHydrated: (symbol: string, interval: string) => boolean;
+  setBackendIdMap: (symbol: string, interval: string, map: Map<string, number>) => void;
+  getBackendId: (frontendId: string, symbol: string, interval: string) => number | undefined;
+  setBackendId: (frontendId: string, symbol: string, interval: string, backendId: number) => void;
+  removeBackendId: (frontendId: string, symbol: string, interval: string) => void;
 }
 
 export const useDrawingStore = create<DrawingState>((set, get) => ({
-  drawingsBySymbol: {},
+  drawingsByKey: {},
   activeTool: null,
   selectedDrawingId: null,
   magnetEnabled: true,
@@ -46,76 +48,76 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
   setMagnetEnabled: (enabled) => set({ magnetEnabled: enabled }),
 
   addDrawing: (drawing) => set((state) => {
-    const existing = state.drawingsBySymbol[drawing.symbol] ?? [];
+    const key = compositeKey(drawing.symbol, drawing.interval);
+    const existing = state.drawingsByKey[key] ?? [];
     return {
-      drawingsBySymbol: {
-        ...state.drawingsBySymbol,
-        [drawing.symbol]: [...existing, drawing],
+      drawingsByKey: {
+        ...state.drawingsByKey,
+        [key]: [...existing, drawing],
       },
     };
   }),
 
   updateDrawing: (id, updates) => set((state) => {
-    const newBySymbol = { ...state.drawingsBySymbol };
-    for (const [symbol, drawings] of Object.entries(newBySymbol)) {
+    for (const [key, drawings] of Object.entries(state.drawingsByKey)) {
       const idx = drawings.findIndex(d => d.id === id);
-      if (idx !== -1) {
-        const updated = [...drawings];
-        updated[idx] = { ...drawings[idx]!, ...updates, updatedAt: Date.now() } as Drawing;
-        newBySymbol[symbol] = updated;
-        break;
-      }
+      if (idx === -1) continue;
+      const updated = [...drawings];
+      updated[idx] = { ...drawings[idx]!, ...updates, updatedAt: Date.now() } as Drawing;
+      return { drawingsByKey: { ...state.drawingsByKey, [key]: updated } };
     }
-    return { drawingsBySymbol: newBySymbol };
+    return state;
   }),
 
-  deleteDrawing: (id, symbol) => set((state) => {
-    const drawings = state.drawingsBySymbol[symbol];
+  deleteDrawing: (id, symbol, interval) => set((state) => {
+    const key = compositeKey(symbol, interval);
+    const drawings = state.drawingsByKey[key];
     if (!drawings) return state;
     return {
-      drawingsBySymbol: {
-        ...state.drawingsBySymbol,
-        [symbol]: drawings.filter(d => d.id !== id),
+      drawingsByKey: {
+        ...state.drawingsByKey,
+        [key]: drawings.filter(d => d.id !== id),
       },
       selectedDrawingId: state.selectedDrawingId === id ? null : state.selectedDrawingId,
     };
   }),
 
-  getDrawingsForSymbol: (symbol) => get().drawingsBySymbol[symbol] ?? [],
+  getDrawingsForSymbol: (symbol, interval) => get().drawingsByKey[compositeKey(symbol, interval)] ?? [],
 
-  setDrawingsForSymbol: (symbol, drawings) => set((state) => ({
-    drawingsBySymbol: {
-      ...state.drawingsBySymbol,
-      [symbol]: drawings,
+  setDrawingsForSymbol: (symbol, interval, drawings) => set((state) => ({
+    drawingsByKey: {
+      ...state.drawingsByKey,
+      [compositeKey(symbol, interval)]: drawings,
     },
   })),
 
   clearAll: () => {
-    hydratedSymbols.clear();
+    hydratedKeys.clear();
     backendIdMaps.clear();
-    set({ drawingsBySymbol: {}, selectedDrawingId: null, activeTool: null });
+    set({ drawingsByKey: {}, selectedDrawingId: null, activeTool: null });
   },
 
-  markHydrated: (symbol) => { hydratedSymbols.add(symbol); },
-  isHydrated: (symbol) => hydratedSymbols.has(symbol),
+  markHydrated: (symbol, interval) => { hydratedKeys.add(compositeKey(symbol, interval)); },
+  isHydrated: (symbol, interval) => hydratedKeys.has(compositeKey(symbol, interval)),
 
-  setBackendIdMap: (symbol, map) => { backendIdMaps.set(symbol, map); },
+  setBackendIdMap: (symbol, interval, map) => { backendIdMaps.set(compositeKey(symbol, interval), map); },
 
-  getBackendId: (frontendId, symbol) => {
-    const map = backendIdMaps.get(symbol);
+  getBackendId: (frontendId, symbol, interval) => {
+    const map = backendIdMaps.get(compositeKey(symbol, interval));
     return map?.get(frontendId);
   },
 
-  setBackendId: (frontendId, symbol, backendId) => {
-    let map = backendIdMaps.get(symbol);
+  setBackendId: (frontendId, symbol, interval, backendId) => {
+    const key = compositeKey(symbol, interval);
+    let map = backendIdMaps.get(key);
     if (!map) {
       map = new Map();
-      backendIdMaps.set(symbol, map);
+      backendIdMaps.set(key, map);
     }
     map.set(frontendId, backendId);
   },
 
-  removeBackendId: (frontendId, symbol) => {
-    backendIdMaps.get(symbol)?.delete(frontendId);
+  removeBackendId: (frontendId, symbol, interval) => {
+    backendIdMaps.get(compositeKey(symbol, interval))?.delete(frontendId);
   },
 }));

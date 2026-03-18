@@ -4,6 +4,7 @@ export interface DrawingBase {
   id: string;
   type: DrawingType;
   symbol: string;
+  interval: string;
   createdAt: number;
   updatedAt: number;
   visible: boolean;

@@ -71,6 +71,13 @@
       "when": 1772389080708,
       "tag": "0009_violet_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1773936000000,
+      "tag": "0024_chart_drawings_interval",
+      "breakpoints": true
     }
   ]
 }
