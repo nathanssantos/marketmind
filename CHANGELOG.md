@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.71.0] - 2026-03-19
+
+### Added
+- **Arrow drawing tool**: two-point arrow with arrowhead, same interaction as line tool
+- **Text drawing tool**: single-click placement with inline editing, font size/bold/underline support
+- **Per-drawing color and line width**: all drawing types now support custom color and thickness
+- **Floating drawing toolbar**: appears on selection with color presets, custom color picker, line width buttons, delete; draggable; text-specific font controls
+- **Pencil smoothing**: quadratic bezier interpolation replaces jagged lineTo, with 3px minimum distance filter
+- **Right-click context menu**: "Clear All Drawings" option on chart (legacy setup menu items removed)
+- **Trailing stop indicator interval**: configurable ATR calculation timeframe independent from trading interval
+- **Economic calendar provider**: backend router, frontend EconomicCalendarProvider service
+- **Market session boundaries**: session boundary renderer on chart with market event tooltips
+
+### Changed
+- **chart-studies types refactored**: extracted shared `TwoPointFields` interface, collapsed duplicate serialization cases, merged identical hit-testing handle branches
+- **Type guard for two-point drawings**: `isTwoPointDrawing()` replaces 6 repeated type union checks in interaction handler
+- **Context menu simplified**: removed legacy setup-related items (hide/show/delete setups), now drawings-only
+
 ## [0.70.0] - 2026-03-18
 
 ### Added
