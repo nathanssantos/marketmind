@@ -2017,6 +2017,7 @@ export const tradingRouter = router({
         trailingActivationModeShort: z.enum(['auto', 'manual']).nullable().optional(),
         manualTrailingActivatedLong: z.boolean().nullable().optional(),
         manualTrailingActivatedShort: z.boolean().nullable().optional(),
+        indicatorInterval: z.string().nullable().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -2059,6 +2060,7 @@ export const tradingRouter = router({
           trailingActivationModeShort: fields.trailingActivationModeShort ?? null,
           manualTrailingActivatedLong: fields.manualTrailingActivatedLong ?? null,
           manualTrailingActivatedShort: fields.manualTrailingActivatedShort ?? null,
+          indicatorInterval: fields.indicatorInterval ?? null,
         })
         .returning();
       return created!;

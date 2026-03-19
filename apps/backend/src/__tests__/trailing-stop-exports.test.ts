@@ -112,6 +112,7 @@ const makeSymbolOverride = (overrides: Partial<SymbolTrailingStopOverride> = {})
   trailingActivationModeShort: null,
   manualTrailingActivatedLong: false,
   manualTrailingActivatedShort: false,
+  indicatorInterval: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

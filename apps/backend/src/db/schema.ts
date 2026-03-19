@@ -325,6 +325,7 @@ export const autoTradingConfig = pgTable('auto_trading_config', {
   sessionScanEnabled: boolean('session_scan_enabled').default(false).notNull(),
   sessionScanMarkets: text('session_scan_markets').default('[]').notNull(),
   autoCancelOrphans: boolean('auto_cancel_orphans').default(false).notNull(),
+  trailingStopIndicatorInterval: varchar('trailing_stop_indicator_interval', { length: 10 }).default('30m').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -718,6 +719,7 @@ export const symbolTrailingStopOverrides = pgTable('symbol_trailing_stop_overrid
     .$type<'auto' | 'manual'>(),
   manualTrailingActivatedLong: boolean('manual_trailing_activated_long').default(false),
   manualTrailingActivatedShort: boolean('manual_trailing_activated_short').default(false),
+  indicatorInterval: varchar('indicator_interval', { length: 10 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

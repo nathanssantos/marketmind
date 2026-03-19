@@ -1,6 +1,7 @@
 import { Button, ConfirmationDialog, IconButton, Slider, TooltipWrapper } from '@renderer/components/ui';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useBookTicker } from '@renderer/hooks/useBookTicker';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useToast } from '@renderer/hooks/useToast';
@@ -11,7 +12,8 @@ import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuBan, LuGripVertical, LuX } from 'react-icons/lu';
+import { LuArrowUpDown, LuGripVertical, LuX } from 'react-icons/lu';
+import { PiBroom } from 'react-icons/pi';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
@@ -196,6 +198,9 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
 
   const balance = parseFloat(activeWallet?.currentBalance ?? '0');
   const currentPrice = usePriceStore((s) => s.prices[symbol]?.price ?? 0);
+  const { bidPrice, askPrice } = useBookTicker(symbol);
+  const buyPrice = askPrice > 0 ? askPrice : currentPrice;
+  const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
 
   const getQuantity = useCallback((price: number): string => {
     const pct = sizePercent / 100;
@@ -328,7 +333,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
                     loading={isCancellingAllOrders}
                     aria-label={t('futures.cancelOrders', 'Cancel Orders')}
                   >
-                    <LuBan size={12} />
+                    <PiBroom size={12} />
                   </IconButton>
                 </TooltipWrapper>
               </>
@@ -336,13 +341,13 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES' }: Quick
             <Button size="2xs" fontSize="2xs" h="34px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
               <VStack gap={0} lineHeight="1">
                 <Text fontSize="2xs">{t('chart.quickTrade.buy')}</Text>
-                <Text fontSize="2xs" fontWeight="bold">{currentPrice > 0 ? formatChartPrice(currentPrice) : '—'}</Text>
+                <Text fontSize="2xs" fontWeight="bold">{buyPrice > 0 ? formatChartPrice(buyPrice) : '—'}</Text>
               </VStack>
             </Button>
             <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
               <VStack gap={0} lineHeight="1">
                 <Text fontSize="2xs">{t('chart.quickTrade.sell')}</Text>
-                <Text fontSize="2xs" fontWeight="bold">{currentPrice > 0 ? formatChartPrice(currentPrice) : '—'}</Text>
+                <Text fontSize="2xs" fontWeight="bold">{sellPrice > 0 ? formatChartPrice(sellPrice) : '—'}</Text>
               </VStack>
             </Button>
           </HStack>

@@ -413,9 +413,26 @@ export class TrailingStopService {
     const executionsByInterval = new Map<string, TradeExecution[]>();
     
     for (const execution of executions) {
+      const walletId = execution.walletId;
+      const override = await db.query.symbolTrailingStopOverrides.findFirst({
+        where: and(
+          eq(symbolTrailingStopOverrides.walletId, walletId),
+          eq(symbolTrailingStopOverrides.symbol, symbol)
+        ),
+      });
+      const walletCfg = await db.query.autoTradingConfig.findFirst({
+        where: eq(autoTradingConfig.walletId, walletId),
+      });
+
+      const configuredInterval = override?.useIndividualConfig && override.indicatorInterval
+        ? override.indicatorInterval
+        : walletCfg?.trailingStopIndicatorInterval ?? null;
+
       let interval: string;
 
-      if (!execution.setupId) {
+      if (configuredInterval) {
+        interval = configuredInterval;
+      } else if (!execution.setupId) {
         interval = '30m';
       } else {
         const setup = await db.query.setupDetections.findFirst({

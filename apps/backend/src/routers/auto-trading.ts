@@ -160,6 +160,7 @@ export const autoTradingRouter = router({
         trailingStopOffsetPercent: z.string().optional(),
         trailingActivationModeLong: z.enum(['auto', 'manual']).optional(),
         trailingActivationModeShort: z.enum(['auto', 'manual']).optional(),
+        trailingStopIndicatorInterval: z.string().optional(),
         leverage: z.number().min(AUTO_TRADING_CONFIG.LEVERAGE.MIN).max(AUTO_TRADING_CONFIG.LEVERAGE.MAX).optional(),
         marginType: z.enum(['ISOLATED', 'CROSSED']).optional(),
         opportunityCostEnabled: z.boolean().optional(),

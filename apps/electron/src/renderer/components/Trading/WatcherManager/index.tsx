@@ -471,6 +471,8 @@ export const WatcherManager = () => {
         trailingStopOffsetPercent={Number(config?.trailingStopOffsetPercent ?? 0)}
         onTrailingStopOffsetPercentChange={(value) => handleConfigUpdate({ trailingStopOffsetPercent: value.toString() })}
         isPending={updateConfig.isPending}
+        indicatorInterval={(config?.trailingStopIndicatorInterval ?? '30m') as import('@marketmind/types').TimeInterval}
+        onIndicatorIntervalChange={(interval) => handleConfigUpdate({ trailingStopIndicatorInterval: interval })}
         activationModeLong={config?.trailingActivationModeLong ?? 'auto'}
         onActivationModeLongChange={(mode) => handleConfigUpdate({ trailingActivationModeLong: mode })}
         activationModeShort={config?.trailingActivationModeShort ?? 'auto'}

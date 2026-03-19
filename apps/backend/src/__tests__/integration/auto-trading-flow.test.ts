@@ -224,6 +224,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         sessionScanEnabled: false,
         sessionScanMarkets: '[]',
         autoCancelOrphans: false,
+        trailingStopIndicatorInterval: '30m',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -318,6 +319,7 @@ describe('Auto-Trading Flow Integration Tests', () => {
         sessionScanEnabled: false,
         sessionScanMarkets: '[]',
         autoCancelOrphans: false,
+        trailingStopIndicatorInterval: '30m',
         createdAt: new Date(),
         updatedAt: new Date(),
       };

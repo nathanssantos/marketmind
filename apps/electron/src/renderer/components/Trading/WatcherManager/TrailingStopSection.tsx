@@ -1,5 +1,7 @@
 import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
+import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
 import { CollapsibleSection, Slider, Switch } from '@renderer/components/ui';
+import type { TimeInterval } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
 
 export interface TrailingStopSectionProps {
@@ -7,6 +9,8 @@ export interface TrailingStopSectionProps {
   onToggle: () => void;
   trailingStopEnabled: boolean;
   onTrailingStopEnabledChange: (enabled: boolean) => void;
+  indicatorInterval?: TimeInterval;
+  onIndicatorIntervalChange?: (interval: TimeInterval) => void;
   trailingActivationPercentLong: number;
   onTrailingActivationPercentLongChange: (value: number) => void;
   trailingActivationPercentShort: number;
@@ -50,6 +54,8 @@ export const TrailingStopSection = ({
   onUseAdaptiveTrailingChange,
   isPending,
   compact = false,
+  indicatorInterval = '30m' as TimeInterval,
+  onIndicatorIntervalChange,
   activationModeLong = 'auto',
   onActivationModeLongChange,
   activationModeShort = 'auto',
@@ -85,6 +91,27 @@ export const TrailingStopSection = ({
 
       {trailingStopEnabled && (
         <>
+          {onIndicatorIntervalChange && (
+            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+              <Flex justify="space-between" align="center">
+                <Box>
+                  <Text fontSize={labelSize} fontWeight="medium">
+                    {t('watcherManager.trailingStop.indicatorInterval')}
+                  </Text>
+                  {!compact && (
+                    <Text fontSize={descSize} color="fg.muted">
+                      {t('watcherManager.trailingStop.indicatorIntervalDescription')}
+                    </Text>
+                  )}
+                </Box>
+                <TimeframeSelector
+                  selectedTimeframe={indicatorInterval}
+                  onTimeframeChange={onIndicatorIntervalChange}
+                />
+              </Flex>
+            </Box>
+          )}
+
           {onActivationModeLongChange && (
             <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
               <Flex justify="space-between" align="center">

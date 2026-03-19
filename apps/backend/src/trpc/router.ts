@@ -5,6 +5,7 @@ import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
 import { customSymbolRouter } from '../routers/custom-symbol';
 import { drawingRouter } from '../routers/drawing';
+import { economicCalendarRouter } from '../routers/economic-calendar';
 import { feesRouter } from '../routers/fees';
 import { futuresTradingRouter } from '../routers/futures-trading';
 import { healthRouter } from '../routers/health';
@@ -45,6 +46,7 @@ export const appRouter = router({
   customSymbol: customSymbolRouter,
   drawing: drawingRouter,
   scalping: scalpingRouter,
+  economicCalendar: economicCalendarRouter,
 });
 
 export type AppRouter = typeof appRouter;

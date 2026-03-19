@@ -115,6 +115,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         activationModeShort: (symbolConfig.trailingActivationModeShort ?? walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
         manualTrailingActivatedLong: symbolConfig.manualTrailingActivatedLong ?? false,
         manualTrailingActivatedShort: symbolConfig.manualTrailingActivatedShort ?? false,
+        indicatorInterval: symbolConfig.indicatorInterval ?? walletConfig?.trailingStopIndicatorInterval ?? '30m',
       };
     }
 
@@ -141,6 +142,7 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
       activationModeShort: (walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
       manualTrailingActivatedLong: false,
       manualTrailingActivatedShort: false,
+      indicatorInterval: walletConfig?.trailingStopIndicatorInterval ?? '30m',
     };
   }, [symbolConfig, walletConfig, useIndividualConfig]);
 
@@ -259,6 +261,8 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
               onTrailingDistancePercentLongChange={(value) => debouncedUpdate({ trailingDistancePercentLong: value.toString() })}
               trailingDistancePercentShort={effectiveValues.trailingDistancePercentShort}
               onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
+              indicatorInterval={effectiveValues.indicatorInterval as import('@marketmind/types').TimeInterval}
+              onIndicatorIntervalChange={(interval) => debouncedUpdate({ indicatorInterval: interval })}
               useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
               onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}
               trailingDistanceMode={effectiveValues.trailingDistanceMode}
