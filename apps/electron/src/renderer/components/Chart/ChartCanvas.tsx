@@ -426,23 +426,28 @@ export const ChartCanvas = ({
 
     const marketPrice = latestKlinesPriceRef.current;
     const isAboveMarket = marketPrice > 0 && price > marketPrice;
+    const hasOpenShort = (backendExecutions ?? []).some(
+      (e) => e.symbol === symbol && e.side === 'SHORT' && e.status === 'open'
+    );
     const optimisticId = `opt-${Date.now()}`;
 
-    setOptimisticExecutions(prev => [...prev, {
-      id: optimisticId,
-      symbol,
-      side: 'LONG',
-      entryPrice: roundTradingPrice(price),
-      quantity: getOrderQuantity(price),
-      stopLoss: null,
-      takeProfit: null,
-      status: 'pending',
-      setupType: null,
-      marketType: marketType || 'FUTURES',
-      openedAt: new Date(),
-      triggerKlineOpenTime: null,
-      fibonacciProjection: null,
-    }]);
+    if (!hasOpenShort) {
+      setOptimisticExecutions(prev => [...prev, {
+        id: optimisticId,
+        symbol,
+        side: 'LONG',
+        entryPrice: roundTradingPrice(price),
+        quantity: getOrderQuantity(price),
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending',
+        setupType: null,
+        marketType: marketType || 'FUTURES',
+        openedAt: new Date(),
+        triggerKlineOpenTime: null,
+        fibonacciProjection: null,
+      }]);
+    }
 
     try {
       await addBackendOrder({
@@ -453,14 +458,15 @@ export const ChartCanvas = ({
         price: isAboveMarket ? undefined : roundTradingPrice(price),
         stopPrice: isAboveMarket ? roundTradingPrice(price) : undefined,
         quantity: getOrderQuantity(price),
+        reduceOnly: hasOpenShort,
       });
       utils.autoTrading.getActiveExecutions.invalidate();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
-      setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+      if (!hasOpenShort) setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
     }
-  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
+  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions]);
 
   const handleShortEntry = useCallback(async (price: number) => {
     if (!backendWalletId) {
@@ -471,23 +477,28 @@ export const ChartCanvas = ({
 
     const marketPrice = latestKlinesPriceRef.current;
     const isBelowMarket = marketPrice > 0 && price < marketPrice;
+    const hasOpenLong = (backendExecutions ?? []).some(
+      (e) => e.symbol === symbol && e.side === 'LONG' && e.status === 'open'
+    );
     const optimisticId = `opt-${Date.now()}`;
 
-    setOptimisticExecutions(prev => [...prev, {
-      id: optimisticId,
-      symbol,
-      side: 'SHORT',
-      entryPrice: roundTradingPrice(price),
-      quantity: getOrderQuantity(price),
-      stopLoss: null,
-      takeProfit: null,
-      status: 'pending',
-      setupType: null,
-      marketType: marketType || 'FUTURES',
-      openedAt: new Date(),
-      triggerKlineOpenTime: null,
-      fibonacciProjection: null,
-    }]);
+    if (!hasOpenLong) {
+      setOptimisticExecutions(prev => [...prev, {
+        id: optimisticId,
+        symbol,
+        side: 'SHORT',
+        entryPrice: roundTradingPrice(price),
+        quantity: getOrderQuantity(price),
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending',
+        setupType: null,
+        marketType: marketType || 'FUTURES',
+        openedAt: new Date(),
+        triggerKlineOpenTime: null,
+        fibonacciProjection: null,
+      }]);
+    }
 
     try {
       await addBackendOrder({
@@ -498,14 +509,15 @@ export const ChartCanvas = ({
         price: isBelowMarket ? undefined : roundTradingPrice(price),
         stopPrice: isBelowMarket ? roundTradingPrice(price) : undefined,
         quantity: getOrderQuantity(price),
+        reduceOnly: hasOpenLong,
       });
       utils.autoTrading.getActiveExecutions.invalidate();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
-      setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+      if (!hasOpenLong) setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
     }
-  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils]);
+  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions]);
 
   const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
   const needsAggTrades = isTickOrVolumeChart || chartType === 'footprint';

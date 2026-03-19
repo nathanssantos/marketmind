@@ -1,4 +1,5 @@
 import type { Order, TradingSetup } from '@marketmind/types';
+import { calculateLiquidationPrice } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawBotIcon, drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
@@ -1511,6 +1512,38 @@ export const useOrderLinesRenderer = (
         ctx.restore();
       }
     }
+
+    allPositions.forEach((position) => {
+      if (position.leverage <= 1) return;
+      const isLong = position.netQuantity > 0;
+      const side = isLong ? 'LONG' as const : 'SHORT' as const;
+      const liqPrice = calculateLiquidationPrice(position.avgPrice, position.leverage, side);
+      if (liqPrice <= 0) return;
+
+      const liqY = manager.priceToY(liqPrice);
+      if (liqY < 0 || liqY > chartHeight) return;
+
+      ctx.save();
+      ctx.strokeStyle = ORDER_LINE_COLORS.LIQUIDATION_LINE;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(0, liqY);
+      ctx.lineTo(chartWidth, liqY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      const liqLabel = `LIQ ${side === 'LONG' ? '↑' : '↓'}`;
+      drawInfoTag(ctx, liqLabel, liqY, ORDER_LINE_COLORS.LIQUIDATION_FILL, false);
+
+      const liqPriceText = formatChartPrice(liqPrice);
+      priceTags.push({ priceText: liqPriceText, y: liqY, fillColor: ORDER_LINE_COLORS.LIQUIDATION_FILL });
+
+      ctx.restore();
+    });
 
     priceTags.forEach(({ priceText, y, fillColor, flashAlpha: tagFlash }) => {
       if (y < 0 || y > chartHeight) return;

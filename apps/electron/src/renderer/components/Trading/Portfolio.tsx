@@ -873,8 +873,8 @@ const OrphanOrderCard = memo(({ orphan, onCancel, onNavigateToSymbol }: {
         <Flex align="center" gap={2}>
           <CryptoIcon symbol={orphan.symbol} size={18} />
           <Text fontSize="sm" fontWeight="semibold">{orphan.symbol}</Text>
-          <Badge colorPalette={isBuy ? 'green' : 'red'} size="xs">{orphan.side}</Badge>
-          <Badge colorPalette="gray" size="xs">{orphan.type.replace(/_/g, ' ')}</Badge>
+          <Badge colorPalette={isBuy ? 'green' : 'red'} size="xs" px={1}>{t(`trading.ticket.${isBuy ? 'buy' : 'sell'}`)}</Badge>
+          <Badge colorPalette="gray" size="xs" px={1}>{orphan.type.replace(/_/g, ' ')}</Badge>
         </Flex>
         <IconButton
           aria-label={t('trading.portfolio.orphanOrdersCancel')}
@@ -933,7 +933,7 @@ const OrphanOrdersTable = memo(({ orphans, walletId, cancelFuturesOrder, onNavig
               </Flex>
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={isBuy ? 'green' : 'red'} size="xs">{orphan.side}</Badge>
+              <Badge colorPalette={isBuy ? 'green' : 'red'} size="xs" px={1}>{t(`trading.ticket.${isBuy ? 'buy' : 'sell'}`)}</Badge>
             </TradingTableCell>
             <TradingTableCell>
               <Text fontSize="xs">{orphan.type.replace(/_/g, ' ')}</Text>

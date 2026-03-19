@@ -235,7 +235,9 @@ export const tradingRouter = router({
               )
               .limit(1);
 
-            if (!existingOpposite) {
+            if (existingOpposite) {
+              await ctx.db.update(orders).set({ reduceOnly: true }).where(eq(orders.orderId, algoOrder.algoId));
+            } else {
               await ctx.db.insert(tradeExecutions).values({
                 id: generateEntityId(),
                 userId: ctx.user.id,
@@ -334,7 +336,9 @@ export const tradingRouter = router({
               )
               .limit(1);
 
-            if (!existingOpposite) {
+            if (existingOpposite) {
+              await ctx.db.update(orders).set({ reduceOnly: true }).where(eq(orders.orderId, binanceOrder.orderId));
+            } else {
               await ctx.db.insert(tradeExecutions).values({
                 id: generateEntityId(),
                 userId: ctx.user.id,

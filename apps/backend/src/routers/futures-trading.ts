@@ -976,6 +976,23 @@ export const futuresTradingRouter = router({
       }
     }),
 
+  getOpenDbOrderIds: protectedProcedure
+    .input(z.object({ walletId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const result = await ctx.db
+        .select({ orderId: orders.orderId })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.userId, ctx.user.id),
+            eq(orders.walletId, input.walletId),
+            eq(orders.status, 'NEW'),
+            eq(orders.marketType, 'FUTURES')
+          )
+        );
+      return result.map((r) => r.orderId);
+    }),
+
   reversePosition: protectedProcedure
     .input(
       z.object({

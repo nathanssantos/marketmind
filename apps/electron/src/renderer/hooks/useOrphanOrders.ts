@@ -64,8 +64,14 @@ export const useOrphanOrders = (
       staleTime: 1000,
     });
 
+  const { data: dbOrderIds } = trpc.futuresTrading.getOpenDbOrderIds.useQuery(
+    { walletId },
+    { enabled, refetchInterval: polling, staleTime: 1000 }
+  );
+
   const orphanOrders = useMemo((): OrphanOrder[] => {
     const trackedOrderIds = buildTrackedOrderIds(backendExecutions ?? []);
+    if (dbOrderIds) dbOrderIds.forEach((id) => trackedOrderIds.add(id));
     const orphans: OrphanOrder[] = [];
 
     for (const order of exchangeOpenOrders ?? []) {
