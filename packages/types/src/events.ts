@@ -37,6 +37,7 @@ export interface MarketSession {
   tradingDays: number[];
   icon: EventIcon;
   enabled: boolean;
+  color?: string;
 }
 
 export interface CalendarEventQuery {

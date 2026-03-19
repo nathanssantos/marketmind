@@ -1,5 +1,6 @@
 import type { CalendarEventQuery, CalendarServiceConfig, MarketEvent } from '@marketmind/types';
 import type { CalendarProviderAdapter } from './CalendarProviderAdapter';
+import { EconomicCalendarProvider } from './EconomicCalendarProvider';
 import { StaticMarketSessionProvider } from './StaticMarketSessionProvider';
 
 const DEFAULT_CACHE_TIMEOUT = 5 * 60 * 1000;
@@ -34,6 +35,10 @@ export class CalendarService {
     const staticProvider = new StaticMarketSessionProvider();
     await staticProvider.initialize();
     this.providers.set(staticProvider.id, staticProvider);
+
+    const economicProvider = new EconomicCalendarProvider();
+    await economicProvider.initialize();
+    this.providers.set(economicProvider.id, economicProvider);
 
     for (const providerConfig of this.config.providers) {
       if (providerConfig.enabled && this.providers.has(providerConfig.id)) {

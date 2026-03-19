@@ -83,7 +83,8 @@ export const createEventScaleRenderer = (options: EventScaleRendererOptions): Ev
       visibleEvents.push({ event, x });
     }
 
-    visibleEvents.sort((a, b) => a.x - b.x);
+    const priorityOrder: Record<string, number> = { critical: 3, high: 2, medium: 1, low: 0 };
+    visibleEvents.sort((a, b) => a.x - b.x || (priorityOrder[b.event.priority] ?? 0) - (priorityOrder[a.event.priority] ?? 0));
 
     let lastDrawnX = -Infinity;
 

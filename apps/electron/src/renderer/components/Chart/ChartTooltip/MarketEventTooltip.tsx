@@ -29,8 +29,18 @@ const getEventTypeIcon = (type: string) => {
   }
 };
 
+const getMetaString = (metadata: Record<string, unknown> | undefined, key: string): string | null => {
+  const val = metadata?.[key];
+  return typeof val === 'string' ? val : null;
+};
+
 export const MarketEventTooltip = ({ marketEvent, left, top }: MarketEventTooltipProps) => {
   const { t } = useTranslation();
+
+  const actual = getMetaString(marketEvent.metadata, 'actual');
+  const estimate = getMetaString(marketEvent.metadata, 'estimate');
+  const previous = getMetaString(marketEvent.metadata, 'previous');
+  const hasEconData = marketEvent.type === 'economic_event' && (actual || estimate || previous);
 
   return (
     <TooltipContainer left={left} top={top}>
@@ -51,10 +61,30 @@ export const MarketEventTooltip = ({ marketEvent, left, top }: MarketEventToolti
         </Text>
       )}
 
+      {hasEconData && (
+        <HStack gap={2} pt={1} borderTopWidth={1} borderColor="border" flexWrap="wrap">
+          {actual && (
+            <Text fontSize="2xs"><Text as="span" color="fg.muted">{t('common.actual')}:</Text> {actual}</Text>
+          )}
+          {estimate && (
+            <Text fontSize="2xs"><Text as="span" color="fg.muted">{t('common.estimate')}:</Text> {estimate}</Text>
+          )}
+          {previous && (
+            <Text fontSize="2xs"><Text as="span" color="fg.muted">{t('common.previous')}:</Text> {previous}</Text>
+          )}
+        </HStack>
+      )}
+
       <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
         <Text color="fg.muted" fontSize="2xs">{t('common.type')}</Text>
         <Badge colorScheme="blue" fontSize="2xs" px={2}>
-          {marketEvent.type === 'market_open' ? t('common.marketOpen') : t('common.marketClose')}
+          {marketEvent.type === 'market_open'
+            ? t('common.marketOpen')
+            : marketEvent.type === 'market_close'
+              ? t('common.marketClose')
+              : marketEvent.type === 'economic_event'
+                ? t('common.economicEvent')
+                : marketEvent.type}
         </Badge>
       </HStack>
 

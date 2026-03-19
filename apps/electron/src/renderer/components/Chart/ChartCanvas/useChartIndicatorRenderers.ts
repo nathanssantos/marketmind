@@ -45,6 +45,7 @@ import { useCVDRenderer } from '../useCVDRenderer';
 import { useImbalanceRenderer } from '../useImbalanceRenderer';
 import { useVolumeProfileRenderer } from '../useVolumeProfileRenderer';
 import { useFootprintRenderer } from '../useFootprintRenderer';
+import { useSessionBoundariesRenderer } from '../useSessionBoundariesRenderer';
 export interface UseChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
@@ -101,6 +102,7 @@ export interface UseChartIndicatorRenderersResult {
   renderImbalance: () => void;
   renderVolumeProfile: () => void;
   renderFootprint: () => void;
+  renderSessionBoundaries: () => void;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   renderAllOverlayIndicators: () => void;
   renderAllPanelIndicators: () => void;
@@ -404,6 +406,13 @@ export const useChartIndicatorRenderers = ({
     enabled: isIndicatorActive('footprint') || chartType === 'footprint',
   });
 
+  const { render: renderSessionBoundaries } = useSessionBoundariesRenderer({
+    manager,
+    colors,
+    enabled: showEventRow,
+    marketEvents,
+  });
+
   const renderAllOverlayIndicators = (): void => {
     renderBollingerBands();
     renderATR();
@@ -493,6 +502,7 @@ export const useChartIndicatorRenderers = ({
     renderImbalance,
     renderVolumeProfile,
     renderFootprint,
+    renderSessionBoundaries,
     getEventAtPosition,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,

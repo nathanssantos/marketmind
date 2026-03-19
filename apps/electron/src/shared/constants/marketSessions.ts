@@ -12,6 +12,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'us' },
     enabled: true,
+    color: '#3B82F6',
   },
   {
     id: 'nasdaq',
@@ -24,6 +25,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'us' },
     enabled: false,
+    color: '#6366F1',
   },
   {
     id: 'tse',
@@ -40,6 +42,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'jp' },
     enabled: true,
+    color: '#EF4444',
   },
   {
     id: 'sse',
@@ -56,6 +59,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'cn' },
     enabled: true,
+    color: '#F59E0B',
   },
   {
     id: 'szse',
@@ -72,6 +76,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'cn' },
     enabled: false,
+    color: '#F97316',
   },
   {
     id: 'hkex',
@@ -88,6 +93,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'hk' },
     enabled: false,
+    color: '#EC4899',
   },
   {
     id: 'lse',
@@ -99,7 +105,8 @@ export const MARKET_SESSIONS: MarketSession[] = [
     closeTime: { hour: 16, minute: 30 },
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'gb' },
-    enabled: false,
+    enabled: true,
+    color: '#8B5CF6',
   },
   {
     id: 'euronext',
@@ -112,6 +119,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'eu' },
     enabled: false,
+    color: '#14B8A6',
   },
   {
     id: 'xetra',
@@ -124,6 +132,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'de' },
     enabled: false,
+    color: '#0EA5E9',
   },
   {
     id: 'asx',
@@ -135,7 +144,8 @@ export const MARKET_SESSIONS: MarketSession[] = [
     closeTime: { hour: 16, minute: 0 },
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'au' },
-    enabled: false,
+    enabled: true,
+    color: '#10B981',
   },
   {
     id: 'bse',
@@ -148,6 +158,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'in' },
     enabled: false,
+    color: '#84CC16',
   },
   {
     id: 'krx',
@@ -160,6 +171,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'kr' },
     enabled: false,
+    color: '#A855F7',
   },
   {
     id: 'b3',
@@ -172,6 +184,7 @@ export const MARKET_SESSIONS: MarketSession[] = [
     tradingDays: [1, 2, 3, 4, 5],
     icon: { type: 'flag', value: 'br' },
     enabled: false,
+    color: '#22D3EE',
   },
 ];
 
