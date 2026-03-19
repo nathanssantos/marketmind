@@ -10,10 +10,15 @@ export const DRAWING_COLORS = {
   fibonacci: 'rgba(180, 180, 180, 0.7)',
   ruler: '#64748B',
   area: '#64748B',
+  arrow: '#2196F3',
+  text: '#ffffff',
   handle: '#ffffff',
   handleStroke: '#2196F3',
   selected: '#2196F3',
 } as const;
+
+export const DEFAULT_LINE_WIDTH = 2;
+export const DEFAULT_FONT_SIZE = 14;
 
 export const FIBONACCI_DEFAULT_LEVELS = [
   0, 0.236, 0.382, 0.5, 0.618, 0.786, 0.886, 1,

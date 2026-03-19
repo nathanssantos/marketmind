@@ -1,4 +1,4 @@
-import type { CoordinateMapper, Drawing, LineDrawing, RulerDrawing, RectangleDrawing, AreaDrawing, PencilDrawing, FibonacciDrawing } from '@marketmind/chart-studies';
+import type { CoordinateMapper, Drawing, LineDrawing, RulerDrawing, RectangleDrawing, AreaDrawing, PencilDrawing, FibonacciDrawing, ArrowDrawing, TextDrawing } from '@marketmind/chart-studies';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
@@ -11,6 +11,8 @@ import { renderPencil } from './renderers/renderPencil';
 import { renderRuler } from './renderers/renderRuler';
 import { renderArea } from './renderers/renderArea';
 import { renderFibonacci } from './renderers/renderFibonacci';
+import { renderArrow } from './renderers/renderArrow';
+import { renderText } from './renderers/renderText';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
 
@@ -64,8 +66,9 @@ const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
     case 'line':
     case 'ruler':
     case 'rectangle':
-    case 'area': {
-      const d = drawing as LineDrawing | RulerDrawing | RectangleDrawing | AreaDrawing;
+    case 'area':
+    case 'arrow': {
+      const d = drawing as LineDrawing | RulerDrawing | RectangleDrawing | AreaDrawing | ArrowDrawing;
       if (!d.startTime && !d.endTime) return drawing;
       return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex) };
     }
@@ -78,6 +81,11 @@ const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
       const d = drawing as FibonacciDrawing;
       if (!d.swingLowTime && !d.swingHighTime) return drawing;
       return { ...d, swingLowIndex: timeToIdx(d.swingLowTime, d.swingLowIndex), swingHighIndex: timeToIdx(d.swingHighTime, d.swingHighIndex) };
+    }
+    case 'text': {
+      const d = drawing as TextDrawing;
+      if (!d.time) return drawing;
+      return { ...d, index: timeToIdx(d.time, d.index) };
     }
   }
 };
@@ -125,6 +133,12 @@ const renderSingleDrawing = (
       break;
     case 'fibonacci':
       renderFibonacci(ctx, drawing, mapper, isSelected, chartHeight, chartWidth, themeColors);
+      break;
+    case 'arrow':
+      renderArrow(ctx, drawing, mapper, isSelected);
+      break;
+    case 'text':
+      renderText(ctx, drawing, mapper, isSelected);
       break;
   }
 
@@ -232,7 +246,8 @@ const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: numbe
     case 'line':
     case 'ruler':
     case 'rectangle':
-    case 'area': {
+    case 'area':
+    case 'arrow': {
       const minIdx = Math.min(drawing.startIndex, drawing.endIndex);
       const maxIdx = Math.max(drawing.startIndex, drawing.endIndex);
       return maxIdx >= viewStart && minIdx <= viewEnd;
@@ -248,5 +263,7 @@ const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: numbe
       const maxIdx = Math.max(...indices);
       return maxIdx >= viewStart && minIdx <= viewEnd;
     }
+    case 'text':
+      return drawing.index >= viewStart && drawing.index <= viewEnd;
   }
 };

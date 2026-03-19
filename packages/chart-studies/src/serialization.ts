@@ -16,6 +16,15 @@ export interface SerializedDrawingData {
   swingHighTime?: number;
   direction?: 'up' | 'down';
   levels?: Array<{ level: number; label: string; price: number }>;
+  color?: string;
+  lineWidth?: number;
+  index?: number;
+  price?: number;
+  time?: number;
+  text?: string;
+  fontSize?: number;
+  fontWeight?: 'normal' | 'bold';
+  textDecoration?: 'none' | 'underline';
 }
 
 export type KlineTimeLookup = (index: number) => number | undefined;
@@ -25,11 +34,15 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
   const data: SerializedDrawingData = {};
   const t = getOpenTime ?? (() => undefined);
 
+  if (drawing.color) data.color = drawing.color;
+  if (drawing.lineWidth) data.lineWidth = drawing.lineWidth;
+
   switch (drawing.type) {
     case 'line':
     case 'ruler':
     case 'rectangle':
     case 'area':
+    case 'arrow':
       data.startIndex = drawing.startIndex;
       data.startPrice = drawing.startPrice;
       data.endIndex = drawing.endIndex;
@@ -50,6 +63,15 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       data.direction = drawing.direction;
       data.levels = drawing.levels;
       break;
+    case 'text':
+      data.index = drawing.index;
+      data.price = drawing.price;
+      data.time = t(drawing.index);
+      data.text = drawing.text;
+      data.fontSize = drawing.fontSize;
+      data.fontWeight = drawing.fontWeight;
+      data.textDecoration = drawing.textDecoration;
+      break;
   }
 
   return JSON.stringify(data);
@@ -68,18 +90,21 @@ export const deserializeDrawingData = (
 ): Drawing | null => {
   try {
     const data = JSON.parse(dataStr) as SerializedDrawingData;
-    const common = { ...base, type };
+    const common = { ...base, type, ...(data.color && { color: data.color }), ...(data.lineWidth && { lineWidth: data.lineWidth }) };
     const ri = (idx: number, time?: number) => resolveIndex(idx, time, timeToIndex);
+
+    const twoPointFields = {
+      startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!,
+      endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice!,
+    };
 
     switch (type) {
       case 'line':
-        return { ...common, type: 'line', startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!, endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice! };
       case 'ruler':
-        return { ...common, type: 'ruler', startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!, endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice! };
       case 'rectangle':
-        return { ...common, type: 'rectangle', startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!, endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice! };
       case 'area':
-        return { ...common, type: 'area', startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!, endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice! };
+      case 'arrow':
+        return { ...common, type, ...twoPointFields } as Drawing;
       case 'pencil':
         return { ...common, type: 'pencil', points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price })) };
       case 'fibonacci':
@@ -88,6 +113,13 @@ export const deserializeDrawingData = (
           swingLowIndex: ri(data.swingLowIndex!, data.swingLowTime), swingLowPrice: data.swingLowPrice!,
           swingHighIndex: ri(data.swingHighIndex!, data.swingHighTime), swingHighPrice: data.swingHighPrice!,
           direction: data.direction ?? 'up', levels: data.levels ?? [],
+        };
+      case 'text':
+        return {
+          ...common, type: 'text',
+          index: ri(data.index!, data.time), price: data.price!,
+          text: data.text ?? '', fontSize: data.fontSize ?? 14,
+          fontWeight: data.fontWeight ?? 'normal', textDecoration: data.textDecoration ?? 'none',
         };
       default:
         return null;

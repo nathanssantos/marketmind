@@ -12,6 +12,7 @@ const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoin
   switch (drawing.type) {
     case 'line':
     case 'ruler':
+    case 'arrow':
     case 'rectangle':
     case 'area':
       return [
@@ -32,6 +33,8 @@ const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoin
         { x: mapper.indexToCenterX(last.index), y: mapper.priceToY(last.price) },
       ];
     }
+    case 'text':
+      return [{ x: mapper.indexToCenterX(drawing.index), y: mapper.priceToY(drawing.price) }];
   }
 };
 

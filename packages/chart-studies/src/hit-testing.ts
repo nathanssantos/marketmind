@@ -82,16 +82,8 @@ export const pointNearHandle = (
 const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): DrawingHandle[] => {
   switch (drawing.type) {
     case 'line':
-    case 'ruler': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
-      const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
-      const ey = mapper.priceToY(drawing.endPrice);
-      return [
-        { drawingId: drawing.id, handleType: 'start', x: sx, y: sy },
-        { drawingId: drawing.id, handleType: 'end', x: ex, y: ey },
-      ];
-    }
+    case 'ruler':
+    case 'arrow':
     case 'rectangle':
     case 'area': {
       const sx = mapper.indexToCenterX(drawing.startIndex);
@@ -122,6 +114,11 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
         { drawingId: drawing.id, handleType: 'end', x: mapper.indexToCenterX(last.index), y: mapper.priceToY(last.price) },
       ];
     }
+    case 'text': {
+      const tx = mapper.indexToCenterX(drawing.index);
+      const ty = mapper.priceToY(drawing.price);
+      return [{ drawingId: drawing.id, handleType: 'start', x: tx, y: ty }];
+    }
   }
 };
 
@@ -150,7 +147,8 @@ export const hitTestDrawing = (
 
   switch (drawing.type) {
     case 'line':
-    case 'ruler': {
+    case 'ruler':
+    case 'arrow': {
       const sx = mapper.indexToCenterX(drawing.startIndex);
       const sy = mapper.priceToY(drawing.startPrice);
       const ex = mapper.indexToCenterX(drawing.endIndex);
@@ -195,6 +193,14 @@ export const hitTestDrawing = (
           }
         }
       }
+      break;
+    }
+    case 'text': {
+      const tx = mapper.indexToCenterX(drawing.index);
+      const ty = mapper.priceToY(drawing.price);
+      const w = drawing.text.length * drawing.fontSize * 0.6;
+      const h = drawing.fontSize * 1.2;
+      if (pointInRect(px, py, tx, ty - h, tx + w, ty)) return { drawingId: drawing.id, handleType: 'body', distance: 0 };
       break;
     }
   }

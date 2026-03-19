@@ -1,5 +1,5 @@
 import type { RulerDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
 import { formatChartPrice } from '@renderer/utils/formatters';
 
 const LABEL_FONT = '11px monospace';
@@ -7,7 +7,6 @@ const LABEL_BG_COLOR = 'rgba(0, 0, 0, 0.7)';
 const LABEL_PADDING = 4;
 const LABEL_HEIGHT = 16;
 const DASHED_LINE = [6, 3] as const;
-const LINE_WIDTH = 2;
 
 export const renderRuler = (
   ctx: CanvasRenderingContext2D,
@@ -23,9 +22,10 @@ export const renderRuler = (
 
   const isPositive = drawing.endPrice >= drawing.startPrice;
 
+  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (isPositive ? colors.bullish : colors.bearish);
-  ctx.lineWidth = LINE_WIDTH;
+  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? (isPositive ? colors.bullish : colors.bearish));
+  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
   ctx.setLineDash([...DASHED_LINE]);
   ctx.beginPath();
   ctx.moveTo(x1, y1);

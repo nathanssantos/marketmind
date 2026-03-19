@@ -49,7 +49,11 @@
     "futuresOnly": "Futures",
     "stocksOnly": "Stocks",
     "add": "Add",
-    "remove": "Remove"
+    "remove": "Remove",
+    "economicEvent": "Economic Event",
+    "actual": "Actual",
+    "estimate": "Estimate",
+    "previous": "Previous"
   },
   "app": {
     "title": "MarketMind",
@@ -608,6 +612,8 @@
       "fibonacci": "Fibonacci",
       "ruler": "Ruler",
       "area": "Area",
+      "arrow": "Arrow",
+      "text": "Text",
       "magnet": "OHLC Magnet"
     },
     "quickTrade": {
@@ -680,7 +686,19 @@
       "deleteSetup": "Delete Setup",
       "hideSetups": "Hide Detected Setups",
       "showSetups": "Show Detected Setups",
-      "deleteAllSetups": "Remove All Detected Setups"
+      "deleteAllSetups": "Remove All Detected Setups",
+      "clearAllDrawings": "Clear All Drawings"
+    },
+    "drawingToolbar": {
+      "color": "Color",
+      "lineWidth": "Line Width",
+      "thin": "Thin",
+      "medium": "Medium",
+      "thick": "Thick",
+      "fontSize": "Font Size",
+      "bold": "Bold",
+      "underline": "Underline",
+      "delete": "Delete"
     },
     "navigation": {
       "resetView": "Reset to initial view",
@@ -1404,6 +1422,8 @@
       "description": "Automatically adjust stop loss as price moves in your favor",
       "enabled": "Enable Trailing Stop",
       "enabledDescription": "Works independently - continues for open positions even when watchers are paused",
+      "indicatorInterval": "Indicator Timeframe",
+      "indicatorIntervalDescription": "Timeframe used for trailing stop indicator calculations",
       "activationLong": "LONG Activation",
       "activationLongDescription": "TP progress required to activate trailing stop for LONG positions",
       "activationShort": "SHORT Activation",

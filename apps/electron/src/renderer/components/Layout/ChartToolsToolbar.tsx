@@ -6,6 +6,7 @@ import { useDrawingStore } from '@renderer/store/drawingStore';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  LuArrowUpRight,
   LuCalendarDays,
   LuMagnet,
   LuMessageSquare,
@@ -16,6 +17,7 @@ import {
   LuScan,
   LuSquare,
   LuTriangleRight,
+  LuType,
 } from 'react-icons/lu';
 import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
@@ -92,6 +94,26 @@ export const ChartToolsToolbar = memo(({
             onClick={() => handleToolClick('line')}
           >
             <LuMinus />
+          </ToggleIconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.tools.arrow', 'Arrow')} showArrow placement="right">
+          <ToggleIconButton
+            active={isToolActive('arrow')}
+            size="2xs"
+            aria-label={t('chart.tools.arrow', 'Arrow')}
+            onClick={() => handleToolClick('arrow')}
+          >
+            <LuArrowUpRight />
+          </ToggleIconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.tools.text', 'Text')} showArrow placement="right">
+          <ToggleIconButton
+            active={isToolActive('text')}
+            size="2xs"
+            aria-label={t('chart.tools.text', 'Text')}
+            onClick={() => handleToolClick('text')}
+          >
+            <LuType />
           </ToggleIconButton>
         </TooltipWrapper>
         <TooltipWrapper label={t('chart.tools.rectangle', 'Rectangle')} showArrow placement="right">

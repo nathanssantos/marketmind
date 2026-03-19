@@ -53,7 +53,10 @@ import { useOrderLinesRenderer, type BackendExecution, type TrailingStopLineConf
 import { usePriceMagnet } from './usePriceMagnet';
 import { useDrawingInteraction } from './drawings/useDrawingInteraction';
 import { useDrawingsRenderer } from './drawings/useDrawingsRenderer';
-import { useDrawingStore } from '@renderer/store/drawingStore';
+import { DrawingToolbar } from './drawings/DrawingToolbar';
+import { TextEditOverlay } from './drawings/TextEditOverlay';
+import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
+import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { useBackendDrawings } from '@renderer/hooks/useBackendDrawings';
 import { useOrphanOrders } from '@renderer/hooks/useOrphanOrders';
 import type { MovingAverageConfig } from './useMovingAverageRenderer';
@@ -215,6 +218,8 @@ export const ChartCanvas = ({
   const [slTightenOnly] = useTradingPref<boolean>('slTightenOnly', false);
 
   const detectedSetups = useSetupStore((state) => state.detectedSetups);
+  const drawingKey = compositeKey(symbol ?? '', timeframe);
+  const drawingsForContextMenu = useDrawingStore(s => s.drawingsByKey[drawingKey]);
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {
@@ -900,6 +905,7 @@ export const ChartCanvas = ({
     renderImbalance,
     renderVolumeProfile,
     renderFootprint,
+    renderSessionBoundaries,
     getEventAtPosition,
   } = useChartIndicatorRenderers({
     manager,
@@ -1412,6 +1418,8 @@ export const ChartCanvas = ({
   useEffect(() => {
     const handleDeleteDrawing = (event: KeyboardEvent) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
         const drawingState = useDrawingStore.getState();
         if (drawingState.selectedDrawingId && symbol) {
           drawingState.deleteDrawing(drawingState.selectedDrawingId, symbol, timeframe);
@@ -1548,6 +1556,7 @@ export const ChartCanvas = ({
       manager.clear();
       renderWatermark();
       renderGrid();
+      renderSessionBoundaries();
       renderVolume();
       if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
         renderKlines();
@@ -1863,6 +1872,7 @@ export const ChartCanvas = ({
     manager,
     renderWatermark,
     renderGrid,
+    renderSessionBoundaries,
     renderVolume,
     renderKlines,
     renderLineChart,
@@ -2007,6 +2017,13 @@ export const ChartCanvas = ({
           </DialogPositioner>
         </DialogRoot>
       </Portal>
+      <ChartContextMenuManager
+        hasDrawings={(drawingsForContextMenu?.length ?? 0) > 0}
+        onClearAllDrawings={() => {
+          if (symbol) useDrawingStore.getState().setDrawingsForSymbol(symbol, timeframe, []);
+          manager?.markDirty('overlays');
+        }}
+      >
       <Box
         position="relative"
         width={width}
@@ -2028,6 +2045,16 @@ export const ChartCanvas = ({
             cursor: 'crosshair',
             display: 'block',
           }}
+        />
+        <DrawingToolbar
+          manager={manager}
+          symbol={symbol ?? ''}
+          interval={timeframe}
+        />
+        <TextEditOverlay
+          manager={manager}
+          symbol={symbol ?? ''}
+          interval={timeframe}
         />
         <ChartNavigation
           onResetView={handleResetView}
@@ -2051,6 +2078,7 @@ export const ChartCanvas = ({
           />
         )}
       </Box>
+      </ChartContextMenuManager>
     </>
   );
 };

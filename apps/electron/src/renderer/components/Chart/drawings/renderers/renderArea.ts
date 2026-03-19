@@ -33,8 +33,8 @@ export const renderArea = (
 
   ctx.fillStyle = AREA_FILL_COLOR;
   ctx.fillRect(left, top, w, h);
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : colors.crosshair;
-  ctx.lineWidth = BORDER_WIDTH;
+  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? colors.crosshair);
+  ctx.lineWidth = drawing.lineWidth ?? BORDER_WIDTH;
   ctx.setLineDash([...BORDER_DASH]);
   ctx.strokeRect(left, top, w, h);
 

@@ -44,7 +44,7 @@ export const renderFibonacci = (
 
   ctx.save();
 
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : DRAWING_COLORS.fibonacci;
+  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.fibonacci);
   ctx.lineWidth = SWING_LINE_WIDTH;
   ctx.setLineDash([...SWING_LINE_DASH]);
   ctx.beginPath();

@@ -1,5 +1,5 @@
 import type { Drawing, DrawingType, CoordinateMapper } from '@marketmind/chart-studies';
-import { hitTestDrawings, FIBONACCI_DEFAULT_LEVELS } from '@marketmind/chart-studies';
+import { hitTestDrawings, FIBONACCI_DEFAULT_LEVELS, DEFAULT_FONT_SIZE } from '@marketmind/chart-studies';
 import { formatFibonacciLabel } from '@marketmind/fibonacci';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
@@ -32,6 +32,11 @@ interface UseDrawingInteractionResult {
   lastSnapRef: React.MutableRefObject<OHLCSnapIndicator | null>;
   snapToOHLC: (x: number, y: number) => { x: number; y: number; snapped: boolean };
 }
+
+type TwoPointType = 'line' | 'ruler' | 'arrow' | 'rectangle' | 'area';
+const TWO_POINT_TYPES = new Set<string>(['line', 'ruler', 'arrow', 'rectangle', 'area']);
+const isTwoPointDrawing = (d: Drawing): d is Drawing & { type: TwoPointType; startIndex: number; startPrice: number; endIndex: number; endPrice: number; startTime?: number; endTime?: number } =>
+  TWO_POINT_TYPES.has(d.type);
 
 let nextDrawingId = 1;
 const generateId = (): string => `drawing-${Date.now()}-${nextDrawingId++}`;
@@ -138,6 +143,19 @@ export const useDrawingInteraction = ({
       return true;
     }
 
+    if (activeTool === 'text') {
+      const drawing: Drawing = {
+        id: generateId(), type: 'text', symbol, interval, visible: true, locked: false, zIndex: 0,
+        createdAt: Date.now(), updatedAt: Date.now(),
+        index, price, time,
+        text: '', fontSize: DEFAULT_FONT_SIZE, fontWeight: 'normal', textDecoration: 'none', color: '#ffffff',
+      };
+      store.addDrawing(drawing);
+      store.selectDrawing(drawing.id);
+      manager?.markDirty('overlays');
+      return true;
+    }
+
     if (activeTool === 'rectangle' || activeTool === 'area') {
       const drawing: Drawing = {
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
@@ -169,7 +187,7 @@ export const useDrawingInteraction = ({
       }
 
       const drawing: Drawing = {
-        id: generateId(), type: drawingType as 'line' | 'ruler', symbol, interval, visible: true, locked: false, zIndex: 0,
+        id: generateId(), type: drawingType as 'line' | 'ruler' | 'arrow', symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
@@ -202,7 +220,7 @@ export const useDrawingInteraction = ({
           direction: dir,
           levels: computeFibLevels(lowPrice, highPrice, dir),
         };
-      } else if (pending.type === 'line' || pending.type === 'ruler' || pending.type === 'rectangle' || pending.type === 'area') {
+      } else if (isTwoPointDrawing(pending)) {
         pendingDrawingRef.current = { ...pending, endIndex: index, endPrice: price, endTime: time } as Drawing;
       }
       manager.markDirty('overlays');
@@ -210,6 +228,14 @@ export const useDrawingInteraction = ({
     }
 
     if (phase === 'drawing-freeform' && pending && pending.type === 'pencil') {
+      const lastPt = pending.points[pending.points.length - 1];
+      if (lastPt) {
+        const lx = manager.indexToCenterX(lastPt.index);
+        const ly = manager.priceToY(lastPt.price);
+        const dx = x - lx;
+        const dy = y - ly;
+        if (dx * dx + dy * dy < 9) return true;
+      }
       const { index, price, time } = getIndexAndPrice(x, y);
       pendingDrawingRef.current = {
         ...pending,
@@ -234,7 +260,7 @@ export const useDrawingInteraction = ({
       };
 
       if (handleType === 'body' || handleType === null) {
-        if (originalDrawing.type === 'line' || originalDrawing.type === 'ruler' || originalDrawing.type === 'rectangle' || originalDrawing.type === 'area') {
+        if (isTwoPointDrawing(originalDrawing)) {
           const si = originalDrawing.startIndex + deltaIndex;
           const ei = originalDrawing.endIndex + deltaIndex;
           store.updateDrawing(originalDrawing.id, {
@@ -253,6 +279,12 @@ export const useDrawingInteraction = ({
             swingLowTime: timeAt(sli), swingHighTime: timeAt(shi),
             levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), originalDrawing.direction),
           } as Partial<Drawing>);
+        } else if (originalDrawing.type === 'text') {
+          store.updateDrawing(originalDrawing.id, {
+            index: originalDrawing.index + deltaIndex,
+            price: originalDrawing.price + deltaPrice,
+            time: timeAt(originalDrawing.index + deltaIndex),
+          } as Partial<Drawing>);
         } else if (originalDrawing.type === 'pencil') {
           store.updateDrawing(originalDrawing.id, {
             points: originalDrawing.points.map(p => {
@@ -261,9 +293,9 @@ export const useDrawingInteraction = ({
             }),
           } as Partial<Drawing>);
         }
-      } else if (handleType === 'start' && (originalDrawing.type === 'line' || originalDrawing.type === 'ruler' || originalDrawing.type === 'rectangle' || originalDrawing.type === 'area')) {
+      } else if (handleType === 'start' && isTwoPointDrawing(originalDrawing)) {
         store.updateDrawing(originalDrawing.id, { startIndex: newIndex, startPrice: newPrice, startTime: newTime } as Partial<Drawing>);
-      } else if (handleType === 'end' && (originalDrawing.type === 'line' || originalDrawing.type === 'ruler' || originalDrawing.type === 'rectangle' || originalDrawing.type === 'area')) {
+      } else if (handleType === 'end' && isTwoPointDrawing(originalDrawing)) {
         store.updateDrawing(originalDrawing.id, { endIndex: newIndex, endPrice: newPrice, endTime: newTime } as Partial<Drawing>);
       } else if (handleType === 'swingLow' && originalDrawing.type === 'fibonacci') {
         const lowPrice = newPrice;
@@ -316,14 +348,14 @@ export const useDrawingInteraction = ({
           direction: dir,
           levels: computeFibLevels(lowPrice, highPrice, dir),
         };
-      } else if (drawing.type === 'line' || drawing.type === 'ruler' || drawing.type === 'rectangle' || drawing.type === 'area') {
+      } else if (isTwoPointDrawing(drawing)) {
         drawing = { ...drawing, endIndex: index, endPrice: price } as Drawing;
       }
 
       const isZeroLength =
         (drawing.type === 'fibonacci' && drawing.swingLowPrice === drawing.swingHighPrice) ||
         ((drawing.type === 'rectangle' || drawing.type === 'area') && (drawing.startIndex === drawing.endIndex || drawing.startPrice === drawing.endPrice)) ||
-        ((drawing.type === 'line' || drawing.type === 'ruler') && drawing.startIndex === drawing.endIndex && drawing.startPrice === drawing.endPrice);
+        ((drawing.type === 'line' || drawing.type === 'ruler' || drawing.type === 'arrow') && drawing.startIndex === drawing.endIndex && drawing.startPrice === drawing.endPrice);
 
       const store = useDrawingStore.getState();
 

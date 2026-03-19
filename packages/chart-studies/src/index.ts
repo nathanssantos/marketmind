@@ -8,6 +8,8 @@ export type {
   PencilDrawing,
   FibonacciLevel,
   FibonacciDrawing,
+  ArrowDrawing,
+  TextDrawing,
   Drawing,
   TwoPointDrawingType,
   DrawingHandle,
@@ -21,6 +23,8 @@ export {
   PENCIL_HIT_THRESHOLD,
   DRAWING_COLORS,
   FIBONACCI_DEFAULT_LEVELS,
+  DEFAULT_LINE_WIDTH,
+  DEFAULT_FONT_SIZE,
 } from './constants';
 
 export {

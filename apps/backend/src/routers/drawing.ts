@@ -4,7 +4,7 @@ import { db } from '../db';
 import { chartDrawings } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 
-const drawingTypeSchema = z.enum(['line', 'rectangle', 'pencil', 'fibonacci', 'ruler', 'area']);
+const drawingTypeSchema = z.enum(['line', 'rectangle', 'pencil', 'fibonacci', 'ruler', 'area', 'arrow', 'text']);
 
 export const drawingRouter = router({
   listBySymbol: protectedProcedure
