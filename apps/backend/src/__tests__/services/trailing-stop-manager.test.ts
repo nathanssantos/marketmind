@@ -66,11 +66,15 @@ vi.mock('@marketmind/types', async (importOriginal) => {
   };
 });
 
-vi.mock('../../constants', () => ({
-  TRAILING_STOP: {
-    PEAK_PROFIT_FLOOR: 0.3,
-  },
-}));
+vi.mock('../../constants', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    TRAILING_STOP: {
+      PEAK_PROFIT_FLOOR: 0.3,
+    },
+  };
+});
 
 vi.mock('../../db', () => ({
   db: {
@@ -1197,7 +1201,7 @@ describe('TrailingStopService - Manager Methods', () => {
           side: 'LONG',
           triggerPrice: 101,
           marketType: 'FUTURES',
-          currentAlgoId: 12345,
+          currentAlgoId: '12345',
         })
       );
     });

@@ -810,7 +810,7 @@ describe('BinanceFuturesUserStreamService', () => {
 
       expect(execution!.stopLoss).toBeNull();
       expect(execution!.stopLossAlgoId).toBeNull();
-      expect(execution!.takeProfitAlgoId).toBe(222222);
+      expect(execution!.takeProfitAlgoId).toBe('222222');
       expect(execution!.status).toBe('open');
 
       service.stop();

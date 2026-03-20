@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/backend",
-  "version": "0.71.0",
+  "version": "0.72.0",
   "description": "MarketMind Backend API Server",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

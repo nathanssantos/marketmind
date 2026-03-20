@@ -69,15 +69,16 @@ export const useOrphanOrders = (
     { enabled, refetchInterval: polling, staleTime: 1000 }
   );
 
-  const orphanOrders = useMemo((): OrphanOrder[] => {
-    const trackedOrderIds = buildTrackedOrderIds(backendExecutions ?? []);
-    if (dbOrderIds) dbOrderIds.forEach((id) => trackedOrderIds.add(id));
+  const { orphanOrders, trackedOrders } = useMemo(() => {
+    const executionOrderIds = buildTrackedOrderIds(backendExecutions ?? []);
+    const dbIdSet = new Set(dbOrderIds ?? []);
     const orphans: OrphanOrder[] = [];
+    const tracked: OrphanOrder[] = [];
 
     for (const order of exchangeOpenOrders ?? []) {
       const oid = order.orderId;
-      if (trackedOrderIds.has(oid)) continue;
-      orphans.push({
+      if (executionOrderIds.has(oid)) continue;
+      const entry: OrphanOrder = {
         id: `exchange-order-${oid}`,
         exchangeOrderId: oid,
         isAlgo: false,
@@ -87,13 +88,15 @@ export const useOrphanOrders = (
         price: String(order.price),
         quantity: String(order.origQty),
         createdAt: order.time ? new Date(Number(order.time)) : null,
-      });
+      };
+      if (dbIdSet.has(oid)) { tracked.push(entry); continue; }
+      orphans.push(entry);
     }
 
     for (const algo of exchangeAlgoOrders ?? []) {
       const aid = algo.algoId;
-      if (trackedOrderIds.has(aid)) continue;
-      orphans.push({
+      if (executionOrderIds.has(aid)) continue;
+      const entry: OrphanOrder = {
         id: `exchange-algo-${aid}`,
         exchangeOrderId: aid,
         isAlgo: true,
@@ -103,14 +106,17 @@ export const useOrphanOrders = (
         price: String((algo as { triggerPrice?: string }).triggerPrice ?? '0'),
         quantity: String(algo.quantity ?? '0'),
         createdAt: algo.createTime ? new Date(Number(algo.createTime)) : null,
-      });
+      };
+      if (dbIdSet.has(aid)) { tracked.push(entry); continue; }
+      orphans.push(entry);
     }
 
-    return orphans;
-  }, [backendExecutions, exchangeOpenOrders, exchangeAlgoOrders]);
+    return { orphanOrders: orphans, trackedOrders: tracked };
+  }, [backendExecutions, exchangeOpenOrders, exchangeAlgoOrders, dbOrderIds]);
 
   return {
     orphanOrders,
+    trackedOrders,
     isLoading: isLoadingOrders || isLoadingAlgo,
     exchangeOpenOrders,
     exchangeAlgoOrders,

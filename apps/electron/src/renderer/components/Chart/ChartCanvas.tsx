@@ -242,7 +242,7 @@ export const ChartCanvas = ({
     }
   );
 
-  const { orphanOrders: orphanOrdersRaw, exchangeOpenOrders, exchangeAlgoOrders } = useOrphanOrders(
+  const { orphanOrders: orphanOrdersRaw, trackedOrders: trackedOrdersRaw, exchangeOpenOrders, exchangeAlgoOrders } = useOrphanOrders(
     backendWalletId ?? '',
     backendExecutions ?? [],
     symbol,
@@ -319,6 +319,24 @@ export const ChartCanvas = ({
     [orphanOrdersRaw]
   );
 
+  const trackedOrderExecutions = useMemo((): BackendExecution[] =>
+    trackedOrdersRaw.map((o) => ({
+      id: o.id,
+      symbol: o.symbol,
+      side: o.side === 'BUY' ? 'LONG' as const : 'SHORT' as const,
+      entryPrice: o.price,
+      quantity: o.quantity,
+      stopLoss: null,
+      takeProfit: null,
+      status: 'pending' as const,
+      setupType: null,
+      marketType: 'FUTURES' as const,
+      openedAt: o.createdAt,
+      entryOrderType: o.type as BackendExecution['entryOrderType'],
+    })),
+    [trackedOrdersRaw]
+  );
+
   const allExecutions = useMemo((): BackendExecution[] => {
     const realIds = new Set(filteredBackendExecutions.map(e => e.id));
     const uniqueOptimistic = optimisticExecutions.filter(o => {
@@ -330,7 +348,7 @@ export const ChartCanvas = ({
       );
       return !matchesOrphan;
     });
-    const merged = [...filteredBackendExecutions, ...uniqueOptimistic, ...orphanOrderExecutions];
+    const merged = [...filteredBackendExecutions, ...uniqueOptimistic, ...orphanOrderExecutions, ...trackedOrderExecutions];
     closingSnapshotsRef.current.forEach((snapshot, id) => {
       if (!realIds.has(id)) merged.push(snapshot);
     });
@@ -348,7 +366,7 @@ export const ChartCanvas = ({
         if (!ov) return e;
         return { ...e, ...ov.patches };
       });
-  }, [filteredBackendExecutions, optimisticExecutions, symbol, orphanOrderExecutions, overrideVersion, closingVersion]);
+  }, [filteredBackendExecutions, optimisticExecutions, symbol, orphanOrderExecutions, trackedOrderExecutions, overrideVersion, closingVersion]);
 
   useEffect(() => {
     const overrides = optimisticOverridesRef.current;
@@ -361,7 +379,7 @@ export const ChartCanvas = ({
         changed = true;
         continue;
       }
-      const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions];
+      const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
       const serverExec = allReal.find(e => e.id === id);
       if (!serverExec) continue;
       const patchKeys = Object.keys(ov.patches) as (keyof OptimisticOverride['patches'])[];
@@ -377,11 +395,11 @@ export const ChartCanvas = ({
       }
     }
     if (changed) setOverrideVersion(v => v + 1);
-  }, [filteredBackendExecutions, orphanOrderExecutions]);
+  }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions]);
 
   useEffect(() => {
     if (optimisticExecutions.length === 0) return;
-    const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions];
+    const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
     const now = Date.now();
     const remaining = optimisticExecutions.filter(opt => {
       const openedMs = opt.openedAt instanceof Date ? opt.openedAt.getTime() : opt.openedAt ? new Date(opt.openedAt).getTime() : now;
@@ -396,7 +414,7 @@ export const ChartCanvas = ({
       return true;
     });
     if (remaining.length !== optimisticExecutions.length) setOptimisticExecutions(remaining);
-  }, [filteredBackendExecutions, orphanOrderExecutions, optimisticExecutions]);
+  }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions, optimisticExecutions]);
 
   const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
 
@@ -431,23 +449,23 @@ export const ChartCanvas = ({
     );
     const optimisticId = `opt-${Date.now()}`;
 
-    if (!hasOpenShort) {
-      setOptimisticExecutions(prev => [...prev, {
-        id: optimisticId,
-        symbol,
-        side: 'LONG',
-        entryPrice: roundTradingPrice(price),
-        quantity: getOrderQuantity(price),
-        stopLoss: null,
-        takeProfit: null,
-        status: 'pending',
-        setupType: null,
-        marketType: marketType || 'FUTURES',
-        openedAt: new Date(),
-        triggerKlineOpenTime: null,
-        fibonacciProjection: null,
-      }]);
-    }
+    setOptimisticExecutions(prev => [...prev, {
+      id: optimisticId,
+      symbol,
+      side: 'LONG',
+      entryPrice: roundTradingPrice(price),
+      quantity: getOrderQuantity(price),
+      stopLoss: null,
+      takeProfit: null,
+      status: 'pending',
+      setupType: null,
+      marketType: marketType || 'FUTURES',
+      openedAt: new Date(),
+      triggerKlineOpenTime: null,
+      fibonacciProjection: null,
+    }]);
+    orderLoadingMapRef.current.set(optimisticId, Date.now());
+    manager?.markDirty('overlays');
 
     try {
       await addBackendOrder({
@@ -461,10 +479,14 @@ export const ChartCanvas = ({
         reduceOnly: hasOpenShort,
       });
       utils.autoTrading.getActiveExecutions.invalidate();
+      orderFlashMapRef.current.set(optimisticId, performance.now());
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
-      if (!hasOpenShort) setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+      setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+    } finally {
+      orderLoadingMapRef.current.delete(optimisticId);
+      manager?.markDirty('overlays');
     }
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions]);
 
@@ -482,23 +504,23 @@ export const ChartCanvas = ({
     );
     const optimisticId = `opt-${Date.now()}`;
 
-    if (!hasOpenLong) {
-      setOptimisticExecutions(prev => [...prev, {
-        id: optimisticId,
-        symbol,
-        side: 'SHORT',
-        entryPrice: roundTradingPrice(price),
-        quantity: getOrderQuantity(price),
-        stopLoss: null,
-        takeProfit: null,
-        status: 'pending',
-        setupType: null,
-        marketType: marketType || 'FUTURES',
-        openedAt: new Date(),
-        triggerKlineOpenTime: null,
-        fibonacciProjection: null,
-      }]);
-    }
+    setOptimisticExecutions(prev => [...prev, {
+      id: optimisticId,
+      symbol,
+      side: 'SHORT',
+      entryPrice: roundTradingPrice(price),
+      quantity: getOrderQuantity(price),
+      stopLoss: null,
+      takeProfit: null,
+      status: 'pending',
+      setupType: null,
+      marketType: marketType || 'FUTURES',
+      openedAt: new Date(),
+      triggerKlineOpenTime: null,
+      fibonacciProjection: null,
+    }]);
+    orderLoadingMapRef.current.set(optimisticId, Date.now());
+    manager?.markDirty('overlays');
 
     try {
       await addBackendOrder({
@@ -512,10 +534,14 @@ export const ChartCanvas = ({
         reduceOnly: hasOpenLong,
       });
       utils.autoTrading.getActiveExecutions.invalidate();
+      orderFlashMapRef.current.set(optimisticId, performance.now());
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
-      if (!hasOpenLong) setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+      setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+    } finally {
+      orderLoadingMapRef.current.delete(optimisticId);
+      manager?.markDirty('overlays');
     }
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions]);
 
@@ -723,6 +749,7 @@ export const ChartCanvas = ({
     onSuccess: () => {
       utils.futuresTrading.getOpenOrders.invalidate();
       utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
     },
   });
@@ -754,6 +781,10 @@ export const ChartCanvas = ({
       orderLoadingMapRef.current.set(orderId, Date.now());
       manager?.markDirty('overlays');
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
+        .then(() => {
+          orderFlashMapRef.current.set(orderId, performance.now());
+          manager?.markDirty('overlays');
+        })
         .catch((error) => {
           clearOptimistic(orderId, cancelPatches);
           toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
@@ -771,7 +802,10 @@ export const ChartCanvas = ({
       applyOptimistic(exec.id, cancelPatches, { status: exec.status });
       orderLoadingMapRef.current.set(exec.id, Date.now());
       manager?.markDirty('overlays');
-      cancelExecution(exec.id).catch((error: unknown) => {
+      cancelExecution(exec.id).then(() => {
+        orderFlashMapRef.current.set(exec.id, performance.now());
+        manager?.markDirty('overlays');
+      }).catch((error: unknown) => {
         clearOptimistic(exec.id, cancelPatches);
         toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
       }).finally(() => {
@@ -831,6 +865,8 @@ export const ChartCanvas = ({
         const lastKline = klines[klines.length - 1];
         const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
         await closeExecution(exec.id, exitPrice);
+        orderFlashMapRef.current.set(exec.id, performance.now());
+        manager.markDirty('overlays');
       } catch (error) {
         toastError(t('trading.order.closeFailed'), error instanceof Error ? error.message : undefined);
       } finally {
@@ -1029,6 +1065,10 @@ export const ChartCanvas = ({
           ...(isAlgo ? { stopPrice: newPrice } : { price: newPrice }),
           reduceOnly: true,
         }))
+        .then(() => {
+          orderFlashMapRef.current.set(optimisticId, performance.now());
+          manager?.markDirty('overlays');
+        })
         .catch((error) => {
           clearOptimistic(id, cancelPatches);
           setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
@@ -1143,21 +1183,49 @@ export const ChartCanvas = ({
     if (!backendWalletId || !symbol) return;
 
     const marketPrice = latestKlinesPriceRef.current;
+    const gridSide = side === 'BUY' ? 'LONG' as const : 'SHORT' as const;
+    const optimisticIds: string[] = [];
 
+    for (let i = 0; i < prices.length; i++) {
+      const price = prices[i]!;
+      const quantity = getOrderQuantity(price);
+      if (!quantity || parseFloat(quantity) <= 0) continue;
+
+      const optId = `opt-grid-${Date.now()}-${i}`;
+      optimisticIds.push(optId);
+      setOptimisticExecutions(prev => [...prev, {
+        id: optId,
+        symbol,
+        side: gridSide,
+        entryPrice: roundTradingPrice(price),
+        quantity,
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending',
+        setupType: null,
+        marketType: marketType || 'FUTURES',
+        openedAt: new Date(),
+        triggerKlineOpenTime: null,
+        fibonacciProjection: null,
+      }]);
+      orderLoadingMapRef.current.set(optId, Date.now());
+    }
+    manager?.markDirty('overlays');
+
+    let idx = 0;
     for (const price of prices) {
       const quantity = getOrderQuantity(price);
       if (!quantity || parseFloat(quantity) <= 0) continue;
 
+      const optId = optimisticIds[idx]!;
+      idx++;
+
       const isBuy = side === 'BUY';
       const isAboveMarket = marketPrice > 0 && price > marketPrice;
       const isBelowMarket = marketPrice > 0 && price < marketPrice;
-
-      let type: 'LIMIT' | 'STOP_MARKET';
-      if (isBuy) {
-        type = isAboveMarket ? 'STOP_MARKET' : 'LIMIT';
-      } else {
-        type = isBelowMarket ? 'STOP_MARKET' : 'LIMIT';
-      }
+      const type: 'LIMIT' | 'STOP_MARKET' = isBuy
+        ? (isAboveMarket ? 'STOP_MARKET' : 'LIMIT')
+        : (isBelowMarket ? 'STOP_MARKET' : 'LIMIT');
 
       try {
         await addBackendOrder({
@@ -1170,13 +1238,21 @@ export const ChartCanvas = ({
           stopPrice: type === 'STOP_MARKET' ? roundTradingPrice(price) : undefined,
           quantity,
         });
-      } catch {
+        orderFlashMapRef.current.set(optId, performance.now());
+        orderLoadingMapRef.current.delete(optId);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        toastError(t('trading.order.failed'), msg);
+        const remainingIds = optimisticIds.slice(idx - 1);
+        setOptimisticExecutions(prev => prev.filter(e => !remainingIds.includes(e.id)));
+        remainingIds.forEach(id => orderLoadingMapRef.current.delete(id));
         break;
       }
     }
+    manager?.markDirty('overlays');
 
     utils.autoTrading.getActiveExecutions.invalidate();
-  }, [backendWalletId, symbol, marketType, getOrderQuantity, addBackendOrder, utils]);
+  }, [backendWalletId, symbol, marketType, getOrderQuantity, addBackendOrder, utils, manager, toastError, t]);
 
   const gridInteraction = useGridInteraction({
     manager,

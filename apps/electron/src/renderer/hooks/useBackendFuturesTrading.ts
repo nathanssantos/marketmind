@@ -58,6 +58,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const createOrderMutation = trpc.futuresTrading.createOrder.useMutation({
     onSuccess: () => {
       utils.futuresTrading.getOpenOrders.invalidate();
+      utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.futuresTrading.getPositions.invalidate();
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
@@ -69,6 +70,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const cancelOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
     onSuccess: () => {
       utils.futuresTrading.getOpenOrders.invalidate();
+      utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
     },

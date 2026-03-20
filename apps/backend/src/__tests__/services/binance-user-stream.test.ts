@@ -377,7 +377,7 @@ describe('BinanceUserStreamService', () => {
         walletId: 'wallet-1',
         symbol: 'BTCUSDT',
         status: 'pending',
-        entryOrderId: 12345,
+        entryOrderId: '12345',
         side: 'LONG',
         entryPrice: '50000',
       };
@@ -427,8 +427,8 @@ describe('BinanceUserStreamService', () => {
         walletId: 'wallet-1',
         symbol: 'BTCUSDT',
         status: 'open',
-        stopLossOrderId: 12345,
-        takeProfitOrderId: 12346,
+        stopLossOrderId: '12345',
+        takeProfitOrderId: '12346',
         side: 'LONG',
         entryPrice: '50000',
       };

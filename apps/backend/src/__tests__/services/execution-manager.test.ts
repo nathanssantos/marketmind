@@ -259,7 +259,7 @@ describe('Execution Manager - Database Operations', () => {
       const execution = await getExecutionById(executionId);
       expect(execution?.stopLossAlgoId).toBeNull();
       expect(execution?.stopLoss).toBeNull();
-      expect(execution?.takeProfitAlgoId).toBe(67890);
+      expect(execution?.takeProfitAlgoId).toBe('67890');
       expect(parseFloat(execution?.takeProfit || '0')).toBe(55000);
     });
 
@@ -269,7 +269,7 @@ describe('Execution Manager - Database Operations', () => {
       await clearProtectionOrderIds(executionId, 'takeProfit');
 
       const execution = await getExecutionById(executionId);
-      expect(execution?.stopLossAlgoId).toBe(12345);
+      expect(execution?.stopLossAlgoId).toBe('12345');
       expect(parseFloat(execution?.stopLoss || '0')).toBe(48000);
       expect(execution?.takeProfitAlgoId).toBeNull();
       expect(execution?.takeProfit).toBeNull();

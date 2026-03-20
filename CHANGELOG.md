@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.72.0] - 2026-03-20
+
+### Added
+- **useKlineLiveStream hook**: extracted kline live stream logic from App.tsx and ChartWindow.tsx into a reusable hook, eliminating ~300 lines of duplicated code
+- **Instant order feedback**: all order operations now follow a consistent loading → flash → error toast pattern (entry creation, cancel, close, entry drag, grid orders)
+- **Grid orders optimistic UI**: grid orders now appear instantly with loading spinners, flash on confirmation, and clean up on error
+
+### Changed
+- **Kline interval constants unified**: replaced duplicated `INTERVAL_MS` maps across `klineQueries.ts`, `kline-fetcher.ts` with single `INTERVAL_MS` from `@marketmind/types`
+- **WebSocket reconnect grace period**: reduced from 60s to 10s for faster recovery
+- **Kline mapper cleanup**: removed unused legacy aliases (`convertDbKlineToKline`, `convertDbKlinesToKlines`, `convertDbKlinesReversed`)
+- **Orphan order detection**: simplified hook to use backend executions directly with proper null-safety
+- **Backend test mocks updated**: aligned test mocks with refactored kline mapper and trailing stop exports
+
+### Fixed
+- **Reduce order optimistic UI**: LONG entries against SHORT positions (and vice versa) now show instant optimistic feedback instead of being silently skipped
+- **Exchange order cancel missing flash**: cancel operations now show confirmation flash animation
+- **Position close missing flash**: close operations now show brief confirmation flash before removal
+- **Exchange entry drag missing flash**: drag-to-move on exchange orders now shows flash at new price
+- **Grid order error cleanup**: when a grid order fails mid-batch, all remaining unprocessed optimistic entries are properly cleaned up
+
 ## [0.71.0] - 2026-03-19
 
 ### Added

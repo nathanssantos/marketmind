@@ -62,7 +62,7 @@ import { logger } from '../../services/logger';
 
 const MOCK_ALGO_ID = '12345';
 const MOCK_ORDER_ID = '67890';
-const NEW_ALGO_ID = 99999;
+const NEW_ALGO_ID = '99999';
 const TRIGGER_PRICE = 50000;
 const QUANTITY = 0.1;
 
@@ -277,9 +277,9 @@ describe('protection-orders', () => {
 
       expect(mockGetOpenAlgoOrders).toHaveBeenCalledWith('BTCUSDT');
       expect(mockCancelAlgoOrder).toHaveBeenCalledTimes(2);
-      expect(mockCancelAlgoOrder).toHaveBeenCalledWith(111);
-      expect(mockCancelAlgoOrder).toHaveBeenCalledWith(333);
-      expect(mockCancelAlgoOrder).not.toHaveBeenCalledWith(222);
+      expect(mockCancelAlgoOrder).toHaveBeenCalledWith('111');
+      expect(mockCancelAlgoOrder).toHaveBeenCalledWith('333');
+      expect(mockCancelAlgoOrder).not.toHaveBeenCalledWith('222');
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({ symbol: 'BTCUSDT', cancelled: 2, total: 3 }),
         expect.stringContaining('Cancelled reduceOnly algo orders'),
@@ -523,8 +523,8 @@ describe('protection-orders', () => {
         takeProfitOrderId: null,
       });
 
-      expect(mockCancelAlgoOrder).toHaveBeenCalledWith(111);
-      expect(mockCancelAlgoOrder).toHaveBeenCalledWith(222);
+      expect(mockCancelAlgoOrder).toHaveBeenCalledWith('111');
+      expect(mockCancelAlgoOrder).toHaveBeenCalledWith('222');
     });
   });
 });

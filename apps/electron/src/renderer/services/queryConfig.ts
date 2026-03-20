@@ -47,7 +47,7 @@ export const QUERY_CONFIGS: Record<QueryConfigKey, QueryConfigOptions> = {
   klines: {
     staleTime: QUERY_STALE_TIMES.SHORT,
     gcTime: QUERY_GC_TIMES.MEDIUM,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchInterval: false,
   },
 

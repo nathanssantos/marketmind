@@ -1,6 +1,7 @@
-import type { Interval, Kline } from '@marketmind/types';
+import type { Interval, Kline, TimeInterval } from '@marketmind/types';
+import { INTERVAL_MS } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
-import { ABSOLUTE_MINIMUM_KLINES, TIME_MS, UNIT_MS } from '../../constants';
+import { ABSOLUTE_MINIMUM_KLINES, TIME_MS } from '../../constants';
 import { db } from '../../db';
 import { klines as klinesTable } from '../../db/schema';
 import { mapDbKlinesReversed } from '../../utils/kline-mapper';
@@ -18,13 +19,8 @@ const hasLocalIntegrityIssues = (klines: Kline[], intervalMs: number): boolean =
   return false;
 };
 
-export const getIntervalMs = (interval: string): number => {
-  const match = interval.match(/^(\d+)([mhdw])$/);
-  if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
-  const unitMs = UNIT_MS[match[2]];
-  if (!unitMs) return 4 * TIME_MS.HOUR;
-  return parseInt(match[1]) * unitMs;
-};
+export const getIntervalMs = (interval: string): number =>
+  INTERVAL_MS[interval as TimeInterval] ?? 4 * TIME_MS.HOUR;
 
 export const fetchKlinesFromDbWithBackfill = async (
   symbol: string,

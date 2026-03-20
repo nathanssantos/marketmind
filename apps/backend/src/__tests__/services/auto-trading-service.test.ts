@@ -736,7 +736,7 @@ describe('AutoTradingService', () => {
       };
 
       const result = await service.executeBinanceOrder(wallet as any, orderParams, 'FUTURES');
-      expect(result.orderId).toBe(100);
+      expect(result.orderId).toBe('100');
       expect(mockFuturesSubmitOrder).toHaveBeenCalled();
     });
 
@@ -799,7 +799,7 @@ describe('AutoTradingService', () => {
       };
 
       const result = await service.executeBinanceOrder(wallet as any, orderParams, 'SPOT');
-      expect(result.orderId).toBe(200);
+      expect(result.orderId).toBe('200');
     });
 
     it('should not include price for MARKET orders', async () => {
@@ -911,7 +911,7 @@ describe('AutoTradingService', () => {
 
       const result = await service.createTakeProfitOrder(wallet as any, 'BTCUSDT', 0.01, 55000, 'LONG', 'SPOT');
       expect(result.isAlgoOrder).toBe(false);
-      expect(result).toHaveProperty('orderId', 400);
+      expect(result).toHaveProperty('orderId', '400');
 
       const orderParams = executeSpy.mock.calls[0]![1];
       expect(orderParams.type).toBe('LIMIT');
@@ -938,7 +938,7 @@ describe('AutoTradingService', () => {
 
       const result = await service.closePosition(wallet as any, 'BTCUSDT', 0.01, 'SELL', 'FUTURES');
       expect(result).toBeDefined();
-      expect(result!.orderId).toBe(500);
+      expect(result!.orderId).toBe('500');
       expect(mockFuturesSubmitOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'MARKET',
@@ -952,7 +952,7 @@ describe('AutoTradingService', () => {
 
       const result = await service.closePosition(wallet as any, 'BTCUSDT', 0.01, 'SELL', 'SPOT');
       expect(result).toBeDefined();
-      expect(result!.orderId).toBe(200);
+      expect(result!.orderId).toBe('200');
     });
 
     it('should return null on error', async () => {

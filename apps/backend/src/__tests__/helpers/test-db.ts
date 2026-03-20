@@ -333,6 +333,7 @@ CREATE TABLE IF NOT EXISTS auto_trading_config (
   session_scan_enabled BOOLEAN DEFAULT false NOT NULL,
   session_scan_markets TEXT DEFAULT '[]' NOT NULL,
   auto_cancel_orphans BOOLEAN DEFAULT false NOT NULL,
+  trailing_stop_indicator_interval VARCHAR(10) DEFAULT '30m' NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

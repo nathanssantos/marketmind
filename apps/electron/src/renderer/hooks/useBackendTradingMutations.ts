@@ -10,6 +10,7 @@ export const useBackendTradingMutations = () => {
       utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
+      utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.wallet.list.invalidate();
     },
   });
@@ -18,6 +19,7 @@ export const useBackendTradingMutations = () => {
     onSuccess: () => {
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
+      utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.wallet.list.invalidate();
     },
   });

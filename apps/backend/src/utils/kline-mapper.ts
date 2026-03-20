@@ -25,6 +25,3 @@ export const mapDbKlinesToApi = (dbKlines: DbKline[]): Kline[] =>
 export const mapDbKlinesReversed = (dbKlines: DbKline[]): Kline[] =>
   [...dbKlines].reverse().map(mapDbKlineToApi);
 
-export const convertDbKlineToKline = mapDbKlineToApi;
-export const convertDbKlinesToKlines = mapDbKlinesToApi;
-export const convertDbKlinesReversed = mapDbKlinesReversed;

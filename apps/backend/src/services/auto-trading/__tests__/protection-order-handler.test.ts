@@ -120,8 +120,8 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
-      expect(result.stopLossOrderId).toBe(101);
-      expect(result.takeProfitOrderId).toBe(201);
+      expect(result.stopLossOrderId).toBe('101');
+      expect(result.takeProfitOrderId).toBe('201');
       expect(result.stopLossAlgoId).toBeNull();
       expect(result.takeProfitAlgoId).toBeNull();
       expect(result.stopLossIsAlgo).toBe(false);
@@ -143,8 +143,8 @@ describe('ProtectionOrderHandler', () => {
 
       expect(result.stopLossOrderId).toBeNull();
       expect(result.takeProfitOrderId).toBeNull();
-      expect(result.stopLossAlgoId).toBe(301);
-      expect(result.takeProfitAlgoId).toBe(401);
+      expect(result.stopLossAlgoId).toBe('301');
+      expect(result.takeProfitAlgoId).toBe('401');
       expect(result.stopLossIsAlgo).toBe(true);
       expect(result.takeProfitIsAlgo).toBe(true);
       expect(mockWsService.emitRiskAlert).not.toHaveBeenCalled();
@@ -161,9 +161,9 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
-      expect(result.stopLossOrderId).toBe(101);
+      expect(result.stopLossOrderId).toBe('101');
       expect(result.stopLossIsAlgo).toBe(false);
-      expect(result.takeProfitAlgoId).toBe(401);
+      expect(result.takeProfitAlgoId).toBe('401');
       expect(result.takeProfitIsAlgo).toBe(true);
       expect(mockWsService.emitRiskAlert).not.toHaveBeenCalled();
     });
@@ -181,7 +181,7 @@ describe('ProtectionOrderHandler', () => {
 
       expect(result.stopLossOrderId).toBeNull();
       expect(result.stopLossAlgoId).toBeNull();
-      expect(result.takeProfitOrderId).toBe(201);
+      expect(result.takeProfitOrderId).toBe('201');
       expect(mockWsService.emitRiskAlert).toHaveBeenCalledOnce();
       expect(mockWsService.emitRiskAlert).toHaveBeenCalledWith(
         'w1',
@@ -209,7 +209,7 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
-      expect(result.stopLossOrderId).toBe(101);
+      expect(result.stopLossOrderId).toBe('101');
       expect(result.takeProfitOrderId).toBeNull();
       expect(mockWsService.emitRiskAlert).toHaveBeenCalledOnce();
       expect(mockWsService.emitRiskAlert).toHaveBeenCalledWith(
@@ -278,7 +278,7 @@ describe('ProtectionOrderHandler', () => {
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
       expect(result.stopLossOrderId).toBeNull();
-      expect(result.stopLossAlgoId).toBe(301);
+      expect(result.stopLossAlgoId).toBe('301');
       expect(mockWsService.emitRiskAlert).not.toHaveBeenCalled();
     });
 
@@ -314,9 +314,9 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
-      expect(result.orderListId).toBe(500);
-      expect(result.stopLossOrderId).toBe(501);
-      expect(result.takeProfitOrderId).toBe(502);
+      expect(result.orderListId).toBe('500');
+      expect(result.stopLossOrderId).toBe('501');
+      expect(result.takeProfitOrderId).toBe('502');
       expect(result.stopLossAlgoId).toBeNull();
       expect(result.takeProfitAlgoId).toBeNull();
       expect(result.stopLossIsAlgo).toBe(false);
@@ -358,8 +358,8 @@ describe('ProtectionOrderHandler', () => {
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
       expect(result.orderListId).toBeNull();
-      expect(result.stopLossOrderId).toBe(701);
-      expect(result.takeProfitOrderId).toBe(801);
+      expect(result.stopLossOrderId).toBe('701');
+      expect(result.takeProfitOrderId).toBe('801');
       expect(mockWithRetrySafe).toHaveBeenCalledTimes(2);
     });
 
@@ -377,9 +377,9 @@ describe('ProtectionOrderHandler', () => {
       const result = await handler.placeProtectionOrders(watcher, setup, 52000, wallet, 0.1);
 
       expect(result.orderListId).toBeNull();
-      expect(result.stopLossAlgoId).toBe(901);
+      expect(result.stopLossAlgoId).toBe('901');
       expect(result.stopLossIsAlgo).toBe(true);
-      expect(result.takeProfitOrderId).toBe(1001);
+      expect(result.takeProfitOrderId).toBe('1001');
       expect(result.takeProfitIsAlgo).toBe(false);
     });
 
@@ -432,8 +432,8 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 52000, 0.5);
 
-      expect(result.stopLossOrderId).toBe(1100);
-      expect(result.takeProfitOrderId).toBe(1200);
+      expect(result.stopLossOrderId).toBe('1100');
+      expect(result.takeProfitOrderId).toBe('1200');
       expect(result.stopLossIsAlgo).toBe(false);
       expect(result.takeProfitIsAlgo).toBe(false);
       expect(result.stopLossAlgoId).toBeNull();
@@ -453,8 +453,8 @@ describe('ProtectionOrderHandler', () => {
 
       expect(result.stopLossOrderId).toBeNull();
       expect(result.takeProfitOrderId).toBeNull();
-      expect(result.stopLossAlgoId).toBe(1300);
-      expect(result.takeProfitAlgoId).toBe(1400);
+      expect(result.stopLossAlgoId).toBe('1300');
+      expect(result.takeProfitAlgoId).toBe('1400');
       expect(result.stopLossIsAlgo).toBe(true);
       expect(result.takeProfitIsAlgo).toBe(true);
     });
@@ -470,7 +470,7 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeFallbackProtectionOrders(wallet, watcher, setup, 52000, 0.5);
 
-      expect(result.stopLossOrderId).toBe(1500);
+      expect(result.stopLossOrderId).toBe('1500');
       expect(result.takeProfitOrderId).toBeNull();
       expect(result.takeProfitAlgoId).toBeNull();
     });
@@ -488,7 +488,7 @@ describe('ProtectionOrderHandler', () => {
 
       expect(result.stopLossOrderId).toBeNull();
       expect(result.stopLossAlgoId).toBeNull();
-      expect(result.takeProfitOrderId).toBe(1600);
+      expect(result.takeProfitOrderId).toBe('1600');
     });
 
     it('should handle both SL and TP failure', async () => {
@@ -551,7 +551,7 @@ describe('ProtectionOrderHandler', () => {
 
       const result = await handler.placeSingleStopLoss(wallet, watcher, setup, 0.3);
 
-      expect(result.stopLossOrderId).toBe(2001);
+      expect(result.stopLossOrderId).toBe('2001');
       expect(result.stopLossAlgoId).toBeNull();
       expect(result.stopLossIsAlgo).toBe(false);
     });
@@ -569,7 +569,7 @@ describe('ProtectionOrderHandler', () => {
       const result = await handler.placeSingleStopLoss(wallet, watcher, setup, 0.3);
 
       expect(result.stopLossOrderId).toBeNull();
-      expect(result.stopLossAlgoId).toBe(2002);
+      expect(result.stopLossAlgoId).toBe('2002');
       expect(result.stopLossIsAlgo).toBe(true);
     });
 

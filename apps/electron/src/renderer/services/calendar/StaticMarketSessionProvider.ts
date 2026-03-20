@@ -7,7 +7,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const timezoneOffsetCache = new Map<string, number>();
 
 const getTimezoneOffset = (timezone: string, date: Date): number => {
-  const cacheKey = `${timezone}-${date.getFullYear()}-${date.getMonth()}`;
+  const cacheKey = `${timezone}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   const cached = timezoneOffsetCache.get(cacheKey);
   if (cached !== undefined) return cached;
 

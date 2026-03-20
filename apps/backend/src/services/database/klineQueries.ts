@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { klines } from '../../db/schema';
 import type { Interval, MarketType } from '@marketmind/types';
+import { INTERVAL_MS } from '@marketmind/types';
 
 export type KlineRecord = typeof klines.$inferSelect;
 
@@ -25,24 +26,6 @@ export interface KlineRange {
   latest: Date;
   count: number;
 }
-
-const INTERVAL_MS: Record<string, number> = {
-  '1m': 60 * 1000,
-  '3m': 3 * 60 * 1000,
-  '5m': 5 * 60 * 1000,
-  '15m': 15 * 60 * 1000,
-  '30m': 30 * 60 * 1000,
-  '1h': 60 * 60 * 1000,
-  '2h': 2 * 60 * 60 * 1000,
-  '4h': 4 * 60 * 60 * 1000,
-  '6h': 6 * 60 * 60 * 1000,
-  '8h': 8 * 60 * 60 * 1000,
-  '12h': 12 * 60 * 60 * 1000,
-  '1d': 24 * 60 * 60 * 1000,
-  '3d': 3 * 24 * 60 * 60 * 1000,
-  '1w': 7 * 24 * 60 * 60 * 1000,
-  '1M': 30 * 24 * 60 * 60 * 1000,
-};
 
 export const klineQueries = {
   async findMany(params: KlineQueryParams): Promise<KlineRecord[]> {

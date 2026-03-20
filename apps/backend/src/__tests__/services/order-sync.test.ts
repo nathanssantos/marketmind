@@ -384,7 +384,7 @@ describe('OrderSyncService', () => {
       const result = await service.syncWallet(wallet);
 
       expect(result.orphanOrders).toHaveLength(1);
-      expect(result.orphanOrders[0]?.algoId).toBe(999);
+      expect(result.orphanOrders[0]?.algoId).toBe('999');
       expect(result.orphanOrders[0]?.symbol).toBe('ETHUSDT');
       expect(result.orphanOrders[0]?.hasPositionOnExchange).toBe(false);
     });
@@ -430,7 +430,7 @@ describe('OrderSyncService', () => {
 
       expect(result.mismatchedOrders).toHaveLength(1);
       expect(result.mismatchedOrders[0]?.field).toBe('stopLoss');
-      expect(result.mismatchedOrders[0]?.dbAlgoId).toBe(100);
+      expect(result.mismatchedOrders[0]?.dbAlgoId).toBe('100');
       expect(result.mismatchedOrders[0]?.exchangeAlgoId).toBeNull();
     });
 
@@ -447,7 +447,7 @@ describe('OrderSyncService', () => {
 
       expect(result.mismatchedOrders).toHaveLength(1);
       expect(result.mismatchedOrders[0]?.field).toBe('takeProfit');
-      expect(result.mismatchedOrders[0]?.dbAlgoId).toBe(200);
+      expect(result.mismatchedOrders[0]?.dbAlgoId).toBe('200');
     });
 
     it('should detect SL trigger price mismatch', async () => {
@@ -691,12 +691,12 @@ describe('OrderSyncService', () => {
       expect(mockSyncProtectionOrderIdFromExchange).toHaveBeenCalledWith(
         'exec-1',
         'stopLoss',
-        150,
+        '150',
         44500
       );
       expect(results[0]?.fixedOrders).toHaveLength(1);
       expect(results[0]?.fixedOrders[0]?.field).toBe('stopLoss');
-      expect(results[0]?.fixedOrders[0]?.newAlgoId).toBe(150);
+      expect(results[0]?.fixedOrders[0]?.newAlgoId).toBe('150');
     });
 
     it('should auto-fix TP by syncing from exchange when alternative TP exists', async () => {
@@ -721,7 +721,7 @@ describe('OrderSyncService', () => {
       expect(mockSyncProtectionOrderIdFromExchange).toHaveBeenCalledWith(
         'exec-1',
         'takeProfit',
-        250,
+        '250',
         56000
       );
       expect(results[0]?.fixedOrders).toHaveLength(1);
@@ -743,7 +743,7 @@ describe('OrderSyncService', () => {
 
       expect(mockClearProtectionOrderIds).toHaveBeenCalledWith('exec-1', 'stopLoss');
       expect(results[0]?.fixedOrders).toHaveLength(1);
-      expect(results[0]?.fixedOrders[0]?.newAlgoId).toBe(0);
+      expect(results[0]?.fixedOrders[0]?.newAlgoId).toBe('');
     });
 
     it('should clear stale TP order ID when no matching TP on exchange', async () => {
@@ -761,7 +761,7 @@ describe('OrderSyncService', () => {
 
       expect(mockClearProtectionOrderIds).toHaveBeenCalledWith('exec-1', 'takeProfit');
       expect(results[0]?.fixedOrders).toHaveLength(1);
-      expect(results[0]?.fixedOrders[0]?.newAlgoId).toBe(0);
+      expect(results[0]?.fixedOrders[0]?.newAlgoId).toBe('');
     });
 
     it('should auto-fix SL trigger price mismatch', async () => {
@@ -783,7 +783,7 @@ describe('OrderSyncService', () => {
       expect(mockSyncProtectionOrderIdFromExchange).toHaveBeenCalledWith(
         'exec-1',
         'stopLoss',
-        100,
+        '100',
         44000
       );
       expect(results[0]?.fixedOrders).toHaveLength(1);
@@ -812,7 +812,7 @@ describe('OrderSyncService', () => {
       expect(mockSyncProtectionOrderIdFromExchange).toHaveBeenCalledWith(
         'exec-1',
         'takeProfit',
-        200,
+        '200',
         56000
       );
       expect(results[0]?.fixedOrders).toHaveLength(1);

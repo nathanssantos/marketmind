@@ -1,9 +1,8 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
 import { CryptoIcon, ErrorMessage, IconButton, LoadingSpinner } from './components/ui';
-import type { Kline, MarketType, TimeInterval, ChartType } from '@marketmind/types';
+import type { MarketType, ChartType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
@@ -16,12 +15,12 @@ import type { MovingAverageConfig } from './components/Chart/useMovingAverageRen
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainLayout } from './components/Layout/MainLayout';
 import { UpdateNotification } from './components/Update/UpdateNotification';
-import { DEFAULT_MOVING_AVERAGES, DEFAULT_TIMEFRAME, INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from './constants/defaults';
+import { DEFAULT_MOVING_AVERAGES, DEFAULT_TIMEFRAME } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
-import { useKlineStream } from './hooks/useBackendKlines';
 import { trpc } from './utils/trpc';
 import { useKlinePagination } from './hooks/useKlinePagination';
+import { useKlineLiveStream } from './hooks/useKlineLiveStream';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
 import { useDebounce } from './hooks/useDebounce';
@@ -218,171 +217,14 @@ function AppContent(): ReactElement {
   const loading = isInitialLoading;
   const error = paginationError;
 
-  const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
-  const previousPriceRef = useRef<number | null>(null);
-  const pendingUpdateRef = useRef<{ kline: Kline; isFinal: boolean } | null>(null);
-  const rafIdRef = useRef<number | null>(null);
-  const lastRefetchRef = useRef<number>(0);
-  const lastUpdateRef = useRef<number>(0);
-  const isRefetchingRef = useRef(false);
-
-  const getIntervalMs = useCallback((tf: string): number => {
-    return INTERVAL_MS_MAP[tf as TimeInterval] || 60_000;
-  }, []);
-
-  useEffect(() => {
-    setLiveKlines([]);
-    previousPriceRef.current = null;
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    pendingUpdateRef.current = null;
-    lastRefetchRef.current = 0;
-  }, [symbol, timeframe, marketType]);
-
-  const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
-    if (isRefetchingRef.current) return;
-
-    const now = Date.now();
-    const timeSinceLastUpdate = now - lastUpdateRef.current;
-
-    if (!isFinal && timeSinceLastUpdate < MIN_UPDATE_INTERVAL_MS) {
-      pendingUpdateRef.current = { kline, isFinal };
-      return;
-    }
-
-    pendingUpdateRef.current = { kline, isFinal };
-
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-    }
-
-    rafIdRef.current = requestAnimationFrame(() => {
-      const update = pendingUpdateRef.current;
-      if (!update) return;
-
-      const { kline: latestKline, isFinal: finalFlag } = update;
-      const currentPrice = getKlineClose(latestKline);
-
-      previousPriceRef.current = currentPrice;
-      lastUpdateRef.current = Date.now();
-
-      setLiveKlines(prev => {
-        if (prev.length === 0) return [latestKline];
-
-        const lastKline = prev[prev.length - 1];
-        if (!lastKline) return [latestKline];
-
-        if (latestKline.openTime === lastKline.openTime) {
-          if (getKlineClose(latestKline) === getKlineClose(lastKline) &&
-            getKlineHigh(latestKline) === getKlineHigh(lastKline) &&
-            getKlineLow(latestKline) === getKlineLow(lastKline) &&
-            getKlineVolume(latestKline) === getKlineVolume(lastKline)) return prev;
-          return [...prev.slice(0, -1), latestKline];
-        }
-
-        if (latestKline.openTime > lastKline.openTime) {
-          previousPriceRef.current = null;
-          if (finalFlag) return [...prev, latestKline];
-          return [...prev, latestKline];
-        }
-
-        return prev;
-      });
-
-      rafIdRef.current = null;
-      pendingUpdateRef.current = null;
-    });
-  }, []);
-
-  const handleKlineStreamUpdate = useCallback((backendKline: any) => {
-    const kline: Kline = {
-      openTime: backendKline.openTime,
-      closeTime: backendKline.closeTime,
-      open: backendKline.open,
-      high: backendKline.high,
-      low: backendKline.low,
-      close: backendKline.close,
-      volume: backendKline.volume,
-      quoteVolume: backendKline.quoteVolume || '0',
-      trades: backendKline.trades || 0,
-      takerBuyBaseVolume: backendKline.takerBuyBaseVolume || '0',
-      takerBuyQuoteVolume: backendKline.takerBuyQuoteVolume || '0',
-    };
-    handleRealtimeUpdate(kline, backendKline.isClosed);
-  }, [handleRealtimeUpdate]);
-
-  useKlineStream(
+  const { displayKlines } = useKlineLiveStream({
     symbol,
-    timeframe as any,
-    handleKlineStreamUpdate,
-    !!marketData,
-    marketType
-  );
-
-  useEffect(() => {
-    return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!marketData?.klines || liveKlines.length === 0) return;
-
-    const lastBaseKline = marketData.klines[marketData.klines.length - 1];
-    const firstLiveKline = liveKlines[0];
-
-    if (!lastBaseKline || !firstLiveKline) return;
-
-    const intervalMs = getIntervalMs(timeframe);
-    const gap = firstLiveKline.openTime - lastBaseKline.openTime;
-    const gapCandles = Math.floor(gap / intervalMs);
-
-    if (gapCandles > 1) {
-      const now = Date.now();
-      const minRefetchInterval = 30000;
-
-      if (now - lastRefetchRef.current > minRefetchInterval) {
-        console.log(`[App] Detected gap of ${gapCandles} candles, refetching klines...`);
-        lastRefetchRef.current = now;
-        setLiveKlines([]);
-        refetchKlines();
-      }
-    }
-  }, [marketData?.klines, liveKlines, timeframe, getIntervalMs, refetchKlines]);
-
-
-  const displayKlines = useMemo(() => {
-    if (!marketData?.klines) return [];
-    if (liveKlines.length === 0) return marketData.klines;
-
-    const baseKlines = marketData.klines;
-    const lastBaseKline = baseKlines[baseKlines.length - 1];
-    const firstLiveKline = liveKlines[0];
-
-    if (!lastBaseKline || !firstLiveKline) {
-      return [...baseKlines, ...liveKlines];
-    }
-
-    if (firstLiveKline.openTime === lastBaseKline.openTime) {
-      return [...baseKlines.slice(0, -1), ...liveKlines];
-    }
-
-    if (firstLiveKline.openTime > lastBaseKline.openTime) {
-      const filteredLiveKlines = liveKlines.filter(k => k.openTime > lastBaseKline.openTime);
-      return [...baseKlines, ...filteredLiveKlines];
-    }
-
-    const overlapIndex = baseKlines.findIndex(k => k.openTime >= firstLiveKline.openTime);
-    if (overlapIndex > 0) {
-      return [...baseKlines.slice(0, overlapIndex), ...liveKlines];
-    }
-
-    return liveKlines;
-  }, [marketData?.klines, liveKlines]);
+    timeframe,
+    marketType,
+    baseKlines: marketData?.klines,
+    enabled: !!marketData,
+    refetchKlines,
+  });
 
   const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 

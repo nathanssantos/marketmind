@@ -324,7 +324,7 @@ describe('BinanceFuturesClient Service', () => {
         quantity: '0.1',
       });
 
-      expect(result.orderId).toBe(123);
+      expect(result.orderId).toBe('123');
       expect(result.symbol).toBe('BTCUSDT');
     });
 
@@ -367,7 +367,7 @@ describe('BinanceFuturesClient Service', () => {
 
       const client = createBinanceFuturesClientForPrices();
       await expect(cancelFuturesOrder(client, 'BTCUSDT', '123')).resolves.not.toThrow();
-      expect(mockMethods.cancelOrder).toHaveBeenCalledWith({ symbol: 'BTCUSDT', orderId: '123' });
+      expect(mockMethods.cancelOrder).toHaveBeenCalledWith({ symbol: 'BTCUSDT', orderId: 123 });
     });
   });
 
@@ -449,7 +449,7 @@ describe('BinanceFuturesClient Service', () => {
       const result = await getOpenOrders(client, 'BTCUSDT');
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.orderId).toBe(127);
+      expect(result[0]!.orderId).toBe('127');
     });
 
     it('should get all open orders when no symbol', async () => {

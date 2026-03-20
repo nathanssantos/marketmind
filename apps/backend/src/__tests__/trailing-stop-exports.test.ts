@@ -10,15 +10,19 @@ vi.mock('@marketmind/indicators', () => ({
   calculateSwingPoints: vi.fn(() => ({ swingPoints: [] })),
 }));
 
-vi.mock('../constants', () => ({
-  TRAILING_STOP: {
-    PEAK_PROFIT_FLOOR: 0.4,
-    PEAK_PROFIT_FLOOR_LONG: 0.4,
-    PEAK_PROFIT_FLOOR_SHORT: 0.3,
-    ATR_MULTIPLIER: 0.002,
-    MIN_STOP_CHANGE_ABSOLUTE: 0.005,
-  },
-}));
+vi.mock('../constants', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    TRAILING_STOP: {
+      PEAK_PROFIT_FLOOR: 0.4,
+      PEAK_PROFIT_FLOOR_LONG: 0.4,
+      PEAK_PROFIT_FLOOR_SHORT: 0.3,
+      ATR_MULTIPLIER: 0.002,
+      MIN_STOP_CHANGE_ABSOLUTE: 0.005,
+    },
+  };
+});
 
 vi.mock('../db', () => ({
   db: {

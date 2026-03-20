@@ -91,7 +91,7 @@ export const backfillHistoricalKlines = async (
   return totalInserted;
 };
 
-export const getIntervalMilliseconds = (interval: Interval): number => INTERVAL_MS[interval] || 60000;
+export const getIntervalMilliseconds = (interval: Interval): number => INTERVAL_MS[interval] ?? 60_000;
 
 export const calculateStartTime = (interval: Interval, periodsBack: number): Date => {
   const now = Date.now();

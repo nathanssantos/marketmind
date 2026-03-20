@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  convertDbKlineToKline,
-  convertDbKlinesToKlines,
-  convertDbKlinesReversed,
   mapDbKlineToApi,
   mapDbKlinesToApi,
   mapDbKlinesReversed,
@@ -165,17 +162,4 @@ describe('kline-mapper', () => {
     });
   });
 
-  describe('legacy aliases', () => {
-    it('convertDbKlineToKline should be alias for mapDbKlineToApi', () => {
-      expect(convertDbKlineToKline).toBe(mapDbKlineToApi);
-    });
-
-    it('convertDbKlinesToKlines should be alias for mapDbKlinesToApi', () => {
-      expect(convertDbKlinesToKlines).toBe(mapDbKlinesToApi);
-    });
-
-    it('convertDbKlinesReversed should be alias for mapDbKlinesReversed', () => {
-      expect(convertDbKlinesReversed).toBe(mapDbKlinesReversed);
-    });
-  });
 });

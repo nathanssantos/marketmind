@@ -15,12 +15,12 @@ import { KlineValidator, compareOHLC } from './kline-validator';
 
 class ReconnectionGuard {
   private isInGracePeriod = false;
-  private readonly GRACE_PERIOD_MS = 60 * 1000;
+  private readonly GRACE_PERIOD_MS = 10 * 1000;
 
   onReconnect(marketType: MarketType): void {
     this.isInGracePeriod = true;
 
-    logger.warn({ marketType }, 'WebSocket reconnected - entering grace period (60s)');
+    logger.warn({ marketType }, 'WebSocket reconnected - entering grace period (10s)');
 
     setTimeout(() => {
       this.isInGracePeriod = false;
