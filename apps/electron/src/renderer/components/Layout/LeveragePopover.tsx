@@ -1,4 +1,4 @@
-import { Box } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
 import { Button, Popover, TooltipWrapper } from '@renderer/components/ui';
 import { LeverageSelector } from '@renderer/components/LeverageSelector';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -20,6 +20,15 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
   const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
     { walletId: walletId!, symbol },
     { enabled: !!walletId && !!symbol },
+  );
+
+  const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
+    { walletId: walletId! },
+    { enabled: !!walletId },
+  );
+
+  const hasOpenPosition = (activeExecutions ?? []).some(
+    (e) => e.symbol === symbol && e.status === 'open'
   );
 
   const utils = trpc.useUtils();
@@ -73,8 +82,13 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
           <LeverageSelector
             value={leverage}
             onChange={handleLeverageChange}
-            disabled={!walletId || !symbol}
+            disabled={!walletId || !symbol || hasOpenPosition}
           />
+          {hasOpenPosition && (
+            <Text fontSize="2xs" color="orange.500" mt={2} textAlign="center">
+              {t('futures.leverageLockedPosition', 'Close position to change leverage')}
+            </Text>
+          )}
         </Box>
       </Popover>
     </Box>

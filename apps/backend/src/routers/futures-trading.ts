@@ -55,10 +55,23 @@ export const futuresTradingRouter = router({
 
       try {
         const client = createBinanceFuturesClient(wallet);
+
+        const positions = await guardBinanceCall(() => client.getPositions({ symbol: input.symbol }));
+        const hasOpenPosition = positions.some(
+          (p) => p.symbol === input.symbol && Math.abs(parseFloat(String(p.positionAmt))) > 0
+        );
+        if (hasOpenPosition) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: `Cannot change leverage while ${input.symbol} has an open position. Close the position first.`,
+          });
+        }
+
         const result = await setLeverage(client, input.symbol, input.leverage);
         binanceApiCache.invalidate('SYMBOL_LEVERAGE', input.walletId, input.symbol);
         return result;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
