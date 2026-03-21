@@ -57,17 +57,30 @@ export class ProtectionOrderHandler {
         takeProfit: effectiveTakeProfit,
       });
 
-      const slRetryResult = await withRetrySafe(
-        () => autoTradingService.createStopLossOrder(
-          wallet,
-          watcher.symbol,
-          actualQuantity,
-          setup.stopLoss!,
-          setup.direction,
-          watcher.marketType
+      const [slRetryResult, tpRetryResult] = await Promise.all([
+        withRetrySafe(
+          () => autoTradingService.createStopLossOrder(
+            wallet,
+            watcher.symbol,
+            actualQuantity,
+            setup.stopLoss!,
+            setup.direction,
+            watcher.marketType
+          ),
+          { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
         ),
-        { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
-      );
+        withRetrySafe(
+          () => autoTradingService.createTakeProfitOrder(
+            wallet,
+            watcher.symbol,
+            actualQuantity,
+            effectiveTakeProfit,
+            setup.direction,
+            watcher.marketType
+          ),
+          { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+        ),
+      ]);
 
       if (slRetryResult.success) {
         const slResult = slRetryResult.result;
@@ -88,18 +101,6 @@ export class ProtectionOrderHandler {
           error: serializeError(slRetryResult.lastError),
         });
       }
-
-      const tpRetryResult = await withRetrySafe(
-        () => autoTradingService.createTakeProfitOrder(
-          wallet,
-          watcher.symbol,
-          actualQuantity,
-          effectiveTakeProfit,
-          setup.direction,
-          watcher.marketType
-        ),
-        { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
-      );
 
       if (tpRetryResult.success) {
         const tpResult = tpRetryResult.result;
@@ -216,17 +217,30 @@ export class ProtectionOrderHandler {
     let stopLossIsAlgo = false;
     let takeProfitIsAlgo = false;
 
-    const slFallbackResult = await withRetrySafe(
-      () => autoTradingService.createStopLossOrder(
-        wallet,
-        watcher.symbol,
-        actualQuantity,
-        setup.stopLoss!,
-        setup.direction,
-        watcher.marketType
+    const [slFallbackResult, tpFallbackResult] = await Promise.all([
+      withRetrySafe(
+        () => autoTradingService.createStopLossOrder(
+          wallet,
+          watcher.symbol,
+          actualQuantity,
+          setup.stopLoss!,
+          setup.direction,
+          watcher.marketType
+        ),
+        { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
       ),
-      { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
-    );
+      withRetrySafe(
+        () => autoTradingService.createTakeProfitOrder(
+          wallet,
+          watcher.symbol,
+          actualQuantity,
+          effectiveTakeProfit,
+          setup.direction,
+          watcher.marketType
+        ),
+        { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
+      ),
+    ]);
 
     if (slFallbackResult.success) {
       const slResult = slFallbackResult.result;
@@ -242,18 +256,6 @@ export class ProtectionOrderHandler {
         error: serializeError(slFallbackResult.lastError),
       });
     }
-
-    const tpFallbackResult = await withRetrySafe(
-      () => autoTradingService.createTakeProfitOrder(
-        wallet,
-        watcher.symbol,
-        actualQuantity,
-        effectiveTakeProfit,
-        setup.direction,
-        watcher.marketType
-      ),
-      { maxRetries: PROTECTION_ORDER_RETRY.MAX_ATTEMPTS, initialDelayMs: PROTECTION_ORDER_RETRY.INITIAL_DELAY_MS }
-    );
 
     if (tpFallbackResult.success) {
       const tpResult = tpFallbackResult.result;

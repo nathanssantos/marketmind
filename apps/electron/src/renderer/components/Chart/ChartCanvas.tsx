@@ -34,6 +34,7 @@ import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualiza
 import { trpc } from '@renderer/utils/trpc';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { CHART_CONFIG, ORDER_LINE_COLORS } from '@shared/constants';
+import { QUERY_CONFIG } from '@shared/constants/queryConfig';
 import { getKlineClose, getOrderPrice, isOrderLong, isOrderPending, roundTradingPrice, roundTradingQty } from '@shared/utils';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -232,14 +233,15 @@ export const ChartCanvas = ({
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
 
-  const tradingPolling = usePollingInterval(10_000);
+  const executionPolling = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
+  const configPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL);
 
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId: backendWalletId ?? '' },
     {
       enabled: !!backendWalletId && !!symbol,
-      refetchInterval: tradingPolling,
-      staleTime: 1000,
+      refetchInterval: executionPolling,
+      staleTime: QUERY_CONFIG.STALE_TIME.FAST,
     }
   );
 
@@ -251,12 +253,12 @@ export const ChartCanvas = ({
 
   const { data: symbolTrailingConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
-    { enabled: !!backendWalletId && !!symbol, refetchInterval: tradingPolling, staleTime: 1000 }
+    { enabled: !!backendWalletId && !!symbol, refetchInterval: configPolling, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
   const { data: walletAutoTradingConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId: backendWalletId ?? '' },
-    { enabled: !!backendWalletId, refetchInterval: tradingPolling, staleTime: 1000 }
+    { enabled: !!backendWalletId, refetchInterval: configPolling, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
   const trailingStopLineConfig = useMemo((): TrailingStopLineConfig | null => {
@@ -1549,28 +1551,31 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     if (!manager) return;
-    const interval = setInterval(() => manager.markDirty('overlays'), 1000);
-    return () => clearInterval(interval);
-  }, [manager]);
-
-  useEffect(() => {
-    if (!manager) return;
     let rafId = 0;
+    let isAnimating = false;
     const animationLoop = () => {
       const hasLoading = orderLoadingMapRef.current.size > 0;
       const hasFlash = orderFlashMapRef.current.size > 0 || useOrderFlashStore.getState().flashes.size > 0;
       if (hasLoading || hasFlash) {
         manager.markDirty('overlays');
         rafId = requestAnimationFrame(animationLoop);
+      } else {
+        isAnimating = false;
       }
     };
+    const startAnimation = () => {
+      if (isAnimating) return;
+      isAnimating = true;
+      rafId = requestAnimationFrame(animationLoop);
+    };
+    const unsubFlash = useOrderFlashStore.subscribe((state) => {
+      if (state.flashes.size > 0) startAnimation();
+    });
     const checkInterval = setInterval(() => {
-      if (orderLoadingMapRef.current.size > 0 || orderFlashMapRef.current.size > 0 || useOrderFlashStore.getState().flashes.size > 0) {
-        cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(animationLoop);
-      }
-    }, 100);
+      if (orderLoadingMapRef.current.size > 0 || orderFlashMapRef.current.size > 0) startAnimation();
+    }, 500);
     return () => {
+      unsubFlash();
       clearInterval(checkInterval);
       cancelAnimationFrame(rafId);
     };

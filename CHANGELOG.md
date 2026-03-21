@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.73.0] - 2026-03-21
+
+### Added
+- **Opening Range Breakout (ORB) renderer**: new chart overlay that visualizes the opening range of each trading session with breakout levels and tests (276 test cases)
+- **ORB toggle in chart tools toolbar**: users can now enable/disable ORB visualization from the chart tools menu
+
+### Changed
+- **QuickTradeToolbar overhaul**: simplified size presets (0.5, 1, 5, 10, 50, 100), added menu-based actions, cleaner layout
+- **TradingSidebar**: now receives symbol, marketType, and quick trade mode props for better integration with QuickTradeActions
+- **Layout improvements**: updated MainLayout, ChartWindow, and Toolbar for better component composition
+
+### Performance
+- **Parallelize SL+TP protection orders**: stop loss and take profit orders are now placed simultaneously via `Promise.all()`, saving 200-400ms per trade execution
+- **Reduce tRPC polling overhead**: chart trading queries reduced from 18 req/min to ~4 req/min per chart (78% reduction) by using standardized `QUERY_CONFIG` intervals
+- **Eliminate unnecessary overlay redraws**: removed 1-second `setInterval` that forced overlay redraws even with no data changes (60 wasted redraws/min eliminated)
+- **Optimize order animation RAF loop**: replaced 100ms polling with event-driven approach — RAF loop only runs during active loading/flash animations
+
+### Removed
+- **Daily PnL visibility toggle**: removed eye icon button and show/hide logic from Portfolio summary (PnL is now always visible)
+
 ## [0.72.0] - 2026-03-20
 
 ### Added

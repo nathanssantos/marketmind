@@ -15,7 +15,7 @@ import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from
 import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
-import { LuBot, LuChevronDown, LuChevronUp, LuEye, LuEyeOff, LuX } from 'react-icons/lu';
+import { LuBot, LuChevronDown, LuChevronUp, LuX } from 'react-icons/lu';
 import { useOrphanOrders, type OrphanOrder } from '@renderer/hooks/useOrphanOrders';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useToast } from '@renderer/hooks/useToast';
@@ -55,8 +55,6 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
   const globalActions = useGlobalActionsOptional();
   const [summaryExpanded, setSummaryExpanded] = useUIPref('portfolioSummaryExpanded', true);
   const toggleSummary = useCallback(() => setSummaryExpanded(!summaryExpanded), [summaryExpanded, setSummaryExpanded]);
-  const [dailyPnlVisible, setDailyPnlVisible] = useUIPref('portfolioDailyPnlVisible', true);
-  const toggleDailyPnl = useCallback(() => setDailyPnlVisible(!dailyPnlVisible), [dailyPnlVisible, setDailyPnlVisible]);
 
   const { activeWallet: rawActiveWallet, isIB, wallets: backendWallets } = useActiveWallet();
   const activeWalletId = rawActiveWallet?.id;
@@ -230,27 +228,12 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
               <Text color="fg.muted" fontWeight="medium">{t('trading.portfolio.dailyPnl')}</Text>
               <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
             </Stack>
-            <Flex align="center" gap={2}>
-              {dailyPnlVisible ? (
-                <Stack gap={0} align="flex-end">
-                  <Text fontWeight="medium" fontSize="sm" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'green.500' : 'red.500'}>
-                    {todayPnl ? `${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnlPercent.toFixed(2)}%)` : '$0.00'}
-                  </Text>
-                  <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
-                </Stack>
-              ) : (
-                <Text color="fg.muted">****</Text>
-              )}
-              <IconButton
-                aria-label="Toggle daily PnL"
-                size="2xs"
-                variant="ghost"
-                colorPalette="gray"
-                onClick={toggleDailyPnl}
-              >
-                {dailyPnlVisible ? <LuEye size={12} /> : <LuEyeOff size={12} />}
-              </IconButton>
-            </Flex>
+            <Stack gap={0} align="flex-end">
+              <Text fontWeight="medium" fontSize="sm" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'green.500' : 'red.500'}>
+                {todayPnl ? `${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnlPercent.toFixed(2)}%)` : '$0.00'}
+              </Text>
+              <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
+            </Stack>
           </Flex>
 
           {positions.length === 0 && orphanOrders.length === 0 ? (
