@@ -640,6 +640,7 @@
       "tooltip": "Info-bulle",
       "activityIndicator": "Indicateur d'Activité",
       "marketEvents": "Événements du Marché",
+      "openingRange": "Opening Range",
       "autoPatterns": "Détection Automatique de Motifs",
       "detectPatterns": "Détecter les Motifs Maintenant",
       "setupDetection": "Détection Algorithmique de Setups",
@@ -664,7 +665,9 @@
       "min": "MIN",
       "sizePercent": "Taille %",
       "noPriceError": "Aucun prix actuel disponible",
-      "invalidQuantityError": "Quantité invalide"
+      "invalidQuantityError": "Quantité invalide",
+      "moveToSidebar": "Déplacer vers la Sidebar",
+      "moveToChart": "Déplacer vers le Graphique"
     },
     "gridOrders": {
       "title": "Ordres en Grille",

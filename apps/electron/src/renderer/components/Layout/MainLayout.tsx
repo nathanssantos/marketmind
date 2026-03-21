@@ -16,7 +16,7 @@ import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
 import { AutoTradingSidebar } from '../AutoTrading/AutoTradingSidebar';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
-import { QuickTradeToolbar } from './QuickTradeToolbar';
+import { QuickTradeToolbar, type QuickTradeMode } from './QuickTradeToolbar';
 import { Toolbar } from './Toolbar';
 
 interface MainLayoutProps {
@@ -70,6 +70,7 @@ export const MainLayout = ({
   onMovingAveragesChange,
   onNavigateToSymbol,
 }: MainLayoutProps) => {
+  const [quickTradeMode, setQuickTradeMode] = useUIPref<QuickTradeMode>('quickTradeMode', 'sidebar');
   const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [marketWidth, setMarketWidth] = useUIPref('marketSidebarWidth', DEFAULT_MARKET_WIDTH);
@@ -195,7 +196,9 @@ export const MainLayout = ({
             })()}
             transition="width 0.2s ease"
           >
-            {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
+            {symbol && quickTradeMode === 'chart' && (
+              <QuickTradeToolbar symbol={symbol} marketType={marketType} onMenuAction={setQuickTradeMode} currentMode={quickTradeMode} />
+            )}
             {children}
           </Box>
 
@@ -225,7 +228,7 @@ export const MainLayout = ({
                 onMouseDown={handleMouseDown}
                 userSelect="none"
               />
-              <TradingSidebar width={tradingWidth} onClose={onToggleTrading} />
+              <TradingSidebar width={tradingWidth} onClose={onToggleTrading} symbol={symbol} marketType={marketType} quickTradeMode={quickTradeMode} onQuickTradeModeChange={setQuickTradeMode} />
             </>
           )}
         </Flex>

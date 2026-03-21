@@ -46,6 +46,7 @@ import { useImbalanceRenderer } from '../useImbalanceRenderer';
 import { useVolumeProfileRenderer } from '../useVolumeProfileRenderer';
 import { useFootprintRenderer } from '../useFootprintRenderer';
 import { useSessionBoundariesRenderer } from '../useSessionBoundariesRenderer';
+import { useORBRenderer } from '../useORBRenderer';
 export interface UseChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
@@ -53,6 +54,7 @@ export interface UseChartIndicatorRenderersProps {
   indicatorData: UseChartIndicatorsResult;
   stochasticData: StochasticResult | null;
   showEventRow: boolean;
+  showOrb: boolean;
   marketEvents: MarketEvent[];
   cvdValuesRef: RefObject<(number | null)[]>;
   imbalanceValuesRef: RefObject<(number | null)[]>;
@@ -103,6 +105,7 @@ export interface UseChartIndicatorRenderersResult {
   renderVolumeProfile: () => void;
   renderFootprint: () => void;
   renderSessionBoundaries: () => void;
+  renderORB: () => void;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   renderAllOverlayIndicators: () => void;
   renderAllPanelIndicators: () => void;
@@ -115,6 +118,7 @@ export const useChartIndicatorRenderers = ({
   indicatorData,
   stochasticData,
   showEventRow,
+  showOrb,
   marketEvents,
   cvdValuesRef,
   imbalanceValuesRef,
@@ -413,6 +417,13 @@ export const useChartIndicatorRenderers = ({
     marketEvents,
   });
 
+  const { render: renderORB } = useORBRenderer({
+    manager,
+    colors,
+    enabled: showOrb,
+    marketEvents,
+  });
+
   const renderAllOverlayIndicators = (): void => {
     renderBollingerBands();
     renderATR();
@@ -430,6 +441,7 @@ export const useChartIndicatorRenderers = ({
     renderFibonacci();
     renderFVG();
     renderLiquidityLevels();
+    renderORB();
     renderEventScale();
     renderVolumeProfile();
     renderFootprint();
@@ -503,6 +515,7 @@ export const useChartIndicatorRenderers = ({
     renderVolumeProfile,
     renderFootprint,
     renderSessionBoundaries,
+    renderORB,
     getEventAtPosition,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,

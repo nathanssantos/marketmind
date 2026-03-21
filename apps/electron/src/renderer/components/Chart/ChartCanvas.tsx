@@ -145,6 +145,7 @@ export const ChartCanvas = ({
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
+  const [showOrb] = useChartPref('showOrb', false);
 
   const isIndicatorActive = useIndicatorStore((s) => s.isActive);
   const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
@@ -721,12 +722,12 @@ export const ChartCanvas = ({
     activeIndicators: activeIndicators as IndicatorId[],
   });
 
-  const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow });
+  const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow || showOrb });
 
   useEventRefreshScheduler({
     activeWatchers: watcherStatus?.activeWatchers ?? [],
     chartInterval: timeframe as TimeInterval,
-    enabled: showEventRow,
+    enabled: showEventRow || showOrb,
     onRefresh: refetchMarketEvents,
   });
 
@@ -954,6 +955,7 @@ export const ChartCanvas = ({
     renderVolumeProfile,
     renderFootprint,
     renderSessionBoundaries,
+    renderORB,
     getEventAtPosition,
   } = useChartIndicatorRenderers({
     manager,
@@ -962,6 +964,7 @@ export const ChartCanvas = ({
     indicatorData,
     stochasticData,
     showEventRow,
+    showOrb,
     marketEvents,
     cvdValuesRef,
     imbalanceValuesRef,
@@ -1645,6 +1648,7 @@ export const ChartCanvas = ({
       renderWatermark();
       renderGrid();
       renderSessionBoundaries();
+      renderORB();
       renderVolume();
       if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
         renderKlines();
@@ -1961,6 +1965,7 @@ export const ChartCanvas = ({
     renderWatermark,
     renderGrid,
     renderSessionBoundaries,
+    renderORB,
     renderVolume,
     renderKlines,
     renderLineChart,

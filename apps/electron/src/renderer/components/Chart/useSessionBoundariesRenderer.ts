@@ -4,7 +4,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useCallback, useMemo } from 'react';
 import { getSessionById } from '@shared/constants/marketSessions';
 
-interface SessionWindow {
+export interface SessionWindow {
   sessionId: string;
   openTimestamp: number;
   closeTimestamp: number;
@@ -26,7 +26,7 @@ const SESSION_LINE_ALPHA = 0.35;
 const SESSION_LINE_DASH = [6, 4];
 const OVERLAP_ALPHA_PER_SESSION = 0.02;
 
-const buildSessionWindows = (events: MarketEvent[]): SessionWindow[] => {
+export const buildSessionWindows = (events: MarketEvent[]): SessionWindow[] => {
   const opensBySession = new Map<string, MarketEvent[]>();
   const windows: SessionWindow[] = [];
 

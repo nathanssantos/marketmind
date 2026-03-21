@@ -651,6 +651,7 @@
       "tooltip": "Tooltip",
       "activityIndicator": "Indicador de Actividad",
       "marketEvents": "Eventos de Mercado",
+      "openingRange": "Opening Range",
       "autoPatterns": "Detección Automática de Patrones",
       "detectPatterns": "Detectar Patrones Ahora",
       "setupDetection": "Detección Algorítmica de Setups",
@@ -675,7 +676,9 @@
       "min": "MÍN",
       "sizePercent": "Tamaño %",
       "noPriceError": "No hay precio actual disponible",
-      "invalidQuantityError": "Cantidad inválida"
+      "invalidQuantityError": "Cantidad inválida",
+      "moveToSidebar": "Mover a Sidebar",
+      "moveToChart": "Mover al Gráfico"
     },
     "gridOrders": {
       "title": "Órdenes en Cuadrícula",

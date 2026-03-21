@@ -41,6 +41,7 @@ export interface ToolbarProps {
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
   showZoomControls?: boolean;
+  rightExtra?: React.ReactNode;
   onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onToggleTrading: () => void;
@@ -60,6 +61,7 @@ export const Toolbar = memo(({
   showNewWindowButton = true,
   showSidebarButtons = true,
   showZoomControls = true,
+  rightExtra,
   onSymbolChange,
   onTimeframeChange,
   onToggleTrading,
@@ -294,6 +296,7 @@ export const Toolbar = memo(({
         </Box>
       )}
 
+      {rightExtra && <Box flexShrink={0}>{rightExtra}</Box>}
     </Flex>
   );
 });

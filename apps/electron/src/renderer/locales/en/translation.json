@@ -594,6 +594,7 @@
       "tooltip": "Tooltip",
       "activityIndicator": "Activity Indicator",
       "marketEvents": "Market Events",
+      "openingRange": "Opening Range",
       "setupDetection": "Algorithmic Setup Detection",
       "indicators": "Indicators",
       "quickSettings": "Quick Settings"
@@ -622,7 +623,9 @@
       "min": "MIN",
       "sizePercent": "Size %",
       "noPriceError": "No current price available",
-      "invalidQuantityError": "Invalid quantity"
+      "invalidQuantityError": "Invalid quantity",
+      "moveToSidebar": "Move to Sidebar",
+      "moveToChart": "Move to Chart"
     },
     "gridOrders": {
       "title": "Grid Orders",

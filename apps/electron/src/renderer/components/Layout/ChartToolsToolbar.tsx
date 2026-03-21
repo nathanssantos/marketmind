@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import {
   LuArrowUpRight,
   LuCalendarDays,
+  LuColumns2,
   LuMagnet,
   LuMessageSquare,
   LuMinus,
@@ -36,6 +37,7 @@ export const ChartToolsToolbar = memo(({
   const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
+  const [showOrb, setShowOrb] = useChartPref('showOrb', false);
 
   const activeTool = useDrawingStore(s => s.activeTool);
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
@@ -52,6 +54,7 @@ export const ChartToolsToolbar = memo(({
   const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
+  const handleOrbToggle = useCallback(() => setShowOrb(!showOrb), [showOrb, setShowOrb]);
   const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
 
   const handleToolClick = useCallback((tool: DrawingType) => {
@@ -196,6 +199,16 @@ export const ChartToolsToolbar = memo(({
             onClick={handleEventRowToggle}
           >
             <LuCalendarDays />
+          </ToggleIconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.controls.openingRange')} showArrow placement="right">
+          <ToggleIconButton
+            active={showOrb}
+            size="2xs"
+            aria-label={t('chart.controls.openingRange')}
+            onClick={handleOrbToggle}
+          >
+            <LuColumns2 />
           </ToggleIconButton>
         </TooltipWrapper>
       </VStack>

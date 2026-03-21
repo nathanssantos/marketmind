@@ -12,7 +12,7 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { useUIStore, type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
 import { LuBot, LuChevronDown, LuChevronUp, LuEye, LuEyeOff, LuX } from 'react-icons/lu';
@@ -46,7 +46,11 @@ interface PortfolioPosition {
   leverage: number;
 }
 
-const PortfolioComponent = () => {
+interface PortfolioProps {
+  headerContent?: ReactNode;
+}
+
+const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
   const [summaryExpanded, setSummaryExpanded] = useUIPref('portfolioSummaryExpanded', true);
@@ -210,6 +214,7 @@ const PortfolioComponent = () => {
 
   return (
     <Stack gap={3} p={4}>
+      {headerContent}
       {!isIB && <FuturesPositionsPanel />}
 
       {!activeWallet ? (
@@ -280,14 +285,20 @@ const PortfolioComponent = () => {
                         <Text fontWeight="medium">
                           {activeWallet.currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / activeWallet.walletBalance) * 100).toFixed(1)}%)
                         </Text>
-                        {hasLeverage && (
-                          <Text color="fg.muted">
-                            {t('trading.portfolio.margin')}: {activeWallet.currency} {totalMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalMargin / activeWallet.walletBalance) * 100).toFixed(1)}%)
-                          </Text>
-                        )}
                         <BrlValue usdtValue={totalExposure} />
                       </Stack>
                     </Flex>
+                    {hasLeverage && (
+                      <Flex justify="space-between">
+                        <Text color="fg.muted">{t('trading.portfolio.margin')}</Text>
+                        <Stack gap={0} align="flex-end">
+                          <Text color="fg.muted">
+                            {activeWallet.currency} {totalMargin.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalMargin / activeWallet.walletBalance) * 100).toFixed(1)}%)
+                          </Text>
+                          <BrlValue usdtValue={totalMargin} />
+                        </Stack>
+                      </Flex>
+                    )}
                     <Flex justify="space-between">
                       <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
                       <Stack gap={0} align="flex-end">

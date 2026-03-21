@@ -1,10 +1,10 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
-import { ErrorMessage, IconButton, LoadingSpinner } from '../components/ui';
+import { ErrorMessage, IconButton, LoadingSpinner, ToggleIconButton, TooltipWrapper } from '../components/ui';
 import type { AssetClass, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuX } from 'react-icons/lu';
+import { LuDollarSign, LuX } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { AdvancedControlsConfig } from '../components/Chart/AdvancedControls';
 import { ChartCanvas } from '../components/Chart/ChartCanvas';
@@ -39,6 +39,8 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
   const [symbol, setSymbol] = useState(routeSymbol || initialSymbol || 'BTCUSDT');
   const [marketType, setMarketType] = useState<MarketType>('FUTURES');
   const [assetClass, setAssetClass] = useState<AssetClass>('CRYPTO');
+
+  const [showQuickTrade, setShowQuickTrade] = useState(false);
 
   useCurrencyAutoRefresh();
 
@@ -156,6 +158,18 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
           isAutoTradingOpen={false}
           onToggleTrading={() => { }}
           onToggleAutoTrading={() => { }}
+          rightExtra={
+            <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
+              <ToggleIconButton
+                active={showQuickTrade}
+                onClick={() => setShowQuickTrade((v) => !v)}
+                aria-label={t('trading.sidebar.title')}
+                size="2xs"
+              >
+                <LuDollarSign />
+              </ToggleIconButton>
+            </TooltipWrapper>
+          }
         />
       </Box>
 
@@ -168,7 +182,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
         />
 
         <Box flex="1" position="relative" overflow="hidden">
-          {symbol && <QuickTradeToolbar symbol={symbol} marketType={marketType} />}
+          {symbol && showQuickTrade && <QuickTradeToolbar symbol={symbol} marketType={marketType} onClose={() => setShowQuickTrade(false)} />}
           {loading && (
             <LoadingSpinner message={t('app.loadingMarketData')} />
           )}
