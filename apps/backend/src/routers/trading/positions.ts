@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
-import { positions, realizedPnlEvents, wallets } from '../../db/schema';
+import { positions, wallets } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
@@ -14,7 +14,7 @@ import { serializeError } from '../../utils/errors';
 import { generateEntityId } from '../../utils/id';
 
 export const positionsRouter = router({
-  list: protectedProcedure
+  getPositions: protectedProcedure
     .input(
       z.object({
         walletId: z.string(),
@@ -42,7 +42,7 @@ export const positionsRouter = router({
       return userPositions;
     }),
 
-  create: protectedProcedure
+  createPosition: protectedProcedure
     .input(
       z.object({
         walletId: z.string(),
@@ -117,7 +117,7 @@ export const positionsRouter = router({
       return { id: positionId };
     }),
 
-  close: protectedProcedure
+  closePosition: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -132,11 +132,17 @@ export const positionsRouter = router({
         .limit(1);
 
       if (!position) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Position not found',
+        });
       }
 
       if (position.status !== 'open') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Position is not open' });
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Position is not open',
+        });
       }
 
       const wallet = await walletQueries.getById(position.walletId);
@@ -258,18 +264,6 @@ export const positionsRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, wallet.id));
-
-        await tx.insert(realizedPnlEvents).values({
-          walletId: wallet.id,
-          userId: ctx.user.id,
-          executionId: input.id,
-          symbol: position.symbol,
-          eventType: 'full_close',
-          pnl: netPnl.toString(),
-          fees: totalFees.toString(),
-          quantity: qty.toString(),
-          price: exitPrice.toString(),
-        });
       });
 
       return {

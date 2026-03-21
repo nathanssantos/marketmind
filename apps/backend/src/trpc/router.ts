@@ -19,7 +19,6 @@ import { signalSuggestionsRouter } from '../routers/signal-suggestions';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
-import { nestedTradingRouter } from '../routers/trading/index';
 import { scalpingRouter } from '../routers/scalping';
 import { router } from '../trpc';
 
@@ -40,7 +39,6 @@ export const appRouter = router({
   signalSuggestions: signalSuggestionsRouter,
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
-  trade: nestedTradingRouter,
   preferences: preferencesRouter,
   screener: screenerRouter,
   customSymbol: customSymbolRouter,

@@ -127,3 +127,33 @@ export type {
   OverlayLayerResult,
   OverlayRenderFunctions,
 } from './layers';
+
+export { useChartTradingData } from './useChartTradingData';
+export type { OptimisticOverride } from './useChartTradingData';
+
+export { useChartTradingActions } from './useChartTradingActions';
+
+export { useChartKeyboardShortcuts } from './useChartKeyboardShortcuts';
+
+export { useChartOverlayEffects } from './useChartOverlayEffects';
+
+export { useChartRenderPipeline } from './useChartRenderPipeline';
+
+export { ChartCloseDialog } from './ChartCloseDialog';
+
+export { useChartAuxiliarySetup } from './useChartAuxiliarySetup';
+export type {
+  UseChartAuxiliarySetupProps,
+} from './useChartAuxiliarySetup';
+
+export { useChartAlternativeKlines } from './useChartAlternativeKlines';
+export type {
+  UseChartAlternativeKlinesProps,
+  UseChartAlternativeKlinesResult,
+} from './useChartAlternativeKlines';
+
+export { useChartPlacementHandlers } from './useChartPlacementHandlers';
+export type {
+  UseChartPlacementHandlersProps,
+  UseChartPlacementHandlersResult,
+} from './useChartPlacementHandlers';
