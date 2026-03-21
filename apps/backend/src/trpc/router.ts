@@ -7,7 +7,7 @@ import { customSymbolRouter } from '../routers/custom-symbol';
 import { drawingRouter } from '../routers/drawing';
 import { economicCalendarRouter } from '../routers/economic-calendar';
 import { feesRouter } from '../routers/fees';
-import { futuresTradingRouter } from '../routers/futures-trading';
+import { futuresTradingRouter } from '../routers/futures-trading/index';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
 import { orderSyncRouter } from '../routers/order-sync';

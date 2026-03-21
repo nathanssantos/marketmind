@@ -411,6 +411,15 @@ export class RotationManager {
     }
   }
 
+  cleanupWalletMaps(walletId: string): void {
+    for (const key of this.rotationPendingWatchers.keys()) {
+      if (key.startsWith(`${walletId}-`)) this.rotationPendingWatchers.delete(key);
+    }
+    for (const key of this.recentlyRotatedWatchers.keys()) {
+      if (key.startsWith(`${walletId}-`)) this.recentlyRotatedWatchers.delete(key);
+    }
+  }
+
   async stopDynamicRotation(walletId: string, stopDynamicWatchers: boolean = true): Promise<void> {
     const keysToDelete: string[] = [];
     for (const key of this.rotationStates.keys()) {
