@@ -106,6 +106,7 @@ vi.mock('../../../db/schema', () => ({
   autoTradingConfig: { walletId: 'walletId' },
   klines: { symbol: 'symbol', interval: 'interval', marketType: 'marketType', openTime: 'openTime' },
   wallets: { id: 'id' },
+  tradingProfiles: { id: 'id' },
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -191,11 +192,26 @@ vi.mock('../utils', () => ({
   yieldToEventLoop: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../../utils/trading-validation', () => ({
+  isDirectionAllowed: vi.fn(() => true),
+}));
+
+vi.mock('../../profile-applicator', () => ({
+  applyProfileOverrides: vi.fn(
+    (config: Record<string, unknown>) => config
+  ),
+}));
+
+vi.mock('../../../utils/id', () => ({
+  generateEntityId: vi.fn(() => 'test-id'),
+}));
+
 vi.mock('../../../env', () => ({
   env: { ENCRYPTION_KEY: 'a'.repeat(64) },
 }));
 
 import { SignalProcessor, type SignalProcessorConfig } from '../signal-processor';
+import { getIntervalMs, emitLogsToWebSocket } from '../signal-helpers';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
 
 
@@ -308,37 +324,37 @@ describe('SignalProcessor', () => {
 
   describe('getIntervalMs', () => {
     it('should parse minute intervals', () => {
-      const result = (processor as any).getIntervalMs('15m');
+      const result = getIntervalMs('15m');
       expect(result).toBe(15 * 60_000);
     });
 
     it('should parse hour intervals', () => {
-      const result = (processor as any).getIntervalMs('4h');
+      const result = getIntervalMs('4h');
       expect(result).toBe(4 * 3_600_000);
     });
 
     it('should parse day intervals', () => {
-      const result = (processor as any).getIntervalMs('1d');
+      const result = getIntervalMs('1d');
       expect(result).toBe(86_400_000);
     });
 
     it('should parse week intervals', () => {
-      const result = (processor as any).getIntervalMs('1w');
+      const result = getIntervalMs('1w');
       expect(result).toBe(604_800_000);
     });
 
     it('should return default 4h for invalid format', () => {
-      const result = (processor as any).getIntervalMs('invalid');
+      const result = getIntervalMs('invalid');
       expect(result).toBe(4 * 3_600_000);
     });
 
     it('should return default 4h for empty string', () => {
-      const result = (processor as any).getIntervalMs('');
+      const result = getIntervalMs('');
       expect(result).toBe(4 * 3_600_000);
     });
 
     it('should return default 4h for unknown unit', () => {
-      const result = (processor as any).getIntervalMs('5x');
+      const result = getIntervalMs('5x');
       expect(result).toBe(4 * 3_600_000);
     });
   });
@@ -1596,7 +1612,6 @@ describe('SignalProcessor', () => {
       const watcher = createWatcher();
       const watcherMap = new Map<string, ActiveWatcher>();
       watcherMap.set('wallet-1-BTCUSDT-1h-FUTURES', watcher);
-      vi.mocked(deps.getActiveWatchers).mockReturnValue(watcherMap);
 
       const watcherResults = [
         {
@@ -1623,7 +1638,7 @@ describe('SignalProcessor', () => {
         },
       ];
 
-      (processor as any).emitLogsToWebSocket(watcherResults);
+      emitLogsToWebSocket(watcherResults as any, watcherMap);
 
       expect(mockAddLog).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
         level: 'info',
@@ -1640,14 +1655,12 @@ describe('SignalProcessor', () => {
     it('should skip when websocket service is null', () => {
       mockGetWebSocketService.mockReturnValueOnce(null as unknown as ReturnType<typeof mockGetWebSocketService>);
 
-      (processor as any).emitLogsToWebSocket([]);
+      emitLogsToWebSocket([], new Map());
 
       expect(mockAddLog).not.toHaveBeenCalled();
     });
 
     it('should skip watchers not found in active watchers', () => {
-      vi.mocked(deps.getActiveWatchers).mockReturnValue(new Map());
-
       const watcherResults = [
         {
           watcherId: 'nonexistent',
@@ -1673,7 +1686,7 @@ describe('SignalProcessor', () => {
         },
       ];
 
-      (processor as any).emitLogsToWebSocket(watcherResults);
+      emitLogsToWebSocket(watcherResults as any, new Map());
 
       expect(mockAddLog).not.toHaveBeenCalled();
     });
@@ -1682,7 +1695,6 @@ describe('SignalProcessor', () => {
       const watcher = createWatcher();
       const watcherMap = new Map<string, ActiveWatcher>();
       watcherMap.set('watcher-1', watcher);
-      vi.mocked(deps.getActiveWatchers).mockReturnValue(watcherMap);
 
       const watcherResults = [
         {
@@ -1706,7 +1718,7 @@ describe('SignalProcessor', () => {
         },
       ];
 
-      (processor as any).emitLogsToWebSocket(watcherResults);
+      emitLogsToWebSocket(watcherResults as any, watcherMap);
 
       expect(mockAddLog).toHaveBeenCalledTimes(3);
       expect(mockEmitAutoTradingLog).toHaveBeenCalledTimes(3);

@@ -1,4 +1,4 @@
-import type { Kline, TimeInterval, TradingSetup } from '@marketmind/types';
+import type { Kline } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import {
@@ -6,36 +6,35 @@ import {
   AUTO_TRADING_BATCH,
   AUTO_TRADING_TIMING,
   TIME_MS,
-  UNIT_MS,
 } from '../../constants';
 import { db } from '../../db';
 import {
   autoTradingConfig,
   klines,
-  signalSuggestions,
   tradingProfiles,
   wallets,
 } from '../../db/schema';
 import { prefetchKlines, prefetchKlinesAsync } from '../kline-prefetch';
 import { StrategyLoader } from '../setup-detection/dynamic';
-import { detectSetups } from '../indicator-engine';
 import {
   createBatchResult,
   outputBatchResults,
   WatcherLogBuffer,
-  type SetupLogEntry,
   type WatcherResult,
 } from '../watcher-batch-logger';
-import { autoTradingLogBuffer, type FrontendLogEntry } from '../auto-trading-log-buffer';
-import { getWebSocketService } from '../websocket';
 import { calculateRequiredKlines } from '../../utils/kline-calculator';
 import { serializeError } from '../../utils/errors';
-import { generateEntityId } from '../../utils/id';
-import type { ActiveWatcher, SignalProcessorDeps } from './types';
-import { log, yieldToEventLoop } from './utils';
 import { isDirectionAllowed } from '../../utils/trading-validation';
 import type { AutoTradingConfig } from '../../db/schema';
 import { applyProfileOverrides } from '../profile-applicator';
+import type { ActiveWatcher, SignalProcessorDeps } from './types';
+import { log, yieldToEventLoop } from './utils';
+import {
+  getIntervalMs,
+  runSetupDetection,
+  handleSemiAssistedSetups,
+  emitLogsToWebSocket,
+} from './signal-helpers';
 
 const CANDLE_CLOSE_SAFETY_BUFFER_MS = AUTO_TRADING_TIMING.CANDLE_CLOSE_SAFETY_BUFFER_MS;
 const BATCH_SIZE = parseInt(
@@ -140,7 +139,7 @@ export class SignalProcessor {
       );
       outputBatchResults(unifiedResult, VERBOSE_BATCH_LOGS, this.deps.getConfigCacheStats());
 
-      this.emitLogsToWebSocket(unifiedResult.watcherResults);
+      emitLogsToWebSocket(unifiedResult.watcherResults, this.deps.getActiveWatchers());
 
       if (!hasPendingWatchers) {
         this.pendingCycleId = null;
@@ -196,14 +195,6 @@ export class SignalProcessor {
       result.isRecentlyRotated = isRecentlyRotated;
       return result;
     }
-  }
-
-  private getIntervalMs(interval: string): number {
-    const match = interval.match(/^(\d+)([mhdw])$/);
-    if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
-    const unitMs = UNIT_MS[match[2]];
-    if (!unitMs) return 4 * TIME_MS.HOUR;
-    return parseInt(match[1]) * unitMs;
   }
 
   private async processWatcherCore(
@@ -267,6 +258,74 @@ export class SignalProcessor {
       return true;
     });
 
+    const klinesAndCandle = await this.loadKlinesData(watcher, watcherId, logBuffer);
+    if (!klinesAndCandle) return logBuffer.toResult('pending', 'Kline backfill in progress');
+    if (klinesAndCandle === 'no-candles') {
+      logBuffer.warn('!', 'No closed candles available');
+      return logBuffer.toResult('skipped', 'No closed candles');
+    }
+
+    const { closedKlines, lastCandle } = klinesAndCandle;
+
+    const timingResult = await this.handleCandleTiming(watcher, watcherId, lastCandle, logBuffer);
+    if (timingResult) return timingResult;
+
+    if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {
+      logBuffer.log('~', 'Candle already processed');
+      return logBuffer.toResult('skipped', 'Already processed');
+    }
+
+    logBuffer.log('>', 'Scanning for setups', {
+      strategies: filteredStrategies.length,
+      directionMode,
+      klines: closedKlines.length,
+    });
+
+    const detectedSetups = runSetupDetection(
+      closedKlines, filteredStrategies, effectiveConfig, directionMode, watcher, logBuffer
+    );
+
+    watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
+
+    this.deps.incrementBarsForOpenTrades(watcher.symbol, watcher.interval, parseFloat(lastCandle.close)).catch((error: unknown) => {
+      logBuffer.warn('!', 'Failed to increment bars for open trades', {
+        error: serializeError(error),
+      });
+    });
+
+    if (detectedSetups.length === 0) {
+      logBuffer.log('·', 'No setups found');
+      watcher.lastProcessedTime = Date.now();
+      return logBuffer.toResult('success', undefined, closedKlines.length);
+    }
+
+    const effectiveTradingMode = effectiveConfig?.tradingMode ?? 'auto';
+
+    if (effectiveTradingMode === 'semi_assisted') {
+      await handleSemiAssistedSetups(
+        detectedSetups, watcher, watcherId, effectiveConfig,
+        filteredStrategies, closedKlines, lastCandle, this.deps, logBuffer
+      );
+      watcher.lastProcessedTime = Date.now();
+      return logBuffer.toResult('success', undefined, closedKlines.length);
+    }
+
+    for (const setup of detectedSetups) {
+      const executed = await this.deps.executeSetupSafe(watcher, setup, filteredStrategies, closedKlines, logBuffer);
+      if (executed) {
+        logBuffer.incrementTrades();
+      }
+    }
+
+    watcher.lastProcessedTime = Date.now();
+    return logBuffer.toResult('success', undefined, closedKlines.length);
+  }
+
+  private async loadKlinesData(
+    watcher: ActiveWatcher,
+    watcherId: string,
+    logBuffer: WatcherLogBuffer
+  ): Promise<{ closedKlines: Kline[]; lastCandle: Kline } | null | 'no-candles'> {
     const requiredKlines = calculateRequiredKlines();
     const minRequired = ABSOLUTE_MINIMUM_KLINES;
 
@@ -292,13 +351,13 @@ export class SignalProcessor {
       setTimeout(() => {
         this.queueWatcherProcessing(watcherId);
       }, AUTO_TRADING_TIMING.BACKFILL_RECHECK_MS);
-      return logBuffer.toResult('pending', 'Kline backfill in progress');
+      return null;
     }
 
     klinesData.reverse();
 
     const now = Date.now();
-    const intervalMs = this.getIntervalMs(watcher.interval);
+    const intervalMs = getIntervalMs(watcher.interval);
     const currentCandleOpenTime = Math.floor(now / intervalMs) * intervalMs;
 
     const mappedKlines: Kline[] = klinesData.map((k) => ({
@@ -318,12 +377,20 @@ export class SignalProcessor {
     }));
 
     const closedKlines = mappedKlines.filter(k => k.openTime < currentCandleOpenTime);
-
     const lastCandle = closedKlines[closedKlines.length - 1];
-    if (!lastCandle) {
-      logBuffer.warn('!', 'No closed candles available');
-      return logBuffer.toResult('skipped', 'No closed candles');
-    }
+    if (!lastCandle) return 'no-candles';
+
+    return { closedKlines, lastCandle };
+  }
+
+  private async handleCandleTiming(
+    watcher: ActiveWatcher,
+    watcherId: string,
+    lastCandle: Kline,
+    logBuffer: WatcherLogBuffer
+  ): Promise<WatcherResult | null> {
+    const now = Date.now();
+    const intervalMs = getIntervalMs(watcher.interval);
 
     const pendingRotation = this.deps.getRotationPendingWatcher(watcherId);
     if (pendingRotation) {
@@ -377,6 +444,7 @@ export class SignalProcessor {
         actual: new Date(lastCandle.openTime).toISOString(),
       });
 
+      const requiredKlines = calculateRequiredKlines();
       const result = await prefetchKlines({
         symbol: watcher.symbol,
         interval: watcher.interval,
@@ -408,232 +476,7 @@ export class SignalProcessor {
       return logBuffer.toResult('pending', `Candle closes in ${Math.ceil(remainingMs / 1000)}s`);
     }
 
-    if (watcher.lastProcessedCandleOpenTime === lastCandle.openTime) {
-      logBuffer.log('~', 'Candle already processed');
-      return logBuffer.toResult('skipped', 'Already processed');
-    }
-
-    logBuffer.log('>', 'Scanning for setups', {
-      strategies: filteredStrategies.length,
-      directionMode,
-      klines: closedKlines.length,
-    });
-
-    const detectedSetups: TradingSetup[] = [];
-    const currentIndex = closedKlines.length - 1;
-
-    const minRRLong = effectiveConfig?.minRiskRewardRatioLong
-      ? parseFloat(effectiveConfig.minRiskRewardRatioLong)
-      : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
-    const minRRShort = effectiveConfig?.minRiskRewardRatioShort
-      ? parseFloat(effectiveConfig.minRiskRewardRatioShort)
-      : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
-
-    const detectionResults = detectSetups({
-      klines: closedKlines,
-      strategies: filteredStrategies,
-      currentIndex,
-      config: {
-        minConfidence: 50,
-        minRiskReward: Math.min(minRRLong, minRRShort),
-        silent: true,
-        interval: watcher.interval as TimeInterval,
-        directionMode: directionMode !== 'auto' ? directionMode as 'long_only' | 'short_only' : undefined,
-        maxFibonacciEntryProgressPercentLong: effectiveConfig?.maxFibonacciEntryProgressPercentLong ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentLong) : undefined,
-        maxFibonacciEntryProgressPercentShort: effectiveConfig?.maxFibonacciEntryProgressPercentShort ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentShort) : undefined,
-        fibonacciSwingRange: (effectiveConfig?.fibonacciSwingRange as 'nearest' | 'extended' | undefined) ?? undefined,
-      },
-    });
-
-    for (const result of detectionResults) {
-      const strategy = filteredStrategies.find(s => s.id === result.strategyId);
-      const strategyName = strategy?.name ?? result.strategyId;
-
-      if (result.rejection) {
-        const rejectionDirection = result.rejection.details?.['direction'] as string | undefined;
-        const entryPrice = result.rejection.details?.['entryPrice'] as number | undefined;
-
-        if (rejectionDirection && rejectionDirection !== '-') {
-          const lastKline = closedKlines[closedKlines.length - 1];
-          const currentPrice = lastKline ? parseFloat(lastKline.close) : 0;
-
-          logBuffer.startSetupValidation({
-            type: strategyName,
-            direction: rejectionDirection as 'LONG' | 'SHORT',
-            entryPrice: entryPrice ?? currentPrice,
-            confidence: result.confidence ?? 0,
-          });
-
-          const reasonKey = result.rejection.reason.split(':')[0]?.trim() ?? result.rejection.reason;
-          const detailValues = result.rejection.details
-            ? Object.entries(result.rejection.details)
-                .filter(([k]) => k !== 'direction' && k !== 'entryPrice')
-                .map(([k, v]) => `${k}=${v}`)
-                .join(', ')
-            : '';
-
-          logBuffer.addValidationCheck({
-            name: reasonKey,
-            passed: false,
-            reason: detailValues || result.rejection.reason,
-          });
-
-          logBuffer.completeSetupValidation('blocked', result.rejection.reason);
-        }
-
-        logBuffer.addRejection({
-          setupType: strategyName,
-          direction: rejectionDirection ?? '-',
-          reason: result.rejection.reason,
-          details: result.rejection.details,
-        });
-      }
-
-      if (result.setup && result.confidence >= 50) {
-        const setupWithTriggerData = {
-          ...result.setup,
-          triggerKlineIndex: result.triggerKlineIndex,
-          triggerCandleData: result.triggerCandleData,
-          triggerIndicatorValues: result.triggerIndicatorValues,
-        };
-        detectedSetups.push(setupWithTriggerData);
-
-        const setupEntry: SetupLogEntry = {
-          type: result.setup.type,
-          direction: result.setup.direction,
-          confidence: result.confidence,
-          entryPrice: result.setup.entryPrice?.toFixed(6) ?? '-',
-          stopLoss: result.setup.stopLoss?.toFixed(6) ?? '-',
-          takeProfit: result.setup.takeProfit?.toFixed(6) ?? '-',
-          riskReward: result.setup.riskRewardRatio?.toFixed(2) ?? '-',
-        };
-        logBuffer.addSetup(setupEntry);
-        logBuffer.log('>', 'Setup detected', {
-          type: result.setup.type,
-          direction: result.setup.direction,
-          confidence: result.confidence,
-        });
-      }
-    }
-
-    watcher.lastProcessedCandleOpenTime = lastCandle.openTime;
-
-    this.deps.incrementBarsForOpenTrades(watcher.symbol, watcher.interval, parseFloat(lastCandle.close)).catch((error: unknown) => {
-      logBuffer.warn('!', 'Failed to increment bars for open trades', {
-        error: serializeError(error),
-      });
-    });
-
-    if (detectedSetups.length === 0) {
-      logBuffer.log('·', 'No setups found');
-      watcher.lastProcessedTime = Date.now();
-      return logBuffer.toResult('success', undefined, closedKlines.length);
-    }
-
-    const effectiveTradingMode = effectiveConfig?.tradingMode ?? 'auto';
-
-    if (effectiveTradingMode === 'semi_assisted') {
-      const wsService = getWebSocketService();
-      const userId = effectiveConfig?.userId ?? watcher.userId;
-      const defaultPositionSizePercent = effectiveConfig?.positionSizePercent ?? '10';
-      const intervalMs = this.getIntervalMs(watcher.interval);
-      const expiresAt = new Date(Date.now() + intervalMs * 3);
-
-      for (const setup of detectedSetups) {
-        const passesFilters = await this.deps.validateSetupFilters(
-          watcher, setup, filteredStrategies, closedKlines, logBuffer
-        );
-        if (!passesFilters) {
-          logBuffer.log('~', 'Setup filtered out (semi-assisted)', {
-            type: setup.type,
-            direction: setup.direction,
-          });
-          continue;
-        }
-
-        const suggestionId = generateEntityId();
-
-        await db.insert(signalSuggestions).values({
-          id: suggestionId,
-          userId,
-          walletId: watcher.walletId,
-          watcherId,
-          symbol: watcher.symbol,
-          interval: watcher.interval,
-          side: setup.direction as 'LONG' | 'SHORT',
-          setupType: setup.type,
-          strategyId: setup.type,
-          entryPrice: String(setup.entryPrice ?? 0),
-          stopLoss: setup.stopLoss != null ? String(setup.stopLoss) : null,
-          takeProfit: setup.takeProfit != null ? String(setup.takeProfit) : null,
-          riskRewardRatio: setup.riskRewardRatio != null ? String(setup.riskRewardRatio) : null,
-          confidence: setup.confidence ?? null,
-          fibonacciProjection: setup.fibonacciProjection ? JSON.stringify(setup.fibonacciProjection) : null,
-          triggerKlineOpenTime: lastCandle.openTime,
-          status: 'pending',
-          positionSizePercent: defaultPositionSizePercent,
-          expiresAt,
-        });
-
-        logBuffer.log('>', 'Signal suggestion created (semi-assisted)', {
-          type: setup.type,
-          direction: setup.direction,
-          entryPrice: setup.entryPrice,
-        });
-
-        if (wsService) {
-          wsService.emitSignalSuggestion(userId, {
-            id: suggestionId,
-            walletId: watcher.walletId,
-            symbol: watcher.symbol,
-            interval: watcher.interval,
-            side: setup.direction as 'LONG' | 'SHORT',
-            setupType: setup.type,
-            entryPrice: String(setup.entryPrice ?? 0),
-            stopLoss: setup.stopLoss != null ? String(setup.stopLoss) : null,
-            takeProfit: setup.takeProfit != null ? String(setup.takeProfit) : null,
-            riskRewardRatio: setup.riskRewardRatio != null ? String(setup.riskRewardRatio) : null,
-            confidence: setup.confidence ?? null,
-            expiresAt: expiresAt.toISOString(),
-          });
-        }
-      }
-
-      watcher.lastProcessedTime = Date.now();
-      return logBuffer.toResult('success', undefined, closedKlines.length);
-    }
-
-    for (const setup of detectedSetups) {
-      const executed = await this.deps.executeSetupSafe(watcher, setup, filteredStrategies, closedKlines, logBuffer);
-      if (executed) {
-        logBuffer.incrementTrades();
-      }
-    }
-
-    watcher.lastProcessedTime = Date.now();
-    return logBuffer.toResult('success', undefined, closedKlines.length);
+    return null;
   }
 
-  private emitLogsToWebSocket(watcherResults: WatcherResult[]): void {
-    const wsService = getWebSocketService();
-    if (!wsService) return;
-
-    const activeWatchers = this.deps.getActiveWatchers();
-    for (const result of watcherResults) {
-      const watcher = activeWatchers.get(result.watcherId);
-      if (!watcher) continue;
-
-      for (const logEntry of result.logs) {
-        const entry: FrontendLogEntry = autoTradingLogBuffer.addLog(watcher.walletId, {
-          timestamp: logEntry.timestamp.getTime(),
-          level: logEntry.level,
-          emoji: logEntry.emoji,
-          message: logEntry.message,
-          symbol: result.symbol,
-          interval: result.interval,
-        });
-        wsService.emitAutoTradingLog(watcher.walletId, entry);
-      }
-    }
-  }
 }

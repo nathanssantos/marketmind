@@ -3,13 +3,19 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
-import { getKlineClose, roundTradingPrice, roundTradingQty } from '@shared/utils';
+import { getKlineClose, roundTradingPrice } from '@shared/utils';
 import type { MutableRefObject } from 'react';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { OptimisticOverride } from './useChartTradingData';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import {
+  createOptimisticEntry,
+  submitEntryOrder,
+  mapExecutionToOrder,
+  getOrderQuantity as getOrderQuantityHelper,
+} from './chartOrderHelpers';
 
 export interface UseChartTradingActionsProps {
   symbol?: string;
@@ -81,55 +87,28 @@ export const useChartTradingActions = ({
 
   const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
 
-  const getOrderQuantity = useCallback((price: number): string => {
-    const balance = parseFloat(activeWalletBalance ?? '0');
-    const pct = quickTradeSizePercent / 100;
-    const qty = balance > 0 && price > 0 ? (balance * pct) / price : 1;
-    return roundTradingQty(qty);
-  }, [activeWalletBalance, quickTradeSizePercent]);
+  const getOrderQuantity = useCallback((price: number): string =>
+    getOrderQuantityHelper(price, activeWalletBalance, quickTradeSizePercent),
+  [activeWalletBalance, quickTradeSizePercent]);
 
   const handleLongEntry = useCallback(async (price: number) => {
-    if (!backendWalletId) {
-      warning(t('trading.ticket.noWallet'));
-      return;
-    }
+    if (!backendWalletId) { warning(t('trading.ticket.noWallet')); return; }
     if (!symbol) return;
 
     const marketPrice = latestKlinesPriceRef.current;
-    const isAboveMarket = marketPrice > 0 && price > marketPrice;
     const hasOpenShort = (backendExecutions ?? []).some(
       (e) => e.symbol === symbol && e.side === 'SHORT' && e.status === 'open'
     );
-    const optimisticId = `opt-${Date.now()}`;
 
-    setOptimisticExecutions(prev => [...prev, {
-      id: optimisticId,
-      symbol,
-      side: 'LONG',
-      entryPrice: roundTradingPrice(price),
-      quantity: getOrderQuantity(price),
-      stopLoss: null,
-      takeProfit: null,
-      status: 'pending',
-      setupType: null,
-      marketType: marketType || 'FUTURES',
-      openedAt: new Date(),
-      triggerKlineOpenTime: null,
-      fibonacciProjection: null,
-    }]);
-    orderLoadingMapRef.current.set(optimisticId, Date.now());
-    manager?.markDirty('overlays');
+    const optimisticId = createOptimisticEntry({
+      symbol, side: 'LONG', price, marketType: marketType || 'FUTURES',
+      getOrderQuantity, setOptimisticExecutions, orderLoadingMapRef, manager,
+    });
 
     try {
-      await addBackendOrder({
-        walletId: backendWalletId,
-        symbol,
-        side: 'BUY',
-        type: isAboveMarket ? 'STOP_MARKET' : 'LIMIT',
-        price: isAboveMarket ? undefined : roundTradingPrice(price),
-        stopPrice: isAboveMarket ? roundTradingPrice(price) : undefined,
-        quantity: getOrderQuantity(price),
-        reduceOnly: hasOpenShort,
+      await submitEntryOrder({
+        backendWalletId, symbol, side: 'BUY', price, marketPrice,
+        quantity: getOrderQuantity(price), reduceOnly: hasOpenShort, addBackendOrder,
       });
       utils.autoTrading.getActiveExecutions.invalidate();
       orderFlashMapRef.current.set(optimisticId, performance.now());
@@ -144,47 +123,23 @@ export const useChartTradingActions = ({
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions, manager, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
 
   const handleShortEntry = useCallback(async (price: number) => {
-    if (!backendWalletId) {
-      warning(t('trading.ticket.noWallet'));
-      return;
-    }
+    if (!backendWalletId) { warning(t('trading.ticket.noWallet')); return; }
     if (!symbol) return;
 
     const marketPrice = latestKlinesPriceRef.current;
-    const isBelowMarket = marketPrice > 0 && price < marketPrice;
     const hasOpenLong = (backendExecutions ?? []).some(
       (e) => e.symbol === symbol && e.side === 'LONG' && e.status === 'open'
     );
-    const optimisticId = `opt-${Date.now()}`;
 
-    setOptimisticExecutions(prev => [...prev, {
-      id: optimisticId,
-      symbol,
-      side: 'SHORT',
-      entryPrice: roundTradingPrice(price),
-      quantity: getOrderQuantity(price),
-      stopLoss: null,
-      takeProfit: null,
-      status: 'pending',
-      setupType: null,
-      marketType: marketType || 'FUTURES',
-      openedAt: new Date(),
-      triggerKlineOpenTime: null,
-      fibonacciProjection: null,
-    }]);
-    orderLoadingMapRef.current.set(optimisticId, Date.now());
-    manager?.markDirty('overlays');
+    const optimisticId = createOptimisticEntry({
+      symbol, side: 'SHORT', price, marketType: marketType || 'FUTURES',
+      getOrderQuantity, setOptimisticExecutions, orderLoadingMapRef, manager,
+    });
 
     try {
-      await addBackendOrder({
-        walletId: backendWalletId,
-        symbol,
-        side: 'SELL',
-        type: isBelowMarket ? 'STOP_MARKET' : 'LIMIT',
-        price: isBelowMarket ? undefined : roundTradingPrice(price),
-        stopPrice: isBelowMarket ? roundTradingPrice(price) : undefined,
-        quantity: getOrderQuantity(price),
-        reduceOnly: hasOpenLong,
+      await submitEntryOrder({
+        backendWalletId, symbol, side: 'SELL', price, marketPrice,
+        quantity: getOrderQuantity(price), reduceOnly: hasOpenLong, addBackendOrder,
       });
       utils.autoTrading.getActiveExecutions.invalidate();
       orderFlashMapRef.current.set(optimisticId, performance.now());
@@ -483,23 +438,10 @@ export const useChartTradingActions = ({
       const optId = optimisticIds[idx]!;
       idx++;
 
-      const isBuy = side === 'BUY';
-      const isAboveMarket = marketPrice > 0 && price > marketPrice;
-      const isBelowMarket = marketPrice > 0 && price < marketPrice;
-      const type: 'LIMIT' | 'STOP_MARKET' = isBuy
-        ? (isAboveMarket ? 'STOP_MARKET' : 'LIMIT')
-        : (isBelowMarket ? 'STOP_MARKET' : 'LIMIT');
-
       try {
-        await addBackendOrder({
-          walletId: backendWalletId,
-          symbol,
-          side,
-          type,
-          marketType: marketType ?? 'FUTURES',
-          price: type === 'LIMIT' ? roundTradingPrice(price) : undefined,
-          stopPrice: type === 'STOP_MARKET' ? roundTradingPrice(price) : undefined,
-          quantity,
+        await submitEntryOrder({
+          backendWalletId, symbol, side, price, marketPrice,
+          quantity, reduceOnly: false, addBackendOrder,
         });
         orderFlashMapRef.current.set(optId, performance.now());
         orderLoadingMapRef.current.delete(optId);
@@ -517,38 +459,11 @@ export const useChartTradingActions = ({
     utils.autoTrading.getActiveExecutions.invalidate();
   }, [backendWalletId, symbol, marketType, getOrderQuantity, addBackendOrder, utils, manager, toastError, t, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
 
-  const draggableOrders = useMemo((): Order[] => {
-    return allExecutions
+  const draggableOrders = useMemo((): Order[] =>
+    allExecutions
       .filter(exec => exec.status === 'open' || exec.status === 'pending')
-      .map(exec => ({
-        id: exec.id,
-        symbol: exec.symbol,
-        orderId: '0',
-        orderListId: '-1',
-        clientOrderId: exec.id,
-        price: exec.entryPrice,
-        origQty: exec.quantity,
-        executedQty: exec.status === 'pending' ? '0' : exec.quantity,
-        cummulativeQuoteQty: '0',
-        status: exec.status === 'pending' ? 'NEW' as const : 'FILLED' as const,
-        timeInForce: 'GTC' as const,
-        type: (exec.entryOrderType ?? (exec.status === 'pending' ? 'LIMIT' : 'MARKET')) as Order['type'],
-        side: exec.side === 'LONG' ? 'BUY' : 'SELL',
-        time: Date.now(),
-        updateTime: Date.now(),
-        isWorking: true,
-        origQuoteOrderQty: '0',
-        entryPrice: parseFloat(exec.entryPrice),
-        quantity: parseFloat(exec.quantity),
-        orderDirection: exec.side === 'LONG' ? 'long' : 'short',
-        stopLoss: exec.stopLoss ? parseFloat(exec.stopLoss) : undefined,
-        takeProfit: exec.takeProfit ? parseFloat(exec.takeProfit) : undefined,
-        isAutoTrade: !!exec.setupType,
-        walletId: backendWalletId ?? '',
-        setupType: exec.setupType ?? undefined,
-        isPendingLimitOrder: exec.status === 'pending',
-      } as Order));
-  }, [allExecutions, backendWalletId]);
+      .map(exec => mapExecutionToOrder(exec, backendWalletId ?? '')),
+  [allExecutions, backendWalletId]);
 
   return {
     handleLongEntry,
