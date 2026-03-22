@@ -1,28 +1,28 @@
 import type { Interval, MarketType } from '@marketmind/types';
-import { TRADING_DEFAULTS } from '@marketmind/types';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import {
   AUTO_TRADING_ROTATION,
   AUTO_TRADING_TIMING,
   INTERVAL_MS,
   TIME_MS,
 } from '../../constants';
-import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { db } from '../../db';
-import { activeWatchers as activeWatchersTable, autoTradingConfig, wallets } from '../../db/schema';
-import { calculateRequiredKlines } from '../../utils/kline-calculator';
-import { parseDynamicSymbolExcluded } from '../../utils/profile-transformers';
+import { activeWatchers as activeWatchersTable, wallets } from '../../db/schema';
 import { serializeError } from '../../utils/errors';
 import {
   getDynamicSymbolRotationService,
   type RotationConfig,
   type RotationResult,
 } from '../dynamic-symbol-rotation';
-import { getKlineMaintenance } from '../kline-maintenance';
-import { prefetchKlines } from '../kline-prefetch';
-import type { ActiveWatcher, RotationManagerDeps, RotationPendingWatcher, WalletRotationState } from './types';
+import type { RotationManagerDeps, RotationPendingWatcher, WalletRotationState } from './types';
 import { getRotationStateKey } from './types';
 import { log, getCandleCloseTime, getNextCandleCloseTime, getRotationAnticipationMs } from './utils';
+import {
+  applyRotation,
+  applyRotationWithQueue,
+  buildRotationConfig,
+  restoreRotationStates as restoreRotationStatesImpl,
+} from './rotation-executor';
 
 const MIN_ROTATION_PREPARATION_TIME_MS = AUTO_TRADING_ROTATION.MIN_PREPARATION_TIME_MS;
 
@@ -35,19 +35,6 @@ export class RotationManager {
   private readonly ANTICIPATION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.ANTICIPATION_CHECK_INTERVAL_MS;
 
   constructor(private deps: RotationManagerDeps) {}
-
-  private countDynamicWatchersForInterval(
-    watchers: Map<string, ActiveWatcher>,
-    walletId: string,
-    interval: string,
-    marketType: MarketType
-  ): number {
-    let count = 0;
-    for (const watcher of watchers.values()) {
-      if (watcher.walletId === walletId && !watcher.isManual && watcher.interval === interval && watcher.marketType === marketType) count++;
-    }
-    return count;
-  }
 
   getRotationPendingWatcher(watcherId: string): RotationPendingWatcher | undefined {
     return this.rotationPendingWatchers.get(watcherId);
@@ -115,25 +102,10 @@ export class RotationManager {
 
         try {
           const walletId = stateKey.split(':')[0]!;
+          await this.refreshWalletBalance(state, walletId);
+
           const rotationService = getDynamicSymbolRotationService();
-
-          if (state.config.capitalRequirement) {
-            const [wallet] = await db
-              .select({ currentBalance: wallets.currentBalance })
-              .from(wallets)
-              .where(eq(wallets.id, walletId))
-              .limit(1);
-
-            if (wallet) {
-              state.config.capitalRequirement.walletBalance = parseFloat(wallet.currentBalance ?? '0');
-            }
-          }
-
-          const result = await rotationService.executeRotation(
-            walletId,
-            state.userId,
-            state.config
-          );
+          const result = await rotationService.executeRotation(walletId, state.userId, state.config);
 
           if (result.added.length > 0 || result.removed.length > 0) {
             log('> [DynamicRotation] Applying anticipated rotation', {
@@ -144,13 +116,8 @@ export class RotationManager {
             });
 
             await this.applyRotationWithQueue(
-              walletId,
-              state.userId,
-              result,
-              state.config.interval,
-              state.profileId,
-              state.config.marketType,
-              currentCandleClose
+              walletId, state.userId, result, state.config.interval,
+              state.profileId, state.config.marketType, currentCandleClose
             );
           }
 
@@ -169,10 +136,7 @@ export class RotationManager {
 
   async checkAllRotationsOnce(): Promise<string[]> {
     const allAddedWatcherIds: string[] = [];
-
-    if (this.rotationStates.size === 0) {
-      return allAddedWatcherIds;
-    }
+    if (this.rotationStates.size === 0) return allAddedWatcherIds;
 
     const now = Date.now();
     const rotationsToExecute: Array<{ stateKey: string; state: WalletRotationState; targetCandleClose: number; isAnticipated: boolean }> = [];
@@ -190,9 +154,7 @@ export class RotationManager {
       }
     }
 
-    if (rotationsToExecute.length === 0) {
-      return allAddedWatcherIds;
-    }
+    if (rotationsToExecute.length === 0) return allAddedWatcherIds;
 
     log('> [DynamicRotation] Checking rotations', {
       count: rotationsToExecute.length,
@@ -205,25 +167,10 @@ export class RotationManager {
 
       try {
         const walletId = stateKey.split(':')[0]!;
+        await this.refreshWalletBalance(state, walletId);
+
         const rotationService = getDynamicSymbolRotationService();
-
-        if (state.config.capitalRequirement) {
-          const [wallet] = await db
-            .select({ currentBalance: wallets.currentBalance })
-            .from(wallets)
-            .where(eq(wallets.id, walletId))
-            .limit(1);
-
-          if (wallet) {
-            state.config.capitalRequirement.walletBalance = parseFloat(wallet.currentBalance ?? '0');
-          }
-        }
-
-        const result = await rotationService.executeRotation(
-          walletId,
-          state.userId,
-          state.config
-        );
+        const result = await rotationService.executeRotation(walletId, state.userId, state.config);
 
         if (result.added.length > 0 || result.removed.length > 0) {
           log('> [DynamicRotation] Applying rotation', {
@@ -235,13 +182,8 @@ export class RotationManager {
           });
 
           const addedIds = await this.applyRotationWithQueue(
-            walletId,
-            state.userId,
-            result,
-            state.config.interval,
-            state.profileId,
-            state.config.marketType,
-            targetCandleClose
+            walletId, state.userId, result, state.config.interval,
+            state.profileId, state.config.marketType, targetCandleClose
           );
           allAddedWatcherIds.push(...addedIds);
         }
@@ -270,76 +212,10 @@ export class RotationManager {
     marketType: MarketType = 'FUTURES',
     targetCandleClose?: number
   ): Promise<string[]> {
-    const addedWatcherIds: string[] = [];
-
-    for (const symbol of result.removed) {
-      await this.deps.stopWatcher(walletId, symbol, interval, marketType);
-    }
-
-    const activeWatchers = this.deps.getActiveWatchers();
-    const currentDynamicCount = this.countDynamicWatchersForInterval(activeWatchers, walletId, interval, marketType);
-    const maxToAdd = Math.max(0, result.targetLimit - currentDynamicCount);
-
-    const symbolsToAdd = result.added
-      .filter(symbol => {
-        const existingWatcher = activeWatchers.get(`${walletId}-${symbol}-${interval}-${marketType}`);
-        return !existingWatcher;
-      })
-      .slice(0, maxToAdd);
-
-    if (symbolsToAdd.length > 0) {
-      log('> [DynamicRotation] Backfilling new symbols', {
-        count: symbolsToAdd.length,
-        symbols: symbolsToAdd.join(', '),
-        targetCandleClose: targetCandleClose ? new Date(targetCandleClose).toISOString() : 'not set',
-      });
-
-      const klineMaintenance = getKlineMaintenance();
-      const requiredKlinesForRotation = calculateRequiredKlines();
-
-      await Promise.all(
-        symbolsToAdd.map(async (symbol) => {
-          log('> [DynamicRotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForRotation });
-          const prefetchResult = await prefetchKlines({
-            symbol,
-            interval,
-            marketType,
-            targetCount: requiredKlinesForRotation,
-            silent: false,
-            forRotation: true,
-          });
-          log('> [DynamicRotation] Prefetch result', {
-            symbol,
-            success: prefetchResult.success,
-            downloaded: prefetchResult.downloaded,
-            totalInDb: prefetchResult.totalInDb,
-            gaps: prefetchResult.gaps,
-            alreadyComplete: prefetchResult.alreadyComplete,
-            error: prefetchResult.error,
-          });
-          await klineMaintenance.forceCheckSymbol(symbol, interval as Interval, marketType);
-        })
-      );
-    }
-
-    for (const symbol of symbolsToAdd) {
-      const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
-      await this.deps.startWatcher(walletId, userId, symbol, interval, profileId, false, marketType, false, false, true, targetCandleClose);
-      addedWatcherIds.push(watcherId);
-
-      this.recentlyRotatedWatchers.set(watcherId, Date.now());
-
-      if (targetCandleClose) {
-        this.rotationPendingWatchers.set(watcherId, {
-          addedAt: Date.now(),
-          targetCandleClose,
-        });
-      }
-    }
-
-    this.deps.addToProcessingQueue(addedWatcherIds);
-
-    return addedWatcherIds;
+    return applyRotationWithQueue(
+      this.deps, this.rotationPendingWatchers, this.recentlyRotatedWatchers,
+      walletId, userId, result, interval, profileId, marketType, targetCandleClose
+    );
   }
 
   async startDynamicRotation(
@@ -366,26 +242,9 @@ export class RotationManager {
     }
 
     const enableAutoRotation = config.enableAutoRotation ?? true;
+    const rotationConfig = buildRotationConfig(config);
 
     const rotationService = getDynamicSymbolRotationService();
-    const excludedSymbols = parseDynamicSymbolExcluded(config.dynamicSymbolExcluded);
-
-    const rotationConfig: RotationConfig = {
-      enabled: true,
-      limit: config.targetWatcherCount,
-      interval: config.interval,
-      excludedSymbols,
-      marketType: config.marketType,
-      capitalRequirement: config.walletBalance !== undefined ? {
-        walletBalance: config.walletBalance,
-        leverage: config.leverage ?? 1,
-        targetWatchersCount: config.targetWatcherCount,
-        positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
-      } : undefined,
-      useBtcCorrelationFilter: config.useBtcCorrelationFilter,
-      directionMode: config.directionMode,
-    };
-
     const initialResult = await rotationService.executeRotation(walletId, userId, rotationConfig);
     const addedWatcherIds = await this.applyRotation(walletId, userId, initialResult, config.interval, config.profileId, config.marketType);
 
@@ -423,9 +282,7 @@ export class RotationManager {
   async stopDynamicRotation(walletId: string, stopDynamicWatchers: boolean = true): Promise<void> {
     const keysToDelete: string[] = [];
     for (const key of this.rotationStates.keys()) {
-      if (key.startsWith(`${walletId}:`)) {
-        keysToDelete.push(key);
-      }
+      if (key.startsWith(`${walletId}:`)) keysToDelete.push(key);
     }
 
     if (keysToDelete.length === 0) {
@@ -438,9 +295,7 @@ export class RotationManager {
       this.isCheckingRotation.delete(key);
     }
 
-    if (this.rotationStates.size === 0) {
-      this.stopAnticipationTimer();
-    }
+    if (this.rotationStates.size === 0) this.stopAnticipationTimer();
 
     if (stopDynamicWatchers) {
       const dynamicWatchers = await db
@@ -474,119 +329,7 @@ export class RotationManager {
     profileId?: string,
     marketType: MarketType = 'FUTURES'
   ): Promise<string[]> {
-    const addedWatcherIds: string[] = [];
-
-    for (const symbol of result.removed) {
-      const existingWatcher = await db
-        .select()
-        .from(activeWatchersTable)
-        .where(
-          and(
-            eq(activeWatchersTable.walletId, walletId),
-            eq(activeWatchersTable.symbol, symbol),
-            eq(activeWatchersTable.isManual, false)
-          )
-        )
-        .limit(1);
-
-      if (existingWatcher.length > 0) {
-        await this.deps.stopWatcher(walletId, symbol, interval, marketType);
-      }
-    }
-
-    const klineMaintenance = getKlineMaintenance();
-    const validations: Array<{ symbol: string; gapsFilled: number; corruptedFixed: number }> = [];
-
-    const activeWatchers = this.deps.getActiveWatchers();
-    const currentDynamicCount = this.countDynamicWatchersForInterval(activeWatchers, walletId, interval, marketType);
-    const maxToAdd = Math.max(0, result.targetLimit - currentDynamicCount);
-
-    const symbolsToAdd: string[] = [];
-    for (const symbol of result.added) {
-      if (symbolsToAdd.length >= maxToAdd) break;
-
-      const existingWatcher = await db
-        .select()
-        .from(activeWatchersTable)
-        .where(
-          and(
-            eq(activeWatchersTable.walletId, walletId),
-            eq(activeWatchersTable.symbol, symbol)
-          )
-        )
-        .limit(1);
-
-      if (existingWatcher.length === 0) {
-        symbolsToAdd.push(symbol);
-      }
-    }
-
-    if (symbolsToAdd.length > 0) {
-      log('> [Rotation] Backfilling new symbols', {
-        count: symbolsToAdd.length,
-        symbols: symbolsToAdd.join(', '),
-      });
-
-      const requiredKlinesForApply = calculateRequiredKlines();
-
-      await Promise.all(
-        symbolsToAdd.map(async (symbol) => {
-          log('> [Rotation] Starting prefetch', { symbol, interval, marketType, targetCount: requiredKlinesForApply });
-          const prefetchResult = await prefetchKlines({ symbol, interval, marketType, targetCount: requiredKlinesForApply, silent: false });
-          log('> [Rotation] Prefetch result', {
-            symbol,
-            success: prefetchResult.success,
-            downloaded: prefetchResult.downloaded,
-            totalInDb: prefetchResult.totalInDb,
-            gaps: prefetchResult.gaps,
-            alreadyComplete: prefetchResult.alreadyComplete,
-            error: prefetchResult.error,
-          });
-
-          const validationResult = await klineMaintenance.forceCheckSymbol(
-            symbol,
-            interval as Interval,
-            marketType
-          );
-
-          if (validationResult.gapsFilled > 0 || validationResult.corruptedFixed > 0) {
-            validations.push({
-              symbol,
-              gapsFilled: validationResult.gapsFilled,
-              corruptedFixed: validationResult.corruptedFixed,
-            });
-          }
-        })
-      );
-    }
-
-    for (const symbol of symbolsToAdd) {
-      const watcherId = `${walletId}-${symbol}-${interval}-${marketType}`;
-      await this.deps.startWatcher(
-        walletId,
-        userId,
-        symbol,
-        interval,
-        profileId,
-        false,
-        marketType,
-        false,
-        false,
-        true
-      );
-      addedWatcherIds.push(watcherId);
-    }
-
-    if (validations.length > 0) {
-      log('# [Rotation] Kline validations completed', {
-        symbols: validations.map(v => v.symbol).join(', '),
-        totalGapsFilled: validations.reduce((sum, v) => sum + v.gapsFilled, 0),
-        totalCorruptedFixed: validations.reduce((sum, v) => sum + v.corruptedFixed, 0),
-        details: validations,
-      });
-    }
-
-    return addedWatcherIds;
+    return applyRotation(this.deps, walletId, userId, result, interval, profileId, marketType);
   }
 
   async triggerManualRotation(
@@ -605,25 +348,9 @@ export class RotationManager {
       directionMode?: 'auto' | 'long_only' | 'short_only';
     }
   ): Promise<RotationResult> {
+    const rotationConfig = buildRotationConfig(config);
+
     const rotationService = getDynamicSymbolRotationService();
-    const excludedSymbols = parseDynamicSymbolExcluded(config.dynamicSymbolExcluded);
-
-    const rotationConfig: RotationConfig = {
-      enabled: true,
-      limit: config.targetWatcherCount,
-      interval: config.interval,
-      excludedSymbols,
-      marketType: config.marketType,
-      capitalRequirement: config.walletBalance !== undefined ? {
-        walletBalance: config.walletBalance,
-        leverage: config.leverage ?? 1,
-        targetWatchersCount: config.targetWatcherCount,
-        positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
-      } : undefined,
-      useBtcCorrelationFilter: config.useBtcCorrelationFilter,
-      directionMode: config.directionMode,
-    };
-
     const result = await rotationService.executeRotation(walletId, userId, rotationConfig);
     const addedWatcherIds = await this.applyRotation(walletId, userId, result, config.interval, config.profileId, config.marketType);
 
@@ -634,9 +361,7 @@ export class RotationManager {
 
   isRotationActive(walletId: string): boolean {
     for (const key of this.rotationStates.keys()) {
-      if (key.startsWith(`${walletId}:`)) {
-        return true;
-      }
+      if (key.startsWith(`${walletId}:`)) return true;
     }
     return false;
   }
@@ -649,9 +374,7 @@ export class RotationManager {
       if (key.startsWith(`${walletId}:`)) {
         const nextCandleClose = getNextCandleCloseTime(state.config.interval, now);
         const nextTime = new Date(nextCandleClose);
-        if (!earliestTime || nextTime < earliestTime) {
-          earliestTime = nextTime;
-        }
+        if (!earliestTime || nextTime < earliestTime) earliestTime = nextTime;
       }
     }
 
@@ -660,9 +383,7 @@ export class RotationManager {
 
   getRotationConfig(walletId: string): RotationConfig | null {
     for (const [key, state] of this.rotationStates.entries()) {
-      if (key.startsWith(`${walletId}:`)) {
-        return state.config;
-      }
+      if (key.startsWith(`${walletId}:`)) return state.config;
     }
     return null;
   }
@@ -675,11 +396,7 @@ export class RotationManager {
       if (key.startsWith(`${walletId}:`)) {
         const interval = key.split(':')[1] ?? state.config.interval;
         const nextCandleClose = getNextCandleCloseTime(state.config.interval, now);
-        cycles.push({
-          interval,
-          nextRotation: new Date(nextCandleClose),
-          config: state.config,
-        });
+        cycles.push({ interval, nextRotation: new Date(nextCandleClose), config: state.config });
       }
     }
 
@@ -697,84 +414,24 @@ export class RotationManager {
     }>,
     _getDynamicWatcherCount: (walletId: string) => number
   ): Promise<void> {
-    const dynamicWatchersByWallet = new Map<string, {
-      userId: string;
-      interval: string;
-      marketType: MarketType;
-      profileId?: string;
-      count: number;
-    }>();
+    return restoreRotationStatesImpl(
+      this.startDynamicRotation.bind(this),
+      persistedWatchers,
+      _getDynamicWatcherCount
+    );
+  }
 
-    for (const pw of persistedWatchers) {
-      if (pw.isManual) continue;
+  private async refreshWalletBalance(state: WalletRotationState, walletId: string): Promise<void> {
+    if (!state.config.capitalRequirement) return;
 
-      const key = `${pw.walletId}:${pw.interval}`;
-      const existing = dynamicWatchersByWallet.get(key);
-      if (existing) {
-        existing.count++;
-      } else {
-        dynamicWatchersByWallet.set(key, {
-          userId: pw.userId,
-          interval: pw.interval,
-          marketType: (pw.marketType as MarketType) ?? 'FUTURES',
-          profileId: pw.profileId ?? undefined,
-          count: 1,
-        });
-      }
-    }
-
-    if (dynamicWatchersByWallet.size === 0) {
-      log('> [Startup] No dynamic watchers to restore rotation for');
-      return;
-    }
-
-    const walletIds = [...new Set([...dynamicWatchersByWallet.keys()].map(k => k.split(':')[0]!))].filter(Boolean);
-
-    const configs = await db
-      .select()
-      .from(autoTradingConfig)
-      .where(inArray(autoTradingConfig.walletId, walletIds));
-
-    const walletsData = await db
-      .select({ id: wallets.id, currentBalance: wallets.currentBalance })
+    const [wallet] = await db
+      .select({ currentBalance: wallets.currentBalance })
       .from(wallets)
-      .where(inArray(wallets.id, walletIds));
+      .where(eq(wallets.id, walletId))
+      .limit(1);
 
-    const configByWallet = new Map(configs.map(c => [c.walletId, c]));
-    const walletBalanceMap = new Map(walletsData.map(w => [w.id, parseFloat(w.currentBalance ?? '0')]));
-
-    let restoredCount = 0;
-    for (const [key, watcherInfo] of dynamicWatchersByWallet.entries()) {
-      const walletId = key.split(':')[0]!;
-      const config = configByWallet.get(walletId);
-
-      if (!config?.useDynamicSymbolSelection) continue;
-
-      try {
-        const targetCount = watcherInfo.count > 0 ? watcherInfo.count : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
-
-        await this.startDynamicRotation(walletId, watcherInfo.userId, {
-          useDynamicSymbolSelection: true,
-          targetWatcherCount: targetCount,
-          dynamicSymbolExcluded: config.dynamicSymbolExcluded,
-          marketType: watcherInfo.marketType,
-          interval: watcherInfo.interval,
-          profileId: watcherInfo.profileId,
-          enableAutoRotation: config.enableAutoRotation,
-          leverage: config.leverage ?? 1,
-          positionSizePercent: TRADING_DEFAULTS.POSITION_SIZE_PERCENT,
-          walletBalance: walletBalanceMap.get(walletId),
-          useBtcCorrelationFilter: config.useBtcCorrelationFilter ?? true,
-          directionMode: config.directionMode,
-        });
-        restoredCount++;
-      } catch (error) {
-        log('! [Startup] Failed to restore rotation', {
-          walletId,
-          interval: watcherInfo.interval,
-          error: serializeError(error),
-        });
-      }
+    if (wallet) {
+      state.config.capitalRequirement.walletBalance = parseFloat(wallet.currentBalance ?? '0');
     }
   }
 }

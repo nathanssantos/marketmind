@@ -1,15 +1,11 @@
-import { calculateFibonacciProjection, selectDynamicFibonacciLevel } from '@marketmind/indicators';
 import type {
   ComputedIndicators,
   EvaluationContext,
   ExitContext,
-  FibonacciProjectionData,
   Kline,
   SetupDirection,
   StrategyDefinition,
   TimeInterval,
-  TriggerCandleSnapshot,
-  TriggerIndicatorValues,
 } from '@marketmind/types';
 
 import {
@@ -23,10 +19,13 @@ import { logger } from '../../logger';
 import { isDirectionAllowed } from '../../../utils/trading-validation';
 import { ConditionEvaluator } from './ConditionEvaluator';
 import { ExitCalculator } from './ExitCalculator';
+import {
+  calculateFibonacciProjectionData,
+  extractIndicatorValues,
+  extractTriggerCandles,
+  validateFibonacciEntryProgress,
+} from './FibonacciHelper';
 import { IndicatorEngine } from './IndicatorEngine';
-
-const DEFAULT_FIBONACCI_LOOKBACK = 100;
-const DEFAULT_FIBONACCI_LEVEL = 1.618;
 
 const { MIN_ENTRY_STOP_SEPARATION_PERCENT, MAX_FIBONACCI_ENTRY_PROGRESS_PERCENT } = EXIT_CALCULATOR;
 
@@ -105,10 +104,13 @@ export class StrategyInterpreter extends BaseSetupDetector {
     const closePrice = parseFloat(klines[currentIndex]?.close ?? '0');
     const entryPrice = closePrice;
 
-    const fibonacciProjection = this.calculateFibonacciProjectionData(klines, currentIndex, direction, indicators);
+    const fibonacciProjection = calculateFibonacciProjectionData(
+      klines, currentIndex, direction, indicators,
+      this.interval, this.fibonacciSwingRange, this.indicatorEngine, this.silent
+    );
 
     const maxFibProgress = direction === 'LONG' ? this.maxFibEntryProgressLong : this.maxFibEntryProgressShort;
-    const fibEntryValidation = this.validateFibonacciEntryProgress(entryPrice, fibonacciProjection, direction, maxFibProgress);
+    const fibEntryValidation = validateFibonacciEntryProgress(entryPrice, fibonacciProjection, direction, maxFibProgress, this.silent);
     if (!fibEntryValidation.valid) {
       return {
         setup: null,
@@ -214,15 +216,8 @@ export class StrategyInterpreter extends BaseSetupDetector {
       };
     }
 
-    const indicatorConfluence = this.calculateIndicatorConfluence(
-      indicators,
-      currentIndex
-    );
-
-    const volumeConfirmation = this.checkVolumeConfirmation(
-      indicators,
-      currentIndex
-    );
+    const indicatorConfluence = this.calculateIndicatorConfluence(indicators, currentIndex);
+    const volumeConfirmation = this.checkVolumeConfirmation(indicators, currentIndex);
 
     const baseSetup = this.createSetup(
       this.strategy.id,
@@ -269,8 +264,9 @@ export class StrategyInterpreter extends BaseSetupDetector {
       }, '✓ Setup detected');
     }
 
-    const triggerCandleData = this.extractTriggerCandles(klines, currentIndex);
-    const triggerIndicatorValues = this.extractIndicatorValues(indicators, currentIndex);
+    const lookback = this.strategy.education?.candlePattern?.lookback ?? 3;
+    const triggerCandleData = extractTriggerCandles(klines, currentIndex, lookback);
+    const triggerIndicatorValues = extractIndicatorValues(indicators, currentIndex);
 
     return {
       setup,
@@ -279,155 +275,6 @@ export class StrategyInterpreter extends BaseSetupDetector {
       triggerCandleData,
       triggerIndicatorValues,
     };
-  }
-
-  private calculateFibonacciProjectionData(
-    klines: Kline[],
-    currentIndex: number,
-    direction: SetupDirection,
-    indicators: ComputedIndicators
-  ): FibonacciProjectionData | undefined {
-    const lookback = this.interval ?? DEFAULT_FIBONACCI_LOOKBACK;
-    const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction, this.fibonacciSwingRange);
-    if (!projection) return undefined;
-
-    const primaryLevel = this.selectPrimaryFibonacciLevel(klines, currentIndex, indicators);
-
-    return {
-      swingLow: {
-        price: projection.swingLow.price,
-        index: projection.swingLow.index,
-        timestamp: projection.swingLow.timestamp,
-      },
-      swingHigh: {
-        price: projection.swingHigh.price,
-        index: projection.swingHigh.index,
-        timestamp: projection.swingHigh.timestamp,
-      },
-      levels: projection.levels.map(l => ({
-        level: l.level,
-        price: l.price,
-        label: l.label,
-      })),
-      range: projection.range,
-      primaryLevel,
-    };
-  }
-
-  private selectPrimaryFibonacciLevel(
-    klines: Kline[],
-    currentIndex: number,
-    indicators: ComputedIndicators
-  ): number {
-    const adxValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'adx', currentIndex);
-    const atrValue = this.indicatorEngine.resolveIndicatorValue(indicators, 'atr', currentIndex);
-
-    if (adxValue === null || atrValue === null) {
-      if (!this.silent) {
-        logger.trace({ adxValue, atrValue }, 'Missing ADX or ATR for dynamic Fibonacci level selection, using default');
-      }
-      return DEFAULT_FIBONACCI_LEVEL;
-    }
-
-    const currentKline = klines[currentIndex];
-    const closePrice = currentKline ? parseFloat(currentKline.close) : 0;
-    const atrPercent = closePrice > 0 ? (atrValue / closePrice) * 100 : 0;
-
-    let volumeRatio: number | undefined;
-    const currentVolume = currentKline ? parseFloat(currentKline.volume) : 0;
-    if (currentVolume > 0 && currentIndex >= 20) {
-      let avgVolume = 0;
-      for (let i = currentIndex - 20; i < currentIndex; i++) {
-        const k = klines[i];
-        if (k) avgVolume += parseFloat(k.volume);
-      }
-      avgVolume /= 20;
-      volumeRatio = avgVolume > 0 ? currentVolume / avgVolume : undefined;
-    }
-
-    const result = selectDynamicFibonacciLevel({ adx: adxValue, atrPercent, volumeRatio });
-
-    if (!this.silent) {
-      logger.trace({
-        adx: adxValue.toFixed(2),
-        atrPercent: atrPercent.toFixed(2),
-        volumeRatio: volumeRatio?.toFixed(2) ?? 'N/A',
-        selectedLevel: result.level,
-        reason: result.reason,
-      }, 'Dynamic Fibonacci level selected');
-    }
-
-    return result.level;
-  }
-
-  private extractTriggerCandles(
-    klines: Kline[],
-    currentIndex: number
-  ): TriggerCandleSnapshot[] {
-    const lookback = this.strategy.education?.candlePattern?.lookback ?? 3;
-    const snapshots: TriggerCandleSnapshot[] = [];
-
-    for (let offset = -(lookback - 1); offset <= 0; offset++) {
-      const idx = currentIndex + offset;
-      if (idx < 0 || idx >= klines.length) continue;
-
-      const kline = klines[idx];
-      if (!kline) continue;
-
-      snapshots.push({
-        offset,
-        openTime: kline.openTime,
-        open: typeof kline.open === 'string' ? parseFloat(kline.open) : kline.open,
-        high: typeof kline.high === 'string' ? parseFloat(kline.high) : kline.high,
-        low: typeof kline.low === 'string' ? parseFloat(kline.low) : kline.low,
-        close: typeof kline.close === 'string' ? parseFloat(kline.close) : kline.close,
-        volume: typeof kline.volume === 'string' ? parseFloat(kline.volume) : kline.volume,
-      });
-    }
-
-    return snapshots;
-  }
-
-  private extractIndicatorValues(
-    indicators: ComputedIndicators,
-    currentIndex: number
-  ): TriggerIndicatorValues {
-    const values: TriggerIndicatorValues = {};
-
-    for (const [id, indicator] of Object.entries(indicators)) {
-      if (id.startsWith('_')) continue;
-
-      if (Array.isArray(indicator.values)) {
-        const current = indicator.values[currentIndex];
-        const prev = currentIndex > 0 ? indicator.values[currentIndex - 1] : null;
-        const prev2 = currentIndex > 1 ? indicator.values[currentIndex - 2] : null;
-
-        if (current !== null && current !== undefined) {
-          values[id] = current;
-        }
-        if (prev !== null && prev !== undefined) {
-          values[`${id}Prev`] = prev;
-        }
-        if (prev2 !== null && prev2 !== undefined) {
-          values[`${id}Prev2`] = prev2;
-        }
-      } else {
-        const subValues = indicator.values;
-        for (const [subKey, arr] of Object.entries(subValues)) {
-          const current = arr[currentIndex];
-          const prev = currentIndex > 0 ? arr[currentIndex - 1] : null;
-
-          if (current !== null && current !== undefined) {
-            values[`${id}.${subKey}`] = current;
-          }
-          if (prev !== null && prev !== undefined) {
-            values[`${id}.${subKey}Prev`] = prev;
-          }
-        }
-      }
-    }
-
-    return values;
   }
 
   private checkEntryConditions(context: EvaluationContext): {
@@ -457,7 +304,7 @@ export class StrategyInterpreter extends BaseSetupDetector {
     let count = 0;
 
     for (const [id, indicator] of Object.entries(indicators)) {
-      if (id.startsWith('_')) continue; // Skip internal indicators
+      if (id.startsWith('_')) continue;
 
       if (Array.isArray(indicator.values)) {
         if (indicator.values[currentIndex] !== null) {
@@ -484,20 +331,13 @@ export class StrategyInterpreter extends BaseSetupDetector {
     currentIndex: number
   ): boolean {
     const volumeCurrent = this.indicatorEngine.resolveIndicatorValue(
-      indicators,
-      'volume.current',
-      currentIndex
+      indicators, 'volume.current', currentIndex
     );
     const volumeSma20 = this.indicatorEngine.resolveIndicatorValue(
-      indicators,
-      'volume.sma20',
-      currentIndex
+      indicators, 'volume.sma20', currentIndex
     );
 
-    if (volumeCurrent === null || volumeSma20 === null) {
-      return false;
-    }
-
+    if (volumeCurrent === null || volumeSma20 === null) return false;
     return volumeCurrent > volumeSma20;
   }
 
@@ -619,46 +459,5 @@ export class StrategyInterpreter extends BaseSetupDetector {
     }
 
     return { passed: true, reason: '', details: {} };
-  }
-
-  private validateFibonacciEntryProgress(
-    entryPrice: number,
-    fibonacciProjection: FibonacciProjectionData | undefined,
-    direction: SetupDirection,
-    maxProgress: number
-  ): { valid: boolean; progress: number; reason?: string } {
-    if (!fibonacciProjection) {
-      return { valid: true, progress: 0 };
-    }
-
-    const { swingLow, swingHigh } = fibonacciProjection;
-    const swingRange = swingHigh.price - swingLow.price;
-
-    if (swingRange <= 0) {
-      return { valid: true, progress: 0, reason: 'invalid_swing_range' };
-    }
-
-    const progress = direction === 'LONG'
-      ? ((entryPrice - swingLow.price) / swingRange) * 100
-      : ((swingHigh.price - entryPrice) / swingRange) * 100;
-
-    const isValid = progress <= maxProgress;
-
-    if (!isValid && !this.silent) {
-      logger.warn({
-        direction,
-        entryPrice: entryPrice.toFixed(4),
-        swingLow: swingLow.price.toFixed(4),
-        swingHigh: swingHigh.price.toFixed(4),
-        fibLevel: `${progress.toFixed(1)}%`,
-        maxAllowed: `${maxProgress}%`,
-      }, '! Entry price above max Fibonacci level - setup rejected');
-    }
-
-    return {
-      valid: isValid,
-      progress,
-      reason: isValid ? undefined : 'entry_above_max_fib_level',
-    };
   }
 }
