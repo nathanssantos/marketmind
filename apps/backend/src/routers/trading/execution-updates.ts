@@ -161,12 +161,23 @@ export const executionUpdatesRouter = router({
         newTakeProfitOrderId: isFutures ? newTakeProfitAlgoId : newTakeProfitOrderId,
       }, 'Updated trade execution SL/TP');
 
+      const openExecutionsAfterUpdate = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(
+          eq(tradeExecutions.walletId, execution.walletId),
+          eq(tradeExecutions.userId, ctx.user.id),
+          eq(tradeExecutions.status, 'open'),
+        ));
+
       return {
         success: true,
         stopLoss: input.stopLoss?.toString(),
         takeProfit: input.takeProfit?.toString(),
         stopLossOrderId: isFutures ? newStopLossAlgoId : newStopLossOrderId,
         takeProfitOrderId: isFutures ? newTakeProfitAlgoId : newTakeProfitOrderId,
+        walletId: execution.walletId,
+        openExecutions: openExecutionsAfterUpdate,
       };
     }),
 
@@ -346,6 +357,7 @@ export const executionUpdatesRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const results: { executionId: string; success: boolean; error?: string }[] = [];
+      let resolvedWalletId: string | null = null;
 
       for (const executionId of input.executionIds) {
         try {
@@ -365,6 +377,7 @@ export const executionUpdatesRouter = router({
             continue;
           }
 
+          if (!resolvedWalletId) resolvedWalletId = execution.walletId;
           const wallet = await walletQueries.getById(execution.walletId);
           const walletSupportsLive = !isPaperWallet(wallet);
           const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
@@ -409,6 +422,18 @@ export const executionUpdatesRouter = router({
         }
       }
 
-      return { results };
+      let openExecutions;
+      if (resolvedWalletId) {
+        openExecutions = await ctx.db
+          .select()
+          .from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, resolvedWalletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+      }
+
+      return { results, walletId: resolvedWalletId, openExecutions };
     }),
 });

@@ -142,6 +142,15 @@ export const executionsRouter = router({
           pnlPercent: 0,
         });
 
+        const openExecutionsAfterCancel = await ctx.db
+          .select()
+          .from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, execution.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
         return {
           pnl: '0',
           grossPnl: '0',
@@ -150,6 +159,8 @@ export const executionsRouter = router({
           exitOrderId: null,
           exitPrice: '0',
           cancelled: true,
+          walletId: execution.walletId,
+          openExecutions: openExecutionsAfterCancel,
         };
       }
 
@@ -362,6 +373,15 @@ export const executionsRouter = router({
         ? (totalNetPnl / (weightedEntryPrice * totalQty / leverage)) * 100
         : 0;
 
+      const openExecutionsAfterClose = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(
+          eq(tradeExecutions.walletId, execution.walletId),
+          eq(tradeExecutions.userId, ctx.user.id),
+          eq(tradeExecutions.status, 'open'),
+        ));
+
       return {
         pnl: totalNetPnl.toString(),
         grossPnl: totalGrossPnl.toString(),
@@ -371,6 +391,8 @@ export const executionsRouter = router({
         exitPrice: exitPrice.toString(),
         leverage: isFutures ? leverage : undefined,
         marketType: execution.marketType,
+        walletId: execution.walletId,
+        openExecutions: openExecutionsAfterClose,
       };
     }),
 
@@ -419,6 +441,15 @@ export const executionsRouter = router({
         })
         .where(eq(tradeExecutions.id, input.id));
 
-      return { success: true };
+      const openExecutionsAfterCancel = await ctx.db
+        .select()
+        .from(tradeExecutions)
+        .where(and(
+          eq(tradeExecutions.walletId, execution.walletId),
+          eq(tradeExecutions.userId, ctx.user.id),
+          eq(tradeExecutions.status, 'open'),
+        ));
+
+      return { success: true, walletId: execution.walletId, openExecutions: openExecutionsAfterCancel };
     }),
 });

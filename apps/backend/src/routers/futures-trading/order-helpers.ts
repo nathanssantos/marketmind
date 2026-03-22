@@ -118,15 +118,25 @@ export const handleConditionalOrder = async (
     }
   }
 
+  const openExecutions = await ctx.db.select().from(tradeExecutions)
+    .where(
+      and(
+        eq(tradeExecutions.walletId, input.walletId),
+        eq(tradeExecutions.userId, ctx.user.id),
+        eq(tradeExecutions.status, 'open'),
+      )
+    );
+
   return {
     orderId: algoOrder.algoId,
     symbol: algoOrder.symbol,
     side: algoOrder.side,
     type: algoOrder.type,
-    status: 'NEW',
+    status: 'NEW' as const,
     price: algoOrder.triggerPrice ?? triggerPrice,
     quantity: algoOrder.quantity,
     executedQty: '0',
+    openExecutions,
   };
 };
 

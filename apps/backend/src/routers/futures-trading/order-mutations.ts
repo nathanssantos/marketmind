@@ -88,6 +88,13 @@ export const orderMutationsRouter = router({
             takeProfitIntent: input.takeProfit,
           });
 
+          const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
           return {
             orderId: simulatedOrderId,
             symbol: input.symbol,
@@ -97,6 +104,7 @@ export const orderMutationsRouter = router({
             price,
             quantity,
             executedQty: input.type === 'MARKET' ? quantity : '0',
+            openExecutions: paperOpenExecutions,
           };
         }
 
@@ -217,7 +225,14 @@ export const orderMutationsRouter = router({
         const wsService = getWebSocketService();
         if (wsService) wsService.emitOrderCreated(input.walletId, orderResult);
 
-        return orderResult;
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
+        return { ...orderResult, openExecutions };
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
@@ -252,7 +267,14 @@ export const orderMutationsRouter = router({
             .set({ status: 'cancelled', updatedAt: new Date() })
             .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
 
-          return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
+          const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
+          return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
 
         const [dbOrder] = await ctx.db.select().from(orders).where(eq(orders.orderId, input.orderId)).limit(1);
@@ -275,7 +297,14 @@ export const orderMutationsRouter = router({
           .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
           .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
 
-        return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED' };
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
+        return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions };
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({

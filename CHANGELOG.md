@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.74.0] - 2026-03-22
+
+### Added
+- **Instant position feedback**: all trading mutations (create, close, cancel, update SL/TP, reverse) now return updated open executions in the response, enabling instant UI updates via React Query `setQueryData`
+
+### Changed
+- **Trading mutations enriched response**: `createOrder`, `cancelOrder`, `closePosition`, `reversePosition`, `closePositionAndCancelOrders`, `closeTradeExecution`, `cancelTradeExecution`, `updateTradeExecutionSLTP`, `cancelIndividualProtectionOrder` all return `openExecutions` alongside their normal response
+- **Frontend cache updates**: `useBackendTradingMutations`, `useBackendFuturesTrading`, and `useChartTradingActions` now use `setQueryData` for instant cache updates instead of waiting for query refetch cycle
+
+### Refactored
+- **44 files split to ≤500 lines**: systematic code quality pass across the entire monorepo
+  - `binance-futures-user-stream.ts` (2519→542): handlers extracted to `user-stream/`
+  - `auto-trading.ts` router (2282→index): 9 sub-routers
+  - `ChartCanvas.tsx` (2182→379): hooks extracted for trading data, shortcuts, animations
+  - `trading.ts` router (2085→index): 7 sub-routers
+  - `useOrderLinesRenderer.ts` (1674→244): drawing, hit-test, render sections extracted
+  - `order-executor.ts` (1666→270): validator, sizing, executors extracted
+  - `auto-trading-scheduler.ts` (1628→290): thin facade over modules
+  - `IndicatorEngine.ts` (1582→368): handlers, cache, screener extracted
+  - `futures-trading.ts` (1341→index): 8 sub-routers
+  - `position-monitor.ts` (1328→440): exit, fees, liquidation extracted
+  - `theme/index.ts` (1250→30): tokens, recipes, color resolvers extracted
+  - `ProfileEditorDialog.tsx` (1191→240): form sections and hooks extracted
+  - `kline-maintenance.ts` (1087→343): gap/corruption detection extracted
+  - `pyramiding.ts` (1021→482): calculations and evaluators extracted
+  - `ExitCalculator.ts` (981→432): swing/pivot helpers extracted
+  - Plus 29 more files between 500-973 lines
+
 ## [0.73.0] - 2026-03-21
 
 ### Added

@@ -88,6 +88,13 @@ export const orderMutationsRouter = router({
             reduceOnly: input.reduceOnly,
           });
 
+          const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
           return {
             orderId: simulatedOrderId,
             symbol: input.symbol,
@@ -98,6 +105,7 @@ export const orderMutationsRouter = router({
             quantity,
             executedQty: input.type === 'MARKET' ? quantity : '0',
             marketType: input.marketType,
+            openExecutions: paperOpenExecutions,
           };
         }
 
@@ -248,6 +256,13 @@ export const orderMutationsRouter = router({
             }
           }
 
+          const algoOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, orderInput.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
           return {
             orderId: algoOrder.algoId,
             symbol: algoOrder.symbol,
@@ -258,6 +273,7 @@ export const orderMutationsRouter = router({
             quantity: algoOrder.quantity,
             executedQty: '0',
             marketType: orderInput.marketType,
+            openExecutions: algoOpenExecutions,
           };
         }
 
@@ -350,6 +366,13 @@ export const orderMutationsRouter = router({
           }
         }
 
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, orderInput.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
         return {
           orderId: binanceOrder.orderId,
           symbol: binanceOrder.symbol,
@@ -360,6 +383,7 @@ export const orderMutationsRouter = router({
           quantity: binanceOrder.origQty,
           executedQty: binanceOrder.executedQty,
           marketType: orderInput.marketType,
+          openExecutions,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -402,10 +426,19 @@ export const orderMutationsRouter = router({
             })
             .where(eq(orders.orderId, input.orderId));
 
+          const paperOpenExecs = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
           return {
             orderId: input.orderId,
             symbol: input.symbol,
             status: 'CANCELED',
+            walletId: input.walletId,
+            openExecutions: paperOpenExecs,
           };
         }
 
@@ -450,10 +483,19 @@ export const orderMutationsRouter = router({
             )
           );
 
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
         return {
           orderId: input.orderId,
           symbol: input.symbol,
           status: cancelSucceeded ? 'CANCELED' : 'ALREADY_FILLED',
+          walletId: input.walletId,
+          openExecutions,
         };
       } catch (error) {
         throw new TRPCError({

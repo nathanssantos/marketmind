@@ -68,7 +68,16 @@ export const useChartTradingActions = ({
   });
 
   const cancelFuturesOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId: wId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.futuresTrading.getOpenOrders.invalidate();
       utils.futuresTrading.getOpenAlgoOrders.invalidate();
       utils.futuresTrading.getOpenDbOrderIds.invalidate();

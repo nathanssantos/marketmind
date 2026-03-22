@@ -5,7 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
-import { orders, positions } from '../../db/schema';
+import { orders, positions, tradeExecutions } from '../../db/schema';
 import { BinanceIpBannedError } from '../../services/binance-api-cache';
 import {
   cancelAllSymbolOrders,
@@ -186,12 +186,21 @@ export const positionMutationsRouter = router({
             pnlPercent: pnlPercent.toFixed(2),
           }, 'Paper futures position closed with funding');
 
+          const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
           return {
             success: true,
             positionId: input.positionId,
             pnl: netPnl,
             pnlPercent,
             accumulatedFunding,
+            walletId: input.walletId,
+            openExecutions: paperOpenExecutions,
           };
         }
 
@@ -214,7 +223,14 @@ export const positionMutationsRouter = router({
           quantity: result.origQty,
         }, 'Futures position closed');
 
-        return { success: true, orderId: result.orderId };
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
+        return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions };
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         throw new TRPCError({
@@ -316,7 +332,14 @@ export const positionMutationsRouter = router({
             closedPnl: netPnl.toFixed(4),
           }, 'Paper futures position reversed');
 
-          return { success: true, closedPnl: netPnl, newPositionId, newSide };
+          const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
+          return { success: true, closedPnl: netPnl, newPositionId, newSide, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
 
         const client = createBinanceFuturesClient(wallet);
@@ -358,11 +381,20 @@ export const positionMutationsRouter = router({
           quantity: formattedQty,
         }, 'Position reversed: cancel orders → close → open');
 
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
         return {
           success: true,
           closeOrderId: closeResult.orderId,
           openOrderId: openResult.orderId,
           newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
+          walletId: input.walletId,
+          openExecutions,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -445,7 +477,15 @@ export const positionMutationsRouter = router({
             .where(eq(positions.id, input.positionId));
 
           logger.info({ positionId: input.positionId, symbol: input.symbol, netPnl: netPnl.toFixed(4) }, 'Paper position closed and orders cancelled');
-          return { success: true, pnl: netPnl, pnlPercent };
+
+          const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
+          return { success: true, pnl: netPnl, pnlPercent, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
 
         const client = createBinanceFuturesClient(wallet);
@@ -465,7 +505,14 @@ export const positionMutationsRouter = router({
           orderId: result.orderId,
         }, 'Position closed and all orders cancelled');
 
-        return { success: true, orderId: result.orderId };
+        const openExecutions = await ctx.db.select().from(tradeExecutions)
+          .where(and(
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'open'),
+          ));
+
+        return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });

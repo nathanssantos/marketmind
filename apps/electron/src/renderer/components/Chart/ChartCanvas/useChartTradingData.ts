@@ -7,7 +7,7 @@ import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useIndicatorStore } from '@renderer/store';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants/queryConfig';
-import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BackendExecution, TrailingStopLineConfig } from '../useOrderLinesRenderer';
 
 interface OptimisticOverride {
