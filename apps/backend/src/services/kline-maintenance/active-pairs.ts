@@ -1,0 +1,78 @@
+import type { Interval } from '@marketmind/types';
+import { and, eq, inArray } from 'drizzle-orm';
+import { db } from '../../db';
+import { pairMaintenanceLog, tradeExecutions } from '../../db/schema';
+import { binanceKlineStreamService, binanceFuturesKlineStreamService } from '../binance-kline-stream';
+import { logger, serializeError } from '../logger';
+import type { ActivePair } from './types';
+
+export const getActivePairsWithSubscriptions = async (): Promise<ActivePair[]> => {
+  const pairs: ActivePair[] = [];
+  const seen = new Set<string>();
+
+  const watchers = await db.query.activeWatchers.findMany();
+  for (const watcher of watchers) {
+    const key = `${watcher.symbol}@${watcher.interval}@${watcher.marketType}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      pairs.push({
+        symbol: watcher.symbol,
+        interval: watcher.interval as Interval,
+        marketType: watcher.marketType,
+      });
+    }
+  }
+
+  try {
+    const spotSubs = binanceKlineStreamService.getActiveSubscriptions();
+    for (const sub of spotSubs) {
+      const key = `${sub.symbol}@${sub.interval}@SPOT`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        pairs.push({ symbol: sub.symbol, interval: sub.interval as Interval, marketType: 'SPOT' });
+      }
+    }
+
+    const futuresSubs = binanceFuturesKlineStreamService.getActiveSubscriptions();
+    for (const sub of futuresSubs) {
+      const key = `${sub.symbol}@${sub.interval}@FUTURES`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        pairs.push({ symbol: sub.symbol, interval: sub.interval as Interval, marketType: 'FUTURES' });
+      }
+    }
+  } catch (error) {
+    logger.trace({ error: serializeError(error) }, '[KlineMaintenance] Stream services not available (expected during startup)');
+  }
+
+  try {
+    const openExecs = await db.query.tradeExecutions.findMany({
+      where: inArray(tradeExecutions.status, ['open', 'pending']),
+      columns: { symbol: true, marketType: true },
+    });
+    const uniqueOpen = [...new Map(
+      openExecs.map(e => [`${e.symbol}@${e.marketType}`, e])
+    ).values()];
+
+    for (const exec of uniqueOpen) {
+      const logEntries = await db.query.pairMaintenanceLog.findMany({
+        where: and(
+          eq(pairMaintenanceLog.symbol, exec.symbol),
+          eq(pairMaintenanceLog.marketType, exec.marketType ?? 'FUTURES')
+        ),
+        columns: { interval: true },
+      });
+      for (const log of logEntries) {
+        const key = `${exec.symbol}@${log.interval}@${exec.marketType}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          pairs.push({ symbol: exec.symbol, interval: log.interval as Interval, marketType: (exec.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES' });
+        }
+      }
+    }
+  } catch (error) {
+    logger.trace({ error: serializeError(error) }, '[KlineMaintenance] Error fetching open executions for active pairs');
+  }
+
+  return pairs;
+};
