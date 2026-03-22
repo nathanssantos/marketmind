@@ -6,8 +6,6 @@ import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType, getPosition } from './binance-futures-client';
-import { createStopLossOrder, createTakeProfitOrder, cancelAllOpenProtectionOrdersOnExchange } from './protection-orders';
-import type { ProtectionOrderResult } from './protection-orders';
 import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
@@ -24,6 +22,7 @@ import { handleOrderUpdate as handleOrderUpdateFn } from './user-stream/handle-o
 import { handleAlgoOrderUpdate as handleAlgoOrderUpdateFn } from './user-stream/handle-algo-update';
 import { verifyAlgoFillProcessed as verifyAlgoFillProcessedFn, closeResidualPosition as closeResidualPositionFn } from './user-stream/position-lifecycle';
 import { handleAccountUpdate as handleAccountUpdateFn, handleMarginCall as handleMarginCallFn, handleConfigUpdate as handleConfigUpdateFn, handleConditionalOrderReject as handleConditionalOrderRejectFn, cancelPendingEntryOrders as cancelPendingEntryOrdersFn } from './user-stream/handle-account-events';
+import { executeDebouncedSlTpUpdate } from './user-stream/debounced-sltp-update';
 
 export class BinanceFuturesUserStreamService implements UserStreamContext {
   connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
@@ -102,95 +101,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
     const timer = setTimeout(async () => {
       this.pendingSlTpUpdates.delete(key);
-      try {
-        const [execution] = await db
-          .select()
-          .from(tradeExecutions)
-          .where(and(eq(tradeExecutions.id, executionId), eq(tradeExecutions.status, 'open')))
-          .limit(1);
-        if (!execution) return;
-
-        const walletRow = await this.getCachedWallet(walletId);
-        if (!walletRow) return;
-
-        const slPrice = execution.stopLoss ? parseFloat(execution.stopLoss) : null;
-        const tpPrice = execution.takeProfit ? parseFloat(execution.takeProfit) : null;
-        if (!slPrice && !tpPrice) return;
-
-        const qty = parseFloat(execution.quantity);
-
-        await cancelAllOpenProtectionOrdersOnExchange({ wallet: walletRow, symbol, marketType: 'FUTURES' });
-
-        let newSlResult: ProtectionOrderResult | null = null;
-        let newTpResult: ProtectionOrderResult | null = null;
-
-        if (slPrice) {
-          try {
-            newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: slPrice, marketType: 'FUTURES' });
-          } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            if (msg.includes('Unknown order') || msg.includes('-2011')) {
-              await new Promise(r => setTimeout(r, 100));
-              try {
-                newSlResult = await createStopLossOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: slPrice, marketType: 'FUTURES' });
-              } catch (retryErr) {
-                logger.error({ error: serializeError(retryErr), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced SL after retry');
-              }
-            } else {
-              logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced SL — position may be unprotected');
-            }
-          }
-        }
-        if (tpPrice) {
-          try {
-            newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: tpPrice, marketType: 'FUTURES' });
-          } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : String(e);
-            if (msg.includes('Unknown order') || msg.includes('-2011')) {
-              await new Promise(r => setTimeout(r, 100));
-              try {
-                newTpResult = await createTakeProfitOrder({ wallet: walletRow, symbol, side: execution.side, quantity: qty, triggerPrice: tpPrice, marketType: 'FUTURES' });
-              } catch (retryErr) {
-                logger.error({ error: serializeError(retryErr), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced TP after retry');
-              }
-            } else {
-              logger.error({ error: serializeError(e), symbol, executionId }, '[FuturesUserStream] CRITICAL: Failed to place debounced TP — position may be unprotected');
-            }
-          }
-        }
-
-        const slUpdate: Record<string, unknown> = {};
-        if (newSlResult) {
-          slUpdate.stopLossAlgoId = newSlResult.isAlgoOrder ? (newSlResult.algoId ?? null) : null;
-          slUpdate.stopLossOrderId = newSlResult.isAlgoOrder ? null : (newSlResult.orderId ?? null);
-          slUpdate.stopLossIsAlgo = newSlResult.isAlgoOrder;
-        } else if (slPrice) {
-          slUpdate.stopLossAlgoId = null;
-          slUpdate.stopLossOrderId = null;
-          slUpdate.stopLossIsAlgo = false;
-        }
-
-        const tpUpdate: Record<string, unknown> = {};
-        if (newTpResult) {
-          tpUpdate.takeProfitAlgoId = newTpResult.isAlgoOrder ? (newTpResult.algoId ?? null) : null;
-          tpUpdate.takeProfitOrderId = newTpResult.isAlgoOrder ? null : (newTpResult.orderId ?? null);
-          tpUpdate.takeProfitIsAlgo = newTpResult.isAlgoOrder;
-        } else if (tpPrice) {
-          tpUpdate.takeProfitAlgoId = null;
-          tpUpdate.takeProfitOrderId = null;
-          tpUpdate.takeProfitIsAlgo = false;
-        }
-
-        await db.update(tradeExecutions).set({
-          ...slUpdate,
-          ...tpUpdate,
-          updatedAt: new Date(),
-        }).where(eq(tradeExecutions.id, executionId));
-
-        logger.info({ executionId, symbol, qty }, '[FuturesUserStream] Debounced SL/TP update after pyramid');
-      } catch (e) {
-        logger.error({ error: serializeError(e), executionId, symbol }, '[FuturesUserStream] Debounced SL/TP update failed');
-      }
+      await executeDebouncedSlTpUpdate(this, executionId, walletId, symbol);
     }, BinanceFuturesUserStreamService.PYRAMID_SLTP_DEBOUNCE_MS);
 
     this.pendingSlTpUpdates.set(key, timer);

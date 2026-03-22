@@ -107,6 +107,55 @@ export interface SignalProcessorDeps {
   resumeWatchersForWallet: (walletId: string) => void;
 }
 
+export interface FilterValidatorConfig {
+  useBtcCorrelationFilter: boolean;
+  useFundingFilter: boolean;
+  useMtfFilter: boolean;
+  useMarketRegimeFilter: boolean;
+  useVolumeFilter: boolean;
+  useConfluenceScoring: boolean;
+  confluenceMinScore: number;
+  useStochasticFilter: boolean;
+  useStochasticRecoveryFilter: boolean;
+  useStochasticHtfFilter: boolean;
+  useStochasticRecoveryHtfFilter: boolean;
+  useMomentumTimingFilter: boolean;
+  useAdxFilter: boolean;
+  useTrendFilter: boolean;
+  useChoppinessFilter: boolean;
+  choppinessThresholdHigh: number;
+  choppinessThresholdLow: number;
+  choppinessPeriod: number;
+  useSessionFilter: boolean;
+  sessionStartUtc: number;
+  sessionEndUtc: number;
+  useBollingerSqueezeFilter: boolean;
+  bollingerSqueezeThreshold: number;
+  bollingerSqueezePeriod: number;
+  bollingerSqueezeStdDev: number;
+  useVwapFilter: boolean;
+  useSuperTrendFilter: boolean;
+  superTrendPeriod: number;
+  superTrendMultiplier: number;
+  useDirectionFilter: boolean;
+  enableLongInBearMarket: boolean;
+  enableShortInBullMarket: boolean;
+  volumeFilterConfig?: import('@marketmind/types').VolumeFilterConfig;
+}
+
+export interface FilterValidatorDeps {
+  getBtcKlines: (interval: string, marketType: MarketType) => Promise<import('@marketmind/types').Kline[]>;
+  getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => Promise<import('@marketmind/types').Kline[]>;
+  getCachedFundingRate: (symbol: string) => Promise<number | null>;
+}
+
+export interface FilterValidationResult {
+  passed: boolean;
+  filterResults: import('../../utils/confluence-scoring').FilterResults;
+  rejectionReason?: string;
+  rejectionDetails?: Record<string, unknown>;
+}
+
 export interface RotationManagerDeps {
   startWatcher: (
     walletId: string,

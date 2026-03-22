@@ -8,42 +8,16 @@ import { serializeError } from '../utils/errors';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
+import {
+  type OpportunityCostConfig,
+  type StaleTradeCheck,
+  type BarIncrementResult,
+  parseNumeric,
+  calculatePriceMovementPercent,
+  calculateProfitPercent,
+} from './opportunity-cost-types';
 
-export interface OpportunityCostConfig {
-  opportunityCostEnabled: boolean;
-  maxHoldingPeriodBars: number;
-  stalePriceThresholdPercent: number;
-  staleTradeAction: 'ALERT_ONLY' | 'TIGHTEN_STOP' | 'AUTO_CLOSE';
-  timeBasedStopTighteningEnabled: boolean;
-  timeTightenAfterBars: number;
-  timeTightenPercentPerBar: number;
-}
-
-export interface StaleTradeCheck {
-  executionId: string;
-  symbol: string;
-  side: 'LONG' | 'SHORT';
-  barsInTrade: number;
-  priceMovementPercent: number;
-  isStale: boolean;
-  profitPercent: number;
-  currentPrice: number;
-  recommendedAction: 'NONE' | 'ALERT' | 'TIGHTEN' | 'CLOSE';
-  newStopLoss?: number;
-  reason?: string;
-}
-
-export interface BarIncrementResult {
-  executionId: string;
-  newBarsInTrade: number;
-  priceMovementPercent: number;
-  significantMovement: boolean;
-}
-
-const parseNumeric = (value: string | null | undefined): number => {
-  if (value === null || value === undefined) return 0;
-  return parseFloat(value);
-};
+export type { OpportunityCostConfig, StaleTradeCheck, BarIncrementResult };
 
 export class OpportunityCostManagerService {
   private readonly ALERT_COOLDOWN_MS = OPPORTUNITY_COST_CONFIG.ALERT_COOLDOWN_MS;
@@ -105,14 +79,14 @@ export class OpportunityCostManagerService {
     const highestPrice = parseNumeric(execution.highestPriceSinceEntry) || entryPrice;
     const lowestPrice = parseNumeric(execution.lowestPriceSinceEntry) || entryPrice;
 
-    const priceMovementPercent = this.calculatePriceMovementPercent(
+    const priceMovementPercent = calculatePriceMovementPercent(
       entryPrice,
       highestPrice,
       lowestPrice,
       execution.side
     );
 
-    const profitPercent = this.calculateProfitPercent(entryPrice, currentPrice, execution.side);
+    const profitPercent = calculateProfitPercent(entryPrice, currentPrice, execution.side);
 
     const isStale = barsInTrade >= config.maxHoldingPeriodBars &&
       priceMovementPercent < config.stalePriceThresholdPercent;
@@ -194,7 +168,7 @@ export class OpportunityCostManagerService {
     const config = await this.getConfig(execution.walletId);
     const threshold = config?.stalePriceThresholdPercent ?? OPPORTUNITY_COST_CONFIG.DEFAULT_STALE_THRESHOLD_PERCENT;
 
-    const priceMovementPercent = this.calculatePriceMovementPercent(
+    const priceMovementPercent = calculatePriceMovementPercent(
       entryPrice,
       highestPrice,
       lowestPrice,
@@ -336,39 +310,6 @@ export class OpportunityCostManagerService {
         }
         break;
       }
-    }
-  }
-
-  private calculatePriceMovementPercent(
-    entryPrice: number,
-    highestPrice: number,
-    lowestPrice: number,
-    side: 'LONG' | 'SHORT'
-  ): number {
-    if (entryPrice === 0) return 0;
-
-    if (side === 'LONG') {
-      const upMove = ((highestPrice - entryPrice) / entryPrice) * 100;
-      const downMove = ((entryPrice - lowestPrice) / entryPrice) * 100;
-      return Math.max(upMove, downMove);
-    } else {
-      const downMove = ((entryPrice - lowestPrice) / entryPrice) * 100;
-      const upMove = ((highestPrice - entryPrice) / entryPrice) * 100;
-      return Math.max(downMove, upMove);
-    }
-  }
-
-  private calculateProfitPercent(
-    entryPrice: number,
-    currentPrice: number,
-    side: 'LONG' | 'SHORT'
-  ): number {
-    if (entryPrice === 0) return 0;
-
-    if (side === 'LONG') {
-      return ((currentPrice - entryPrice) / entryPrice) * 100;
-    } else {
-      return ((entryPrice - currentPrice) / entryPrice) * 100;
     }
   }
 

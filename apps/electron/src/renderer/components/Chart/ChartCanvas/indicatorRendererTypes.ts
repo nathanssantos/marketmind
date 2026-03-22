@@ -1,0 +1,70 @@
+import type { RefObject } from 'react';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import type { FootprintBar, MarketEvent, VolumeProfile } from '@marketmind/types';
+import type { StochasticResult } from '@marketmind/indicators';
+import type { UseChartIndicatorsResult } from './useChartIndicators';
+
+export interface UseChartIndicatorRenderersProps {
+  manager: CanvasManager | null;
+  colors: ChartThemeColors;
+  chartType?: string;
+  indicatorData: UseChartIndicatorsResult;
+  stochasticData: StochasticResult | null;
+  showEventRow: boolean;
+  showOrb: boolean;
+  marketEvents: MarketEvent[];
+  cvdValuesRef: RefObject<(number | null)[]>;
+  imbalanceValuesRef: RefObject<(number | null)[]>;
+  volumeProfile?: VolumeProfile | null;
+  footprintBars?: FootprintBar[];
+}
+
+export interface UseChartIndicatorRenderersResult {
+  renderStochastic: () => void;
+  renderRSI: () => void;
+  renderBollingerBands: () => void;
+  renderATR: () => void;
+  renderVWAP: () => void;
+  renderParabolicSAR: () => void;
+  renderKeltner: () => void;
+  renderDonchian: () => void;
+  renderSupertrend: () => void;
+  renderIchimoku: () => void;
+  renderOBV: () => void;
+  renderCMF: () => void;
+  renderStochRSI: () => void;
+  renderMACD: () => void;
+  renderADX: () => void;
+  renderWilliamsR: () => void;
+  renderCCI: () => void;
+  renderKlinger: () => void;
+  renderElderRay: () => void;
+  renderAroon: () => void;
+  renderVortex: () => void;
+  renderMFI: () => void;
+  renderROC: () => void;
+  renderAO: () => void;
+  renderTSI: () => void;
+  renderPPO: () => void;
+  renderCMO: () => void;
+  renderUltimateOsc: () => void;
+  renderDEMA: () => void;
+  renderTEMA: () => void;
+  renderWMA: () => void;
+  renderHMA: () => void;
+  renderPivotPoints: () => void;
+  renderFibonacci: () => void;
+  renderFVG: () => void;
+  renderLiquidityLevels: () => void;
+  renderEventScale: () => void;
+  renderCVD: () => void;
+  renderImbalance: () => void;
+  renderVolumeProfile: () => void;
+  renderFootprint: () => void;
+  renderSessionBoundaries: () => void;
+  renderORB: () => void;
+  getEventAtPosition: (x: number, y: number) => MarketEvent | null;
+  renderAllOverlayIndicators: () => void;
+  renderAllPanelIndicators: () => void;
+}

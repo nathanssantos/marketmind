@@ -1,70 +1,21 @@
-import type { Kline, MarketType, StrategyDefinition, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
+import type { Kline, StrategyDefinition, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
 import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
 import {
   checkBtcCorrelation,
   checkFundingRate,
   checkMarketRegime,
   checkMtfCondition,
-  checkStochasticHtfCondition,
-  checkStochasticRecoveryHtfCondition,
   checkTrendCondition,
   checkVolumeCondition,
   getFilterValidatorSyncFilters,
   getHigherTimeframe,
-  getOneStepAboveTimeframe,
   MTF_FILTER,
 } from '../../utils/filters';
 import type { WatcherLogBuffer } from '../watcher-batch-logger';
-import type { ActiveWatcher } from './types';
+import type { ActiveWatcher, FilterValidatorConfig, FilterValidatorDeps, FilterValidationResult } from './types';
+import { checkStochasticHtfFilter, checkStochasticRecoveryHtfFilter } from './filter-validator-htf';
 
-export interface FilterValidatorConfig {
-  useBtcCorrelationFilter: boolean;
-  useFundingFilter: boolean;
-  useMtfFilter: boolean;
-  useMarketRegimeFilter: boolean;
-  useVolumeFilter: boolean;
-  useConfluenceScoring: boolean;
-  confluenceMinScore: number;
-  useStochasticFilter: boolean;
-  useStochasticRecoveryFilter: boolean;
-  useStochasticHtfFilter: boolean;
-  useStochasticRecoveryHtfFilter: boolean;
-  useMomentumTimingFilter: boolean;
-  useAdxFilter: boolean;
-  useTrendFilter: boolean;
-  useChoppinessFilter: boolean;
-  choppinessThresholdHigh: number;
-  choppinessThresholdLow: number;
-  choppinessPeriod: number;
-  useSessionFilter: boolean;
-  sessionStartUtc: number;
-  sessionEndUtc: number;
-  useBollingerSqueezeFilter: boolean;
-  bollingerSqueezeThreshold: number;
-  bollingerSqueezePeriod: number;
-  bollingerSqueezeStdDev: number;
-  useVwapFilter: boolean;
-  useSuperTrendFilter: boolean;
-  superTrendPeriod: number;
-  superTrendMultiplier: number;
-  useDirectionFilter: boolean;
-  enableLongInBearMarket: boolean;
-  enableShortInBullMarket: boolean;
-  volumeFilterConfig?: VolumeFilterConfig;
-}
-
-export interface FilterValidatorDeps {
-  getBtcKlines: (interval: string, marketType: MarketType) => Promise<Kline[]>;
-  getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => Promise<Kline[]>;
-  getCachedFundingRate: (symbol: string) => Promise<number | null>;
-}
-
-export interface FilterValidationResult {
-  passed: boolean;
-  filterResults: FilterResults;
-  rejectionReason?: string;
-  rejectionDetails?: Record<string, unknown>;
-}
+export type { FilterValidatorConfig, FilterValidatorDeps, FilterValidationResult };
 
 export class FilterValidator {
   constructor(private deps: FilterValidatorDeps) {}
@@ -228,7 +179,7 @@ export class FilterValidator {
     }
 
     if (config.useStochasticHtfFilter) {
-      const result = await this.checkStochasticHtfFilter(watcher, setup, logBuffer);
+      const result = await this.checkStochasticHtfFilterMethod(watcher, setup, logBuffer);
       if (!result.passed) {
         logBuffer.addValidationCheck({
           name: 'HTF Stochastic',
@@ -245,7 +196,7 @@ export class FilterValidator {
     }
 
     if (config.useStochasticRecoveryHtfFilter) {
-      const result = await this.checkStochasticRecoveryHtfFilter(watcher, setup, logBuffer);
+      const result = await this.checkStochasticRecoveryHtfFilterMethod(watcher, setup, logBuffer);
       if (!result.passed) {
         logBuffer.addValidationCheck({
           name: 'HTF Stochastic Recovery',
@@ -468,52 +419,20 @@ export class FilterValidator {
     return { passed: confluenceResult.isAllowed };
   }
 
-  private async checkStochasticHtfFilter(
+  private async checkStochasticHtfFilterMethod(
     watcher: ActiveWatcher,
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer
   ): Promise<{ passed: boolean }> {
-    const htfInterval = getOneStepAboveTimeframe(watcher.interval);
-    if (!htfInterval) return { passed: true };
-
-    const htfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
-    if (htfKlines.length === 0) return { passed: true };
-
-    const result = checkStochasticHtfCondition(htfKlines, setup.openTime, setup.direction);
-
-    logBuffer.addFilterCheck({
-      filterName: 'HTF Stochastic',
-      passed: result.isAllowed,
-      reason: result.reason ?? 'N/A',
-      details: { k: result.currentK?.toFixed(1) ?? 'N/A', htfInterval },
-    });
-
-    if (!result.isAllowed) return { passed: false };
-    return { passed: true };
+    return checkStochasticHtfFilter(this.deps, watcher.symbol, watcher.interval, watcher.marketType, setup, logBuffer);
   }
 
-  private async checkStochasticRecoveryHtfFilter(
+  private async checkStochasticRecoveryHtfFilterMethod(
     watcher: ActiveWatcher,
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer
   ): Promise<{ passed: boolean }> {
-    const htfInterval = getOneStepAboveTimeframe(watcher.interval);
-    if (!htfInterval) return { passed: true };
-
-    const htfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
-    if (htfKlines.length === 0) return { passed: true };
-
-    const result = checkStochasticRecoveryHtfCondition(htfKlines, setup.openTime, setup.direction);
-
-    logBuffer.addFilterCheck({
-      filterName: 'HTF Stochastic Recovery',
-      passed: result.isAllowed,
-      reason: result.reason ?? 'N/A',
-      details: { k: result.currentK?.toFixed(1) ?? 'N/A', htfInterval },
-    });
-
-    if (!result.isAllowed) return { passed: false };
-    return { passed: true };
+    return checkStochasticRecoveryHtfFilter(this.deps, watcher.symbol, watcher.interval, watcher.marketType, setup, logBuffer);
   }
 
   private shouldApplyTrendFilter(

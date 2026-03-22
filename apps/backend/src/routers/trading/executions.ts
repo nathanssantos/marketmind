@@ -12,6 +12,7 @@ import { cancelAllProtectionOrders } from '../../services/protection-orders';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
 import { getWebSocketService } from '../../services/websocket';
+import { cancelFuturesExecutionOrders, cancelSpotExecutionOrders } from './cancel-execution-helpers';
 
 export const executionsRouter = router({
   getTradeExecutions: protectedProcedure
@@ -93,38 +94,7 @@ export const executionsRouter = router({
 
         if (shouldExecuteReal) {
           if (isFutures) {
-            const { createBinanceFuturesClient, cancelFuturesAlgoOrder } = await import('../../services/binance-futures-client');
-            const apiClient = createBinanceFuturesClient(wallet);
-            const client = getFuturesClient(wallet);
-
-            await cancelAllProtectionOrders({
-              wallet,
-              symbol: execution.symbol,
-              marketType: 'FUTURES',
-              stopLossAlgoId: execution.stopLossAlgoId,
-              stopLossOrderId: execution.stopLossOrderId,
-              takeProfitAlgoId: execution.takeProfitAlgoId,
-              takeProfitOrderId: execution.takeProfitOrderId,
-            });
-
-            if (execution.entryOrderId) {
-              const isAlgoEntry = execution.entryOrderType === 'STOP_MARKET' || execution.entryOrderType === 'TAKE_PROFIT_MARKET';
-              try {
-                if (isAlgoEntry) {
-                  await cancelFuturesAlgoOrder(apiClient, execution.entryOrderId);
-                } else {
-                  await client.cancelOrder(execution.symbol, execution.entryOrderId);
-                }
-                logger.info({ orderId: execution.entryOrderId, symbol: execution.symbol }, 'Cancelled entry order during execution close');
-              } catch (error) {
-                logger.warn({
-                  orderId: execution.entryOrderId,
-                  symbol: execution.symbol,
-                  error: serializeError(error),
-                }, 'Failed to cancel entry order (may already be filled/cancelled)');
-              }
-            }
-
+            await cancelFuturesExecutionOrders(execution, wallet);
           } else {
             const client = getSpotClient(wallet);
             const orderIdsToCancel = [
@@ -428,75 +398,11 @@ export const executionsRouter = router({
 
       if (wallet && !isPaperWallet(wallet) && env.ENABLE_LIVE_TRADING) {
         const isFutures = execution.marketType === 'FUTURES';
-        const orderIdsToCancel = [
-          execution.entryOrderId,
-          execution.stopLossOrderId,
-          execution.takeProfitOrderId,
-        ].filter((id): id is string => id !== null);
 
         if (isFutures) {
-          const { createBinanceFuturesClient, cancelFuturesAlgoOrder } = await import('../../services/binance-futures-client');
-          const apiClient = createBinanceFuturesClient(wallet);
-          const client = getFuturesClient(wallet);
-
-          await cancelAllProtectionOrders({
-            wallet,
-            symbol: execution.symbol,
-            marketType: 'FUTURES',
-            stopLossAlgoId: execution.stopLossAlgoId,
-            stopLossOrderId: execution.stopLossOrderId,
-            takeProfitAlgoId: execution.takeProfitAlgoId,
-            takeProfitOrderId: execution.takeProfitOrderId,
-          });
-
-          if (execution.entryOrderId) {
-            const isAlgoEntry = execution.entryOrderType === 'STOP_MARKET' || execution.entryOrderType === 'TAKE_PROFIT_MARKET';
-            try {
-              if (isAlgoEntry) {
-                await cancelFuturesAlgoOrder(apiClient, execution.entryOrderId);
-              } else {
-                await client.cancelOrder(execution.symbol, execution.entryOrderId);
-              }
-              logger.info({ orderId: execution.entryOrderId, symbol: execution.symbol }, 'Cancelled entry order during execution cancel');
-            } catch (error) {
-              logger.warn({
-                orderId: execution.entryOrderId,
-                symbol: execution.symbol,
-                error: serializeError(error),
-              }, 'Failed to cancel entry order (may already be filled/cancelled)');
-            }
-          }
-
+          await cancelFuturesExecutionOrders(execution, wallet);
         } else {
-          const client = getSpotClient(wallet);
-
-          for (const orderId of orderIdsToCancel) {
-            try {
-              await client.cancelOrder(execution.symbol, orderId);
-              logger.info({ orderId, symbol: execution.symbol }, 'Cancelled Binance order during execution cancel');
-            } catch (error) {
-              logger.warn({
-                orderId,
-                symbol: execution.symbol,
-                error: serializeError(error),
-              }, 'Failed to cancel Binance order (may already be filled/cancelled)');
-            }
-          }
-
-          if (execution.orderListId) {
-            try {
-              const { createBinanceClient } = await import('../../services/binance-client');
-              const binanceClient = createBinanceClient(wallet);
-              await binanceClient.cancelOCO({ symbol: execution.symbol, orderListId: Number(execution.orderListId) });
-              logger.info({ orderListId: execution.orderListId, symbol: execution.symbol }, 'Cancelled OCO order list');
-            } catch (error) {
-              logger.warn({
-                orderListId: execution.orderListId,
-                symbol: execution.symbol,
-                error: serializeError(error),
-              }, 'Failed to cancel OCO order list (may already be executed)');
-            }
-          }
+          await cancelSpotExecutionOrders(execution, wallet);
         }
       }
 

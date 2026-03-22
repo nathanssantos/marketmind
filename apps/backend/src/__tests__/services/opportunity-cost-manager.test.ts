@@ -20,6 +20,7 @@ vi.mock('../../services/websocket', () => ({
 
 import type { OpportunityCostConfig, StaleTradeCheck } from '../../services/opportunity-cost-manager';
 import { OpportunityCostManagerService } from '../../services/opportunity-cost-manager';
+import { calculatePriceMovementPercent, calculateProfitPercent } from '../../services/opportunity-cost-types';
 import { priceCache } from '../../services/price-cache';
 
 describe('OpportunityCostManagerService', () => {
@@ -38,51 +39,26 @@ describe('OpportunityCostManagerService', () => {
 
   describe('calculatePriceMovementPercent', () => {
     it('should calculate price movement for LONG with upward movement', () => {
-      const service = new OpportunityCostManagerService();
-      const calculatePriceMovementPercent = (service as unknown as {
-        calculatePriceMovementPercent: (entryPrice: number, highestPrice: number, lowestPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculatePriceMovementPercent.bind(service);
-
       const result = calculatePriceMovementPercent(100, 110, 95, 'LONG');
       expect(result).toBe(10);
     });
 
     it('should calculate price movement for LONG with downward movement being greater', () => {
-      const service = new OpportunityCostManagerService();
-      const calculatePriceMovementPercent = (service as unknown as {
-        calculatePriceMovementPercent: (entryPrice: number, highestPrice: number, lowestPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculatePriceMovementPercent.bind(service);
-
       const result = calculatePriceMovementPercent(100, 102, 85, 'LONG');
       expect(result).toBe(15);
     });
 
     it('should calculate price movement for SHORT with downward movement', () => {
-      const service = new OpportunityCostManagerService();
-      const calculatePriceMovementPercent = (service as unknown as {
-        calculatePriceMovementPercent: (entryPrice: number, highestPrice: number, lowestPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculatePriceMovementPercent.bind(service);
-
       const result = calculatePriceMovementPercent(100, 105, 90, 'SHORT');
       expect(result).toBe(10);
     });
 
     it('should calculate price movement for SHORT with upward movement being greater', () => {
-      const service = new OpportunityCostManagerService();
-      const calculatePriceMovementPercent = (service as unknown as {
-        calculatePriceMovementPercent: (entryPrice: number, highestPrice: number, lowestPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculatePriceMovementPercent.bind(service);
-
       const result = calculatePriceMovementPercent(100, 115, 98, 'SHORT');
       expect(result).toBe(15);
     });
 
     it('should return 0 when entry price is 0', () => {
-      const service = new OpportunityCostManagerService();
-      const calculatePriceMovementPercent = (service as unknown as {
-        calculatePriceMovementPercent: (entryPrice: number, highestPrice: number, lowestPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculatePriceMovementPercent.bind(service);
-
       const result = calculatePriceMovementPercent(0, 110, 90, 'LONG');
       expect(result).toBe(0);
     });
@@ -90,51 +66,26 @@ describe('OpportunityCostManagerService', () => {
 
   describe('calculateProfitPercent', () => {
     it('should calculate positive profit for LONG when price is up', () => {
-      const service = new OpportunityCostManagerService();
-      const calculateProfitPercent = (service as unknown as {
-        calculateProfitPercent: (entryPrice: number, currentPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculateProfitPercent.bind(service);
-
       const result = calculateProfitPercent(100, 110, 'LONG');
       expect(result).toBe(10);
     });
 
     it('should calculate negative profit for LONG when price is down', () => {
-      const service = new OpportunityCostManagerService();
-      const calculateProfitPercent = (service as unknown as {
-        calculateProfitPercent: (entryPrice: number, currentPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculateProfitPercent.bind(service);
-
       const result = calculateProfitPercent(100, 90, 'LONG');
       expect(result).toBe(-10);
     });
 
     it('should calculate positive profit for SHORT when price is down', () => {
-      const service = new OpportunityCostManagerService();
-      const calculateProfitPercent = (service as unknown as {
-        calculateProfitPercent: (entryPrice: number, currentPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculateProfitPercent.bind(service);
-
       const result = calculateProfitPercent(100, 90, 'SHORT');
       expect(result).toBe(10);
     });
 
     it('should calculate negative profit for SHORT when price is up', () => {
-      const service = new OpportunityCostManagerService();
-      const calculateProfitPercent = (service as unknown as {
-        calculateProfitPercent: (entryPrice: number, currentPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculateProfitPercent.bind(service);
-
       const result = calculateProfitPercent(100, 110, 'SHORT');
       expect(result).toBe(-10);
     });
 
     it('should return 0 when entry price is 0', () => {
-      const service = new OpportunityCostManagerService();
-      const calculateProfitPercent = (service as unknown as {
-        calculateProfitPercent: (entryPrice: number, currentPrice: number, side: 'LONG' | 'SHORT') => number;
-      }).calculateProfitPercent.bind(service);
-
       const result = calculateProfitPercent(0, 110, 'LONG');
       expect(result).toBe(0);
     });

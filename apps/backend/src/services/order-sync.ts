@@ -7,51 +7,8 @@ import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './ex
 import { logger, serializeError } from './logger';
 import { cancelProtectionOrder } from './protection-orders';
 import { getWebSocketService } from './websocket';
-
-export interface OrphanOrder {
-  algoId: string;
-  symbol: string;
-  type: string;
-  side: string;
-  triggerPrice: string;
-  quantity: string;
-  hasPositionOnExchange: boolean;
-}
-
-export interface MismatchedOrder {
-  executionId: string;
-  symbol: string;
-  field: 'stopLoss' | 'takeProfit';
-  dbValue: number | null;
-  dbAlgoId: string | null;
-  exchangeAlgoId: string | null;
-  exchangeTriggerPrice: string | null;
-}
-
-export interface FixedOrder {
-  executionId: string;
-  symbol: string;
-  field: 'stopLoss' | 'takeProfit';
-  oldAlgoId: string | null;
-  newAlgoId: string;
-  newTriggerPrice: string;
-}
-
-export interface OrderSyncResult {
-  walletId: string;
-  synced: boolean;
-  orphanOrders: OrphanOrder[];
-  mismatchedOrders: MismatchedOrder[];
-  fixedOrders: FixedOrder[];
-  cancelledOrphans: number;
-  errors: string[];
-}
-
-export interface OrderSyncServiceStartOptions {
-  autoCancelOrphans?: boolean;
-  autoFixMismatches?: boolean;
-  delayFirstSync?: number;
-}
+export type { OrphanOrder, MismatchedOrder, FixedOrder, OrderSyncResult, OrderSyncServiceStartOptions } from './order-sync-types';
+import { type OrderSyncResult, type OrderSyncServiceStartOptions, createEmptyOrderSyncResult } from './order-sync-types';
 
 export class OrderSyncService {
   private isRunning = false;
@@ -158,15 +115,7 @@ export class OrderSyncService {
   }
 
   async syncWallet(wallet: Wallet): Promise<OrderSyncResult> {
-    const result: OrderSyncResult = {
-      walletId: wallet.id,
-      synced: true,
-      orphanOrders: [],
-      mismatchedOrders: [],
-      fixedOrders: [],
-      cancelledOrphans: 0,
-      errors: [],
-    };
+    const result = createEmptyOrderSyncResult(wallet.id);
 
     try {
       const [walletConfig] = await db.select({ autoCancelOrphans: autoTradingConfig.autoCancelOrphans })

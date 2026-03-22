@@ -6,13 +6,11 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { ACTIVE_TRADE_STATUSES } from '@marketmind/types';
 import { logger } from '../logger';
 import { serializeError } from '../../utils/errors';
-import { SCALPING_ENGINE } from '../../constants/scalping';
 import type { SignalEngine } from './signal-engine';
 import { autoTradingService, type OrderParams } from '../auto-trading';
-import { BinanceIpBannedError } from '../binance-api-cache';
-import { createStopLossOrder, createTakeProfitOrder, updateStopLossOrder } from '../protection-orders';
+import { createStopLossOrder, createTakeProfitOrder } from '../protection-orders';
 import { walletQueries } from '../database/walletQueries';
-import { getMinNotionalFilterService } from '../min-notional-filter';
+import { buildOrderParams, checkMicroTrailing, type MicroTrailingState } from './micro-trailing';
 
 export interface ExecutionEngineConfig {
   walletId: string;
@@ -90,7 +88,7 @@ export class ExecutionEngine {
       const quantity = positionValue / signal.entryPrice;
       const side: 'BUY' | 'SELL' = signal.direction === 'LONG' ? 'BUY' : 'SELL';
 
-      const orderParams: OrderParams = this.buildOrderParams(signal, side, quantity);
+      const orderParams: OrderParams = buildOrderParams(this.config.executionMode, signal, side, quantity);
       const setupType = `scalping-${signal.strategy}`;
 
       await db.insert(tradeExecutions).values({
@@ -355,136 +353,14 @@ export class ExecutionEngine {
   }
 
   async checkMicroTrailing(symbol: string, currentPrice: number): Promise<void> {
-    if (this.config.microTrailingTicks <= 0) return;
-
-    const executionId = this.activePositions.get(symbol);
-    if (!executionId) return;
-
-    if (this.trailingInFlight.has(symbol)) return;
-
-    const now = Date.now();
-    const lastUpdate = this.lastTrailingUpdate.get(symbol) ?? 0;
-    if (now - lastUpdate < SCALPING_ENGINE.MICRO_TRAILING_MIN_INTERVAL_MS) return;
-
-    this.trailingInFlight.add(symbol);
-    try {
-      const execution = await db.query.tradeExecutions.findFirst({
-        where: and(
-          eq(tradeExecutions.id, executionId),
-          eq(tradeExecutions.walletId, this.config.walletId),
-        ),
-      });
-
-      if (!this.activePositions.has(symbol)) return;
-
-      if (!execution || execution.status !== 'open') {
-        if (!execution) {
-          this.activePositions.delete(symbol);
-          logger.warn({ symbol, executionId }, 'Stale execution in micro-trailing, cleaned up');
-        }
-        return;
-      }
-
-      let tickSize = this.symbolTickSizes.get(symbol);
-      if (tickSize === undefined) {
-        const filterService = getMinNotionalFilterService();
-        const filters = await filterService.getSymbolFilters('FUTURES');
-        const symbolFilters = filters.get(symbol);
-        tickSize = symbolFilters?.tickSize ?? SCALPING_ENGINE.DEFAULT_TICK_SIZE;
-        this.symbolTickSizes.set(symbol, tickSize);
-      }
-
-      const currentSL = parseFloat(execution.stopLoss ?? '0');
-      if (currentSL <= 0) return;
-
-      const trailingDistance = this.config.microTrailingTicks * tickSize;
-      const side = execution.side as 'LONG' | 'SHORT';
-
-      let newSL: number;
-      if (side === 'LONG') {
-        newSL = currentPrice - trailingDistance;
-        if (newSL <= currentSL) return;
-      } else {
-        newSL = currentPrice + trailingDistance;
-        if (newSL >= currentSL) return;
-      }
-
-      this.lastTrailingUpdate.set(symbol, now);
-
-      const wallet = await walletQueries.getByIdAndUser(this.config.walletId, this.config.userId);
-      const quantity = parseFloat(execution.quantity);
-
-      const result = await updateStopLossOrder({
-        wallet: wallet as Wallet,
-        symbol,
-        side,
-        quantity,
-        triggerPrice: newSL,
-        marketType: 'FUTURES',
-        currentAlgoId: execution.stopLossAlgoId,
-        currentOrderId: execution.stopLossOrderId,
-      });
-
-      await db.update(tradeExecutions)
-        .set({
-          stopLoss: String(newSL),
-          stopLossAlgoId: result.algoId ?? null,
-          stopLossOrderId: result.orderId ?? null,
-          stopLossIsAlgo: !!result.algoId,
-        })
-        .where(eq(tradeExecutions.id, executionId));
-
-      this.trailingErrorCount.delete(symbol);
-      logger.debug({ symbol, oldSL: currentSL, newSL, tickSize, ticks: this.config.microTrailingTicks }, 'Micro-trailing SL updated');
-    } catch (error) {
-      const errorCount = (this.trailingErrorCount.get(symbol) ?? 0) + 1;
-      this.trailingErrorCount.set(symbol, errorCount);
-
-      if (error instanceof BinanceIpBannedError) {
-        this.lastTrailingUpdate.set(symbol, now + SCALPING_ENGINE.IP_BAN_PAUSE_MS);
-        logger.error({ symbol }, 'IP banned — micro-trailing paused for 5 minutes');
-        return;
-      }
-
-      const backoffMs = Math.min(
-        SCALPING_ENGINE.MICRO_TRAILING_ERROR_BACKOFF_MS * Math.pow(2, errorCount - 1),
-        SCALPING_ENGINE.MICRO_TRAILING_MAX_BACKOFF_MS,
-      );
-      this.lastTrailingUpdate.set(symbol, now + backoffMs);
-      logger.error({ error: serializeError(error), symbol, backoffMs, errorCount }, 'Failed to update micro-trailing SL');
-    } finally {
-      this.trailingInFlight.delete(symbol);
-    }
-  }
-
-  private buildOrderParams(signal: ScalpingSignal, side: 'BUY' | 'SELL', quantity: number): OrderParams {
-    switch (this.config.executionMode) {
-      case 'POST_ONLY':
-        return {
-          symbol: signal.symbol,
-          side,
-          type: 'LIMIT',
-          quantity,
-          price: signal.entryPrice,
-          timeInForce: 'GTC',
-        };
-      case 'IOC':
-        return {
-          symbol: signal.symbol,
-          side,
-          type: 'MARKET',
-          quantity,
-          timeInForce: 'IOC',
-        };
-      case 'MARKET':
-      default:
-        return {
-          symbol: signal.symbol,
-          side,
-          type: 'MARKET',
-          quantity,
-        };
-    }
+    const state: MicroTrailingState = {
+      activePositions: this.activePositions,
+      lastTrailingUpdate: this.lastTrailingUpdate,
+      trailingInFlight: this.trailingInFlight,
+      trailingErrorCount: this.trailingErrorCount,
+      symbolTickSizes: this.symbolTickSizes,
+    };
+    return checkMicroTrailing(symbol, currentPrice, this.config, state);
   }
 
   updateConfig(config: Partial<ExecutionEngineConfig>): void {
