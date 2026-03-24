@@ -23,8 +23,11 @@ export interface UseChartIndicatorRenderersProps {
 export interface UseChartIndicatorRenderersResult {
   renderStochastic: () => void;
   renderRSI: () => void;
+  renderRSI14: () => void;
   renderBollingerBands: () => void;
   renderATR: () => void;
+  renderDailyVWAP: () => void;
+  renderWeeklyVWAP: () => void;
   renderVWAP: () => void;
   renderParabolicSAR: () => void;
   renderKeltner: () => void;

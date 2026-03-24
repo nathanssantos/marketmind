@@ -38,6 +38,9 @@ export const useFibonacciRenderer = ({
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     for (const level of fibonacciData.levels) {
       if (!level || HIDDEN_LEVELS.has(level.level)) continue;

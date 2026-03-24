@@ -1,10 +1,9 @@
 import type { Bounds, Dimensions } from '@/renderer/utils/canvas/coordinateSystem';
 import { priceToY } from '@/renderer/utils/canvas/coordinateSystem';
 import type { Kline, Viewport } from '@marketmind/types';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
-
-const DEFAULT_LINE_COLOR = '#2196f3';
 
 interface LineRendererConfig {
   klines: Kline[];
@@ -25,7 +24,7 @@ export const useLineRenderer = () => {
       canvas,
       bounds,
       dimensions,
-      color = DEFAULT_LINE_COLOR,
+      color = INDICATOR_COLORS.DEFAULT_LINE,
       lineWidth = 2,
       showArea = true,
     } = config;

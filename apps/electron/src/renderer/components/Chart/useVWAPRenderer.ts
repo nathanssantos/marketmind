@@ -1,22 +1,41 @@
-import { calculateMonthlyVWAP } from '@marketmind/indicators';
+import { calculateIntradayVWAP, calculateWeeklyVWAP, calculateMonthlyVWAP } from '@marketmind/indicators';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback } from 'react';
 
-const VWAP_COLOR = '#FFD700';
+export type VWAPPeriod = 'daily' | 'weekly' | 'monthly';
+
+const VWAP_FALLBACK_COLORS: Record<VWAPPeriod, string> = {
+  daily: INDICATOR_COLORS.VWAP_DAILY_LINE,
+  weekly: INDICATOR_COLORS.VWAP_WEEKLY_LINE,
+  monthly: INDICATOR_COLORS.VWAP_LINE,
+};
+
 const VWAP_LINE_WIDTH = 3;
 const VWAP_DASH_PATTERN = [6, 4];
 
+const VWAP_CALCULATORS: Record<VWAPPeriod, typeof calculateMonthlyVWAP> = {
+  daily: calculateIntradayVWAP,
+  weekly: calculateWeeklyVWAP,
+  monthly: calculateMonthlyVWAP,
+};
+
 export interface UseVWAPRendererProps {
   manager: CanvasManager | null;
+  colors?: ChartThemeColors;
   enabled?: boolean;
+  period?: VWAPPeriod;
 }
 
 export const useVWAPRenderer = ({
   manager,
+  colors,
   enabled = true,
+  period = 'monthly',
 }: UseVWAPRendererProps) => {
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -28,9 +47,11 @@ export const useVWAPRenderer = ({
 
     if (!ctx || !dimensions || !klines || klines.length === 0) return;
 
-    const vwapValues = calculateMonthlyVWAP(klines);
+    const calculate = VWAP_CALCULATORS[period];
+    const vwapValues = calculate(klines);
     if (vwapValues.length === 0) return;
 
+    const color = colors?.vwap?.[period] ?? VWAP_FALLBACK_COLORS[period];
     const { chartWidth, chartHeight } = dimensions;
     const startIndex = Math.max(0, Math.floor(viewport.start));
     const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
@@ -43,10 +64,10 @@ export const useVWAPRenderer = ({
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
+    ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
-    ctx.strokeStyle = VWAP_COLOR;
+    ctx.strokeStyle = color;
     ctx.lineWidth = VWAP_LINE_WIDTH;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -61,8 +82,6 @@ export const useVWAPRenderer = ({
       if (value === null || value === undefined || isNaN(value)) continue;
 
       const x = manager.indexToX(i);
-
-      if (x > effectiveWidth) break;
 
       const centerX = x + klineCenterOffset;
       const y = manager.priceToY(value);
@@ -87,10 +106,10 @@ export const useVWAPRenderer = ({
 
       if (y >= 0 && y <= chartHeight) {
         const priceText = formatChartPrice(lastVisibleValue);
-        drawPriceTag(ctx, priceText, y, chartWidth, VWAP_COLOR, CHART_CONFIG.CANVAS_PADDING_RIGHT);
+        drawPriceTag(ctx, priceText, y, chartWidth, color, CHART_CONFIG.CANVAS_PADDING_RIGHT);
       }
     }
-  }, [manager, enabled]);
+  }, [manager, colors, enabled, period]);
 
   return { render };
 };

@@ -1,8 +1,9 @@
 import type { VortexResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseVortexRendererProps {
   manager: CanvasManager | null;
@@ -32,6 +33,7 @@ export const useVortexRenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -82,8 +84,8 @@ export const useVortexRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(vortexData.viPlus, colors.vortex?.viPlusLine ?? '#26a69a', 1);
-    drawLine(vortexData.viMinus, colors.vortex?.viMinusLine ?? '#ef5350', 1);
+    drawLine(vortexData.viPlus, colors.vortex?.viPlusLine ?? INDICATOR_COLORS.VORTEX_PLUS, 1);
+    drawLine(vortexData.viMinus, colors.vortex?.viMinusLine ?? INDICATOR_COLORS.VORTEX_MINUS, 1);
 
     ctx.restore();
   }, [manager, vortexData, enabled, colors]);

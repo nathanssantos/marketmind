@@ -1,8 +1,9 @@
 import type { PPOResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UsePPORendererProps {
   manager: CanvasManager | null;
@@ -33,6 +34,7 @@ export const usePPORenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.min(Math.ceil(viewport.end), ppoData.ppo.length);
@@ -86,8 +88,8 @@ export const usePPORenderer = ({
       const height = Math.abs(y - zeroY);
 
       ctx.fillStyle = value >= 0
-        ? (colors.ppo?.histogramPositive ?? '#26a69a')
-        : (colors.ppo?.histogramNegative ?? '#ef5350');
+        ? (colors.ppo?.histogramPositive ?? INDICATOR_COLORS.PPO_HISTOGRAM_POSITIVE)
+        : (colors.ppo?.histogramNegative ?? INDICATOR_COLORS.PPO_HISTOGRAM_NEGATIVE);
 
       ctx.fillRect(x - barWidth / 2, value >= 0 ? y : zeroY, barWidth, height);
     }
@@ -117,8 +119,8 @@ export const usePPORenderer = ({
       ctx.stroke();
     };
 
-    drawLine(ppoData.ppo, colors.ppo?.ppoLine ?? '#2962ff', 1);
-    drawLine(ppoData.signal, colors.ppo?.signalLine ?? '#ff6d00', 1);
+    drawLine(ppoData.ppo, colors.ppo?.ppoLine ?? INDICATOR_COLORS.PPO_LINE, 1);
+    drawLine(ppoData.signal, colors.ppo?.signalLine ?? INDICATOR_COLORS.PPO_SIGNAL, 1);
 
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 

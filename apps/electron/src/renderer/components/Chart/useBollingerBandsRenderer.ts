@@ -51,7 +51,7 @@ export const useBollingerBandsRenderer = ({
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
+    ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
     const upperPoints: Array<{ x: number; y: number }> = [];
@@ -63,8 +63,6 @@ export const useBollingerBandsRenderer = ({
       if (!bb) continue;
 
       const x = manager.indexToX(i) + klineCenterOffset;
-      if (x > effectiveWidth) break;
-
       upperPoints.push({ x, y: manager.priceToY(bb.upper) });
       middlePoints.push({ x, y: manager.priceToY(bb.middle) });
       lowerPoints.push({ x, y: manager.priceToY(bb.lower) });

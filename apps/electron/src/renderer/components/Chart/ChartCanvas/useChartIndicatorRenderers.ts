@@ -77,6 +77,16 @@ export const useChartIndicatorRenderers = ({
     enabled: isIndicatorActive('rsi'),
   });
 
+  const { render: renderRSI14 } = useRSIRenderer({
+    manager,
+    rsiData: indicatorData.rsi14Data,
+    colors,
+    enabled: isIndicatorActive('rsi14'),
+    overboughtLevel: 70,
+    oversoldLevel: 30,
+    panelId: 'rsi14',
+  });
+
   const { render: renderBollingerBands } = useBollingerBandsRenderer({
     manager,
     colors,
@@ -89,9 +99,25 @@ export const useChartIndicatorRenderers = ({
     enabled: isIndicatorActive('atr'),
   });
 
+  const { render: renderDailyVWAP } = useVWAPRenderer({
+    manager,
+    colors,
+    enabled: isIndicatorActive('dailyVwap'),
+    period: 'daily',
+  });
+
+  const { render: renderWeeklyVWAP } = useVWAPRenderer({
+    manager,
+    colors,
+    enabled: isIndicatorActive('weeklyVwap'),
+    period: 'weekly',
+  });
+
   const { render: renderVWAP } = useVWAPRenderer({
     manager,
+    colors,
     enabled: isIndicatorActive('vwap'),
+    period: 'monthly',
   });
 
   const { render: renderParabolicSAR } = useParabolicSARRenderer({
@@ -363,6 +389,8 @@ export const useChartIndicatorRenderers = ({
   const renderAllOverlayIndicators = (): void => {
     renderBollingerBands();
     renderATR();
+    renderDailyVWAP();
+    renderWeeklyVWAP();
     renderVWAP();
     renderParabolicSAR();
     renderKeltner();
@@ -386,6 +414,7 @@ export const useChartIndicatorRenderers = ({
   const renderAllPanelIndicators = (): void => {
     renderStochastic();
     renderRSI();
+    renderRSI14();
     renderOBV();
     renderCMF();
     renderStochRSI();
@@ -411,8 +440,11 @@ export const useChartIndicatorRenderers = ({
   return {
     renderStochastic,
     renderRSI,
+    renderRSI14,
     renderBollingerBands,
     renderATR,
+    renderDailyVWAP,
+    renderWeeklyVWAP,
     renderVWAP,
     renderParabolicSAR,
     renderKeltner,

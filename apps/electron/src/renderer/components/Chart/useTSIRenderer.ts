@@ -1,8 +1,9 @@
 import type { TSIResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseTSIRendererProps {
   manager: CanvasManager | null;
@@ -32,6 +33,7 @@ export const useTSIRenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -82,8 +84,8 @@ export const useTSIRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(tsiData.tsi, colors.tsi?.tsiLine ?? '#2962ff', 1);
-    drawLine(tsiData.signal, colors.tsi?.signalLine ?? '#ff6d00', 1);
+    drawLine(tsiData.tsi, colors.tsi?.tsiLine ?? INDICATOR_COLORS.TSI_LINE, 1);
+    drawLine(tsiData.signal, colors.tsi?.signalLine ?? INDICATOR_COLORS.TSI_SIGNAL, 1);
 
     ctx.restore();
   }, [manager, tsiData, enabled, colors]);

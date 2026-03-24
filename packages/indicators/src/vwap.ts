@@ -2,95 +2,73 @@ import type { Kline } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@marketmind/types';
 
 const TYPICAL_PRICE_DIVISOR = 3;
+const MS_PER_DAY = 86_400_000;
+
+const getUTCDayKey = (ts: number): number => {
+  const d = new Date(ts);
+  return d.getUTCFullYear() * 10000 + d.getUTCMonth() * 100 + d.getUTCDate();
+};
+
+const getUTCWeekKey = (ts: number): number => {
+  const d = new Date(ts);
+  const utcMs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const day = new Date(utcMs).getUTCDay();
+  return Math.floor((utcMs - day * MS_PER_DAY) / (7 * MS_PER_DAY));
+};
+
+const getUTCMonthKey = (ts: number): number => {
+  const d = new Date(ts);
+  return d.getUTCFullYear() * 100 + d.getUTCMonth();
+};
+
+const accumulateVWAP = (
+  kline: Kline,
+  state: { tpv: number; vol: number },
+): number => {
+  const typicalPrice =
+    (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / TYPICAL_PRICE_DIVISOR;
+  state.tpv += typicalPrice * getKlineVolume(kline);
+  state.vol += getKlineVolume(kline);
+  return state.vol === 0 ? getKlineClose(kline) : state.tpv / state.vol;
+};
+
+const calculatePeriodicVWAP = (
+  klines: Kline[],
+  getPeriodKey: (ts: number) => number,
+): number[] => {
+  if (klines.length === 0) return [];
+  const firstKline = klines[0];
+  if (!firstKline) return [];
+
+  const vwap: number[] = [];
+  const state = { tpv: 0, vol: 0 };
+  let currentPeriod = getPeriodKey(firstKline.openTime);
+
+  for (const kline of klines) {
+    const period = getPeriodKey(kline.openTime);
+    if (period !== currentPeriod) {
+      state.tpv = 0;
+      state.vol = 0;
+      currentPeriod = period;
+    }
+    vwap.push(accumulateVWAP(kline, state));
+  }
+
+  return vwap;
+};
 
 export const calculateVWAP = (klines: Kline[]): number[] => {
   const vwap: number[] = [];
-  let cumulativeTPV = 0;
-  let cumulativeVolume = 0;
-
-  for (const kline of klines) {
-    const typicalPrice =
-      (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / TYPICAL_PRICE_DIVISOR;
-
-    cumulativeTPV += typicalPrice * getKlineVolume(kline);
-    cumulativeVolume += getKlineVolume(kline);
-
-    if (cumulativeVolume === 0) {
-      vwap.push(getKlineClose(kline));
-    } else {
-      vwap.push(cumulativeTPV / cumulativeVolume);
-    }
-  }
-
+  const state = { tpv: 0, vol: 0 };
+  for (const kline of klines) vwap.push(accumulateVWAP(kline, state));
   return vwap;
 };
 
-export const calculateIntradayVWAP = (klines: Kline[]): number[] => {
-  if (klines.length === 0) return [];
+export const calculateIntradayVWAP = (klines: Kline[]): number[] =>
+  calculatePeriodicVWAP(klines, getUTCDayKey);
 
-  const firstKline = klines[0];
-  if (!firstKline) return [];
+export const calculateWeeklyVWAP = (klines: Kline[]): number[] =>
+  calculatePeriodicVWAP(klines, getUTCWeekKey);
 
-  const vwap: number[] = [];
-  let cumulativeTPV = 0;
-  let cumulativeVolume = 0;
-  let currentDay = new Date(firstKline.openTime).getDate();
-
-  for (const kline of klines) {
-    const klineDay = new Date(kline.openTime).getDate();
-
-    if (klineDay !== currentDay) {
-      cumulativeTPV = 0;
-      cumulativeVolume = 0;
-      currentDay = klineDay;
-    }
-
-    const typicalPrice =
-      (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / TYPICAL_PRICE_DIVISOR;
-    cumulativeTPV += typicalPrice * getKlineVolume(kline);
-    cumulativeVolume += getKlineVolume(kline);
-
-    if (cumulativeVolume === 0) {
-      vwap.push(getKlineClose(kline));
-    } else {
-      vwap.push(cumulativeTPV / cumulativeVolume);
-    }
-  }
-
-  return vwap;
-};
-
-export const calculateMonthlyVWAP = (klines: Kline[]): number[] => {
-  if (klines.length === 0) return [];
-
-  const firstKline = klines[0];
-  if (!firstKline) return [];
-
-  const vwap: number[] = [];
-  let cumulativeTPV = 0;
-  let cumulativeVolume = 0;
-  let currentMonth = new Date(firstKline.openTime).getMonth();
-
-  for (const kline of klines) {
-    const klineMonth = new Date(kline.openTime).getMonth();
-
-    if (klineMonth !== currentMonth) {
-      cumulativeTPV = 0;
-      cumulativeVolume = 0;
-      currentMonth = klineMonth;
-    }
-
-    const typicalPrice =
-      (getKlineHigh(kline) + getKlineLow(kline) + getKlineClose(kline)) / TYPICAL_PRICE_DIVISOR;
-    cumulativeTPV += typicalPrice * getKlineVolume(kline);
-    cumulativeVolume += getKlineVolume(kline);
-
-    if (cumulativeVolume === 0) {
-      vwap.push(getKlineClose(kline));
-    } else {
-      vwap.push(cumulativeTPV / cumulativeVolume);
-    }
-  }
-
-  return vwap;
-};
+export const calculateMonthlyVWAP = (klines: Kline[]): number[] =>
+  calculatePeriodicVWAP(klines, getUTCMonthKey);

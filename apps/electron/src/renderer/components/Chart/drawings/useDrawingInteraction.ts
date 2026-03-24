@@ -3,6 +3,7 @@ import { hitTestDrawings, FIBONACCI_DEFAULT_LEVELS, DEFAULT_FONT_SIZE } from '@m
 import { formatFibonacciLabel } from '@marketmind/fibonacci';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import { useCallback, useEffect, useRef } from 'react';
 import { useOHLCMagnet } from './useOHLCMagnet';
@@ -148,7 +149,7 @@ export const useDrawingInteraction = ({
         id: generateId(), type: 'text', symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         index, price, time,
-        text: '', fontSize: DEFAULT_FONT_SIZE, fontWeight: 'normal', textDecoration: 'none', color: '#ffffff',
+        text: '', fontSize: DEFAULT_FONT_SIZE, fontWeight: 'normal', textDecoration: 'none', color: INDICATOR_COLORS.LABEL_TEXT,
       };
       store.addDrawing(drawing);
       store.selectDrawing(drawing.id);

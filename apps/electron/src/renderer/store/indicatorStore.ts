@@ -5,9 +5,12 @@ import { usePreferencesStore } from './preferencesStore';
 export type IndicatorId =
   | 'volume'
   | 'rsi'
+  | 'rsi14'
   | 'stochastic'
   | 'bollingerBands'
   | 'atr'
+  | 'dailyVwap'
+  | 'weeklyVwap'
   | 'vwap'
   | 'macd'
   | 'adx'
@@ -116,11 +119,11 @@ export const DEFAULT_INDICATOR_PARAMS: IndicatorParams = {
 };
 
 export const INDICATOR_CATEGORIES: Record<IndicatorCategory, IndicatorId[]> = {
-  oscillators: ['rsi', 'stochastic', 'williamsR', 'cci', 'stochRsi', 'cmo', 'mfi', 'ultimateOsc'],
+  oscillators: ['rsi', 'rsi14', 'stochastic', 'williamsR', 'cci', 'stochRsi', 'cmo', 'mfi', 'ultimateOsc'],
   momentum: ['macd', 'tsi', 'ppo', 'roc', 'ao'],
   trend: ['adx', 'aroon', 'vortex', 'parabolicSar', 'supertrend'],
   volatility: ['bollingerBands', 'atr', 'keltner', 'donchian'],
-  volume: ['volume', 'vwap', 'obv', 'cmf', 'klinger', 'elderRay'],
+  volume: ['volume', 'dailyVwap', 'weeklyVwap', 'vwap', 'obv', 'cmf', 'klinger', 'elderRay'],
   movingAverages: ['dema', 'tema', 'wma', 'hma'],
   priceStructure: ['ichimoku', 'pivotPoints', 'fibonacci', 'fvg', 'liquidityLevels'],
   crypto: [],
@@ -129,6 +132,7 @@ export const INDICATOR_CATEGORIES: Record<IndicatorCategory, IndicatorId[]> = {
 
 export const PANEL_INDICATORS: IndicatorId[] = [
   'rsi',
+  'rsi14',
   'stochastic',
   'macd',
   'adx',
@@ -156,6 +160,8 @@ export const OVERLAY_INDICATORS: IndicatorId[] = [
   'volume',
   'bollingerBands',
   'atr',
+  'dailyVwap',
+  'weeklyVwap',
   'vwap',
   'ichimoku',
   'supertrend',
@@ -202,7 +208,7 @@ interface IndicatorState {
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
-    activeIndicators: ['volume'],
+    activeIndicators: ['volume', 'stochastic', 'rsi14', 'dailyVwap'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
     hydrate: (data) => {

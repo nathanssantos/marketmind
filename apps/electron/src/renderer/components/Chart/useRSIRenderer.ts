@@ -20,6 +20,7 @@ interface UseRSIRendererProps {
   enabled?: boolean;
   overboughtLevel?: number;
   oversoldLevel?: number;
+  panelId?: string;
 }
 
 export const useRSIRenderer = ({
@@ -29,9 +30,10 @@ export const useRSIRenderer = ({
   enabled = true,
   overboughtLevel = 95,
   oversoldLevel = 5,
+  panelId = 'rsi',
 }: UseRSIRendererProps) => {
   const render = useCallback((): void => {
-    const setup = getOscillatorSetup(manager, enabled && !!rsiData, 'rsi');
+    const setup = getOscillatorSetup(manager, enabled && !!rsiData, panelId);
     if (!setup) return;
 
     const { ctx, chartWidth, panelTop, panelHeight, visibleStart, visibleEnd, indexToX } = setup;
@@ -60,7 +62,7 @@ export const useRSIRenderer = ({
     );
 
     ctx.restore();
-  }, [manager, rsiData, enabled, overboughtLevel, oversoldLevel, colors]);
+  }, [manager, rsiData, enabled, overboughtLevel, oversoldLevel, colors, panelId]);
 
   return { render };
 };

@@ -1,6 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { VolumeProfile } from '@marketmind/types';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseVolumeProfileRendererProps {
@@ -13,7 +14,6 @@ interface UseVolumeProfileRendererProps {
 const MAX_BAR_WIDTH = 120;
 const OPACITY = 0.3;
 const POC_OPACITY = 0.6;
-const VALUE_AREA_OPACITY = 0.15;
 
 export const useVolumeProfileRenderer = ({
   manager,
@@ -31,19 +31,23 @@ export const useVolumeProfileRenderer = ({
     const dims = manager.getDimensions();
     if (!dims) return;
 
-    const chartWidth = dims.width;
+    const chartWidth = dims.chartWidth;
     const chartHeight = viewport.height;
+    const clipHeight = dims.chartHeight ?? chartHeight;
 
     const maxVolume = Math.max(...volumeProfile.levels.map((l) => l.volume));
     if (maxVolume <= 0) return;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, clipHeight);
+    ctx.clip();
 
     if (volumeProfile.valueAreaLow > 0 && volumeProfile.valueAreaHigh > 0) {
       const vaTopY = priceToY(volumeProfile.valueAreaHigh, viewport.priceMin, viewport.priceMax, chartHeight);
       const vaBottomY = priceToY(volumeProfile.valueAreaLow, viewport.priceMin, viewport.priceMax, chartHeight);
 
-      ctx.fillStyle = colors.scalping?.valueAreaFill ?? `rgba(128, 128, 128, ${VALUE_AREA_OPACITY})`;
+      ctx.fillStyle = colors.scalping?.valueAreaFill ?? INDICATOR_COLORS.VALUE_AREA_FILL;
       ctx.fillRect(chartWidth - MAX_BAR_WIDTH, vaTopY, MAX_BAR_WIDTH, vaBottomY - vaTopY);
     }
 
@@ -70,7 +74,7 @@ export const useVolumeProfileRenderer = ({
       ctx.fillRect(x + buyWidth, y - barHeight / 2, sellWidth, barHeight);
 
       if (isPOC) {
-        ctx.strokeStyle = colors.scalping?.pocLine ?? '#FFD700';
+        ctx.strokeStyle = colors.scalping?.pocLine ?? INDICATOR_COLORS.POC_LINE;
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 2]);
         ctx.beginPath();

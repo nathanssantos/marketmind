@@ -218,6 +218,27 @@ export const getChartColors = (colorMode: 'light' | 'dark', paletteOverride?: { 
     pocLine: resolve('chart.scalping.pocLine', colorMode),
     valueAreaFill: resolve('chart.scalping.valueAreaFill', colorMode),
   },
+  vwap: {
+    daily: resolve('chart.vwap.daily', colorMode),
+    weekly: resolve('chart.vwap.weekly', colorMode),
+    monthly: resolve('chart.vwap.monthly', colorMode),
+  },
+  atrTrailing: {
+    long: resolve('chart.atr.long', colorMode),
+    short: resolve('chart.atr.short', colorMode),
+  },
+  drawing: {
+    fibonacci: resolve('chart.drawing.fibonacci', colorMode),
+    fibGolden: resolve('chart.drawing.fibGolden', colorMode),
+    fibKeyLevel: resolve('chart.drawing.fibKeyLevel', colorMode),
+    buyZone: resolve('chart.drawing.buyZone', colorMode),
+    dangerZone: resolve('chart.drawing.dangerZone', colorMode),
+    selected: resolve('chart.drawing.selected', colorMode),
+    labelBg: resolve('chart.drawing.labelBg', colorMode),
+    areaFill: resolve('chart.drawing.areaFill', colorMode),
+    snapIndicator: resolve('chart.drawing.snapIndicator', colorMode),
+    snapLabel: resolve('chart.drawing.snapLabel', colorMode),
+  },
   indicatorZone: resolve('chart.indicator.zone', colorMode),
   panel: {
     background: resolve('chart.panel.background', colorMode),

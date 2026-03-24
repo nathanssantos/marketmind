@@ -3,23 +3,22 @@ import type { RSIResult } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { useEffect, useRef, useState } from 'react';
 
-const WORKER_KEY = 'rsi';
-
 export const useRSIWorker = (klines: Kline[], period: number = 2, enabled: boolean = false) => {
   const [rsiData, setRSIData] = useState<RSIResult | null>(null);
   const workerRef = useRef<Worker | null>(null);
+  const workerKey = `rsi-${period}`;
 
   useEffect(() => {
-    if (!workerPool.has(WORKER_KEY)) {
-      workerPool.register(WORKER_KEY, () => 
+    if (!workerPool.has(workerKey)) {
+      workerPool.register(workerKey, () =>
         new Worker(new URL('../workers/rsi.worker.ts', import.meta.url), {
           type: 'module',
         })
       );
     }
 
-    workerRef.current = workerPool.get(WORKER_KEY);
-  }, []);
+    workerRef.current = workerPool.get(workerKey);
+  }, [workerKey]);
 
   useEffect(() => {
     if (!enabled || klines.length === 0) {

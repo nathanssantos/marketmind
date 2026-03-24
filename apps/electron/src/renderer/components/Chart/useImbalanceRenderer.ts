@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, OSCILLATOR_CONFIG } from '@shared/constants';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { useCallback } from 'react';
 import { getOscillatorSetup } from './hooks/useOscillatorSetup';
@@ -49,7 +49,7 @@ export const useImbalanceRenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }, { y: bullishY }, { y: bearishY }] });
 
     ctx.beginPath();
-    ctx.strokeStyle = colors.scalping?.imbalanceLine ?? '#FF9800';
+    ctx.strokeStyle = colors.scalping?.imbalanceLine ?? INDICATOR_COLORS.IMBALANCE_LINE;
     ctx.lineWidth = OSCILLATOR_CONFIG.LINE_WIDTH;
 
     let started = false;

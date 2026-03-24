@@ -1,6 +1,6 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
-import { GRID_ORDER_COLORS } from '@shared/constants/chartColors';
+import { GRID_ORDER_COLORS, ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 import { GRID_ORDER_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback } from 'react';
 import { roundTradingPrice } from '@shared/utils';
@@ -63,7 +63,7 @@ export const useGridPreviewRenderer = ({ manager, getPreviewPrices }: UseGridPre
       ctx.fillStyle = labelColor;
       ctx.fillRect(2, y - GRID_ORDER_CONFIG.LABEL_HEIGHT / 2, totalWidth, GRID_ORDER_CONFIG.LABEL_HEIGHT);
 
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
       ctx.fillText(label, 2 + GRID_ORDER_CONFIG.LABEL_PADDING, y);
     }
 
@@ -77,7 +77,7 @@ export const useGridPreviewRenderer = ({ manager, getPreviewPrices }: UseGridPre
     ctx.globalAlpha = 0.9;
     ctx.fillRect(dimensions.chartWidth / 2 - summaryWidth / 2, centerY - 10, summaryWidth, 20);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
     ctx.fillText(summaryLabel, dimensions.chartWidth / 2, centerY);
 
     ctx.restore();

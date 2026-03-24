@@ -6,8 +6,11 @@ export interface IndicatorRenderFunctions {
   renderMovingAverages?: () => void;
   renderStochastic?: () => void;
   renderRSI?: () => void;
+  renderRSI14?: () => void;
   renderBollingerBands?: () => void;
   renderATR?: () => void;
+  renderDailyVWAP?: () => void;
+  renderWeeklyVWAP?: () => void;
   renderVWAP?: () => void;
   renderParabolicSAR?: () => void;
   renderKeltner?: () => void;
@@ -20,7 +23,6 @@ export interface IndicatorRenderFunctions {
   renderHMA?: () => void;
   renderPivotPoints?: () => void;
   renderFibonacci?: () => void;
-  renderFibonacciProjection?: () => void;
   renderFVG?: () => void;
   renderLiquidityLevels?: () => void;
   renderOBV?: () => void;
@@ -54,7 +56,6 @@ export interface IndicatorLayerProps {
   showBollingerBands: boolean;
   showATR: boolean;
   showVWAP: boolean;
-  showFibonacciProjection: boolean;
 }
 
 export interface IndicatorLayerResult {
@@ -65,6 +66,8 @@ export interface IndicatorLayerResult {
 const OVERLAY_INDICATORS = [
   'renderMovingAverages',
   'renderBollingerBands',
+  'renderDailyVWAP',
+  'renderWeeklyVWAP',
   'renderVWAP',
   'renderParabolicSAR',
   'renderKeltner',
@@ -77,7 +80,6 @@ const OVERLAY_INDICATORS = [
   'renderHMA',
   'renderPivotPoints',
   'renderFibonacci',
-  'renderFibonacciProjection',
   'renderFVG',
   'renderLiquidityLevels',
 ] as const;
@@ -129,8 +131,7 @@ export const createIndicatorLayer = ({
       prev.showRSI !== next.showRSI ||
       prev.showBollingerBands !== next.showBollingerBands ||
       prev.showATR !== next.showATR ||
-      prev.showVWAP !== next.showVWAP ||
-      prev.showFibonacciProjection !== next.showFibonacciProjection
+      prev.showVWAP !== next.showVWAP
     );
   };
 

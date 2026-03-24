@@ -38,7 +38,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     expect(layer.render).toBeDefined();
@@ -65,7 +64,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     layer.render();
@@ -89,7 +87,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     const prev = {
@@ -103,7 +100,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
     const next = {
       manager: manager as never,
@@ -116,7 +112,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
 
     expect(layer.shouldRerender(prev, next)).toBe(true);
@@ -137,7 +132,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     const prev = {
@@ -151,7 +145,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
     const next = {
       manager: manager as never,
@@ -164,7 +157,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
 
     expect(layer.shouldRerender(prev, next)).toBe(true);
@@ -184,7 +176,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     expect(() => layer.render()).not.toThrow();

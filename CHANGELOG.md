@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.75.0] - 2026-03-24
+
+### Added
+- **Daily & Weekly VWAP indicators**: new chart overlays alongside existing Monthly VWAP, with distinct orange tones
+- **RSI(14) indicator**: standard 14-period RSI with 70/30 overbought/oversold levels, alongside existing RSI(2)
+- **Default active indicators**: Stochastic, RSI(14), and Daily VWAP now enabled by default for new users
+- **SIGNAL_COLORS semantic palette**: centralized base colors (BULLISH, BEARISH, PRIMARY, SECONDARY, etc.) eliminating ~60 duplicate color definitions
+- **Drawing color tokens**: fibonacci golden, key level, buy/danger zone, label bg, snap indicator colors now in theme system
+- **VWAP, ATR, and order flow color tokens**: all chart colors now flow through Chakra semantic tokens with light/dark mode support
+
+### Fixed
+- **Overlay indicator clipping**: 15+ overlay renderers (ATR, Supertrend, Ichimoku, Parabolic SAR, Keltner, Donchian, DEMA/TEMA/WMA/HMA, Pivot Points, Fibonacci, Session Boundaries, Volume Profile, Footprint) now clip to chart area, preventing bleeding into oscillator panels
+- **Drawing clipping**: fibonacci drawings, areas, and all user drawings now clip to chart area
+- **Sub-panel oscillator clipping**: 11 oscillators (Vortex, AO, Aroon, CMO, Elder Ray, Klinger, TSI, ROC, MFI, Ultimate Osc, PPO) now clip to their panel boundaries via `applyPanelClip()`
+- **VWAP UTC consistency**: all VWAP variants (daily, weekly, monthly) now use UTC for period boundary detection, fixing timezone-dependent calculation errors
+- **VWAP boundary detection**: daily VWAP now compares year+month+day (not just day), monthly compares year+month (not just month), preventing reset failures across month/year boundaries
+- **Right margin clipping**: overlays no longer cut short at `effectiveWidth`; clip rect uses `chartWidth` matching kline rendering
+- **Token-INDICATOR_COLORS sync**: ADX, Ichimoku chikou, OBV, CCI, MACD, Klinger/PPO zero lines dark mode values now match between theme tokens and fallback constants
+- **RSI line color**: changed from purple to blue (#2196f3) for both RSI(2) and RSI(14)
+
+### Changed
+- **Unified color architecture**: all chart colors now flow from `chartIndicatorTokens.ts` (tokens) → `colorResolvers.ts` → `useChartColors()` → renderers, with `INDICATOR_COLORS` as fallback
+- **INDICATOR_COLORS deduplicated**: ~40 constants now reference `SIGNAL_COLORS` base values instead of repeating hex literals
+- **All hex colors lowercase**: standardized to lowercase format across all color files
+- **Light mode color variants**: ~15 tokens updated with proper light-mode values for VWAP, scalping, FVG, drawing colors
+
+### Removed
+- **Dead code**: `useFibonacciProjectionRenderer.ts` (orphaned, never imported) and all references
+
 ## [0.74.0] - 2026-03-22
 
 ### Added

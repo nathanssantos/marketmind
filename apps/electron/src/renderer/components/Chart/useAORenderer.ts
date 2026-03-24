@@ -1,8 +1,9 @@
 import type { AOResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseAORendererProps {
   manager: CanvasManager | null;
@@ -33,6 +34,7 @@ export const useAORenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -71,8 +73,8 @@ export const useAORenderer = ({
 
       const isGrowing = prevValue !== null ? value > prevValue : value >= 0;
       ctx.fillStyle = isGrowing
-        ? (colors.ao?.positive ?? '#26a69a')
-        : (colors.ao?.negative ?? '#ef5350');
+        ? (colors.ao?.positive ?? INDICATOR_COLORS.AO_POSITIVE)
+        : (colors.ao?.negative ?? INDICATOR_COLORS.AO_NEGATIVE);
 
       ctx.fillRect(x - barWidth / 2, value >= 0 ? y : zeroY, barWidth, height);
       prevValue = value;

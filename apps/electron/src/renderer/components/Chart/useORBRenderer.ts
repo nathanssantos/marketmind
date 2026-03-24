@@ -129,6 +129,9 @@ export const useORBRenderer = ({
     const { chartWidth, chartHeight } = dimensions;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     for (const zone of orbZones) {
       const orbStartX = manager.timestampToX(zone.orbEndTimestamp, intervalMs);

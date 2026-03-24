@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { DepthLevel } from '@marketmind/types';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 interface OrderBookHeatmapProps {
@@ -10,6 +11,15 @@ interface OrderBookHeatmapProps {
 }
 
 const HISTORY_SIZE = 300;
+
+const parseRgba = (rgba: string): [number, number, number] => {
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return [0, 0, 0];
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+};
+
+const [BID_R, BID_G, BID_B] = parseRgba(INDICATOR_COLORS.ORDERBOOK_BID);
+const [ASK_R, ASK_G, ASK_B] = parseRgba(INDICATOR_COLORS.ORDERBOOK_ASK);
 
 interface DepthSnapshot {
   bids: DepthLevel[];
@@ -52,7 +62,7 @@ export function OrderBookHeatmap({ bids, asks, width = 600, height: heightProp }
     const history = historyRef.current;
     if (history.length === 0) return;
 
-    ctx.fillStyle = '#0a0e17';
+    ctx.fillStyle = INDICATOR_COLORS.ORDERBOOK_BG;
     ctx.fillRect(0, 0, width, height);
 
     let globalMinPrice = Infinity;
@@ -90,9 +100,9 @@ export function OrderBookHeatmap({ bids, asks, width = 600, height: heightProp }
 
         const isBid = snap.bids.includes(level);
         if (isBid) {
-          ctx.fillStyle = `rgba(38, 166, 154, ${intensity * 0.8})`;
+          ctx.fillStyle = `rgba(${BID_R}, ${BID_G}, ${BID_B}, ${intensity * 0.8})`;
         } else {
-          ctx.fillStyle = `rgba(239, 83, 80, ${intensity * 0.8})`;
+          ctx.fillStyle = `rgba(${ASK_R}, ${ASK_G}, ${ASK_B}, ${intensity * 0.8})`;
         }
 
         const cellHeight = Math.max(1, height / 50);

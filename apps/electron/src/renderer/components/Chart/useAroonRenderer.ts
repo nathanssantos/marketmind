@@ -1,8 +1,9 @@
 import type { AroonResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseAroonRendererProps {
   manager: CanvasManager | null;
@@ -32,6 +33,7 @@ export const useAroonRenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -73,8 +75,8 @@ export const useAroonRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(aroonData.aroonUp, colors.aroon?.upLine ?? '#26a69a', 1);
-    drawLine(aroonData.aroonDown, colors.aroon?.downLine ?? '#ef5350', 1);
+    drawLine(aroonData.aroonUp, colors.aroon?.upLine ?? INDICATOR_COLORS.AROON_UP, 1);
+    drawLine(aroonData.aroonDown, colors.aroon?.downLine ?? INDICATOR_COLORS.AROON_DOWN, 1);
 
     ctx.restore();
   }, [manager, aroonData, enabled, colors]);

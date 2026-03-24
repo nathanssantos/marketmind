@@ -44,6 +44,7 @@ export const INDICATOR_PANEL_HEIGHTS = {
 
 export const PANEL_RENDER_ORDER = [
   'rsi',
+  'rsi14',
   'stochastic',
   'macd',
   'adx',

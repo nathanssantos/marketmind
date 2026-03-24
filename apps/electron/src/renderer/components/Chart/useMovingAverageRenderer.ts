@@ -85,7 +85,7 @@ export const useMovingAverageRenderer = ({
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, dimensions.chartHeight);
+    ctx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
     ctx.clip();
 
     movingAverages.forEach((ma, index) => {
@@ -114,8 +114,6 @@ export const useMovingAverageRenderer = ({
 
         const x = manager.indexToX(i);
         
-        if (x > effectiveWidth) break;
-
         const centerX = x + klineCenterOffset;
         const y = manager.priceToY(value);
 

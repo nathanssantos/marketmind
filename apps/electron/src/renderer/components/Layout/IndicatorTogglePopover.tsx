@@ -56,6 +56,12 @@ export const IndicatorTogglePopover = memo(
                             onToggle: () => toggleIndicator('rsi'),
                         },
                         {
+                            id: 'rsi14',
+                            label: t('chart.controls.rsi14'),
+                            isActive: isIndicatorActive('rsi14'),
+                            onToggle: () => toggleIndicator('rsi14'),
+                        },
+                        {
                             id: 'williamsR',
                             label: t('chart.indicators.names.williamsR', 'Williams %R'),
                             isActive: isIndicatorActive('williamsR'),
@@ -200,6 +206,18 @@ export const IndicatorTogglePopover = memo(
                             label: t('chart.controls.volume'),
                             isActive: isIndicatorActive('volume'),
                             onToggle: () => toggleIndicator('volume'),
+                        },
+                        {
+                            id: 'dailyVwap',
+                            label: t('chart.controls.dailyVwap'),
+                            isActive: isIndicatorActive('dailyVwap'),
+                            onToggle: () => toggleIndicator('dailyVwap'),
+                        },
+                        {
+                            id: 'weeklyVwap',
+                            label: t('chart.controls.weeklyVwap'),
+                            isActive: isIndicatorActive('weeklyVwap'),
+                            onToggle: () => toggleIndicator('weeklyVwap'),
                         },
                         {
                             id: 'vwap',

@@ -1,5 +1,6 @@
 import type { RulerDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { formatChartPrice } from '@renderer/utils/formatters';
 
 const LABEL_FONT = '11px monospace';
@@ -14,6 +15,7 @@ export const renderRuler = (
   mapper: CoordinateMapper,
   isSelected: boolean,
   colors: { bullish: string; bearish: string },
+  themeColors?: ChartThemeColors,
 ): void => {
   const x1 = mapper.indexToCenterX(drawing.startIndex);
   const y1 = mapper.priceToY(drawing.startPrice);
@@ -47,7 +49,7 @@ export const renderRuler = (
   const label = `${klineCount} bars  ${sign}${formatChartPrice(priceChange)} (${sign}${percentChange.toFixed(2)}%)`;
 
   const textWidth = ctx.measureText(label).width;
-  ctx.fillStyle = LABEL_BG_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.labelBg ?? LABEL_BG_COLOR;
   ctx.fillRect(midX - LABEL_PADDING, midY - LABEL_HEIGHT - LABEL_PADDING, textWidth + LABEL_PADDING * 2, LABEL_HEIGHT + LABEL_PADDING);
   ctx.fillStyle = isPositive ? colors.bullish : colors.bearish;
   ctx.fillText(label, midX, midY - LABEL_PADDING);

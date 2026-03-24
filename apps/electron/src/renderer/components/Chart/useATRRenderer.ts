@@ -1,11 +1,9 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 import { useCallback, useMemo } from 'react';
-
-const ATR_LONG_COLOR = '#00e5ff';
-const ATR_SHORT_COLOR = '#ff6d00';
 
 interface UseATRRendererProps {
   manager: CanvasManager | null;
@@ -99,8 +97,16 @@ export const useATRRenderer = ({
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
+    const { chartWidth, chartHeight } = dimensions;
+
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
     ctx.lineWidth = 2;
+
+    const longColor = colors.atrTrailing?.long ?? INDICATOR_COLORS.ATR_TRAILING_LONG;
+    const shortColor = colors.atrTrailing?.short ?? INDICATOR_COLORS.ATR_TRAILING_SHORT;
 
     let currentIsLong: boolean | null = null;
 
@@ -116,7 +122,7 @@ export const useATRRenderer = ({
         ctx.beginPath();
         ctx.moveTo(x, y);
       } else if (data.isLong !== currentIsLong) {
-        ctx.strokeStyle = currentIsLong ? ATR_LONG_COLOR : ATR_SHORT_COLOR;
+        ctx.strokeStyle = currentIsLong ? longColor : shortColor;
         ctx.stroke();
 
         currentIsLong = data.isLong;
@@ -128,7 +134,7 @@ export const useATRRenderer = ({
     }
 
     if (currentIsLong !== null) {
-      ctx.strokeStyle = currentIsLong ? ATR_LONG_COLOR : ATR_SHORT_COLOR;
+      ctx.strokeStyle = currentIsLong ? longColor : shortColor;
       ctx.stroke();
     }
 

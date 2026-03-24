@@ -1,7 +1,7 @@
 import type { OBVResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseOBVRendererProps {
@@ -69,7 +69,7 @@ export const useOBVRenderer = ({
       return panelTop + padding + innerHeight - normalized * innerHeight;
     };
 
-    ctx.strokeStyle = colors.obv?.line ?? '#2196f3';
+    ctx.strokeStyle = colors.obv?.line ?? INDICATOR_COLORS.OBV_LINE;
     ctx.lineWidth = 2;
     ctx.beginPath();
 
@@ -93,7 +93,7 @@ export const useOBVRenderer = ({
     ctx.stroke();
 
     if (obvData.sma && obvData.sma.length > 0) {
-      ctx.strokeStyle = colors.obv?.sma ?? '#ff9800';
+      ctx.strokeStyle = colors.obv?.sma ?? INDICATOR_COLORS.OBV_SMA;
       ctx.lineWidth = 1;
       ctx.beginPath();
 

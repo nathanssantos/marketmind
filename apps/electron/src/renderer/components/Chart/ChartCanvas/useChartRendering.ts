@@ -42,7 +42,6 @@ export interface UseChartRenderingProps {
   showATR: boolean;
   showVWAP: boolean;
   showCurrentPriceLine: boolean;
-  showFibonacciProjection: boolean;
   showEventRow: boolean;
   timeframe: string;
   symbol?: string;

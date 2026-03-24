@@ -60,8 +60,11 @@ export const useChartRenderPipeline = ({
   const {
     renderStochastic,
     renderRSI,
+    renderRSI14,
     renderBollingerBands,
     renderATR,
+    renderDailyVWAP,
+    renderWeeklyVWAP,
     renderVWAP,
     renderParabolicSAR,
     renderKeltner,
@@ -121,8 +124,11 @@ export const useChartRenderPipeline = ({
       renderMovingAverages();
       renderStochastic();
       renderRSI();
+      renderRSI14();
       renderBollingerBands();
       renderATR();
+      renderDailyVWAP();
+      renderWeeklyVWAP();
       renderVWAP();
       renderParabolicSAR();
       renderKeltner();
@@ -197,8 +203,11 @@ export const useChartRenderPipeline = ({
     renderMovingAverages,
     renderStochastic,
     renderRSI,
+    renderRSI14,
     renderBollingerBands,
     renderATR,
+    renderDailyVWAP,
+    renderWeeklyVWAP,
     renderVWAP,
     renderParabolicSAR,
     renderKeltner,

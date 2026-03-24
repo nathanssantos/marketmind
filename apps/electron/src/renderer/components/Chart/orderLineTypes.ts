@@ -1,5 +1,6 @@
 import type { Order } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
+import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
 export interface BackendExecution {
   id: string;
@@ -102,10 +103,10 @@ export const SLTP_BUTTON = {
   BORDER_RADIUS: 3,
   FONT_SIZE: 9,
   SL_BG: 'rgba(185, 28, 28, 0.85)',
-  SL_BORDER: 'rgba(185, 28, 28, 1)',
+  SL_BORDER: ORDER_LINE_COLORS.SL_LOSS_LINE,
   TP_BG: 'rgba(15, 118, 56, 0.85)',
-  TP_BORDER: 'rgba(15, 118, 56, 1)',
-  TEXT_COLOR: '#ffffff',
+  TP_BORDER: ORDER_LINE_COLORS.TP_LINE,
+  TEXT_COLOR: ORDER_LINE_COLORS.TEXT_WHITE,
 } as const;
 
 export const PRICE_TAG_WIDTH = CHART_CONFIG.CANVAS_PADDING_RIGHT;

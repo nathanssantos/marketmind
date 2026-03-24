@@ -74,6 +74,7 @@ export interface UseChartIndicatorsResult {
   fvgData: ReturnType<typeof useFVGWorker>;
   liquidityLevelsData: ReturnType<typeof useLiquidityLevelsWorker>;
   rsiData: ReturnType<typeof useRSIWorker>;
+  rsi14Data: ReturnType<typeof useRSIWorker>;
   isIndicatorActive: (id: IndicatorId) => boolean;
 }
 
@@ -118,6 +119,7 @@ export const useChartIndicators = ({
   const fvgData = useFVGWorker(klines, isIndicatorActive('fvg'));
   const liquidityLevelsData = useLiquidityLevelsWorker(klines, isIndicatorActive('liquidityLevels'));
   const rsiData = useRSIWorker(klines, 2, isIndicatorActive('rsi'));
+  const rsi14Data = useRSIWorker(klines, 14, isIndicatorActive('rsi14'));
 
   return useMemo(
     () => ({
@@ -153,6 +155,7 @@ export const useChartIndicators = ({
       fvgData,
       liquidityLevelsData,
       rsiData,
+      rsi14Data,
       isIndicatorActive,
     }),
     [
@@ -188,6 +191,7 @@ export const useChartIndicators = ({
       fvgData,
       liquidityLevelsData,
       rsiData,
+      rsi14Data,
       isIndicatorActive,
     ]
   );

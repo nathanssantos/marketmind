@@ -126,10 +126,10 @@ const renderSingleDrawing = (
       renderPencil(ctx, drawing, mapper, isSelected);
       break;
     case 'ruler':
-      renderRuler(ctx, drawing, mapper, isSelected, colors);
+      renderRuler(ctx, drawing, mapper, isSelected, colors, themeColors);
       break;
     case 'area':
-      renderArea(ctx, drawing, mapper, isSelected, colors);
+      renderArea(ctx, drawing, mapper, isSelected, colors, themeColors);
       break;
     case 'fibonacci':
       renderFibonacci(ctx, drawing, mapper, isSelected, chartHeight, chartWidth, themeColors);
@@ -147,16 +147,16 @@ const renderSingleDrawing = (
   }
 };
 
-const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndicator): void => {
+const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndicator, themeColors?: ChartThemeColors): void => {
   ctx.save();
 
   ctx.beginPath();
   ctx.arc(snap.x, snap.y, SNAP_INDICATOR_RADIUS, 0, Math.PI * 2);
-  ctx.fillStyle = SNAP_INDICATOR_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.snapIndicator ?? SNAP_INDICATOR_COLOR;
   ctx.fill();
 
   ctx.font = SNAP_LABEL_FONT;
-  ctx.fillStyle = SNAP_LABEL_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.snapLabel ?? SNAP_LABEL_COLOR;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   ctx.fillText(OHLC_LABELS[snap.ohlcType], snap.x + SNAP_LABEL_OFFSET_X, snap.y + SNAP_LABEL_OFFSET_Y);
@@ -218,6 +218,11 @@ export const useDrawingsRenderer = ({
       lastFirstKlineTimeRef.current = firstTime;
     }
 
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
+    ctx.clip();
+
     for (const raw of sorted) {
       const cacheKey = `${raw.id}-${raw.updatedAt}`;
       let drawing = drawingIndexCache.current.get(cacheKey);
@@ -233,8 +238,10 @@ export const useDrawingsRenderer = ({
       renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
     }
 
+    ctx.restore();
+
     if (snapIndicator) {
-      renderSnapIndicator(ctx, snapIndicator);
+      renderSnapIndicator(ctx, snapIndicator, themeColors);
     }
   }, [manager, symbol, colors, themeColors, pendingDrawingRef, lastSnapRef]);
 

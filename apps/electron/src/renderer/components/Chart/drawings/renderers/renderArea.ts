@@ -1,5 +1,6 @@
 import type { AreaDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { formatChartPrice } from '@renderer/utils/formatters';
 
 const LABEL_FONT = '11px monospace';
@@ -18,6 +19,7 @@ export const renderArea = (
   mapper: CoordinateMapper,
   isSelected: boolean,
   colors: { crosshair: string; bullish: string; bearish: string },
+  themeColors?: ChartThemeColors,
 ): void => {
   const x1 = mapper.indexToCenterX(drawing.startIndex);
   const y1 = mapper.priceToY(drawing.startPrice);
@@ -31,7 +33,7 @@ export const renderArea = (
 
   ctx.save();
 
-  ctx.fillStyle = AREA_FILL_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.areaFill ?? AREA_FILL_COLOR;
   ctx.fillRect(left, top, w, h);
   ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? colors.crosshair);
   ctx.lineWidth = drawing.lineWidth ?? BORDER_WIDTH;
@@ -52,7 +54,7 @@ export const renderArea = (
   const label = `${klineCount} bars  ${sign}${formatChartPrice(priceChange)} (${sign}${percentChange.toFixed(2)}%)`;
 
   const textWidth = ctx.measureText(label).width;
-  ctx.fillStyle = LABEL_BG_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.labelBg ?? LABEL_BG_COLOR;
   ctx.fillRect(left, top - LABEL_OFFSET_Y, textWidth + LABEL_PADDING * 2, LABEL_HEIGHT);
   ctx.fillStyle = isPositive ? colors.bullish : colors.bearish;
   ctx.fillText(label, left + LABEL_PADDING, top - LABEL_TEXT_OFFSET_Y);

@@ -13,7 +13,7 @@ describe('useRSIRenderer', () => {
     gridLines: '#363A45',
     text: '#D9D9D9',
     axisLabel: '#848E9C',
-    rsi: { line: '#9c27b0', zone: 'rgba(156, 39, 176, 0.2)' },
+    rsi: { line: '#2196f3', zone: 'rgba(156, 39, 176, 0.2)' },
   };
 
   const mockRsiData = { values: [45, 55, 70, 35, 50] };

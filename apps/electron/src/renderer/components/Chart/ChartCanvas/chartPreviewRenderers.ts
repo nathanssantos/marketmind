@@ -30,7 +30,7 @@ export const renderDragPreview = (
 
   if (dragType === 'entry' && isOrderPending(draggedOrder)) {
     const isLong = isOrderLong(draggedOrder);
-    color = isLong ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+    color = isLong ? ORDER_LINE_COLORS.PENDING_LONG_LINE : ORDER_LINE_COLORS.PENDING_SHORT_LINE;
     label = `${isLong ? 'L' : 'S'} ${previewPrice.toFixed(2)}`;
   } else {
     const isStopLoss = dragType === 'stopLoss';
@@ -42,9 +42,9 @@ export const renderDragPreview = (
       : (entryPrice - previewPrice) / entryPrice) * 100 * dragExecLeverage;
     if (isStopLoss) {
       const slInProfit = isLong ? previewPrice > entryPrice : previewPrice < entryPrice;
-      color = slInProfit ? 'rgba(15, 118, 56, 0.8)' : 'rgba(185, 28, 28, 0.8)';
+      color = slInProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : ORDER_LINE_COLORS.SL_LOSS_LINE;
     } else {
-      color = 'rgba(15, 118, 56, 0.8)';
+      color = ORDER_LINE_COLORS.TP_LINE;
     }
     const pctSign = pctChange >= 0 ? '+' : '';
     label = `${isStopLoss ? 'SL' : 'TP'} ${previewPrice.toFixed(2)} (${pctSign}${pctChange.toFixed(2)}%)`;
@@ -82,7 +82,7 @@ export const renderDragPreview = (
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
   ctx.fillText(label, labelPadding, y);
 
   ctx.restore();
@@ -116,9 +116,9 @@ export const renderSlTpPreview = (
   let color: string;
   if (isStopLoss) {
     const slInProfit = entryPrice > 0 && (isLong ? previewPrice > entryPrice : previewPrice < entryPrice);
-    color = slInProfit ? 'rgba(15, 118, 56, 0.8)' : 'rgba(185, 28, 28, 0.8)';
+    color = slInProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : ORDER_LINE_COLORS.SL_LOSS_LINE;
   } else {
-    color = 'rgba(15, 118, 56, 0.8)';
+    color = ORDER_LINE_COLORS.TP_LINE;
   }
 
   const pctSign = pctChange >= 0 ? '+' : '';
@@ -156,7 +156,7 @@ export const renderSlTpPreview = (
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
   ctx.fillText(label, labelPadding, y);
   ctx.restore();
 };
@@ -212,7 +212,7 @@ export const renderTsPreview = (
   ctx.fill();
 
   drawShieldIcon(ctx, labelPadding, y - iconSize / 2, iconSize, ORDER_LINE_COLORS.TRAILING_STOP_ICON_STROKE);
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
   ctx.fillText(label, labelPadding + iconSize + iconPadding, y);
   ctx.restore();
 };
@@ -270,7 +270,7 @@ export const renderOrderPreview = (
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
   ctx.fillText(label, labelPadding, y);
 
   ctx.restore();
