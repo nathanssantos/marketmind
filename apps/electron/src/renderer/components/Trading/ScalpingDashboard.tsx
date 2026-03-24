@@ -3,8 +3,8 @@ import { Button, Badge, IconButton, DirectionModeSelector, type DirectionMode } 
 import { LuSettings } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useBackendScalping } from '@renderer/hooks/useBackendScalping';
-import { useScalpingMetrics } from '@renderer/hooks/useScalpingMetrics';
 import { useScalpingSignals } from '@renderer/hooks/useScalpingSignals';
+import { OrderFlowMetrics } from '../OrderFlow/OrderFlowMetrics';
 
 interface ScalpingDashboardProps {
   walletId: string;
@@ -15,7 +15,6 @@ interface ScalpingDashboardProps {
 export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingDashboardProps) {
   const { t } = useTranslation();
   const { config, status, start, stop, resetCircuitBreaker, upsertConfig } = useBackendScalping(walletId);
-  const metrics = useScalpingMetrics(symbol);
   const { signals } = useScalpingSignals(walletId);
   const statusData = status.data;
   const isRunning = statusData?.isRunning ?? false;
@@ -87,32 +86,8 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
       )}
 
       {isRunning && (
-        <Box p={3} bg="bg.muted" borderRadius="md">
-          <Stack gap={2.5} fontSize="xs">
-            <Flex justify="space-between" align="center">
-              <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.orderFlow', 'Order Flow')}</Text>
-            </Flex>
-
-            <Stack gap={1}>
-              <Flex justify="space-between">
-                <Text color="fg.muted">CVD</Text>
-                <Text fontWeight="medium" fontFamily="mono">{metrics.cvd.toFixed(2)}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('scalping.metric.imbalance', 'Imbalance')}</Text>
-                <Text fontWeight="medium" fontFamily="mono">{metrics.imbalanceRatio.toFixed(3)}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('scalping.metric.spread', 'Spread')}</Text>
-                <Text fontWeight="medium" fontFamily="mono">{metrics.spreadPercent.toFixed(4)}%</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('scalping.metric.absorption', 'Absorption')}</Text>
-                <Text fontWeight="medium" fontFamily="mono">{metrics.absorptionScore.toFixed(2)}</Text>
-              </Flex>
-            </Stack>
-
-          </Stack>
+        <Box bg="bg.muted" borderRadius="md">
+          <OrderFlowMetrics symbol={symbol} />
         </Box>
       )}
 

@@ -5,6 +5,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
+  LuBookOpen,
   LuBot,
   LuChartBar,
   LuDollarSign,
@@ -72,10 +73,12 @@ export const Toolbar = memo(({
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
-  const { marketSidebarOpen, toggleMarketSidebar, isAnalyticsOpen, toggleAnalytics, isCustomSymbolsOpen, toggleCustomSymbols } = useUIStore(
+  const { marketSidebarOpen, toggleMarketSidebar, orderFlowSidebarOpen, toggleOrderFlowSidebar, isAnalyticsOpen, toggleAnalytics, isCustomSymbolsOpen, toggleCustomSymbols } = useUIStore(
     useShallow((state) => ({
       marketSidebarOpen: state.marketSidebarOpen,
       toggleMarketSidebar: state.toggleMarketSidebar,
+      orderFlowSidebarOpen: state.orderFlowSidebarOpen,
+      toggleOrderFlowSidebar: state.toggleOrderFlowSidebar,
       isAnalyticsOpen: state.isAnalyticsOpen,
       toggleAnalytics: state.toggleAnalytics,
       isCustomSymbolsOpen: state.isCustomSymbolsOpen,
@@ -182,6 +185,16 @@ export const Toolbar = memo(({
                 onClick={toggleMarketSidebar}
               >
                 <LuActivity />
+              </ToggleIconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('orderFlow.title', 'Order Flow')} showArrow>
+              <ToggleIconButton
+                active={orderFlowSidebarOpen}
+                size="2xs"
+                aria-label={t('orderFlow.title', 'Order Flow')}
+                onClick={toggleOrderFlowSidebar}
+              >
+                <LuBookOpen />
               </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('screener.title')} showArrow>

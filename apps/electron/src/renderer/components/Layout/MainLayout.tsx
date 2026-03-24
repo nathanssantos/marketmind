@@ -15,6 +15,7 @@ import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
 import { AutoTradingSidebar } from '../AutoTrading/AutoTradingSidebar';
+import { OrderFlowSidebar } from '../OrderFlow';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
 import { QuickTradeToolbar, type QuickTradeMode } from './QuickTradeToolbar';
 import { Toolbar } from './Toolbar';
@@ -74,13 +75,17 @@ export const MainLayout = ({
   const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [marketWidth, setMarketWidth] = useUIPref('marketSidebarWidth', DEFAULT_MARKET_WIDTH);
+  const [orderFlowWidth, setOrderFlowWidth] = useUIPref('orderFlowSidebarWidth', DEFAULT_MARKET_WIDTH);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const resizingRef = useRef<'trading' | 'autoTrading' | 'market' | null>(null);
+  const resizingRef = useRef<'trading' | 'autoTrading' | 'market' | 'orderFlow' | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
 
-  const marketSidebarOpen = useUIStore(useShallow((state) => state.marketSidebarOpen));
+  const { marketSidebarOpen, orderFlowSidebarOpen } = useUIStore(useShallow((state) => ({
+    marketSidebarOpen: state.marketSidebarOpen,
+    orderFlowSidebarOpen: state.orderFlowSidebarOpen,
+  })));
 
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
@@ -88,7 +93,7 @@ export const MainLayout = ({
     navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => onNavigateToSymbol?.(symbol, marketType),
   }), [onOpenSymbolSelector, onNavigateToSymbol]);
 
-  const startResize = useCallback((e: React.MouseEvent, target: 'trading' | 'autoTrading' | 'market', currentWidth: number) => {
+  const startResize = useCallback((e: React.MouseEvent, target: 'trading' | 'autoTrading' | 'market' | 'orderFlow', currentWidth: number) => {
     e.preventDefault();
     resizingRef.current = target;
     startXRef.current = e.clientX;
@@ -98,6 +103,7 @@ export const MainLayout = ({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => startResize(e, 'trading', tradingWidth), [startResize, tradingWidth]);
   const handleMarketMouseDown = useCallback((e: React.MouseEvent) => startResize(e, 'market', marketWidth), [startResize, marketWidth]);
+  const handleOrderFlowMouseDown = useCallback((e: React.MouseEvent) => startResize(e, 'orderFlow', orderFlowWidth), [startResize, orderFlowWidth]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const target = resizingRef.current;
@@ -115,8 +121,12 @@ export const MainLayout = ({
       const deltaX = startXRef.current - e.clientX;
       const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_TRADING_WIDTH), maxWidth);
       setAutoTradingWidth(newWidth);
+    } else if (target === 'orderFlow') {
+      const deltaX = e.clientX - startXRef.current;
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, MIN_MARKET_WIDTH), maxWidth);
+      setOrderFlowWidth(newWidth);
     }
-  }, [setTradingWidth, setMarketWidth, setAutoTradingWidth]);
+  }, [setTradingWidth, setMarketWidth, setAutoTradingWidth, setOrderFlowWidth]);
 
   const handleMouseUp = useCallback(() => {
     resizingRef.current = null;
@@ -177,6 +187,21 @@ export const MainLayout = ({
             </>
           )}
 
+          {orderFlowSidebarOpen && (
+            <>
+              <OrderFlowSidebar width={orderFlowWidth} symbol={symbol} />
+              <Box
+                position="relative"
+                width="4px"
+                bg="border"
+                cursor="col-resize"
+                _hover={{ bg: 'green.500' }}
+                onMouseDown={handleOrderFlowMouseDown}
+                userSelect="none"
+              />
+            </>
+          )}
+
           <ChartToolsToolbar
             movingAverages={movingAverages}
             onMovingAveragesChange={onMovingAveragesChange}
@@ -190,7 +215,7 @@ export const MainLayout = ({
               let rightWidth = 0;
               if (isTradingOpen) rightWidth += tradingWidth;
               if (isAutoTradingOpen) rightWidth += autoTradingWidth;
-              const leftWidth = marketSidebarOpen ? marketWidth : 0;
+              const leftWidth = (marketSidebarOpen ? marketWidth : 0) + (orderFlowSidebarOpen ? orderFlowWidth : 0);
               const totalSidebar = leftWidth + rightWidth;
               return totalSidebar > 0 ? `calc(100% - ${totalSidebar}px)` : '100%';
             })()}

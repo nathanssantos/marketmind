@@ -1932,7 +1932,9 @@
       "imbalance": "Imbalance",
       "spread": "Spread",
       "absorption": "Absorption",
-      "domLadder": "DOM Ladder"
+      "domLadder": "DOM Ladder",
+      "microprice": "Microprice",
+      "exhaustion": "Exhaustion"
     },
     "signals": {
       "title": "Signals"
@@ -1940,6 +1942,14 @@
     "circuitBreaker": {
       "tripped": "CB Tripped",
       "reset": "Reset"
+    }
+  },
+  "orderFlow": {
+    "title": "Order Flow",
+    "tabs": {
+      "dom": "DOM",
+      "heatmap": "Heatmap",
+      "metrics": "Metrics"
     }
   }
 }

@@ -1928,8 +1928,16 @@
     "strategy": { "imbalance": "Déséquilibre", "cvd-divergence": "Divergence CVD", "mean-reversion": "Retour à la Moyenne", "momentum-burst": "Burst de Momentum", "absorption-reversal": "Renversement par Absorption", "ema-cross": "Croisement EMA" },
     "dashboard": { "title": "Scalping" },
     "status": { "running": "En cours", "stopped": "Arrêté" },
-    "metric": { "sessionPnl": "P&L Session", "trades": "Trades", "winRate": "Taux de Réussite", "orderFlow": "Flux d'Ordres", "imbalance": "Déséquilibre", "spread": "Spread", "absorption": "Absorption", "domLadder": "Carnet d'Ordres" },
+    "metric": { "sessionPnl": "P&L Session", "trades": "Trades", "winRate": "Taux de Réussite", "orderFlow": "Flux d'Ordres", "imbalance": "Déséquilibre", "spread": "Spread", "absorption": "Absorption", "domLadder": "Carnet d'Ordres", "microprice": "Microprix", "exhaustion": "Épuisement" },
     "signals": { "title": "Signaux" },
     "circuitBreaker": { "tripped": "CB Déclenché", "reset": "Réinitialiser" }
+  },
+  "orderFlow": {
+    "title": "Flux d'Ordres",
+    "tabs": {
+      "dom": "DOM",
+      "heatmap": "Carte de Chaleur",
+      "metrics": "Métriques"
+    }
   }
 }

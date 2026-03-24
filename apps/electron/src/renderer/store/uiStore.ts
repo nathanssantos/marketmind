@@ -4,6 +4,7 @@ import { usePreferencesStore } from './preferencesStore';
 export type TradingSidebarTab = 'orders' | 'portfolio';
 export type MarketSidebarTab = 'indicators' | 'scanner';
 export type AutoTradingSidebarTab = 'watchers' | 'scalping' | 'logs';
+export type OrderFlowSidebarTab = 'dom' | 'heatmap' | 'metrics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
@@ -25,6 +26,7 @@ const HYDRATE_KEYS = [
   'ordersTableSortKey', 'ordersTableSortDirection', 'portfolioTableSortKey', 'portfolioTableSortDirection',
   'watchersTableSortKey', 'watchersTableSortDirection', 'showEventRow', 'enableShiftAltOrderEntry',
   'isAnalyticsOpen', 'isCustomSymbolsOpen', 'trailingStopPanelExpanded',
+  'orderFlowSidebarOpen', 'orderFlowSidebarTab',
 ] as const;
 
 interface UIState {
@@ -103,6 +105,13 @@ interface UIState {
   trailingStopPanelExpanded: boolean;
   setTrailingStopPanelExpanded: (expanded: boolean) => void;
   toggleTrailingStopPanel: () => void;
+
+  orderFlowSidebarOpen: boolean;
+  setOrderFlowSidebarOpen: (open: boolean) => void;
+  toggleOrderFlowSidebar: () => void;
+
+  orderFlowSidebarTab: OrderFlowSidebarTab;
+  setOrderFlowSidebarTab: (tab: OrderFlowSidebarTab) => void;
 
   isOrdersDialogOpen: boolean;
   setOrdersDialogOpen: (open: boolean) => void;
@@ -223,6 +232,17 @@ export const useUIStore = create<UIState>()(
       syncUI('trailingStopPanelExpanded', val);
       return { trailingStopPanelExpanded: val };
     }),
+
+    orderFlowSidebarOpen: false,
+    setOrderFlowSidebarOpen: (open) => { set({ orderFlowSidebarOpen: open }); syncUI('orderFlowSidebarOpen', open); },
+    toggleOrderFlowSidebar: () => set((state) => {
+      const val = !state.orderFlowSidebarOpen;
+      syncUI('orderFlowSidebarOpen', val);
+      return { orderFlowSidebarOpen: val };
+    }),
+
+    orderFlowSidebarTab: 'dom',
+    setOrderFlowSidebarTab: (tab) => { set({ orderFlowSidebarTab: tab }); syncUI('orderFlowSidebarTab', tab); },
 
     isOrdersDialogOpen: false,
     setOrdersDialogOpen: (open) => set({ isOrdersDialogOpen: open }),

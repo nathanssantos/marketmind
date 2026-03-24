@@ -1,6 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { DepthLevel } from '@marketmind/types';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 interface OrderBookHeatmapProps {
   bids: DepthLevel[];
@@ -17,9 +17,24 @@ interface DepthSnapshot {
   timestamp: number;
 }
 
-export function OrderBookHeatmap({ bids, asks, width = 600, height = 200 }: OrderBookHeatmapProps) {
+export function OrderBookHeatmap({ bids, asks, width = 600, height: heightProp }: OrderBookHeatmapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<DepthSnapshot[]>([]);
+  const [measuredHeight, setMeasuredHeight] = useState(0);
+  const height = heightProp ?? measuredHeight;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || heightProp) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setMeasuredHeight(Math.floor(entry.contentRect.height));
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [heightProp]);
 
   useEffect(() => {
     if (bids.length === 0 && asks.length === 0) return;
@@ -37,7 +52,8 @@ export function OrderBookHeatmap({ bids, asks, width = 600, height = 200 }: Orde
     const history = historyRef.current;
     if (history.length === 0) return;
 
-    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#0a0e17';
+    ctx.fillRect(0, 0, width, height);
 
     let globalMinPrice = Infinity;
     let globalMaxPrice = -Infinity;
@@ -91,13 +107,15 @@ export function OrderBookHeatmap({ bids, asks, width = 600, height = 200 }: Orde
   }, [draw]);
 
   return (
-    <Box borderTop="1px solid" borderColor="border.muted">
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        style={{ width: `${width}px`, height: `${height}px`, display: 'block' }}
-      />
+    <Box ref={containerRef} flex={1} minH={0} position="relative">
+      {height > 0 && (
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          style={{ width: `${width}px`, height: `${height}px`, display: 'block' }}
+        />
+      )}
     </Box>
   );
 }

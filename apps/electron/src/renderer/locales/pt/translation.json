@@ -1967,7 +1967,9 @@
       "imbalance": "Desequilíbrio",
       "spread": "Spread",
       "absorption": "Absorção",
-      "domLadder": "Livro de Ofertas"
+      "domLadder": "Livro de Ofertas",
+      "microprice": "Micropreço",
+      "exhaustion": "Exaustão"
     },
     "signals": {
       "title": "Sinais"
@@ -1975,6 +1977,14 @@
     "circuitBreaker": {
       "tripped": "CB Ativado",
       "reset": "Resetar"
+    }
+  },
+  "orderFlow": {
+    "title": "Fluxo de Ordens",
+    "tabs": {
+      "dom": "DOM",
+      "heatmap": "Mapa de Calor",
+      "metrics": "Métricas"
     }
   }
 }
