@@ -9,8 +9,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
 import { LuChartBar, LuInfo, LuPlus, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
+import { useUIStore } from '../../store/uiStore';
 import { CreateWalletDialog } from './CreateWalletDialog';
-import { WalletPerformanceModal } from './WalletPerformanceModal';
 
 type WalletType = 'paper' | 'testnet' | 'live' | null;
 
@@ -111,7 +111,6 @@ export const WalletManager = () => {
   };
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [performanceWalletId, setPerformanceWalletId] = useState<string | null>(null);
 
   return (
     <Stack gap={2} p={4}>
@@ -148,7 +147,7 @@ export const WalletManager = () => {
                 wallet={wallet}
                 isActive={wallet.id === activeWalletId}
                 onDelete={() => handleDeleteWallet(wallet.id)}
-                onViewPerformance={() => setPerformanceWalletId(wallet.id)}
+                onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
                 onSync={() => handleSyncBalance(wallet.id)}
                 isDeleting={isDeleting}
                 isSyncing={syncingWalletId === wallet.id || isSyncing}
@@ -166,11 +165,6 @@ export const WalletManager = () => {
         isCreating={isCreatingPaper || isCreating}
       />
 
-      <WalletPerformanceModal
-        isOpen={performanceWalletId !== null}
-        onClose={() => setPerformanceWalletId(null)}
-        walletId={performanceWalletId}
-      />
     </Stack>
   );
 };

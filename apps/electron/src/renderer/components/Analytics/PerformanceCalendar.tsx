@@ -74,6 +74,10 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
   const getWeekPnl = (week: (number | null)[]) => {
     let pnl = 0;
     let pnlPercent = 0;
+    let wins = 0;
+    let losses = 0;
+    let grossProfit = 0;
+    let grossLoss = 0;
     let hasTrades = false;
     for (const day of week) {
       if (day === null) continue;
@@ -81,16 +85,37 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
       if (entry) {
         pnl += entry.pnl;
         pnlPercent += entry.pnlPercent;
+        wins += entry.wins;
+        losses += entry.losses;
+        grossProfit += entry.grossProfit;
+        grossLoss += entry.grossLoss;
         hasTrades = true;
       }
     }
-    return { pnl, pnlPercent, hasTrades };
+    const totalTrades = wins + losses;
+    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+    return { pnl, pnlPercent, wins, losses, winRate, profitFactor, hasTrades };
   };
 
   const monthTotal = data.reduce(
-    (acc, d) => ({ pnl: acc.pnl + d.pnl, pnlPercent: acc.pnlPercent + d.pnlPercent, trades: acc.trades + d.tradesCount }),
-    { pnl: 0, pnlPercent: 0, trades: 0 }
+    (acc, d) => ({
+      pnl: acc.pnl + d.pnl,
+      pnlPercent: acc.pnlPercent + d.pnlPercent,
+      trades: acc.trades + d.tradesCount,
+      wins: acc.wins + d.wins,
+      losses: acc.losses + d.losses,
+      grossProfit: acc.grossProfit + d.grossProfit,
+      grossLoss: acc.grossLoss + d.grossLoss,
+    }),
+    { pnl: 0, pnlPercent: 0, trades: 0, wins: 0, losses: 0, grossProfit: 0, grossLoss: 0 }
   );
+
+  const monthTotalTrades = monthTotal.wins + monthTotal.losses;
+  const monthWinRate = monthTotalTrades > 0 ? (monthTotal.wins / monthTotalTrades) * 100 : 0;
+  const monthProfitFactor = monthTotal.grossLoss > 0
+    ? monthTotal.grossProfit / monthTotal.grossLoss
+    : monthTotal.grossProfit > 0 ? Infinity : 0;
 
   const formatDateKey = (day: number) => {
     const mm = String(month).padStart(2, '0');
@@ -160,7 +185,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
             return (
               <Grid key={weekIdx} templateColumns="repeat(8, 1fr)" gap={1} mb={1}>
                 {week.map((day, dayIdx) => {
-                  if (day === null) return <GridItem key={`empty-${weekIdx}-${dayIdx}`} />;
+                  if (day === null) return <GridItem key={`empty-${weekIdx}-${dayIdx}`}><Box h="100%" /></GridItem>;
 
                   const dateKey = formatDateKey(day);
                   const entry = dailyMap.get(dateKey);
@@ -168,7 +193,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
                   if (!entry) {
                     return (
                       <GridItem key={dateKey}>
-                        <Box bg="bg.muted" borderRadius="sm" p={1} minH="52px" opacity={0.5}>
+                        <Box bg="bg.muted" borderRadius="sm" p={1} h="100%" opacity={0.5}>
                           <Text fontSize="10px" color="fg.muted" lineHeight="1">{day}</Text>
                         </Box>
                       </GridItem>
@@ -189,7 +214,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
                         bg={dayBg}
                         borderRadius="sm"
                         p={1}
-                        minH="52px"
+                        h="100%"
                         title={t('trading.analytics.calendar.trades', { count: entry.tradesCount })}
                       >
                         <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">{day}</Text>
@@ -207,7 +232,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
 
                 <GridItem>
                   {weekSummary.hasTrades ? (
-                    <Box bg={weekBg} borderRadius="sm" p={1} minH="52px">
+                    <Box bg={weekBg} borderRadius="sm" p={1} h="100%">
                       <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">W{weekIdx + 1}</Text>
                       <Text fontSize="10px" fontWeight="bold" color={weekPnlColor} lineHeight="1.2">
                         {formatWalletCurrencyWithSign(weekSummary.pnl, currency)}
@@ -220,9 +245,14 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
                           {weekSummary.pnl < 0 ? '-' : ''}{formatBRL(convertUsdtToBrl(Math.abs(weekSummary.pnl), usdtBrlRate))}
                         </Text>
                       )}
+                      {weekSummary.wins + weekSummary.losses > 0 && (
+                        <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
+                          WR {weekSummary.winRate.toFixed(0)}% · PF {weekSummary.profitFactor === Infinity ? '\u221E' : weekSummary.profitFactor.toFixed(1)}
+                        </Text>
+                      )}
                     </Box>
                   ) : (
-                    <Box bg="bg.muted" borderRadius="sm" p={1} minH="52px" opacity={0.5} />
+                    <Box bg="bg.muted" borderRadius="sm" p={1} h="100%" opacity={0.5} />
                   )}
                 </GridItem>
               </Grid>
@@ -233,7 +263,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
             <Grid templateColumns="repeat(8, 1fr)" gap={1} mt={1}>
               <GridItem colSpan={7} />
               <GridItem>
-                <Box bg={getDayBg(monthTotal.pnl)} borderRadius="sm" p={1} minH="52px">
+                <Box bg={getDayBg(monthTotal.pnl)} borderRadius="sm" p={1} h="100%">
                   <Text fontSize="10px" color="fg.muted" lineHeight="1" mb="2px">
                     {t(`trading.analytics.calendar.months.${month}`).slice(0, 3)}
                   </Text>
@@ -246,6 +276,11 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
                   {showBrlValues && (
                     <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
                       {monthTotal.pnl < 0 ? '-' : ''}{formatBRL(convertUsdtToBrl(Math.abs(monthTotal.pnl), usdtBrlRate))}
+                    </Text>
+                  )}
+                  {monthTotalTrades > 0 && (
+                    <Text fontSize="9px" color="fg.muted" lineHeight="1.2">
+                      WR {monthWinRate.toFixed(0)}% · PF {monthProfitFactor === Infinity ? '\u221E' : monthProfitFactor.toFixed(1)}
                     </Text>
                   )}
                 </Box>

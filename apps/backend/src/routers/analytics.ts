@@ -359,14 +359,31 @@ export const analyticsRouter = router({
         )
         .orderBy(realizedPnlEvents.createdAt);
 
-      const dailyData: Record<string, { pnl: number; closedPositions: number; balanceAtStart: number }> = {};
+      const dailyData: Record<string, {
+        pnl: number;
+        closedPositions: number;
+        balanceAtStart: number;
+        wins: number;
+        losses: number;
+        grossProfit: number;
+        grossLoss: number;
+      }> = {};
 
       for (const event of events) {
         const dateKey = event.createdAt.toISOString().slice(0, 10);
-        if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, closedPositions: 0, balanceAtStart: runningBalance };
+        if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, closedPositions: 0, balanceAtStart: runningBalance, wins: 0, losses: 0, grossProfit: 0, grossLoss: 0 };
         const pnl = parseFloat(event.pnl || '0');
         dailyData[dateKey].pnl += pnl;
-        if (event.eventType === 'full_close') dailyData[dateKey].closedPositions++;
+        if (event.eventType === 'full_close') {
+          dailyData[dateKey].closedPositions++;
+          if (pnl > 0) {
+            dailyData[dateKey].wins++;
+            dailyData[dateKey].grossProfit += pnl;
+          } else if (pnl < 0) {
+            dailyData[dateKey].losses++;
+            dailyData[dateKey].grossLoss += Math.abs(pnl);
+          }
+        }
         runningBalance += pnl;
       }
 
@@ -377,6 +394,10 @@ export const analyticsRouter = router({
           ? parseFloat(((data.pnl / data.balanceAtStart) * 100).toFixed(2))
           : 0,
         tradesCount: data.closedPositions,
+        wins: data.wins,
+        losses: data.losses,
+        grossProfit: parseFloat(data.grossProfit.toFixed(2)),
+        grossLoss: parseFloat(data.grossLoss.toFixed(2)),
       }));
     }),
 
