@@ -104,10 +104,12 @@ export const useORBRenderer = ({
   orbPeriodMinutes = 15,
 }: UseORBRendererProps): UseORBRendererReturn => {
   const klines = manager?.getKlines() ?? [];
+  const intervalMinutes = getIntervalMinutes(klines);
+  const isTimeframeSupported = intervalMinutes > 0 && intervalMinutes < 15;
 
   const orbZones = useMemo(
-    () => (enabled ? buildORBZones(marketEvents, klines, orbPeriodMinutes) : []),
-    [enabled, marketEvents, klines, orbPeriodMinutes],
+    () => (enabled && isTimeframeSupported ? buildORBZones(marketEvents, klines, orbPeriodMinutes) : []),
+    [enabled, isTimeframeSupported, marketEvents, klines, orbPeriodMinutes],
   );
 
   const render = useCallback((): void => {
