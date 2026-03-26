@@ -208,7 +208,7 @@ interface IndicatorState {
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
-    activeIndicators: ['volume', 'stochastic', 'rsi14', 'dailyVwap'],
+    activeIndicators: ['volume', 'stochastic', 'rsi', 'dailyVwap'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
     hydrate: (data) => {

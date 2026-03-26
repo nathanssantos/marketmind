@@ -28,8 +28,8 @@ export const useRSIRenderer = ({
   rsiData,
   colors,
   enabled = true,
-  overboughtLevel = 95,
-  oversoldLevel = 5,
+  overboughtLevel = 90,
+  oversoldLevel = 10,
   panelId = 'rsi',
 }: UseRSIRendererProps) => {
   const render = useCallback((): void => {

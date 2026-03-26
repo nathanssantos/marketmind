@@ -17,7 +17,7 @@ export const getDefaultMovingAverages = (colorMode: 'light' | 'dark'): MovingAve
   const colors = getChartColors(colorMode);
   const ma = colors.ma;
   return [
-    { period: 7, type: 'EMA', color: '#00bfff', lineWidth: 2, visible: false },
+    { period: 7, type: 'EMA', color: '#00bfff', lineWidth: 2, visible: true },
     { period: 8, type: 'EMA', color: ma[6] ?? '#00bcd4', lineWidth: 2, visible: false },
     { period: 9, type: 'EMA', color: '#ff00ff', lineWidth: 2, visible: true },
     { period: 10, type: 'EMA', color: ma[3] ?? '#14b8a6', lineWidth: 2, visible: false },
