@@ -1,5 +1,5 @@
 import type { Kline, StrategyDefinition, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
-import { calculateConfluenceScore, type FilterResults } from '../../utils/confluence-scoring';
+import { calculateConfluenceScore, type FilterResults } from '../../../utils/confluence-scoring';
 import {
   checkBtcCorrelation,
   checkFundingRate,
@@ -10,9 +10,9 @@ import {
   getFilterValidatorSyncFilters,
   getHigherTimeframe,
   MTF_FILTER,
-} from '../../utils/filters';
-import type { WatcherLogBuffer } from '../watcher-batch-logger';
-import type { ActiveWatcher, FilterValidatorConfig, FilterValidatorDeps, FilterValidationResult } from './types';
+} from '../../../utils/filters';
+import type { WatcherLogBuffer } from '../../watcher-batch-logger';
+import type { ActiveWatcher, FilterValidatorConfig, FilterValidatorDeps, FilterValidationResult } from '../types';
 import { checkStochasticHtfFilter, checkStochasticRecoveryHtfFilter } from './filter-validator-htf';
 
 export type { FilterValidatorConfig, FilterValidatorDeps, FilterValidationResult };

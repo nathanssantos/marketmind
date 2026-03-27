@@ -1,24 +1,24 @@
 import type { TradingSetup } from '@marketmind/types';
 import { getDefaultFee, calculateLiquidationPrice } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
-import { BACKTEST_DEFAULTS } from '../../constants';
-import { db } from '../../db';
+import { BACKTEST_DEFAULTS } from '../../../constants';
+import { db } from '../../../db';
 import {
   autoTradingConfig,
   setupDetections,
   tradeExecutions,
   type Wallet,
-} from '../../db/schema';
-import { serializeError } from '../../utils/errors';
-import { cooldownService } from '../cooldown';
-import { positionMonitorService } from '../position-monitor';
-import { getWebSocketService } from '../websocket';
-import { cancelAllOpenProtectionOrdersOnExchange, createStopLossOrder, createTakeProfitOrder } from '../protection-orders';
-import { createBinanceFuturesClient, getPosition } from '../binance-futures-client';
-import { logger } from '../logger';
-import type { ActiveWatcher } from './types';
-import { log } from './utils';
-import type { WatcherLogBuffer } from '../watcher-batch-logger';
+} from '../../../db/schema';
+import { serializeError } from '../../../utils/errors';
+import { cooldownService } from '../../cooldown';
+import { positionMonitorService } from '../../position-monitor';
+import { getWebSocketService } from '../../websocket';
+import { cancelAllOpenProtectionOrdersOnExchange, createStopLossOrder, createTakeProfitOrder } from '../../protection-orders';
+import { createBinanceFuturesClient, getPosition } from '../../binance-futures-client';
+import { logger } from '../../logger';
+import type { ActiveWatcher } from '../types';
+import { log } from '../utils';
+import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { LiveOrderResult } from './live-order-executor';
 import type { PaperOrderResult } from './paper-order-executor';
 

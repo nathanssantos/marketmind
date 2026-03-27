@@ -91,7 +91,7 @@ vi.mock('../../exchange-stream-factory', () => ({
   }),
 }));
 
-import { WatcherManager } from '../watcher-manager';
+import { WatcherManager } from '../processing/watcher-manager';
 import type { ActiveWatcher, WatcherManagerDeps } from '../types';
 import { db } from '../../../db';
 

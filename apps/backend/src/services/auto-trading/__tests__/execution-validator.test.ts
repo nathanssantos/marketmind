@@ -61,7 +61,7 @@ vi.mock('../../../utils/filters/filter-registry', () => ({
   buildFilterConfigFromDb: vi.fn(() => ({})),
 }));
 
-vi.mock('../fibonacci-calculator', () => ({
+vi.mock('../validation/fibonacci-calculator', () => ({
   calculateFibonacciTakeProfit: vi.fn(),
 }));
 
@@ -78,7 +78,7 @@ import {
   validateRiskReward,
   resolveConfig,
   type ExecutionValidatorDeps,
-} from '../execution-validator';
+} from '../validation/execution-validator';
 
 const createLogBuffer = (): WatcherLogBuffer =>
   new WatcherLogBuffer('watcher-1', 'BTCUSDT', '4h', 'FUTURES');

@@ -1,21 +1,21 @@
 import type { ExchangeId, MarketType } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
-import { INTERVAL_MS, TIME_MS } from '../../constants';
-import { db } from '../../db';
+import { INTERVAL_MS, TIME_MS } from '../../../constants';
+import { db } from '../../../db';
 import {
   activeWatchers as activeWatchersTable,
   autoTradingConfig,
   tradingProfiles,
-} from '../../db/schema';
-import { calculateRequiredKlines } from '../../utils/kline-calculator';
-import { serializeError } from '../../utils/errors';
-import { prefetchKlines } from '../kline-prefetch';
+} from '../../../db/schema';
+import { calculateRequiredKlines } from '../../../utils/kline-calculator';
+import { serializeError } from '../../../utils/errors';
+import { prefetchKlines } from '../../kline-prefetch';
 import {
   outputStartupResults,
   StartupLogBuffer,
-} from '../watcher-batch-logger';
-import type { ActiveWatcher, WatcherManagerDeps } from './types';
-import { log, getPollingIntervalForTimeframe } from './utils';
+} from '../../watcher-batch-logger';
+import type { ActiveWatcher, WatcherManagerDeps } from '../types';
+import { log, getPollingIntervalForTimeframe } from '../utils';
 
 export interface WalletPauseInfo {
   pausedAt: Date;
@@ -210,7 +210,7 @@ export class WatcherManager {
 
     this.activeWatchers.set(watcherId, watcher);
 
-    const { getKlineStreamService } = await import('../exchange-stream-factory');
+    const { getKlineStreamService } = await import('../../exchange-stream-factory');
     const streamService = await getKlineStreamService(exchange, marketType);
     await streamService.subscribe(symbol, interval);
 
@@ -230,7 +230,7 @@ export class WatcherManager {
     clearTimeout(watcher.intervalId);
     this.activeWatchers.delete(watcherId);
 
-    const { getKlineStreamService } = await import('../exchange-stream-factory');
+    const { getKlineStreamService } = await import('../../exchange-stream-factory');
     const streamService = await getKlineStreamService(watcher.exchange, watcher.marketType);
     streamService.unsubscribe(symbol, interval);
     log('> Unsubscribed from kline stream', { symbol, interval, marketType: watcher.marketType, exchange: watcher.exchange });

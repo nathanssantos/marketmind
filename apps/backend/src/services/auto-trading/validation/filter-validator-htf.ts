@@ -3,8 +3,8 @@ import {
   checkStochasticHtfCondition,
   checkStochasticRecoveryHtfCondition,
   getOneStepAboveTimeframe,
-} from '../../utils/filters';
-import type { WatcherLogBuffer } from '../watcher-batch-logger';
+} from '../../../utils/filters';
+import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 
 interface HtfCheckDeps {
   getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => Promise<Kline[]>;

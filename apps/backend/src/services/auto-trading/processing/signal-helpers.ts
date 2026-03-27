@@ -1,16 +1,16 @@
 import type { Kline, TimeInterval, TradingSetup } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
-import { TIME_MS, UNIT_MS } from '../../constants';
-import { db } from '../../db';
-import { signalSuggestions } from '../../db/schema';
-import type { WatcherLogBuffer, SetupLogEntry, WatcherResult } from '../watcher-batch-logger';
-import { autoTradingLogBuffer, type FrontendLogEntry } from '../auto-trading-log-buffer';
-import { getWebSocketService } from '../websocket';
-import { generateEntityId } from '../../utils/id';
-import type { AutoTradingConfig } from '../../db/schema';
-import type { ActiveWatcher, SignalProcessorDeps } from './types';
-import type { StrategyLoader } from '../setup-detection/dynamic';
-import { detectSetups } from '../indicator-engine';
+import { TIME_MS, UNIT_MS } from '../../../constants';
+import { db } from '../../../db';
+import { signalSuggestions } from '../../../db/schema';
+import type { WatcherLogBuffer, SetupLogEntry, WatcherResult } from '../../watcher-batch-logger';
+import { autoTradingLogBuffer, type FrontendLogEntry } from '../../auto-trading-log-buffer';
+import { getWebSocketService } from '../../websocket';
+import { generateEntityId } from '../../../utils/id';
+import type { AutoTradingConfig } from '../../../db/schema';
+import type { ActiveWatcher, SignalProcessorDeps } from '../types';
+import type { StrategyLoader } from '../../setup-detection/dynamic';
+import { detectSetups } from '../../indicator-engine';
 
 export const getIntervalMs = (interval: string): number => {
   const match = interval.match(/^(\d+)([mhdw])$/);

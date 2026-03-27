@@ -2,16 +2,16 @@ import type { Interval, MarketType } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
-import { db } from '../../db';
-import { activeWatchers as activeWatchersTable, autoTradingConfig, wallets } from '../../db/schema';
-import { calculateRequiredKlines } from '../../utils/kline-calculator';
-import { parseDynamicSymbolExcluded } from '../../utils/profile-transformers';
-import { serializeError } from '../../utils/errors';
-import type { RotationConfig, RotationResult } from '../dynamic-symbol-rotation';
-import { getKlineMaintenance } from '../kline-maintenance';
-import { prefetchKlines } from '../kline-prefetch';
-import type { ActiveWatcher, RotationManagerDeps, RotationPendingWatcher } from './types';
-import { log } from './utils';
+import { db } from '../../../db';
+import { activeWatchers as activeWatchersTable, autoTradingConfig, wallets } from '../../../db/schema';
+import { calculateRequiredKlines } from '../../../utils/kline-calculator';
+import { parseDynamicSymbolExcluded } from '../../../utils/profile-transformers';
+import { serializeError } from '../../../utils/errors';
+import type { RotationConfig, RotationResult } from '../../dynamic-symbol-rotation';
+import { getKlineMaintenance } from '../../kline-maintenance';
+import { prefetchKlines } from '../../kline-prefetch';
+import type { ActiveWatcher, RotationManagerDeps, RotationPendingWatcher } from '../types';
+import { log } from '../utils';
 
 export const countDynamicWatchersForInterval = (
   watchers: Map<string, ActiveWatcher>,

@@ -6,29 +6,29 @@ import {
   AUTO_TRADING_BATCH,
   AUTO_TRADING_TIMING,
   TIME_MS,
-} from '../../constants';
-import { db } from '../../db';
+} from '../../../constants';
+import { db } from '../../../db';
 import {
   autoTradingConfig,
   klines,
   tradingProfiles,
   wallets,
-} from '../../db/schema';
-import { prefetchKlines, prefetchKlinesAsync } from '../kline-prefetch';
-import { StrategyLoader } from '../setup-detection/dynamic';
+} from '../../../db/schema';
+import { prefetchKlines, prefetchKlinesAsync } from '../../kline-prefetch';
+import { StrategyLoader } from '../../setup-detection/dynamic';
 import {
   createBatchResult,
   outputBatchResults,
   WatcherLogBuffer,
   type WatcherResult,
-} from '../watcher-batch-logger';
-import { calculateRequiredKlines } from '../../utils/kline-calculator';
-import { serializeError } from '../../utils/errors';
-import { isDirectionAllowed } from '../../utils/trading-validation';
-import type { AutoTradingConfig } from '../../db/schema';
-import { applyProfileOverrides } from '../profile-applicator';
-import type { ActiveWatcher, SignalProcessorDeps } from './types';
-import { log, yieldToEventLoop } from './utils';
+} from '../../watcher-batch-logger';
+import { calculateRequiredKlines } from '../../../utils/kline-calculator';
+import { serializeError } from '../../../utils/errors';
+import { isDirectionAllowed } from '../../../utils/trading-validation';
+import type { AutoTradingConfig } from '../../../db/schema';
+import { applyProfileOverrides } from '../../profile-applicator';
+import type { ActiveWatcher, SignalProcessorDeps } from '../types';
+import { log, yieldToEventLoop } from '../utils';
 import {
   getIntervalMs,
   runSetupDetection,

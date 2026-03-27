@@ -4,16 +4,16 @@ import {
   PROTECTION_ORDER_RETRY,
   RISK_ALERT_LEVELS,
   RISK_ALERT_TYPES,
-} from '../../constants';
-import { db } from '../../db';
-import { tradeExecutions, type Wallet } from '../../db/schema';
-import { serializeError } from '../../utils/errors';
-import { withRetrySafe } from '../../utils/retry';
-import { autoTradingService } from '../auto-trading';
-import { ocoOrderService } from '../oco-orders';
-import { getWebSocketService } from '../websocket';
-import type { ActiveWatcher } from './types';
-import { log } from './utils';
+} from '../../../constants';
+import { db } from '../../../db';
+import { tradeExecutions, type Wallet } from '../../../db/schema';
+import { serializeError } from '../../../utils/errors';
+import { withRetrySafe } from '../../../utils/retry';
+import { autoTradingService } from '../../auto-trading';
+import { ocoOrderService } from '../../oco-orders';
+import { getWebSocketService } from '../../websocket';
+import type { ActiveWatcher } from '../types';
+import { log } from '../utils';
 
 export interface ProtectionOrderResult {
   stopLossOrderId: string | null;

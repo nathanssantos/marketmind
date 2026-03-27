@@ -1,10 +1,10 @@
 import type { Interval, MarketType } from '@marketmind/types';
-import { calculateRequiredKlines } from '../../utils/kline-calculator';
-import { getKlineMaintenance } from '../kline-maintenance';
-import { prefetchKlines } from '../kline-prefetch';
-import { serializeError } from '../../utils/errors';
-import type { ActiveWatcher, BtcStreamManagerDeps } from './types';
-import { log } from './utils';
+import { calculateRequiredKlines } from '../../../utils/kline-calculator';
+import { getKlineMaintenance } from '../../kline-maintenance';
+import { prefetchKlines } from '../../kline-prefetch';
+import { serializeError } from '../../../utils/errors';
+import type { ActiveWatcher, BtcStreamManagerDeps } from '../types';
+import { log } from '../utils';
 
 export class BtcStreamManager {
   private btcStreamSubscribed: Set<string> = new Set();
@@ -47,7 +47,7 @@ export class BtcStreamManager {
       log('! [BTC Correlation] Maintenance check failed for BTCUSDT', { error: serializeError(error) });
     }
 
-    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('../binance-kline-stream');
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('../../binance-kline-stream');
     if (marketType === 'FUTURES') {
       binanceFuturesKlineStreamService.subscribe('BTCUSDT', interval);
     } else {
@@ -74,7 +74,7 @@ export class BtcStreamManager {
 
     if (hasBtcWatcher) return;
 
-    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('../binance-kline-stream');
+    const { binanceKlineStreamService, binanceFuturesKlineStreamService } = await import('../../binance-kline-stream');
     if (marketType === 'FUTURES') {
       binanceFuturesKlineStreamService.unsubscribe('BTCUSDT', interval);
     } else {

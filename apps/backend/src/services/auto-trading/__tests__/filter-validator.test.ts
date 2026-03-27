@@ -81,7 +81,7 @@ vi.mock('../../../utils/confluence-scoring', () => ({
   calculateConfluenceScore: filterMocks.calculateConfluenceScore,
 }));
 
-import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from '../filter-validator';
+import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from '../validation/filter-validator';
 import {
   checkBtcCorrelation,
   checkFundingRate,

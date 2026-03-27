@@ -1,13 +1,13 @@
 import type { TradingSetup } from '@marketmind/types';
-import { db } from '../../db';
-import { tradeExecutions, type Wallet } from '../../db/schema';
-import { serializeError } from '../../utils/errors';
-import { cooldownService } from '../cooldown';
-import { positionMonitorService } from '../position-monitor';
-import { getWebSocketService } from '../websocket';
-import type { ActiveWatcher } from './types';
-import { log } from './utils';
-import { getIntervalMs } from './fibonacci-calculator';
+import { db } from '../../../db';
+import { tradeExecutions, type Wallet } from '../../../db/schema';
+import { serializeError } from '../../../utils/errors';
+import { cooldownService } from '../../cooldown';
+import { positionMonitorService } from '../../position-monitor';
+import { getWebSocketService } from '../../websocket';
+import type { ActiveWatcher } from '../types';
+import { log } from '../utils';
+import { getIntervalMs } from '../validation/fibonacci-calculator';
 
 export interface PaperOrderResult {
   actualEntryPrice: number;

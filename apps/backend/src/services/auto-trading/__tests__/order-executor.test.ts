@@ -207,7 +207,7 @@ vi.mock('../utils', () => ({
   log: vi.fn(),
 }));
 
-vi.mock('../protection-order-handler', () => ({
+vi.mock('../execution/protection-order-handler', () => ({
   protectionOrderHandler: mockProtectionOrderHandler,
 }));
 
@@ -226,14 +226,14 @@ vi.mock('../../logger', () => ({
   logger: mockLogger,
 }));
 
-vi.mock('../filter-validator', () => {
+vi.mock('../validation/filter-validator', () => {
   function MockFilterValidator() {
     return mockFilterValidator;
   }
   return { FilterValidator: MockFilterValidator };
 });
 
-import { OrderExecutor, type OrderExecutorDeps } from '../order-executor';
+import { OrderExecutor, type OrderExecutorDeps } from '../execution/order-executor';
 import { calculateFibonacciProjection, calculateADX } from '@marketmind/indicators';
 import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { ActiveWatcher } from '../types';

@@ -31,7 +31,7 @@ import {
   getIntervalMs,
   getAdxBasedFibonacciLevel,
   calculateFibonacciTakeProfit,
-} from '../fibonacci-calculator';
+} from '../validation/fibonacci-calculator';
 import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
 
 const mockedCalculateADX = vi.mocked(calculateADX);

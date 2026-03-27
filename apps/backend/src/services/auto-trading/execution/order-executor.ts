@@ -1,27 +1,27 @@
 import type { FibLevel, Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
-import { db } from '../../db';
+import { db } from '../../../db';
 import {
   autoTradingConfig,
   wallets,
-} from '../../db/schema';
-import { env } from '../../env';
-import { serializeError } from '../../utils/errors';
-import type { WatcherLogBuffer } from '../watcher-batch-logger';
-import type { ActiveWatcher } from './types';
-import { type FilterValidatorDeps, FilterValidator } from './filter-validator';
+} from '../../../db/schema';
+import { env } from '../../../env';
+import { serializeError } from '../../../utils/errors';
+import type { WatcherLogBuffer } from '../../watcher-batch-logger';
+import type { ActiveWatcher } from '../types';
+import { type FilterValidatorDeps, FilterValidator } from '../validation/filter-validator';
 import {
   resolveConfig,
   resolveTpConfig,
   validateRiskReward,
   validateSetupFilters as validateSetupFiltersImpl,
   validateExecutionChecks,
-} from './execution-validator';
+} from '../validation/execution-validator';
 import {
   calculateFibonacciTakeProfit,
   getIntervalMs,
   getAdxBasedFibonacciLevel,
-} from './fibonacci-calculator';
+} from '../validation/fibonacci-calculator';
 import { createAndExecuteTrade } from './trade-record-manager';
 import { executeLiveOrder } from './live-order-executor';
 import { executePaperOrder } from './paper-order-executor';
@@ -120,7 +120,7 @@ export class OrderExecutor {
     this.executingSetups.add(executionLockKey);
 
     try {
-      const { getScalpingScheduler } = await import('../scalping/scalping-scheduler');
+      const { getScalpingScheduler } = await import('../../scalping/scalping-scheduler');
       if (getScalpingScheduler().isSymbolBeingScalped(watcher.walletId, watcher.symbol)) {
         logBuffer.log('~', 'Skipping: symbol is being scalped', { symbol: watcher.symbol });
         return;

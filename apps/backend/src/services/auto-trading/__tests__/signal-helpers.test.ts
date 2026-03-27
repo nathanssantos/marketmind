@@ -36,7 +36,7 @@ vi.mock('../../indicator-engine', () => ({
   detectSetups: vi.fn(() => []),
 }));
 
-import { getIntervalMs, emitLogsToWebSocket, runSetupDetection } from '../signal-helpers';
+import { getIntervalMs, emitLogsToWebSocket, runSetupDetection } from '../processing/signal-helpers';
 import { getWebSocketService } from '../../websocket';
 import { detectSetups } from '../../indicator-engine';
 import type { ActiveWatcher } from '../types';

@@ -1,22 +1,22 @@
 import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
 import { and, eq, inArray } from 'drizzle-orm';
-import { BACKTEST_DEFAULTS } from '../../constants';
-import { db } from '../../db';
+import { BACKTEST_DEFAULTS } from '../../../constants';
+import { db } from '../../../db';
 import {
   autoTradingConfig,
   tradeExecutions,
   tradingProfiles,
-} from '../../db/schema';
-import { applyProfileOverrides } from '../profile-applicator';
-import { isDirectionAllowed } from '../../utils/trading-validation';
-import { cooldownService } from '../cooldown';
-import { pyramidingService } from '../pyramiding';
-import { riskManagerService } from '../risk-manager';
-import { walletLockService } from '../wallet-lock';
-import { buildFilterConfigFromDb } from '../../utils/filters/filter-registry';
+} from '../../../db/schema';
+import { applyProfileOverrides } from '../../profile-applicator';
+import { isDirectionAllowed } from '../../../utils/trading-validation';
+import { cooldownService } from '../../cooldown';
+import { pyramidingService } from '../../pyramiding';
+import { riskManagerService } from '../../risk-manager';
+import { walletLockService } from '../../wallet-lock';
+import { buildFilterConfigFromDb } from '../../../utils/filters/filter-registry';
 import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from './filter-validator';
-import type { WatcherLogBuffer } from '../watcher-batch-logger';
-import type { ActiveWatcher } from './types';
+import type { WatcherLogBuffer } from '../../watcher-batch-logger';
+import type { ActiveWatcher } from '../types';
 import { calculateFibonacciTakeProfit } from './fibonacci-calculator';
 
 export interface ExecutionValidatorDeps extends FilterValidatorDeps {

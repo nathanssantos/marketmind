@@ -111,7 +111,7 @@ vi.mock('../utils', () => ({
   getRotationAnticipationMs: vi.fn(() => 30_000),
 }));
 
-import { RotationManager } from '../rotation-manager';
+import { RotationManager } from '../rotation/rotation-manager';
 import type { RotationManagerDeps } from '../types';
 import type { RotationResult } from '../../dynamic-symbol-rotation';
 

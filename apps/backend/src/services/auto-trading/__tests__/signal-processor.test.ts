@@ -210,8 +210,8 @@ vi.mock('../../../env', () => ({
   env: { ENCRYPTION_KEY: 'a'.repeat(64) },
 }));
 
-import { SignalProcessor, type SignalProcessorConfig } from '../signal-processor';
-import { getIntervalMs, emitLogsToWebSocket } from '../signal-helpers';
+import { SignalProcessor, type SignalProcessorConfig } from '../processing/signal-processor';
+import { getIntervalMs, emitLogsToWebSocket } from '../processing/signal-helpers';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
 
 

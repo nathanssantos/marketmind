@@ -1,8 +1,8 @@
 import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
 import type { FibLevel, Kline, TimeInterval } from '@marketmind/types';
 import { FILTER_THRESHOLDS } from '@marketmind/types';
-import { TIME_MS, UNIT_MS } from '../../constants';
-import { log } from './utils';
+import { TIME_MS, UNIT_MS } from '../../../constants';
+import { log } from '../utils';
 
 export const getIntervalMs = (interval: string): number => {
   const match = interval.match(/^(\d+)([mhdw])$/);

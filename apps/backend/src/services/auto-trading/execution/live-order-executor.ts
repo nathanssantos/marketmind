@@ -1,11 +1,11 @@
 import type { TradingSetup } from '@marketmind/types';
-import { autoTradingConfig, type Wallet } from '../../db/schema';
-import { serializeError } from '../../utils/errors';
-import { autoTradingService } from '../auto-trading';
-import { getFuturesClient } from '../../exchange';
+import { autoTradingConfig, type Wallet } from '../../../db/schema';
+import { serializeError } from '../../../utils/errors';
+import { autoTradingService } from '../../auto-trading';
+import { getFuturesClient } from '../../../exchange';
 import { protectionOrderHandler } from './protection-order-handler';
-import type { ActiveWatcher } from './types';
-import { log } from './utils';
+import type { ActiveWatcher } from '../types';
+import { log } from '../utils';
 
 export interface LiveOrderResult {
   entryOrderId: string | null;

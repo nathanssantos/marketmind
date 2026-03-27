@@ -5,18 +5,18 @@ import {
   AUTO_TRADING_TIMING,
   INTERVAL_MS,
   TIME_MS,
-} from '../../constants';
-import { db } from '../../db';
-import { activeWatchers as activeWatchersTable, wallets } from '../../db/schema';
-import { serializeError } from '../../utils/errors';
+} from '../../../constants';
+import { db } from '../../../db';
+import { activeWatchers as activeWatchersTable, wallets } from '../../../db/schema';
+import { serializeError } from '../../../utils/errors';
 import {
   getDynamicSymbolRotationService,
   type RotationConfig,
   type RotationResult,
-} from '../dynamic-symbol-rotation';
-import type { RotationManagerDeps, RotationPendingWatcher, WalletRotationState } from './types';
-import { getRotationStateKey } from './types';
-import { log, getCandleCloseTime, getNextCandleCloseTime, getRotationAnticipationMs } from './utils';
+} from '../../dynamic-symbol-rotation';
+import type { RotationManagerDeps, RotationPendingWatcher, WalletRotationState } from '../types';
+import { getRotationStateKey } from '../types';
+import { log, getCandleCloseTime, getNextCandleCloseTime, getRotationAnticipationMs } from '../utils';
 import {
   applyRotation,
   applyRotationWithQueue,
