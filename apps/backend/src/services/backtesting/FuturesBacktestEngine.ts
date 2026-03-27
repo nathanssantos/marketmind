@@ -7,6 +7,7 @@ import {
   getDefaultFee,
   getRoundTripFee,
 } from '@marketmind/types';
+import { FUNDING } from '../../constants';
 import { BacktestEngine } from './BacktestEngine';
 import { BinanceFuturesDataService } from '../binance-futures-data';
 
@@ -14,8 +15,6 @@ interface LocalFundingRateData {
   fundingTime: number;
   fundingRate: number;
 }
-
-const FUNDING_INTERVAL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export class FuturesBacktestEngine {
   private spotEngine: BacktestEngine;
@@ -63,9 +62,9 @@ export class FuturesBacktestEngine {
 
   private generateDefaultFundingRates(startTime: number, endTime: number): LocalFundingRateData[] {
     const rates: LocalFundingRateData[] = [];
-    const startFunding = Math.ceil(startTime / FUNDING_INTERVAL_MS) * FUNDING_INTERVAL_MS;
+    const startFunding = Math.ceil(startTime / FUNDING.INTERVAL_MS) * FUNDING.INTERVAL_MS;
 
-    for (let time = startFunding; time <= endTime; time += FUNDING_INTERVAL_MS) {
+    for (let time = startFunding; time <= endTime; time += FUNDING.INTERVAL_MS) {
       rates.push({
         fundingTime: time,
         fundingRate: 0.0001, // Default 0.01% funding rate

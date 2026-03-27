@@ -1,13 +1,12 @@
 import { calculateFundingPayment } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
-import { TIME_MS } from '../constants';
+import { FUNDING, TIME_MS } from '../constants';
 import { db } from '../db';
 import { positions, wallets } from '../db/schema';
 import { isPaperWallet } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger } from './logger';
 
-const FUNDING_INTERVAL_MS = 8 * TIME_MS.HOUR;
 const CHECK_INTERVAL_MS = 5 * TIME_MS.MINUTE;
 
 interface FundingRateCache {
@@ -92,7 +91,7 @@ class FundingRateService {
       const nextFundingTime = fundingInfo.nextFundingTime;
       const now = Date.now();
 
-      const lastFundingTime = nextFundingTime - FUNDING_INTERVAL_MS;
+      const lastFundingTime = nextFundingTime - FUNDING.INTERVAL_MS;
 
       const cache = this.fundingCache.get(symbol);
 

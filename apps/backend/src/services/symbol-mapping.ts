@@ -1,4 +1,5 @@
 import type { MarketType } from '@marketmind/types';
+import { TIME_MS } from '../constants';
 import { getAvailableSymbols } from './binance-exchange-info';
 
 const COINGECKO_TO_BINANCE: Record<string, string> = {
@@ -108,7 +109,7 @@ const COINGECKO_TO_BINANCE: Record<string, string> = {
 };
 
 let availableSymbolsCache: { symbols: Set<string>; timestamp: number } | null = null;
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 5 * TIME_MS.MINUTE;
 
 const getAvailableSymbolsSet = async (marketType: MarketType): Promise<Set<string>> => {
   const now = Date.now();
