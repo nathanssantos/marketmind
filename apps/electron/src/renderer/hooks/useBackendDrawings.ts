@@ -42,14 +42,15 @@ const buildTimeToIndex = (klines: Kline[]): TimeToIndexLookup => {
       else if (midTime > time) hi = mid - 1;
       else return mid;
     }
-    return Math.max(0, Math.min(lo, klines.length - 1));
+    return Math.max(0, lo);
   };
 };
 
 const buildGetOpenTime = (klines: Kline[]): KlineTimeLookup =>
   (index: number): number | undefined => {
-    const clamped = Math.round(Math.max(0, Math.min(index, klines.length - 1)));
-    return klines[clamped]?.openTime;
+    const rounded = Math.round(index);
+    if (rounded < 0 || rounded >= klines.length) return undefined;
+    return klines[rounded]?.openTime;
   };
 
 export const useBackendDrawings = (symbol: string, interval: string, klines: Kline[]) => {
