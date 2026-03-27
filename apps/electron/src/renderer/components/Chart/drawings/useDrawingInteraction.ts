@@ -1,8 +1,9 @@
-import type { Drawing, DrawingType, CoordinateMapper } from '@marketmind/chart-studies';
+import type { Drawing, DrawingType } from '@marketmind/chart-studies';
 import { hitTestDrawings, FIBONACCI_DEFAULT_LEVELS, DEFAULT_FONT_SIZE } from '@marketmind/chart-studies';
 import { formatFibonacciLabel } from '@marketmind/fibonacci';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { createDrawingMapper } from '@renderer/utils/canvas/canvasHelpers';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import { useCallback, useEffect, useRef } from 'react';
@@ -42,18 +43,107 @@ const isTwoPointDrawing = (d: Drawing): d is Drawing & { type: TwoPointType; sta
 let nextDrawingId = 1;
 const generateId = (): string => `drawing-${Date.now()}-${nextDrawingId++}`;
 
-const createMapper = (manager: CanvasManager): CoordinateMapper => ({
-  priceToY: (price: number) => manager.priceToY(price),
-  yToPrice: (y: number) => manager.yToPrice(y),
-  indexToX: (index: number) => manager.indexToX(index),
-  xToIndex: (x: number) => {
-    const viewport = manager.getViewport();
-    const dimensions = manager.getDimensions();
-    if (!dimensions) return 0;
-    return Math.floor(viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start));
-  },
-  indexToCenterX: (index: number) => manager.indexToCenterX(index),
-});
+const applyDragUpdate = (
+  store: ReturnType<typeof useDrawingStore.getState>,
+  originalDrawing: Drawing,
+  handleType: string | null,
+  deltaIndex: number,
+  deltaPrice: number,
+  newIndex: number,
+  newPrice: number,
+  newTime: number | undefined,
+  timeAt: (idx: number) => number | undefined,
+): void => {
+  if (handleType === 'body' || handleType === null) {
+    if (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork') {
+      const si = originalDrawing.startIndex + deltaIndex;
+      const ei = originalDrawing.endIndex + deltaIndex;
+      const wi = originalDrawing.widthIndex + deltaIndex;
+      store.updateDrawing(originalDrawing.id, {
+        startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
+        endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
+        startTime: timeAt(si), endTime: timeAt(ei),
+        widthIndex: wi, widthPrice: originalDrawing.widthPrice + deltaPrice,
+        widthTime: timeAt(wi),
+      } as Partial<Drawing>);
+      return;
+    }
+
+    if (isTwoPointDrawing(originalDrawing)) {
+      const si = originalDrawing.startIndex + deltaIndex;
+      const ei = originalDrawing.endIndex + deltaIndex;
+      store.updateDrawing(originalDrawing.id, {
+        startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
+        endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
+        startTime: timeAt(si), endTime: timeAt(ei),
+      } as Partial<Drawing>);
+      return;
+    }
+
+    if (originalDrawing.type === 'fibonacci') {
+      const lowPrice = originalDrawing.swingLowPrice + deltaPrice;
+      const highPrice = originalDrawing.swingHighPrice + deltaPrice;
+      const sli = originalDrawing.swingLowIndex + deltaIndex;
+      const shi = originalDrawing.swingHighIndex + deltaIndex;
+      store.updateDrawing(originalDrawing.id, {
+        swingLowIndex: sli, swingLowPrice: lowPrice,
+        swingHighIndex: shi, swingHighPrice: highPrice,
+        swingLowTime: timeAt(sli), swingHighTime: timeAt(shi),
+        levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), originalDrawing.direction),
+      } as Partial<Drawing>);
+      return;
+    }
+
+    if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine' || originalDrawing.type === 'anchoredVwap') {
+      store.updateDrawing(originalDrawing.id, {
+        index: originalDrawing.index + deltaIndex,
+        price: originalDrawing.price + deltaPrice,
+        time: timeAt(originalDrawing.index + deltaIndex),
+      } as Partial<Drawing>);
+      return;
+    }
+
+    if (originalDrawing.type === 'pencil' || originalDrawing.type === 'highlighter') {
+      store.updateDrawing(originalDrawing.id, {
+        points: originalDrawing.points.map(p => {
+          const ni = p.index + deltaIndex;
+          return { index: ni, price: p.price + deltaPrice, time: timeAt(ni) };
+        }),
+      } as Partial<Drawing>);
+    }
+    return;
+  }
+
+  if (handleType === 'width' && (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork')) {
+    store.updateDrawing(originalDrawing.id, { widthIndex: newIndex, widthPrice: newPrice, widthTime: newTime } as Partial<Drawing>);
+    return;
+  }
+
+  if ((handleType === 'start' || handleType === 'end') && isTwoPointDrawing(originalDrawing)) {
+    const field = handleType === 'start'
+      ? { startIndex: newIndex, startPrice: newPrice, startTime: newTime }
+      : { endIndex: newIndex, endPrice: newPrice, endTime: newTime };
+    store.updateDrawing(originalDrawing.id, field as Partial<Drawing>);
+    return;
+  }
+
+  if (handleType === 'swingLow' && originalDrawing.type === 'fibonacci') {
+    const dir = originalDrawing.swingHighPrice >= newPrice ? 'up' : 'down';
+    store.updateDrawing(originalDrawing.id, {
+      swingLowIndex: newIndex, swingLowPrice: newPrice, swingLowTime: newTime, direction: dir,
+      levels: computeFibLevels(Math.min(newPrice, originalDrawing.swingHighPrice), Math.max(newPrice, originalDrawing.swingHighPrice), dir),
+    } as Partial<Drawing>);
+    return;
+  }
+
+  if (handleType === 'swingHigh' && originalDrawing.type === 'fibonacci') {
+    const dir = newPrice >= originalDrawing.swingLowPrice ? 'up' : 'down';
+    store.updateDrawing(originalDrawing.id, {
+      swingHighIndex: newIndex, swingHighPrice: newPrice, swingHighTime: newTime, direction: dir,
+      levels: computeFibLevels(Math.min(originalDrawing.swingLowPrice, newPrice), Math.max(originalDrawing.swingLowPrice, newPrice), dir),
+    } as Partial<Drawing>);
+  }
+};
 
 const computeFibLevels = (lowPrice: number, highPrice: number, direction: 'up' | 'down') => {
   const range = highPrice - lowPrice;
@@ -103,32 +193,26 @@ export const useDrawingInteraction = ({
     const selectedId = store.selectedDrawingId;
 
     if (!activeTool) {
-      const mapper = createMapper(manager);
+      const mapper = createDrawingMapper(manager);
       const drawings = store.getDrawingsForSymbol(symbol, interval);
       const hit = hitTestDrawings(x, y, drawings, mapper, selectedId);
 
-      if (hit) {
-        if (hit.drawingId !== selectedId) {
-          store.selectDrawing(hit.drawingId);
-        }
-
-        const drawing = drawings.find(d => d.id === hit.drawingId);
-        if (drawing && !drawing.locked) {
-          const isFibBody = drawing.type === 'fibonacci' && (hit.handleType === null || hit.handleType === 'body');
-          if (!isFibBody) {
-            phaseRef.current = 'dragging';
-            dragStartRef.current = { x, y, handleType: hit.handleType, originalDrawing: { ...drawing } as Drawing };
-            return true;
-          }
-        }
-        return true;
-      }
-
-      if (selectedId) {
-        store.selectDrawing(null);
+      if (!hit) {
+        if (selectedId) store.selectDrawing(null);
         return false;
       }
-      return false;
+
+      if (hit.drawingId !== selectedId) store.selectDrawing(hit.drawingId);
+
+      const drawing = drawings.find(d => d.id === hit.drawingId);
+      if (!drawing || drawing.locked) return true;
+
+      const isFibBody = drawing.type === 'fibonacci' && (hit.handleType === null || hit.handleType === 'body');
+      if (isFibBody) return true;
+
+      phaseRef.current = 'dragging';
+      dragStartRef.current = { x, y, handleType: hit.handleType, originalDrawing: { ...drawing } as Drawing };
+      return true;
     }
 
     const { index, price, time } = getIndexAndPrice(x, y);
@@ -303,81 +387,14 @@ export const useDrawingInteraction = ({
         return klines[rounded]?.openTime;
       };
 
-      if (handleType === 'body' || handleType === null) {
-        if (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork') {
-          const si = originalDrawing.startIndex + deltaIndex;
-          const ei = originalDrawing.endIndex + deltaIndex;
-          const wi = originalDrawing.widthIndex + deltaIndex;
-          store.updateDrawing(originalDrawing.id, {
-            startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
-            endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
-            startTime: timeAt(si), endTime: timeAt(ei),
-            widthIndex: wi, widthPrice: originalDrawing.widthPrice + deltaPrice,
-            widthTime: timeAt(wi),
-          } as Partial<Drawing>);
-        } else if (isTwoPointDrawing(originalDrawing)) {
-          const si = originalDrawing.startIndex + deltaIndex;
-          const ei = originalDrawing.endIndex + deltaIndex;
-          store.updateDrawing(originalDrawing.id, {
-            startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
-            endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
-            startTime: timeAt(si), endTime: timeAt(ei),
-          } as Partial<Drawing>);
-        } else if (originalDrawing.type === 'fibonacci') {
-          const lowPrice = originalDrawing.swingLowPrice + deltaPrice;
-          const highPrice = originalDrawing.swingHighPrice + deltaPrice;
-          const sli = originalDrawing.swingLowIndex + deltaIndex;
-          const shi = originalDrawing.swingHighIndex + deltaIndex;
-          store.updateDrawing(originalDrawing.id, {
-            swingLowIndex: sli, swingLowPrice: lowPrice,
-            swingHighIndex: shi, swingHighPrice: highPrice,
-            swingLowTime: timeAt(sli), swingHighTime: timeAt(shi),
-            levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), originalDrawing.direction),
-          } as Partial<Drawing>);
-        } else if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine' || originalDrawing.type === 'anchoredVwap') {
-          store.updateDrawing(originalDrawing.id, {
-            index: originalDrawing.index + deltaIndex,
-            price: originalDrawing.price + deltaPrice,
-            time: timeAt(originalDrawing.index + deltaIndex),
-          } as Partial<Drawing>);
-        } else if (originalDrawing.type === 'pencil' || originalDrawing.type === 'highlighter') {
-          store.updateDrawing(originalDrawing.id, {
-            points: originalDrawing.points.map(p => {
-              const ni = p.index + deltaIndex;
-              return { index: ni, price: p.price + deltaPrice, time: timeAt(ni) };
-            }),
-          } as Partial<Drawing>);
-        }
-      } else if (handleType === 'start' && isTwoPointDrawing(originalDrawing)) {
-        store.updateDrawing(originalDrawing.id, { startIndex: newIndex, startPrice: newPrice, startTime: newTime } as Partial<Drawing>);
-      } else if (handleType === 'end' && isTwoPointDrawing(originalDrawing)) {
-        store.updateDrawing(originalDrawing.id, { endIndex: newIndex, endPrice: newPrice, endTime: newTime } as Partial<Drawing>);
-      } else if (handleType === 'swingLow' && originalDrawing.type === 'fibonacci') {
-        const lowPrice = newPrice;
-        const highPrice = originalDrawing.swingHighPrice;
-        const dir = highPrice >= lowPrice ? 'up' : 'down';
-        store.updateDrawing(originalDrawing.id, {
-          swingLowIndex: newIndex, swingLowPrice: newPrice, swingLowTime: newTime, direction: dir,
-          levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), dir),
-        } as Partial<Drawing>);
-      } else if (handleType === 'width' && (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork')) {
-        store.updateDrawing(originalDrawing.id, { widthIndex: newIndex, widthPrice: newPrice, widthTime: newTime } as Partial<Drawing>);
-      } else if (handleType === 'swingHigh' && originalDrawing.type === 'fibonacci') {
-        const lowPrice = originalDrawing.swingLowPrice;
-        const highPrice = newPrice;
-        const dir = newPrice >= originalDrawing.swingLowPrice ? 'up' : 'down';
-        store.updateDrawing(originalDrawing.id, {
-          swingHighIndex: newIndex, swingHighPrice: newPrice, swingHighTime: newTime, direction: dir,
-          levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), dir),
-        } as Partial<Drawing>);
-      }
+      applyDragUpdate(store, originalDrawing, handleType, deltaIndex, deltaPrice, newIndex, newPrice, newTime, timeAt);
 
       manager.markDirty('overlays');
       return true;
     }
 
     if (!useDrawingStore.getState().activeTool) {
-      const mapper = createMapper(manager);
+      const mapper = createDrawingMapper(manager);
       const drawings = useDrawingStore.getState().getDrawingsForSymbol(symbol, interval);
       const selectedId = useDrawingStore.getState().selectedDrawingId;
       const hit = hitTestDrawings(x, y, drawings, mapper, selectedId);

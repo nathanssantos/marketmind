@@ -1,15 +1,7 @@
 import type { RectangleDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
-
-const hexToFillColor = (hex: string): string => {
-  if (hex.startsWith('#') && hex.length === 7) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, 0.08)`;
-  }
-  return 'rgba(156, 39, 176, 0.08)';
-};
+import { hexToRgba, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { FILL_OPACITY } from '@shared/constants';
 
 export const renderRectangle = (
   ctx: CanvasRenderingContext2D,
@@ -17,10 +9,7 @@ export const renderRectangle = (
   mapper: CoordinateMapper,
   isSelected: boolean,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
 
   const left = Math.min(x1, x2);
   const top = Math.min(y1, y2);
@@ -30,7 +19,7 @@ export const renderRectangle = (
   const strokeColor = drawing.color ?? DRAWING_COLORS.rectangle;
   const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.fillStyle = hexToFillColor(strokeColor);
+  ctx.fillStyle = hexToRgba(strokeColor, FILL_OPACITY.RECTANGLE);
   ctx.fillRect(left, top, w, h);
   ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : strokeColor;
   ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth - 0.5;

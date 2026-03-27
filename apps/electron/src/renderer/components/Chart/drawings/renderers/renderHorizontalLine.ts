@@ -1,5 +1,7 @@
 import type { HorizontalLineDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle } from '@renderer/utils/canvas/canvasHelpers';
+import { LINE_DASHES } from '@shared/constants';
 
 export const renderHorizontalLine = (
   ctx: CanvasRenderingContext2D,
@@ -11,11 +13,9 @@ export const renderHorizontalLine = (
   const y = mapper.priceToY(drawing.price);
   const gripX = mapper.indexToCenterX(drawing.index);
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.horizontalLine);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
-  ctx.setLineDash([6, 4]);
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.horizontalLine);
+  ctx.setLineDash([...LINE_DASHES.STANDARD]);
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(chartWidth, y);

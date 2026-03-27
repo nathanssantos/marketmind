@@ -1,5 +1,7 @@
 import type { VerticalLineDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle } from '@renderer/utils/canvas/canvasHelpers';
+import { LINE_DASHES } from '@shared/constants';
 
 export const renderVerticalLine = (
   ctx: CanvasRenderingContext2D,
@@ -9,11 +11,9 @@ export const renderVerticalLine = (
   chartHeight: number,
 ): void => {
   const x = mapper.indexToCenterX(drawing.index);
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.verticalLine);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
-  ctx.setLineDash([6, 4]);
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.verticalLine);
+  ctx.setLineDash([...LINE_DASHES.STANDARD]);
   ctx.beginPath();
   ctx.moveTo(x, 0);
   ctx.lineTo(x, chartHeight);

@@ -1,5 +1,7 @@
 import type { RayDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { CANVAS_EDGE_PADDING } from '@shared/constants';
 
 export const renderRay = (
   ctx: CanvasRenderingContext2D,
@@ -9,10 +11,7 @@ export const renderRay = (
   chartWidth: number,
   chartHeight: number,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
 
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -25,30 +24,28 @@ export const renderRay = (
     extY = y2;
   } else if (dx === 0) {
     extX = x2;
-    extY = dy > 0 ? chartHeight + 10 : -10;
+    extY = dy > 0 ? chartHeight + CANVAS_EDGE_PADDING : -CANVAS_EDGE_PADDING;
   } else {
     const slope = dy / dx;
     if (dx > 0) {
-      extX = chartWidth + 10;
+      extX = chartWidth + CANVAS_EDGE_PADDING;
       extY = y2 + slope * (extX - x2);
     } else {
-      extX = -10;
+      extX = -CANVAS_EDGE_PADDING;
       extY = y2 + slope * (extX - x2);
     }
 
-    if (extY < -10) {
-      extY = -10;
-      extX = x2 + (-10 - y2) / slope;
-    } else if (extY > chartHeight + 10) {
-      extY = chartHeight + 10;
-      extX = x2 + (chartHeight + 10 - y2) / slope;
+    if (extY < -CANVAS_EDGE_PADDING) {
+      extY = -CANVAS_EDGE_PADDING;
+      extX = x2 + (-CANVAS_EDGE_PADDING - y2) / slope;
+    } else if (extY > chartHeight + CANVAS_EDGE_PADDING) {
+      extY = chartHeight + CANVAS_EDGE_PADDING;
+      extX = x2 + (chartHeight + CANVAS_EDGE_PADDING - y2) / slope;
     }
   }
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.ray);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.ray);
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(extX, extY);

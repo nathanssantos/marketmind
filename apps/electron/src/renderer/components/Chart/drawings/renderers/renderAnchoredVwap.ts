@@ -1,5 +1,6 @@
 import type { AnchoredVwapDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle } from '@renderer/utils/canvas/canvasHelpers';
 import type { Kline } from '@marketmind/types';
 
 export const renderAnchoredVwap = (
@@ -14,10 +15,8 @@ export const renderAnchoredVwap = (
   const anchorIdx = Math.max(0, Math.round(drawing.index));
   if (anchorIdx >= klines.length) return;
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.anchoredVwap);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.anchoredVwap);
 
   let cumVol = 0;
   let cumTpVol = 0;

@@ -1,12 +1,8 @@
 import type { PriceRangeDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { applyDrawingStyle, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { TRADING_COLORS } from '@shared/constants';
 
-const PROFIT_COLOR = 'rgba(38, 166, 154, 0.15)';
-const PROFIT_BORDER = '#26A69A';
-const LOSS_COLOR = 'rgba(239, 83, 80, 0.15)';
-const LOSS_BORDER = '#EF5350';
 const LABEL_FONT = '11px sans-serif';
-const LABEL_COLOR = '#E0E0E0';
 
 export const renderPriceRange = (
   ctx: CanvasRenderingContext2D,
@@ -14,10 +10,7 @@ export const renderPriceRange = (
   mapper: CoordinateMapper,
   isSelected: boolean,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
 
   const left = Math.min(x1, x2);
   const right = Math.max(x1, x2);
@@ -32,14 +25,13 @@ export const renderPriceRange = (
   const pctChange = ((drawing.endPrice - drawing.startPrice) / drawing.startPrice) * 100;
   const priceDiff = Math.abs(drawing.endPrice - drawing.startPrice);
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
 
-  ctx.fillStyle = isLong ? PROFIT_COLOR : LOSS_COLOR;
+  ctx.fillStyle = isLong ? TRADING_COLORS.PROFIT_FILL : TRADING_COLORS.LOSS_FILL;
   ctx.fillRect(left, top, width, height);
 
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? (isLong ? PROFIT_BORDER : LOSS_BORDER));
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  const defaultColor = isLong ? TRADING_COLORS.PROFIT : TRADING_COLORS.LOSS;
+  applyDrawingStyle(ctx, drawing, isSelected, defaultColor);
   ctx.strokeRect(left, top, width, height);
 
   ctx.setLineDash([4, 3]);
@@ -57,9 +49,9 @@ export const renderPriceRange = (
 
   const labelX = right + 6;
   const sign = pctChange >= 0 ? '+' : '';
-  ctx.fillStyle = isLong ? PROFIT_BORDER : LOSS_BORDER;
+  ctx.fillStyle = isLong ? TRADING_COLORS.PROFIT : TRADING_COLORS.LOSS;
   ctx.fillText(`${sign}${pctChange.toFixed(2)}%`, labelX, (y1 + y2) / 2 - 8);
-  ctx.fillStyle = LABEL_COLOR;
+  ctx.fillStyle = TRADING_COLORS.LABEL_TEXT;
   ctx.fillText(`${priceDiff.toFixed(2)}`, labelX, (y1 + y2) / 2 + 8);
 
   ctx.restore();

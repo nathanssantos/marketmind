@@ -1,4 +1,4 @@
-import type { Drawing, CoordinateMapper } from '@marketmind/chart-studies';
+import type { Drawing, CoordinateMapper, ChannelDrawing, PitchforkDrawing, FibonacciDrawing, PencilDrawing, HighlighterDrawing } from '@marketmind/chart-studies';
 import { HANDLE_RADIUS, DRAWING_COLORS } from '@marketmind/chart-studies';
 
 const FULL_CIRCLE = Math.PI * 2;
@@ -8,50 +8,54 @@ interface HandlePoint {
   y: number;
 }
 
+const TWO_POINT_HANDLE_TYPES = new Set(['line', 'ruler', 'arrow', 'rectangle', 'area', 'ray', 'trendLine', 'priceRange', 'ellipse', 'gannFan']);
+const THREE_POINT_HANDLE_TYPES = new Set(['channel', 'pitchfork']);
+const FREEFORM_HANDLE_TYPES = new Set(['pencil', 'highlighter']);
+const SINGLE_POINT_HANDLE_TYPES = new Set(['text', 'horizontalLine', 'verticalLine', 'anchoredVwap']);
+
 const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoint[] => {
-  switch (drawing.type) {
-    case 'line':
-    case 'ruler':
-    case 'arrow':
-    case 'rectangle':
-    case 'area':
-    case 'ray':
-    case 'trendLine':
-    case 'priceRange':
-    case 'ellipse':
-    case 'gannFan':
-      return [
-        { x: mapper.indexToCenterX(drawing.startIndex), y: mapper.priceToY(drawing.startPrice) },
-        { x: mapper.indexToCenterX(drawing.endIndex), y: mapper.priceToY(drawing.endPrice) },
-      ];
-    case 'channel':
-    case 'pitchfork':
-      return [
-        { x: mapper.indexToCenterX(drawing.startIndex), y: mapper.priceToY(drawing.startPrice) },
-        { x: mapper.indexToCenterX(drawing.endIndex), y: mapper.priceToY(drawing.endPrice) },
-        { x: mapper.indexToCenterX(drawing.widthIndex), y: mapper.priceToY(drawing.widthPrice) },
-      ];
-    case 'fibonacci':
-      return [
-        { x: mapper.indexToCenterX(drawing.swingLowIndex), y: mapper.priceToY(drawing.swingLowPrice) },
-        { x: mapper.indexToCenterX(drawing.swingHighIndex), y: mapper.priceToY(drawing.swingHighPrice) },
-      ];
-    case 'pencil':
-    case 'highlighter': {
-      if (drawing.points.length === 0) return [];
-      const first = drawing.points[0]!;
-      const last = drawing.points[drawing.points.length - 1]!;
-      return [
-        { x: mapper.indexToCenterX(first.index), y: mapper.priceToY(first.price) },
-        { x: mapper.indexToCenterX(last.index), y: mapper.priceToY(last.price) },
-      ];
-    }
-    case 'text':
-    case 'horizontalLine':
-    case 'verticalLine':
-    case 'anchoredVwap':
-      return [{ x: mapper.indexToCenterX(drawing.index), y: mapper.priceToY(drawing.price) }];
+  if (TWO_POINT_HANDLE_TYPES.has(drawing.type)) {
+    const d = drawing as Drawing & { startIndex: number; startPrice: number; endIndex: number; endPrice: number };
+    return [
+      { x: mapper.indexToCenterX(d.startIndex), y: mapper.priceToY(d.startPrice) },
+      { x: mapper.indexToCenterX(d.endIndex), y: mapper.priceToY(d.endPrice) },
+    ];
   }
+
+  if (THREE_POINT_HANDLE_TYPES.has(drawing.type)) {
+    const d = drawing as ChannelDrawing | PitchforkDrawing;
+    return [
+      { x: mapper.indexToCenterX(d.startIndex), y: mapper.priceToY(d.startPrice) },
+      { x: mapper.indexToCenterX(d.endIndex), y: mapper.priceToY(d.endPrice) },
+      { x: mapper.indexToCenterX(d.widthIndex), y: mapper.priceToY(d.widthPrice) },
+    ];
+  }
+
+  if (drawing.type === 'fibonacci') {
+    const d = drawing as FibonacciDrawing;
+    return [
+      { x: mapper.indexToCenterX(d.swingLowIndex), y: mapper.priceToY(d.swingLowPrice) },
+      { x: mapper.indexToCenterX(d.swingHighIndex), y: mapper.priceToY(d.swingHighPrice) },
+    ];
+  }
+
+  if (FREEFORM_HANDLE_TYPES.has(drawing.type)) {
+    const d = drawing as PencilDrawing | HighlighterDrawing;
+    if (d.points.length === 0) return [];
+    const first = d.points[0]!;
+    const last = d.points[d.points.length - 1]!;
+    return [
+      { x: mapper.indexToCenterX(first.index), y: mapper.priceToY(first.price) },
+      { x: mapper.indexToCenterX(last.index), y: mapper.priceToY(last.price) },
+    ];
+  }
+
+  if (SINGLE_POINT_HANDLE_TYPES.has(drawing.type)) {
+    const d = drawing as Drawing & { index: number; price: number };
+    return [{ x: mapper.indexToCenterX(d.index), y: mapper.priceToY(d.price) }];
+  }
+
+  return [];
 };
 
 export const renderDrawingHandles = (

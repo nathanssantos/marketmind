@@ -1,32 +1,7 @@
 import type { ChannelDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
-
-const extendToEdges = (
-  sx: number, sy: number, ex: number, ey: number,
-  chartWidth: number, chartHeight: number,
-): [number, number, number, number] => {
-  const dx = ex - sx;
-  const dy = ey - sy;
-
-  if (dx === 0 && dy === 0) return [sx, sy, ex, ey];
-
-  if (dx === 0) {
-    return [sx, -10, ex, chartHeight + 10];
-  }
-
-  const slope = dy / dx;
-  let lx = -10;
-  let ly = sy + slope * (lx - sx);
-  let rx = chartWidth + 10;
-  let ry = sy + slope * (rx - sx);
-
-  if (ly < -10) { ly = -10; lx = sx + (-10 - sy) / slope; }
-  else if (ly > chartHeight + 10) { ly = chartHeight + 10; lx = sx + (chartHeight + 10 - sy) / slope; }
-  if (ry < -10) { ry = -10; rx = sx + (-10 - sy) / slope; }
-  else if (ry > chartHeight + 10) { ry = chartHeight + 10; rx = sx + (chartHeight + 10 - sy) / slope; }
-
-  return [lx, ly, rx, ry];
-};
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle, extendLineToEdges, hexToRgba, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { FILL_OPACITY, LINE_DASHES } from '@shared/constants';
 
 export const renderChannel = (
   ctx: CanvasRenderingContext2D,
@@ -36,25 +11,20 @@ export const renderChannel = (
   chartWidth: number,
   chartHeight: number,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
   const wx = mapper.indexToCenterX(drawing.widthIndex);
   const wy = mapper.priceToY(drawing.widthPrice);
 
   const dx = x2 - x1;
   const dy = y2 - y1;
 
-  const [l1x, l1y, r1x, r1y] = extendToEdges(x1, y1, x2, y2, chartWidth, chartHeight);
-  const [l2x, l2y, r2x, r2y] = extendToEdges(wx, wy, wx + dx, wy + dy, chartWidth, chartHeight);
+  const [l1x, l1y, r1x, r1y] = extendLineToEdges(x1, y1, x2, y2, chartWidth, chartHeight);
+  const [l2x, l2y, r2x, r2y] = extendLineToEdges(wx, wy, wx + dx, wy + dy, chartWidth, chartHeight);
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   const color = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.channel);
 
   ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  const baseWidth = applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.channel);
 
   ctx.beginPath();
   ctx.moveTo(l1x, l1y);
@@ -66,16 +36,8 @@ export const renderChannel = (
   ctx.lineTo(r2x, r2y);
   ctx.stroke();
 
-  let fillColor = 'rgba(171, 71, 188, 0.06)';
   const c = drawing.color ?? DRAWING_COLORS.channel;
-  if (c.startsWith('#') && c.length >= 7) {
-    const r = parseInt(c.slice(1, 3), 16);
-    const g = parseInt(c.slice(3, 5), 16);
-    const b = parseInt(c.slice(5, 7), 16);
-    fillColor = `rgba(${r}, ${g}, ${b}, 0.06)`;
-  }
-
-  ctx.fillStyle = fillColor;
+  ctx.fillStyle = hexToRgba(c, FILL_OPACITY.CHANNEL);
   ctx.beginPath();
   ctx.moveTo(l1x, l1y);
   ctx.lineTo(r1x, r1y);
@@ -91,7 +53,7 @@ export const renderChannel = (
   ctx.strokeStyle = color;
   ctx.lineWidth = baseWidth * 0.6;
   ctx.globalAlpha = 0.5;
-  ctx.setLineDash([6, 4]);
+  ctx.setLineDash([...LINE_DASHES.STANDARD]);
   ctx.beginPath();
   ctx.moveTo(ml1x, ml1y);
   ctx.lineTo(mr1x, mr1y);

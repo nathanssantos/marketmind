@@ -1,5 +1,6 @@
 import type { AreaDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { formatChartPrice } from '@renderer/utils/formatters';
 
@@ -21,10 +22,7 @@ export const renderArea = (
   colors: { crosshair: string; bullish: string; bearish: string },
   themeColors?: ChartThemeColors,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
 
   const left = Math.min(x1, x2);
   const top = Math.min(y1, y2);

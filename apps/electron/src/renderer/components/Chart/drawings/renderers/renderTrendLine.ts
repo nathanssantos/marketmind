@@ -1,5 +1,6 @@
 import type { TrendLineDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle, extendLineToEdges, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
 
 export const renderTrendLine = (
   ctx: CanvasRenderingContext2D,
@@ -9,30 +10,11 @@ export const renderTrendLine = (
   chartWidth: number,
   chartHeight: number,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
-  const dx = x2 - x1;
-  const dy = y2 - y1;
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
+  const [lx, ly, rx, ry] = extendLineToEdges(x1, y1, x2, y2, chartWidth, chartHeight);
 
-  let lx: number, ly: number, rx: number, ry: number;
-  if (dx === 0 && dy === 0) {
-    lx = x1; ly = y1; rx = x2; ry = y2;
-  } else if (dx === 0) {
-    lx = x1; ly = -10; rx = x2; ry = chartHeight + 10;
-  } else {
-    const slope = dy / dx;
-    lx = -10;
-    ly = y1 + slope * (lx - x1);
-    rx = chartWidth + 10;
-    ry = y1 + slope * (rx - x1);
-  }
-
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.trendLine);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.trendLine);
   ctx.beginPath();
   ctx.moveTo(lx, ly);
   ctx.lineTo(rx, ry);

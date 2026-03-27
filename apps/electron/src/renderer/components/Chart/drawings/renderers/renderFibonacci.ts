@@ -3,15 +3,12 @@ import { DRAWING_COLORS } from '@marketmind/chart-studies';
 import { getLevelColor as getFibLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { CANVAS_FONTS, INDICATOR_COLORS, LINE_DASHES } from '@shared/constants';
 
 const SWING_LINE_WIDTH = 2;
-const SWING_LINE_DASH = [2, 4] as const;
 const SWING_POINT_RADIUS = 4;
 const FULL_CIRCLE = Math.PI * 2;
 const LINE_WIDTH = 1;
-const LEVEL_DASH = [4, 4] as const;
-const LABEL_FONT = '10px monospace';
 const LABEL_OFFSET_X = 4;
 const LABEL_OFFSET_Y = 10;
 const HIDDEN_LEVELS = new Set([0.886, 1.382]);
@@ -43,7 +40,7 @@ export const renderFibonacci = (
 
   ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.fibonacci);
   ctx.lineWidth = SWING_LINE_WIDTH;
-  ctx.setLineDash([...SWING_LINE_DASH]);
+  ctx.setLineDash([...LINE_DASHES.FIBONACCI_SWING]);
   ctx.beginPath();
   ctx.moveTo(lowX, lowY);
   ctx.lineTo(highX, highY);
@@ -100,7 +97,7 @@ export const renderFibonacci = (
 
     ctx.strokeStyle = color;
     ctx.lineWidth = LINE_WIDTH;
-    ctx.setLineDash([...LEVEL_DASH]);
+    ctx.setLineDash([...LINE_DASHES.FIBONACCI]);
     ctx.beginPath();
     ctx.moveTo(fibStartX, y);
     ctx.lineTo(chartWidth, y);
@@ -108,7 +105,7 @@ export const renderFibonacci = (
     ctx.setLineDash([]);
 
     ctx.fillStyle = color;
-    ctx.font = LABEL_FONT;
+    ctx.font = CANVAS_FONTS.SMALL;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${level.label} (${formatChartPrice(level.price)})`, fibStartX + LABEL_OFFSET_X, y - LABEL_OFFSET_Y);

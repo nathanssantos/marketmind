@@ -1,7 +1,8 @@
 import type { GannFanDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS, DEFAULT_LINE_WIDTH, GANN_ANGLES } from '@marketmind/chart-studies';
+import { mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { CANVAS_EDGE_PADDING, CANVAS_FONTS } from '@shared/constants';
 
-const GANN_LABEL_FONT = '10px sans-serif';
 const GANN_LABEL_OFFSET = 4;
 
 export const renderGannFan = (
@@ -12,10 +13,7 @@ export const renderGannFan = (
   chartWidth: number,
   chartHeight: number,
 ): void => {
-  const ox = mapper.indexToCenterX(drawing.startIndex);
-  const oy = mapper.priceToY(drawing.startPrice);
-  const rx = mapper.indexToCenterX(drawing.endIndex);
-  const ry = mapper.priceToY(drawing.endPrice);
+  const { x1: ox, y1: oy, x2: rx, y2: ry } = mapTwoPointCoords(drawing, mapper);
 
   const refDx = rx - ox;
   const refDy = ry - oy;
@@ -37,14 +35,14 @@ export const renderGannFan = (
     let endY: number;
     if (dx === 0) {
       endX = ox;
-      endY = dy > 0 ? chartHeight + 10 : -10;
+      endY = dy > 0 ? chartHeight + CANVAS_EDGE_PADDING : -CANVAS_EDGE_PADDING;
     } else {
       const slope = dy / dx;
       if (dx > 0) {
-        endX = chartWidth + 10;
+        endX = chartWidth + CANVAS_EDGE_PADDING;
         endY = oy + slope * (endX - ox);
       } else {
-        endX = -10;
+        endX = -CANVAS_EDGE_PADDING;
         endY = oy + slope * (endX - ox);
       }
     }
@@ -60,7 +58,7 @@ export const renderGannFan = (
     ctx.stroke();
 
     ctx.globalAlpha = 0.7;
-    ctx.font = GANN_LABEL_FONT;
+    ctx.font = CANVAS_FONTS.LABEL;
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
