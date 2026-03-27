@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseROCRendererProps {
   manager: CanvasManager | null;
@@ -79,7 +79,10 @@ export const useROCRenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, rocData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.roc?.line ?? INDICATOR_COLORS.ROC_LINE);
   }, [manager, rocData, enabled, colors]);
 
   return { render };

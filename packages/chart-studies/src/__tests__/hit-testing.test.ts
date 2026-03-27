@@ -8,7 +8,7 @@ import {
   hitTestDrawing,
   hitTestDrawings,
 } from '../hit-testing';
-import type { Drawing, CoordinateMapper, LineDrawing, RectangleDrawing, PencilDrawing, FibonacciDrawing } from '../types';
+import type { Drawing, CoordinateMapper, LineDrawing, RectangleDrawing, PencilDrawing, FibonacciDrawing, TrendLineDrawing, VerticalLineDrawing, EllipseDrawing, PitchforkDrawing, GannFanDrawing, HighlighterDrawing } from '../types';
 
 const createMapper = (): CoordinateMapper => ({
   priceToY: (price: number) => 1000 - price,
@@ -232,5 +232,97 @@ describe('hitTestDrawings', () => {
     const result = hitTestDrawings(55, 501, [line1, line2], mapper, null);
     expect(result).not.toBeNull();
     expect(result!.drawingId).toBe('1');
+  });
+});
+
+describe('hitTestDrawing - new types', () => {
+  const mapper = createMapper();
+
+  it('detects trendLine hit (infinite line)', () => {
+    const drawing: TrendLineDrawing = {
+      ...baseDrawing, id: 't1', type: 'trendLine',
+      startIndex: 0, startPrice: 500, endIndex: 10, endPrice: 500,
+    };
+    const result = hitTestDrawing(55, 500, drawing, mapper, false);
+    expect(result).not.toBeNull();
+    expect(result!.drawingId).toBe('t1');
+  });
+
+  it('detects trendLine hit beyond segment endpoints', () => {
+    const drawing: TrendLineDrawing = {
+      ...baseDrawing, id: 't2', type: 'trendLine',
+      startIndex: 5, startPrice: 500, endIndex: 10, endPrice: 500,
+    };
+    const result = hitTestDrawing(155, 500, drawing, mapper, false);
+    expect(result).not.toBeNull();
+  });
+
+  it('detects verticalLine hit', () => {
+    const drawing: VerticalLineDrawing = {
+      ...baseDrawing, id: 'v1', type: 'verticalLine',
+      index: 10, price: 500,
+    };
+    const x = mapper.indexToCenterX(10);
+    const result = hitTestDrawing(x + 2, 300, drawing, mapper, false);
+    expect(result).not.toBeNull();
+    expect(result!.drawingId).toBe('v1');
+  });
+
+  it('misses verticalLine when far away', () => {
+    const drawing: VerticalLineDrawing = {
+      ...baseDrawing, id: 'v2', type: 'verticalLine',
+      index: 10, price: 500,
+    };
+    const result = hitTestDrawing(200, 300, drawing, mapper, false);
+    expect(result).toBeNull();
+  });
+
+  it('detects ellipse body hit', () => {
+    const drawing: EllipseDrawing = {
+      ...baseDrawing, id: 'e1', type: 'ellipse',
+      startIndex: 0, startPrice: 600, endIndex: 10, endPrice: 400,
+    };
+    const result = hitTestDrawing(55, 500, drawing, mapper, false);
+    expect(result).not.toBeNull();
+    expect(result!.handleType).toBe('body');
+  });
+
+  it('detects highlighter hit', () => {
+    const drawing: HighlighterDrawing = {
+      ...baseDrawing, id: 'h1', type: 'highlighter',
+      points: [{ index: 0, price: 500 }, { index: 5, price: 600 }, { index: 10, price: 500 }],
+    };
+    const midX = mapper.indexToCenterX(2);
+    const midY = mapper.priceToY(540);
+    const result = hitTestDrawing(midX, midY, drawing, mapper, false);
+    expect(result).not.toBeNull();
+  });
+
+  it('detects pitchfork median line hit', () => {
+    const drawing: PitchforkDrawing = {
+      ...baseDrawing, id: 'p1', type: 'pitchfork',
+      startIndex: 0, startPrice: 500,
+      endIndex: 10, endPrice: 400,
+      widthIndex: 10, widthPrice: 600,
+    };
+    const mx = mapper.indexToCenterX(5);
+    const my = mapper.priceToY(500);
+    const result = hitTestDrawing(mx, my, drawing, mapper, false);
+    expect(result).not.toBeNull();
+  });
+
+  it('detects gannFan 1x1 line hit', () => {
+    const drawing: GannFanDrawing = {
+      ...baseDrawing, id: 'g1', type: 'gannFan',
+      startIndex: 0, startPrice: 500, endIndex: 10, endPrice: 600,
+    };
+    const ox = mapper.indexToCenterX(0);
+    const oy = mapper.priceToY(500);
+    const rx = mapper.indexToCenterX(10);
+    const ry = mapper.priceToY(600);
+    const midX = (ox + rx) / 2;
+    const midY = (oy + ry) / 2;
+    const result = hitTestDrawing(midX, midY, drawing, mapper, false);
+    expect(result).not.toBeNull();
   });
 });

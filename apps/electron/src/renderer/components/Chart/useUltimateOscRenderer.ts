@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseUltimateOscRendererProps {
   manager: CanvasManager | null;
@@ -72,7 +72,10 @@ export const useUltimateOscRenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, ultimateOscData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.ultimateOsc?.line ?? INDICATOR_COLORS.ULTIMATE_OSC_LINE);
   }, [manager, ultimateOscData, enabled, colors]);
 
   return { render };

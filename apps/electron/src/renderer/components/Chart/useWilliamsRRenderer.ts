@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseWilliamsRRendererProps {
   manager: CanvasManager | null;
@@ -71,7 +71,10 @@ export const useWilliamsRRenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, williamsRData as (number | null)[], visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.williamsR?.line ?? INDICATOR_COLORS.WILLIAMS_R_LINE);
   }, [manager, williamsRData, enabled, colors]);
 
   return { render };

@@ -3,6 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelValueTag } from './utils/oscillatorRendering';
 
 interface UseOBVRendererProps {
   manager: CanvasManager | null;
@@ -123,6 +124,11 @@ export const useOBVRenderer = ({
     ctx.fillText('OBV', chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN - 4, panelTop + padding + 10);
 
     ctx.restore();
+
+    if (obvData.sma && obvData.sma.length > 0) {
+      drawPanelValueTag(ctx, obvData.sma, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.obv?.sma ?? INDICATOR_COLORS.OBV_SMA);
+    }
+    drawPanelValueTag(ctx, obvData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.obv?.line ?? INDICATOR_COLORS.OBV_LINE);
   }, [manager, obvData, enabled, colors]);
 
   return { render, panelId: PANEL_ID, panelHeight: PANEL_HEIGHT };

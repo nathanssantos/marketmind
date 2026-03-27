@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseVortexRendererProps {
   manager: CanvasManager | null;
@@ -88,6 +88,9 @@ export const useVortexRenderer = ({
     drawLine(vortexData.viMinus, colors.vortex?.viMinusLine ?? INDICATOR_COLORS.VORTEX_MINUS, 1);
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, vortexData.viMinus, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.vortex?.viMinusLine ?? INDICATOR_COLORS.VORTEX_MINUS);
+    drawPanelValueTag(ctx, vortexData.viPlus, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.vortex?.viPlusLine ?? INDICATOR_COLORS.VORTEX_PLUS);
   }, [manager, vortexData, enabled, colors]);
 
   return { render };

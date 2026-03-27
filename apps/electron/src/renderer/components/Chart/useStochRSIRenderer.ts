@@ -8,6 +8,7 @@ import {
   createNormalizedValueToY,
   drawLineOnPanel,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
 } from './utils/oscillatorRendering';
@@ -67,6 +68,9 @@ export const useStochRSIRenderer = ({
     );
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, stochRsiData!.d, visibleStart, visibleEnd, valueToY, chartWidth, colors.stochRsi?.d ?? INDICATOR_COLORS.STOCH_RSI_D);
+    drawPanelValueTag(ctx, stochRsiData!.k, visibleStart, visibleEnd, valueToY, chartWidth, colors.stochRsi?.k ?? INDICATOR_COLORS.STOCH_RSI_K);
   }, [manager, stochRsiData, enabled, colors]);
 
   return { render, panelId: PANEL_ID, panelHeight: PANEL_HEIGHT };

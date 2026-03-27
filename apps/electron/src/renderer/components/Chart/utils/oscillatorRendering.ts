@@ -1,4 +1,5 @@
-import { PANEL_COLORS, OSCILLATOR_CONFIG, LINE_WIDTHS } from '@shared/constants';
+import { CHART_CONFIG, PANEL_COLORS, OSCILLATOR_CONFIG, LINE_WIDTHS } from '@shared/constants';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 
 interface OscillatorPanelConfig {
   ctx: CanvasRenderingContext2D;
@@ -160,4 +161,45 @@ export const createDynamicValueToY = (
     const normalized = (value - minValue) / range;
     return panelTop + padding + innerHeight * (1 - normalized);
   };
+};
+
+const PANEL_TAG_WIDTH = CHART_CONFIG.CANVAS_PADDING_RIGHT;
+
+const getLastValidValue = (
+  values: (number | null | undefined)[],
+  visibleStart: number,
+  visibleEnd: number,
+): number | null => {
+  for (let i = visibleEnd - 1; i >= visibleStart; i--) {
+    const v = values[i];
+    if (v !== null && v !== undefined && !isNaN(v)) return v;
+  }
+  return null;
+};
+
+const formatPanelValue = (value: number): string => {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (abs >= 10_000) return `${(value / 1_000).toFixed(1)}K`;
+  if (abs >= 100) return value.toFixed(1);
+  if (abs >= 1) return value.toFixed(2);
+  return value.toFixed(4);
+};
+
+export const drawPanelValueTag = (
+  ctx: CanvasRenderingContext2D,
+  values: (number | null | undefined)[],
+  visibleStart: number,
+  visibleEnd: number,
+  valueToY: (v: number) => number,
+  chartWidth: number,
+  color: string,
+  formatFn: (v: number) => string = formatPanelValue,
+): void => {
+  const lastValue = getLastValidValue(values, visibleStart, visibleEnd);
+  if (lastValue === null) return;
+
+  const y = valueToY(lastValue);
+  drawPriceTag(ctx, formatFn(lastValue), y, chartWidth, color, PANEL_TAG_WIDTH);
 };

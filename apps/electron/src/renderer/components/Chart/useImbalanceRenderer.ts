@@ -8,6 +8,7 @@ import { getOscillatorSetup } from './hooks/useOscillatorSetup';
 import {
   applyPanelClip,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneLines,
   drawZoneFill,
 } from './utils/oscillatorRendering';
@@ -69,6 +70,8 @@ export const useImbalanceRenderer = ({
     ctx.stroke();
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, imbalanceValues, visibleStart, visibleEnd, valueToY, chartWidth, colors.scalping?.imbalanceLine ?? INDICATOR_COLORS.IMBALANCE_LINE);
   }, [manager, imbalanceValuesRef, enabled, colors]);
 
   return { render };

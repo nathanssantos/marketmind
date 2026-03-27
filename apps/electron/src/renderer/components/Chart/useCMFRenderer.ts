@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS, INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseCMFRendererProps {
   manager: CanvasManager | null;
@@ -72,6 +72,8 @@ export const useCMFRenderer = ({
     }
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, cmfData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.cmf?.positive ?? INDICATOR_COLORS.CMF_POSITIVE);
   }, [manager, cmfData, enabled, colors]);
 
   return { render, panelId: PANEL_ID, panelHeight: PANEL_HEIGHT };

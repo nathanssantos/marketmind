@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UsePPORendererProps {
   manager: CanvasManager | null;
@@ -125,6 +125,9 @@ export const usePPORenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, ppoData.signal, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.ppo?.signalLine ?? INDICATOR_COLORS.PPO_SIGNAL);
+    drawPanelValueTag(ctx, ppoData.ppo, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.ppo?.ppoLine ?? INDICATOR_COLORS.PPO_LINE);
   }, [manager, ppoData, enabled, colors]);
 
   return { render };

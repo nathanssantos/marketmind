@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseKlingerRendererProps {
   manager: CanvasManager | null;
@@ -102,6 +102,9 @@ export const useKlingerRenderer = ({
     drawLine(klingerData.signal, colors.klinger?.signalLine ?? INDICATOR_COLORS.KLINGER_SIGNAL, 1);
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, klingerData.signal, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.klinger?.signalLine ?? INDICATOR_COLORS.KLINGER_SIGNAL);
+    drawPanelValueTag(ctx, klingerData.kvo, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.klinger?.kvoLine ?? INDICATOR_COLORS.KLINGER_LINE);
   }, [manager, klingerData, enabled, colors]);
 
   return { render };

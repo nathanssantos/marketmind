@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseTSIRendererProps {
   manager: CanvasManager | null;
@@ -88,6 +88,9 @@ export const useTSIRenderer = ({
     drawLine(tsiData.signal, colors.tsi?.signalLine ?? INDICATOR_COLORS.TSI_SIGNAL, 1);
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, tsiData.signal, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.tsi?.signalLine ?? INDICATOR_COLORS.TSI_SIGNAL);
+    drawPanelValueTag(ctx, tsiData.tsi, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.tsi?.tsiLine ?? INDICATOR_COLORS.TSI_LINE);
   }, [manager, tsiData, enabled, colors]);
 
   return { render };

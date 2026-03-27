@@ -7,6 +7,7 @@ import { getOscillatorSetup } from './hooks/useOscillatorSetup';
 import {
   applyPanelClip,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneLines,
 } from './utils/oscillatorRendering';
 
@@ -79,6 +80,8 @@ export const useCVDRenderer = ({
     ctx.stroke();
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, cvdValues, visibleStart, visibleEnd, valueToY, chartWidth, colors.scalping?.cvdLine ?? INDICATOR_COLORS.CVD_LINE);
   }, [manager, cvdValuesRef, enabled, colors]);
 
   return { render };

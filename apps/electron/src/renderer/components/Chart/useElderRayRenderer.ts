@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseElderRayRendererProps {
   manager: CanvasManager | null;
@@ -84,6 +84,9 @@ export const useElderRayRenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, elderRayData.bearPower, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.elderRay?.bearPower ?? INDICATOR_COLORS.ELDER_BEAR);
+    drawPanelValueTag(ctx, elderRayData.bullPower, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.elderRay?.bullPower ?? INDICATOR_COLORS.ELDER_BULL);
   }, [manager, elderRayData, enabled, colors]);
 
   return { render };

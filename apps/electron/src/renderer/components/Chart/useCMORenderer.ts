@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseCMORendererProps {
   manager: CanvasManager | null;
@@ -72,7 +72,10 @@ export const useCMORenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, cmoData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.cmo?.line ?? INDICATOR_COLORS.CMO_LINE);
   }, [manager, cmoData, enabled, colors]);
 
   return { render };

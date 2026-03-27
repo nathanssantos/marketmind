@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseMFIRendererProps {
   manager: CanvasManager | null;
@@ -72,7 +72,10 @@ export const useMFIRenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, mfiData as (number | null)[], visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.mfi?.line ?? INDICATOR_COLORS.MFI_LINE);
   }, [manager, mfiData, enabled, colors]);
 
   return { render };

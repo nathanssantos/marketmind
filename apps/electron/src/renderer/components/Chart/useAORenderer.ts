@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseAORendererProps {
   manager: CanvasManager | null;
@@ -83,6 +83,8 @@ export const useAORenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, aoData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.ao?.positive ?? INDICATOR_COLORS.AO_POSITIVE);
   }, [manager, aoData, enabled, colors]);
 
   return { render };

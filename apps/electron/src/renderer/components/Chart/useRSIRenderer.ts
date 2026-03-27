@@ -9,6 +9,7 @@ import {
   createNormalizedValueToY,
   drawLineOnPanel,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
 } from './utils/oscillatorRendering';
@@ -62,6 +63,8 @@ export const useRSIRenderer = ({
     );
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, rsiData!.values, visibleStart, visibleEnd, valueToY, chartWidth, colors.rsi.line);
   }, [manager, rsiData, enabled, overboughtLevel, oversoldLevel, colors, panelId]);
 
   return { render };

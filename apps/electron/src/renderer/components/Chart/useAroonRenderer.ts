@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { applyPanelClip, drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseAroonRendererProps {
   manager: CanvasManager | null;
@@ -79,6 +79,9 @@ export const useAroonRenderer = ({
     drawLine(aroonData.aroonDown, colors.aroon?.downLine ?? INDICATOR_COLORS.AROON_DOWN, 1);
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, aroonData.aroonDown, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.aroon?.downLine ?? INDICATOR_COLORS.AROON_DOWN);
+    drawPanelValueTag(ctx, aroonData.aroonUp, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.aroon?.upLine ?? INDICATOR_COLORS.AROON_UP);
   }, [manager, aroonData, enabled, colors]);
 
   return { render };
