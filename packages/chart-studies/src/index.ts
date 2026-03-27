@@ -9,7 +9,18 @@ export type {
   FibonacciLevel,
   FibonacciDrawing,
   ArrowDrawing,
+  RayDrawing,
+  ChannelDrawing,
+  HorizontalLineDrawing,
   TextDrawing,
+  TrendLineDrawing,
+  PriceRangeDrawing,
+  VerticalLineDrawing,
+  AnchoredVwapDrawing,
+  HighlighterDrawing,
+  EllipseDrawing,
+  PitchforkDrawing,
+  GannFanDrawing,
   Drawing,
   TwoPointDrawingType,
   DrawingHandle,
@@ -25,6 +36,7 @@ export {
   FIBONACCI_DEFAULT_LEVELS,
   DEFAULT_LINE_WIDTH,
   DEFAULT_FONT_SIZE,
+  GANN_ANGLES,
 } from './constants';
 
 export {

@@ -34,8 +34,12 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
     if (!selectedDrawing || !manager) return null;
     switch (selectedDrawing.type) {
       case 'text':
+      case 'horizontalLine':
+      case 'verticalLine':
+      case 'anchoredVwap':
         return { x: manager.indexToCenterX(selectedDrawing.index), y: manager.priceToY(selectedDrawing.price) };
       case 'pencil':
+      case 'highlighter':
         if (selectedDrawing.points.length === 0) return null;
         return { x: manager.indexToCenterX(selectedDrawing.points[0]!.index), y: manager.priceToY(selectedDrawing.points[0]!.price) };
       case 'fibonacci':

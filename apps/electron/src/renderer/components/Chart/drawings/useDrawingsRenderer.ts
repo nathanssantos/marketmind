@@ -1,4 +1,4 @@
-import type { CoordinateMapper, Drawing, LineDrawing, RulerDrawing, RectangleDrawing, AreaDrawing, PencilDrawing, FibonacciDrawing, ArrowDrawing, TextDrawing } from '@marketmind/chart-studies';
+import type { CoordinateMapper, Drawing, LineDrawing, RulerDrawing, RectangleDrawing, AreaDrawing, PencilDrawing, FibonacciDrawing, ArrowDrawing, TextDrawing, RayDrawing, HorizontalLineDrawing, ChannelDrawing, TrendLineDrawing, PriceRangeDrawing, VerticalLineDrawing, AnchoredVwapDrawing, HighlighterDrawing, EllipseDrawing, PitchforkDrawing, GannFanDrawing } from '@marketmind/chart-studies';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
@@ -12,6 +12,17 @@ import { renderRuler } from './renderers/renderRuler';
 import { renderArea } from './renderers/renderArea';
 import { renderFibonacci } from './renderers/renderFibonacci';
 import { renderArrow } from './renderers/renderArrow';
+import { renderRay } from './renderers/renderRay';
+import { renderHorizontalLine } from './renderers/renderHorizontalLine';
+import { renderChannel } from './renderers/renderChannel';
+import { renderTrendLine } from './renderers/renderTrendLine';
+import { renderPriceRange } from './renderers/renderPriceRange';
+import { renderVerticalLine } from './renderers/renderVerticalLine';
+import { renderAnchoredVwap } from './renderers/renderAnchoredVwap';
+import { renderHighlighter } from './renderers/renderHighlighter';
+import { renderEllipse } from './renderers/renderEllipse';
+import { renderPitchfork } from './renderers/renderPitchfork';
+import { renderGannFan } from './renderers/renderGannFan';
 import { renderText } from './renderers/renderText';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
@@ -59,7 +70,7 @@ const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
       else if (mt > time) hi = mid - 1;
       else return mid;
     }
-    return Math.max(0, Math.min(lo, klines.length - 1));
+    return Math.max(0, lo);
   };
 
   switch (drawing.type) {
@@ -67,13 +78,25 @@ const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
     case 'ruler':
     case 'rectangle':
     case 'area':
-    case 'arrow': {
-      const d = drawing as LineDrawing | RulerDrawing | RectangleDrawing | AreaDrawing | ArrowDrawing;
+    case 'arrow':
+    case 'ray':
+    case 'trendLine':
+    case 'priceRange':
+    case 'ellipse':
+    case 'gannFan': {
+      const d = drawing as LineDrawing | RulerDrawing | RectangleDrawing | AreaDrawing | ArrowDrawing | RayDrawing | TrendLineDrawing | PriceRangeDrawing | EllipseDrawing | GannFanDrawing;
       if (!d.startTime && !d.endTime) return drawing;
       return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex) };
     }
-    case 'pencil': {
-      const d = drawing as PencilDrawing;
+    case 'channel':
+    case 'pitchfork': {
+      const d = drawing as ChannelDrawing | PitchforkDrawing;
+      if (!d.startTime && !d.endTime && !d.widthTime) return drawing;
+      return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex), widthIndex: timeToIdx(d.widthTime, d.widthIndex) };
+    }
+    case 'pencil':
+    case 'highlighter': {
+      const d = drawing as PencilDrawing | HighlighterDrawing;
       if (!d.points.some(p => p.time !== undefined)) return drawing;
       return { ...d, points: d.points.map(p => ({ ...p, index: timeToIdx(p.time, p.index) })) };
     }
@@ -84,6 +107,13 @@ const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
     }
     case 'text': {
       const d = drawing as TextDrawing;
+      if (!d.time) return drawing;
+      return { ...d, index: timeToIdx(d.time, d.index) };
+    }
+    case 'horizontalLine':
+    case 'verticalLine':
+    case 'anchoredVwap': {
+      const d = drawing as HorizontalLineDrawing | VerticalLineDrawing | AnchoredVwapDrawing;
       if (!d.time) return drawing;
       return { ...d, index: timeToIdx(d.time, d.index) };
     }
@@ -112,6 +142,7 @@ const renderSingleDrawing = (
   chartWidth: number,
   colors: { bullish: string; bearish: string; crosshair: string },
   themeColors: ChartThemeColors,
+  klines: Kline[],
 ): void => {
   if (!drawing.visible) return;
 
@@ -137,8 +168,41 @@ const renderSingleDrawing = (
     case 'arrow':
       renderArrow(ctx, drawing, mapper, isSelected);
       break;
+    case 'ray':
+      renderRay(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
     case 'text':
       renderText(ctx, drawing, mapper, isSelected);
+      break;
+    case 'horizontalLine':
+      renderHorizontalLine(ctx, drawing, mapper, isSelected, chartWidth);
+      break;
+    case 'channel':
+      renderChannel(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'trendLine':
+      renderTrendLine(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'priceRange':
+      renderPriceRange(ctx, drawing, mapper, isSelected);
+      break;
+    case 'verticalLine':
+      renderVerticalLine(ctx, drawing, mapper, isSelected, chartHeight);
+      break;
+    case 'anchoredVwap':
+      renderAnchoredVwap(ctx, drawing, mapper, isSelected, klines);
+      break;
+    case 'highlighter':
+      renderHighlighter(ctx, drawing, mapper, isSelected);
+      break;
+    case 'ellipse':
+      renderEllipse(ctx, drawing, mapper, isSelected);
+      break;
+    case 'pitchfork':
+      renderPitchfork(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'gannFan':
+      renderGannFan(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
       break;
   }
 
@@ -231,11 +295,11 @@ export const useDrawingsRenderer = ({
         drawingIndexCache.current.set(cacheKey, drawing);
       }
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
-      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
+      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, currentKlines);
     }
 
     if (pendingDrawing) {
-      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
+      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, currentKlines);
     }
 
     ctx.restore();
@@ -254,16 +318,30 @@ const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: numbe
     case 'ruler':
     case 'rectangle':
     case 'area':
-    case 'arrow': {
+    case 'arrow':
+    case 'priceRange':
+    case 'ellipse': {
       const minIdx = Math.min(drawing.startIndex, drawing.endIndex);
       const maxIdx = Math.max(drawing.startIndex, drawing.endIndex);
       return maxIdx >= viewStart && minIdx <= viewEnd;
     }
+    case 'ray':
+    case 'channel':
+    case 'pitchfork':
+    case 'anchoredVwap': {
+      const idx = 'startIndex' in drawing ? Math.min(drawing.startIndex, drawing.endIndex) : drawing.index;
+      return idx <= viewEnd;
+    }
+    case 'trendLine':
+    case 'gannFan':
+    case 'horizontalLine':
+      return true;
     case 'fibonacci': {
       const minIdx = Math.min(drawing.swingLowIndex, drawing.swingHighIndex);
       return minIdx <= viewEnd;
     }
-    case 'pencil': {
+    case 'pencil':
+    case 'highlighter': {
       if (drawing.points.length === 0) return false;
       const indices = drawing.points.map(p => p.index);
       const minIdx = Math.min(...indices);
@@ -271,6 +349,7 @@ const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: numbe
       return maxIdx >= viewStart && minIdx <= viewEnd;
     }
     case 'text':
+    case 'verticalLine':
       return drawing.index >= viewStart && drawing.index <= viewEnd;
   }
 };

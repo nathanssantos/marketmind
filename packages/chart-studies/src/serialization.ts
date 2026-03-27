@@ -7,6 +7,9 @@ export interface SerializedDrawingData {
   endPrice?: number;
   startTime?: number;
   endTime?: number;
+  widthIndex?: number;
+  widthPrice?: number;
+  widthTime?: number;
   points?: Array<{ index: number; price: number; time?: number }>;
   swingLowIndex?: number;
   swingLowPrice?: number;
@@ -43,6 +46,11 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
     case 'rectangle':
     case 'area':
     case 'arrow':
+    case 'ray':
+    case 'trendLine':
+    case 'priceRange':
+    case 'ellipse':
+    case 'gannFan':
       data.startIndex = drawing.startIndex;
       data.startPrice = drawing.startPrice;
       data.endIndex = drawing.endIndex;
@@ -50,7 +58,20 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       data.startTime = t(drawing.startIndex);
       data.endTime = t(drawing.endIndex);
       break;
+    case 'channel':
+    case 'pitchfork':
+      data.startIndex = drawing.startIndex;
+      data.startPrice = drawing.startPrice;
+      data.endIndex = drawing.endIndex;
+      data.endPrice = drawing.endPrice;
+      data.startTime = t(drawing.startIndex);
+      data.endTime = t(drawing.endIndex);
+      data.widthIndex = drawing.widthIndex;
+      data.widthPrice = drawing.widthPrice;
+      data.widthTime = t(drawing.widthIndex);
+      break;
     case 'pencil':
+    case 'highlighter':
       data.points = drawing.points.map((p) => ({ index: p.index, price: p.price, time: t(p.index) }));
       break;
     case 'fibonacci':
@@ -71,6 +92,13 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       data.fontSize = drawing.fontSize;
       data.fontWeight = drawing.fontWeight;
       data.textDecoration = drawing.textDecoration;
+      break;
+    case 'horizontalLine':
+    case 'verticalLine':
+    case 'anchoredVwap':
+      data.index = drawing.index;
+      data.price = drawing.price;
+      data.time = t(drawing.index);
       break;
   }
 
@@ -104,9 +132,18 @@ export const deserializeDrawingData = (
       case 'rectangle':
       case 'area':
       case 'arrow':
+      case 'ray':
+      case 'trendLine':
+      case 'priceRange':
+      case 'ellipse':
+      case 'gannFan':
         return { ...common, type, ...twoPointFields } as Drawing;
+      case 'channel':
+      case 'pitchfork':
+        return { ...common, type, ...twoPointFields, widthIndex: ri(data.widthIndex ?? 0, data.widthTime), widthPrice: data.widthPrice ?? 0 } as Drawing;
       case 'pencil':
-        return { ...common, type: 'pencil', points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price })) };
+      case 'highlighter':
+        return { ...common, type, points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price })) } as Drawing;
       case 'fibonacci':
         return {
           ...common, type: 'fibonacci',
@@ -121,6 +158,14 @@ export const deserializeDrawingData = (
           text: data.text ?? '', fontSize: data.fontSize ?? 14,
           fontWeight: data.fontWeight ?? 'normal', textDecoration: data.textDecoration ?? 'none',
         };
+      case 'horizontalLine':
+        return {
+          ...common, type: 'horizontalLine',
+          index: ri(data.index!, data.time), price: data.price!,
+        };
+      case 'verticalLine':
+      case 'anchoredVwap':
+        return { ...common, type, index: ri(data.index!, data.time), price: data.price! } as Drawing;
       default:
         return null;
     }

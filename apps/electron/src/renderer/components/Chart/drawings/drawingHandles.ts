@@ -15,16 +15,29 @@ const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoin
     case 'arrow':
     case 'rectangle':
     case 'area':
+    case 'ray':
+    case 'trendLine':
+    case 'priceRange':
+    case 'ellipse':
+    case 'gannFan':
       return [
         { x: mapper.indexToCenterX(drawing.startIndex), y: mapper.priceToY(drawing.startPrice) },
         { x: mapper.indexToCenterX(drawing.endIndex), y: mapper.priceToY(drawing.endPrice) },
+      ];
+    case 'channel':
+    case 'pitchfork':
+      return [
+        { x: mapper.indexToCenterX(drawing.startIndex), y: mapper.priceToY(drawing.startPrice) },
+        { x: mapper.indexToCenterX(drawing.endIndex), y: mapper.priceToY(drawing.endPrice) },
+        { x: mapper.indexToCenterX(drawing.widthIndex), y: mapper.priceToY(drawing.widthPrice) },
       ];
     case 'fibonacci':
       return [
         { x: mapper.indexToCenterX(drawing.swingLowIndex), y: mapper.priceToY(drawing.swingLowPrice) },
         { x: mapper.indexToCenterX(drawing.swingHighIndex), y: mapper.priceToY(drawing.swingHighPrice) },
       ];
-    case 'pencil': {
+    case 'pencil':
+    case 'highlighter': {
       if (drawing.points.length === 0) return [];
       const first = drawing.points[0]!;
       const last = drawing.points[drawing.points.length - 1]!;
@@ -34,6 +47,9 @@ const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoin
       ];
     }
     case 'text':
+    case 'horizontalLine':
+    case 'verticalLine':
+    case 'anchoredVwap':
       return [{ x: mapper.indexToCenterX(drawing.index), y: mapper.priceToY(drawing.price) }];
   }
 };

@@ -8,10 +8,12 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter @marketmind/backend --filter @marketmind/electron dev",
+    "dev:web": "pnpm --filter @marketmind/electron dev:web",
     "dev:backend": "pnpm --filter @marketmind/backend dev",
     "dev:frontend": "pnpm --filter @marketmind/electron dev",
     "dev:all": "pnpm --parallel dev",
     "build": "pnpm --filter @marketmind/electron build",
+    "build:web": "pnpm --filter @marketmind/electron build:web",
     "build:backend": "pnpm --filter @marketmind/backend build",
     "build:all": "pnpm -r build",
     "lint": "pnpm -r lint",

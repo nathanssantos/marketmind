@@ -8,7 +8,7 @@ import { useDrawingStore } from '@renderer/store/drawingStore';
 import { useCallback, useEffect, useRef } from 'react';
 import { useOHLCMagnet } from './useOHLCMagnet';
 
-type InteractionPhase = 'idle' | 'placing-first' | 'placing-second' | 'drawing-freeform' | 'dragging';
+type InteractionPhase = 'idle' | 'placing-first' | 'placing-second' | 'placing-third' | 'drawing-freeform' | 'dragging';
 
 interface UseDrawingInteractionProps {
   manager: CanvasManager | null;
@@ -34,8 +34,8 @@ interface UseDrawingInteractionResult {
   snapToOHLC: (x: number, y: number) => { x: number; y: number; snapped: boolean };
 }
 
-type TwoPointType = 'line' | 'ruler' | 'arrow' | 'rectangle' | 'area';
-const TWO_POINT_TYPES = new Set<string>(['line', 'ruler', 'arrow', 'rectangle', 'area']);
+type TwoPointType = 'line' | 'ruler' | 'arrow' | 'rectangle' | 'area' | 'ray' | 'channel' | 'trendLine' | 'priceRange' | 'ellipse' | 'gannFan';
+const TWO_POINT_TYPES = new Set<string>(['line', 'ruler', 'arrow', 'rectangle', 'area', 'ray', 'channel', 'trendLine', 'priceRange', 'ellipse', 'gannFan']);
 const isTwoPointDrawing = (d: Drawing): d is Drawing & { type: TwoPointType; startIndex: number; startPrice: number; endIndex: number; endPrice: number; startTime?: number; endTime?: number } =>
   TWO_POINT_TYPES.has(d.type);
 
@@ -90,8 +90,8 @@ export const useDrawingInteraction = ({
     if (!manager) return { index: 0, price: 0 };
     const result = snap(x, y);
     const idx = result.snappedIndex;
-    const clamped = Math.max(0, Math.min(idx, klines.length - 1));
-    const time = klines[Math.round(clamped)]?.openTime;
+    const roundedIdx = Math.round(idx);
+    const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
     return { index: idx, price: result.snappedPrice, time };
   }, [manager, snap, klines]);
 
@@ -133,12 +133,12 @@ export const useDrawingInteraction = ({
 
     const { index, price, time } = getIndexAndPrice(x, y);
 
-    if (activeTool === 'pencil') {
+    if (activeTool === 'pencil' || activeTool === 'highlighter') {
       const drawing: Drawing = {
-        id: generateId(), type: 'pencil', symbol, interval, visible: true, locked: false, zIndex: 0,
+        id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         points: [{ index, price, time }],
-      };
+      } as Drawing;
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'drawing-freeform';
       return true;
@@ -157,12 +157,47 @@ export const useDrawingInteraction = ({
       return true;
     }
 
+    if (activeTool === 'horizontalLine' || activeTool === 'verticalLine' || activeTool === 'anchoredVwap') {
+      const drawing: Drawing = {
+        id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
+        createdAt: Date.now(), updatedAt: Date.now(),
+        index, price, time,
+      } as Drawing;
+      store.addDrawing(drawing);
+      store.selectDrawing(drawing.id);
+      store.setActiveTool(null);
+      manager?.markDirty('overlays');
+      return true;
+    }
+
     if (activeTool === 'rectangle' || activeTool === 'area') {
       const drawing: Drawing = {
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
+      } as Drawing;
+      pendingDrawingRef.current = drawing;
+      phaseRef.current = 'placing-second';
+      return true;
+    }
+
+    if (activeTool === 'channel' || activeTool === 'pitchfork') {
+      if (phaseRef.current === 'placing-third' && pendingDrawingRef.current && (pendingDrawingRef.current.type === 'channel' || pendingDrawingRef.current.type === 'pitchfork')) {
+        const finalDrawing: Drawing = { ...pendingDrawingRef.current, widthIndex: index, widthPrice: price, widthTime: time } as Drawing;
+        store.addDrawing(finalDrawing);
+        store.selectDrawing(finalDrawing.id);
+        store.setActiveTool(null);
+        pendingDrawingRef.current = null;
+        phaseRef.current = 'idle';
+        manager?.markDirty('overlays');
+        return true;
+      }
+      const drawing: Drawing = {
+        id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
+        createdAt: Date.now(), updatedAt: Date.now(),
+        startIndex: index, startPrice: price, endIndex: index, endPrice: price,
+        startTime: time, endTime: time, widthIndex: index, widthPrice: price, widthTime: time,
       } as Drawing;
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
@@ -188,7 +223,7 @@ export const useDrawingInteraction = ({
       }
 
       const drawing: Drawing = {
-        id: generateId(), type: drawingType as 'line' | 'ruler' | 'arrow', symbol, interval, visible: true, locked: false, zIndex: 0,
+        id: generateId(), type: drawingType as 'line' | 'ruler' | 'arrow' | 'ray' | 'trendLine' | 'priceRange' | 'ellipse' | 'gannFan', symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
@@ -206,6 +241,13 @@ export const useDrawingInteraction = ({
 
     const phase = phaseRef.current;
     const pending = pendingDrawingRef.current;
+
+    if (phase === 'placing-third' && pending && (pending.type === 'channel' || pending.type === 'pitchfork')) {
+      const { index, price, time } = getIndexAndPrice(x, y);
+      pendingDrawingRef.current = { ...pending, widthIndex: index, widthPrice: price, widthTime: time } as Drawing;
+      manager.markDirty('overlays');
+      return true;
+    }
 
     if (phase === 'placing-second' && pending) {
       const { index, price, time } = getIndexAndPrice(x, y);
@@ -228,7 +270,7 @@ export const useDrawingInteraction = ({
       return true;
     }
 
-    if (phase === 'drawing-freeform' && pending && pending.type === 'pencil') {
+    if (phase === 'drawing-freeform' && pending && (pending.type === 'pencil' || pending.type === 'highlighter')) {
       const lastPt = pending.points[pending.points.length - 1];
       if (lastPt) {
         const lx = manager.indexToCenterX(lastPt.index);
@@ -256,12 +298,24 @@ export const useDrawingInteraction = ({
       const deltaPrice = newPrice - startDragPrice;
 
       const timeAt = (idx: number) => {
-        const c = Math.round(Math.max(0, Math.min(idx, klines.length - 1)));
-        return klines[c]?.openTime;
+        const rounded = Math.round(idx);
+        if (rounded < 0 || rounded >= klines.length) return undefined;
+        return klines[rounded]?.openTime;
       };
 
       if (handleType === 'body' || handleType === null) {
-        if (isTwoPointDrawing(originalDrawing)) {
+        if (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork') {
+          const si = originalDrawing.startIndex + deltaIndex;
+          const ei = originalDrawing.endIndex + deltaIndex;
+          const wi = originalDrawing.widthIndex + deltaIndex;
+          store.updateDrawing(originalDrawing.id, {
+            startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
+            endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
+            startTime: timeAt(si), endTime: timeAt(ei),
+            widthIndex: wi, widthPrice: originalDrawing.widthPrice + deltaPrice,
+            widthTime: timeAt(wi),
+          } as Partial<Drawing>);
+        } else if (isTwoPointDrawing(originalDrawing)) {
           const si = originalDrawing.startIndex + deltaIndex;
           const ei = originalDrawing.endIndex + deltaIndex;
           store.updateDrawing(originalDrawing.id, {
@@ -280,13 +334,13 @@ export const useDrawingInteraction = ({
             swingLowTime: timeAt(sli), swingHighTime: timeAt(shi),
             levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), originalDrawing.direction),
           } as Partial<Drawing>);
-        } else if (originalDrawing.type === 'text') {
+        } else if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine' || originalDrawing.type === 'anchoredVwap') {
           store.updateDrawing(originalDrawing.id, {
             index: originalDrawing.index + deltaIndex,
             price: originalDrawing.price + deltaPrice,
             time: timeAt(originalDrawing.index + deltaIndex),
           } as Partial<Drawing>);
-        } else if (originalDrawing.type === 'pencil') {
+        } else if (originalDrawing.type === 'pencil' || originalDrawing.type === 'highlighter') {
           store.updateDrawing(originalDrawing.id, {
             points: originalDrawing.points.map(p => {
               const ni = p.index + deltaIndex;
@@ -306,6 +360,8 @@ export const useDrawingInteraction = ({
           swingLowIndex: newIndex, swingLowPrice: newPrice, swingLowTime: newTime, direction: dir,
           levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), dir),
         } as Partial<Drawing>);
+      } else if (handleType === 'width' && (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork')) {
+        store.updateDrawing(originalDrawing.id, { widthIndex: newIndex, widthPrice: newPrice, widthTime: newTime } as Partial<Drawing>);
       } else if (handleType === 'swingHigh' && originalDrawing.type === 'fibonacci') {
         const lowPrice = originalDrawing.swingLowPrice;
         const highPrice = newPrice;
@@ -333,6 +389,21 @@ export const useDrawingInteraction = ({
 
   const handleMouseUp = useCallback((x: number, y: number): boolean => {
     const phase = phaseRef.current;
+
+    if (phase === 'placing-second' && pendingDrawingRef.current && (pendingDrawingRef.current.type === 'channel' || pendingDrawingRef.current.type === 'pitchfork')) {
+      const { index, price, time } = getIndexAndPrice(x, y);
+      const drawing = pendingDrawingRef.current;
+      if (drawing.startIndex === index && drawing.startPrice === price) {
+        useDrawingStore.getState().setActiveTool(null);
+        pendingDrawingRef.current = null;
+        phaseRef.current = 'idle';
+        manager?.markDirty('overlays');
+        return true;
+      }
+      pendingDrawingRef.current = { ...drawing, endIndex: index, endPrice: price, endTime: time } as Drawing;
+      phaseRef.current = 'placing-third';
+      return true;
+    }
 
     if (phase === 'placing-second' && pendingDrawingRef.current) {
       const { index, price } = getIndexAndPrice(x, y);

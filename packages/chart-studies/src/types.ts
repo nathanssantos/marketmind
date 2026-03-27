@@ -1,4 +1,4 @@
-export type DrawingType = 'line' | 'rectangle' | 'pencil' | 'fibonacci' | 'ruler' | 'area' | 'arrow' | 'text';
+export type DrawingType = 'line' | 'rectangle' | 'pencil' | 'fibonacci' | 'ruler' | 'area' | 'arrow' | 'text' | 'ray' | 'horizontalLine' | 'channel' | 'trendLine' | 'priceRange' | 'verticalLine' | 'anchoredVwap' | 'highlighter' | 'ellipse' | 'pitchfork' | 'gannFan';
 
 export interface DrawingBase {
   id: string;
@@ -28,11 +28,53 @@ export interface RulerDrawing extends DrawingBase, TwoPointFields { type: 'ruler
 export interface RectangleDrawing extends DrawingBase, TwoPointFields { type: 'rectangle'; }
 export interface AreaDrawing extends DrawingBase, TwoPointFields { type: 'area'; }
 export interface ArrowDrawing extends DrawingBase, TwoPointFields { type: 'arrow'; }
+export interface RayDrawing extends DrawingBase, TwoPointFields { type: 'ray'; }
+
+export interface ChannelDrawing extends DrawingBase, TwoPointFields {
+  type: 'channel';
+  widthIndex: number;
+  widthPrice: number;
+  widthTime?: number;
+}
+
+export interface HorizontalLineDrawing extends DrawingBase {
+  type: 'horizontalLine';
+  index: number;
+  price: number;
+  time?: number;
+}
 
 export interface PencilDrawing extends DrawingBase {
   type: 'pencil';
   points: Array<{ index: number; price: number; time?: number }>;
 }
+
+export interface TrendLineDrawing extends DrawingBase, TwoPointFields { type: 'trendLine'; }
+export interface PriceRangeDrawing extends DrawingBase, TwoPointFields { type: 'priceRange'; }
+export interface VerticalLineDrawing extends DrawingBase {
+  type: 'verticalLine';
+  index: number;
+  price: number;
+  time?: number;
+}
+export interface AnchoredVwapDrawing extends DrawingBase {
+  type: 'anchoredVwap';
+  index: number;
+  price: number;
+  time?: number;
+}
+export interface HighlighterDrawing extends DrawingBase {
+  type: 'highlighter';
+  points: Array<{ index: number; price: number; time?: number }>;
+}
+export interface EllipseDrawing extends DrawingBase, TwoPointFields { type: 'ellipse'; }
+export interface PitchforkDrawing extends DrawingBase, TwoPointFields {
+  type: 'pitchfork';
+  widthIndex: number;
+  widthPrice: number;
+  widthTime?: number;
+}
+export interface GannFanDrawing extends DrawingBase, TwoPointFields { type: 'gannFan'; }
 
 export interface TextDrawing extends DrawingBase {
   type: 'text';
@@ -71,13 +113,24 @@ export type Drawing =
   | PencilDrawing
   | FibonacciDrawing
   | ArrowDrawing
-  | TextDrawing;
+  | TextDrawing
+  | RayDrawing
+  | HorizontalLineDrawing
+  | ChannelDrawing
+  | TrendLineDrawing
+  | PriceRangeDrawing
+  | VerticalLineDrawing
+  | AnchoredVwapDrawing
+  | HighlighterDrawing
+  | EllipseDrawing
+  | PitchforkDrawing
+  | GannFanDrawing;
 
-export type TwoPointDrawingType = 'line' | 'ruler' | 'rectangle' | 'area' | 'fibonacci' | 'arrow';
+export type TwoPointDrawingType = 'line' | 'ruler' | 'rectangle' | 'area' | 'fibonacci' | 'arrow' | 'ray' | 'trendLine' | 'priceRange' | 'ellipse' | 'gannFan';
 
 export interface DrawingHandle {
   drawingId: string;
-  handleType: 'start' | 'end' | 'swingLow' | 'swingHigh' | 'body';
+  handleType: 'start' | 'end' | 'swingLow' | 'swingHigh' | 'body' | 'width';
   x: number;
   y: number;
 }
