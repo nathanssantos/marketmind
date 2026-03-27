@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { BinanceIpBannedError, binanceApiCache, guardBinanceCall } from '../../services/binance-api-cache';
+import { binanceApiCache, guardBinanceCall } from '../../services/binance-api-cache';
+import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   createBinanceFuturesClient,
   getSymbolLeverageBrackets,
@@ -45,13 +46,7 @@ export const accountConfigRouter = router({
         binanceApiCache.invalidate('SYMBOL_LEVERAGE', input.walletId, input.symbol);
         return result;
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set leverage',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -75,12 +70,7 @@ export const accountConfigRouter = router({
         await setMarginType(client, input.symbol, input.marginType);
         return { success: true, marginType: input.marginType };
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set margin type',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -101,12 +91,7 @@ export const accountConfigRouter = router({
         binanceApiCache.set('SYMBOL_LEVERAGE', input.walletId, result, input.symbol);
         return result;
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get symbol leverage',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -132,12 +117,7 @@ export const accountConfigRouter = router({
         const client = createBinanceFuturesClient(wallet);
         return await getSymbolLeverageBrackets(client, input.symbol);
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get leverage brackets',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 });

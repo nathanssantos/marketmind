@@ -14,6 +14,7 @@ import { getKlineMaintenance } from '../services/kline-maintenance';
 import { logger } from '../services/logger';
 import { getWebSocketService } from '../services/websocket';
 import { protectedProcedure, router } from '../trpc';
+import { KeyedCache } from '../utils/cache';
 
 const intervalSchema = z.enum([
   '1s', '1m', '3m', '5m', '15m', '30m',
@@ -24,21 +25,15 @@ const intervalSchema = z.enum([
 const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('FUTURES');
 const assetClassSchema = z.enum(['CRYPTO', 'STOCKS']).default('CRYPTO');
 
-const symbolsCache = new Map<string, any[]>();
-const symbolsCacheTime = new Map<string, number>();
-const SYMBOLS_CACHE_DURATION = 5 * TIME_MS.MINUTE;
-
-const corruptionCheckCache = new Map<string, number>();
-const CORRUPTION_CHECK_COOLDOWN = 2 * TIME_MS.MINUTE;
+const symbolsCache = new KeyedCache<any[]>(5 * TIME_MS.MINUTE);
+const corruptionCheckCache = new KeyedCache<boolean>(2 * TIME_MS.MINUTE);
 
 const triggerCorruptionCheck = (symbol: string, interval: string, marketType: MarketType): void => {
   const key = `${symbol}@${interval}@${marketType}`;
-  const lastCheck = corruptionCheckCache.get(key) ?? 0;
-  const now = Date.now();
 
-  if (now - lastCheck < CORRUPTION_CHECK_COOLDOWN) return;
+  if (corruptionCheckCache.has(key)) return;
 
-  corruptionCheckCache.set(key, now);
+  corruptionCheckCache.set(key, true);
 
   const gapFiller = getKlineMaintenance();
   gapFiller.forceCheckSymbol(symbol, interval as Interval, marketType).catch((error) => {
@@ -429,10 +424,8 @@ export const klineRouter = router({
       const cacheKey = `symbols_${marketType}`;
 
       let symbols = symbolsCache.get(cacheKey);
-      const cacheTime = symbolsCacheTime.get(cacheKey) ?? 0;
-      const now = Date.now();
 
-      if (!symbols || now - cacheTime > SYMBOLS_CACHE_DURATION) {
+      if (!symbols) {
         const baseUrl = marketType === 'FUTURES'
           ? 'https://fapi.binance.com/fapi/v1/exchangeInfo'
           : 'https://api.binance.com/api/v3/exchangeInfo';
@@ -453,7 +446,6 @@ export const klineRouter = router({
           }));
 
         symbolsCache.set(cacheKey, fetchedSymbols);
-        symbolsCacheTime.set(cacheKey, now);
         symbols = fetchedSymbols;
         logger.info({ marketType, count: fetchedSymbols.length }, 'Cached exchange symbols');
       }

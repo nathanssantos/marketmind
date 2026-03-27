@@ -2,7 +2,8 @@ import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, tradeExecutions } from '../../db/schema';
-import { BinanceIpBannedError, guardBinanceCall } from '../../services/binance-api-cache';
+import { guardBinanceCall } from '../../services/binance-api-cache';
+import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   cancelAllFuturesAlgoOrders,
   cancelAllFuturesOrders,
@@ -234,12 +235,7 @@ export const orderMutationsRouter = router({
 
         return { ...orderResult, openExecutions };
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to create futures order',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -306,12 +302,7 @@ export const orderMutationsRouter = router({
 
         return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions };
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to cancel futures order',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -345,12 +336,7 @@ export const orderMutationsRouter = router({
 
         return { success: true, cancelled: orderCount };
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to cancel algo orders',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -387,12 +373,7 @@ export const orderMutationsRouter = router({
         logger.info({ symbol: input.symbol }, 'Cancelled all regular orders for symbol');
         return { success: true };
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to cancel orders',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 });

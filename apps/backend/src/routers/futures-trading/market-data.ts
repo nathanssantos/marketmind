@@ -1,8 +1,7 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { BinanceIpBannedError } from '../../services/binance-api-cache';
 import { getBinanceFuturesDataService } from '../../services/binance-futures-data';
 import { protectedProcedure, router } from '../../trpc';
+import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 
 export const marketDataRouter = router({
   getMarkPrice: protectedProcedure
@@ -12,8 +11,7 @@ export const marketDataRouter = router({
         const dataService = getBinanceFuturesDataService();
         return await dataService.getMarkPrice(input.symbol);
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw error;
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -24,8 +22,7 @@ export const marketDataRouter = router({
         const dataService = getBinanceFuturesDataService();
         return await dataService.getCurrentFundingRate(input.symbol);
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw error;
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -34,8 +31,7 @@ export const marketDataRouter = router({
       const dataService = getBinanceFuturesDataService();
       return await dataService.getExchangeInfo();
     } catch (error) {
-      if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-      throw error;
+      throw mapBinanceErrorToTRPC(error);
     }
   }),
 });

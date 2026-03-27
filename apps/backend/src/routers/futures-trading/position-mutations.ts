@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
 import { orders, positions, tradeExecutions } from '../../db/schema';
-import { BinanceIpBannedError } from '../../services/binance-api-cache';
+import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   cancelAllSymbolOrders,
   closePosition as closeExchangePosition,
@@ -232,12 +232,7 @@ export const positionMutationsRouter = router({
 
         return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions };
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to close futures position',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -397,13 +392,7 @@ export const positionMutationsRouter = router({
           openExecutions,
         };
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to reverse position',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -514,13 +503,7 @@ export const positionMutationsRouter = router({
 
         return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions };
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to close position and cancel orders',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 });

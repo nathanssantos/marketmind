@@ -1,8 +1,8 @@
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders } from '../../db/schema';
-import { BinanceIpBannedError, binanceApiCache } from '../../services/binance-api-cache';
+import { binanceApiCache } from '../../services/binance-api-cache';
+import { guardBinanceBan, mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   createBinanceFuturesClient,
   getOpenAlgoOrders,
@@ -40,13 +40,7 @@ export const orderQueriesRouter = router({
       }
 
       try {
-        if (binanceApiCache.isBanned()) {
-          const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
-          throw new TRPCError({
-            code: 'TOO_MANY_REQUESTS',
-            message: `IP banned by Binance. Try again in ${waitSeconds} seconds.`,
-          });
-        }
+        guardBinanceBan();
 
         const cacheKey = input.symbol || 'all';
         const cached = binanceApiCache.get<Awaited<ReturnType<typeof getOpenOrders>>>('OPEN_ORDERS', input.walletId, cacheKey);
@@ -57,7 +51,6 @@ export const orderQueriesRouter = router({
         binanceApiCache.set('OPEN_ORDERS', input.walletId, openOrders, cacheKey);
         return openOrders;
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         if (errorMessage.includes('418') || errorMessage.includes('banned') || errorMessage.includes('-1003')) {
           const banMatch = errorMessage.match(/until\s+(\d+)/);
@@ -65,11 +58,7 @@ export const orderQueriesRouter = router({
           binanceApiCache.setBanned(banExpiry);
         }
         logger.error({ error: errorMessage }, 'Failed to get open futures orders');
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: errorMessage,
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
@@ -91,12 +80,7 @@ export const orderQueriesRouter = router({
         const client = createBinanceFuturesClient(wallet);
         return await getOpenAlgoOrders(client, input.symbol);
       } catch (error) {
-        if (error instanceof BinanceIpBannedError) throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get open algo orders',
-          cause: error,
-        });
+        throw mapBinanceErrorToTRPC(error);
       }
     }),
 
