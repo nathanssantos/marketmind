@@ -24,7 +24,7 @@ const hydrateDomainStores = (prefs: Record<string, Record<string, unknown>>) => 
   useScreenerStore.getState().hydrate(ui);
   useCurrencyStore.getState().hydrate(ui);
   useSetupStore.getState().hydrate(trading);
-  hydrateLayoutStore();
+  void hydrateLayoutStore();
 };
 
 export const PreferencesHydrator = ({ children }: { children: ReactNode }) => {

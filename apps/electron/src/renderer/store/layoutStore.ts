@@ -11,6 +11,7 @@ import type {
 import type { MarketType } from '@marketmind/types';
 import { useIndicatorStore, type IndicatorId } from './indicatorStore';
 import { usePreferencesStore } from './preferencesStore';
+import { trpc } from '@renderer/services/trpc';
 
 const generateId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -310,28 +311,26 @@ const persistLayout = (): void => {
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, layoutPresets } = useLayoutStore.getState();
-    usePreferencesStore.getState().set('layout', 'symbolTabs', symbolTabs);
-    usePreferencesStore.getState().set('layout', 'activeSymbolTabId', activeSymbolTabId);
-    usePreferencesStore.getState().set('layout', 'layoutPresets', layoutPresets);
+    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, layoutPresets });
+    trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
 };
 
 useLayoutStore.subscribe(persistLayout);
 
-export const hydrateLayoutStore = (): void => {
-  const layoutPrefs = usePreferencesStore.getState().layout;
-  const symbolTabs = layoutPrefs['symbolTabs'] as SymbolTab[] | undefined;
-  const activeSymbolTabId = layoutPrefs['activeSymbolTabId'] as string | undefined;
-  const layoutPresets = layoutPrefs['layoutPresets'] as LayoutPreset[] | undefined;
+export const hydrateLayoutStore = async (): Promise<void> => {
+  try {
+    const saved = await trpc.layout.get.query();
 
-  if (symbolTabs || activeSymbolTabId || layoutPresets) {
-    useLayoutStore.getState().hydrate({
-      ...(symbolTabs && { symbolTabs }),
-      ...(activeSymbolTabId && { activeSymbolTabId }),
-      ...(layoutPresets && { layoutPresets }),
-    });
-    return;
-  }
+    if (saved?.symbolTabs || saved?.activeSymbolTabId || saved?.layoutPresets) {
+      useLayoutStore.getState().hydrate({
+        ...(saved.symbolTabs && { symbolTabs: saved.symbolTabs }),
+        ...(saved.activeSymbolTabId && { activeSymbolTabId: saved.activeSymbolTabId }),
+        ...(saved.layoutPresets && { layoutPresets: saved.layoutPresets }),
+      });
+      return;
+    }
+  } catch {}
 
   const chartPrefs = usePreferencesStore.getState().chart;
   const savedSymbol = chartPrefs['symbol'] as string | undefined;

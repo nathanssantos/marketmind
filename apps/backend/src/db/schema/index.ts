@@ -6,3 +6,4 @@ export * from './trading';
 export * from './setups';
 export * from './monitoring';
 export * from './misc';
+export * from './layouts';

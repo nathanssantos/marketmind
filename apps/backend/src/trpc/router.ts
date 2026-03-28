@@ -5,6 +5,7 @@ import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
 import { customSymbolRouter } from '../routers/custom-symbol';
 import { drawingRouter } from '../routers/drawing';
+import { layoutRouter } from '../routers/layout';
 import { economicCalendarRouter } from '../routers/economic-calendar';
 import { feesRouter } from '../routers/fees';
 import { futuresTradingRouter } from '../routers/futures-trading/index';
@@ -43,6 +44,7 @@ export const appRouter = router({
   screener: screenerRouter,
   customSymbol: customSymbolRouter,
   drawing: drawingRouter,
+  layout: layoutRouter,
   scalping: scalpingRouter,
   economicCalendar: economicCalendarRouter,
 });
