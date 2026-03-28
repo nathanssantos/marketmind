@@ -1,5 +1,5 @@
 import { Button, ConfirmationDialog, IconButton, Menu, Slider, TooltipWrapper } from '@renderer/components/ui';
-import { Box, HStack, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBookTicker } from '@renderer/hooks/useBookTicker';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
@@ -17,6 +17,31 @@ import { PiBroom } from 'react-icons/pi';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
+
+const ActionRow = ({ icon, label, onClick, loading, disabled, children }: {
+  icon?: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  children?: React.ReactNode;
+}) => (
+  <Flex
+    align="center"
+    gap={2}
+    px={2}
+    py={1}
+    cursor={disabled ? 'default' : 'pointer'}
+    borderRadius="sm"
+    opacity={disabled ? 0.4 : 1}
+    _hover={disabled ? {} : { bg: 'bg.muted' }}
+    onClick={disabled || loading ? undefined : onClick}
+  >
+    {children ?? icon}
+    <Text fontSize="xs" color="fg.muted">{label}</Text>
+    {loading && <Spinner size="xs" />}
+  </Flex>
+);
 
 const SIZE_PRESETS = [0.5, 1, 5, 10, 50, 100] as const;
 const SNAP_THRESHOLD = 16;
@@ -277,25 +302,13 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
           <VStack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
             {marketType === 'FUTURES' && (
               <>
-                <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition}>
-                  <LuArrowUpDown /> <Text fontSize="xs">{t('futures.reversePosition', 'Reverse Position')}</Text>
-                </Button>
-                <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition}>
-                  <LuX /> <Text fontSize="xs">{t('futures.closePosition', 'Close Position')}</Text>
-                </Button>
-                <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders}>
-                  <PiBroom /> <Text fontSize="xs">{t('futures.cancelOrders', 'Cancel Orders')}</Text>
-                </Button>
+                <ActionRow icon={<LuArrowUpDown />} label={t('futures.reversePosition', 'Reverse Position')} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition} />
+                <ActionRow icon={<LuX />} label={t('futures.closePosition', 'Close Position')} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition} />
+                <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders', 'Cancel Orders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
               </>
             )}
-            <HStack gap={2}>
-              <GridOrderPopover />
-              <Text fontSize="xs" color="fg.muted">{t('chart.quickTrade.gridOrders', 'Grid Orders')}</Text>
-            </HStack>
-            <HStack gap={2}>
-              <TrailingStopPopover symbol={symbol} />
-              <Text fontSize="xs" color="fg.muted">{t('chart.quickTrade.trailingStop', 'Trailing Stop')}</Text>
-            </HStack>
+            <ActionRow label={t('chart.quickTrade.gridOrders', 'Grid Orders')}><GridOrderPopover /></ActionRow>
+            <ActionRow label={t('chart.quickTrade.trailingStop', 'Trailing Stop')}><TrailingStopPopover symbol={symbol} /></ActionRow>
           </VStack>
         )}
       </VStack>
