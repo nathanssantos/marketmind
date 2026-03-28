@@ -139,6 +139,7 @@ export const useChartTradingData = ({
         triggerKlineOpenTime: exec.triggerKlineOpenTime,
         fibonacciProjection: exec.fibonacciProjection ? JSON.parse(exec.fibonacciProjection) : null,
         leverage: exec.leverage ?? 1,
+        liquidationPrice: exec.liquidationPrice,
       }));
   }, [backendExecutions, symbol, marketType]);
 
