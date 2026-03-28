@@ -1,7 +1,4 @@
-import { workerPool } from '@/renderer/utils/WorkerPool';
-import { useEffect, useRef, useState, useCallback } from 'react';
-
-let globalRequestId = 0;
+import { useEffect, useRef, useState } from 'react';
 
 export const useWorkerComputation = <TResult>(
   workerKey: string,
@@ -10,15 +7,18 @@ export const useWorkerComputation = <TResult>(
   enabled: boolean,
 ): TResult | null => {
   const [result, setResult] = useState<TResult | null>(null);
-  const activeRequestIdRef = useRef(0);
   const workerRef = useRef<Worker | null>(null);
-
-  const factory = useCallback(workerFactory, [workerKey]);
+  const factoryRef = useRef(workerFactory);
+  factoryRef.current = workerFactory;
 
   useEffect(() => {
-    if (!workerPool.has(workerKey)) workerPool.register(workerKey, factory);
-    workerRef.current = workerPool.get(workerKey);
-  }, [workerKey, factory]);
+    const worker = factoryRef.current();
+    workerRef.current = worker;
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [workerKey]);
 
   useEffect(() => {
     if (!enabled || !message) {
@@ -29,11 +29,7 @@ export const useWorkerComputation = <TResult>(
     const worker = workerRef.current;
     if (!worker) return;
 
-    const requestId = ++globalRequestId;
-    activeRequestIdRef.current = requestId;
-
     const handleMessage = (e: MessageEvent) => {
-      if (activeRequestIdRef.current !== requestId) return;
       setResult(e.data as TResult);
     };
 
@@ -43,7 +39,7 @@ export const useWorkerComputation = <TResult>(
     return () => {
       worker.removeEventListener('message', handleMessage);
     };
-  }, [workerKey, message, enabled]);
+  }, [message, enabled]);
 
   return result;
 };
