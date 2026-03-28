@@ -278,7 +278,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
             {marketType === 'FUTURES' && (
               <>
                 <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition}>
-                  <LuArrowUpDown /> <Text fontSize="xs">{t('futures.reversePosition', 'Reverse')}</Text>
+                  <LuArrowUpDown /> <Text fontSize="xs">{t('futures.reversePosition', 'Reverse Position')}</Text>
                 </Button>
                 <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition}>
                   <LuX /> <Text fontSize="xs">{t('futures.closePosition', 'Close Position')}</Text>
@@ -288,8 +288,14 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
                 </Button>
               </>
             )}
-            <GridOrderPopover />
-            <TrailingStopPopover symbol={symbol} />
+            <HStack gap={2}>
+              <GridOrderPopover />
+              <Text fontSize="xs" color="fg.muted">{t('chart.quickTrade.gridOrders', 'Grid Orders')}</Text>
+            </HStack>
+            <HStack gap={2}>
+              <TrailingStopPopover symbol={symbol} />
+              <Text fontSize="xs" color="fg.muted">{t('chart.quickTrade.trailingStop', 'Trailing Stop')}</Text>
+            </HStack>
           </VStack>
         )}
       </VStack>
