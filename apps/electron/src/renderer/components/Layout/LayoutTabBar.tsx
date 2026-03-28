@@ -63,14 +63,14 @@ const LayoutTab = memo(function LayoutTab({
 export const LayoutTabBar = memo(function LayoutTabBar() {
   const layoutPresets = useLayoutStore((s) => s.layoutPresets);
   const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
-  const getActiveTab = useLayoutStore((s) => s.getActiveTab);
+  const activeLayoutId = useLayoutStore((s) => {
+    const tab = s.symbolTabs.find(t => t.id === s.activeSymbolTabId);
+    return tab?.activeLayoutId;
+  });
   const setActiveLayout = useLayoutStore((s) => s.setActiveLayout);
   const addLayout = useLayoutStore((s) => s.addLayout);
   const removeLayout = useLayoutStore((s) => s.removeLayout);
   const renameLayout = useLayoutStore((s) => s.renameLayout);
-
-  const activeTab = getActiveTab();
-  const activeLayoutId = activeTab?.activeLayoutId;
 
   const handleActivate = useCallback(
     (layoutId: string) => setActiveLayout(activeSymbolTabId, layoutId),
