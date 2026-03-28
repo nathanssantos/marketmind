@@ -27,6 +27,7 @@ import { useChartData } from './hooks/useChartData';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useChartPref, useUIPref } from './store/preferencesStore';
+import { useLayoutStore } from './store/layoutStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { useSetupStore } from './store/setupStore';
 import { system } from './theme';
@@ -230,6 +231,24 @@ function AppContent(): ReactElement {
     return () => setToasterNavigateToSymbol(null);
   }, [handleSymbolChange]);
 
+  const focusedPanel = useLayoutStore(s => s.getFocusedPanel());
+  const activeLayout = useLayoutStore(s => s.getActiveLayout());
+  const setPanelTimeframe = useLayoutStore(s => s.setPanelTimeframe);
+  const setPanelChartType = useLayoutStore(s => s.setPanelChartType);
+
+  const effectiveTimeframe = (focusedPanel?.timeframe ?? timeframe) as Timeframe;
+  const effectiveChartType = (focusedPanel?.chartType ?? chartType) as ChartType;
+
+  const handleTimeframeChange = useCallback((tf: Timeframe) => {
+    if (focusedPanel && activeLayout) setPanelTimeframe(activeLayout.id, focusedPanel.id, tf);
+    else setTimeframe(tf);
+  }, [focusedPanel, activeLayout, setPanelTimeframe, setTimeframe]);
+
+  const handleChartTypeChange = useCallback((ct: ChartType) => {
+    if (focusedPanel && activeLayout) setPanelChartType(activeLayout.id, focusedPanel.id, ct);
+    else setChartType(ct);
+  }, [focusedPanel, activeLayout, setPanelChartType, setChartType]);
+
   useChartData({
     klines: displayKlines,
     symbol,
@@ -253,12 +272,12 @@ function AppContent(): ReactElement {
         symbol={symbol}
         marketType={marketType}
         onMarketTypeChange={setMarketType}
-        timeframe={timeframe}
-        chartType={chartType}
-        onChartTypeChange={setChartType}
+        timeframe={effectiveTimeframe}
+        chartType={effectiveChartType}
+        onChartTypeChange={handleChartTypeChange}
         movingAverages={movingAverages}
         onSymbolChange={handleSymbolChange}
-        onTimeframeChange={setTimeframe}
+        onTimeframeChange={handleTimeframeChange}
         onMovingAveragesChange={setMovingAverages}
         onNavigateToSymbol={handleSymbolChange}
       />
