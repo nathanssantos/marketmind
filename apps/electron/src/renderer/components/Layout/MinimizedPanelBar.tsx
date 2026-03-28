@@ -1,7 +1,8 @@
-import { Flex } from '@chakra-ui/react';
-import { Badge } from '@renderer/components/ui';
+import { Flex, HStack, Text } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback } from 'react';
+import { LuMaximize2 } from 'react-icons/lu';
 
 function MinimizedPanelBarComponent() {
   const activeLayout = useLayoutStore(s => s.getActiveLayout());
@@ -20,18 +21,24 @@ function MinimizedPanelBarComponent() {
   if (minimizedPanels.length === 0) return null;
 
   return (
-    <Flex align="center" gap={1} h="24px" minH="24px" px={2} bg="bg.subtle">
+    <Flex align="center" gap={1} h="28px" minH="28px" px={2} borderTop="1px solid" borderColor="border">
       {minimizedPanels.map(panel => (
-        <Badge
+        <HStack
           key={panel.id}
-          size="sm"
-          variant="subtle"
+          gap={1}
+          px={2}
+          h="22px"
+          bg="bg.subtle"
+          borderRadius="sm"
           cursor="pointer"
+          _hover={{ bg: 'bg.muted' }}
           onClick={() => handleRestore(panel.id)}
-          _hover={{ opacity: 0.8 }}
         >
-          {panel.timeframe}
-        </Badge>
+          <Text fontSize="xs" color="fg.muted">{panel.timeframe} {panel.chartType}</Text>
+          <IconButton aria-label="Restore" size="2xs" variant="ghost" onClick={(e) => { e.stopPropagation(); handleRestore(panel.id); }}>
+            <LuMaximize2 />
+          </IconButton>
+        </HStack>
       ))}
     </Flex>
   );

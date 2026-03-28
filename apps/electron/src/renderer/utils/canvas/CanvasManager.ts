@@ -63,6 +63,7 @@ export class CanvasManager {
   private lastRenderTime: number = 0;
   private minFrameTime: number = 16;
   private boundsCache: BoundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -73,11 +74,24 @@ export class CanvasManager {
     this.viewport = viewport;
     this.padding = padding;
     this.initialize();
+    this.observeResize();
 
     if (!globalThis.__canvasManagerInstances) {
       globalThis.__canvasManagerInstances = new Set();
     }
     globalThis.__canvasManagerInstances.add(this);
+  }
+
+  private observeResize(): void {
+    const parent = this.canvas.parentElement;
+    if (!parent) return;
+    this.resizeObserver = new ResizeObserver(() => {
+      this.ctx = setupCanvas(this.canvas);
+      this.updateDimensions();
+      this.updateKlineWidth();
+      this.markDirty('all');
+    });
+    this.resizeObserver.observe(parent);
   }
 
   public setRenderCallback(callback: (() => void) | null): void {
@@ -437,6 +451,9 @@ export class CanvasManager {
     this.klines = [];
     this.bounds = null;
     this.dimensions = null;
+
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
 
     if (globalThis.__canvasManagerInstances) {
       globalThis.__canvasManagerInstances.delete(this);
