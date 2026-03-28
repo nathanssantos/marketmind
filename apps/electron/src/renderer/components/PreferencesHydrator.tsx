@@ -7,6 +7,7 @@ import { useScreenerStore } from '../store/screenerStore';
 import { useSetupStore } from '../store/setupStore';
 import { useUIStore } from '../store/uiStore';
 import { useCurrencyStore } from '../store/currencyStore';
+import { hydrateLayoutStore } from '../store/layoutStore';
 import { trpc } from '../utils/trpc';
 
 const hydrateDomainStores = (prefs: Record<string, Record<string, unknown>>) => {
@@ -23,6 +24,7 @@ const hydrateDomainStores = (prefs: Record<string, Record<string, unknown>>) => 
   useScreenerStore.getState().hydrate(ui);
   useCurrencyStore.getState().hydrate(ui);
   useSetupStore.getState().hydrate(trading);
+  hydrateLayoutStore();
 };
 
 export const PreferencesHydrator = ({ children }: { children: ReactNode }) => {

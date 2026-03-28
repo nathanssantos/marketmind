@@ -10,6 +10,7 @@ import type {
 } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import type { IndicatorId } from './indicatorStore';
+import { usePreferencesStore } from './preferencesStore';
 
 const generateId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -284,3 +285,32 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     return layout.grid.find(p => p.id === state.focusedPanelId);
   },
 }));
+
+let persistDebounce: ReturnType<typeof setTimeout> | null = null;
+
+const persistLayout = (): void => {
+  if (persistDebounce) clearTimeout(persistDebounce);
+  persistDebounce = setTimeout(() => {
+    const { symbolTabs, activeSymbolTabId, layoutPresets } = useLayoutStore.getState();
+    usePreferencesStore.getState().set('layout', 'symbolTabs', symbolTabs);
+    usePreferencesStore.getState().set('layout', 'activeSymbolTabId', activeSymbolTabId);
+    usePreferencesStore.getState().set('layout', 'layoutPresets', layoutPresets);
+  }, 500);
+};
+
+useLayoutStore.subscribe(persistLayout);
+
+export const hydrateLayoutStore = (): void => {
+  const layoutPrefs = usePreferencesStore.getState().layout;
+  const symbolTabs = layoutPrefs['symbolTabs'] as SymbolTab[] | undefined;
+  const activeSymbolTabId = layoutPrefs['activeSymbolTabId'] as string | undefined;
+  const layoutPresets = layoutPrefs['layoutPresets'] as LayoutPreset[] | undefined;
+
+  if (symbolTabs || activeSymbolTabId || layoutPresets) {
+    useLayoutStore.getState().hydrate({
+      ...(symbolTabs && { symbolTabs }),
+      ...(activeSymbolTabId && { activeSymbolTabId }),
+      ...(layoutPresets && { layoutPresets }),
+    });
+  }
+};

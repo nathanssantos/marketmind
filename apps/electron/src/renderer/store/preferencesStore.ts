@@ -2,13 +2,14 @@ import { useCallback, useRef } from 'react';
 import { create } from 'zustand';
 import { trpc } from '../services/trpc';
 
-type PreferenceCategory = 'chart' | 'ui' | 'trading';
+type PreferenceCategory = 'chart' | 'ui' | 'trading' | 'layout';
 
 interface PreferencesState {
   isHydrated: boolean;
   chart: Record<string, unknown>;
   ui: Record<string, unknown>;
   trading: Record<string, unknown>;
+  layout: Record<string, unknown>;
 
   hydrate: (allPrefs: Record<string, Record<string, unknown>>) => void;
   set: (category: PreferenceCategory, key: string, value: unknown) => void;
@@ -21,12 +22,13 @@ let pendingWrites: Record<PreferenceCategory, Record<string, unknown>> = {
   chart: {},
   ui: {},
   trading: {},
+  layout: {},
 };
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
 const flushToBackend = async () => {
   const writes = pendingWrites;
-  pendingWrites = { chart: {}, ui: {}, trading: {} };
+  pendingWrites = { chart: {}, ui: {}, trading: {}, layout: {} };
 
   for (const [category, prefs] of Object.entries(writes)) {
     if (Object.keys(prefs).length === 0) continue;
@@ -59,6 +61,7 @@ export const usePreferencesStore = create<PreferencesState>()((set) => ({
   chart: {},
   ui: {},
   trading: {},
+  layout: {},
 
   hydrate: (allPrefs) =>
     set({
@@ -66,6 +69,7 @@ export const usePreferencesStore = create<PreferencesState>()((set) => ({
       chart: allPrefs['chart'] ?? {},
       ui: allPrefs['ui'] ?? {},
       trading: allPrefs['trading'] ?? {},
+      layout: allPrefs['layout'] ?? {},
     }),
 
   set: (category, key, value) => {
@@ -78,8 +82,8 @@ export const usePreferencesStore = create<PreferencesState>()((set) => ({
 
   reset: () => {
     if (flushTimer) clearTimeout(flushTimer);
-    pendingWrites = { chart: {}, ui: {}, trading: {} };
-    set({ isHydrated: false, chart: {}, ui: {}, trading: {} });
+    pendingWrites = { chart: {}, ui: {}, trading: {}, layout: {} };
+    set({ isHydrated: false, chart: {}, ui: {}, trading: {}, layout: {} });
   },
 }));
 
