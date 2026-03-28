@@ -221,14 +221,14 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
               <Menu.Positioner>
                 <Menu.Content minW="160px">
                   {onMenuAction && currentMode && (
-                    <Menu.Item value="toggle-mode" px={3} py={2} fontSize="sm" onClick={() => onMenuAction(currentMode === 'sidebar' ? 'chart' : 'sidebar')}>
+                    <Menu.Item value="toggle-mode" onClick={() => onMenuAction(currentMode === 'sidebar' ? 'chart' : 'sidebar')}>
                       {currentMode === 'sidebar'
                         ? t('chart.quickTrade.moveToChart')
                         : t('chart.quickTrade.moveToSidebar')}
                     </Menu.Item>
                   )}
                   {onClose && (
-                    <Menu.Item value="close" px={3} py={2} fontSize="sm" onClick={onClose}>
+                    <Menu.Item value="close" onClick={onClose}>
                       {t('common.close', 'Close')}
                     </Menu.Item>
                   )}

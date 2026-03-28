@@ -18,6 +18,9 @@ import { AutoTradingSidebar } from '../AutoTrading/AutoTradingSidebar';
 import { OrderFlowSidebar } from '../OrderFlow';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
 import { QuickTradeToolbar, type QuickTradeMode } from './QuickTradeToolbar';
+import { SymbolTabBar } from './SymbolTabBar';
+import { LayoutTabBar } from './LayoutTabBar';
+import { MinimizedPanelBar } from './MinimizedPanelBar';
 import { Toolbar } from './Toolbar';
 
 interface MainLayoutProps {
@@ -207,8 +210,9 @@ export const MainLayout = ({
             onMovingAveragesChange={onMovingAveragesChange}
           />
 
-          <Box
+          <Flex
             flex={1}
+            direction="column"
             position="relative"
             overflow="hidden"
             width={(() => {
@@ -221,11 +225,16 @@ export const MainLayout = ({
             })()}
             transition="width 0.2s ease"
           >
+            <SymbolTabBar />
             {symbol && quickTradeMode === 'chart' && (
               <QuickTradeToolbar symbol={symbol} marketType={marketType} onMenuAction={setQuickTradeMode} currentMode={quickTradeMode} />
             )}
-            {children}
-          </Box>
+            <Box flex={1} overflow="hidden">
+              {children}
+            </Box>
+            <MinimizedPanelBar />
+            <LayoutTabBar />
+          </Flex>
 
           {isAutoTradingOpen && (
             <>
