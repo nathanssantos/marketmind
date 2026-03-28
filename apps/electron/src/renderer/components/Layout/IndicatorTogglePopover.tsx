@@ -20,18 +20,25 @@ interface IndicatorCategory {
 interface IndicatorTogglePopoverProps {
     movingAverages: MovingAverageConfig[];
     onMovingAverageToggle: (index: number) => void;
+    activeIndicatorsOverride?: string[];
+    onToggleIndicatorOverride?: (id: IndicatorId) => void;
 }
 
 export const IndicatorTogglePopover = memo(
     ({
         movingAverages,
         onMovingAverageToggle,
+        activeIndicatorsOverride,
+        onToggleIndicatorOverride,
     }: IndicatorTogglePopoverProps) => {
         const { t } = useTranslation();
         const [isOpen, setIsOpen] = useState(false);
-        const { activeIndicators, toggleIndicator } = useIndicatorStore(
+        const storeState = useIndicatorStore(
             useShallow((s) => ({ activeIndicators: s.activeIndicators, toggleIndicator: s.toggleIndicator }))
         );
+
+        const activeIndicators = activeIndicatorsOverride ?? storeState.activeIndicators;
+        const toggleIndicator = onToggleIndicatorOverride ?? storeState.toggleIndicator;
 
         const isIndicatorActive = useCallback(
             (id: IndicatorId): boolean => activeIndicators.includes(id),

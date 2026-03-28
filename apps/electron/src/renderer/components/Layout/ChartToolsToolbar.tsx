@@ -3,6 +3,8 @@ import { Separator, ToggleIconButton, TooltipWrapper } from '@renderer/component
 import type { DrawingType } from '@marketmind/chart-studies';
 import { useChartPref } from '@renderer/store/preferencesStore';
 import { useDrawingStore } from '@renderer/store/drawingStore';
+import { useLayoutStore } from '@renderer/store/layoutStore';
+import type { IndicatorId } from '@renderer/store/indicatorStore';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -75,6 +77,14 @@ export const ChartToolsToolbar = memo(({
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
   const setMagnetEnabled = useDrawingStore(s => s.setMagnetEnabled);
 
+  const focusedPanel = useLayoutStore(s => s.getFocusedPanel());
+  const activeLayout = useLayoutStore(s => s.getActiveLayout());
+  const togglePanelIndicator = useLayoutStore(s => s.togglePanelIndicator);
+
+  const handleToggleFocusedIndicator = useCallback((id: IndicatorId) => {
+    if (focusedPanel && activeLayout) togglePanelIndicator(activeLayout.id, focusedPanel.id, id);
+  }, [focusedPanel, activeLayout, togglePanelIndicator]);
+
   const toggleMA = useCallback((index: number): void => {
     const updated = movingAverages.map((ma, i) =>
       i === index ? { ...ma, visible: !ma.visible } : ma
@@ -102,6 +112,8 @@ export const ChartToolsToolbar = memo(({
         <IndicatorTogglePopover
           movingAverages={movingAverages}
           onMovingAverageToggle={toggleMA}
+          activeIndicatorsOverride={focusedPanel?.activeIndicators}
+          onToggleIndicatorOverride={focusedPanel ? handleToggleFocusedIndicator : undefined}
         />
         <Separator orientation="horizontal" width="100%" />
         <DrawingToolButton tool="pencil" label={t('chart.tools.pencil', 'Pencil')} icon={<PencilIcon />} />
