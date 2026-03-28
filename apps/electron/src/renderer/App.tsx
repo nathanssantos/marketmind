@@ -220,24 +220,29 @@ function AppContent(): ReactElement {
 
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
 
+  const focusedPanel = useLayoutStore(s => s.getFocusedPanel());
+  const activeLayout = useLayoutStore(s => s.getActiveLayout());
+  const activeTab = useLayoutStore(s => s.getActiveTab());
+  const setPanelTimeframe = useLayoutStore(s => s.setPanelTimeframe);
+  const setPanelChartType = useLayoutStore(s => s.setPanelChartType);
+  const updateTabSymbol = useLayoutStore(s => s.updateTabSymbol);
+
+  const effectiveSymbol = activeTab?.symbol ?? symbol;
+  const effectiveMarketType = activeTab?.marketType ?? marketType;
+  const effectiveTimeframe = (focusedPanel?.timeframe ?? timeframe) as Timeframe;
+  const effectiveChartType = (focusedPanel?.chartType ?? chartType) as ChartType;
+
   const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
     clearDetectedSetups();
+    if (activeTab) updateTabSymbol(activeTab.id, newSymbol, newMarketType ?? activeTab.marketType);
     setSymbol(newSymbol);
     if (newMarketType) setMarketType(newMarketType);
-  }, [setSymbol, setMarketType, clearDetectedSetups]);
+  }, [activeTab, updateTabSymbol, setSymbol, setMarketType, clearDetectedSetups]);
 
   useEffect(() => {
     setToasterNavigateToSymbol(handleSymbolChange);
     return () => setToasterNavigateToSymbol(null);
   }, [handleSymbolChange]);
-
-  const focusedPanel = useLayoutStore(s => s.getFocusedPanel());
-  const activeLayout = useLayoutStore(s => s.getActiveLayout());
-  const setPanelTimeframe = useLayoutStore(s => s.setPanelTimeframe);
-  const setPanelChartType = useLayoutStore(s => s.setPanelChartType);
-
-  const effectiveTimeframe = (focusedPanel?.timeframe ?? timeframe) as Timeframe;
-  const effectiveChartType = (focusedPanel?.chartType ?? chartType) as ChartType;
 
   const handleTimeframeChange = useCallback((tf: Timeframe) => {
     if (focusedPanel && activeLayout) setPanelTimeframe(activeLayout.id, focusedPanel.id, tf);
@@ -269,9 +274,9 @@ function AppContent(): ReactElement {
         isAutoTradingOpen={isAutoTradingOpen}
         onToggleTrading={toggleTrading}
         onToggleAutoTrading={toggleAutoTrading}
-        symbol={symbol}
-        marketType={marketType}
-        onMarketTypeChange={setMarketType}
+        symbol={effectiveSymbol}
+        marketType={effectiveMarketType}
+        onMarketTypeChange={(mt) => { setMarketType(mt); if (activeTab) updateTabSymbol(activeTab.id, activeTab.symbol, mt); }}
         timeframe={effectiveTimeframe}
         chartType={effectiveChartType}
         onChartTypeChange={handleChartTypeChange}
