@@ -1,5 +1,5 @@
-import { HStack } from '@chakra-ui/react';
-import { Badge, GridWindow } from '@renderer/components/ui';
+import { Text } from '@chakra-ui/react';
+import { GridWindow } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import type { GridPanelConfig } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
@@ -27,10 +27,7 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
 
   const header = (
-    <HStack gap={1}>
-      <Badge size="sm" variant="subtle">{panelConfig.timeframe}</Badge>
-      <Badge size="sm" variant="outline">{panelConfig.chartType}</Badge>
-    </HStack>
+    <Text fontSize="xs" color="fg.muted">{panelConfig.timeframe} {panelConfig.chartType}</Text>
   );
 
   return (
