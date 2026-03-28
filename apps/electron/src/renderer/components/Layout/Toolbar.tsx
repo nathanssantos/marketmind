@@ -1,7 +1,7 @@
 import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
-import { Box, Flex, HStack, Text } from '@chakra-ui/react';
-import { IconButton, Logo, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
-import { memo } from 'react';
+import { Box, Flex, HStack, Portal, Text } from '@chakra-ui/react';
+import { IconButton, Logo, Menu, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
@@ -10,12 +10,14 @@ import {
   LuChartBar,
   LuDollarSign,
   LuLayers,
+  LuPlus,
   LuSquareArrowOutUpRight,
   LuScanLine,
   LuSettings,
   LuZoomIn,
   LuZoomOut,
 } from 'react-icons/lu';
+import { useLayoutStore } from '../../store/layoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
@@ -27,6 +29,52 @@ import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
 import type { ChartType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { WalletSelector } from '../WalletSelector';
+
+const TIMEFRAME_OPTIONS = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'] as const;
+
+const ToolbarLayoutActions = memo(({ showNewWindowButton, onOpenNewWindow }: { showNewWindowButton: boolean; onOpenNewWindow: () => void }) => {
+  const { t } = useTranslation();
+  const activeLayout = useLayoutStore(s => s.getActiveLayout());
+  const addPanel = useLayoutStore(s => s.addPanel);
+
+  const handleAddPanel = useCallback((tf: string) => {
+    if (activeLayout) addPanel(activeLayout.id, tf);
+  }, [activeLayout, addPanel]);
+
+  return (
+    <HStack gap={1} flexShrink={0}>
+      <Menu.Root>
+        <Menu.Trigger asChild>
+          <Box>
+            <TooltipWrapper label={t('chart.controls.addChart', 'Add chart')} showArrow>
+              <IconButton size="2xs" aria-label={t('chart.controls.addChart', 'Add chart')} variant="ghost" color="fg.muted">
+                <LuPlus />
+              </IconButton>
+            </TooltipWrapper>
+          </Box>
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content>
+              {TIMEFRAME_OPTIONS.map(tf => (
+                <Menu.Item key={tf} value={tf} onClick={() => handleAddPanel(tf)}>{tf}</Menu.Item>
+              ))}
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
+      {showNewWindowButton && (
+        <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
+          <IconButton size="2xs" aria-label={t('chart.controls.newWindow')} onClick={onOpenNewWindow} variant="ghost" color="fg.muted">
+            <LuSquareArrowOutUpRight />
+          </IconButton>
+        </TooltipWrapper>
+      )}
+    </HStack>
+  );
+});
+
+ToolbarLayoutActions.displayName = 'ToolbarLayoutActions';
 
 export interface ToolbarProps {
   symbol: string;
@@ -142,20 +190,6 @@ export const Toolbar = memo(({
           showMarketTypeToggle
         />
 
-        {showNewWindowButton && (
-          <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.newWindow')}
-              onClick={handleOpenNewWindow}
-              variant="outline"
-              color="fg.muted"
-            >
-              <LuSquareArrowOutUpRight />
-            </IconButton>
-          </TooltipWrapper>
-        )}
-
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
         <TimeframeSelector
@@ -168,6 +202,13 @@ export const Toolbar = memo(({
         <ChartTypeSelector
           chartType={chartType}
           onChartTypeChange={onChartTypeChange}
+        />
+
+        <Box w="1px" h="22px" bg="border" flexShrink={0} />
+
+        <ToolbarLayoutActions
+          showNewWindowButton={showNewWindowButton}
+          onOpenNewWindow={handleOpenNewWindow}
         />
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
