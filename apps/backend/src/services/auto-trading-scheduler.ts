@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const STRATEGIES_DIR = path.join(__dirname, '../../strategies/builtin');
 
-export type { WalletPauseInfo } from './auto-trading/watcher-manager';
+export type { WalletPauseInfo } from './auto-trading/processing/watcher-manager';
 
 export class AutoTradingScheduler {
   private cacheManager: CacheManager;
