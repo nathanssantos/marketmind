@@ -212,9 +212,10 @@ export const ChartCanvas = ({
 
   const cursorManager = useCursorManager(canvasRef);
   const { calculateStochastic } = useStochasticWorker();
-  const activeIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
+  const storeActiveIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
+  const activeIndicators = (activeIndicatorsOverride ?? storeActiveIndicators) as IndicatorId[];
 
-  const indicatorData = useChartIndicators({ klines, activeIndicators: activeIndicators as IndicatorId[] });
+  const indicatorData = useChartIndicators({ klines, activeIndicators });
 
   const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow || showOrb });
 
