@@ -312,5 +312,18 @@ export const hydrateLayoutStore = (): void => {
       ...(activeSymbolTabId && { activeSymbolTabId }),
       ...(layoutPresets && { layoutPresets }),
     });
+    return;
+  }
+
+  const chartPrefs = usePreferencesStore.getState().chart;
+  const savedSymbol = chartPrefs['symbol'] as string | undefined;
+  const savedMarketType = chartPrefs['marketType'] as MarketType | undefined;
+
+  if (savedSymbol) {
+    useLayoutStore.getState().updateTabSymbol(
+      'default',
+      savedSymbol,
+      savedMarketType ?? 'FUTURES',
+    );
   }
 };
