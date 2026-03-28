@@ -203,7 +203,7 @@ describe('useORBRenderer', () => {
       );
     });
 
-    it('should render using first candle when interval is larger than ORB period', () => {
+    it('should not render when interval is larger than ORB period', () => {
       const hourlyKlines = [
         makeKline(sessionOpen, 105, 100),
         makeKline(sessionOpen + 60 * 60_000, 110, 102),
@@ -212,7 +212,6 @@ describe('useORBRenderer', () => {
       const hourlyManager = {
         ...mockManager,
         getKlines: vi.fn(() => hourlyKlines),
-        timestampToX: vi.fn((ts: number) => ((ts - sessionOpen) / (60 * 60_000)) * 35),
       } as unknown as CanvasManager;
 
       const { result } = renderHook(() =>
@@ -226,7 +225,7 @@ describe('useORBRenderer', () => {
       );
 
       result.current.render();
-      expect(mockCtx.fillRect).toHaveBeenCalled();
+      expect(mockCtx.fillRect).not.toHaveBeenCalled();
     });
   });
 
