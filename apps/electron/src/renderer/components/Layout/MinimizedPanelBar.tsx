@@ -1,5 +1,5 @@
 import { Flex, HStack, Text } from '@chakra-ui/react';
-import { IconButton } from '@renderer/components/ui';
+import { IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback } from 'react';
 import { LuMaximize2 } from 'react-icons/lu';
@@ -35,9 +35,11 @@ function MinimizedPanelBarComponent() {
           onClick={() => handleRestore(panel.id)}
         >
           <Text fontSize="xs" color="fg.muted">{panel.timeframe} {panel.chartType}</Text>
-          <IconButton aria-label="Restore" size="2xs" variant="ghost" onClick={(e) => { e.stopPropagation(); handleRestore(panel.id); }}>
-            <LuMaximize2 />
-          </IconButton>
+          <TooltipWrapper label="Restore" showArrow>
+            <IconButton aria-label="Restore" size="2xs" variant="ghost" onClick={(e) => { e.stopPropagation(); handleRestore(panel.id); }}>
+              <LuMaximize2 />
+            </IconButton>
+          </TooltipWrapper>
         </HStack>
       ))}
     </Flex>

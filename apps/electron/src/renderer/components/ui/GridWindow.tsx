@@ -1,5 +1,6 @@
 import { Box, Flex, HStack } from '@chakra-ui/react';
 import { IconButton } from './icon-button';
+import { TooltipWrapper } from './Tooltip';
 import { memo, useCallback, type ReactNode } from 'react';
 import { LuMaximize2, LuMinimize2, LuMinus, LuX } from 'react-icons/lu';
 
@@ -79,16 +80,22 @@ function GridWindowComponent({
           {header}
         </Box>
         <HStack gap={0} flexShrink={0}>
-          <IconButton aria-label="Minimize" size="2xs" variant="ghost" onClick={handleMinimize}>
-            <LuMinus />
-          </IconButton>
-          <IconButton aria-label={isMaximized ? 'Restore' : 'Maximize'} size="2xs" variant="ghost" onClick={handleToggleMaximize}>
-            {isMaximized ? <LuMinimize2 /> : <LuMaximize2 />}
-          </IconButton>
-          {onClose && (
-            <IconButton aria-label="Close" size="2xs" variant="ghost" onClick={handleClose}>
-              <LuX />
+          <TooltipWrapper label="Minimize" showArrow>
+            <IconButton aria-label="Minimize" size="2xs" variant="ghost" onClick={handleMinimize}>
+              <LuMinus />
             </IconButton>
+          </TooltipWrapper>
+          <TooltipWrapper label={isMaximized ? 'Restore' : 'Maximize'} showArrow>
+            <IconButton aria-label={isMaximized ? 'Restore' : 'Maximize'} size="2xs" variant="ghost" onClick={handleToggleMaximize}>
+              {isMaximized ? <LuMinimize2 /> : <LuMaximize2 />}
+            </IconButton>
+          </TooltipWrapper>
+          {onClose && (
+            <TooltipWrapper label="Close" showArrow>
+              <IconButton aria-label="Close" size="2xs" variant="ghost" onClick={handleClose}>
+                <LuX />
+              </IconButton>
+            </TooltipWrapper>
           )}
         </HStack>
       </Flex>

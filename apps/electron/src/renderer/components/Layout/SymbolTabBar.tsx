@@ -1,5 +1,5 @@
 import { Flex, HStack, Text } from '@chakra-ui/react';
-import { CryptoIcon, IconButton } from '@renderer/components/ui';
+import { CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useState } from 'react';
 import { LuPlus, LuX } from 'react-icons/lu';
@@ -40,17 +40,19 @@ const SymbolTab = memo(function SymbolTab({
         {symbol}
       </Text>
       {canClose && hovered && (
-        <IconButton
-          aria-label="Close tab"
-          size="2xs"
-          variant="ghost"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose(id);
-          }}
-        >
-          <LuX />
-        </IconButton>
+        <TooltipWrapper label="Close tab" showArrow>
+          <IconButton
+            aria-label="Close tab"
+            size="2xs"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose(id);
+            }}
+          >
+            <LuX />
+          </IconButton>
+        </TooltipWrapper>
       )}
     </HStack>
   );
@@ -95,9 +97,11 @@ export const SymbolTabBar = memo(function SymbolTabBar() {
           />
         ))}
       </Flex>
-      <IconButton aria-label="Add tab" size="2xs" variant="ghost" mx={1} onClick={handleAdd}>
-        <LuPlus />
-      </IconButton>
+      <TooltipWrapper label="New tab" showArrow>
+        <IconButton aria-label="Add tab" size="2xs" variant="ghost" mx={1} onClick={handleAdd}>
+          <LuPlus />
+        </IconButton>
+      </TooltipWrapper>
     </Flex>
   );
 });

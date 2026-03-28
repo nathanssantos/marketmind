@@ -1,5 +1,5 @@
 import { Flex, Text, Portal } from '@chakra-ui/react';
-import { FormDialog, IconButton, Input, Menu } from '@renderer/components/ui';
+import { FormDialog, IconButton, Input, Menu, TooltipWrapper } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useState } from 'react';
 import { LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
@@ -136,9 +136,11 @@ export const LayoutTabBar = memo(function LayoutTabBar() {
             />
           ))}
         </Flex>
-        <IconButton aria-label="Add layout" size="2xs" variant="ghost" mx={1} onClick={handleAddClick}>
-          <LuPlus />
-        </IconButton>
+        <TooltipWrapper label="New layout" showArrow>
+          <IconButton aria-label="Add layout" size="2xs" variant="ghost" mx={1} onClick={handleAddClick}>
+            <LuPlus />
+          </IconButton>
+        </TooltipWrapper>
       </Flex>
 
       <FormDialog
