@@ -2,10 +2,12 @@ import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { wallets } from '../../db/schema';
+import { wallets, tradeExecutions } from '../../db/schema';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
+import { createBinanceFuturesClient, getPositions as getFuturesPositions } from '../../services/binance-futures-client';
 import { getWebSocketService } from '../../services/websocket';
+import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
 
 export const walletSyncRouter = router({
@@ -79,6 +81,35 @@ export const walletSyncRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(wallets.id, input.id));
+
+        if (wallet.marketType === 'FUTURES') {
+          try {
+            const binanceClient = createBinanceFuturesClient(wallet);
+            const exchangePositions = await getFuturesPositions(binanceClient);
+
+            const openExecutions = await ctx.db
+              .select({ id: tradeExecutions.id, symbol: tradeExecutions.symbol })
+              .from(tradeExecutions)
+              .where(
+                and(
+                  eq(tradeExecutions.walletId, input.id),
+                  eq(tradeExecutions.status, 'open'),
+                  eq(tradeExecutions.marketType, 'FUTURES'),
+                )
+              );
+
+            for (const exec of openExecutions) {
+              const pos = exchangePositions.find((p) => p.symbol === exec.symbol);
+              if (!pos) continue;
+              await ctx.db
+                .update(tradeExecutions)
+                .set({ liquidationPrice: pos.liquidationPrice })
+                .where(eq(tradeExecutions.id, exec.id));
+            }
+          } catch (e) {
+            logger.warn({ error: e }, 'Failed to sync liquidation prices');
+          }
+        }
 
         const wsService = getWebSocketService();
         if (wsService) {
