@@ -61,6 +61,7 @@ export interface ChartCanvasProps {
   timeframe?: string;
   onNearLeftEdge?: () => void;
   isLoadingMore?: boolean;
+  activeIndicatorsOverride?: string[];
 }
 
 export const ChartCanvas = ({
@@ -77,6 +78,7 @@ export const ChartCanvas = ({
   timeframe = '1h',
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
+  activeIndicatorsOverride,
 }: ChartCanvasProps): ReactElement => {
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
@@ -86,9 +88,19 @@ export const ChartCanvas = ({
   const [showEventRow] = useChartPref('showEventRow', false);
   const [showOrb] = useChartPref('showOrb', false);
 
-  const isIndicatorActive = useIndicatorStore((s) => s.isActive);
-  const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
-  const showActivityIndicator = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
+  const storeIsActive = useIndicatorStore((s) => s.isActive);
+  const storeShowVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
+  const storeShowActivity = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
+
+  const isIndicatorActive = activeIndicatorsOverride
+    ? (id: IndicatorId) => activeIndicatorsOverride.includes(id)
+    : storeIsActive;
+  const showVolume = activeIndicatorsOverride
+    ? activeIndicatorsOverride.includes('volume')
+    : storeShowVolume;
+  const showActivityIndicator = activeIndicatorsOverride
+    ? activeIndicatorsOverride.includes('activityIndicator')
+    : storeShowActivity;
   const colors = useChartColors();
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
