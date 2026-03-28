@@ -1,31 +1,14 @@
-import { calculateMovingAverages, type MAConfig, type MAResult } from '@marketmind/indicators';
+import { calculateMovingAverages, type MAConfig } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-export interface MAWorkerRequest {
-  type: 'calculate';
-  klines: Kline[];
-  configs: MAConfig[];
-}
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; configs: MAConfig[] }>) => {
+  const { klines, configs } = e.data;
 
-export interface WorkerResponse {
-  type: 'result';
-  results: MAResult[];
-}
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
 
-self.onmessage = (event: MessageEvent<MAWorkerRequest>) => {
-  const { type, klines, configs } = event.data;
-
-  if (type !== 'calculate') return;
-
-  const results = calculateMovingAverages(klines, configs);
-
-  const response: WorkerResponse = {
-    type: 'result',
-    results,
-  };
-
-  self.postMessage(response);
+  const result = calculateMovingAverages(klines, configs);
+  self.postMessage(result);
 };
-
-export { };
-

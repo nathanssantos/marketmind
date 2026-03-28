@@ -211,7 +211,8 @@ export const ChartCanvas = ({
   });
 
   const cursorManager = useCursorManager(canvasRef);
-  const { calculateStochastic } = useStochasticWorker();
+  const showStochasticEarly = isIndicatorActive('stochastic');
+  const stochasticResult = useStochasticWorker(klines, showStochasticEarly, 14, 3, 3);
   const storeActiveIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
   const activeIndicators = (activeIndicatorsOverride ?? storeActiveIndicators) as IndicatorId[];
 
@@ -299,19 +300,9 @@ export const ChartCanvas = ({
 
   useChartOverlayEffects({ manager, allExecutions, orderLoadingMapRef, orderFlashMapRef, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders });
 
-  const showStochastic = isIndicatorActive('stochastic');
   useEffect(() => {
-    if (!showStochastic || klines.length === 0) { setStochasticData(null); return; }
-    const calculate = async (): Promise<void> => {
-      try {
-        const result = await calculateStochastic(klines, 14, 3, 3);
-        setStochasticData(result);
-      } catch (_error) {
-        setStochasticData(null);
-      }
-    };
-    calculate();
-  }, [showStochastic, klines, calculateStochastic]);
+    setStochasticData(stochasticResult);
+  }, [stochasticResult, setStochasticData]);
 
   useChartPanelHeights({ manager, showEventRow, activeIndicators: activeIndicators as IndicatorId[], advancedConfig });
 

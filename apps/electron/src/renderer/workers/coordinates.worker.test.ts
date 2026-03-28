@@ -24,7 +24,7 @@ describe('coordinates.worker', () => {
         paddingBottom: 10,
       },
     } as MessageEvent);
-    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'coordinateResult' }));
+    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ results: expect.any(Array) }));
   });
 
   it('should convert indices to X coordinates', async () => {
@@ -40,7 +40,7 @@ describe('coordinates.worker', () => {
         rightMargin: 50,
       },
     } as MessageEvent);
-    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'coordinateResult' }));
+    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ results: expect.any(Array) }));
   });
 
   it('should handle zero price range', async () => {
@@ -55,9 +55,8 @@ describe('coordinates.worker', () => {
         dimensions: { chartHeight: 400, chartWidth: 800 },
       },
     } as MessageEvent);
-    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'coordinateResult',
+    expect(mockPostMessage).toHaveBeenCalledWith({
       results: [200, 200, 200],
-    }));
+    });
   });
 });

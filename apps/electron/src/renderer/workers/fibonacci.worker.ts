@@ -1,8 +1,14 @@
-import { calculateAutoFibonacci, type FibonacciResult } from '@marketmind/indicators';
+import { calculateAutoFibonacci } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {
-  const { klines, lookback = 50 } = event.data;
-  const result: FibonacciResult | null = calculateAutoFibonacci(klines, lookback);
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {
+  const { klines, lookback = 50 } = e.data;
+
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  const result = calculateAutoFibonacci(klines, lookback);
   self.postMessage(result);
 };

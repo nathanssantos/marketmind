@@ -1,8 +1,14 @@
-import { calculateTEMA, type TEMAResult } from '@marketmind/indicators';
+import { calculateTEMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[]; period?: number }>) => {
-  const { klines, period = 21 } = event.data;
-  const result: TEMAResult = calculateTEMA(klines, period);
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {
+  const { klines, period = 21 } = e.data;
+
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  const result = calculateTEMA(klines, period);
   self.postMessage(result);
 };

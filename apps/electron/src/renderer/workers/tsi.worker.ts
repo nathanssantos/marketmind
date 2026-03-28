@@ -1,14 +1,7 @@
 import { calculateTSI } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-interface WorkerMessage {
-  klines: Kline[];
-  longPeriod?: number;
-  shortPeriod?: number;
-  signalPeriod?: number;
-}
-
-self.onmessage = (e: MessageEvent<WorkerMessage>) => {
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; longPeriod?: number; shortPeriod?: number; signalPeriod?: number }>) => {
   const { klines, longPeriod = 25, shortPeriod = 13, signalPeriod = 13 } = e.data;
 
   if (!klines || klines.length === 0) {

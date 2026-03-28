@@ -1,14 +1,14 @@
-import { calculateWilliamsR, type WilliamsRResult } from '@marketmind/indicators';
+import { calculateWilliamsR } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[]; period: number }>) => {
-  const { klines, period } = event.data;
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
+  const { klines, period } = e.data;
 
   if (!klines || klines.length === 0) {
     self.postMessage(null);
     return;
   }
 
-  const result: WilliamsRResult = calculateWilliamsR(klines, period);
+  const result = calculateWilliamsR(klines, period);
   self.postMessage(result);
 };

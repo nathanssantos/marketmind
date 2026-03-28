@@ -1,35 +1,14 @@
 import type { Kline } from '@marketmind/types';
-import { calculateBounds as calculate } from '../utils/boundsCalculation';
+import { calculateBounds } from '../utils/boundsCalculation';
 
-export interface BoundsWorkerRequest {
-  type: 'calculateBounds';
-  klines: Kline[];
-  viewportStart: number;
-  viewportEnd: number;
-}
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; viewportStart: number; viewportEnd: number }>) => {
+  const { klines, viewportStart, viewportEnd } = e.data;
 
-export interface BoundsWorkerResponse {
-  type: 'boundsResult';
-  minPrice: number;
-  maxPrice: number;
-  minVolume: number;
-  maxVolume: number;
-}
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
 
-self.onmessage = (event: MessageEvent<BoundsWorkerRequest>) => {
-  const { type, klines, viewportStart, viewportEnd } = event.data;
-
-  if (type !== 'calculateBounds') return;
-
-  const result = calculate(klines, viewportStart, viewportEnd);
-
-  const response: BoundsWorkerResponse = {
-    type: 'boundsResult',
-    ...result,
-  };
-
-  self.postMessage(response);
+  const result = calculateBounds(klines, viewportStart, viewportEnd);
+  self.postMessage(result);
 };
-
-export { };
-

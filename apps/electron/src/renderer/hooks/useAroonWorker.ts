@@ -1,39 +1,22 @@
 import type { AroonResult } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useWorkerComputation } from './useWorkerComputation';
 
 export const useAroonWorker = (
   klines: Kline[] | null,
   enabled: boolean,
   period = 25,
 ): AroonResult | null => {
-  const [data, setData] = useState<AroonResult | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const message = useMemo(
+    () => klines && klines.length > 0 ? { klines, period } : null,
+    [klines, period],
+  );
 
-  useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
-
-    workerRef.current = new Worker(
-      new URL('../workers/aroon.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-
-    workerRef.current.onmessage = (e: MessageEvent<AroonResult | null>) => {
-      setData(e.data);
-    };
-
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!workerRef.current || !klines || !enabled) return;
-    workerRef.current.postMessage({ klines, period });
-  }, [klines, enabled, period]);
-
-  return data;
+  return useWorkerComputation<AroonResult>(
+    'aroon',
+    () => new Worker(new URL('../workers/aroon.worker.ts', import.meta.url), { type: 'module' }),
+    message,
+    enabled,
+  );
 };

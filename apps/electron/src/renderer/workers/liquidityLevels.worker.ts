@@ -1,17 +1,18 @@
-import { calculateLiquidityLevels, type LiquidityLevel } from '@marketmind/indicators';
+import { calculateLiquidityLevels } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-const getKlineHigh = (kline: Kline): number => parseFloat(kline.high);
-const getKlineLow = (kline: Kline): number => parseFloat(kline.low);
-const getKlineClose = (kline: Kline): number => parseFloat(kline.close);
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {
+  const { klines, lookback = 50 } = e.data;
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {
-  const { klines, lookback = 50 } = event.data;
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
 
-  const highs = klines.map(getKlineHigh);
-  const lows = klines.map(getKlineLow);
-  const closes = klines.map(getKlineClose);
+  const highs = klines.map((k) => parseFloat(k.high));
+  const lows = klines.map((k) => parseFloat(k.low));
+  const closes = klines.map((k) => parseFloat(k.close));
 
-  const result: LiquidityLevel[] = calculateLiquidityLevels(highs, lows, closes, { lookback });
+  const result = calculateLiquidityLevels(highs, lows, closes, { lookback });
   self.postMessage(result);
 };

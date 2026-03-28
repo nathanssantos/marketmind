@@ -1,6 +1,7 @@
 import type { PPOResult } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useWorkerComputation } from './useWorkerComputation';
 
 export const usePPOWorker = (
   klines: Kline[] | null,
@@ -9,33 +10,15 @@ export const usePPOWorker = (
   slowPeriod = 26,
   signalPeriod = 9,
 ): PPOResult | null => {
-  const [data, setData] = useState<PPOResult | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const message = useMemo(
+    () => klines && klines.length > 0 ? { klines, fastPeriod, slowPeriod, signalPeriod } : null,
+    [klines, fastPeriod, slowPeriod, signalPeriod],
+  );
 
-  useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
-
-    workerRef.current = new Worker(
-      new URL('../workers/ppo.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-
-    workerRef.current.onmessage = (e: MessageEvent<PPOResult | null>) => {
-      setData(e.data);
-    };
-
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!workerRef.current || !klines || !enabled) return;
-    workerRef.current.postMessage({ klines, fastPeriod, slowPeriod, signalPeriod });
-  }, [klines, enabled, fastPeriod, slowPeriod, signalPeriod]);
-
-  return data;
+  return useWorkerComputation<PPOResult>(
+    'ppo',
+    () => new Worker(new URL('../workers/ppo.worker.ts', import.meta.url), { type: 'module' }),
+    message,
+    enabled,
+  );
 };

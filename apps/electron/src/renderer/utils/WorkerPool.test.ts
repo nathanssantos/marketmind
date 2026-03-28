@@ -48,14 +48,9 @@ describe('WorkerPool', () => {
 
   describe('get', () => {
     it('should return null when factory not registered', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       const worker = workerPool.get('non-existent');
 
       expect(worker).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith('No worker factory registered for key: non-existent');
-
-      consoleSpy.mockRestore();
     });
 
     it('should create worker on first access', () => {

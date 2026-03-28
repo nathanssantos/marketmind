@@ -1,26 +1,12 @@
-export interface CoordinateWorkerRequest {
+interface CoordinateRequest {
   type: 'batchPriceToY' | 'batchIndexToX';
   data: number[];
-  bounds?: {
-    minPrice: number;
-    maxPrice: number;
-  };
-  dimensions?: {
-    chartHeight: number;
-    chartWidth: number;
-  };
-  viewport?: {
-    start: number;
-    end: number;
-  };
+  bounds?: { minPrice: number; maxPrice: number };
+  dimensions?: { chartHeight: number; chartWidth: number };
+  viewport?: { start: number; end: number };
   paddingTop?: number;
   paddingBottom?: number;
   rightMargin?: number;
-}
-
-export interface CoordinateWorkerResponse {
-  type: 'coordinateResult';
-  results: number[];
 }
 
 const batchPriceToY = (
@@ -55,9 +41,7 @@ const batchIndexToX = (
   const effectiveWidth = chartWidth - rightMargin;
   const visibleRange = viewportEnd - viewportStart;
 
-  if (visibleRange === 0) {
-    return indices.map(() => 0);
-  }
+  if (visibleRange === 0) return indices.map(() => 0);
 
   return indices.map((index) => {
     const ratio = (index - viewportStart) / visibleRange;
@@ -65,45 +49,16 @@ const batchIndexToX = (
   });
 };
 
-self.onmessage = (event: MessageEvent<CoordinateWorkerRequest>) => {
-  const {
-    type,
-    data,
-    bounds,
-    dimensions,
-    viewport,
-    paddingTop = 0,
-    paddingBottom = 0,
-    rightMargin = 0,
-  } = event.data;
+self.onmessage = (e: MessageEvent<CoordinateRequest>) => {
+  const { type, data, bounds, dimensions, viewport, paddingTop = 0, paddingBottom = 0, rightMargin = 0 } = e.data;
 
   let results: number[] = [];
 
   if (type === 'batchPriceToY' && bounds && dimensions) {
-    results = batchPriceToY(
-      data,
-      bounds.minPrice,
-      bounds.maxPrice,
-      dimensions.chartHeight,
-      paddingTop,
-      paddingBottom
-    );
+    results = batchPriceToY(data, bounds.minPrice, bounds.maxPrice, dimensions.chartHeight, paddingTop, paddingBottom);
   } else if (type === 'batchIndexToX' && viewport && dimensions) {
-    results = batchIndexToX(
-      data,
-      viewport.start,
-      viewport.end,
-      dimensions.chartWidth,
-      rightMargin
-    );
+    results = batchIndexToX(data, viewport.start, viewport.end, dimensions.chartWidth, rightMargin);
   }
 
-  const response: CoordinateWorkerResponse = {
-    type: 'coordinateResult',
-    results,
-  };
-
-  self.postMessage(response);
+  self.postMessage({ results });
 };
-
-export {};

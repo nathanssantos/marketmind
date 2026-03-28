@@ -1,35 +1,14 @@
 import type { Kline } from '@marketmind/types';
-import {
-    optimizeKlines,
-    type OptimizationResult,
-    type SimplifiedKline,
-} from '../utils/klineOptimization';
+import { optimizeKlines } from '../utils/klineOptimization';
 
-export interface OptimizerWorkerRequest {
-  type: 'optimizeKlines';
-  klines: Kline[];
-  detailedCount?: number;
-}
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; detailedCount?: number }>) => {
+  const { klines, detailedCount } = e.data;
 
-export interface OptimizerWorkerResponse extends OptimizationResult {
-  type: 'optimizedResult';
-}
-
-self.onmessage = (event: MessageEvent<OptimizerWorkerRequest>) => {
-  const { type, klines, detailedCount } = event.data;
-
-  if (type !== 'optimizeKlines') return;
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
 
   const result = optimizeKlines(klines, detailedCount);
-
-  const response: OptimizerWorkerResponse = {
-    type: 'optimizedResult',
-    ...result,
-  };
-
-  self.postMessage(response);
+  self.postMessage(result);
 };
-
-export { };
-export type { SimplifiedKline };
-

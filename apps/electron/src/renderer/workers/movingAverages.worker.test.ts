@@ -18,16 +18,17 @@ describe('movingAverages.worker', () => {
   it('should calculate moving averages', async () => {
     await import('./movingAverages.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'calculate', klines: mockKlines, configs: mockConfigs } } as MessageEvent);
+    handler({ data: { klines: mockKlines, configs: mockConfigs } } as MessageEvent);
     expect(calculateMovingAverages).toHaveBeenCalledWith(mockKlines, mockConfigs);
-    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'result' }));
+    expect(mockPostMessage).toHaveBeenCalledWith([{ type: 'SMA', period: 20, values: [100, 101, 102] }]);
   });
 
-  it('should ignore wrong type', async () => {
+  it('should post null for empty klines', async () => {
     vi.resetModules();
     await import('./movingAverages.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'wrongType', klines: mockKlines, configs: mockConfigs } } as MessageEvent);
+    handler({ data: { klines: [], configs: mockConfigs } } as MessageEvent);
     expect(calculateMovingAverages).not.toHaveBeenCalled();
+    expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

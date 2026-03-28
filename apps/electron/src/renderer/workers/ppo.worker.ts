@@ -1,14 +1,7 @@
 import { calculatePPO } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-interface WorkerMessage {
-  klines: Kline[];
-  fastPeriod?: number;
-  slowPeriod?: number;
-  signalPeriod?: number;
-}
-
-self.onmessage = (e: MessageEvent<WorkerMessage>) => {
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; fastPeriod?: number; slowPeriod?: number; signalPeriod?: number }>) => {
   const { klines, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9 } = e.data;
 
   if (!klines || klines.length === 0) {

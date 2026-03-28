@@ -1,5 +1,8 @@
 type WorkerFactory = () => Worker;
 
+let nextRequestId = 0;
+export const getNextRequestId = (): number => ++nextRequestId;
+
 class WorkerPool {
   private workers: Map<string, Worker> = new Map();
   private factories: Map<string, WorkerFactory> = new Map();
@@ -14,10 +17,7 @@ class WorkerPool {
     }
 
     const factory = this.factories.get(key);
-    if (!factory) {
-      console.warn(`No worker factory registered for key: ${key}`);
-      return null;
-    }
+    if (!factory) return null;
 
     const worker = factory();
     this.workers.set(key, worker);

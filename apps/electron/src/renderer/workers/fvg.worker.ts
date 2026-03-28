@@ -1,8 +1,14 @@
-import { calculateFVG, type FVGResult } from '@marketmind/indicators';
+import { calculateFVG } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[] }>) => {
-  const { klines } = event.data;
-  const result: FVGResult = calculateFVG(klines);
+self.onmessage = (e: MessageEvent<{ klines: Kline[] }>) => {
+  const { klines } = e.data;
+
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  const result = calculateFVG(klines);
   self.postMessage(result);
 };
