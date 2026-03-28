@@ -67,7 +67,9 @@ function GridWindowComponent({
         h="24px"
         minH="24px"
         px={1}
-        bg="bg.subtle"
+        bg="transparent"
+        borderBottom="1px solid"
+        borderColor="border"
         cursor="grab"
         userSelect="none"
       >

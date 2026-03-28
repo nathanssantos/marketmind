@@ -21,10 +21,10 @@ import { QuickTradeToolbar, type QuickTradeMode } from './QuickTradeToolbar';
 import { SymbolTabBar } from './SymbolTabBar';
 import { LayoutTabBar } from './LayoutTabBar';
 import { MinimizedPanelBar } from './MinimizedPanelBar';
+import { ChartGrid } from './ChartGrid';
 import { Toolbar } from './Toolbar';
 
 interface MainLayoutProps {
-  children: React.ReactNode;
   onOpenSymbolSelector?: () => void;
   advancedConfig: AdvancedControlsConfig;
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
@@ -54,7 +54,6 @@ const DEFAULT_MARKET_WIDTH = MIN_MARKET_WIDTH;
 const MAX_SIDEBAR_RATIO = 0.75;
 
 export const MainLayout = ({
-  children,
   onOpenSymbolSelector,
   advancedConfig,
   onAdvancedConfigChange,
@@ -230,7 +229,7 @@ export const MainLayout = ({
               <QuickTradeToolbar symbol={symbol} marketType={marketType} onMenuAction={setQuickTradeMode} currentMode={quickTradeMode} />
             )}
             <Box flex={1} overflow="hidden">
-              {children}
+              <ChartGrid />
             </Box>
             <MinimizedPanelBar />
             <LayoutTabBar />

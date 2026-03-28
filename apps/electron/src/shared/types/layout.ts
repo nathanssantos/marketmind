@@ -12,20 +12,13 @@ export interface GridPosition {
   h: number;
 }
 
-export interface MovingAverageLayoutConfig {
-  type: string;
-  period: number;
-  color: string;
-  visible: boolean;
-}
-
 export interface GridPanelConfig {
   id: string;
   timeframe: string;
   chartType: ChartType;
   activeIndicators: IndicatorId[];
   indicatorParams: Record<string, unknown>;
-  movingAverages: MovingAverageLayoutConfig[];
+  movingAverages: Array<{ period: number; type: 'SMA' | 'EMA'; color: string; lineWidth?: number; visible?: boolean }>;
   gridPosition: GridPosition;
   windowState: PanelWindowState;
   savedGridPosition?: GridPosition;

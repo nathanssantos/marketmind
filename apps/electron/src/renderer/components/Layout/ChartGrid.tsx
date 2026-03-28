@@ -45,20 +45,34 @@ function ChartGridComponent() {
     [activeLayout],
   );
 
-  const totalRows = useMemo(
-    () => Math.max(1, Math.floor(containerHeight / (DEFAULT_ROW_HEIGHT + GRID_MARGIN[1]))),
-    [containerHeight],
-  );
+  const maxRow = useMemo(() => {
+    const panels = maximizedPanel ? [maximizedPanel] : visiblePanels;
+    let max = 0;
+    for (const p of panels) {
+      const bottom = p.gridPosition.y + p.gridPosition.h;
+      if (bottom > max) max = bottom;
+    }
+    return Math.max(max, 1);
+  }, [maximizedPanel, visiblePanels]);
+
+  const dynamicRowHeight = useMemo(() => {
+    if (containerHeight <= 0 || maxRow <= 0) return DEFAULT_ROW_HEIGHT;
+    const totalMargin = GRID_MARGIN[1] * (maxRow - 1);
+    return Math.floor((containerHeight - totalMargin) / maxRow);
+  }, [containerHeight, maxRow]);
 
   const gridLayout = useMemo((): Layout => {
-    if (maximizedPanel) return [{
-      i: maximizedPanel.id,
-      x: 0, y: 0,
-      w: DEFAULT_GRID_COLS, h: totalRows,
-      static: true,
-    }];
+    if (maximizedPanel) {
+      const fullRows = Math.max(1, Math.floor(containerHeight / (dynamicRowHeight + GRID_MARGIN[1])));
+      return [{
+        i: maximizedPanel.id,
+        x: 0, y: 0,
+        w: DEFAULT_GRID_COLS, h: fullRows,
+        static: true,
+      }];
+    }
     return visiblePanels.map(buildLayoutItem);
-  }, [maximizedPanel, visiblePanels, totalRows]);
+  }, [maximizedPanel, visiblePanels, containerHeight, dynamicRowHeight]);
 
   const handleLayoutChange = useCallback(
     (layout: Layout) => {
@@ -87,7 +101,7 @@ function ChartGridComponent() {
           width={containerWidth}
           gridConfig={{
             cols: DEFAULT_GRID_COLS,
-            rowHeight: DEFAULT_ROW_HEIGHT,
+            rowHeight: dynamicRowHeight,
             margin: GRID_MARGIN,
             containerPadding: GRID_CONTAINER_PADDING,
           }}
@@ -97,6 +111,7 @@ function ChartGridComponent() {
           }}
           resizeConfig={{
             enabled: !maximizedPanel,
+            handles: ['s', 'e', 'se', 'sw', 'w', 'n', 'ne', 'nw'],
           }}
           onLayoutChange={handleLayoutChange}
         >

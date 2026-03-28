@@ -1,9 +1,10 @@
-import { Flex, HStack, Text } from '@chakra-ui/react';
+import { HStack } from '@chakra-ui/react';
 import { Badge, GridWindow } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import type { GridPanelConfig } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import { memo, useCallback } from 'react';
+import { ChartPanelContent } from './ChartPanelContent';
 
 interface ChartGridPanelProps {
   panelConfig: GridPanelConfig;
@@ -12,7 +13,7 @@ interface ChartGridPanelProps {
   layoutId: string;
 }
 
-function ChartGridPanelComponent({ panelConfig, symbol, marketType: _marketType, layoutId }: ChartGridPanelProps) {
+function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId }: ChartGridPanelProps) {
   const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const setPanelWindowState = useLayoutStore(s => s.setPanelWindowState);
@@ -43,9 +44,11 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType: _marketType,
       onRestore={handleRestore}
       onClose={handleClose}
     >
-      <Flex align="center" justify="center" h="100%" color="fg.muted" bg="bg">
-        <Text fontSize="sm">{symbol} {panelConfig.timeframe}</Text>
-      </Flex>
+      <ChartPanelContent
+        symbol={symbol}
+        marketType={marketType}
+        panelConfig={panelConfig}
+      />
     </GridWindow>
   );
 }

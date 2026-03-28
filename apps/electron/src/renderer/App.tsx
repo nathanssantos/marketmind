@@ -1,5 +1,5 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
-import { CryptoIcon, ErrorMessage, IconButton, LoadingSpinner } from './components/ui';
+import { CryptoIcon, IconButton } from './components/ui';
 import type { MarketType, ChartType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
@@ -8,7 +8,7 @@ import { LuX } from 'react-icons/lu';
 import { AutoAuth } from './components/Auth/AutoAuth';
 import { PreferencesHydrator } from './components/PreferencesHydrator';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
-import { ChartCanvas } from './components/Chart/ChartCanvas';
+
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
@@ -23,7 +23,7 @@ import { useKlinePagination } from './hooks/useKlinePagination';
 import { useKlineLiveStream } from './hooks/useKlineLiveStream';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
-import { useDebounce } from './hooks/useDebounce';
+
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useChartPref, useUIPref } from './store/preferencesStore';
@@ -129,7 +129,6 @@ function App(): ReactElement {
 }
 
 function AppContent(): ReactElement {
-  const { t } = useTranslation();
   const utils = trpc.useUtils();
 
   useEffect(() => {
@@ -196,11 +195,6 @@ function AppContent(): ReactElement {
 
   const {
     allKlines: paginatedKlines,
-    isLoadingMore,
-    hasMore,
-    loadOlderKlines,
-    isInitialLoading,
-    error: paginationError,
     refetch: refetchKlines,
   } = useKlinePagination({
     symbol,
@@ -214,9 +208,6 @@ function AppContent(): ReactElement {
     return { symbol, interval: timeframe, klines: paginatedKlines };
   }, [paginatedKlines, symbol, timeframe]);
 
-  const loading = isInitialLoading;
-  const error = paginationError;
-
   const { displayKlines } = useKlineLiveStream({
     symbol,
     timeframe,
@@ -225,8 +216,6 @@ function AppContent(): ReactElement {
     enabled: !!marketData,
     refetchKlines,
   });
-
-  const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
 
   const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
 
@@ -272,35 +261,7 @@ function AppContent(): ReactElement {
         onTimeframeChange={setTimeframe}
         onMovingAveragesChange={setMovingAverages}
         onNavigateToSymbol={handleSymbolChange}
-      >
-        {loading && (
-          <LoadingSpinner message={t('app.loadingMarketData')} />
-        )}
-
-        {error && (
-          <ErrorMessage
-            title={t('app.failedToLoadMarketData')}
-            message={error.message}
-            onRetry={() => window.location.reload()}
-          />
-        )}
-
-        {marketData && (
-          <ChartCanvas
-            klines={displayKlines}
-            symbol={symbol}
-            marketType={marketType}
-            width="100%"
-            height="100%"
-            chartType={chartType}
-            movingAverages={movingAverages}
-            advancedConfig={debouncedAdvancedConfig}
-            timeframe={timeframe}
-            onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
-            isLoadingMore={isLoadingMore}
-          />
-        )}
-      </MainLayout>
+      />
 
       <UpdateNotification />
     </>
