@@ -12,7 +12,7 @@ import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuEllipsisVertical, LuGripVertical, LuX } from 'react-icons/lu';
+import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGripVertical, LuX } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
@@ -51,6 +51,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
     cancelAllOrders,
     isCancellingAllOrders,
   } = useBackendFuturesTrading(activeWallet?.id || '');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showCancelOrdersConfirm, setShowCancelOrdersConfirm] = useState(false);
@@ -243,63 +244,10 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
           <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
             {`${Math.round(sizePercent * 10) / 10}%`}
           </Text>
-          <GridOrderPopover />
-          <TrailingStopPopover symbol={symbol} />
           {marketType === 'FUTURES' && <LeveragePopover symbol={symbol} />}
         </HStack>
 
         <HStack gap={1.5}>
-          {marketType === 'FUTURES' && (
-            <>
-              <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
-                <IconButton
-                  size="2xs"
-                  h="34px"
-                  w="34px"
-                  variant="solid"
-                  colorPalette="blue"
-                  color="white"
-                  onClick={handleReverseClick}
-                  loading={isReversingPosition}
-                  disabled={!currentPosition}
-                  aria-label={t('futures.reversePosition', 'Reverse Position')}
-                >
-                  <LuArrowUpDown size={12} />
-                </IconButton>
-              </TooltipWrapper>
-              <TooltipWrapper label={t('futures.closePosition', 'Close Position')}>
-                <IconButton
-                  size="2xs"
-                  h="34px"
-                  w="34px"
-                  variant="solid"
-                  colorPalette="red"
-                  color="white"
-                  onClick={handleClosePositionClick}
-                  loading={isClosingPositionAndCancellingOrders}
-                  disabled={!currentPosition}
-                  aria-label={t('futures.closePosition', 'Close Position')}
-                >
-                  <LuX size={12} />
-                </IconButton>
-              </TooltipWrapper>
-              <TooltipWrapper label={t('futures.cancelOrders', 'Cancel Orders')}>
-                <IconButton
-                  size="2xs"
-                  h="34px"
-                  w="34px"
-                  variant="solid"
-                  colorPalette="orange"
-                  color="white"
-                  onClick={handleCancelOrdersClick}
-                  loading={isCancellingAllOrders}
-                  aria-label={t('futures.cancelOrders', 'Cancel Orders')}
-                >
-                  <PiBroom size={12} />
-                </IconButton>
-              </TooltipWrapper>
-            </>
-          )}
           <Button size="2xs" fontSize="2xs" h="34px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
             <VStack gap={0} lineHeight="1">
               <Text fontSize="2xs">{t('chart.quickTrade.buy')}</Text>
@@ -312,7 +260,38 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
               <Text fontSize="2xs" fontWeight="bold">{sellPrice > 0 ? formatChartPrice(sellPrice) : '—'}</Text>
             </VStack>
           </Button>
+          <TooltipWrapper label={showAdvanced ? t('common.hideActions', 'Hide actions') : t('common.moreActions', 'More actions')} showArrow>
+            <IconButton
+              size="2xs"
+              variant="ghost"
+              aria-label="Toggle advanced"
+              onClick={() => setShowAdvanced((prev) => !prev)}
+              h="34px"
+            >
+              {showAdvanced ? <LuChevronUp /> : <LuChevronDown />}
+            </IconButton>
+          </TooltipWrapper>
         </HStack>
+
+        {showAdvanced && (
+          <VStack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
+            {marketType === 'FUTURES' && (
+              <>
+                <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition}>
+                  <LuArrowUpDown /> <Text fontSize="xs">{t('futures.reversePosition', 'Reverse')}</Text>
+                </Button>
+                <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition}>
+                  <LuX /> <Text fontSize="xs">{t('futures.closePosition', 'Close Position')}</Text>
+                </Button>
+                <Button size="2xs" variant="ghost" justifyContent="flex-start" gap={2} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders}>
+                  <PiBroom /> <Text fontSize="xs">{t('futures.cancelOrders', 'Cancel Orders')}</Text>
+                </Button>
+              </>
+            )}
+            <GridOrderPopover />
+            <TrailingStopPopover symbol={symbol} />
+          </VStack>
+        )}
       </VStack>
 
       <ConfirmationDialog
