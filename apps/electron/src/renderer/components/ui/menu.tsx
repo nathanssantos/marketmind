@@ -13,6 +13,12 @@ const StyledContent = (props: ComponentProps<typeof ChakraMenu.Content>) => (
         display: 'flex',
         alignItems: 'center',
       },
+      '& [data-part="item-group-label"]': {
+        padding: '6px 12px 2px',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        opacity: 0.6,
+      },
     }}
     {...props}
   />

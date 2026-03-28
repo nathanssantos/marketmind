@@ -1,156 +1,64 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
-import { ErrorMessage, IconButton, LoadingSpinner, ToggleIconButton, TooltipWrapper } from '../components/ui';
-import type { AssetClass, MarketType } from '@marketmind/types';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { IconButton, ToggleIconButton, TooltipWrapper } from '../components/ui';
+import { useCallback, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuDollarSign, LuX } from 'react-icons/lu';
-import { useNavigate, useParams } from 'react-router-dom';
-import type { AdvancedControlsConfig } from '../components/Chart/AdvancedControls';
-import { ChartCanvas } from '../components/Chart/ChartCanvas';
-import { PinnedControlsProvider } from '../components/Chart/PinnedControlsContext';
-import type { Timeframe } from '../components/Chart/TimeframeSelector';
 import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
+import { PinnedControlsProvider } from '../components/Chart/PinnedControlsContext';
+import { ChartGrid } from '../components/Layout/ChartGrid';
 import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
+import { LayoutTabBar } from '../components/Layout/LayoutTabBar';
+import { MinimizedPanelBar } from '../components/Layout/MinimizedPanelBar';
 import { QuickTradeToolbar } from '../components/Layout/QuickTradeToolbar';
+import { SymbolTabBar } from '../components/Layout/SymbolTabBar';
 import { Toolbar } from '../components/Layout/Toolbar';
-import { MarketStatusBar } from '../components/MarketStatusBar';
-import { DEFAULT_MOVING_AVERAGES as SHARED_DEFAULT_MAS, DEFAULT_TIMEFRAME } from '../constants/defaults';
+import { PreferencesHydrator } from '../components/PreferencesHydrator';
+import { DEFAULT_MOVING_AVERAGES } from '../constants/defaults';
 import { ChartProvider } from '../context/ChartContext';
-import { useKlinePagination } from '../hooks/useKlinePagination';
-import { useKlineLiveStream } from '../hooks/useKlineLiveStream';
-import { useDebounce } from '../hooks/useDebounce';
+import { useLayoutSync } from '../hooks/useLayoutSync';
 import { useChartPref } from '../store/preferencesStore';
 import { useCurrencyAutoRefresh } from '../store/currencyStore';
-import { useSetupStore } from '../store/setupStore';
 import { system } from '../theme';
 import { toaster } from '../utils/toaster';
 
-const DEFAULT_MOVING_AVERAGES: MovingAverageConfig[] = SHARED_DEFAULT_MAS;
-
-interface ChartWindowContentProps {
-  initialSymbol?: string;
-}
-
-function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactElement {
+function ChartWindowContent(): ReactElement {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { symbol: routeSymbol, timeframe: routeTimeframe } = useParams<{ symbol?: string; timeframe?: string }>();
-  const [symbol, setSymbol] = useState(routeSymbol || initialSymbol || 'BTCUSDT');
-  const [marketType, setMarketType] = useState<MarketType>('FUTURES');
-  const [assetClass, setAssetClass] = useState<AssetClass>('CRYPTO');
-
   const [showQuickTrade, setShowQuickTrade] = useState(false);
 
   useCurrencyAutoRefresh();
 
-  const [chartType, setChartType] = useChartPref<string>('chartType', 'kline');
   const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
     'movingAverages',
     DEFAULT_MOVING_AVERAGES
   );
 
-  const [advancedConfig] = useChartPref<AdvancedControlsConfig>('advancedConfig', {
-    rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
-    volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
-    klineSpacing: CHART_CONFIG.KLINE_SPACING,
-    klineWickWidth: CHART_CONFIG.KLINE_WICK_WIDTH,
-    gridLineWidth: CHART_CONFIG.GRID_LINE_WIDTH,
-    currentPriceLineWidth: CHART_CONFIG.CURRENT_PRICE_LINE_WIDTH,
-    currentPriceLineStyle: CHART_CONFIG.CURRENT_PRICE_LINE_STYLE,
-    paddingTop: CHART_CONFIG.CANVAS_PADDING_TOP,
-    paddingBottom: CHART_CONFIG.CANVAS_PADDING_BOTTOM,
-    paddingLeft: CHART_CONFIG.CANVAS_PADDING_LEFT,
-    paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
-  });
-
-  const [timeframe, setTimeframe] = useState<Timeframe>((routeTimeframe as Timeframe) || DEFAULT_TIMEFRAME);
-
   const {
-    allKlines: paginatedKlines,
-    isLoadingMore,
-    hasMore,
-    loadOlderKlines,
-    isInitialLoading,
-    error: paginationError,
-    refetch: refetchKlines,
-  } = useKlinePagination({
-    symbol,
-    interval: timeframe as any,
-    marketType,
-    enabled: !!symbol,
-  });
+    effectiveSymbol,
+    effectiveMarketType,
+    effectiveTimeframe,
+    effectiveChartType,
+    handleSymbolChange,
+    handleTimeframeChange,
+    handleChartTypeChange,
+    handleMarketTypeChange,
+  } = useLayoutSync();
 
-  const marketData = useMemo(() => {
-    if (paginatedKlines.length === 0) return null;
-    return { symbol, interval: timeframe, klines: paginatedKlines };
-  }, [paginatedKlines, symbol, timeframe]);
-
-  const loading = isInitialLoading;
-  const error = paginationError;
-
-  useEffect(() => {
-    const migrateMovingAverages = () => {
-      const hasOldConfig = movingAverages.some(ma => ma.period === 20) ||
-        movingAverages.length !== 6 ||
-        !movingAverages.some(ma => ma.period === 70) ||
-        !movingAverages.some(ma => ma.period === 200);
-
-      if (hasOldConfig) {
-        setMovingAverages(DEFAULT_MOVING_AVERAGES);
-      }
-    };
-
-    migrateMovingAverages();
+  const toggleQuickTrade = useCallback(() => {
+    setShowQuickTrade((v) => !v);
   }, []);
 
-  const { displayKlines } = useKlineLiveStream({
-    symbol,
-    timeframe,
-    marketType,
-    baseKlines: marketData?.klines,
-    enabled: !!marketData,
-    refetchKlines,
-  });
-
-  const debouncedAdvancedConfig = useDebounce(advancedConfig, 300);
-
-  useEffect(() => {
-    const newPath = `/chart/${encodeURIComponent(symbol)}/${timeframe}`;
-    const currentPath = window.location.hash.slice(1);
-    if (currentPath !== newPath) {
-      navigate(newPath, { replace: true });
-    }
-  }, [symbol, timeframe, navigate]);
-
-  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
-
-  const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType, newAssetClass?: AssetClass): void => {
-    clearDetectedSetups();
-    setSymbol(newSymbol);
-    if (newMarketType) setMarketType(newMarketType);
-    if (newAssetClass) setAssetClass(newAssetClass);
-  }, [setSymbol, setMarketType, setAssetClass, clearDetectedSetups]);
-
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      height="100vh"
-      width="100vw"
-      overflow="hidden"
-      bg="var(--chakra-colors-chakra-body-bg)"
-    >
+    <Box display="flex" flexDirection="column" h="100vh">
       <Box flexShrink={0} height="30px">
         <Toolbar
-          symbol={symbol}
-          marketType={marketType}
-          onMarketTypeChange={setMarketType}
+          symbol={effectiveSymbol}
+          marketType={effectiveMarketType}
+          onMarketTypeChange={handleMarketTypeChange}
           onSymbolChange={handleSymbolChange}
-          timeframe={timeframe}
-          chartType={chartType as import('@marketmind/types').ChartType}
-          onChartTypeChange={setChartType}
-          onTimeframeChange={setTimeframe}
+          timeframe={effectiveTimeframe}
+          chartType={effectiveChartType}
+          onChartTypeChange={handleChartTypeChange}
+          onTimeframeChange={handleTimeframeChange}
           movingAverages={movingAverages}
           showNewWindowButton={false}
           showSidebarButtons={false}
@@ -162,7 +70,7 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
             <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
               <ToggleIconButton
                 active={showQuickTrade}
-                onClick={() => setShowQuickTrade((v) => !v)}
+                onClick={toggleQuickTrade}
                 aria-label={t('trading.sidebar.title')}
                 size="2xs"
               >
@@ -173,54 +81,33 @@ function ChartWindowContent({ initialSymbol }: ChartWindowContentProps): ReactEl
         />
       </Box>
 
-      {assetClass === 'STOCKS' && <MarketStatusBar />}
+      <SymbolTabBar />
 
-      <Flex flex="1" overflow="hidden">
+      <Flex flex={1} overflow="hidden">
         <ChartToolsToolbar
           movingAverages={movingAverages}
           onMovingAveragesChange={setMovingAverages}
         />
 
-        <Box flex="1" position="relative" overflow="hidden">
-          {symbol && showQuickTrade && <QuickTradeToolbar symbol={symbol} marketType={marketType} onClose={() => setShowQuickTrade(false)} />}
-          {loading && (
-            <LoadingSpinner message={t('app.loadingMarketData')} />
-          )}
-
-          {error && (
-            <ErrorMessage
-              title={t('app.failedToLoadMarketData')}
-              message={error.message}
-              onRetry={() => window.location.reload()}
+        <Flex flex={1} direction="column" overflow="hidden">
+          {effectiveSymbol && showQuickTrade && (
+            <QuickTradeToolbar
+              symbol={effectiveSymbol}
+              marketType={effectiveMarketType}
+              onClose={() => setShowQuickTrade(false)}
             />
           )}
-
-          {marketData && (
-            <ChartCanvas
-              klines={displayKlines}
-              symbol={symbol}
-              marketType={marketType}
-              width="100%"
-              height="100%"
-              chartType={chartType as 'kline' | 'line' | 'tick' | 'volume' | 'footprint'}
-              movingAverages={movingAverages}
-              advancedConfig={debouncedAdvancedConfig}
-              timeframe={timeframe}
-              onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
-              isLoadingMore={isLoadingMore}
-            />
-          )}
-        </Box>
+          <ChartGrid />
+          <MinimizedPanelBar />
+        </Flex>
       </Flex>
+
+      <LayoutTabBar />
     </Box>
   );
 }
 
-interface ChartWindowProps {
-  initialSymbol?: string;
-}
-
-export function ChartWindow({ initialSymbol }: ChartWindowProps): ReactElement {
+export function ChartWindow(): ReactElement {
   const { t } = useTranslation();
 
   return (
@@ -270,11 +157,13 @@ export function ChartWindow({ initialSymbol }: ChartWindowProps): ReactElement {
           );
         }}
       </Toaster>
-      <ChartProvider>
-        <PinnedControlsProvider>
-          <ChartWindowContent initialSymbol={initialSymbol} />
-        </PinnedControlsProvider>
-      </ChartProvider>
+      <PreferencesHydrator>
+        <ChartProvider>
+          <PinnedControlsProvider>
+            <ChartWindowContent />
+          </PinnedControlsProvider>
+        </ChartProvider>
+      </PreferencesHydrator>
     </ChakraProvider>
   );
 }

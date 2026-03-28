@@ -1,9 +1,11 @@
-import { Box } from '@chakra-ui/react';
+import { Box, Portal } from '@chakra-ui/react';
+import { IconButton, Menu } from '@renderer/components/ui';
 import { GridLayout, useContainerWidth } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { LuPlus } from 'react-icons/lu';
 import { ChartGridPanel } from './ChartGridPanel';
 import type { GridPanelConfig } from '@shared/types/layout';
 import { DEFAULT_GRID_COLS, DEFAULT_ROW_HEIGHT, GRID_MARGIN, GRID_CONTAINER_PADDING } from '@shared/types/layout';
@@ -22,6 +24,7 @@ function ChartGridComponent() {
   const updatePanelGridPosition = useLayoutStore(s => s.updatePanelGridPosition);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
+  const addPanel = useLayoutStore(s => s.addPanel);
 
   const { width: containerWidth, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true });
 
@@ -98,12 +101,17 @@ function ChartGridComponent() {
     if (singleId && focusedPanelId !== singleId) setFocusedPanel(singleId);
   }, [isSinglePanel, visiblePanels, focusedPanelId, setFocusedPanel]);
 
+  const handleAddPanel = useCallback((timeframe: string) => {
+    if (!activeLayout) return;
+    addPanel(activeLayout.id, timeframe);
+  }, [activeLayout, addPanel]);
+
   if (!activeLayout || !activeTab) return null;
 
   const panelsToRender = maximizedPanel ? [maximizedPanel] : visiblePanels;
 
   return (
-    <Box ref={containerRef} w="100%" h="100%" overflow="hidden">
+    <Box ref={containerRef} w="100%" h="100%" overflow="hidden" position="relative">
       {mounted && containerWidth > 0 && (
         <GridLayout
           layout={gridLayout}
@@ -136,6 +144,39 @@ function ChartGridComponent() {
             </Box>
           ))}
         </GridLayout>
+      )}
+      {!maximizedPanel && (
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton
+              aria-label="Add chart"
+              size="xs"
+              variant="outline"
+              position="absolute"
+              bottom={2}
+              right={2}
+              zIndex={10}
+              borderRadius="full"
+              opacity={0.6}
+              _hover={{ opacity: 1 }}
+            >
+              <LuPlus />
+            </IconButton>
+          </Menu.Trigger>
+          <Portal>
+            <Menu.Positioner>
+              <Menu.Content>
+                <Menu.Item value="1m" onClick={() => handleAddPanel('1m')}>1m</Menu.Item>
+                <Menu.Item value="5m" onClick={() => handleAddPanel('5m')}>5m</Menu.Item>
+                <Menu.Item value="15m" onClick={() => handleAddPanel('15m')}>15m</Menu.Item>
+                <Menu.Item value="30m" onClick={() => handleAddPanel('30m')}>30m</Menu.Item>
+                <Menu.Item value="1h" onClick={() => handleAddPanel('1h')}>1h</Menu.Item>
+                <Menu.Item value="4h" onClick={() => handleAddPanel('4h')}>4h</Menu.Item>
+                <Menu.Item value="1d" onClick={() => handleAddPanel('1d')}>1d</Menu.Item>
+              </Menu.Content>
+            </Menu.Positioner>
+          </Portal>
+        </Menu.Root>
       )}
     </Box>
   );

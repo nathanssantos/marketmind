@@ -1,6 +1,6 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
 import { CryptoIcon, IconButton } from './components/ui';
-import type { MarketType, ChartType } from '@marketmind/types';
+import type { ChartType, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,13 +23,12 @@ import { useKlinePagination } from './hooks/useKlinePagination';
 import { useKlineLiveStream } from './hooks/useKlineLiveStream';
 import { useBackendWallet } from './hooks/useBackendWallet';
 import { useChartData } from './hooks/useChartData';
+import { useLayoutSync } from './hooks/useLayoutSync';
 
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useChartPref, useUIPref } from './store/preferencesStore';
-import { useLayoutStore } from './store/layoutStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
-import { useSetupStore } from './store/setupStore';
 import { system } from './theme';
 import { getToasterNavigateToSymbol, setToasterNavigateToSymbol, toaster } from './utils/toaster';
 
@@ -139,14 +138,14 @@ function AppContent(): ReactElement {
     ]);
   }, []);
 
-  const [symbol, setSymbol] = useChartPref('symbol', 'BTCUSDT');
-  const [marketType, setMarketType] = useChartPref<MarketType>('marketType', 'FUTURES');
+  const [symbol] = useChartPref('symbol', 'BTCUSDT');
+  const [marketType] = useChartPref<MarketType>('marketType', 'FUTURES');
 
   useCurrencyAutoRefresh();
   useOrderNotifications();
 
-  const [chartType, setChartType] = useChartPref<ChartType>('chartType', 'kline');
-  const [timeframe, setTimeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);
+  const [chartType] = useChartPref<ChartType>('chartType', 'kline');
+  const [timeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);
   const [isTradingOpen, setIsTradingOpen] = useUIPref('tradingSidebarOpen', true);
   const [isAutoTradingOpen, setIsAutoTradingOpen] = useUIPref('autoTradingSidebarOpen', false);
   const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
@@ -185,7 +184,6 @@ function AppContent(): ReactElement {
     migrateMovingAverages();
   }, []);
 
-
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);
   }, [setIsTradingOpen]);
@@ -218,41 +216,21 @@ function AppContent(): ReactElement {
     refetchKlines,
   });
 
-  const clearDetectedSetups = useSetupStore((state) => state.clearDetectedSetups);
-
-  const focusedPanel = useLayoutStore(s => s.getFocusedPanel());
-  const activeLayout = useLayoutStore(s => s.getActiveLayout());
-  const activeTab = useLayoutStore(s => s.getActiveTab());
-  const setPanelTimeframe = useLayoutStore(s => s.setPanelTimeframe);
-  const setPanelChartType = useLayoutStore(s => s.setPanelChartType);
-  const updateTabSymbol = useLayoutStore(s => s.updateTabSymbol);
-
-  const effectiveSymbol = activeTab?.symbol ?? symbol;
-  const effectiveMarketType = activeTab?.marketType ?? marketType;
-  const effectiveTimeframe = (focusedPanel?.timeframe ?? timeframe) as Timeframe;
-  const effectiveChartType = (focusedPanel?.chartType ?? chartType) as ChartType;
-
-  const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
-    clearDetectedSetups();
-    if (activeTab) updateTabSymbol(activeTab.id, newSymbol, newMarketType ?? activeTab.marketType);
-    setSymbol(newSymbol);
-    if (newMarketType) setMarketType(newMarketType);
-  }, [activeTab, updateTabSymbol, setSymbol, setMarketType, clearDetectedSetups]);
+  const {
+    effectiveSymbol,
+    effectiveMarketType,
+    effectiveTimeframe,
+    effectiveChartType,
+    handleSymbolChange,
+    handleTimeframeChange,
+    handleChartTypeChange,
+    handleMarketTypeChange,
+  } = useLayoutSync();
 
   useEffect(() => {
     setToasterNavigateToSymbol(handleSymbolChange);
     return () => setToasterNavigateToSymbol(null);
   }, [handleSymbolChange]);
-
-  const handleTimeframeChange = useCallback((tf: Timeframe) => {
-    if (focusedPanel && activeLayout) setPanelTimeframe(activeLayout.id, focusedPanel.id, tf);
-    else setTimeframe(tf);
-  }, [focusedPanel, activeLayout, setPanelTimeframe, setTimeframe]);
-
-  const handleChartTypeChange = useCallback((ct: ChartType) => {
-    if (focusedPanel && activeLayout) setPanelChartType(activeLayout.id, focusedPanel.id, ct);
-    else setChartType(ct);
-  }, [focusedPanel, activeLayout, setPanelChartType, setChartType]);
 
   useChartData({
     klines: displayKlines,
@@ -276,7 +254,7 @@ function AppContent(): ReactElement {
         onToggleAutoTrading={toggleAutoTrading}
         symbol={effectiveSymbol}
         marketType={effectiveMarketType}
-        onMarketTypeChange={(mt) => { setMarketType(mt); if (activeTab) updateTabSymbol(activeTab.id, activeTab.symbol, mt); }}
+        onMarketTypeChange={handleMarketTypeChange}
         timeframe={effectiveTimeframe}
         chartType={effectiveChartType}
         onChartTypeChange={handleChartTypeChange}
