@@ -2,7 +2,7 @@ import type { FibonacciResult } from '@marketmind/indicators';
 import { getLevelColor as getFibonacciLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseFibonacciRendererProps {
@@ -12,7 +12,6 @@ interface UseFibonacciRendererProps {
   enabled?: boolean;
 }
 
-const LINE_WIDTH = 1;
 const LEVEL_DASH = [4, 4] as const;
 const HIDDEN_LEVELS = new Set([0.886, 1.382]);
 
@@ -51,7 +50,7 @@ export const useFibonacciRenderer = ({
 
       const color = getLevelColor(level.level, colors);
       ctx.strokeStyle = color;
-      ctx.lineWidth = LINE_WIDTH;
+      ctx.lineWidth = INDICATOR_LINE_WIDTHS.OVERLAY;
       ctx.setLineDash([...LEVEL_DASH]);
       ctx.beginPath();
       ctx.moveTo(0, y);

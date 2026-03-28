@@ -18,7 +18,13 @@ interface ChartPanelContentProps {
 
 function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPanelContentProps) {
   const [globalMAs] = useChartPref<MovingAverageConfig[]>('movingAverages', DEFAULT_MOVING_AVERAGES);
-  const effectiveMAs = panelConfig.movingAverages.length > 0 ? panelConfig.movingAverages : globalMAs;
+  const effectiveMAs = useMemo(() =>
+    globalMAs.map(ma => {
+      const panelMA = panelConfig.movingAverages.find(p => p.period === ma.period && p.type === ma.type);
+      return panelMA ? { ...ma, visible: panelMA.visible } : ma;
+    }),
+    [globalMAs, panelConfig.movingAverages],
+  );
   const {
     allKlines: paginatedKlines,
     isLoadingMore,

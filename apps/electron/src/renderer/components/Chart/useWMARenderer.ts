@@ -1,7 +1,7 @@
 import type { WMAResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseWMARendererProps {
@@ -37,7 +37,7 @@ export const useWMARenderer = ({
     const visibleEndIndex = Math.ceil(viewport.end);
 
     ctx.strokeStyle = colors.wma?.line ?? INDICATOR_COLORS.WMA_LINE;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.OVERLAY;
     ctx.beginPath();
 
     let isFirstPoint = true;

@@ -1,7 +1,7 @@
 import { calculateBollingerBandsArray } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback, useMemo } from 'react';
 
 export interface UseBollingerBandsRendererProps {
@@ -86,7 +86,7 @@ export const useBollingerBandsRenderer = ({
     }
 
     ctx.strokeStyle = colors.bollingerBands?.upper ?? INDICATOR_COLORS.BOLLINGER_UPPER;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.OVERLAY;
     ctx.beginPath();
     if (upperPoints.length > 0) {
       ctx.moveTo(upperPoints[0]!.x, upperPoints[0]!.y);
@@ -107,7 +107,7 @@ export const useBollingerBandsRenderer = ({
     ctx.stroke();
 
     ctx.strokeStyle = colors.bollingerBands?.middle ?? INDICATOR_COLORS.BOLLINGER_MIDDLE;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.OVERLAY_MIDDLE;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
     if (middlePoints.length > 0) {

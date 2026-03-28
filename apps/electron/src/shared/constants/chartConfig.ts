@@ -71,10 +71,25 @@ export type PanelId = (typeof PANEL_RENDER_ORDER)[number];
 export const DEFAULT_MA_PERIODS = [20, 50, 200] as const;
 
 export const LINE_WIDTHS = {
+  HAIRLINE: 0.5,
   THIN: 1,
   NORMAL: 1.5,
   THICK: 2,
-  HAIRLINE: 0.5,
+  HEAVY: 3,
+} as const;
+
+export const INDICATOR_LINE_WIDTHS = {
+  OVERLAY: LINE_WIDTHS.THIN,
+  OVERLAY_MIDDLE: LINE_WIDTHS.NORMAL,
+  PANEL: LINE_WIDTHS.THIN,
+  VWAP: LINE_WIDTHS.THIN,
+  SUPERTREND: LINE_WIDTHS.THICK,
+  ATR: LINE_WIDTHS.THICK,
+  VOLUME_MA: LINE_WIDTHS.THICK,
+  CURRENT_PRICE: LINE_WIDTHS.THICK,
+  LINE_CHART: LINE_WIDTHS.THICK,
+  OBV: LINE_WIDTHS.THICK,
+  OBV_SMA: LINE_WIDTHS.THIN,
 } as const;
 
 export const FONTS = {
@@ -83,7 +98,7 @@ export const FONTS = {
 } as const;
 
 export const OSCILLATOR_CONFIG = {
-  LINE_WIDTH: 1,
+  LINE_WIDTH: INDICATOR_LINE_WIDTHS.PANEL,
   BAR_WIDTH_RATIO: 0.6,
   ZONE_LINE_DASH: [2, 2] as readonly number[],
 } as const;

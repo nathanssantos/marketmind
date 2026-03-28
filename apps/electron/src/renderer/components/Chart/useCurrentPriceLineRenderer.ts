@@ -6,7 +6,7 @@ import {
   formatTimerText,
 } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { getKlineClose, getKlineOpen } from '@shared/utils';
 import { useCallback } from 'react';
 
@@ -28,7 +28,7 @@ export const useCurrentPriceLineRenderer = ({
   manager,
   colors,
   enabled = true,
-  lineWidth = 2,
+  lineWidth = INDICATOR_LINE_WIDTHS.CURRENT_PRICE,
   timeframe,
 }: UseCurrentPriceLineRendererProps): UseCurrentPriceLineRendererReturn => {
   const renderLine = useCallback((): void => {

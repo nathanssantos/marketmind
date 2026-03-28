@@ -3,7 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback } from 'react';
 
@@ -15,7 +15,6 @@ const VWAP_FALLBACK_COLORS: Record<VWAPPeriod, string> = {
   monthly: INDICATOR_COLORS.VWAP_LINE,
 };
 
-const VWAP_LINE_WIDTH = 1;
 const VWAP_DASH_PATTERN = [6, 4];
 
 const VWAP_CALCULATORS: Record<VWAPPeriod, typeof calculateMonthlyVWAP> = {
@@ -68,7 +67,7 @@ export const useVWAPRenderer = ({
     ctx.clip();
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = VWAP_LINE_WIDTH;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.VWAP;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.setLineDash(VWAP_DASH_PATTERN);

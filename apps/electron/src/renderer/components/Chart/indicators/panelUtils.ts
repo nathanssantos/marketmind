@@ -1,5 +1,5 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, PANEL_COLORS } from '@shared/constants';
+import { CHART_CONFIG, OSCILLATOR_CONFIG, PANEL_COLORS } from '@shared/constants';
 
 export interface PanelRenderContext {
   ctx: CanvasRenderingContext2D;
@@ -123,7 +123,7 @@ export const drawIndicatorLine = (
   values: (number | null)[],
   valueToY: (value: number) => number,
   color: string,
-  lineWidth = 2.5,
+  lineWidth = OSCILLATOR_CONFIG.LINE_WIDTH,
   viewport: { start: number; end: number }
 ): void => {
   const { ctx, visibleStartIndex, visibleEndIndex, klineWidth } = context;

@@ -2,7 +2,7 @@ import { calculateMovingAverage } from '@marketmind/indicators';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { CHART_CONFIG, LINE_WIDTHS } from '@shared/constants/chartConfig';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 
@@ -95,7 +95,7 @@ export const useMovingAverageRenderer = ({
       const isHovered = hoveredMAIndexRef?.current === index;
 
       ctx.strokeStyle = ma.color;
-      ctx.lineWidth = isHovered ? (ma.lineWidth || 1.5) + 1 : (ma.lineWidth || 1.5);
+      ctx.lineWidth = isHovered ? (ma.lineWidth || LINE_WIDTHS.NORMAL) + 1 : (ma.lineWidth || LINE_WIDTHS.NORMAL);
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       

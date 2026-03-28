@@ -1,7 +1,7 @@
 import { calculateATR } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow } from '@shared/utils';
 import { useCallback, useMemo } from 'react';
 
@@ -103,7 +103,7 @@ export const useATRRenderer = ({
     ctx.beginPath();
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.ATR;
 
     const longColor = colors.atrTrailing?.long ?? INDICATOR_COLORS.ATR_TRAILING_LONG;
     const shortColor = colors.atrTrailing?.short ?? INDICATOR_COLORS.ATR_TRAILING_SHORT;

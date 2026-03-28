@@ -1,7 +1,7 @@
 import type { UltimateOscillatorResult } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
 import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
@@ -51,7 +51,7 @@ export const useUltimateOscRenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
     ctx.strokeStyle = colors.ultimateOsc?.line ?? INDICATOR_COLORS.ULTIMATE_OSC_LINE;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.PANEL;
     ctx.beginPath();
 
     let isFirstPoint = true;
