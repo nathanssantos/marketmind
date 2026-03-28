@@ -16,6 +16,7 @@ interface GridWindowProps {
   onMaximize: (id: string) => void;
   onRestore: (id: string) => void;
   onClose?: (id: string) => void;
+  showFocusBorder?: boolean;
 }
 
 function GridWindowComponent({
@@ -29,6 +30,7 @@ function GridWindowComponent({
   onMaximize,
   onRestore,
   onClose,
+  showFocusBorder = true,
 }: GridWindowProps) {
   const isMaximized = windowState === 'maximized';
 
@@ -55,7 +57,7 @@ function GridWindowComponent({
       direction="column"
       h="100%"
       borderWidth="1px"
-      borderColor={isFocused ? 'blue.500' : 'border'}
+      borderColor={isFocused && showFocusBorder ? 'blue.500' : 'border'}
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}

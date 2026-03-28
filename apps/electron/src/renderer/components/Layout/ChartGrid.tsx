@@ -20,6 +20,8 @@ function ChartGridComponent() {
   const activeLayout = useLayoutStore(s => s.getActiveLayout());
   const activeTab = useLayoutStore(s => s.getActiveTab());
   const updatePanelGridPosition = useLayoutStore(s => s.updatePanelGridPosition);
+  const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
+  const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
 
   const { width: containerWidth, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true });
 
@@ -89,6 +91,13 @@ function ChartGridComponent() {
     [activeLayout, maximizedPanel, updatePanelGridPosition],
   );
 
+  const isSinglePanel = visiblePanels.length === 1;
+  useEffect(() => {
+    if (!isSinglePanel) return;
+    const singleId = visiblePanels[0]?.id;
+    if (singleId && focusedPanelId !== singleId) setFocusedPanel(singleId);
+  }, [isSinglePanel, visiblePanels, focusedPanelId, setFocusedPanel]);
+
   if (!activeLayout || !activeTab) return null;
 
   const panelsToRender = maximizedPanel ? [maximizedPanel] : visiblePanels;
@@ -122,6 +131,7 @@ function ChartGridComponent() {
                 symbol={activeTab.symbol}
                 marketType={activeTab.marketType}
                 layoutId={activeLayout.id}
+                isSinglePanel={isSinglePanel}
               />
             </Box>
           ))}

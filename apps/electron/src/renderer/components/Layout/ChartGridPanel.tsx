@@ -11,9 +11,10 @@ interface ChartGridPanelProps {
   symbol: string;
   marketType: MarketType;
   layoutId: string;
+  isSinglePanel?: boolean;
 }
 
-function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId }: ChartGridPanelProps) {
+function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, isSinglePanel }: ChartGridPanelProps) {
   const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const setPanelWindowState = useLayoutStore(s => s.setPanelWindowState);
@@ -37,6 +38,7 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId }: 
       id={panelConfig.id}
       windowState={panelConfig.windowState}
       isFocused={focusedPanelId === panelConfig.id}
+      showFocusBorder={!isSinglePanel}
       header={header}
       onFocus={handleFocus}
       onMinimize={handleMinimize}
