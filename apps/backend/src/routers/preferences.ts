@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { userPreferences } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 
-const categorySchema = z.enum(['trading', 'ui', 'chart', 'notifications', 'recent']);
+const categorySchema = z.enum(['trading', 'ui', 'chart', 'notifications', 'recent', 'layout']);
 
 const parseJsonValue = (value: string): unknown => {
   try {
