@@ -23,16 +23,6 @@ const getGlobalActiveIndicators = (): IndicatorId[] => {
   }
 };
 
-const getGlobalMovingAverages = (): GridPanelConfig['movingAverages'] => {
-  try {
-    const chartPrefs = usePreferencesStore.getState().chart;
-    const mas = chartPrefs['movingAverages'] as GridPanelConfig['movingAverages'] | undefined;
-    return mas ?? [];
-  } catch {
-    return [];
-  }
-};
-
 const createDefaultPanel = (
   timeframe: string,
   gridPosition: GridPosition,
@@ -42,7 +32,6 @@ const createDefaultPanel = (
   chartType: 'kline',
   activeIndicators: getGlobalActiveIndicators(),
   indicatorParams: {},
-  movingAverages: getGlobalMovingAverages(),
   gridPosition,
   windowState: 'normal',
 });

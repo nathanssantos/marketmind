@@ -9,6 +9,7 @@ export {
   type IndicatorId,
   type IndicatorCategory,
   type IndicatorParams,
+  type MAParams,
   INDICATOR_CATEGORIES,
   PANEL_INDICATORS,
   OVERLAY_INDICATORS,

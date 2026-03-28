@@ -214,9 +214,10 @@ export const ChartCanvas = ({
   const showStochasticEarly = isIndicatorActive('stochastic');
   const stochasticResult = useStochasticWorker(klines, showStochasticEarly, 14, 3, 3);
   const storeActiveIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
+  const storeIndicatorParams = useIndicatorStore((s) => s.indicatorParams);
   const activeIndicators = (activeIndicatorsOverride ?? storeActiveIndicators) as IndicatorId[];
 
-  const indicatorData = useChartIndicators({ klines, activeIndicators });
+  const indicatorData = useChartIndicators({ klines, activeIndicators, indicatorParams: storeIndicatorParams });
 
   const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow || showOrb });
 
@@ -246,7 +247,7 @@ export const ChartCanvas = ({
   });
 
   const indicatorRenderers = useChartIndicatorRenderers({
-    manager, colors, chartType, indicatorData, stochasticData,
+    manager, colors, chartType, indicatorData, indicatorParams: storeIndicatorParams, stochasticData,
     showEventRow, showOrb, marketEvents, cvdValuesRef, imbalanceValuesRef,
     volumeProfile: volumeProfileData ?? null, footprintBars,
   });

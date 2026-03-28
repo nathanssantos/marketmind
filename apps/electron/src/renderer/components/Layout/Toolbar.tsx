@@ -25,7 +25,6 @@ import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
 import type { ChartType } from '@marketmind/types';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
 import { WalletSelector } from '../WalletSelector';
 
@@ -36,7 +35,6 @@ export interface ToolbarProps {
   timeframe: Timeframe;
   chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
-  movingAverages: MovingAverageConfig[];
   isTradingOpen: boolean;
   isAutoTradingOpen: boolean;
   showNewWindowButton?: boolean;
@@ -56,7 +54,6 @@ export const Toolbar = memo(({
   timeframe,
   chartType,
   onChartTypeChange,
-  movingAverages: _movingAverages,
   isTradingOpen,
   isAutoTradingOpen,
   showNewWindowButton = true,

@@ -3,7 +3,6 @@ import { IconButton, ToggleIconButton, TooltipWrapper } from '../components/ui';
 import { useCallback, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuDollarSign, LuX } from 'react-icons/lu';
-import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { PinnedControlsProvider } from '../components/Chart/PinnedControlsContext';
 import { ChartGrid } from '../components/Layout/ChartGrid';
 import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
@@ -13,10 +12,8 @@ import { QuickTradeToolbar } from '../components/Layout/QuickTradeToolbar';
 import { SymbolTabBar } from '../components/Layout/SymbolTabBar';
 import { Toolbar } from '../components/Layout/Toolbar';
 import { PreferencesHydrator } from '../components/PreferencesHydrator';
-import { DEFAULT_MOVING_AVERAGES } from '../constants/defaults';
 import { ChartProvider } from '../context/ChartContext';
 import { useLayoutSync } from '../hooks/useLayoutSync';
-import { useChartPref } from '../store/preferencesStore';
 import { useCurrencyAutoRefresh } from '../store/currencyStore';
 import { system } from '../theme';
 import { toaster } from '../utils/toaster';
@@ -26,11 +23,6 @@ function ChartWindowContent(): ReactElement {
   const [showQuickTrade, setShowQuickTrade] = useState(false);
 
   useCurrencyAutoRefresh();
-
-  const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
-    'movingAverages',
-    DEFAULT_MOVING_AVERAGES
-  );
 
   const {
     effectiveSymbol,
@@ -59,7 +51,6 @@ function ChartWindowContent(): ReactElement {
           chartType={effectiveChartType}
           onChartTypeChange={handleChartTypeChange}
           onTimeframeChange={handleTimeframeChange}
-          movingAverages={movingAverages}
           showNewWindowButton={false}
           showSidebarButtons={false}
           isTradingOpen={false}
@@ -84,10 +75,7 @@ function ChartWindowContent(): ReactElement {
       <SymbolTabBar />
 
       <Flex flex={1} overflow="hidden">
-        <ChartToolsToolbar
-          movingAverages={movingAverages}
-          onMovingAveragesChange={setMovingAverages}
-        />
+        <ChartToolsToolbar />
 
         <Flex flex={1} direction="column" overflow="hidden">
           {effectiveSymbol && showQuickTrade && (

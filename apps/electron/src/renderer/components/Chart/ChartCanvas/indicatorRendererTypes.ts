@@ -3,6 +3,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { FootprintBar, MarketEvent, VolumeProfile } from '@marketmind/types';
 import type { StochasticResult } from '@marketmind/indicators';
+import type { IndicatorParams } from '@renderer/store/indicatorStore';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
 
 export interface UseChartIndicatorRenderersProps {
@@ -10,6 +11,7 @@ export interface UseChartIndicatorRenderersProps {
   colors: ChartThemeColors;
   chartType?: string;
   indicatorData: UseChartIndicatorsResult;
+  indicatorParams?: IndicatorParams;
   stochasticData: StochasticResult | null;
   showEventRow: boolean;
   showOrb: boolean;
@@ -67,6 +69,7 @@ export interface UseChartIndicatorRenderersResult {
   renderFootprint: () => void;
   renderSessionBoundaries: () => void;
   renderORB: () => void;
+  renderMAIndicators: () => void;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   renderAllOverlayIndicators: () => void;
   renderAllPanelIndicators: () => void;

@@ -11,11 +11,10 @@ import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls
 
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
 import type { Timeframe } from './components/Chart/TimeframeSelector';
-import type { MovingAverageConfig } from './components/Chart/useMovingAverageRenderer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { MainLayout } from './components/Layout/MainLayout';
 import { UpdateNotification } from './components/Update/UpdateNotification';
-import { DEFAULT_MOVING_AVERAGES, DEFAULT_TIMEFRAME } from './constants/defaults';
+import { DEFAULT_TIMEFRAME } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
 import { trpc } from './utils/trpc';
@@ -148,11 +147,6 @@ function AppContent(): ReactElement {
   const [timeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);
   const [isTradingOpen, setIsTradingOpen] = useUIPref('tradingSidebarOpen', true);
   const [isAutoTradingOpen, setIsAutoTradingOpen] = useUIPref('autoTradingSidebarOpen', false);
-  const [movingAverages, setMovingAverages] = useChartPref<MovingAverageConfig[]>(
-    'movingAverages',
-    DEFAULT_MOVING_AVERAGES
-  );
-
   const [advancedConfig, setAdvancedConfig] = useChartPref<AdvancedControlsConfig>('advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
     volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
@@ -168,21 +162,6 @@ function AppContent(): ReactElement {
   });
 
   const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
-
-  useEffect(() => {
-    const migrateMovingAverages = () => {
-      const hasOldConfig = movingAverages.some(ma => ma.period === 20) ||
-        movingAverages.length !== 6 ||
-        !movingAverages.some(ma => ma.period === 70) ||
-        !movingAverages.some(ma => ma.period === 200);
-
-      if (hasOldConfig) {
-        setMovingAverages(DEFAULT_MOVING_AVERAGES);
-      }
-    };
-
-    migrateMovingAverages();
-  }, []);
 
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);
@@ -238,7 +217,6 @@ function AppContent(): ReactElement {
     timeframe,
     chartType,
     showVolume,
-    movingAverages,
     marketType,
   });
 
@@ -258,10 +236,8 @@ function AppContent(): ReactElement {
         timeframe={effectiveTimeframe}
         chartType={effectiveChartType}
         onChartTypeChange={handleChartTypeChange}
-        movingAverages={movingAverages}
         onSymbolChange={handleSymbolChange}
         onTimeframeChange={handleTimeframeChange}
-        onMovingAveragesChange={setMovingAverages}
         onNavigateToSymbol={handleSymbolChange}
       />
 

@@ -1,3 +1,9 @@
+import type { IndicatorId } from '@renderer/store/indicatorStore';
+import { getMAParams, DEFAULT_INDICATOR_PARAMS } from '@renderer/store/indicatorStore';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
+import { CHART_CONFIG, LINE_WIDTHS } from '@shared/constants/chartConfig';
+import { useCallback } from 'react';
 import {
   useStochasticRenderer,
   useRSIRenderer,
@@ -52,6 +58,7 @@ export const useChartIndicatorRenderers = ({
   colors,
   chartType,
   indicatorData,
+  indicatorParams,
   stochasticData,
   showEventRow,
   showOrb,
@@ -61,7 +68,7 @@ export const useChartIndicatorRenderers = ({
   volumeProfile = null,
   footprintBars = [],
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
-  const { isIndicatorActive } = indicatorData;
+  const { isIndicatorActive, maData } = indicatorData;
 
   const { render: renderStochastic } = useStochasticRenderer({
     manager,
@@ -386,7 +393,86 @@ export const useChartIndicatorRenderers = ({
     marketEvents,
   });
 
+  const renderMAIndicators = useCallback((): void => {
+    if (!manager || maData.size === 0) return;
+
+    const ctx = manager.getContext();
+    const dimensions = manager.getDimensions();
+    const viewport = manager.getViewport();
+    const bounds = manager.getBounds();
+    const klines = manager.getKlines();
+
+    if (!ctx || !dimensions || !bounds || !klines) return;
+
+    const { chartWidth, chartHeight } = dimensions;
+    const startIndex = Math.max(0, Math.floor(viewport.start));
+    const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerKline = effectiveWidth / visibleRange;
+    const { klineWidth } = viewport;
+    const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
+    const resolvedParams = indicatorParams ?? DEFAULT_INDICATOR_PARAMS;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
+
+    for (const [id, values] of maData) {
+      const params = getMAParams(id as IndicatorId, resolvedParams);
+      if (!params) continue;
+
+      ctx.strokeStyle = params.color;
+      ctx.lineWidth = params.lineWidth || LINE_WIDTHS.NORMAL;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+
+      let hasMovedTo = false;
+      for (let i = startIndex; i < endIndex; i++) {
+        const value = values[i];
+        if (value === null || value === undefined) continue;
+
+        const x = manager.indexToX(i);
+        const centerX = x + klineCenterOffset;
+        const y = manager.priceToY(value);
+
+        if (!hasMovedTo) {
+          ctx.moveTo(centerX, y);
+          hasMovedTo = true;
+        } else {
+          ctx.lineTo(centerX, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    for (const [id, values] of maData) {
+      const params = getMAParams(id as IndicatorId, resolvedParams);
+      if (!params) continue;
+
+      const lastValue = values[endIndex - 1];
+      if (lastValue === null || lastValue === undefined) continue;
+
+      const y = manager.priceToY(lastValue);
+      if (y < 0 || y > chartHeight) continue;
+
+      drawPriceTag(ctx, formatChartPrice(lastValue), y, chartWidth, params.color, CHART_CONFIG.CANVAS_PADDING_RIGHT);
+    }
+
+    ctx.restore();
+  }, [manager, maData, indicatorParams]);
+
   const renderAllOverlayIndicators = (): void => {
+    renderMAIndicators();
     renderBollingerBands();
     renderATR();
     renderDailyVWAP();
@@ -484,6 +570,7 @@ export const useChartIndicatorRenderers = ({
     renderFootprint,
     renderSessionBoundaries,
     renderORB,
+    renderMAIndicators,
     getEventAtPosition,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,

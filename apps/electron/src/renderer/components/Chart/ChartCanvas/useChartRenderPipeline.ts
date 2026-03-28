@@ -104,6 +104,7 @@ export const useChartRenderPipeline = ({
     renderFootprint,
     renderSessionBoundaries,
     renderORB,
+    renderMAIndicators,
   } = indicatorRenderers;
 
   useEffect(() => {
@@ -121,6 +122,7 @@ export const useChartRenderPipeline = ({
       } else {
         renderLineChart();
       }
+      renderMAIndicators();
       renderMovingAverages();
       renderStochastic();
       renderRSI();
@@ -201,6 +203,7 @@ export const useChartRenderPipeline = ({
     renderKlines,
     renderLineChart,
     renderMovingAverages,
+    renderMAIndicators,
     renderStochastic,
     renderRSI,
     renderRSI14,

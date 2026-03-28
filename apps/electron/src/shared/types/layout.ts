@@ -18,7 +18,6 @@ export interface GridPanelConfig {
   chartType: ChartType;
   activeIndicators: IndicatorId[];
   indicatorParams: Record<string, unknown>;
-  movingAverages: Array<{ period: number; type: 'SMA' | 'EMA'; color: string; lineWidth?: number; visible?: boolean }>;
   gridPosition: GridPosition;
   windowState: PanelWindowState;
   savedGridPosition?: GridPosition;

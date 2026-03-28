@@ -1,7 +1,6 @@
 import type { Kline, MarketType } from '@marketmind/types';
 import React, { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
-import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 
 export interface ChartContextData {
   klines: Kline[];
@@ -9,7 +8,6 @@ export interface ChartContextData {
   timeframe: Timeframe;
   chartType: string;
   showVolume: boolean;
-  movingAverages: MovingAverageConfig[];
   marketType?: MarketType;
 }
 

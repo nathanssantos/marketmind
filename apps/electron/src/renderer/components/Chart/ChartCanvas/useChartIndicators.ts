@@ -1,4 +1,5 @@
 import type { Kline } from '@marketmind/types';
+import { calculateMovingAverage } from '@marketmind/indicators';
 import { useADXWorker } from '@renderer/hooks/useADXWorker';
 import { useAOWorker } from '@renderer/hooks/useAOWorker';
 import { useAroonWorker } from '@renderer/hooks/useAroonWorker';
@@ -31,7 +32,8 @@ import { useUltimateOscWorker } from '@renderer/hooks/useUltimateOscWorker';
 import { useVortexWorker } from '@renderer/hooks/useVortexWorker';
 import { useWilliamsRWorker } from '@renderer/hooks/useWilliamsRWorker';
 import { useWMAWorker } from '@renderer/hooks/useWMAWorker';
-import type { IndicatorId } from '@renderer/store/indicatorStore';
+import type { IndicatorId, IndicatorParams } from '@renderer/store/indicatorStore';
+import { isMAIndicator, getMAParams, DEFAULT_INDICATOR_PARAMS } from '@renderer/store/indicatorStore';
 import { useCallback, useMemo } from 'react';
 
 export type { IndicatorId };
@@ -39,6 +41,7 @@ export type { IndicatorId };
 export interface UseChartIndicatorsProps {
   klines: Kline[];
   activeIndicators: IndicatorId[];
+  indicatorParams?: IndicatorParams;
 }
 
 export interface UseChartIndicatorsResult {
@@ -75,17 +78,30 @@ export interface UseChartIndicatorsResult {
   liquidityLevelsData: ReturnType<typeof useLiquidityLevelsWorker>;
   rsiData: ReturnType<typeof useRSIWorker>;
   rsi14Data: ReturnType<typeof useRSIWorker>;
+  maData: Map<string, (number | null)[]>;
   isIndicatorActive: (id: IndicatorId) => boolean;
 }
 
 export const useChartIndicators = ({
   klines,
   activeIndicators,
+  indicatorParams,
 }: UseChartIndicatorsProps): UseChartIndicatorsResult => {
   const isIndicatorActive = useCallback(
     (id: IndicatorId): boolean => activeIndicators.includes(id),
     [activeIndicators]
   );
+
+  const maData = useMemo(() => {
+    const map = new Map<string, (number | null)[]>();
+    for (const id of activeIndicators) {
+      if (!isMAIndicator(id)) continue;
+      const params = getMAParams(id as IndicatorId, indicatorParams ?? DEFAULT_INDICATOR_PARAMS);
+      if (!params) continue;
+      map.set(id, calculateMovingAverage(klines, params.period, params.type));
+    }
+    return map;
+  }, [klines, activeIndicators, indicatorParams]);
 
   const parabolicSarData = useParabolicSARWorker(klines, isIndicatorActive('parabolicSar'));
   const keltnerData = useKeltnerWorker(klines, isIndicatorActive('keltner'));
@@ -156,6 +172,7 @@ export const useChartIndicators = ({
       liquidityLevelsData,
       rsiData,
       rsi14Data,
+      maData,
       isIndicatorActive,
     }),
     [
@@ -192,6 +209,7 @@ export const useChartIndicators = ({
       liquidityLevelsData,
       rsiData,
       rsi14Data,
+      maData,
       isIndicatorActive,
     ]
   );

@@ -1,11 +1,10 @@
 import { Checkbox, IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { useIndicatorStore, type IndicatorId } from '@renderer/store';
+import { useIndicatorStore, DEFAULT_INDICATOR_PARAMS, type IndicatorId, type MAParams } from '@renderer/store';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 
 interface IndicatorCategory {
     title: string;
@@ -18,16 +17,12 @@ interface IndicatorCategory {
 }
 
 interface IndicatorTogglePopoverProps {
-    movingAverages: MovingAverageConfig[];
-    onMovingAverageToggle: (index: number) => void;
     activeIndicatorsOverride?: string[];
     onToggleIndicatorOverride?: (id: IndicatorId) => void;
 }
 
 export const IndicatorTogglePopover = memo(
     ({
-        movingAverages,
-        onMovingAverageToggle,
         activeIndicatorsOverride,
         onToggleIndicatorOverride,
     }: IndicatorTogglePopoverProps) => {
@@ -296,12 +291,15 @@ export const IndicatorTogglePopover = memo(
                 {
                     title: t('chart.indicators.categories.movingAverages'),
                     indicators: [
-                        ...movingAverages.map((ma, index) => ({
-                            id: `ma-${index}`,
-                            label: `${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`,
-                            isActive: ma.visible !== false,
-                            onToggle: () => onMovingAverageToggle(index),
-                        })),
+                        ...(['ema-7', 'ema-8', 'ema-9', 'ema-10', 'ema-19', 'ema-20', 'ema-21', 'ema-50', 'ema-70', 'ema-100', 'ema-200'] as const).map(id => {
+                            const params = DEFAULT_INDICATOR_PARAMS[id] as MAParams;
+                            return {
+                                id,
+                                label: `${params.type}${params.period}`,
+                                isActive: isIndicatorActive(id),
+                                onToggle: () => toggleIndicator(id),
+                            };
+                        }),
                         {
                             id: 'dema',
                             label: t('chart.indicators.names.dema', 'DEMA'),
@@ -331,9 +329,7 @@ export const IndicatorTogglePopover = memo(
             ],
             [
                 t,
-                movingAverages,
                 isIndicatorActive,
-                onMovingAverageToggle,
                 toggleIndicator,
             ]
         );

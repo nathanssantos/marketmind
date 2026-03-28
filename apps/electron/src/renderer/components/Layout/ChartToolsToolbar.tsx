@@ -35,13 +35,8 @@ import {
   LuMessageSquare,
   LuRectangleHorizontal,
 } from 'react-icons/lu';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
-export interface ChartToolsToolbarProps {
-  movingAverages: MovingAverageConfig[];
-  onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
-}
 
 const DrawingToolButton = memo(({ tool, label, icon }: { tool: DrawingType; label: string; icon: React.ReactNode }) => {
   const activeTool = useDrawingStore(s => s.activeTool);
@@ -63,10 +58,7 @@ const DrawingToolButton = memo(({ tool, label, icon }: { tool: DrawingType; labe
 
 DrawingToolButton.displayName = 'DrawingToolButton';
 
-export const ChartToolsToolbar = memo(({
-  movingAverages,
-  onMovingAveragesChange,
-}: ChartToolsToolbarProps) => {
+export const ChartToolsToolbar = memo(() => {
   const { t } = useTranslation();
 
   const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', false);
@@ -84,13 +76,6 @@ export const ChartToolsToolbar = memo(({
   const handleToggleFocusedIndicator = useCallback((id: IndicatorId) => {
     if (focusedPanel && activeLayout) togglePanelIndicator(activeLayout.id, focusedPanel.id, id);
   }, [focusedPanel, activeLayout, togglePanelIndicator]);
-
-  const toggleMA = useCallback((index: number): void => {
-    const updated = movingAverages.map((ma, i) =>
-      i === index ? { ...ma, visible: !ma.visible } : ma
-    );
-    onMovingAveragesChange(updated);
-  }, [movingAverages, onMovingAveragesChange]);
 
   const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
@@ -110,8 +95,6 @@ export const ChartToolsToolbar = memo(({
     >
       <VStack gap={0.5}>
         <IndicatorTogglePopover
-          movingAverages={movingAverages}
-          onMovingAverageToggle={toggleMA}
           activeIndicatorsOverride={focusedPanel?.activeIndicators}
           onToggleIndicatorOverride={focusedPanel ? handleToggleFocusedIndicator : undefined}
         />

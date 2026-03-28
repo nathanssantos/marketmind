@@ -7,7 +7,6 @@ import { useShallow } from 'zustand/react/shallow';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { ChartType } from '@marketmind/types';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { MarketSidebar } from '../MarketSidebar';
 import { AnalyticsModal } from '../Analytics';
 import { CustomSymbolsModal } from '../CustomSymbols';
@@ -38,10 +37,8 @@ interface MainLayoutProps {
   timeframe: Timeframe;
   chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
-  movingAverages: MovingAverageConfig[];
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
@@ -67,10 +64,8 @@ export const MainLayout = ({
   timeframe,
   chartType,
   onChartTypeChange,
-  movingAverages,
   onSymbolChange,
   onTimeframeChange,
-  onMovingAveragesChange,
   onNavigateToSymbol,
 }: MainLayoutProps) => {
   const [quickTradeMode, setQuickTradeMode] = useUIPref<QuickTradeMode>('quickTradeMode', 'sidebar');
@@ -157,7 +152,6 @@ export const MainLayout = ({
           timeframe={timeframe}
           chartType={chartType}
           onChartTypeChange={onChartTypeChange}
-          movingAverages={movingAverages}
           isTradingOpen={isTradingOpen}
           isAutoTradingOpen={isAutoTradingOpen}
           onSymbolChange={onSymbolChange}
@@ -204,10 +198,7 @@ export const MainLayout = ({
             </>
           )}
 
-          <ChartToolsToolbar
-            movingAverages={movingAverages}
-            onMovingAveragesChange={onMovingAveragesChange}
-          />
+          <ChartToolsToolbar />
 
           <Flex
             flex={1}
