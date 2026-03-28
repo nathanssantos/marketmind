@@ -9,10 +9,28 @@ import type {
   ChartType,
 } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
-import type { IndicatorId } from './indicatorStore';
+import { useIndicatorStore, type IndicatorId } from './indicatorStore';
 import { usePreferencesStore } from './preferencesStore';
 
 const generateId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const getGlobalActiveIndicators = (): IndicatorId[] => {
+  try {
+    return [...useIndicatorStore.getState().activeIndicators];
+  } catch {
+    return ['volume', 'stochastic', 'rsi', 'dailyVwap'];
+  }
+};
+
+const getGlobalMovingAverages = (): GridPanelConfig['movingAverages'] => {
+  try {
+    const chartPrefs = usePreferencesStore.getState().chart;
+    const mas = chartPrefs['movingAverages'] as GridPanelConfig['movingAverages'] | undefined;
+    return mas ?? [];
+  } catch {
+    return [];
+  }
+};
 
 const createDefaultPanel = (
   timeframe: string,
@@ -21,9 +39,9 @@ const createDefaultPanel = (
   id: generateId(),
   timeframe,
   chartType: 'kline',
-  activeIndicators: ['volume', 'stochastic', 'rsi', 'dailyVwap'],
+  activeIndicators: getGlobalActiveIndicators(),
   indicatorParams: {},
-  movingAverages: [],
+  movingAverages: getGlobalMovingAverages(),
   gridPosition,
   windowState: 'normal',
 });

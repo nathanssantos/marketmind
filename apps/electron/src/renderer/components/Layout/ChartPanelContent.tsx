@@ -3,6 +3,9 @@ import { ChartCanvas } from '@renderer/components/Chart/ChartCanvas';
 import { ErrorMessage, LoadingSpinner } from '@renderer/components/ui';
 import { useKlinePagination } from '@renderer/hooks/useKlinePagination';
 import { useKlineLiveStream } from '@renderer/hooks/useKlineLiveStream';
+import { useChartPref } from '@renderer/store/preferencesStore';
+import { DEFAULT_MOVING_AVERAGES } from '@renderer/constants/defaults';
+import type { MovingAverageConfig } from '@renderer/components/Chart/useMovingAverageRenderer';
 import type { MarketType } from '@marketmind/types';
 import type { GridPanelConfig } from '@shared/types/layout';
 import { memo, useMemo } from 'react';
@@ -14,6 +17,8 @@ interface ChartPanelContentProps {
 }
 
 function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPanelContentProps) {
+  const [globalMAs] = useChartPref<MovingAverageConfig[]>('movingAverages', DEFAULT_MOVING_AVERAGES);
+  const effectiveMAs = panelConfig.movingAverages.length > 0 ? panelConfig.movingAverages : globalMAs;
   const {
     allKlines: paginatedKlines,
     isLoadingMore,
@@ -61,7 +66,7 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
       width="100%"
       height="100%"
       chartType={panelConfig.chartType}
-      movingAverages={panelConfig.movingAverages}
+      movingAverages={effectiveMAs}
       timeframe={panelConfig.timeframe}
       onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
       isLoadingMore={isLoadingMore}
