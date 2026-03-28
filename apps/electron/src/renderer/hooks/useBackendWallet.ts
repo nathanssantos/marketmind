@@ -38,6 +38,9 @@ export const useBackendWallet = () => {
   const syncBalanceMutation = trpc.wallet.syncBalance.useMutation({
     onSuccess: () => {
       utils.wallet.list.invalidate();
+      utils.trading.getTradeExecutions.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
+      utils.futuresTrading.getPositions.invalidate();
     },
   });
 
