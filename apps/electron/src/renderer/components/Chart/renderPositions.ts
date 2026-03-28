@@ -51,6 +51,7 @@ export const groupActivePositions = (
         ? (currentPrice - entryPrice) * quantity
         : (entryPrice - currentPrice) * quantity;
 
+      const typedOrder = order as Order & { leverage?: number; liquidationPrice?: number };
       groupedPositions.set(key, {
         symbol: order.symbol,
         netQuantity: orderQuantity,
@@ -58,7 +59,8 @@ export const groupActivePositions = (
         orderIds: [getOrderId(order)],
         orders: [order],
         totalPnL: orderPnL,
-        leverage: (order as Order & { leverage?: number }).leverage ?? 1,
+        leverage: typedOrder.leverage ?? 1,
+        liquidationPrice: typedOrder.liquidationPrice,
       });
     }
   });

@@ -173,7 +173,7 @@ export const renderLiquidationLines = (
     if (position.leverage <= 1) return;
     const isLong = position.netQuantity > 0;
     const side = isLong ? 'LONG' as const : 'SHORT' as const;
-    const liqPrice = calculateLiquidationPrice(position.avgPrice, position.leverage, side);
+    const liqPrice = position.liquidationPrice ?? calculateLiquidationPrice(position.avgPrice, position.leverage, side);
     if (liqPrice <= 0) return;
 
     const liqY = manager.priceToY(liqPrice);

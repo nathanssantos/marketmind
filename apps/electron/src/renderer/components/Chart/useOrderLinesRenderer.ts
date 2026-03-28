@@ -89,6 +89,7 @@ export const useOrderLinesRenderer = (
           setupType: exec.setupType ?? undefined,
           isPendingLimitOrder: exec.status === 'pending',
           leverage: exec.leverage ?? 1,
+          liquidationPrice: exec.liquidationPrice ? parseFloat(exec.liquidationPrice) : undefined,
         } as Order;
       });
   }, [backendExecutions]);

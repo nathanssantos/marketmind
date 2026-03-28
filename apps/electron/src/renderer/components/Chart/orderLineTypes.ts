@@ -18,6 +18,7 @@ export interface BackendExecution {
   triggerKlineOpenTime?: number | null;
   fibonacciProjection?: import('@marketmind/types').FibonacciProjectionData | null;
   leverage?: number;
+  liquidationPrice?: string | null;
 }
 
 export interface OrderCloseButton {
@@ -94,6 +95,7 @@ export interface GroupedPosition {
   orders: Order[];
   totalPnL: number;
   leverage: number;
+  liquidationPrice?: number;
 }
 
 export const SLTP_BUTTON = {
