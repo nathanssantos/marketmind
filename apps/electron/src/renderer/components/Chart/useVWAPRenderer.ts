@@ -15,7 +15,7 @@ const VWAP_FALLBACK_COLORS: Record<VWAPPeriod, string> = {
   monthly: INDICATOR_COLORS.VWAP_LINE,
 };
 
-const VWAP_LINE_WIDTH = 3;
+const VWAP_LINE_WIDTH = 1;
 const VWAP_DASH_PATTERN = [6, 4];
 
 const VWAP_CALCULATORS: Record<VWAPPeriod, typeof calculateMonthlyVWAP> = {
