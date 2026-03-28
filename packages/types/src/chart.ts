@@ -1,17 +1,9 @@
 export type ChartType = 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
 
-export interface MovingAverage {
-  period: number;
-  type: 'SMA' | 'EMA';
-  color: string;
-  visible: boolean;
-}
-
 export interface ChartConfig {
   type: ChartType;
   showVolume: boolean;
   showGrid: boolean;
-  movingAverages: MovingAverage[];
   colors: ChartColors;
 }
 

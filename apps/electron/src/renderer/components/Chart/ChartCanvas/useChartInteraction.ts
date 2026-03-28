@@ -1,6 +1,5 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
-import type { MovingAverageConfig } from '../useMovingAverageRenderer';
 import type { Kline, MarketEvent, Order } from '@marketmind/types';
 import type { TooltipData } from './useChartState';
 import { CHART_CONFIG } from '@shared/constants';
@@ -13,8 +12,6 @@ export interface UseChartInteractionProps {
   manager: CanvasManager | null;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   klines: Kline[];
-  movingAverages: MovingAverageConfig[];
-  maValuesCache: Map<string, (number | null)[]>;
   advancedConfig?: AdvancedControlsConfig;
   showVolume: boolean;
   showEventRow: boolean;
@@ -30,7 +27,6 @@ export interface UseChartInteractionProps {
   lastTooltipOrderRef: React.MutableRefObject<string | null>;
   setTooltipData: (data: TooltipData) => void;
   setOrderToClose: (orderId: string | null) => void;
-  getHoveredMATag: (x: number, y: number) => number | undefined;
   getHoveredOrder: (x: number, y: number) => Order | null;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   getClickedOrderId: (x: number, y: number) => string | null;
@@ -81,8 +77,6 @@ export const useChartInteraction = ({
   manager,
   canvasRef,
   klines,
-  movingAverages,
-  maValuesCache,
   advancedConfig,
   showVolume,
   showEventRow,
@@ -98,7 +92,6 @@ export const useChartInteraction = ({
   lastTooltipOrderRef,
   setTooltipData,
   setOrderToClose,
-  getHoveredMATag,
   getHoveredOrder,
   getEventAtPosition,
   getClickedOrderId,
@@ -147,19 +140,16 @@ export const useChartInteraction = ({
       mouseY,
       rect,
       klines,
-      movingAverages,
-      maValuesCache,
       advancedConfig,
       showVolume,
       showEventRow,
       lastTooltipOrderRef,
-      getHoveredMATag,
       getHoveredOrder,
       getEventAtPosition,
       hoveredMAIndexRef,
       setTooltipData,
     });
-  }, [manager, klines, movingAverages, maValuesCache, advancedConfig, showVolume, getHoveredMATag, getHoveredOrder, showEventRow, getEventAtPosition, setTooltipData, hoveredMAIndexRef, lastTooltipOrderRef, tooltipEnabledRef]);
+  }, [manager, klines, advancedConfig, showVolume, getHoveredOrder, showEventRow, getEventAtPosition, setTooltipData, hoveredMAIndexRef, lastTooltipOrderRef, tooltipEnabledRef]);
 
   const handleCanvasMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!canvasRef.current) return;
@@ -250,10 +240,7 @@ export const useChartInteraction = ({
       const isOnPriceScale = mouseX >= priceScaleLeft && mouseY < timeScaleTop;
       const isOnTimeScale = mouseY >= timeScaleTop;
 
-      const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
-
-      if (hoveredTagIndex !== undefined) updateCursor('pointer');
-      else if (isOnPriceScale) updateCursor('ns-resize');
+      if (isOnPriceScale) updateCursor('ns-resize');
       else if (isOnTimeScale) updateCursor('crosshair');
       else if (isInChartArea || isInExtendedPatternArea) updateCursor('crosshair');
     }
@@ -282,7 +269,7 @@ export const useChartInteraction = ({
     canvasRef, manager, klines, advancedConfig, isPanning,
     shiftPressed, altPressed,
     mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef,
-    setTooltipData, getHoveredMATag, getHoveredOrder,
+    setTooltipData, getHoveredOrder,
     getClickedOrderId, getSLTPAtPosition, orderDragHandler, gridInteraction, drawingInteraction, cursorManager,
     handleMouseMove, updateCursor, processMouseMoveTooltip,
   ]);

@@ -1,7 +1,6 @@
 import type { Kline, MarketEvent, Order, TradingSetup, Viewport } from '@marketmind/types';
 import type { StochasticResult } from '@marketmind/indicators';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import type { MovingAverageConfig } from '../useMovingAverageRenderer';
 
 export interface TooltipData {
   kline: Kline | null;
@@ -77,7 +76,6 @@ const chartReducer = (state: ChartState, action: ChartAction): ChartState => {
 
 export interface UseChartStateProps {
   klines: Kline[];
-  movingAverages?: MovingAverageConfig[];
   viewport?: Viewport;
 }
 

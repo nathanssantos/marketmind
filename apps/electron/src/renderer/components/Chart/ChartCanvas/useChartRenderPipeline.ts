@@ -50,7 +50,6 @@ export const useChartRenderPipeline = ({
     renderKlines,
     renderLineChart,
     renderVolume,
-    renderMovingAverages,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,
@@ -123,7 +122,6 @@ export const useChartRenderPipeline = ({
         renderLineChart();
       }
       renderMAIndicators();
-      renderMovingAverages();
       renderStochastic();
       renderRSI();
       renderRSI14();
@@ -202,7 +200,6 @@ export const useChartRenderPipeline = ({
     renderVolume,
     renderKlines,
     renderLineChart,
-    renderMovingAverages,
     renderMAIndicators,
     renderStochastic,
     renderRSI,

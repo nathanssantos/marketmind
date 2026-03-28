@@ -1,12 +1,10 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
-import type { MovingAverageConfig } from '../useMovingAverageRenderer';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
 import type { TooltipData, OrderPreview } from './useChartState';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { calculateMovingAverage } from '@marketmind/indicators';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Kline, MarketEvent, Order, MarketType } from '@marketmind/types';
 import type { StochasticResult } from '@marketmind/indicators';
 
@@ -33,7 +31,6 @@ export interface UseChartRenderingProps {
   klines: Kline[];
   chartType: 'kline' | 'line';
   advancedConfig?: AdvancedControlsConfig;
-  movingAverages: MovingAverageConfig[];
   showGrid: boolean;
   showVolume: boolean;
   showStochastic: boolean;
@@ -68,11 +65,10 @@ export interface UseChartRenderingProps {
 export interface UseChartRenderingResult {
   renderAll: () => void;
   renderLayer: (layerId: RenderLayerId) => void;
-  maValuesCache: Map<string, (number | null)[]>;
 }
 
 export const useChartRendering = (props: UseChartRenderingProps): UseChartRenderingResult => {
-  const { manager, klines, movingAverages } = props;
+  const { manager } = props;
 
   const lastRenderTimeRef = useRef<Record<RenderLayerId, number>>({
     background: 0,
@@ -84,38 +80,6 @@ export const useChartRendering = (props: UseChartRenderingProps): UseChartRender
     panels: 0,
     interaction: 0,
   });
-
-  const prevKlinesRef = useRef<Kline[]>([]);
-  const prevMaCacheRef = useRef<Map<string, (number | null)[]>>(new Map());
-
-  const maValuesCache = useMemo(() => {
-    const prev = prevKlinesRef.current;
-    const cache = new Map<string, (number | null)[]>();
-    const isAppend = klines.length > prev.length &&
-      klines.length - prev.length <= 5 &&
-      prev.length > 0 &&
-      klines[prev.length - 1]?.openTime === prev[prev.length - 1]?.openTime;
-
-    for (const ma of movingAverages) {
-      if (ma.visible === false) continue;
-      const key = `${ma.type}-${ma.period}`;
-      const prevValues = prevMaCacheRef.current.get(key);
-
-      if (isAppend && prevValues && prevValues.length === prev.length) {
-        const recalcStart = Math.max(0, prev.length - 1);
-        const fullValues = calculateMovingAverage(klines, ma.period, ma.type);
-        const merged = prevValues.slice(0, recalcStart);
-        for (let i = recalcStart; i < fullValues.length; i++) merged.push(fullValues[i]!);
-        cache.set(key, merged);
-      } else {
-        cache.set(key, calculateMovingAverage(klines, ma.period, ma.type));
-      }
-    }
-
-    prevKlinesRef.current = klines;
-    prevMaCacheRef.current = cache;
-    return cache;
-  }, [klines, movingAverages]);
 
   const renderAll = useCallback(() => {
     if (!manager) return;
@@ -144,7 +108,6 @@ export const useChartRendering = (props: UseChartRenderingProps): UseChartRender
   return {
     renderAll,
     renderLayer,
-    maValuesCache,
   };
 };
 

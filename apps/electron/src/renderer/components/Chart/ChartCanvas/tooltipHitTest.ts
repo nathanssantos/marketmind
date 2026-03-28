@@ -1,13 +1,9 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
-import type { MovingAverageConfig } from '../useMovingAverageRenderer';
 import type { Kline, MarketEvent, Order } from '@marketmind/types';
 import type { TooltipData } from './useChartState';
-import { pointToLineDistance } from '@marketmind/chart-studies';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineVolume } from '@shared/utils';
-
-const HOVER_THRESHOLD = 8;
 
 export interface TooltipHitTestParams {
   manager: CanvasManager;
@@ -15,13 +11,10 @@ export interface TooltipHitTestParams {
   mouseY: number;
   rect: DOMRect;
   klines: Kline[];
-  movingAverages: MovingAverageConfig[];
-  maValuesCache: Map<string, (number | null)[]>;
   advancedConfig?: AdvancedControlsConfig;
   showVolume: boolean;
   showEventRow: boolean;
   lastTooltipOrderRef: React.MutableRefObject<string | null>;
-  getHoveredMATag: (x: number, y: number) => number | undefined;
   getHoveredOrder: (x: number, y: number) => Order | null;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   hoveredMAIndexRef: React.MutableRefObject<number | undefined>;
@@ -34,13 +27,10 @@ export const processTooltipHitTest = ({
   mouseY,
   rect,
   klines,
-  movingAverages,
-  maValuesCache,
   advancedConfig,
   showVolume,
   showEventRow,
   lastTooltipOrderRef,
-  getHoveredMATag,
   getHoveredOrder,
   getEventAtPosition,
   hoveredMAIndexRef,
@@ -59,9 +49,7 @@ export const processTooltipHitTest = ({
   const isOnTimeScale = mouseY >= timeScaleTop;
   const isInChartArea = mouseX < dimensions.chartWidth && mouseY < timeScaleTop;
 
-  const hoveredTagIndex = getHoveredMATag(mouseX, mouseY);
-
-  if (isOnPriceScale && hoveredTagIndex === undefined) {
+  if (isOnPriceScale) {
     hoveredMAIndexRef.current = undefined;
     setTooltipData({ kline: null, x: 0, y: 0, visible: false });
     return;
@@ -113,63 +101,7 @@ export const processTooltipHitTest = ({
     return;
   }
 
-  let closestMAIndex: number | undefined = undefined;
-  let closestMADistance = Infinity;
-  let closestMAValue: number | undefined = undefined;
-
-  if (hoveredTagIndex !== undefined) {
-    closestMAIndex = hoveredTagIndex;
-  } else if (movingAverages.length > 0) {
-    const effectiveWidth = dimensions.chartWidth - (advancedConfig?.rightMargin ?? CHART_CONFIG.CHART_RIGHT_MARGIN);
-    const visibleRange = viewport.end - viewport.start;
-    const widthPerKline = effectiveWidth / visibleRange;
-    const { klineWidth } = viewport;
-    const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
-
-    for (let maIdx = 0; maIdx < movingAverages.length; maIdx++) {
-      const ma = movingAverages[maIdx];
-      if (!ma || ma.visible === false) continue;
-      const cacheKey = `${ma.type}-${ma.period}`;
-      const maValues = maValuesCache.get(cacheKey);
-      if (!maValues) continue;
-
-      const startIdx = Math.max(0, Math.floor(viewport.start));
-      const endIdx = Math.min(klines.length, Math.ceil(viewport.end));
-
-      for (let i = startIdx; i < endIdx - 1; i++) {
-        const value1 = maValues[i];
-        const value2 = maValues[i + 1];
-        if (value1 === null || value1 === undefined || value2 === null || value2 === undefined) continue;
-
-        const x1 = manager.indexToX(i) + klineCenterOffset;
-        const y1 = manager.priceToY(value1);
-        const x2 = manager.indexToX(i + 1) + klineCenterOffset;
-        const y2 = manager.priceToY(value2);
-        const distance = pointToLineDistance(mouseX, mouseY, x1, y1, x2, y2);
-
-        if (distance < HOVER_THRESHOLD && distance < closestMADistance) {
-          closestMADistance = distance;
-          closestMAIndex = maIdx;
-          closestMAValue = (value1 + value2) / 2;
-        }
-      }
-      if (closestMADistance < HOVER_THRESHOLD * 0.5) break;
-    }
-  }
-
-  hoveredMAIndexRef.current = closestMAIndex;
-
-  if (closestMAIndex !== undefined) {
-    const ma = movingAverages[closestMAIndex];
-    if (ma) {
-      setTooltipData({
-        kline: null, x: mouseX, y: mouseY, visible: true,
-        containerWidth: rect.width, containerHeight: rect.height,
-        movingAverage: { period: ma.period, type: ma.type, color: ma.color, ...(closestMAValue !== undefined && { value: closestMAValue }) },
-      });
-      return;
-    }
-  }
+  hoveredMAIndexRef.current = undefined;
 
   if (!isInChartArea) {
     setTooltipData({ kline: null, x: 0, y: 0, visible: false });

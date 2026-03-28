@@ -1,9 +1,7 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
-import type { MovingAverageConfig } from '../../useMovingAverageRenderer';
 
 export interface IndicatorRenderFunctions {
-  renderMovingAverages?: () => void;
   renderStochastic?: () => void;
   renderRSI?: () => void;
   renderRSI14?: () => void;
@@ -48,7 +46,6 @@ export interface IndicatorRenderFunctions {
 export interface IndicatorLayerProps {
   manager: CanvasManager | null;
   colors: ChartColors;
-  movingAverages: MovingAverageConfig[];
   activeIndicators: string[];
   renderFunctions: IndicatorRenderFunctions;
   showStochastic: boolean;
@@ -64,7 +61,6 @@ export interface IndicatorLayerResult {
 }
 
 const OVERLAY_INDICATORS = [
-  'renderMovingAverages',
   'renderBollingerBands',
   'renderDailyVWAP',
   'renderWeeklyVWAP',
@@ -125,7 +121,6 @@ export const createIndicatorLayer = ({
 
   const shouldRerender = (prev: IndicatorLayerProps, next: IndicatorLayerProps): boolean => {
     return (
-      prev.movingAverages !== next.movingAverages ||
       prev.activeIndicators !== next.activeIndicators ||
       prev.showStochastic !== next.showStochastic ||
       prev.showRSI !== next.showRSI ||

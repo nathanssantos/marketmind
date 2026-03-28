@@ -3,10 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { processTooltipHitTest } from '../tooltipHitTest';
 import type { TooltipHitTestParams } from '../tooltipHitTest';
 
-vi.mock('@marketmind/chart-studies', () => ({
-  pointToLineDistance: (_px: number, _py: number, _x1: number, _y1: number, _x2: number, _y2: number) => 5,
-}));
-
 vi.mock('@shared/constants', () => ({
   CHART_CONFIG: {
     CANVAS_PADDING_RIGHT: 80,
@@ -48,12 +44,9 @@ const createParams = (overrides: Partial<TooltipHitTestParams> = {}): TooltipHit
   mouseY: 100,
   rect: { width: 800, height: 600 } as DOMRect,
   klines: [],
-  movingAverages: [],
-  maValuesCache: new Map(),
   showVolume: false,
   showEventRow: false,
   lastTooltipOrderRef: { current: null },
-  getHoveredMATag: () => undefined,
   getHoveredOrder: () => null,
   getEventAtPosition: () => null,
   hoveredMAIndexRef: { current: undefined },
@@ -169,37 +162,6 @@ describe('processTooltipHitTest', () => {
 
     processTooltipHitTest(params);
     expect(setTooltipData).not.toHaveBeenCalled();
-  });
-
-  it('shows MA tooltip when hovering a tag', () => {
-    const params = createParams({
-      movingAverages: [{ period: 20, type: 'SMA', color: '#ff0000', visible: true }],
-      getHoveredMATag: () => 0,
-      setTooltipData,
-    });
-
-    processTooltipHitTest(params);
-    expect(setTooltipData).toHaveBeenCalledWith(
-      expect.objectContaining({
-        visible: true,
-        movingAverage: expect.objectContaining({ period: 20, type: 'SMA', color: '#ff0000' }),
-      }),
-    );
-  });
-
-  it('hides tooltip when outside chart area and no MA match', () => {
-    const params = createParams({
-      mouseX: 750,
-      mouseY: 100,
-      getHoveredMATag: () => 0,
-      movingAverages: [],
-      setTooltipData,
-    });
-
-    processTooltipHitTest(params);
-    expect(setTooltipData).toHaveBeenCalledWith(
-      expect.objectContaining({ visible: false }),
-    );
   });
 
   it('shows kline tooltip when hovering a kline body', () => {

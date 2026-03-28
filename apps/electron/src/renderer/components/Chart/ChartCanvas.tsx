@@ -24,7 +24,6 @@ import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
-import type { MovingAverageConfig } from './useMovingAverageRenderer';
 import {
   useChartState,
   useCursorManager,
@@ -55,7 +54,6 @@ export interface ChartCanvasProps {
   height?: string | number;
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
-  movingAverages?: MovingAverageConfig[];
   chartType?: 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
   advancedConfig?: AdvancedControlsConfig;
   timeframe?: string;
@@ -72,7 +70,6 @@ export const ChartCanvas = ({
   height = '600px',
   initialViewport,
   onViewportChange,
-  movingAverages = [],
   chartType = 'kline',
   advancedConfig,
   timeframe = '1h',
@@ -165,7 +162,7 @@ export const ChartCanvas = ({
 
   managerRef.current = manager;
 
-  const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines, movingAverages });
+  const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines });
   const { tooltipData, orderToClose, stochasticData } = chartState;
   const { setTooltip: setTooltipData, setOrderToClose, setStochasticData } = chartActions;
   const { mousePosition: mousePositionRef, orderPreview: orderPreviewRef, hoveredMAIndex: hoveredMAIndexRef, hoveredOrderId: hoveredOrderIdRef, lastHoveredOrder: lastHoveredOrderRef, lastTooltipOrder: lastTooltipOrderRef, tooltipEnabled: tooltipEnabledRef, tooltipDebounce: tooltipDebounceRef } = chartRefs;
@@ -239,10 +236,10 @@ export const ChartCanvas = ({
     return () => { if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current); };
   }, [isPanning]);
 
-  const { renderGrid, renderKlines, renderLineChart, renderVolume, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark, getHoveredMATag, maValuesCache } = useChartBaseRenderers({
-    manager, klines: effectiveKlines, colors, chartType, advancedConfig, movingAverages,
+  const { renderGrid, renderKlines, renderLineChart, renderVolume, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
+    manager, colors, chartType, advancedConfig,
     showGrid, showVolume, showCurrentPriceLine, showCrosshair, showActivityIndicator,
-    hoveredKlineIndex: tooltipData.klineIndex, highlightedCandlesRef, hoveredMAIndexRef, mousePositionRef,
+    hoveredKlineIndex: tooltipData.klineIndex, highlightedCandlesRef, mousePositionRef,
     timeframe, symbol, marketType,
   });
 
@@ -277,12 +274,12 @@ export const ChartCanvas = ({
   }, [symbol, currentPrice, updatePrice, isPanning]);
 
   const { handleCanvasMouseMove, handleCanvasMouseDown, handleCanvasMouseUp, handleCanvasMouseLeave, handleWheel } = useChartInteraction({
-    manager, canvasRef, klines, movingAverages, maValuesCache, advancedConfig,
+    manager, canvasRef, klines, advancedConfig,
     showVolume, showEventRow, isPanning, shiftPressed, altPressed,
     tooltipEnabledRef, mousePositionRef, orderPreviewRef, hoveredMAIndexRef,
     hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef,
     setTooltipData, setOrderToClose: handleOrderCloseRequest,
-    getHoveredMATag, getHoveredOrder, getEventAtPosition, getClickedOrderId, getSLTPAtPosition,
+    getHoveredOrder, getEventAtPosition, getClickedOrderId, getSLTPAtPosition,
     onLongEntry: handleLongEntry, onShortEntry: handleShortEntry,
     orderDragHandler, gridInteraction: isGridModeActive ? gridInteraction : undefined,
     drawingInteraction, cursorManager,
@@ -327,7 +324,7 @@ export const ChartCanvas = ({
 
   useChartRenderPipeline({
     manager, chartType, colors, allExecutions,
-    baseRenderers: { renderGrid, renderKlines, renderLineChart, renderVolume, renderMovingAverages, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark, getHoveredMATag, maValuesCache },
+    baseRenderers: { renderGrid, renderKlines, renderLineChart, renderVolume, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark },
     indicatorRenderers, renderOrderLines, renderGridPreview, renderDrawings,
     orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, orderPreviewRef,
   });
