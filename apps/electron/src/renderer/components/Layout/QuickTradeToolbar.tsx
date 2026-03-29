@@ -436,7 +436,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onMenuA
   }, [isDragging, snapToEdges, setSavedPosition]);
 
   return (
-    <Box ref={containerRef} position="absolute" inset={0} zIndex={10} pointerEvents="none">
+    <Box ref={containerRef} position="absolute" top="32px" left={0} right={0} bottom={0} zIndex={10} pointerEvents="none">
       <Box
         ref={panelRef}
         position="absolute"
