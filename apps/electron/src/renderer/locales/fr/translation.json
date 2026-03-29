@@ -1942,5 +1942,101 @@
       "heatmap": "Carte de Chaleur",
       "metrics": "Métriques"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Se connecter",
+      "subtitle": "Entrez vos identifiants pour continuer",
+      "email": "Email",
+      "password": "Mot de passe",
+      "rememberMe": "Se souvenir de moi",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "createAccount": "Créer un compte",
+      "invalidCredentials": "Email ou mot de passe invalide",
+      "rateLimited": "Trop de tentatives. Veuillez réessayer plus tard."
+    },
+    "register": {
+      "title": "Créer un compte",
+      "subtitle": "Inscrivez-vous pour commencer",
+      "email": "Email",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "submit": "Créer un compte",
+      "hasAccount": "Vous avez déjà un compte ?",
+      "signIn": "Se connecter",
+      "passwordMismatch": "Les mots de passe ne correspondent pas",
+      "emailInUse": "Cet email est déjà enregistré"
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "subtitle": "Nous vous enverrons un lien pour réinitialiser votre mot de passe",
+      "email": "Email",
+      "submit": "Envoyer le lien de réinitialisation",
+      "backToLogin": "Retour à la connexion",
+      "successTitle": "Vérifiez votre email",
+      "successMessage": "Si un compte existe avec cet email, nous avons envoyé un lien de réinitialisation."
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Entrez votre nouveau mot de passe",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "submit": "Réinitialiser le mot de passe",
+      "successTitle": "Mot de passe réinitialisé",
+      "successMessage": "Votre mot de passe a été réinitialisé. Redirection vers la connexion...",
+      "invalidToken": "Ce lien de réinitialisation est invalide ou a expiré.",
+      "backToLogin": "Retour à la connexion",
+      "requestNew": "Demander un nouveau lien"
+    },
+    "verifyEmail": {
+      "title": "Vérifiez votre email",
+      "subtitle": "Nous avons envoyé un lien de vérification à votre adresse email",
+      "checkInbox": "Veuillez vérifier votre boîte de réception et cliquer sur le lien de vérification.",
+      "resend": "Renvoyer l'email de vérification",
+      "resent": "Email de vérification renvoyé",
+      "alreadyVerified": "Votre email est déjà vérifié",
+      "successTitle": "Email vérifié",
+      "successMessage": "Votre email a été vérifié. Redirection...",
+      "invalidToken": "Ce lien de vérification est invalide ou a expiré.",
+      "continueWithout": "Continuer sans vérifier"
+    },
+    "twoFactor": {
+      "title": "Authentification à deux facteurs",
+      "subtitle": "Entrez le code à 6 chiffres envoyé à votre email",
+      "code": "Code de vérification",
+      "submit": "Vérifier",
+      "resend": "Renvoyer le code",
+      "resent": "Un nouveau code a été envoyé",
+      "invalidCode": "Code invalide ou expiré",
+      "backToLogin": "Retour à la connexion"
+    },
+    "validation": {
+      "emailRequired": "L'email est obligatoire",
+      "emailInvalid": "Veuillez entrer un email valide",
+      "passwordRequired": "Le mot de passe est obligatoire",
+      "passwordMin": "Le mot de passe doit contenir au moins 8 caractères",
+      "codeRequired": "Le code est obligatoire",
+      "codeLength": "Le code doit contenir 6 chiffres"
+    }
+  },
+  "account": {
+    "title": "Compte",
+    "profile": "Profil",
+    "name": "Nom",
+    "namePlaceholder": "Votre nom",
+    "email": "Email",
+    "emailVerified": "Vérifié",
+    "emailNotVerified": "Non vérifié",
+    "security": "Sécurité",
+    "twoFactor": "Authentification à deux facteurs",
+    "twoFactorDescription": "Recevez un code par email lors de la connexion",
+    "twoFactorRequiresEmail": "Vérifiez votre email d'abord pour activer le 2FA",
+    "memberSince": "Membre depuis",
+    "save": "Enregistrer",
+    "saved": "Enregistré",
+    "logout": "Se déconnecter",
+    "settings": "Paramètres"
   }
 }

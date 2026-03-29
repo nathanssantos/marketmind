@@ -25,27 +25,49 @@ const REGISTER_RATE_LIMIT: RateLimitConfig = {
   blockDurationMs: 24 * 60 * 60 * 1000,
 };
 
+const PASSWORD_RESET_RATE_LIMIT: RateLimitConfig = {
+  maxAttempts: 3,
+  windowMs: 60 * 60 * 1000,
+  blockDurationMs: 60 * 60 * 1000,
+};
+
+const EMAIL_VERIFICATION_RATE_LIMIT: RateLimitConfig = {
+  maxAttempts: 5,
+  windowMs: 60 * 60 * 1000,
+  blockDurationMs: 60 * 60 * 1000,
+};
+
+const TWO_FACTOR_RATE_LIMIT: RateLimitConfig = {
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+  blockDurationMs: 30 * 60 * 1000,
+};
+
 const loginAttempts = new Map<string, RateLimitEntry>();
 const registerAttempts = new Map<string, RateLimitEntry>();
+const passwordResetAttempts = new Map<string, RateLimitEntry>();
+const emailVerificationAttempts = new Map<string, RateLimitEntry>();
+const twoFactorAttempts = new Map<string, RateLimitEntry>();
+
+const cleanupStore = (store: Map<string, RateLimitEntry>, config: RateLimitConfig) => {
+  const now = Date.now();
+  for (const [key, entry] of store.entries()) {
+    if ((entry.blockedUntil && entry.blockedUntil < now) || now - entry.firstAttempt > config.windowMs) {
+      store.delete(key);
+    }
+  }
+};
+
+const RATE_LIMIT_STORES: [Map<string, RateLimitEntry>, RateLimitConfig][] = [
+  [loginAttempts, LOGIN_RATE_LIMIT],
+  [registerAttempts, REGISTER_RATE_LIMIT],
+  [passwordResetAttempts, PASSWORD_RESET_RATE_LIMIT],
+  [emailVerificationAttempts, EMAIL_VERIFICATION_RATE_LIMIT],
+  [twoFactorAttempts, TWO_FACTOR_RATE_LIMIT],
+];
 
 const cleanupInterval = setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, entry] of loginAttempts.entries()) {
-      if (entry.blockedUntil && entry.blockedUntil < now) {
-        loginAttempts.delete(key);
-      } else if (now - entry.firstAttempt > LOGIN_RATE_LIMIT.windowMs) {
-        loginAttempts.delete(key);
-      }
-    }
-    for (const [key, entry] of registerAttempts.entries()) {
-      if (entry.blockedUntil && entry.blockedUntil < now) {
-        registerAttempts.delete(key);
-      } else if (now - entry.firstAttempt > REGISTER_RATE_LIMIT.windowMs) {
-        registerAttempts.delete(key);
-      }
-    }
-  },
+  () => RATE_LIMIT_STORES.forEach(([store, config]) => cleanupStore(store, config)),
   5 * 60 * 1000
 );
 
@@ -178,4 +200,79 @@ export const getLoginAttemptsRemaining = (ip: string, email: string): number => 
   const key = createKey(ip, email.toLowerCase());
   const result = checkRateLimit(loginAttempts, key, LOGIN_RATE_LIMIT);
   return result.remainingAttempts;
+};
+
+export const checkPasswordResetRateLimit = (
+  email: string,
+  metadata: { userAgent?: string; ip?: string } = {}
+): void => {
+  const key = email.toLowerCase();
+  const result = checkRateLimit(passwordResetAttempts, key, PASSWORD_RESET_RATE_LIMIT);
+
+  if (!result.allowed) {
+    logSecurityEvent(SecurityEvent.RATE_LIMIT_EXCEEDED, null, {
+      ...metadata,
+      email,
+      reason: 'password_reset_attempts_exceeded',
+    });
+
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many password reset attempts. Please try again later.',
+    });
+  }
+};
+
+export const recordPasswordResetAttempt = (email: string, success: boolean): void => {
+  const key = email.toLowerCase();
+  recordAttempt(passwordResetAttempts, key, PASSWORD_RESET_RATE_LIMIT, success);
+};
+
+export const checkEmailVerificationRateLimit = (
+  email: string,
+  metadata: { userAgent?: string; ip?: string } = {}
+): void => {
+  const key = email.toLowerCase();
+  const result = checkRateLimit(emailVerificationAttempts, key, EMAIL_VERIFICATION_RATE_LIMIT);
+
+  if (!result.allowed) {
+    logSecurityEvent(SecurityEvent.RATE_LIMIT_EXCEEDED, null, {
+      ...metadata,
+      email,
+      reason: 'email_verification_attempts_exceeded',
+    });
+
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many verification email requests. Please try again later.',
+    });
+  }
+};
+
+export const recordEmailVerificationAttempt = (email: string, success: boolean): void => {
+  const key = email.toLowerCase();
+  recordAttempt(emailVerificationAttempts, key, EMAIL_VERIFICATION_RATE_LIMIT, success);
+};
+
+export const checkTwoFactorRateLimit = (
+  userId: string,
+  metadata: { userAgent?: string; ip?: string } = {}
+): void => {
+  const result = checkRateLimit(twoFactorAttempts, userId, TWO_FACTOR_RATE_LIMIT);
+
+  if (!result.allowed) {
+    logSecurityEvent(SecurityEvent.RATE_LIMIT_EXCEEDED, null, {
+      ...metadata,
+      reason: 'two_factor_attempts_exceeded',
+    });
+
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many verification attempts. Please try again later.',
+    });
+  }
+};
+
+export const recordTwoFactorAttempt = (userId: string, success: boolean): void => {
+  recordAttempt(twoFactorAttempts, userId, TWO_FACTOR_RATE_LIMIT, success);
 };

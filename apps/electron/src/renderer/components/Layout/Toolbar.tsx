@@ -1,4 +1,3 @@
-import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
 import { Box, Flex, HStack, Portal, Text } from '@chakra-ui/react';
 import { IconButton, Logo, Menu, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import { memo, useCallback } from 'react';
@@ -13,7 +12,6 @@ import {
   LuPlus,
   LuSquareArrowOutUpRight,
   LuScanLine,
-  LuSettings,
   LuZoomIn,
   LuZoomOut,
 } from 'react-icons/lu';
@@ -28,6 +26,7 @@ import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
 import type { ChartType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
+import { UserAvatar } from '../UserAvatar';
 import { WalletSelector } from '../WalletSelector';
 
 const TIMEFRAME_OPTIONS = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'] as const;
@@ -114,7 +113,6 @@ export const Toolbar = memo(({
   onToggleAutoTrading,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const globalActions = useGlobalActionsOptional();
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
@@ -323,28 +321,13 @@ export const Toolbar = memo(({
           </>
         )}
 
-        {showSidebarButtons && (
-          <>
-            <Box w="1px" h="22px" bg="border" flexShrink={0} />
-            <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
-              <IconButton
-                aria-label={t('header.settings')}
-                onClick={globalActions?.openSettings}
-                variant="outline"
-                color="fg.muted"
-                size="2xs"
-              >
-                <LuSettings />
-              </IconButton>
-            </TooltipWrapper>
-          </>
-        )}
       </Flex>
 
       {showSidebarButtons && (
-        <Box flexShrink={0}>
+        <HStack gap={1} flexShrink={0}>
           <WalletSelector />
-        </Box>
+          <UserAvatar />
+        </HStack>
       )}
 
       {rightExtra && <Box flexShrink={0}>{rightExtra}</Box>}

@@ -140,6 +140,9 @@ const start = async (): Promise<void> => {
     const { cooldownService } = await import('./services/cooldown');
     cooldownService.startCleanupScheduler(60);
 
+    const { startCleanupScheduler } = await import('./services/cleanup');
+    startCleanupScheduler();
+
     const { fundingRateService } = await import('./services/funding-rate-service');
     fundingRateService.start();
 

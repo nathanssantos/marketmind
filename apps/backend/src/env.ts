@@ -11,6 +11,8 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32),
   CORS_ORIGIN: z.string().url().default('http://localhost:5174'),
   ENABLE_LIVE_TRADING: z.string().default('false').transform(v => v === 'true'),
+  RESEND_API_KEY: z.string().optional(),
+  APP_URL: z.string().url().default('http://localhost:5174'),
 });
 
 export const env = envSchema.parse(process.env);

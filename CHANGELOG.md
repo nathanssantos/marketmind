@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.82.0] - 2026-03-29
+
+### Added
+- **Authentication pages**: Login, Register, Forgot Password, Reset Password pages with full i18n (en, pt, es, fr)
+- **Email verification**: Registration now sends verification email; verify-email page with resend support
+- **Two-factor authentication**: Optional email-based 2FA per user; 6-digit code input page with resend
+- **Password recovery**: Resend email service for password reset with secure single-use tokens (1h expiry)
+- **Remember me**: Login supports short (24h) vs long (30d) session duration
+- **User avatar dropdown**: Toolbar avatar with initials, dropdown menu for Account, Settings, and Logout
+- **Account dialog**: Edit profile name, view email verification status, toggle 2FA, member since date
+- **User profile**: `name` column on users table with `updateProfile` endpoint
+- **Auth guard**: Route protection replacing dev-only AutoAuth; redirects to login when unauthenticated
+- **Cleanup scheduler**: Hourly cleanup of expired sessions, tokens, and 2FA codes
+- **Rate limiting**: Password reset (3/email/hr), email verification (5/email/hr), 2FA attempts (5/user/15min)
+- **Security audit events**: PASSWORD_RESET_REQUEST/SUCCESS/FAILURE, EMAIL_VERIFICATION_SENT/SUCCESS, TWO_FACTOR_SENT/SUCCESS/FAILURE/TOGGLED
+
+### Changed
+- **ChakraProvider lifted** from App.tsx to index.tsx so auth pages share the theme
+- **Settings button** moved from toolbar to user avatar dropdown
+- **PasswordInput** fixed to full-width (100%) matching other inputs
+- **Auth constants** extracted to `AUTH_EXPIRY` (backend) and `AUTH_UI` (frontend) for single source of truth
+- **Rate limiter cleanup** deduplicated from 5 identical loops to generic `cleanupStore()` function
+- **Email templates** use extracted `EMAIL_COLORS` constants and derive expiry text from `AUTH_EXPIRY`
+- **Error handling** uses tRPC error codes (`isRateLimited`, `isConflict`) instead of fragile string matching
+
+### Removed
+- **AutoAuth component**: Replaced by proper AuthGuard with login redirect
+
 ## [0.75.0] - 2026-03-24
 
 ### Added

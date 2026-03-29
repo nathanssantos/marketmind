@@ -1954,5 +1954,101 @@
       "heatmap": "Heatmap",
       "metrics": "Metrics"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Enter your credentials to continue",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account",
+      "invalidCredentials": "Invalid email or password",
+      "rateLimited": "Too many attempts. Please try again later."
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Sign up to get started",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "passwordMismatch": "Passwords do not match",
+      "emailInUse": "This email is already registered"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "subtitle": "We'll send you a link to reset your password",
+      "email": "Email",
+      "submit": "Send reset link",
+      "backToLogin": "Back to sign in",
+      "successTitle": "Check your email",
+      "successMessage": "If an account exists with that email, we've sent a password reset link."
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "subtitle": "Enter your new password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "successTitle": "Password reset",
+      "successMessage": "Your password has been reset. Redirecting to sign in...",
+      "invalidToken": "This reset link is invalid or has expired.",
+      "backToLogin": "Back to sign in",
+      "requestNew": "Request a new link"
+    },
+    "verifyEmail": {
+      "title": "Verify your email",
+      "subtitle": "We've sent a verification link to your email address",
+      "checkInbox": "Please check your inbox and click the verification link.",
+      "resend": "Resend verification email",
+      "resent": "Verification email resent",
+      "alreadyVerified": "Your email is already verified",
+      "successTitle": "Email verified",
+      "successMessage": "Your email has been verified. Redirecting...",
+      "invalidToken": "This verification link is invalid or has expired.",
+      "continueWithout": "Continue without verifying"
+    },
+    "twoFactor": {
+      "title": "Two-factor authentication",
+      "subtitle": "Enter the 6-digit code sent to your email",
+      "code": "Verification code",
+      "submit": "Verify",
+      "resend": "Resend code",
+      "resent": "A new code has been sent",
+      "invalidCode": "Invalid or expired code",
+      "backToLogin": "Back to sign in"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "codeRequired": "Code is required",
+      "codeLength": "Code must be 6 digits"
+    }
+  },
+  "account": {
+    "title": "Account",
+    "profile": "Profile",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "email": "Email",
+    "emailVerified": "Verified",
+    "emailNotVerified": "Not verified",
+    "security": "Security",
+    "twoFactor": "Two-factor authentication",
+    "twoFactorDescription": "Receive a code by email when signing in",
+    "twoFactorRequiresEmail": "Verify your email first to enable 2FA",
+    "memberSince": "Member since",
+    "save": "Save",
+    "saved": "Saved",
+    "logout": "Sign out",
+    "settings": "Settings"
   }
 }

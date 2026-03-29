@@ -1,9 +1,11 @@
+import { ChakraProvider } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
 import { createPlatformAdapter } from './adapters/factory';
 import type { PlatformAdapter } from './adapters/types';
 import App from './App';
+import { AuthGuard } from './components/Auth/AuthGuard';
 import { LanguageSyncProvider } from './components/LanguageSyncProvider';
 import { TrpcProvider } from './components/TrpcProvider';
 import { ColorModeProvider } from './components/ui';
@@ -11,7 +13,14 @@ import { PRE_REACT_COLORS } from './constants/preReactColors';
 import { PlatformProvider } from './context/PlatformContext';
 import './global.d.ts';
 import './i18n';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { TwoFactorPage } from './pages/TwoFactorPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ChartWindow } from './pages/ChartWindow';
+import { system } from './theme';
 
 const PERFORMANCE_CLEANUP = {
   INTERVAL_MS: 30_000,
@@ -63,18 +72,26 @@ const Root = () => {
   return (
     <TrpcProvider>
       <PlatformProvider adapter={adapter}>
-        <ColorModeProvider>
-          <LanguageSyncProvider>
-            <RouterComponent platform={adapter.platform}>
-              <Routes>
-                <Route path="/" element={<App />} />
-                <Route path="/chart" element={<ChartWindow />} />
-                <Route path="/chart/:symbol" element={<ChartWindow />} />
-                <Route path="/chart/:symbol/:timeframe" element={<ChartWindow />} />
-              </Routes>
-            </RouterComponent>
-          </LanguageSyncProvider>
-        </ColorModeProvider>
+        <ChakraProvider value={system}>
+          <ColorModeProvider>
+            <LanguageSyncProvider>
+              <RouterComponent platform={adapter.platform}>
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                  <Route path="/verify-email/:token?" element={<VerifyEmailPage />} />
+                  <Route path="/two-factor" element={<TwoFactorPage />} />
+                  <Route path="/" element={<AuthGuard><App /></AuthGuard>} />
+                  <Route path="/chart" element={<AuthGuard><ChartWindow /></AuthGuard>} />
+                  <Route path="/chart/:symbol" element={<AuthGuard><ChartWindow /></AuthGuard>} />
+                  <Route path="/chart/:symbol/:timeframe" element={<AuthGuard><ChartWindow /></AuthGuard>} />
+                </Routes>
+              </RouterComponent>
+            </LanguageSyncProvider>
+          </ColorModeProvider>
+        </ChakraProvider>
       </PlatformProvider>
     </TrpcProvider>
   );

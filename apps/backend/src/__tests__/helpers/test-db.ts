@@ -34,6 +34,9 @@ DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
 DROP TABLE IF EXISTS trading_profiles CASCADE;
+DROP TABLE IF EXISTS two_factor_codes CASCADE;
+DROP TABLE IF EXISTS email_verification_tokens CASCADE;
+DROP TABLE IF EXISTS password_reset_tokens CASCADE;
 DROP TABLE IF EXISTS sessions CASCADE;
 DROP TABLE IF EXISTS wallets CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -44,6 +47,9 @@ CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(255) PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  email_verified BOOLEAN DEFAULT false NOT NULL,
+  two_factor_enabled BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -52,6 +58,31 @@ CREATE TABLE IF NOT EXISTS sessions (
   id VARCHAR(255) PRIMARY KEY,
   user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   expires_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMP NOT NULL,
+  used BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMP NOT NULL,
+  used BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS two_factor_codes (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS wallets (
@@ -697,6 +728,9 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.apiKeys);
   await db.delete(schema.userPreferences);
   await db.delete(schema.tradingProfiles);
+  await db.delete(schema.twoFactorCodes);
+  await db.delete(schema.emailVerificationTokens);
+  await db.delete(schema.passwordResetTokens);
   await db.delete(schema.sessions);
   await db.delete(schema.wallets);
   await db.delete(schema.users);

@@ -1989,5 +1989,101 @@
       "heatmap": "Mapa de Calor",
       "metrics": "Métricas"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Insira suas credenciais para continuar",
+      "email": "Email",
+      "password": "Senha",
+      "rememberMe": "Lembrar de mim",
+      "forgotPassword": "Esqueceu a senha?",
+      "submit": "Entrar",
+      "noAccount": "Ainda não tem conta?",
+      "createAccount": "Criar conta",
+      "invalidCredentials": "Email ou senha inválidos",
+      "rateLimited": "Muitas tentativas. Tente novamente mais tarde."
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Cadastre-se para começar",
+      "email": "Email",
+      "password": "Senha",
+      "confirmPassword": "Confirmar senha",
+      "submit": "Criar conta",
+      "hasAccount": "Já tem uma conta?",
+      "signIn": "Entrar",
+      "passwordMismatch": "As senhas não coincidem",
+      "emailInUse": "Este email já está registrado"
+    },
+    "forgotPassword": {
+      "title": "Esqueci a senha",
+      "subtitle": "Enviaremos um link para redefinir sua senha",
+      "email": "Email",
+      "submit": "Enviar link de redefinição",
+      "backToLogin": "Voltar para o login",
+      "successTitle": "Verifique seu email",
+      "successMessage": "Se existe uma conta com esse email, enviamos um link de redefinição de senha."
+    },
+    "resetPassword": {
+      "title": "Redefinir senha",
+      "subtitle": "Digite sua nova senha",
+      "newPassword": "Nova senha",
+      "confirmPassword": "Confirmar nova senha",
+      "submit": "Redefinir senha",
+      "successTitle": "Senha redefinida",
+      "successMessage": "Sua senha foi redefinida. Redirecionando para o login...",
+      "invalidToken": "Este link de redefinição é inválido ou expirou.",
+      "backToLogin": "Voltar para o login",
+      "requestNew": "Solicitar novo link"
+    },
+    "verifyEmail": {
+      "title": "Verifique seu email",
+      "subtitle": "Enviamos um link de verificação para seu email",
+      "checkInbox": "Verifique sua caixa de entrada e clique no link de verificação.",
+      "resend": "Reenviar email de verificação",
+      "resent": "Email de verificação reenviado",
+      "alreadyVerified": "Seu email já foi verificado",
+      "successTitle": "Email verificado",
+      "successMessage": "Seu email foi verificado. Redirecionando...",
+      "invalidToken": "Este link de verificação é inválido ou expirou.",
+      "continueWithout": "Continuar sem verificar"
+    },
+    "twoFactor": {
+      "title": "Autenticação de dois fatores",
+      "subtitle": "Digite o código de 6 dígitos enviado para seu email",
+      "code": "Código de verificação",
+      "submit": "Verificar",
+      "resend": "Reenviar código",
+      "resent": "Um novo código foi enviado",
+      "invalidCode": "Código inválido ou expirado",
+      "backToLogin": "Voltar para o login"
+    },
+    "validation": {
+      "emailRequired": "Email é obrigatório",
+      "emailInvalid": "Insira um email válido",
+      "passwordRequired": "Senha é obrigatória",
+      "passwordMin": "A senha deve ter no mínimo 8 caracteres",
+      "codeRequired": "Código é obrigatório",
+      "codeLength": "O código deve ter 6 dígitos"
+    }
+  },
+  "account": {
+    "title": "Conta",
+    "profile": "Perfil",
+    "name": "Nome",
+    "namePlaceholder": "Seu nome",
+    "email": "Email",
+    "emailVerified": "Verificado",
+    "emailNotVerified": "Não verificado",
+    "security": "Segurança",
+    "twoFactor": "Autenticação de dois fatores",
+    "twoFactorDescription": "Receba um código por email ao entrar",
+    "twoFactorRequiresEmail": "Verifique seu email primeiro para ativar o 2FA",
+    "memberSince": "Membro desde",
+    "save": "Salvar",
+    "saved": "Salvo",
+    "logout": "Sair",
+    "settings": "Configurações"
   }
 }

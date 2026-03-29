@@ -6,15 +6,23 @@ export const useBackendAuth = () => {
   const loginMutation = trpc.auth.login.useMutation();
   const registerMutation = trpc.auth.register.useMutation();
   const logoutMutation = trpc.auth.logout.useMutation();
+  const requestPasswordResetMutation = trpc.auth.requestPasswordReset.useMutation();
+  const resetPasswordMutation = trpc.auth.resetPassword.useMutation();
+  const verifyEmailMutation = trpc.auth.verifyEmail.useMutation();
+  const resendVerificationMutation = trpc.auth.resendVerificationEmail.useMutation();
+  const verifyTwoFactorMutation = trpc.auth.verifyTwoFactor.useMutation();
+  const resendTwoFactorMutation = trpc.auth.resendTwoFactorCode.useMutation();
+  const toggleTwoFactorMutation = trpc.auth.toggleTwoFactor.useMutation();
+
   const { data: currentUser, isLoading, refetch } = trpc.auth.me.useQuery(undefined, {
     retry: false,
     staleTime: QUERY_CONFIG.STALE_TIME.LONG,
   });
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const result = await loginMutation.mutateAsync({ email, password });
-      await refetch();
+    async (email: string, password: string, rememberMe = false) => {
+      const result = await loginMutation.mutateAsync({ email, password, rememberMe });
+      if (!result.requiresTwoFactor) await refetch();
       return result;
     },
     [loginMutation, refetch]
@@ -34,6 +42,58 @@ export const useBackendAuth = () => {
     await refetch();
   }, [logoutMutation, refetch]);
 
+  const requestPasswordReset = useCallback(
+    async (email: string) => {
+      return await requestPasswordResetMutation.mutateAsync({ email });
+    },
+    [requestPasswordResetMutation]
+  );
+
+  const resetPassword = useCallback(
+    async (token: string, password: string) => {
+      return await resetPasswordMutation.mutateAsync({ token, password });
+    },
+    [resetPasswordMutation]
+  );
+
+  const verifyEmail = useCallback(
+    async (token: string) => {
+      const result = await verifyEmailMutation.mutateAsync({ token });
+      await refetch();
+      return result;
+    },
+    [verifyEmailMutation, refetch]
+  );
+
+  const resendVerificationEmail = useCallback(async () => {
+    return await resendVerificationMutation.mutateAsync();
+  }, [resendVerificationMutation]);
+
+  const verifyTwoFactor = useCallback(
+    async (userId: string, code: string, rememberMe = false) => {
+      const result = await verifyTwoFactorMutation.mutateAsync({ userId, code, rememberMe });
+      await refetch();
+      return result;
+    },
+    [verifyTwoFactorMutation, refetch]
+  );
+
+  const resendTwoFactorCode = useCallback(
+    async (userId: string) => {
+      return await resendTwoFactorMutation.mutateAsync({ userId });
+    },
+    [resendTwoFactorMutation]
+  );
+
+  const toggleTwoFactor = useCallback(
+    async (enabled: boolean) => {
+      const result = await toggleTwoFactorMutation.mutateAsync({ enabled });
+      await refetch();
+      return result;
+    },
+    [toggleTwoFactorMutation, refetch]
+  );
+
   return {
     currentUser,
     isLoading,
@@ -41,11 +101,28 @@ export const useBackendAuth = () => {
     login,
     register,
     logout,
+    requestPasswordReset,
+    resetPassword,
+    verifyEmail,
+    resendVerificationEmail,
+    verifyTwoFactor,
+    resendTwoFactorCode,
+    toggleTwoFactor,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
     isLoggingOut: logoutMutation.isPending,
+    isRequestingReset: requestPasswordResetMutation.isPending,
+    isResettingPassword: resetPasswordMutation.isPending,
+    isVerifyingEmail: verifyEmailMutation.isPending,
+    isResendingVerification: resendVerificationMutation.isPending,
+    isVerifyingTwoFactor: verifyTwoFactorMutation.isPending,
+    isResendingTwoFactor: resendTwoFactorMutation.isPending,
+    isTogglingTwoFactor: toggleTwoFactorMutation.isPending,
     loginError: loginMutation.error,
     registerError: registerMutation.error,
     logoutError: logoutMutation.error,
+    resetError: resetPasswordMutation.error,
+    verifyEmailError: verifyEmailMutation.error,
+    twoFactorError: verifyTwoFactorMutation.error,
   };
 };

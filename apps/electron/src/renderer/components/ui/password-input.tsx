@@ -11,7 +11,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((p
   const [show, setShow] = useState(false);
 
   return (
-    <Box position="relative">
+    <Box position="relative" width="100%">
       <Input
         {...(props as any)}
         ref={ref}
