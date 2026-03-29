@@ -5,7 +5,6 @@ import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuGauge } from 'react-icons/lu';
 
 interface LeveragePopoverProps {
   symbol: string;
@@ -72,7 +71,7 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
                 fontSize="xs"
                 fontWeight="bold"
               >
-                {leverage > 1 ? `${leverage}x` : <LuGauge size={14} />}
+                {`${leverage}x`}
               </Button>
             </TooltipWrapper>
           </Box>

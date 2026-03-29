@@ -12,9 +12,10 @@ import { TrailingStopSection } from '../Trading/WatcherManager/TrailingStopSecti
 
 interface TrailingStopPopoverProps {
   symbol: string;
+  triggerElement?: React.ReactNode;
 }
 
-export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) => {
+export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingStopPopoverProps) => {
   const { t } = useTranslation();
   const { success, info } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -186,26 +187,28 @@ export const TrailingStopPopover = memo(({ symbol }: TrailingStopPopoverProps) =
         width="280px"
         positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
         trigger={
-          <Box>
-            <TooltipWrapper
-              label={tooltipLabel}
-              showArrow
-              placement="bottom"
-              isDisabled={isOpen}
-            >
-              <ToggleIconButton
-                active={isTrailingActive}
-                aria-label={t('positionTrailingStop.title')}
-                size="2xs"
-                h="22px"
-                w="22px"
-                onClick={handleClick}
-                onContextMenu={handleContextMenu}
+          triggerElement ?? (
+            <Box>
+              <TooltipWrapper
+                label={tooltipLabel}
+                showArrow
+                placement="bottom"
+                isDisabled={isOpen}
               >
-                <LuShield />
-              </ToggleIconButton>
-            </TooltipWrapper>
+                <ToggleIconButton
+                  active={isTrailingActive}
+                  aria-label={t('positionTrailingStop.title')}
+                  size="2xs"
+                  h="22px"
+                  w="22px"
+                  onClick={handleClick}
+                  onContextMenu={handleContextMenu}
+                >
+                  <LuShield />
+                </ToggleIconButton>
+              </TooltipWrapper>
           </Box>
+          )
         }
       >
         <VStack gap={2} p={3} align="stretch" maxH="80vh" overflowY="auto">

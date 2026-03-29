@@ -5,7 +5,11 @@ import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuGrid3X3 } from 'react-icons/lu';
 
-export const GridOrderPopover = memo(() => {
+interface GridOrderPopoverProps {
+  triggerElement?: React.ReactNode;
+}
+
+export const GridOrderPopover = memo(({ triggerElement }: GridOrderPopoverProps = {}) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -49,26 +53,28 @@ export const GridOrderPopover = memo(() => {
         width="220px"
         positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
         trigger={
-          <Box>
-            <TooltipWrapper
-              label={t('chart.gridOrders.title')}
-              showArrow
-              placement="bottom"
-              isDisabled={isOpen}
-            >
-              <ToggleIconButton
-                active={isGridModeActive}
-                aria-label={t('chart.gridOrders.title')}
-                size="2xs"
-                h="22px"
-                w="22px"
-                onClick={handleClick}
-                onContextMenu={handleContextMenu}
+          triggerElement ?? (
+            <Box>
+              <TooltipWrapper
+                label={t('chart.gridOrders.title')}
+                showArrow
+                placement="bottom"
+                isDisabled={isOpen}
               >
-                <LuGrid3X3 />
-              </ToggleIconButton>
-            </TooltipWrapper>
-          </Box>
+                <ToggleIconButton
+                  active={isGridModeActive}
+                  aria-label={t('chart.gridOrders.title')}
+                  size="2xs"
+                  h="22px"
+                  w="22px"
+                  onClick={handleClick}
+                  onContextMenu={handleContextMenu}
+                >
+                  <LuGrid3X3 />
+                </ToggleIconButton>
+              </TooltipWrapper>
+            </Box>
+          )
         }
       >
         <VStack gap={2} p={3} align="stretch">

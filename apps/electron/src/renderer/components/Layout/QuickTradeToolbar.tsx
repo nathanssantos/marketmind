@@ -12,7 +12,7 @@ import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGripVertical, LuX } from 'react-icons/lu';
+import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuShield, LuX } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
@@ -307,8 +307,12 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
                 <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders', 'Cancel Orders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
               </>
             )}
-            <ActionRow label={t('chart.quickTrade.gridOrders', 'Grid Orders')}><GridOrderPopover /></ActionRow>
-            <ActionRow label={t('chart.quickTrade.trailingStop', 'Trailing Stop')}><TrailingStopPopover symbol={symbol} /></ActionRow>
+            <GridOrderPopover triggerElement={
+              <ActionRow icon={<LuGrid3X3 />} label={t('chart.quickTrade.gridOrders', 'Grid Orders')} />
+            } />
+            <TrailingStopPopover symbol={symbol} triggerElement={
+              <ActionRow icon={<LuShield />} label={t('chart.quickTrade.trailingStop', 'Trailing Stop')} />
+            } />
           </VStack>
         )}
       </VStack>
