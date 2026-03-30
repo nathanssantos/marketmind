@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.83.1] - 2026-03-30
+
+### Fixed
+- **Heatmap column alignment**: Columns now align exactly with candlesticks using same coordinate system as CanvasManager
+- **Heatmap real-time updates**: Live bucket emitted every 2s so current candle shows data immediately instead of lagging by 1 minute
+- **Heatmap settings apply immediately**: Adding always-collect symbols starts depth collection instantly, no restart needed
+
+### Changed
+- **TimescaleDB hypertable**: Heatmap table converted to hypertable with auto-compression (>1 day) and retention policy (7 days)
+- **Code review optimizations**: Race condition fix, stack overflow prevention, deduped bid/ask loops, extracted constants, capped snapshot payload
+
 ## [0.83.0] - 2026-03-30
 
 ### Added
