@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { heatmapAlwaysCollectSymbols } from '../db/schema';
+import { binanceDepthStreamService } from '../services/binance-depth-stream';
 import { protectedProcedure, router } from '../trpc';
 
 export const heatmapRouter = router({
@@ -16,6 +17,7 @@ export const heatmapRouter = router({
       await ctx.db.insert(heatmapAlwaysCollectSymbols)
         .values({ symbol: input.symbol })
         .onConflictDoNothing();
+      binanceDepthStreamService.subscribe(input.symbol.toLowerCase());
       return { success: true };
     }),
 

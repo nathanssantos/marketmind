@@ -1,5 +1,6 @@
 import type { MutableRefObject } from 'react';
 import { useEffect, useRef } from 'react';
+import { HEATMAP_MAX_BUCKETS } from '@marketmind/types';
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
 import { socketService } from '../services/socketService';
 
@@ -41,7 +42,7 @@ export const useLiquidityHeatmap = (
       }
 
       current.buckets.push(data.bucket);
-      if (current.buckets.length > 500) current.buckets.splice(0, current.buckets.length - 500);
+      if (current.buckets.length > HEATMAP_MAX_BUCKETS) current.buckets.splice(0, current.buckets.length - HEATMAP_MAX_BUCKETS);
       current.maxQuantity = data.maxQuantity;
       current.priceBinSize = data.priceBinSize;
     };

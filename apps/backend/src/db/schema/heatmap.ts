@@ -1,4 +1,4 @@
-import { index, pgTable, primaryKey, serial, text, timestamp, unique, varchar, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, primaryKey, serial, text, timestamp, unique, varchar, numeric } from 'drizzle-orm/pg-core';
 
 export const heatmapAlwaysCollectSymbols = pgTable(
   'heatmap_always_collect_symbols',
@@ -25,6 +25,5 @@ export const liquidityHeatmapBuckets = pgTable(
   },
   (table) => ({
     pk: primaryKey({ columns: [table.symbol, table.bucketTime] }),
-    lookupIdx: index('heatmap_lookup_idx').on(table.symbol, table.bucketTime),
   })
 );

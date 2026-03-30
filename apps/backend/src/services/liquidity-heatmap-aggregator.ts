@@ -1,16 +1,11 @@
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
+import { LIQUIDITY_HEATMAP } from '../constants/heatmap';
 import { and, eq, gte } from 'drizzle-orm';
 import type { BinanceDepthStreamService } from './binance-depth-stream';
 import { db } from '../db/client';
 import { liquidityHeatmapBuckets } from '../db/schema';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
-
-const BUCKET_DURATION_MS = 60_000;
-const MAX_BUCKETS_MEMORY = 500;
-const SAMPLE_INTERVAL_MS = 2_000;
-const PERSIST_BATCH_SIZE = 10;
-const MAX_DB_AGE_MS = 24 * 60 * 60 * 1000;
 
 interface CurrentBucket {
   time: number;
@@ -24,7 +19,7 @@ interface SymbolState {
   buckets: LiquidityHeatmapBucket[];
   maxQuantity: number;
   unpersisted: LiquidityHeatmapBucket[];
-  loaded: boolean;
+  loadPromise: Promise<void> | null;
 }
 
 const computePriceBinSize = (price: number): number => {
@@ -38,7 +33,29 @@ const computePriceBinSize = (price: number): number => {
 };
 
 const alignToBucket = (timestamp: number): number =>
-  Math.floor(timestamp / BUCKET_DURATION_MS) * BUCKET_DURATION_MS;
+  Math.floor(timestamp / LIQUIDITY_HEATMAP.BUCKET_DURATION_MS) * LIQUIDITY_HEATMAP.BUCKET_DURATION_MS;
+
+const maxOfRecord = (rec: Record<string, number>): number => {
+  let max = 0;
+  for (const key in rec) {
+    const v = rec[key]!;
+    if (v > max) max = v;
+  }
+  return max;
+};
+
+const accumulateIntoBins = (source: Map<number, number>, target: Map<number, number>, binSize: number): void => {
+  for (const [price, qty] of source) {
+    const binned = Math.round(price / binSize) * binSize;
+    target.set(binned, (target.get(binned) ?? 0) + qty);
+  }
+};
+
+const mapToRecord = (map: Map<number, number>): Record<string, number> => {
+  const rec: Record<string, number> = {};
+  for (const [k, v] of map) rec[k] = v;
+  return rec;
+};
 
 export class LiquidityHeatmapAggregator {
   private symbols = new Map<string, SymbolState>();
@@ -50,14 +67,13 @@ export class LiquidityHeatmapAggregator {
     this.depthService = depthService;
 
     this.unsubscribeDepth = depthService.onDepthUpdate((update) => {
-      const state = this.symbols.get(update.symbol);
-      if (!state) {
+      if (!this.symbols.has(update.symbol)) {
         const refPrice = update.bids[0]?.price ?? update.asks[0]?.price ?? 0;
         if (refPrice > 0) this.getOrCreateState(update.symbol, refPrice);
       }
     });
 
-    this.sampleTimer = setInterval(() => this.sampleAll(), SAMPLE_INTERVAL_MS);
+    this.sampleTimer = setInterval(() => this.sampleAll(), LIQUIDITY_HEATMAP.SAMPLE_INTERVAL_MS);
     logger.info('Liquidity heatmap aggregator started');
   }
 
@@ -80,13 +96,19 @@ export class LiquidityHeatmapAggregator {
     const state = this.symbols.get(symbol);
     if (!state) return null;
 
-    if (!state.loaded) await this.loadFromDB(symbol, state);
+    if (state.loadPromise) await state.loadPromise;
 
     if (state.buckets.length === 0) return null;
+
+    const maxBuckets = LIQUIDITY_HEATMAP.SNAPSHOT_MAX_BUCKETS;
+    const buckets = state.buckets.length > maxBuckets
+      ? state.buckets.slice(state.buckets.length - maxBuckets)
+      : state.buckets;
+
     return {
       symbol,
       priceBinSize: state.priceBinSize,
-      buckets: state.buckets,
+      buckets,
       maxQuantity: state.maxQuantity,
     };
   }
@@ -100,20 +122,17 @@ export class LiquidityHeatmapAggregator {
         buckets: [],
         maxQuantity: 0,
         unpersisted: [],
-        loaded: false,
+        loadPromise: null,
       };
       this.symbols.set(symbol, state);
-      void this.loadFromDB(symbol, state);
+      state.loadPromise = this.loadFromDB(symbol, state).finally(() => { state!.loadPromise = null; });
     }
     return state;
   }
 
   private async loadFromDB(symbol: string, state: SymbolState): Promise<void> {
-    if (state.loaded) return;
-    state.loaded = true;
-
     try {
-      const cutoff = new Date(Date.now() - MAX_DB_AGE_MS);
+      const cutoff = new Date(Date.now() - LIQUIDITY_HEATMAP.MAX_DB_AGE_MS);
       const rows = await db
         .select()
         .from(liquidityHeatmapBuckets)
@@ -132,19 +151,17 @@ export class LiquidityHeatmapAggregator {
         const time = row.bucketTime.getTime();
         if (existingTimes.has(time)) continue;
 
-        const bids: Record<number, number> = JSON.parse(row.bids);
-        const asks: Record<number, number> = JSON.parse(row.asks);
-        const bucket: LiquidityHeatmapBucket = { time, bids, asks };
-
-        state.buckets.push(bucket);
+        const bids: Record<string, number> = JSON.parse(row.bids);
+        const asks: Record<string, number> = JSON.parse(row.asks);
+        state.buckets.push({ time, bids, asks });
 
         const rowMax = parseFloat(row.maxQuantity);
         if (rowMax > max) max = rowMax;
       }
 
       state.buckets.sort((a, b) => a.time - b.time);
-      if (state.buckets.length > MAX_BUCKETS_MEMORY) {
-        state.buckets.splice(0, state.buckets.length - MAX_BUCKETS_MEMORY);
+      if (state.buckets.length > LIQUIDITY_HEATMAP.MAX_BUCKETS_MEMORY) {
+        state.buckets.splice(0, state.buckets.length - LIQUIDITY_HEATMAP.MAX_BUCKETS_MEMORY);
       }
       state.maxQuantity = max;
 
@@ -163,103 +180,66 @@ export class LiquidityHeatmapAggregator {
     const now = Date.now();
     const wsService = getWebSocketService();
 
-    const depthSymbols = this.depthService.getSubscribedSymbols();
-    for (const rawSymbol of depthSymbols) {
+    for (const rawSymbol of this.depthService.getSubscribedSymbols()) {
       const symbol = rawSymbol.toUpperCase();
       const fullBook = this.depthService.getFullBook(symbol);
-      if (!fullBook) continue;
+      if (!fullBook || (fullBook.bids.size === 0 && fullBook.asks.size === 0)) continue;
 
-      const midPrice = this.estimateMidPrice(fullBook.bids, fullBook.asks);
-      if (midPrice <= 0) continue;
+      const state = this.symbols.get(symbol);
+      if (!state || state.loadPromise) continue;
 
-      const state = this.getOrCreateState(symbol, midPrice);
       const bucketTime = alignToBucket(now);
 
       if (!state.currentBucket || state.currentBucket.time !== bucketTime) {
         if (state.currentBucket) {
-          this.finalizeBucket(state);
+          const evicted = this.finalizeBucket(state);
           const lastBucket = state.buckets[state.buckets.length - 1];
           if (lastBucket && wsService) {
             wsService.emitLiquidityHeatmapBucket(symbol, lastBucket, state.priceBinSize, state.maxQuantity);
           }
-
-          if (state.unpersisted.length >= PERSIST_BATCH_SIZE) {
+          if (evicted) this.recomputeMaxQuantity(state);
+          if (state.unpersisted.length >= LIQUIDITY_HEATMAP.PERSIST_BATCH_SIZE) {
             void this.persistBatch(symbol, state);
           }
         }
         state.currentBucket = { time: bucketTime, bidAcc: new Map(), askAcc: new Map() };
       }
 
-      this.ingestFullBook(state, fullBook.bids, fullBook.asks);
+      accumulateIntoBins(fullBook.bids, state.currentBucket.bidAcc, state.priceBinSize);
+      accumulateIntoBins(fullBook.asks, state.currentBucket.askAcc, state.priceBinSize);
     }
   }
 
-  private estimateMidPrice(bids: Map<number, number>, asks: Map<number, number>): number {
-    let bestBid = 0;
-    let bestAsk = Infinity;
-    for (const price of bids.keys()) if (price > bestBid) bestBid = price;
-    for (const price of asks.keys()) if (price < bestAsk) bestAsk = price;
-    if (bestBid === 0 && bestAsk === Infinity) return 0;
-    if (bestBid === 0) return bestAsk;
-    if (bestAsk === Infinity) return bestBid;
-    return (bestBid + bestAsk) / 2;
-  }
-
-  private ingestFullBook(state: SymbolState, bids: Map<number, number>, asks: Map<number, number>): void {
-    const bucket = state.currentBucket!;
-    const binSize = state.priceBinSize;
-
-    for (const [price, qty] of bids) {
-      const binned = Math.round(price / binSize) * binSize;
-      const existing = bucket.bidAcc.get(binned) ?? 0;
-      bucket.bidAcc.set(binned, existing + qty);
-    }
-
-    for (const [price, qty] of asks) {
-      const binned = Math.round(price / binSize) * binSize;
-      const existing = bucket.askAcc.get(binned) ?? 0;
-      bucket.askAcc.set(binned, existing + qty);
-    }
-  }
-
-  private finalizeBucket(state: SymbolState): void {
+  private finalizeBucket(state: SymbolState): boolean {
     const current = state.currentBucket;
-    if (!current || (current.bidAcc.size === 0 && current.askAcc.size === 0)) return;
+    if (!current || (current.bidAcc.size === 0 && current.askAcc.size === 0)) return false;
 
-    const bids: Record<number, number> = {};
-    const asks: Record<number, number> = {};
-    let bucketMax = 0;
-
-    for (const [price, qty] of current.bidAcc) {
-      bids[price] = qty;
-      if (qty > bucketMax) bucketMax = qty;
-    }
-
-    for (const [price, qty] of current.askAcc) {
-      asks[price] = qty;
-      if (qty > bucketMax) bucketMax = qty;
-    }
+    const bids = mapToRecord(current.bidAcc);
+    const asks = mapToRecord(current.askAcc);
+    const bucketMax = Math.max(maxOfRecord(bids), maxOfRecord(asks));
 
     const bucket: LiquidityHeatmapBucket = { time: current.time, bids, asks };
     state.buckets.push(bucket);
     state.unpersisted.push(bucket);
 
-    if (state.buckets.length > MAX_BUCKETS_MEMORY) {
-      state.buckets.splice(0, state.buckets.length - MAX_BUCKETS_MEMORY);
+    let evicted = false;
+    if (state.buckets.length > LIQUIDITY_HEATMAP.MAX_BUCKETS_MEMORY) {
+      state.buckets.splice(0, state.buckets.length - LIQUIDITY_HEATMAP.MAX_BUCKETS_MEMORY);
+      evicted = true;
     }
 
-    if (bucketMax > state.maxQuantity) {
-      state.maxQuantity = bucketMax;
-    } else {
-      this.recomputeMaxQuantity(state);
-    }
+    if (bucketMax > state.maxQuantity) state.maxQuantity = bucketMax;
+
+    return evicted;
   }
 
   private recomputeMaxQuantity(state: SymbolState): void {
     let max = 0;
     for (const bucket of state.buckets) {
-      for (const qty of Object.values(bucket.bids)) if (qty > max) max = qty;
-      for (const qty of Object.values(bucket.asks)) if (qty > max) max = qty;
+      const bMax = maxOfRecord(bucket.bids);
+      const aMax = maxOfRecord(bucket.asks);
+      const m = bMax > aMax ? bMax : aMax;
+      if (m > max) max = m;
     }
     state.maxQuantity = max;
   }
@@ -275,14 +255,16 @@ export class LiquidityHeatmapAggregator {
         priceBinSize: String(state.priceBinSize),
         bids: JSON.stringify(b.bids),
         asks: JSON.stringify(b.asks),
-        maxQuantity: String(Math.max(...Object.values(b.bids), ...Object.values(b.asks), 0)),
+        maxQuantity: String(Math.max(maxOfRecord(b.bids), maxOfRecord(b.asks))),
       }));
 
       await db.insert(liquidityHeatmapBuckets).values(values).onConflictDoNothing();
       logger.trace({ symbol, count: batch.length }, 'Persisted heatmap buckets');
     } catch (err) {
       logger.error({ error: err, symbol }, 'Failed to persist heatmap buckets');
-      state.unpersisted.unshift(...batch);
+      if (state.unpersisted.length < LIQUIDITY_HEATMAP.MAX_BUCKETS_MEMORY) {
+        state.unpersisted.push(...batch);
+      }
     }
   }
 

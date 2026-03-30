@@ -269,10 +269,10 @@
       },
       "heatmap": {
         "title": "Mapa de Liquidez",
-        "description": "Símbolos que siempre recopilan datos de profundidad del libro de órdenes para el heatmap, incluso sin gráfico abierto. Requiere reiniciar el backend.",
+        "description": "Símbolos que siempre recopilan datos de profundidad del libro de órdenes para el heatmap, incluso sin gráfico abierto.",
         "placeholder": "ETHUSDT",
         "add": "Agregar",
-        "empty": "No hay símbolos configurados. BTCUSDT se usa por defecto."
+        "empty": "BTCUSDT siempre está recopilando."
       }
     },
     "chart": {

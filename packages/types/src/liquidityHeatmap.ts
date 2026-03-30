@@ -1,7 +1,10 @@
+export const HEATMAP_MAX_BUCKETS = 500;
+export const HEATMAP_BUCKET_DURATION_MS = 60_000;
+
 export interface LiquidityHeatmapBucket {
   time: number;
-  bids: Record<number, number>;
-  asks: Record<number, number>;
+  bids: Record<string, number>;
+  asks: Record<string, number>;
 }
 
 export interface LiquidityHeatmapSnapshot {

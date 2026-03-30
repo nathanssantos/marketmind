@@ -243,10 +243,10 @@
       },
       "heatmap": {
         "title": "Liquidity Heatmap",
-        "description": "Symbols that always collect order book depth for the heatmap, even without a chart open. Requires backend restart to take effect.",
+        "description": "Symbols that always collect order book depth for the heatmap, even without a chart open.",
         "placeholder": "ETHUSDT",
         "add": "Add",
-        "empty": "No symbols configured. BTCUSDT is used as default."
+        "empty": "BTCUSDT is always collecting."
       }
     },
     "chart": {

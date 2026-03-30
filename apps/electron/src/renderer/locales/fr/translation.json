@@ -269,10 +269,10 @@
       },
       "heatmap": {
         "title": "Carte de Liquidité",
-        "description": "Symboles qui collectent toujours les données du carnet d'ordres pour la heatmap, même sans graphique ouvert. Nécessite un redémarrage du backend.",
+        "description": "Symboles qui collectent toujours les données du carnet d'ordres pour la heatmap, même sans graphique ouvert.",
         "placeholder": "ETHUSDT",
         "add": "Ajouter",
-        "empty": "Aucun symbole configuré. BTCUSDT est utilisé par défaut."
+        "empty": "BTCUSDT collecte en permanence."
       }
     },
     "chart": {

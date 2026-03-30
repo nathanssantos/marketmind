@@ -1,3 +1,4 @@
+import { HEATMAP_BUCKET_DURATION_MS } from '@marketmind/types';
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG } from '@shared/constants';
@@ -53,6 +54,15 @@ interface MergedLevels {
   nextSearchStart: number;
 }
 
+const mergeRecordIntoMap = (rec: Record<string, number>, target: Map<number, number>): void => {
+  for (const key in rec) {
+    const price = Number(key);
+    const qty = rec[key]!;
+    const existing = target.get(price) ?? 0;
+    if (qty > existing) target.set(price, qty);
+  }
+};
+
 function findBucketsForKline(
   buckets: LiquidityHeatmapBucket[],
   openTime: number,
@@ -66,27 +76,15 @@ function findBucketsForKline(
   for (let i = searchStart; i < buckets.length; i++) {
     const bt = buckets[i]!.time;
     if (bt >= closeTime) break;
-    if (bt + 60_000 <= openTime) {
+    if (bt + HEATMAP_BUCKET_DURATION_MS <= openTime) {
       nextStart = i + 1;
       continue;
     }
 
     nextStart = i;
     const bucket = buckets[i]!;
-
-    for (const priceStr of Object.keys(bucket.bids)) {
-      const price = Number(priceStr);
-      const qty = bucket.bids[price]!;
-      const existing = bids.get(price) ?? 0;
-      if (qty > existing) bids.set(price, qty);
-    }
-
-    for (const priceStr of Object.keys(bucket.asks)) {
-      const price = Number(priceStr);
-      const qty = bucket.asks[price]!;
-      const existing = asks.get(price) ?? 0;
-      if (qty > existing) asks.set(price, qty);
-    }
+    mergeRecordIntoMap(bucket.bids, bids);
+    mergeRecordIntoMap(bucket.asks, asks);
   }
 
   return { bids, asks, nextSearchStart: nextStart };
@@ -138,7 +136,7 @@ export const useLiquidityHeatmapRenderer = ({
 
     const visibleRange = viewport.end - viewport.start;
     if (visibleRange <= 0) return;
-    const colWidth = Math.max(1, chartWidth / visibleRange);
+    const colWidth = Math.max(1, effectiveWidth / visibleRange);
 
     const binSize = data.priceBinSize;
     const refPrice = Number(klines[startIdx]!.close);
