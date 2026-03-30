@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.83.0] - 2026-03-30
+
+### Added
+- **Liquidity Heatmap**: Thermal overlay on the price chart showing order book depth density with bid (green) and ask (red) separation
+- **Full order book sampling**: Aggregator samples all 1000 levels every 2s, bins by price, accumulates into 1-minute time buckets
+- **Heatmap data persistence**: Buckets saved to PostgreSQL (`liquidity_heatmap_buckets` table), loaded on startup (last 24h)
+- **Always-collect symbols**: Settings UI in Data tab to configure symbols that always collect depth data (BTCUSDT by default)
+- **Heatmap always-collect config**: New tRPC router (`heatmap`) with get/add/remove endpoints, changes apply immediately
+- **Order Flow indicator category**: New category in indicator toggle popover with Liquidity Heatmap toggle
+
+### Changed
+- **Removed old OrderBookHeatmap**: Replaced useless sidebar heatmap with chart-integrated thermal overlay
+- **OrderFlowSidebar**: Reduced to 2 tabs (DOM, Metrics) after removing Heatmap tab
+- **Depth stream**: Added `getFullBook()` method exposing full order book Maps for heatmap aggregation
+
+### Removed
+- **OrderBookHeatmap component**: Sidebar-based heatmap with no price alignment (replaced by chart overlay)
+
 ## [0.82.0] - 2026-03-29
 
 ### Added
