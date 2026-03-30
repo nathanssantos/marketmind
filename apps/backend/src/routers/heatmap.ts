@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { heatmapAlwaysCollectSymbols } from '../db/schema';
-import { binanceDepthStreamService } from '../services/binance-depth-stream';
+import { liquidityHeatmapAggregator } from '../services/liquidity-heatmap-aggregator';
 import { protectedProcedure, router } from '../trpc';
 
 export const heatmapRouter = router({
@@ -17,15 +17,19 @@ export const heatmapRouter = router({
       await ctx.db.insert(heatmapAlwaysCollectSymbols)
         .values({ symbol: input.symbol })
         .onConflictDoNothing();
-      binanceDepthStreamService.subscribe(input.symbol.toLowerCase());
+      liquidityHeatmapAggregator.addSymbol(input.symbol);
       return { success: true };
     }),
+
+  getActiveSymbols: protectedProcedure
+    .query(() => liquidityHeatmapAggregator.getActiveSymbols()),
 
   removeAlwaysCollectSymbol: protectedProcedure
     .input(z.object({ symbol: z.string().min(1).max(20).transform(s => s.toUpperCase()) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.delete(heatmapAlwaysCollectSymbols)
         .where(eq(heatmapAlwaysCollectSymbols.symbol, input.symbol));
+      liquidityHeatmapAggregator.removeSymbol(input.symbol);
       return { success: true };
     }),
 });

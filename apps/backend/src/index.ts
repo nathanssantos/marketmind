@@ -176,15 +176,15 @@ const start = async (): Promise<void> => {
     binanceAggTradeStreamService.start();
     binanceDepthStreamService.start(createBinanceClientForPrices());
 
-    const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
-    liquidityHeatmapAggregator.start(binanceDepthStreamService);
-
     const { heatmapAlwaysCollectSymbols } = await import('./db/schema');
     const alwaysCollectRows = await db.select().from(heatmapAlwaysCollectSymbols);
-    const alwaysCollectSymbols = alwaysCollectRows.length > 0
-      ? alwaysCollectRows.map(r => r.symbol.toLowerCase())
-      : ['btcusdt'];
-    for (const s of alwaysCollectSymbols) binanceDepthStreamService.subscribe(s);
+    const symbols = alwaysCollectRows.length > 0
+      ? alwaysCollectRows.map(r => r.symbol)
+      : ['BTCUSDT'];
+    for (const s of symbols) binanceDepthStreamService.subscribe(s.toLowerCase());
+
+    const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
+    liquidityHeatmapAggregator.start(binanceDepthStreamService, symbols);
 
     setTimeout(async () => {
       try {

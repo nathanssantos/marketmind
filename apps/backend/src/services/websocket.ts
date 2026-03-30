@@ -208,7 +208,6 @@ export class WebSocketService {
         const room = `liquidityHeatmap:${symbol}`;
         if (!socket.rooms.has(room)) {
           socket.join(room);
-          if (!isCustomSymbol(symbol)) binanceDepthStreamService.subscribe(symbol);
           void this.sendLiquidityHeatmapSnapshot(socket, symbol);
         }
       });

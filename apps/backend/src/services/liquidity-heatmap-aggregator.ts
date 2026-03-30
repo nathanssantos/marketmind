@@ -59,22 +59,38 @@ const mapToRecord = (map: Map<number, number>): Record<string, number> => {
 
 export class LiquidityHeatmapAggregator {
   private symbols = new Map<string, SymbolState>();
+  private allowedSymbols = new Set<string>();
   private depthService: BinanceDepthStreamService | null = null;
   private unsubscribeDepth: (() => void) | null = null;
   private sampleTimer: ReturnType<typeof setInterval> | null = null;
 
-  start(depthService: BinanceDepthStreamService): void {
+  start(depthService: BinanceDepthStreamService, initialSymbols: string[]): void {
     this.depthService = depthService;
-
-    this.unsubscribeDepth = depthService.onDepthUpdate((update) => {
-      if (!this.symbols.has(update.symbol)) {
-        const refPrice = update.bids[0]?.price ?? update.asks[0]?.price ?? 0;
-        if (refPrice > 0) this.getOrCreateState(update.symbol, refPrice);
-      }
-    });
+    for (const s of initialSymbols) this.allowedSymbols.add(s.toUpperCase());
 
     this.sampleTimer = setInterval(() => this.sampleAll(), LIQUIDITY_HEATMAP.SAMPLE_INTERVAL_MS);
-    logger.info('Liquidity heatmap aggregator started');
+    logger.info({ symbols: [...this.allowedSymbols] }, 'Liquidity heatmap aggregator started');
+  }
+
+  addSymbol(symbol: string): void {
+    const s = symbol.toUpperCase();
+    this.allowedSymbols.add(s);
+    if (this.depthService) this.depthService.subscribe(s.toLowerCase());
+  }
+
+  removeSymbol(symbol: string): void {
+    const s = symbol.toUpperCase();
+    this.allowedSymbols.delete(s);
+    const state = this.symbols.get(s);
+    if (state) {
+      if (state.currentBucket) this.finalizeBucket(state);
+      if (state.unpersisted.length > 0) void this.persistBatch(s, state);
+      this.symbols.delete(s);
+    }
+  }
+
+  getActiveSymbols(): string[] {
+    return [...this.allowedSymbols];
   }
 
   stop(): void {
@@ -180,13 +196,15 @@ export class LiquidityHeatmapAggregator {
     const now = Date.now();
     const wsService = getWebSocketService();
 
-    for (const rawSymbol of this.depthService.getSubscribedSymbols()) {
-      const symbol = rawSymbol.toUpperCase();
+    for (const symbol of this.allowedSymbols) {
       const fullBook = this.depthService.getFullBook(symbol);
       if (!fullBook || (fullBook.bids.size === 0 && fullBook.asks.size === 0)) continue;
 
-      const state = this.symbols.get(symbol);
-      if (!state || state.loadPromise) continue;
+      const midPrice = this.estimateMidPrice(fullBook.bids, fullBook.asks);
+      if (midPrice <= 0) continue;
+
+      const state = this.getOrCreateState(symbol, midPrice);
+      if (state.loadPromise) continue;
 
       const bucketTime = alignToBucket(now);
 
@@ -217,6 +235,17 @@ export class LiquidityHeatmapAggregator {
         wsService.emitLiquidityHeatmapBucket(symbol, liveBucket, state.priceBinSize, state.maxQuantity);
       }
     }
+  }
+
+  private estimateMidPrice(bids: Map<number, number>, asks: Map<number, number>): number {
+    let bestBid = 0;
+    let bestAsk = Infinity;
+    for (const price of bids.keys()) if (price > bestBid) bestBid = price;
+    for (const price of asks.keys()) if (price < bestAsk) bestAsk = price;
+    if (bestBid === 0 && bestAsk === Infinity) return 0;
+    if (bestBid === 0) return bestAsk;
+    if (bestAsk === Infinity) return bestBid;
+    return (bestBid + bestAsk) / 2;
   }
 
   private finalizeBucket(state: SymbolState): boolean {
