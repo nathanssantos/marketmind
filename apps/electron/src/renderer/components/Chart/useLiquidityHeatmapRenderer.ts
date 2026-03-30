@@ -136,7 +136,7 @@ export const useLiquidityHeatmapRenderer = ({
 
     const visibleRange = viewport.end - viewport.start;
     if (visibleRange <= 0) return;
-    const colWidth = Math.max(1, effectiveWidth / visibleRange);
+    const colWidth = Math.max(1, chartWidth / visibleRange);
 
     const binSize = data.priceBinSize;
     const refPrice = Number(klines[startIdx]!.close);
