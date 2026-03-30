@@ -143,12 +143,9 @@ export const useLiquidityHeatmapRenderer = ({
     const cellHeight = Math.max(2, Math.abs(manager.priceToY(refPrice) - manager.priceToY(refPrice + binSize)));
     const invMax = 255 / data.maxQuantity;
 
-    const lastKlineX = manager.indexToX(Math.min(klines.length - 1, endIdx - 1)) + colWidth;
-    const clipRight = Math.min(effectiveWidth, lastKlineX);
-
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, clipRight, chartHeight);
+    ctx.rect(0, 0, effectiveWidth, chartHeight);
     ctx.clip();
 
     let searchStart = 0;
@@ -156,7 +153,7 @@ export const useLiquidityHeatmapRenderer = ({
     for (let i = startIdx; i < endIdx; i++) {
       const kline = klines[i]!;
       const x = manager.indexToX(i);
-      if (x + colWidth <= 0 || x >= clipRight) continue;
+      if (x + colWidth <= 0 || x >= effectiveWidth) continue;
 
       const { bids, asks, nextSearchStart } = findBucketsForKline(
         data.buckets,
