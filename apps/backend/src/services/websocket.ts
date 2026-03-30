@@ -408,7 +408,7 @@ export class WebSocketService {
   private async sendLiquidityHeatmapSnapshot(socket: { emit: (event: string, data: unknown) => void }, symbol: string): Promise<void> {
     try {
       const { liquidityHeatmapAggregator } = await import('./liquidity-heatmap-aggregator');
-      const snapshot = liquidityHeatmapAggregator.getSnapshot(symbol);
+      const snapshot = await liquidityHeatmapAggregator.getSnapshot(symbol);
       if (snapshot) socket.emit('liquidityHeatmap:snapshot', snapshot);
     } catch {
       // aggregator not yet initialized

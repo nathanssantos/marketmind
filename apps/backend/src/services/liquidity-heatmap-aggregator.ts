@@ -1,11 +1,16 @@
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
+import { and, eq, gte } from 'drizzle-orm';
 import type { BinanceDepthStreamService } from './binance-depth-stream';
+import { db } from '../db/client';
+import { liquidityHeatmapBuckets } from '../db/schema';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 
 const BUCKET_DURATION_MS = 60_000;
-const MAX_BUCKETS = 500;
+const MAX_BUCKETS_MEMORY = 500;
 const SAMPLE_INTERVAL_MS = 2_000;
+const PERSIST_BATCH_SIZE = 10;
+const MAX_DB_AGE_MS = 24 * 60 * 60 * 1000;
 
 interface CurrentBucket {
   time: number;
@@ -18,6 +23,8 @@ interface SymbolState {
   currentBucket: CurrentBucket | null;
   buckets: LiquidityHeatmapBucket[];
   maxQuantity: number;
+  unpersisted: LiquidityHeatmapBucket[];
+  loaded: boolean;
 }
 
 const computePriceBinSize = (price: number): number => {
@@ -63,15 +70,19 @@ export class LiquidityHeatmapAggregator {
       clearInterval(this.sampleTimer);
       this.sampleTimer = null;
     }
+    void this.flushAllToDB();
     this.symbols.clear();
     this.depthService = null;
     logger.info('Liquidity heatmap aggregator stopped');
   }
 
-  getSnapshot(symbol: string): LiquidityHeatmapSnapshot | null {
+  async getSnapshot(symbol: string): Promise<LiquidityHeatmapSnapshot | null> {
     const state = this.symbols.get(symbol);
-    if (!state || state.buckets.length === 0) return null;
+    if (!state) return null;
 
+    if (!state.loaded) await this.loadFromDB(symbol, state);
+
+    if (state.buckets.length === 0) return null;
     return {
       symbol,
       priceBinSize: state.priceBinSize,
@@ -88,10 +99,63 @@ export class LiquidityHeatmapAggregator {
         currentBucket: null,
         buckets: [],
         maxQuantity: 0,
+        unpersisted: [],
+        loaded: false,
       };
       this.symbols.set(symbol, state);
+      void this.loadFromDB(symbol, state);
     }
     return state;
+  }
+
+  private async loadFromDB(symbol: string, state: SymbolState): Promise<void> {
+    if (state.loaded) return;
+    state.loaded = true;
+
+    try {
+      const cutoff = new Date(Date.now() - MAX_DB_AGE_MS);
+      const rows = await db
+        .select()
+        .from(liquidityHeatmapBuckets)
+        .where(and(
+          eq(liquidityHeatmapBuckets.symbol, symbol),
+          gte(liquidityHeatmapBuckets.bucketTime, cutoff)
+        ))
+        .orderBy(liquidityHeatmapBuckets.bucketTime);
+
+      if (rows.length === 0) return;
+
+      const existingTimes = new Set(state.buckets.map(b => b.time));
+      let max = state.maxQuantity;
+
+      for (const row of rows) {
+        const time = row.bucketTime.getTime();
+        if (existingTimes.has(time)) continue;
+
+        const bids: Record<number, number> = JSON.parse(row.bids);
+        const asks: Record<number, number> = JSON.parse(row.asks);
+        const bucket: LiquidityHeatmapBucket = { time, bids, asks };
+
+        state.buckets.push(bucket);
+
+        const rowMax = parseFloat(row.maxQuantity);
+        if (rowMax > max) max = rowMax;
+      }
+
+      state.buckets.sort((a, b) => a.time - b.time);
+      if (state.buckets.length > MAX_BUCKETS_MEMORY) {
+        state.buckets.splice(0, state.buckets.length - MAX_BUCKETS_MEMORY);
+      }
+      state.maxQuantity = max;
+
+      if (rows.length > 0 && state.priceBinSize === 0) {
+        state.priceBinSize = parseFloat(rows[0]!.priceBinSize);
+      }
+
+      logger.info({ symbol, loaded: rows.length }, 'Loaded heatmap history from DB');
+    } catch (err) {
+      logger.error({ error: err, symbol }, 'Failed to load heatmap from DB');
+    }
   }
 
   private sampleAll(): void {
@@ -117,6 +181,10 @@ export class LiquidityHeatmapAggregator {
           const lastBucket = state.buckets[state.buckets.length - 1];
           if (lastBucket && wsService) {
             wsService.emitLiquidityHeatmapBucket(symbol, lastBucket, state.priceBinSize, state.maxQuantity);
+          }
+
+          if (state.unpersisted.length >= PERSIST_BATCH_SIZE) {
+            void this.persistBatch(symbol, state);
           }
         }
         state.currentBucket = { time: bucketTime, bidAcc: new Map(), askAcc: new Map() };
@@ -174,9 +242,10 @@ export class LiquidityHeatmapAggregator {
 
     const bucket: LiquidityHeatmapBucket = { time: current.time, bids, asks };
     state.buckets.push(bucket);
+    state.unpersisted.push(bucket);
 
-    if (state.buckets.length > MAX_BUCKETS) {
-      state.buckets.splice(0, state.buckets.length - MAX_BUCKETS);
+    if (state.buckets.length > MAX_BUCKETS_MEMORY) {
+      state.buckets.splice(0, state.buckets.length - MAX_BUCKETS_MEMORY);
     }
 
     if (bucketMax > state.maxQuantity) {
@@ -193,6 +262,35 @@ export class LiquidityHeatmapAggregator {
       for (const qty of Object.values(bucket.asks)) if (qty > max) max = qty;
     }
     state.maxQuantity = max;
+  }
+
+  private async persistBatch(symbol: string, state: SymbolState): Promise<void> {
+    const batch = state.unpersisted.splice(0, state.unpersisted.length);
+    if (batch.length === 0) return;
+
+    try {
+      const values = batch.map(b => ({
+        symbol,
+        bucketTime: new Date(b.time),
+        priceBinSize: String(state.priceBinSize),
+        bids: JSON.stringify(b.bids),
+        asks: JSON.stringify(b.asks),
+        maxQuantity: String(Math.max(...Object.values(b.bids), ...Object.values(b.asks), 0)),
+      }));
+
+      await db.insert(liquidityHeatmapBuckets).values(values).onConflictDoNothing();
+      logger.trace({ symbol, count: batch.length }, 'Persisted heatmap buckets');
+    } catch (err) {
+      logger.error({ error: err, symbol }, 'Failed to persist heatmap buckets');
+      state.unpersisted.unshift(...batch);
+    }
+  }
+
+  private async flushAllToDB(): Promise<void> {
+    for (const [symbol, state] of this.symbols) {
+      if (state.currentBucket) this.finalizeBucket(state);
+      if (state.unpersisted.length > 0) await this.persistBatch(symbol, state);
+    }
   }
 }
 
