@@ -183,8 +183,11 @@ const start = async (): Promise<void> => {
       : ['BTCUSDT'];
     for (const s of symbols) binanceDepthStreamService.subscribe(s.toLowerCase());
 
+    const { binanceLiquidationStreamService } = await import('./services/binance-liquidation-stream');
+    binanceLiquidationStreamService.start();
+
     const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
-    liquidityHeatmapAggregator.start(binanceDepthStreamService, symbols);
+    liquidityHeatmapAggregator.start(binanceDepthStreamService, binanceLiquidationStreamService, symbols);
 
     setTimeout(async () => {
       try {

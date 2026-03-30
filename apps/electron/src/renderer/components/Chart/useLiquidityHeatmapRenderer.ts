@@ -166,6 +166,49 @@ export const useLiquidityHeatmapRenderer = ({
       paintLevels(ctx, asks, ASK_LUT, manager, x, colWidth, cellHeight, chartHeight, invMax);
     }
 
+    if (data.liquidations && data.liquidations.length > 0) {
+      const markerSize = Math.max(4, colWidth * 0.3);
+      for (const liq of data.liquidations) {
+        const y = manager.priceToY(liq.price);
+        if (y < 0 || y > chartHeight) continue;
+
+        let liqX = -1;
+        for (let i = startIdx; i < endIdx; i++) {
+          if (klines[i]!.openTime <= liq.time && liq.time < klines[i]!.closeTime) {
+            liqX = manager.indexToX(i) + colWidth / 2;
+            break;
+          }
+        }
+        if (liqX < 0) {
+          if (liq.time >= klines[endIdx - 1]!.openTime) liqX = manager.indexToX(endIdx - 1) + colWidth / 2;
+          else continue;
+        }
+
+        ctx.fillStyle = liq.side === 'SELL' ? 'rgba(255, 60, 60, 0.9)' : 'rgba(60, 255, 120, 0.9)';
+        ctx.beginPath();
+        ctx.arc(liqX, y, markerSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (data.estimatedLevels && data.estimatedLevels.length > 0) {
+      ctx.setLineDash([6, 4]);
+      ctx.lineWidth = 1;
+      for (const level of data.estimatedLevels) {
+        const y = manager.priceToY(level.price);
+        if (y < 0 || y > chartHeight) continue;
+
+        ctx.strokeStyle = level.side === 'LONG'
+          ? 'rgba(255, 80, 80, 0.4)'
+          : 'rgba(80, 255, 140, 0.4)';
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(chartWidth, y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
     ctx.restore();
   }, [manager, heatmapDataRef, enabled]);
 

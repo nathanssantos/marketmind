@@ -1,4 +1,5 @@
-import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
+import type { EstimatedLiquidationLevel, LiquidityHeatmapBucket, LiquidityHeatmapLiquidation, LiquidityHeatmapSnapshot } from '@marketmind/types';
+import type { BinanceLiquidationStreamService } from './binance-liquidation-stream';
 import { LIQUIDITY_HEATMAP } from '../constants/heatmap';
 import { and, eq, gte } from 'drizzle-orm';
 import type { BinanceDepthStreamService } from './binance-depth-stream';
@@ -13,6 +14,10 @@ interface CurrentBucket {
   askAcc: Map<number, number>;
 }
 
+const COMMON_LEVERAGES = [5, 10, 25, 50, 100] as const;
+const MAX_LIQUIDATION_HISTORY = 200;
+const MAINTENANCE_MARGIN_RATE = 0.004;
+
 interface SymbolState {
   priceBinSize: number;
   currentBucket: CurrentBucket | null;
@@ -20,6 +25,8 @@ interface SymbolState {
   maxQuantity: number;
   unpersisted: LiquidityHeatmapBucket[];
   loadPromise: Promise<void> | null;
+  liquidations: LiquidityHeatmapLiquidation[];
+  lastMidPrice: number;
 }
 
 const computePriceBinSize = (price: number): number => {
@@ -61,12 +68,22 @@ export class LiquidityHeatmapAggregator {
   private symbols = new Map<string, SymbolState>();
   private allowedSymbols = new Set<string>();
   private depthService: BinanceDepthStreamService | null = null;
-  private unsubscribeDepth: (() => void) | null = null;
+  private unsubscribeLiquidation: (() => void) | null = null;
   private sampleTimer: ReturnType<typeof setInterval> | null = null;
 
-  start(depthService: BinanceDepthStreamService, initialSymbols: string[]): void {
+  start(depthService: BinanceDepthStreamService, liquidationService: BinanceLiquidationStreamService, initialSymbols: string[]): void {
     this.depthService = depthService;
     for (const s of initialSymbols) this.allowedSymbols.add(s.toUpperCase());
+
+    this.unsubscribeLiquidation = liquidationService.onLiquidation((event) => {
+      const liq = event as LiquidityHeatmapLiquidation & { _symbol: string };
+      const symbol = liq._symbol;
+      if (!this.allowedSymbols.has(symbol)) return;
+      const state = this.symbols.get(symbol);
+      if (!state) return;
+      state.liquidations.push({ price: event.price, quantity: event.quantity, side: event.side, time: event.time });
+      if (state.liquidations.length > MAX_LIQUIDATION_HISTORY) state.liquidations.splice(0, state.liquidations.length - MAX_LIQUIDATION_HISTORY);
+    });
 
     this.sampleTimer = setInterval(() => this.sampleAll(), LIQUIDITY_HEATMAP.SAMPLE_INTERVAL_MS);
     logger.info({ symbols: [...this.allowedSymbols] }, 'Liquidity heatmap aggregator started');
@@ -94,9 +111,9 @@ export class LiquidityHeatmapAggregator {
   }
 
   stop(): void {
-    if (this.unsubscribeDepth) {
-      this.unsubscribeDepth();
-      this.unsubscribeDepth = null;
+    if (this.unsubscribeLiquidation) {
+      this.unsubscribeLiquidation();
+      this.unsubscribeLiquidation = null;
     }
     if (this.sampleTimer) {
       clearInterval(this.sampleTimer);
@@ -126,6 +143,8 @@ export class LiquidityHeatmapAggregator {
       priceBinSize: state.priceBinSize,
       buckets,
       maxQuantity: state.maxQuantity,
+      liquidations: state.liquidations,
+      estimatedLevels: this.computeEstimatedLevels(state.lastMidPrice),
     };
   }
 
@@ -139,6 +158,8 @@ export class LiquidityHeatmapAggregator {
         maxQuantity: 0,
         unpersisted: [],
         loadPromise: null,
+        liquidations: [],
+        lastMidPrice: referencePrice,
       };
       this.symbols.set(symbol, state);
       state.loadPromise = this.loadFromDB(symbol, state).finally(() => { state!.loadPromise = null; });
@@ -205,6 +226,7 @@ export class LiquidityHeatmapAggregator {
 
       const state = this.getOrCreateState(symbol, midPrice);
       if (state.loadPromise) continue;
+      state.lastMidPrice = midPrice;
 
       const bucketTime = alignToBucket(now);
 
@@ -235,6 +257,18 @@ export class LiquidityHeatmapAggregator {
         wsService.emitLiquidityHeatmapBucket(symbol, liveBucket, state.priceBinSize, state.maxQuantity);
       }
     }
+  }
+
+  private computeEstimatedLevels(price: number): EstimatedLiquidationLevel[] {
+    if (price <= 0) return [];
+    const levels: EstimatedLiquidationLevel[] = [];
+    for (const lev of COMMON_LEVERAGES) {
+      const longLiqPrice = price * (1 - (1 / lev) + MAINTENANCE_MARGIN_RATE);
+      const shortLiqPrice = price * (1 + (1 / lev) - MAINTENANCE_MARGIN_RATE);
+      levels.push({ price: longLiqPrice, side: 'LONG', leverage: lev });
+      levels.push({ price: shortLiqPrice, side: 'SHORT', leverage: lev });
+    }
+    return levels;
   }
 
   private estimateMidPrice(bids: Map<number, number>, asks: Map<number, number>): number {

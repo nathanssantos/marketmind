@@ -37,6 +37,8 @@ export const useLiquidityHeatmap = (
           priceBinSize: data.priceBinSize,
           buckets: [data.bucket],
           maxQuantity: data.maxQuantity,
+          liquidations: [],
+          estimatedLevels: [],
         };
         return;
       }

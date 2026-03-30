@@ -7,9 +7,24 @@ export interface LiquidityHeatmapBucket {
   asks: Record<string, number>;
 }
 
+export interface LiquidityHeatmapLiquidation {
+  price: number;
+  quantity: number;
+  side: 'BUY' | 'SELL';
+  time: number;
+}
+
+export interface EstimatedLiquidationLevel {
+  price: number;
+  side: 'LONG' | 'SHORT';
+  leverage: number;
+}
+
 export interface LiquidityHeatmapSnapshot {
   symbol: string;
   priceBinSize: number;
   buckets: LiquidityHeatmapBucket[];
   maxQuantity: number;
+  liquidations: LiquidityHeatmapLiquidation[];
+  estimatedLevels: EstimatedLiquidationLevel[];
 }
