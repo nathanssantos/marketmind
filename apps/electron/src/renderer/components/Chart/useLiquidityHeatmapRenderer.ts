@@ -1,7 +1,7 @@
 import { HEATMAP_BUCKET_DURATION_MS } from '@marketmind/types';
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+
 import type { MutableRefObject } from 'react';
 import { useCallback } from 'react';
 
@@ -129,7 +129,6 @@ export const useLiquidityHeatmapRenderer = ({
     if (!ctx || !dimensions || !klines || klines.length === 0) return;
 
     const { chartWidth, chartHeight } = dimensions;
-    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
     const startIdx = Math.max(0, Math.floor(viewport.start));
     const endIdx = Math.min(klines.length, Math.ceil(viewport.end));
     if (startIdx >= endIdx) return;
@@ -145,7 +144,7 @@ export const useLiquidityHeatmapRenderer = ({
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
+    ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
     let searchStart = 0;
@@ -153,7 +152,7 @@ export const useLiquidityHeatmapRenderer = ({
     for (let i = startIdx; i < endIdx; i++) {
       const kline = klines[i]!;
       const x = manager.indexToX(i);
-      if (x + colWidth <= 0 || x >= effectiveWidth) continue;
+      if (x + colWidth <= 0 || x >= chartWidth) continue;
 
       const { bids, asks, nextSearchStart } = findBucketsForKline(
         data.buckets,
