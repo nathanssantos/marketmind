@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { STARTUP_CONFIG } from './constants';
+import { db } from './db/client';
 import { env } from './env';
 import { initializeKlineMaintenance } from './services/kline-maintenance';
 import { initializeWebSocket } from './services/websocket';
@@ -177,7 +178,13 @@ const start = async (): Promise<void> => {
 
     const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
     liquidityHeatmapAggregator.start(binanceDepthStreamService);
-    binanceDepthStreamService.subscribe('btcusdt');
+
+    const { heatmapAlwaysCollectSymbols } = await import('./db/schema');
+    const alwaysCollectRows = await db.select().from(heatmapAlwaysCollectSymbols);
+    const alwaysCollectSymbols = alwaysCollectRows.length > 0
+      ? alwaysCollectRows.map(r => r.symbol.toLowerCase())
+      : ['btcusdt'];
+    for (const s of alwaysCollectSymbols) binanceDepthStreamService.subscribe(s);
 
     setTimeout(async () => {
       try {

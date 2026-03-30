@@ -266,6 +266,13 @@
         "confirmTitle": "Effacer toutes les données kline ?",
         "confirmDescription": "Toutes les données de chandeliers téléchargées seront définitivement supprimées. Le système téléchargera à nouveau uniquement ce qui est nécessaire pour les graphiques, les watchers et les positions actives.",
         "confirmButton": "Effacer"
+      },
+      "heatmap": {
+        "title": "Carte de Liquidité",
+        "description": "Symboles qui collectent toujours les données du carnet d'ordres pour la heatmap, même sans graphique ouvert. Nécessite un redémarrage du backend.",
+        "placeholder": "ETHUSDT",
+        "add": "Ajouter",
+        "empty": "Aucun symbole configuré. BTCUSDT est utilisé par défaut."
       }
     },
     "chart": {

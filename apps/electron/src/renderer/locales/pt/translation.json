@@ -266,6 +266,13 @@
         "confirmTitle": "Limpar todos os dados de kline?",
         "confirmDescription": "Todos os dados de candlestick baixados serão excluídos permanentemente. O sistema irá baixar novamente apenas o necessário para gráficos, watchers e posições ativas.",
         "confirmButton": "Limpar"
+      },
+      "heatmap": {
+        "title": "Mapa de Liquidez",
+        "description": "Symbols que sempre coletam dados do order book para o heatmap, mesmo sem gráfico aberto. Requer reiniciar o backend.",
+        "placeholder": "ETHUSDT",
+        "add": "Adicionar",
+        "empty": "Nenhum symbol configurado. BTCUSDT é usado como padrão."
       }
     },
     "chart": {

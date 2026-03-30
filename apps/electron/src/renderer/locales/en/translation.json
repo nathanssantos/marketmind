@@ -240,6 +240,13 @@
         "confirmTitle": "Clear all kline data?",
         "confirmDescription": "All downloaded candlestick data will be permanently deleted. The system will re-download only what is needed for active charts, watchers and positions.",
         "confirmButton": "Clear"
+      },
+      "heatmap": {
+        "title": "Liquidity Heatmap",
+        "description": "Symbols that always collect order book depth for the heatmap, even without a chart open. Requires backend restart to take effect.",
+        "placeholder": "ETHUSDT",
+        "add": "Add",
+        "empty": "No symbols configured. BTCUSDT is used as default."
       }
     },
     "chart": {

@@ -1,4 +1,16 @@
-import { index, pgTable, primaryKey, text, timestamp, varchar, numeric } from 'drizzle-orm/pg-core';
+import { index, pgTable, primaryKey, serial, text, timestamp, unique, varchar, numeric } from 'drizzle-orm/pg-core';
+
+export const heatmapAlwaysCollectSymbols = pgTable(
+  'heatmap_always_collect_symbols',
+  {
+    id: serial().primaryKey(),
+    symbol: varchar({ length: 20 }).notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => ({
+    symbolUnique: unique().on(table.symbol),
+  })
+);
 
 export const liquidityHeatmapBuckets = pgTable(
   'liquidity_heatmap_buckets',

@@ -21,6 +21,7 @@ import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
 import { scalpingRouter } from '../routers/scalping';
+import { heatmapRouter } from '../routers/heatmap';
 import { router } from '../trpc';
 
 export const appRouter = router({
@@ -47,6 +48,7 @@ export const appRouter = router({
   layout: layoutRouter,
   scalping: scalpingRouter,
   economicCalendar: economicCalendarRouter,
+  heatmap: heatmapRouter,
 });
 
 export type AppRouter = typeof appRouter;

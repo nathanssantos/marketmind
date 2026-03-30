@@ -1,11 +1,11 @@
-import { Badge, Button, ConfirmationDialog, Separator, Slider } from '@renderer/components/ui';
+import { Badge, Button, ConfirmationDialog, Input, Separator, Slider } from '@renderer/components/ui';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { trpc } from '@/renderer/utils/trpc';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@/renderer/components/Trading/TradingTable';
-import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuRefreshCw, LuTrash2, LuWrench } from 'react-icons/lu';
+import { LuPlus, LuRefreshCw, LuTrash2, LuWrench, LuX } from 'react-icons/lu';
 
 const MS_PER_HOUR = 3_600_000;
 const DEFAULT_COOLDOWN_HOURS = 2;
@@ -34,6 +34,65 @@ const statusColumns = (t: (key: string) => string): TradingTableColumn[] => [
   { key: 'gaps', header: t('settings.data.status.gapsFound'), textAlign: 'right', minW: '70px' },
   { key: 'corrupted', header: t('settings.data.status.corruptedFixed'), textAlign: 'right', minW: '90px' },
 ];
+
+const HeatmapAlwaysCollectSection = () => {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const { data: symbols = [] } = trpc.heatmap.getAlwaysCollectSymbols.useQuery();
+  const [newSymbol, setNewSymbol] = useState('');
+
+  const addMutation = trpc.heatmap.addAlwaysCollectSymbol.useMutation({
+    onSuccess: () => { setNewSymbol(''); void utils.heatmap.getAlwaysCollectSymbols.invalidate(); },
+  });
+
+  const removeMutation = trpc.heatmap.removeAlwaysCollectSymbol.useMutation({
+    onSuccess: () => void utils.heatmap.getAlwaysCollectSymbols.invalidate(),
+  });
+
+  const handleAdd = () => {
+    const s = newSymbol.trim().toUpperCase();
+    if (s && !symbols.includes(s)) addMutation.mutate({ symbol: s });
+  };
+
+  return (
+    <Box>
+      <Text fontSize="md" fontWeight="medium" mb={1}>{t('settings.data.heatmap.title', 'Liquidity Heatmap')}</Text>
+      <Text fontSize="sm" color="fg.muted" mb={4}>{t('settings.data.heatmap.description', 'Symbols that always collect order book depth for the heatmap, even without a chart open. Requires backend restart to take effect.')}</Text>
+
+      <HStack gap={2} mb={3}>
+        <Input
+          size="sm"
+          placeholder={t('settings.data.heatmap.placeholder', 'ETHUSDT')}
+          value={newSymbol}
+          onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
+          maxW="200px"
+        />
+        <Button size="sm" variant="outline" onClick={handleAdd} loading={addMutation.isPending}>
+          <LuPlus />
+          {t('settings.data.heatmap.add', 'Add')}
+        </Button>
+      </HStack>
+
+      {symbols.length > 0 && (
+        <Flex gap={2} flexWrap="wrap">
+          {symbols.map((s) => (
+            <Badge key={s} size="lg" px={3} py={1} colorPalette="blue">
+              {s}
+              <Box as="button" ml={1} cursor="pointer" opacity={0.7} _hover={{ opacity: 1 }} onClick={() => removeMutation.mutate({ symbol: s })}>
+                <LuX size={12} />
+              </Box>
+            </Badge>
+          ))}
+        </Flex>
+      )}
+
+      {symbols.length === 0 && (
+        <Text fontSize="sm" color="fg.muted">{t('settings.data.heatmap.empty', 'No symbols configured. BTCUSDT is used as default.')}</Text>
+      )}
+    </Box>
+  );
+};
 
 export const DataTab = () => {
   const { t } = useTranslation();
@@ -236,6 +295,10 @@ export const DataTab = () => {
         isDestructive
         isLoading={clearKlinesMutation.isPending}
       />
+
+      <Separator />
+
+      <HeatmapAlwaysCollectSection />
     </Stack>
   );
 };
