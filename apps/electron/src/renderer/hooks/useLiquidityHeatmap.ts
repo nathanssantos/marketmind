@@ -41,8 +41,13 @@ export const useLiquidityHeatmap = (
         return;
       }
 
-      current.buckets.push(data.bucket);
-      if (current.buckets.length > HEATMAP_MAX_BUCKETS) current.buckets.splice(0, current.buckets.length - HEATMAP_MAX_BUCKETS);
+      const lastIdx = current.buckets.length - 1;
+      if (lastIdx >= 0 && current.buckets[lastIdx]!.time === data.bucket.time) {
+        current.buckets[lastIdx] = data.bucket;
+      } else {
+        current.buckets.push(data.bucket);
+        if (current.buckets.length > HEATMAP_MAX_BUCKETS) current.buckets.splice(0, current.buckets.length - HEATMAP_MAX_BUCKETS);
+      }
       current.maxQuantity = data.maxQuantity;
       current.priceBinSize = data.priceBinSize;
     };

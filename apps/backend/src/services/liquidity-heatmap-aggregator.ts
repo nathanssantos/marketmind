@@ -207,6 +207,15 @@ export class LiquidityHeatmapAggregator {
 
       accumulateIntoBins(fullBook.bids, state.currentBucket.bidAcc, state.priceBinSize);
       accumulateIntoBins(fullBook.asks, state.currentBucket.askAcc, state.priceBinSize);
+
+      if (wsService) {
+        const liveBucket: LiquidityHeatmapBucket = {
+          time: state.currentBucket.time,
+          bids: mapToRecord(state.currentBucket.bidAcc),
+          asks: mapToRecord(state.currentBucket.askAcc),
+        };
+        wsService.emitLiquidityHeatmapBucket(symbol, liveBucket, state.priceBinSize, state.maxQuantity);
+      }
     }
   }
 
