@@ -1,7 +1,7 @@
-import type { RefObject } from 'react';
+import type { MutableRefObject, RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { FootprintBar, MarketEvent, VolumeProfile } from '@marketmind/types';
+import type { FootprintBar, LiquidityHeatmapSnapshot, MarketEvent, VolumeProfile } from '@marketmind/types';
 import type { StochasticResult } from '@marketmind/indicators';
 import type { IndicatorParams } from '@renderer/store/indicatorStore';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
@@ -20,6 +20,7 @@ export interface UseChartIndicatorRenderersProps {
   imbalanceValuesRef: RefObject<(number | null)[]>;
   volumeProfile?: VolumeProfile | null;
   footprintBars?: FootprintBar[];
+  heatmapDataRef: MutableRefObject<LiquidityHeatmapSnapshot | null>;
 }
 
 export interface UseChartIndicatorRenderersResult {
@@ -69,6 +70,7 @@ export interface UseChartIndicatorRenderersResult {
   renderFootprint: () => void;
   renderSessionBoundaries: () => void;
   renderORB: () => void;
+  renderLiquidityHeatmap: () => void;
   renderMAIndicators: () => void;
   getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   renderAllOverlayIndicators: () => void;

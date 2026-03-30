@@ -103,6 +103,7 @@ export const useChartRenderPipeline = ({
     renderFootprint,
     renderSessionBoundaries,
     renderORB,
+    renderLiquidityHeatmap,
     renderMAIndicators,
   } = indicatorRenderers;
 
@@ -115,6 +116,7 @@ export const useChartRenderPipeline = ({
       renderGrid();
       renderSessionBoundaries();
       renderORB();
+      renderLiquidityHeatmap();
       renderVolume();
       if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
         renderKlines();
@@ -197,6 +199,7 @@ export const useChartRenderPipeline = ({
     renderGrid,
     renderSessionBoundaries,
     renderORB,
+    renderLiquidityHeatmap,
     renderVolume,
     renderKlines,
     renderLineChart,

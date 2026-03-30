@@ -1,0 +1,62 @@
+import type { MutableRefObject } from 'react';
+import { useEffect, useRef } from 'react';
+import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from '@marketmind/types';
+import { socketService } from '../services/socketService';
+
+export const useLiquidityHeatmap = (
+  symbol: string | null,
+  enabled = true
+): { dataRef: MutableRefObject<LiquidityHeatmapSnapshot | null> } => {
+  const dataRef = useRef<LiquidityHeatmapSnapshot | null>(null);
+
+  useEffect(() => {
+    if (!symbol || !enabled) {
+      dataRef.current = null;
+      return;
+    }
+
+    const socket = socketService.connect();
+    dataRef.current = null;
+    socket.emit('subscribe:liquidityHeatmap', symbol);
+
+    const snapshotHandler = (snapshot: LiquidityHeatmapSnapshot) => {
+      dataRef.current = snapshot;
+    };
+
+    const bucketHandler = (data: {
+      symbol: string;
+      bucket: LiquidityHeatmapBucket;
+      priceBinSize: number;
+      maxQuantity: number;
+    }) => {
+      const current = dataRef.current;
+      if (!current) {
+        dataRef.current = {
+          symbol: data.symbol,
+          priceBinSize: data.priceBinSize,
+          buckets: [data.bucket],
+          maxQuantity: data.maxQuantity,
+        };
+        return;
+      }
+
+      current.buckets.push(data.bucket);
+      if (current.buckets.length > 500) current.buckets.splice(0, current.buckets.length - 500);
+      current.maxQuantity = data.maxQuantity;
+      current.priceBinSize = data.priceBinSize;
+    };
+
+    socket.on('liquidityHeatmap:snapshot', snapshotHandler);
+    socket.on('liquidityHeatmap:bucket', bucketHandler);
+
+    return () => {
+      socket.off('liquidityHeatmap:snapshot', snapshotHandler);
+      socket.off('liquidityHeatmap:bucket', bucketHandler);
+      socket.emit('unsubscribe:liquidityHeatmap', symbol);
+      dataRef.current = null;
+      socketService.disconnect();
+    };
+  }, [symbol, enabled]);
+
+  return { dataRef };
+};

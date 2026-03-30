@@ -676,7 +676,8 @@
         "volume": "Volume",
         "movingAverages": "Médias Móveis",
         "priceStructure": "Estrutura de Preço",
-        "crypto": "Métricas Crypto"
+        "crypto": "Métricas Crypto",
+        "orderFlow": "Fluxo de Ordens"
       },
       "names": {
         "volume": "Volume",
@@ -719,7 +720,8 @@
         "fibRetracement": "Retração de Fib.",
         "fvg": "FVG",
         "fairValueGap": "Fair Value Gap",
-        "liquidityLevels": "Níveis de Liquidez"
+        "liquidityLevels": "Níveis de Liquidez",
+        "liquidityHeatmap": "Mapa de Liquidez"
       }
     },
     "contextMenu": {
@@ -1986,7 +1988,6 @@
     "title": "Fluxo de Ordens",
     "tabs": {
       "dom": "DOM",
-      "heatmap": "Mapa de Calor",
       "metrics": "Métricas"
     }
   },

@@ -41,3 +41,4 @@ export { useVolumeProfileRenderer } from '../useVolumeProfileRenderer';
 export { useFootprintRenderer } from '../useFootprintRenderer';
 export { useSessionBoundariesRenderer } from '../useSessionBoundariesRenderer';
 export { useORBRenderer } from '../useORBRenderer';
+export { useLiquidityHeatmapRenderer } from '../useLiquidityHeatmapRenderer';

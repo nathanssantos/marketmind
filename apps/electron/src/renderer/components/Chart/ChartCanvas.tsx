@@ -2,6 +2,7 @@ import { Box } from '@chakra-ui/react';
 import type { Kline, MarketType, TimeInterval, Viewport } from '@marketmind/types';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
+import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
 import { useChartPref, useTradingPref } from '@renderer/store/preferencesStore';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
 import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
@@ -99,6 +100,11 @@ export const ChartCanvas = ({
     ? activeIndicatorsOverride.includes('activityIndicator')
     : storeShowActivity;
   const colors = useChartColors();
+
+  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(
+    symbol ?? null,
+    isIndicatorActive('liquidityHeatmap' as IndicatorId)
+  );
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -246,7 +252,7 @@ export const ChartCanvas = ({
   const indicatorRenderers = useChartIndicatorRenderers({
     manager, colors, chartType, indicatorData, indicatorParams: storeIndicatorParams, stochasticData,
     showEventRow, showOrb, marketEvents, cvdValuesRef, imbalanceValuesRef,
-    volumeProfile: volumeProfileData ?? null, footprintBars,
+    volumeProfile: volumeProfileData ?? null, footprintBars, heatmapDataRef,
   });
 
   const { getEventAtPosition } = indicatorRenderers;

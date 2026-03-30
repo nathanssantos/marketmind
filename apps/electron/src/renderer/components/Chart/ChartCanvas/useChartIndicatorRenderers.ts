@@ -48,6 +48,7 @@ import {
   useFootprintRenderer,
   useSessionBoundariesRenderer,
   useORBRenderer,
+  useLiquidityHeatmapRenderer,
 } from './indicatorRendererImports';
 import type { UseChartIndicatorRenderersProps, UseChartIndicatorRenderersResult } from './indicatorRendererTypes';
 
@@ -67,6 +68,7 @@ export const useChartIndicatorRenderers = ({
   imbalanceValuesRef,
   volumeProfile = null,
   footprintBars = [],
+  heatmapDataRef,
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
   const { isIndicatorActive, maData } = indicatorData;
 
@@ -393,6 +395,12 @@ export const useChartIndicatorRenderers = ({
     marketEvents,
   });
 
+  const { render: renderLiquidityHeatmap } = useLiquidityHeatmapRenderer({
+    manager,
+    heatmapDataRef,
+    enabled: isIndicatorActive('liquidityHeatmap'),
+  });
+
   const renderMAIndicators = useCallback((): void => {
     if (!manager || maData.size === 0) return;
 
@@ -472,6 +480,7 @@ export const useChartIndicatorRenderers = ({
   }, [manager, maData, indicatorParams]);
 
   const renderAllOverlayIndicators = (): void => {
+    renderLiquidityHeatmap();
     renderMAIndicators();
     renderBollingerBands();
     renderATR();
@@ -570,6 +579,7 @@ export const useChartIndicatorRenderers = ({
     renderFootprint,
     renderSessionBoundaries,
     renderORB,
+    renderLiquidityHeatmap,
     renderMAIndicators,
     getEventAtPosition,
     renderAllOverlayIndicators,

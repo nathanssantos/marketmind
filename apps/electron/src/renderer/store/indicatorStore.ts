@@ -49,7 +49,8 @@ export type IndicatorId =
   | 'cvd'
   | 'bookImbalance'
   | 'volumeProfile'
-  | 'footprint';
+  | 'footprint'
+  | 'liquidityHeatmap';
 
 export type IndicatorCategory =
   | 'oscillators'
@@ -158,7 +159,7 @@ export const INDICATOR_CATEGORIES: Record<IndicatorCategory, IndicatorId[]> = {
   movingAverages: ['ema-7', 'ema-8', 'ema-9', 'ema-10', 'ema-19', 'ema-20', 'ema-21', 'ema-50', 'ema-70', 'ema-100', 'ema-200', 'dema', 'tema', 'wma', 'hma'],
   priceStructure: ['ichimoku', 'pivotPoints', 'fibonacci', 'fvg', 'liquidityLevels'],
   crypto: [],
-  orderFlow: ['cvd', 'bookImbalance', 'volumeProfile', 'footprint'],
+  orderFlow: ['cvd', 'bookImbalance', 'volumeProfile', 'footprint', 'liquidityHeatmap'],
 };
 
 export const PANEL_INDICATORS: IndicatorId[] = [
@@ -212,6 +213,7 @@ export const OVERLAY_INDICATORS: IndicatorId[] = [
   'activityIndicator',
   'volumeProfile',
   'footprint',
+  'liquidityHeatmap',
 ];
 
 export const isMAIndicator = (id: string): boolean => id.startsWith('ema-') || id.startsWith('sma-');

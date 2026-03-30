@@ -53,10 +53,9 @@ describe('OrderFlowSidebar', () => {
     expect(container.children.length).toBe(0);
   });
 
-  it('renders 3 tab triggers when open', () => {
+  it('renders 2 tab triggers when open', () => {
     renderWithChakra(<OrderFlowSidebar width={300} symbol="BTCUSDT" />);
     expect(screen.getByText('DOM')).toBeDefined();
-    expect(screen.getByText('Heatmap')).toBeDefined();
     expect(screen.getByText('Metrics')).toBeDefined();
   });
 

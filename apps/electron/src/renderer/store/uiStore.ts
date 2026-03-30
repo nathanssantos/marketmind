@@ -4,7 +4,7 @@ import { usePreferencesStore } from './preferencesStore';
 export type TradingSidebarTab = 'orders' | 'portfolio';
 export type MarketSidebarTab = 'indicators' | 'scanner';
 export type AutoTradingSidebarTab = 'watchers' | 'scalping' | 'logs';
-export type OrderFlowSidebarTab = 'dom' | 'heatmap' | 'metrics';
+export type OrderFlowSidebarTab = 'dom' | 'metrics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';

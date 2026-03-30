@@ -652,7 +652,8 @@
         "volume": "Volume",
         "movingAverages": "Moving Averages",
         "priceStructure": "Price Structure",
-        "crypto": "Crypto Metrics"
+        "crypto": "Crypto Metrics",
+        "orderFlow": "Order Flow"
       },
       "names": {
         "macd": "MACD",
@@ -685,7 +686,8 @@
         "dema": "DEMA",
         "tema": "TEMA",
         "wma": "WMA",
-        "hma": "HMA"
+        "hma": "HMA",
+        "liquidityHeatmap": "Liquidity Heatmap"
       }
     },
     "contextMenu": {
@@ -1951,7 +1953,6 @@
     "title": "Order Flow",
     "tabs": {
       "dom": "DOM",
-      "heatmap": "Heatmap",
       "metrics": "Metrics"
     }
   },

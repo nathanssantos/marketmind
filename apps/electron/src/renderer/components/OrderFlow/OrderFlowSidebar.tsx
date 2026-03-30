@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { DomLadder } from '../Chart/DomLadder';
-import { OrderBookHeatmap } from '../Chart/OrderBookHeatmap';
 import { IconButton, SidebarContainer, Tabs } from '../ui';
 import { OrderFlowMetrics } from './OrderFlowMetrics';
 
@@ -54,9 +53,6 @@ const OrderFlowSidebarComponent = ({ width, symbol }: OrderFlowSidebarProps) => 
             <Tabs.Trigger value="dom">
               <Text fontSize="xs">{t('orderFlow.tabs.dom', 'DOM')}</Text>
             </Tabs.Trigger>
-            <Tabs.Trigger value="heatmap">
-              <Text fontSize="xs">{t('orderFlow.tabs.heatmap', 'Heatmap')}</Text>
-            </Tabs.Trigger>
             <Tabs.Trigger value="metrics">
               <Text fontSize="xs">{t('orderFlow.tabs.metrics', 'Metrics')}</Text>
             </Tabs.Trigger>
@@ -69,10 +65,6 @@ const OrderFlowSidebarComponent = ({ width, symbol }: OrderFlowSidebarProps) => 
         <Box flex={1} minH={0} display="flex" flexDirection="column">
           <Tabs.Content value="dom" flex={1} minH={0} display="flex" flexDirection="column">
             <DomLadder bids={bids} asks={asks} currentPrice={currentPrice} />
-          </Tabs.Content>
-
-          <Tabs.Content value="heatmap" flex={1} minH={0} display="flex" flexDirection="column">
-            <OrderBookHeatmap bids={bids} asks={asks} width={width - 2} />
           </Tabs.Content>
 
           <Tabs.Content value="metrics" flex={1} minH={0} overflowY="auto">

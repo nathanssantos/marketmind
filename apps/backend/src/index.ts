@@ -175,6 +175,10 @@ const start = async (): Promise<void> => {
     binanceAggTradeStreamService.start();
     binanceDepthStreamService.start(createBinanceClientForPrices());
 
+    const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
+    liquidityHeatmapAggregator.start(binanceDepthStreamService);
+    binanceDepthStreamService.subscribe('btcusdt');
+
     setTimeout(async () => {
       try {
         const { getScalpingScheduler } = await import('./services/scalping/scalping-scheduler');

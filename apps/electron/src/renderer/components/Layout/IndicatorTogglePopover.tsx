@@ -326,6 +326,17 @@ export const IndicatorTogglePopover = memo(
                         },
                     ],
                 },
+                {
+                    title: t('chart.indicators.categories.orderFlow', 'Order Flow'),
+                    indicators: [
+                        {
+                            id: 'liquidityHeatmap',
+                            label: t('chart.indicators.names.liquidityHeatmap', 'Liquidity Heatmap'),
+                            isActive: isIndicatorActive('liquidityHeatmap'),
+                            onToggle: () => toggleIndicator('liquidityHeatmap'),
+                        },
+                    ],
+                },
             ],
             [
                 t,
