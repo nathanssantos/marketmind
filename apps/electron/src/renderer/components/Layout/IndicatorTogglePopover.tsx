@@ -335,6 +335,12 @@ export const IndicatorTogglePopover = memo(
                             isActive: isIndicatorActive('liquidityHeatmap'),
                             onToggle: () => toggleIndicator('liquidityHeatmap'),
                         },
+                        {
+                            id: 'liquidationMarkers',
+                            label: t('chart.indicators.names.liquidationMarkers', 'Liquidation Markers'),
+                            isActive: isIndicatorActive('liquidationMarkers'),
+                            onToggle: () => toggleIndicator('liquidationMarkers'),
+                        },
                     ],
                 },
             ],

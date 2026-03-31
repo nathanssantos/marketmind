@@ -728,7 +728,8 @@
         "fvg": "FVG",
         "fairValueGap": "Fair Value Gap",
         "liquidityLevels": "Níveis de Liquidez",
-        "liquidityHeatmap": "Mapa de Liquidez"
+        "liquidityHeatmap": "Mapa de Liquidez",
+        "liquidationMarkers": "Marcadores de Liquidação"
       }
     },
     "contextMenu": {

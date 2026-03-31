@@ -694,7 +694,8 @@
         "tema": "TEMA",
         "wma": "WMA",
         "hma": "HMA",
-        "liquidityHeatmap": "Liquidity Heatmap"
+        "liquidityHeatmap": "Liquidity Heatmap",
+        "liquidationMarkers": "Liquidation Markers"
       }
     },
     "contextMenu": {

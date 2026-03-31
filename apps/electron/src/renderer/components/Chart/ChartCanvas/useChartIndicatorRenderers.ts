@@ -399,6 +399,7 @@ export const useChartIndicatorRenderers = ({
     manager,
     heatmapDataRef,
     enabled: isIndicatorActive('liquidityHeatmap'),
+    liquidationMarkersEnabled: isIndicatorActive('liquidationMarkers'),
   });
 
   const renderMAIndicators = useCallback((): void => {

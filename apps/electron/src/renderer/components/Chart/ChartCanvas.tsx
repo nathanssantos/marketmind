@@ -103,7 +103,7 @@ export const ChartCanvas = ({
 
   const { dataRef: heatmapDataRef } = useLiquidityHeatmap(
     symbol ?? null,
-    isIndicatorActive('liquidityHeatmap')
+    isIndicatorActive('liquidityHeatmap') || isIndicatorActive('liquidationMarkers')
   );
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);

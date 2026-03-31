@@ -9,6 +9,7 @@ interface UseLiquidityHeatmapRendererProps {
   manager: CanvasManager | null;
   heatmapDataRef: MutableRefObject<LiquidityHeatmapSnapshot | null>;
   enabled?: boolean;
+  liquidationMarkersEnabled?: boolean;
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -115,11 +116,13 @@ export const useLiquidityHeatmapRenderer = ({
   manager,
   heatmapDataRef,
   enabled = true,
+  liquidationMarkersEnabled = false,
 }: UseLiquidityHeatmapRendererProps) => {
   const render = useCallback((): void => {
-    if (!manager || !enabled) return;
+    if (!manager || (!enabled && !liquidationMarkersEnabled)) return;
     const data = heatmapDataRef.current;
-    if (!data || data.buckets.length === 0 || data.maxQuantity <= 0) return;
+    if (!data) return;
+    const hasHeatmapData = enabled && data.buckets.length > 0 && data.maxQuantity > 0;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
@@ -137,36 +140,38 @@ export const useLiquidityHeatmapRenderer = ({
     if (visibleRange <= 0) return;
     const colWidth = Math.max(1, chartWidth / visibleRange);
 
-    const binSize = data.priceBinSize;
-    const refPrice = Number(klines[startIdx]!.close);
-    const cellHeight = Math.max(2, Math.abs(manager.priceToY(refPrice) - manager.priceToY(refPrice + binSize)));
-    const invMax = 255 / data.maxQuantity;
-
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
-    let searchStart = 0;
+    if (hasHeatmapData) {
+      const binSize = data.priceBinSize;
+      const refPrice = Number(klines[startIdx]!.close);
+      const cellHeight = Math.max(2, Math.abs(manager.priceToY(refPrice) - manager.priceToY(refPrice + binSize)));
+      const invMax = 255 / data.maxQuantity;
 
-    for (let i = startIdx; i < endIdx; i++) {
-      const kline = klines[i]!;
-      const x = manager.indexToX(i);
-      if (x + colWidth <= 0 || x >= chartWidth) continue;
+      let searchStart = 0;
 
-      const { bids, asks, nextSearchStart } = findBucketsForKline(
-        data.buckets,
-        kline.openTime,
-        kline.closeTime,
-        searchStart
-      );
-      searchStart = nextSearchStart;
+      for (let i = startIdx; i < endIdx; i++) {
+        const kline = klines[i]!;
+        const x = manager.indexToX(i);
+        if (x + colWidth <= 0 || x >= chartWidth) continue;
 
-      paintLevels(ctx, bids, BID_LUT, manager, x, colWidth, cellHeight, chartHeight, invMax);
-      paintLevels(ctx, asks, ASK_LUT, manager, x, colWidth, cellHeight, chartHeight, invMax);
+        const { bids, asks, nextSearchStart } = findBucketsForKline(
+          data.buckets,
+          kline.openTime,
+          kline.closeTime,
+          searchStart
+        );
+        searchStart = nextSearchStart;
+
+        paintLevels(ctx, bids, BID_LUT, manager, x, colWidth, cellHeight, chartHeight, invMax);
+        paintLevels(ctx, asks, ASK_LUT, manager, x, colWidth, cellHeight, chartHeight, invMax);
+      }
     }
 
-    if (data.liquidations && data.liquidations.length > 0) {
+    if (liquidationMarkersEnabled && data.liquidations && data.liquidations.length > 0) {
       const markerSize = 3.5;
       for (const liq of data.liquidations) {
         const y = manager.priceToY(liq.price);
@@ -191,7 +196,7 @@ export const useLiquidityHeatmapRenderer = ({
       }
     }
 
-    if (data.estimatedLevels && data.estimatedLevels.length > 0) {
+    if (liquidationMarkersEnabled && data.estimatedLevels && data.estimatedLevels.length > 0) {
       ctx.setLineDash([6, 4]);
       ctx.lineWidth = 1;
       for (const level of data.estimatedLevels) {
@@ -210,7 +215,7 @@ export const useLiquidityHeatmapRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, heatmapDataRef, enabled]);
+  }, [manager, heatmapDataRef, enabled, liquidationMarkersEnabled]);
 
   return { render };
 };
