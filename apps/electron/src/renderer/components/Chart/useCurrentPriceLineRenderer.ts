@@ -91,7 +91,7 @@ export const useCurrentPriceLineRenderer = ({
 
     const priceText = formatChartPrice(currentPrice);
     const timerText = timeframe
-      ? formatTimerText(computeSecondsRemaining(timeframe, lastKline.openTime))
+      ? formatTimerText(computeSecondsRemaining(timeframe, lastKline.closeTime))
       : null;
 
     drawCurrentPriceTag(
