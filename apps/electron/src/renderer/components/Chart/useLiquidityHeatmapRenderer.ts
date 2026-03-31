@@ -167,7 +167,7 @@ export const useLiquidityHeatmapRenderer = ({
     }
 
     if (data.liquidations && data.liquidations.length > 0) {
-      const markerSize = 1.5;
+      const markerSize = 3.5;
       for (const liq of data.liquidations) {
         const y = manager.priceToY(liq.price);
         if (y < 0 || y > chartHeight) continue;
