@@ -36,7 +36,6 @@ interface UseKlineLiveStreamOptions {
 
 interface UseKlineLiveStreamReturn {
   displayKlines: Kline[];
-  isRefetching: boolean;
 }
 
 const MIN_REFETCH_INTERVAL_MS = 30_000;
@@ -56,7 +55,6 @@ export const useKlineLiveStream = ({
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRefetchRef = useRef<number>(0);
   const lastUpdateRef = useRef<number>(0);
-  const isRefetchingRef = useRef(false);
 
   const getIntervalMs = useCallback((tf: string): number =>
     INTERVAL_MS_MAP[tf as TimeInterval] || 60_000, []);
@@ -74,7 +72,6 @@ export const useKlineLiveStream = ({
     pendingUpdateRef.current = null;
     lastRefetchRef.current = 0;
     lastUpdateRef.current = 0;
-    isRefetchingRef.current = false;
   }, [symbol, timeframe, marketType]);
 
   const processUpdate = useCallback(() => {
@@ -108,12 +105,21 @@ export const useKlineLiveStream = ({
   }, []);
 
   const handleRealtimeUpdate = useCallback((kline: Kline, isFinal: boolean) => {
-    if (isRefetchingRef.current) return;
+    if (isFinal) {
+      if (flushTimerRef.current !== null) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      pendingUpdateRef.current = { kline, isFinal };
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = requestAnimationFrame(processUpdate);
+      return;
+    }
 
     const now = Date.now();
     const timeSinceLastUpdate = now - lastUpdateRef.current;
 
-    if (!isFinal && timeSinceLastUpdate < MIN_UPDATE_INTERVAL_MS) {
+    if (timeSinceLastUpdate < MIN_UPDATE_INTERVAL_MS) {
       pendingUpdateRef.current = { kline, isFinal };
 
       if (flushTimerRef.current === null) {
@@ -167,21 +173,11 @@ export const useKlineLiveStream = ({
   const handleBecameVisible = useCallback((state: VisibilityState) => {
     if (state.hiddenDuration < VISIBILITY_REFRESH_THRESHOLD_MS) return;
 
-    isRefetchingRef.current = true;
-    setLiveKlines([]);
-    pendingUpdateRef.current = null;
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    if (flushTimerRef.current !== null) {
-      clearTimeout(flushTimerRef.current);
-      flushTimerRef.current = null;
-    }
+    const now = Date.now();
+    if (now - lastRefetchRef.current < MIN_REFETCH_INTERVAL_MS) return;
+    lastRefetchRef.current = now;
 
-    void refetchKlines().finally(() => {
-      isRefetchingRef.current = false;
-    });
+    void refetchKlines();
   }, [refetchKlines]);
 
   useVisibilityChange({
@@ -204,7 +200,6 @@ export const useKlineLiveStream = ({
       const now = Date.now();
       if (now - lastRefetchRef.current > MIN_REFETCH_INTERVAL_MS) {
         lastRefetchRef.current = now;
-        setLiveKlines([]);
         void refetchKlines();
       }
     }
@@ -239,8 +234,5 @@ export const useKlineLiveStream = ({
     return [...baseKlines, ...filteredLiveKlines];
   }, [baseKlines, liveKlines]);
 
-  return {
-    displayKlines,
-    isRefetching: isRefetchingRef.current,
-  };
+  return { displayKlines };
 };
