@@ -6,7 +6,7 @@ export const PENCIL_HIT_THRESHOLD = 6;
 export const DRAWING_COLORS = {
   line: '#ffffff',
   rectangle: '#ffffff',
-  pencil: '#FF9800',
+  pencil: '#ffffff',
   fibonacci: 'rgba(180, 180, 180, 0.7)',
   ruler: '#ffffff',
   area: '#ffffff',
@@ -18,7 +18,7 @@ export const DRAWING_COLORS = {
   priceRange: '#ffffff',
   verticalLine: '#ffffff',
   anchoredVwap: '#ffffff',
-  highlighter: '#FFEB3B',
+  highlighter: '#ffffff',
   ellipse: '#ffffff',
   pitchfork: '#ffffff',
   gannFan: '#ffffff',
