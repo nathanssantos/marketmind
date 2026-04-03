@@ -8,8 +8,10 @@ import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
+import { trpc } from '@renderer/utils/trpc';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { roundTradingQty } from '@shared/utils';
+import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuShield, LuX } from 'react-icons/lu';
@@ -80,6 +82,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showCancelOrdersConfirm, setShowCancelOrdersConfirm] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState<{ side: 'BUY' | 'SELL'; price: number; quantity: string } | null>(null);
 
   const currentPosition = useMemo(() => {
     if (marketType !== 'FUTURES' || !Array.isArray(positions)) return null;
@@ -175,19 +178,26 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
 
+  const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
+    { walletId: activeWallet?.id!, symbol },
+    { enabled: !!activeWallet?.id && !!symbol && marketType === 'FUTURES' },
+  );
+  const leverage = symbolLeverage?.leverage ?? 1;
+
   const getQuantity = useCallback((price: number): string => {
     const pct = sizePercent / 100;
-    const qty = balance > 0 && price > 0 ? (balance * pct) / price : 0;
+    const marginPower = balance * leverage;
+    const qty = marginPower > 0 && price > 0 ? (marginPower * pct) / price : 0;
     return roundTradingQty(qty);
-  }, [balance, sizePercent]);
+  }, [balance, sizePercent, leverage]);
 
-  const handleQuickOrder = useCallback(async (side: 'BUY' | 'SELL') => {
+  const handleQuickOrder = useCallback((side: 'BUY' | 'SELL') => {
     if (!activeWallet?.id) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
-    const price = usePriceStore.getState().getPrice(symbol);
+    const price = side === 'BUY' ? buyPrice : sellPrice;
     if (!price || price <= 0) {
       toastError(t('chart.quickTrade.noPriceError'));
       return;
@@ -197,13 +207,20 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
       toastError(t('chart.quickTrade.invalidQuantityError'));
       return;
     }
+    setPendingOrder({ side, price, quantity });
+  }, [activeWallet?.id, symbol, buyPrice, sellPrice, getQuantity, warning, toastError, t]);
+
+  const handleConfirmOrder = useCallback(async () => {
+    if (!activeWallet?.id || !pendingOrder) return;
     try {
-      await createOrder({ walletId: activeWallet.id, symbol, side, type: 'MARKET', quantity });
+      await createOrder({ walletId: activeWallet.id, symbol, side: pendingOrder.side, type: 'MARKET', quantity: pendingOrder.quantity });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
+    } finally {
+      setPendingOrder(null);
     }
-  }, [activeWallet?.id, symbol, getQuantity, createOrder, warning, toastError, t]);
+  }, [activeWallet?.id, symbol, pendingOrder, createOrder, toastError, t]);
 
   const handleBuy = useCallback(() => handleQuickOrder('BUY'), [handleQuickOrder]);
   const handleSell = useCallback(() => handleQuickOrder('SELL'), [handleQuickOrder]);
@@ -358,6 +375,63 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
         colorPalette="orange"
         isLoading={isCancellingAllOrders}
       />
+
+      {pendingOrder && (() => {
+        const isBuy = pendingOrder.side === 'BUY';
+        const totalValue = parseFloat(pendingOrder.quantity) * pendingOrder.price;
+        const margin = totalValue / leverage;
+        const liqPrice = calculateLiquidationPrice(pendingOrder.price, leverage, isBuy ? 'LONG' : 'SHORT');
+        const liqPct = Math.abs((liqPrice - pendingOrder.price) / pendingOrder.price * 100);
+
+        return (
+          <ConfirmationDialog
+            isOpen
+            onClose={() => setPendingOrder(null)}
+            onConfirm={handleConfirmOrder}
+            title={t('chart.quickTrade.confirmOrder', 'Confirm Order')}
+            confirmLabel={isBuy ? t('chart.quickTrade.confirmBuy', 'Confirm Buy') : t('chart.quickTrade.confirmSell', 'Confirm Sell')}
+            colorPalette={isBuy ? 'green' : 'red'}
+            isLoading={isCreatingOrder}
+            description={
+              <VStack align="stretch" gap={2} fontSize="sm" w="100%">
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('common.symbol', 'Symbol')}</Text>
+                  <Text fontWeight="bold">{symbol}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('common.side', 'Side')}</Text>
+                  <Text fontWeight="bold" color={isBuy ? 'green.500' : 'red.500'}>{isBuy ? 'LONG' : 'SHORT'}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('common.price', 'Price')}</Text>
+                  <Text>{formatChartPrice(pendingOrder.price)}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('common.quantity', 'Quantity')}</Text>
+                  <Text>{pendingOrder.quantity}</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('futures.leverage', 'Leverage')}</Text>
+                  <Text color="orange.500" fontWeight="bold">{leverage}x</Text>
+                </Flex>
+                <Box h="1px" bg="border" />
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('chart.quickTrade.totalValue', 'Total Value')}</Text>
+                  <Text fontWeight="bold">{formatChartPrice(totalValue)} USDT</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('chart.quickTrade.margin', 'Margin Required')}</Text>
+                  <Text>{formatChartPrice(margin)} USDT</Text>
+                </Flex>
+                <Flex justify="space-between">
+                  <Text color="fg.muted">{t('chart.quickTrade.liquidation', 'Liq. Price')}</Text>
+                  <Text color="red.400">{formatChartPrice(liqPrice)} ({liqPct.toFixed(1)}%)</Text>
+                </Flex>
+              </VStack>
+            }
+          />
+        );
+      })()}
     </>
   );
 });
