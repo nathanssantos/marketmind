@@ -10,11 +10,17 @@ import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/c
 import { getKlineClose, getKlineOpen } from '@shared/utils';
 import { useCallback } from 'react';
 
+type LineStyle = 'solid' | 'dashed' | 'dotted';
+
+const DASHED_LINE_PATTERN = [8, 4] as const;
+const DOTTED_LINE_PATTERN = [2, 3] as const;
+
 interface UseCurrentPriceLineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   enabled?: boolean;
   lineWidth?: number;
+  lineStyle?: LineStyle;
   timeframe?: string;
 }
 
@@ -29,6 +35,7 @@ export const useCurrentPriceLineRenderer = ({
   colors,
   enabled = true,
   lineWidth = INDICATOR_LINE_WIDTHS.CURRENT_PRICE,
+  lineStyle = CHART_CONFIG.CURRENT_PRICE_LINE_STYLE,
   timeframe,
 }: UseCurrentPriceLineRendererProps): UseCurrentPriceLineRendererReturn => {
   const renderLine = useCallback((): void => {
@@ -57,14 +64,16 @@ export const useCurrentPriceLineRenderer = ({
     ctx.save();
     ctx.strokeStyle = candleColor;
     ctx.lineWidth = lineWidth;
-    ctx.setLineDash([2, 3]);
+    if (lineStyle === 'dashed') ctx.setLineDash([...DASHED_LINE_PATTERN]);
+    else if (lineStyle === 'dotted') ctx.setLineDash([...DOTTED_LINE_PATTERN]);
+    else ctx.setLineDash([]);
 
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(chartWidth, y);
     ctx.stroke();
     ctx.restore();
-  }, [enabled, manager, colors, lineWidth, manager?.getKlines()]);
+  }, [enabled, manager, colors, lineWidth, lineStyle, manager?.getKlines()]);
 
   const renderLabel = useCallback((): void => {
     if (!manager) return;

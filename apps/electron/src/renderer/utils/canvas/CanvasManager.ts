@@ -64,6 +64,8 @@ export class CanvasManager {
   private minFrameTime: number = 16;
   private boundsCache: BoundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
   private resizeObserver: ResizeObserver | null = null;
+  private paddingTop: number = CHART_CONFIG.CANVAS_PADDING_TOP;
+  private paddingBottom: number = CHART_CONFIG.CANVAS_PADDING_BOTTOM;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -280,14 +282,19 @@ export class CanvasManager {
     this.markDirty('all');
   }
 
+  public setChartPadding(top: number, bottom: number): void {
+    this.paddingTop = top;
+    this.paddingBottom = bottom;
+  }
+
   public priceToY(price: number): number {
     if (!this.bounds || !this.dimensions) return 0;
-    return priceToY(price, this.bounds, this.dimensions, CHART_CONFIG.CANVAS_PADDING_TOP, CHART_CONFIG.CANVAS_PADDING_BOTTOM);
+    return priceToY(price, this.bounds, this.dimensions, this.paddingTop, this.paddingBottom);
   }
 
   public yToPrice(y: number): number {
     if (!this.bounds || !this.dimensions) return 0;
-    return yToPrice(y, this.bounds, this.dimensions, CHART_CONFIG.CANVAS_PADDING_TOP, CHART_CONFIG.CANVAS_PADDING_BOTTOM);
+    return yToPrice(y, this.bounds, this.dimensions, this.paddingTop, this.paddingBottom);
   }
 
   public volumeToHeight(volume: number): number {

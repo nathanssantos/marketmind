@@ -112,6 +112,9 @@ export const useChartBaseRenderers = ({
       ...(advancedConfig?.currentPriceLineWidth !== undefined && {
         lineWidth: advancedConfig.currentPriceLineWidth,
       }),
+      ...(advancedConfig?.currentPriceLineStyle !== undefined && {
+        lineStyle: advancedConfig.currentPriceLineStyle,
+      }),
       timeframe,
     });
 
