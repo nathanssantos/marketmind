@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.84.0] - 2026-04-03
+
+### Added
+- **Long/Short Position drawing tools**: New drawing types for projecting trades with entry, SL, TP zones, R:R ratio, percentage badges, and adjustable handles
+- **Drawing lock system**: Lock/unlock button in drawing toolbar prevents accidental editing and deletion of drawings
+- **Order confirmation modal**: Buy/Sell orders now show confirmation dialog with symbol, side, price, quantity, leverage, total value, margin required, and liquidation price
+- **Leverage-aware position sizing**: % buttons in order entry now represent percentage of total margin (balance × leverage) instead of just wallet balance
+
+### Fixed
+- **Drawing position drift on reload**: Deserialized drawings lost time fields needed for index re-resolution when klines changed
+- **Drawing selection after creation**: Redundant `setActiveTool(null)` after `selectDrawing()` was clearing the selection immediately
+- **Drawing handle drag corruption**: Handle drag captured resolved indices instead of raw store indices, causing position corruption on subsequent interactions
+- **Hit testing mismatch**: Hit testing now uses resolved indices matching what the renderer displays
+- **Current price line style not applied**: `currentPriceLineStyle` setting was stored but never passed to renderer (hardcoded `setLineDash`)
+- **Current price line width mismatch**: Default constant was THICK (2px) while config default was 1px
+- **Chart padding not applied**: `paddingTop`/`paddingBottom` config values were ignored by CanvasManager coordinate mapping
+
+### Changed
+- **ORB moved to indicator system**: Opening Range Breakout moved from toolbar toggle to indicator selector under Price Structure category
+- **Drawing toolbar position**: Toolbar now fixed at top-center of chart instead of following the drawing
+- **Ruler icon**: Improved SVG to look like an actual ruler with body and tick marks
+- **Ruler button position**: Moved next to Price Range in toolbar
+- **Default current price line style**: Changed from 'solid' to 'dotted'
+- **P/L areas toggle removed**: Replaced by new Long/Short Position drawing tools
+
 ## [0.83.1] - 2026-03-30
 
 ### Fixed
