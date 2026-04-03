@@ -75,6 +75,9 @@ export const useChartKeyboardShortcuts = ({
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
         const drawingState = useDrawingStore.getState();
         if (drawingState.selectedDrawingId && symbol) {
+          const drawings = drawingState.getDrawingsForSymbol(symbol, timeframe);
+          const selected = drawings.find(d => d.id === drawingState.selectedDrawingId);
+          if (selected?.locked) return;
           drawingState.deleteDrawing(drawingState.selectedDrawingId, symbol, timeframe);
           manager?.markDirty('overlays');
         }

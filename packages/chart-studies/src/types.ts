@@ -1,4 +1,4 @@
-export type DrawingType = 'line' | 'rectangle' | 'pencil' | 'fibonacci' | 'ruler' | 'area' | 'arrow' | 'text' | 'ray' | 'horizontalLine' | 'channel' | 'trendLine' | 'priceRange' | 'verticalLine' | 'anchoredVwap' | 'highlighter' | 'ellipse' | 'pitchfork' | 'gannFan';
+export type DrawingType = 'line' | 'rectangle' | 'pencil' | 'fibonacci' | 'ruler' | 'area' | 'arrow' | 'text' | 'ray' | 'horizontalLine' | 'channel' | 'trendLine' | 'priceRange' | 'verticalLine' | 'anchoredVwap' | 'highlighter' | 'ellipse' | 'pitchfork' | 'gannFan' | 'longPosition' | 'shortPosition';
 
 export interface DrawingBase {
   id: string;
@@ -105,6 +105,24 @@ export interface FibonacciDrawing extends DrawingBase {
   levels: FibonacciLevel[];
 }
 
+export interface LongPositionDrawing extends DrawingBase {
+  type: 'longPosition';
+  entryIndex: number;
+  entryPrice: number;
+  entryTime?: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+}
+
+export interface ShortPositionDrawing extends DrawingBase {
+  type: 'shortPosition';
+  entryIndex: number;
+  entryPrice: number;
+  entryTime?: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+}
+
 export type Drawing =
   | LineDrawing
   | RulerDrawing
@@ -124,7 +142,9 @@ export type Drawing =
   | HighlighterDrawing
   | EllipseDrawing
   | PitchforkDrawing
-  | GannFanDrawing;
+  | GannFanDrawing
+  | LongPositionDrawing
+  | ShortPositionDrawing;
 
 export type TwoPointDrawingType = 'line' | 'ruler' | 'rectangle' | 'area' | 'fibonacci' | 'arrow' | 'ray' | 'trendLine' | 'priceRange' | 'ellipse' | 'gannFan';
 

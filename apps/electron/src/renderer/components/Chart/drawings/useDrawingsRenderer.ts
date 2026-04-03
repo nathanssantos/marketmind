@@ -1,4 +1,5 @@
-import type { CoordinateMapper, Drawing, ChannelDrawing, PitchforkDrawing, PencilDrawing, HighlighterDrawing, FibonacciDrawing, TextDrawing, HorizontalLineDrawing, VerticalLineDrawing, AnchoredVwapDrawing } from '@marketmind/chart-studies';
+import type { CoordinateMapper, Drawing, PencilDrawing, HighlighterDrawing } from '@marketmind/chart-studies';
+import { resolveDrawingIndices } from '@marketmind/chart-studies';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
@@ -25,6 +26,7 @@ import { renderEllipse } from './renderers/renderEllipse';
 import { renderPitchfork } from './renderers/renderPitchfork';
 import { renderGannFan } from './renderers/renderGannFan';
 import { renderText } from './renderers/renderText';
+import { renderPosition } from './renderers/renderPosition';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
 
@@ -56,67 +58,6 @@ interface UseDrawingsRendererProps {
   pendingDrawingRef: React.MutableRefObject<Drawing | null>;
   lastSnapRef: React.MutableRefObject<OHLCSnapIndicator | null>;
 }
-
-const TWO_POINT_TYPES = new Set(['line', 'ruler', 'rectangle', 'area', 'arrow', 'ray', 'trendLine', 'priceRange', 'ellipse', 'gannFan']);
-const THREE_POINT_TYPES = new Set(['channel', 'pitchfork']);
-const FREEFORM_TYPES = new Set(['pencil', 'highlighter']);
-const SINGLE_POINT_TYPES = new Set(['horizontalLine', 'verticalLine', 'anchoredVwap']);
-
-const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
-  if (klines.length === 0) return drawing;
-
-  const timeToIdx = (time: number | undefined, fallbackIdx: number): number => {
-    if (time === undefined) return fallbackIdx;
-    let lo = 0;
-    let hi = klines.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >>> 1;
-      const mt = klines[mid]?.openTime ?? 0;
-      if (mt < time) lo = mid + 1;
-      else if (mt > time) hi = mid - 1;
-      else return mid;
-    }
-    return Math.max(0, lo);
-  };
-
-  if (TWO_POINT_TYPES.has(drawing.type)) {
-    const d = drawing as Drawing & { startIndex: number; endIndex: number; startTime?: number; endTime?: number };
-    if (!d.startTime && !d.endTime) return drawing;
-    return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex) } as Drawing;
-  }
-
-  if (THREE_POINT_TYPES.has(drawing.type)) {
-    const d = drawing as ChannelDrawing | PitchforkDrawing;
-    if (!d.startTime && !d.endTime && !d.widthTime) return drawing;
-    return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex), widthIndex: timeToIdx(d.widthTime, d.widthIndex) };
-  }
-
-  if (FREEFORM_TYPES.has(drawing.type)) {
-    const d = drawing as PencilDrawing | HighlighterDrawing;
-    if (!d.points.some(p => p.time !== undefined)) return drawing;
-    return { ...d, points: d.points.map(p => ({ ...p, index: timeToIdx(p.time, p.index) })) };
-  }
-
-  if (SINGLE_POINT_TYPES.has(drawing.type)) {
-    const d = drawing as HorizontalLineDrawing | VerticalLineDrawing | AnchoredVwapDrawing;
-    if (!d.time) return drawing;
-    return { ...d, index: timeToIdx(d.time, d.index) };
-  }
-
-  if (drawing.type === 'fibonacci') {
-    const d = drawing as FibonacciDrawing;
-    if (!d.swingLowTime && !d.swingHighTime) return drawing;
-    return { ...d, swingLowIndex: timeToIdx(d.swingLowTime, d.swingLowIndex), swingHighIndex: timeToIdx(d.swingHighTime, d.swingHighIndex) };
-  }
-
-  if (drawing.type === 'text') {
-    const d = drawing as TextDrawing;
-    if (!d.time) return drawing;
-    return { ...d, index: timeToIdx(d.time, d.index) };
-  }
-
-  return drawing;
-};
 
 const renderSingleDrawing = (
   ctx: CanvasRenderingContext2D,
@@ -188,6 +129,10 @@ const renderSingleDrawing = (
       break;
     case 'gannFan':
       renderGannFan(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'longPosition':
+    case 'shortPosition':
+      renderPosition(ctx, drawing, mapper, isSelected, chartWidth);
       break;
   }
 
@@ -297,9 +242,10 @@ export const useDrawingsRenderer = ({
   return { render };
 };
 
+const FREEFORM_TYPES = new Set(['pencil', 'highlighter']);
 const BOUNDED_VIEWPORT_TYPES = new Set(['line', 'ruler', 'rectangle', 'area', 'arrow', 'priceRange', 'ellipse']);
 const INFINITE_VIEWPORT_TYPES = new Set(['trendLine', 'gannFan', 'horizontalLine']);
-const SEMI_INFINITE_TYPES = new Set(['ray', 'channel', 'pitchfork', 'anchoredVwap']);
+const SEMI_INFINITE_TYPES = new Set(['ray', 'channel', 'pitchfork', 'anchoredVwap', 'longPosition', 'shortPosition']);
 const POINT_VIEWPORT_TYPES = new Set(['text', 'verticalLine']);
 
 const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: number): boolean => {
@@ -313,7 +259,10 @@ const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: numbe
   }
 
   if (SEMI_INFINITE_TYPES.has(drawing.type)) {
-    const idx = 'startIndex' in drawing ? Math.min(drawing.startIndex, (drawing as Drawing & { endIndex: number }).endIndex) : (drawing as Drawing & { index: number }).index;
+    let idx: number;
+    if ('entryIndex' in drawing) idx = (drawing as Drawing & { entryIndex: number }).entryIndex;
+    else if ('startIndex' in drawing) idx = Math.min(drawing.startIndex, (drawing as Drawing & { endIndex: number }).endIndex);
+    else idx = (drawing as Drawing & { index: number }).index;
     return idx <= viewEnd;
   }
 

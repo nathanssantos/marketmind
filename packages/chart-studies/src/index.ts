@@ -21,6 +21,8 @@ export type {
   EllipseDrawing,
   PitchforkDrawing,
   GannFanDrawing,
+  LongPositionDrawing,
+  ShortPositionDrawing,
   Drawing,
   TwoPointDrawingType,
   DrawingHandle,
@@ -55,3 +57,5 @@ export {
   deserializeDrawingData,
 } from './serialization';
 export type { KlineTimeLookup, TimeToIndexLookup } from './serialization';
+
+export { resolveDrawingIndices } from './resolveIndices';

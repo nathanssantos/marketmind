@@ -28,6 +28,11 @@ export interface SerializedDrawingData {
   fontSize?: number;
   fontWeight?: 'normal' | 'bold';
   textDecoration?: 'none' | 'underline';
+  entryIndex?: number;
+  entryPrice?: number;
+  entryTime?: number;
+  stopLossPrice?: number;
+  takeProfitPrice?: number;
 }
 
 export type KlineTimeLookup = (index: number) => number | undefined;
@@ -100,6 +105,14 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       data.price = drawing.price;
       data.time = t(drawing.index);
       break;
+    case 'longPosition':
+    case 'shortPosition':
+      data.entryIndex = drawing.entryIndex;
+      data.entryPrice = drawing.entryPrice;
+      data.entryTime = t(drawing.entryIndex);
+      data.stopLossPrice = drawing.stopLossPrice;
+      data.takeProfitPrice = drawing.takeProfitPrice;
+      break;
   }
 
   return JSON.stringify(data);
@@ -124,6 +137,7 @@ export const deserializeDrawingData = (
     const twoPointFields = {
       startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!,
       endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice!,
+      startTime: data.startTime, endTime: data.endTime,
     };
 
     switch (type) {
@@ -140,21 +154,23 @@ export const deserializeDrawingData = (
         return { ...common, type, ...twoPointFields } as Drawing;
       case 'channel':
       case 'pitchfork':
-        return { ...common, type, ...twoPointFields, widthIndex: ri(data.widthIndex ?? 0, data.widthTime), widthPrice: data.widthPrice ?? 0 } as Drawing;
+        return { ...common, type, ...twoPointFields, widthIndex: ri(data.widthIndex ?? 0, data.widthTime), widthPrice: data.widthPrice ?? 0, widthTime: data.widthTime } as Drawing;
       case 'pencil':
       case 'highlighter':
-        return { ...common, type, points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price })) } as Drawing;
+        return { ...common, type, points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price, time: p.time })) } as Drawing;
       case 'fibonacci':
         return {
           ...common, type: 'fibonacci',
           swingLowIndex: ri(data.swingLowIndex!, data.swingLowTime), swingLowPrice: data.swingLowPrice!,
           swingHighIndex: ri(data.swingHighIndex!, data.swingHighTime), swingHighPrice: data.swingHighPrice!,
+          swingLowTime: data.swingLowTime, swingHighTime: data.swingHighTime,
           direction: data.direction ?? 'up', levels: data.levels ?? [],
         };
       case 'text':
         return {
           ...common, type: 'text',
           index: ri(data.index!, data.time), price: data.price!,
+          time: data.time,
           text: data.text ?? '', fontSize: data.fontSize ?? 14,
           fontWeight: data.fontWeight ?? 'normal', textDecoration: data.textDecoration ?? 'none',
         };
@@ -162,10 +178,19 @@ export const deserializeDrawingData = (
         return {
           ...common, type: 'horizontalLine',
           index: ri(data.index!, data.time), price: data.price!,
+          time: data.time,
         };
       case 'verticalLine':
       case 'anchoredVwap':
-        return { ...common, type, index: ri(data.index!, data.time), price: data.price! } as Drawing;
+        return { ...common, type, index: ri(data.index!, data.time), price: data.price!, time: data.time } as Drawing;
+      case 'longPosition':
+      case 'shortPosition':
+        return {
+          ...common, type,
+          entryIndex: ri(data.entryIndex!, data.entryTime), entryPrice: data.entryPrice!,
+          entryTime: data.entryTime,
+          stopLossPrice: data.stopLossPrice!, takeProfitPrice: data.takeProfitPrice!,
+        } as Drawing;
       default:
         return null;
     }

@@ -1,5 +1,5 @@
 import type { Drawing, DrawingType } from '@marketmind/chart-studies';
-import { hitTestDrawings, FIBONACCI_DEFAULT_LEVELS, DEFAULT_FONT_SIZE } from '@marketmind/chart-studies';
+import { hitTestDrawings, FIBONACCI_DEFAULT_LEVELS, DEFAULT_FONT_SIZE, resolveDrawingIndices } from '@marketmind/chart-studies';
 import { formatFibonacciLabel } from '@marketmind/fibonacci';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
@@ -94,6 +94,17 @@ const applyDragUpdate = (
       return;
     }
 
+    if (originalDrawing.type === 'longPosition' || originalDrawing.type === 'shortPosition') {
+      const ei = originalDrawing.entryIndex + deltaIndex;
+      store.updateDrawing(originalDrawing.id, {
+        entryIndex: ei, entryPrice: originalDrawing.entryPrice + deltaPrice,
+        entryTime: timeAt(ei),
+        stopLossPrice: originalDrawing.stopLossPrice + deltaPrice,
+        takeProfitPrice: originalDrawing.takeProfitPrice + deltaPrice,
+      } as Partial<Drawing>);
+      return;
+    }
+
     if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine' || originalDrawing.type === 'anchoredVwap') {
       store.updateDrawing(originalDrawing.id, {
         index: originalDrawing.index + deltaIndex,
@@ -142,6 +153,12 @@ const applyDragUpdate = (
       swingHighIndex: newIndex, swingHighPrice: newPrice, swingHighTime: newTime, direction: dir,
       levels: computeFibLevels(Math.min(originalDrawing.swingLowPrice, newPrice), Math.max(originalDrawing.swingLowPrice, newPrice), dir),
     } as Partial<Drawing>);
+  }
+
+  if ((originalDrawing.type === 'longPosition' || originalDrawing.type === 'shortPosition')) {
+    if (handleType === 'start') store.updateDrawing(originalDrawing.id, { entryPrice: newPrice, entryIndex: newIndex, entryTime: newTime } as Partial<Drawing>);
+    else if (handleType === 'end') store.updateDrawing(originalDrawing.id, { stopLossPrice: newPrice } as Partial<Drawing>);
+    else if (handleType === 'width') store.updateDrawing(originalDrawing.id, { takeProfitPrice: newPrice } as Partial<Drawing>);
   }
 };
 
@@ -194,7 +211,8 @@ export const useDrawingInteraction = ({
 
     if (!activeTool) {
       const mapper = createDrawingMapper(manager);
-      const drawings = store.getDrawingsForSymbol(symbol, interval);
+      const rawDrawings = store.getDrawingsForSymbol(symbol, interval);
+      const drawings = rawDrawings.map(d => resolveDrawingIndices(d, klines));
       const hit = hitTestDrawings(x, y, drawings, mapper, selectedId);
 
       if (!hit) {
@@ -210,8 +228,11 @@ export const useDrawingInteraction = ({
       const isFibBody = drawing.type === 'fibonacci' && (hit.handleType === null || hit.handleType === 'body');
       if (isFibBody) return true;
 
+      const rawDrawing = rawDrawings.find(d => d.id === hit.drawingId);
+      if (!rawDrawing) return true;
+
       phaseRef.current = 'dragging';
-      dragStartRef.current = { x, y, handleType: hit.handleType, originalDrawing: { ...drawing } as Drawing };
+      dragStartRef.current = { x, y, handleType: hit.handleType, originalDrawing: { ...rawDrawing } as Drawing };
       return true;
     }
 
@@ -249,7 +270,6 @@ export const useDrawingInteraction = ({
       } as Drawing;
       store.addDrawing(drawing);
       store.selectDrawing(drawing.id);
-      store.setActiveTool(null);
       manager?.markDirty('overlays');
       return true;
     }
@@ -266,12 +286,23 @@ export const useDrawingInteraction = ({
       return true;
     }
 
+    if (activeTool === 'longPosition' || activeTool === 'shortPosition') {
+      const drawing: Drawing = {
+        id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
+        createdAt: Date.now(), updatedAt: Date.now(),
+        entryIndex: index, entryPrice: price, entryTime: time,
+        stopLossPrice: price, takeProfitPrice: price,
+      } as Drawing;
+      pendingDrawingRef.current = drawing;
+      phaseRef.current = 'placing-second';
+      return true;
+    }
+
     if (activeTool === 'channel' || activeTool === 'pitchfork') {
       if (phaseRef.current === 'placing-third' && pendingDrawingRef.current && (pendingDrawingRef.current.type === 'channel' || pendingDrawingRef.current.type === 'pitchfork')) {
         const finalDrawing: Drawing = { ...pendingDrawingRef.current, widthIndex: index, widthPrice: price, widthTime: time } as Drawing;
         store.addDrawing(finalDrawing);
         store.selectDrawing(finalDrawing.id);
-        store.setActiveTool(null);
         pendingDrawingRef.current = null;
         phaseRef.current = 'idle';
         manager?.markDirty('overlays');
@@ -335,7 +366,12 @@ export const useDrawingInteraction = ({
 
     if (phase === 'placing-second' && pending) {
       const { index, price, time } = getIndexAndPrice(x, y);
-      if (pending.type === 'fibonacci') {
+      if (pending.type === 'longPosition' || pending.type === 'shortPosition') {
+        const risk = Math.abs(pending.entryPrice - price);
+        const isLong = pending.type === 'longPosition';
+        const tp = isLong ? pending.entryPrice + risk : pending.entryPrice - risk;
+        pendingDrawingRef.current = { ...pending, stopLossPrice: price, takeProfitPrice: tp } as Drawing;
+      } else if (pending.type === 'fibonacci') {
         const lowPrice = Math.min(pending.swingLowPrice, price);
         const highPrice = Math.max(pending.swingLowPrice, price);
         const dir = price >= pending.swingLowPrice ? 'up' : 'down';
@@ -395,9 +431,10 @@ export const useDrawingInteraction = ({
 
     if (!useDrawingStore.getState().activeTool) {
       const mapper = createDrawingMapper(manager);
-      const drawings = useDrawingStore.getState().getDrawingsForSymbol(symbol, interval);
+      const rawDrawings = useDrawingStore.getState().getDrawingsForSymbol(symbol, interval);
+      const resolvedDrawings = rawDrawings.map(d => resolveDrawingIndices(d, klines));
       const selectedId = useDrawingStore.getState().selectedDrawingId;
-      const hit = hitTestDrawings(x, y, drawings, mapper, selectedId);
+      const hit = hitTestDrawings(x, y, resolvedDrawings, mapper, selectedId);
       return hit !== null;
     }
 
@@ -419,6 +456,32 @@ export const useDrawingInteraction = ({
       }
       pendingDrawingRef.current = { ...drawing, endIndex: index, endPrice: price, endTime: time } as Drawing;
       phaseRef.current = 'placing-third';
+      return true;
+    }
+
+    if (phase === 'placing-second' && pendingDrawingRef.current && (pendingDrawingRef.current.type === 'longPosition' || pendingDrawingRef.current.type === 'shortPosition')) {
+      const { price } = getIndexAndPrice(x, y);
+      const drawing = pendingDrawingRef.current;
+      const store = useDrawingStore.getState();
+
+      if (drawing.entryPrice === price) {
+        store.setActiveTool(null);
+        pendingDrawingRef.current = null;
+        phaseRef.current = 'idle';
+        manager?.markDirty('overlays');
+        return true;
+      }
+
+      const risk = Math.abs(drawing.entryPrice - price);
+      const isLong = drawing.type === 'longPosition';
+      const tp = isLong ? drawing.entryPrice + risk : drawing.entryPrice - risk;
+      const finalDrawing = { ...drawing, stopLossPrice: price, takeProfitPrice: tp } as Drawing;
+
+      store.addDrawing(finalDrawing);
+      store.selectDrawing(finalDrawing.id);
+      pendingDrawingRef.current = null;
+      phaseRef.current = 'idle';
+      manager?.markDirty('overlays');
       return true;
     }
 
@@ -458,7 +521,6 @@ export const useDrawingInteraction = ({
 
       store.addDrawing(drawing);
       store.selectDrawing(drawing.id);
-      store.setActiveTool(null);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
@@ -470,7 +532,6 @@ export const useDrawingInteraction = ({
       const store = useDrawingStore.getState();
       store.addDrawing(drawing);
       store.selectDrawing(drawing.id);
-      store.setActiveTool(null);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');

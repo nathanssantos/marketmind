@@ -132,6 +132,18 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
       const hy = mapper.priceToY(drawing.price);
       return [{ drawingId: drawing.id, handleType: 'start', x: hx, y: hy }];
     }
+    case 'longPosition':
+    case 'shortPosition': {
+      const ex = mapper.indexToCenterX(drawing.entryIndex);
+      const entryY = mapper.priceToY(drawing.entryPrice);
+      const slY = mapper.priceToY(drawing.stopLossPrice);
+      const tpY = mapper.priceToY(drawing.takeProfitPrice);
+      return [
+        { drawingId: drawing.id, handleType: 'start', x: ex, y: entryY },
+        { drawingId: drawing.id, handleType: 'end', x: ex, y: slY },
+        { drawingId: drawing.id, handleType: 'width', x: ex, y: tpY },
+      ];
+    }
     case 'channel':
     case 'pitchfork': {
       const sx = mapper.indexToCenterX(drawing.startIndex);
@@ -196,6 +208,22 @@ export const hitTestDrawing = (
       if (len === 0) break;
       const dist = Math.abs(dy * px - dx * py + ex * sy - ey * sx) / len;
       if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
+      break;
+    }
+    case 'longPosition':
+    case 'shortPosition': {
+      const entryY = mapper.priceToY(drawing.entryPrice);
+      const slY = mapper.priceToY(drawing.stopLossPrice);
+      const tpY = mapper.priceToY(drawing.takeProfitPrice);
+      const x1 = mapper.indexToCenterX(drawing.entryIndex);
+      const minY = Math.min(entryY, slY, tpY);
+      const maxY = Math.max(entryY, slY, tpY);
+      if (px >= x1 - 20 && py >= minY - HIT_THRESHOLD && py <= maxY + HIT_THRESHOLD) {
+        if (Math.abs(py - entryY) <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: Math.abs(py - entryY) };
+        if (Math.abs(py - slY) <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: Math.abs(py - slY) };
+        if (Math.abs(py - tpY) <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: Math.abs(py - tpY) };
+        if (py >= minY && py <= maxY) return { drawingId: drawing.id, handleType: 'body', distance: 0 };
+      }
       break;
     }
     case 'rectangle':
