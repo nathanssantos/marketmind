@@ -17,3 +17,5 @@ export { HighlighterIcon } from './HighlighterIcon';
 export { EllipseIcon } from './EllipseIcon';
 export { PitchforkIcon } from './PitchforkIcon';
 export { GannFanIcon } from './GannFanIcon';
+export { LongPositionIcon } from './LongPositionIcon';
+export { ShortPositionIcon } from './ShortPositionIcon';

@@ -27,13 +27,13 @@ import {
   TextIcon,
   AnchoredVwapIcon,
   RulerIcon,
+  LongPositionIcon,
+  ShortPositionIcon,
 } from '@renderer/components/icons';
 import {
   LuCalendarDays,
-  LuColumns2,
   LuMagnet,
   LuMessageSquare,
-  LuRectangleHorizontal,
 } from 'react-icons/lu';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
@@ -61,10 +61,8 @@ DrawingToolButton.displayName = 'DrawingToolButton';
 export const ChartToolsToolbar = memo(() => {
   const { t } = useTranslation();
 
-  const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
-  const [showOrb, setShowOrb] = useChartPref('showOrb', false);
 
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
   const setMagnetEnabled = useDrawingStore(s => s.setMagnetEnabled);
@@ -77,10 +75,8 @@ export const ChartToolsToolbar = memo(() => {
     if (focusedPanel && activeLayout) togglePanelIndicator(activeLayout.id, focusedPanel.id, id);
   }, [focusedPanel, activeLayout, togglePanelIndicator]);
 
-  const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
-  const handleOrbToggle = useCallback(() => setShowOrb(!showOrb), [showOrb, setShowOrb]);
   const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
 
   return (
@@ -116,22 +112,15 @@ export const ChartToolsToolbar = memo(() => {
         <Separator orientation="horizontal" width="100%" />
         <DrawingToolButton tool="fibonacci" label={t('chart.tools.fibonacci', 'Fibonacci')} icon={<FibonacciIcon />} />
         <DrawingToolButton tool="priceRange" label={t('chart.tools.priceRange', 'Price Range')} icon={<PriceRangeIcon />} />
+        <DrawingToolButton tool="ruler" label={t('chart.tools.ruler', 'Ruler')} icon={<RulerIcon />} />
         <DrawingToolButton tool="pitchfork" label={t('chart.tools.pitchfork', 'Pitchfork')} icon={<PitchforkIcon />} />
         <DrawingToolButton tool="gannFan" label={t('chart.tools.gannFan', 'Gann Fan')} icon={<GannFanIcon />} />
         <Separator orientation="horizontal" width="100%" />
+        <DrawingToolButton tool="longPosition" label={t('chart.tools.longPosition', 'Long Position')} icon={<LongPositionIcon />} />
+        <DrawingToolButton tool="shortPosition" label={t('chart.tools.shortPosition', 'Short Position')} icon={<ShortPositionIcon />} />
+        <Separator orientation="horizontal" width="100%" />
         <DrawingToolButton tool="text" label={t('chart.tools.text', 'Text')} icon={<TextIcon />} />
         <DrawingToolButton tool="anchoredVwap" label={t('chart.tools.anchoredVwap', 'Anchored VWAP')} icon={<AnchoredVwapIcon />} />
-        <DrawingToolButton tool="ruler" label={t('chart.tools.ruler', 'Ruler')} icon={<RulerIcon />} />
-        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
-          <ToggleIconButton
-            active={showProfitLossAreas}
-            size="2xs"
-            aria-label={t('chart.controls.profitLossAreas')}
-            onClick={handleProfitLossToggle}
-          >
-            <LuRectangleHorizontal />
-          </ToggleIconButton>
-        </TooltipWrapper>
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="right">
           <ToggleIconButton
@@ -162,16 +151,6 @@ export const ChartToolsToolbar = memo(() => {
             onClick={handleEventRowToggle}
           >
             <LuCalendarDays />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.openingRange')} showArrow placement="right">
-          <ToggleIconButton
-            active={showOrb}
-            size="2xs"
-            aria-label={t('chart.controls.openingRange')}
-            onClick={handleOrbToggle}
-          >
-            <LuColumns2 />
           </ToggleIconButton>
         </TooltipWrapper>
       </VStack>
