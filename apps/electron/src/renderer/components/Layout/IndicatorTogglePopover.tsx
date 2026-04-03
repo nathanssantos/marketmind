@@ -286,6 +286,12 @@ export const IndicatorTogglePopover = memo(
                             isActive: isIndicatorActive('activityIndicator'),
                             onToggle: () => toggleIndicator('activityIndicator'),
                         },
+                        {
+                            id: 'orb',
+                            label: t('chart.indicators.names.orb', 'Opening Range Breakout'),
+                            isActive: isIndicatorActive('orb'),
+                            onToggle: () => toggleIndicator('orb'),
+                        },
                     ],
                 },
                 {

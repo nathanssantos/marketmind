@@ -695,7 +695,8 @@
         "wma": "WMA",
         "hma": "HMA",
         "liquidityHeatmap": "Liquidity Heatmap",
-        "liquidationMarkers": "Liquidation Markers"
+        "liquidationMarkers": "Liquidation Markers",
+        "orb": "Opening Range Breakout"
       }
     },
     "contextMenu": {

@@ -747,7 +747,8 @@
         "fairValueGap": "Fair Value Gap",
         "liquidityLevels": "Niveaux de Liquidité",
         "liquidityHeatmap": "Carte de Liquidité",
-        "liquidationMarkers": "Marqueurs de Liquidation"
+        "liquidationMarkers": "Marqueurs de Liquidation",
+        "orb": "Opening Range Breakout"
       }
     },
     "contextMenu": {

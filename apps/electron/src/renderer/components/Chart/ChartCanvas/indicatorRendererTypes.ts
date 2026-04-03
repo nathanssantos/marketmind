@@ -14,7 +14,6 @@ export interface UseChartIndicatorRenderersProps {
   indicatorParams?: IndicatorParams;
   stochasticData: StochasticResult | null;
   showEventRow: boolean;
-  showOrb: boolean;
   marketEvents: MarketEvent[];
   cvdValuesRef: RefObject<(number | null)[]>;
   imbalanceValuesRef: RefObject<(number | null)[]>;

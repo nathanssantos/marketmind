@@ -62,7 +62,6 @@ export const useChartIndicatorRenderers = ({
   indicatorParams,
   stochasticData,
   showEventRow,
-  showOrb,
   marketEvents,
   cvdValuesRef,
   imbalanceValuesRef,
@@ -391,7 +390,7 @@ export const useChartIndicatorRenderers = ({
   const { render: renderORB } = useORBRenderer({
     manager,
     colors,
-    enabled: showOrb,
+    enabled: isIndicatorActive('orb'),
     marketEvents,
   });
 

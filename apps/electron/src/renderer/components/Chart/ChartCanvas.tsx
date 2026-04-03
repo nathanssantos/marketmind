@@ -84,11 +84,10 @@ export const ChartCanvas = ({
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
-  const [showOrb] = useChartPref('showOrb', false);
-
   const storeIsActive = useIndicatorStore((s) => s.isActive);
   const storeShowVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
   const storeShowActivity = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
+  const showOrb = useIndicatorStore((s) => s.activeIndicators.includes('orb'));
 
   const isIndicatorActive = activeIndicatorsOverride
     ? (id: IndicatorId) => activeIndicatorsOverride.includes(id)
@@ -251,7 +250,7 @@ export const ChartCanvas = ({
 
   const indicatorRenderers = useChartIndicatorRenderers({
     manager, colors, chartType, indicatorData, indicatorParams: storeIndicatorParams, stochasticData,
-    showEventRow, showOrb, marketEvents, cvdValuesRef, imbalanceValuesRef,
+    showEventRow, marketEvents, cvdValuesRef, imbalanceValuesRef,
     volumeProfile: volumeProfileData ?? null, footprintBars, heatmapDataRef,
   });
 
@@ -309,6 +308,12 @@ export const ChartCanvas = ({
   }, [stochasticResult, setStochasticData]);
 
   useChartPanelHeights({ manager, showEventRow, activeIndicators: activeIndicators as IndicatorId[], advancedConfig });
+
+  useEffect(() => {
+    if (!manager || !advancedConfig) return;
+    manager.setChartPadding(advancedConfig.paddingTop, advancedConfig.paddingBottom);
+    manager.markDirty('all');
+  }, [manager, advancedConfig?.paddingTop, advancedConfig?.paddingBottom]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {
