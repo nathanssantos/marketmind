@@ -13,6 +13,7 @@ const envSchema = z.object({
   ENABLE_LIVE_TRADING: z.string().default('false').transform(v => v === 'true'),
   RESEND_API_KEY: z.string().optional(),
   APP_URL: z.string().url().default('http://localhost:5174'),
+  DEMO_MODE: z.string().default('false').transform(v => v === 'true'),
 });
 
 export const env = envSchema.parse(process.env);

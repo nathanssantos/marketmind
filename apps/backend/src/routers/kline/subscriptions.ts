@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../../services/binance-kline-stream';
 import { getWebSocketService } from '../../services/websocket';
-import { protectedProcedure } from '../../trpc';
+import { demoOrProtectedProcedure } from '../../trpc';
 import { intervalSchema, marketTypeSchema, subscribeToStream, unsubscribeFromStream } from './shared';
 
 export const subscriptionProcedures = {
-  subscribe: protectedProcedure
+  subscribe: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -18,7 +18,7 @@ export const subscriptionProcedures = {
       return { success: true, message: `Subscribed to ${input.symbol}@${input.interval} (${input.marketType})` };
     }),
 
-  unsubscribe: protectedProcedure
+  unsubscribe: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -31,7 +31,7 @@ export const subscriptionProcedures = {
       return { success: true, message: `Unsubscribed from ${input.symbol}@${input.interval} (${input.marketType})` };
     }),
 
-  subscribeStream: protectedProcedure
+  subscribeStream: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -44,7 +44,7 @@ export const subscriptionProcedures = {
       return { success: true, message: `Subscribed to real-time stream ${input.symbol}@${input.interval} (${input.marketType})` };
     }),
 
-  unsubscribeStream: protectedProcedure
+  unsubscribeStream: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -57,7 +57,7 @@ export const subscriptionProcedures = {
       return { success: true, message: `Unsubscribed from real-time stream ${input.symbol}@${input.interval} (${input.marketType})` };
     }),
 
-  getActiveStreams: protectedProcedure
+  getActiveStreams: demoOrProtectedProcedure
     .query(async () => {
       const spotStreams = binanceKlineStreamService.getActiveSubscriptions();
       const futuresStreams = binanceFuturesKlineStreamService.getActiveSubscriptions();
@@ -67,7 +67,7 @@ export const subscriptionProcedures = {
       };
     }),
 
-  getActiveSymbols: protectedProcedure.query(() => {
+  getActiveSymbols: demoOrProtectedProcedure.query(() => {
     const ws = getWebSocketService();
     if (!ws) return [];
     return ws.getActivelyViewedSymbols();

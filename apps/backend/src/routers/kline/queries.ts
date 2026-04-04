@@ -8,7 +8,7 @@ import { symbolSearch } from '../../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../../services/binance-historical';
 import { prefetchKlines } from '../../services/kline-prefetch';
 import { logger } from '../../services/logger';
-import { protectedProcedure } from '../../trpc';
+import { demoOrProtectedProcedure, protectedProcedure } from '../../trpc';
 import {
   assetClassSchema,
   intervalSchema,
@@ -19,7 +19,7 @@ import {
 } from './shared';
 
 export const queryProcedures = {
-  list: protectedProcedure
+  list: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -76,7 +76,7 @@ export const queryProcedures = {
       return result;
     }),
 
-  latest: protectedProcedure
+  latest: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -121,7 +121,7 @@ export const queryProcedures = {
       return { count: result.length };
     }),
 
-  sync: protectedProcedure
+  sync: demoOrProtectedProcedure
     .input(
       z.object({
         symbol: z.string(),
@@ -168,7 +168,7 @@ export const queryProcedures = {
       };
     }),
 
-  searchSymbols: protectedProcedure
+  searchSymbols: demoOrProtectedProcedure
     .input(
       z.object({
         query: z.string().min(1).max(20),

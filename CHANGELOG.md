@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.85.0] - 2026-04-04
+
+### Added
+- **Open-source release**: Repository is now public under MIT license
+- **Landing page**: MarketMind presentation site at [marketmind-app.vercel.app](https://marketmind-app.vercel.app) with 4 languages (EN/PT/ES/FR), dark/light mode
+- **Backend demo mode**: `DEMO_MODE` env var for read-only deployment (charts + indicators without auth/trading)
+- **Portfolio integration**: MarketMind featured on GitHub profile README
+
+### Changed
+- Updated README with landing page link, current stats (7,200+ tests), and full package list
+- Updated QUICK_START.md with current date
+- Cleaned up repository: removed stale logs, old optimization plans, and internal AI prompts
+
+### Removed
+- `MONOREPO.md` (redundant with QUICK_START.md)
+- `CUSTOM_SYMBOLS_IMPLEMENTATION_PROMPT.md` (internal AI prompt)
+- `docs/plans/PLAN-01` through `PLAN-06` (old optimization plans)
+- Stale log and result files from root and apps/backend
+
 ## [0.84.0] - 2026-04-03
 
 ### Added
