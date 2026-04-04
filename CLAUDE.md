@@ -1168,6 +1168,12 @@ Before committing:
 
 ---
 
-**Last Updated:** November 2025
-**Version:** 1.4
-**Project Version:** 0.28.0
+## 🚀 Release Process
+
+When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: version must be updated in **6 places** (3 package.json files, README badge, CHANGELOG, and the landing site repo).
+
+---
+
+**Last Updated:** April 2026
+**Version:** 1.5
+**Project Version:** 0.85.0
