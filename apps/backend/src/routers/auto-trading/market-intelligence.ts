@@ -28,7 +28,7 @@ export const marketIntelligenceRouter = router({
       });
 
       const mappedKlines = mapDbKlinesReversed(btcKlinesData);
-      const trendInfo = getBtcTrendEmaInfoWithHistory(mappedKlines);
+      const trendInfo = await getBtcTrendEmaInfoWithHistory(mappedKlines);
       const trendEmoji = trendInfo.trend === 'BULLISH' ? '✓' : trendInfo.trend === 'BEARISH' ? '✗' : '·';
       logApiTable('getBtcTrendStatus', [
         ['Interval', interval],
@@ -151,7 +151,7 @@ export const marketIntelligenceRouter = router({
       }
 
       const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-      const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+      const adxResult = await checkAdxCondition(btcKlinesData, 'LONG');
       const isChoppy = adxResult.adx !== null && adxResult.adx < 20;
 
       logApiTable('getBtcAdxTrendStrength', [
@@ -305,7 +305,7 @@ export const marketIntelligenceRouter = router({
     let adxSaved = false;
     if (btcDbKlines.length >= 50) {
       const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-      const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+      const adxResult = await checkAdxCondition(btcKlinesData, 'LONG');
       if (adxResult.adx !== null) {
         await historyService.saveIndicatorValue('ADX', adxResult.adx, {
           plusDI: adxResult.plusDI,
@@ -372,7 +372,7 @@ export const marketIntelligenceRouter = router({
       }
 
       const mappedKlines = mapDbKlinesReversed(dbKlines);
-      const indicators = getCurrentIndicatorValues(mappedKlines);
+      const indicators = await getCurrentIndicatorValues(mappedKlines);
 
       let trendStrength: 'strong' | 'moderate' | 'weak' | 'unknown' = 'unknown';
       if (indicators.adx !== null) {

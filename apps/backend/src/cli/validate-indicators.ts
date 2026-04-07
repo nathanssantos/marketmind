@@ -1,5 +1,5 @@
-import { calculateEMA, calculateRSI, calculateSMA } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { PineIndicatorService } from '../services/pine/PineIndicatorService';
 
 const createMockKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 86400000,
@@ -15,7 +15,7 @@ const createMockKline = (close: number, index: number): Kline => ({
   takerBuyQuoteVolume: '50000',
 });
 
-function validateEMA() {
+async function validateEMA() {
   console.log('=== VALIDAÇÃO DE EMA ===\n');
 
   const prices = [100, 102, 104, 103, 105, 107, 106, 108, 110, 109, 111, 113, 112, 114, 116];
@@ -24,8 +24,9 @@ function validateEMA() {
   console.log('Preços de teste:', prices.join(', '));
   console.log('');
 
-  const ema9 = calculateEMA(klines, 9);
-  const sma9 = calculateSMA(klines, 9);
+  const pineService = new PineIndicatorService();
+  const ema9 = await pineService.compute('ema', klines, { period: 9 });
+  const sma9 = await pineService.compute('sma', klines, { period: 9 });
 
   console.log('--- EMA9 vs SMA9 ---');
   console.log('Index | Price | SMA9     | EMA9     | Diff');
@@ -65,7 +66,7 @@ function validateEMA() {
   console.log(`\n✓ EMA está CORRETO - usa fórmula padrão da indústria`);
 }
 
-function validateRSI() {
+async function validateRSI() {
   console.log('\n\n=== VALIDAÇÃO DE RSI ===\n');
 
   const prices = [44, 44.34, 44.09, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08, 45.89, 46.03, 45.61, 46.28, 46.28, 46.00, 46.03, 46.41, 46.22, 45.64];
@@ -77,7 +78,9 @@ function validateRSI() {
   console.log(prices.slice(10).join(', '));
   console.log('');
 
-  const rsi14 = calculateRSI(klines, 14);
+  const pineService = new PineIndicatorService();
+  const rsi14Values = await pineService.compute('rsi', klines, { period: 14 });
+  const rsi14 = { values: rsi14Values };
 
   console.log('--- RSI14 Calculado pelo Sistema ---');
   for (let i = 0; i < prices.length; i++) {
@@ -148,7 +151,7 @@ function validateRSI() {
   }
 }
 
-function validateRSI2() {
+async function validateRSI2() {
   console.log('\n\n=== VALIDAÇÃO DE RSI(2) - Connors RSI2 ===\n');
 
   const prices = [100, 98, 96, 99, 101, 100, 97, 95, 98, 102, 104, 103, 100, 97, 94];
@@ -157,7 +160,9 @@ function validateRSI2() {
   console.log('Preços de teste para RSI(2):');
   console.log(prices.join(', '));
 
-  const rsi2 = calculateRSI(klines, 2);
+  const pineService = new PineIndicatorService();
+  const rsi2Values = await pineService.compute('rsi', klines, { period: 2 });
+  const rsi2 = { values: rsi2Values };
 
   console.log('\n--- RSI(2) Calculado ---');
   for (let i = 0; i < prices.length; i++) {
@@ -182,9 +187,9 @@ async function main() {
   console.log('║        Fase 1 do Plano de Validação                        ║');
   console.log('╚════════════════════════════════════════════════════════════╝\n');
 
-  validateEMA();
-  validateRSI();
-  validateRSI2();
+  await validateEMA();
+  await validateRSI();
+  await validateRSI2();
 
   console.log('\n\n=== RESUMO DA VALIDAÇÃO ===');
   console.log('✓ EMA: Implementação CORRETA (usa fórmula padrão)');

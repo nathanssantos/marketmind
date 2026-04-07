@@ -19,7 +19,7 @@ const {
   VOLATILITY_TARGET,
 } = POSITION_SIZING_CONFIG;
 
-export const calculateUnifiedPositionSize = (input: UnifiedPositionSizeInput): UnifiedPositionSizeResult => {
+export const calculateUnifiedPositionSize = async (input: UnifiedPositionSizeInput): Promise<UnifiedPositionSizeResult> => {
   const {
     equity,
     entryPrice,
@@ -79,7 +79,7 @@ export const calculateUnifiedPositionSize = (input: UnifiedPositionSizeInput): U
 
   let volatilityFactor = 1.0;
   if (applyVolatilityAdjustment && klines && klines.length > 0) {
-    const volResult = calculateVolatilityAdjustment({
+    const volResult = await calculateVolatilityAdjustment({
       klines,
       entryPrice,
       klineIndex,

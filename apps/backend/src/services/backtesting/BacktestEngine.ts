@@ -351,7 +351,7 @@ export class BacktestEngine {
     stochasticHtfKlines: Kline[] = [],
     mtfHtfKlines: Kline[] = [],
     mtfHtfInterval: string | null = null
-  ): { trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] } {
+  ): Promise<{ trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] }> {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
     let peakEquity = config.initialCapital;
@@ -416,7 +416,7 @@ export class BacktestEngine {
         trades.length
       );
 
-      const volatilityAdjusted = tradeExecutor.applyVolatilityAdjustment(
+      const volatilityAdjusted = await tradeExecutor.applyVolatilityAdjustment(
         positionSize,
         entryPrice,
         historicalKlines as Kline[],

@@ -1,11 +1,11 @@
-import { calculateATR } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { VolatilityAdjustmentInput, VolatilityAdjustmentResult } from './types';
 
 const DEFAULT_ATR_PERIOD = 14;
 const DEFAULT_HIGH_VOLATILITY_THRESHOLD = 3.0;
 const DEFAULT_REDUCTION_FACTOR = 0.7;
 
-export const calculateVolatilityAdjustment = (input: VolatilityAdjustmentInput): VolatilityAdjustmentResult => {
+export const calculateVolatilityAdjustment = async (input: VolatilityAdjustmentInput): Promise<VolatilityAdjustmentResult> => {
   const {
     klines,
     entryPrice,
@@ -39,7 +39,8 @@ export const calculateVolatilityAdjustment = (input: VolatilityAdjustmentInput):
     };
   }
 
-  const atrValues = calculateATR(recentKlines, atrPeriod);
+  const pineService = new PineIndicatorService();
+  const atrValues = await pineService.compute('atr', recentKlines, { period: atrPeriod });
 
   if (atrValues.length === 0) {
     return {

@@ -1,6 +1,6 @@
 import { serializeError } from '../utils/errors';
-import { calculateATR } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { PineIndicatorService } from './pine/PineIndicatorService';
 import { logger } from './logger';
 import { strategyPerformanceService } from './strategy-performance';
 
@@ -42,7 +42,7 @@ export class ConfidenceCalculator {
     );
 
     const perfFactor = this.calculatePerformanceFactor(performance);
-    const volatilityFactor = this.calculateVolatilityFactor(klines);
+    const volatilityFactor = await this.calculateVolatilityFactor(klines);
     const volumeFactor = this.calculateVolumeFactor(currentVolume, avgVolume);
     const lossesPenalty = this.calculateConsecutiveLossesPenalty(performance);
 
@@ -115,11 +115,12 @@ export class ConfidenceCalculator {
     return 0.7;
   }
 
-  private calculateVolatilityFactor(klines: Kline[]): number {
+  private async calculateVolatilityFactor(klines: Kline[]): Promise<number> {
     if (klines.length < 14) return 1.0;
 
     try {
-      const atrValues = calculateATR(klines, 14);
+      const pineService = new PineIndicatorService();
+      const atrValues = await pineService.compute('atr', klines, { period: 14 });
       if (atrValues.length === 0) return 1.0;
 
       const atr = atrValues[atrValues.length - 1];
@@ -135,7 +136,7 @@ export class ConfidenceCalculator {
       if (atrPercent < 3.0) return 1.0;
       if (atrPercent < 4.0) return 0.95;
       if (atrPercent < 5.0) return 0.9;
-      
+
       return 0.85;
     } catch (error) {
       logger.error({

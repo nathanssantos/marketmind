@@ -149,7 +149,7 @@ export class AutoTradingService {
 
       const mappedKlines = mapDbKlinesReversed(recentKlines);
 
-      const result = calculateVolatilityAdjustmentCore({
+      const result = await calculateVolatilityAdjustmentCore({
         klines: mappedKlines,
         entryPrice: currentPrice,
       });

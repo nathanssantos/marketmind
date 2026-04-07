@@ -1845,7 +1845,7 @@ export const autoTradingRouter = router({
       }
 
       const mappedKlines = mapDbKlinesReversed(dbKlines);
-      const indicators = getCurrentIndicatorValues(mappedKlines);
+      const indicators = await getCurrentIndicatorValues(mappedKlines);
 
       let trendStrength: 'strong' | 'moderate' | 'weak' | 'unknown' = 'unknown';
       if (indicators.adx !== null) {

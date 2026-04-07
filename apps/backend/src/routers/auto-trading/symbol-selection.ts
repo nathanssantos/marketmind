@@ -130,7 +130,7 @@ export const symbolSelectionRouter = router({
 
         if (btcDbKlines.length >= 30) {
           const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-          btcTrendInfo = getEma21Direction(btcKlinesData);
+          btcTrendInfo = await getEma21Direction(btcKlinesData);
           log('> BTC Correlation Filter - Trend', {
             direction: btcTrendInfo.direction,
             price: btcTrendInfo.price?.toFixed(2),

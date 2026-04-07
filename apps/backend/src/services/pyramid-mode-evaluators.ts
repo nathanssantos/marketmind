@@ -39,7 +39,7 @@ export const evaluateDynamicPyramid = async (
     leverageAware: config.leverageAware,
   };
 
-  const dynamicEval = evaluateDynamicConditions(klines, dynamicConfig);
+  const dynamicEval = await evaluateDynamicConditions(klines, dynamicConfig);
 
   if (!dynamicEval.canPyramid) {
     logPyramidDecision('REJECTED', symbol, direction, {

@@ -1,7 +1,8 @@
-import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
+import { calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
 import type { FibLevel, Kline, TimeInterval } from '@marketmind/types';
 import { FILTER_THRESHOLDS } from '@marketmind/types';
 import { TIME_MS, UNIT_MS } from '../../../constants';
+import { PineIndicatorService } from '../../pine/PineIndicatorService';
 import { log } from '../utils';
 
 export const getIntervalMs = (interval: string): number => {
@@ -12,7 +13,7 @@ export const getIntervalMs = (interval: string): number => {
   return parseInt(match[1]) * unitMs;
 };
 
-export const getAdxBasedFibonacciLevel = (klines: Kline[], _direction: 'LONG' | 'SHORT'): number => {
+export const getAdxBasedFibonacciLevel = async (klines: Kline[], _direction: 'LONG' | 'SHORT'): Promise<number> => {
   const { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG } = FILTER_THRESHOLDS;
   const MIN_KLINES_FOR_ADX = 35;
 
@@ -24,8 +25,10 @@ export const getAdxBasedFibonacciLevel = (klines: Kline[], _direction: 'LONG' | 
     return 1.272;
   }
 
-  const adxResult = calculateADX(klines, 14);
-  const adx = adxResult.adx[adxResult.adx.length - 1];
+  const pineService = new PineIndicatorService();
+  const dmiResult = await pineService.computeMulti('dmi', klines, { period: 14 });
+  const adxArray = dmiResult['adx'] ?? [];
+  const adx = adxArray[adxArray.length - 1];
 
   if (adx == null) {
     log('! ADX calculation returned null, using default level');
@@ -48,14 +51,14 @@ export const getAdxBasedFibonacciLevel = (klines: Kline[], _direction: 'LONG' | 
   return targetLevel;
 };
 
-export const calculateFibonacciTakeProfit = (
+export const calculateFibonacciTakeProfit = async (
   klines: Kline[],
   _entryPrice: number,
   direction: 'LONG' | 'SHORT',
   fibonacciTargetLevel: FibLevel = '2',
   interval: string = '4h',
   swingRange: 'extended' | 'nearest' = 'nearest'
-): number | null => {
+): Promise<number | null> => {
   const currentIndex = klines.length - 1;
   const lookback = calculateTimeframeLookback(interval as TimeInterval);
   const projection = calculateFibonacciProjection(klines, currentIndex, lookback, direction, swingRange);
@@ -82,7 +85,7 @@ export const calculateFibonacciTakeProfit = (
   });
 
   const targetLevel = fibonacciTargetLevel === 'auto'
-    ? getAdxBasedFibonacciLevel(klines, direction)
+    ? await getAdxBasedFibonacciLevel(klines, direction)
     : parseFloat(fibonacciTargetLevel);
 
   const targetLevelData = projection.levels.find(

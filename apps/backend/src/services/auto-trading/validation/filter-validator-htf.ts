@@ -24,7 +24,7 @@ export const checkStochasticHtfFilter = async (
   const htfKlines = await deps.getHtfKlines(symbol, htfInterval, marketType);
   if (htfKlines.length === 0) return { passed: true };
 
-  const result = checkStochasticHtfCondition(htfKlines, setup.openTime, setup.direction);
+  const result = await checkStochasticHtfCondition(htfKlines, setup.openTime, setup.direction);
 
   logBuffer.addFilterCheck({
     filterName: 'HTF Stochastic',
@@ -51,7 +51,7 @@ export const checkStochasticRecoveryHtfFilter = async (
   const htfKlines = await deps.getHtfKlines(symbol, htfInterval, marketType);
   if (htfKlines.length === 0) return { passed: true };
 
-  const result = checkStochasticRecoveryHtfCondition(htfKlines, setup.openTime, setup.direction);
+  const result = await checkStochasticRecoveryHtfCondition(htfKlines, setup.openTime, setup.direction);
 
   logBuffer.addFilterCheck({
     filterName: 'HTF Stochastic Recovery',

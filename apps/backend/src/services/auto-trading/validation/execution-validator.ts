@@ -184,7 +184,7 @@ export const validateSetupFilters = async (
   let effectiveTakeProfit = setup.takeProfit;
 
   if (tpCalculationMode === 'fibonacci') {
-    const fibTarget = calculateFibonacciTakeProfit(
+    const fibTarget = await calculateFibonacciTakeProfit(
       cycleKlines, setup.entryPrice, setup.direction,
       effectiveFibLevel, watcher.interval, fibonacciSwingRange
     );

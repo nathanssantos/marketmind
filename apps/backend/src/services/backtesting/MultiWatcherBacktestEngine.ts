@@ -432,7 +432,7 @@ export class MultiWatcherBacktestEngine {
     const htfInterval = getHigherTimeframe(event.watcherInterval);
     const stochasticHtfKlines = this.stochasticHtfKlinesCache.get(`${watcherId}-stoch-htf`);
 
-    const filterResult = this.applyIndicatorFilters(
+    const filterResult = await this.applyIndicatorFilters(
       klinesUpToSetup,
       event.setup.direction,
       setupStrategy,

@@ -1,6 +1,6 @@
-import { calculateADX, calculateATR, calculateRSI } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
 import { logger } from './logger';
+import { PineIndicatorService } from './pine/PineIndicatorService';
 
 export interface DynamicPyramidConfig {
   useAtr: boolean;
@@ -30,10 +30,10 @@ const DEFAULT_ATR_PERIOD = 14;
 const DEFAULT_ADX_PERIOD = 14;
 const DEFAULT_RSI_PERIOD = 14;
 
-export const evaluateDynamicConditions = (
+export const evaluateDynamicConditions = async (
   klines: Kline[],
   config: DynamicPyramidConfig
-): DynamicPyramidEvaluation => {
+): Promise<DynamicPyramidEvaluation> => {
   if (klines.length < 30) {
     return {
       canPyramid: false,
@@ -47,14 +47,15 @@ export const evaluateDynamicConditions = (
     };
   }
 
+  const pineService = new PineIndicatorService();
   let atrRatio = 1;
   let atrValue: number | null = null;
   let adxValue: number | null = null;
   let rsiValue: number | null = null;
 
   if (config.useAtr) {
-    const atrValues = calculateATR(klines, DEFAULT_ATR_PERIOD);
-    const validAtrValues = atrValues.filter((v) => !isNaN(v) && v > 0);
+    const atrValues = await pineService.compute('atr', klines, { period: DEFAULT_ATR_PERIOD });
+    const validAtrValues = atrValues.filter((v): v is number => v !== null && !isNaN(v) && v > 0);
 
     if (validAtrValues.length >= 2) {
       const currentAtr = validAtrValues[validAtrValues.length - 1] ?? 0;
@@ -66,8 +67,9 @@ export const evaluateDynamicConditions = (
   }
 
   if (config.useAdx) {
-    const adxResult = calculateADX(klines, DEFAULT_ADX_PERIOD);
-    const adxValues = adxResult.adx.filter((v): v is number => v !== null);
+    const dmiResult = await pineService.computeMulti('dmi', klines, { period: DEFAULT_ADX_PERIOD });
+    const adxArray = dmiResult['adx'] ?? [];
+    const adxValues = adxArray.filter((v): v is number => v !== null);
 
     if (adxValues.length > 0) {
       adxValue = adxValues[adxValues.length - 1] ?? null;
@@ -92,11 +94,11 @@ export const evaluateDynamicConditions = (
   }
 
   if (config.useRsi) {
-    const rsiResult = calculateRSI(klines, DEFAULT_RSI_PERIOD);
-    const rsiValues = rsiResult.values.filter((v): v is number => v !== null);
+    const rsiValues = await pineService.compute('rsi', klines, { period: DEFAULT_RSI_PERIOD });
+    const validRsiValues = rsiValues.filter((v): v is number => v !== null);
 
-    if (rsiValues.length > 0) {
-      rsiValue = rsiValues[rsiValues.length - 1] ?? null;
+    if (validRsiValues.length > 0) {
+      rsiValue = validRsiValues[validRsiValues.length - 1] ?? null;
 
       if (rsiValue !== null && rsiValue > config.rsiLowerBound && rsiValue < config.rsiUpperBound) {
         logger.trace({
@@ -177,14 +179,15 @@ export const calculateLeverageAdjustedScaleFactor = (
   return Math.max(0.1, Math.min(1.0, adjusted));
 };
 
-export const calculateAtrAdjustedMinDistance = (
+export const calculateAtrAdjustedMinDistance = async (
   baseMinDistance: number,
   klines: Kline[]
-): number => {
+): Promise<number> => {
   if (klines.length < 30) return baseMinDistance;
 
-  const atrValues = calculateATR(klines, DEFAULT_ATR_PERIOD);
-  const validAtrValues = atrValues.filter((v) => !isNaN(v) && v > 0);
+  const pineService = new PineIndicatorService();
+  const atrValues = await pineService.compute('atr', klines, { period: DEFAULT_ATR_PERIOD });
+  const validAtrValues = atrValues.filter((v): v is number => v !== null && !isNaN(v) && v > 0);
 
   if (validAtrValues.length < 2) return baseMinDistance;
 
@@ -197,22 +200,25 @@ export const calculateAtrAdjustedMinDistance = (
   return baseMinDistance * clampedRatio;
 };
 
-export const getCurrentIndicatorValues = (
+export const getCurrentIndicatorValues = async (
   klines: Kline[]
-): { atr: number | null; adx: number | null; rsi: number | null; plusDI: number | null; minusDI: number | null } => {
+): Promise<{ atr: number | null; adx: number | null; rsi: number | null; plusDI: number | null; minusDI: number | null }> => {
   if (klines.length < 30) {
     return { atr: null, adx: null, rsi: null, plusDI: null, minusDI: null };
   }
 
-  const atrValues = calculateATR(klines, DEFAULT_ATR_PERIOD);
-  const adxResult = calculateADX(klines, DEFAULT_ADX_PERIOD);
-  const rsiResult = calculateRSI(klines, DEFAULT_RSI_PERIOD);
+  const pineService = new PineIndicatorService();
+  const [atrValues, dmiResult, rsiValues] = await Promise.all([
+    pineService.compute('atr', klines, { period: DEFAULT_ATR_PERIOD }),
+    pineService.computeMulti('dmi', klines, { period: DEFAULT_ADX_PERIOD }),
+    pineService.compute('rsi', klines, { period: DEFAULT_RSI_PERIOD }),
+  ]);
 
-  const validAtr = atrValues.filter((v) => !isNaN(v) && v > 0);
-  const validAdx = adxResult.adx.filter((v): v is number => v !== null);
-  const validRsi = rsiResult.values.filter((v): v is number => v !== null);
-  const validPlusDI = adxResult.plusDI.filter((v): v is number => v !== null);
-  const validMinusDI = adxResult.minusDI.filter((v): v is number => v !== null);
+  const validAtr = atrValues.filter((v): v is number => v !== null && !isNaN(v) && v > 0);
+  const validAdx = (dmiResult['adx'] ?? []).filter((v): v is number => v !== null);
+  const validRsi = rsiValues.filter((v): v is number => v !== null);
+  const validPlusDI = (dmiResult['plusDI'] ?? []).filter((v): v is number => v !== null);
+  const validMinusDI = (dmiResult['minusDI'] ?? []).filter((v): v is number => v !== null);
 
   return {
     atr: validAtr.length > 0 ? (validAtr[validAtr.length - 1] ?? null) : null,

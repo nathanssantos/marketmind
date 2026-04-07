@@ -1,5 +1,6 @@
-import { calculateATR, calculateSwingPoints } from '@marketmind/indicators';
+import { calculateSwingPoints } from '@marketmind/indicators';
 import type { FibonacciProjectionData, Interval, Kline as KlineType, TrailingStopOptimizationConfig } from '@marketmind/types';
+import { PineIndicatorService } from './pine/PineIndicatorService';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../db';
 import type { SymbolTrailingStopOverride, TradeExecution } from '../db/schema';
@@ -212,8 +213,13 @@ export class TrailingStopService {
       const currentPrice = await this.getCurrentPrice(symbol, execMarketType);
       const { swingPoints } = calculateSwingPoints(mappedKlines, this.config.swingLookback);
 
-      const atrValues = this.config.useATRMultiplier ? calculateATR(mappedKlines, 14) : [];
-      const currentATR = atrValues.length > 0 ? atrValues[atrValues.length - 1] : undefined;
+      let currentATR: number | undefined;
+      if (this.config.useATRMultiplier) {
+        const pineService = new PineIndicatorService();
+        const atrValues = await pineService.compute('atr', mappedKlines, { period: 14 });
+        const lastAtr = atrValues.length > 0 ? atrValues[atrValues.length - 1] : null;
+        currentATR = lastAtr !== null ? lastAtr : undefined;
+      }
 
       let effectiveConfig = this.config;
       if (this.config.useVolatilityBasedThresholds && currentATR && currentATR > 0 && currentPrice > 0) {

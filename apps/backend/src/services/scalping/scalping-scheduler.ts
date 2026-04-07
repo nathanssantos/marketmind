@@ -172,10 +172,10 @@ export class ScalpingScheduler {
       binanceFuturesKlineStreamService.subscribe(symbol, signalInterval);
     }
 
-    const klineUnsub = binanceFuturesKlineStreamService.onKlineClose((update) => {
+    const klineUnsub = binanceFuturesKlineStreamService.onKlineClose(async (update) => {
       if (update.interval !== signalInterval) return;
       if (!symbols.includes(update.symbol)) return;
-      klineIndicatorManager.processKlineClose(update);
+      await klineIndicatorManager.processKlineClose(update);
     });
     unsubscribers.push(klineUnsub);
 

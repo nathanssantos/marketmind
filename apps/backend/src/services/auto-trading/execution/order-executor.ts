@@ -71,14 +71,14 @@ export class OrderExecutor {
     }
   }
 
-  calculateFibonacciTakeProfit(
+  async calculateFibonacciTakeProfit(
     klines: Kline[],
     _entryPrice: number,
     direction: 'LONG' | 'SHORT',
     fibonacciTargetLevel: FibLevel = '2',
     interval: string = '4h',
     swingRange: 'extended' | 'nearest' = 'nearest'
-  ): number | null {
+  ): Promise<number | null> {
     return calculateFibonacciTakeProfit(klines, _entryPrice, direction, fibonacciTargetLevel, interval, swingRange);
   }
 
@@ -86,7 +86,7 @@ export class OrderExecutor {
     return getIntervalMs(interval);
   }
 
-  getAdxBasedFibonacciLevel(klines: Kline[], direction: 'LONG' | 'SHORT'): number {
+  async getAdxBasedFibonacciLevel(klines: Kline[], direction: 'LONG' | 'SHORT'): Promise<number> {
     return getAdxBasedFibonacciLevel(klines, direction);
   }
 
@@ -170,7 +170,7 @@ export class OrderExecutor {
     let effectiveTakeProfit = setup.takeProfit;
 
     if (tpCalculationMode === 'fibonacci') {
-      const fibTarget = calculateFibonacciTakeProfit(
+      const fibTarget = await calculateFibonacciTakeProfit(
         cycleKlines, setup.entryPrice, setup.direction,
         effectiveFibLevel, watcher.interval, fibonacciSwingRange
       );
