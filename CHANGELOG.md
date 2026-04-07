@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.86.0] - 2026-04-07
+
+### Added
+- **Standalone Volume Profile**: Kline-based volume profile that works without scalping/wallet — calculates price-level volume distribution with POC, buy/sell separation directly from visible candles
+- **Volume Profile in indicator popover**: Toggle on/off via Order Flow category alongside Footprint, Liquidity Heatmap, and Liquidation Markers
+- **Footprint in indicator popover**: Now accessible from the Order Flow indicator category
+- **Desktop build pipeline**: GitHub Actions workflow builds macOS (DMG+ZIP) and Windows (NSIS) installers on tag push, publishes to GitHub Releases
+- **Auto-update on startup**: UpdateManager now checks for updates every 24h automatically
+- **Release process documentation**: `docs/RELEASE_PROCESS.md` with version checklist and code signing guide
+
+### Fixed
+- **Kline candle corruption on symbol switch**: Invalidate React Query cache on symbol change and set staleTime to 0 — prevents stale cached candles when returning to a previously viewed symbol
+- **Volume Profile coordinate mapping**: Uses `manager.priceToY()` like all other chart renderers instead of custom function that ignored chart padding and bounds
+
+### Changed
+- Default indicators: removed EMA-7 and Daily VWAP from defaults (kept EMA-9, EMA-21, EMA-200, Stochastic, RSI)
+- Volume Profile decoupled from scalping metrics — works independently for any symbol/timeframe
+- electron-builder config: added `publish` (GitHub provider) and `zip` target for macOS auto-update
+
 ## [0.85.0] - 2026-04-04
 
 ### Added
