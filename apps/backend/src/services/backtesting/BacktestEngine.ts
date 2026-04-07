@@ -6,7 +6,7 @@ import type {
 } from '@marketmind/types';
 import type { PineStrategy } from '../pine/types';
 import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
-import { calculateEMA } from '@marketmind/indicators';
+import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { TRPCError } from '@trpc/server';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -133,7 +133,7 @@ export class BacktestEngine {
         loadedStrategies
       );
 
-      const { trades, equity, maxDrawdown, equityCurve } = this.executeBacktest(
+      const { trades, equity, maxDrawdown, equityCurve } = await this.executeBacktest(
         tradableSetups,
         historicalKlines,
         config,
@@ -338,7 +338,7 @@ export class BacktestEngine {
     return tradableSetups;
   }
 
-  private executeBacktest(
+  private async executeBacktest(
     tradableSetups: any[],
     historicalKlines: any[],
     config: BacktestConfig,
@@ -381,10 +381,10 @@ export class BacktestEngine {
 
       const setupIndex = klineIndexMap.get(setup.openTime) ?? -1;
 
-      if (!filterManager.runRegisteredFilters(historicalKlines as Kline[], setupIndex, setup.direction, setup.type)) continue;
-      if (!filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
-      if (!filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
-      if (!filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length).passed) continue;
+      if (!(await filterManager.runRegisteredFilters(historicalKlines as Kline[], setupIndex, setup.direction, setup.type))) continue;
+      if (!(await filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length))) continue;
+      if (!(await filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length))) continue;
+      if (!(await filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length)).passed) continue;
 
       const entryKline = klineMap.get(setup.openTime);
       if (!entryKline) {
@@ -403,7 +403,7 @@ export class BacktestEngine {
 
       const shouldUseTrendFilter = effectiveConfig.useTrendFilter === true;
 
-      if (!filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, shouldUseTrendFilter, trades.length)) continue;
+      if (!(await filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, shouldUseTrendFilter, trades.length))) continue;
       if (!filterManager.checkFvgFilter(historicalKlines as Kline[], setupIndex, entryPrice, setup.direction, trades.length)) continue;
 
       const { stopLoss, takeProfit } = tradeExecutor.resolveStopLossAndTakeProfit(setup, entryPrice, trades.length);
@@ -553,7 +553,8 @@ export class BacktestEngine {
     );
 
     const emaTrendPeriod = baseEffective.trendFilterPeriod ?? 21;
-    const emaTrend = calculateEMA(klines, emaTrendPeriod).map(v => v ?? 0);
+    const pineService = new PineIndicatorService();
+    const emaTrend = (await pineService.compute('ema', klines, { period: emaTrendPeriod })).map(v => v ?? 0);
 
     const anyHtfStochastic = configs.some(c => c.useStochasticHtfFilter || c.useStochasticRecoveryHtfFilter);
     let batchStochasticHtfKlines: Kline[] = [];
@@ -637,7 +638,7 @@ export class BacktestEngine {
           useBnbDiscount: config.useBnbDiscount,
         });
 
-        const { trades, maxDrawdown, equityCurve } = this.executeBacktest(
+        const { trades, maxDrawdown, equityCurve } = await this.executeBacktest(
           baseFilteredSetups,
           historicalKlines,
           config,

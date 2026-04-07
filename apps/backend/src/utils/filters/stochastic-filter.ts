@@ -1,5 +1,7 @@
-import { calculateStochastic } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline, StochasticFilterResult } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 export type { StochasticFilterResult };
 
@@ -11,10 +13,10 @@ export const STOCHASTIC_FILTER = {
   OVERBOUGHT_THRESHOLD: 80,
 } as const;
 
-export const checkStochasticCondition = (
+export const checkStochasticCondition = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT'
-): StochasticFilterResult => {
+): Promise<StochasticFilterResult> => {
   const { K_PERIOD, K_SMOOTHING, D_PERIOD, OVERSOLD_THRESHOLD, OVERBOUGHT_THRESHOLD } =
     STOCHASTIC_FILTER;
 
@@ -31,10 +33,13 @@ export const checkStochasticCondition = (
     };
   }
 
-  const stochResult = calculateStochastic(klines, K_PERIOD, K_SMOOTHING, D_PERIOD);
-  const lastIndex = stochResult.k.length - 1;
-  const currentK = stochResult.k[lastIndex];
-  const currentD = stochResult.d[lastIndex];
+  const stochResult = await pineService.computeMulti('stoch', klines, { period: K_PERIOD, smoothK: K_SMOOTHING });
+  const kValues = stochResult['k'] ?? [];
+  const dValues = stochResult['d'] ?? [];
+
+  const lastIndex = kValues.length - 1;
+  const currentK = kValues[lastIndex] ?? null;
+  const currentD = dValues[lastIndex] ?? null;
 
   if (currentK === null || currentK === undefined) {
     return {

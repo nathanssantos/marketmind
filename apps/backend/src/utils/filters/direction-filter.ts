@@ -1,10 +1,12 @@
-import { calculateEMA } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type {
   DirectionFilterConfig,
   DirectionFilterResult,
   Kline,
   MarketDirection,
 } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 const EMA_PERIOD = 200;
 const MIN_KLINES_REQUIRED = 212;
@@ -57,11 +59,11 @@ const getMarketDirection = (
   return 'NEUTRAL';
 };
 
-export const checkDirectionFilter = (
+export const checkDirectionFilter = async (
   klines: Kline[],
   tradeDirection: 'LONG' | 'SHORT',
   config: DirectionFilterConfig = {}
-): DirectionFilterResult => {
+): Promise<DirectionFilterResult> => {
   const { enableLongInBearMarket = false, enableShortInBullMarket = false } = config;
 
   if (klines.length < MIN_KLINES_REQUIRED) {
@@ -77,14 +79,11 @@ export const checkDirectionFilter = (
     };
   }
 
-  const emaValues = calculateEMA(klines, EMA_PERIOD);
+  const emaValues = await pineService.compute('ema', klines, { period: EMA_PERIOD });
   const lastIndex = klines.length - 1;
 
-  // Use klines[-2] (not the signal candle itself) as the confirmation candle.
-  // It must have OPENED and CLOSED entirely on the correct side of EMA200:
-  // a candle that opened below and closed above is the crossover candle — not confirmation.
   const prevIndex = lastIndex - 1;
-  const ema200 = emaValues[prevIndex];
+  const ema200 = emaValues[prevIndex] ?? null;
   const currentPrice = getKlineClose(klines[prevIndex]);
   const openPrice = (() => {
     const k = klines[prevIndex];
@@ -92,7 +91,7 @@ export const checkDirectionFilter = (
     return typeof k.open === 'string' ? parseFloat(k.open) : (k.open as number);
   })();
 
-  if (ema200 === null || ema200 === undefined || isNaN(ema200) || ema200 === 0) {
+  if (ema200 === null || isNaN(ema200) || ema200 === 0) {
     return {
       isAllowed: true,
       direction: 'NEUTRAL',
@@ -107,7 +106,6 @@ export const checkDirectionFilter = (
   const ema200Slope = calculateSlope(emaValues, SLOPE_LOOKBACK);
   const priceVsEma200Percent = ((currentPrice - ema200) / ema200) * 100;
 
-  // Both open and close of klines[-2] must be on the same side of EMA200.
   const openAbove = openPrice > ema200;
   const closeAbove = currentPrice > ema200;
   const confirmedAbove = openAbove && closeAbove;
@@ -116,7 +114,6 @@ export const checkDirectionFilter = (
   const marketDirection = confirmedDirection !== 'NEUTRAL'
     ? getMarketDirection(currentPrice, ema200, ema200Slope)
     : ('NEUTRAL' as MarketDirection);
-  // Override to NEUTRAL if the candle itself crossed EMA200 (not a confirmed breakout)
   const effectiveDirection: MarketDirection = confirmedDirection === 'NEUTRAL' ? 'NEUTRAL' : marketDirection;
 
   let isAllowed = true;

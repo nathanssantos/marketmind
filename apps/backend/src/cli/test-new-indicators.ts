@@ -34,12 +34,12 @@ const generateMockKlines = (count: number): Kline[] => {
   return klines;
 };
 
-const testAdxFilter = () => {
+const testAdxFilter = async () => {
   console.log('\n=== Testing ADX Filter ===\n');
 
   const klines = generateMockKlines(100);
-  const resultLong = checkAdxCondition(klines, 'LONG');
-  const resultShort = checkAdxCondition(klines, 'SHORT');
+  const resultLong = await checkAdxCondition(klines, 'LONG');
+  const resultShort = await checkAdxCondition(klines, 'SHORT');
 
   console.log('ADX Result (LONG):');
   console.log(`  ADX: ${resultLong.adx?.toFixed(2) ?? 'N/A'}`);

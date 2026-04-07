@@ -1,6 +1,8 @@
-import { calculateADX, calculateATR } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline, SetupStrategyType } from '@marketmind/types';
 import { getStrategyStrategyType } from './strategy-filter-types';
+
+const pineService = new PineIndicatorService();
 
 const ADX_PERIOD = 14;
 const ATR_PERIOD = 14;
@@ -55,10 +57,10 @@ const getVolatilityLevel = (percentile: number): VolatilityLevel => {
   return 'EXTREME';
 };
 
-export const checkMarketRegime = (
+export const checkMarketRegime = async (
   klines: Kline[],
   setupType: string
-): MarketRegimeResult => {
+): Promise<MarketRegimeResult> => {
   const strategyType = getSetupStrategyType(setupType);
 
   if (klines.length < MIN_KLINES_REQUIRED) {
@@ -76,23 +78,29 @@ export const checkMarketRegime = (
     };
   }
 
-  const adxResult = calculateADX(klines, ADX_PERIOD);
-  const atrValues = calculateATR(klines, ATR_PERIOD);
+  const [dmiResult, atrValues] = await Promise.all([
+    pineService.computeMulti('dmi', klines, { period: ADX_PERIOD }),
+    pineService.compute('atr', klines, { period: ATR_PERIOD }),
+  ]);
+
+  const adxArr = dmiResult['adx'] ?? [];
+  const plusDIArr = dmiResult['plusDI'] ?? [];
+  const minusDIArr = dmiResult['minusDI'] ?? [];
 
   const lastIndex = klines.length - 1;
-  const adx = adxResult.adx[lastIndex];
-  const plusDI = adxResult.plusDI[lastIndex];
-  const minusDI = adxResult.minusDI[lastIndex];
-  const atr = atrValues[lastIndex];
+  const adx = adxArr[lastIndex] ?? null;
+  const plusDI = plusDIArr[lastIndex] ?? null;
+  const minusDI = minusDIArr[lastIndex] ?? null;
+  const atr = atrValues[lastIndex] ?? null;
 
-  if (adx === null || adx === undefined || isNaN(adx)) {
+  if (adx === null || isNaN(adx)) {
     return {
       isAllowed: true,
       regime: 'RANGING',
       adx: null,
       plusDI: plusDI ?? null,
       minusDI: minusDI ?? null,
-      atr: isNaN(atr ?? NaN) ? null : atr ?? null,
+      atr: atr !== null && !isNaN(atr) ? atr : null,
       atrPercentile: null,
       volatilityLevel: 'NORMAL',
       recommendedStrategy: 'ANY',
@@ -102,11 +110,11 @@ export const checkMarketRegime = (
 
   const validAtrValues = atrValues
     .slice(Math.max(0, atrValues.length - ATR_LOOKBACK))
-    .filter((v): v is number => !isNaN(v))
+    .filter((v): v is number => v !== null && !isNaN(v))
     .sort((a, b) => a - b);
 
   let atrPercentile: number | null = null;
-  if (atr !== undefined && !isNaN(atr) && validAtrValues.length > 0) {
+  if (atr !== null && !isNaN(atr) && validAtrValues.length > 0) {
     atrPercentile = calculatePercentile(atr, validAtrValues);
   }
 
@@ -143,7 +151,7 @@ export const checkMarketRegime = (
       adx,
       plusDI: plusDI ?? null,
       minusDI: minusDI ?? null,
-      atr: isNaN(atr ?? NaN) ? null : atr ?? null,
+      atr: atr !== null && !isNaN(atr) ? atr : null,
       atrPercentile,
       volatilityLevel,
       recommendedStrategy,
@@ -157,7 +165,7 @@ export const checkMarketRegime = (
     adx,
     plusDI: plusDI ?? null,
     minusDI: minusDI ?? null,
-    atr: isNaN(atr ?? NaN) ? null : atr ?? null,
+    atr: atr !== null && !isNaN(atr) ? atr : null,
     atrPercentile,
     volatilityLevel,
     recommendedStrategy,

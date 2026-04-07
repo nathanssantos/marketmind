@@ -66,7 +66,7 @@ class IndicatorSchedulerService {
       let adxSaved = false;
       if (btcDbKlines.length >= ADX_TREND.MIN_KLINES_REQUIRED) {
         const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-        const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+        const adxResult = await checkAdxCondition(btcKlinesData, 'LONG');
         if (adxResult.adx !== null) {
           await historyService.saveIndicatorValue('ADX', adxResult.adx, {
             plusDI: adxResult.plusDI,

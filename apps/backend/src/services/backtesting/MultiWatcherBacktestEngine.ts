@@ -347,7 +347,7 @@ export class MultiWatcherBacktestEngine {
     return events;
   }
 
-  private applyIndicatorFilters(
+  private async applyIndicatorFilters(
     klines: Kline[],
     direction: 'LONG' | 'SHORT',
     _strategy: unknown,
@@ -363,37 +363,37 @@ export class MultiWatcherBacktestEngine {
       htfInterval?: string | null;
       stochasticHtfKlines?: Kline[];
     }
-  ): { passed: boolean } {
+  ): Promise<{ passed: boolean }> {
     const filterResults: FilterResults = {};
     const setupIndex = klines.length - 1;
     const setupType = context?.setupType ?? '';
 
-    const btcResult = filterManager.checkBtcCorrelationFilter(context?.btcKlines ?? [], direction, context?.symbol ?? '', tradesCount);
+    const btcResult = await filterManager.checkBtcCorrelationFilter(context?.btcKlines ?? [], direction, context?.symbol ?? '', tradesCount);
     if (!btcResult.passed) return { passed: false };
     if (btcResult.result) filterResults.btcCorrelation = btcResult.result;
 
-    const mtfResult = filterManager.checkMtfFilter(context?.htfKlines ?? [], direction, context?.htfInterval ?? null, tradesCount);
+    const mtfResult = await filterManager.checkMtfFilter(context?.htfKlines ?? [], direction, context?.htfInterval ?? null, tradesCount);
     if (!mtfResult.passed) return { passed: false };
     if (mtfResult.result) filterResults.mtf = mtfResult.result;
 
-    const regimeResult = filterManager.checkMarketRegimeFilter(klines, setupIndex, setupType, tradesCount);
+    const regimeResult = await filterManager.checkMarketRegimeFilter(klines, setupIndex, setupType, tradesCount);
     if (!regimeResult.passed) return { passed: false };
     if (regimeResult.result) {
       filterResults.marketRegime = regimeResult.result;
       filterResults.adxValue = regimeResult.result.adx ?? undefined;
     }
 
-    const volumeResult = filterManager.checkVolumeFilter(klines, setupIndex, direction, setupType, tradesCount);
+    const volumeResult = await filterManager.checkVolumeFilter(klines, setupIndex, direction, setupType, tradesCount);
     if (!volumeResult.passed) return { passed: false };
     if (volumeResult.result) filterResults.volume = volumeResult.result;
 
-    if (!filterManager.runValidatorFilters(klines, setupIndex, direction, setupType)) return { passed: false };
+    if (!(await filterManager.runValidatorFilters(klines, setupIndex, direction, setupType))) return { passed: false };
 
-    if (!filterManager.checkStochasticHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount)) return { passed: false };
-    if (!filterManager.checkStochasticRecoveryHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount)) return { passed: false };
+    if (!(await filterManager.checkStochasticHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount))) return { passed: false };
+    if (!(await filterManager.checkStochasticRecoveryHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount))) return { passed: false };
 
     const shouldApplyTrend = this.config.useTrendFilter === true;
-    if (!filterManager.checkTrendFilter(klines, setupIndex, direction, shouldApplyTrend, tradesCount)) return { passed: false };
+    if (!(await filterManager.checkTrendFilter(klines, setupIndex, direction, shouldApplyTrend, tradesCount))) return { passed: false };
     if (shouldApplyTrend) filterResults.trendAllowed = true;
 
     if (!filterManager.checkConfluenceScoring(filterResults, tradesCount)) return { passed: false };

@@ -1,5 +1,7 @@
-import { calculateEMA } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { HtfTrend, Interval, Kline, MtfFilterResult } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 const EMA_SHORT_PERIOD = 50;
 const EMA_LONG_PERIOD = 200;
@@ -34,11 +36,11 @@ export const getHigherTimeframe = (tradingInterval: string): Interval | null => 
   return HTF_MAPPING[tradingInterval] ?? null;
 };
 
-export const checkMtfCondition = (
+export const checkMtfCondition = async (
   htfKlines: Kline[],
   direction: 'LONG' | 'SHORT',
   htfInterval: string
-): MtfFilterResult => {
+): Promise<MtfFilterResult> => {
   if (htfKlines.length < MIN_KLINES_FOR_EMA200) {
     return {
       isAllowed: true,
@@ -55,21 +57,23 @@ export const checkMtfCondition = (
     };
   }
 
-  const ema50Values = calculateEMA(htfKlines, EMA_SHORT_PERIOD);
-  const ema200Values = calculateEMA(htfKlines, EMA_LONG_PERIOD);
+  const [ema50Values, ema200Values] = await Promise.all([
+    pineService.compute('ema', htfKlines, { period: EMA_SHORT_PERIOD }),
+    pineService.compute('ema', htfKlines, { period: EMA_LONG_PERIOD }),
+  ]);
 
   const lastIndex = htfKlines.length - 1;
-  const ema50 = ema50Values[lastIndex];
-  const ema200 = ema200Values[lastIndex];
+  const ema50 = ema50Values[lastIndex] ?? null;
+  const ema200 = ema200Values[lastIndex] ?? null;
   const lastKline = htfKlines[lastIndex];
 
-  if (!lastKline || ema50 === null || ema50 === undefined || ema200 === null || ema200 === undefined) {
+  if (!lastKline || ema50 === null || ema200 === null) {
     return {
       isAllowed: true,
       htfTrend: 'NEUTRAL',
       htfInterval,
-      ema50: ema50 ?? null,
-      ema200: ema200 ?? null,
+      ema50,
+      ema200,
       price: lastKline ? parseFloat(String(lastKline.close)) : null,
       goldenCross: false,
       deathCross: false,

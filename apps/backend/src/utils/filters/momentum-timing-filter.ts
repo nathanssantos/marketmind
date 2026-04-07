@@ -1,6 +1,8 @@
-import { calculateRSI, calculateMFI } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline, MomentumTimingResult, SetupMomentumType } from '@marketmind/types';
 import { getStrategyMomentumType } from './strategy-filter-types';
+
+const pineService = new PineIndicatorService();
 
 export type { MomentumTimingResult, SetupMomentumType };
 
@@ -20,11 +22,11 @@ export const getSetupMomentumType = (setupType: string): SetupMomentumType => {
   return getStrategyMomentumType(setupType);
 };
 
-export const checkMomentumTiming = (
+export const checkMomentumTiming = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT',
   setupType?: string
-): MomentumTimingResult => {
+): Promise<MomentumTimingResult> => {
   const {
     RSI_PERIOD,
     MFI_PERIOD,
@@ -52,14 +54,16 @@ export const checkMomentumTiming = (
     };
   }
 
-  const rsiResult = calculateRSI(klines, RSI_PERIOD);
-  const mfiResult = calculateMFI(klines, MFI_PERIOD);
+  const [rsiValues, mfiValues] = await Promise.all([
+    pineService.compute('rsi', klines, { period: RSI_PERIOD }),
+    pineService.compute('mfi', klines, { period: MFI_PERIOD }),
+  ]);
 
-  const lastIndex = rsiResult.values.length - 1;
-  const rsiValue = rsiResult.values[lastIndex] ?? null;
-  const rsiPrevValue = rsiResult.values[lastIndex - 1] ?? null;
+  const lastIndex = rsiValues.length - 1;
+  const rsiValue = rsiValues[lastIndex] ?? null;
+  const rsiPrevValue = rsiValues[lastIndex - 1] ?? null;
 
-  const mfiValue = mfiResult[lastIndex] ?? null;
+  const mfiValue = mfiValues[lastIndex] ?? null;
 
   if (rsiValue === null) {
     return {
