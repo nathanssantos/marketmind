@@ -1,108 +1,84 @@
 import type { ComputedIndicator, Kline } from '@marketmind/types';
 
 import {
-  calculateADX,
   calculateAO,
   calculateAroon,
-  calculateATR,
-  calculateBollingerBandsArray,
-  calculateCCI,
   calculateCMF,
-  calculateCMO,
   calculateCumulativeRSI,
   calculateDEMA,
   calculateDMI,
   calculateDonchian,
-  calculateEMA,
   calculateHalvingCycle,
-  calculateHMA,
   calculateIBS,
   calculateIchimoku,
-  calculateKeltner,
-  calculateMACD,
-  calculateMFI,
   calculateNDayHighLow,
   calculateNR7,
-  calculateOBV,
   calculatePercentBSeries,
-  calculateROC,
-  calculateRSI,
-  calculateSMA,
-  calculateStochastic,
   calculateStochRSI,
-  calculateSupertrend,
   calculateTEMA,
-  calculateVWAP,
-  calculateWilliamsR,
-  calculateWMA,
   findPivotPoints,
 } from '@marketmind/indicators';
 
+import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { toNumber } from './types';
 
-type Handler = (klines: Kline[], resolvedParams: Record<string, number | string>) => ComputedIndicator;
+const pineService = new PineIndicatorService();
+
+type Handler = (klines: Kline[], resolvedParams: Record<string, number | string>) => Promise<ComputedIndicator>;
 
 export const CORE_HANDLERS: Record<string, Handler> = {
-  sma: (klines, resolvedParams) => ({
+  sma: async (klines, resolvedParams) => ({
     type: 'sma',
-    values: calculateSMA(klines, toNumber(resolvedParams['period'], 20)),
+    values: await pineService.compute('sma', klines, { period: toNumber(resolvedParams['period'], 20) }),
   }),
 
-  ema: (klines, resolvedParams) => ({
+  ema: async (klines, resolvedParams) => ({
     type: 'ema',
-    values: calculateEMA(klines, toNumber(resolvedParams['period'], 20)),
+    values: await pineService.compute('ema', klines, { period: toNumber(resolvedParams['period'], 20) }),
   }),
 
-  rsi: (klines, resolvedParams) => {
-    const rsiResult = calculateRSI(klines, toNumber(resolvedParams['period'], 14));
-    return { type: 'rsi', values: rsiResult.values };
-  },
+  rsi: async (klines, resolvedParams) => ({
+    type: 'rsi',
+    values: await pineService.compute('rsi', klines, { period: toNumber(resolvedParams['period'], 14) }),
+  }),
 
-  macd: (klines, resolvedParams) => {
-    const macdResult = calculateMACD(
-      klines,
-      toNumber(resolvedParams['fastPeriod'], 12),
-      toNumber(resolvedParams['slowPeriod'], 26),
-      toNumber(resolvedParams['signalPeriod'], 9)
-    );
+  macd: async (klines, resolvedParams) => {
+    const result = await pineService.computeMulti('macd', klines, {
+      fastPeriod: toNumber(resolvedParams['fastPeriod'], 12),
+      slowPeriod: toNumber(resolvedParams['slowPeriod'], 26),
+      signalPeriod: toNumber(resolvedParams['signalPeriod'], 9),
+    });
     return {
       type: 'macd',
-      values: { macd: macdResult.macd, signal: macdResult.signal, histogram: macdResult.histogram },
+      values: { macd: result['line'] ?? [], signal: result['signal'] ?? [], histogram: result['histogram'] ?? [] },
     };
   },
 
-  bollingerBands: (klines, resolvedParams) => {
-    const bbResult = calculateBollingerBandsArray(
-      klines,
-      toNumber(resolvedParams['period'], 20),
-      toNumber(resolvedParams['stdDev'], 2)
-    );
+  bollingerBands: async (klines, resolvedParams) => {
+    const result = await pineService.computeMulti('bb', klines, {
+      period: toNumber(resolvedParams['period'], 20),
+      stdDev: toNumber(resolvedParams['stdDev'], 2),
+    });
     return {
       type: 'bollingerBands',
-      values: {
-        upper: bbResult.map((b) => b?.upper ?? null),
-        middle: bbResult.map((b) => b?.middle ?? null),
-        lower: bbResult.map((b) => b?.lower ?? null),
-      },
+      values: { upper: result['upper'] ?? [], middle: result['middle'] ?? [], lower: result['lower'] ?? [] },
     };
   },
 
-  atr: (klines, resolvedParams) => {
-    const atrResult = calculateATR(klines, toNumber(resolvedParams['period'], 14));
-    return { type: 'atr', values: atrResult.map((v) => (isNaN(v) ? null : v)) };
+  atr: async (klines, resolvedParams) => ({
+    type: 'atr',
+    values: await pineService.compute('atr', klines, { period: toNumber(resolvedParams['period'], 14) }),
+  }),
+
+  stochastic: async (klines, resolvedParams) => {
+    const result = await pineService.computeMulti('stoch', klines, {
+      period: toNumber(resolvedParams['kPeriod'], 14),
+      smoothK: toNumber(resolvedParams['kSmoothing'], 3),
+    });
+    return { type: 'stochastic', values: { k: result['k'] ?? [], d: result['d'] ?? [] } };
   },
 
-  stochastic: (klines, resolvedParams) => {
-    const stochResult = calculateStochastic(
-      klines,
-      toNumber(resolvedParams['kPeriod'], 14),
-      toNumber(resolvedParams['kSmoothing'], 3),
-      toNumber(resolvedParams['dPeriod'], 3)
-    );
-    return { type: 'stochastic', values: { k: stochResult.k, d: stochResult.d } };
-  },
-
-  stochRsi: (klines, resolvedParams) => {
+  stochRsi: async (klines, resolvedParams) => {
     const stochRsiResult = calculateStochRSI(
       klines,
       toNumber(resolvedParams['rsiPeriod'], 14),
@@ -113,7 +89,7 @@ export const CORE_HANDLERS: Record<string, Handler> = {
     return { type: 'stochRsi', values: { k: stochRsiResult.k, d: stochRsiResult.d } };
   },
 
-  ichimoku: (klines, resolvedParams) => {
+  ichimoku: async (klines, resolvedParams) => {
     const ichimokuResult = calculateIchimoku(
       klines,
       toNumber(resolvedParams['tenkanPeriod'], 9),
@@ -133,7 +109,7 @@ export const CORE_HANDLERS: Record<string, Handler> = {
     };
   },
 
-  halvingCycle: (klines) => {
+  halvingCycle: async (klines) => {
     const halvingResult = calculateHalvingCycle(klines);
     return {
       type: 'halvingCycle',
@@ -145,9 +121,9 @@ export const CORE_HANDLERS: Record<string, Handler> = {
     };
   },
 
-  vwap: (klines) => ({ type: 'vwap', values: calculateVWAP(klines) }),
+  vwap: async (klines) => ({ type: 'vwap', values: await pineService.compute('vwap', klines) }),
 
-  pivotPoints: (klines, resolvedParams) => {
+  pivotPoints: async (klines, resolvedParams) => {
     const pivots = findPivotPoints(klines, toNumber(resolvedParams['lookback'], 5));
     const pivotValues: (number | null)[] = new Array(klines.length).fill(null);
     for (const pivot of pivots) {
@@ -156,70 +132,71 @@ export const CORE_HANDLERS: Record<string, Handler> = {
     return { type: 'pivotPoints', values: pivotValues };
   },
 
-  adx: (klines, resolvedParams) => {
-    const adxResult = calculateADX(klines, toNumber(resolvedParams['period'], 14));
-    return { type: 'adx', values: { adx: adxResult.adx, plusDI: adxResult.plusDI, minusDI: adxResult.minusDI } };
+  adx: async (klines, resolvedParams) => {
+    const result = await pineService.computeMulti('dmi', klines, { period: toNumber(resolvedParams['period'], 14) });
+    return { type: 'adx', values: { adx: result['adx'] ?? [], plusDI: result['plusDI'] ?? [], minusDI: result['minusDI'] ?? [] } };
   },
 
-  obv: (klines, resolvedParams) => {
+  obv: async (klines, resolvedParams) => {
+    const obvValues = await pineService.compute('obv', klines);
     const smaPeriod = resolvedParams['smaPeriod'];
-    const obvResult = calculateOBV(klines, typeof smaPeriod === 'number' ? smaPeriod : undefined);
-    return { type: 'obv', values: { obv: obvResult.values, sma: obvResult.sma } };
+    let sma: (number | null)[] = [];
+    if (typeof smaPeriod === 'number') {
+      sma = await pineService.compute('sma', klines, { period: smaPeriod });
+    }
+    return { type: 'obv', values: { obv: obvValues, sma } };
   },
 
-  williamsR: (klines, resolvedParams) => ({
+  williamsR: async (klines, resolvedParams) => ({
     type: 'williamsR',
-    values: calculateWilliamsR(klines, toNumber(resolvedParams['period'], 14)),
+    values: await pineService.compute('wpr', klines, { period: toNumber(resolvedParams['period'], 14) }),
   }),
 
-  cci: (klines, resolvedParams) => ({
+  cci: async (klines, resolvedParams) => ({
     type: 'cci',
-    values: calculateCCI(klines, toNumber(resolvedParams['period'], 20)),
+    values: await pineService.compute('cci', klines, { period: toNumber(resolvedParams['period'], 20) }),
   }),
 
-  mfi: (klines, resolvedParams) => ({
+  mfi: async (klines, resolvedParams) => ({
     type: 'mfi',
-    values: calculateMFI(klines, toNumber(resolvedParams['period'], 14)),
+    values: await pineService.compute('mfi', klines, { period: toNumber(resolvedParams['period'], 14) }),
   }),
 
-  donchian: (klines, resolvedParams) => {
+  donchian: async (klines, resolvedParams) => {
     const donchianResult = calculateDonchian(klines, toNumber(resolvedParams['period'], 20));
     return { type: 'donchian', values: { upper: donchianResult.upper, middle: donchianResult.middle, lower: donchianResult.lower } };
   },
 
-  keltner: (klines, resolvedParams) => {
-    const keltnerResult = calculateKeltner(
-      klines,
-      toNumber(resolvedParams['emaPeriod'], 20),
-      toNumber(resolvedParams['atrPeriod'], 10),
-      toNumber(resolvedParams['multiplier'], 2)
-    );
-    return { type: 'keltner', values: { upper: keltnerResult.upper, middle: keltnerResult.middle, lower: keltnerResult.lower } };
+  keltner: async (klines, resolvedParams) => {
+    const result = await pineService.computeMulti('kc', klines, {
+      period: toNumber(resolvedParams['emaPeriod'], 20),
+      multiplier: toNumber(resolvedParams['multiplier'], 2),
+    });
+    return { type: 'keltner', values: { upper: result['upper'] ?? [], middle: result['middle'] ?? [], lower: result['lower'] ?? [] } };
   },
 
-  supertrend: (klines, resolvedParams) => {
-    const supertrendResult = calculateSupertrend(
-      klines,
-      toNumber(resolvedParams['period'], 10),
-      toNumber(resolvedParams['multiplier'], 3)
-    );
+  supertrend: async (klines, resolvedParams) => {
+    const result = await pineService.computeMulti('supertrend', klines, {
+      period: toNumber(resolvedParams['period'], 10),
+      multiplier: toNumber(resolvedParams['multiplier'], 3),
+    });
     return {
       type: 'supertrend',
       values: {
-        trend: supertrendResult.trend.map((t) => (t === 'up' ? 1 : t === 'down' ? -1 : null)),
-        value: supertrendResult.value,
+        trend: (result['direction'] ?? []).map((v) => (v === null ? null : v > 0 ? 1 : -1)),
+        value: result['value'] ?? [],
       },
     };
   },
 
-  ibs: (klines) => ({ type: 'ibs', values: calculateIBS(klines).values }),
+  ibs: async (klines) => ({ type: 'ibs', values: calculateIBS(klines).values }),
 
-  percentB: (klines, resolvedParams) => ({
+  percentB: async (klines, resolvedParams) => ({
     type: 'percentB',
     values: calculatePercentBSeries(klines, toNumber(resolvedParams['period'], 20), toNumber(resolvedParams['stdDev'], 2)).values,
   }),
 
-  cumulativeRsi: (klines, resolvedParams) => {
+  cumulativeRsi: async (klines, resolvedParams) => {
     const cumulativeRsiResult = calculateCumulativeRSI(
       klines,
       toNumber(resolvedParams['rsiPeriod'], 2),
@@ -228,7 +205,7 @@ export const CORE_HANDLERS: Record<string, Handler> = {
     return { type: 'cumulativeRsi', values: { cumulative: cumulativeRsiResult.values, rsi: cumulativeRsiResult.rsiValues } };
   },
 
-  nDayHighLow: (klines, resolvedParams) => {
+  nDayHighLow: async (klines, resolvedParams) => {
     const nDayResult = calculateNDayHighLow(klines, toNumber(resolvedParams['period'], 7));
     return {
       type: 'nDayHighLow',
@@ -241,37 +218,58 @@ export const CORE_HANDLERS: Record<string, Handler> = {
     };
   },
 
-  nr7: (klines, resolvedParams) => ({
+  nr7: async (klines, resolvedParams) => ({
     type: 'nr7',
     values: calculateNR7(klines, toNumber(resolvedParams['lookback'], 7)).isNR7.map((v) => (v ? 1 : 0)),
   }),
 
-  roc: (klines, resolvedParams) => ({ type: 'roc', values: calculateROC(klines, toNumber(resolvedParams['period'], 12)).values }),
+  roc: async (klines, resolvedParams) => ({
+    type: 'roc',
+    values: await pineService.compute('roc', klines, { period: toNumber(resolvedParams['period'], 12) }),
+  }),
 
-  dema: (klines, resolvedParams) => ({ type: 'dema', values: calculateDEMA(klines, toNumber(resolvedParams['period'], 20)).values }),
+  dema: async (klines, resolvedParams) => ({
+    type: 'dema',
+    values: calculateDEMA(klines, toNumber(resolvedParams['period'], 20)).values,
+  }),
 
-  tema: (klines, resolvedParams) => ({ type: 'tema', values: calculateTEMA(klines, toNumber(resolvedParams['period'], 20)).values }),
+  tema: async (klines, resolvedParams) => ({
+    type: 'tema',
+    values: calculateTEMA(klines, toNumber(resolvedParams['period'], 20)).values,
+  }),
 
-  wma: (klines, resolvedParams) => ({ type: 'wma', values: calculateWMA(klines, toNumber(resolvedParams['period'], 20)).values }),
+  wma: async (klines, resolvedParams) => ({
+    type: 'wma',
+    values: await pineService.compute('wma', klines, { period: toNumber(resolvedParams['period'], 20) }),
+  }),
 
-  hma: (klines, resolvedParams) => ({ type: 'hma', values: calculateHMA(klines, toNumber(resolvedParams['period'], 20)).values }),
+  hma: async (klines, resolvedParams) => ({
+    type: 'hma',
+    values: await pineService.compute('hma', klines, { period: toNumber(resolvedParams['period'], 20) }),
+  }),
 
-  cmo: (klines, resolvedParams) => ({ type: 'cmo', values: calculateCMO(klines, toNumber(resolvedParams['period'], 14)).values }),
+  cmo: async (klines, resolvedParams) => ({
+    type: 'cmo',
+    values: await pineService.compute('cmo', klines, { period: toNumber(resolvedParams['period'], 14) }),
+  }),
 
-  ao: (klines, resolvedParams) => ({
+  ao: async (klines, resolvedParams) => ({
     type: 'ao',
     values: calculateAO(klines, toNumber(resolvedParams['fastPeriod'], 5), toNumber(resolvedParams['slowPeriod'], 34)).values,
   }),
 
-  aroon: (klines, resolvedParams) => {
+  aroon: async (klines, resolvedParams) => {
     const aroonResult = calculateAroon(klines, toNumber(resolvedParams['period'], 25));
     return { type: 'aroon', values: { up: aroonResult.aroonUp, down: aroonResult.aroonDown, oscillator: aroonResult.oscillator } };
   },
 
-  dmi: (klines, resolvedParams) => {
+  dmi: async (klines, resolvedParams) => {
     const dmiResult = calculateDMI(klines, toNumber(resolvedParams['period'], 14));
     return { type: 'dmi', values: { plusDI: dmiResult.plusDI, minusDI: dmiResult.minusDI, dx: dmiResult.dx } };
   },
 
-  cmf: (klines, resolvedParams) => ({ type: 'cmf', values: calculateCMF(klines, toNumber(resolvedParams['period'], 20)).values }),
+  cmf: async (klines, resolvedParams) => {
+    const cmfResult = calculateCMF(klines, toNumber(resolvedParams['period'], 20));
+    return { type: 'cmf', values: cmfResult.values };
+  },
 };

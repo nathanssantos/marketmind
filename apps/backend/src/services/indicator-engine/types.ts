@@ -31,7 +31,7 @@ export interface ScreenerExtraData {
 export type IndicatorComputeHandler = (
   klines: Kline[],
   resolvedParams: Record<string, number | string>,
-) => ComputedIndicator;
+) => Promise<ComputedIndicator>;
 
 export type CryptoIndicatorHandler = (
   klines: Kline[],
@@ -59,5 +59,12 @@ export type IndicatorHandlerMap = Record<
   IndicatorType,
   IndicatorComputeHandler
 >;
+
+export type ScreenerEvalAsyncFn = (
+  klines: Kline[],
+  params: Record<string, number>,
+  ticker?: ScreenerTickerData,
+  extra?: ScreenerExtraData,
+) => Promise<number | null>;
 
 export type CryptoHandlerMap = Partial<Record<IndicatorType, CryptoIndicatorHandler>>;

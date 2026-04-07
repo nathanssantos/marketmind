@@ -1,40 +1,28 @@
 import type { Kline, ScreenerIndicatorId } from '@marketmind/types';
 
 import {
-  calculateADX,
-  calculateATR,
   calculateBollingerBands,
-  calculateCCI,
-  calculateCMF,
   calculateChoppiness,
-  calculateEMA,
-  calculateMACD,
-  calculateMFI,
-  calculateOBV,
-  calculateROC,
-  calculateRSI,
-  calculateSMA,
-  calculateStochastic,
-  calculateSupertrend,
-  calculateTSI,
+  calculateCMF,
   calculateVolumeRatio,
-  calculateVWAP,
-  calculateWilliamsR,
 } from '@marketmind/indicators';
 
-import type { ScreenerEvalFn } from './types';
+import { PineIndicatorService } from '../pine/PineIndicatorService';
+import type { ScreenerExtraData, ScreenerTickerData } from './types';
+
+const pineService = new PineIndicatorService();
+
+type ScreenerAsyncEvalFn = (
+  klines: Kline[],
+  params: Record<string, number>,
+  ticker?: ScreenerTickerData,
+  extra?: ScreenerExtraData,
+) => Promise<number | null>;
 
 const getLastNonNull = (values: (number | null)[]): number | null => {
   for (let i = values.length - 1; i >= 0; i--) {
     const v = values[i];
     if (v !== null && v !== undefined) return v;
-  }
-  return null;
-};
-
-const getLastValidNumber = (values: number[]): number | null => {
-  for (let i = values.length - 1; i >= 0; i--) {
-    if (!isNaN(values[i]!)) return values[i]!;
   }
   return null;
 };
@@ -78,138 +66,148 @@ const getReturns = (klines: Kline[], period: number): number[] => {
   return returns;
 };
 
-export const SCREENER_KLINE_EVALUATORS: Partial<Record<ScreenerIndicatorId, ScreenerEvalFn>> = {
-  RSI: (klines, params) => {
-    const result = calculateRSI(klines, params['period'] ?? 14);
-    return getLastNonNull(result.values);
-  },
-
-  ADX: (klines, params) => {
-    const result = calculateADX(klines, params['period'] ?? 14);
-    return getLastNonNull(result.adx);
-  },
-
-  EMA: (klines, params) => {
-    const values = calculateEMA(klines, params['period'] ?? 21);
+export const SCREENER_KLINE_EVALUATORS: Partial<Record<ScreenerIndicatorId, ScreenerAsyncEvalFn>> = {
+  RSI: async (klines, params) => {
+    const values = await pineService.compute('rsi', klines, { period: params['period'] ?? 14 });
     return getLastNonNull(values);
   },
 
-  SMA: (klines, params) => {
-    const values = calculateSMA(klines, params['period'] ?? 20);
+  ADX: async (klines, params) => {
+    const result = await pineService.computeMulti('dmi', klines, { period: params['period'] ?? 14 });
+    return getLastNonNull(result['adx'] ?? []);
+  },
+
+  EMA: async (klines, params) => {
+    const values = await pineService.compute('ema', klines, { period: params['period'] ?? 21 });
     return getLastNonNull(values);
   },
 
-  MACD_HISTOGRAM: (klines) => {
-    const result = calculateMACD(klines);
-    return getLastValidNumber(result.histogram);
+  SMA: async (klines, params) => {
+    const values = await pineService.compute('sma', klines, { period: params['period'] ?? 20 });
+    return getLastNonNull(values);
   },
 
-  MACD_SIGNAL: (klines) => {
-    const result = calculateMACD(klines);
-    return getLastValidNumber(result.signal);
+  MACD_HISTOGRAM: async (klines) => {
+    const result = await pineService.computeMulti('macd', klines);
+    return getLastNonNull(result['histogram'] ?? []);
   },
 
-  BOLLINGER_WIDTH: (klines, params) => {
+  MACD_SIGNAL: async (klines) => {
+    const result = await pineService.computeMulti('macd', klines);
+    return getLastNonNull(result['signal'] ?? []);
+  },
+
+  BOLLINGER_WIDTH: async (klines, params) => {
     const bb = calculateBollingerBands(klines, params['period'] ?? 20, params['stdDev'] ?? 2);
     if (!bb || bb.middle === 0) return null;
     return (bb.upper - bb.lower) / bb.middle;
   },
 
-  BOLLINGER_UPPER: (klines, params) => {
+  BOLLINGER_UPPER: async (klines, params) => {
     const bb = calculateBollingerBands(klines, params['period'] ?? 20, params['stdDev'] ?? 2);
     return bb?.upper ?? null;
   },
 
-  BOLLINGER_LOWER: (klines, params) => {
+  BOLLINGER_LOWER: async (klines, params) => {
     const bb = calculateBollingerBands(klines, params['period'] ?? 20, params['stdDev'] ?? 2);
     return bb?.lower ?? null;
   },
 
-  ATR: (klines, params) => {
-    const values = calculateATR(klines, params['period'] ?? 14);
-    return getLastValidNumber(values);
+  ATR: async (klines, params) => {
+    const values = await pineService.compute('atr', klines, { period: params['period'] ?? 14 });
+    return getLastNonNull(values);
   },
 
-  ATR_PERCENT: (klines, params) => {
-    const values = calculateATR(klines, params['period'] ?? 14);
-    const atr = getLastValidNumber(values);
+  ATR_PERCENT: async (klines, params) => {
+    const values = await pineService.compute('atr', klines, { period: params['period'] ?? 14 });
+    const atr = getLastNonNull(values);
     if (atr === null || klines.length === 0) return null;
     const close = parseClose(klines[klines.length - 1]!);
     if (close === 0) return null;
     return (atr / close) * 100;
   },
 
-  STOCHASTIC_K: (klines, params) => {
-    const result = calculateStochastic(klines, params['period'] ?? 14, params['kSmoothing'] ?? 3, params['dPeriod'] ?? 3);
-    return getLastNonNull(result.k);
+  STOCHASTIC_K: async (klines, params) => {
+    const result = await pineService.computeMulti('stoch', klines, {
+      period: params['period'] ?? 14,
+      smoothK: params['kSmoothing'] ?? 3,
+    });
+    return getLastNonNull(result['k'] ?? []);
   },
 
-  STOCHASTIC_D: (klines, params) => {
-    const result = calculateStochastic(klines, params['period'] ?? 14, params['kSmoothing'] ?? 3, params['dPeriod'] ?? 3);
-    return getLastNonNull(result.d);
+  STOCHASTIC_D: async (klines, params) => {
+    const result = await pineService.computeMulti('stoch', klines, {
+      period: params['period'] ?? 14,
+      smoothK: params['kSmoothing'] ?? 3,
+    });
+    return getLastNonNull(result['d'] ?? []);
   },
 
-  CCI: (klines, params) => {
-    const values = calculateCCI(klines, params['period'] ?? 20);
-    return getLastNonNull(values as (number | null)[]);
+  CCI: async (klines, params) => {
+    const values = await pineService.compute('cci', klines, { period: params['period'] ?? 20 });
+    return getLastNonNull(values);
   },
 
-  MFI: (klines, params) => {
-    const values = calculateMFI(klines, params['period'] ?? 14);
-    return getLastNonNull(values as (number | null)[]);
+  MFI: async (klines, params) => {
+    const values = await pineService.compute('mfi', klines, { period: params['period'] ?? 14 });
+    return getLastNonNull(values);
   },
 
-  CMF: (klines, params) => {
+  CMF: async (klines, params) => {
     const result = calculateCMF(klines, params['period'] ?? 20);
     return getLastNonNull(result.values);
   },
 
-  OBV: (klines) => {
-    const result = calculateOBV(klines);
-    return result.values.length > 0 ? result.values[result.values.length - 1]! : null;
+  OBV: async (klines) => {
+    const values = await pineService.compute('obv', klines);
+    return values.length > 0 ? (values[values.length - 1] ?? null) : null;
   },
 
-  VWAP: (klines) => {
-    const values = calculateVWAP(klines);
-    return values.length > 0 ? values[values.length - 1]! : null;
+  VWAP: async (klines) => {
+    const values = await pineService.compute('vwap', klines);
+    return values.length > 0 ? (values[values.length - 1] ?? null) : null;
   },
 
-  ROC: (klines, params) => {
-    const result = calculateROC(klines, params['period'] ?? 12);
-    return getLastNonNull(result.values);
+  ROC: async (klines, params) => {
+    const values = await pineService.compute('roc', klines, { period: params['period'] ?? 12 });
+    return getLastNonNull(values);
   },
 
-  WILLIAMS_R: (klines, params) => {
-    const values = calculateWilliamsR(klines, params['period'] ?? 14);
-    return getLastNonNull(values as (number | null)[]);
+  WILLIAMS_R: async (klines, params) => {
+    const values = await pineService.compute('wpr', klines, { period: params['period'] ?? 14 });
+    return getLastNonNull(values);
   },
 
-  CHOPPINESS: (klines, params) => {
+  CHOPPINESS: async (klines, params) => {
     const values = calculateChoppiness(klines, params['period'] ?? 14);
-    return getLastValidNumber(values);
+    const lastValid = values.length > 0 ? values[values.length - 1] : null;
+    return lastValid !== undefined && lastValid !== null && !isNaN(lastValid) ? lastValid : null;
   },
 
-  TSI: (klines) => {
-    const result = calculateTSI(klines);
-    return getLastNonNull(result.tsi);
+  TSI: async (klines) => {
+    const values = await pineService.compute('tsi', klines);
+    return getLastNonNull(values);
   },
 
-  SUPERTREND: (klines, params) => {
-    const result = calculateSupertrend(klines, params['period'] ?? 10, params['multiplier'] ?? 3);
-    return getLastNonNull(result.value);
+  SUPERTREND: async (klines, params) => {
+    const result = await pineService.computeMulti('supertrend', klines, {
+      period: params['period'] ?? 10,
+      multiplier: params['multiplier'] ?? 3,
+    });
+    return getLastNonNull(result['value'] ?? []);
   },
 
-  PRICE_CLOSE: (klines) => {
+  PRICE_CLOSE: async (klines) => {
     if (klines.length === 0) return null;
     return parseClose(klines[klines.length - 1]!);
   },
 
-  VOLUME_RATIO: (klines, params) => {
+  VOLUME_RATIO: async (klines, params) => {
     if (klines.length === 0) return null;
     return calculateVolumeRatio(klines, klines.length - 1, params['period'] ?? 20);
   },
 
-  BTC_CORRELATION: (klines, params, _ticker, extra) => {
+  BTC_CORRELATION: async (klines, params, _ticker, extra) => {
     if (!extra?.btcKlines || extra.btcKlines.length === 0) return null;
     const period = params['period'] ?? 30;
     const assetReturns = getReturns(klines, period);
@@ -218,13 +216,13 @@ export const SCREENER_KLINE_EVALUATORS: Partial<Record<ScreenerIndicatorId, Scre
   },
 };
 
-export const SCREENER_TICKER_EVALUATORS: Partial<Record<ScreenerIndicatorId, ScreenerEvalFn>> = {
-  PRICE_CHANGE_24H: (_klines, _params, ticker) => ticker?.priceChange ?? null,
-  PRICE_CHANGE_PERCENT_24H: (_klines, _params, ticker) => ticker?.priceChangePercent ?? null,
-  VOLUME_24H: (_klines, _params, ticker) => ticker?.volume ?? null,
-  QUOTE_VOLUME_24H: (_klines, _params, ticker) => ticker?.quoteVolume ?? null,
-  MARKET_CAP_RANK: (_klines, _params, _ticker, extra) => extra?.marketCapRank ?? null,
-  FUNDING_RATE: (_klines, _params, _ticker, extra) => extra?.fundingRate ?? null,
+export const SCREENER_TICKER_EVALUATORS: Partial<Record<ScreenerIndicatorId, ScreenerAsyncEvalFn>> = {
+  PRICE_CHANGE_24H: async (_klines, _params, ticker) => ticker?.priceChange ?? null,
+  PRICE_CHANGE_PERCENT_24H: async (_klines, _params, ticker) => ticker?.priceChangePercent ?? null,
+  VOLUME_24H: async (_klines, _params, ticker) => ticker?.volume ?? null,
+  QUOTE_VOLUME_24H: async (_klines, _params, ticker) => ticker?.quoteVolume ?? null,
+  MARKET_CAP_RANK: async (_klines, _params, _ticker, extra) => extra?.marketCapRank ?? null,
+  FUNDING_RATE: async (_klines, _params, _ticker, extra) => extra?.fundingRate ?? null,
 };
 
 export const TICKER_BASED_INDICATORS: Set<ScreenerIndicatorId> = new Set([

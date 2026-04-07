@@ -7,8 +7,7 @@ import type {
   ScreenerIndicatorId,
 } from '@marketmind/types';
 
-import { calculateADX, calculateATR } from '@marketmind/indicators';
-
+import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { createCryptoIndicatorHandlers, fetchCryptoData } from './crypto-handlers';
 import { calculateVolumeSMA, createIndicatorHandlers } from './handlers';
 import { SCREENER_KLINE_EVALUATORS, SCREENER_TICKER_EVALUATORS } from './screener';
@@ -17,6 +16,8 @@ import { MAX_CACHE_SIZE, MAX_SINGLE_CACHE_SIZE } from './types';
 
 export type { ScreenerExtraData, ScreenerTickerData } from './types';
 export { isTickerBasedIndicator, TICKER_BASED_INDICATORS } from './screener';
+
+const pineService = new PineIndicatorService();
 
 export class IndicatorEngine {
   private cache: Map<string, ComputedIndicators> = new Map();
@@ -27,11 +28,11 @@ export class IndicatorEngine {
   private readonly indicatorComputeHandlers = createIndicatorHandlers();
   private readonly cryptoIndicatorHandlers = createCryptoIndicatorHandlers();
 
-  computeIndicators(
+  async computeIndicators(
     klines: Kline[],
     indicators: Record<string, IndicatorDefinition>,
     params: Record<string, number>
-  ): ComputedIndicators {
+  ): Promise<ComputedIndicators> {
     const cacheKey = this.generateCacheKey(klines, indicators, params);
     const cached = this.cache.get(cacheKey);
     if (cached) return cached;
@@ -46,7 +47,7 @@ export class IndicatorEngine {
       if (cachedSingle) {
         result[id] = cachedSingle;
       } else {
-        const computed = this.computeIndicator(klines, definition, params);
+        const computed = await this.computeIndicator(klines, definition, params);
         result[id] = computed;
         if (this.singleCache.size >= MAX_SINGLE_CACHE_SIZE) {
           const firstKey = this.singleCache.keys().next().value;
@@ -82,13 +83,13 @@ export class IndicatorEngine {
       if (cachedAdx) {
         result['adx'] = cachedAdx;
       } else {
-        const adxResult = calculateADX(klines, 14);
+        const dmiResult = await pineService.computeMulti('dmi', klines, { period: 14 });
         result['adx'] = {
           type: 'adx' as IndicatorType,
           values: {
-            adx: adxResult.adx,
-            plusDI: adxResult.plusDI,
-            minusDI: adxResult.minusDI,
+            adx: dmiResult['adx'] ?? [],
+            plusDI: dmiResult['plusDI'] ?? [],
+            minusDI: dmiResult['minusDI'] ?? [],
           },
         };
         this.singleCache.set(adxKey, result['adx']);
@@ -101,7 +102,7 @@ export class IndicatorEngine {
       if (cachedAtr) {
         result['atr'] = cachedAtr;
       } else {
-        const atrResult = calculateATR(klines, 14);
+        const atrResult = await pineService.compute('atr', klines, { period: 14 });
         result['atr'] = {
           type: 'atr' as IndicatorType,
           values: atrResult,
@@ -130,7 +131,7 @@ export class IndicatorEngine {
     symbol: string,
     baseAssetSymbol?: string
   ): Promise<ComputedIndicators> {
-    const result = this.computeIndicators(klines, indicators, params);
+    const result = await this.computeIndicators(klines, indicators, params);
 
     const hasCryptoIndicators = Object.values(indicators).some(
       (def) => ['fundingRate', 'openInterest', 'liquidations', 'relativeStrength', 'btcDominance'].includes(def.type)
@@ -165,11 +166,11 @@ export class IndicatorEngine {
     return handler ? handler(klines, resolvedParams, cryptoData) : null;
   }
 
-  private computeIndicator(
+  private async computeIndicator(
     klines: Kline[],
     definition: IndicatorDefinition,
     params: Record<string, number>
-  ): ComputedIndicator {
+  ): Promise<ComputedIndicator> {
     const resolvedParams = this.resolveParams(definition.params, params);
     const handler = this.indicatorComputeHandlers[definition.type];
 
@@ -314,13 +315,13 @@ export class IndicatorEngine {
     this.singleCache.clear();
   }
 
-  evaluateScreenerIndicator(
+  async evaluateScreenerIndicator(
     id: ScreenerIndicatorId,
     klines: Kline[],
     params: Record<string, number> = {},
     tickerData?: ScreenerTickerData,
     extraData?: ScreenerExtraData,
-  ): number | null {
+  ): Promise<number | null> {
     const tickerFn = SCREENER_TICKER_EVALUATORS[id];
     if (tickerFn) return tickerFn(klines, params, tickerData, extraData);
 
@@ -330,26 +331,26 @@ export class IndicatorEngine {
     return null;
   }
 
-  evaluateScreenerIndicators(
+  async evaluateScreenerIndicators(
     ids: ScreenerIndicatorId[],
     klines: Kline[],
     paramsMap: Record<string, Record<string, number>>,
     tickerData?: ScreenerTickerData,
     extraData?: ScreenerExtraData,
-  ): Record<string, number | null> {
+  ): Promise<Record<string, number | null>> {
     const result: Record<string, number | null> = {};
     for (const id of ids) {
-      result[id] = this.evaluateScreenerIndicator(id, klines, paramsMap[id] ?? {}, tickerData, extraData);
+      result[id] = await this.evaluateScreenerIndicator(id, klines, paramsMap[id] ?? {}, tickerData, extraData);
     }
     return result;
   }
 
-  getScreenerPreviousValue(
+  async getScreenerPreviousValue(
     id: ScreenerIndicatorId,
     klines: Kline[],
     barsBack: number,
     params: Record<string, number> = {},
-  ): number | null {
+  ): Promise<number | null> {
     if (klines.length <= barsBack) return null;
     const truncated = klines.slice(0, -barsBack);
     return this.evaluateScreenerIndicator(id, truncated, params);

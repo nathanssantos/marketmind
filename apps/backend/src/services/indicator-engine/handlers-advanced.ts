@@ -10,75 +10,108 @@ import {
   calculateKlinger,
   calculateLiquidityLevels,
   calculateMassIndex,
-  calculateParabolicSAR,
   calculatePPO,
   calculateSwingPoints,
-  calculateTSI,
   calculateUltimateOscillator,
   calculateVortex,
   type FairValueGap,
 } from '@marketmind/indicators';
 
+import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { calculateHighest, calculateLowest } from './indicator-utils';
 import { toNumber } from './types';
 
-type Handler = (klines: Kline[], resolvedParams: Record<string, number | string>) => ComputedIndicator;
+const pineService = new PineIndicatorService();
+
+type Handler = (klines: Kline[], resolvedParams: Record<string, number | string>) => Promise<ComputedIndicator>;
 
 export const ADVANCED_HANDLERS: Record<string, Handler> = {
-  ppo: (klines, resolvedParams) => {
+  ppo: async (klines, resolvedParams) => {
     const ppoResult = calculatePPO(klines, toNumber(resolvedParams['fastPeriod'], 12), toNumber(resolvedParams['slowPeriod'], 26), toNumber(resolvedParams['signalPeriod'], 9));
     return { type: 'ppo', values: { ppo: ppoResult.ppo, signal: ppoResult.signal, histogram: ppoResult.histogram } };
   },
 
-  tsi: (klines, resolvedParams) => {
-    const tsiResult = calculateTSI(klines, toNumber(resolvedParams['longPeriod'], 25), toNumber(resolvedParams['shortPeriod'], 13), toNumber(resolvedParams['signalPeriod'], 13));
-    return { type: 'tsi', values: { tsi: tsiResult.tsi, signal: tsiResult.signal } };
+  tsi: async (klines, resolvedParams) => {
+    const tsiValues = await pineService.compute('tsi', klines, {
+      shortPeriod: toNumber(resolvedParams['shortPeriod'], 13),
+      longPeriod: toNumber(resolvedParams['longPeriod'], 25),
+    });
+    const signalPeriod = toNumber(resolvedParams['signalPeriod'], 13);
+    const signal: (number | null)[] = [];
+    let count = 0;
+    let sum = 0;
+    let lastSignal: number | null = null;
+    for (let i = 0; i < tsiValues.length; i++) {
+      const v = tsiValues[i];
+      if (v === null || v === undefined) { signal.push(null); continue; }
+      count++;
+      if (count <= signalPeriod) {
+        sum += v;
+        if (count === signalPeriod) {
+          lastSignal = sum / signalPeriod;
+          signal.push(lastSignal);
+        } else {
+          signal.push(null);
+        }
+      } else {
+        const k = 2 / (signalPeriod + 1);
+        lastSignal = lastSignal !== null ? lastSignal + k * (v - lastSignal) : v;
+        signal.push(lastSignal);
+      }
+    }
+    return { type: 'tsi', values: { tsi: tsiValues, signal } };
   },
 
-  ultimateOscillator: (klines, resolvedParams) => ({
+  ultimateOscillator: async (klines, resolvedParams) => ({
     type: 'ultimateOscillator',
     values: calculateUltimateOscillator(klines, toNumber(resolvedParams['period1'], 7), toNumber(resolvedParams['period2'], 14), toNumber(resolvedParams['period3'], 28)).values,
   }),
 
-  vortex: (klines, resolvedParams) => {
+  vortex: async (klines, resolvedParams) => {
     const vortexResult = calculateVortex(klines, toNumber(resolvedParams['period'], 14));
     return { type: 'vortex', values: { viPlus: vortexResult.viPlus, viMinus: vortexResult.viMinus } };
   },
 
-  parabolicSar: (klines, resolvedParams) => {
-    const psarResult = calculateParabolicSAR(klines, toNumber(resolvedParams['step'], 0.02), toNumber(resolvedParams['max'], 0.2));
-    return {
-      type: 'parabolicSar',
-      values: { sar: psarResult.sar, trend: psarResult.trend.map((t) => (t === 'up' ? 1 : -1)) },
-    };
+  parabolicSar: async (klines, resolvedParams) => {
+    const sarValues = await pineService.compute('sar', klines, {
+      start: toNumber(resolvedParams['step'], 0.02),
+      increment: toNumber(resolvedParams['step'], 0.02),
+      max: toNumber(resolvedParams['max'], 0.2),
+    });
+    const closes = klines.map((k) => parseFloat(k.close));
+    const trend = sarValues.map((sar, i) => {
+      if (sar === null) return null;
+      return sar < closes[i]! ? 1 : -1;
+    });
+    return { type: 'parabolicSar', values: { sar: sarValues, trend } };
   },
 
-  massIndex: (klines, resolvedParams) => ({
+  massIndex: async (klines, resolvedParams) => ({
     type: 'massIndex',
     values: calculateMassIndex(klines, toNumber(resolvedParams['emaPeriod'], 9), toNumber(resolvedParams['sumPeriod'], 25)).values,
   }),
 
-  klinger: (klines, resolvedParams) => {
+  klinger: async (klines, resolvedParams) => {
     const klingerResult = calculateKlinger(klines, toNumber(resolvedParams['shortPeriod'], 34), toNumber(resolvedParams['longPeriod'], 55), toNumber(resolvedParams['signalPeriod'], 13));
     return { type: 'klinger', values: { kvo: klingerResult.kvo, signal: klingerResult.signal } };
   },
 
-  elderRay: (klines, resolvedParams) => {
+  elderRay: async (klines, resolvedParams) => {
     const elderResult = calculateElderRay(klines, toNumber(resolvedParams['period'], 13));
     return { type: 'elderRay', values: { bullPower: elderResult.bullPower, bearPower: elderResult.bearPower } };
   },
 
-  deltaVolume: (klines) => {
+  deltaVolume: async (klines) => {
     const deltaResult = calculateDeltaVolume(klines);
     return { type: 'deltaVolume', values: { delta: deltaResult.delta, cumulative: deltaResult.cumulativeDelta } };
   },
 
-  swingPoints: (klines, resolvedParams) => {
+  swingPoints: async (klines, resolvedParams) => {
     const swingResult = calculateSwingPoints(klines, toNumber(resolvedParams['lookback'], 5));
     return { type: 'swingPoints', values: { high: swingResult.swingHighs, low: swingResult.swingLows } };
   },
 
-  fvg: (klines) => {
+  fvg: async (klines) => {
     const fvgResult = calculateFVG(klines);
     const bullish: (number | null)[] = new Array(klines.length).fill(null);
     const bearish: (number | null)[] = new Array(klines.length).fill(null);
@@ -141,7 +174,7 @@ export const ADVANCED_HANDLERS: Record<string, Handler> = {
     };
   },
 
-  gapDetection: (klines, resolvedParams) => {
+  gapDetection: async (klines, resolvedParams) => {
     const gapsResult = calculateGaps(klines, toNumber(resolvedParams['threshold'], 0.5));
     const gapValues: (number | null)[] = new Array(klines.length).fill(null);
     for (const gap of gapsResult.gaps) {
@@ -150,7 +183,7 @@ export const ADVANCED_HANDLERS: Record<string, Handler> = {
     return { type: 'gapDetection', values: gapValues };
   },
 
-  fibonacci: (klines) => {
+  fibonacci: async (klines) => {
     const highs = klines.map((k) => parseFloat(k.high));
     const lows = klines.map((k) => parseFloat(k.low));
     const highPrice = Math.max(...highs.filter((h) => !isNaN(h)));
@@ -169,7 +202,7 @@ export const ADVANCED_HANDLERS: Record<string, Handler> = {
     };
   },
 
-  floorPivots: (klines, resolvedParams) => {
+  floorPivots: async (klines, resolvedParams) => {
     const highs = klines.map((k) => parseFloat(k.high));
     const lows = klines.map((k) => parseFloat(k.low));
     const closes = klines.map((k) => parseFloat(k.close));
@@ -193,7 +226,7 @@ export const ADVANCED_HANDLERS: Record<string, Handler> = {
     };
   },
 
-  liquidityLevels: (klines, resolvedParams) => {
+  liquidityLevels: async (klines, resolvedParams) => {
     const highs = klines.map((k) => parseFloat(k.high));
     const lows = klines.map((k) => parseFloat(k.low));
     const closes = klines.map((k) => parseFloat(k.close));
@@ -212,23 +245,29 @@ export const ADVANCED_HANDLERS: Record<string, Handler> = {
     return { type: 'liquidityLevels', values: { support: supportValues, resistance: resistanceValues } };
   },
 
-  fundingRate: (klines) => ({ type: 'fundingRate', values: new Array(klines.length).fill(null) }),
-  openInterest: (klines) => ({ type: 'openInterest', values: new Array(klines.length).fill(null) }),
-  liquidations: (klines) => ({ type: 'liquidations', values: new Array(klines.length).fill(null) }),
-  btcDominance: (klines) => ({ type: 'btcDominance', values: new Array(klines.length).fill(null) }),
-  relativeStrength: (klines) => ({ type: 'relativeStrength', values: new Array(klines.length).fill(null) }),
+  fundingRate: async (klines) => ({ type: 'fundingRate', values: new Array(klines.length).fill(null) }),
+  openInterest: async (klines) => ({ type: 'openInterest', values: new Array(klines.length).fill(null) }),
+  liquidations: async (klines) => ({ type: 'liquidations', values: new Array(klines.length).fill(null) }),
+  btcDominance: async (klines) => ({ type: 'btcDominance', values: new Array(klines.length).fill(null) }),
+  relativeStrength: async (klines) => ({ type: 'relativeStrength', values: new Array(klines.length).fill(null) }),
 
-  highest: (klines, resolvedParams) => {
+  highest: async (klines, resolvedParams) => {
     const period = toNumber(resolvedParams['period'], 20);
     const sourceParam = resolvedParams['source'];
     const source = typeof sourceParam === 'string' ? sourceParam : 'high';
+    if (source === 'high') {
+      return { type: 'highest', values: await pineService.compute('highest', klines, { period }) };
+    }
     return { type: 'highest', values: calculateHighest(klines, period, source) };
   },
 
-  lowest: (klines, resolvedParams) => {
+  lowest: async (klines, resolvedParams) => {
     const period = toNumber(resolvedParams['period'], 20);
     const sourceParam = resolvedParams['source'];
     const source = typeof sourceParam === 'string' ? sourceParam : 'low';
+    if (source === 'low') {
+      return { type: 'lowest', values: await pineService.compute('lowest', klines, { period }) };
+    }
     return { type: 'lowest', values: calculateLowest(klines, period, source) };
   },
 };
