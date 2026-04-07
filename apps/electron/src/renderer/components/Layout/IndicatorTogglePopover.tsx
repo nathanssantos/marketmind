@@ -336,6 +336,18 @@ export const IndicatorTogglePopover = memo(
                     title: t('chart.indicators.categories.orderFlow', 'Order Flow'),
                     indicators: [
                         {
+                            id: 'volumeProfile',
+                            label: t('chart.indicators.names.volumeProfile', 'Volume Profile'),
+                            isActive: isIndicatorActive('volumeProfile'),
+                            onToggle: () => toggleIndicator('volumeProfile'),
+                        },
+                        {
+                            id: 'footprint',
+                            label: t('chart.indicators.names.footprint', 'Footprint'),
+                            isActive: isIndicatorActive('footprint'),
+                            onToggle: () => toggleIndicator('footprint'),
+                        },
+                        {
                             id: 'liquidityHeatmap',
                             label: t('chart.indicators.names.liquidityHeatmap', 'Liquidity Heatmap'),
                             isActive: isIndicatorActive('liquidityHeatmap'),
