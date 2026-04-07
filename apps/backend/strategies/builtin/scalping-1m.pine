@@ -1,0 +1,45 @@
+// @id scalping-1m
+// @name Scalping 1M
+// @version 1.0.0
+// @description Ultra-scalping para 1 minuto. Entries muito rápidas com VWAP + momentum. Alto número de trades, pequenos ganhos.
+// @author MarketMind
+// @tags scalping,1m,ultra-short,high-frequency
+// @strategyType ANY
+// @momentumType ANY
+// @param emaPeriod EMA ultra-rápida
+// @param targetPercent Target %
+// @param stopPercent Stop %
+
+//@version=5
+indicator('Scalping 1M', overlay=true)
+
+emaPeriod = input.int(5, 'emaPeriod', minval=3, maxval=8, step=1)
+targetPercent = input.float(0.2, 'targetPercent', minval=0.1, maxval=0.5, step=0.05)
+stopPercent = input.float(0.15, 'stopPercent', minval=0.1, maxval=0.3, step=0.05)
+
+ema = ta.ema(close, emaPeriod)
+vwap = ta.vwap(hlc3)
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > vwap and ta.crossover(close, ema))
+shortEntry = (close < vwap and ta.crossunder(close, ema))
+
+confBase = 75
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close * (1 - 2 / 100) : shortEntry ? close * (1 + 2 / 100) : na
+tp = longEntry ? close * (1 + 4 / 100) : shortEntry ? close * (1 - 4 / 100) : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,0 +1,63 @@
+// @id qullamaggie-breakout
+// @name Qullamaggie Breakout
+// @version 1.0.0
+// @description Kristjan Kullamägi's continuation breakout setup. Entry on range expansion after orderly consolidation while price surfs EMA10/20. One of his 3 'timeless' setups that made him tens of millions.
+// @author Kristjan Kullamägi / MarketMind
+// @tags qullamaggie,breakout,momentum,swing-trading
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param ema10Period Fast EMA period (Qullamaggie uses 10)
+// @param ema20Period Slow EMA period (Qullamaggie uses 20)
+// @param ema50Period Trend EMA period for additional confirmation
+// @param atrPeriod ATR period for volatility measurement
+// @param consolidationLookback Bars to look back for consolidation range
+// @param atrStopMultiplier ATR multiplier for stop loss
+// @param volumeMultiplier Minimum volume as multiplier of 20-period average
+
+//@version=5
+indicator('Qullamaggie Breakout', overlay=true)
+
+ema10Period = input.int(10, 'ema10Period', minval=8, maxval=12, step=1)
+ema20Period = input.int(20, 'ema20Period', minval=18, maxval=22, step=1)
+ema50Period = input.int(50, 'ema50Period', minval=45, maxval=55, step=1)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+consolidationLookback = input.int(15, 'consolidationLookback', minval=10, maxval=25, step=1)
+atrStopMultiplier = input.float(1.5, 'atrStopMultiplier', minval=1, maxval=2.5, step=0.25)
+volumeMultiplier = input.float(1.2, 'volumeMultiplier', minval=1, maxval=2, step=0.1)
+
+ema10 = ta.ema(close, ema10Period)
+ema20 = ta.ema(close, ema20Period)
+ema50 = ta.ema(close, ema50Period)
+ema200 = ta.ema(close, 200)
+atr = ta.atr(atrPeriod)
+highestHigh = ta.highest(high, consolidationLookback)
+lowestLow = ta.lowest(low, consolidationLookback)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > ema10 and close > ema20 and ema10 > ema20 and ema10 > ema10[1] and ema20 > ema20[1] and close > highestHigh[1] and volume > (ta.sma(volume, 20) * volumeMultiplier))
+shortEntry = (close < ema10 and close < ema20 and ema10 < ema20 and ema10 < ema10[1] and ema20 < ema20[1] and close < lowestLow[1] and volume > (ta.sma(volume, 20) * volumeMultiplier))
+
+confBase = 55
+confBonus0 = close > ema50 ? 10 : 0
+confBonus1 = close > ema200 ? 10 : 0
+confBonus2 = volume > (ta.sma(volume, 20) * 1.5) ? 10 : 0
+confBonus3 = ema10 > ema50 ? 10 : 0
+confBonus4 = ((high - low) / atr) > 1.5 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2 + confBonus3 + confBonus4, 100)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.5 : shortEntry ? close + atrVal * 0.5 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.5)) * 3 : shortEntry ? close - math.abs((close + atrVal * 0.5) - close) * 3 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

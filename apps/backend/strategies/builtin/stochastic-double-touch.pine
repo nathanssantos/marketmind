@@ -1,0 +1,54 @@
+// @id stochastic-double-touch
+// @name Stochastic Double Touch
+// @version 1.0.0
+// @description Setup de reversão baseado em duplo toque do Estocástico em zonas extremas sem cruzar a linha 50. Identifica pontos de reversão forte onde o preço testa zonas de oversold/overbought duas vezes antes de reverter.
+// @author MarketMind
+// @tags reversal,stochastic,mean-reversion,double-touch,oscillator
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param stochPeriod Período do Estocástico
+// @param stochSmoothK Suavização K do Estocástico
+// @param oversoldLevel Nível de oversold
+// @param overboughtLevel Nível de overbought
+// @param volumeMultiplier Multiplicador de volume mínimo
+// @param atrMultiplier Multiplicador ATR para take profit
+
+//@version=5
+indicator('Stochastic Double Touch', overlay=true)
+
+stochPeriod = input.int(14, 'stochPeriod', minval=10, maxval=21, step=1)
+stochSmoothK = input.int(3, 'stochSmoothK', minval=1, maxval=5, step=1)
+oversoldLevel = input.int(20, 'oversoldLevel', minval=15, maxval=30, step=5)
+overboughtLevel = input.int(80, 'overboughtLevel', minval=70, maxval=85, step=5)
+volumeMultiplier = input.float(1.2, 'volumeMultiplier', minval=1, maxval=2, step=0.1)
+atrMultiplier = input.float(2.5, 'atrMultiplier', minval=2, maxval=4, step=0.5)
+
+[stoch_k, _stoch_d, _stoch_unused] = ta.stoch(close, high, low, stochPeriod, stochSmoothK, 3)
+atr = ta.atr(14)
+volumeSMA = ta.sma(volume, 20)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (stoch_k[1] < oversoldLevel and stoch_k >= oversoldLevel and volume > (volumeSMA * volumeMultiplier))
+shortEntry = (stoch_k[1] > overboughtLevel and stoch_k <= overboughtLevel and volume > (volumeSMA * volumeMultiplier))
+
+confBase = 70
+confBonus0 = volume > (volumeSMA * 1.5) ? 10 : 0
+confBonus1 = atr > (atr.sma20 * 1.2) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.5 : shortEntry ? close + atrVal * 0.5 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

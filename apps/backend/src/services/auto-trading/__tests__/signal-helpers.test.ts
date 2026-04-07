@@ -33,7 +33,7 @@ vi.mock('../../../utils/id', () => ({
 }));
 
 vi.mock('../../indicator-engine', () => ({
-  detectSetups: vi.fn(() => []),
+  detectSetups: vi.fn(() => Promise.resolve([])),
 }));
 
 import { getIntervalMs, emitLogsToWebSocket, runSetupDetection } from '../processing/signal-helpers';
@@ -94,10 +94,16 @@ describe('emitLogsToWebSocket', () => {
       watcherId: 'unknown-watcher',
       symbol: 'BTCUSDT',
       interval: '1h',
-      logs: [],
-      setups: [],
+      marketType: 'FUTURES',
+      status: 'success',
+      setupsDetected: [],
+      filterChecks: [],
       rejections: [],
+      tradeExecutions: [],
       setupValidations: [],
+      tradesExecuted: 0,
+      durationMs: 0,
+      logs: [],
     }];
 
     emitLogsToWebSocket(results, new Map());
@@ -123,15 +129,21 @@ describe('emitLogsToWebSocket', () => {
       watcherId: 'w1',
       symbol: 'BTCUSDT',
       interval: '1h',
+      marketType: 'FUTURES',
+      status: 'success',
+      setupsDetected: [],
+      filterChecks: [],
+      rejections: [],
+      tradeExecutions: [],
+      setupValidations: [],
+      tradesExecuted: 0,
+      durationMs: 0,
       logs: [{
         timestamp: new Date(),
-        level: 'info',
+        level: 'info' as const,
         emoji: '>',
         message: 'test log',
       }],
-      setups: [],
-      rejections: [],
-      setupValidations: [],
     }];
 
     emitLogsToWebSocket(results, watcherMap);
@@ -167,10 +179,10 @@ describe('runSetupDetection', () => {
     takerBuyQuoteVolume: '50000',
   });
 
-  it('returns empty array when detectSetups returns no results', () => {
-    mockedDetectSetups.mockReturnValue([]);
+  it('returns empty array when detectSetups returns no results', async () => {
+    mockedDetectSetups.mockResolvedValue([]);
 
-    const result = runSetupDetection(
+    const result = await runSetupDetection(
       [makeKline('100')] as never[],
       [],
       null,
@@ -182,8 +194,8 @@ describe('runSetupDetection', () => {
     expect(result).toEqual([]);
   });
 
-  it('returns setups with confidence >= 50', () => {
-    mockedDetectSetups.mockReturnValue([
+  it('returns setups with confidence >= 50', async () => {
+    mockedDetectSetups.mockResolvedValue([
       {
         strategyId: 'test-strat',
         confidence: 75,
@@ -204,9 +216,9 @@ describe('runSetupDetection', () => {
 
     const logBuffer = makeLogBuffer();
 
-    const result = runSetupDetection(
+    const result = await runSetupDetection(
       [makeKline('100')] as never[],
-      [{ id: 'test-strat', name: 'Test Strategy' }] as never[],
+      [{ metadata: { id: 'test-strat', name: 'Test Strategy' } }] as never[],
       null,
       'auto',
       { interval: '1h' } as ActiveWatcher,
@@ -218,8 +230,8 @@ describe('runSetupDetection', () => {
     expect(logBuffer.addSetup).toHaveBeenCalled();
   });
 
-  it('filters out setups with confidence < 50', () => {
-    mockedDetectSetups.mockReturnValue([
+  it('filters out setups with confidence < 50', async () => {
+    mockedDetectSetups.mockResolvedValue([
       {
         strategyId: 'low-conf',
         confidence: 30,
@@ -232,7 +244,7 @@ describe('runSetupDetection', () => {
       } as never,
     ]);
 
-    const result = runSetupDetection(
+    const result = await runSetupDetection(
       [makeKline('100')] as never[],
       [],
       null,
@@ -244,8 +256,8 @@ describe('runSetupDetection', () => {
     expect(result).toEqual([]);
   });
 
-  it('logs rejections with direction', () => {
-    mockedDetectSetups.mockReturnValue([
+  it('logs rejections with direction', async () => {
+    mockedDetectSetups.mockResolvedValue([
       {
         strategyId: 'rejected-strat',
         confidence: 60,
@@ -258,9 +270,9 @@ describe('runSetupDetection', () => {
 
     const logBuffer = makeLogBuffer();
 
-    runSetupDetection(
+    await runSetupDetection(
       [makeKline('100')] as never[],
-      [{ id: 'rejected-strat', name: 'Rejected Strategy' }] as never[],
+      [{ metadata: { id: 'rejected-strat', name: 'Rejected Strategy' } }] as never[],
       null,
       'auto',
       { interval: '1h' } as ActiveWatcher,
@@ -275,10 +287,10 @@ describe('runSetupDetection', () => {
     expect(logBuffer.completeSetupValidation).toHaveBeenCalledWith('blocked', 'minRR: too low');
   });
 
-  it('uses TRADING_DEFAULTS for minRR when effectiveConfig is null', () => {
-    mockedDetectSetups.mockReturnValue([]);
+  it('uses TRADING_DEFAULTS for minRR when effectiveConfig is null', async () => {
+    mockedDetectSetups.mockResolvedValue([]);
 
-    runSetupDetection(
+    await runSetupDetection(
       [makeKline('100')] as never[],
       [],
       null,
@@ -294,10 +306,10 @@ describe('runSetupDetection', () => {
     }));
   });
 
-  it('passes directionMode when not auto', () => {
-    mockedDetectSetups.mockReturnValue([]);
+  it('passes directionMode when not auto', async () => {
+    mockedDetectSetups.mockResolvedValue([]);
 
-    runSetupDetection(
+    await runSetupDetection(
       [makeKline('100')] as never[],
       [],
       null,
@@ -313,10 +325,10 @@ describe('runSetupDetection', () => {
     }));
   });
 
-  it('passes undefined directionMode when auto', () => {
-    mockedDetectSetups.mockReturnValue([]);
+  it('passes undefined directionMode when auto', async () => {
+    mockedDetectSetups.mockResolvedValue([]);
 
-    runSetupDetection(
+    await runSetupDetection(
       [makeKline('100')] as never[],
       [],
       null,

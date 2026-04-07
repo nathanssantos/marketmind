@@ -1,0 +1,52 @@
+// @id grid-trading
+// @name Grid Trading
+// @version 1.0.0
+// @description Grid trading strategy placing multiple orders at predetermined price levels. Buys below fair value (EMA), sells above. Best in ranging/sideways markets.
+// @author MarketMind
+// @tags grid,ranging,mean-reversion,market-making
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param emaPeriod EMA period for fair value calculation
+// @param atrPeriod ATR period for grid spacing
+// @param gridSpacingATR ATR multiplier for grid spacing
+// @param minGridSpacing Minimum grid spacing as % of price
+// @param maxGridSpacing Maximum grid spacing as % of price
+
+//@version=5
+indicator('Grid Trading', overlay=true)
+
+emaPeriod = input.int(20, 'emaPeriod', minval=10, maxval=50, step=5)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+gridSpacingATR = input.float(1, 'gridSpacingATR', minval=0.5, maxval=2, step=0.25)
+minGridSpacing = input.float(0.5, 'minGridSpacing', minval=0.25, maxval=1, step=0.25)
+maxGridSpacing = input.float(2, 'maxGridSpacing', minval=1, maxval=4, step=0.5)
+
+ema = ta.ema(close, emaPeriod)
+atr = ta.atr(atrPeriod)
+ema200 = ta.ema(close, 200)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = close < ema
+shortEntry = close > ema
+
+confBase = 65
+confBonus0 = close < ema ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,0 +1,57 @@
+// @id divergence-rsi-macd
+// @name Divergence (RSI + MACD)
+// @version 1.0.0
+// @description Detects bullish/bearish divergences using RSI and MACD. Price makes new low but RSI/MACD doesn't confirm = bullish divergence. Opposite for bearish. Classic reversal signal.
+// @author MarketMind
+// @tags divergence,rsi,macd,reversal
+// @strategyType ANY
+// @momentumType REVERSAL
+// @param rsiPeriod RSI period
+// @param macdFast MACD fast period
+// @param macdSlow MACD slow period
+// @param macdSignal MACD signal period
+// @param divergenceLookback Lookback for divergence detection
+// @param targetMultiplier Risk:Reward target
+// @param atrPeriod ATR for stop calculation
+
+//@version=5
+indicator('Divergence (RSI + MACD)', overlay=true)
+
+rsiPeriod = input.int(14, 'rsiPeriod', minval=7, maxval=21, step=1)
+macdFast = input.int(12, 'macdFast', minval=8, maxval=16, step=1)
+macdSlow = input.int(26, 'macdSlow', minval=20, maxval=32, step=1)
+macdSignal = input.int(9, 'macdSignal', minval=5, maxval=12, step=1)
+divergenceLookback = input.int(20, 'divergenceLookback', minval=10, maxval=50, step=5)
+targetMultiplier = input.float(2, 'targetMultiplier', minval=1.5, maxval=3, step=0.5)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+
+rsi = ta.rsi(close, rsiPeriod)
+[macd_line, macd_signal, macd_histogram] = ta.macd(close, macdFast, macdSlow, macdSignal)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (low < low[20] and rsi > 30 and rsi > rsi[20])
+shortEntry = (high > high[20] and rsi < 70 and rsi < rsi[20])
+
+confBase = 70
+confBonus0 = rsi < 30 ? 10 : 0
+confBonus1 = rsi > 70 ? 10 : 0
+confBonus2 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * targetMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * targetMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,0 +1,53 @@
+// @id williams-momentum
+// @name Williams %R Momentum
+// @version 1.0.0
+// @description Momentum strategy using Williams %R oscillator. Entry when Williams %R crosses from oversold/overbought zones with volume confirmation. Quick momentum trades.
+// @author MarketMind
+// @tags momentum,williams,oscillator,quick-trades
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param williamsPeriod Williams %R period (shorter for crypto)
+// @param oversold Oversold level
+// @param overbought Overbought level
+// @param exitLevel Exit level (neutral zone)
+// @param atrMultiplier ATR multiplier for safety stop
+
+//@version=5
+indicator('Williams %R Momentum', overlay=true)
+
+williamsPeriod = input.int(5, 'williamsPeriod', minval=2, maxval=14, step=1)
+oversold = input.int(-80, 'oversold', minval=-90, maxval=-70, step=5)
+overbought = input.int(-20, 'overbought', minval=-30, maxval=-10, step=5)
+exitLevel = input.int(-50, 'exitLevel', minval=-60, maxval=-40, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+williamsR = ta.wpr(williamsPeriod)
+ema20 = ta.ema(close, 20)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (williamsR[1] < oversold and williamsR >= oversold)
+shortEntry = (williamsR[1] > overbought and williamsR <= overbought)
+
+confBase = 60
+confBonus0 = volume > ta.sma(volume, 20) ? 15 : 0
+confBonus1 = williamsR < -90 ? 5 : 0
+confBonus2 = williamsR > -10 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 85)
+
+exitLong = williamsR > exitLevel
+exitShort = williamsR < exitLevel
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

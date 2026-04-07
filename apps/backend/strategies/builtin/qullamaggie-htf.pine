@@ -1,0 +1,65 @@
+// @id qullamaggie-htf
+// @name Qullamaggie High Tight Flag
+// @version 1.0.0
+// @description Kristjan Kullamägi's High Tight Flag (HTF) setup. Detects stocks that have moved 50%+ and are consolidating with shallow pullback (max 25%). 'If you could only trade one setup, it should be the HTF' - Qullamaggie.
+// @author Kristjan Kullamägi / MarketMind
+// @tags qullamaggie,htf,high-tight-flag,continuation,momentum
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param flagpoleLookback Bars to look back for flagpole (initial move)
+// @param minFlagpoleGain Minimum % gain for flagpole (50% for crypto, 100% for stocks)
+// @param maxPullbackPercent Maximum pullback % from peak (Qullamaggie uses 25%)
+// @param flagLookback Bars to look for flag consolidation
+// @param atrPeriod ATR period for volatility
+// @param ema10Period Fast EMA for trend confirmation
+// @param ema20Period Slow EMA for trend confirmation
+// @param volumeDecreaseThreshold Volume in flag should be below this % of flagpole volume
+
+//@version=5
+indicator('Qullamaggie High Tight Flag', overlay=true)
+
+flagpoleLookback = input.int(30, 'flagpoleLookback', minval=20, maxval=50, step=5)
+minFlagpoleGain = input.int(50, 'minFlagpoleGain', minval=30, maxval=100, step=10)
+maxPullbackPercent = input.int(25, 'maxPullbackPercent', minval=15, maxval=30, step=5)
+flagLookback = input.int(15, 'flagLookback', minval=10, maxval=25, step=1)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+ema10Period = input.int(10, 'ema10Period', minval=8, maxval=12, step=1)
+ema20Period = input.int(20, 'ema20Period', minval=18, maxval=22, step=1)
+volumeDecreaseThreshold = input.float(0.7, 'volumeDecreaseThreshold', minval=0.5, maxval=0.9, step=0.1)
+
+ema10 = ta.ema(close, ema10Period)
+ema20 = ta.ema(close, ema20Period)
+ema200 = ta.ema(close, 200)
+atr = ta.atr(atrPeriod)
+highestHigh30 = ta.highest(high, flagpoleLookback)
+lowestLow30 = ta.lowest(low, flagpoleLookback)
+highestHigh15 = ta.highest(high, flagLookback)
+lowestLow15 = ta.lowest(low, flagLookback)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (((highestHigh30 - lowestLow30) / lowestLow30 * 100) >= minFlagpoleGain and ((highestHigh15 - close) / highestHigh15 * 100) <= maxPullbackPercent and close > highestHigh15[1] and close > ema10 and close > ema20 and ema10 > ema20 and volume > ta.sma(volume, 20))
+shortEntry = (((highestHigh30 - lowestLow30) / highestHigh30 * 100) >= minFlagpoleGain and ((close - lowestLow15) / lowestLow15 * 100) <= maxPullbackPercent and close < lowestLow15[1] and close < ema10 and close < ema20 and ema10 < ema20 and volume > ta.sma(volume, 20))
+
+confBase = 60
+confBonus0 = ((highestHigh15 - close) / highestHigh15 * 100) <= 15 ? 15 : 0
+confBonus1 = ((highestHigh30 - lowestLow30) / lowestLow30 * 100) >= 80 ? 10 : 0
+confBonus2 = close > ema200 ? 10 : 0
+confBonus3 = volume > (ta.sma(volume, 20) * 1.5) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2 + confBonus3, 100)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.3 : shortEntry ? close + atrVal * 0.3 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.3)) * 3 : shortEntry ? close - math.abs((close + atrVal * 0.3) - close) * 3 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

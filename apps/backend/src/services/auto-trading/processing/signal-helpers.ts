@@ -9,7 +9,7 @@ import { getWebSocketService } from '../../websocket';
 import { generateEntityId } from '../../../utils/id';
 import type { AutoTradingConfig } from '../../../db/schema';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
-import type { StrategyLoader } from '../../setup-detection/dynamic';
+import type { PineStrategy } from '../../pine/types';
 import { detectSetups } from '../../indicator-engine';
 
 export const getIntervalMs = (interval: string): number => {
@@ -20,14 +20,14 @@ export const getIntervalMs = (interval: string): number => {
   return parseInt(match[1]) * unitMs;
 };
 
-export const runSetupDetection = (
+export const runSetupDetection = async (
   closedKlines: Kline[],
-  filteredStrategies: Awaited<ReturnType<StrategyLoader['loadAllCached']>>,
+  filteredStrategies: PineStrategy[],
   effectiveConfig: AutoTradingConfig | null,
   directionMode: string,
   watcher: ActiveWatcher,
   logBuffer: WatcherLogBuffer
-): TradingSetup[] => {
+): Promise<TradingSetup[]> => {
   const currentIndex = closedKlines.length - 1;
 
   const minRRLong = effectiveConfig?.minRiskRewardRatioLong
@@ -37,7 +37,7 @@ export const runSetupDetection = (
     ? parseFloat(effectiveConfig.minRiskRewardRatioShort)
     : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
 
-  const detectionResults = detectSetups({
+  const detectionResults = await detectSetups({
     klines: closedKlines,
     strategies: filteredStrategies,
     currentIndex,
@@ -56,8 +56,8 @@ export const runSetupDetection = (
   const detectedSetups: TradingSetup[] = [];
 
   for (const result of detectionResults) {
-    const strategy = filteredStrategies.find(s => s.id === result.strategyId);
-    const strategyName = strategy?.name ?? result.strategyId;
+    const strategy = filteredStrategies.find(s => s.metadata.id === result.strategyId);
+    const strategyName = strategy?.metadata.name ?? result.strategyId;
 
     if (result.rejection) {
       const rejectionDirection = result.rejection.details?.['direction'] as string | undefined;
@@ -103,8 +103,6 @@ export const runSetupDetection = (
       const setupWithTriggerData = {
         ...result.setup,
         triggerKlineIndex: result.triggerKlineIndex,
-        triggerCandleData: result.triggerCandleData,
-        triggerIndicatorValues: result.triggerIndicatorValues,
       };
       detectedSetups.push(setupWithTriggerData);
 
@@ -134,7 +132,7 @@ export const handleSemiAssistedSetups = async (
   watcher: ActiveWatcher,
   watcherId: string,
   effectiveConfig: AutoTradingConfig | null,
-  filteredStrategies: Awaited<ReturnType<StrategyLoader['loadAllCached']>>,
+  filteredStrategies: PineStrategy[],
   closedKlines: Kline[],
   lastCandle: Kline,
   deps: SignalProcessorDeps,

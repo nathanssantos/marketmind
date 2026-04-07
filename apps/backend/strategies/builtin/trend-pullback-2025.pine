@@ -1,0 +1,57 @@
+// @id trend-pullback-2025
+// @name Trend Pullback 2025
+// @version 1.0.0
+// @description Buy the dip strategy for bull markets. Waits for pullbacks to key EMAs in strong uptrends, enters when momentum resumes. High win rate strategy with tight risk management.
+// @author MarketMind
+// @tags trend-following,pullback,buy-the-dip,bull-market,2025
+// @strategyType TREND_FOLLOWING
+// @momentumType PULLBACK
+// @param emaFast Fast EMA for pullback target
+// @param emaMid Mid EMA for trend confirmation
+// @param emaTrend Main trend EMA
+// @param rsiPeriod RSI period (shorter for faster signals)
+// @param rsiOversold RSI oversold for pullback
+// @param atrPeriod ATR period
+// @param slMultiplier SL ATR multiplier (tight)
+// @param tpMultiplier TP ATR multiplier
+
+//@version=5
+indicator('Trend Pullback 2025', overlay=true)
+
+rsiPeriod = input.int(7, 'rsiPeriod', minval=5, maxval=14, step=2)
+rsiOversold = input.int(40, 'rsiOversold', minval=30, maxval=50, step=5)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(1.2, 'slMultiplier', minval=0.8, maxval=2, step=0.2)
+tpMultiplier = input.float(2.5, 'tpMultiplier', minval=1.5, maxval=4, step=0.5)
+
+emaFast = ta.ema(close, emaFast)
+emaMid = ta.ema(close, emaMid)
+emaTrend = ta.ema(close, emaTrend)
+rsi = ta.rsi(close, rsiPeriod)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (emaMid > emaTrend and ta.crossover(close, emaFast))
+shortEntry = (emaMid < emaTrend and ta.crossunder(close, emaFast))
+
+confBase = 65
+confBonus0 = close > emaTrend ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * tpMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * tpMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

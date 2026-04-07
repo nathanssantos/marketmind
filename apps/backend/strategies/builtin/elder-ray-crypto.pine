@@ -1,0 +1,47 @@
+// @id elder-ray-crypto
+// @name Elder Ray Crypto
+// @version 1.0.0
+// @description Elder Ray Index (Bull/Bear Power) para crypto. Mede força de bulls vs bears em relação a EMA. Entry quando power cruza zero.
+// @author MarketMind
+// @tags momentum,elder-ray,bull-bear-power
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param emaPeriod Período EMA base
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Elder Ray Crypto', overlay=true)
+
+emaPeriod = input.int(13, 'emaPeriod', minval=10, maxval=20, step=1)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+ema = ta.ema(close, emaPeriod)
+elderRay_ema = ta.ema(close, emaPeriod)
+elderRay_bullPower = high - elderRay_ema
+elderRay_bearPower = low - elderRay_ema
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > ema and ta.crossover(elderRay_bearPower, 0))
+shortEntry = (close < ema and ta.crossunder(elderRay_bullPower, 0))
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = elderRay_bullPower < 0
+exitShort = elderRay_bearPower > 0
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

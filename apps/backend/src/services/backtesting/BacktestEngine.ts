@@ -1,11 +1,10 @@
 import type {
   BacktestConfig,
   BacktestResult,
-  ComputedIndicators,
   Interval,
   Kline,
-  StrategyDefinition,
 } from '@marketmind/types';
+import type { PineStrategy } from '../pine/types';
 import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
 import { calculateEMA } from '@marketmind/indicators';
 import { TRPCError } from '@trpc/server';
@@ -13,13 +12,12 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { BACKTEST_DEFAULTS, BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
+import { PineStrategyLoader } from '../pine/PineStrategyLoader';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
-import { ConditionEvaluator, IndicatorEngine, StrategyLoader } from '../setup-detection/dynamic';
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
 import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import { ExitManager } from './ExitManager';
 import { FilterManager, type FilterConfig } from './FilterManager';
-import { IndicatorCache } from './IndicatorCache';
 import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
 import { calculateBacktestMetrics } from './metrics-calculator';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
@@ -40,14 +38,6 @@ export class BacktestEngine {
       const { setupDetectionService, loadedStrategies, strategyMap } = await this.initializeStrategies(config, historicalKlines);
       const effectiveConfig = this.buildEffectiveConfig(config, loadedStrategies);
 
-      const indicatorEngine = new IndicatorEngine();
-      const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
-
-      const indicatorCache = new IndicatorCache();
-      if (loadedStrategies.length > 0) {
-        indicatorCache.initialize(historicalKlines as Kline[]);
-        indicatorCache.precomputeForStrategies(loadedStrategies, config.strategyParams || {});
-      }
 
       const resolvedDirectionMode = effectiveConfig.directionMode
         ?? (effectiveConfig.onlyLong ? 'long_only' as const : undefined);
@@ -126,9 +116,9 @@ export class BacktestEngine {
         slippagePercent: effectiveConfig.slippagePercent,
         marketType: config.marketType,
         useBnbDiscount: config.useBnbDiscount,
-      }, conditionEvaluator);
+      });
 
-      const detectedSetups = await this.detectSetups(
+      const { detectedSetups, exitSignalsMap } = await this.detectSetupsWithExitSignals(
         setupDetectionService,
         historicalKlines,
         loadedStrategies,
@@ -152,8 +142,7 @@ export class BacktestEngine {
         filterManager,
         tradeExecutor,
         exitManager,
-        indicatorEngine,
-        indicatorCache,
+        exitSignalsMap,
         stochasticHtfKlines,
         mtfHtfKlines,
         mtfHtfInterval
@@ -232,7 +221,6 @@ export class BacktestEngine {
 
   private async initializeStrategies(config: BacktestConfig, _historicalKlines: any[]) {
     const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [];
-    const strategyOverrides = config.strategyParams || {};
 
     console.log('[Backtest] Dynamic setups:', setupsToEnable);
     if (config.maxFibonacciEntryProgressPercentLong !== undefined || config.maxFibonacciEntryProgressPercentShort !== undefined) {
@@ -246,20 +234,18 @@ export class BacktestEngine {
       initialStopMode: config.initialStopMode,
     });
 
-    const loadedStrategies: StrategyDefinition[] = [];
-    const strategyMap = new Map<string, StrategyDefinition>();
+    const loadedStrategies: PineStrategy[] = [];
+    const strategyMap = new Map<string, PineStrategy>();
 
     if (setupsToEnable.length > 0) {
       const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
-      const loader = new StrategyLoader([strategiesDir]);
-      const allStrategies = await loader.loadAll({ includeUnprofitable: true });
+      const pineLoader = new PineStrategyLoader([strategiesDir]);
+      const allPineStrategies = await pineLoader.loadAll();
 
-      for (const strategyDef of allStrategies) {
-        if (setupsToEnable.includes(strategyDef.id)) {
-          setupDetectionService.loadStrategy(strategyDef, strategyOverrides);
-          loadedStrategies.push(strategyDef);
-          strategyMap.set(strategyDef.id, strategyDef);
-          console.log(`[Backtest] Loaded dynamic strategy: ${strategyDef.id}`);
+      for (const pineStrategy of allPineStrategies) {
+        if (setupsToEnable.includes(pineStrategy.metadata.id)) {
+          setupDetectionService.loadPineStrategy(pineStrategy);
+          console.log(`[Backtest] Loaded Pine strategy: ${pineStrategy.metadata.id}`);
         }
       }
     }
@@ -267,7 +253,7 @@ export class BacktestEngine {
     return { setupDetectionService, loadedStrategies, strategyMap };
   }
 
-  private buildEffectiveConfig(config: BacktestConfig, _loadedStrategies: StrategyDefinition[]): BacktestConfig {
+  private buildEffectiveConfig(config: BacktestConfig, _loadedStrategies: PineStrategy[]): BacktestConfig {
     const isFutures = config.marketType === 'FUTURES';
     return {
       ...applyFilterDefaults(
@@ -289,12 +275,12 @@ export class BacktestEngine {
     };
   }
 
-  private async detectSetups(
+  private async detectSetupsWithExitSignals(
     setupDetectionService: SetupDetectionService,
     historicalKlines: any[],
-    loadedStrategies: StrategyDefinition[],
+    loadedStrategies: PineStrategy[],
     trendFilterPeriod?: number
-  ): Promise<any[]> {
+  ): Promise<{ detectedSetups: any[]; exitSignalsMap: Map<string, (number | null)[]> }> {
     try {
       const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies, trendFilterPeriod);
       const startIndex = warmupPeriod;
@@ -302,7 +288,7 @@ export class BacktestEngine {
 
       console.log(`[Backtest] Scanning from index ${startIndex} to ${endIndex} (${endIndex - startIndex + 1} candles)`);
 
-      const detectedSetups = await setupDetectionService.detectSetupsInRange(
+      const { setups: detectedSetups, exitSignalsMap } = await setupDetectionService.detectSetupsWithExitSignals(
         historicalKlines,
         startIndex,
         endIndex
@@ -318,7 +304,7 @@ export class BacktestEngine {
         console.log('[Backtest] Setup breakdown:', setupTypes);
       }
 
-      return detectedSetups;
+      return { detectedSetups, exitSignalsMap };
     } catch (error) {
       console.error('[Backtest] Error detecting setups:', error);
       throw new TRPCError({
@@ -334,7 +320,7 @@ export class BacktestEngine {
     _historicalKlines: any[],
     config: BacktestConfig,
     effectiveConfig: BacktestConfig,
-    _loadedStrategies: StrategyDefinition[]
+    _loadedStrategies: PineStrategy[]
   ): Promise<any[]> {
     const userStartTimestamp = new Date(config.startDate).getTime();
     const setupsInRange = detectedSetups.filter((s: any) => s.openTime >= userStartTimestamp);
@@ -357,12 +343,11 @@ export class BacktestEngine {
     historicalKlines: any[],
     config: BacktestConfig,
     effectiveConfig: BacktestConfig,
-    strategyMap: Map<string, StrategyDefinition>,
+    _strategyMap: Map<string, PineStrategy>,
     filterManager: FilterManager,
     tradeExecutor: TradeExecutor,
     exitManager: ExitManager,
-    indicatorEngine: IndicatorEngine,
-    indicatorCache: IndicatorCache,
+    exitSignalsMap: Map<string, (number | null)[]>,
     stochasticHtfKlines: Kline[] = [],
     mtfHtfKlines: Kline[] = [],
     mtfHtfInterval: string | null = null
@@ -416,10 +401,7 @@ export class BacktestEngine {
 
       const { entryPrice, actualEntryKlineIndex } = entryResult;
 
-      const setupStrategy = strategyMap.get(setup.type);
-      const globalTrendFilterEnabled = effectiveConfig.useTrendFilter === true;
-      const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
-      const shouldUseTrendFilter = globalTrendFilterEnabled || strategyTrendFilterEnabled;
+      const shouldUseTrendFilter = effectiveConfig.useTrendFilter === true;
 
       if (!filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, shouldUseTrendFilter, trades.length)) continue;
       if (!filterManager.checkFvgFilter(historicalKlines as Kline[], setupIndex, entryPrice, setup.direction, trades.length)) continue;
@@ -462,62 +444,7 @@ export class BacktestEngine {
         continue;
       }
 
-      let computedIndicators: ComputedIndicators | null = null;
-      let resolvedParams: Record<string, number> = {};
-
-      if (setupStrategy) {
-        const exitConditions = setupStrategy.exit?.conditions;
-        const exitConditionForDirection = setup.direction === 'LONG'
-          ? exitConditions?.long
-          : exitConditions?.short;
-
-        if (exitConditionForDirection) {
-          resolvedParams = Object.entries(setupStrategy.parameters).reduce(
-            (acc, [key, param]) => {
-              acc[key] = (config.strategyParams || {})[key] ?? param.default;
-              return acc;
-            },
-            {} as Record<string, number>
-          );
-
-          if (setupStrategy.indicators && indicatorCache.getStats().cacheSize > 0) {
-            computedIndicators = {};
-            let allCached = true;
-
-            for (const [id, definition] of Object.entries(setupStrategy.indicators)) {
-              const cached = indicatorCache.getForDefinition(definition, resolvedParams, setupStrategy.parameters);
-              if (cached) {
-                computedIndicators[id] = cached;
-              } else {
-                allCached = false;
-                break;
-              }
-            }
-
-            if (allCached) {
-              const priceData = indicatorCache.getPriceData();
-              if (priceData) {
-                computedIndicators['_price'] = {
-                  type: 'sma',
-                  values: priceData,
-                };
-              }
-            } else {
-              computedIndicators = indicatorEngine.computeIndicators(
-                historicalKlines as Kline[],
-                setupStrategy.indicators,
-                resolvedParams
-              );
-            }
-          } else {
-            computedIndicators = indicatorEngine.computeIndicators(
-              historicalKlines as Kline[],
-              setupStrategy.indicators,
-              resolvedParams
-            );
-          }
-        }
-      }
+      const exitSignals = exitSignalsMap.get(setup.type);
 
       const exitResult = exitManager.findExit(
         setup,
@@ -525,9 +452,7 @@ export class BacktestEngine {
         actualEntryKlineIndex,
         stopLoss,
         takeProfit,
-        setupStrategy,
-        computedIndicators,
-        resolvedParams
+        exitSignals
       );
 
       if (!exitResult) continue;
@@ -612,16 +537,7 @@ export class BacktestEngine {
     const { setupDetectionService, loadedStrategies, strategyMap } = await this.initializeStrategies(baseConfig, historicalKlines);
     const baseEffective = this.buildEffectiveConfig(baseConfig, loadedStrategies);
 
-    const indicatorEngine = new IndicatorEngine();
-    const conditionEvaluator = new ConditionEvaluator(indicatorEngine);
-
-    const indicatorCache = new IndicatorCache();
-    if (loadedStrategies.length > 0) {
-      indicatorCache.initialize(klines);
-      indicatorCache.precomputeForStrategies(loadedStrategies, baseConfig.strategyParams || {});
-    }
-
-    const detectedSetups = await this.detectSetups(
+    const { detectedSetups, exitSignalsMap } = await this.detectSetupsWithExitSignals(
       setupDetectionService,
       historicalKlines,
       loadedStrategies,
@@ -719,7 +635,7 @@ export class BacktestEngine {
           slippagePercent: effectiveConfig.slippagePercent,
           marketType: config.marketType,
           useBnbDiscount: config.useBnbDiscount,
-        }, conditionEvaluator);
+        });
 
         const { trades, maxDrawdown, equityCurve } = this.executeBacktest(
           baseFilteredSetups,
@@ -730,8 +646,7 @@ export class BacktestEngine {
           filterManager,
           tradeExecutor,
           exitManager,
-          indicatorEngine,
-          indicatorCache,
+          exitSignalsMap,
           batchStochasticHtfKlines,
           batchMtfHtfKlines,
           batchMtfHtfInterval
@@ -764,52 +679,20 @@ export class BacktestEngine {
     return results;
   }
 
-  private calculateWarmupPeriod(strategies: StrategyDefinition[], trendFilterPeriod?: number): number {
+  private calculateWarmupPeriod(_strategies: PineStrategy[], trendFilterPeriod?: number): number {
     const MIN_WARMUP = 50;
     let maxPeriod = trendFilterPeriod ? Math.max(MIN_WARMUP, trendFilterPeriod) : MIN_WARMUP;
 
-    for (const strategy of strategies) {
-      if (strategy.indicators) {
-        for (const [, indicator] of Object.entries(strategy.indicators)) {
-          const params = indicator.params || {};
-
-          const period = params['period'] || params['emaPeriod'] || params['smaPeriod'] ||
-                        params['lookback'] || params['kPeriod'] || params['slowPeriod'] || 0;
-
-          const periodValue = typeof period === 'string' && period.startsWith('$')
-            ? strategy.parameters?.[period.slice(1)]?.default || 0
-            : period;
-
-          if (typeof periodValue === 'number' && periodValue > maxPeriod) {
-            maxPeriod = periodValue;
-          }
+    for (const strategy of _strategies) {
+      for (const [, paramDef] of Object.entries(strategy.metadata.parameters)) {
+        if (typeof paramDef.default === 'number' && paramDef.default > maxPeriod) {
+          maxPeriod = paramDef.default;
         }
       }
-
-      if (strategy.parameters) {
-        for (const [paramName, paramDef] of Object.entries(strategy.parameters)) {
-          if (paramName.toLowerCase().includes('trend') ||
-              paramName.toLowerCase().includes('ema') ||
-              paramName.toLowerCase().includes('sma')) {
-            const defaultValue = paramDef.default;
-            if (typeof defaultValue === 'number' && defaultValue > maxPeriod) {
-              maxPeriod = defaultValue;
-            }
-          }
-        }
-      }
-
-      if (strategy.filters?.trendFilter?.period) {
-        const trendPeriod = strategy.filters.trendFilter.period;
-        if (typeof trendPeriod === 'number' && trendPeriod > maxPeriod) {
-          maxPeriod = trendPeriod;
-        }
-      }
-
     }
 
     const warmupWithBuffer = Math.ceil(maxPeriod * 1.5);
-    console.log(`[Backtest] Calculated warmup period: ${warmupWithBuffer} (max indicator period: ${maxPeriod})`);
+    console.log(`[Backtest] Calculated warmup period: ${warmupWithBuffer} (max period: ${maxPeriod})`);
 
     return warmupWithBuffer;
   }

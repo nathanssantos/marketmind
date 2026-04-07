@@ -1,0 +1,55 @@
+// @id 7day-momentum-crypto
+// @name 7-Day Momentum Crypto
+// @version 1.0.0
+// @description Crypto-optimized momentum strategy using 7-day price momentum. Research shows 7-day is the most stable momentum period for crypto trading. Uses EMA for trend confirmation.
+// @author Academic Research / MarketMind
+// @tags momentum,crypto,trend-following,7day,proven
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param momentumPeriod Momentum lookback period
+// @param momentumThreshold Minimum momentum % for entry
+// @param emaFast Fast EMA period
+// @param emaSlow Slow EMA period
+// @param atrPeriod ATR period
+// @param slMultiplier Stop loss ATR multiplier
+// @param tpMultiplier Take profit ATR multiplier
+
+//@version=5
+indicator('7-Day Momentum Crypto', overlay=true)
+
+momentumPeriod = input.int(7, 'momentumPeriod', minval=5, maxval=14, step=1)
+momentumThreshold = input.int(3, 'momentumThreshold', minval=1, maxval=10, step=1)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(2, 'slMultiplier', minval=1.5, maxval=3, step=0.25)
+tpMultiplier = input.float(4, 'tpMultiplier', minval=2, maxval=6, step=0.5)
+
+emaFast = ta.ema(close, emaFast)
+emaSlow = ta.ema(close, emaSlow)
+rsi = ta.rsi(close, 14)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (emaFast > emaSlow and close > emaFast and rsi > 50 and rsi < 75)
+shortEntry = (emaFast < emaSlow and close < emaFast and rsi < 50 and rsi > 25)
+
+confBase = 65
+confBonus0 = rsi > 55 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * tpMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * tpMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

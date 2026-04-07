@@ -5,87 +5,82 @@ import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpe
 import * as schema from '../../db/schema';
 import type { Interval } from '@marketmind/types';
 
-vi.mock('../../services/setup-detection/dynamic', () => {
+vi.mock('../../services/pine/PineStrategyLoader', () => {
   const mockStrategiesInternal = [
     {
-      id: 'test-strategy-1',
-      name: 'Test Strategy 1',
-      version: '1.0.0',
-      description: 'A test strategy',
-      author: 'Test Author',
-      tags: ['test', 'strategy'],
-      status: 'active',
-      recommendedTimeframes: ['1h', '4h'],
-      conditions: { entry: { long: [], short: [] }, exit: { long: [], short: [] } },
-      risk: { stopLoss: { method: 'fixed', value: 2 }, takeProfit: { method: 'fixed', value: 4 } },
+      metadata: {
+        id: 'test-strategy-1',
+        name: 'Test Strategy 1',
+        version: '1.0.0',
+        description: 'A test strategy',
+        author: 'Test Author',
+        tags: ['test', 'strategy'],
+        status: 'active',
+        enabled: true,
+        parameters: {},
+        filters: {},
+        recommendedTimeframes: { primary: '1h', secondary: ['4h'] },
+      },
+      source: '',
+      filePath: 'test',
     },
     {
-      id: 'test-strategy-2',
-      name: 'Test Strategy 2',
-      version: '1.0.0',
-      description: 'Another test strategy',
-      author: 'Test Author',
-      tags: ['test'],
-      status: 'experimental',
-      recommendedTimeframes: ['15m'],
-      conditions: { entry: { long: [], short: [] }, exit: { long: [], short: [] } },
-      risk: { stopLoss: { method: 'fixed', value: 1.5 }, takeProfit: { method: 'fixed', value: 3 } },
+      metadata: {
+        id: 'test-strategy-2',
+        name: 'Test Strategy 2',
+        version: '1.0.0',
+        description: 'Another test strategy',
+        author: 'Test Author',
+        tags: ['test'],
+        status: 'experimental',
+        enabled: true,
+        parameters: {},
+        filters: {},
+        recommendedTimeframes: { primary: '15m' },
+      },
+      source: '',
+      filePath: 'test',
     },
   ];
 
   return {
-    StrategyLoader: class {
-      loadAll({ includeUnprofitable: _includeUnprofitable = false, includeStatuses, excludeStatuses }: any = {}) {
-        let filtered = [...mockStrategiesInternal];
-
-        if (includeStatuses) {
-          filtered = filtered.filter(s => includeStatuses.includes(s.status));
-        }
-        if (excludeStatuses) {
-          filtered = filtered.filter(s => !excludeStatuses.includes(s.status));
-        }
-
-        return Promise.resolve(filtered);
+    PineStrategyLoader: class {
+      loadAll() {
+        return Promise.resolve([...mockStrategiesInternal]);
       }
 
-      loadAllCached(options: any = {}) {
-        return this.loadAll(options);
+      loadAllCached() {
+        return this.loadAll();
       }
 
-      loadFromString(json: string) {
-        return JSON.parse(json);
-      }
-
-      validateStrategy(strategy: any) {
+      loadFromString(source: string) {
         return {
-          valid: !!strategy.id && !!strategy.name,
-          errors: strategy.id ? [] : [{ path: 'id', message: 'Missing id', severity: 'error' }],
-          warnings: [],
-        };
-      }
-    },
-    StrategyInterpreter: class {
-      detect() {
-        return {
-          setup: {
-            id: 'setup-1',
-            type: 'test-strategy-1',
-            symbol: 'BTCUSDT',
-            interval: '1h',
-            direction: 'LONG',
-            entryPrice: 50000,
-            stopLoss: 49000,
-            takeProfit: 52000,
-            confidence: 75,
-            detectedAt: Date.now(),
-            riskReward: 2,
-          },
-          confidence: 75,
+          metadata: { id: 'inline', name: 'Inline Strategy', version: '1.0.0', description: '', author: '', tags: [], status: 'active', enabled: true, parameters: {}, filters: {} },
+          source,
+          filePath: 'inline',
         };
       }
     },
   };
 });
+
+vi.mock('../../services/indicator-engine', () => ({
+  detectSetups: vi.fn().mockResolvedValue([
+    {
+      setup: {
+        type: 'test-strategy-1',
+        direction: 'LONG',
+        entryPrice: 50000,
+        stopLoss: 49000,
+        takeProfit: 52000,
+        confidence: 75,
+        riskRewardRatio: 2,
+      },
+      confidence: 75,
+      strategyId: 'test-strategy-1',
+    },
+  ]),
+}));
 
 vi.mock('../../services/logger', () => ({
   logger: {
@@ -184,7 +179,7 @@ describe('Setup Detection Router', () => {
       const result = await caller.setupDetection.listStrategies();
 
       expect(result[0]).toHaveProperty('recommendedTimeframes');
-      expect(result[0]!.recommendedTimeframes).toBeInstanceOf(Array);
+      expect(result[0]!.recommendedTimeframes).toBeDefined();
     });
   });
 
@@ -198,8 +193,8 @@ describe('Setup Detection Router', () => {
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('name');
-      expect(result).toHaveProperty('conditions');
-      expect(result).toHaveProperty('risk');
+      expect(result).toHaveProperty('parameters');
+      expect(result).toHaveProperty('filters');
     });
 
     it('should throw error for non-existent strategy', async () => {
@@ -411,50 +406,28 @@ describe('Setup Detection Router', () => {
   });
 
   describe('validateStrategy', () => {
-    it('should validate valid strategy JSON (public endpoint)', async () => {
+    it('should validate valid Pine strategy source (public endpoint)', async () => {
       const caller = createUnauthenticatedCaller();
 
-      const validStrategy = JSON.stringify({
-        id: 'custom-strategy',
-        name: 'Custom Strategy',
-        version: '1.0.0',
-        conditions: { entry: { long: [], short: [] }, exit: { long: [], short: [] } },
-        risk: { stopLoss: { method: 'fixed', value: 2 }, takeProfit: { method: 'fixed', value: 4 } },
-      });
+      const validSource = '// @id custom-strategy\n// @name Custom Strategy\n//@version=5\nindicator("Custom Strategy", overlay=true)\nplot(0, "signal")\n';
 
       const result = await caller.setupDetection.validateStrategy({
-        strategyJson: validStrategy,
+        strategySource: validSource,
       });
 
       expect(result.valid).toBe(true);
       expect(result.errors).toEqual([]);
     });
 
-    it('should reject invalid strategy JSON', async () => {
+    it('should reject invalid Pine strategy source', async () => {
       const caller = createUnauthenticatedCaller();
 
-      const invalidStrategy = JSON.stringify({
-        name: 'Missing ID Strategy',
-      });
-
       const result = await caller.setupDetection.validateStrategy({
-        strategyJson: invalidStrategy,
+        strategySource: 'not valid pine source',
       });
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-    });
-
-    it('should handle malformed JSON', async () => {
-      const caller = createUnauthenticatedCaller();
-
-      const result = await caller.setupDetection.validateStrategy({
-        strategyJson: 'not valid json',
-      });
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]!.path).toBe('json');
     });
   });
 

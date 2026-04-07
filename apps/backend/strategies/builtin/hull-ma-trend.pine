@@ -1,0 +1,44 @@
+// @id hull-ma-trend
+// @name Hull MA Trend
+// @version 1.0.0
+// @description Hull Moving Average trend following. HMA é muito responsiva com menos lag que EMA. Entry quando HMA muda de direção.
+// @author MarketMind
+// @tags trend-following,hull-ma,momentum,low-lag
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param hmaPeriod Período do HMA
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Hull MA Trend', overlay=true)
+
+hmaPeriod = input.int(20, 'hmaPeriod', minval=14, maxval=30, step=2)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+hma = ta.hma(close, hmaPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (hma > hma[1] and hma[1] <= hma[2])
+shortEntry = (hma < hma[1] and hma[1] >= hma[2])
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 85)
+
+exitLong = hma < hma[1]
+exitShort = hma > hma[1]
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

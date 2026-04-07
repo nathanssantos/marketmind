@@ -1,9 +1,8 @@
-import type { ComputedIndicators, EvaluationContext, Kline, MarketType, StrategyDefinition } from '@marketmind/types';
+import type { Kline, MarketType } from '@marketmind/types';
 import {
   checkStopLossAndTakeProfit as checkSLTP,
   applySlippage as applySlippageUtil,
 } from '../indicator-engine/exitUtils';
-import type { ConditionEvaluator } from '../setup-detection/dynamic';
 
 export interface ExitConfig {
   slippagePercent?: number;
@@ -19,30 +18,9 @@ export interface ExitResult {
 
 export class ExitManager {
   private config: ExitConfig;
-  private conditionEvaluator: ConditionEvaluator;
 
-  constructor(config: ExitConfig, conditionEvaluator: ConditionEvaluator) {
+  constructor(config: ExitConfig) {
     this.config = config;
-    this.conditionEvaluator = conditionEvaluator;
-  }
-
-  checkExitCondition(
-    exitCondition: any,
-    klines: Kline[],
-    currentIndex: number,
-    indicators: ComputedIndicators,
-    params: Record<string, number>
-  ): boolean {
-    if (!exitCondition) return false;
-
-    const context: EvaluationContext = {
-      klines,
-      currentIndex,
-      indicators,
-      params,
-    };
-
-    return this.conditionEvaluator.evaluate(exitCondition, context);
   }
 
   checkStopLossAndTakeProfit(
@@ -66,42 +44,32 @@ export class ExitManager {
   }
 
   findExit(
-    setup: any,
+    setup: { direction: 'LONG' | 'SHORT' },
     klines: Kline[],
     actualEntryKlineIndex: number,
     stopLoss: number | undefined,
     takeProfit: number | undefined,
-    strategy: StrategyDefinition | undefined,
-    computedIndicators: ComputedIndicators | null,
-    resolvedParams: Record<string, number>
+    exitSignals: (number | null)[] | undefined,
+    maxBarsInTrade?: number
   ): ExitResult | null {
-    const exitConditions = strategy?.exit?.conditions;
-    const maxBarsInTrade = strategy?.exit?.maxBarsInTrade;
-    const exitConditionForDirection = setup.direction === 'LONG'
-      ? exitConditions?.long
-      : exitConditions?.short;
-
     let barsInTrade = 0;
     const startIndex = actualEntryKlineIndex + 1;
 
     for (let i = startIndex; i < klines.length; i++) {
       barsInTrade++;
       const futureKline = klines[i]!;
-      const futureIndex = i;
       const high = parseFloat(String(futureKline.high));
       const low = parseFloat(String(futureKline.low));
       const open = parseFloat(String(futureKline.open));
       const close = parseFloat(String(futureKline.close));
 
-      if (exitConditionForDirection && computedIndicators && futureIndex >= 0) {
-        const exitConditionMet = this.checkExitCondition(
-          exitConditionForDirection,
-          klines,
-          futureIndex,
-          computedIndicators,
-          resolvedParams
-        );
-        if (exitConditionMet) {
+      if (exitSignals && i < exitSignals.length) {
+        const exitValue = exitSignals[i];
+        const shouldExit =
+          (setup.direction === 'LONG' && exitValue === 1) ||
+          (setup.direction === 'SHORT' && exitValue === -1);
+
+        if (shouldExit) {
           const finalPrice = this.applySlippage(close, 'EXIT_CONDITION', setup.direction);
           return {
             exitPrice: finalPrice,

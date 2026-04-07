@@ -15,7 +15,7 @@ vi.mock('../../services/btc-dominance-data', () => ({
   })),
 }));
 
-import { IndicatorEngine } from '../../services/setup-detection/dynamic/IndicatorEngine';
+import { IndicatorEngine } from '../../services/indicator-engine/IndicatorEngine';
 import { getBinanceFuturesDataService } from '../../services/binance-futures-data';
 import { getBTCDominanceDataService } from '../../services/btc-dominance-data';
 

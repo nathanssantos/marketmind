@@ -1,0 +1,51 @@
+// @id klinger-oscillator
+// @name Klinger Oscillator
+// @version 1.0.0
+// @description Klinger Volume Oscillator para detectar fluxo de dinheiro long-term. Combina price movement com volume para confirmar tendências.
+// @author MarketMind
+// @tags volume,klinger,money-flow,trend
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param fastPeriod Período EMA rápida
+// @param slowPeriod Período EMA lenta
+// @param signalPeriod Período signal line
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Klinger Oscillator', overlay=true)
+
+fastPeriod = input.int(34, 'fastPeriod', minval=30, maxval=40, step=2)
+slowPeriod = input.int(55, 'slowPeriod', minval=50, maxval=60, step=5)
+signalPeriod = input.int(13, 'signalPeriod', minval=10, maxval=18, step=1)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+klinger_sv = volume * (2 * (close - low) / math.max(high - low, 0.0001) - 1)
+klinger_kvo = ta.ema(klinger_sv, fastPeriod) - ta.ema(klinger_sv, slowPeriod)
+klinger_signal = ta.ema(klinger_kvo, signalPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = ta.crossover(klinger_kvo, klinger_signal)
+shortEntry = ta.crossunder(klinger_kvo, klinger_signal)
+
+confBase = 70
+confBonus0 = klinger_kvo > 0 ? 5 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = ta.crossunder(klinger_kvo, klinger_signal)
+exitShort = ta.crossover(klinger_kvo, klinger_signal)
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

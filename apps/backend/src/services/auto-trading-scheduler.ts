@@ -1,4 +1,5 @@
-import type { ExchangeId, MarketType, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import type { ExchangeId, MarketType, TradingSetup } from '@marketmind/types';
+import type { PineStrategy } from './pine/types';
 import { and, eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -72,7 +73,7 @@ export class AutoTradingScheduler {
           this.orderExecutor.executeSetupSafe(
             watcher as ActiveWatcher,
             setup as TradingSetup,
-            strategies as StrategyDefinition[],
+            strategies as PineStrategy[],
             cycleKlines,
             logBuffer as WatcherLogBuffer
           ),
@@ -80,7 +81,7 @@ export class AutoTradingScheduler {
           this.orderExecutor.validateSetupFilters(
             watcher as ActiveWatcher,
             setup as TradingSetup,
-            strategies as StrategyDefinition[],
+            strategies as PineStrategy[],
             cycleKlines,
             logBuffer as WatcherLogBuffer
           ),

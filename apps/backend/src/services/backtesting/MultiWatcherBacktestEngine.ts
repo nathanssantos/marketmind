@@ -7,7 +7,6 @@ import type {
   Kline,
   MultiWatcherBacktestConfig,
   MultiWatcherBacktestResult,
-  StrategyDefinition,
   TimelineEvent,
   TradingSetup,
   WatcherConfig,
@@ -28,7 +27,7 @@ import { fileURLToPath } from 'url';
 import { BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
-import { StrategyLoader } from '../setup-detection/dynamic';
+import { PineStrategyLoader } from '../pine/PineStrategyLoader';
 import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
 import { calculateBacktestMetrics } from './metrics-calculator';
 import { SharedPortfolioManager, type TradeResult as PortfolioTradeResult, type PortfolioConfig } from './SharedPortfolioManager';
@@ -41,7 +40,7 @@ interface WatcherState {
   klines: Kline[];
   klineIndexMap: Map<number, number>;
   detectedSetups: TradingSetup[];
-  strategies: StrategyDefinition[];
+  strategies: import('../pine/types').PineStrategy[];
   stats: WatcherStats;
   filterManager: FilterManager;
 }
@@ -179,8 +178,8 @@ export class MultiWatcherBacktestEngine {
 
   private async initializeWatchers(): Promise<void> {
     const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
-    const loader = new StrategyLoader([strategiesDir]);
-    const allStrategies = await loader.loadAll({ includeUnprofitable: true });
+    const pineLoader = new PineStrategyLoader([strategiesDir]);
+    const allPineStrategies = await pineLoader.loadAll();
 
     const intervalsNeeded = new Set(this.config.watchers.map((w) => w.interval));
     const marketType = this.config.marketType ?? 'FUTURES';
@@ -260,9 +259,9 @@ export class MultiWatcherBacktestEngine {
       }
 
       const setupTypes = watcherConfig.setupTypes ?? this.config.setupTypes ?? [];
-      const watcherStrategies = allStrategies.filter((s) => setupTypes.includes(s.id));
+      const watcherPineStrategies = allPineStrategies.filter((s) => setupTypes.includes(s.metadata.id));
 
-      const setups = await this.detectSetups(watcherConfig, klines, watcherStrategies);
+      const setups = await this.detectSetups(watcherConfig, klines, watcherPineStrategies);
       console.log(`[MultiWatcherBacktest] Detected ${setups.length} setups for ${watcherId}`);
 
       const klineIndexMap = new Map(klines.map((k, i) => [k.openTime, i]));
@@ -272,7 +271,7 @@ export class MultiWatcherBacktestEngine {
         klines,
         klineIndexMap,
         detectedSetups: setups,
-        strategies: watcherStrategies,
+        strategies: watcherPineStrategies,
         stats: this.initWatcherStats(watcherConfig),
         filterManager: new FilterManager(this.config as unknown as FilterConfig),
       });
@@ -299,9 +298,9 @@ export class MultiWatcherBacktestEngine {
   private async detectSetups(
     _watcherConfig: WatcherConfig,
     klines: Kline[],
-    strategies: StrategyDefinition[]
+    pineStrategies: import('../pine/types').PineStrategy[]
   ): Promise<TradingSetup[]> {
-    if (strategies.length === 0) return [];
+    if (pineStrategies.length === 0) return [];
 
     const setupDetectionService = new SetupDetectionService({
       silent: this.config.silent,
@@ -309,10 +308,9 @@ export class MultiWatcherBacktestEngine {
       maxFibonacciEntryProgressPercentShort: this.config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: this.config.fibonacciSwingRange,
     });
-    const strategyOverrides = this.config.strategyParams || {};
 
-    for (const strategy of strategies) {
-      setupDetectionService.loadStrategy(strategy, strategyOverrides);
+    for (const strategy of pineStrategies) {
+      setupDetectionService.loadPineStrategy(strategy);
     }
 
     const warmupPeriod = BACKTEST_ENGINE.EMA200_WARMUP_BARS;
@@ -352,7 +350,7 @@ export class MultiWatcherBacktestEngine {
   private applyIndicatorFilters(
     klines: Kline[],
     direction: 'LONG' | 'SHORT',
-    strategy: StrategyDefinition | undefined,
+    _strategy: unknown,
     filterManager: FilterManager,
     tradesCount: number,
     context?: {
@@ -394,7 +392,7 @@ export class MultiWatcherBacktestEngine {
     if (!filterManager.checkStochasticHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount)) return { passed: false };
     if (!filterManager.checkStochasticRecoveryHtfFilter(context?.stochasticHtfKlines ?? [], context?.setupTimestamp ?? 0, direction, tradesCount)) return { passed: false };
 
-    const shouldApplyTrend = this.config.useTrendFilter === true || strategy?.filters?.trendFilter?.enabled === true;
+    const shouldApplyTrend = this.config.useTrendFilter === true;
     if (!filterManager.checkTrendFilter(klines, setupIndex, direction, shouldApplyTrend, tradesCount)) return { passed: false };
     if (shouldApplyTrend) filterResults.trendAllowed = true;
 
@@ -426,7 +424,7 @@ export class MultiWatcherBacktestEngine {
     this.checkAndClosePositions(event.timestamp, watcher.klines, event.klineIndex);
 
     const klinesUpToSetup = watcher.klines.slice(0, event.klineIndex + 1);
-    const setupStrategy = watcher.strategies.find((s) => s.id === event.setup.type);
+    const setupStrategy = watcher.strategies.find((s) => s.metadata.id === event.setup.type);
 
     const btcKlines = this.btcKlinesCache.get(event.watcherInterval);
     const htfKlinesKey = `${watcherId}-htf`;

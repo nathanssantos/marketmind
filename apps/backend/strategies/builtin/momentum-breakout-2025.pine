@@ -1,0 +1,59 @@
+// @id momentum-breakout-2025
+// @name Momentum Breakout 2025
+// @version 1.1.0
+// @description Momentum trend strategy. Long: EMA fast > slow, price > trend EMA, RSI > 55. Short: EMA fast < slow, price < trend EMA, RSI < 45.
+// @author MarketMind
+// @tags trend-following,momentum,breakout,bull-market,2025
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param emaFast Fast EMA period
+// @param emaSlow Slow EMA period
+// @param emaTrend Trend EMA period
+// @param rsiPeriod RSI period
+// @param rsiLong RSI threshold for long (momentum confirmation)
+// @param rsiShort RSI threshold for short (bearish momentum)
+// @param atrPeriod ATR period
+// @param atrMultiplierSL ATR multiplier for stop loss
+// @param atrMultiplierTP ATR multiplier for take profit
+
+//@version=5
+indicator('Momentum Breakout 2025', overlay=true)
+
+rsiPeriod = input.int(14, 'rsiPeriod', minval=10, maxval=20, step=2)
+rsiLong = input.int(55, 'rsiLong', minval=50, maxval=65, step=5)
+rsiShort = input.int(45, 'rsiShort', minval=35, maxval=50, step=5)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+atrMultiplierSL = input.float(1.5, 'atrMultiplierSL', minval=1, maxval=2.5, step=0.25)
+atrMultiplierTP = input.float(3, 'atrMultiplierTP', minval=2, maxval=5, step=0.5)
+
+emaFast = ta.ema(close, emaFast)
+emaSlow = ta.ema(close, emaSlow)
+emaTrend = ta.ema(close, emaTrend)
+rsi = ta.rsi(close, rsiPeriod)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (emaFast > emaSlow and close > emaTrend and rsi > rsiLong)
+shortEntry = (emaFast < emaSlow and close < emaTrend and rsi < rsiShort)
+
+confBase = 60
+confBonus0 = rsi > 60 ? 10 : 0
+confBonus1 = volume > (ta.sma(volume, 20) * 1.5) ? 15 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * atrMultiplierTP : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * atrMultiplierTP : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

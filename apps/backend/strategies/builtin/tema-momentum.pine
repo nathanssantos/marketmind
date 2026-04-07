@@ -1,0 +1,47 @@
+// @id tema-momentum
+// @name TEMA Momentum
+// @version 1.0.0
+// @description Triple EMA (TEMA) momentum strategy. TEMA elimina lag melhor que DEMA. Entry quando preço cruza TEMA com slope positivo.
+// @author MarketMind
+// @tags trend-following,tema,momentum,low-lag
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param temaPeriod Período do TEMA
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('TEMA Momentum', overlay=true)
+
+temaPeriod = input.int(20, 'temaPeriod', minval=14, maxval=30, step=2)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+tema_e1 = ta.ema(close, temaPeriod)
+tema_e2 = ta.ema(tema_e1, temaPeriod)
+tema_e3 = ta.ema(tema_e2, temaPeriod)
+tema = 3 * tema_e1 - 3 * tema_e2 + tema_e3
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ta.crossover(close, tema) and tema > tema[1])
+shortEntry = (ta.crossunder(close, tema) and tema < tema[1])
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 85)
+
+exitLong = ta.crossunder(close, tema)
+exitShort = ta.crossover(close, tema)
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

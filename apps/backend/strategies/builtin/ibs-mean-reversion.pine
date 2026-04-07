@@ -1,0 +1,53 @@
+// @id ibs-mean-reversion
+// @name IBS Mean Reversion
+// @version 1.0.0
+// @description Internal Bar Strength (IBS) mean-reversion strategy. IBS = (Close - Low) / (High - Low). Buy when IBS < 0.2 (close near low), sell when IBS > 0.8 (close near high). Research shows 4-6% annual return with 60%+ win rate.
+// @author MarketMind
+// @tags mean-reversion,ibs,short-term,daily
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param ibsOversold IBS oversold threshold
+// @param ibsOverbought IBS overbought threshold
+// @param smaTrend Trend filter SMA period
+// @param atrPeriod ATR for stop loss
+// @param slMultiplier Stop loss ATR multiplier
+
+//@version=5
+indicator('IBS Mean Reversion', overlay=true)
+
+ibsOversold = input.float(0.2, 'ibsOversold', minval=0.1, maxval=0.3, step=0.05)
+ibsOverbought = input.float(0.8, 'ibsOverbought', minval=0.7, maxval=0.9, step=0.05)
+smaTrend = input.int(200, 'smaTrend', minval=100, maxval=250, step=50)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(2, 'slMultiplier', minval=1.5, maxval=3, step=0.5)
+
+ibs = (close - low) / (high - low)
+sma200 = ta.sma(close, smaTrend)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ibs < ibsOversold and close > sma200)
+shortEntry = (ibs > ibsOverbought and close < sma200)
+
+confBase = 65
+confBonus0 = ibs < 0.1 ? 15 : 0
+confBonus1 = ibs > 0.9 ? 15 : 0
+confBonus2 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

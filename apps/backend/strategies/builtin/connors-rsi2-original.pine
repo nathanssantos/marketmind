@@ -1,0 +1,57 @@
+// @id connors-rsi2-original
+// @name Connors RSI 2 Original
+// @version 1.0.0
+// @description Larry Connors' RSI 2 mean-reversion strategy from 'Short-Term Trading Strategies That Work' (2008). Long: RSI(2) < 15 + above SMA. Short: RSI(2) > 85 + below SMA.
+// @author MarketMind
+// @tags mean-reversion,connors,rsi2,classic,proven
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param rsiPeriod RSI period (2 is original)
+// @param rsiEntryLong RSI entry threshold for long (oversold)
+// @param rsiEntryShort RSI entry threshold for short (overbought)
+// @param smaTrend Trend filter SMA period (200 for stocks, 50 for crypto)
+// @param smaExit Exit SMA period
+// @param atrPeriod ATR for position sizing
+// @param slMultiplier Stop loss ATR (Connors uses none, but we add for safety)
+
+//@version=5
+indicator('Connors RSI 2 Original', overlay=true)
+
+rsiPeriod = input.int(2, 'rsiPeriod', minval=2, maxval=3, step=1)
+rsiEntryLong = input.int(15, 'rsiEntryLong', minval=5, maxval=25, step=1)
+rsiEntryShort = input.int(85, 'rsiEntryShort', minval=75, maxval=95, step=1)
+smaTrend = input.int(50, 'smaTrend', minval=20, maxval=200, step=10)
+smaExit = input.int(5, 'smaExit', minval=3, maxval=10, step=1)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(3, 'slMultiplier', minval=2, maxval=5, step=0.5)
+
+rsi2 = ta.rsi(close, rsiPeriod)
+sma200 = ta.sma(close, smaTrend)
+sma5 = ta.sma(close, smaExit)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (rsi2 < rsiEntryLong and close > sma200)
+shortEntry = (rsi2 > rsiEntryShort and close < sma200)
+
+confBase = 75
+confBonus0 = rsi2 < 2 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 95)
+
+exitLong = close > sma5
+exitShort = close < sma5
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

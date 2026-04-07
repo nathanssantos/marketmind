@@ -1,0 +1,61 @@
+// @id qullamaggie-ep
+// @name Qullamaggie Episodic Pivot
+// @version 1.0.0
+// @description Kristjan Kullamägi's Episodic Pivot (EP) setup. Detects gap ups of 5%+ with extreme volume on catalysts (earnings, news). Entry above opening range highs. One of his 3 'timeless' setups.
+// @author Kristjan Kullamägi / MarketMind
+// @tags qullamaggie,episodic-pivot,gap,momentum,catalyst
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param minGapPercent Minimum gap up % (5% for crypto, 10% for stocks)
+// @param volumeMultiplier Minimum volume as multiplier of 20-period average
+// @param atrPeriod ATR period for stop/target calculation
+// @param ema10Period Fast EMA for trailing stop
+// @param ema20Period Slow EMA for trailing stop
+// @param priorMoveCheck Bars to check that stock hasn't rallied substantially
+// @param maxPriorGain Max % gain in prior period (to ensure fresh catalyst)
+
+//@version=5
+indicator('Qullamaggie Episodic Pivot', overlay=true)
+
+minGapPercent = input.int(5, 'minGapPercent', minval=3, maxval=15, step=1)
+volumeMultiplier = input.float(2, 'volumeMultiplier', minval=1.5, maxval=4, step=0.5)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+ema10Period = input.int(10, 'ema10Period', minval=8, maxval=12, step=1)
+ema20Period = input.int(20, 'ema20Period', minval=18, maxval=22, step=1)
+priorMoveCheck = input.int(60, 'priorMoveCheck', minval=30, maxval=90, step=10)
+maxPriorGain = input.int(30, 'maxPriorGain', minval=20, maxval=50, step=5)
+
+ema10 = ta.ema(close, ema10Period)
+ema20 = ta.ema(close, ema20Period)
+ema200 = ta.ema(close, 200)
+atr = ta.atr(atrPeriod)
+highestHigh60 = ta.highest(high, priorMoveCheck)
+lowestLow60 = ta.lowest(low, priorMoveCheck)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (((open - close.prev) / close.prev * 100) >= minGapPercent and volume > (ta.sma(volume, 20) * volumeMultiplier) and close > open and close > high[1] and ((highestHigh60.prev - lowestLow60.prev) / lowestLow60.prev * 100) <= maxPriorGain)
+shortEntry = (((close.prev - open) / close.prev * 100) >= minGapPercent and volume > (ta.sma(volume, 20) * volumeMultiplier) and close < open and close < low[1] and ((highestHigh60.prev - lowestLow60.prev) / highestHigh60.prev * 100) <= maxPriorGain)
+
+confBase = 55
+confBonus0 = ((open - close.prev) / close.prev * 100) >= 10 ? 15 : 0
+confBonus1 = volume > (ta.sma(volume, 20) * 3) ? 15 : 0
+confBonus2 = close > ema200 ? 10 : 0
+confBonus3 = ((close - open) / open * 100) >= 3 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2 + confBonus3, 100)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.3 : shortEntry ? close + atrVal * 0.3 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.3)) * 3 : shortEntry ? close - math.abs((close + atrVal * 0.3) - close) * 3 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

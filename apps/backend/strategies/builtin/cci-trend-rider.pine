@@ -1,0 +1,55 @@
+// @id cci-trend-rider
+// @name CCI Trend Rider
+// @version 1.0.0
+// @description Trend riding strategy using Commodity Channel Index. Entry when CCI crosses above +100 (strong uptrend) or below -100 (strong downtrend). Exit when CCI returns to zero zone.
+// @author MarketMind
+// @tags trend-following,cci,momentum,trend-rider
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param cciPeriod CCI period
+// @param strongTrendUp Strong uptrend threshold
+// @param strongTrendDown Strong downtrend threshold
+// @param exitZone Exit zone threshold
+// @param atrMultiplier ATR multiplier for stop
+// @param rrMultiplier Risk-reward multiplier
+
+//@version=5
+indicator('CCI Trend Rider', overlay=true)
+
+cciPeriod = input.int(20, 'cciPeriod', minval=14, maxval=30, step=2)
+strongTrendUp = input.int(100, 'strongTrendUp', minval=80, maxval=150, step=10)
+strongTrendDown = input.int(-100, 'strongTrendDown', minval=-150, maxval=-80, step=10)
+exitZone = input.int(50, 'exitZone', minval=0, maxval=75, step=25)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2.5, step=0.25)
+rrMultiplier = input.float(2, 'rrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+cci = ta.cci(cciPeriod)
+ema50 = ta.ema(close, 50)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (cci[1] < strongTrendUp and cci >= strongTrendUp and close > ema50)
+shortEntry = (cci[1] > strongTrendDown and cci <= strongTrendDown and close < ema50)
+
+confBase = 65
+confBonus0 = cci > 150 ? 10 : 0
+confBonus1 = cci < -150 ? 10 : 0
+confBonus2 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * rrMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * rrMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

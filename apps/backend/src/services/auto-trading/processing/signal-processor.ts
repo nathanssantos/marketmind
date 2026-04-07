@@ -15,7 +15,7 @@ import {
   wallets,
 } from '../../../db/schema';
 import { prefetchKlines, prefetchKlinesAsync } from '../../kline-prefetch';
-import { StrategyLoader } from '../../setup-detection/dynamic';
+import { PineStrategyLoader } from '../../pine/PineStrategyLoader';
 import {
   createBatchResult,
   outputBatchResults,
@@ -24,7 +24,6 @@ import {
 } from '../../watcher-batch-logger';
 import { calculateRequiredKlines } from '../../../utils/kline-calculator';
 import { serializeError } from '../../../utils/errors';
-import { isDirectionAllowed } from '../../../utils/trading-validation';
 import type { AutoTradingConfig } from '../../../db/schema';
 import { applyProfileOverrides } from '../../profile-applicator';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
@@ -55,14 +54,14 @@ export class SignalProcessor {
   private pendingResults: WatcherResult[] = [];
   private pendingCycleId: number | null = null;
   private pendingCycleStartTime: Date | null = null;
-  private strategyLoader: StrategyLoader;
+  private strategyLoader: PineStrategyLoader;
   private walletEconomyMode: Map<string, boolean> = new Map();
 
   constructor(
     private deps: SignalProcessorDeps,
     config: SignalProcessorConfig
   ) {
-    this.strategyLoader = new StrategyLoader([config.strategiesDir]);
+    this.strategyLoader = new PineStrategyLoader([config.strategiesDir]);
   }
 
   queueWatcherProcessing(watcherId: string): void {
@@ -250,13 +249,10 @@ export class SignalProcessor {
 
     const directionMode = effectiveConfig?.directionMode ?? 'auto';
 
-    const strategies = await this.strategyLoader.loadAllCached({ includeUnprofitable: false });
-    const filteredStrategies = strategies.filter((s) => {
-      if (!watcher.enabledStrategies.includes(s.id)) return false;
-      if (!isDirectionAllowed(directionMode, 'SHORT') && !s.entry.long) return false;
-      if (!isDirectionAllowed(directionMode, 'LONG') && !s.entry.short) return false;
-      return true;
-    });
+    const strategies = await this.strategyLoader.loadAllCached();
+    const filteredStrategies = strategies.filter((s) =>
+      watcher.enabledStrategies.includes(s.metadata.id)
+    );
 
     const klinesAndCandle = await this.loadKlinesData(watcher, watcherId, logBuffer);
     if (!klinesAndCandle) return logBuffer.toResult('pending', 'Kline backfill in progress');
@@ -281,7 +277,7 @@ export class SignalProcessor {
       klines: closedKlines.length,
     });
 
-    const detectedSetups = runSetupDetection(
+    const detectedSetups = await runSetupDetection(
       closedKlines, filteredStrategies, effectiveConfig, directionMode, watcher, logBuffer
     );
 

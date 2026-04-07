@@ -1,0 +1,51 @@
+// @id swing-weekly
+// @name Swing Weekly
+// @version 1.0.0
+// @description Estratégia swing trading semanal. EMA 20 + RSI para posições de médio prazo. Menos trades, maiores movimentos.
+// @author MarketMind
+// @tags swing,weekly,position,long-term
+// @strategyType ANY
+// @momentumType ANY
+// @param emaPeriod EMA período
+// @param rsiPeriod RSI período
+// @param oversold Oversold
+// @param overbought Overbought
+// @param atrMultiplier ATR stop
+
+//@version=5
+indicator('Swing Weekly', overlay=true)
+
+emaPeriod = input.int(20, 'emaPeriod', minval=15, maxval=30, step=5)
+rsiPeriod = input.int(14, 'rsiPeriod', minval=10, maxval=21, step=1)
+oversold = input.int(40, 'oversold', minval=30, maxval=45, step=5)
+overbought = input.int(60, 'overbought', minval=55, maxval=70, step=5)
+atrMultiplier = input.float(3, 'atrMultiplier', minval=2, maxval=4, step=0.5)
+
+ema = ta.ema(close, emaPeriod)
+rsi = ta.rsi(close, rsiPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > ema and ta.crossover(rsi, oversold))
+shortEntry = (close < ema and ta.crossunder(rsi, overbought))
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = ta.crossunder(close, ema)
+exitShort = ta.crossover(close, ema)
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 3 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 3 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,0 +1,46 @@
+// @id dca-grid-hybrid
+// @name DCA Grid Hybrid
+// @version 1.0.0
+// @description Estratégia híbrida DCA com grid. Compras programadas em níveis de preço com gestão de posição por grids. Ideal para acumulação.
+// @author MarketMind
+// @tags dca,grid,accumulation,position-building
+// @strategyType ANY
+// @momentumType ANY
+// @param gridLevels Número de níveis do grid
+// @param gridSpacing Espaçamento entre níveis (%)
+// @param takeProfitPercent Take profit por nível (%)
+
+//@version=5
+indicator('DCA Grid Hybrid', overlay=true)
+
+gridLevels = input.int(5, 'gridLevels', minval=3, maxval=10, step=1)
+gridSpacing = input.float(3, 'gridSpacing', minval=1, maxval=5, step=0.5)
+takeProfitPercent = input.int(5, 'takeProfitPercent', minval=2, maxval=10, step=1)
+
+ema50 = ta.ema(close, 50)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = close < (ema50 * (1 - gridSpacing / 100))
+shortEntry = close > (ema50 * (1 + gridSpacing / 100))
+
+confBase = 65
+confBonus0 = close < (ema50 * 0.9) ? 15 : 0
+confValue = math.min(confBase + confBonus0, 85)
+
+exitLong = close > ema50
+exitShort = close < ema50
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 2 : shortEntry ? close + atrVal * 2 : na
+tp = longEntry ? close * (1 + 4 / 100) : shortEntry ? close * (1 - 4 / 100) : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

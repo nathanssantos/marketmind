@@ -154,10 +154,10 @@ describe('buildFilterConfig', () => {
   it('should use volume filter config defaults', () => {
     const config = {} as never;
     const result = buildFilterConfig(config, 'auto');
-    expect(result.volumeFilterConfig.longConfig.useObvCheck).toBe(false);
-    expect(result.volumeFilterConfig.longConfig.obvLookback).toBe(7);
-    expect(result.volumeFilterConfig.shortConfig.useObvCheck).toBe(true);
-    expect(result.volumeFilterConfig.shortConfig.obvLookback).toBe(5);
+    expect(result.volumeFilterConfig!.longConfig!.useObvCheck).toBe(false);
+    expect(result.volumeFilterConfig!.longConfig!.obvLookback).toBe(7);
+    expect(result.volumeFilterConfig!.shortConfig!.useObvCheck).toBe(true);
+    expect(result.volumeFilterConfig!.shortConfig!.obvLookback).toBe(5);
   });
 
   it('should use config values for volume filter when provided', () => {
@@ -168,10 +168,10 @@ describe('buildFilterConfig', () => {
       volumeFilterObvLookbackShort: 3,
     } as never;
     const result = buildFilterConfig(config, 'auto');
-    expect(result.volumeFilterConfig.longConfig.useObvCheck).toBe(true);
-    expect(result.volumeFilterConfig.longConfig.obvLookback).toBe(14);
-    expect(result.volumeFilterConfig.shortConfig.useObvCheck).toBe(false);
-    expect(result.volumeFilterConfig.shortConfig.obvLookback).toBe(3);
+    expect(result.volumeFilterConfig!.longConfig!.useObvCheck).toBe(true);
+    expect(result.volumeFilterConfig!.longConfig!.obvLookback).toBe(14);
+    expect(result.volumeFilterConfig!.shortConfig!.useObvCheck).toBe(false);
+    expect(result.volumeFilterConfig!.shortConfig!.obvLookback).toBe(3);
   });
 });
 
@@ -191,7 +191,7 @@ describe('validateRiskReward', () => {
   });
 
   it('should pass for valid LONG risk/reward ratio', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
@@ -199,12 +199,12 @@ describe('validateRiskReward', () => {
       takeProfit: 110,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 110, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 110, 'default', null, logBuffer);
     expect(result.valid).toBe(true);
   });
 
   it('should pass for valid SHORT risk/reward ratio', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'SHORT',
       entryPrice: 100,
@@ -212,12 +212,12 @@ describe('validateRiskReward', () => {
       takeProfit: 90,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 90, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 90, 'default', null, logBuffer);
     expect(result.valid).toBe(true);
   });
 
   it('should reject when LONG R:R ratio is below minimum', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
@@ -225,12 +225,12 @@ describe('validateRiskReward', () => {
       takeProfit: 102,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 102, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 102, 'default', null, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should reject when SHORT R:R ratio is below minimum', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'SHORT',
       entryPrice: 100,
@@ -238,12 +238,12 @@ describe('validateRiskReward', () => {
       takeProfit: 99,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 99, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 99, 'default', null, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should reject when risk is zero (LONG SL >= entry)', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
@@ -251,12 +251,12 @@ describe('validateRiskReward', () => {
       takeProfit: 110,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 110, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 110, 'default', null, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should reject when risk is zero (SHORT SL <= entry)', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'SHORT',
       entryPrice: 100,
@@ -264,36 +264,36 @@ describe('validateRiskReward', () => {
       takeProfit: 90,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 90, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 90, 'default', null, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should reject when no stop loss', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
       takeProfit: 110,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 110, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 110, 'default', null, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should pass when no take profit (skips R:R)', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
       stopLoss: 95,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, undefined, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, undefined, 'default', null, logBuffer);
     expect(result.valid).toBe(true);
   });
 
   it('should use config min R:R when provided', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
@@ -305,12 +305,12 @@ describe('validateRiskReward', () => {
       minRiskRewardRatioLong: '2.0',
       minRiskRewardRatioShort: '1.5',
     } as never;
-    const result = validateRiskReward(setup, 108, 'default', config, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 108, 'default', config, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should use SHORT min R:R for SHORT direction', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'SHORT',
       entryPrice: 100,
@@ -322,12 +322,12 @@ describe('validateRiskReward', () => {
       minRiskRewardRatioLong: '1.0',
       minRiskRewardRatioShort: '2.0',
     } as never;
-    const result = validateRiskReward(setup, 92, 'default', config, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 92, 'default', config, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should indicate fibonacci TP mode in rejection', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
@@ -335,12 +335,12 @@ describe('validateRiskReward', () => {
       takeProfit: 105,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 102, 'fibonacci', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 102, 'fibonacci', null, logBuffer);
     expect(result.valid).toBe(false);
   });
 
   it('should pass when R:R exactly equals minimum', () => {
-    const setup: TradingSetup = {
+    const setup = {
       type: 'test-setup',
       direction: 'LONG',
       entryPrice: 100,
@@ -348,7 +348,7 @@ describe('validateRiskReward', () => {
       takeProfit: 105,
       confidence: 80,
     };
-    const result = validateRiskReward(setup, 105, 'default', null, logBuffer);
+    const result = validateRiskReward(setup as TradingSetup, 105, 'default', null, logBuffer);
     expect(result.valid).toBe(true);
   });
 });

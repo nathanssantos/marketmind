@@ -1,0 +1,53 @@
+// @id larry-williams-9-3
+// @name Larry Williams 9.3 (Double Pullback)
+// @version 1.0.0
+// @description Larry Williams Setup 9.3 - Double close confirmation. Entry when TWO consecutive klines close below the reference kline (LONG) or above (SHORT) during EMA9 uptrend/downtrend. More conservative than 9.2.
+// @author Larry Williams / MarketMind
+// @tags larry-williams,ema,pullback,double-confirmation
+// @strategyType TREND_FOLLOWING
+// @momentumType PULLBACK
+// @param emaPeriod EMA period (Larry Williams uses 9)
+// @param atrPeriod ATR period for stop/target
+// @param atrStopMultiplier ATR multiplier for stop loss
+// @param atrTargetMultiplier ATR multiplier for take profit
+// @param volumeMultiplier Minimum volume as multiplier of average
+
+//@version=5
+indicator('Larry Williams 9.3 (Double Pullback)', overlay=true)
+
+emaPeriod = input.int(9, 'emaPeriod', minval=5, maxval=15, step=1)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+atrStopMultiplier = input.float(1.5, 'atrStopMultiplier', minval=1, maxval=3, step=0.25)
+atrTargetMultiplier = input.float(2.5, 'atrTargetMultiplier', minval=1.5, maxval=4, step=0.5)
+volumeMultiplier = input.float(1, 'volumeMultiplier', minval=0.5, maxval=2, step=0.25)
+
+ema9 = ta.ema(close, emaPeriod)
+atr = ta.atr(atrPeriod)
+ema200 = ta.ema(close, 200)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ema9 > ema9[1] and close[1] < close[3] and close[2] < close[3] and volume > ta.sma(volume, 20))
+shortEntry = (ema9 < ema9[1] and close[1] > close[3] and close[2] > close[3] and volume > ta.sma(volume, 20))
+
+confBase = 60
+confBonus0 = volume > ta.sma(volume, 20) ? 20 : 0
+confBonus1 = close > ema200 ? 10 : 0
+confBonus2 = close < ema200 ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 100)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * atrTargetMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * atrTargetMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,0 +1,51 @@
+// @id macd-divergence
+// @name MACD Signal Line Crossover
+// @version 1.0.0
+// @description Long quando linha MACD cruza acima da linha de sinal. Short no cruzamento inverso. Estratégia clássica de momentum.
+// @author Gerald Appel
+// @tags momentum,macd,crossover,trend
+// @strategyType TREND_FOLLOWING
+// @momentumType REVERSAL
+// @param fastPeriod Período da EMA rápida do MACD
+// @param slowPeriod Período da EMA lenta do MACD
+// @param signalPeriod Período da linha de sinal
+// @param atrMultiplier Multiplicador do ATR para stop loss
+
+//@version=5
+indicator('MACD Signal Line Crossover', overlay=true)
+
+fastPeriod = input.int(12, 'fastPeriod', minval=8, maxval=16, step=1)
+slowPeriod = input.int(26, 'slowPeriod', minval=20, maxval=32, step=1)
+signalPeriod = input.int(9, 'signalPeriod', minval=5, maxval=12, step=1)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=3, step=0.25)
+
+[macd_line, macd_signal, macd_histogram] = ta.macd(close, fastPeriod, slowPeriod, signalPeriod)
+atr = ta.atr(14)
+ema50 = ta.ema(close, 50)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ta.crossover(macd_line, macd_signal) and macd_histogram > 0)
+shortEntry = (ta.crossunder(macd_line, macd_signal) and macd_histogram < 0)
+
+confBase = 60
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = close > ema50 ? 10 : 0
+confBonus2 = close < ema50 ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

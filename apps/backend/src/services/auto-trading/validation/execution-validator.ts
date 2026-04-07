@@ -1,4 +1,5 @@
-import type { Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import type { Kline, TradingSetup } from '@marketmind/types';
+import type { PineStrategy } from '../../pine/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { BACKTEST_DEFAULTS } from '../../../constants';
 import { db } from '../../../db';
@@ -173,7 +174,7 @@ export const validateSetupFilters = async (
   filterValidator: FilterValidator,
   watcher: ActiveWatcher,
   setup: TradingSetup,
-  strategies: StrategyDefinition[],
+  strategies: PineStrategy[],
   cycleKlines: Kline[],
   logBuffer: WatcherLogBuffer
 ): Promise<boolean> => {
@@ -257,7 +258,7 @@ export const validateExecutionChecks = async (
   setup: TradingSetup,
   config: typeof autoTradingConfig.$inferSelect,
   cycleKlines: Kline[],
-  strategies: StrategyDefinition[],
+  strategies: PineStrategy[],
   filterValidator: FilterValidator,
   getWatcherStatus: (walletId: string) => { active: boolean; watchers: number },
   walletBalance: number,

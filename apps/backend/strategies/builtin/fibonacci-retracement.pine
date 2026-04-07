@@ -1,0 +1,48 @@
+// @id fibonacci-retracement
+// @name Fibonacci Retracement
+// @version 1.0.0
+// @description Entry em níveis Fibonacci de retracement (38.2%, 50%, 61.8%). Espera pullback em tendência para níveis clássicos de Fibonacci.
+// @author MarketMind
+// @tags fibonacci,retracement,support-resistance,pullback
+// @strategyType ANY
+// @momentumType PULLBACK
+// @param lookbackPeriod Período lookback para swing high/low
+// @param fibLevel Nível Fibonacci target
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Fibonacci Retracement', overlay=true)
+
+lookbackPeriod = input.int(50, 'lookbackPeriod', minval=30, maxval=100, step=10)
+fibLevel = input.float(0.618, 'fibLevel', minval=0.382, maxval=0.786, step=0.118)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+fib_level618 = 0.618
+fib_level382 = 0.382
+ema50 = ta.ema(close, 50)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > ema50 and low <= fib_level618 and close > fib_level618)
+shortEntry = (close < ema50 and high >= fib_level618 and close < fib_level618)
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

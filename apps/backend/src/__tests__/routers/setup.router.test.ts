@@ -135,7 +135,6 @@ describe('Setup Router', () => {
       const config = await caller.setup.getConfig();
 
       expect(config).toBeDefined();
-      expect(typeof config.enableTrendFilter).toBe('boolean');
       expect(typeof config.minConfidence).toBe('number');
       expect(typeof config.minRiskReward).toBe('number');
     });

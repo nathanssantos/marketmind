@@ -4,7 +4,7 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { BATCH_BACKTEST_TIMEFRAMES, TRADING_DEFAULTS } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
-import { StrategyLoader } from '../../services/setup-detection/dynamic';
+import { PineStrategyLoader } from '../../services/pine/PineStrategyLoader';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -266,11 +266,11 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   const parallelWorkers = parseInt(options.parallel, 10);
 
   const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
-  const strategyLoader = new StrategyLoader([strategiesDir]);
-  const allStrategies = await strategyLoader.loadAll({ includeUnprofitable: true });
+  const strategyLoader = new PineStrategyLoader([strategiesDir]);
+  const allStrategies = await strategyLoader.loadAll();
   const strategyIds = options.includeDisabled
-    ? allStrategies.map((s) => s.id)
-    : allStrategies.filter((s) => s.enabled).map((s) => s.id);
+    ? allStrategies.map((s) => s.metadata.id)
+    : allStrategies.filter((s) => s.metadata.enabled).map((s) => s.metadata.id);
 
   const strategies = options.strategies
     ? options.strategies.split(',').map((s) => s.trim())
@@ -307,7 +307,7 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   console.log(`  Confluence: ${options.useConfluenceScoring ? chalk.green('ON') : chalk.gray('OFF')}`);
   console.log(`  Momentum Timing: ${options.useMomentumTimingFilter ? chalk.green('ON') : chalk.gray('OFF')}`);
   console.log('');
-  const availableStrategies = new Set(allStrategies.map((s) => s.id));
+  const availableStrategies = new Set(allStrategies.map((s) => s.metadata.id));
 
   const missingStrategies = strategies.filter((s) => !availableStrategies.has(s));
   if (missingStrategies.length > 0) {

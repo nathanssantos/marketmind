@@ -24,7 +24,7 @@ const {
   const mockPrefetchKlines = vi.fn().mockResolvedValue({ success: true, downloaded: 0, totalInDb: 100, gaps: 0, alreadyComplete: false });
   const mockPrefetchKlinesAsync = vi.fn();
   const mockMeetsKlineRequirement = vi.fn(() => true);
-  const mockDetectSetups = vi.fn().mockReturnValue([]);
+  const mockDetectSetups = vi.fn().mockResolvedValue([]);
   const mockLoadAll = vi.fn().mockResolvedValue([]);
   const mockToResult: ReturnType<typeof vi.fn> = vi.fn(
     (status: string, reason?: string, klinesCount?: number) => ({
@@ -121,13 +121,13 @@ vi.mock('../../kline-prefetch', () => ({
   meetsKlineRequirementWithTolerance: mockMeetsKlineRequirement,
 }));
 
-vi.mock('../../setup-detection/dynamic', () => {
-  class MockStrategyLoader {
+vi.mock('../../pine/PineStrategyLoader', () => {
+  class MockPineStrategyLoader {
     loadAll = mockLoadAll;
     loadAllCached = mockLoadAll;
   }
   return {
-    StrategyLoader: MockStrategyLoader,
+    PineStrategyLoader: MockPineStrategyLoader,
   };
 });
 
@@ -910,8 +910,8 @@ describe('SignalProcessor', () => {
 
     it('should return success with no setups when none detected', async () => {
       setupForDetection();
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -939,10 +939,10 @@ describe('SignalProcessor', () => {
       watcher.enabledStrategies = ['strategy-1'];
 
       mockLoadAll.mockResolvedValueOnce([
-        { id: 'strategy-1', name: 'Enabled Strategy' },
-        { id: 'strategy-2', name: 'Disabled Strategy' },
+        { metadata: { id: 'strategy-1', name: 'Enabled Strategy', enabled: true }, source: '', filePath: '' },
+        { metadata: { id: 'strategy-2', name: 'Disabled Strategy', enabled: true }, source: '', filePath: '' },
       ]);
-      mockDetectSetups.mockReturnValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
+      mockDetectSetups.mockResolvedValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -963,15 +963,15 @@ describe('SignalProcessor', () => {
       await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
 
       expect(mockDetectSetups).toHaveBeenCalledWith(expect.objectContaining({
-        strategies: [expect.objectContaining({ id: 'strategy-1' })],
+        strategies: [expect.objectContaining({ metadata: expect.objectContaining({ id: 'strategy-1' }) })],
       }));
     });
 
     it('should detect and execute setups with sufficient confidence', async () => {
       const { lastCandleOpen: _lastCandleOpen } = setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1012,8 +1012,8 @@ describe('SignalProcessor', () => {
     it('should not execute setups with confidence below threshold', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1050,8 +1050,8 @@ describe('SignalProcessor', () => {
     it('should handle rejections with direction details', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1089,8 +1089,8 @@ describe('SignalProcessor', () => {
     it('should handle rejections without direction', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1122,8 +1122,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with dash direction', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1220,11 +1220,11 @@ describe('SignalProcessor', () => {
       mockDbFindMany.mockResolvedValueOnce(klineRows);
 
       mockLoadAll.mockResolvedValueOnce([
-        { id: 'strategy-1', name: 'Strategy A' },
-        { id: 'strategy-2', name: 'Strategy B' },
+        { metadata: { id: 'strategy-1', name: 'Strategy A', enabled: true }, source: '', filePath: '' },
+        { metadata: { id: 'strategy-2', name: 'Strategy B', enabled: true }, source: '', filePath: '' },
       ]);
 
-      mockDetectSetups.mockReturnValueOnce([
+      mockDetectSetups.mockResolvedValueOnce([
         {
           setup: {
             type: 'Strategy A',
@@ -1283,8 +1283,8 @@ describe('SignalProcessor', () => {
     it('should not increment trades when executeSetupSafe returns false', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1326,8 +1326,8 @@ describe('SignalProcessor', () => {
     it('should update lastProcessedTime after processing with setups', async () => {
       const { watcher } = setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1939,8 +1939,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with no details object', async () => {
       setupForRejectionTest();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1971,8 +1971,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with direction LONG and entry price detail', async () => {
       setupForRejectionTest();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 45,
         strategyId: 'strategy-1',
@@ -2009,8 +2009,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with direction SHORT and no extra details', async () => {
       setupForRejectionTest();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 60,
         strategyId: 'strategy-1',
@@ -2043,7 +2043,7 @@ describe('SignalProcessor', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize StrategyLoader with provided strategies directory', () => {
+    it('should initialize PineStrategyLoader with provided strategies directory', () => {
       const config = { strategiesDir: '/custom/strategies/dir' };
       const newProcessor = new SignalProcessor(deps, config);
       expect((newProcessor as any).strategyLoader).toBeDefined();

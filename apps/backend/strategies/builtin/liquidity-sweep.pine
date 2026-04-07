@@ -1,0 +1,52 @@
+// @id liquidity-sweep
+// @name Liquidity Sweep
+// @version 1.0.0
+// @description Detects sweeps of liquidity (stop hunts) where price briefly breaks support/resistance to trigger stops, then reverses sharply. Smart money concept strategy.
+// @author MarketMind
+// @tags smart-money,liquidity,stop-hunt,reversal
+// @strategyType ANY
+// @momentumType REVERSAL
+// @param sweepLookback Lookback for support/resistance levels
+// @param minSweepDistance Min sweep distance % below/above level
+// @param maxSweepDistance Max sweep distance %
+// @param reversalThreshold Min reversal size % to confirm
+// @param atrPeriod ATR period for stop/target
+// @param targetMultiplier Risk:Reward target
+
+//@version=5
+indicator('Liquidity Sweep', overlay=true)
+
+sweepLookback = input.int(20, 'sweepLookback', minval=10, maxval=50, step=5)
+minSweepDistance = input.float(0.2, 'minSweepDistance', minval=0.1, maxval=0.5, step=0.1)
+maxSweepDistance = input.float(1, 'maxSweepDistance', minval=0.5, maxval=2, step=0.25)
+reversalThreshold = input.float(0.3, 'reversalThreshold', minval=0.2, maxval=0.5, step=0.1)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+targetMultiplier = input.float(2, 'targetMultiplier', minval=1.5, maxval=3, step=0.5)
+
+atr = ta.atr(atrPeriod)
+ema50 = ta.ema(close, 50)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (low[1] < low[20] and close > close[1] and close > low[20] and volume > ta.sma(volume, 20))
+shortEntry = (high[1] > high[20] and close < close[1] and close < high[20] and volume > ta.sma(volume, 20))
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * targetMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * targetMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

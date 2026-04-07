@@ -1,0 +1,47 @@
+// @id dmi-adx-trend
+// @name DMI ADX Trend
+// @version 1.0.0
+// @description DMI (+DI/-DI) com ADX para trend trading. Entry quando +DI cruza -DI com ADX > 25. Sistema completo de trend direction e strength.
+// @author MarketMind
+// @tags trend-following,dmi,adx,directional-movement
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param dmiPeriod Período do DMI
+// @param adxThreshold ADX mínimo para trend
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('DMI ADX Trend', overlay=true)
+
+dmiPeriod = input.int(14, 'dmiPeriod', minval=10, maxval=20, step=2)
+adxThreshold = input.int(25, 'adxThreshold', minval=20, maxval=30, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+[dmi_plusDI, dmi_minusDI, dmi_adx] = ta.dmi(dmiPeriod, dmiPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ta.crossover(dmi_plusDI, dmi_minusDI) and dmi_adx > adxThreshold)
+shortEntry = (ta.crossover(dmi_minusDI, dmi_plusDI) and dmi_adx > adxThreshold)
+
+confBase = 70
+confBonus0 = dmi_adx > 40 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = dmi_minusDI > dmi_plusDI
+exitShort = dmi_plusDI > dmi_minusDI
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

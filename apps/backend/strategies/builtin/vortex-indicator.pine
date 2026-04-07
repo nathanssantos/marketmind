@@ -1,0 +1,48 @@
+// @id vortex-indicator
+// @name Vortex Indicator
+// @version 1.0.0
+// @description Vortex Indicator (VI+ e VI-) para trend direction. Mede movimento positivo/negativo em relação ao range. Entry quando VI+ cruza VI-.
+// @author MarketMind
+// @tags trend-following,vortex,directional
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param vortexPeriod Período do Vortex
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Vortex Indicator', overlay=true)
+
+vortexPeriod = input.int(14, 'vortexPeriod', minval=10, maxval=21, step=1)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+vortex_vmp = math.abs(high - low[1])
+vortex_vmm = math.abs(low - high[1])
+vortex_tr = ta.atr(1) * vortexPeriod
+vortex_plus = math.sum(vortex_vmp, vortexPeriod) / math.max(vortex_tr, 0.0001)
+vortex_minus = math.sum(vortex_vmm, vortexPeriod) / math.max(vortex_tr, 0.0001)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = ta.crossover(vortex_plus, vortex_minus)
+shortEntry = ta.crossover(vortex_minus, vortex_plus)
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 85)
+
+exitLong = vortex_minus > vortex_plus
+exitShort = vortex_plus > vortex_minus
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

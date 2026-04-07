@@ -1,0 +1,57 @@
+// @id donchian-breakout
+// @name Donchian Channel Breakout
+// @version 1.0.0
+// @description Classic breakout strategy using Donchian Channels. Long when price breaks above upper channel, short when price breaks below lower channel. Filtered by ADX for trending markets.
+// @author MarketMind
+// @tags breakout,donchian,trend-following,adx
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param donchianPeriod Donchian Channel period
+// @param adxPeriod ADX period
+// @param adxThreshold Minimum ADX for trend confirmation
+// @param atrMultiplier ATR multiplier for stop loss
+// @param rrMultiplier Risk-reward multiplier
+
+//@version=5
+indicator('Donchian Channel Breakout', overlay=true)
+
+donchianPeriod = input.int(20, 'donchianPeriod', minval=10, maxval=50, step=5)
+adxPeriod = input.int(14, 'adxPeriod', minval=10, maxval=20, step=2)
+adxThreshold = input.int(20, 'adxThreshold', minval=15, maxval=35, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1, maxval=3, step=0.5)
+rrMultiplier = input.float(2, 'rrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+donchian_upper = ta.highest(high, donchianPeriod)
+donchian_lower = ta.lowest(low, donchianPeriod)
+donchian_middle = (donchian_upper + donchian_lower) / 2
+[_adx_plus, _adx_minus, adx_adx] = ta.dmi(adxPeriod, adxPeriod)
+adx_plusDI = _adx_plus
+adx_minusDI = _adx_minus
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (high > donchian_upper[1] and close > donchian_middle and adx_adx > adxThreshold)
+shortEntry = (low < donchian_lower[1] and close < donchian_middle and adx_adx > adxThreshold)
+
+confBase = 60
+confBonus0 = adx_adx > 30 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus2 = adx_plusDI > adx_minusDI ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * rrMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * rrMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

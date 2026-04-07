@@ -1,14 +1,10 @@
 import type {
   Kline,
-  StrategyDefinition,
   TimeInterval,
   TradingSetup,
-  TriggerCandleSnapshot,
-  TriggerIndicatorValues,
 } from '@marketmind/types';
-import { StrategyInterpreter } from '../setup-detection/dynamic/StrategyInterpreter';
-import type { SetupRejection } from '../setup-detection/BaseSetupDetector';
-import { IndicatorEngine } from './IndicatorEngine';
+import { PineStrategyRunner } from '../pine/PineStrategyRunner';
+import type { PineStrategy, PineRunOptions } from '../pine/types';
 
 export interface DetectSetupsConfig {
   minConfidence: number;
@@ -26,51 +22,51 @@ export interface DetectSetupsResult {
   setup: TradingSetup | null;
   confidence: number;
   strategyId: string;
-  rejection?: SetupRejection;
+  rejection?: { reason: string; details?: Record<string, string | number | boolean | null> };
   triggerKlineIndex?: number;
-  triggerCandleData?: TriggerCandleSnapshot[];
-  triggerIndicatorValues?: TriggerIndicatorValues;
 }
 
-export const detectSetups = (input: {
+export const detectSetups = async (input: {
   klines: Kline[];
-  strategies: StrategyDefinition[];
+  strategies: PineStrategy[];
   currentIndex?: number;
   config: DetectSetupsConfig;
-  indicatorEngine?: IndicatorEngine;
-}): DetectSetupsResult[] => {
+}): Promise<DetectSetupsResult[]> => {
   const { klines, strategies, config } = input;
   const currentIndex = input.currentIndex ?? klines.length - 1;
   const results: DetectSetupsResult[] = [];
-  const sharedEngine = input.indicatorEngine ?? new IndicatorEngine();
+  const runner = new PineStrategyRunner();
+
+  const pineOptions: PineRunOptions = {
+    minConfidence: config.minConfidence,
+    minRiskReward: config.minRiskReward,
+  };
 
   for (const strategy of strategies) {
-    const interpreter = new StrategyInterpreter({
-      enabled: true,
-      minConfidence: config.minConfidence,
-      minRiskReward: config.minRiskReward,
-      strategy,
-      silent: config.silent ?? true,
-      interval: config.interval,
-      directionMode: config.directionMode,
-      maxFibonacciEntryProgressPercentLong: config.maxFibonacciEntryProgressPercentLong,
-      maxFibonacciEntryProgressPercentShort: config.maxFibonacciEntryProgressPercentShort,
-      fibonacciSwingRange: config.fibonacciSwingRange,
-      initialStopMode: config.initialStopMode,
-      indicatorEngine: sharedEngine,
-    });
+    const detectionResults = await runner.detectSignals(strategy, klines.slice(0, currentIndex + 1), pineOptions);
 
-    const result = interpreter.detect(klines, currentIndex);
+    for (const result of detectionResults) {
+      const idx = result.triggerKlineIndex ?? -1;
+      if (idx !== currentIndex) continue;
 
-    results.push({
-      setup: result.setup,
-      confidence: result.confidence,
-      strategyId: strategy.id,
-      rejection: result.rejection,
-      triggerKlineIndex: result.triggerKlineIndex,
-      triggerCandleData: result.triggerCandleData,
-      triggerIndicatorValues: result.triggerIndicatorValues,
-    });
+      if (config.directionMode === 'long_only' && result.setup?.direction === 'SHORT') continue;
+      if (config.directionMode === 'short_only' && result.setup?.direction === 'LONG') continue;
+
+      results.push({
+        setup: result.setup,
+        confidence: result.confidence,
+        strategyId: strategy.metadata.id,
+        triggerKlineIndex: result.triggerKlineIndex,
+      });
+    }
+
+    if (!detectionResults.some((r) => r.triggerKlineIndex === currentIndex)) {
+      results.push({
+        setup: null,
+        confidence: 0,
+        strategyId: strategy.metadata.id,
+      });
+    }
   }
 
   return results;

@@ -1,0 +1,48 @@
+// @id aroon-trend-crypto
+// @name Aroon Trend Crypto
+// @version 1.0.0
+// @description Aroon indicator para identificar início de novas tendências. Aroon Up/Down medem tempo desde último high/low. Entry quando Aroon cruza.
+// @author MarketMind
+// @tags trend-following,aroon,trend-strength
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param aroonPeriod Período do Aroon
+// @param threshold Threshold para strong trend
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Aroon Trend Crypto', overlay=true)
+
+aroonPeriod = input.int(25, 'aroonPeriod', minval=14, maxval=30, step=5)
+threshold = input.int(70, 'threshold', minval=60, maxval=80, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+aroon_up = 100 * (aroonPeriod - ta.barssince(high == ta.highest(high, aroonPeriod + 1))) / aroonPeriod
+aroon_down = 100 * (aroonPeriod - ta.barssince(low == ta.lowest(low, aroonPeriod + 1))) / aroonPeriod
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ta.crossover(aroon_up, aroon_down) and aroon_up > threshold)
+shortEntry = (ta.crossover(aroon_down, aroon_up) and aroon_down > threshold)
+
+confBase = 70
+confBonus0 = aroon_up > 90 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = aroon_down > aroon_up
+exitShort = aroon_up > aroon_down
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

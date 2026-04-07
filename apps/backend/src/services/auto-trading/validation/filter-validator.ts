@@ -1,4 +1,5 @@
-import type { Kline, StrategyDefinition, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
+import type { Kline, TradingSetup, VolumeFilterConfig } from '@marketmind/types';
+import type { PineStrategy } from '../../pine/types';
 import { calculateConfluenceScore, type FilterResults } from '../../../utils/confluence-scoring';
 import {
   checkBtcCorrelation,
@@ -25,7 +26,7 @@ export class FilterValidator {
     setup: TradingSetup,
     config: FilterValidatorConfig,
     cycleKlines: Kline[],
-    strategies: StrategyDefinition[],
+    strategies: PineStrategy[],
     logBuffer: WatcherLogBuffer
   ): Promise<FilterValidationResult> {
     const filterResults: FilterResults = {};
@@ -437,13 +438,10 @@ export class FilterValidator {
 
   private shouldApplyTrendFilter(
     config: FilterValidatorConfig,
-    setup: TradingSetup,
-    strategies: StrategyDefinition[]
+    _setup: TradingSetup,
+    _strategies: PineStrategy[]
   ): boolean {
-    const setupStrategy = strategies.find(s => s.id === setup.type);
-    const globalTrendFilterEnabled = config.useTrendFilter === true;
-    const strategyTrendFilterEnabled = setupStrategy?.filters?.trendFilter?.enabled === true;
-    return globalTrendFilterEnabled || strategyTrendFilterEnabled;
+    return config.useTrendFilter === true;
   }
 
   private checkTrendFilter(

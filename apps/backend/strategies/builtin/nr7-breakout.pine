@@ -1,0 +1,56 @@
+// @id nr7-breakout
+// @name NR7 Breakout
+// @version 1.0.0
+// @description Tony Crabel's NR7 (Narrow Range 7) breakout strategy. Identifies bars with narrowest range in 7 bars (volatility contraction) then trades the breakout. Research shows 7.8% CAGR with 899 trades since 1993 on SPY.
+// @author Tony Crabel
+// @tags breakout,volatility,nr7,crabel,classic
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param lookback NR lookback period (7 is classic)
+// @param smaTrend Trend filter SMA period
+// @param atrPeriod ATR for stop loss
+// @param slMultiplier Stop loss ATR multiplier (tight for breakout)
+
+//@version=5
+indicator('NR7 Breakout', overlay=true)
+
+lookback = input.int(7, 'lookback', minval=4, maxval=10, step=1)
+smaTrend = input.int(50, 'smaTrend', minval=20, maxval=100, step=10)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(1.5, 'slMultiplier', minval=1, maxval=2.5, step=0.5)
+
+nr7_range = high - low
+nr7_isNR = true
+for i = 1 to lookback - 1
+    if nr7_range >= high[i] - low[i]
+        nr7_isNR := false
+        break
+nr7 = nr7_isNR ? 1 : 0
+sma50 = ta.sma(close, smaTrend)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (nr7 == 1 and close > sma50)
+shortEntry = (nr7 == 1 and close < sma50)
+
+confBase = 65
+confBonus0 = close > sma50 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2.5 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2.5 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

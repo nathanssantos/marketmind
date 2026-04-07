@@ -1,4 +1,5 @@
-import type { FibLevel, Kline, StrategyDefinition, TradingSetup } from '@marketmind/types';
+import type { FibLevel, Kline, TradingSetup } from '@marketmind/types';
+import type { PineStrategy } from '../../pine/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../../../db';
 import {
@@ -42,7 +43,7 @@ export class OrderExecutor {
   async validateSetupFilters(
     watcher: ActiveWatcher,
     setup: TradingSetup,
-    strategies: StrategyDefinition[],
+    strategies: PineStrategy[],
     cycleKlines: Kline[],
     logBuffer: WatcherLogBuffer
   ): Promise<boolean> {
@@ -54,7 +55,7 @@ export class OrderExecutor {
   async executeSetupSafe(
     watcher: ActiveWatcher,
     setup: TradingSetup,
-    strategies: StrategyDefinition[],
+    strategies: PineStrategy[],
     cycleKlines: Kline[],
     logBuffer: WatcherLogBuffer
   ): Promise<boolean> {
@@ -102,7 +103,7 @@ export class OrderExecutor {
   private async executeSetup(
     watcher: ActiveWatcher,
     setup: TradingSetup,
-    strategies: StrategyDefinition[],
+    strategies: PineStrategy[],
     cycleKlines: Kline[],
     logBuffer: WatcherLogBuffer
   ): Promise<void> {
@@ -134,7 +135,7 @@ export class OrderExecutor {
   private async executeSetupInternal(
     watcher: ActiveWatcher,
     setup: TradingSetup,
-    strategies: StrategyDefinition[],
+    strategies: PineStrategy[],
     cycleKlines: Kline[],
     logBuffer: WatcherLogBuffer
   ): Promise<void> {
