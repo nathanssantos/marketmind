@@ -66,15 +66,16 @@ export const useKlinePagination = ({
 
   const initialQuery = trpc.kline.list.useQuery(
     { symbol, interval, marketType, limit: CHART_INITIAL_LOAD },
-    { enabled: enabled && !!symbol && !!interval },
+    { enabled: enabled && !!symbol && !!interval, staleTime: 0 },
   );
 
   useEffect(() => {
+    void utils.kline.list.invalidate({ symbol, interval, marketType });
     setOlderKlines([]);
     setHasMore(true);
     setIsLoadingMore(false);
     loadingRef.current = false;
-  }, [symbol, interval, marketType]);
+  }, [symbol, interval, marketType, utils.kline.list]);
 
   const baseKlines = initialQuery.data
     ? initialQuery.data.map(mapToKline)

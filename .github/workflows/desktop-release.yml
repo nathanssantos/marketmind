@@ -1,0 +1,67 @@
+name: Desktop Release
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter @marketmind/types build
+          pnpm --filter @marketmind/indicators build
+          pnpm --filter @marketmind/fibonacci build
+          pnpm --filter @marketmind/logger build
+          pnpm --filter @marketmind/trading-core build
+          pnpm --filter @marketmind/risk build
+          pnpm --filter @marketmind/utils build
+
+      - name: Build Electron app
+        working-directory: apps/electron
+        run: |
+          pnpm exec tsc -p tsconfig.node.json
+          pnpm exec vite build
+
+      - name: Build macOS installers
+        if: matrix.os == 'macos-latest'
+        working-directory: apps/electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: pnpm exec electron-builder --mac --publish always
+
+      - name: Build Windows installer
+        if: matrix.os == 'windows-latest'
+        working-directory: apps/electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm exec electron-builder --win --publish always
