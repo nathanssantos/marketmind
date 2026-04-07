@@ -25,8 +25,12 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 #### Chart Visualization
 - **Kline Charts**: High-performance Canvas rendering with zoom and pan
 - **25+ Technical Indicators**: RSI, MACD, Bollinger Bands, Stochastic, ADX, and more
+- **Volume Profile**: Price-level volume distribution with POC, Value Area, and buy/sell separation
+- **Liquidity Heatmap**: Real-time order book depth visualization with thermal overlay
+- **Opening Range Breakout**: Built-in ORB indicator with configurable session boundaries
 - **Volume Analysis**: Volume bars synchronized with klines
 - **Moving Averages**: SMA, EMA, WMA, DEMA, TEMA (all periods configurable)
+- **Drawing Tools**: Lines, arrows, Fibonacci, positions, ruler, and more
 - **Grid System**: Dynamic grid with price and time labels
 - **Smart Tooltip**: Hover to see OHLCV data with intelligent positioning
 
@@ -51,6 +55,10 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 - **Monte Carlo Simulation**: Statistical analysis of strategy robustness
 - **Batch Backtesting**: Test multiple strategies across symbols and timeframes
 - **Performance Metrics**: Win rate, profit factor, Sharpe ratio, max drawdown
+
+#### Market Analysis
+- **Screener & Scanners**: Market-wide screening with customizable filters and real-time setup detection
+- **Footprint Chart**: Intra-bar bid/ask volume split visualization
 
 #### User Experience
 - **Dark/Light Themes**: Full theme support with semantic tokens
