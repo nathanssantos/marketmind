@@ -135,17 +135,17 @@ export const useVolumeProfileRenderer = ({
 
     const chartWidth = dims.chartWidth;
     const chartHeight = dims.chartHeight;
-    const priceRange = viewport.priceMax - viewport.priceMin;
-
-    if (priceRange <= 0) return;
 
     const maxVolume = Math.max(...profile.levels.map((l) => l.volume));
     if (maxVolume <= 0) return;
 
-    const pxPerPrice = chartHeight / priceRange;
     const priceLevels = profile.levels.map((l) => l.price).sort((a, b) => a - b);
-    const bucketPriceSize = priceLevels.length > 1 ? (priceLevels[priceLevels.length - 1]! - priceLevels[0]!) / priceLevels.length : priceRange / NUM_BUCKETS;
-    const barHeight = Math.max(1, pxPerPrice * bucketPriceSize * 0.9);
+    const bucketPriceSize = priceLevels.length > 1
+      ? (priceLevels[priceLevels.length - 1]! - priceLevels[0]!) / priceLevels.length
+      : 1;
+    const y1 = manager.priceToY(0);
+    const y2 = manager.priceToY(bucketPriceSize);
+    const barHeight = Math.max(1, Math.abs(y1 - y2) * 0.9);
 
     ctx.save();
     ctx.beginPath();
@@ -153,15 +153,15 @@ export const useVolumeProfileRenderer = ({
     ctx.clip();
 
     if (profile.valueAreaLow > 0 && profile.valueAreaHigh > 0) {
-      const vaTopY = priceToY(profile.valueAreaHigh, viewport.priceMin, viewport.priceMax, chartHeight);
-      const vaBottomY = priceToY(profile.valueAreaLow, viewport.priceMin, viewport.priceMax, chartHeight);
+      const vaTopY = manager.priceToY(profile.valueAreaHigh);
+      const vaBottomY = manager.priceToY(profile.valueAreaLow);
 
       ctx.fillStyle = colors.scalping?.valueAreaFill ?? INDICATOR_COLORS.VALUE_AREA_FILL;
       ctx.fillRect(chartWidth - MAX_BAR_WIDTH, vaTopY, MAX_BAR_WIDTH, vaBottomY - vaTopY);
     }
 
     for (const level of profile.levels) {
-      const y = priceToY(level.price, viewport.priceMin, viewport.priceMax, chartHeight);
+      const y = manager.priceToY(level.price);
       if (y < -barHeight || y > chartHeight + barHeight) continue;
 
       const barWidth = (level.volume / maxVolume) * MAX_BAR_WIDTH;
@@ -198,9 +198,4 @@ export const useVolumeProfileRenderer = ({
   }, [manager, externalProfile, enabled, colors]);
 
   return { render };
-};
-
-const priceToY = (price: number, priceMin: number, priceMax: number, height: number): number => {
-  if (priceMax === priceMin) return height / 2;
-  return height - ((price - priceMin) / (priceMax - priceMin)) * height;
 };
