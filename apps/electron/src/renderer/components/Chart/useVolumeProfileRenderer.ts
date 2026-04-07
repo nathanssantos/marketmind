@@ -134,15 +134,22 @@ export const useVolumeProfileRenderer = ({
     if (!dims) return;
 
     const chartWidth = dims.chartWidth;
-    const chartHeight = viewport.height;
-    const clipHeight = dims.chartHeight ?? chartHeight;
+    const chartHeight = dims.chartHeight;
+    const priceRange = viewport.priceMax - viewport.priceMin;
+
+    if (priceRange <= 0) return;
 
     const maxVolume = Math.max(...profile.levels.map((l) => l.volume));
     if (maxVolume <= 0) return;
 
+    const pxPerPrice = chartHeight / priceRange;
+    const priceLevels = profile.levels.map((l) => l.price).sort((a, b) => a - b);
+    const bucketPriceSize = priceLevels.length > 1 ? (priceLevels[priceLevels.length - 1]! - priceLevels[0]!) / priceLevels.length : priceRange / NUM_BUCKETS;
+    const barHeight = Math.max(1, pxPerPrice * bucketPriceSize * 0.9);
+
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, chartWidth, clipHeight);
+    ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
     if (profile.valueAreaLow > 0 && profile.valueAreaHigh > 0) {
@@ -155,11 +162,10 @@ export const useVolumeProfileRenderer = ({
 
     for (const level of profile.levels) {
       const y = priceToY(level.price, viewport.priceMin, viewport.priceMax, chartHeight);
-      if (y < 0 || y > chartHeight) continue;
+      if (y < -barHeight || y > chartHeight + barHeight) continue;
 
       const barWidth = (level.volume / maxVolume) * MAX_BAR_WIDTH;
       const x = chartWidth - barWidth;
-      const barHeight = Math.max(1, chartHeight / profile.levels.length * 0.8);
 
       const isPOC = level.price === profile.poc;
       const buyRatio = level.volume > 0 ? level.buyVolume / level.volume : 0.5;
