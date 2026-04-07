@@ -252,7 +252,7 @@ interface IndicatorState {
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
-    activeIndicators: ['volume', 'ema-7', 'ema-9', 'ema-21', 'ema-200', 'stochastic', 'rsi', 'dailyVwap'],
+    activeIndicators: ['volume', 'ema-9', 'ema-21', 'ema-200', 'stochastic', 'rsi'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
     hydrate: (data) => {
