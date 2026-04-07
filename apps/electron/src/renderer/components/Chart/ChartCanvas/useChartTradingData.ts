@@ -265,7 +265,7 @@ export const useChartTradingData = ({
 
   const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
   const needsScalpingMetrics = useIndicatorStore((s) =>
-    s.activeIndicators.includes('cvd') || s.activeIndicators.includes('bookImbalance') || s.activeIndicators.includes('volumeProfile')
+    s.activeIndicators.includes('cvd') || s.activeIndicators.includes('bookImbalance')
   );
 
   const { data: scalpingCfg } = trpc.scalping.getConfig.useQuery(
