@@ -31,8 +31,6 @@ type SingleIndicatorType =
 type MultiIndicatorType =
   | 'bb' | 'macd' | 'stoch' | 'kc' | 'supertrend' | 'dmi';
 
-type IndicatorType = SingleIndicatorType | MultiIndicatorType;
-
 const SINGLE_SCRIPTS: Record<SingleIndicatorType, (p: Record<string, number>) => string> = {
   sma: (p) => `ta.sma(close, ${p['period'] ?? 20})`,
   ema: (p) => `ta.ema(close, ${p['period'] ?? 20})`,

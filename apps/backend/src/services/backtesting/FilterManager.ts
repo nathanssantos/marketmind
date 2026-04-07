@@ -1,5 +1,6 @@
-import { calculateEMA, calculateFVG } from '@marketmind/indicators';
+import { calculateFVG } from '@marketmind/indicators';
 import type { Kline } from '@marketmind/types';
+import { PineIndicatorCache } from '../pine/PineIndicatorCache';
 import { isDirectionAllowed } from '../../utils/trading-validation';
 import {
   checkBtcCorrelation,
@@ -122,6 +123,7 @@ export class FilterManager {
   private currentDay = '';
   private dailyLossLimitReached = false;
   private emaTrend: number[] = [];
+  private pineCache: PineIndicatorCache = new PineIndicatorCache();
   private openPositionsBySymbol: Map<string, 'LONG' | 'SHORT'> = new Map();
   private positionsPerStrategy: Map<string, number> = new Map();
 
@@ -187,9 +189,14 @@ export class FilterManager {
   }
 
   async initialize(klines: Kline[], _startDate: string, _endDate: string, _symbol: string): Promise<void> {
+    await this.pineCache.initialize(klines);
     const trendPeriod = this.config.trendFilterPeriod ?? 21;
-    const emaResult = calculateEMA(klines, trendPeriod);
+    const emaResult = await this.pineCache.getOrCompute('ema', { period: trendPeriod });
     this.emaTrend = emaResult.map(v => v ?? 0);
+  }
+
+  getPineCache(): PineIndicatorCache {
+    return this.pineCache;
   }
 
   setEmaTrend(emaTrend: number[]): void {
