@@ -17,22 +17,13 @@ const POC_OPACITY = 0.6;
 const VALUE_AREA_PERCENT = 0.7;
 const NUM_BUCKETS = 100;
 
-const buildProfileFromKlines = (klines: Kline[], startIdx: number, endIdx: number): VolumeProfile | null => {
+const buildProfileFromKlines = (klines: Kline[], startIdx: number, endIdx: number, viewportPriceMin: number, viewportPriceMax: number): VolumeProfile | null => {
   const start = Math.max(0, Math.floor(startIdx));
   const end = Math.min(klines.length, Math.ceil(endIdx) + 1);
   if (end <= start) return null;
 
-  let priceMin = Infinity;
-  let priceMax = -Infinity;
-
-  for (let i = start; i < end; i++) {
-    const k = klines[i]!;
-    const high = parseFloat(k.high);
-    const low = parseFloat(k.low);
-    if (low < priceMin) priceMin = low;
-    if (high > priceMax) priceMax = high;
-  }
-
+  const priceMin = viewportPriceMin;
+  const priceMax = viewportPriceMax;
   const range = priceMax - priceMin;
   if (range <= 0) return null;
 
@@ -122,7 +113,7 @@ export const useVolumeProfileRenderer = ({
     const viewport = manager.getViewport();
 
     const profile = externalProfile ?? (klines && klines.length > 0
-      ? buildProfileFromKlines(klines, viewport.start, viewport.end)
+      ? buildProfileFromKlines(klines, viewport.start, viewport.end, viewport.priceMin, viewport.priceMax)
       : null);
 
     if (!profile || profile.levels.length === 0) return;
@@ -151,14 +142,6 @@ export const useVolumeProfileRenderer = ({
     ctx.beginPath();
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
-
-    if (profile.valueAreaLow > 0 && profile.valueAreaHigh > 0) {
-      const vaTopY = manager.priceToY(profile.valueAreaHigh);
-      const vaBottomY = manager.priceToY(profile.valueAreaLow);
-
-      ctx.fillStyle = colors.scalping?.valueAreaFill ?? INDICATOR_COLORS.VALUE_AREA_FILL;
-      ctx.fillRect(chartWidth - MAX_BAR_WIDTH, vaTopY, MAX_BAR_WIDTH, vaBottomY - vaTopY);
-    }
 
     for (const level of profile.levels) {
       const y = manager.priceToY(level.price);
