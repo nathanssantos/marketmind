@@ -26,7 +26,7 @@ interface PlotResult {
 
 type SingleIndicatorType =
   | 'sma' | 'ema' | 'rsi' | 'atr' | 'hma' | 'wma' | 'cci' | 'mfi'
-  | 'roc' | 'cmo' | 'vwap' | 'obv' | 'wpr' | 'tsi' | 'sar';
+  | 'roc' | 'cmo' | 'vwap' | 'obv' | 'wpr' | 'tsi' | 'sar' | 'highest' | 'lowest';
 
 type MultiIndicatorType =
   | 'bb' | 'macd' | 'stoch' | 'kc' | 'supertrend' | 'dmi';
@@ -50,6 +50,8 @@ const SINGLE_SCRIPTS: Record<SingleIndicatorType, (p: Record<string, number>) =>
   wpr: (p) => `ta.wpr(${p['period'] ?? 14})`,
   tsi: (p) => `ta.tsi(close, ${p['shortPeriod'] ?? 13}, ${p['longPeriod'] ?? 25})`,
   sar: (p) => `ta.sar(${p['start'] ?? 0.02}, ${p['increment'] ?? 0.02}, ${p['max'] ?? 0.2})`,
+  highest: (p) => `ta.highest(high, ${p['period'] ?? 20})`,
+  lowest: (p) => `ta.lowest(low, ${p['period'] ?? 20})`,
 };
 
 const MULTI_SCRIPTS: Record<MultiIndicatorType, (p: Record<string, number>) => { decl: string; plots: string[] }> = {
