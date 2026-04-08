@@ -1,4 +1,4 @@
-import type { ADXResult } from '@marketmind/indicators';
+import type { ADXResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

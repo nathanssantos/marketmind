@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrailingStopOptimizationConfig } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../lib/indicators', () => ({
   calculateATR: vi.fn(() => []),
   calculateSwingPoints: vi.fn(() => ({ swingPoints: [] })),
 }));

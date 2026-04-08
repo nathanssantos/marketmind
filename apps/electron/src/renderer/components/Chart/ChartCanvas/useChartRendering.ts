@@ -6,7 +6,7 @@ import type { UseChartIndicatorsResult } from './useChartIndicators';
 import type { TooltipData, OrderPreview } from './useChartState';
 import { useCallback, useEffect, useRef } from 'react';
 import type { Kline, MarketEvent, Order, MarketType } from '@marketmind/types';
-import type { StochasticResult } from '@marketmind/indicators';
+import type { StochasticResult } from '@marketmind/types';
 
 export type RenderLayerId =
   | 'background'

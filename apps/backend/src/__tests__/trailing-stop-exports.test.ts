@@ -5,7 +5,7 @@ const { mockComputeTrailingStopCore } = vi.hoisted(() => ({
   mockComputeTrailingStopCore: vi.fn(),
 }));
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateATR: vi.fn(() => []),
   calculateSwingPoints: vi.fn(() => ({ swingPoints: [] })),
 }));

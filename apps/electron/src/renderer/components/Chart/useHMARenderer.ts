@@ -1,4 +1,4 @@
-import type { HMAResult } from '@marketmind/indicators';
+import type { HMAResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';

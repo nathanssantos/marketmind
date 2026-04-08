@@ -1,7 +1,7 @@
-import { calculateAutoFibonacci } from '@marketmind/indicators';
+import { calculateAutoFibonacci } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateAutoFibonacci: vi.fn(() => ({ levels: [100, 123.6, 138.2, 150, 161.8] })),
 }));
 

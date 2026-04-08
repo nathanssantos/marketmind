@@ -1,4 +1,4 @@
-import type { OBVResult } from '@marketmind/indicators';
+import type { OBVResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';

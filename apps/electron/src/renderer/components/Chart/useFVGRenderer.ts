@@ -1,4 +1,4 @@
-import type { FVGResult } from '@marketmind/indicators';
+import type { FVGResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';

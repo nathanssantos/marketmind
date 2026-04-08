@@ -1,4 +1,4 @@
-import type { FVGResult } from '@marketmind/indicators';
+import type { FVGResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

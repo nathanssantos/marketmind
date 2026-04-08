@@ -3,7 +3,7 @@ import {
     findLowestSwingLow as findLowestSwingLowFromIndicators,
     findMostRecentSwingHigh as findSwingHighFromIndicators,
     findMostRecentSwingLow as findSwingLowFromIndicators,
-} from '@marketmind/indicators';
+} from '../../lib/indicators';
 import type { Kline, PivotPoint } from '@marketmind/types';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 

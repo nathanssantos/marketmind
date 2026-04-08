@@ -1,4 +1,4 @@
-import { calculateUltimateOscillator } from '@marketmind/indicators';
+import { calculateUltimateOscillator } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; shortPeriod?: number; midPeriod?: number; longPeriod?: number }>) => {

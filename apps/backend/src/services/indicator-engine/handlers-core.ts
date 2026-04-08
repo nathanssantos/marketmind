@@ -17,7 +17,7 @@ import {
   calculateStochRSI,
   calculateTEMA,
   findPivotPoints,
-} from '@marketmind/indicators';
+} from '../../lib/indicators';
 
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { toNumber } from './types';

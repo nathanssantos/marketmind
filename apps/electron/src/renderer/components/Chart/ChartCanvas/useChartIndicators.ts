@@ -1,5 +1,5 @@
 import type { Kline } from '@marketmind/types';
-import { calculateMovingAverage } from '@marketmind/indicators';
+import { calculateMovingAverage } from '../../../lib/indicators';
 import { useADXWorker } from '@renderer/hooks/useADXWorker';
 import { useAOWorker } from '@renderer/hooks/useAOWorker';
 import { useAroonWorker } from '@renderer/hooks/useAroonWorker';

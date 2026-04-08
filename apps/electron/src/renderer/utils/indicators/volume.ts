@@ -1,4 +1,4 @@
-import { calculateSMA } from '@marketmind/indicators';
+import { calculateSMA } from '../../lib/indicators';
 import type { Kline, VolumeCluster } from '@marketmind/types';
 import { getKlineClose, getKlineVolume } from '@shared/utils';
 

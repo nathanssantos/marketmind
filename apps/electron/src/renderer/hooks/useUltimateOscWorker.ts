@@ -1,4 +1,4 @@
-import type { UltimateOscillatorResult } from '@marketmind/indicators';
+import type { UltimateOscillatorResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

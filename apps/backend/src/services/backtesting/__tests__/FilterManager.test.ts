@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../../lib/indicators', () => ({
   calculateEMA: vi.fn(() => [50000, 50100, 50200, 50300, 50400]),
-  CHOPPINESS_FILTER: { DEFAULT_PERIOD: 14, HIGH_THRESHOLD: 61.8, LOW_THRESHOLD: 38.2 },
-  detectTrendByEMA: vi.fn(() => ({
-    direction: 'BULLISH',
-    isClearTrend: true,
-    strength: 50,
-    method: 'ema',
-    details: { price: 51000, ema: { value: 50000, period: 21, pricePosition: 'above' } },
-  })),
+  calculateFVG: vi.fn(() => []),
 }));
 
 vi.mock('../../../utils/confluence-scoring', () => ({
@@ -70,7 +63,7 @@ vi.mock('../../../utils/filters', async (importOriginal) => {
 });
 
 import { FilterManager, type FilterConfig } from '../FilterManager';
-import { calculateEMA } from '@marketmind/indicators';
+import { calculateEMA } from '../../../lib/indicators';
 import {
   checkAdxCondition,
   checkBollingerSqueezeCondition,

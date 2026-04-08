@@ -1,4 +1,4 @@
-import type { MACDResult } from '@marketmind/indicators';
+import type { MACDResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

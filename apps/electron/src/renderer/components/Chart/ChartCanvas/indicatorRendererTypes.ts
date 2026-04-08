@@ -2,7 +2,7 @@ import type { MutableRefObject, RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { FootprintBar, LiquidityHeatmapSnapshot, MarketEvent, VolumeProfile } from '@marketmind/types';
-import type { StochasticResult } from '@marketmind/indicators';
+import type { StochasticResult } from '@marketmind/types';
 import type { IndicatorParams } from '@renderer/store/indicatorStore';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
 

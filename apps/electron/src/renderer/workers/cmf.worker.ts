@@ -1,4 +1,4 @@
-import { calculateCMF } from '@marketmind/indicators';
+import { calculateCMF } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {

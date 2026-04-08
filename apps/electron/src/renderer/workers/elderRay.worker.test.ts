@@ -1,7 +1,7 @@
-import { calculateElderRay } from '@marketmind/indicators';
+import { calculateElderRay } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateElderRay: vi.fn(() => ({ bullPower: [5, 8], bearPower: [-3, -5] })),
 }));
 

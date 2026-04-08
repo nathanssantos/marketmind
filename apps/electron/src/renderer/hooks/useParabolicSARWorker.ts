@@ -1,4 +1,4 @@
-import type { ParabolicSARResult } from '@marketmind/indicators';
+import type { ParabolicSARResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

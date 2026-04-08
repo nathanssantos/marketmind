@@ -11,7 +11,7 @@ vi.mock('../../../services/pine/PineIndicatorService', () => ({
   },
 }));
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../../lib/indicators', () => ({
   calculateFibonacciProjection: vi.fn(),
   calculateTimeframeLookback: vi.fn(),
 }));
@@ -41,7 +41,7 @@ import {
   getAdxBasedFibonacciLevel,
   calculateFibonacciTakeProfit,
 } from '../validation/fibonacci-calculator';
-import { calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
+import { calculateFibonacciProjection, calculateTimeframeLookback } from '../../../lib/indicators';
 
 const mockedCalculateFibonacciProjection = vi.mocked(calculateFibonacciProjection);
 const mockedCalculateTimeframeLookback = vi.mocked(calculateTimeframeLookback);

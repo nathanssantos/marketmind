@@ -1,4 +1,4 @@
-import type { FibonacciResult } from '@marketmind/indicators';
+import type { FibonacciResult } from '@marketmind/types';
 import { getLevelColor as getFibonacciLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';

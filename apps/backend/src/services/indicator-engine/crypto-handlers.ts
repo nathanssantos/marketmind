@@ -7,7 +7,7 @@ import {
   type FundingRateData,
   type LiquidationData,
   type OpenInterestData,
-} from '@marketmind/indicators';
+} from '../../lib/indicators';
 
 import { getBinanceFuturesDataService } from '../binance-futures-data';
 import { getBTCDominanceDataService } from '../btc-dominance-data';

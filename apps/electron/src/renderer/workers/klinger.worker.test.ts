@@ -1,7 +1,7 @@
-import { calculateKlinger } from '@marketmind/indicators';
+import { calculateKlinger } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateKlinger: vi.fn(() => ({ kvo: [1000], signal: [900] })),
 }));
 

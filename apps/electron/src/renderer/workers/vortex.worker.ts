@@ -1,4 +1,4 @@
-import { calculateVortex } from '@marketmind/indicators';
+import { calculateVortex } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {

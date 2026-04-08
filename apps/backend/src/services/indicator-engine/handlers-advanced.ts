@@ -15,7 +15,7 @@ import {
   calculateUltimateOscillator,
   calculateVortex,
   type FairValueGap,
-} from '@marketmind/indicators';
+} from '../../lib/indicators';
 
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { calculateHighest, calculateLowest } from './indicator-utils';

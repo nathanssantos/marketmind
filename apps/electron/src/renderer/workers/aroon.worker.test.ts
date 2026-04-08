@@ -1,7 +1,7 @@
-import { calculateAroon } from '@marketmind/indicators';
+import { calculateAroon } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateAroon: vi.fn(() => ({ aroonUp: [80, 75], aroonDown: [20, 25] })),
 }));
 

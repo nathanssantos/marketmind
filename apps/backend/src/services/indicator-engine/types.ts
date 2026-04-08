@@ -4,7 +4,7 @@ import type {
   Kline,
 } from '@marketmind/types';
 
-import type { FundingRateData, LiquidationData, OpenInterestData } from '@marketmind/indicators';
+import type { FundingRateData, LiquidationData, OpenInterestData } from '../../lib/indicators';
 
 export interface CryptoData {
   fundingRate: FundingRateData[];

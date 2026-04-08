@@ -1,4 +1,4 @@
-import { calculateLiquidityLevels } from '@marketmind/indicators';
+import { calculateLiquidityLevels } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {

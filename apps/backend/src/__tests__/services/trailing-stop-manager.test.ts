@@ -46,7 +46,7 @@ const {
 
 vi.stubGlobal('fetch', mockFetch);
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../lib/indicators', () => ({
   calculateATR: vi.fn(() => [1.5, 1.6, 1.7]),
   calculateSwingPoints: vi.fn(() => ({
     swingPoints: [

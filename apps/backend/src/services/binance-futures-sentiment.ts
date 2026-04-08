@@ -2,7 +2,7 @@ import type {
   FundingRateData,
   OpenInterestData,
   LiquidationData,
-} from '@marketmind/indicators';
+} from '../lib/indicators';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { logger, serializeError } from './logger';
 import type { DataCache } from './binance-futures-data-cache';

@@ -1,4 +1,4 @@
-import type { TSIResult } from '@marketmind/indicators';
+import type { TSIResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

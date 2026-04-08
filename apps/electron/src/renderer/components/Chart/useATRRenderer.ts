@@ -1,4 +1,4 @@
-import { calculateATR } from '@marketmind/indicators';
+import { calculateATR } from '../../lib/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';

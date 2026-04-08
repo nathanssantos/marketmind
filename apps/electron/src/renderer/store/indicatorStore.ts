@@ -1,4 +1,4 @@
-import { FIBONACCI_LEVELS } from '@marketmind/indicators';
+import { FIBONACCI_LEVELS } from '../lib/indicators';
 import { create } from 'zustand';
 import { usePreferencesStore } from './preferencesStore';
 

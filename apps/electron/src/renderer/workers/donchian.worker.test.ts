@@ -1,7 +1,7 @@
-import { calculateDonchian } from '@marketmind/indicators';
+import { calculateDonchian } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateDonchian: vi.fn(() => ({ upper: [110, 112], lower: [95, 97], middle: [102.5, 104.5] })),
 }));
 

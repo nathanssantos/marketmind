@@ -1,7 +1,7 @@
-import { calculateStochRSI } from '@marketmind/indicators';
+import { calculateStochRSI } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateStochRSI: vi.fn(() => ({ k: [50, 55], d: [45, 50] })),
 }));
 

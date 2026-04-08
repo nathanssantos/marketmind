@@ -1,4 +1,4 @@
-import { calculatePPO } from '@marketmind/indicators';
+import { calculatePPO } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; fastPeriod?: number; slowPeriod?: number; signalPeriod?: number }>) => {

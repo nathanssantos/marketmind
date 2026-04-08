@@ -1,4 +1,4 @@
-import { calculateStochRSI } from '@marketmind/indicators';
+import { calculateStochRSI } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; rsiPeriod?: number; stochPeriod?: number; kSmooth?: number; dSmooth?: number }>) => {

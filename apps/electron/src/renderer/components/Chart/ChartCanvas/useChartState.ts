@@ -1,5 +1,5 @@
 import type { Kline, MarketEvent, Order, TradingSetup, Viewport } from '@marketmind/types';
-import type { StochasticResult } from '@marketmind/indicators';
+import type { StochasticResult } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
 export interface TooltipData {

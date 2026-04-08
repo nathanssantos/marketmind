@@ -1,4 +1,4 @@
-import { calculateParabolicSAR } from '@marketmind/indicators';
+import { calculateParabolicSAR } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; afStart?: number; afIncrement?: number; afMax?: number }>) => {

@@ -1,4 +1,4 @@
-import type { LiquidityLevel } from '@marketmind/indicators';
+import type { LiquidityLevel } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

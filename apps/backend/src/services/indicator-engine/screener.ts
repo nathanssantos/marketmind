@@ -5,7 +5,7 @@ import {
   calculateChoppiness,
   calculateCMF,
   calculateVolumeRatio,
-} from '@marketmind/indicators';
+} from '../../lib/indicators';
 
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import type { ScreenerExtraData, ScreenerTickerData } from './types';

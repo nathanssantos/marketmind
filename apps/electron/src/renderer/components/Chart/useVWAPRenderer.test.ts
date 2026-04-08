@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useVWAPRenderer } from './useVWAPRenderer';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../lib/indicators', () => ({
   calculateIntradayVWAP: vi.fn(() => [100, 101, 102, 103, 104]),
   calculateWeeklyVWAP: vi.fn(() => [200, 201, 202, 203, 204]),
   calculateMonthlyVWAP: vi.fn(() => [300, 301, 302, 303, 304]),

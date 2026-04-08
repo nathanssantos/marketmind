@@ -1,7 +1,7 @@
-import { calculateParabolicSAR } from '@marketmind/indicators';
+import { calculateParabolicSAR } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateParabolicSAR: vi.fn(() => ({ sar: [100, 101, 102], trend: ['up', 'up', 'down'] })),
 }));
 

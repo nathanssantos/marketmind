@@ -1,4 +1,4 @@
-import { calculateSwingPoints } from '@marketmind/indicators';
+import { calculateSwingPoints } from '../lib/indicators';
 import type { FibonacciProjectionData, Interval, Kline as KlineType, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { PineIndicatorService } from './pine/PineIndicatorService';
 import { and, desc, eq, inArray } from 'drizzle-orm';

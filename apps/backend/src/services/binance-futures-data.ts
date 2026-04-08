@@ -2,7 +2,7 @@ import type {
   FundingRateData,
   OpenInterestData,
   LiquidationData,
-} from '@marketmind/indicators';
+} from '../lib/indicators';
 import type { FuturesSymbolInfo, FuturesContractType } from '@marketmind/types';
 import { WEBSOCKET_CONFIG } from '../constants';
 import { withRetryFetch } from '../utils/retry';

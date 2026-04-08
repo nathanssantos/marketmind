@@ -1,4 +1,4 @@
-import { calculateIntradayVWAP, calculateWeeklyVWAP, calculateMonthlyVWAP } from '@marketmind/indicators';
+import { calculateIntradayVWAP, calculateWeeklyVWAP, calculateMonthlyVWAP } from '../../lib/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';

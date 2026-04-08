@@ -1,4 +1,4 @@
-import { calculateAutoFibonacci } from '@marketmind/indicators';
+import { calculateAutoFibonacci } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {

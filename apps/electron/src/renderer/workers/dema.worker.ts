@@ -1,4 +1,4 @@
-import { calculateDEMA } from '@marketmind/indicators';
+import { calculateDEMA } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {

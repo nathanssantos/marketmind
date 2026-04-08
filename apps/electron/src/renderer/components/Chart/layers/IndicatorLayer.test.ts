@@ -2,7 +2,7 @@ import type { Kline, Viewport } from '@marketmind/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createIndicatorRenderer, createMovingAverageRenderer } from './IndicatorLayer';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../../lib/indicators', () => ({
   calculateMovingAverage: vi.fn((klines: Kline[], period: number) => {
     return klines.map((_, i) => (i >= period - 1 ? 100 + i : null));
   }),

@@ -1,4 +1,4 @@
-import type { CCIResult } from '@marketmind/indicators';
+import type { CCIResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

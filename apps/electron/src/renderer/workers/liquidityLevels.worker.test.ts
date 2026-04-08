@@ -1,7 +1,7 @@
-import { calculateLiquidityLevels } from '@marketmind/indicators';
+import { calculateLiquidityLevels } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateLiquidityLevels: vi.fn(() => []),
 }));
 

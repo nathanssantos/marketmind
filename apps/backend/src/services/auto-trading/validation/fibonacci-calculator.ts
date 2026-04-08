@@ -1,4 +1,4 @@
-import { calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
+import { calculateFibonacciProjection, calculateTimeframeLookback } from '../../../lib/indicators';
 import type { FibLevel, Kline, TimeInterval } from '@marketmind/types';
 import { FILTER_THRESHOLDS } from '@marketmind/types';
 import { TIME_MS, UNIT_MS } from '../../../constants';

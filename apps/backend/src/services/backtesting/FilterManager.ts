@@ -1,4 +1,4 @@
-import { calculateFVG } from '@marketmind/indicators';
+import { calculateFVG } from '../../lib/indicators';
 import type { Kline } from '@marketmind/types';
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { isDirectionAllowed } from '../../utils/trading-validation';

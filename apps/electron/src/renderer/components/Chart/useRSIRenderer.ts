@@ -1,4 +1,4 @@
-import type { RSIResult } from '@marketmind/indicators';
+import type { RSIResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';

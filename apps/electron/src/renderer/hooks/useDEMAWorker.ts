@@ -1,4 +1,4 @@
-import type { DEMAResult } from '@marketmind/indicators';
+import type { DEMAResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';

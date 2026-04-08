@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Kline } from '@marketmind/types';
-import { calculateSMA, calculateEMA, calculateRSI, calculateATR, calculateMACD } from '@marketmind/indicators';
+import { calculateSMA, calculateEMA, calculateRSI, calculateATR, calculateMACD } from '../../../lib/indicators';
 import { PineIndicatorService } from '../PineIndicatorService';
 
 const makeKlines = (count: number, base = 50000, amplitude = 5000): Kline[] =>

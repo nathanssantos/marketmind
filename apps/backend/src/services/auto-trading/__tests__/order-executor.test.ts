@@ -109,8 +109,8 @@ vi.mock('../../../services/pine/PineIndicatorService', () => ({
   },
 }));
 
-vi.mock('@marketmind/indicators', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@marketmind/indicators')>();
+vi.mock('../../../lib/indicators', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../lib/indicators')>();
   return {
     ...actual,
     calculateFibonacciProjection: vi.fn(),
@@ -243,7 +243,7 @@ vi.mock('../validation/filter-validator', () => {
 });
 
 import { OrderExecutor, type OrderExecutorDeps } from '../execution/order-executor';
-import { calculateFibonacciProjection } from '@marketmind/indicators';
+import { calculateFibonacciProjection } from '../../../lib/indicators';
 import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { ActiveWatcher } from '../types';
 import type { AutoTradingConfig } from '../../../db/schema';

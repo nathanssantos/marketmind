@@ -1,4 +1,4 @@
-import { calculateTEMA } from '@marketmind/indicators';
+import { calculateTEMA } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
 self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {

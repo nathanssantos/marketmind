@@ -1,4 +1,4 @@
-import type { PivotAnalysis } from '@marketmind/indicators';
+import type { PivotAnalysis } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 import { useMemo } from 'react';
 import { useWorkerComputation } from './useWorkerComputation';
