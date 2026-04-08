@@ -1,8 +1,9 @@
-import { calculateROC } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateROC: vi.fn(() => [1.5, 2.0, -0.5]),
+const mockComputeSingle = vi.fn(() => Promise.resolve([1.5, 2.0, -0.5]));
+
+vi.mock('./pineWorkerService', () => ({
+  computeSingle: mockComputeSingle,
 }));
 
 describe('roc.worker', () => {
@@ -11,29 +12,30 @@ describe('roc.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeSingle.mockResolvedValue([1.5, 2.0, -0.5]);
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = { postMessage: mockPostMessage, onmessage: null };
   });
 
   it('should calculate ROC with default period', async () => {
     await import('./roc.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines } } as MessageEvent);
-    expect(calculateROC).toHaveBeenCalledWith(mockKlines, 12);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('roc', mockKlines, { period: 12 });
   });
 
   it('should use custom period', async () => {
     vi.resetModules();
     await import('./roc.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, period: 20 } } as MessageEvent);
-    expect(calculateROC).toHaveBeenCalledWith(mockKlines, 20);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, period: 20 } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('roc', mockKlines, { period: 20 });
   });
 
   it('should post null when klines empty', async () => {
     vi.resetModules();
     await import('./roc.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: [] } } as MessageEvent);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: [] } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

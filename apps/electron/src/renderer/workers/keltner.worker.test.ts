@@ -1,8 +1,9 @@
-import { calculateKeltner } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateKeltner: vi.fn(() => ({ upper: [110], middle: [105], lower: [100] })),
+const mockComputeMulti = vi.fn(() => Promise.resolve({ upper: [110], middle: [105], lower: [100] }));
+
+vi.mock('./pineWorkerService', () => ({
+  computeMulti: mockComputeMulti,
 }));
 
 describe('keltner.worker', () => {
@@ -11,21 +12,22 @@ describe('keltner.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeMulti.mockResolvedValue({ upper: [110], middle: [105], lower: [100] });
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = { postMessage: mockPostMessage, onmessage: null };
   });
 
   it('should calculate Keltner with defaults', async () => {
     await import('./keltner.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines } } as MessageEvent);
-    expect(calculateKeltner).toHaveBeenCalledWith(mockKlines, 20, 10, 2);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines } } as MessageEvent);
+    expect(mockComputeMulti).toHaveBeenCalledWith('kc', mockKlines, { period: 20, multiplier: 2 });
   });
 
   it('should use custom params', async () => {
     vi.resetModules();
     await import('./keltner.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, emaPeriod: 14, atrPeriod: 7, multiplier: 1.5 } } as MessageEvent);
-    expect(calculateKeltner).toHaveBeenCalledWith(mockKlines, 14, 7, 1.5);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, emaPeriod: 14, atrPeriod: 7, multiplier: 1.5 } } as MessageEvent);
+    expect(mockComputeMulti).toHaveBeenCalledWith('kc', mockKlines, { period: 14, multiplier: 1.5 });
   });
 });

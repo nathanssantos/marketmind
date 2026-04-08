@@ -1,8 +1,9 @@
-import { calculateCCI } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateCCI: vi.fn(() => [100, -50, 150]),
+const mockComputeSingle = vi.fn(() => Promise.resolve([100, -50, 150]));
+
+vi.mock('./pineWorkerService', () => ({
+  computeSingle: mockComputeSingle,
 }));
 
 describe('cci.worker', () => {
@@ -14,6 +15,7 @@ describe('cci.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeSingle.mockResolvedValue([100, -50, 150]);
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = {
       postMessage: mockPostMessage,
       onmessage: null,
@@ -22,17 +24,17 @@ describe('cci.worker', () => {
 
   it('should calculate CCI and post result', async () => {
     await import('./cci.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, period: 20 } } as MessageEvent);
-    expect(calculateCCI).toHaveBeenCalledWith(mockKlines, 20);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, period: 20 } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('cci', mockKlines, { period: 20 });
     expect(mockPostMessage).toHaveBeenCalled();
   });
 
   it('should post null when klines are empty', async () => {
     vi.resetModules();
     await import('./cci.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: [], period: 20 } } as MessageEvent);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: [], period: 20 } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

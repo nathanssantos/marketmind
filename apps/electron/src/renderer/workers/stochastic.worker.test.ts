@@ -1,8 +1,9 @@
-import { calculateStochastic } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateStochastic: vi.fn(() => ({ k: [50, 55], d: [45, 50] })),
+const mockComputeMulti = vi.fn(() => Promise.resolve({ k: [50, 55], d: [45, 50] }));
+
+vi.mock('./pineWorkerService', () => ({
+  computeMulti: mockComputeMulti,
 }));
 
 describe('stochastic.worker', () => {
@@ -11,23 +12,24 @@ describe('stochastic.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeMulti.mockResolvedValue({ k: [50, 55], d: [45, 50] });
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = { postMessage: mockPostMessage, onmessage: null };
   });
 
   it('should calculate Stochastic', async () => {
     await import('./stochastic.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
-    expect(calculateStochastic).toHaveBeenCalledWith(mockKlines, 14, 3, 3);
-    expect(mockPostMessage).toHaveBeenCalledWith({ k: [50, 55], d: [45, 50] });
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
+    expect(mockComputeMulti).toHaveBeenCalledWith('stoch', mockKlines, { period: 14, smoothK: 3 });
+    expect(mockPostMessage).toHaveBeenCalled();
   });
 
   it('should post null for empty klines', async () => {
     vi.resetModules();
     await import('./stochastic.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: [], kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
-    expect(calculateStochastic).not.toHaveBeenCalled();
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: [], kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
+    expect(mockComputeMulti).not.toHaveBeenCalled();
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

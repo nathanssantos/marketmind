@@ -3,17 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useBollingerBandsRenderer } from './useBollingerBandsRenderer';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateBollingerBandsArray: vi.fn((klines: unknown[]) => {
-    const klinesArray = klines as Array<{ close: string }>;
-    return klinesArray.map((kline) => {
-      const close = parseFloat(kline.close);
-      return {
-        upper: close + 10,
-        middle: close,
-        lower: close - 10,
-      };
-    });
+vi.mock('@renderer/hooks/useBBWorker', () => ({
+  useBBWorker: vi.fn((_klines: unknown[], _period?: number, _stdDev?: number, enabled?: boolean) => {
+    if (!enabled) return null;
+    const klinesArray = _klines as Array<{ close: string }>;
+    if (klinesArray.length === 0) return null;
+    return {
+      upper: klinesArray.map((k) => parseFloat(k.close) + 10),
+      middle: klinesArray.map((k) => parseFloat(k.close)),
+      lower: klinesArray.map((k) => parseFloat(k.close) - 10),
+    };
   }),
 }));
 

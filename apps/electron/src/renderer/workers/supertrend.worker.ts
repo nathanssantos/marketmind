@@ -1,7 +1,7 @@
-import { calculateSupertrend } from '@marketmind/indicators';
+import { computeSupertrend } from './pineWorkerService';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number; multiplier: number }>) => {
+self.onmessage = async (e: MessageEvent<{ klines: Kline[]; period: number; multiplier: number }>) => {
   const { klines, period, multiplier } = e.data;
 
   if (!klines || klines.length === 0) {
@@ -9,6 +9,6 @@ self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number; multiplier:
     return;
   }
 
-  const result = calculateSupertrend(klines, period, multiplier);
+  const result = await computeSupertrend(klines, period, multiplier);
   self.postMessage(result);
 };

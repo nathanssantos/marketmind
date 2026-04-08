@@ -1,7 +1,7 @@
-import { calculateRSI } from '@marketmind/indicators';
+import { computeSingle } from './pineWorkerService';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
+self.onmessage = async (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
   const { klines, period } = e.data;
 
   if (!klines || klines.length === 0) {
@@ -9,6 +9,6 @@ self.onmessage = (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
     return;
   }
 
-  const result = calculateRSI(klines, period);
-  self.postMessage(result);
+  const values = await computeSingle('rsi', klines, { period });
+  self.postMessage({ values });
 };

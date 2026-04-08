@@ -1,8 +1,9 @@
-import { calculateADX } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateADX: vi.fn(() => ({ adx: [25, 30], plusDI: [20, 25], minusDI: [15, 20] })),
+const mockComputeMulti = vi.fn(() => Promise.resolve({ adx: [25, 30], plusDI: [20, 25], minusDI: [15, 20] }));
+
+vi.mock('./pineWorkerService', () => ({
+  computeMulti: mockComputeMulti,
 }));
 
 describe('adx.worker', () => {
@@ -14,6 +15,7 @@ describe('adx.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeMulti.mockResolvedValue({ adx: [25, 30], plusDI: [20, 25], minusDI: [15, 20] });
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = {
       postMessage: mockPostMessage,
       onmessage: null,
@@ -22,25 +24,25 @@ describe('adx.worker', () => {
 
   it('should calculate ADX and post result', async () => {
     await import('./adx.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, period: 14 } } as MessageEvent);
-    expect(calculateADX).toHaveBeenCalledWith(mockKlines, 14);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, period: 14 } } as MessageEvent);
+    expect(mockComputeMulti).toHaveBeenCalledWith('dmi', mockKlines, { period: 14 });
     expect(mockPostMessage).toHaveBeenCalled();
   });
 
   it('should post null when klines are empty', async () => {
     vi.resetModules();
     await import('./adx.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: [], period: 14 } } as MessageEvent);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: [], period: 14 } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 
   it('should post null when klines are undefined', async () => {
     vi.resetModules();
     await import('./adx.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: undefined, period: 14 } } as MessageEvent);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: undefined, period: 14 } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });
