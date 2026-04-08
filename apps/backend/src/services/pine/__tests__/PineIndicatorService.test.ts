@@ -31,7 +31,7 @@ const comparePineVsLegacy = (
   for (let i = 0; i < Math.min(pine.length, legacy.length); i++) {
     const pv = pine[i];
     const lv = legacy[i];
-    if (pv === null || lv === null) continue;
+    if (pv == null || lv == null) continue;
     if (Math.abs(lv) < 0.0001) continue;
 
     const relDiff = Math.abs(pv - lv) / Math.abs(lv);
@@ -110,7 +110,7 @@ describe('PineIndicatorService', () => {
         const m = result['middle']![i];
         const u = result['upper']![i];
         const l = result['lower']![i];
-        if (m !== null && u !== null && l !== null) {
+        if (m != null && u != null && l != null) {
           expect(u).toBeGreaterThan(m);
           expect(l).toBeLessThan(m);
         }

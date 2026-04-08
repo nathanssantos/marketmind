@@ -99,11 +99,20 @@ const {
   mockLogger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
+const { mockOrderExecComputeMulti } = vi.hoisted(() => ({
+  mockOrderExecComputeMulti: vi.fn().mockResolvedValue({ adx: [25], plusDI: [], minusDI: [] }),
+}));
+vi.mock('../../../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = vi.fn().mockResolvedValue([]);
+    computeMulti = mockOrderExecComputeMulti;
+  },
+}));
+
 vi.mock('@marketmind/indicators', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@marketmind/indicators')>();
   return {
     ...actual,
-    calculateADX: vi.fn(() => ({ adx: [25] })),
     calculateFibonacciProjection: vi.fn(),
   };
 });
@@ -234,7 +243,7 @@ vi.mock('../validation/filter-validator', () => {
 });
 
 import { OrderExecutor, type OrderExecutorDeps } from '../execution/order-executor';
-import { calculateFibonacciProjection, calculateADX } from '@marketmind/indicators';
+import { calculateFibonacciProjection } from '@marketmind/indicators';
 import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { ActiveWatcher } from '../types';
 import type { AutoTradingConfig } from '../../../db/schema';
@@ -466,27 +475,27 @@ describe('OrderExecutor', () => {
   });
 
   describe('calculateFibonacciTakeProfit', () => {
-    it('should return null when projection fails', () => {
+    it('should return null when projection fails', async () => {
       vi.mocked(calculateFibonacciProjection).mockReturnValue(null);
 
-      const result = executor.calculateFibonacciTakeProfit(
+      const result = await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', '2', '1h',
       );
 
       expect(result).toBeNull();
     });
 
-    it('should return null when projection has no levels', () => {
+    it('should return null when projection has no levels', async () => {
       vi.mocked(calculateFibonacciProjection).mockReturnValue({ levels: [] } as never);
 
-      const result = executor.calculateFibonacciTakeProfit(
+      const result = await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', '2', '1h',
       );
 
       expect(result).toBeNull();
     });
 
-    it('should return target level price when found', () => {
+    it('should return target level price when found', async () => {
       vi.mocked(calculateFibonacciProjection).mockReturnValue({
         levels: [
           { level: 1.618, price: 115 },
@@ -495,14 +504,14 @@ describe('OrderExecutor', () => {
         ],
       } as never);
 
-      const result = executor.calculateFibonacciTakeProfit(
+      const result = await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', '2', '1h',
       );
 
       expect(result).toBe(120);
     });
 
-    it('should fall back to 161.8% level when target not found', () => {
+    it('should fall back to 161.8% level when target not found', async () => {
       vi.mocked(calculateFibonacciProjection).mockReturnValue({
         levels: [
           { level: 1.0, price: 105 },
@@ -510,27 +519,27 @@ describe('OrderExecutor', () => {
         ],
       } as never);
 
-      const result = executor.calculateFibonacciTakeProfit(
+      const result = await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', '2.618', '1h',
       );
 
       expect(result).toBe(115);
     });
 
-    it('should return null when neither target nor 161.8% found', () => {
+    it('should return null when neither target nor 161.8% found', async () => {
       vi.mocked(calculateFibonacciProjection).mockReturnValue({
         levels: [{ level: 1.0, price: 105 }],
       } as never);
 
-      const result = executor.calculateFibonacciTakeProfit(
+      const result = await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', '2.618', '1h',
       );
 
       expect(result).toBeNull();
     });
 
-    it('should use ADX-based level when auto mode', () => {
-      vi.mocked(calculateADX).mockReturnValue({ adx: [35] } as never);
+    it('should use ADX-based level when auto mode', async () => {
+      mockOrderExecComputeMulti.mockResolvedValue({ adx: [35], plusDI: [], minusDI: [] });
       vi.mocked(calculateFibonacciProjection).mockReturnValue({
         levels: [
           { level: 1.382, price: 112 },
@@ -538,19 +547,19 @@ describe('OrderExecutor', () => {
         ],
       } as never);
 
-      const result = executor.calculateFibonacciTakeProfit(
+      const result = await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', 'auto', '1h',
       );
 
       expect(result).toBe(115);
     });
 
-    it('should pass swingRange parameter', () => {
+    it('should pass swingRange parameter', async () => {
       vi.mocked(calculateFibonacciProjection).mockReturnValue({
         levels: [{ level: 2.0, price: 120 }],
       } as never);
 
-      executor.calculateFibonacciTakeProfit(
+      await executor.calculateFibonacciTakeProfit(
         createKlines(50), 100, 'LONG', '2', '1h', 'extended',
       );
 
@@ -561,36 +570,36 @@ describe('OrderExecutor', () => {
   });
 
   describe('getAdxBasedFibonacciLevel (private)', () => {
-    const getLevel = (klines: Kline[], dir: 'LONG' | 'SHORT'): number =>
+    const getLevel = (klines: Kline[], dir: 'LONG' | 'SHORT'): Promise<number> =>
       (executor as any).getAdxBasedFibonacciLevel(klines, dir);
 
-    it('should return default 1.272 when insufficient klines', () => {
-      expect(getLevel(createKlines(20), 'LONG')).toBe(1.272);
+    it('should return default 1.272 when insufficient klines', async () => {
+      expect(await getLevel(createKlines(20), 'LONG')).toBe(1.272);
     });
 
-    it('should return default 1.272 when ADX is null', () => {
-      vi.mocked(calculateADX).mockReturnValue({ adx: [null] } as never);
-      expect(getLevel(createKlines(50), 'LONG')).toBe(1.272);
+    it('should return default 1.272 when ADX is null', async () => {
+      mockOrderExecComputeMulti.mockResolvedValue({ adx: [null], plusDI: [], minusDI: [] });
+      expect(await getLevel(createKlines(50), 'LONG')).toBe(1.272);
     });
 
-    it('should return 2.0 for very strong ADX (>= 40)', () => {
-      vi.mocked(calculateADX).mockReturnValue({ adx: [45] } as never);
-      expect(getLevel(createKlines(50), 'LONG')).toBe(2.0);
+    it('should return 2.0 for very strong ADX (>= 40)', async () => {
+      mockOrderExecComputeMulti.mockResolvedValue({ adx: [45], plusDI: [], minusDI: [] });
+      expect(await getLevel(createKlines(50), 'LONG')).toBe(2.0);
     });
 
-    it('should return 1.618 for strong ADX (>= 30)', () => {
-      vi.mocked(calculateADX).mockReturnValue({ adx: [35] } as never);
-      expect(getLevel(createKlines(50), 'LONG')).toBe(1.618);
+    it('should return 1.618 for strong ADX (>= 30)', async () => {
+      mockOrderExecComputeMulti.mockResolvedValue({ adx: [35], plusDI: [], minusDI: [] });
+      expect(await getLevel(createKlines(50), 'LONG')).toBe(1.618);
     });
 
-    it('should return 1.382 for moderate ADX (>= 20)', () => {
-      vi.mocked(calculateADX).mockReturnValue({ adx: [25] } as never);
-      expect(getLevel(createKlines(50), 'LONG')).toBe(1.382);
+    it('should return 1.382 for moderate ADX (>= 20)', async () => {
+      mockOrderExecComputeMulti.mockResolvedValue({ adx: [25], plusDI: [], minusDI: [] });
+      expect(await getLevel(createKlines(50), 'LONG')).toBe(1.382);
     });
 
-    it('should return 1.272 for weak ADX (< 20)', () => {
-      vi.mocked(calculateADX).mockReturnValue({ adx: [15] } as never);
-      expect(getLevel(createKlines(50), 'LONG')).toBe(1.272);
+    it('should return 1.272 for weak ADX (< 20)', async () => {
+      mockOrderExecComputeMulti.mockResolvedValue({ adx: [15], plusDI: [], minusDI: [] });
+      expect(await getLevel(createKlines(50), 'LONG')).toBe(1.272);
     });
   });
 

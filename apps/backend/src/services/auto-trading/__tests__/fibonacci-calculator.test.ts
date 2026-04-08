@@ -1,8 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
+const { mockComputeMulti } = vi.hoisted(() => ({
+  mockComputeMulti: vi.fn(),
+}));
+vi.mock('../../../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = vi.fn().mockResolvedValue([]);
+    computeMulti = mockComputeMulti;
+  },
+}));
+
 vi.mock('@marketmind/indicators', () => ({
-  calculateADX: vi.fn(),
   calculateFibonacciProjection: vi.fn(),
   calculateTimeframeLookback: vi.fn(),
 }));
@@ -32,11 +41,18 @@ import {
   getAdxBasedFibonacciLevel,
   calculateFibonacciTakeProfit,
 } from '../validation/fibonacci-calculator';
-import { calculateADX, calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
+import { calculateFibonacciProjection, calculateTimeframeLookback } from '@marketmind/indicators';
 
-const mockedCalculateADX = vi.mocked(calculateADX);
 const mockedCalculateFibonacciProjection = vi.mocked(calculateFibonacciProjection);
 const mockedCalculateTimeframeLookback = vi.mocked(calculateTimeframeLookback);
+
+const setupAdxMock = (adxValues: (number | null)[]) => {
+  mockComputeMulti.mockResolvedValue({
+    adx: adxValues,
+    plusDI: [],
+    minusDI: [],
+  });
+};
 
 const createKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -91,76 +107,76 @@ describe('getAdxBasedFibonacciLevel', () => {
     vi.clearAllMocks();
   });
 
-  it('should return 1.272 when klines are insufficient', () => {
+  it('should return 1.272 when klines are insufficient', async () => {
     const klines = createKlines(10);
-    const result = getAdxBasedFibonacciLevel(klines, 'LONG');
+    const result = await getAdxBasedFibonacciLevel(klines, 'LONG');
     expect(result).toBe(1.272);
-    expect(mockedCalculateADX).not.toHaveBeenCalled();
+    expect(mockComputeMulti).not.toHaveBeenCalled();
   });
 
-  it('should return 1.272 when klines count is exactly 34', () => {
+  it('should return 1.272 when klines count is exactly 34', async () => {
     const klines = createKlines(34);
-    const result = getAdxBasedFibonacciLevel(klines, 'LONG');
+    const result = await getAdxBasedFibonacciLevel(klines, 'LONG');
     expect(result).toBe(1.272);
   });
 
-  it('should return 1.272 when ADX is null', () => {
+  it('should return 1.272 when ADX is null', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [null as unknown as number], plusDI: [], minusDI: [] });
-    const result = getAdxBasedFibonacciLevel(klines, 'LONG');
+    setupAdxMock([null]);
+    const result = await getAdxBasedFibonacciLevel(klines, 'LONG');
     expect(result).toBe(1.272);
   });
 
-  it('should return 2.0 when ADX >= ADX_VERY_STRONG (45)', () => {
+  it('should return 2.0 when ADX >= ADX_VERY_STRONG (45)', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [50], plusDI: [], minusDI: [] });
-    const result = getAdxBasedFibonacciLevel(klines, 'LONG');
+    setupAdxMock([50]);
+    const result = await getAdxBasedFibonacciLevel(klines, 'LONG');
     expect(result).toBe(2.0);
   });
 
-  it('should return 1.618 when ADX >= ADX_STRONG (40) but < ADX_VERY_STRONG', () => {
+  it('should return 1.618 when ADX >= ADX_STRONG (40) but < ADX_VERY_STRONG', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [42], plusDI: [], minusDI: [] });
-    const result = getAdxBasedFibonacciLevel(klines, 'SHORT');
+    setupAdxMock([42]);
+    const result = await getAdxBasedFibonacciLevel(klines, 'SHORT');
     expect(result).toBe(1.618);
   });
 
-  it('should return 1.382 when ADX >= ADX_MIN (25) but < ADX_STRONG', () => {
+  it('should return 1.382 when ADX >= ADX_MIN (25) but < ADX_STRONG', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [30], plusDI: [], minusDI: [] });
-    const result = getAdxBasedFibonacciLevel(klines, 'LONG');
+    setupAdxMock([30]);
+    const result = await getAdxBasedFibonacciLevel(klines, 'LONG');
     expect(result).toBe(1.382);
   });
 
-  it('should return 1.272 when ADX < ADX_MIN (25)', () => {
+  it('should return 1.272 when ADX < ADX_MIN (25)', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [15], plusDI: [], minusDI: [] });
-    const result = getAdxBasedFibonacciLevel(klines, 'LONG');
+    setupAdxMock([15]);
+    const result = await getAdxBasedFibonacciLevel(klines, 'LONG');
     expect(result).toBe(1.272);
   });
 
-  it('should return 2.0 at ADX exactly 45', () => {
+  it('should return 2.0 at ADX exactly 45', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [45], plusDI: [], minusDI: [] });
-    expect(getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(2.0);
+    setupAdxMock([45]);
+    expect(await getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(2.0);
   });
 
-  it('should return 1.618 at ADX exactly 40', () => {
+  it('should return 1.618 at ADX exactly 40', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [40], plusDI: [], minusDI: [] });
-    expect(getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(1.618);
+    setupAdxMock([40]);
+    expect(await getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(1.618);
   });
 
-  it('should return 1.382 at ADX exactly 25', () => {
+  it('should return 1.382 at ADX exactly 25', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [25], plusDI: [], minusDI: [] });
-    expect(getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(1.382);
+    setupAdxMock([25]);
+    expect(await getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(1.382);
   });
 
-  it('should use last ADX value from array', () => {
+  it('should use last ADX value from array', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({ adx: [10, 20, 50], plusDI: [], minusDI: [] });
-    expect(getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(2.0);
+    setupAdxMock([10, 20, 50]);
+    expect(await getAdxBasedFibonacciLevel(klines, 'LONG')).toBe(2.0);
   });
 });
 
@@ -170,14 +186,14 @@ describe('calculateFibonacciTakeProfit', () => {
     mockedCalculateTimeframeLookback.mockReturnValue(100);
   });
 
-  it('should return null when projection fails', () => {
+  it('should return null when projection fails', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue(null);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG');
     expect(result).toBeNull();
   });
 
-  it('should return null when projection has empty levels', () => {
+  it('should return null when projection has empty levels', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [],
       swingHigh: { price: 110, index: 5 },
@@ -186,11 +202,11 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG');
     expect(result).toBeNull();
   });
 
-  it('should return price for matching target level', () => {
+  it('should return price for matching target level', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [
         { level: 1.272, price: 115 },
@@ -203,11 +219,11 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG', '2');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG', '2');
     expect(result).toBe(130);
   });
 
-  it('should fall back to 1.618 level when target not found', () => {
+  it('should fall back to 1.618 level when target not found', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [
         { level: 1.272, price: 115 },
@@ -219,11 +235,11 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG', '2');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG', '2');
     expect(result).toBe(120);
   });
 
-  it('should return null when neither target nor 1.618 found', () => {
+  it('should return null when neither target nor 1.618 found', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [
         { level: 1.0, price: 110 },
@@ -235,12 +251,12 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG', '2');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG', '2');
     expect(result).toBeNull();
   });
 
-  it('should use auto mode with ADX-based level', () => {
-    mockedCalculateADX.mockReturnValue({ adx: [50], plusDI: [], minusDI: [] });
+  it('should use auto mode with ADX-based level', async () => {
+    setupAdxMock([50]);
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [
         { level: 1.618, price: 120 },
@@ -252,11 +268,11 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG', 'auto');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG', 'auto');
     expect(result).toBe(130);
   });
 
-  it('should use default parameters when not specified', () => {
+  it('should use default parameters when not specified', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [
         { level: 2.0, price: 130 },
@@ -267,11 +283,11 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG');
     expect(result).toBe(130);
   });
 
-  it('should pass swingRange and interval to projection', () => {
+  it('should pass swingRange and interval to projection', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [{ level: 1.618, price: 120 }],
       swingHigh: { price: 110, index: 5 },
@@ -280,14 +296,14 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'SHORT',
     } as never);
     const klines = createKlines(50);
-    calculateFibonacciTakeProfit(klines, 100, 'SHORT', '1.618', '1h', 'extended');
+    await calculateFibonacciTakeProfit(klines, 100, 'SHORT', '1.618', '1h', 'extended');
     expect(mockedCalculateTimeframeLookback).toHaveBeenCalledWith('1h');
     expect(mockedCalculateFibonacciProjection).toHaveBeenCalledWith(
       klines, 49, 100, 'SHORT', 'extended'
     );
   });
 
-  it('should match level with small floating point difference', () => {
+  it('should match level with small floating point difference', async () => {
     mockedCalculateFibonacciProjection.mockReturnValue({
       levels: [
         { level: 1.6180001, price: 120 },
@@ -298,7 +314,7 @@ describe('calculateFibonacciTakeProfit', () => {
       direction: 'LONG',
     } as never);
     const klines = createKlines(50);
-    const result = calculateFibonacciTakeProfit(klines, 100, 'LONG', '1.618');
+    const result = await calculateFibonacciTakeProfit(klines, 100, 'LONG', '1.618');
     expect(result).toBe(120);
   });
 });

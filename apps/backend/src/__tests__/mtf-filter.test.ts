@@ -55,9 +55,9 @@ describe('MTF Filter', () => {
 
   describe('checkMtfCondition', () => {
     describe('LONG direction', () => {
-      it('should allow LONG when HTF is bullish (golden cross)', () => {
+      it('should allow LONG when HTF is bullish (golden cross)', async () => {
         const klines = createBullishKlines(300);
-        const result = checkMtfCondition(klines, 'LONG', '4h');
+        const result = await checkMtfCondition(klines, 'LONG', '4h');
 
         expect(result.isAllowed).toBe(true);
         expect(result.htfTrend).toBe('BULLISH');
@@ -65,9 +65,9 @@ describe('MTF Filter', () => {
         expect(result.reason).toContain('LONG allowed');
       });
 
-      it('should block LONG when HTF is bearish (death cross)', () => {
+      it('should block LONG when HTF is bearish (death cross)', async () => {
         const klines = createBearishKlines(300);
-        const result = checkMtfCondition(klines, 'LONG', '4h');
+        const result = await checkMtfCondition(klines, 'LONG', '4h');
 
         expect(result.isAllowed).toBe(false);
         expect(result.htfTrend).toBe('BEARISH');
@@ -77,18 +77,18 @@ describe('MTF Filter', () => {
     });
 
     describe('SHORT direction', () => {
-      it('should allow SHORT when HTF is bearish', () => {
+      it('should allow SHORT when HTF is bearish', async () => {
         const klines = createBearishKlines(300);
-        const result = checkMtfCondition(klines, 'SHORT', '4h');
+        const result = await checkMtfCondition(klines, 'SHORT', '4h');
 
         expect(result.isAllowed).toBe(true);
         expect(result.htfTrend).toBe('BEARISH');
         expect(result.reason).toContain('SHORT allowed');
       });
 
-      it('should block SHORT when HTF is bullish', () => {
+      it('should block SHORT when HTF is bullish', async () => {
         const klines = createBullishKlines(300);
-        const result = checkMtfCondition(klines, 'SHORT', '4h');
+        const result = await checkMtfCondition(klines, 'SHORT', '4h');
 
         expect(result.isAllowed).toBe(false);
         expect(result.htfTrend).toBe('BULLISH');
@@ -97,18 +97,18 @@ describe('MTF Filter', () => {
     });
 
     describe('edge cases', () => {
-      it('should soft pass when insufficient klines for EMA200', () => {
+      it('should soft pass when insufficient klines for EMA200', async () => {
         const klines = createBullishKlines(100);
-        const result = checkMtfCondition(klines, 'LONG', '4h');
+        const result = await checkMtfCondition(klines, 'LONG', '4h');
 
         expect(result.isAllowed).toBe(true);
         expect(result.htfTrend).toBe('NEUTRAL');
         expect(result.reason).toContain('soft pass');
       });
 
-      it('should return all required fields', () => {
+      it('should return all required fields', async () => {
         const klines = createBullishKlines(300);
-        const result = checkMtfCondition(klines, 'LONG', '4h');
+        const result = await checkMtfCondition(klines, 'LONG', '4h');
 
         expect(result).toHaveProperty('isAllowed');
         expect(result).toHaveProperty('htfTrend');

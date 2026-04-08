@@ -26,31 +26,42 @@ vi.mock('../../../utils/confluence-scoring', () => ({
   })),
 }));
 
+const { mockPineCompute } = vi.hoisted(() => ({
+  mockPineCompute: vi.fn(async (): Promise<(number | null)[]> => [50000, 50100, 50200, 50300, 50400]),
+}));
+
+vi.mock('../../pine/PineIndicatorService', () => {
+  class MockPineIndicatorService {
+    compute = mockPineCompute;
+  }
+  return { PineIndicatorService: MockPineIndicatorService };
+});
+
 vi.mock('../../../utils/filters', async (importOriginal) => {
   const original = await importOriginal<typeof import('../../../utils/filters')>();
   return {
     ...original,
     ADX_FILTER: { MIN_KLINES_REQUIRED: 30 },
-    checkAdxCondition: vi.fn(() => ({ isAllowed: true, reason: 'ADX passed' })),
+    checkAdxCondition: vi.fn(async () => ({ isAllowed: true, reason: 'ADX passed' })),
     STOCHASTIC_FILTER: { K_PERIOD: 14, K_SMOOTHING: 3, D_PERIOD: 3 },
-    checkStochasticCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic passed' })),
-    checkStochasticRecoveryCondition: vi.fn(() => ({ isAllowed: true, reason: 'Stochastic Recovery passed' })),
-    checkStochasticHtfCondition: vi.fn(() => ({ isAllowed: true, reason: 'LONG allowed (HTF): oversold', currentK: 15, currentD: 18, isOversold: true, isOverbought: false })),
-    checkStochasticRecoveryHtfCondition: vi.fn(() => ({ isAllowed: true, reason: 'LONG allowed (HTF): recovering from oversold', currentK: 30, currentD: 28, isOversold: false, isOverbought: false })),
-    checkTrendCondition: vi.fn(() => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
-    checkMomentumTiming: vi.fn(() => ({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' })),
+    checkStochasticCondition: vi.fn(async () => ({ isAllowed: true, reason: 'Stochastic passed' })),
+    checkStochasticRecoveryCondition: vi.fn(async () => ({ isAllowed: true, reason: 'Stochastic Recovery passed' })),
+    checkStochasticHtfCondition: vi.fn(async () => ({ isAllowed: true, reason: 'LONG allowed (HTF): oversold', currentK: 15, currentD: 18, isOversold: true, isOverbought: false })),
+    checkStochasticRecoveryHtfCondition: vi.fn(async () => ({ isAllowed: true, reason: 'LONG allowed (HTF): recovering from oversold', currentK: 30, currentD: 28, isOversold: false, isOverbought: false })),
+    checkTrendCondition: vi.fn(async () => ({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' })),
+    checkMomentumTiming: vi.fn(async () => ({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' })),
     MOMENTUM_TIMING_FILTER: { MIN_KLINES_REQUIRED: 20, RSI_PERIOD: 14, MFI_PERIOD: 14, RSI_LONG_MIN: 40, RSI_SHORT_MAX: 60, RSI_PULLBACK_LONG_MIN: 30, RSI_PULLBACK_SHORT_MAX: 70, MFI_LONG_MIN: 30, MFI_SHORT_MAX: 70 },
     MTF_FILTER: { EMA_SHORT_PERIOD: 50, EMA_LONG_PERIOD: 200, MIN_KLINES_FOR_EMA200: 250 },
-    checkMtfCondition: vi.fn(() => ({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, deathCross: false, priceAboveEma50: true, priceAboveEma200: true, reason: 'MTF passed' })),
-    checkBtcCorrelation: vi.fn(() => ({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' })),
-    checkMarketRegime: vi.fn(() => ({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' })),
-    checkVolumeCondition: vi.fn(() => ({ isAllowed: true, currentVolume: 1500, averageVolume: 1000, volumeRatio: 1.5, isVolumeSpike: false, obvTrend: 'RISING', reason: 'Volume passed' })),
+    checkMtfCondition: vi.fn(async () => ({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, deathCross: false, priceAboveEma50: true, priceAboveEma200: true, reason: 'MTF passed' })),
+    checkBtcCorrelation: vi.fn(async () => ({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' })),
+    checkMarketRegime: vi.fn(async () => ({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' })),
+    checkVolumeCondition: vi.fn(async () => ({ isAllowed: true, currentVolume: 1500, averageVolume: 1000, volumeRatio: 1.5, isVolumeSpike: false, obvTrend: 'RISING', reason: 'Volume passed' })),
     checkFundingRate: vi.fn(() => ({ isAllowed: true, currentRate: 0.0001, fundingLevel: 'NORMAL', signal: 'NEUTRAL', nextFundingTime: null, reason: 'Funding rate normal' })),
-    checkChoppinessCondition: vi.fn(() => ({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' })),
+    checkChoppinessCondition: vi.fn(async () => ({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' })),
     checkSessionCondition: vi.fn(() => ({ isAllowed: true, currentHourUtc: 14, isInSession: true, reason: 'Session passed' })),
-    checkBollingerSqueezeCondition: vi.fn(() => ({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' })),
-    checkVwapCondition: vi.fn(() => ({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' })),
-    checkSupertrendCondition: vi.fn(() => ({ isAllowed: true, trend: 'up', value: 49500, reason: 'Supertrend passed' })),
+    checkBollingerSqueezeCondition: vi.fn(async () => ({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' })),
+    checkVwapCondition: vi.fn(async () => ({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' })),
+    checkSupertrendCondition: vi.fn(async () => ({ isAllowed: true, trend: 'up', value: 49500, reason: 'Supertrend passed' })),
     getHigherTimeframe: vi.fn((interval: string) => {
       const mapping: Record<string, string> = { '1m': '15m', '5m': '1h', '15m': '4h', '1h': '4h', '4h': '1d', '1d': '1w' };
       return mapping[interval] ?? null;
@@ -102,20 +113,20 @@ describe('FilterManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(calculateEMA).mockReturnValue([50000, 50100, 50200, 50300, 50400]);
-    vi.mocked(checkAdxCondition).mockReturnValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
-    vi.mocked(checkStochasticCondition).mockReturnValue({ isAllowed: true, currentK: 50, currentD: 48, isOversold: false, isOverbought: false, reason: 'Stochastic passed' });
-    vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' });
-    vi.mocked(checkMomentumTiming).mockReturnValue({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' });
-    vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, deathCross: false, priceAboveEma50: true, priceAboveEma200: true, reason: 'MTF passed' });
-    vi.mocked(checkBtcCorrelation).mockReturnValue({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' });
-    vi.mocked(checkMarketRegime).mockReturnValue({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' });
-    vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: true, currentVolume: 1500, averageVolume: 1000, volumeRatio: 1.5, isVolumeSpike: false, obvTrend: 'RISING', reason: 'Volume passed' });
+    vi.mocked(checkAdxCondition).mockResolvedValue({ isAllowed: true, adx: 25, plusDI: 30, minusDI: 15, isBullish: true, isBearish: false, isStrongTrend: true, reason: 'ADX passed' });
+    vi.mocked(checkStochasticCondition).mockResolvedValue({ isAllowed: true, currentK: 50, currentD: 48, isOversold: false, isOverbought: false, reason: 'Stochastic passed' });
+    vi.mocked(checkTrendCondition).mockResolvedValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'Trend passed' });
+    vi.mocked(checkMomentumTiming).mockResolvedValue({ isAllowed: true, rsiValue: 55, rsiPrevValue: 53, rsiMomentum: 'RISING', mfiValue: 60, mfiConfirmation: true, reason: 'Momentum passed' });
+    vi.mocked(checkMtfCondition).mockResolvedValue({ isAllowed: true, htfTrend: 'BULLISH', htfInterval: '4h', ema50: 50000, ema200: 49000, price: 51000, goldenCross: true, deathCross: false, priceAboveEma50: true, priceAboveEma200: true, reason: 'MTF passed' });
+    vi.mocked(checkBtcCorrelation).mockResolvedValue({ isAllowed: true, btcTrend: 'BULLISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 51000, btcMacdHistogram: 100, btcRsi: 55, btcRsiMomentum: 'RISING', isAltcoin: true, correlationScore: 80, reason: 'BTC correlation passed' });
+    vi.mocked(checkMarketRegime).mockResolvedValue({ isAllowed: true, regime: 'TRENDING', adx: 30, plusDI: 25, minusDI: 15, atr: 500, atrPercentile: 50, volatilityLevel: 'NORMAL', recommendedStrategy: 'TREND_FOLLOWING', reason: 'Market regime passed' });
+    vi.mocked(checkVolumeCondition).mockResolvedValue({ isAllowed: true, currentVolume: 1500, averageVolume: 1000, volumeRatio: 1.5, isVolumeSpike: false, obvTrend: 'RISING', reason: 'Volume passed' });
     vi.mocked(checkFundingRate).mockReturnValue({ isAllowed: true, currentRate: 0.0001, fundingLevel: 'NORMAL', signal: 'NEUTRAL', nextFundingTime: null, reason: 'Funding rate normal' });
-    vi.mocked(checkChoppinessCondition).mockReturnValue({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' });
+    vi.mocked(checkChoppinessCondition).mockResolvedValue({ isAllowed: true, choppinessValue: 45, isChoppy: false, isTrending: false, reason: 'Choppiness passed' });
     vi.mocked(checkSessionCondition).mockReturnValue({ isAllowed: true, currentHourUtc: 14, isInSession: true, reason: 'Session passed' });
-    vi.mocked(checkBollingerSqueezeCondition).mockReturnValue({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' });
-    vi.mocked(checkVwapCondition).mockReturnValue({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' });
-    vi.mocked(checkSupertrendCondition).mockReturnValue({ isAllowed: true, trend: 'up', value: 49500, reason: 'Supertrend passed' });
+    vi.mocked(checkBollingerSqueezeCondition).mockResolvedValue({ isAllowed: true, bbWidth: 0.15, isSqueezing: false, reason: 'BB squeeze passed' });
+    vi.mocked(checkVwapCondition).mockResolvedValue({ isAllowed: true, vwap: 50000, currentPrice: 50500, priceVsVwap: 'ABOVE', reason: 'VWAP passed' });
+    vi.mocked(checkSupertrendCondition).mockResolvedValue({ isAllowed: true, trend: 'up', value: 49500, reason: 'Supertrend passed' });
     vi.mocked(calculateConfluenceScore).mockReturnValue({ isAllowed: true, totalScore: 75, maxPossibleScore: 110, scorePercent: 68, contributions: [], alignmentBonus: 10, recommendation: 'MODERATE_ENTRY', reason: 'Confluence score 75/110 (68%) - MODERATE_ENTRY' });
     manager = new FilterManager({});
   });
@@ -145,7 +156,7 @@ describe('FilterManager', () => {
       const klines = createMockKlines(250);
       await manager.initialize(klines, '2024-01-01', '2024-12-31', 'BTCUSDT');
 
-      expect(calculateEMA).toHaveBeenCalled();
+      expect(mockPineCompute).toHaveBeenCalled();
       expect(manager.getEmaTrend()).toHaveLength(5);
     });
 
@@ -155,7 +166,7 @@ describe('FilterManager', () => {
 
       await customManager.initialize(klines, '2024-01-01', '2024-12-31', 'BTCUSDT');
 
-      expect(calculateEMA).toHaveBeenCalledWith(klines, 100);
+      expect(mockPineCompute).toHaveBeenCalledWith('ema', klines, { period: 100 });
     });
   });
 
@@ -347,134 +358,134 @@ describe('FilterManager', () => {
   });
 
   describe('checkStochasticHtfFilter', () => {
-    it('should allow when HTF stochastic filter disabled', () => {
+    it('should allow when HTF stochastic filter disabled', async () => {
       const htfKlines = createMockKlines(50);
-      const result = manager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      const result = await manager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
       expect(result).toBe(true);
       expect(checkStochasticHtfCondition).not.toHaveBeenCalled();
     });
 
-    it('should call checkStochasticHtfCondition when enabled', () => {
+    it('should call checkStochasticHtfCondition when enabled', async () => {
       const customManager = new FilterManager({ useStochasticHtfFilter: true });
       const htfKlines = createMockKlines(50);
 
-      const result = customManager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      const result = await customManager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
 
       expect(result).toBe(true);
       expect(checkStochasticHtfCondition).toHaveBeenCalled();
     });
 
-    it('should block when HTF stochastic condition fails', () => {
-      vi.mocked(checkStochasticHtfCondition).mockReturnValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked (HTF): not oversold' });
+    it('should block when HTF stochastic condition fails', async () => {
+      vi.mocked(checkStochasticHtfCondition).mockResolvedValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked (HTF): not oversold' });
       const customManager = new FilterManager({ useStochasticHtfFilter: true });
       const htfKlines = createMockKlines(50);
 
-      const result = customManager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      const result = await customManager.checkStochasticHtfFilter(htfKlines, Date.now(), 'LONG', 0);
 
       expect(result).toBe(false);
       expect(customManager.stats.skippedStochasticHtf).toBe(1);
     });
 
-    it('should allow when htfKlines is empty', () => {
+    it('should allow when htfKlines is empty', async () => {
       const customManager = new FilterManager({ useStochasticHtfFilter: true });
 
-      const result = customManager.checkStochasticHtfFilter([], Date.now(), 'LONG', 0);
+      const result = await customManager.checkStochasticHtfFilter([], Date.now(), 'LONG', 0);
 
       expect(result).toBe(true);
     });
   });
 
   describe('checkStochasticRecoveryHtfFilter', () => {
-    it('should allow when HTF stochastic recovery filter disabled', () => {
+    it('should allow when HTF stochastic recovery filter disabled', async () => {
       const htfKlines = createMockKlines(50);
-      const result = manager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      const result = await manager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
       expect(result).toBe(true);
       expect(checkStochasticRecoveryHtfCondition).not.toHaveBeenCalled();
     });
 
-    it('should call checkStochasticRecoveryHtfCondition when enabled', () => {
+    it('should call checkStochasticRecoveryHtfCondition when enabled', async () => {
       const customManager = new FilterManager({ useStochasticRecoveryHtfFilter: true });
       const htfKlines = createMockKlines(50);
 
-      const result = customManager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      const result = await customManager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
 
       expect(result).toBe(true);
       expect(checkStochasticRecoveryHtfCondition).toHaveBeenCalled();
     });
 
-    it('should block when HTF stochastic recovery condition fails', () => {
-      vi.mocked(checkStochasticRecoveryHtfCondition).mockReturnValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked (HTF): already crossed midpoint' });
+    it('should block when HTF stochastic recovery condition fails', async () => {
+      vi.mocked(checkStochasticRecoveryHtfCondition).mockResolvedValue({ isAllowed: false, currentK: 55, currentD: 52, isOversold: false, isOverbought: false, reason: 'LONG blocked (HTF): already crossed midpoint' });
       const customManager = new FilterManager({ useStochasticRecoveryHtfFilter: true });
       const htfKlines = createMockKlines(50);
 
-      const result = customManager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
+      const result = await customManager.checkStochasticRecoveryHtfFilter(htfKlines, Date.now(), 'LONG', 0);
 
       expect(result).toBe(false);
       expect(customManager.stats.skippedStochasticRecoveryHtf).toBe(1);
     });
 
-    it('should allow when htfKlines is empty', () => {
+    it('should allow when htfKlines is empty', async () => {
       const customManager = new FilterManager({ useStochasticRecoveryHtfFilter: true });
 
-      const result = customManager.checkStochasticRecoveryHtfFilter([], Date.now(), 'LONG', 0);
+      const result = await customManager.checkStochasticRecoveryHtfFilter([], Date.now(), 'LONG', 0);
 
       expect(result).toBe(true);
     });
   });
 
   describe('checkTrendFilter', () => {
-    it('should allow when trend filter disabled', () => {
+    it('should allow when trend filter disabled', async () => {
       const klines = createMockKlines(250);
 
-      const result = manager.checkTrendFilter(klines, 2, 'LONG', false, 0);
+      const result = await manager.checkTrendFilter(klines, 2, 'LONG', false, 0);
 
       expect(result).toBe(true);
       expect(checkTrendCondition).not.toHaveBeenCalled();
     });
 
-    it('should allow LONG when price above EMA', () => {
-      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'LONG allowed: price above EMA21' });
+    it('should allow LONG when price above EMA', async () => {
+      vi.mocked(checkTrendCondition).mockResolvedValue({ isAllowed: true, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'LONG allowed: price above EMA21' });
       const klines = createMockKlines(250);
 
-      const result = manager.checkTrendFilter(klines, 2, 'LONG', true, 0);
+      const result = await manager.checkTrendFilter(klines, 2, 'LONG', true, 0);
 
       expect(result).toBe(true);
       expect(checkTrendCondition).toHaveBeenCalledWith(expect.any(Array), 'LONG');
     });
 
-    it('should block LONG when price below EMA', () => {
-      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: false, ema21: 50000, price: 49000, isBullish: false, isBearish: true, reason: 'LONG blocked: price below EMA21' });
+    it('should block LONG when price below EMA', async () => {
+      vi.mocked(checkTrendCondition).mockResolvedValue({ isAllowed: false, ema21: 50000, price: 49000, isBullish: false, isBearish: true, reason: 'LONG blocked: price below EMA21' });
       const klines = createMockKlines(250);
 
-      const result = manager.checkTrendFilter(klines, 2, 'LONG', true, 0);
+      const result = await manager.checkTrendFilter(klines, 2, 'LONG', true, 0);
 
       expect(result).toBe(false);
       expect(manager.stats.skippedTrend).toBe(1);
     });
 
-    it('should allow SHORT when price below EMA', () => {
-      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: true, ema21: 50000, price: 49000, isBullish: false, isBearish: true, reason: 'SHORT allowed: price below EMA21' });
+    it('should allow SHORT when price below EMA', async () => {
+      vi.mocked(checkTrendCondition).mockResolvedValue({ isAllowed: true, ema21: 50000, price: 49000, isBullish: false, isBearish: true, reason: 'SHORT allowed: price below EMA21' });
       const klines = createMockKlines(250);
 
-      const result = manager.checkTrendFilter(klines, 2, 'SHORT', true, 0);
+      const result = await manager.checkTrendFilter(klines, 2, 'SHORT', true, 0);
 
       expect(result).toBe(true);
     });
 
-    it('should block SHORT when price above EMA', () => {
-      vi.mocked(checkTrendCondition).mockReturnValue({ isAllowed: false, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'SHORT blocked: price above EMA21' });
+    it('should block SHORT when price above EMA', async () => {
+      vi.mocked(checkTrendCondition).mockResolvedValue({ isAllowed: false, ema21: 50000, price: 51000, isBullish: true, isBearish: false, reason: 'SHORT blocked: price above EMA21' });
       const klines = createMockKlines(250);
 
-      const result = manager.checkTrendFilter(klines, 2, 'SHORT', true, 0);
+      const result = await manager.checkTrendFilter(klines, 2, 'SHORT', true, 0);
 
       expect(result).toBe(false);
       expect(manager.stats.skippedTrend).toBe(1);
     });
 
-    it('should pass when klines too short', () => {
+    it('should pass when klines too short', async () => {
       const klines = createMockKlines(1);
 
-      const result = manager.checkTrendFilter(klines, 0, 'LONG', true, 0);
+      const result = await manager.checkTrendFilter(klines, 0, 'LONG', true, 0);
 
       expect(result).toBe(true);
     });
@@ -562,47 +573,47 @@ describe('FilterManager', () => {
   });
 
   describe('checkMtfFilter', () => {
-    it('should pass when MTF filter disabled', () => {
+    it('should pass when MTF filter disabled', async () => {
       const klines = createMockKlines(300);
-      const result = manager.checkMtfFilter(klines, 'LONG', '4h', 0);
+      const result = await manager.checkMtfFilter(klines, 'LONG', '4h', 0);
 
       expect(result).toEqual({ passed: true, result: null });
       expect(checkMtfCondition).not.toHaveBeenCalled();
     });
 
-    it('should pass when htfInterval is null', () => {
+    it('should pass when htfInterval is null', async () => {
       const customManager = new FilterManager({ useMtfFilter: true });
       const klines = createMockKlines(300);
-      const result = customManager.checkMtfFilter(klines, 'LONG', null, 0);
+      const result = await customManager.checkMtfFilter(klines, 'LONG', null, 0);
 
       expect(result).toEqual({ passed: true, result: null });
     });
 
-    it('should pass when insufficient htf klines', () => {
+    it('should pass when insufficient htf klines', async () => {
       const customManager = new FilterManager({ useMtfFilter: true });
       const klines = createMockKlines(100);
-      const result = customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
+      const result = await customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
 
       expect(result).toEqual({ passed: true, result: null });
     });
 
-    it('should call checkMtfCondition with enough klines', () => {
+    it('should call checkMtfCondition with enough klines', async () => {
       const customManager = new FilterManager({ useMtfFilter: true });
       const klines = createMockKlines(300);
 
-      const result = customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
+      const result = await customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
 
       expect(result.passed).toBe(true);
       expect(result.result).toBeDefined();
       expect(checkMtfCondition).toHaveBeenCalledWith(klines, 'LONG', '4h');
     });
 
-    it('should block when MTF condition fails', () => {
-      vi.mocked(checkMtfCondition).mockReturnValue({ isAllowed: false, htfTrend: 'BEARISH', htfInterval: '4h', ema50: 50000, ema200: 51000, price: 49000, goldenCross: false, deathCross: true, priceAboveEma50: false, priceAboveEma200: false, reason: 'HTF bearish' });
+    it('should block when MTF condition fails', async () => {
+      vi.mocked(checkMtfCondition).mockResolvedValue({ isAllowed: false, htfTrend: 'BEARISH', htfInterval: '4h', ema50: 50000, ema200: 51000, price: 49000, goldenCross: false, deathCross: true, priceAboveEma50: false, priceAboveEma200: false, reason: 'HTF bearish' });
       const customManager = new FilterManager({ useMtfFilter: true });
       const klines = createMockKlines(300);
 
-      const result = customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
+      const result = await customManager.checkMtfFilter(klines, 'LONG', '4h', 0);
 
       expect(result.passed).toBe(false);
       expect(customManager.stats.skippedMtf).toBe(1);
@@ -610,40 +621,40 @@ describe('FilterManager', () => {
   });
 
   describe('checkBtcCorrelationFilter', () => {
-    it('should pass when BTC correlation filter disabled', () => {
+    it('should pass when BTC correlation filter disabled', async () => {
       const klines = createMockKlines(50);
-      const result = manager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+      const result = await manager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
 
       expect(result).toEqual({ passed: true, result: null });
       expect(checkBtcCorrelation).not.toHaveBeenCalled();
     });
 
-    it('should pass when insufficient btc klines', () => {
+    it('should pass when insufficient btc klines', async () => {
       const customManager = new FilterManager({ useBtcCorrelationFilter: true });
       const klines = createMockKlines(20);
 
-      const result = customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+      const result = await customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
 
       expect(result).toEqual({ passed: true, result: null });
     });
 
-    it('should call checkBtcCorrelation with enough klines', () => {
+    it('should call checkBtcCorrelation with enough klines', async () => {
       const customManager = new FilterManager({ useBtcCorrelationFilter: true });
       const klines = createMockKlines(50);
 
-      const result = customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+      const result = await customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
 
       expect(result.passed).toBe(true);
       expect(result.result).toBeDefined();
       expect(checkBtcCorrelation).toHaveBeenCalledWith(klines, 'LONG', 'ETHUSDT');
     });
 
-    it('should block when BTC correlation fails', () => {
-      vi.mocked(checkBtcCorrelation).mockReturnValue({ isAllowed: false, btcTrend: 'BEARISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 48000, btcMacdHistogram: -200, btcRsi: 35, btcRsiMomentum: 'FALLING', isAltcoin: true, correlationScore: 25, reason: 'BTC bearish blocks LONG' });
+    it('should block when BTC correlation fails', async () => {
+      vi.mocked(checkBtcCorrelation).mockResolvedValue({ isAllowed: false, btcTrend: 'BEARISH', btcStrength: 'STRONG', btcEma21: 50000, btcPrice: 48000, btcMacdHistogram: -200, btcRsi: 35, btcRsiMomentum: 'FALLING', isAltcoin: true, correlationScore: 25, reason: 'BTC bearish blocks LONG' });
       const customManager = new FilterManager({ useBtcCorrelationFilter: true });
       const klines = createMockKlines(50);
 
-      const result = customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
+      const result = await customManager.checkBtcCorrelationFilter(klines, 'LONG', 'ETHUSDT', 0);
 
       expect(result.passed).toBe(false);
       expect(customManager.stats.skippedBtcCorrelation).toBe(1);
@@ -651,40 +662,40 @@ describe('FilterManager', () => {
   });
 
   describe('checkMarketRegimeFilter', () => {
-    it('should pass when market regime filter disabled', () => {
+    it('should pass when market regime filter disabled', async () => {
       const klines = createMockKlines(60);
-      const result = manager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
+      const result = await manager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
 
       expect(result).toEqual({ passed: true, result: null });
       expect(checkMarketRegime).not.toHaveBeenCalled();
     });
 
-    it('should pass when setupIndex < 30', () => {
+    it('should pass when setupIndex < 30', async () => {
       const customManager = new FilterManager({ useMarketRegimeFilter: true });
       const klines = createMockKlines(60);
 
-      const result = customManager.checkMarketRegimeFilter(klines, 25, 'SETUP_9_1', 0);
+      const result = await customManager.checkMarketRegimeFilter(klines, 25, 'SETUP_9_1', 0);
 
       expect(result).toEqual({ passed: true, result: null });
     });
 
-    it('should call checkMarketRegime with enough klines', () => {
+    it('should call checkMarketRegime with enough klines', async () => {
       const customManager = new FilterManager({ useMarketRegimeFilter: true });
       const klines = createMockKlines(100);
 
-      const result = customManager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
+      const result = await customManager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
 
       expect(result.passed).toBe(true);
       expect(result.result).toBeDefined();
       expect(checkMarketRegime).toHaveBeenCalled();
     });
 
-    it('should block when market regime condition fails', () => {
-      vi.mocked(checkMarketRegime).mockReturnValue({ isAllowed: false, regime: 'RANGING', adx: 15, plusDI: 18, minusDI: 20, atr: 300, atrPercentile: 30, volatilityLevel: 'LOW', recommendedStrategy: 'MEAN_REVERSION', reason: 'Ranging market blocks trend strategy' });
+    it('should block when market regime condition fails', async () => {
+      vi.mocked(checkMarketRegime).mockResolvedValue({ isAllowed: false, regime: 'RANGING', adx: 15, plusDI: 18, minusDI: 20, atr: 300, atrPercentile: 30, volatilityLevel: 'LOW', recommendedStrategy: 'MEAN_REVERSION', reason: 'Ranging market blocks trend strategy' });
       const customManager = new FilterManager({ useMarketRegimeFilter: true });
       const klines = createMockKlines(100);
 
-      const result = customManager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
+      const result = await customManager.checkMarketRegimeFilter(klines, 40, 'SETUP_9_1', 0);
 
       expect(result.passed).toBe(false);
       expect(customManager.stats.skippedMarketRegime).toBe(1);
@@ -692,51 +703,51 @@ describe('FilterManager', () => {
   });
 
   describe('checkVolumeFilter', () => {
-    it('should pass when volume filter disabled', () => {
+    it('should pass when volume filter disabled', async () => {
       const klines = createMockKlines(50);
-      const result = manager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+      const result = await manager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
 
       expect(result).toEqual({ passed: true, result: null });
       expect(checkVolumeCondition).not.toHaveBeenCalled();
     });
 
-    it('should pass when setupIndex < 21', () => {
+    it('should pass when setupIndex < 21', async () => {
       const customManager = new FilterManager({ useVolumeFilter: true });
       const klines = createMockKlines(30);
 
-      const result = customManager.checkVolumeFilter(klines, 15, 'LONG', 'SETUP_9_1', 0);
+      const result = await customManager.checkVolumeFilter(klines, 15, 'LONG', 'SETUP_9_1', 0);
 
       expect(result).toEqual({ passed: true, result: null });
     });
 
-    it('should call checkVolumeCondition with enough klines', () => {
+    it('should call checkVolumeCondition with enough klines', async () => {
       const customManager = new FilterManager({ useVolumeFilter: true });
       const klines = createMockKlines(60);
 
-      const result = customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+      const result = await customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
 
       expect(result.passed).toBe(true);
       expect(result.result).toBeDefined();
       expect(checkVolumeCondition).toHaveBeenCalled();
     });
 
-    it('should block when volume condition fails', () => {
-      vi.mocked(checkVolumeCondition).mockReturnValue({ isAllowed: false, currentVolume: 200, averageVolume: 1000, volumeRatio: 0.2, isVolumeSpike: false, obvTrend: 'FALLING', reason: 'Volume too low' });
+    it('should block when volume condition fails', async () => {
+      vi.mocked(checkVolumeCondition).mockResolvedValue({ isAllowed: false, currentVolume: 200, averageVolume: 1000, volumeRatio: 0.2, isVolumeSpike: false, obvTrend: 'FALLING', reason: 'Volume too low' });
       const customManager = new FilterManager({ useVolumeFilter: true });
       const klines = createMockKlines(60);
 
-      const result = customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+      const result = await customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
 
       expect(result.passed).toBe(false);
       expect(customManager.stats.skippedVolume).toBe(1);
     });
 
-    it('should pass volumeFilterConfig to checkVolumeCondition', () => {
+    it('should pass volumeFilterConfig to checkVolumeCondition', async () => {
       const volumeFilterConfig = { breakoutMultiplier: 2.0, pullbackMultiplier: 0.8, useObv: true };
       const customManager = new FilterManager({ useVolumeFilter: true, volumeFilterConfig });
       const klines = createMockKlines(60);
 
-      customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
+      await customManager.checkVolumeFilter(klines, 30, 'LONG', 'SETUP_9_1', 0);
 
       expect(checkVolumeCondition).toHaveBeenCalledWith(expect.any(Array), 'LONG', 'SETUP_9_1', volumeFilterConfig);
     });
@@ -978,7 +989,7 @@ describe('FilterManager', () => {
 
   describe('initialize - handles null EMA values', () => {
     it('should map null EMA values to 0', async () => {
-      vi.mocked(calculateEMA).mockReturnValue([null, 50100, null, 50300, null]);
+      mockPineCompute.mockResolvedValueOnce([null, 50100, null, 50300, null] as (number | null)[]);
       const klines = createMockKlines(50);
 
       await manager.initialize(klines, '2024-01-01', '2024-12-31', 'BTCUSDT');

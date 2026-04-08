@@ -60,9 +60,9 @@ const createKlinesForSlowStoch = (targetK: 'oversold' | 'overbought' | 'neutral'
 
 describe('checkStochasticCondition (Slow Stochastic)', () => {
   describe('LONG direction - allowed only when oversold', () => {
-    it('should allow LONG when K is oversold (K < 20)', () => {
+    it('should allow LONG when K is oversold (K < 20)', async () => {
       const klines = createKlinesForSlowStoch('oversold');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOversold).toBe(true);
@@ -72,9 +72,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.reason).toContain('oversold');
     });
 
-    it('should block LONG when K is neutral (not oversold)', () => {
+    it('should block LONG when K is neutral (not oversold)', async () => {
       const klines = createKlinesForSlowStoch('neutral');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOversold).toBe(false);
@@ -83,9 +83,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.reason).toContain('not oversold');
     });
 
-    it('should block LONG when K is overbought (not oversold)', () => {
+    it('should block LONG when K is overbought (not oversold)', async () => {
       const klines = createKlinesForSlowStoch('overbought');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOverbought).toBe(true);
@@ -97,9 +97,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
   });
 
   describe('SHORT direction - allowed only when overbought', () => {
-    it('should allow SHORT when K is overbought (K > 80)', () => {
+    it('should allow SHORT when K is overbought (K > 80)', async () => {
       const klines = createKlinesForSlowStoch('overbought');
-      const result = checkStochasticCondition(klines, 'SHORT');
+      const result = await checkStochasticCondition(klines, 'SHORT');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOverbought).toBe(true);
@@ -109,9 +109,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.reason).toContain('overbought');
     });
 
-    it('should block SHORT when K is neutral (not overbought)', () => {
+    it('should block SHORT when K is neutral (not overbought)', async () => {
       const klines = createKlinesForSlowStoch('neutral');
-      const result = checkStochasticCondition(klines, 'SHORT');
+      const result = await checkStochasticCondition(klines, 'SHORT');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOverbought).toBe(false);
@@ -120,9 +120,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.reason).toContain('not overbought');
     });
 
-    it('should block SHORT when K is oversold (not overbought)', () => {
+    it('should block SHORT when K is oversold (not overbought)', async () => {
       const klines = createKlinesForSlowStoch('oversold');
-      const result = checkStochasticCondition(klines, 'SHORT');
+      const result = await checkStochasticCondition(klines, 'SHORT');
 
       expect(result.currentK).not.toBeNull();
       expect(result.isOversold).toBe(true);
@@ -134,13 +134,13 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
   });
 
   describe('edge cases', () => {
-    it('should return isAllowed=true (soft pass) when insufficient klines', () => {
+    it('should return isAllowed=true (soft pass) when insufficient klines', async () => {
       const klines: Kline[] = [];
       for (let i = 0; i < 10; i += 1) {
         klines.push(createKline(100, 105, 95, 100, i));
       }
 
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.currentK).toBeNull();
@@ -148,9 +148,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result.reason).toContain('soft pass');
     });
 
-    it('should return currentK and currentD values when calculation succeeds', () => {
+    it('should return currentK and currentD values when calculation succeeds', async () => {
       const klines = createKlinesForSlowStoch('neutral');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.currentD).not.toBeNull();
@@ -158,9 +158,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(typeof result.currentD).toBe('number');
     });
 
-    it('should return K value between 0 and 100', () => {
+    it('should return K value between 0 and 100', async () => {
       const klines = createKlinesForSlowStoch('neutral');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.currentK).toBeGreaterThanOrEqual(0);
@@ -179,9 +179,9 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
   });
 
   describe('result structure', () => {
-    it('should return all required fields in StochasticFilterResult', () => {
+    it('should return all required fields in StochasticFilterResult', async () => {
       const klines = createKlinesForSlowStoch('neutral');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
       expect(result).toHaveProperty('currentK');
@@ -191,18 +191,18 @@ describe('checkStochasticCondition (Slow Stochastic)', () => {
       expect(result).toHaveProperty('reason');
     });
 
-    it('should correctly identify oversold state (K < 20) after price drop', () => {
+    it('should correctly identify oversold state (K < 20) after price drop', async () => {
       const klines = createKlinesForSlowStoch('oversold');
-      const result = checkStochasticCondition(klines, 'LONG');
+      const result = await checkStochasticCondition(klines, 'LONG');
 
       expect(result.isOversold).toBe(true);
       expect(result.currentK).not.toBeNull();
       expect(result.currentK!).toBeLessThan(STOCHASTIC_FILTER.OVERSOLD_THRESHOLD);
     });
 
-    it('should correctly identify overbought state (K > 80) after price rise', () => {
+    it('should correctly identify overbought state (K > 80) after price rise', async () => {
       const klines = createKlinesForSlowStoch('overbought');
-      const result = checkStochasticCondition(klines, 'SHORT');
+      const result = await checkStochasticCondition(klines, 'SHORT');
 
       expect(result.isOverbought).toBe(true);
       expect(result.currentK).not.toBeNull();

@@ -25,8 +25,8 @@ const createNormalVolatilityKlines = (count: number, basePrice: number): Kline[]
 
 describe('calculateUnifiedPositionSize', () => {
   describe('fixed-fractional method', () => {
-    it('should calculate position size based on max percentage', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should calculate position size based on max percentage', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'fixed-fractional',
@@ -43,8 +43,8 @@ describe('calculateUnifiedPositionSize', () => {
   });
 
   describe('risk-based method', () => {
-    it('should calculate position size based on risk per trade', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should calculate position size based on risk per trade', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         stopLoss: 95,
@@ -58,8 +58,8 @@ describe('calculateUnifiedPositionSize', () => {
       expect(result.rationale).toContain('Risk 2%');
     });
 
-    it('should fallback to fixed when no stop loss', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should fallback to fixed when no stop loss', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'risk-based',
@@ -72,8 +72,8 @@ describe('calculateUnifiedPositionSize', () => {
   });
 
   describe('kelly method', () => {
-    it('should calculate position using Kelly criterion', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should calculate position using Kelly criterion', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'kelly',
@@ -92,8 +92,8 @@ describe('calculateUnifiedPositionSize', () => {
       expect(result.rationale).toContain('WR=60.0%');
     });
 
-    it('should use default stats when not provided', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should use default stats when not provided', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'kelly',
@@ -107,8 +107,8 @@ describe('calculateUnifiedPositionSize', () => {
   });
 
   describe('volatility method', () => {
-    it('should calculate position based on ATR', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should calculate position based on ATR', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'volatility',
@@ -121,8 +121,8 @@ describe('calculateUnifiedPositionSize', () => {
       expect(result.rationale).toContain('ATR=');
     });
 
-    it('should fallback to fixed when no ATR', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should fallback to fixed when no ATR', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'volatility',
@@ -135,10 +135,10 @@ describe('calculateUnifiedPositionSize', () => {
   });
 
   describe('volatility adjustment', () => {
-    it('should apply volatility adjustment when enabled', () => {
+    it('should apply volatility adjustment when enabled', async () => {
       const klines = createNormalVolatilityKlines(20, 100);
 
-      const result = calculateUnifiedPositionSize({
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'fixed-fractional',
@@ -150,8 +150,8 @@ describe('calculateUnifiedPositionSize', () => {
       expect(result.volatilityFactor).toBe(1.0);
     });
 
-    it('should not apply volatility adjustment when disabled', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should not apply volatility adjustment when disabled', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'fixed-fractional',
@@ -164,8 +164,8 @@ describe('calculateUnifiedPositionSize', () => {
   });
 
   describe('constraints', () => {
-    it('should respect max position size percent', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should respect max position size percent', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         stopLoss: 99.9,
@@ -178,8 +178,8 @@ describe('calculateUnifiedPositionSize', () => {
       expect(result.positionPercent).toBeLessThanOrEqual(10);
     });
 
-    it('should respect min position size percent', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should respect min position size percent', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'kelly',
@@ -198,8 +198,8 @@ describe('calculateUnifiedPositionSize', () => {
   });
 
   describe('risk amount calculation', () => {
-    it('should calculate risk amount with stop loss', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should calculate risk amount with stop loss', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         stopLoss: 95,
@@ -211,8 +211,8 @@ describe('calculateUnifiedPositionSize', () => {
       expect(result.riskAmount).toBeCloseTo(50, 0);
     });
 
-    it('should calculate risk amount without stop loss', () => {
-      const result = calculateUnifiedPositionSize({
+    it('should calculate risk amount without stop loss', async () => {
+      const result = await calculateUnifiedPositionSize({
         equity: 10000,
         entryPrice: 100,
         method: 'fixed-fractional',

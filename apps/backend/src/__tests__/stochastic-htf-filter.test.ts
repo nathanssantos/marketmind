@@ -137,9 +137,9 @@ describe('findHtfKlineIndex', () => {
 });
 
 describe('checkStochasticHtfCondition', () => {
-  it('should soft pass when no HTF kline found for timestamp', () => {
+  it('should soft pass when no HTF kline found for timestamp', async () => {
     const klines = createKlinesForScenario('oversold', 1000000);
-    const result = checkStochasticHtfCondition(klines, 0, 'LONG');
+    const result = await checkStochasticHtfCondition(klines, 0, 'LONG');
 
     expect(result.isAllowed).toBe(true);
     expect(result.currentK).toBeNull();
@@ -147,39 +147,39 @@ describe('checkStochasticHtfCondition', () => {
     expect(result.reason).toContain('soft pass');
   });
 
-  it('should delegate to checkStochasticCondition with sliced klines', () => {
+  it('should delegate to checkStochasticCondition with sliced klines', async () => {
     const klines = createKlinesForScenario('oversold');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticHtfCondition(klines, lastKlineTime, 'LONG');
+    const result = await checkStochasticHtfCondition(klines, lastKlineTime, 'LONG');
 
     expect(result.currentK).not.toBeNull();
     expect(result.isOversold).toBe(true);
     expect(result.isAllowed).toBe(true);
   });
 
-  it('should add (HTF) prefix to reason for allowed LONG', () => {
+  it('should add (HTF) prefix to reason for allowed LONG', async () => {
     const klines = createKlinesForScenario('oversold');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticHtfCondition(klines, lastKlineTime, 'LONG');
+    const result = await checkStochasticHtfCondition(klines, lastKlineTime, 'LONG');
 
     expect(result.reason).toContain('(HTF)');
     expect(result.reason).toContain('LONG allowed');
   });
 
-  it('should add (HTF) prefix to reason for blocked LONG', () => {
+  it('should add (HTF) prefix to reason for blocked LONG', async () => {
     const klines = createKlinesForScenario('neutral');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticHtfCondition(klines, lastKlineTime, 'LONG');
+    const result = await checkStochasticHtfCondition(klines, lastKlineTime, 'LONG');
 
     expect(result.isAllowed).toBe(false);
     expect(result.reason).toContain('(HTF)');
     expect(result.reason).toContain('LONG blocked');
   });
 
-  it('should allow SHORT when overbought on HTF', () => {
+  it('should allow SHORT when overbought on HTF', async () => {
     const klines = createKlinesForScenario('overbought');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticHtfCondition(klines, lastKlineTime, 'SHORT');
+    const result = await checkStochasticHtfCondition(klines, lastKlineTime, 'SHORT');
 
     expect(result.isAllowed).toBe(true);
     expect(result.isOverbought).toBe(true);
@@ -187,31 +187,31 @@ describe('checkStochasticHtfCondition', () => {
     expect(result.reason).toContain('SHORT allowed');
   });
 
-  it('should block SHORT when neutral on HTF', () => {
+  it('should block SHORT when neutral on HTF', async () => {
     const klines = createKlinesForScenario('neutral');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticHtfCondition(klines, lastKlineTime, 'SHORT');
+    const result = await checkStochasticHtfCondition(klines, lastKlineTime, 'SHORT');
 
     expect(result.isAllowed).toBe(false);
     expect(result.reason).toContain('(HTF)');
     expect(result.reason).toContain('SHORT blocked');
   });
 
-  it('should only use klines up to the setup timestamp', () => {
+  it('should only use klines up to the setup timestamp', async () => {
     const klines = createKlinesForScenario('oversold');
     const midIndex = Math.floor(klines.length / 2);
     const midTime = klines[midIndex]!.openTime;
 
-    const resultMid = checkStochasticHtfCondition(klines, midTime, 'LONG');
-    const resultFull = checkStochasticHtfCondition(klines, klines[klines.length - 1]!.openTime, 'LONG');
+    const resultMid = await checkStochasticHtfCondition(klines, midTime, 'LONG');
+    const resultFull = await checkStochasticHtfCondition(klines, klines[klines.length - 1]!.openTime, 'LONG');
 
     expect(resultMid.currentK).not.toBe(resultFull.currentK);
   });
 
-  it('should soft pass with insufficient sliced klines', () => {
+  it('should soft pass with insufficient sliced klines', async () => {
     const klines = createKlinesForScenario('oversold');
     const earlyTime = klines[3]!.openTime;
-    const result = checkStochasticHtfCondition(klines, earlyTime, 'LONG');
+    const result = await checkStochasticHtfCondition(klines, earlyTime, 'LONG');
 
     expect(result.isAllowed).toBe(true);
     if (result.currentK === null) {
@@ -221,9 +221,9 @@ describe('checkStochasticHtfCondition', () => {
 });
 
 describe('checkStochasticRecoveryHtfCondition', () => {
-  it('should soft pass when no HTF kline found for timestamp', () => {
+  it('should soft pass when no HTF kline found for timestamp', async () => {
     const klines = createKlinesForScenario('oversold', 1000000);
-    const result = checkStochasticRecoveryHtfCondition(klines, 0, 'LONG');
+    const result = await checkStochasticRecoveryHtfCondition(klines, 0, 'LONG');
 
     expect(result.isAllowed).toBe(true);
     expect(result.currentK).toBeNull();
@@ -231,30 +231,30 @@ describe('checkStochasticRecoveryHtfCondition', () => {
     expect(result.reason).toContain('soft pass');
   });
 
-  it('should delegate to checkStochasticRecoveryCondition with sliced klines', () => {
+  it('should delegate to checkStochasticRecoveryCondition with sliced klines', async () => {
     const klines = createKlinesForScenario('oversold');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'LONG');
+    const result = await checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'LONG');
 
     expect(result.currentK).not.toBeNull();
     expect(result).toHaveProperty('isAllowed');
     expect(result).toHaveProperty('reason');
   });
 
-  it('should add (HTF) prefix to reason when applicable', () => {
+  it('should add (HTF) prefix to reason when applicable', async () => {
     const klines = createKlinesForScenario('neutral');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'LONG');
+    const result = await checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'LONG');
 
     if (result.reason.includes('LONG allowed') || result.reason.includes('LONG blocked')) {
       expect(result.reason).toContain('(HTF)');
     }
   });
 
-  it('should return all required fields in result', () => {
+  it('should return all required fields in result', async () => {
     const klines = createKlinesForScenario('neutral');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'LONG');
+    const result = await checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'LONG');
 
     expect(result).toHaveProperty('isAllowed');
     expect(result).toHaveProperty('currentK');
@@ -264,10 +264,10 @@ describe('checkStochasticRecoveryHtfCondition', () => {
     expect(result).toHaveProperty('reason');
   });
 
-  it('should handle SHORT direction', () => {
+  it('should handle SHORT direction', async () => {
     const klines = createKlinesForScenario('overbought');
     const lastKlineTime = klines[klines.length - 1]!.openTime;
-    const result = checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'SHORT');
+    const result = await checkStochasticRecoveryHtfCondition(klines, lastKlineTime, 'SHORT');
 
     expect(result).toHaveProperty('isAllowed');
     expect(result.currentK).not.toBeNull();

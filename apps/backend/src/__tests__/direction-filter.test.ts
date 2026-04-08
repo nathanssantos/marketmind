@@ -1,12 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateEMA: vi.fn(),
+const { mockCompute, mockComputeMulti } = vi.hoisted(() => ({
+  mockCompute: vi.fn(),
+  mockComputeMulti: vi.fn(),
+}));
+
+vi.mock('../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = mockComputeMulti;
+  },
 }));
 
 import { checkDirectionFilter, DIRECTION_FILTER } from '../utils/filters/direction-filter';
-import { calculateEMA } from '@marketmind/indicators';
 
 const createKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -27,8 +34,6 @@ const createKlines = (count: number, lastClose = 100): Kline[] =>
     createKline(i === count - 1 ? lastClose : 100, i),
   );
 
-// Sets klines[-2] (prevIndex) to prevClose, and klines[-1] to lastClose.
-// Used for tests that need to control the confirmation candle value.
 const createKlinesPrev = (count: number, prevClose: number, lastClose = prevClose): Kline[] =>
   Array.from({ length: count }, (_, i) =>
     createKline(
@@ -63,9 +68,9 @@ describe('checkDirectionFilter', () => {
   });
 
   describe('insufficient klines', () => {
-    it('should return soft pass when klines < MIN_KLINES_REQUIRED', () => {
+    it('should return soft pass when klines < MIN_KLINES_REQUIRED', async () => {
       const klines = createKlines(100, 50);
-      const result = checkDirectionFilter(klines, 'LONG');
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.direction).toBe('NEUTRAL');
@@ -74,15 +79,15 @@ describe('checkDirectionFilter', () => {
       expect(result.reason).toContain('Insufficient');
     });
 
-    it('should return current price even with insufficient klines', () => {
+    it('should return current price even with insufficient klines', async () => {
       const klines = createKlines(100, 50);
-      const result = checkDirectionFilter(klines, 'LONG');
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.currentPrice).toBe(50);
     });
 
-    it('should return 0 for currentPrice when klines array is empty', () => {
-      const result = checkDirectionFilter([], 'LONG');
+    it('should return 0 for currentPrice when klines array is empty', async () => {
+      const result = await checkDirectionFilter([], 'LONG');
 
       expect(result.currentPrice).toBe(0);
       expect(result.isAllowed).toBe(true);
@@ -90,52 +95,52 @@ describe('checkDirectionFilter', () => {
   });
 
   describe('invalid EMA calculation', () => {
-    it('should return soft pass when EMA200 is null', () => {
+    it('should return soft pass when EMA200 is null', async () => {
       const klines = createKlines(220, 100);
-      vi.mocked(calculateEMA).mockReturnValue(new Array(220).fill(null));
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(new Array(220).fill(null));
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.direction).toBe('NEUTRAL');
       expect(result.reason).toContain('EMA200 calculation incomplete');
     });
 
-    it('should return soft pass when EMA200 is NaN', () => {
+    it('should return soft pass when EMA200 is NaN', async () => {
       const klines = createKlines(220, 100);
       const emaValues = new Array(220).fill(100);
       emaValues[218] = NaN;
-      vi.mocked(calculateEMA).mockReturnValue(emaValues);
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(emaValues);
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
     });
 
-    it('should return soft pass when EMA200 is 0', () => {
+    it('should return soft pass when EMA200 is 0', async () => {
       const klines = createKlines(220, 100);
       const emaValues = new Array(220).fill(100);
       emaValues[218] = 0;
-      vi.mocked(calculateEMA).mockReturnValue(emaValues);
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(emaValues);
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
     });
   });
 
   describe('BULLISH market', () => {
-    it('should allow LONG in bullish market (price above EMA, positive slope)', () => {
+    it('should allow LONG in bullish market (price above EMA, positive slope)', async () => {
       const klines = createKlines(220, 110);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'up'));
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.direction).toBe('BULLISH');
       expect(result.reason).toContain('LONG allowed');
     });
 
-    it('should block SHORT in bullish market by default', () => {
+    it('should block SHORT in bullish market by default', async () => {
       const klines = createKlines(220, 110);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
-      const result = checkDirectionFilter(klines, 'SHORT');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'up'));
+      const result = await checkDirectionFilter(klines, 'SHORT');
 
       expect(result.isAllowed).toBe(false);
       expect(result.direction).toBe('BULLISH');
@@ -143,10 +148,10 @@ describe('checkDirectionFilter', () => {
       expect(result.reason).toContain('BULLISH');
     });
 
-    it('should allow SHORT in bullish market when override enabled', () => {
+    it('should allow SHORT in bullish market when override enabled', async () => {
       const klines = createKlines(220, 110);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
-      const result = checkDirectionFilter(klines, 'SHORT', { enableShortInBullMarket: true });
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'up'));
+      const result = await checkDirectionFilter(klines, 'SHORT', { enableShortInBullMarket: true });
 
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('override enabled');
@@ -154,10 +159,10 @@ describe('checkDirectionFilter', () => {
   });
 
   describe('BEARISH market', () => {
-    it('should block LONG in bearish market by default', () => {
+    it('should block LONG in bearish market by default', async () => {
       const klines = createKlines(220, 90);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'down'));
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'down'));
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(false);
       expect(result.direction).toBe('BEARISH');
@@ -165,19 +170,19 @@ describe('checkDirectionFilter', () => {
       expect(result.reason).toContain('BEARISH');
     });
 
-    it('should allow LONG in bearish market when override enabled', () => {
+    it('should allow LONG in bearish market when override enabled', async () => {
       const klines = createKlines(220, 90);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'down'));
-      const result = checkDirectionFilter(klines, 'LONG', { enableLongInBearMarket: true });
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'down'));
+      const result = await checkDirectionFilter(klines, 'LONG', { enableLongInBearMarket: true });
 
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('override enabled');
     });
 
-    it('should allow SHORT in bearish market', () => {
+    it('should allow SHORT in bearish market', async () => {
       const klines = createKlines(220, 90);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'down'));
-      const result = checkDirectionFilter(klines, 'SHORT');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'down'));
+      const result = await checkDirectionFilter(klines, 'SHORT');
 
       expect(result.isAllowed).toBe(true);
       expect(result.direction).toBe('BEARISH');
@@ -185,19 +190,19 @@ describe('checkDirectionFilter', () => {
   });
 
   describe('NEUTRAL market', () => {
-    it('should allow LONG when price above EMA with flat slope (classified BULLISH)', () => {
+    it('should allow LONG when price above EMA with flat slope (classified BULLISH)', async () => {
       const klines = createKlinesPrev(220, 101);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'flat'));
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'flat'));
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.direction).toBe('BULLISH');
     });
 
-    it('should allow SHORT when price below EMA with flat slope (classified BEARISH)', () => {
+    it('should allow SHORT when price below EMA with flat slope (classified BEARISH)', async () => {
       const klines = createKlinesPrev(220, 99);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'flat'));
-      const result = checkDirectionFilter(klines, 'SHORT');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'flat'));
+      const result = await checkDirectionFilter(klines, 'SHORT');
 
       expect(result.isAllowed).toBe(true);
       expect(result.direction).toBe('BEARISH');
@@ -205,21 +210,21 @@ describe('checkDirectionFilter', () => {
   });
 
   describe('price vs EMA200 percent', () => {
-    it('should calculate correct percentage difference', () => {
+    it('should calculate correct percentage difference', async () => {
       const klines = createKlinesPrev(220, 110);
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'up'));
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.priceVsEma200Percent).toBeCloseTo(10.0, 0);
     });
   });
 
   describe('string close values', () => {
-    it('should handle string close values in klines', () => {
+    it('should handle string close values in klines', async () => {
       const klines = createKlinesPrev(220, 110);
       klines[218]!.close = '110' as unknown as string;
-      vi.mocked(calculateEMA).mockReturnValue(buildEmaArray(220, 100, 'up'));
-      const result = checkDirectionFilter(klines, 'LONG');
+      mockCompute.mockResolvedValue(buildEmaArray(220, 100, 'up'));
+      const result = await checkDirectionFilter(klines, 'LONG');
 
       expect(result.currentPrice).toBe(110);
     });

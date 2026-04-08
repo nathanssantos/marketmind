@@ -1,13 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateBollingerBands: vi.fn(),
-  calculateBBWidth: vi.fn(),
+const { mockComputeMulti } = vi.hoisted(() => ({
+  mockComputeMulti: vi.fn(),
+}));
+
+vi.mock('../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = vi.fn();
+    computeMulti = mockComputeMulti;
+  },
 }));
 
 import { checkBollingerSqueezeCondition, BOLLINGER_SQUEEZE_FILTER } from '../utils/filters/bollinger-squeeze-filter';
-import { calculateBollingerBands, calculateBBWidth } from '@marketmind/indicators';
 
 const createKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -32,8 +37,8 @@ describe('checkBollingerSqueezeCondition', () => {
   });
 
   describe('insufficient klines', () => {
-    it('should return soft pass when klines < period', () => {
-      const result = checkBollingerSqueezeCondition(createKlines(10));
+    it('should return soft pass when klines < period', async () => {
+      const result = await checkBollingerSqueezeCondition(createKlines(10));
 
       expect(result.isAllowed).toBe(true);
       expect(result.bbWidth).toBeNull();
@@ -41,13 +46,13 @@ describe('checkBollingerSqueezeCondition', () => {
       expect(result.reason).toContain('Insufficient');
     });
 
-    it('should not call calculateBollingerBands for insufficient klines', () => {
-      checkBollingerSqueezeCondition(createKlines(5));
-      expect(calculateBollingerBands).not.toHaveBeenCalled();
+    it('should not call computeMulti for insufficient klines', async () => {
+      await checkBollingerSqueezeCondition(createKlines(5));
+      expect(mockComputeMulti).not.toHaveBeenCalled();
     });
 
-    it('should use custom period for kline check', () => {
-      const result = checkBollingerSqueezeCondition(createKlines(15), 0.1, 30);
+    it('should use custom period for kline check', async () => {
+      const result = await checkBollingerSqueezeCondition(createKlines(15), 0.1, 30);
 
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('Insufficient');
@@ -55,9 +60,9 @@ describe('checkBollingerSqueezeCondition', () => {
   });
 
   describe('null BB calculation', () => {
-    it('should return soft pass when calculateBollingerBands returns null', () => {
-      vi.mocked(calculateBollingerBands).mockReturnValue(null as never);
-      const result = checkBollingerSqueezeCondition(createKlines(25));
+    it('should return soft pass when computeMulti returns null values', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [null], middle: [null], lower: [null] });
+      const result = await checkBollingerSqueezeCondition(createKlines(25));
 
       expect(result.isAllowed).toBe(true);
       expect(result.bbWidth).toBeNull();
@@ -66,26 +71,21 @@ describe('checkBollingerSqueezeCondition', () => {
   });
 
   describe('volatility squeeze (trade blocked)', () => {
-    it('should block trade when BB width is below threshold', () => {
-      const bbResult = { upper: 105, middle: 100, lower: 95 };
-      vi.mocked(calculateBollingerBands).mockReturnValue(bbResult);
-      vi.mocked(calculateBBWidth).mockReturnValue(0.05);
+    it('should block trade when BB width is below threshold', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [102.5], middle: [100], lower: [97.5] });
 
-      const result = checkBollingerSqueezeCondition(createKlines(25));
+      const result = await checkBollingerSqueezeCondition(createKlines(25));
 
       expect(result.isAllowed).toBe(false);
-      expect(result.bbWidth).toBe(0.05);
+      expect(result.bbWidth).toBeCloseTo(0.05);
       expect(result.isSqueezing).toBe(true);
       expect(result.reason).toContain('squeeze');
-      expect(result.reason).toContain('5.00%');
     });
 
-    it('should block when width is just below threshold', () => {
-      const bbResult = { upper: 105, middle: 100, lower: 95 };
-      vi.mocked(calculateBollingerBands).mockReturnValue(bbResult);
-      vi.mocked(calculateBBWidth).mockReturnValue(0.099);
+    it('should block when width is just below threshold', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [104.95], middle: [100], lower: [95.05] });
 
-      const result = checkBollingerSqueezeCondition(createKlines(25));
+      const result = await checkBollingerSqueezeCondition(createKlines(25));
 
       expect(result.isAllowed).toBe(false);
       expect(result.isSqueezing).toBe(true);
@@ -93,26 +93,22 @@ describe('checkBollingerSqueezeCondition', () => {
   });
 
   describe('sufficient volatility (trade allowed)', () => {
-    it('should allow trade when BB width is above threshold', () => {
-      const bbResult = { upper: 110, middle: 100, lower: 90 };
-      vi.mocked(calculateBollingerBands).mockReturnValue(bbResult);
-      vi.mocked(calculateBBWidth).mockReturnValue(0.2);
+    it('should allow trade when BB width is above threshold', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [110], middle: [100], lower: [90] });
 
-      const result = checkBollingerSqueezeCondition(createKlines(25));
+      const result = await checkBollingerSqueezeCondition(createKlines(25));
 
       expect(result.isAllowed).toBe(true);
-      expect(result.bbWidth).toBe(0.2);
+      expect(result.bbWidth).toBeCloseTo(0.2);
       expect(result.isSqueezing).toBe(false);
       expect(result.reason).toContain('sufficient volatility');
       expect(result.reason).toContain('20.00%');
     });
 
-    it('should allow when width equals threshold', () => {
-      const bbResult = { upper: 105, middle: 100, lower: 95 };
-      vi.mocked(calculateBollingerBands).mockReturnValue(bbResult);
-      vi.mocked(calculateBBWidth).mockReturnValue(0.1);
+    it('should allow when width equals threshold', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [105], middle: [100], lower: [95] });
 
-      const result = checkBollingerSqueezeCondition(createKlines(25));
+      const result = await checkBollingerSqueezeCondition(createKlines(25), 0.1);
 
       expect(result.isAllowed).toBe(true);
       expect(result.isSqueezing).toBe(false);
@@ -120,25 +116,21 @@ describe('checkBollingerSqueezeCondition', () => {
   });
 
   describe('custom parameters', () => {
-    it('should use custom threshold', () => {
-      const bbResult = { upper: 105, middle: 100, lower: 95 };
-      vi.mocked(calculateBollingerBands).mockReturnValue(bbResult);
-      vi.mocked(calculateBBWidth).mockReturnValue(0.15);
+    it('should use custom threshold', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [107.5], middle: [100], lower: [92.5] });
 
-      const result = checkBollingerSqueezeCondition(createKlines(25), 0.2);
+      const result = await checkBollingerSqueezeCondition(createKlines(25), 0.2);
 
       expect(result.isAllowed).toBe(false);
       expect(result.isSqueezing).toBe(true);
     });
 
-    it('should pass custom period and stdDev to calculateBollingerBands', () => {
-      const bbResult = { upper: 110, middle: 100, lower: 90 };
-      vi.mocked(calculateBollingerBands).mockReturnValue(bbResult);
-      vi.mocked(calculateBBWidth).mockReturnValue(0.2);
+    it('should pass custom period and stdDev to computeMulti', async () => {
+      mockComputeMulti.mockResolvedValue({ upper: [110], middle: [100], lower: [90] });
 
-      checkBollingerSqueezeCondition(createKlines(35), 0.1, 30, 2.5);
+      await checkBollingerSqueezeCondition(createKlines(35), 0.1, 30, 2.5);
 
-      expect(calculateBollingerBands).toHaveBeenCalledWith(expect.any(Array), 30, 2.5);
+      expect(mockComputeMulti).toHaveBeenCalledWith('bb', expect.any(Array), { period: 30, stdDev: 2.5 });
     });
   });
 

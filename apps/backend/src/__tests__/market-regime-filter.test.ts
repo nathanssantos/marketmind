@@ -53,9 +53,9 @@ describe('Market Regime Filter', () => {
 
   describe('checkMarketRegime', () => {
     describe('trending market', () => {
-      it('should identify trending market with high ADX', () => {
+      it('should identify trending market with high ADX', async () => {
         const klines = createTrendingKlines(100);
-        const result = checkMarketRegime(klines, 'larry-williams-9-1');
+        const result = await checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result.adx).not.toBeNull();
         expect(result).toHaveProperty('regime');
@@ -66,9 +66,9 @@ describe('Market Regime Filter', () => {
         }
       });
 
-      it('should allow trend-following setups in trending market', () => {
+      it('should allow trend-following setups in trending market', async () => {
         const klines = createTrendingKlines(100);
-        const result = checkMarketRegime(klines, 'larry-williams-9-1');
+        const result = await checkMarketRegime(klines, 'larry-williams-9-1');
 
         if (result.regime === 'TRENDING') {
           expect(result.isAllowed).toBe(true);
@@ -77,9 +77,9 @@ describe('Market Regime Filter', () => {
     });
 
     describe('ranging market', () => {
-      it('should identify ranging market with low ADX', () => {
+      it('should identify ranging market with low ADX', async () => {
         const klines = createRangingKlines(50);
-        const result = checkMarketRegime(klines, 'larry-williams-9-1');
+        const result = await checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result.adx).not.toBeNull();
         if (result.adx && result.adx < 20) {
@@ -90,17 +90,17 @@ describe('Market Regime Filter', () => {
     });
 
     describe('edge cases', () => {
-      it('should soft pass when insufficient klines', () => {
+      it('should soft pass when insufficient klines', async () => {
         const klines = createTrendingKlines(20);
-        const result = checkMarketRegime(klines, 'larry-williams-9-1');
+        const result = await checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result.isAllowed).toBe(true);
         expect(result.reason).toContain('soft pass');
       });
 
-      it('should return all required fields', () => {
+      it('should return all required fields', async () => {
         const klines = createTrendingKlines(50);
-        const result = checkMarketRegime(klines, 'larry-williams-9-1');
+        const result = await checkMarketRegime(klines, 'larry-williams-9-1');
 
         expect(result).toHaveProperty('isAllowed');
         expect(result).toHaveProperty('regime');

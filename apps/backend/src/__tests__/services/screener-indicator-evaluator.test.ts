@@ -36,379 +36,379 @@ describe('IndicatorEvaluator', () => {
   const klines = generateKlines(200);
 
   describe('evaluateIndicator', () => {
-    it('should compute RSI', () => {
-      const value = evaluateIndicator('RSI', klines, { period: 14 });
+    it('should compute RSI', async () => {
+      const value = await evaluateIndicator('RSI', klines, { period: 14 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(100);
     });
 
-    it('should compute ADX', () => {
-      const value = evaluateIndicator('ADX', klines, { period: 14 });
+    it('should compute ADX', async () => {
+      const value = await evaluateIndicator('ADX', klines, { period: 14 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThanOrEqual(0);
     });
 
-    it('should compute EMA', () => {
-      const value = evaluateIndicator('EMA', klines, { period: 21 });
+    it('should compute EMA', async () => {
+      const value = await evaluateIndicator('EMA', klines, { period: 21 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should compute SMA', () => {
-      const value = evaluateIndicator('SMA', klines, { period: 20 });
+    it('should compute SMA', async () => {
+      const value = await evaluateIndicator('SMA', klines, { period: 20 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should compute MACD_HISTOGRAM', () => {
-      const value = evaluateIndicator('MACD_HISTOGRAM', klines);
+    it('should compute MACD_HISTOGRAM', async () => {
+      const value = await evaluateIndicator('MACD_HISTOGRAM', klines);
       expect(value).not.toBeNull();
       expect(typeof value).toBe('number');
     });
 
-    it('should compute BOLLINGER_WIDTH', () => {
-      const value = evaluateIndicator('BOLLINGER_WIDTH', klines, { period: 20 });
+    it('should compute BOLLINGER_WIDTH', async () => {
+      const value = await evaluateIndicator('BOLLINGER_WIDTH', klines, { period: 20 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThanOrEqual(0);
     });
 
-    it('should compute ATR', () => {
-      const value = evaluateIndicator('ATR', klines, { period: 14 });
+    it('should compute ATR', async () => {
+      const value = await evaluateIndicator('ATR', klines, { period: 14 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should compute ATR_PERCENT', () => {
-      const value = evaluateIndicator('ATR_PERCENT', klines, { period: 14 });
+    it('should compute ATR_PERCENT', async () => {
+      const value = await evaluateIndicator('ATR_PERCENT', klines, { period: 14 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should compute STOCHASTIC_K', () => {
-      const value = evaluateIndicator('STOCHASTIC_K', klines);
+    it('should compute STOCHASTIC_K', async () => {
+      const value = await evaluateIndicator('STOCHASTIC_K', klines);
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(100);
     });
 
-    it('should compute CCI', () => {
-      const value = evaluateIndicator('CCI', klines, { period: 20 });
+    it('should compute CCI', async () => {
+      const value = await evaluateIndicator('CCI', klines, { period: 20 });
       expect(value).not.toBeNull();
     });
 
-    it('should compute MFI', () => {
-      const value = evaluateIndicator('MFI', klines, { period: 14 });
+    it('should compute MFI', async () => {
+      const value = await evaluateIndicator('MFI', klines, { period: 14 });
       expect(value).not.toBeNull();
     });
 
-    it('should compute ROC', () => {
-      const value = evaluateIndicator('ROC', klines, { period: 12 });
+    it('should compute ROC', async () => {
+      const value = await evaluateIndicator('ROC', klines, { period: 12 });
       expect(value).not.toBeNull();
     });
 
-    it('should compute WILLIAMS_R', () => {
-      const value = evaluateIndicator('WILLIAMS_R', klines, { period: 14 });
+    it('should compute WILLIAMS_R', async () => {
+      const value = await evaluateIndicator('WILLIAMS_R', klines, { period: 14 });
       expect(value).not.toBeNull();
       expect(value).toBeLessThanOrEqual(0);
       expect(value).toBeGreaterThanOrEqual(-100);
     });
 
-    it('should compute CHOPPINESS', () => {
-      const value = evaluateIndicator('CHOPPINESS', klines, { period: 14 });
+    it('should compute CHOPPINESS', async () => {
+      const value = await evaluateIndicator('CHOPPINESS', klines, { period: 14 });
       expect(value).not.toBeNull();
     });
 
-    it('should compute TSI', () => {
-      const value = evaluateIndicator('TSI', klines);
+    it('should compute TSI', async () => {
+      const value = await evaluateIndicator('TSI', klines);
       expect(value).not.toBeNull();
     });
 
-    it('should compute PRICE_CLOSE', () => {
-      const value = evaluateIndicator('PRICE_CLOSE', klines);
-      expect(value).not.toBeNull();
-      expect(value).toBeGreaterThan(0);
-    });
-
-    it('should compute VOLUME_RATIO', () => {
-      const value = evaluateIndicator('VOLUME_RATIO', klines, { period: 20 });
+    it('should compute PRICE_CLOSE', async () => {
+      const value = await evaluateIndicator('PRICE_CLOSE', klines);
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should return null for empty klines', () => {
-      expect(evaluateIndicator('RSI', [])).toBeNull();
-      expect(evaluateIndicator('ADX', [])).toBeNull();
-      expect(evaluateIndicator('PRICE_CLOSE', [])).toBeNull();
+    it('should compute VOLUME_RATIO', async () => {
+      const value = await evaluateIndicator('VOLUME_RATIO', klines, { period: 20 });
+      expect(value).not.toBeNull();
+      expect(value).toBeGreaterThan(0);
     });
 
-    it('should return null for insufficient klines', () => {
+    it('should return null for empty klines', async () => {
+      expect(await evaluateIndicator('RSI', [])).toBeNull();
+      expect(await evaluateIndicator('ADX', [])).toBeNull();
+      expect(await evaluateIndicator('PRICE_CLOSE', [])).toBeNull();
+    });
+
+    it('should return null for insufficient klines', async () => {
       const short = generateKlines(3);
-      expect(evaluateIndicator('RSI', short, { period: 14 })).toBeNull();
+      expect(await evaluateIndicator('RSI', short, { period: 14 })).toBeNull();
     });
 
-    it('should compute ticker-based indicators', () => {
+    it('should compute ticker-based indicators', async () => {
       const ticker = { priceChange: 5.5, priceChangePercent: 2.3, lastPrice: 100, volume: 50000, quoteVolume: 5000000 };
-      expect(evaluateIndicator('PRICE_CHANGE_24H', [], {}, ticker)).toBe(5.5);
-      expect(evaluateIndicator('PRICE_CHANGE_PERCENT_24H', [], {}, ticker)).toBe(2.3);
-      expect(evaluateIndicator('VOLUME_24H', [], {}, ticker)).toBe(50000);
+      expect(await evaluateIndicator('PRICE_CHANGE_24H', [], {}, ticker)).toBe(5.5);
+      expect(await evaluateIndicator('PRICE_CHANGE_PERCENT_24H', [], {}, ticker)).toBe(2.3);
+      expect(await evaluateIndicator('VOLUME_24H', [], {}, ticker)).toBe(50000);
     });
 
-    it('should compute MARKET_CAP_RANK from extra data', () => {
+    it('should compute MARKET_CAP_RANK from extra data', async () => {
       const extra = { marketCapRank: 15 };
-      expect(evaluateIndicator('MARKET_CAP_RANK', [], {}, undefined, extra)).toBe(15);
+      expect(await evaluateIndicator('MARKET_CAP_RANK', [], {}, undefined, extra)).toBe(15);
     });
 
-    it('should compute BTC_CORRELATION', () => {
+    it('should compute BTC_CORRELATION', async () => {
       const btcKlines = generateKlines(200, 40000, 500);
-      const value = evaluateIndicator('BTC_CORRELATION', klines, { period: 30 }, undefined, { btcKlines });
+      const value = await evaluateIndicator('BTC_CORRELATION', klines, { period: 30 }, undefined, { btcKlines });
       expect(value).not.toBeNull();
       expect(value!).toBeGreaterThanOrEqual(-1);
       expect(value!).toBeLessThanOrEqual(1);
     });
 
-    it('should compute MACD_SIGNAL', () => {
-      const value = evaluateIndicator('MACD_SIGNAL', klines);
+    it('should compute MACD_SIGNAL', async () => {
+      const value = await evaluateIndicator('MACD_SIGNAL', klines);
       expect(value).not.toBeNull();
       expect(typeof value).toBe('number');
     });
 
-    it('should compute BOLLINGER_UPPER', () => {
-      const value = evaluateIndicator('BOLLINGER_UPPER', klines, { period: 20, stdDev: 2 });
+    it('should compute BOLLINGER_UPPER', async () => {
+      const value = await evaluateIndicator('BOLLINGER_UPPER', klines, { period: 20, stdDev: 2 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should compute BOLLINGER_LOWER', () => {
-      const value = evaluateIndicator('BOLLINGER_LOWER', klines, { period: 20, stdDev: 2 });
+    it('should compute BOLLINGER_LOWER', async () => {
+      const value = await evaluateIndicator('BOLLINGER_LOWER', klines, { period: 20, stdDev: 2 });
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThan(0);
     });
 
-    it('should compute STOCHASTIC_D', () => {
-      const value = evaluateIndicator('STOCHASTIC_D', klines);
+    it('should compute STOCHASTIC_D', async () => {
+      const value = await evaluateIndicator('STOCHASTIC_D', klines);
       expect(value).not.toBeNull();
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(100);
     });
 
-    it('should compute CMF', () => {
-      const value = evaluateIndicator('CMF', klines, { period: 20 });
+    it('should compute CMF', async () => {
+      const value = await evaluateIndicator('CMF', klines, { period: 20 });
       expect(value).not.toBeNull();
       expect(typeof value).toBe('number');
     });
 
-    it('should compute SUPERTREND', () => {
-      const value = evaluateIndicator('SUPERTREND', klines, { period: 10, multiplier: 3 });
+    it('should compute SUPERTREND', async () => {
+      const value = await evaluateIndicator('SUPERTREND', klines, { period: 10, multiplier: 3 });
       expect(value).not.toBeNull();
       expect(typeof value).toBe('number');
     });
 
-    it('should compute OBV', () => {
-      const value = evaluateIndicator('OBV', klines);
+    it('should compute OBV', async () => {
+      const value = await evaluateIndicator('OBV', klines);
       expect(value).not.toBeNull();
       expect(typeof value).toBe('number');
     });
 
-    it('should compute VWAP', () => {
-      const value = evaluateIndicator('VWAP', klines);
+    it('should compute VWAP', async () => {
+      const value = await evaluateIndicator('VWAP', klines);
       expect(value).not.toBeNull();
       expect(typeof value).toBe('number');
     });
 
-    it('should compute FUNDING_RATE from extra data', () => {
+    it('should compute FUNDING_RATE from extra data', async () => {
       const extra: ExtraData = { fundingRate: 0.0005 };
-      expect(evaluateIndicator('FUNDING_RATE', [], {}, undefined, extra)).toBe(0.0005);
+      expect(await evaluateIndicator('FUNDING_RATE', [], {}, undefined, extra)).toBe(0.0005);
     });
 
-    it('should return null for FUNDING_RATE when extra is undefined', () => {
-      expect(evaluateIndicator('FUNDING_RATE', [], {}, undefined, undefined)).toBeNull();
+    it('should return null for FUNDING_RATE when extra is undefined', async () => {
+      expect(await evaluateIndicator('FUNDING_RATE', [], {}, undefined, undefined)).toBeNull();
     });
 
-    it('should return null for FUNDING_RATE when fundingRate is null', () => {
+    it('should return null for FUNDING_RATE when fundingRate is null', async () => {
       const extra: ExtraData = { fundingRate: null };
-      expect(evaluateIndicator('FUNDING_RATE', [], {}, undefined, extra)).toBeNull();
+      expect(await evaluateIndicator('FUNDING_RATE', [], {}, undefined, extra)).toBeNull();
     });
 
-    it('should return null for ticker-based indicators when ticker is undefined', () => {
-      expect(evaluateIndicator('PRICE_CHANGE_24H', [], {}, undefined)).toBeNull();
-      expect(evaluateIndicator('PRICE_CHANGE_PERCENT_24H', [], {}, undefined)).toBeNull();
-      expect(evaluateIndicator('VOLUME_24H', [], {}, undefined)).toBeNull();
+    it('should return null for ticker-based indicators when ticker is undefined', async () => {
+      expect(await evaluateIndicator('PRICE_CHANGE_24H', [], {}, undefined)).toBeNull();
+      expect(await evaluateIndicator('PRICE_CHANGE_PERCENT_24H', [], {}, undefined)).toBeNull();
+      expect(await evaluateIndicator('VOLUME_24H', [], {}, undefined)).toBeNull();
     });
 
-    it('should return null for MARKET_CAP_RANK when extra is undefined', () => {
-      expect(evaluateIndicator('MARKET_CAP_RANK', [], {}, undefined, undefined)).toBeNull();
+    it('should return null for MARKET_CAP_RANK when extra is undefined', async () => {
+      expect(await evaluateIndicator('MARKET_CAP_RANK', [], {}, undefined, undefined)).toBeNull();
     });
 
-    it('should return null for MARKET_CAP_RANK when marketCapRank is null', () => {
+    it('should return null for MARKET_CAP_RANK when marketCapRank is null', async () => {
       const extra: ExtraData = { marketCapRank: null };
-      expect(evaluateIndicator('MARKET_CAP_RANK', [], {}, undefined, extra)).toBeNull();
+      expect(await evaluateIndicator('MARKET_CAP_RANK', [], {}, undefined, extra)).toBeNull();
     });
 
-    it('should return null for BTC_CORRELATION when extra is undefined', () => {
-      expect(evaluateIndicator('BTC_CORRELATION', klines, { period: 30 }, undefined, undefined)).toBeNull();
+    it('should return null for BTC_CORRELATION when extra is undefined', async () => {
+      expect(await evaluateIndicator('BTC_CORRELATION', klines, { period: 30 }, undefined, undefined)).toBeNull();
     });
 
-    it('should return null for BTC_CORRELATION when btcKlines is empty', () => {
-      expect(evaluateIndicator('BTC_CORRELATION', klines, { period: 30 }, undefined, { btcKlines: [] })).toBeNull();
+    it('should return null for BTC_CORRELATION when btcKlines is empty', async () => {
+      expect(await evaluateIndicator('BTC_CORRELATION', klines, { period: 30 }, undefined, { btcKlines: [] })).toBeNull();
     });
 
-    it('should return null for BTC_CORRELATION when not enough data for correlation (n < 5)', () => {
+    it('should return null for BTC_CORRELATION when not enough data for correlation (n < 5)', async () => {
       const shortKlines = generateKlines(4);
       const shortBtcKlines = generateKlines(4, 40000, 500);
-      const value = evaluateIndicator('BTC_CORRELATION', shortKlines, { period: 3 }, undefined, { btcKlines: shortBtcKlines });
+      const value = await evaluateIndicator('BTC_CORRELATION', shortKlines, { period: 3 }, undefined, { btcKlines: shortBtcKlines });
       expect(value).toBeNull();
     });
 
-    it('should return null for BTC_CORRELATION when all returns are identical (denom === 0)', () => {
+    it('should return null for BTC_CORRELATION when all returns are identical (denom === 0)', async () => {
       const flatKlines: Kline[] = [];
       const flatBtcKlines: Kline[] = [];
       for (let i = 0; i < 40; i++) {
         flatKlines.push(makeKline(100, 99, 101, 98, 1000, i));
         flatBtcKlines.push(makeKline(40000, 39900, 40100, 39800, 5000, i));
       }
-      const value = evaluateIndicator('BTC_CORRELATION', flatKlines, { period: 30 }, undefined, { btcKlines: flatBtcKlines });
+      const value = await evaluateIndicator('BTC_CORRELATION', flatKlines, { period: 30 }, undefined, { btcKlines: flatBtcKlines });
       expect(value).toBeNull();
     });
 
-    it('should return null for OBV when klines are empty', () => {
-      expect(evaluateIndicator('OBV', [])).toBeNull();
+    it('should return null for OBV when klines are empty', async () => {
+      expect(await evaluateIndicator('OBV', [])).toBeNull();
     });
 
-    it('should return null for VWAP when klines are empty', () => {
-      expect(evaluateIndicator('VWAP', [])).toBeNull();
+    it('should return null for VWAP when klines are empty', async () => {
+      expect(await evaluateIndicator('VWAP', [])).toBeNull();
     });
 
-    it('should return null for VOLUME_RATIO when klines are empty', () => {
-      expect(evaluateIndicator('VOLUME_RATIO', [])).toBeNull();
+    it('should return null for VOLUME_RATIO when klines are empty', async () => {
+      expect(await evaluateIndicator('VOLUME_RATIO', [])).toBeNull();
     });
 
-    it('should return null for ATR_PERCENT when klines are empty', () => {
-      expect(evaluateIndicator('ATR_PERCENT', [])).toBeNull();
+    it('should return null for ATR_PERCENT when klines are empty', async () => {
+      expect(await evaluateIndicator('ATR_PERCENT', [])).toBeNull();
     });
 
-    it('should return null for ATR_PERCENT when close is zero', () => {
+    it('should return null for ATR_PERCENT when close is zero', async () => {
       const zeroCloseKlines: Kline[] = [];
       for (let i = 0; i < 20; i++) {
         zeroCloseKlines.push(makeKline(i === 19 ? 0 : 100, 99, 101, 98, 1000, i));
       }
-      const value = evaluateIndicator('ATR_PERCENT', zeroCloseKlines, { period: 14 });
+      const value = await evaluateIndicator('ATR_PERCENT', zeroCloseKlines, { period: 14 });
       expect(value).toBeNull();
     });
 
-    it('should return null for BOLLINGER_WIDTH when klines are insufficient', () => {
+    it('should return null for BOLLINGER_WIDTH when klines are insufficient', async () => {
       const shortKlines = generateKlines(2);
-      expect(evaluateIndicator('BOLLINGER_WIDTH', shortKlines, { period: 20 })).toBeNull();
+      expect(await evaluateIndicator('BOLLINGER_WIDTH', shortKlines, { period: 20 })).toBeNull();
     });
 
-    it('should return null for BOLLINGER_UPPER when klines are insufficient', () => {
-      expect(evaluateIndicator('BOLLINGER_UPPER', [], { period: 20, stdDev: 2 })).toBeNull();
+    it('should return null for BOLLINGER_UPPER when klines are insufficient', async () => {
+      expect(await evaluateIndicator('BOLLINGER_UPPER', [], { period: 20, stdDev: 2 })).toBeNull();
     });
 
-    it('should return null for BOLLINGER_LOWER when klines are insufficient', () => {
-      expect(evaluateIndicator('BOLLINGER_LOWER', [], { period: 20, stdDev: 2 })).toBeNull();
+    it('should return null for BOLLINGER_LOWER when klines are insufficient', async () => {
+      expect(await evaluateIndicator('BOLLINGER_LOWER', [], { period: 20, stdDev: 2 })).toBeNull();
     });
 
-    it('should use default params when none provided for RSI', () => {
-      const value = evaluateIndicator('RSI', klines, {});
+    it('should use default params when none provided for RSI', async () => {
+      const value = await evaluateIndicator('RSI', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for ADX', () => {
-      const value = evaluateIndicator('ADX', klines, {});
+    it('should use default params when none provided for ADX', async () => {
+      const value = await evaluateIndicator('ADX', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for EMA', () => {
-      const value = evaluateIndicator('EMA', klines, {});
+    it('should use default params when none provided for EMA', async () => {
+      const value = await evaluateIndicator('EMA', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for SMA', () => {
-      const value = evaluateIndicator('SMA', klines, {});
+    it('should use default params when none provided for SMA', async () => {
+      const value = await evaluateIndicator('SMA', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for ATR', () => {
-      const value = evaluateIndicator('ATR', klines, {});
+    it('should use default params when none provided for ATR', async () => {
+      const value = await evaluateIndicator('ATR', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for ATR_PERCENT', () => {
-      const value = evaluateIndicator('ATR_PERCENT', klines, {});
+    it('should use default params when none provided for ATR_PERCENT', async () => {
+      const value = await evaluateIndicator('ATR_PERCENT', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for STOCHASTIC_K', () => {
-      const value = evaluateIndicator('STOCHASTIC_K', klines, {});
+    it('should use default params when none provided for STOCHASTIC_K', async () => {
+      const value = await evaluateIndicator('STOCHASTIC_K', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for STOCHASTIC_D', () => {
-      const value = evaluateIndicator('STOCHASTIC_D', klines, {});
+    it('should use default params when none provided for STOCHASTIC_D', async () => {
+      const value = await evaluateIndicator('STOCHASTIC_D', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for CCI', () => {
-      const value = evaluateIndicator('CCI', klines, {});
+    it('should use default params when none provided for CCI', async () => {
+      const value = await evaluateIndicator('CCI', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for MFI', () => {
-      const value = evaluateIndicator('MFI', klines, {});
+    it('should use default params when none provided for MFI', async () => {
+      const value = await evaluateIndicator('MFI', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for CMF', () => {
-      const value = evaluateIndicator('CMF', klines, {});
+    it('should use default params when none provided for CMF', async () => {
+      const value = await evaluateIndicator('CMF', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for ROC', () => {
-      const value = evaluateIndicator('ROC', klines, {});
+    it('should use default params when none provided for ROC', async () => {
+      const value = await evaluateIndicator('ROC', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for WILLIAMS_R', () => {
-      const value = evaluateIndicator('WILLIAMS_R', klines, {});
+    it('should use default params when none provided for WILLIAMS_R', async () => {
+      const value = await evaluateIndicator('WILLIAMS_R', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for CHOPPINESS', () => {
-      const value = evaluateIndicator('CHOPPINESS', klines, {});
+    it('should use default params when none provided for CHOPPINESS', async () => {
+      const value = await evaluateIndicator('CHOPPINESS', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for SUPERTREND', () => {
-      const value = evaluateIndicator('SUPERTREND', klines, {});
+    it('should use default params when none provided for SUPERTREND', async () => {
+      const value = await evaluateIndicator('SUPERTREND', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for BOLLINGER_WIDTH', () => {
-      const value = evaluateIndicator('BOLLINGER_WIDTH', klines, {});
+    it('should use default params when none provided for BOLLINGER_WIDTH', async () => {
+      const value = await evaluateIndicator('BOLLINGER_WIDTH', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for VOLUME_RATIO', () => {
-      const value = evaluateIndicator('VOLUME_RATIO', klines, {});
+    it('should use default params when none provided for VOLUME_RATIO', async () => {
+      const value = await evaluateIndicator('VOLUME_RATIO', klines, {});
       expect(value).not.toBeNull();
     });
 
-    it('should use default params when none provided for BTC_CORRELATION', () => {
+    it('should use default params when none provided for BTC_CORRELATION', async () => {
       const btcKlines = generateKlines(200, 40000, 500);
-      const value = evaluateIndicator('BTC_CORRELATION', klines, {}, undefined, { btcKlines });
+      const value = await evaluateIndicator('BTC_CORRELATION', klines, {}, undefined, { btcKlines });
       expect(value).not.toBeNull();
     });
 
-    it('should return null for an unknown indicator id', () => {
-      const value = evaluateIndicator('UNKNOWN_INDICATOR' as never, klines);
+    it('should return null for an unknown indicator id', async () => {
+      const value = await evaluateIndicator('UNKNOWN_INDICATOR' as never, klines);
       expect(value).toBeNull();
     });
   });
 
   describe('evaluateIndicators', () => {
-    it('should evaluate multiple indicators at once', () => {
-      const result = evaluateIndicators(
+    it('should evaluate multiple indicators at once', async () => {
+      const result = await evaluateIndicators(
         ['RSI', 'ADX', 'EMA', 'PRICE_CLOSE'],
         klines,
         { RSI: { period: 14 }, ADX: { period: 14 }, EMA: { period: 21 } },
@@ -419,8 +419,8 @@ describe('IndicatorEvaluator', () => {
       expect(result['PRICE_CLOSE']).not.toBeNull();
     });
 
-    it('should use empty params when paramsMap entry is missing for an indicator', () => {
-      const result = evaluateIndicators(
+    it('should use empty params when paramsMap entry is missing for an indicator', async () => {
+      const result = await evaluateIndicators(
         ['RSI', 'PRICE_CLOSE'],
         klines,
         {},
@@ -429,10 +429,10 @@ describe('IndicatorEvaluator', () => {
       expect(result['PRICE_CLOSE']).not.toBeNull();
     });
 
-    it('should handle ticker-based indicators in evaluateIndicators', () => {
+    it('should handle ticker-based indicators in evaluateIndicators', async () => {
       const ticker: TickerData = { priceChange: 10, priceChangePercent: 5, lastPrice: 200, volume: 90000, quoteVolume: 18000000 };
       const extra: ExtraData = { fundingRate: 0.001, marketCapRank: 5 };
-      const result = evaluateIndicators(
+      const result = await evaluateIndicators(
         ['PRICE_CHANGE_24H', 'FUNDING_RATE', 'MARKET_CAP_RANK', 'RSI'],
         klines,
         { RSI: { period: 14 } },
@@ -447,16 +447,16 @@ describe('IndicatorEvaluator', () => {
   });
 
   describe('getPreviousValue', () => {
-    it('should return value from N bars back', () => {
-      const current = evaluateIndicator('RSI', klines, { period: 14 });
-      const previous = getPreviousValue('RSI', klines, 2, { period: 14 });
+    it('should return value from N bars back', async () => {
+      const current = await evaluateIndicator('RSI', klines, { period: 14 });
+      const previous = await getPreviousValue('RSI', klines, 2, { period: 14 });
       expect(previous).not.toBeNull();
       expect(previous).not.toBe(current);
     });
 
-    it('should return null if not enough klines', () => {
+    it('should return null if not enough klines', async () => {
       const short = generateKlines(5);
-      expect(getPreviousValue('RSI', short, 10, { period: 14 })).toBeNull();
+      expect(await getPreviousValue('RSI', short, 10, { period: 14 })).toBeNull();
     });
   });
 
@@ -482,7 +482,7 @@ describe('IndicatorEvaluator', () => {
   });
 
   describe('edge cases - getReturns with zero close', () => {
-    it('should skip zero-close klines in BTC_CORRELATION calculation', () => {
+    it('should skip zero-close klines in BTC_CORRELATION calculation', async () => {
       const klinesWithZero: Kline[] = [];
       const btcKlines: Kline[] = [];
       for (let i = 0; i < 40; i++) {
@@ -490,97 +490,97 @@ describe('IndicatorEvaluator', () => {
         klinesWithZero.push(makeKline(price, price * 0.99, price * 1.01, price * 0.98, 1000, i));
         btcKlines.push(makeKline(40000 + i * 10, 39900, 40100, 39800, 5000, i));
       }
-      const value = evaluateIndicator('BTC_CORRELATION', klinesWithZero, { period: 30 }, undefined, { btcKlines });
+      const value = await evaluateIndicator('BTC_CORRELATION', klinesWithZero, { period: 30 }, undefined, { btcKlines });
       expect(value === null || (typeof value === 'number' && value >= -1 && value <= 1)).toBe(true);
     });
   });
 
   describe('edge cases - getLastNonNull and getLastValidNumber', () => {
-    it('should return null for MACD_HISTOGRAM when klines produce no valid values', () => {
-      const result = evaluateIndicator('MACD_HISTOGRAM', []);
+    it('should return null for MACD_HISTOGRAM when klines produce no valid values', async () => {
+      const result = await evaluateIndicator('MACD_HISTOGRAM', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for MACD_SIGNAL when klines produce no valid values', () => {
-      const result = evaluateIndicator('MACD_SIGNAL', []);
+    it('should return null for MACD_SIGNAL when klines produce no valid values', async () => {
+      const result = await evaluateIndicator('MACD_SIGNAL', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for CHOPPINESS when klines are empty', () => {
-      const result = evaluateIndicator('CHOPPINESS', []);
+    it('should return null for CHOPPINESS when klines are empty', async () => {
+      const result = await evaluateIndicator('CHOPPINESS', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for TSI when klines are empty', () => {
-      const result = evaluateIndicator('TSI', []);
+    it('should return null for TSI when klines are empty', async () => {
+      const result = await evaluateIndicator('TSI', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for SUPERTREND when klines are empty', () => {
-      const result = evaluateIndicator('SUPERTREND', []);
+    it('should return null for SUPERTREND when klines are empty', async () => {
+      const result = await evaluateIndicator('SUPERTREND', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for CMF when klines are empty', () => {
-      const result = evaluateIndicator('CMF', []);
+    it('should return null for CMF when klines are empty', async () => {
+      const result = await evaluateIndicator('CMF', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for CCI when klines are empty', () => {
-      const result = evaluateIndicator('CCI', []);
+    it('should return null for CCI when klines are empty', async () => {
+      const result = await evaluateIndicator('CCI', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for MFI when klines are empty', () => {
-      const result = evaluateIndicator('MFI', []);
+    it('should return null for MFI when klines are empty', async () => {
+      const result = await evaluateIndicator('MFI', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for WILLIAMS_R when klines are empty', () => {
-      const result = evaluateIndicator('WILLIAMS_R', []);
+    it('should return null for WILLIAMS_R when klines are empty', async () => {
+      const result = await evaluateIndicator('WILLIAMS_R', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for ROC when klines are empty', () => {
-      const result = evaluateIndicator('ROC', []);
+    it('should return null for ROC when klines are empty', async () => {
+      const result = await evaluateIndicator('ROC', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for EMA when klines are empty', () => {
-      const result = evaluateIndicator('EMA', []);
+    it('should return null for EMA when klines are empty', async () => {
+      const result = await evaluateIndicator('EMA', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for SMA when klines are empty', () => {
-      const result = evaluateIndicator('SMA', []);
+    it('should return null for SMA when klines are empty', async () => {
+      const result = await evaluateIndicator('SMA', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for STOCHASTIC_K when klines are empty', () => {
-      const result = evaluateIndicator('STOCHASTIC_K', []);
+    it('should return null for STOCHASTIC_K when klines are empty', async () => {
+      const result = await evaluateIndicator('STOCHASTIC_K', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for STOCHASTIC_D when klines are empty', () => {
-      const result = evaluateIndicator('STOCHASTIC_D', []);
+    it('should return null for STOCHASTIC_D when klines are empty', async () => {
+      const result = await evaluateIndicator('STOCHASTIC_D', []);
       expect(result).toBeNull();
     });
 
-    it('should return null for ATR when klines are empty', () => {
-      const result = evaluateIndicator('ATR', []);
+    it('should return null for ATR when klines are empty', async () => {
+      const result = await evaluateIndicator('ATR', []);
       expect(result).toBeNull();
     });
   });
 
   describe('getPreviousValue - additional edge cases', () => {
-    it('should use default empty params when none provided', () => {
-      const value = getPreviousValue('RSI', klines, 1);
+    it('should use default empty params when none provided', async () => {
+      const value = await getPreviousValue('RSI', klines, 1);
       expect(value).not.toBeNull();
     });
 
-    it('should return null when barsBack equals klines length', () => {
+    it('should return null when barsBack equals klines length', async () => {
       const fiveKlines = generateKlines(5);
-      expect(getPreviousValue('PRICE_CLOSE', fiveKlines, 5)).toBeNull();
+      expect(await getPreviousValue('PRICE_CLOSE', fiveKlines, 5)).toBeNull();
     });
   });
 });

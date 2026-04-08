@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateATR: vi.fn(),
-  calculateADX: vi.fn(),
-  calculateRSI: vi.fn(),
+const { mockCompute, mockComputeMulti } = vi.hoisted(() => ({
+  mockCompute: vi.fn(),
+  mockComputeMulti: vi.fn(),
+}));
+vi.mock('../../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = mockComputeMulti;
+  },
 }));
 
 import {
@@ -16,11 +21,6 @@ import {
   type DynamicPyramidConfig,
   type PyramidCandidate,
 } from '../../services/dynamic-pyramid-evaluator';
-import { calculateATR, calculateADX, calculateRSI } from '@marketmind/indicators';
-
-const mockedCalculateATR = vi.mocked(calculateATR);
-const mockedCalculateADX = vi.mocked(calculateADX);
-const mockedCalculateRSI = vi.mocked(calculateRSI);
 
 const createKline = (close: number, high: number, low: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -38,6 +38,28 @@ const createKline = (close: number, high: number, low: number, index: number): K
 
 const createKlines = (count: number): Kline[] =>
   Array.from({ length: count }, (_, i) => createKline(100 + i, 101 + i, 99 + i, i));
+
+const setupMocks = (opts: {
+  atr?: (number | null)[];
+  adx?: (number | null)[];
+  plusDI?: (number | null)[];
+  minusDI?: (number | null)[];
+  rsi?: (number | null)[];
+}) => {
+  mockCompute.mockImplementation((type: string) => {
+    if (type === 'atr') return Promise.resolve(opts.atr ?? []);
+    if (type === 'rsi') return Promise.resolve(opts.rsi ?? []);
+    return Promise.resolve([]);
+  });
+  mockComputeMulti.mockImplementation((type: string) => {
+    if (type === 'dmi') return Promise.resolve({
+      adx: opts.adx ?? [],
+      plusDI: opts.plusDI ?? [],
+      minusDI: opts.minusDI ?? [],
+    });
+    return Promise.resolve({});
+  });
+};
 
 const defaultConfig: DynamicPyramidConfig = {
   useAtr: true,
@@ -57,9 +79,9 @@ describe('evaluateDynamicConditions', () => {
     vi.clearAllMocks();
   });
 
-  it('should reject when klines are insufficient (< 30)', () => {
+  it('should reject when klines are insufficient (< 30)', async () => {
     const klines = createKlines(20);
-    const result = evaluateDynamicConditions(klines, defaultConfig);
+    const result = await evaluateDynamicConditions(klines, defaultConfig);
 
     expect(result.canPyramid).toBe(false);
     expect(result.reason).toBe('Insufficient kline data for indicator calculation');
@@ -71,27 +93,22 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBe(defaultConfig.baseScaleFactor);
   });
 
-  it('should reject when klines length is exactly 29', () => {
+  it('should reject when klines length is exactly 29', async () => {
     const klines = createKlines(29);
-    const result = evaluateDynamicConditions(klines, defaultConfig);
+    const result = await evaluateDynamicConditions(klines, defaultConfig);
 
     expect(result.canPyramid).toBe(false);
     expect(result.reason).toContain('Insufficient');
   });
 
-  it('should calculate ATR ratio and adjust min distance', () => {
+  it('should calculate ATR ratio and adjust min distance', async () => {
     const klines = createKlines(50);
     const atrValues: number[] = Array.from({ length: 50 }, (_, i) => (i < 10 ? 0 : 2.0));
     atrValues[atrValues.length - 1] = 3.0;
 
-    mockedCalculateATR.mockReturnValue(atrValues);
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [15],
-    });
+    setupMocks({ atr: atrValues, adx: [30], plusDI: [20], minusDI: [15] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.canPyramid).toBe(true);
     expect(result.atrValue).toBe(3.0);
@@ -99,69 +116,50 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedMinDistance).toBeGreaterThan(defaultConfig.baseMinDistance);
   });
 
-  it('should clamp ATR ratio between 0.5 and 2.0', () => {
+  it('should clamp ATR ratio between 0.5 and 2.0', async () => {
     const klines = createKlines(50);
     const atrValues = Array.from({ length: 50 }, () => 1.0);
     atrValues[atrValues.length - 1] = 100.0;
 
-    mockedCalculateATR.mockReturnValue(atrValues);
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [15],
-    });
+    setupMocks({ atr: atrValues, adx: [30], plusDI: [20], minusDI: [15] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.atrRatio).toBeLessThanOrEqual(2.0);
     expect(result.atrRatio).toBeGreaterThanOrEqual(0.5);
   });
 
-  it('should handle ATR with fewer than 2 valid values', () => {
+  it('should handle ATR with fewer than 2 valid values', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([NaN, 0, NaN, 0, 1.5]);
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [15],
-    });
+    setupMocks({ atr: [NaN, 0, NaN, 0, 1.5], adx: [30], plusDI: [20], minusDI: [15] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.canPyramid).toBe(true);
     expect(result.atrRatio).toBe(1);
   });
 
-  it('should skip ATR calculation when useAtr is false', () => {
+  it('should skip ATR calculation when useAtr is false', async () => {
     const klines = createKlines(50);
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [15],
-    });
+    setupMocks({ adx: [30], plusDI: [20], minusDI: [15] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useAtr: false,
       useRsi: false,
     });
 
-    expect(mockedCalculateATR).not.toHaveBeenCalled();
+    expect(mockCompute).not.toHaveBeenCalledWith('atr', expect.anything(), expect.anything());
     expect(result.atrRatio).toBe(1);
     expect(result.atrValue).toBeNull();
     expect(result.canPyramid).toBe(true);
   });
 
-  it('should reject when ADX is below threshold', () => {
+  it('should reject when ADX is below threshold', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [20.0],
-      plusDI: [15],
-      minusDI: [18],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [20.0], plusDI: [15], minusDI: [18] });
 
-    const result = evaluateDynamicConditions(klines, defaultConfig);
+    const result = await evaluateDynamicConditions(klines, defaultConfig);
 
     expect(result.canPyramid).toBe(false);
     expect(result.reason).toContain('ADX');
@@ -169,79 +167,56 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adxValue).toBe(20.0);
   });
 
-  it('should pass when ADX is above threshold', () => {
+  it('should pass when ADX is above threshold', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [35.0],
-      plusDI: [25],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [35.0], plusDI: [25], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.canPyramid).toBe(true);
     expect(result.adxValue).toBe(35.0);
   });
 
-  it('should pass when ADX equals threshold exactly', () => {
+  it('should pass when ADX equals threshold exactly', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [25.0],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [25.0], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.canPyramid).toBe(true);
     expect(result.adxValue).toBe(25.0);
   });
 
-  it('should skip ADX check when useAdx is false', () => {
+  it('should skip ADX check when useAdx is false', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5) });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useAdx: false,
       useRsi: false,
     });
 
-    expect(mockedCalculateADX).not.toHaveBeenCalled();
+    expect(mockComputeMulti).not.toHaveBeenCalled();
     expect(result.adxValue).toBeNull();
     expect(result.canPyramid).toBe(true);
   });
 
-  it('should handle empty ADX values array', () => {
+  it('should handle empty ADX values array', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [null, null],
-      plusDI: [null],
-      minusDI: [null],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [null, null], plusDI: [null], minusDI: [null] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.canPyramid).toBe(true);
     expect(result.adxValue).toBeNull();
   });
 
-  it('should reject when RSI is in neutral zone', () => {
+  it('should reject when RSI is in neutral zone', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [50.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10], rsi: [50.0] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(false);
     expect(result.reason).toContain('RSI');
@@ -249,122 +224,72 @@ describe('evaluateDynamicConditions', () => {
     expect(result.rsiValue).toBe(50.0);
   });
 
-  it('should pass when RSI is below lower bound (strong downtrend)', () => {
+  it('should pass when RSI is below lower bound (strong downtrend)', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [30.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10], rsi: [30.0] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(true);
     expect(result.rsiValue).toBe(30.0);
   });
 
-  it('should pass when RSI is above upper bound (strong uptrend)', () => {
+  it('should pass when RSI is above upper bound (strong uptrend)', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [70.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10], rsi: [70.0] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(true);
     expect(result.rsiValue).toBe(70.0);
   });
 
-  it('should pass when RSI equals lower bound exactly', () => {
+  it('should pass when RSI equals lower bound exactly', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [40.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10], rsi: [40.0] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(true);
   });
 
-  it('should pass when RSI equals upper bound exactly', () => {
+  it('should pass when RSI equals upper bound exactly', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [60.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10], rsi: [60.0] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(true);
   });
 
-  it('should skip RSI check when useRsi is false', () => {
+  it('should skip RSI check when useRsi is false', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useRsi: false,
     });
 
-    expect(mockedCalculateRSI).not.toHaveBeenCalled();
+    expect(mockCompute).not.toHaveBeenCalledWith('rsi', expect.anything(), expect.anything());
     expect(result.rsiValue).toBeNull();
   });
 
-  it('should handle empty RSI values array', () => {
+  it('should handle empty RSI values array', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [null, null],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10], rsi: [null, null] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(true);
     expect(result.rsiValue).toBeNull();
   });
 
-  it('should apply leverage-aware scale factor when leverage > 1', () => {
+  it('should apply leverage-aware scale factor when leverage > 1', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useRsi: false,
       leverage: 4,
@@ -376,16 +301,11 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBe(0.4);
   });
 
-  it('should not adjust scale factor when leverageAware is false', () => {
+  it('should not adjust scale factor when leverageAware is false', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useRsi: false,
       leverage: 10,
@@ -395,16 +315,11 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBe(defaultConfig.baseScaleFactor);
   });
 
-  it('should not adjust scale factor when leverage is 1', () => {
+  it('should not adjust scale factor when leverage is 1', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useRsi: false,
       leverage: 1,
@@ -414,16 +329,11 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBe(defaultConfig.baseScaleFactor);
   });
 
-  it('should clamp adjusted scale factor to minimum 0.1', () => {
+  it('should clamp adjusted scale factor to minimum 0.1', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useRsi: false,
       baseScaleFactor: 0.1,
@@ -434,16 +344,11 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBeGreaterThanOrEqual(0.1);
   });
 
-  it('should clamp adjusted scale factor to maximum 1.0', () => {
+  it('should clamp adjusted scale factor to maximum 1.0', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 1.5));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: Array.from({ length: 50 }, () => 1.5), adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useRsi: false,
       baseScaleFactor: 1.5,
@@ -454,19 +359,11 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBeLessThanOrEqual(1.0);
   });
 
-  it('should return all indicator values when all conditions pass', () => {
+  it('should return all indicator values when all conditions pass', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue(Array.from({ length: 50 }, () => 2.0));
-    mockedCalculateADX.mockReturnValue({
-      adx: [30.5],
-      plusDI: [20],
-      minusDI: [10],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [72.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: Array.from({ length: 50 }, () => 2.0), adx: [30.5], plusDI: [20], minusDI: [10], rsi: [72.0] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: true });
 
     expect(result.canPyramid).toBe(true);
     expect(result.reason).toBe('Dynamic conditions met');
@@ -475,10 +372,10 @@ describe('evaluateDynamicConditions', () => {
     expect(result.atrValue).toBe(2.0);
   });
 
-  it('should handle all indicators disabled', () => {
+  it('should handle all indicators disabled', async () => {
     const klines = createKlines(50);
 
-    const result = evaluateDynamicConditions(klines, {
+    const result = await evaluateDynamicConditions(klines, {
       ...defaultConfig,
       useAtr: false,
       useAdx: false,
@@ -494,16 +391,11 @@ describe('evaluateDynamicConditions', () => {
     expect(result.adjustedScaleFactor).toBe(defaultConfig.baseScaleFactor);
   });
 
-  it('should handle ATR where avgAtr is 0', () => {
+  it('should handle ATR where avgAtr is 0', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 2.0]);
-    mockedCalculateADX.mockReturnValue({
-      adx: [30],
-      plusDI: [20],
-      minusDI: [10],
-    });
+    setupMocks({ atr: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 2.0], adx: [30], plusDI: [20], minusDI: [10] });
 
-    const result = evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
+    const result = await evaluateDynamicConditions(klines, { ...defaultConfig, useRsi: false });
 
     expect(result.canPyramid).toBe(true);
   });
@@ -608,49 +500,49 @@ describe('calculateAtrAdjustedMinDistance', () => {
     vi.clearAllMocks();
   });
 
-  it('should return base distance when klines are insufficient', () => {
+  it('should return base distance when klines are insufficient', async () => {
     const klines = createKlines(20);
-    expect(calculateAtrAdjustedMinDistance(0.005, klines)).toBe(0.005);
+    expect(await calculateAtrAdjustedMinDistance(0.005, klines)).toBe(0.005);
   });
 
-  it('should return base distance when klines length is exactly 29', () => {
+  it('should return base distance when klines length is exactly 29', async () => {
     const klines = createKlines(29);
-    expect(calculateAtrAdjustedMinDistance(0.005, klines)).toBe(0.005);
+    expect(await calculateAtrAdjustedMinDistance(0.005, klines)).toBe(0.005);
   });
 
-  it('should return base distance when fewer than 2 valid ATR values', () => {
+  it('should return base distance when fewer than 2 valid ATR values', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([NaN, 0, NaN]);
+    setupMocks({ atr: [NaN, 0, NaN] });
 
-    expect(calculateAtrAdjustedMinDistance(0.005, klines)).toBe(0.005);
+    expect(await calculateAtrAdjustedMinDistance(0.005, klines)).toBe(0.005);
   });
 
-  it('should adjust distance based on ATR ratio', () => {
+  it('should adjust distance based on ATR ratio', async () => {
     const klines = createKlines(50);
     const atrValues = Array.from({ length: 50 }, () => 1.0);
     atrValues[atrValues.length - 1] = 1.5;
-    mockedCalculateATR.mockReturnValue(atrValues);
+    setupMocks({ atr: atrValues });
 
-    const result = calculateAtrAdjustedMinDistance(0.005, klines);
+    const result = await calculateAtrAdjustedMinDistance(0.005, klines);
     expect(result).toBeGreaterThan(0.005);
   });
 
-  it('should clamp ratio between 0.5 and 2.0', () => {
+  it('should clamp ratio between 0.5 and 2.0', async () => {
     const klines = createKlines(50);
     const atrValues = Array.from({ length: 50 }, () => 1.0);
     atrValues[atrValues.length - 1] = 100.0;
-    mockedCalculateATR.mockReturnValue(atrValues);
+    setupMocks({ atr: atrValues });
 
-    const result = calculateAtrAdjustedMinDistance(0.005, klines);
+    const result = await calculateAtrAdjustedMinDistance(0.005, klines);
     expect(result).toBeLessThanOrEqual(0.005 * 2.0);
     expect(result).toBeGreaterThanOrEqual(0.005 * 0.5);
   });
 
-  it('should handle avgAtr of 0', () => {
+  it('should handle avgAtr of 0', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 2.0]);
+    setupMocks({ atr: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 2.0] });
 
-    const result = calculateAtrAdjustedMinDistance(0.005, klines);
+    const result = await calculateAtrAdjustedMinDistance(0.005, klines);
     expect(result).toBeGreaterThan(0);
   });
 });
@@ -660,9 +552,9 @@ describe('getCurrentIndicatorValues', () => {
     vi.clearAllMocks();
   });
 
-  it('should return nulls when klines are insufficient', () => {
+  it('should return nulls when klines are insufficient', async () => {
     const klines = createKlines(20);
-    const result = getCurrentIndicatorValues(klines);
+    const result = await getCurrentIndicatorValues(klines);
 
     expect(result.atr).toBeNull();
     expect(result.adx).toBeNull();
@@ -671,19 +563,11 @@ describe('getCurrentIndicatorValues', () => {
     expect(result.minusDI).toBeNull();
   });
 
-  it('should return all indicator values for sufficient klines', () => {
+  it('should return all indicator values for sufficient klines', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([1.5, 2.0, 2.5]);
-    mockedCalculateADX.mockReturnValue({
-      adx: [25.0, 30.0],
-      plusDI: [20.0, 22.0],
-      minusDI: [15.0, 12.0],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [55.0, 60.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: [1.5, 2.0, 2.5], adx: [25.0, 30.0], plusDI: [20.0, 22.0], minusDI: [15.0, 12.0], rsi: [55.0, 60.0] });
 
-    const result = getCurrentIndicatorValues(klines);
+    const result = await getCurrentIndicatorValues(klines);
 
     expect(result.atr).toBe(2.5);
     expect(result.adx).toBe(30.0);
@@ -692,19 +576,11 @@ describe('getCurrentIndicatorValues', () => {
     expect(result.minusDI).toBe(12.0);
   });
 
-  it('should return null for indicators with no valid values', () => {
+  it('should return null for indicators with no valid values', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([NaN, 0, NaN]);
-    mockedCalculateADX.mockReturnValue({
-      adx: [null, null],
-      plusDI: [null],
-      minusDI: [null],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [null, null],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: [NaN, 0, NaN], adx: [null, null], plusDI: [null], minusDI: [null], rsi: [null, null] });
 
-    const result = getCurrentIndicatorValues(klines);
+    const result = await getCurrentIndicatorValues(klines);
 
     expect(result.atr).toBeNull();
     expect(result.adx).toBeNull();
@@ -713,24 +589,29 @@ describe('getCurrentIndicatorValues', () => {
     expect(result.minusDI).toBeNull();
   });
 
-  it('should return last valid value for each indicator', () => {
+  it('should return last valid value for each indicator', async () => {
     const klines = createKlines(50);
-    mockedCalculateATR.mockReturnValue([0, NaN, 3.0, 0, 4.0]);
-    mockedCalculateADX.mockReturnValue({
-      adx: [null, 25.0, null, 28.0],
-      plusDI: [null, 18.0, null, 20.0],
-      minusDI: [null, 14.0, null, 11.0],
-    });
-    mockedCalculateRSI.mockReturnValue({
-      values: [null, 45.0, null, 55.0],
-    } as ReturnType<typeof calculateRSI>);
+    setupMocks({ atr: [0, NaN, 3.0, 0, 4.0], adx: [null, 25.0, null, 28.0], plusDI: [null, 18.0, null, 20.0], minusDI: [null, 14.0, null, 11.0], rsi: [null, 45.0, null, 55.0] });
 
-    const result = getCurrentIndicatorValues(klines);
+    const result = await getCurrentIndicatorValues(klines);
 
     expect(result.atr).toBe(4.0);
     expect(result.adx).toBe(28.0);
     expect(result.rsi).toBe(55.0);
     expect(result.plusDI).toBe(20.0);
     expect(result.minusDI).toBe(11.0);
+  });
+
+  it('should return all required fields', async () => {
+    const klines = createKlines(50);
+    setupMocks({ atr: [1.0], adx: [25.0], plusDI: [20.0], minusDI: [15.0], rsi: [50.0] });
+
+    const result = await getCurrentIndicatorValues(klines);
+
+    expect(result).toHaveProperty('atr');
+    expect(result).toHaveProperty('adx');
+    expect(result).toHaveProperty('rsi');
+    expect(result).toHaveProperty('plusDI');
+    expect(result).toHaveProperty('minusDI');
   });
 });

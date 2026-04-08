@@ -99,7 +99,7 @@ const defaultConfig: PyramidConfig = {
 };
 
 describe('evaluateDynamicPyramid', () => {
-  let mockEvaluateStatic: ReturnType<typeof vi.fn>;
+  let mockEvaluateStatic: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<PyramidEvaluation>>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -107,7 +107,7 @@ describe('evaluateDynamicPyramid', () => {
   });
 
   it('should reject when dynamic conditions fail', async () => {
-    mockedEvaluateDynamicConditions.mockReturnValue({
+    mockedEvaluateDynamicConditions.mockResolvedValue({
       canPyramid: false,
       reason: 'ADX below threshold',
       adjustedMinDistance: 0.005,
@@ -130,7 +130,7 @@ describe('evaluateDynamicPyramid', () => {
   });
 
   it('should delegate to evaluateStatic with adjusted config when dynamic passes', async () => {
-    mockedEvaluateDynamicConditions.mockReturnValue({
+    mockedEvaluateDynamicConditions.mockResolvedValue({
       canPyramid: true,
       reason: 'OK',
       adjustedMinDistance: 0.003,
@@ -169,7 +169,7 @@ describe('evaluateDynamicPyramid', () => {
   });
 
   it('should propagate static rejection with dynamic metadata', async () => {
-    mockedEvaluateDynamicConditions.mockReturnValue({
+    mockedEvaluateDynamicConditions.mockResolvedValue({
       canPyramid: true,
       reason: 'OK',
       adjustedMinDistance: 0.003,
@@ -202,7 +202,7 @@ describe('evaluateDynamicPyramid', () => {
   });
 
   it('should pass mlConfidence to evaluateStatic', async () => {
-    mockedEvaluateDynamicConditions.mockReturnValue({
+    mockedEvaluateDynamicConditions.mockResolvedValue({
       canPyramid: true,
       reason: 'OK',
       adjustedMinDistance: 0.005,

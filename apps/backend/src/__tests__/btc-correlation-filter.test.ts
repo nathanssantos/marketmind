@@ -55,9 +55,9 @@ describe('BTC Correlation Filter', () => {
 
   describe('checkBtcCorrelation', () => {
     describe('BTC pairs', () => {
-      it('should skip correlation check for BTCUSDT', () => {
+      it('should skip correlation check for BTCUSDT', async () => {
         const btcKlines = createBearishBtcKlines(50);
-        const result = checkBtcCorrelation(btcKlines, 'LONG', 'BTCUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'LONG', 'BTCUSDT');
 
         expect(result.isAllowed).toBe(true);
         expect(result.isAltcoin).toBe(false);
@@ -66,18 +66,18 @@ describe('BTC Correlation Filter', () => {
     });
 
     describe('altcoins - LONG direction', () => {
-      it('should allow LONG when BTC is bullish', () => {
+      it('should allow LONG when BTC is bullish', async () => {
         const btcKlines = createBullishBtcKlines(50);
-        const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
         expect(result.isAllowed).toBe(true);
         expect(result.btcTrend).toBe('BULLISH');
         expect(result.isAltcoin).toBe(true);
       });
 
-      it('should block LONG when BTC is bearish', () => {
+      it('should block LONG when BTC is bearish', async () => {
         const btcKlines = createBearishBtcKlines(50);
-        const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
         expect(result.isAllowed).toBe(false);
         expect(result.btcTrend).toBe('BEARISH');
@@ -86,17 +86,17 @@ describe('BTC Correlation Filter', () => {
     });
 
     describe('altcoins - SHORT direction', () => {
-      it('should allow SHORT when BTC is bearish', () => {
+      it('should allow SHORT when BTC is bearish', async () => {
         const btcKlines = createBearishBtcKlines(50);
-        const result = checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
 
         expect(result.isAllowed).toBe(true);
         expect(result.btcTrend).toBe('BEARISH');
       });
 
-      it('should block SHORT when BTC is bullish', () => {
+      it('should block SHORT when BTC is bullish', async () => {
         const btcKlines = createBullishBtcKlines(50);
-        const result = checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
 
         expect(result.isAllowed).toBe(false);
         expect(result.btcTrend).toBe('BULLISH');
@@ -105,17 +105,17 @@ describe('BTC Correlation Filter', () => {
     });
 
     describe('edge cases', () => {
-      it('should soft pass when insufficient BTC klines', () => {
+      it('should soft pass when insufficient BTC klines', async () => {
         const btcKlines = createBullishBtcKlines(10);
-        const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
         expect(result.isAllowed).toBe(true);
         expect(result.reason).toContain('soft pass');
       });
 
-      it('should return all required fields', () => {
+      it('should return all required fields', async () => {
         const btcKlines = createBullishBtcKlines(50);
-        const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+        const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
         expect(result).toHaveProperty('isAllowed');
         expect(result).toHaveProperty('btcTrend');
@@ -155,9 +155,9 @@ describe('BTC Correlation Filter', () => {
   });
 
   describe('enhanced result fields', () => {
-    it('should include correlationScore in result', () => {
+    it('should include correlationScore in result', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(result).toHaveProperty('correlationScore');
       expect(typeof result.correlationScore).toBe('number');
@@ -165,9 +165,9 @@ describe('BTC Correlation Filter', () => {
       expect(result.correlationScore).toBeLessThanOrEqual(100);
     });
 
-    it('should include btcRsi in result', () => {
+    it('should include btcRsi in result', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(result).toHaveProperty('btcRsi');
       if (result.btcRsi !== null) {
@@ -176,17 +176,17 @@ describe('BTC Correlation Filter', () => {
       }
     });
 
-    it('should include btcRsiMomentum in result', () => {
+    it('should include btcRsiMomentum in result', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(result).toHaveProperty('btcRsiMomentum');
       expect(['RISING', 'FALLING', 'NEUTRAL']).toContain(result.btcRsiMomentum);
     });
 
-    it('should include btcStrength in result', () => {
+    it('should include btcStrength in result', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(result).toHaveProperty('btcStrength');
       expect(['STRONG', 'MODERATE', 'WEAK']).toContain(result.btcStrength);
@@ -194,26 +194,26 @@ describe('BTC Correlation Filter', () => {
   });
 
   describe('correlation score calculation', () => {
-    it('should return high score for bullish conditions', () => {
+    it('should return high score for bullish conditions', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(result.correlationScore).toBeGreaterThan(50);
     });
 
-    it('should return low score for bearish conditions', () => {
+    it('should return low score for bearish conditions', async () => {
       const btcKlines = createBearishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(result.correlationScore).toBeLessThan(50);
     });
 
-    it('should have score bounded between 0 and 100', () => {
+    it('should have score bounded between 0 and 100', async () => {
       const bullishKlines = createBullishBtcKlines(50);
       const bearishKlines = createBearishBtcKlines(50);
 
-      const bullishResult = checkBtcCorrelation(bullishKlines, 'LONG', 'ETHUSDT');
-      const bearishResult = checkBtcCorrelation(bearishKlines, 'LONG', 'ETHUSDT');
+      const bullishResult = await checkBtcCorrelation(bullishKlines, 'LONG', 'ETHUSDT');
+      const bearishResult = await checkBtcCorrelation(bearishKlines, 'LONG', 'ETHUSDT');
 
       expect(bullishResult.correlationScore).toBeGreaterThanOrEqual(0);
       expect(bullishResult.correlationScore).toBeLessThanOrEqual(100);
@@ -223,9 +223,9 @@ describe('BTC Correlation Filter', () => {
   });
 
   describe('asymmetric threshold behavior', () => {
-    it('should block LONG when score is below LONG_BLOCK_SCORE threshold', () => {
+    it('should block LONG when score is below LONG_BLOCK_SCORE threshold', async () => {
       const btcKlines = createBearishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       if (result.correlationScore < BTC_CORRELATION_FILTER.ASYMMETRIC_THRESHOLDS.LONG_BLOCK_SCORE) {
         expect(result.isAllowed).toBe(false);
@@ -233,9 +233,9 @@ describe('BTC Correlation Filter', () => {
       }
     });
 
-    it('should block SHORT when score is above SHORT_BLOCK_SCORE threshold', () => {
+    it('should block SHORT when score is above SHORT_BLOCK_SCORE threshold', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
 
       if (result.correlationScore > BTC_CORRELATION_FILTER.ASYMMETRIC_THRESHOLDS.SHORT_BLOCK_SCORE) {
         expect(result.isAllowed).toBe(false);
@@ -243,18 +243,18 @@ describe('BTC Correlation Filter', () => {
       }
     });
 
-    it('should allow LONG even with neutral score above LONG_BLOCK_SCORE', () => {
+    it('should allow LONG even with neutral score above LONG_BLOCK_SCORE', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       if (result.correlationScore >= BTC_CORRELATION_FILTER.ASYMMETRIC_THRESHOLDS.LONG_BLOCK_SCORE) {
         expect(result.isAllowed).toBe(true);
       }
     });
 
-    it('should allow SHORT even with neutral score below SHORT_BLOCK_SCORE', () => {
+    it('should allow SHORT even with neutral score below SHORT_BLOCK_SCORE', async () => {
       const btcKlines = createBearishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'SHORT', 'ETHUSDT');
 
       if (result.correlationScore <= BTC_CORRELATION_FILTER.ASYMMETRIC_THRESHOLDS.SHORT_BLOCK_SCORE) {
         expect(result.isAllowed).toBe(true);
@@ -263,12 +263,12 @@ describe('BTC Correlation Filter', () => {
   });
 
   describe('btcStrength calculation', () => {
-    it('should return STRONG when score is >= 70 or <= 30', () => {
+    it('should return STRONG when score is >= 70 or <= 30', async () => {
       const strongBullish = createBullishBtcKlines(50);
       const strongBearish = createBearishBtcKlines(50);
 
-      const bullishResult = checkBtcCorrelation(strongBullish, 'LONG', 'ETHUSDT');
-      const bearishResult = checkBtcCorrelation(strongBearish, 'LONG', 'ETHUSDT');
+      const bullishResult = await checkBtcCorrelation(strongBullish, 'LONG', 'ETHUSDT');
+      const bearishResult = await checkBtcCorrelation(strongBearish, 'LONG', 'ETHUSDT');
 
       if (bullishResult.correlationScore >= 70) {
         expect(bullishResult.btcStrength).toBe('STRONG');
@@ -278,9 +278,9 @@ describe('BTC Correlation Filter', () => {
       }
     });
 
-    it('should determine strength based on correlation score', () => {
+    it('should determine strength based on correlation score', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       const score = result.correlationScore;
       if (score >= 70 || score <= 30) {
@@ -294,23 +294,23 @@ describe('BTC Correlation Filter', () => {
   });
 
   describe('RSI momentum detection', () => {
-    it('should detect RISING RSI momentum in uptrend', () => {
+    it('should detect RISING RSI momentum in uptrend', async () => {
       const btcKlines = createBullishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(['RISING', 'NEUTRAL']).toContain(result.btcRsiMomentum);
     });
 
-    it('should detect FALLING RSI momentum in downtrend', () => {
+    it('should detect FALLING RSI momentum in downtrend', async () => {
       const btcKlines = createBearishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       expect(['FALLING', 'NEUTRAL']).toContain(result.btcRsiMomentum);
     });
 
-    it('should include RSI value in reason message when blocking', () => {
+    it('should include RSI value in reason message when blocking', async () => {
       const btcKlines = createBearishBtcKlines(50);
-      const result = checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
+      const result = await checkBtcCorrelation(btcKlines, 'LONG', 'ETHUSDT');
 
       if (!result.isAllowed) {
         expect(result.reason).toMatch(/RSI (rising|falling|neutral)/i);

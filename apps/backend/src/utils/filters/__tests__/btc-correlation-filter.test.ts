@@ -49,9 +49,9 @@ describe('btc-correlation-filter extended', () => {
   });
 
   describe('getBtcTrendInfo', () => {
-    it('should return NEUTRAL with insufficient klines', () => {
+    it('should return NEUTRAL with insufficient klines', async () => {
       const klines = createBullishKlines(10);
-      const result = getBtcTrendInfo(klines);
+      const result = await getBtcTrendInfo(klines);
 
       expect(result.trend).toBe('NEUTRAL');
       expect(result.strength).toBe('WEAK');
@@ -62,9 +62,9 @@ describe('btc-correlation-filter extended', () => {
       expect(result.btcEma21).toBeNull();
     });
 
-    it('should detect BULLISH trend with rising prices', () => {
+    it('should detect BULLISH trend with rising prices', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendInfo(klines);
+      const result = await getBtcTrendInfo(klines);
 
       expect(result.trend).toBe('BULLISH');
       expect(result.score).toBeGreaterThan(50);
@@ -72,17 +72,17 @@ describe('btc-correlation-filter extended', () => {
       expect(result.btcEma21).toBeGreaterThan(0);
     });
 
-    it('should detect BEARISH trend with falling prices', () => {
+    it('should detect BEARISH trend with falling prices', async () => {
       const klines = createBearishKlines(50);
-      const result = getBtcTrendInfo(klines);
+      const result = await getBtcTrendInfo(klines);
 
       expect(result.trend).toBe('BEARISH');
       expect(result.score).toBeLessThan(50);
     });
 
-    it('should set canLong based on LONG_BLOCK_SCORE threshold', () => {
+    it('should set canLong based on LONG_BLOCK_SCORE threshold', async () => {
       const klines = createBearishKlines(50);
-      const result = getBtcTrendInfo(klines);
+      const result = await getBtcTrendInfo(klines);
 
       if (result.score < BTC_CORRELATION_FILTER.ASYMMETRIC_THRESHOLDS.LONG_BLOCK_SCORE) {
         expect(result.canLong).toBe(false);
@@ -91,9 +91,9 @@ describe('btc-correlation-filter extended', () => {
       }
     });
 
-    it('should set canShort based on SHORT_BLOCK_SCORE threshold', () => {
+    it('should set canShort based on SHORT_BLOCK_SCORE threshold', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendInfo(klines);
+      const result = await getBtcTrendInfo(klines);
 
       if (result.score > BTC_CORRELATION_FILTER.ASYMMETRIC_THRESHOLDS.SHORT_BLOCK_SCORE) {
         expect(result.canShort).toBe(false);
@@ -102,9 +102,9 @@ describe('btc-correlation-filter extended', () => {
       }
     });
 
-    it('should return score bounded between 0 and 100', () => {
-      const bullish = getBtcTrendInfo(createBullishKlines(50));
-      const bearish = getBtcTrendInfo(createBearishKlines(50));
+    it('should return score bounded between 0 and 100', async () => {
+      const bullish = await getBtcTrendInfo(createBullishKlines(50));
+      const bearish = await getBtcTrendInfo(createBearishKlines(50));
 
       expect(bullish.score).toBeGreaterThanOrEqual(0);
       expect(bullish.score).toBeLessThanOrEqual(100);
@@ -114,8 +114,8 @@ describe('btc-correlation-filter extended', () => {
   });
 
   describe('getBtcTrendEmaInfo', () => {
-    it('should return NEUTRAL with insufficient klines', () => {
-      const result = getBtcTrendEmaInfo(createFlatKlines(5));
+    it('should return NEUTRAL with insufficient klines', async () => {
+      const result = await getBtcTrendEmaInfo(createFlatKlines(5));
 
       expect(result.trend).toBe('NEUTRAL');
       expect(result.strength).toBe('WEAK');
@@ -123,27 +123,27 @@ describe('btc-correlation-filter extended', () => {
       expect(result.btcEma21).toBeNull();
     });
 
-    it('should detect BULLISH when price above EMA21', () => {
+    it('should detect BULLISH when price above EMA21', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendEmaInfo(klines);
+      const result = await getBtcTrendEmaInfo(klines);
 
       expect(result.trend).toBe('BULLISH');
       expect(result.canLong).toBe(true);
       expect(result.canShort).toBe(false);
     });
 
-    it('should detect BEARISH when price below EMA21', () => {
+    it('should detect BEARISH when price below EMA21', async () => {
       const klines = createBearishKlines(50);
-      const result = getBtcTrendEmaInfo(klines);
+      const result = await getBtcTrendEmaInfo(klines);
 
       expect(result.trend).toBe('BEARISH');
       expect(result.canLong).toBe(false);
       expect(result.canShort).toBe(true);
     });
 
-    it('should determine STRONG strength for large EMA distance', () => {
+    it('should determine STRONG strength for large EMA distance', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendEmaInfo(klines);
+      const result = await getBtcTrendEmaInfo(klines);
 
       if (result.btcPrice && result.btcEma21) {
         const diff = Math.abs(result.btcPrice - result.btcEma21) / result.btcEma21 * 100;
@@ -153,32 +153,32 @@ describe('btc-correlation-filter extended', () => {
       }
     });
 
-    it('should round score', () => {
+    it('should round score', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendEmaInfo(klines);
+      const result = await getBtcTrendEmaInfo(klines);
       expect(result.score).toBe(Math.round(result.score));
     });
   });
 
   describe('getBtcTrendEmaInfoWithHistory', () => {
-    it('should return empty history with insufficient klines', () => {
-      const result = getBtcTrendEmaInfoWithHistory(createFlatKlines(5));
+    it('should return empty history with insufficient klines', async () => {
+      const result = await getBtcTrendEmaInfoWithHistory(createFlatKlines(5));
 
       expect(result.history).toEqual([]);
       expect(result.trend).toBe('NEUTRAL');
     });
 
-    it('should return history points with sufficient klines', () => {
+    it('should return history points with sufficient klines', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendEmaInfoWithHistory(klines);
+      const result = await getBtcTrendEmaInfoWithHistory(klines);
 
       expect(result.history.length).toBeGreaterThan(0);
       expect(result.history.length).toBeLessThanOrEqual(31);
     });
 
-    it('should include timestamp, price, and ema21 in history points', () => {
+    it('should include timestamp, price, and ema21 in history points', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendEmaInfoWithHistory(klines);
+      const result = await getBtcTrendEmaInfoWithHistory(klines);
 
       for (const point of result.history) {
         expect(point).toHaveProperty('timestamp');
@@ -190,9 +190,9 @@ describe('btc-correlation-filter extended', () => {
       }
     });
 
-    it('should include base trend info alongside history', () => {
+    it('should include base trend info alongside history', async () => {
       const klines = createBullishKlines(50);
-      const result = getBtcTrendEmaInfoWithHistory(klines);
+      const result = await getBtcTrendEmaInfoWithHistory(klines);
 
       expect(result).toHaveProperty('trend');
       expect(result).toHaveProperty('strength');
@@ -203,17 +203,17 @@ describe('btc-correlation-filter extended', () => {
   });
 
   describe('getEma21Direction', () => {
-    it('should return NEUTRAL with insufficient klines', () => {
-      const result = getEma21Direction(createFlatKlines(10));
+    it('should return NEUTRAL with insufficient klines', async () => {
+      const result = await getEma21Direction(createFlatKlines(10));
 
       expect(result.direction).toBe('NEUTRAL');
       expect(result.price).toBeNull();
       expect(result.ema21).toBeNull();
     });
 
-    it('should return BULLISH when price above EMA21', () => {
+    it('should return BULLISH when price above EMA21', async () => {
       const klines = createBullishKlines(50);
-      const result = getEma21Direction(klines);
+      const result = await getEma21Direction(klines);
 
       expect(result.direction).toBe('BULLISH');
       expect(result.price).toBeGreaterThan(0);
@@ -221,9 +221,9 @@ describe('btc-correlation-filter extended', () => {
       expect(result.price!).toBeGreaterThan(result.ema21!);
     });
 
-    it('should return BEARISH when price below EMA21', () => {
+    it('should return BEARISH when price below EMA21', async () => {
       const klines = createBearishKlines(50);
-      const result = getEma21Direction(klines);
+      const result = await getEma21Direction(klines);
 
       expect(result.direction).toBe('BEARISH');
       expect(result.price!).toBeLessThan(result.ema21!);
@@ -231,10 +231,10 @@ describe('btc-correlation-filter extended', () => {
   });
 
   describe('checkEma21Alignment', () => {
-    it('should return aligned when both are BULLISH', () => {
+    it('should return aligned when both are BULLISH', async () => {
       const btcKlines = createBullishKlines(50, 40000);
       const assetKlines = createBullishKlines(50, 100);
-      const result = checkEma21Alignment(btcKlines, assetKlines);
+      const result = await checkEma21Alignment(btcKlines, assetKlines);
 
       expect(result.isAligned).toBe(true);
       expect(result.btcDirection).toBe('BULLISH');
@@ -242,10 +242,10 @@ describe('btc-correlation-filter extended', () => {
       expect(result.reason).toContain('Aligned');
     });
 
-    it('should return aligned when both are BEARISH', () => {
+    it('should return aligned when both are BEARISH', async () => {
       const btcKlines = createBearishKlines(50, 50000);
       const assetKlines = createBearishKlines(50, 200);
-      const result = checkEma21Alignment(btcKlines, assetKlines);
+      const result = await checkEma21Alignment(btcKlines, assetKlines);
 
       expect(result.isAligned).toBe(true);
       expect(result.btcDirection).toBe('BEARISH');
@@ -253,29 +253,29 @@ describe('btc-correlation-filter extended', () => {
       expect(result.reason).toContain('Aligned');
     });
 
-    it('should return misaligned when directions differ', () => {
+    it('should return misaligned when directions differ', async () => {
       const btcKlines = createBullishKlines(50, 40000);
       const assetKlines = createBearishKlines(50, 200);
-      const result = checkEma21Alignment(btcKlines, assetKlines);
+      const result = await checkEma21Alignment(btcKlines, assetKlines);
 
       expect(result.isAligned).toBe(false);
       expect(result.reason).toContain('Misaligned');
     });
 
-    it('should allow when BTC data is insufficient', () => {
+    it('should allow when BTC data is insufficient', async () => {
       const btcKlines = createBullishKlines(5);
       const assetKlines = createBullishKlines(50, 100);
-      const result = checkEma21Alignment(btcKlines, assetKlines);
+      const result = await checkEma21Alignment(btcKlines, assetKlines);
 
       expect(result.isAligned).toBe(true);
       expect(result.btcDirection).toBe('NEUTRAL');
       expect(result.reason).toContain('Insufficient data');
     });
 
-    it('should allow when asset data is insufficient', () => {
+    it('should allow when asset data is insufficient', async () => {
       const btcKlines = createBullishKlines(50, 40000);
       const assetKlines = createBullishKlines(5, 100);
-      const result = checkEma21Alignment(btcKlines, assetKlines);
+      const result = await checkEma21Alignment(btcKlines, assetKlines);
 
       expect(result.isAligned).toBe(true);
       expect(result.assetDirection).toBe('NEUTRAL');

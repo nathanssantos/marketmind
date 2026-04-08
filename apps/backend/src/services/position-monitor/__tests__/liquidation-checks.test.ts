@@ -75,7 +75,7 @@ describe('checkLiquidationRisk', () => {
     const results = await checkLiquidationRisk([createMockExecution()]);
 
     expect(results).toHaveLength(1);
-    expect(results[0].riskLevel).toBe('safe');
+    expect(results[0]!.riskLevel).toBe('safe');
   });
 
   it('should detect warning level for LONG position', async () => {
@@ -86,7 +86,7 @@ describe('checkLiquidationRisk', () => {
     ]);
 
     expect(results).toHaveLength(1);
-    expect(results[0].riskLevel).toBe('warning');
+    expect(results[0]!.riskLevel).toBe('warning');
     expect(mockEmitLiquidationWarning).toHaveBeenCalled();
   });
 
@@ -98,7 +98,7 @@ describe('checkLiquidationRisk', () => {
     ]);
 
     expect(results).toHaveLength(1);
-    expect(results[0].riskLevel).toBe('danger');
+    expect(results[0]!.riskLevel).toBe('danger');
   });
 
   it('should detect critical level for LONG position', async () => {
@@ -109,7 +109,7 @@ describe('checkLiquidationRisk', () => {
     ]);
 
     expect(results).toHaveLength(1);
-    expect(results[0].riskLevel).toBe('critical');
+    expect(results[0]!.riskLevel).toBe('critical');
   });
 
   it('should detect risk for SHORT position correctly', async () => {
@@ -120,7 +120,7 @@ describe('checkLiquidationRisk', () => {
     ]);
 
     expect(results).toHaveLength(1);
-    expect(results[0].riskLevel).toBe('danger');
+    expect(results[0]!.riskLevel).toBe('danger');
   });
 
   it('should skip executions without liquidation price', async () => {

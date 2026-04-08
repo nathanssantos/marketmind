@@ -1,6 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { checkTrendCondition, TREND_FILTER } from '../utils/filters';
+import { describe, it, expect, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
+
+const { mockCompute, mockComputeMulti } = vi.hoisted(() => ({
+  mockCompute: vi.fn(),
+  mockComputeMulti: vi.fn(),
+}));
+
+vi.mock('../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = mockComputeMulti;
+  },
+}));
+
+import { checkTrendCondition, TREND_FILTER } from '../utils/filters';
 
 const createKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -36,11 +49,22 @@ const createKlinesWithPriceBelowEMA = (count: number): Kline[] => {
   return klines;
 };
 
+const buildEmaArrayForSlice = (sliceLength: number, emaValue: number): (number | null)[] => {
+  return new Array(sliceLength).fill(emaValue);
+};
+
 describe('checkTrendCondition', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('LONG direction', () => {
-    it('should allow LONG when price is above EMA21 (bullish trend)', () => {
+    it('should allow LONG when price is above EMA21 (bullish trend)', async () => {
       const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
-      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationClose = parseFloat(String(klines[SAMPLE_KLINE_COUNT - 2]!.close));
+      const emaValue = confirmationClose - 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(SAMPLE_KLINE_COUNT - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result.isBullish).toBe(true);
       expect(result.isBearish).toBe(false);
@@ -48,9 +72,12 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('LONG allowed');
     });
 
-    it('should block LONG when price is below EMA21 (bearish trend)', () => {
+    it('should block LONG when price is below EMA21 (bearish trend)', async () => {
       const klines = createKlinesWithPriceBelowEMA(SAMPLE_KLINE_COUNT);
-      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationClose = parseFloat(String(klines[SAMPLE_KLINE_COUNT - 2]!.close));
+      const emaValue = confirmationClose + 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(SAMPLE_KLINE_COUNT - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result.isBullish).toBe(false);
       expect(result.isBearish).toBe(true);
@@ -61,9 +88,12 @@ describe('checkTrendCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when price is below EMA21 (bearish trend)', () => {
+    it('should allow SHORT when price is below EMA21 (bearish trend)', async () => {
       const klines = createKlinesWithPriceBelowEMA(SAMPLE_KLINE_COUNT);
-      const result = checkTrendCondition(klines, 'SHORT');
+      const confirmationClose = parseFloat(String(klines[SAMPLE_KLINE_COUNT - 2]!.close));
+      const emaValue = confirmationClose + 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(SAMPLE_KLINE_COUNT - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'SHORT');
 
       expect(result.isBullish).toBe(false);
       expect(result.isBearish).toBe(true);
@@ -71,9 +101,12 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('SHORT allowed');
     });
 
-    it('should block SHORT when price is above EMA21 (bullish trend)', () => {
+    it('should block SHORT when price is above EMA21 (bullish trend)', async () => {
       const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
-      const result = checkTrendCondition(klines, 'SHORT');
+      const confirmationClose = parseFloat(String(klines[SAMPLE_KLINE_COUNT - 2]!.close));
+      const emaValue = confirmationClose - 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(SAMPLE_KLINE_COUNT - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'SHORT');
 
       expect(result.isBullish).toBe(true);
       expect(result.isBearish).toBe(false);
@@ -84,9 +117,9 @@ describe('checkTrendCondition', () => {
   });
 
   describe('edge cases', () => {
-    it('should block when only 1 kline', () => {
+    it('should block when only 1 kline', async () => {
       const klines = [createKline(100, 0)];
-      const result = checkTrendCondition(klines, 'LONG');
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(false);
       expect(result.ema21).toBeNull();
@@ -94,9 +127,11 @@ describe('checkTrendCondition', () => {
       expect(result.reason).toContain('Insufficient');
     });
 
-    it('should return all required fields in result', () => {
+    it('should return all required fields in result', async () => {
       const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
-      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationClose = parseFloat(String(klines[SAMPLE_KLINE_COUNT - 2]!.close));
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(SAMPLE_KLINE_COUNT - 1, confirmationClose - 5));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
       expect(result).toHaveProperty('ema21');
@@ -106,9 +141,11 @@ describe('checkTrendCondition', () => {
       expect(result).toHaveProperty('reason');
     });
 
-    it('should return numeric values when calculation succeeds', () => {
+    it('should return numeric values when calculation succeeds', async () => {
       const klines = createKlinesWithPriceAboveEMA(SAMPLE_KLINE_COUNT);
-      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationClose = parseFloat(String(klines[SAMPLE_KLINE_COUNT - 2]!.close));
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(SAMPLE_KLINE_COUNT - 1, confirmationClose - 5));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(typeof result.ema21).toBe('number');
       expect(typeof result.price).toBe('number');
@@ -122,7 +159,7 @@ describe('checkTrendCondition', () => {
   });
 
   describe('real-world scenarios', () => {
-    it('should correctly identify uptrend when price is above EMA21', () => {
+    it('should correctly identify uptrend when price is above EMA21', async () => {
       const klines: Kline[] = [];
       const count = SAMPLE_KLINE_COUNT;
       for (let i = 0; i < count; i += 1) {
@@ -130,7 +167,10 @@ describe('checkTrendCondition', () => {
         klines.push(createKline(price, i));
       }
 
-      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationClose = parseFloat(String(klines[count - 2]!.close));
+      const emaValue = confirmationClose - 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(count - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBullish).toBe(true);
@@ -139,7 +179,7 @@ describe('checkTrendCondition', () => {
       }
     });
 
-    it('should correctly identify downtrend when price is below EMA21', () => {
+    it('should correctly identify downtrend when price is below EMA21', async () => {
       const klines: Kline[] = [];
       const count = SAMPLE_KLINE_COUNT;
       for (let i = 0; i < count; i += 1) {
@@ -147,7 +187,10 @@ describe('checkTrendCondition', () => {
         klines.push(createKline(Math.max(price, 10), i));
       }
 
-      const result = checkTrendCondition(klines, 'SHORT');
+      const confirmationClose = parseFloat(String(klines[count - 2]!.close));
+      const emaValue = confirmationClose + 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(count - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'SHORT');
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBearish).toBe(true);
@@ -156,23 +199,25 @@ describe('checkTrendCondition', () => {
       }
     });
 
-    it('should use confirmation candle for price comparison', () => {
+    it('should use confirmation candle for price comparison', async () => {
       const klines: Kline[] = [];
       const count = SAMPLE_KLINE_COUNT;
       for (let i = 0; i < count; i += 1) {
         klines.push(createKline(100 + i * 0.5, i));
       }
 
-      const result = checkTrendCondition(klines, 'LONG');
       const confirmationIndex = klines.length - 2;
       const expectedPrice = parseFloat(String(klines[confirmationIndex]?.close));
+      const emaValue = expectedPrice - 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(count - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result.price).toBe(expectedPrice);
       expect(result.ema21).not.toBeNull();
       expect(result.isAllowed).toBe(true);
     });
 
-    it('should work with large kline datasets (40k+)', () => {
+    it('should work with large kline datasets (40k+)', async () => {
       const klines: Kline[] = [];
       const count = 1000;
       for (let i = 0; i < count; i += 1) {
@@ -180,7 +225,10 @@ describe('checkTrendCondition', () => {
         klines.push(createKline(price, i));
       }
 
-      const result = checkTrendCondition(klines, 'LONG');
+      const confirmationClose = parseFloat(String(klines[count - 2]!.close));
+      const emaValue = confirmationClose - 5;
+      mockCompute.mockResolvedValue(buildEmaArrayForSlice(count - 1, emaValue));
+      const result = await checkTrendCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.isBullish).toBe(true);

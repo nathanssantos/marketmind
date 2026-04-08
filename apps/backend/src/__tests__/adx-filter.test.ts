@@ -47,9 +47,9 @@ const createKlinesWithTrend = (direction: 'up' | 'down' | 'sideways', count: num
 
 describe('checkAdxCondition', () => {
   describe('LONG direction', () => {
-    it('should allow LONG when +DI > -DI and ADX >= threshold (strong uptrend)', () => {
+    it('should allow LONG when +DI > -DI and ADX >= threshold (strong uptrend)', async () => {
       const klines = createKlinesWithTrend('up', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'LONG');
+      const result = await checkAdxCondition(klines, 'LONG');
 
       if (result.adx !== null && result.adx >= ADX_FILTER.TREND_THRESHOLD && result.isBullish) {
         expect(result.isAllowed).toBe(true);
@@ -58,9 +58,9 @@ describe('checkAdxCondition', () => {
       }
     });
 
-    it('should block LONG when +DI < -DI (bearish bias)', () => {
+    it('should block LONG when +DI < -DI (bearish bias)', async () => {
       const klines = createKlinesWithTrend('down', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'LONG');
+      const result = await checkAdxCondition(klines, 'LONG');
 
       if (result.adx !== null && result.adx >= ADX_FILTER.TREND_THRESHOLD && result.isBearish) {
         expect(result.isAllowed).toBe(false);
@@ -68,9 +68,9 @@ describe('checkAdxCondition', () => {
       }
     });
 
-    it('should block LONG when ADX < threshold (weak trend)', () => {
+    it('should block LONG when ADX < threshold (weak trend)', async () => {
       const klines = createKlinesWithTrend('sideways', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'LONG');
+      const result = await checkAdxCondition(klines, 'LONG');
 
       if (result.adx !== null && result.adx < ADX_FILTER.TREND_THRESHOLD) {
         expect(result.isAllowed).toBe(false);
@@ -80,9 +80,9 @@ describe('checkAdxCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when -DI > +DI and ADX >= threshold (strong downtrend)', () => {
+    it('should allow SHORT when -DI > +DI and ADX >= threshold (strong downtrend)', async () => {
       const klines = createKlinesWithTrend('down', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'SHORT');
+      const result = await checkAdxCondition(klines, 'SHORT');
 
       if (result.adx !== null && result.adx >= ADX_FILTER.TREND_THRESHOLD && result.isBearish) {
         expect(result.isAllowed).toBe(true);
@@ -91,9 +91,9 @@ describe('checkAdxCondition', () => {
       }
     });
 
-    it('should block SHORT when -DI < +DI (bullish bias)', () => {
+    it('should block SHORT when -DI < +DI (bullish bias)', async () => {
       const klines = createKlinesWithTrend('up', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'SHORT');
+      const result = await checkAdxCondition(klines, 'SHORT');
 
       if (result.adx !== null && result.adx >= ADX_FILTER.TREND_THRESHOLD && result.isBullish) {
         expect(result.isAllowed).toBe(false);
@@ -103,22 +103,22 @@ describe('checkAdxCondition', () => {
   });
 
   describe('edge cases', () => {
-    it('should return isAllowed=true when insufficient klines', () => {
+    it('should return isAllowed=true when insufficient klines', async () => {
       const klines: Kline[] = [];
       for (let i = 0; i < 10; i += 1) {
         klines.push(createKline(105, 95, 100, i));
       }
 
-      const result = checkAdxCondition(klines, 'LONG');
+      const result = await checkAdxCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.adx).toBeNull();
       expect(result.reason).toContain('Insufficient');
     });
 
-    it('should return all required fields in result', () => {
+    it('should return all required fields in result', async () => {
       const klines = createKlinesWithTrend('up', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'LONG');
+      const result = await checkAdxCondition(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
       expect(result).toHaveProperty('adx');
@@ -130,9 +130,9 @@ describe('checkAdxCondition', () => {
       expect(result).toHaveProperty('reason');
     });
 
-    it('should return numeric values when calculation succeeds', () => {
+    it('should return numeric values when calculation succeeds', async () => {
       const klines = createKlinesWithTrend('up', ADX_FILTER.MIN_KLINES_REQUIRED + 5);
-      const result = checkAdxCondition(klines, 'LONG');
+      const result = await checkAdxCondition(klines, 'LONG');
 
       if (result.adx !== null) {
         expect(typeof result.adx).toBe('number');
