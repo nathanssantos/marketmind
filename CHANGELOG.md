@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.87.0] - 2026-04-13
+
+### Added
+- **PineScript strategy system**: Migrated all 105 JSON strategies to PineScript v5 format (106 total .pine files) via PineTS runtime
+- **PineIndicatorService**: Single-source backend indicator computation using PineTS, replacing `@marketmind/indicators` package
+- **PineIndicatorCache**: Shared indicator cache layer integrated with FilterManager for batch backtesting performance
+- **Frontend PineTS workers**: 15 frontend web workers migrated from `@marketmind/indicators` to PineTS async computation
+- **Frontend pineWorkerService**: Unified PineTS service for all frontend indicator computation (22 indicators: SMA, EMA, RSI, ATR, HMA, WMA, CCI, MFI, ROC, CMO, VWAP, OBV, WPR, TSI, SAR, Highest, Lowest, BB, MACD, Stoch, KC, Supertrend, DMI)
+- **Local indicator implementations**: Moved pivot points, swing points, and zigzag implementations from package to local `lib/indicators/`
+
+### Removed
+- **`@marketmind/indicators` package**: Deleted entirely (124 files, ~17K lines) — all functionality replaced by PineTS + local implementations
+- **JSON strategy files**: Replaced by `.pine` PineScript v5 files in `strategies/builtin/`
+
+### Changed
+- **Backend filters**: All 14 filters migrated from `@marketmind/indicators` to PineIndicatorService
+- **IndicatorEngine**: Migrated to PineTS for all indicator computations
+- **Screener service**: Migrated to PineTS-based indicator computation
+- **Monorepo packages**: Reduced from 7 to 6 shared packages (types, chart-studies, fibonacci, logger, trading-core, risk, utils)
+- **Strategy interpreter**: Now parses PineScript v5 files instead of JSON configs
+
 ## [0.86.0] - 2026-04-07
 
 ### Added

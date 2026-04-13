@@ -180,6 +180,9 @@ export const detectAndFixCorruptedKlines = async (pair: ActivePair, silent = fal
 };
 
 export const detectAndFixMisalignedKlines = async (pair: ActivePair): Promise<number> => {
+  const NON_UNIFORM_INTERVALS = ['1w', '1M', '1y'];
+  if (NON_UNIFORM_INTERVALS.includes(pair.interval)) return 0;
+
   const intervalMs = getIntervalMilliseconds(pair.interval);
   const lookbackMs = MAINTENANCE_KLINES * intervalMs;
   const startTime = new Date(Date.now() - lookbackMs);

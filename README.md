@@ -4,8 +4,8 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.86.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-7,200%2B%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.87.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-7,500%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)
@@ -24,7 +24,7 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 
 #### Chart Visualization
 - **Kline Charts**: High-performance Canvas rendering with zoom and pan
-- **25+ Technical Indicators**: RSI, MACD, Bollinger Bands, Stochastic, ADX, and more
+- **35+ Technical Indicators**: RSI, MACD, Bollinger Bands, Stochastic, ADX, and more (powered by PineTS)
 - **Volume Profile**: Price-level volume distribution with POC, Value Area, and buy/sell separation
 - **Liquidity Heatmap**: Real-time order book depth visualization with thermal overlay
 - **Opening Range Breakout**: Built-in ORB indicator with configurable session boundaries
@@ -87,7 +87,7 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 
 ### Architecture
 - **Monorepo** - pnpm workspaces
-- **Shared Packages** - 7 packages (@marketmind/types, indicators, fibonacci, logger, trading-core, risk, utils)
+- **Shared Packages** - 6 packages (@marketmind/types, chart-studies, fibonacci, logger, trading-core, risk, utils)
 - **Exchange Abstraction** - Binance (crypto) + Interactive Brokers (US stocks)
 - **Real-time API** - Backend server with tRPC endpoints
 - **Session Auth** - Secure cookie-based authentication
@@ -174,10 +174,9 @@ pnpm --filter @marketmind/electron test:coverage
 ```
 
 **Test Stats:**
-- **~7,200+ tests** across the monorepo
-- **4,934 backend tests** + 40 skipped (IB integration)
-- **2,316 frontend tests** (2,289 unit + 27 browser)
-- **722 indicator tests** (60 files)
+- **~7,500+ tests** across the monorepo
+- **5,129 backend tests** + 40 skipped (IB integration)
+- **2,368 frontend tests** (2,341 unit + 27 browser)
 - All type checks passing
 
 ## Production Build
@@ -217,7 +216,7 @@ marketmind/
 │       └── package.json
 ├── packages/
 │   ├── types/             # Shared TypeScript types
-│   ├── indicators/        # Technical analysis (25+ indicators)
+│   ├── chart-studies/     # Chart study definitions
 │   ├── fibonacci/         # Fibonacci calculation engine
 │   ├── logger/            # Logging utilities
 │   ├── trading-core/      # Core trading logic

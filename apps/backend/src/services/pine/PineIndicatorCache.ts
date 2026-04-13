@@ -40,14 +40,14 @@ export class PineIndicatorCache {
   }
 
   async precompute(indicators: Array<{ type: string; params?: Record<string, number> }>): Promise<void> {
-    const singleTypes = ['sma', 'ema', 'rsi', 'atr', 'hma', 'wma', 'cci', 'mfi', 'roc', 'cmo', 'vwap', 'obv', 'wpr', 'tsi', 'sar', 'highest', 'lowest'];
-    const multiTypes = ['bb', 'macd', 'stoch', 'kc', 'supertrend', 'dmi'];
+    const singleTypes: Set<string> = new Set(['sma', 'ema', 'rsi', 'atr', 'hma', 'wma', 'cci', 'mfi', 'roc', 'cmo', 'vwap', 'obv', 'wpr', 'tsi', 'sar', 'highest', 'lowest']);
+    const multiTypes: Set<string> = new Set(['bb', 'macd', 'stoch', 'kc', 'supertrend', 'dmi']);
 
     for (const { type, params } of indicators) {
-      if (singleTypes.includes(type)) {
-        await this.getOrCompute(type as any, params);
-      } else if (multiTypes.includes(type)) {
-        await this.getOrComputeMulti(type as any, params);
+      if (singleTypes.has(type)) {
+        await this.getOrCompute(type as Parameters<PineIndicatorService['compute']>[0], params);
+      } else if (multiTypes.has(type)) {
+        await this.getOrComputeMulti(type as Parameters<PineIndicatorService['computeMulti']>[0], params);
       }
     }
   }
