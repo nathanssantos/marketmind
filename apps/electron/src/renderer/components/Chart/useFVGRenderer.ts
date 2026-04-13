@@ -1,7 +1,7 @@
-import type { FVGResult } from '@marketmind/indicators';
+import type { FVGResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseFVGRendererProps {
@@ -30,6 +30,9 @@ export const useFVGRenderer = ({
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const visibleEndIndex = Math.ceil(viewport.end);
 
@@ -50,14 +53,14 @@ export const useFVGRenderer = ({
 
       const isBullish = gap.type === 'bullish';
       ctx.fillStyle = isBullish
-        ? (colors.fvg?.bullish ?? 'rgba(34, 197, 94, 0.15)')
-        : (colors.fvg?.bearish ?? 'rgba(239, 68, 68, 0.15)');
+        ? (colors.fvg?.bullish ?? INDICATOR_COLORS.FVG_BULLISH)
+        : (colors.fvg?.bearish ?? INDICATOR_COLORS.FVG_BEARISH);
 
       ctx.fillRect(startX, Math.min(topY, bottomY), drawWidth, height);
 
       ctx.strokeStyle = isBullish
-        ? (colors.fvg?.bullishBorder ?? 'rgba(34, 197, 94, 0.4)')
-        : (colors.fvg?.bearishBorder ?? 'rgba(239, 68, 68, 0.4)');
+        ? (colors.fvg?.bullishBorder ?? INDICATOR_COLORS.FVG_BULLISH_BORDER)
+        : (colors.fvg?.bearishBorder ?? INDICATOR_COLORS.FVG_BEARISH_BORDER);
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 2]);
       ctx.beginPath();

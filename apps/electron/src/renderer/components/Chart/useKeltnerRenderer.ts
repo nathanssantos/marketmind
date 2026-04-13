@@ -1,7 +1,7 @@
-import type { KeltnerResult } from '@marketmind/indicators';
+import type { KeltnerResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseKeltnerRendererProps {
@@ -26,7 +26,12 @@ export const useKeltnerRenderer = ({
 
     if (!ctx || !dimensions) return;
 
+    const { chartWidth, chartHeight } = dimensions;
+
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -93,9 +98,9 @@ export const useKeltnerRenderer = ({
     };
 
     fillBetween(keltnerData.upper, keltnerData.lower, colors.keltner?.fill ?? INDICATOR_COLORS.KELTNER_FILL);
-    drawLine(keltnerData.upper, colors.keltner?.upper ?? INDICATOR_COLORS.KELTNER_LINE, 1);
-    drawLine(keltnerData.middle, colors.keltner?.middle ?? INDICATOR_COLORS.KELTNER_LINE, 1.5);
-    drawLine(keltnerData.lower, colors.keltner?.lower ?? INDICATOR_COLORS.KELTNER_LINE, 1);
+    drawLine(keltnerData.upper, colors.keltner?.upper ?? INDICATOR_COLORS.KELTNER_LINE, INDICATOR_LINE_WIDTHS.OVERLAY);
+    drawLine(keltnerData.middle, colors.keltner?.middle ?? INDICATOR_COLORS.KELTNER_LINE, INDICATOR_LINE_WIDTHS.OVERLAY_MIDDLE);
+    drawLine(keltnerData.lower, colors.keltner?.lower ?? INDICATOR_COLORS.KELTNER_LINE, INDICATOR_LINE_WIDTHS.OVERLAY);
 
     ctx.restore();
   }, [manager, keltnerData, enabled, colors]);

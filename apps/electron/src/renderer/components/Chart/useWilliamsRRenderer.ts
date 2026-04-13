@@ -1,9 +1,9 @@
-import type { WilliamsRResult } from '@marketmind/indicators';
+import type { WilliamsRResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseWilliamsRRendererProps {
   manager: CanvasManager | null;
@@ -50,7 +50,7 @@ export const useWilliamsRRenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: midY }] });
 
     ctx.strokeStyle = colors.williamsR?.line ?? INDICATOR_COLORS.WILLIAMS_R_LINE;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.PANEL;
     ctx.beginPath();
 
     let isFirstPoint = true;
@@ -71,7 +71,10 @@ export const useWilliamsRRenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, williamsRData as (number | null)[], visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.williamsR?.line ?? INDICATOR_COLORS.WILLIAMS_R_LINE);
   }, [manager, williamsRData, enabled, colors]);
 
   return { render };

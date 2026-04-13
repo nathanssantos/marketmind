@@ -1,4 +1,4 @@
-import type { StochasticResult } from '@marketmind/indicators';
+import type { StochasticResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
@@ -9,6 +9,7 @@ import {
   createNormalizedValueToY,
   drawLineOnPanel,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
 } from './utils/oscillatorRendering';
@@ -70,6 +71,9 @@ export const useStochasticRenderer = ({
     );
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, stochasticData!.d, visibleStart, visibleEnd, valueToY, chartWidth, colors.stochastic.d);
+    drawPanelValueTag(ctx, stochasticData!.k, visibleStart, visibleEnd, valueToY, chartWidth, colors.stochastic.k);
   }, [manager, stochasticData, enabled, overboughtLevel, oversoldLevel, colors]);
 
   return { render };

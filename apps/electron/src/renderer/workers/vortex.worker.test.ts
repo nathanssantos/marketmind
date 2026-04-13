@@ -1,7 +1,7 @@
-import { calculateVortex } from '@marketmind/indicators';
+import { calculateVortex } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateVortex: vi.fn(() => ({ viPlus: [1.1, 1.2], viMinus: [0.9, 0.8] })),
 }));
 

@@ -1,12 +1,13 @@
 import type { RefObject } from 'react';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, OSCILLATOR_CONFIG } from '@shared/constants';
 import { useCallback } from 'react';
 import { getOscillatorSetup } from './hooks/useOscillatorSetup';
 import {
   applyPanelClip,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneLines,
 } from './utils/oscillatorRendering';
 
@@ -60,7 +61,7 @@ export const useCVDRenderer = ({
     }
 
     ctx.beginPath();
-    ctx.strokeStyle = colors.scalping?.cvdLine ?? '#2196F3';
+    ctx.strokeStyle = colors.scalping?.cvdLine ?? INDICATOR_COLORS.CVD_LINE;
     ctx.lineWidth = OSCILLATOR_CONFIG.LINE_WIDTH;
 
     let started = false;
@@ -79,6 +80,8 @@ export const useCVDRenderer = ({
     ctx.stroke();
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, cvdValues, visibleStart, visibleEnd, valueToY, chartWidth, colors.scalping?.cvdLine ?? INDICATOR_COLORS.CVD_LINE);
   }, [manager, cvdValuesRef, enabled, colors]);
 
   return { render };

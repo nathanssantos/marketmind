@@ -45,10 +45,10 @@ const createHighVolatilityKlines = (count: number, basePrice: number): Kline[] =
 };
 
 describe('calculateVolatilityAdjustment', () => {
-  it('should return factor 1.0 for normal volatility', () => {
+  it('should return factor 1.0 for normal volatility', async () => {
     const klines = createNormalVolatilityKlines(20, 100);
 
-    const result = calculateVolatilityAdjustment({
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice: 100,
     });
@@ -59,10 +59,10 @@ describe('calculateVolatilityAdjustment', () => {
     expect(result.atrPercent).toBeLessThan(VOLATILITY_DEFAULTS.HIGH_VOLATILITY_THRESHOLD);
   });
 
-  it('should return reduced factor for high volatility', () => {
+  it('should return reduced factor for high volatility', async () => {
     const klines = createHighVolatilityKlines(20, 100);
 
-    const result = calculateVolatilityAdjustment({
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice: 100,
     });
@@ -73,10 +73,10 @@ describe('calculateVolatilityAdjustment', () => {
     expect(result.rationale).toContain('High volatility');
   });
 
-  it('should return 1.0 when insufficient klines', () => {
+  it('should return 1.0 when insufficient klines', async () => {
     const klines = createNormalVolatilityKlines(5, 100);
 
-    const result = calculateVolatilityAdjustment({
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice: 100,
     });
@@ -86,10 +86,10 @@ describe('calculateVolatilityAdjustment', () => {
     expect(result.rationale).toContain('Insufficient');
   });
 
-  it('should use klineIndex when provided', () => {
+  it('should use klineIndex when provided', async () => {
     const klines = createNormalVolatilityKlines(30, 100);
 
-    const result = calculateVolatilityAdjustment({
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice: 100,
       klineIndex: 20,
@@ -99,10 +99,10 @@ describe('calculateVolatilityAdjustment', () => {
     expect(result.atrPercent).toBeDefined();
   });
 
-  it('should respect custom thresholds', () => {
+  it('should respect custom thresholds', async () => {
     const klines = createNormalVolatilityKlines(20, 100);
 
-    const result = calculateVolatilityAdjustment({
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice: 100,
       highVolatilityThreshold: 0.5,
@@ -112,10 +112,10 @@ describe('calculateVolatilityAdjustment', () => {
     expect(result.factor).toBe(VOLATILITY_DEFAULTS.REDUCTION_FACTOR);
   });
 
-  it('should respect custom reduction factor', () => {
+  it('should respect custom reduction factor', async () => {
     const klines = createHighVolatilityKlines(20, 100);
 
-    const result = calculateVolatilityAdjustment({
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice: 100,
       reductionFactor: 0.5,

@@ -5,6 +5,7 @@ import rateLimit from '@fastify/rate-limit';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { STARTUP_CONFIG } from './constants';
+import { db } from './db/client';
 import { env } from './env';
 import { initializeKlineMaintenance } from './services/kline-maintenance';
 import { initializeWebSocket } from './services/websocket';
@@ -104,92 +105,126 @@ const start = async (): Promise<void> => {
     setWebSocketService(websocketService);
 
     const [
-      { positionMonitorService },
       { binancePriceStreamService },
       { binanceKlineStreamService, binanceFuturesKlineStreamService },
-      { binanceUserStreamService },
-      { binanceFuturesUserStreamService },
-      { positionSyncService },
     ] = await Promise.all([
-      import('./services/position-monitor'),
       import('./services/binance-price-stream'),
       import('./services/binance-kline-stream'),
-      import('./services/binance-user-stream'),
-      import('./services/binance-futures-user-stream'),
-      import('./services/position-sync'),
     ]);
 
-    positionMonitorService.start();
     binancePriceStreamService.start();
     binanceKlineStreamService.start();
     binanceFuturesKlineStreamService.start();
 
-    await Promise.all([
-      binanceUserStreamService.start(),
-      binanceFuturesUserStreamService.start(),
-      positionSyncService.start(),
-    ]);
+    if (env.DEMO_MODE) {
+      const klineMaintenance = initializeKlineMaintenance();
+      await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
 
-    const { startCustomSymbolService } = await import('./services/custom-symbol-service');
-    await startCustomSymbolService();
-    fastify.log.info('> Custom symbol service started');
+      fastify.log.info(`> Backend server running on http://localhost:${port} [DEMO MODE]`);
+      fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
+      fastify.log.info(`> WebSocket server initialized`);
+      fastify.log.info(`> Binance price stream service started`);
+      fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
+      fastify.log.info(`> Kline maintenance service started`);
+      fastify.log.info(`> Trading services SKIPPED (demo mode)`);
+    } else {
+      const [
+        { positionMonitorService },
+        { binanceUserStreamService },
+        { binanceFuturesUserStreamService },
+        { positionSyncService },
+      ] = await Promise.all([
+        import('./services/position-monitor'),
+        import('./services/binance-user-stream'),
+        import('./services/binance-futures-user-stream'),
+        import('./services/position-sync'),
+      ]);
 
-    const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
-    await autoTradingScheduler.restoreWatchersFromDb();
+      positionMonitorService.start();
 
-    const { cooldownService } = await import('./services/cooldown');
-    cooldownService.startCleanupScheduler(60);
+      await Promise.all([
+        binanceUserStreamService.start(),
+        binanceFuturesUserStreamService.start(),
+        positionSyncService.start(),
+      ]);
 
-    const { fundingRateService } = await import('./services/funding-rate-service');
-    fundingRateService.start();
+      const { startCustomSymbolService } = await import('./services/custom-symbol-service');
+      await startCustomSymbolService();
+      fastify.log.info('> Custom symbol service started');
 
-    const klineMaintenance = initializeKlineMaintenance();
-    await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
+      const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
+      await autoTradingScheduler.restoreWatchersFromDb();
 
-    const { orderSyncService } = await import('./services/order-sync');
-    await orderSyncService.start({ autoCancelOrphans: false, autoFixMismatches: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
+      const { cooldownService } = await import('./services/cooldown');
+      cooldownService.startCleanupScheduler(60);
 
-    setTimeout(() => {
-      import('./services/startup-audit').then(({ runStartupAudit }) => {
-        runStartupAudit().catch((err) => {
-          fastify.log.error({ err }, '[startup-audit] Unhandled error');
+      const { startCleanupScheduler } = await import('./services/cleanup');
+      startCleanupScheduler();
+
+      const { fundingRateService } = await import('./services/funding-rate-service');
+      fundingRateService.start();
+
+      const klineMaintenance = initializeKlineMaintenance();
+      await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
+
+      const { orderSyncService } = await import('./services/order-sync');
+      await orderSyncService.start({ autoCancelOrphans: false, autoFixMismatches: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
+
+      setTimeout(() => {
+        import('./services/startup-audit').then(({ runStartupAudit }) => {
+          runStartupAudit().catch((err) => {
+            fastify.log.error({ err }, '[startup-audit] Unhandled error');
+          });
         });
-      });
-    }, STARTUP_CONFIG.AUDIT_DELAY_MS);
+      }, STARTUP_CONFIG.AUDIT_DELAY_MS);
 
-    const { incomeSyncService } = await import('./services/income-sync-service');
-    incomeSyncService.start({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
+      const { incomeSyncService } = await import('./services/income-sync-service');
+      incomeSyncService.start({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
 
-    const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
-    await indicatorSchedulerService.start();
+      const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
+      await indicatorSchedulerService.start();
 
-    const { binanceBookTickerStreamService } = await import('./services/binance-book-ticker-stream');
-    const { binanceAggTradeStreamService } = await import('./services/binance-agg-trade-stream');
-    const { binanceDepthStreamService } = await import('./services/binance-depth-stream');
-    const { createBinanceClientForPrices } = await import('./services/binance-client');
+      const { binanceBookTickerStreamService } = await import('./services/binance-book-ticker-stream');
+      const { binanceAggTradeStreamService } = await import('./services/binance-agg-trade-stream');
+      const { binanceDepthStreamService } = await import('./services/binance-depth-stream');
+      const { createBinanceClientForPrices } = await import('./services/binance-client');
 
-    binanceBookTickerStreamService.start();
-    binanceAggTradeStreamService.start();
-    binanceDepthStreamService.start(createBinanceClientForPrices());
+      binanceBookTickerStreamService.start();
+      binanceAggTradeStreamService.start();
+      binanceDepthStreamService.start(createBinanceClientForPrices());
 
-    setTimeout(async () => {
-      try {
-        const { getScalpingScheduler } = await import('./services/scalping/scalping-scheduler');
-        await getScalpingScheduler().restoreFromDb();
-      } catch (err) {
-        fastify.log.error({ err }, '[scalping-scheduler] Failed to restore from DB');
-      }
-    }, STARTUP_CONFIG.AUDIT_DELAY_MS);
+      const { heatmapAlwaysCollectSymbols } = await import('./db/schema');
+      const alwaysCollectRows = await db.select().from(heatmapAlwaysCollectSymbols);
+      const symbols = alwaysCollectRows.length > 0
+        ? alwaysCollectRows.map(r => r.symbol)
+        : ['BTCUSDT'];
+      for (const s of symbols) binanceDepthStreamService.subscribe(s.toLowerCase());
 
-    fastify.log.info(`> Backend server running on http://localhost:${port}`);
-    fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
-    fastify.log.info(`> WebSocket server initialized`);
-    fastify.log.info(`> Position monitor service started`);
-    fastify.log.info(`> Binance price stream service started`);
-    fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
-    fastify.log.info(`> Binance user stream service started (SPOT + FUTURES)`);
-    fastify.log.info(`> Kline maintenance service started (delayed ${STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS / 1000}s)`);
-    fastify.log.info(`> Indicator scheduler started (snapshots every 30min)`);
+      const { binanceLiquidationStreamService } = await import('./services/binance-liquidation-stream');
+      binanceLiquidationStreamService.start();
+
+      const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
+      liquidityHeatmapAggregator.start(binanceDepthStreamService, binanceLiquidationStreamService, symbols);
+
+      setTimeout(async () => {
+        try {
+          const { getScalpingScheduler } = await import('./services/scalping/scalping-scheduler');
+          await getScalpingScheduler().restoreFromDb();
+        } catch (err) {
+          fastify.log.error({ err }, '[scalping-scheduler] Failed to restore from DB');
+        }
+      }, STARTUP_CONFIG.AUDIT_DELAY_MS);
+
+      fastify.log.info(`> Backend server running on http://localhost:${port}`);
+      fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
+      fastify.log.info(`> WebSocket server initialized`);
+      fastify.log.info(`> Position monitor service started`);
+      fastify.log.info(`> Binance price stream service started`);
+      fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
+      fastify.log.info(`> Binance user stream service started (SPOT + FUTURES)`);
+      fastify.log.info(`> Kline maintenance service started (delayed ${STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS / 1000}s)`);
+      fastify.log.info(`> Indicator scheduler started (snapshots every 30min)`);
+    }
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

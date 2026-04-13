@@ -1,7 +1,7 @@
-import type { IchimokuResult } from '@marketmind/indicators';
+import type { IchimokuResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseIchimokuRendererProps {
@@ -26,7 +26,12 @@ export const useIchimokuRenderer = ({
 
     if (!ctx || !dimensions) return;
 
+    const { chartWidth, chartHeight } = dimensions;
+
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -95,9 +100,9 @@ export const useIchimokuRenderer = ({
     };
 
     fillCloud();
-    drawLine(ichimokuData.tenkan, colors.ichimoku?.tenkan ?? INDICATOR_COLORS.ICHIMOKU_TENKAN, 1);
-    drawLine(ichimokuData.kijun, colors.ichimoku?.kijun ?? INDICATOR_COLORS.ICHIMOKU_KIJUN, 1);
-    drawLine(ichimokuData.chikou, colors.ichimoku?.chikou ?? INDICATOR_COLORS.ICHIMOKU_CHIKOU, 1);
+    drawLine(ichimokuData.tenkan, colors.ichimoku?.tenkan ?? INDICATOR_COLORS.ICHIMOKU_TENKAN, INDICATOR_LINE_WIDTHS.OVERLAY);
+    drawLine(ichimokuData.kijun, colors.ichimoku?.kijun ?? INDICATOR_COLORS.ICHIMOKU_KIJUN, INDICATOR_LINE_WIDTHS.OVERLAY);
+    drawLine(ichimokuData.chikou, colors.ichimoku?.chikou ?? INDICATOR_COLORS.ICHIMOKU_CHIKOU, INDICATOR_LINE_WIDTHS.OVERLAY);
 
     ctx.restore();
   }, [manager, ichimokuData, enabled, colors]);

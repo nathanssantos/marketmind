@@ -1,0 +1,47 @@
+// @id fvg-rejection
+// @name FVG Rejection
+// @version 1.0.0
+// @description Trades the rejection from a Fair Value Gap zone. Signal fires when a candle's range (wick or body) touches an active FVG zone and the candle closes on the correct side — confirming the FVG as support (LONG) or resistance (SHORT).
+// @author MarketMind
+// @tags price-action,fvg,imbalance,smart-money,rejection
+// @strategyType ANY
+// @momentumType ANY
+// @param atrMultiplier ATR multiplier for stop loss
+
+//@version=5
+indicator('FVG Rejection', overlay=true)
+
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=3, step=0.5)
+
+fvg_bullish = low > high[2] ? 1 : 0
+fvg_bearish = high < low[2] ? 1 : 0
+fvg_bullishTop = fvg_bullish == 1 ? low : na
+fvg_bullishBottom = fvg_bullish == 1 ? high[2] : na
+fvg_bearishTop = fvg_bearish == 1 ? low[2] : na
+fvg_bearishBottom = fvg_bearish == 1 ? high : na
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (low <= fvg_bullishTop and close > fvg_bullishBottom)
+shortEntry = (high >= fvg_bearishBottom and close < fvg_bearishTop)
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 80)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.3 : shortEntry ? close + atrVal * 0.3 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.3)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.3) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

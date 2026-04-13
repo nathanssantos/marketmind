@@ -19,6 +19,7 @@ export class UpdateManager {
     if (!this.isDevelopment) {
       this.setupAutoUpdater();
       this.setupEventHandlers();
+      this.startAutoCheckInterval(24);
     } else {
       log.info('UpdateManager: Running in development mode, auto-updater disabled');
     }

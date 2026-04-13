@@ -90,9 +90,9 @@ const createRecoveryKlines = (scenario: 'long_recovering' | 'long_crossed_midpoi
 
 describe('checkStochasticRecoveryCondition', () => {
   describe('LONG direction', () => {
-    it('should allow LONG when K went below 20 and is recovering below 50', () => {
+    it('should allow LONG when K went below 20 and is recovering below 50', async () => {
       const klines = createRecoveryKlines('long_recovering');
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       if (result.currentK !== null && result.currentK < STOCHASTIC_RECOVERY.MIDPOINT_THRESHOLD) {
         expect(result.isAllowed).toBe(true);
@@ -101,9 +101,9 @@ describe('checkStochasticRecoveryCondition', () => {
       }
     });
 
-    it('should block LONG when K went below 20 but already crossed above 50', () => {
+    it('should block LONG when K went below 20 but already crossed above 50', async () => {
       const klines = createRecoveryKlines('long_crossed_midpoint');
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       if (result.currentK !== null && result.currentK >= STOCHASTIC_RECOVERY.MIDPOINT_THRESHOLD) {
         expect(result.isAllowed).toBe(false);
@@ -112,9 +112,9 @@ describe('checkStochasticRecoveryCondition', () => {
       }
     });
 
-    it('should block LONG when K never went below 20', () => {
+    it('should block LONG when K never went below 20', async () => {
       const klines = createRecoveryKlines('long_never_oversold');
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       if (result.currentK !== null && result.currentK < STOCHASTIC_RECOVERY.MIDPOINT_THRESHOLD) {
         expect(result.isAllowed).toBe(false);
@@ -125,9 +125,9 @@ describe('checkStochasticRecoveryCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when K went above 80 and is recovering above 50', () => {
+    it('should allow SHORT when K went above 80 and is recovering above 50', async () => {
       const klines = createRecoveryKlines('short_recovering');
-      const result = checkStochasticRecoveryCondition(klines, 'SHORT');
+      const result = await checkStochasticRecoveryCondition(klines, 'SHORT');
 
       if (result.currentK !== null && result.currentK > STOCHASTIC_RECOVERY.MIDPOINT_THRESHOLD) {
         expect(result.isAllowed).toBe(true);
@@ -136,9 +136,9 @@ describe('checkStochasticRecoveryCondition', () => {
       }
     });
 
-    it('should block SHORT when K went above 80 but already crossed below 50', () => {
+    it('should block SHORT when K went above 80 but already crossed below 50', async () => {
       const klines = createRecoveryKlines('short_crossed_midpoint');
-      const result = checkStochasticRecoveryCondition(klines, 'SHORT');
+      const result = await checkStochasticRecoveryCondition(klines, 'SHORT');
 
       if (result.currentK !== null && result.currentK <= STOCHASTIC_RECOVERY.MIDPOINT_THRESHOLD) {
         expect(result.isAllowed).toBe(false);
@@ -147,9 +147,9 @@ describe('checkStochasticRecoveryCondition', () => {
       }
     });
 
-    it('should block SHORT when K never went above 80', () => {
+    it('should block SHORT when K never went above 80', async () => {
       const klines = createRecoveryKlines('short_never_overbought');
-      const result = checkStochasticRecoveryCondition(klines, 'SHORT');
+      const result = await checkStochasticRecoveryCondition(klines, 'SHORT');
 
       if (result.currentK !== null && result.currentK > STOCHASTIC_RECOVERY.MIDPOINT_THRESHOLD) {
         expect(result.isAllowed).toBe(false);
@@ -160,13 +160,13 @@ describe('checkStochasticRecoveryCondition', () => {
   });
 
   describe('edge cases', () => {
-    it('should return isAllowed=true (soft pass) when insufficient klines', () => {
+    it('should return isAllowed=true (soft pass) when insufficient klines', async () => {
       const klines: Kline[] = [];
       for (let i = 0; i < 10; i += 1) {
         klines.push(createKline(100, 105, 95, 100, i));
       }
 
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.currentK).toBeNull();
@@ -174,9 +174,9 @@ describe('checkStochasticRecoveryCondition', () => {
       expect(result.reason).toContain('soft pass');
     });
 
-    it('should return currentK and currentD values when calculation succeeds', () => {
+    it('should return currentK and currentD values when calculation succeeds', async () => {
       const klines = createRecoveryKlines('long_never_oversold');
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.currentD).not.toBeNull();
@@ -184,9 +184,9 @@ describe('checkStochasticRecoveryCondition', () => {
       expect(typeof result.currentD).toBe('number');
     });
 
-    it('should return K value between 0 and 100', () => {
+    it('should return K value between 0 and 100', async () => {
       const klines = createRecoveryKlines('long_never_oversold');
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       expect(result.currentK).not.toBeNull();
       expect(result.currentK).toBeGreaterThanOrEqual(0);
@@ -201,9 +201,9 @@ describe('checkStochasticRecoveryCondition', () => {
   });
 
   describe('result structure', () => {
-    it('should return all required fields in StochasticFilterResult', () => {
+    it('should return all required fields in StochasticFilterResult', async () => {
       const klines = createRecoveryKlines('long_never_oversold');
-      const result = checkStochasticRecoveryCondition(klines, 'LONG');
+      const result = await checkStochasticRecoveryCondition(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
       expect(result).toHaveProperty('currentK');

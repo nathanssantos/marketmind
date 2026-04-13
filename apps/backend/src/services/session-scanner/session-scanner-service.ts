@@ -6,9 +6,7 @@ import { getActiveSessions, type SessionDefinition, type SessionStatus } from '.
 import { getScreenerService } from '../screener/screener-service';
 import { getPresetById } from '../screener/presets';
 import type { WebSocketService } from '../websocket';
-
-const SCAN_INTERVAL_MS = 5 * 60 * 1000;
-const RESULT_CACHE_TTL_MS = 10 * 60 * 1000;
+import { SESSION_SCANNER } from '../../constants';
 
 interface CachedResult {
   sessionId: string;
@@ -47,7 +45,7 @@ export class SessionScannerService {
   start(): void {
     if (this.intervalId) return;
     logger.info('[SessionScanner] Starting session scanner');
-    this.intervalId = setInterval(() => void this.scan(), SCAN_INTERVAL_MS);
+    this.intervalId = setInterval(() => void this.scan(), SESSION_SCANNER.SCAN_INTERVAL_MS);
     void this.scan();
   }
 
@@ -76,7 +74,7 @@ export class SessionScannerService {
       const cacheKey = `${session.id}:${presetId}`;
       const cached = this.cache.get(cacheKey);
 
-      if (cached && Date.now() - cached.cachedAt < RESULT_CACHE_TTL_MS) continue;
+      if (cached && Date.now() - cached.cachedAt < SESSION_SCANNER.RESULT_CACHE_TTL_MS) continue;
 
       const preset = getPresetById(presetId);
       if (!preset) continue;

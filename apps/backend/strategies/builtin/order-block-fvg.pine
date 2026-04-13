@@ -1,0 +1,53 @@
+// @id order-block-fvg
+// @name Order Block + FVG
+// @version 1.0.0
+// @description Smart money concept combining Order Blocks (high-volume institutional zones) with Fair Value Gaps (imbalance zones). Entry when price returns to order block with FVG confirmation.
+// @author MarketMind
+// @tags smart-money,order-block,fvg,institutional
+// @strategyType ANY
+// @momentumType ANY
+// @param lookbackPeriod Lookback for order blocks
+// @param orderBlockVolumeMultiplier Volume multiplier to identify order blocks
+// @param fvgMinSize Minimum FVG size as % of price
+// @param targetMultiplier Risk:Reward target
+// @param atrPeriod ATR for stop calculation
+
+//@version=5
+indicator('Order Block + FVG', overlay=true)
+
+lookbackPeriod = input.int(50, 'lookbackPeriod', minval=20, maxval=100, step=10)
+orderBlockVolumeMultiplier = input.float(1.5, 'orderBlockVolumeMultiplier', minval=1.2, maxval=2, step=0.1)
+fvgMinSize = input.float(0.1, 'fvgMinSize', minval=0.05, maxval=0.3, step=0.05)
+targetMultiplier = input.float(2, 'targetMultiplier', minval=1.5, maxval=3, step=0.5)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+
+atr = ta.atr(atrPeriod)
+ema200 = ta.ema(close, 200)
+ema50 = ta.ema(close, 50)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > open and volume > ta.sma(volume, 20) and low[1] < low[50] and close > ema50)
+shortEntry = (close < open and volume > ta.sma(volume, 20) and high[1] > high[50] and close < ema50)
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = close > ema200 ? 5 : 0
+confBonus2 = close < ema200 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * targetMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * targetMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

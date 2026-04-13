@@ -18,7 +18,6 @@ export { useKlingerWorker } from './useKlingerWorker';
 export { useLiquidityLevelsWorker } from './useLiquidityLevelsWorker';
 export { useMACDWorker } from './useMACDWorker';
 export { useMFIWorker } from './useMFIWorker';
-export { useMovingAverageWorker } from './useMovingAverageWorker';
 export { useOBVWorker } from './useOBVWorker';
 export { useParabolicSARWorker } from './useParabolicSARWorker';
 export { usePivotPointsWorker } from './usePivotPointsWorker';

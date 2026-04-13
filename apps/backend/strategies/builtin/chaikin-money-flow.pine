@@ -1,0 +1,48 @@
+// @id chaikin-money-flow
+// @name Chaikin Money Flow
+// @version 1.0.0
+// @description Chaikin Money Flow (CMF) para medir acumulação/distribuição. Entry quando CMF cruza zero indicando mudança no fluxo de dinheiro.
+// @author MarketMind
+// @tags volume,cmf,chaikin,accumulation-distribution
+// @strategyType ANY
+// @momentumType ANY
+// @param cmfPeriod Período do CMF
+// @param threshold Threshold para confirmação
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Chaikin Money Flow', overlay=true)
+
+cmfPeriod = input.int(20, 'cmfPeriod', minval=14, maxval=30, step=2)
+threshold = input.float(0.05, 'threshold', minval=0, maxval=0.1, step=0.025)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+cmf_mfv = ((close - low) - (high - close)) / math.max(high - low, 0.0001) * volume
+cmf = ta.sma(cmf_mfv, cmfPeriod) / math.max(ta.sma(volume, cmfPeriod), 1)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = ta.crossover(cmf, threshold)
+shortEntry = ta.crossunder(cmf, (-1 * threshold))
+
+confBase = 70
+confBonus0 = cmf > 0.15 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = cmf < 0
+exitShort = cmf > 0
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

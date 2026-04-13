@@ -14,4 +14,10 @@ export {
   resetLoginAttempts,
   resetRegisterAttempts,
   getLoginAttemptsRemaining,
+  checkPasswordResetRateLimit,
+  recordPasswordResetAttempt,
+  checkEmailVerificationRateLimit,
+  recordEmailVerificationAttempt,
+  checkTwoFactorRateLimit,
+  recordTwoFactorAttempt,
 } from './login-rate-limiter';

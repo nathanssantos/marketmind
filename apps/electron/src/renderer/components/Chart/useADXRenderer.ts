@@ -1,9 +1,9 @@
-import type { ADXResult } from '@marketmind/indicators';
+import type { ADXResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseADXRendererProps {
   manager: CanvasManager | null;
@@ -75,6 +75,10 @@ export const useADXRenderer = ({
     drawLine(adxData.adx, colors.adx?.adxLine ?? INDICATOR_COLORS.ADX_LINE, 1);
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, adxData.plusDI, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.adx?.plusDI ?? INDICATOR_COLORS.ADX_PLUS_DI);
+    drawPanelValueTag(ctx, adxData.minusDI, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.adx?.minusDI ?? INDICATOR_COLORS.ADX_MINUS_DI);
+    drawPanelValueTag(ctx, adxData.adx, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.adx?.adxLine ?? INDICATOR_COLORS.ADX_LINE);
   }, [manager, adxData, enabled, colors]);
 
   return { render };

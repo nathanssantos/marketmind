@@ -16,15 +16,15 @@ describe('klineOptimizer.worker', () => {
   it('should optimize klines', async () => {
     await import('./klineOptimizer.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'optimizeKlines', klines: mockKlines } } as MessageEvent);
-    expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'optimizedResult' }));
+    handler({ data: { klines: mockKlines } } as MessageEvent);
+    expect(mockPostMessage).toHaveBeenCalledWith({ detailed: [], simplified: [], totalCount: 0 });
   });
 
-  it('should ignore wrong type', async () => {
+  it('should post null for empty klines', async () => {
     vi.resetModules();
     await import('./klineOptimizer.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'wrongType', klines: mockKlines } } as MessageEvent);
-    expect(mockPostMessage).not.toHaveBeenCalled();
+    handler({ data: { klines: [] } } as MessageEvent);
+    expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

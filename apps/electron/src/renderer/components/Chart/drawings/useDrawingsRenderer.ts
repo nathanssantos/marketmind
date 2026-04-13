@@ -1,7 +1,9 @@
-import type { CoordinateMapper, Drawing, LineDrawing, RulerDrawing, RectangleDrawing, AreaDrawing, PencilDrawing, FibonacciDrawing, ArrowDrawing, TextDrawing } from '@marketmind/chart-studies';
+import type { CoordinateMapper, Drawing, PencilDrawing, HighlighterDrawing } from '@marketmind/chart-studies';
+import { resolveDrawingIndices } from '@marketmind/chart-studies';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { createDrawingMapper } from '@renderer/utils/canvas/canvasHelpers';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import type React from 'react';
 import { useCallback, useEffect, useRef } from 'react';
@@ -12,7 +14,19 @@ import { renderRuler } from './renderers/renderRuler';
 import { renderArea } from './renderers/renderArea';
 import { renderFibonacci } from './renderers/renderFibonacci';
 import { renderArrow } from './renderers/renderArrow';
+import { renderRay } from './renderers/renderRay';
+import { renderHorizontalLine } from './renderers/renderHorizontalLine';
+import { renderChannel } from './renderers/renderChannel';
+import { renderTrendLine } from './renderers/renderTrendLine';
+import { renderPriceRange } from './renderers/renderPriceRange';
+import { renderVerticalLine } from './renderers/renderVerticalLine';
+import { renderAnchoredVwap } from './renderers/renderAnchoredVwap';
+import { renderHighlighter } from './renderers/renderHighlighter';
+import { renderEllipse } from './renderers/renderEllipse';
+import { renderPitchfork } from './renderers/renderPitchfork';
+import { renderGannFan } from './renderers/renderGannFan';
 import { renderText } from './renderers/renderText';
+import { renderPosition } from './renderers/renderPosition';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
 
@@ -45,64 +59,6 @@ interface UseDrawingsRendererProps {
   lastSnapRef: React.MutableRefObject<OHLCSnapIndicator | null>;
 }
 
-const resolveDrawingIndices = (drawing: Drawing, klines: Kline[]): Drawing => {
-  if (klines.length === 0) return drawing;
-
-  const timeToIdx = (time: number | undefined, fallbackIdx: number): number => {
-    if (time === undefined) return fallbackIdx;
-    let lo = 0;
-    let hi = klines.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >>> 1;
-      const mt = klines[mid]?.openTime ?? 0;
-      if (mt < time) lo = mid + 1;
-      else if (mt > time) hi = mid - 1;
-      else return mid;
-    }
-    return Math.max(0, Math.min(lo, klines.length - 1));
-  };
-
-  switch (drawing.type) {
-    case 'line':
-    case 'ruler':
-    case 'rectangle':
-    case 'area':
-    case 'arrow': {
-      const d = drawing as LineDrawing | RulerDrawing | RectangleDrawing | AreaDrawing | ArrowDrawing;
-      if (!d.startTime && !d.endTime) return drawing;
-      return { ...d, startIndex: timeToIdx(d.startTime, d.startIndex), endIndex: timeToIdx(d.endTime, d.endIndex) };
-    }
-    case 'pencil': {
-      const d = drawing as PencilDrawing;
-      if (!d.points.some(p => p.time !== undefined)) return drawing;
-      return { ...d, points: d.points.map(p => ({ ...p, index: timeToIdx(p.time, p.index) })) };
-    }
-    case 'fibonacci': {
-      const d = drawing as FibonacciDrawing;
-      if (!d.swingLowTime && !d.swingHighTime) return drawing;
-      return { ...d, swingLowIndex: timeToIdx(d.swingLowTime, d.swingLowIndex), swingHighIndex: timeToIdx(d.swingHighTime, d.swingHighIndex) };
-    }
-    case 'text': {
-      const d = drawing as TextDrawing;
-      if (!d.time) return drawing;
-      return { ...d, index: timeToIdx(d.time, d.index) };
-    }
-  }
-};
-
-const createMapper = (manager: CanvasManager): CoordinateMapper => ({
-  priceToY: (price: number) => manager.priceToY(price),
-  yToPrice: (y: number) => manager.yToPrice(y),
-  indexToX: (index: number) => manager.indexToX(index),
-  xToIndex: (x: number) => {
-    const viewport = manager.getViewport();
-    const dimensions = manager.getDimensions();
-    if (!dimensions) return 0;
-    return Math.floor(viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start));
-  },
-  indexToCenterX: (index: number) => manager.indexToCenterX(index),
-});
-
 const renderSingleDrawing = (
   ctx: CanvasRenderingContext2D,
   drawing: Drawing,
@@ -112,6 +68,7 @@ const renderSingleDrawing = (
   chartWidth: number,
   colors: { bullish: string; bearish: string; crosshair: string },
   themeColors: ChartThemeColors,
+  klines: Kline[],
 ): void => {
   if (!drawing.visible) return;
 
@@ -126,10 +83,10 @@ const renderSingleDrawing = (
       renderPencil(ctx, drawing, mapper, isSelected);
       break;
     case 'ruler':
-      renderRuler(ctx, drawing, mapper, isSelected, colors);
+      renderRuler(ctx, drawing, mapper, isSelected, colors, themeColors);
       break;
     case 'area':
-      renderArea(ctx, drawing, mapper, isSelected, colors);
+      renderArea(ctx, drawing, mapper, isSelected, colors, themeColors);
       break;
     case 'fibonacci':
       renderFibonacci(ctx, drawing, mapper, isSelected, chartHeight, chartWidth, themeColors);
@@ -137,8 +94,45 @@ const renderSingleDrawing = (
     case 'arrow':
       renderArrow(ctx, drawing, mapper, isSelected);
       break;
+    case 'ray':
+      renderRay(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
     case 'text':
       renderText(ctx, drawing, mapper, isSelected);
+      break;
+    case 'horizontalLine':
+      renderHorizontalLine(ctx, drawing, mapper, isSelected, chartWidth);
+      break;
+    case 'channel':
+      renderChannel(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'trendLine':
+      renderTrendLine(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'priceRange':
+      renderPriceRange(ctx, drawing, mapper, isSelected);
+      break;
+    case 'verticalLine':
+      renderVerticalLine(ctx, drawing, mapper, isSelected, chartHeight);
+      break;
+    case 'anchoredVwap':
+      renderAnchoredVwap(ctx, drawing, mapper, isSelected, klines);
+      break;
+    case 'highlighter':
+      renderHighlighter(ctx, drawing, mapper, isSelected);
+      break;
+    case 'ellipse':
+      renderEllipse(ctx, drawing, mapper, isSelected);
+      break;
+    case 'pitchfork':
+      renderPitchfork(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'gannFan':
+      renderGannFan(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
+      break;
+    case 'longPosition':
+    case 'shortPosition':
+      renderPosition(ctx, drawing, mapper, isSelected, chartWidth);
       break;
   }
 
@@ -147,16 +141,16 @@ const renderSingleDrawing = (
   }
 };
 
-const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndicator): void => {
+const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndicator, themeColors?: ChartThemeColors): void => {
   ctx.save();
 
   ctx.beginPath();
   ctx.arc(snap.x, snap.y, SNAP_INDICATOR_RADIUS, 0, Math.PI * 2);
-  ctx.fillStyle = SNAP_INDICATOR_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.snapIndicator ?? SNAP_INDICATOR_COLOR;
   ctx.fill();
 
   ctx.font = SNAP_LABEL_FONT;
-  ctx.fillStyle = SNAP_LABEL_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.snapLabel ?? SNAP_LABEL_COLOR;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   ctx.fillText(OHLC_LABELS[snap.ohlcType], snap.x + SNAP_LABEL_OFFSET_X, snap.y + SNAP_LABEL_OFFSET_Y);
@@ -206,7 +200,7 @@ export const useDrawingsRenderer = ({
 
     const currentKlines = klinesRef.current;
     const selectedId = store.selectedDrawingId;
-    const mapper = createMapper(manager);
+    const mapper = createDrawingMapper(manager);
     const viewport = manager.getViewport();
 
     const sorted = [...rawDrawings].sort((a, b) => a.zIndex - b.zIndex);
@@ -218,6 +212,11 @@ export const useDrawingsRenderer = ({
       lastFirstKlineTimeRef.current = firstTime;
     }
 
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
+    ctx.clip();
+
     for (const raw of sorted) {
       const cacheKey = `${raw.id}-${raw.updatedAt}`;
       let drawing = drawingIndexCache.current.get(cacheKey);
@@ -226,44 +225,65 @@ export const useDrawingsRenderer = ({
         drawingIndexCache.current.set(cacheKey, drawing);
       }
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
-      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
+      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, currentKlines);
     }
 
     if (pendingDrawing) {
-      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
+      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, currentKlines);
     }
 
+    ctx.restore();
+
     if (snapIndicator) {
-      renderSnapIndicator(ctx, snapIndicator);
+      renderSnapIndicator(ctx, snapIndicator, themeColors);
     }
   }, [manager, symbol, colors, themeColors, pendingDrawingRef, lastSnapRef]);
 
   return { render };
 };
 
+const FREEFORM_TYPES = new Set(['pencil', 'highlighter']);
+const BOUNDED_VIEWPORT_TYPES = new Set(['line', 'ruler', 'rectangle', 'area', 'arrow', 'priceRange', 'ellipse']);
+const INFINITE_VIEWPORT_TYPES = new Set(['trendLine', 'gannFan', 'horizontalLine']);
+const SEMI_INFINITE_TYPES = new Set(['ray', 'channel', 'pitchfork', 'anchoredVwap', 'longPosition', 'shortPosition']);
+const POINT_VIEWPORT_TYPES = new Set(['text', 'verticalLine']);
+
 const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: number): boolean => {
-  switch (drawing.type) {
-    case 'line':
-    case 'ruler':
-    case 'rectangle':
-    case 'area':
-    case 'arrow': {
-      const minIdx = Math.min(drawing.startIndex, drawing.endIndex);
-      const maxIdx = Math.max(drawing.startIndex, drawing.endIndex);
-      return maxIdx >= viewStart && minIdx <= viewEnd;
-    }
-    case 'fibonacci': {
-      const minIdx = Math.min(drawing.swingLowIndex, drawing.swingHighIndex);
-      return minIdx <= viewEnd;
-    }
-    case 'pencil': {
-      if (drawing.points.length === 0) return false;
-      const indices = drawing.points.map(p => p.index);
-      const minIdx = Math.min(...indices);
-      const maxIdx = Math.max(...indices);
-      return maxIdx >= viewStart && minIdx <= viewEnd;
-    }
-    case 'text':
-      return drawing.index >= viewStart && drawing.index <= viewEnd;
+  if (INFINITE_VIEWPORT_TYPES.has(drawing.type)) return true;
+
+  if (BOUNDED_VIEWPORT_TYPES.has(drawing.type)) {
+    const d = drawing as Drawing & { startIndex: number; endIndex: number };
+    const minIdx = Math.min(d.startIndex, d.endIndex);
+    const maxIdx = Math.max(d.startIndex, d.endIndex);
+    return maxIdx >= viewStart && minIdx <= viewEnd;
   }
+
+  if (SEMI_INFINITE_TYPES.has(drawing.type)) {
+    let idx: number;
+    if ('entryIndex' in drawing) idx = (drawing as Drawing & { entryIndex: number }).entryIndex;
+    else if ('startIndex' in drawing) idx = Math.min(drawing.startIndex, (drawing as Drawing & { endIndex: number }).endIndex);
+    else idx = (drawing as Drawing & { index: number }).index;
+    return idx <= viewEnd;
+  }
+
+  if (drawing.type === 'fibonacci') {
+    const minIdx = Math.min(drawing.swingLowIndex, drawing.swingHighIndex);
+    return minIdx <= viewEnd;
+  }
+
+  if (FREEFORM_TYPES.has(drawing.type)) {
+    const d = drawing as PencilDrawing | HighlighterDrawing;
+    if (d.points.length === 0) return false;
+    const indices = d.points.map(p => p.index);
+    const minIdx = Math.min(...indices);
+    const maxIdx = Math.max(...indices);
+    return maxIdx >= viewStart && minIdx <= viewEnd;
+  }
+
+  if (POINT_VIEWPORT_TYPES.has(drawing.type)) {
+    const d = drawing as Drawing & { index: number };
+    return d.index >= viewStart && d.index <= viewEnd;
+  }
+
+  return true;
 };

@@ -1,0 +1,52 @@
+// @id pin-inside-combo
+// @name Pin Bar + Inside Bar Combo
+// @version 1.0.0
+// @description Powerful price action combo: Pin bar (long wick rejecting level) followed by inside bar (consolidation). Entry on breakout of inside bar in pin bar direction at support/resistance.
+// @author MarketMind
+// @tags price-action,pin-bar,inside-bar,reversal
+// @strategyType ANY
+// @momentumType REVERSAL
+// @param pinBarRatio Wick to body ratio for valid pin bar
+// @param srTolerance Support/Resistance tolerance %
+// @param targetMultiplier Risk:Reward target
+// @param lookbackPeriod Lookback for S/R levels
+// @param atrPeriod ATR for stop calculation
+
+//@version=5
+indicator('Pin Bar + Inside Bar Combo', overlay=true)
+
+pinBarRatio = input.float(2, 'pinBarRatio', minval=1.5, maxval=3, step=0.5)
+srTolerance = input.float(1, 'srTolerance', minval=0.5, maxval=2, step=0.25)
+targetMultiplier = input.float(2, 'targetMultiplier', minval=1.5, maxval=3, step=0.5)
+lookbackPeriod = input.int(50, 'lookbackPeriod', minval=20, maxval=100, step=10)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+
+atr = ta.atr(atrPeriod)
+ema200 = ta.ema(close, 200)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (high <= high[1] and low >= low[1] and close[1] > open[1])
+shortEntry = (high <= high[1] and low >= low[1] and close[1] < open[1])
+
+confBase = 70
+confBonus0 = volume[1] > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = close > ema200 ? 5 : 0
+confBonus2 = close < ema200 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * targetMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * targetMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

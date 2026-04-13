@@ -1,12 +1,7 @@
-import { calculateAroon } from '@marketmind/indicators';
+import { calculateAroon } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
-interface WorkerMessage {
-  klines: Kline[];
-  period?: number;
-}
-
-self.onmessage = (e: MessageEvent<WorkerMessage>) => {
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {
   const { klines, period = 25 } = e.data;
 
   if (!klines || klines.length === 0) {

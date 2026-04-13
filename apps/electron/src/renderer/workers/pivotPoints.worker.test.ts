@@ -1,7 +1,7 @@
-import { analyzePivots } from '@marketmind/indicators';
+import { analyzePivots } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   analyzePivots: vi.fn(() => ({ pivots: [], supports: [], resistances: [] })),
 }));
 

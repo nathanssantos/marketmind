@@ -1,8 +1,9 @@
-import type { OBVResult } from '@marketmind/indicators';
+import type { OBVResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS, INDICATOR_PANEL_HEIGHTS, PANEL_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
+import { drawPanelValueTag } from './utils/oscillatorRendering';
 
 interface UseOBVRendererProps {
   manager: CanvasManager | null;
@@ -69,8 +70,8 @@ export const useOBVRenderer = ({
       return panelTop + padding + innerHeight - normalized * innerHeight;
     };
 
-    ctx.strokeStyle = colors.obv?.line ?? '#2196f3';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = colors.obv?.line ?? INDICATOR_COLORS.OBV_LINE;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.OBV;
     ctx.beginPath();
 
     let isFirstPoint = true;
@@ -93,8 +94,8 @@ export const useOBVRenderer = ({
     ctx.stroke();
 
     if (obvData.sma && obvData.sma.length > 0) {
-      ctx.strokeStyle = colors.obv?.sma ?? '#ff9800';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = colors.obv?.sma ?? INDICATOR_COLORS.OBV_SMA;
+      ctx.lineWidth = INDICATOR_LINE_WIDTHS.OBV_SMA;
       ctx.beginPath();
 
       isFirstPoint = true;
@@ -123,6 +124,11 @@ export const useOBVRenderer = ({
     ctx.fillText('OBV', chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN - 4, panelTop + padding + 10);
 
     ctx.restore();
+
+    if (obvData.sma && obvData.sma.length > 0) {
+      drawPanelValueTag(ctx, obvData.sma, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.obv?.sma ?? INDICATOR_COLORS.OBV_SMA);
+    }
+    drawPanelValueTag(ctx, obvData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.obv?.line ?? INDICATOR_COLORS.OBV_LINE);
   }, [manager, obvData, enabled, colors]);
 
   return { render, panelId: PANEL_ID, panelHeight: PANEL_HEIGHT };

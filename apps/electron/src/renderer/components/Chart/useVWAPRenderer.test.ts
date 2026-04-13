@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useVWAPRenderer } from './useVWAPRenderer';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateMonthlyVWAP: vi.fn(() => [100, 101, 102, 103, 104]),
+vi.mock('../../lib/indicators', () => ({
+  calculateIntradayVWAP: vi.fn(() => [100, 101, 102, 103, 104]),
+  calculateWeeklyVWAP: vi.fn(() => [200, 201, 202, 203, 204]),
+  calculateMonthlyVWAP: vi.fn(() => [300, 301, 302, 303, 304]),
 }));
 
 describe('useVWAPRenderer', () => {
@@ -49,11 +51,32 @@ describe('useVWAPRenderer', () => {
       expect(mockCtx.stroke).not.toHaveBeenCalled();
     });
 
-    it('should render VWAP when enabled with valid klines', () => {
+    it('should render monthly VWAP by default', () => {
       const { result } = renderHook(() => useVWAPRenderer({ manager: mockManager, enabled: true }));
       result.current.render();
       expect(mockCtx.save).toHaveBeenCalled();
       expect(mockCtx.restore).toHaveBeenCalled();
+    });
+
+    it('should render daily VWAP with daily period', () => {
+      const { result } = renderHook(() => useVWAPRenderer({ manager: mockManager, enabled: true, period: 'daily' }));
+      result.current.render();
+      expect(mockCtx.save).toHaveBeenCalled();
+      expect(mockCtx.strokeStyle).toBe('#ff8c00');
+    });
+
+    it('should render weekly VWAP with weekly period', () => {
+      const { result } = renderHook(() => useVWAPRenderer({ manager: mockManager, enabled: true, period: 'weekly' }));
+      result.current.render();
+      expect(mockCtx.save).toHaveBeenCalled();
+      expect(mockCtx.strokeStyle).toBe('#ff6b00');
+    });
+
+    it('should render monthly VWAP with monthly period', () => {
+      const { result } = renderHook(() => useVWAPRenderer({ manager: mockManager, enabled: true, period: 'monthly' }));
+      result.current.render();
+      expect(mockCtx.save).toHaveBeenCalled();
+      expect(mockCtx.strokeStyle).toBe('#e65100');
     });
   });
 

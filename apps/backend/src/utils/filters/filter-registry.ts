@@ -36,7 +36,7 @@ export interface FilterDef {
     direction: 'LONG' | 'SHORT',
     setupType: string,
     config: Record<string, unknown>
-  ) => BaseFilterResult;
+  ) => Promise<BaseFilterResult>;
 }
 
 export const FILTER_REGISTRY: FilterDef[] = [
@@ -123,11 +123,11 @@ export const FILTER_REGISTRY: FilterDef[] = [
       { key: 'sessionEndUtc', default: 16 },
     ],
     run: (_klines, _direction, _setupType, cfg) =>
-      checkSessionCondition(
+      Promise.resolve(checkSessionCondition(
         Date.now(),
         cfg['sessionStartUtc'] as number,
         cfg['sessionEndUtc'] as number,
-      ),
+      )),
   },
   {
     id: 'bollingerSqueeze',

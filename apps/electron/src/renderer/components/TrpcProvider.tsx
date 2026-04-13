@@ -23,7 +23,11 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(() => new QueryClient({
         queryCache: new QueryCache({
             onError: (error, query) => {
-                const msg = error instanceof Error ? error.message : String(error);
+                const msg = error instanceof Error
+                    ? error.message
+                    : (typeof error === 'object' && error !== null && 'message' in error)
+                        ? String((error as { message: unknown }).message)
+                        : String(error);
                 if (msg.includes('TOO_MANY_REQUESTS') || msg.includes('IP banned') || msg.includes('418') || msg.includes('429')) {
                     const duration = parseBanDuration(msg);
                     useApiBanStore.getState().setBan(Date.now() + duration);
@@ -39,13 +43,14 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
                 staleTime: QUERY_CONFIGS.default.staleTime,
                 gcTime: QUERY_CONFIGS.default.gcTime,
                 retry: (failureCount, error) => {
-                    if (error instanceof Error) {
-                        if (error.message.includes('UNAUTHORIZED')) return false;
-                        if (error.message.includes('NOT_FOUND')) return false;
-                        if (error.message.includes('TOO_MANY_REQUESTS')) return false;
-                    }
-                    const errStr = String(error);
-                    if (errStr.includes('TOO_MANY_REQUESTS')) return false;
+                    const errMsg = error instanceof Error
+                        ? error.message
+                        : (typeof error === 'object' && error !== null && 'message' in error)
+                            ? String((error as { message: unknown }).message)
+                            : String(error);
+                    if (errMsg.includes('UNAUTHORIZED')) return false;
+                    if (errMsg.includes('NOT_FOUND')) return false;
+                    if (errMsg.includes('TOO_MANY_REQUESTS')) return false;
                     return failureCount < 2;
                 },
                 retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),

@@ -39,7 +39,7 @@ vi.mock('../../binance-kline-stream', () => ({
   },
 }));
 
-import { BtcStreamManager } from '../btc-stream-manager';
+import { BtcStreamManager } from '../processing/btc-stream-manager';
 import type { ActiveWatcher, BtcStreamManagerDeps } from '../types';
 import { prefetchKlines } from '../../kline-prefetch';
 

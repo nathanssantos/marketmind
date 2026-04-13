@@ -1,7 +1,6 @@
 import type { Kline, MarketType } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
-import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { useChartContext } from '../context/ChartContext';
 
 interface UseChartDataParams {
@@ -10,7 +9,6 @@ interface UseChartDataParams {
   timeframe: Timeframe;
   chartType: string;
   showVolume: boolean;
-  movingAverages: MovingAverageConfig[];
   marketType?: MarketType;
 }
 
@@ -27,7 +25,6 @@ export const useChartData = (params: UseChartDataParams) => {
       timeframe: params.timeframe,
       chartType: params.chartType,
       showVolume: params.showVolume,
-      movingAverages: params.movingAverages,
       marketType: params.marketType,
     });
 

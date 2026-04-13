@@ -5,7 +5,7 @@ import { binanceAggTradeStreamService } from './binance-agg-trade-stream';
 import { binanceBookTickerStreamService } from './binance-book-ticker-stream';
 import { binanceDepthStreamService } from './binance-depth-stream';
 import type { FrontendLogEntry } from './auto-trading-log-buffer';
-import type { AggTrade, BookTickerUpdate, DepthUpdate, ScalpingMetrics, ScalpingSignal } from '@marketmind/types';
+import type { AggTrade, BookTickerUpdate, DepthUpdate, LiquidityHeatmapBucket, ScalpingMetrics, ScalpingSignal } from '@marketmind/types';
 
 let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
 let _importPromise: Promise<void> | null = null;
@@ -204,6 +204,18 @@ export class WebSocketService {
         socket.leave(`depth:${symbol}`);
       });
 
+      socket.on('subscribe:liquidityHeatmap', (symbol: string) => {
+        const room = `liquidityHeatmap:${symbol}`;
+        if (!socket.rooms.has(room)) {
+          socket.join(room);
+          void this.sendLiquidityHeatmapSnapshot(socket, symbol);
+        }
+      });
+
+      socket.on('unsubscribe:liquidityHeatmap', (symbol: string) => {
+        socket.leave(`liquidityHeatmap:${symbol}`);
+      });
+
       socket.on('subscribe:scalpingMetrics', (symbol: string) => {
         const room = `scalpingMetrics:${symbol}`;
         if (!socket.rooms.has(room)) socket.join(room);
@@ -386,6 +398,20 @@ export class WebSocketService {
 
   public emitScalpingSignal(walletId: string, signal: ScalpingSignal): void {
     this.io.to(`scalpingSignals:${walletId}`).emit('scalpingSignal:new', signal);
+  }
+
+  public emitLiquidityHeatmapBucket(symbol: string, bucket: LiquidityHeatmapBucket, priceBinSize: number, maxQuantity: number): void {
+    this.io.to(`liquidityHeatmap:${symbol}`).emit('liquidityHeatmap:bucket', { symbol, bucket, priceBinSize, maxQuantity });
+  }
+
+  private async sendLiquidityHeatmapSnapshot(socket: { emit: (event: string, data: unknown) => void }, symbol: string): Promise<void> {
+    try {
+      const { liquidityHeatmapAggregator } = await import('./liquidity-heatmap-aggregator');
+      const snapshot = await liquidityHeatmapAggregator.getSnapshot(symbol);
+      if (snapshot) socket.emit('liquidityHeatmap:snapshot', snapshot);
+    } catch {
+      // aggregator not yet initialized
+    }
   }
 
   public getActivelyViewedSymbols(): string[] {

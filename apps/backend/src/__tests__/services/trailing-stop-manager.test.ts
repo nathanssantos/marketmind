@@ -46,7 +46,7 @@ const {
 
 vi.stubGlobal('fetch', mockFetch);
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../lib/indicators', () => ({
   calculateATR: vi.fn(() => [1.5, 1.6, 1.7]),
   calculateSwingPoints: vi.fn(() => ({
     swingPoints: [
@@ -128,6 +128,8 @@ vi.mock('../../utils/formatters', () => ({
 import { TrailingStopService } from '../../services/trailing-stop';
 import type { TradeExecution } from '../../db/schema';
 import type { TrailingStopUpdate } from '../../services/trailing-stop';
+import { fetchPriceFromApi, getLastKlinePrice, getCurrentPrice } from '../../services/trailing-stop-price';
+import { applyStopLossUpdate } from '../../services/trailing-stop-apply';
 
 const makeExecution = (overrides: Partial<TradeExecution> = {}): TradeExecution => ({
   id: 'exec-1',
@@ -338,7 +340,6 @@ describe('TrailingStopService - Manager Methods', () => {
       mockDbQuery.priceCache.findFirst.mockResolvedValue(null);
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const fetchPriceFromApi = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['fetchPriceFromApi']!.bind(service);
       await expect(fetchPriceFromApi('BTCUSDT', 'FUTURES')).rejects.toThrow('HTTP 500');
     });
   });
@@ -352,7 +353,6 @@ describe('TrailingStopService - Manager Methods', () => {
       };
       mockDbQuery.klines.findFirst.mockResolvedValue(recentKline);
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBe(45123.45);
     });
@@ -365,7 +365,6 @@ describe('TrailingStopService - Manager Methods', () => {
       };
       mockDbQuery.klines.findFirst.mockResolvedValue(staleKline);
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBeNull();
     });
@@ -373,7 +372,6 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should return null when no kline found', async () => {
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBeNull();
     });
@@ -381,7 +379,6 @@ describe('TrailingStopService - Manager Methods', () => {
     it('should return null on database error', async () => {
       mockDbQuery.klines.findFirst.mockRejectedValue(new Error('DB error'));
 
-      const getLastKlinePrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number | null>>)['getLastKlinePrice']!.bind(service);
       const result = await getLastKlinePrice('BTCUSDT', 'FUTURES');
       expect(result).toBeNull();
     });
@@ -395,7 +392,6 @@ describe('TrailingStopService - Manager Methods', () => {
         timestamp: new Date(Date.now() - 30000),
       });
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       const result = await getCurrentPrice('BTCUSDT', 'FUTURES');
       expect(result).toBe(44000);
       expect(mockFetch).not.toHaveBeenCalled();
@@ -414,7 +410,6 @@ describe('TrailingStopService - Manager Methods', () => {
       });
       setupInsertChain();
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       const result = await getCurrentPrice('BTCUSDT', 'FUTURES');
       expect(result).toBe(45000);
     });
@@ -426,7 +421,6 @@ describe('TrailingStopService - Manager Methods', () => {
         timestamp: new Date(Date.now() - 30000),
       });
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       const result = await getCurrentPrice('BTCUSDT', 'SPOT');
       expect(result).toBe(44000);
     });
@@ -441,8 +435,6 @@ describe('TrailingStopService - Manager Methods', () => {
           json: () => Promise.resolve({ markPrice: '45000' }),
         });
       setupInsertChain();
-
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
 
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES');
       await vi.advanceTimersByTimeAsync(1000);
@@ -464,8 +456,6 @@ describe('TrailingStopService - Manager Methods', () => {
         close: '43500',
       });
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
-
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES');
       await vi.advanceTimersByTimeAsync(10000);
       const result = await promise;
@@ -485,8 +475,6 @@ describe('TrailingStopService - Manager Methods', () => {
         .mockRejectedValueOnce(new Error('Network error'));
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
-
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES');
       await vi.advanceTimersByTimeAsync(10000);
       const result = await promise;
@@ -503,8 +491,6 @@ describe('TrailingStopService - Manager Methods', () => {
       const networkError = new Error('Network error');
       mockFetch.mockImplementation(() => Promise.reject(networkError));
       mockDbQuery.klines.findFirst.mockResolvedValue(null);
-
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
 
       const promise = getCurrentPrice('BTCUSDT', 'FUTURES').catch((e: Error) => e);
       await vi.advanceTimersByTimeAsync(10000);
@@ -527,7 +513,6 @@ describe('TrailingStopService - Manager Methods', () => {
 
       const insertChain = setupInsertChain();
 
-      const getCurrentPrice = (service as unknown as Record<string, (...args: unknown[]) => Promise<number>>)['getCurrentPrice']!.bind(service);
       await getCurrentPrice('BTCUSDT', 'FUTURES');
 
       expect(mockDbInsert).toHaveBeenCalled();
@@ -1062,14 +1047,14 @@ describe('TrailingStopService - Manager Methods', () => {
   });
 
   describe('applyStopLossUpdate', () => {
-    const applyStopLossUpdate = (svc: TrailingStopService) =>
-      (svc as unknown as Record<string, (...args: unknown[]) => Promise<void>>)['applyStopLossUpdate']!.bind(svc);
+    const callApplyStopLossUpdate = (_svc: TrailingStopService) =>
+      applyStopLossUpdate;
 
     it('should update trade execution in database with new stop loss', async () => {
       const exec = makeExecution({ side: 'LONG', marketType: 'FUTURES' });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockDbUpdate).toHaveBeenCalled();
       expect(updateChain.setFn).toHaveBeenCalledWith(
@@ -1081,7 +1066,7 @@ describe('TrailingStopService - Manager Methods', () => {
       const exec = makeExecution({ side: 'LONG' });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 101, 95, true, 110);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, true, 110);
 
       expect(updateChain.setFn).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1096,7 +1081,7 @@ describe('TrailingStopService - Manager Methods', () => {
       const exec = makeExecution({ side: 'SHORT' });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 99, 105, true, 90);
+      await callApplyStopLossUpdate(service)(exec, 99, 105, true, 90);
 
       expect(updateChain.setFn).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1114,7 +1099,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 105, 100, false, 110);
+      await callApplyStopLossUpdate(service)(exec, 105, 100, false, 110);
 
       expect(updateChain.setFn).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1130,7 +1115,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 105, 100, false, 110);
+      await callApplyStopLossUpdate(service)(exec, 105, 100, false, 110);
 
       const setCallArg = updateChain.setFn.mock.calls[0]?.[0] as Record<string, unknown>;
       expect(setCallArg['highestPriceSinceTrailingActivation']).toBeUndefined();
@@ -1143,7 +1128,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 95, 100, false, 85);
+      await callApplyStopLossUpdate(service)(exec, 95, 100, false, 85);
 
       expect(updateChain.setFn).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1159,7 +1144,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 95, 100, false, 85);
+      await callApplyStopLossUpdate(service)(exec, 95, 100, false, 85);
 
       const setCallArg = updateChain.setFn.mock.calls[0]?.[0] as Record<string, unknown>;
       expect(setCallArg['lowestPriceSinceTrailingActivation']).toBeUndefined();
@@ -1193,7 +1178,7 @@ describe('TrailingStopService - Manager Methods', () => {
       mockUpdateStopLossOrder.mockResolvedValue({ algoId: '99999' });
       setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockUpdateStopLossOrder).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1225,7 +1210,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
 
       setupUpdateChain();
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockUpdateStopLossOrder).not.toHaveBeenCalled();
     });
@@ -1238,7 +1223,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
 
       setupUpdateChain();
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockUpdateStopLossOrder).not.toHaveBeenCalled();
     });
@@ -1251,7 +1236,7 @@ describe('TrailingStopService - Manager Methods', () => {
       });
 
       setupUpdateChain();
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockUpdateStopLossOrder).not.toHaveBeenCalled();
     });
@@ -1276,7 +1261,7 @@ describe('TrailingStopService - Manager Methods', () => {
       mockUpdateStopLossOrder.mockRejectedValue(new Error('Binance error'));
       setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.objectContaining({ executionId: 'exec-1' }),
@@ -1294,7 +1279,7 @@ describe('TrailingStopService - Manager Methods', () => {
         emitPositionUpdate: mockEmitPositionUpdate,
       });
 
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockEmitTradeNotification).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
         type: 'TRAILING_STOP_UPDATED',
@@ -1318,7 +1303,7 @@ describe('TrailingStopService - Manager Methods', () => {
         emitPositionUpdate: mockEmitPositionUpdate,
       });
 
-      await applyStopLossUpdate(service)(exec, 99, 105, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 99, 105, false, undefined);
 
       expect(mockEmitTradeNotification).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
         body: expect.stringContaining('Short'),
@@ -1330,7 +1315,7 @@ describe('TrailingStopService - Manager Methods', () => {
       setupUpdateChain();
       mockGetWebSocketService.mockReturnValue(null);
 
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(mockEmitTradeNotification).not.toHaveBeenCalled();
       expect(mockEmitPositionUpdate).not.toHaveBeenCalled();
@@ -1345,7 +1330,7 @@ describe('TrailingStopService - Manager Methods', () => {
         emitPositionUpdate: mockEmitPositionUpdate,
       });
 
-      await applyStopLossUpdate(service)(exec, 101, null, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, null, false, undefined);
 
       expect(mockEmitTradeNotification).toHaveBeenCalledWith(
         'wallet-1',
@@ -1359,7 +1344,7 @@ describe('TrailingStopService - Manager Methods', () => {
       const exec = makeExecution({ side: 'LONG' });
       setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 101, 95, true, 110);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, true, 110);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({ executionId: 'exec-1', currentExtremePrice: 110 }),
@@ -1387,7 +1372,7 @@ describe('TrailingStopService - Manager Methods', () => {
       mockUpdateStopLossOrder.mockResolvedValue({ algoId: '99999' });
       const updateChain = setupUpdateChain();
 
-      await applyStopLossUpdate(service)(exec, 101, 95, false, undefined);
+      await callApplyStopLossUpdate(service)(exec, 101, 95, false, undefined);
 
       expect(updateChain.setFn).toHaveBeenCalledWith(
         expect.objectContaining({

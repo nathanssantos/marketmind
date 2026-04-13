@@ -225,7 +225,7 @@ export class ScreenerService {
         fundingRate: null,
       };
 
-      const indicators = engine.evaluateScreenerIndicators(
+      const indicators = await engine.evaluateScreenerIndicators(
         requiredIds as Parameters<typeof engine.evaluateScreenerIndicators>[0],
         klineData ?? [],
         paramsMap,
@@ -238,7 +238,7 @@ export class ScreenerService {
         previousValues = {};
         for (const cond of config.filters) {
           if (['CROSSES_ABOVE', 'CROSSES_BELOW', 'INCREASING', 'DECREASING'].includes(cond.operator)) {
-            previousValues[cond.indicator] = engine.getScreenerPreviousValue(
+            previousValues[cond.indicator] = await engine.getScreenerPreviousValue(
               cond.indicator,
               klineData,
               lookbackBars,
@@ -251,7 +251,7 @@ export class ScreenerService {
       if (config.filters.length > 0) {
         for (const cond of config.filters) {
           if (cond.compareIndicator && indicators[cond.compareIndicator] === undefined) {
-            indicators[cond.compareIndicator] = engine.evaluateScreenerIndicator(
+            indicators[cond.compareIndicator] = await engine.evaluateScreenerIndicator(
               cond.compareIndicator,
               klineData ?? [],
               cond.compareIndicatorParams ?? {},

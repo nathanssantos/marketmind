@@ -1,13 +1,14 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
-import type { MovingAverageConfig } from '../../useMovingAverageRenderer';
 
 export interface IndicatorRenderFunctions {
-  renderMovingAverages?: () => void;
   renderStochastic?: () => void;
   renderRSI?: () => void;
+  renderRSI14?: () => void;
   renderBollingerBands?: () => void;
   renderATR?: () => void;
+  renderDailyVWAP?: () => void;
+  renderWeeklyVWAP?: () => void;
   renderVWAP?: () => void;
   renderParabolicSAR?: () => void;
   renderKeltner?: () => void;
@@ -20,7 +21,6 @@ export interface IndicatorRenderFunctions {
   renderHMA?: () => void;
   renderPivotPoints?: () => void;
   renderFibonacci?: () => void;
-  renderFibonacciProjection?: () => void;
   renderFVG?: () => void;
   renderLiquidityLevels?: () => void;
   renderOBV?: () => void;
@@ -46,7 +46,6 @@ export interface IndicatorRenderFunctions {
 export interface IndicatorLayerProps {
   manager: CanvasManager | null;
   colors: ChartColors;
-  movingAverages: MovingAverageConfig[];
   activeIndicators: string[];
   renderFunctions: IndicatorRenderFunctions;
   showStochastic: boolean;
@@ -54,7 +53,6 @@ export interface IndicatorLayerProps {
   showBollingerBands: boolean;
   showATR: boolean;
   showVWAP: boolean;
-  showFibonacciProjection: boolean;
 }
 
 export interface IndicatorLayerResult {
@@ -63,8 +61,9 @@ export interface IndicatorLayerResult {
 }
 
 const OVERLAY_INDICATORS = [
-  'renderMovingAverages',
   'renderBollingerBands',
+  'renderDailyVWAP',
+  'renderWeeklyVWAP',
   'renderVWAP',
   'renderParabolicSAR',
   'renderKeltner',
@@ -77,7 +76,6 @@ const OVERLAY_INDICATORS = [
   'renderHMA',
   'renderPivotPoints',
   'renderFibonacci',
-  'renderFibonacciProjection',
   'renderFVG',
   'renderLiquidityLevels',
 ] as const;
@@ -123,14 +121,12 @@ export const createIndicatorLayer = ({
 
   const shouldRerender = (prev: IndicatorLayerProps, next: IndicatorLayerProps): boolean => {
     return (
-      prev.movingAverages !== next.movingAverages ||
       prev.activeIndicators !== next.activeIndicators ||
       prev.showStochastic !== next.showStochastic ||
       prev.showRSI !== next.showRSI ||
       prev.showBollingerBands !== next.showBollingerBands ||
       prev.showATR !== next.showATR ||
-      prev.showVWAP !== next.showVWAP ||
-      prev.showFibonacciProjection !== next.showFibonacciProjection
+      prev.showVWAP !== next.showVWAP
     );
   };
 

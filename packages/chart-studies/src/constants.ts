@@ -4,13 +4,24 @@ export const HANDLE_HIT_RADIUS = 10;
 export const PENCIL_HIT_THRESHOLD = 6;
 
 export const DRAWING_COLORS = {
-  line: '#2196F3',
-  rectangle: '#9C27B0',
-  pencil: '#FF9800',
+  line: '#ffffff',
+  rectangle: '#ffffff',
+  pencil: '#ffffff',
   fibonacci: 'rgba(180, 180, 180, 0.7)',
-  ruler: '#64748B',
-  area: '#64748B',
-  arrow: '#2196F3',
+  ruler: '#ffffff',
+  area: '#ffffff',
+  arrow: '#ffffff',
+  ray: '#ffffff',
+  horizontalLine: '#ffffff',
+  channel: '#ffffff',
+  trendLine: '#ffffff',
+  priceRange: '#ffffff',
+  verticalLine: '#ffffff',
+  anchoredVwap: '#ffffff',
+  highlighter: '#ffffff',
+  ellipse: '#ffffff',
+  pitchfork: '#ffffff',
+  gannFan: '#ffffff',
   text: '#ffffff',
   handle: '#ffffff',
   handleStroke: '#2196F3',
@@ -19,6 +30,18 @@ export const DRAWING_COLORS = {
 
 export const DEFAULT_LINE_WIDTH = 2;
 export const DEFAULT_FONT_SIZE = 14;
+
+export const GANN_ANGLES = [
+  { ratio: '1x8', slope: 1/8 },
+  { ratio: '1x4', slope: 1/4 },
+  { ratio: '1x3', slope: 1/3 },
+  { ratio: '1x2', slope: 1/2 },
+  { ratio: '1x1', slope: 1 },
+  { ratio: '2x1', slope: 2 },
+  { ratio: '3x1', slope: 3 },
+  { ratio: '4x1', slope: 4 },
+  { ratio: '8x1', slope: 8 },
+] as const;
 
 export const FIBONACCI_DEFAULT_LEVELS = [
   0, 0.236, 0.382, 0.5, 0.618, 0.786, 0.886, 1,

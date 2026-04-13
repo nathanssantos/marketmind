@@ -1,7 +1,7 @@
-import { calculatePPO } from '@marketmind/indicators';
+import { calculatePPO } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculatePPO: vi.fn(() => ({ ppo: [0.5], signal: [0.3], histogram: [0.2] })),
 }));
 

@@ -1,4 +1,4 @@
-import type { RSIResult } from '@marketmind/indicators';
+import type { RSIResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
@@ -9,6 +9,7 @@ import {
   createNormalizedValueToY,
   drawLineOnPanel,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
 } from './utils/oscillatorRendering';
@@ -20,6 +21,7 @@ interface UseRSIRendererProps {
   enabled?: boolean;
   overboughtLevel?: number;
   oversoldLevel?: number;
+  panelId?: string;
 }
 
 export const useRSIRenderer = ({
@@ -27,11 +29,12 @@ export const useRSIRenderer = ({
   rsiData,
   colors,
   enabled = true,
-  overboughtLevel = 95,
-  oversoldLevel = 5,
+  overboughtLevel = 90,
+  oversoldLevel = 10,
+  panelId = 'rsi',
 }: UseRSIRendererProps) => {
   const render = useCallback((): void => {
-    const setup = getOscillatorSetup(manager, enabled && !!rsiData, 'rsi');
+    const setup = getOscillatorSetup(manager, enabled && !!rsiData, panelId);
     if (!setup) return;
 
     const { ctx, chartWidth, panelTop, panelHeight, visibleStart, visibleEnd, indexToX } = setup;
@@ -60,7 +63,9 @@ export const useRSIRenderer = ({
     );
 
     ctx.restore();
-  }, [manager, rsiData, enabled, overboughtLevel, oversoldLevel, colors]);
+
+    drawPanelValueTag(ctx, rsiData!.values, visibleStart, visibleEnd, valueToY, chartWidth, colors.rsi.line);
+  }, [manager, rsiData, enabled, overboughtLevel, oversoldLevel, colors, panelId]);
 
   return { render };
 };

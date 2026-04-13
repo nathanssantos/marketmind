@@ -1,0 +1,50 @@
+// @id market-making
+// @name Market Making
+// @version 1.0.0
+// @description Market making strategy: capture bid-ask spread in ranging/sideways markets. Entry at EMA (fair value) with ATR-based spread. Best in high-volume, non-trending conditions.
+// @author MarketMind
+// @tags market-making,ranging,mean-reversion,spread
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param emaPeriod EMA period for fair value
+// @param atrPeriod ATR period for spread calculation
+// @param spreadMultiplier ATR multiplier for spread width
+// @param minSpreadPercent Minimum spread as % of price
+// @param maxSpreadPercent Maximum spread as % of price
+
+//@version=5
+indicator('Market Making', overlay=true)
+
+emaPeriod = input.int(20, 'emaPeriod', minval=10, maxval=50, step=5)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+spreadMultiplier = input.float(0.5, 'spreadMultiplier', minval=0.25, maxval=1, step=0.25)
+minSpreadPercent = input.float(0.2, 'minSpreadPercent', minval=0.1, maxval=0.5, step=0.1)
+maxSpreadPercent = input.float(1, 'maxSpreadPercent', minval=0.5, maxval=2, step=0.25)
+
+ema = ta.ema(close, emaPeriod)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = close < ema
+shortEntry = close > ema
+
+confBase = 60
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

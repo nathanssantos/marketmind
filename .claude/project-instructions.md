@@ -31,7 +31,7 @@
 
 **Architecture:**
 - **Monorepo** (pnpm workspaces)
-- **Shared Packages** (@marketmind/types, @marketmind/indicators)
+- **Shared Packages** (@marketmind/types, @marketmind/chart-studies, @marketmind/fibonacci, @marketmind/logger, @marketmind/trading-core, @marketmind/risk, @marketmind/utils)
 - **Real-time API** (tRPC endpoints with React Query)
 - **Session Auth** (secure cookie-based authentication)
 - **Encrypted Storage** (AES-256-CBC for API keys)

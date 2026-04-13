@@ -4,14 +4,13 @@ import type { Drawing, TextDrawing } from '@marketmind/chart-studies';
 import { DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuBold, LuGripVertical, LuMinus, LuTrash2, LuUnderline } from 'react-icons/lu';
+import { LuBold, LuLock, LuLockOpen, LuMinus, LuTrash2, LuUnderline } from 'react-icons/lu';
 
 const COLOR_PRESETS = ['#ffffff', '#ef4444', '#22c55e', '#2196F3', '#eab308', '#f97316', '#a855f7', '#06b6d4'] as const;
 const LINE_WIDTHS = [1, DEFAULT_LINE_WIDTH, 3] as const;
 const FONT_SIZES = [12, 14, 16, 18, 20, 24] as const;
-const TOOLBAR_OFFSET_Y = -44;
 
 interface DrawingToolbarProps {
   manager: CanvasManager | null;
@@ -24,63 +23,8 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
   const selectedDrawingId = useDrawingStore(s => s.selectedDrawingId);
   const key = compositeKey(symbol, interval);
   const drawings = useDrawingStore(s => s.drawingsByKey[key]);
-  const [dragOffset, setDragOffset] = useState<{ x: number; y: number } | null>(null);
-  const dragState = useRef({ dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 });
-  const [isDragging, setIsDragging] = useState(false);
 
   const selectedDrawing = useMemo(() => drawings?.find(d => d.id === selectedDrawingId) ?? null, [drawings, selectedDrawingId]);
-
-  const getAnchorPosition = useCallback((): { x: number; y: number } | null => {
-    if (!selectedDrawing || !manager) return null;
-    switch (selectedDrawing.type) {
-      case 'text':
-        return { x: manager.indexToCenterX(selectedDrawing.index), y: manager.priceToY(selectedDrawing.price) };
-      case 'pencil':
-        if (selectedDrawing.points.length === 0) return null;
-        return { x: manager.indexToCenterX(selectedDrawing.points[0]!.index), y: manager.priceToY(selectedDrawing.points[0]!.price) };
-      case 'fibonacci':
-        return { x: manager.indexToCenterX(selectedDrawing.swingHighIndex), y: manager.priceToY(selectedDrawing.swingHighPrice) };
-      default:
-        return { x: manager.indexToCenterX(selectedDrawing.startIndex), y: manager.priceToY(selectedDrawing.startPrice) };
-    }
-  }, [selectedDrawing, manager]);
-
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const anchor = getAnchorPosition();
-    if (!anchor) return;
-    const currentX = dragOffset ? dragOffset.x : 0;
-    const currentY = dragOffset ? dragOffset.y : 0;
-    dragState.current = { dragging: true, startX: e.clientX, startY: e.clientY, originX: currentX, originY: currentY };
-    setIsDragging(true);
-  }, [getAnchorPosition, dragOffset]);
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      const ds = dragState.current;
-      if (!ds.dragging) return;
-      setDragOffset({
-        x: ds.originX + (e.clientX - ds.startX),
-        y: ds.originY + (e.clientY - ds.startY),
-      });
-    };
-    const handleMouseUp = () => {
-      dragState.current.dragging = false;
-      setIsDragging(false);
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
-
-  useEffect(() => {
-    setDragOffset(null);
-  }, [selectedDrawingId]);
 
   const updateDrawing = useCallback((updates: Partial<Drawing>) => {
     if (!selectedDrawingId) return;
@@ -93,14 +37,13 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
     useDrawingStore.getState().deleteDrawing(selectedDrawingId, symbol, interval);
   }, [selectedDrawingId, symbol, interval]);
 
+  const handleToggleLock = useCallback(() => {
+    updateDrawing({ locked: !selectedDrawing?.locked } as Partial<Drawing>);
+  }, [selectedDrawing?.locked, updateDrawing]);
+
   if (!selectedDrawing || !manager) return null;
 
-  const anchor = getAnchorPosition();
-  if (!anchor) return null;
-
-  const x = anchor.x + (dragOffset?.x ?? 0);
-  const y = anchor.y + TOOLBAR_OFFSET_Y + (dragOffset?.y ?? 0);
-
+  const isLocked = selectedDrawing.locked;
   const isText = selectedDrawing.type === 'text';
   const textDrawing = isText ? (selectedDrawing as TextDrawing) : null;
   const currentLineWidth = selectedDrawing.lineWidth ?? DEFAULT_LINE_WIDTH;
@@ -108,8 +51,9 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
   return (
     <Box
       position="absolute"
-      left={`${x}px`}
-      top={`${y}px`}
+      top="8px"
+      left="50%"
+      transform="translateX(-50%)"
       zIndex={20}
       bg="bg.panel"
       border="1px solid"
@@ -121,17 +65,6 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
       onMouseDown={(e) => e.stopPropagation()}
     >
       <HStack gap={1}>
-        <Box
-          cursor="grab"
-          onMouseDown={handleDragStart}
-          display="flex"
-          alignItems="center"
-          color="fg.muted"
-          _hover={{ color: 'fg' }}
-        >
-          <LuGripVertical size={14} />
-        </Box>
-
         {COLOR_PRESETS.map(color => (
           <TooltipWrapper key={color} label={t('chart.drawingToolbar.color', 'Color')} showArrow placement="top">
             <Box
@@ -144,7 +77,8 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               borderColor={selectedDrawing.color === color ? 'blue.400' : 'border'}
               cursor="pointer"
               flexShrink={0}
-              onClick={() => updateDrawing({ color } as Partial<Drawing>)}
+              onClick={() => !isLocked && updateDrawing({ color } as Partial<Drawing>)}
+              opacity={isLocked ? 0.4 : 1}
             />
           </TooltipWrapper>
         ))}
@@ -152,8 +86,9 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
         <input
           type="color"
           value={selectedDrawing.color ?? '#ffffff'}
-          onChange={(e) => updateDrawing({ color: e.target.value } as Partial<Drawing>)}
-          style={{ width: '20px', height: '20px', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }}
+          onChange={(e) => !isLocked && updateDrawing({ color: e.target.value } as Partial<Drawing>)}
+          disabled={isLocked}
+          style={{ width: '20px', height: '20px', padding: 0, border: 'none', cursor: isLocked ? 'not-allowed' : 'pointer', background: 'transparent', opacity: isLocked ? 0.4 : 1 }}
         />
 
         <Box w="1px" h="18px" bg="border" mx={0.5} />
@@ -170,8 +105,9 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               borderRadius="sm"
               cursor="pointer"
               bg={currentLineWidth === lw ? 'blue.500/20' : 'transparent'}
-              _hover={{ bg: 'blue.500/10' }}
-              onClick={() => updateDrawing({ lineWidth: lw } as Partial<Drawing>)}
+              _hover={{ bg: isLocked ? undefined : 'blue.500/10' }}
+              opacity={isLocked ? 0.4 : 1}
+              onClick={() => !isLocked && updateDrawing({ lineWidth: lw } as Partial<Drawing>)}
             >
               <LuMinus style={{ strokeWidth: lw + 1 }} size={14} />
             </Box>
@@ -184,7 +120,8 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
 
             <select
               value={textDrawing.fontSize}
-              onChange={(e) => updateDrawing({ fontSize: parseInt(e.target.value) } as Partial<Drawing>)}
+              onChange={(e) => !isLocked && updateDrawing({ fontSize: parseInt(e.target.value) } as Partial<Drawing>)}
+              disabled={isLocked}
               style={{
                 background: 'transparent',
                 color: 'inherit',
@@ -192,8 +129,9 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
                 borderRadius: '4px',
                 padding: '1px 2px',
                 fontSize: '11px',
-                cursor: 'pointer',
+                cursor: isLocked ? 'not-allowed' : 'pointer',
                 width: '42px',
+                opacity: isLocked ? 0.4 : 1,
               }}
             >
               {FONT_SIZES.map(fs => (
@@ -206,7 +144,8 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
                 size="2xs"
                 variant={textDrawing.fontWeight === 'bold' ? 'solid' : 'ghost'}
                 aria-label={t('chart.drawingToolbar.bold', 'Bold')}
-                onClick={() => updateDrawing({ fontWeight: textDrawing.fontWeight === 'bold' ? 'normal' : 'bold' } as Partial<Drawing>)}
+                onClick={() => !isLocked && updateDrawing({ fontWeight: textDrawing.fontWeight === 'bold' ? 'normal' : 'bold' } as Partial<Drawing>)}
+                disabled={isLocked}
               >
                 <LuBold />
               </IconButton>
@@ -217,7 +156,8 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
                 size="2xs"
                 variant={textDrawing.textDecoration === 'underline' ? 'solid' : 'ghost'}
                 aria-label={t('chart.drawingToolbar.underline', 'Underline')}
-                onClick={() => updateDrawing({ textDecoration: textDrawing.textDecoration === 'underline' ? 'none' : 'underline' } as Partial<Drawing>)}
+                onClick={() => !isLocked && updateDrawing({ textDecoration: textDrawing.textDecoration === 'underline' ? 'none' : 'underline' } as Partial<Drawing>)}
+                disabled={isLocked}
               >
                 <LuUnderline />
               </IconButton>
@@ -227,6 +167,17 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
 
         <Box w="1px" h="18px" bg="border" mx={0.5} />
 
+        <TooltipWrapper label={t(isLocked ? 'chart.drawingToolbar.unlock' : 'chart.drawingToolbar.lock', isLocked ? 'Unlock' : 'Lock')} showArrow placement="top">
+          <IconButton
+            size="2xs"
+            variant={isLocked ? 'solid' : 'ghost'}
+            aria-label={t(isLocked ? 'chart.drawingToolbar.unlock' : 'chart.drawingToolbar.lock', isLocked ? 'Unlock' : 'Lock')}
+            onClick={handleToggleLock}
+          >
+            {isLocked ? <LuLock /> : <LuLockOpen />}
+          </IconButton>
+        </TooltipWrapper>
+
         <TooltipWrapper label={t('chart.drawingToolbar.delete', 'Delete')} showArrow placement="top">
           <IconButton
             size="2xs"
@@ -234,6 +185,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
             colorPalette="red"
             aria-label={t('chart.drawingToolbar.delete', 'Delete')}
             onClick={handleDelete}
+            disabled={isLocked}
           >
             <LuTrash2 />
           </IconButton>

@@ -1,5 +1,6 @@
 import type { LineDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
 
 export const renderLine = (
   ctx: CanvasRenderingContext2D,
@@ -7,15 +8,10 @@ export const renderLine = (
   mapper: CoordinateMapper,
   isSelected: boolean,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.line);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.line);
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);

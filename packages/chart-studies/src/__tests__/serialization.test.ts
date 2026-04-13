@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { serializeDrawingData, deserializeDrawingData } from '../serialization';
-import type { LineDrawing, PencilDrawing, FibonacciDrawing } from '../types';
+import type { LineDrawing, PencilDrawing, FibonacciDrawing, TrendLineDrawing, VerticalLineDrawing, HighlighterDrawing, PitchforkDrawing, GannFanDrawing } from '../types';
 
 const baseProps = {
   id: 'test-1',
@@ -124,6 +124,107 @@ describe('deserializeDrawingData', () => {
     };
     const serialized = serializeDrawingData(original);
     const deserialized = deserializeDrawingData('fibonacci', serialized, baseProps);
+    expect(deserialized).toEqual(original);
+  });
+
+  it('deserializes trendLine drawing', () => {
+    const data = JSON.stringify({ startIndex: 3, startPrice: 100, endIndex: 20, endPrice: 300 });
+    const result = deserializeDrawingData('trendLine', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('trendLine');
+  });
+
+  it('deserializes priceRange drawing', () => {
+    const data = JSON.stringify({ startIndex: 5, startPrice: 100, endIndex: 15, endPrice: 120 });
+    const result = deserializeDrawingData('priceRange', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('priceRange');
+  });
+
+  it('deserializes ellipse drawing', () => {
+    const data = JSON.stringify({ startIndex: 2, startPrice: 200, endIndex: 12, endPrice: 300 });
+    const result = deserializeDrawingData('ellipse', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('ellipse');
+  });
+
+  it('deserializes gannFan drawing', () => {
+    const data = JSON.stringify({ startIndex: 0, startPrice: 100, endIndex: 10, endPrice: 200 });
+    const result = deserializeDrawingData('gannFan', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('gannFan');
+  });
+
+  it('deserializes verticalLine drawing', () => {
+    const data = JSON.stringify({ index: 10, price: 500 });
+    const result = deserializeDrawingData('verticalLine', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('verticalLine');
+    if (result!.type === 'verticalLine') {
+      expect(result!.index).toBe(10);
+      expect(result!.price).toBe(500);
+    }
+  });
+
+  it('deserializes anchoredVwap drawing', () => {
+    const data = JSON.stringify({ index: 5, price: 300 });
+    const result = deserializeDrawingData('anchoredVwap', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('anchoredVwap');
+  });
+
+  it('deserializes highlighter drawing', () => {
+    const data = JSON.stringify({ points: [{ index: 0, price: 100 }, { index: 3, price: 150 }] });
+    const result = deserializeDrawingData('highlighter', data, baseProps);
+    expect(result).not.toBeNull();
+    if (result!.type === 'highlighter') {
+      expect(result!.points).toHaveLength(2);
+    }
+  });
+
+  it('deserializes pitchfork drawing', () => {
+    const data = JSON.stringify({ startIndex: 0, startPrice: 100, endIndex: 10, endPrice: 200, widthIndex: 5, widthPrice: 150 });
+    const result = deserializeDrawingData('pitchfork', data, baseProps);
+    expect(result).not.toBeNull();
+    expect(result!.type).toBe('pitchfork');
+    if (result!.type === 'pitchfork') {
+      expect(result!.widthIndex).toBe(5);
+      expect(result!.widthPrice).toBe(150);
+    }
+  });
+
+  it('roundtrips trendLine correctly', () => {
+    const original: TrendLineDrawing = { ...baseProps, type: 'trendLine', startIndex: 3, startPrice: 100, endIndex: 20, endPrice: 300 };
+    const serialized = serializeDrawingData(original);
+    const deserialized = deserializeDrawingData('trendLine', serialized, baseProps);
+    expect(deserialized).toEqual(original);
+  });
+
+  it('roundtrips verticalLine correctly', () => {
+    const original: VerticalLineDrawing = { ...baseProps, type: 'verticalLine', index: 10, price: 500 };
+    const serialized = serializeDrawingData(original);
+    const deserialized = deserializeDrawingData('verticalLine', serialized, baseProps);
+    expect(deserialized).toEqual(original);
+  });
+
+  it('roundtrips highlighter correctly', () => {
+    const original: HighlighterDrawing = { ...baseProps, type: 'highlighter', points: [{ index: 0, price: 100 }, { index: 5, price: 200 }] };
+    const serialized = serializeDrawingData(original);
+    const deserialized = deserializeDrawingData('highlighter', serialized, baseProps);
+    expect(deserialized).toEqual(original);
+  });
+
+  it('roundtrips pitchfork correctly', () => {
+    const original: PitchforkDrawing = { ...baseProps, type: 'pitchfork', startIndex: 0, startPrice: 100, endIndex: 10, endPrice: 200, widthIndex: 5, widthPrice: 150 };
+    const serialized = serializeDrawingData(original);
+    const deserialized = deserializeDrawingData('pitchfork', serialized, baseProps);
+    expect(deserialized).toEqual(original);
+  });
+
+  it('roundtrips gannFan correctly', () => {
+    const original: GannFanDrawing = { ...baseProps, type: 'gannFan', startIndex: 0, startPrice: 100, endIndex: 10, endPrice: 200 };
+    const serialized = serializeDrawingData(original);
+    const deserialized = deserializeDrawingData('gannFan', serialized, baseProps);
     expect(deserialized).toEqual(original);
   });
 });

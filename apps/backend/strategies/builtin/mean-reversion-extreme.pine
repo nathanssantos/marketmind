@@ -1,0 +1,55 @@
+// @id mean-reversion-extreme
+// @name Mean Reversion Extreme
+// @version 1.0.0
+// @description Mean reversion em condições extremas. RSI < 10 ou > 90 com Bollinger Bands. Entry em extremos para reversão à média.
+// @author MarketMind
+// @tags mean-reversion,extreme,rsi,bollinger
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param rsiPeriod RSI curto
+// @param bbPeriod BB período
+// @param bbStdDev BB desvio padrão
+// @param extremeOversold RSI extreme oversold
+// @param extremeOverbought RSI extreme overbought
+// @param atrMultiplier ATR stop
+
+//@version=5
+indicator('Mean Reversion Extreme', overlay=true)
+
+rsiPeriod = input.int(2, 'rsiPeriod', minval=2, maxval=5, step=1)
+bbPeriod = input.int(20, 'bbPeriod', minval=15, maxval=25, step=5)
+bbStdDev = input.float(2.5, 'bbStdDev', minval=2, maxval=3, step=0.25)
+extremeOversold = input.int(10, 'extremeOversold', minval=5, maxval=15, step=5)
+extremeOverbought = input.int(90, 'extremeOverbought', minval=85, maxval=95, step=5)
+atrMultiplier = input.float(2.5, 'atrMultiplier', minval=2, maxval=3.5, step=0.5)
+
+rsi = ta.rsi(close, rsiPeriod)
+[bb_middle, bb_upper, bb_lower] = ta.bb(close, bbPeriod, bbStdDev)
+bb_bandwidth = (bb_upper - bb_lower) / bb_middle
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (rsi < extremeOversold and close < bb_lower)
+shortEntry = (rsi > extremeOverbought and close > bb_upper)
+
+confBase = 75
+confBonus0 = rsi < 5 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 95)
+
+exitLong = close >= bb_middle
+exitShort = close <= bb_middle
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -22,4 +22,5 @@ export * from './tradingProfile';
 export * from './tradingSetup';
 export * from './scalping';
 export * from './screener';
-
+export * from './liquidityHeatmap';
+export * from './indicators';

@@ -1,12 +1,13 @@
 import type { RulerDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { applyDrawingStyle, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { formatChartPrice } from '@renderer/utils/formatters';
+import { LINE_DASHES } from '@shared/constants';
 
 const LABEL_FONT = '11px monospace';
 const LABEL_BG_COLOR = 'rgba(0, 0, 0, 0.7)';
 const LABEL_PADDING = 4;
 const LABEL_HEIGHT = 16;
-const DASHED_LINE = [6, 3] as const;
 
 export const renderRuler = (
   ctx: CanvasRenderingContext2D,
@@ -14,19 +15,16 @@ export const renderRuler = (
   mapper: CoordinateMapper,
   isSelected: boolean,
   colors: { bullish: string; bearish: string },
+  themeColors?: ChartThemeColors,
 ): void => {
-  const x1 = mapper.indexToCenterX(drawing.startIndex);
-  const y1 = mapper.priceToY(drawing.startPrice);
-  const x2 = mapper.indexToCenterX(drawing.endIndex);
-  const y2 = mapper.priceToY(drawing.endPrice);
+  const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
 
   const isPositive = drawing.endPrice >= drawing.startPrice;
+  const defaultColor = isPositive ? colors.bullish : colors.bearish;
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? (isPositive ? colors.bullish : colors.bearish));
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
-  ctx.setLineDash([...DASHED_LINE]);
+  applyDrawingStyle(ctx, drawing, isSelected, defaultColor);
+  ctx.setLineDash([...LINE_DASHES.RULER]);
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
@@ -47,7 +45,7 @@ export const renderRuler = (
   const label = `${klineCount} bars  ${sign}${formatChartPrice(priceChange)} (${sign}${percentChange.toFixed(2)}%)`;
 
   const textWidth = ctx.measureText(label).width;
-  ctx.fillStyle = LABEL_BG_COLOR;
+  ctx.fillStyle = themeColors?.drawing?.labelBg ?? LABEL_BG_COLOR;
   ctx.fillRect(midX - LABEL_PADDING, midY - LABEL_HEIGHT - LABEL_PADDING, textWidth + LABEL_PADDING * 2, LABEL_HEIGHT + LABEL_PADDING);
   ctx.fillStyle = isPositive ? colors.bullish : colors.bearish;
   ctx.fillText(label, midX, midY - LABEL_PADDING);

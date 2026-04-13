@@ -24,7 +24,7 @@ const {
   const mockPrefetchKlines = vi.fn().mockResolvedValue({ success: true, downloaded: 0, totalInDb: 100, gaps: 0, alreadyComplete: false });
   const mockPrefetchKlinesAsync = vi.fn();
   const mockMeetsKlineRequirement = vi.fn(() => true);
-  const mockDetectSetups = vi.fn().mockReturnValue([]);
+  const mockDetectSetups = vi.fn().mockResolvedValue([]);
   const mockLoadAll = vi.fn().mockResolvedValue([]);
   const mockToResult: ReturnType<typeof vi.fn> = vi.fn(
     (status: string, reason?: string, klinesCount?: number) => ({
@@ -106,6 +106,7 @@ vi.mock('../../../db/schema', () => ({
   autoTradingConfig: { walletId: 'walletId' },
   klines: { symbol: 'symbol', interval: 'interval', marketType: 'marketType', openTime: 'openTime' },
   wallets: { id: 'id' },
+  tradingProfiles: { id: 'id' },
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -120,13 +121,13 @@ vi.mock('../../kline-prefetch', () => ({
   meetsKlineRequirementWithTolerance: mockMeetsKlineRequirement,
 }));
 
-vi.mock('../../setup-detection/dynamic', () => {
-  class MockStrategyLoader {
+vi.mock('../../pine/PineStrategyLoader', () => {
+  class MockPineStrategyLoader {
     loadAll = mockLoadAll;
     loadAllCached = mockLoadAll;
   }
   return {
-    StrategyLoader: MockStrategyLoader,
+    PineStrategyLoader: MockPineStrategyLoader,
   };
 });
 
@@ -191,11 +192,26 @@ vi.mock('../utils', () => ({
   yieldToEventLoop: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../../utils/trading-validation', () => ({
+  isDirectionAllowed: vi.fn(() => true),
+}));
+
+vi.mock('../../profile-applicator', () => ({
+  applyProfileOverrides: vi.fn(
+    (config: Record<string, unknown>) => config
+  ),
+}));
+
+vi.mock('../../../utils/id', () => ({
+  generateEntityId: vi.fn(() => 'test-id'),
+}));
+
 vi.mock('../../../env', () => ({
   env: { ENCRYPTION_KEY: 'a'.repeat(64) },
 }));
 
-import { SignalProcessor, type SignalProcessorConfig } from '../signal-processor';
+import { SignalProcessor, type SignalProcessorConfig } from '../processing/signal-processor';
+import { getIntervalMs, emitLogsToWebSocket } from '../processing/signal-helpers';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
 
 
@@ -308,37 +324,37 @@ describe('SignalProcessor', () => {
 
   describe('getIntervalMs', () => {
     it('should parse minute intervals', () => {
-      const result = (processor as any).getIntervalMs('15m');
+      const result = getIntervalMs('15m');
       expect(result).toBe(15 * 60_000);
     });
 
     it('should parse hour intervals', () => {
-      const result = (processor as any).getIntervalMs('4h');
+      const result = getIntervalMs('4h');
       expect(result).toBe(4 * 3_600_000);
     });
 
     it('should parse day intervals', () => {
-      const result = (processor as any).getIntervalMs('1d');
+      const result = getIntervalMs('1d');
       expect(result).toBe(86_400_000);
     });
 
     it('should parse week intervals', () => {
-      const result = (processor as any).getIntervalMs('1w');
+      const result = getIntervalMs('1w');
       expect(result).toBe(604_800_000);
     });
 
     it('should return default 4h for invalid format', () => {
-      const result = (processor as any).getIntervalMs('invalid');
+      const result = getIntervalMs('invalid');
       expect(result).toBe(4 * 3_600_000);
     });
 
     it('should return default 4h for empty string', () => {
-      const result = (processor as any).getIntervalMs('');
+      const result = getIntervalMs('');
       expect(result).toBe(4 * 3_600_000);
     });
 
     it('should return default 4h for unknown unit', () => {
-      const result = (processor as any).getIntervalMs('5x');
+      const result = getIntervalMs('5x');
       expect(result).toBe(4 * 3_600_000);
     });
   });
@@ -894,8 +910,8 @@ describe('SignalProcessor', () => {
 
     it('should return success with no setups when none detected', async () => {
       setupForDetection();
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -923,10 +939,10 @@ describe('SignalProcessor', () => {
       watcher.enabledStrategies = ['strategy-1'];
 
       mockLoadAll.mockResolvedValueOnce([
-        { id: 'strategy-1', name: 'Enabled Strategy' },
-        { id: 'strategy-2', name: 'Disabled Strategy' },
+        { metadata: { id: 'strategy-1', name: 'Enabled Strategy', enabled: true }, source: '', filePath: '' },
+        { metadata: { id: 'strategy-2', name: 'Disabled Strategy', enabled: true }, source: '', filePath: '' },
       ]);
-      mockDetectSetups.mockReturnValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
+      mockDetectSetups.mockResolvedValueOnce([{ setup: null, confidence: 0, strategyId: 'strategy-1' }]);
 
       mockToResult.mockReturnValueOnce({
         watcherId: '',
@@ -947,15 +963,15 @@ describe('SignalProcessor', () => {
       await (processor as any).processWatcherWithBuffer('wallet-1-BTCUSDT-1h-FUTURES');
 
       expect(mockDetectSetups).toHaveBeenCalledWith(expect.objectContaining({
-        strategies: [expect.objectContaining({ id: 'strategy-1' })],
+        strategies: [expect.objectContaining({ metadata: expect.objectContaining({ id: 'strategy-1' }) })],
       }));
     });
 
     it('should detect and execute setups with sufficient confidence', async () => {
       const { lastCandleOpen: _lastCandleOpen } = setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -996,8 +1012,8 @@ describe('SignalProcessor', () => {
     it('should not execute setups with confidence below threshold', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1034,8 +1050,8 @@ describe('SignalProcessor', () => {
     it('should handle rejections with direction details', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1073,8 +1089,8 @@ describe('SignalProcessor', () => {
     it('should handle rejections without direction', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1106,8 +1122,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with dash direction', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1204,11 +1220,11 @@ describe('SignalProcessor', () => {
       mockDbFindMany.mockResolvedValueOnce(klineRows);
 
       mockLoadAll.mockResolvedValueOnce([
-        { id: 'strategy-1', name: 'Strategy A' },
-        { id: 'strategy-2', name: 'Strategy B' },
+        { metadata: { id: 'strategy-1', name: 'Strategy A', enabled: true }, source: '', filePath: '' },
+        { metadata: { id: 'strategy-2', name: 'Strategy B', enabled: true }, source: '', filePath: '' },
       ]);
 
-      mockDetectSetups.mockReturnValueOnce([
+      mockDetectSetups.mockResolvedValueOnce([
         {
           setup: {
             type: 'Strategy A',
@@ -1267,8 +1283,8 @@ describe('SignalProcessor', () => {
     it('should not increment trades when executeSetupSafe returns false', async () => {
       setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1310,8 +1326,8 @@ describe('SignalProcessor', () => {
     it('should update lastProcessedTime after processing with setups', async () => {
       const { watcher } = setupForDetection();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: {
           type: 'Test Strategy',
           direction: 'LONG',
@@ -1596,7 +1612,6 @@ describe('SignalProcessor', () => {
       const watcher = createWatcher();
       const watcherMap = new Map<string, ActiveWatcher>();
       watcherMap.set('wallet-1-BTCUSDT-1h-FUTURES', watcher);
-      vi.mocked(deps.getActiveWatchers).mockReturnValue(watcherMap);
 
       const watcherResults = [
         {
@@ -1623,7 +1638,7 @@ describe('SignalProcessor', () => {
         },
       ];
 
-      (processor as any).emitLogsToWebSocket(watcherResults);
+      emitLogsToWebSocket(watcherResults as any, watcherMap);
 
       expect(mockAddLog).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
         level: 'info',
@@ -1640,14 +1655,12 @@ describe('SignalProcessor', () => {
     it('should skip when websocket service is null', () => {
       mockGetWebSocketService.mockReturnValueOnce(null as unknown as ReturnType<typeof mockGetWebSocketService>);
 
-      (processor as any).emitLogsToWebSocket([]);
+      emitLogsToWebSocket([], new Map());
 
       expect(mockAddLog).not.toHaveBeenCalled();
     });
 
     it('should skip watchers not found in active watchers', () => {
-      vi.mocked(deps.getActiveWatchers).mockReturnValue(new Map());
-
       const watcherResults = [
         {
           watcherId: 'nonexistent',
@@ -1673,7 +1686,7 @@ describe('SignalProcessor', () => {
         },
       ];
 
-      (processor as any).emitLogsToWebSocket(watcherResults);
+      emitLogsToWebSocket(watcherResults as any, new Map());
 
       expect(mockAddLog).not.toHaveBeenCalled();
     });
@@ -1682,7 +1695,6 @@ describe('SignalProcessor', () => {
       const watcher = createWatcher();
       const watcherMap = new Map<string, ActiveWatcher>();
       watcherMap.set('watcher-1', watcher);
-      vi.mocked(deps.getActiveWatchers).mockReturnValue(watcherMap);
 
       const watcherResults = [
         {
@@ -1706,7 +1718,7 @@ describe('SignalProcessor', () => {
         },
       ];
 
-      (processor as any).emitLogsToWebSocket(watcherResults);
+      emitLogsToWebSocket(watcherResults as any, watcherMap);
 
       expect(mockAddLog).toHaveBeenCalledTimes(3);
       expect(mockEmitAutoTradingLog).toHaveBeenCalledTimes(3);
@@ -1927,8 +1939,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with no details object', async () => {
       setupForRejectionTest();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 0,
         strategyId: 'strategy-1',
@@ -1959,8 +1971,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with direction LONG and entry price detail', async () => {
       setupForRejectionTest();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 45,
         strategyId: 'strategy-1',
@@ -1997,8 +2009,8 @@ describe('SignalProcessor', () => {
     it('should handle rejection with direction SHORT and no extra details', async () => {
       setupForRejectionTest();
 
-      mockLoadAll.mockResolvedValueOnce([{ id: 'strategy-1', name: 'Test Strategy' }]);
-      mockDetectSetups.mockReturnValueOnce([{
+      mockLoadAll.mockResolvedValueOnce([{ metadata: { id: 'strategy-1', name: 'Test Strategy', enabled: true }, source: '', filePath: '' }]);
+      mockDetectSetups.mockResolvedValueOnce([{
         setup: null,
         confidence: 60,
         strategyId: 'strategy-1',
@@ -2031,7 +2043,7 @@ describe('SignalProcessor', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize StrategyLoader with provided strategies directory', () => {
+    it('should initialize PineStrategyLoader with provided strategies directory', () => {
       const config = { strategiesDir: '/custom/strategies/dir' };
       const newProcessor = new SignalProcessor(deps, config);
       expect((newProcessor as any).strategyLoader).toBeDefined();

@@ -1,0 +1,50 @@
+// @id tsi-momentum
+// @name TSI Momentum
+// @version 1.0.0
+// @description True Strength Index momentum strategy. TSI mede momentum com double-smoothing para menos noise. Entry quando TSI cruza signal line.
+// @author MarketMind
+// @tags momentum,tsi,oscillator,trend
+// @strategyType TREND_FOLLOWING
+// @momentumType BREAKOUT
+// @param longPeriod TSI long period
+// @param shortPeriod TSI short period
+// @param signalPeriod Signal line period
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('TSI Momentum', overlay=true)
+
+longPeriod = input.int(25, 'longPeriod', minval=20, maxval=30, step=5)
+shortPeriod = input.int(13, 'shortPeriod', minval=10, maxval=15, step=1)
+signalPeriod = input.int(7, 'signalPeriod', minval=5, maxval=10, step=1)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+tsi_tsi = ta.tsi(close, shortPeriod, longPeriod)
+tsi_signal = ta.ema(tsi_tsi, signalPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = ta.crossover(tsi_tsi, tsi_signal)
+shortEntry = ta.crossunder(tsi_tsi, tsi_signal)
+
+confBase = 65
+confBonus0 = tsi_tsi > 0 ? 5 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 85)
+
+exitLong = ta.crossunder(tsi_tsi, tsi_signal)
+exitShort = ta.crossover(tsi_tsi, tsi_signal)
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

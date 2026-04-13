@@ -26,43 +26,11 @@ export const ChartContextMenu = ({
       <Portal>
         <Menu.Positioner>
           <Menu.Content>
-            <Menu.Item
-              value="toggle-patterns"
-              onClick={onTogglePatternsVisibility}
-              disabled={!hasPatterns}
-              padding="8px 12px"
-              gap="8px"
-              cursor="pointer"
-              display="flex"
-              alignItems="center"
-              whiteSpace="nowrap"
-              _hover={{
-                bg: 'gray.100',
-                _dark: {
-                  bg: 'gray.700',
-                },
-              }}
-            >
+            <Menu.Item value="toggle-patterns" onClick={onTogglePatternsVisibility} disabled={!hasPatterns}>
               {patternsVisible ? <LuEyeOff /> : <LuEye />}
               {patternsVisible ? 'Hide AI Patterns' : 'Show AI Patterns'}
             </Menu.Item>
-            <Menu.Item
-              value="delete-patterns"
-              onClick={onDeletePatterns}
-              disabled={!hasPatterns}
-              padding="8px 12px"
-              gap="8px"
-              cursor="pointer"
-              display="flex"
-              alignItems="center"
-              whiteSpace="nowrap"
-              _hover={{
-                bg: 'gray.100',
-                _dark: {
-                  bg: 'gray.700',
-                },
-              }}
-            >
+            <Menu.Item value="delete-patterns" onClick={onDeletePatterns} disabled={!hasPatterns}>
               <LuTrash2 />
               Delete AI Patterns
             </Menu.Item>

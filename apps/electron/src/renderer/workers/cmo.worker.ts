@@ -1,12 +1,7 @@
-import { calculateCMO } from '@marketmind/indicators';
+import { computeSingle } from './pineWorkerService';
 import type { Kline } from '@marketmind/types';
 
-interface WorkerMessage {
-  klines: Kline[];
-  period?: number;
-}
-
-self.onmessage = (e: MessageEvent<WorkerMessage>) => {
+self.onmessage = async (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {
   const { klines, period = 14 } = e.data;
 
   if (!klines || klines.length === 0) {
@@ -14,6 +9,6 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     return;
   }
 
-  const result = calculateCMO(klines, period);
-  self.postMessage(result);
+  const values = await computeSingle('cmo', klines, { period });
+  self.postMessage({ values });
 };

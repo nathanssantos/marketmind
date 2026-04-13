@@ -17,6 +17,7 @@ import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useUIStore } from '../../store/uiStore';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
+import { EquityCurveChart } from './EquityCurveChart';
 import { PerformanceCalendar } from './PerformanceCalendar';
 
 export const AnalyticsModal = memo(() => {
@@ -47,10 +48,10 @@ export const AnalyticsModal = memo(() => {
     <DialogRoot open={isAnalyticsOpen} onOpenChange={handleOpenChange} size="xl">
       <DialogBackdrop />
       <DialogPositioner>
-        <DialogContent maxH="90vh" maxW="900px" w="90vw">
+        <DialogContent maxH="90vh" maxW="1100px" w="90vw">
           <DialogHeader px={4} pt={4} pb={3}>
             <Flex justify="space-between" align="center" w="100%">
-              <DialogTitle fontSize="md">{t('trading.tabs.analytics')}</DialogTitle>
+              <DialogTitle fontSize="md">{t('trading.tabs.analytics')}{activeWallet ? ` — ${activeWallet.name}` : ''}</DialogTitle>
               <IconButton
                 size="2xs"
                 variant="ghost"
@@ -65,6 +66,7 @@ export const AnalyticsModal = memo(() => {
           <DialogBody px={4} py={3} overflowY="auto">
             {activeWalletId ? (
               <Stack gap={4}>
+                <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
                 <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
                 {marginRequirements && (
                   <MarginInfoPanel requirements={marginRequirements} />

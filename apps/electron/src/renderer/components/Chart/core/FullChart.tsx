@@ -11,7 +11,6 @@ import { useChartLayers } from '../hooks/useChartLayers';
 import { useChartViewport } from '../hooks/useChartViewport';
 import { useTradeVisualization } from '../hooks/useTradeVisualization';
 import type { Timeframe } from '../TimeframeSelector';
-import type { MovingAverageConfig } from '../useMovingAverageRenderer';
 import { LayeredCanvas, useLayerManager } from './LayeredCanvas';
 
 export interface FullChartProps {
@@ -57,7 +56,6 @@ export const FullChart = ({
     const [showCurrentPriceLine, setShowCurrentPriceLine] = useState(true);
     const [showCrosshair, setShowCrosshair] = useState(true);
     const [chartType, setChartType] = useState<'kline' | 'line'>('kline');
-    const [movingAverages, setMovingAverages] = useState<MovingAverageConfig[]>([]);
     const [advancedConfig, setAdvancedConfig] = useState<AdvancedControlsConfig>({
         rightMargin: 100,
         volumeHeightRatio: 0.2,
@@ -159,7 +157,6 @@ export const FullChart = ({
                 showCurrentPriceLine={showCurrentPriceLine}
                 showCrosshair={showCrosshair}
                 chartType={chartType}
-                movingAverages={movingAverages}
                 advancedConfig={advancedConfig}
                 timeframe={currentTimeframe}
                 onShowVolumeChange={setShowVolumeState}
@@ -167,7 +164,6 @@ export const FullChart = ({
                 onShowCurrentPriceLineChange={setShowCurrentPriceLine}
                 onShowCrosshairChange={setShowCrosshair}
                 onChartTypeChange={setChartType}
-                onMovingAveragesChange={setMovingAverages}
                 onAdvancedConfigChange={setAdvancedConfig}
                 onTimeframeChange={setCurrentTimeframe}
             />

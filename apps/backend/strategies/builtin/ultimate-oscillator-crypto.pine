@@ -1,0 +1,58 @@
+// @id ultimate-oscillator-crypto
+// @name Ultimate Oscillator Crypto
+// @version 1.0.0
+// @description Ultimate Oscillator com 3 timeframes (7,14,28). Reduz falsos sinais combinando múltiplos períodos. Entry em divergências ou níveis extremos.
+// @author MarketMind
+// @tags momentum,ultimate-oscillator,multi-timeframe
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param shortPeriod Período curto
+// @param mediumPeriod Período médio
+// @param longPeriod Período longo
+// @param oversold Nível oversold
+// @param overbought Nível overbought
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Ultimate Oscillator Crypto', overlay=true)
+
+shortPeriod = input.int(7, 'shortPeriod', minval=5, maxval=10, step=1)
+mediumPeriod = input.int(14, 'mediumPeriod', minval=12, maxval=18, step=2)
+longPeriod = input.int(28, 'longPeriod', minval=24, maxval=35, step=1)
+oversold = input.int(30, 'oversold', minval=20, maxval=35, step=5)
+overbought = input.int(70, 'overbought', minval=65, maxval=80, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+uo_bp = close - math.min(low, close[1])
+uo_tr = math.max(high, close[1]) - math.min(low, close[1])
+uo_a1 = math.sum(uo_bp, shortPeriod) / math.max(math.sum(uo_tr, shortPeriod), 0.0001)
+uo_a2 = math.sum(uo_bp, mediumPeriod) / math.max(math.sum(uo_tr, mediumPeriod), 0.0001)
+uo_a3 = math.sum(uo_bp, longPeriod) / math.max(math.sum(uo_tr, longPeriod), 0.0001)
+uo = 100 * (4 * uo_a1 + 2 * uo_a2 + uo_a3) / 7
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = ta.crossover(uo, oversold)
+shortEntry = ta.crossunder(uo, overbought)
+
+confBase = 70
+confBonus0 = uo < 20 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = uo > 50
+exitShort = uo < 50
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,6 +1,7 @@
-import type { AOResult } from '@marketmind/indicators';
+import type { AOResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useWorkerComputation } from './useWorkerComputation';
 
 export const useAOWorker = (
   klines: Kline[] | null,
@@ -8,33 +9,15 @@ export const useAOWorker = (
   fastPeriod = 5,
   slowPeriod = 34,
 ): AOResult | null => {
-  const [data, setData] = useState<AOResult | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const message = useMemo(
+    () => klines && klines.length > 0 ? { klines, fastPeriod, slowPeriod } : null,
+    [klines, fastPeriod, slowPeriod],
+  );
 
-  useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
-
-    workerRef.current = new Worker(
-      new URL('../workers/ao.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-
-    workerRef.current.onmessage = (e: MessageEvent<AOResult | null>) => {
-      setData(e.data);
-    };
-
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!workerRef.current || !klines || !enabled) return;
-    workerRef.current.postMessage({ klines, fastPeriod, slowPeriod });
-  }, [klines, enabled, fastPeriod, slowPeriod]);
-
-  return data;
+  return useWorkerComputation<AOResult>(
+    'ao',
+    () => new Worker(new URL('../workers/ao.worker.ts', import.meta.url), { type: 'module' }),
+    message,
+    enabled,
+  );
 };

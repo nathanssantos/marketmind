@@ -1,5 +1,3 @@
-import type { TimeInterval } from '@marketmind/types';
-import { INTERVAL_MINUTES } from '@marketmind/types';
 
 export const drawPriceTag = (
   ctx: CanvasRenderingContext2D,
@@ -106,18 +104,5 @@ export const formatTimerText = (seconds: number): string => {
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
-export const computeSecondsRemaining = (timeframe: string, lastKlineTime: number): number => {
-  const intervalMinutes = INTERVAL_MINUTES[timeframe as TimeInterval];
-  if (!intervalMinutes) return 0;
-  const now = Date.now();
-  const nextKlineTime = lastKlineTime + intervalMinutes * 60 * 1000;
-  let remaining = Math.max(0, Math.floor((nextKlineTime - now) / 1000));
-  if (remaining === 0) {
-    const periodsElapsed = Math.floor((now - lastKlineTime) / (intervalMinutes * 60 * 1000));
-    if (periodsElapsed > 0) {
-      const adjustedNext = lastKlineTime + (periodsElapsed + 1) * intervalMinutes * 60 * 1000;
-      remaining = Math.max(0, Math.floor((adjustedNext - now) / 1000));
-    }
-  }
-  return remaining;
-};
+export const computeSecondsRemaining = (_timeframe: string, closeTime: number): number =>
+  Math.max(0, Math.floor((closeTime - Date.now()) / 1000));

@@ -1,14 +1,14 @@
-import { calculateADX, type ADXResult } from '@marketmind/indicators';
+import { computeMulti } from './pineWorkerService';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[]; period: number }>) => {
-  const { klines, period } = event.data;
+self.onmessage = async (e: MessageEvent<{ klines: Kline[]; period: number }>) => {
+  const { klines, period } = e.data;
 
   if (!klines || klines.length === 0) {
     self.postMessage(null);
     return;
   }
 
-  const result: ADXResult = calculateADX(klines, period);
+  const result = await computeMulti('dmi', klines, { period });
   self.postMessage(result);
 };

@@ -126,7 +126,7 @@ export const setupRouter = router({
       const mappedKlines = mapDbKlinesToApi(klinesData);
 
       const service = new SetupDetectionService();
-      const setups = service.detectSetups(mappedKlines);
+      const setups = await service.detectSetups(mappedKlines);
 
       if (setups.length > 0) {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);

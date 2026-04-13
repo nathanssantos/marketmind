@@ -1,7 +1,7 @@
-import type { PivotAnalysis } from '@marketmind/indicators';
+import type { PivotAnalysis } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UsePivotPointsRendererProps {
@@ -30,6 +30,9 @@ export const usePivotPointsRenderer = ({
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -43,18 +46,17 @@ export const usePivotPointsRenderer = ({
       if (y < 0 || y > chartHeight) continue;
 
       const isHigh = pivot.type === 'high';
-      const strengthColor = pivot.strength === 'strong' ? 1 : pivot.strength === 'medium' ? 0.7 : 0.4;
 
       ctx.beginPath();
       ctx.arc(x + 3, y, 4, 0, Math.PI * 2);
       ctx.fillStyle = isHigh
-        ? (colors.pivotPoints?.resistance ?? `rgba(239, 68, 68, ${strengthColor})`)
-        : (colors.pivotPoints?.support ?? `rgba(34, 197, 94, ${strengthColor})`);
+        ? (colors.pivotPoints?.resistance ?? INDICATOR_COLORS.PIVOT_RESISTANCE)
+        : (colors.pivotPoints?.support ?? INDICATOR_COLORS.PIVOT_SUPPORT);
       ctx.fill();
 
       ctx.strokeStyle = isHigh
-        ? (colors.pivotPoints?.resistance ?? 'rgba(239, 68, 68, 0.5)')
-        : (colors.pivotPoints?.support ?? 'rgba(34, 197, 94, 0.5)');
+        ? (colors.pivotPoints?.resistance ?? INDICATOR_COLORS.PIVOT_RESISTANCE)
+        : (colors.pivotPoints?.support ?? INDICATOR_COLORS.PIVOT_SUPPORT);
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();

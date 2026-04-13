@@ -1,8 +1,9 @@
-import type { ROCResult } from '@marketmind/indicators';
+import type { ROCResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseROCRendererProps {
   manager: CanvasManager | null;
@@ -32,6 +33,7 @@ export const useROCRenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -55,8 +57,8 @@ export const useROCRenderer = ({
     const zeroY = valueToY(0);
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
-    ctx.strokeStyle = colors.roc?.line ?? '#00bcd4';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = colors.roc?.line ?? INDICATOR_COLORS.ROC_LINE;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.PANEL;
     ctx.beginPath();
 
     let isFirstPoint = true;
@@ -77,7 +79,10 @@ export const useROCRenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, rocData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.roc?.line ?? INDICATOR_COLORS.ROC_LINE);
   }, [manager, rocData, enabled, colors]);
 
   return { render };

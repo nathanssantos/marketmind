@@ -1,13 +1,14 @@
-import { calculateDonchian } from '@marketmind/indicators';
+import { calculateDonchian } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
-interface DonchianWorkerMessage {
-  klines: Kline[];
-  period?: number;
-}
-
-self.onmessage = (e: MessageEvent<DonchianWorkerMessage>) => {
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; period?: number }>) => {
   const { klines, period = 20 } = e.data;
+
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
   const result = calculateDonchian(klines, period);
   self.postMessage(result);
 };

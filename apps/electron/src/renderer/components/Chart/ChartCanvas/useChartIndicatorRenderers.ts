@@ -1,118 +1,65 @@
-import type { RefObject } from 'react';
-import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
-import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { FootprintBar, MarketEvent, VolumeProfile } from '@marketmind/types';
-import type { StochasticResult } from '@marketmind/indicators';
-import type { UseChartIndicatorsResult } from './useChartIndicators';
-import { useStochasticRenderer } from '../useStochasticRenderer';
-import { useRSIRenderer } from '../useRSIRenderer';
-import { useBollingerBandsRenderer } from '../useBollingerBandsRenderer';
-import { useATRRenderer } from '../useATRRenderer';
-import { useVWAPRenderer } from '../useVWAPRenderer';
-import { useParabolicSARRenderer } from '../useParabolicSARRenderer';
-import { useKeltnerRenderer } from '../useKeltnerRenderer';
-import { useDonchianRenderer } from '../useDonchianRenderer';
-import { useSupertrendRenderer } from '../useSupertrendRenderer';
-import { useIchimokuRenderer } from '../useIchimokuRenderer';
-import { useOBVRenderer } from '../useOBVRenderer';
-import { useCMFRenderer } from '../useCMFRenderer';
-import { useStochRSIRenderer } from '../useStochRSIRenderer';
-import { useMACDRenderer } from '../useMACDRenderer';
-import { useADXRenderer } from '../useADXRenderer';
-import { useWilliamsRRenderer } from '../useWilliamsRRenderer';
-import { useCCIRenderer } from '../useCCIRenderer';
-import { useKlingerRenderer } from '../useKlingerRenderer';
-import { useElderRayRenderer } from '../useElderRayRenderer';
-import { useAroonRenderer } from '../useAroonRenderer';
-import { useVortexRenderer } from '../useVortexRenderer';
-import { useMFIRenderer } from '../useMFIRenderer';
-import { useROCRenderer } from '../useROCRenderer';
-import { useAORenderer } from '../useAORenderer';
-import { useTSIRenderer } from '../useTSIRenderer';
-import { usePPORenderer } from '../usePPORenderer';
-import { useCMORenderer } from '../useCMORenderer';
-import { useUltimateOscRenderer } from '../useUltimateOscRenderer';
-import { useDEMARenderer } from '../useDEMARenderer';
-import { useTEMARenderer } from '../useTEMARenderer';
-import { useWMARenderer } from '../useWMARenderer';
-import { useHMARenderer } from '../useHMARenderer';
-import { usePivotPointsRenderer } from '../usePivotPointsRenderer';
-import { useFibonacciRenderer } from '../useFibonacciRenderer';
-import { useFVGRenderer } from '../useFVGRenderer';
-import { useLiquidityLevelsRenderer } from '../useLiquidityLevelsRenderer';
-import { useEventScaleRenderer } from '../useEventScaleRenderer';
-import { useCVDRenderer } from '../useCVDRenderer';
-import { useImbalanceRenderer } from '../useImbalanceRenderer';
-import { useVolumeProfileRenderer } from '../useVolumeProfileRenderer';
-import { useFootprintRenderer } from '../useFootprintRenderer';
-import { useSessionBoundariesRenderer } from '../useSessionBoundariesRenderer';
-export interface UseChartIndicatorRenderersProps {
-  manager: CanvasManager | null;
-  colors: ChartThemeColors;
-  chartType?: string;
-  indicatorData: UseChartIndicatorsResult;
-  stochasticData: StochasticResult | null;
-  showEventRow: boolean;
-  marketEvents: MarketEvent[];
-  cvdValuesRef: RefObject<(number | null)[]>;
-  imbalanceValuesRef: RefObject<(number | null)[]>;
-  volumeProfile?: VolumeProfile | null;
-  footprintBars?: FootprintBar[];
-}
+import type { IndicatorId } from '@renderer/store/indicatorStore';
+import { getMAParams, DEFAULT_INDICATOR_PARAMS } from '@renderer/store/indicatorStore';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
+import { CHART_CONFIG, LINE_WIDTHS } from '@shared/constants/chartConfig';
+import { useCallback } from 'react';
+import {
+  useStochasticRenderer,
+  useRSIRenderer,
+  useBollingerBandsRenderer,
+  useATRRenderer,
+  useVWAPRenderer,
+  useParabolicSARRenderer,
+  useKeltnerRenderer,
+  useDonchianRenderer,
+  useSupertrendRenderer,
+  useIchimokuRenderer,
+  useOBVRenderer,
+  useCMFRenderer,
+  useStochRSIRenderer,
+  useMACDRenderer,
+  useADXRenderer,
+  useWilliamsRRenderer,
+  useCCIRenderer,
+  useKlingerRenderer,
+  useElderRayRenderer,
+  useAroonRenderer,
+  useVortexRenderer,
+  useMFIRenderer,
+  useROCRenderer,
+  useAORenderer,
+  useTSIRenderer,
+  usePPORenderer,
+  useCMORenderer,
+  useUltimateOscRenderer,
+  useDEMARenderer,
+  useTEMARenderer,
+  useWMARenderer,
+  useHMARenderer,
+  usePivotPointsRenderer,
+  useFibonacciRenderer,
+  useFVGRenderer,
+  useLiquidityLevelsRenderer,
+  useEventScaleRenderer,
+  useCVDRenderer,
+  useImbalanceRenderer,
+  useVolumeProfileRenderer,
+  useFootprintRenderer,
+  useSessionBoundariesRenderer,
+  useORBRenderer,
+  useLiquidityHeatmapRenderer,
+} from './indicatorRendererImports';
+import type { UseChartIndicatorRenderersProps, UseChartIndicatorRenderersResult } from './indicatorRendererTypes';
 
-export interface UseChartIndicatorRenderersResult {
-  renderStochastic: () => void;
-  renderRSI: () => void;
-  renderBollingerBands: () => void;
-  renderATR: () => void;
-  renderVWAP: () => void;
-  renderParabolicSAR: () => void;
-  renderKeltner: () => void;
-  renderDonchian: () => void;
-  renderSupertrend: () => void;
-  renderIchimoku: () => void;
-  renderOBV: () => void;
-  renderCMF: () => void;
-  renderStochRSI: () => void;
-  renderMACD: () => void;
-  renderADX: () => void;
-  renderWilliamsR: () => void;
-  renderCCI: () => void;
-  renderKlinger: () => void;
-  renderElderRay: () => void;
-  renderAroon: () => void;
-  renderVortex: () => void;
-  renderMFI: () => void;
-  renderROC: () => void;
-  renderAO: () => void;
-  renderTSI: () => void;
-  renderPPO: () => void;
-  renderCMO: () => void;
-  renderUltimateOsc: () => void;
-  renderDEMA: () => void;
-  renderTEMA: () => void;
-  renderWMA: () => void;
-  renderHMA: () => void;
-  renderPivotPoints: () => void;
-  renderFibonacci: () => void;
-  renderFVG: () => void;
-  renderLiquidityLevels: () => void;
-  renderEventScale: () => void;
-  renderCVD: () => void;
-  renderImbalance: () => void;
-  renderVolumeProfile: () => void;
-  renderFootprint: () => void;
-  renderSessionBoundaries: () => void;
-  getEventAtPosition: (x: number, y: number) => MarketEvent | null;
-  renderAllOverlayIndicators: () => void;
-  renderAllPanelIndicators: () => void;
-}
+export type { UseChartIndicatorRenderersProps, UseChartIndicatorRenderersResult };
 
 export const useChartIndicatorRenderers = ({
   manager,
   colors,
   chartType,
   indicatorData,
+  indicatorParams,
   stochasticData,
   showEventRow,
   marketEvents,
@@ -120,8 +67,9 @@ export const useChartIndicatorRenderers = ({
   imbalanceValuesRef,
   volumeProfile = null,
   footprintBars = [],
+  heatmapDataRef,
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
-  const { isIndicatorActive } = indicatorData;
+  const { isIndicatorActive, maData } = indicatorData;
 
   const { render: renderStochastic } = useStochasticRenderer({
     manager,
@@ -137,6 +85,16 @@ export const useChartIndicatorRenderers = ({
     enabled: isIndicatorActive('rsi'),
   });
 
+  const { render: renderRSI14 } = useRSIRenderer({
+    manager,
+    rsiData: indicatorData.rsi14Data,
+    colors,
+    enabled: isIndicatorActive('rsi14'),
+    overboughtLevel: 70,
+    oversoldLevel: 30,
+    panelId: 'rsi14',
+  });
+
   const { render: renderBollingerBands } = useBollingerBandsRenderer({
     manager,
     colors,
@@ -149,9 +107,25 @@ export const useChartIndicatorRenderers = ({
     enabled: isIndicatorActive('atr'),
   });
 
+  const { render: renderDailyVWAP } = useVWAPRenderer({
+    manager,
+    colors,
+    enabled: isIndicatorActive('dailyVwap'),
+    period: 'daily',
+  });
+
+  const { render: renderWeeklyVWAP } = useVWAPRenderer({
+    manager,
+    colors,
+    enabled: isIndicatorActive('weeklyVwap'),
+    period: 'weekly',
+  });
+
   const { render: renderVWAP } = useVWAPRenderer({
     manager,
+    colors,
     enabled: isIndicatorActive('vwap'),
+    period: 'monthly',
   });
 
   const { render: renderParabolicSAR } = useParabolicSARRenderer({
@@ -413,9 +387,105 @@ export const useChartIndicatorRenderers = ({
     marketEvents,
   });
 
+  const { render: renderORB } = useORBRenderer({
+    manager,
+    colors,
+    enabled: isIndicatorActive('orb'),
+    marketEvents,
+  });
+
+  const { render: renderLiquidityHeatmap } = useLiquidityHeatmapRenderer({
+    manager,
+    heatmapDataRef,
+    enabled: isIndicatorActive('liquidityHeatmap'),
+    liquidationMarkersEnabled: isIndicatorActive('liquidationMarkers'),
+  });
+
+  const renderMAIndicators = useCallback((): void => {
+    if (!manager || maData.size === 0) return;
+
+    const ctx = manager.getContext();
+    const dimensions = manager.getDimensions();
+    const viewport = manager.getViewport();
+    const bounds = manager.getBounds();
+    const klines = manager.getKlines();
+
+    if (!ctx || !dimensions || !bounds || !klines) return;
+
+    const { chartWidth, chartHeight } = dimensions;
+    const startIndex = Math.max(0, Math.floor(viewport.start));
+    const endIndex = Math.min(klines.length, Math.ceil(viewport.end));
+    const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
+    const visibleRange = viewport.end - viewport.start;
+    const widthPerKline = effectiveWidth / visibleRange;
+    const { klineWidth } = viewport;
+    const klineCenterOffset = (widthPerKline - klineWidth) / 2 + klineWidth / 2;
+    const resolvedParams = indicatorParams ?? DEFAULT_INDICATOR_PARAMS;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
+
+    for (const [id, values] of maData) {
+      const params = getMAParams(id as IndicatorId, resolvedParams);
+      if (!params) continue;
+
+      ctx.strokeStyle = params.color;
+      ctx.lineWidth = params.lineWidth || LINE_WIDTHS.NORMAL;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+
+      let hasMovedTo = false;
+      for (let i = startIndex; i < endIndex; i++) {
+        const value = values[i];
+        if (value === null || value === undefined) continue;
+
+        const x = manager.indexToX(i);
+        const centerX = x + klineCenterOffset;
+        const y = manager.priceToY(value);
+
+        if (!hasMovedTo) {
+          ctx.moveTo(centerX, y);
+          hasMovedTo = true;
+        } else {
+          ctx.lineTo(centerX, y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    for (const [id, values] of maData) {
+      const params = getMAParams(id as IndicatorId, resolvedParams);
+      if (!params) continue;
+
+      const lastValue = values[endIndex - 1];
+      if (lastValue === null || lastValue === undefined) continue;
+
+      const y = manager.priceToY(lastValue);
+      if (y < 0 || y > chartHeight) continue;
+
+      drawPriceTag(ctx, formatChartPrice(lastValue), y, chartWidth, params.color, CHART_CONFIG.CANVAS_PADDING_RIGHT);
+    }
+
+    ctx.restore();
+  }, [manager, maData, indicatorParams]);
+
   const renderAllOverlayIndicators = (): void => {
+    renderLiquidityHeatmap();
+    renderMAIndicators();
     renderBollingerBands();
     renderATR();
+    renderDailyVWAP();
+    renderWeeklyVWAP();
     renderVWAP();
     renderParabolicSAR();
     renderKeltner();
@@ -430,6 +500,7 @@ export const useChartIndicatorRenderers = ({
     renderFibonacci();
     renderFVG();
     renderLiquidityLevels();
+    renderORB();
     renderEventScale();
     renderVolumeProfile();
     renderFootprint();
@@ -438,6 +509,7 @@ export const useChartIndicatorRenderers = ({
   const renderAllPanelIndicators = (): void => {
     renderStochastic();
     renderRSI();
+    renderRSI14();
     renderOBV();
     renderCMF();
     renderStochRSI();
@@ -463,8 +535,11 @@ export const useChartIndicatorRenderers = ({
   return {
     renderStochastic,
     renderRSI,
+    renderRSI14,
     renderBollingerBands,
     renderATR,
+    renderDailyVWAP,
+    renderWeeklyVWAP,
     renderVWAP,
     renderParabolicSAR,
     renderKeltner,
@@ -503,6 +578,9 @@ export const useChartIndicatorRenderers = ({
     renderVolumeProfile,
     renderFootprint,
     renderSessionBoundaries,
+    renderORB,
+    renderLiquidityHeatmap,
+    renderMAIndicators,
     getEventAtPosition,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,

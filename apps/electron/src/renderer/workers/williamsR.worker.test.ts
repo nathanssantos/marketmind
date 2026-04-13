@@ -1,8 +1,9 @@
-import { calculateWilliamsR } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateWilliamsR: vi.fn(() => ({ williamsR: [-20, -50, -80] })),
+const mockComputeSingle = vi.fn(() => Promise.resolve([-20, -50, -80]));
+
+vi.mock('./pineWorkerService', () => ({
+  computeSingle: mockComputeSingle,
 }));
 
 describe('williamsR.worker', () => {
@@ -11,21 +12,22 @@ describe('williamsR.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeSingle.mockResolvedValue([-20, -50, -80]);
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = { postMessage: mockPostMessage, onmessage: null };
   });
 
   it('should calculate Williams %R', async () => {
     await import('./williamsR.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, period: 14 } } as MessageEvent);
-    expect(calculateWilliamsR).toHaveBeenCalledWith(mockKlines, 14);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, period: 14 } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('wpr', mockKlines, { period: 14 });
   });
 
   it('should post null when klines empty', async () => {
     vi.resetModules();
     await import('./williamsR.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: [], period: 14 } } as MessageEvent);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: [], period: 14 } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

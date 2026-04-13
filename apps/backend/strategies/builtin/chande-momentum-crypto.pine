@@ -1,0 +1,49 @@
+// @id chande-momentum-crypto
+// @name Chande Momentum Crypto
+// @version 1.0.0
+// @description Chande Momentum Oscillator (CMO) strategy. CMO mede força de momentum entre -100 e +100. Entry em níveis extremos ou cruzamentos zero.
+// @author MarketMind
+// @tags momentum,cmo,chande,oscillator
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param cmoPeriod Período do CMO
+// @param oversold Nível oversold
+// @param overbought Nível overbought
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Chande Momentum Crypto', overlay=true)
+
+cmoPeriod = input.int(14, 'cmoPeriod', minval=9, maxval=21, step=1)
+oversold = input.int(-50, 'oversold', minval=-60, maxval=-40, step=5)
+overbought = input.int(50, 'overbought', minval=40, maxval=60, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+cmo = ta.cmo(close, cmoPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = ta.crossover(cmo, oversold)
+shortEntry = ta.crossunder(cmo, overbought)
+
+confBase = 65
+confBonus0 = cmo < -70 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 85)
+
+exitLong = cmo > overbought
+exitShort = cmo < oversold
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

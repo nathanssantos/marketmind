@@ -240,6 +240,19 @@ export const useChartCanvas = ({
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
         wasAtEndRef.current = true;
+      } else if (!wasAtEnd && currentCount > prevCount && !isPrepend && !isSignificantChange && !isCompleteDataChange) {
+        const latestCandleVisible = currentViewport.end >= prevCount;
+        if (latestCandleVisible) {
+          const klinesAdded = currentCount - prevCount;
+          const newViewport = {
+            ...currentViewport,
+            start: currentViewport.start + klinesAdded,
+            end: currentViewport.end + klinesAdded,
+          };
+          setViewport(newViewport);
+          managerRef.current.setViewport(newViewport);
+          onViewportChange?.(newViewport);
+        }
       } else {
         wasAtEndRef.current = Math.abs(currentViewport.end - currentCount) < 1;
       }

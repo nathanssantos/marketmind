@@ -1,4 +1,5 @@
 import { initTRPC, TRPCError } from '@trpc/server';
+import { env } from '../env';
 import type { Context } from './context';
 
 const t = initTRPC.context<Context>().create();
@@ -18,3 +19,5 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     },
   });
 });
+
+export const demoOrProtectedProcedure = env.DEMO_MODE ? publicProcedure : protectedProcedure;

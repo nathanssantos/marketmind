@@ -1,8 +1,9 @@
-import { calculateHMA } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateHMA: vi.fn(() => ({ values: [100, 101, 102] })),
+const mockComputeSingle = vi.fn(() => Promise.resolve([100, 101, 102]));
+
+vi.mock('./pineWorkerService', () => ({
+  computeSingle: mockComputeSingle,
 }));
 
 describe('hma.worker', () => {
@@ -13,6 +14,7 @@ describe('hma.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeSingle.mockResolvedValue([100, 101, 102]);
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = {
       postMessage: mockPostMessage,
       onmessage: null,
@@ -21,16 +23,16 @@ describe('hma.worker', () => {
 
   it('should calculate HMA with default period', async () => {
     await import('./hma.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines } } as MessageEvent);
-    expect(calculateHMA).toHaveBeenCalledWith(mockKlines, 20);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('hma', mockKlines, { period: 20 });
   });
 
   it('should use custom period', async () => {
     vi.resetModules();
     await import('./hma.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, period: 14 } } as MessageEvent);
-    expect(calculateHMA).toHaveBeenCalledWith(mockKlines, 14);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, period: 14 } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('hma', mockKlines, { period: 14 });
   });
 });

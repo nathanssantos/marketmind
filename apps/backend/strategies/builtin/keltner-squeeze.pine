@@ -1,0 +1,57 @@
+// @id keltner-squeeze
+// @name Keltner Squeeze Breakout
+// @version 1.0.0
+// @description Volatility squeeze strategy. Entry when Bollinger Bands are inside Keltner Channel (low volatility) and price breaks out. High probability breakout setup.
+// @author MarketMind
+// @tags breakout,squeeze,keltner,bollinger,volatility
+// @strategyType ANY
+// @momentumType BREAKOUT
+// @param keltnerEmaPeriod Keltner EMA period
+// @param keltnerAtrPeriod Keltner ATR period
+// @param keltnerMultiplier Keltner ATR multiplier
+// @param bbPeriod Bollinger Bands period
+// @param bbStdDev Bollinger Bands std deviation
+// @param atrMultiplier ATR multiplier for stop loss
+// @param rrMultiplier Risk-reward multiplier
+
+//@version=5
+indicator('Keltner Squeeze Breakout', overlay=true)
+
+keltnerEmaPeriod = input.int(20, 'keltnerEmaPeriod', minval=15, maxval=30, step=5)
+keltnerAtrPeriod = input.int(10, 'keltnerAtrPeriod', minval=5, maxval=20, step=5)
+keltnerMultiplier = input.float(1.5, 'keltnerMultiplier', minval=1, maxval=2.5, step=0.5)
+bbPeriod = input.int(20, 'bbPeriod', minval=15, maxval=30, step=5)
+bbStdDev = input.float(2, 'bbStdDev', minval=1.5, maxval=2.5, step=0.5)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2.5, step=0.5)
+rrMultiplier = input.float(2.5, 'rrMultiplier', minval=2, maxval=4, step=0.5)
+
+[keltner_middle, keltner_upper, keltner_lower] = ta.kc(close, keltnerEmaPeriod, keltnerMultiplier)
+[bb_middle, bb_upper, bb_lower] = ta.bb(close, bbPeriod, bbStdDev)
+bb_bandwidth = (bb_upper - bb_lower) / bb_middle
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (bb_upper < keltner_upper and bb_lower > keltner_lower and close > keltner_upper)
+shortEntry = (bb_upper < keltner_upper and bb_lower > keltner_lower and close < keltner_lower)
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = atr > 0 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * rrMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * rrMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

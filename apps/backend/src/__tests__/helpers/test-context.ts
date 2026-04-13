@@ -12,8 +12,10 @@ export const createTestContext = (options: TestContextOptions = {}): Context => 
   const db = getTestDatabase();
 
   const mockRequest = {
+    ip: '127.0.0.1',
     headers: {
       cookie: options.sessionId ? `session=${options.sessionId}` : undefined,
+      'user-agent': 'test-agent',
     },
     cookies: {
       session: options.sessionId,

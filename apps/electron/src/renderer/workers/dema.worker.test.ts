@@ -1,7 +1,7 @@
-import { calculateDEMA } from '@marketmind/indicators';
+import { calculateDEMA } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateDEMA: vi.fn(() => ({ values: [100, 101, 102] })),
 }));
 

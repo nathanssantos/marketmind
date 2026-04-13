@@ -7,6 +7,9 @@ export interface SerializedDrawingData {
   endPrice?: number;
   startTime?: number;
   endTime?: number;
+  widthIndex?: number;
+  widthPrice?: number;
+  widthTime?: number;
   points?: Array<{ index: number; price: number; time?: number }>;
   swingLowIndex?: number;
   swingLowPrice?: number;
@@ -25,6 +28,11 @@ export interface SerializedDrawingData {
   fontSize?: number;
   fontWeight?: 'normal' | 'bold';
   textDecoration?: 'none' | 'underline';
+  entryIndex?: number;
+  entryPrice?: number;
+  entryTime?: number;
+  stopLossPrice?: number;
+  takeProfitPrice?: number;
 }
 
 export type KlineTimeLookup = (index: number) => number | undefined;
@@ -43,6 +51,11 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
     case 'rectangle':
     case 'area':
     case 'arrow':
+    case 'ray':
+    case 'trendLine':
+    case 'priceRange':
+    case 'ellipse':
+    case 'gannFan':
       data.startIndex = drawing.startIndex;
       data.startPrice = drawing.startPrice;
       data.endIndex = drawing.endIndex;
@@ -50,7 +63,20 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       data.startTime = t(drawing.startIndex);
       data.endTime = t(drawing.endIndex);
       break;
+    case 'channel':
+    case 'pitchfork':
+      data.startIndex = drawing.startIndex;
+      data.startPrice = drawing.startPrice;
+      data.endIndex = drawing.endIndex;
+      data.endPrice = drawing.endPrice;
+      data.startTime = t(drawing.startIndex);
+      data.endTime = t(drawing.endIndex);
+      data.widthIndex = drawing.widthIndex;
+      data.widthPrice = drawing.widthPrice;
+      data.widthTime = t(drawing.widthIndex);
+      break;
     case 'pencil':
+    case 'highlighter':
       data.points = drawing.points.map((p) => ({ index: p.index, price: p.price, time: t(p.index) }));
       break;
     case 'fibonacci':
@@ -71,6 +97,21 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       data.fontSize = drawing.fontSize;
       data.fontWeight = drawing.fontWeight;
       data.textDecoration = drawing.textDecoration;
+      break;
+    case 'horizontalLine':
+    case 'verticalLine':
+    case 'anchoredVwap':
+      data.index = drawing.index;
+      data.price = drawing.price;
+      data.time = t(drawing.index);
+      break;
+    case 'longPosition':
+    case 'shortPosition':
+      data.entryIndex = drawing.entryIndex;
+      data.entryPrice = drawing.entryPrice;
+      data.entryTime = t(drawing.entryIndex);
+      data.stopLossPrice = drawing.stopLossPrice;
+      data.takeProfitPrice = drawing.takeProfitPrice;
       break;
   }
 
@@ -96,6 +137,7 @@ export const deserializeDrawingData = (
     const twoPointFields = {
       startIndex: ri(data.startIndex!, data.startTime), startPrice: data.startPrice!,
       endIndex: ri(data.endIndex!, data.endTime), endPrice: data.endPrice!,
+      startTime: data.startTime, endTime: data.endTime,
     };
 
     switch (type) {
@@ -104,23 +146,51 @@ export const deserializeDrawingData = (
       case 'rectangle':
       case 'area':
       case 'arrow':
+      case 'ray':
+      case 'trendLine':
+      case 'priceRange':
+      case 'ellipse':
+      case 'gannFan':
         return { ...common, type, ...twoPointFields } as Drawing;
+      case 'channel':
+      case 'pitchfork':
+        return { ...common, type, ...twoPointFields, widthIndex: ri(data.widthIndex ?? 0, data.widthTime), widthPrice: data.widthPrice ?? 0, widthTime: data.widthTime } as Drawing;
       case 'pencil':
-        return { ...common, type: 'pencil', points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price })) };
+      case 'highlighter':
+        return { ...common, type, points: (data.points ?? []).map((p) => ({ index: ri(p.index, p.time), price: p.price, time: p.time })) } as Drawing;
       case 'fibonacci':
         return {
           ...common, type: 'fibonacci',
           swingLowIndex: ri(data.swingLowIndex!, data.swingLowTime), swingLowPrice: data.swingLowPrice!,
           swingHighIndex: ri(data.swingHighIndex!, data.swingHighTime), swingHighPrice: data.swingHighPrice!,
+          swingLowTime: data.swingLowTime, swingHighTime: data.swingHighTime,
           direction: data.direction ?? 'up', levels: data.levels ?? [],
         };
       case 'text':
         return {
           ...common, type: 'text',
           index: ri(data.index!, data.time), price: data.price!,
+          time: data.time,
           text: data.text ?? '', fontSize: data.fontSize ?? 14,
           fontWeight: data.fontWeight ?? 'normal', textDecoration: data.textDecoration ?? 'none',
         };
+      case 'horizontalLine':
+        return {
+          ...common, type: 'horizontalLine',
+          index: ri(data.index!, data.time), price: data.price!,
+          time: data.time,
+        };
+      case 'verticalLine':
+      case 'anchoredVwap':
+        return { ...common, type, index: ri(data.index!, data.time), price: data.price!, time: data.time } as Drawing;
+      case 'longPosition':
+      case 'shortPosition':
+        return {
+          ...common, type,
+          entryIndex: ri(data.entryIndex!, data.entryTime), entryPrice: data.entryPrice!,
+          entryTime: data.entryTime,
+          stopLossPrice: data.stopLossPrice!, takeProfitPrice: data.takeProfitPrice!,
+        } as Drawing;
       default:
         return null;
     }

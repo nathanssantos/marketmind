@@ -1,8 +1,14 @@
-import { analyzePivots, type PivotAnalysis } from '@marketmind/indicators';
+import { analyzePivots } from '../lib/indicators';
 import type { Kline } from '@marketmind/types';
 
-self.onmessage = (event: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {
-  const { klines, lookback = 5 } = event.data;
-  const result: PivotAnalysis = analyzePivots(klines, { lookback });
+self.onmessage = (e: MessageEvent<{ klines: Kline[]; lookback?: number }>) => {
+  const { klines, lookback = 5 } = e.data;
+
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  const result = analyzePivots(klines, { lookback });
   self.postMessage(result);
 };

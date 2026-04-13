@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Kline, TradingSetup, StrategyDefinition, MarketType } from '@marketmind/types';
+import type { Kline, TradingSetup, MarketType } from '@marketmind/types';
+import type { PineStrategy } from '../../pine/types';
 
 const filterMocks = vi.hoisted(() => ({
   checkStochasticCondition: vi.fn(),
@@ -81,7 +82,7 @@ vi.mock('../../../utils/confluence-scoring', () => ({
   calculateConfluenceScore: filterMocks.calculateConfluenceScore,
 }));
 
-import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from '../filter-validator';
+import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from '../validation/filter-validator';
 import {
   checkBtcCorrelation,
   checkFundingRate,
@@ -845,15 +846,16 @@ describe('FilterValidator', () => {
         reason: 'OK',
       } as never);
 
-      const strategies: StrategyDefinition[] = [{
-        id: 'larry_williams_9_1',
-        filters: { trendFilter: { enabled: true } },
-      } as unknown as StrategyDefinition];
+      const strategies: PineStrategy[] = [{
+        metadata: { id: 'larry_williams_9_1', name: 'larry_williams_9_1', version: '1.0.0', description: '', author: 'test', tags: [], status: 'active', enabled: true, parameters: {}, filters: {} },
+        source: '',
+        filePath: 'test',
+      }];
 
       const result = await validator.validateFilters(
         createWatcher(),
         createSetup({ type: 'larry_williams_9_1' as never }),
-        { ...allDisabledConfig, useTrendFilter: false },
+        { ...allDisabledConfig, useTrendFilter: true },
         createKlines(50),
         strategies,
         logBuffer,

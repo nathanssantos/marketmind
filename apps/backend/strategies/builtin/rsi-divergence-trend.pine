@@ -1,0 +1,63 @@
+// @id rsi-divergence-trend
+// @name RSI Divergence with Trend Filter
+// @version 1.0.0
+// @description RSI trend pullback strategy (LONG ONLY). Enters when RSI is oversold while price stays above trend EMA. Simplified for more signals.
+// @author MarketMind
+// @tags reversal,rsi,divergence,trend-filter,2025
+// @strategyType TREND_FOLLOWING
+// @momentumType REVERSAL
+// @param rsiPeriod RSI period
+// @param rsiOversold RSI oversold level (relaxed)
+// @param rsiOverbought RSI overbought level
+// @param emaTrend Trend EMA period
+// @param adxPeriod ADX period
+// @param adxMin Minimum ADX for trend
+// @param atrPeriod ATR period
+// @param slMultiplier SL ATR multiplier
+// @param tpMultiplier TP ATR multiplier
+
+//@version=5
+indicator('RSI Divergence with Trend Filter', overlay=true)
+
+rsiPeriod = input.int(14, 'rsiPeriod', minval=7, maxval=21, step=2)
+rsiOversold = input.int(40, 'rsiOversold', minval=30, maxval=50, step=5)
+rsiOverbought = input.int(65, 'rsiOverbought', minval=60, maxval=75, step=5)
+adxPeriod = input.int(14, 'adxPeriod', minval=10, maxval=20, step=2)
+adxMin = input.int(20, 'adxMin', minval=15, maxval=30, step=5)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(1.5, 'slMultiplier', minval=1, maxval=2.5, step=0.25)
+tpMultiplier = input.float(2.5, 'tpMultiplier', minval=2, maxval=4, step=0.5)
+
+rsi = ta.rsi(close, rsiPeriod)
+emaTrend = ta.ema(close, emaTrend)
+[_adx_plus, _adx_minus, adx_adx] = ta.dmi(adxPeriod, adxPeriod)
+adx_plusDI = _adx_plus
+adx_minusDI = _adx_minus
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (rsi < rsiOversold and close > emaTrend)
+shortEntry = false
+
+confBase = 65
+confBonus0 = rsi < 30 ? 10 : 0
+confBonus1 = adx_adx > 30 ? 10 : 0
+confBonus2 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * tpMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * tpMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

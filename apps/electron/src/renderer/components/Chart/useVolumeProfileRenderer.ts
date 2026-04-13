@@ -1,6 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { VolumeProfile } from '@marketmind/types';
+import type { Kline, VolumeProfile, VolumeProfileLevel } from '@marketmind/types';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseVolumeProfileRendererProps {
@@ -13,49 +14,151 @@ interface UseVolumeProfileRendererProps {
 const MAX_BAR_WIDTH = 120;
 const OPACITY = 0.3;
 const POC_OPACITY = 0.6;
-const VALUE_AREA_OPACITY = 0.15;
+const VALUE_AREA_PERCENT = 0.7;
+const NUM_BUCKETS = 100;
+
+const buildProfileFromKlines = (klines: Kline[], startIdx: number, endIdx: number): VolumeProfile | null => {
+  const start = Math.max(0, Math.floor(startIdx));
+  const end = Math.min(klines.length, Math.ceil(endIdx) + 1);
+  if (end <= start) return null;
+
+  let priceMin = Infinity;
+  let priceMax = -Infinity;
+  for (let i = start; i < end; i++) {
+    const k = klines[i]!;
+    const high = parseFloat(k.high);
+    const low = parseFloat(k.low);
+    if (low < priceMin) priceMin = low;
+    if (high > priceMax) priceMax = high;
+  }
+
+  const range = priceMax - priceMin;
+  if (range <= 0) return null;
+
+  const bucketSize = range / NUM_BUCKETS;
+  const buckets = Array.from<number>({ length: NUM_BUCKETS }).fill(0);
+  const buyBuckets = Array.from<number>({ length: NUM_BUCKETS }).fill(0);
+
+  for (let i = start; i < end; i++) {
+    const k = klines[i]!;
+    const open = parseFloat(k.open);
+    const close = parseFloat(k.close);
+    const high = parseFloat(k.high);
+    const low = parseFloat(k.low);
+    const vol = parseFloat(k.volume);
+    const takerBuyVol = parseFloat(k.takerBuyBaseVolume);
+    const klineRange = high - low;
+    if (klineRange <= 0 || vol <= 0) continue;
+
+    const bodyBottom = Math.min(open, close);
+    const bodyTop = Math.max(open, close);
+    const buyRatio = vol > 0 ? takerBuyVol / vol : 0.5;
+
+    const lowBucket = Math.max(0, Math.floor((low - priceMin) / bucketSize));
+    const highBucket = Math.min(NUM_BUCKETS - 1, Math.floor((high - priceMin) / bucketSize));
+
+    for (let b = lowBucket; b <= highBucket; b++) {
+      const bucketMidPrice = priceMin + (b + 0.5) * bucketSize;
+      const isInBody = bucketMidPrice >= bodyBottom && bucketMidPrice <= bodyTop;
+      const weight = isInBody ? 2 : 1;
+      const totalWeight = (highBucket - lowBucket + 1) + (isInBody ? 1 : 0);
+      const volShare = (vol * weight) / totalWeight;
+      buckets[b] = (buckets[b] ?? 0) + volShare;
+      buyBuckets[b] = (buyBuckets[b] ?? 0) + volShare * buyRatio;
+    }
+  }
+
+  let maxVol = 0;
+  let pocIndex = 0;
+  const levels: VolumeProfileLevel[] = [];
+
+  for (let i = 0; i < NUM_BUCKETS; i++) {
+    const vol = buckets[i] ?? 0;
+    const buyVol = buyBuckets[i] ?? 0;
+    if (vol <= 0) continue;
+    if (vol > maxVol) {
+      maxVol = vol;
+      pocIndex = i;
+    }
+    levels.push({
+      price: priceMin + (i + 0.5) * bucketSize,
+      volume: vol,
+      buyVolume: buyVol,
+      sellVolume: vol - buyVol,
+    });
+  }
+
+  if (levels.length === 0) return null;
+
+  const poc = priceMin + (pocIndex + 0.5) * bucketSize;
+  const totalVolume = levels.reduce((sum, l) => sum + l.volume, 0);
+  const targetVolume = totalVolume * VALUE_AREA_PERCENT;
+
+  const sorted = [...levels].sort((a, b) => b.volume - a.volume);
+  let accumulated = 0;
+  let vaHigh = poc;
+  let vaLow = poc;
+  for (const level of sorted) {
+    accumulated += level.volume;
+    if (level.price > vaHigh) vaHigh = level.price;
+    if (level.price < vaLow) vaLow = level.price;
+    if (accumulated >= targetVolume) break;
+  }
+
+  return { levels, poc, valueAreaHigh: vaHigh, valueAreaLow: vaLow };
+};
 
 export const useVolumeProfileRenderer = ({
   manager,
-  volumeProfile,
+  volumeProfile: externalProfile,
   colors,
   enabled = true,
 }: UseVolumeProfileRendererProps) => {
   const render = useCallback((): void => {
-    if (!manager || !enabled || !volumeProfile || volumeProfile.levels.length === 0) return;
+    if (!manager || !enabled) return;
+
+    const klines = manager.getKlines();
+    const viewport = manager.getViewport();
+
+    const profile = externalProfile ?? (klines && klines.length > 0
+      ? buildProfileFromKlines(klines, viewport.start, viewport.end)
+      : null);
+
+    if (!profile || profile.levels.length === 0) return;
 
     const ctx = manager.getContext();
     if (!ctx) return;
 
-    const viewport = manager.getViewport();
     const dims = manager.getDimensions();
     if (!dims) return;
 
-    const chartWidth = dims.width;
-    const chartHeight = viewport.height;
+    const chartWidth = dims.chartWidth;
+    const chartHeight = dims.chartHeight;
 
-    const maxVolume = Math.max(...volumeProfile.levels.map((l) => l.volume));
+    const maxVolume = Math.max(...profile.levels.map((l) => l.volume));
     if (maxVolume <= 0) return;
 
+    const priceLevels = profile.levels.map((l) => l.price).sort((a, b) => a - b);
+    const bucketPriceSize = priceLevels.length > 1
+      ? (priceLevels[priceLevels.length - 1]! - priceLevels[0]!) / priceLevels.length
+      : 1;
+    const y1 = manager.priceToY(0);
+    const y2 = manager.priceToY(bucketPriceSize);
+    const barHeight = Math.max(1, Math.abs(y1 - y2) * 0.9);
+
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
-    if (volumeProfile.valueAreaLow > 0 && volumeProfile.valueAreaHigh > 0) {
-      const vaTopY = priceToY(volumeProfile.valueAreaHigh, viewport.priceMin, viewport.priceMax, chartHeight);
-      const vaBottomY = priceToY(volumeProfile.valueAreaLow, viewport.priceMin, viewport.priceMax, chartHeight);
-
-      ctx.fillStyle = colors.scalping?.valueAreaFill ?? `rgba(128, 128, 128, ${VALUE_AREA_OPACITY})`;
-      ctx.fillRect(chartWidth - MAX_BAR_WIDTH, vaTopY, MAX_BAR_WIDTH, vaBottomY - vaTopY);
-    }
-
-    for (const level of volumeProfile.levels) {
-      const y = priceToY(level.price, viewport.priceMin, viewport.priceMax, chartHeight);
-      if (y < 0 || y > chartHeight) continue;
+    for (const level of profile.levels) {
+      const y = manager.priceToY(level.price);
+      if (y < -barHeight || y > chartHeight + barHeight) continue;
 
       const barWidth = (level.volume / maxVolume) * MAX_BAR_WIDTH;
       const x = chartWidth - barWidth;
-      const barHeight = Math.max(1, chartHeight / volumeProfile.levels.length * 0.8);
 
-      const isPOC = level.price === volumeProfile.poc;
+      const isPOC = level.price === profile.poc;
       const buyRatio = level.volume > 0 ? level.buyVolume / level.volume : 0.5;
 
       const buyWidth = barWidth * buyRatio;
@@ -70,7 +173,7 @@ export const useVolumeProfileRenderer = ({
       ctx.fillRect(x + buyWidth, y - barHeight / 2, sellWidth, barHeight);
 
       if (isPOC) {
-        ctx.strokeStyle = colors.scalping?.pocLine ?? '#FFD700';
+        ctx.strokeStyle = colors.scalping?.pocLine ?? INDICATOR_COLORS.POC_LINE;
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 2]);
         ctx.beginPath();
@@ -83,12 +186,7 @@ export const useVolumeProfileRenderer = ({
 
     ctx.globalAlpha = 1;
     ctx.restore();
-  }, [manager, volumeProfile, enabled, colors]);
+  }, [manager, externalProfile, enabled, colors]);
 
   return { render };
-};
-
-const priceToY = (price: number, priceMin: number, priceMax: number, height: number): number => {
-  if (priceMax === priceMin) return height / 2;
-  return height - ((price - priceMin) / (priceMax - priceMin)) * height;
 };

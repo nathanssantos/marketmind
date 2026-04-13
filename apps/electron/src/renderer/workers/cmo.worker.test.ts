@@ -1,8 +1,9 @@
-import { calculateCMO } from '@marketmind/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateCMO: vi.fn(() => ({ values: [25, -15, 35] })),
+const mockComputeSingle = vi.fn(() => Promise.resolve([25, -15, 35]));
+
+vi.mock('./pineWorkerService', () => ({
+  computeSingle: mockComputeSingle,
 }));
 
 describe('cmo.worker', () => {
@@ -14,6 +15,7 @@ describe('cmo.worker', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComputeSingle.mockResolvedValue([25, -15, 35]);
     (globalThis as unknown as { self: { postMessage: typeof mockPostMessage; onmessage: null } }).self = {
       postMessage: mockPostMessage,
       onmessage: null,
@@ -22,25 +24,25 @@ describe('cmo.worker', () => {
 
   it('should calculate CMO with default period and post result', async () => {
     await import('./cmo.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines } } as MessageEvent);
-    expect(calculateCMO).toHaveBeenCalledWith(mockKlines, 14);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('cmo', mockKlines, { period: 14 });
     expect(mockPostMessage).toHaveBeenCalled();
   });
 
   it('should use custom period when provided', async () => {
     vi.resetModules();
     await import('./cmo.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: mockKlines, period: 20 } } as MessageEvent);
-    expect(calculateCMO).toHaveBeenCalledWith(mockKlines, 20);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: mockKlines, period: 20 } } as MessageEvent);
+    expect(mockComputeSingle).toHaveBeenCalledWith('cmo', mockKlines, { period: 20 });
   });
 
   it('should post null when klines are empty', async () => {
     vi.resetModules();
     await import('./cmo.worker');
-    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { klines: [] } } as MessageEvent);
+    const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
+    await handler({ data: { klines: [] } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

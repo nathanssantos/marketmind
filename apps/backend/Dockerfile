@@ -19,7 +19,6 @@ FROM base AS dependencies
 
 # Copy all package.json files
 COPY packages/types/package.json ./packages/types/
-COPY packages/indicators/package.json ./packages/indicators/
 COPY apps/backend/package.json ./apps/backend/
 
 # Install dependencies with frozen lockfile
@@ -30,13 +29,11 @@ FROM dependencies AS build
 
 # Copy source code
 COPY packages/types ./packages/types
-COPY packages/indicators ./packages/indicators
 COPY apps/backend ./apps/backend
 COPY tsconfig.base.json ./
 
 # Build all packages
 RUN pnpm --filter @marketmind/types build && \
-    pnpm --filter @marketmind/indicators build && \
     pnpm --filter @marketmind/backend build
 
 # Stage 4: Production dependencies
@@ -44,7 +41,6 @@ FROM base AS prod-dependencies
 
 # Copy package files
 COPY packages/types/package.json ./packages/types/
-COPY packages/indicators/package.json ./packages/indicators/
 COPY apps/backend/package.json ./apps/backend/
 
 # Install only production dependencies
@@ -65,15 +61,12 @@ WORKDIR /app
 # Copy built application from build stage
 COPY --from=build --chown=backend:nodejs /app/packages/types/dist ./packages/types/dist
 COPY --from=build --chown=backend:nodejs /app/packages/types/package.json ./packages/types/
-COPY --from=build --chown=backend:nodejs /app/packages/indicators/dist ./packages/indicators/dist
-COPY --from=build --chown=backend:nodejs /app/packages/indicators/package.json ./packages/indicators/
 COPY --from=build --chown=backend:nodejs /app/apps/backend/dist ./apps/backend/dist
 COPY --from=build --chown=backend:nodejs /app/apps/backend/package.json ./apps/backend/
 
 # Copy production node_modules
 COPY --from=prod-dependencies --chown=backend:nodejs /app/node_modules ./node_modules
 COPY --from=prod-dependencies --chown=backend:nodejs /app/packages/types/node_modules ./packages/types/node_modules
-COPY --from=prod-dependencies --chown=backend:nodejs /app/packages/indicators/node_modules ./packages/indicators/node_modules
 COPY --from=prod-dependencies --chown=backend:nodejs /app/apps/backend/node_modules ./apps/backend/node_modules
 
 # Copy workspace config

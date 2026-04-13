@@ -1,12 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateIntradayVWAP: vi.fn(),
+const { mockCompute, mockComputeMulti } = vi.hoisted(() => ({
+  mockCompute: vi.fn(),
+  mockComputeMulti: vi.fn(),
+}));
+
+vi.mock('../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = mockComputeMulti;
+  },
 }));
 
 import { checkVwapCondition, VWAP_FILTER } from '../utils/filters/vwap-filter';
-import { calculateIntradayVWAP } from '@marketmind/indicators';
 
 const createKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -33,8 +40,8 @@ describe('checkVwapCondition', () => {
   });
 
   describe('insufficient klines', () => {
-    it('should return soft pass when klines < MIN_KLINES_REQUIRED', () => {
-      const result = checkVwapCondition(createKlines(3), 'LONG');
+    it('should return soft pass when klines < MIN_KLINES_REQUIRED', async () => {
+      const result = await checkVwapCondition(createKlines(3), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.vwap).toBeNull();
@@ -43,25 +50,25 @@ describe('checkVwapCondition', () => {
       expect(result.reason).toContain('Insufficient');
     });
 
-    it('should not call calculateIntradayVWAP for insufficient klines', () => {
-      checkVwapCondition(createKlines(2), 'LONG');
-      expect(calculateIntradayVWAP).not.toHaveBeenCalled();
+    it('should not call compute for insufficient klines', async () => {
+      await checkVwapCondition(createKlines(2), 'LONG');
+      expect(mockCompute).not.toHaveBeenCalled();
     });
   });
 
   describe('invalid VWAP calculation', () => {
-    it('should return soft pass when VWAP is NaN', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([NaN]);
-      const result = checkVwapCondition(createKlines(10), 'LONG');
+    it('should return soft pass when VWAP is NaN', async () => {
+      mockCompute.mockResolvedValue([NaN]);
+      const result = await checkVwapCondition(createKlines(10), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.vwap).toBeNull();
       expect(result.reason).toContain('invalid value');
     });
 
-    it('should return soft pass when VWAP array is empty', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([]);
-      const result = checkVwapCondition(createKlines(10), 'LONG');
+    it('should return soft pass when VWAP array is empty', async () => {
+      mockCompute.mockResolvedValue([]);
+      const result = await checkVwapCondition(createKlines(10), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.vwap).toBeNull();
@@ -69,9 +76,9 @@ describe('checkVwapCondition', () => {
   });
 
   describe('LONG direction', () => {
-    it('should allow LONG when price is above VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([95.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'LONG');
+    it('should allow LONG when price is above VWAP', async () => {
+      mockCompute.mockResolvedValue([95.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.vwap).toBe(95.0);
@@ -81,9 +88,9 @@ describe('checkVwapCondition', () => {
       expect(result.reason).toContain('above');
     });
 
-    it('should block LONG when price is below VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([105.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'LONG');
+    it('should block LONG when price is below VWAP', async () => {
+      mockCompute.mockResolvedValue([105.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'LONG');
 
       expect(result.isAllowed).toBe(false);
       expect(result.priceVsVwap).toBe('BELOW');
@@ -91,9 +98,9 @@ describe('checkVwapCondition', () => {
       expect(result.reason).toContain('below VWAP');
     });
 
-    it('should allow LONG when price is at VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([100.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'LONG');
+    it('should allow LONG when price is at VWAP', async () => {
+      mockCompute.mockResolvedValue([100.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.priceVsVwap).toBe('AT');
@@ -102,9 +109,9 @@ describe('checkVwapCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when price is below VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([105.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'SHORT');
+    it('should allow SHORT when price is below VWAP', async () => {
+      mockCompute.mockResolvedValue([105.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'SHORT');
 
       expect(result.isAllowed).toBe(true);
       expect(result.priceVsVwap).toBe('BELOW');
@@ -112,9 +119,9 @@ describe('checkVwapCondition', () => {
       expect(result.reason).toContain('below');
     });
 
-    it('should block SHORT when price is above VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([95.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'SHORT');
+    it('should block SHORT when price is above VWAP', async () => {
+      mockCompute.mockResolvedValue([95.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'SHORT');
 
       expect(result.isAllowed).toBe(false);
       expect(result.priceVsVwap).toBe('ABOVE');
@@ -122,9 +129,9 @@ describe('checkVwapCondition', () => {
       expect(result.reason).toContain('above VWAP');
     });
 
-    it('should allow SHORT when price is at VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([100.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'SHORT');
+    it('should allow SHORT when price is at VWAP', async () => {
+      mockCompute.mockResolvedValue([100.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'SHORT');
 
       expect(result.isAllowed).toBe(true);
       expect(result.priceVsVwap).toBe('AT');
@@ -132,23 +139,23 @@ describe('checkVwapCondition', () => {
   });
 
   describe('price vs VWAP classification', () => {
-    it('should classify as AT when within 0.1% of VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([100.05]);
-      const result = checkVwapCondition(createKlines(10, 100), 'LONG');
+    it('should classify as AT when within 0.1% of VWAP', async () => {
+      mockCompute.mockResolvedValue([100.05]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'LONG');
 
       expect(result.priceVsVwap).toBe('AT');
     });
 
-    it('should classify as ABOVE when more than 0.1% above VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([99.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'LONG');
+    it('should classify as ABOVE when more than 0.1% above VWAP', async () => {
+      mockCompute.mockResolvedValue([99.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'LONG');
 
       expect(result.priceVsVwap).toBe('ABOVE');
     });
 
-    it('should classify as BELOW when more than 0.1% below VWAP', () => {
-      vi.mocked(calculateIntradayVWAP).mockReturnValue([101.0]);
-      const result = checkVwapCondition(createKlines(10, 100), 'LONG');
+    it('should classify as BELOW when more than 0.1% below VWAP', async () => {
+      mockCompute.mockResolvedValue([101.0]);
+      const result = await checkVwapCondition(createKlines(10, 100), 'LONG');
 
       expect(result.priceVsVwap).toBe('BELOW');
     });

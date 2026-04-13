@@ -7,21 +7,20 @@ import type {
   TriggerIndicatorValues,
 } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
-import { IndicatorEngine } from '../services/indicator-engine';
 import { and, desc, eq } from 'drizzle-orm';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { klines, strategyPerformance, tradeExecutions } from '../db/schema';
 import { detectSetups as detectSetupsUnified } from '../services/indicator-engine';
-import { StrategyLoader } from '../services/setup-detection/dynamic';
+import { PineStrategyLoader } from '../services/pine/PineStrategyLoader';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import { mapDbKlinesToApi } from '../utils/kline-mapper';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const STRATEGIES_DIR = path.join(__dirname, '../../strategies/builtin');
-const sharedStrategyLoader = new StrategyLoader([STRATEGIES_DIR]);
+const sharedStrategyLoader = new PineStrategyLoader([STRATEGIES_DIR]);
 
 const strategyStatusSchema = z.enum(['active', 'experimental', 'deprecated', 'unprofitable']);
 
@@ -48,37 +47,40 @@ export const setupDetectionRouter = router({
   listStrategies: publicProcedure
     .input(listStrategiesInputSchema.optional())
     .query(async ({ input }) => {
-      const strategies = await sharedStrategyLoader.loadAllCached({
-        includeStatuses: input?.includeStatuses,
-        excludeStatuses: input?.excludeStatuses,
-        includeUnprofitable: input?.includeUnprofitable ?? false,
-      });
+      const strategies = await sharedStrategyLoader.loadAllCached();
 
-      return strategies.map((strategy) => ({
-        id: strategy.id,
-        name: strategy.name,
-        version: strategy.version,
-        description: strategy.description,
-        author: strategy.author,
-        tags: strategy.tags,
-        status: strategy.status ?? 'active',
-        enabled: strategy.enabled ?? false,
-        group: strategy.group,
-        recommendedTimeframes: strategy.recommendedTimeframes,
+      let filtered = strategies;
+      if (input?.includeStatuses?.length) {
+        filtered = filtered.filter((s) => input.includeStatuses!.includes(s.metadata.status as any));
+      }
+      if (input?.excludeStatuses?.length) {
+        filtered = filtered.filter((s) => !input.excludeStatuses!.includes(s.metadata.status as any));
+      }
+
+      return filtered.map((strategy) => ({
+        id: strategy.metadata.id,
+        name: strategy.metadata.name,
+        version: strategy.metadata.version,
+        description: strategy.metadata.description,
+        author: strategy.metadata.author,
+        tags: strategy.metadata.tags,
+        status: strategy.metadata.status,
+        enabled: strategy.metadata.enabled,
+        recommendedTimeframes: strategy.metadata.recommendedTimeframes,
       }));
     }),
 
   getStrategyDetails: publicProcedure
     .input(getStrategyDetailsInputSchema)
     .query(async ({ input }) => {
-      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: true });
-      const strategy = strategies.find((s) => s.id === input.strategyId);
+      const strategies = await sharedStrategyLoader.loadAllCached();
+      const strategy = strategies.find((s) => s.metadata.id === input.strategyId);
 
       if (!strategy) {
         throw new Error(`Strategy not found: ${input.strategyId}`);
       }
 
-      return strategy;
+      return strategy.metadata;
     }),
 
   detectSetups: protectedProcedure
@@ -104,13 +106,13 @@ export const setupDetectionRouter = router({
 
       const mappedKlines = mapDbKlinesToApi(klinesData);
 
-      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: false });
+      const strategies = await sharedStrategyLoader.loadAllCached();
 
       const filteredStrategies = enabledStrategies
-        ? strategies.filter((s) => enabledStrategies.includes(s.id))
+        ? strategies.filter((s) => enabledStrategies.includes(s.metadata.id))
         : strategies;
 
-      const results = detectSetupsUnified({
+      const results = await detectSetupsUnified({
         klines: mappedKlines,
         strategies: filteredStrategies,
         config: { minConfidence, minRiskReward },
@@ -161,10 +163,10 @@ export const setupDetectionRouter = router({
 
       const mappedKlines = mapDbKlinesToApi(klinesData);
 
-      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: false });
+      const strategies = await sharedStrategyLoader.loadAllCached();
 
       const filteredStrategies = enabledStrategies
-        ? strategies.filter((s) => enabledStrategies.includes(s.id))
+        ? strategies.filter((s) => enabledStrategies.includes(s.metadata.id))
         : strategies;
 
       const startIdx = mappedKlines.findIndex((k) => k.openTime >= startTime);
@@ -173,55 +175,53 @@ export const setupDetectionRouter = router({
       const actualStartIdx = startIdx === -1 ? 0 : startIdx;
       const actualEndIdx = endIdx === -1 ? mappedKlines.length - 1 : endIdx - 1;
 
-      const setups: TradingSetup[] = [];
-      const sharedEngine = new IndicatorEngine();
+      const { SetupDetectionService } = await import('../services/setup-detection/SetupDetectionService');
+      const service = new SetupDetectionService({ minConfidence, minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO });
+      for (const s of filteredStrategies) service.loadPineStrategy(s);
 
-      for (let i = actualStartIdx; i <= actualEndIdx; i += 1) {
-        const results = detectSetupsUnified({
-          klines: mappedKlines,
-          strategies: filteredStrategies,
-          currentIndex: i,
-          config: {
-            minConfidence,
-            minRiskReward: TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO,
-          },
-          indicatorEngine: sharedEngine,
-        });
-
-        for (const r of results) {
-          if (r.setup && r.confidence >= minConfidence) {
-            setups.push(r.setup);
-          }
-        }
-      }
-
-      setups.sort((a, b) => b.confidence - a.confidence);
+      const setups = await service.detectSetupsInRange(mappedKlines, actualStartIdx, actualEndIdx);
 
       return { setups };
     }),
 
   validateStrategy: publicProcedure
-    .input(z.object({ strategyJson: z.string() }))
+    .input(z.object({ strategySource: z.string() }))
     .mutation(async ({ input }) => {
-      const loader = new StrategyLoader([]);
-
       try {
-        const strategy = loader.loadFromString(input.strategyJson);
-        const validation = loader.validateStrategy(strategy);
+        const loader = new PineStrategyLoader([]);
+        const strategy = loader.loadFromString(input.strategySource);
+
+        if (!input.strategySource.includes('//@version=5') && !input.strategySource.includes("//@version=5")) {
+          return {
+            valid: false,
+            errors: [{ path: 'source', message: 'Missing //@version=5 declaration', severity: 'error' as const }],
+            warnings: [],
+            strategy: null,
+          };
+        }
+
+        if (!input.strategySource.includes("indicator(") && !input.strategySource.includes("indicator (")) {
+          return {
+            valid: false,
+            errors: [{ path: 'source', message: 'Missing indicator() declaration', severity: 'error' as const }],
+            warnings: [],
+            strategy: null,
+          };
+        }
 
         return {
-          valid: validation.valid,
-          errors: validation.errors,
-          warnings: validation.warnings,
-          strategy: validation.valid ? strategy : null,
+          valid: true,
+          errors: [],
+          warnings: [],
+          strategy: strategy.metadata,
         };
       } catch (error) {
         return {
           valid: false,
           errors: [
             {
-              path: 'json',
-              message: error instanceof Error ? error.message : 'Invalid JSON',
+              path: 'source',
+              message: error instanceof Error ? error.message : 'Invalid Pine source',
               severity: 'error' as const,
             },
           ],
@@ -234,16 +234,16 @@ export const setupDetectionRouter = router({
   getStrategyEducation: publicProcedure
     .input(z.object({ strategyId: z.string() }))
     .query(async ({ input }): Promise<{ education: StrategyEducation | null; strategyName: string }> => {
-      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: true });
-      const strategy = strategies.find((s) => s.id === input.strategyId);
+      const strategies = await sharedStrategyLoader.loadAllCached();
+      const strategy = strategies.find((s) => s.metadata.id === input.strategyId);
 
       if (!strategy) {
         return { education: null, strategyName: input.strategyId };
       }
 
       return {
-        education: strategy.education ?? null,
-        strategyName: strategy.name,
+        education: (strategy.metadata.education as unknown as StrategyEducation) ?? null,
+        strategyName: strategy.metadata.name,
       };
     }),
 
@@ -263,8 +263,8 @@ export const setupDetectionRouter = router({
 
       if (!execution) return null;
 
-      const strategies = await sharedStrategyLoader.loadAllCached({ includeUnprofitable: true });
-      const strategy = strategies.find((s) => s.id === execution.setupType);
+      const strategies = await sharedStrategyLoader.loadAllCached();
+      const strategy = strategies.find((s) => s.metadata.id === execution.setupType);
 
       let patternCandles: TriggerCandleSnapshot[] = [];
       let indicatorValues: TriggerIndicatorValues = {};
@@ -309,12 +309,12 @@ export const setupDetectionRouter = router({
 
       return {
         strategyId: execution.setupType ?? 'unknown',
-        strategyName: strategy?.name ?? execution.setupType ?? 'Unknown Strategy',
+        strategyName: strategy?.metadata.name ?? execution.setupType ?? 'Unknown Strategy',
         triggerKlineIndex: execution.triggerKlineIndex ?? 0,
         triggerOpenTime: execution.triggerKlineOpenTime ?? execution.openedAt.getTime(),
         patternCandles,
         indicatorValues,
-        education: strategy?.education ?? null,
+        education: (strategy?.metadata.education as unknown as StrategyEducation) ?? null,
         performance,
       };
     }),

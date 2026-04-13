@@ -56,11 +56,19 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const createOrderMutation = trpc.futuresTrading.createOrder.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const wId = data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId: wId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.futuresTrading.getOpenOrders.invalidate();
       utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.futuresTrading.getPositions.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -68,10 +76,20 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const cancelOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId: wId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.futuresTrading.getOpenOrders.invalidate();
       utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.trading.getOrders.invalidate();
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
     },
   });
@@ -87,9 +105,17 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const closePositionMutation = trpc.futuresTrading.closePosition.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId: wId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.futuresTrading.getPositions.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.analytics.getDailyPerformance.invalidate();
@@ -98,10 +124,18 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const reversePositionMutation = trpc.futuresTrading.reversePosition.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId: wId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.futuresTrading.getPositions.invalidate();
       utils.futuresTrading.getOpenOrders.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -182,10 +216,18 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const closePositionAndCancelOrdersMutation = trpc.futuresTrading.closePositionAndCancelOrders.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId: wId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.futuresTrading.getPositions.invalidate();
       utils.futuresTrading.getOpenOrders.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.analytics.getDailyPerformance.invalidate();

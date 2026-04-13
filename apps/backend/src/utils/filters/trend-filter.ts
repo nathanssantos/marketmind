@@ -1,11 +1,24 @@
-import { detectTrendByEMA, type TrendDetectionResult } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 const DEFAULT_EMA_PERIOD = 21;
 
 export const TREND_FILTER = {
   EMA_PERIOD: DEFAULT_EMA_PERIOD,
 } as const;
+
+export interface TrendDetectionResult {
+  direction: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  isClearTrend: boolean;
+  strength: number;
+  method: string;
+  details: {
+    price: number;
+    ema?: { value: number; period: number; pricePosition: 'above' | 'below' | 'crossing' };
+  };
+}
 
 export interface TrendFilterResult {
   isAllowed: boolean;
@@ -17,11 +30,11 @@ export interface TrendFilterResult {
   trendResult?: TrendDetectionResult;
 }
 
-export const checkTrendCondition = (
+export const checkTrendCondition = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT',
   emaPeriod: number = TREND_FILTER.EMA_PERIOD,
-): TrendFilterResult => {
+): Promise<TrendFilterResult> => {
   if (klines.length < 3) {
     return {
       isAllowed: false,
@@ -47,15 +60,16 @@ export const checkTrendCondition = (
     };
   }
 
-  const trendResult = detectTrendByEMA(klines.slice(0, confirmationIndex + 1), emaPeriod, 1);
+  const slicedKlines = klines.slice(0, confirmationIndex + 1);
+  const emaValues = await pineService.compute('ema', slicedKlines, { period: emaPeriod });
 
-  const ema21 = trendResult.details.ema?.value ?? null;
+  const lastEmaValue = emaValues[emaValues.length - 1] ?? null;
+
   const price = parseFloat(String(confirmationKline.close));
   const openPrice = parseFloat(String(confirmationKline.open));
 
-  // The confirmation candle (klines[-2]) must have OPENED and CLOSED entirely above/below EMA.
-  // A candle that opened below and closed above is the crossover candle itself — not a confirmed breakout.
-  // This works correctly for both crypto (open = prev close) and stocks (gaps possible).
+  const ema21 = lastEmaValue;
+
   const isBullish = ema21 !== null && openPrice > ema21 && price > ema21;
   const isBearish = ema21 !== null && openPrice < ema21 && price < ema21;
 
@@ -67,9 +81,32 @@ export const checkTrendCondition = (
       isBullish: false,
       isBearish: false,
       reason: 'EMA calculation returned null - blocking trade for safety',
-      trendResult,
     };
   }
+
+  const trendResult: TrendDetectionResult = (() => {
+    const recentKlines = slicedKlines.slice(-1);
+    const recentEma = emaValues.slice(-1);
+    const allAbove = recentKlines.every((k, i) => {
+      const emaVal = recentEma[i];
+      return emaVal !== null && emaVal !== undefined && parseFloat(String(k.close)) > emaVal;
+    });
+    const allBelow = recentKlines.every((k, i) => {
+      const emaVal = recentEma[i];
+      return emaVal !== null && emaVal !== undefined && parseFloat(String(k.close)) < emaVal;
+    });
+    const pricePosition: 'above' | 'below' | 'crossing' = allAbove ? 'above' : allBelow ? 'below' : 'crossing';
+    const dir: 'BULLISH' | 'BEARISH' | 'NEUTRAL' = allAbove ? 'BULLISH' : allBelow ? 'BEARISH' : 'NEUTRAL';
+    const emaDistance = Math.abs(price - ema21) / ema21 * 100;
+    const strength = Math.min(100, emaDistance * 20);
+    return {
+      direction: dir,
+      isClearTrend: pricePosition !== 'crossing',
+      strength,
+      method: 'ema',
+      details: { price, ema: { value: ema21, period: emaPeriod, pricePosition } },
+    };
+  })();
 
   const formatPrice = (p: number) => p.toFixed(2);
   let isAllowed: boolean;

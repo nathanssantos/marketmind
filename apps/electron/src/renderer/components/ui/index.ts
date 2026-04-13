@@ -20,6 +20,8 @@ export { EmptyState } from './EmptyState';
 export { ErrorMessage } from './ErrorMessage';
 export { Field } from './field';
 export { FormDialog } from './FormDialog';
+export { GridWindow } from './GridWindow';
+export type { GridWindowState } from './GridWindow';
 export { IconButton } from './icon-button';
 export type { IconButtonProps } from './icon-button';
 export { Image } from './image';

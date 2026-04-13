@@ -1,7 +1,7 @@
-import { calculateAO } from '@marketmind/indicators';
+import { calculateAO } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateAO: vi.fn(() => ({ values: [0.5, -0.3, 0.8] })),
 }));
 

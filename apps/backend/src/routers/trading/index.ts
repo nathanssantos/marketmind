@@ -1,17 +1,18 @@
 import { router } from '../../trpc';
-import { ordersRouter } from './orders';
+import { orderMutationsRouter } from './order-mutations';
+import { orderQueriesRouter } from './order-queries';
 import { positionsRouter } from './positions';
 import { executionsRouter } from './executions';
-import { futuresRouter } from './futures';
+import { executionUpdatesRouter } from './execution-updates';
+import { futuresConfigRouter } from './futures';
+import { marketDataRouter } from './market-data';
 
-export const nestedTradingRouter = router({
-  orders: ordersRouter,
-  positions: positionsRouter,
-  executions: executionsRouter,
-  futures: futuresRouter,
+export const tradingRouter = router({
+  ...orderMutationsRouter._def.procedures,
+  ...orderQueriesRouter._def.procedures,
+  ...positionsRouter._def.procedures,
+  ...executionsRouter._def.procedures,
+  ...executionUpdatesRouter._def.procedures,
+  ...futuresConfigRouter._def.procedures,
+  ...marketDataRouter._def.procedures,
 });
-
-export { ordersRouter } from './orders';
-export { positionsRouter } from './positions';
-export { executionsRouter } from './executions';
-export { futuresRouter } from './futures';

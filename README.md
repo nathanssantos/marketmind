@@ -4,25 +4,33 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.36.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-1,930%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-0.87.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-7,500%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)
+
+**[Website](https://marketmind-app.vercel.app)** | **[Documentation](./docs/)** | **[Download](https://github.com/nathanssantos/marketmind/releases)**
 
 </div>
 
 ## About the Project
 
-**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (klines) with algorithmic setup detection. The goal is to provide automated trading insights on cryptocurrencies through mathematical pattern recognition and backtested strategies.
+**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (klines) with algorithmic setup detection. The goal is to provide automated trading insights on cryptocurrencies and stocks through mathematical pattern recognition and backtested strategies.
+
+Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overview of features, tech stack, and screenshots.
 
 ### Key Features
 
 #### Chart Visualization
 - **Kline Charts**: High-performance Canvas rendering with zoom and pan
-- **25+ Technical Indicators**: RSI, MACD, Bollinger Bands, Stochastic, ADX, and more
+- **35+ Technical Indicators**: RSI, MACD, Bollinger Bands, Stochastic, ADX, and more (powered by PineTS)
+- **Volume Profile**: Price-level volume distribution with POC, Value Area, and buy/sell separation
+- **Liquidity Heatmap**: Real-time order book depth visualization with thermal overlay
+- **Opening Range Breakout**: Built-in ORB indicator with configurable session boundaries
 - **Volume Analysis**: Volume bars synchronized with klines
 - **Moving Averages**: SMA, EMA, WMA, DEMA, TEMA (all periods configurable)
+- **Drawing Tools**: Lines, arrows, Fibonacci, positions, ruler, and more
 - **Grid System**: Dynamic grid with price and time labels
 - **Smart Tooltip**: Hover to see OHLCV data with intelligent positioning
 
@@ -47,6 +55,10 @@
 - **Monte Carlo Simulation**: Statistical analysis of strategy robustness
 - **Batch Backtesting**: Test multiple strategies across symbols and timeframes
 - **Performance Metrics**: Win rate, profit factor, Sharpe ratio, max drawdown
+
+#### Market Analysis
+- **Screener & Scanners**: Market-wide screening with customizable filters and real-time setup detection
+- **Footprint Chart**: Intra-bar bid/ask volume split visualization
 
 #### User Experience
 - **Dark/Light Themes**: Full theme support with semantic tokens
@@ -75,7 +87,8 @@
 
 ### Architecture
 - **Monorepo** - pnpm workspaces
-- **Shared Packages** - @marketmind/types, @marketmind/indicators
+- **Shared Packages** - 6 packages (@marketmind/types, chart-studies, fibonacci, logger, trading-core, risk, utils)
+- **Exchange Abstraction** - Binance (crypto) + Interactive Brokers (US stocks)
 - **Real-time API** - Backend server with tRPC endpoints
 - **Session Auth** - Secure cookie-based authentication
 - **Encrypted Storage** - AES-256-CBC for API keys
@@ -161,8 +174,9 @@ pnpm --filter @marketmind/electron test:coverage
 ```
 
 **Test Stats:**
-- **1,903 unit tests** passing
-- **27 browser tests** passing
+- **~7,500+ tests** across the monorepo
+- **5,129 backend tests** + 40 skipped (IB integration)
+- **2,368 frontend tests** (2,341 unit + 27 browser)
 - All type checks passing
 
 ## Production Build
@@ -202,7 +216,12 @@ marketmind/
 │       └── package.json
 ├── packages/
 │   ├── types/             # Shared TypeScript types
-│   └── indicators/        # Technical analysis utilities
+│   ├── chart-studies/     # Chart study definitions
+│   ├── fibonacci/         # Fibonacci calculation engine
+│   ├── logger/            # Logging utilities
+│   ├── trading-core/      # Core trading logic
+│   ├── risk/              # Risk management
+│   └── utils/             # General utilities
 ├── docs/                  # Documentation
 │   └── UI_STYLE_GUIDE.md  # UI standardization guide
 └── package.json           # Root package
@@ -253,6 +272,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 <div align="center">
 
+**[Website](https://marketmind-app.vercel.app)** |
 **[Quick Start](./QUICK_START.md)** |
 **[Documentation](./docs/)** |
 **[Changelog](./CHANGELOG.md)** |

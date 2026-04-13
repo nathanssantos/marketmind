@@ -1,0 +1,52 @@
+// @id triple-ema-confluence
+// @name Triple EMA Confluence
+// @version 1.0.0
+// @description High-probability entries when all three EMAs are aligned and price crosses the fast EMA. Strong trend-following strategy for bull markets.
+// @author Classic Technical Analysis
+// @tags trend-following,ema,confluence,bull-market,2025
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param emaFast Fast EMA period
+// @param emaMid Mid EMA period
+// @param emaSlow Slow EMA period
+// @param atrPeriod ATR period
+// @param slMultiplier SL ATR multiplier
+// @param tpMultiplier TP ATR multiplier
+
+//@version=5
+indicator('Triple EMA Confluence', overlay=true)
+
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(1.5, 'slMultiplier', minval=1, maxval=2.5, step=0.25)
+tpMultiplier = input.float(3, 'tpMultiplier', minval=2, maxval=4, step=0.5)
+
+emaFast = ta.ema(close, emaFast)
+emaMid = ta.ema(close, emaMid)
+emaSlow = ta.ema(close, emaSlow)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (emaFast > emaMid and emaMid > emaSlow and ta.crossover(close, emaFast))
+shortEntry = (emaFast < emaMid and emaMid < emaSlow and ta.crossunder(close, emaFast))
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = close > open ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * tpMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * tpMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

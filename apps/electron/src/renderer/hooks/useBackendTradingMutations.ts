@@ -4,11 +4,19 @@ export const useBackendTradingMutations = () => {
   const utils = trpc.useUtils();
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        utils.trading.getTradeExecutions.setData(
+          { walletId: data.openExecutions[0]?.walletId ?? '', status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+        utils.autoTrading.getActiveExecutions.invalidate();
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+        utils.autoTrading.getActiveExecutions.invalidate();
+      }
       utils.trading.getOrders.invalidate();
       utils.trading.getPositions.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.futuresTrading.getOpenDbOrderIds.invalidate();
       utils.wallet.list.invalidate();
@@ -16,7 +24,17 @@ export const useBackendTradingMutations = () => {
   });
 
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
+      utils.autoTrading.getActiveExecutions.invalidate();
       utils.trading.getOrders.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.futuresTrading.getOpenDbOrderIds.invalidate();
@@ -25,8 +43,16 @@ export const useBackendTradingMutations = () => {
   });
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
-    onSuccess: () => {
-      utils.trading.getTradeExecutions.invalidate();
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.analytics.getDailyPerformance.invalidate();
@@ -35,8 +61,16 @@ export const useBackendTradingMutations = () => {
   });
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
-    onSuccess: () => {
-      utils.trading.getTradeExecutions.invalidate();
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.analytics.getPerformance.invalidate();
       utils.wallet.list.invalidate();
@@ -44,9 +78,16 @@ export const useBackendTradingMutations = () => {
   });
 
   const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
-    onSuccess: () => {
-
-      utils.trading.getTradeExecutions.invalidate();
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.futuresTrading.getOpenAlgoOrders.invalidate();
       utils.futuresTrading.getOpenOrders.invalidate();
@@ -54,8 +95,16 @@ export const useBackendTradingMutations = () => {
   });
 
   const cancelProtectionOrderMutation = trpc.trading.cancelIndividualProtectionOrder.useMutation({
-    onSuccess: () => {
-      utils.trading.getTradeExecutions.invalidate();
+    onSuccess: (data) => {
+      if (data.openExecutions) {
+        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+        utils.trading.getTradeExecutions.setData(
+          { walletId, status: 'open', limit: 500 },
+          data.openExecutions,
+        );
+      } else {
+        utils.trading.getTradeExecutions.invalidate();
+      }
       utils.autoTrading.getActiveExecutions.invalidate();
       utils.futuresTrading.getOpenAlgoOrders.invalidate();
       utils.futuresTrading.getOpenOrders.invalidate();

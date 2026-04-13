@@ -2,7 +2,7 @@
 
 ## Overview
 
-Standalone market screener accessible via a modal, with pre-built presets and a custom filter builder using the 60+ indicators already in `@marketmind/indicators`. Works for both Binance (crypto) and Interactive Brokers (stocks).
+Standalone market screener accessible via a modal, with pre-built presets and a custom filter builder using the 35+ indicators available via PineIndicatorService (PineTS). Works for both Binance (crypto) and Interactive Brokers (stocks).
 
 ---
 
@@ -218,7 +218,7 @@ export const SCREENER = {
 
 Each function takes `Kline[]` + optional params and returns `number | null`.
 
-**Kline-based indicators** (delegate to `@marketmind/indicators`):
+**Kline-based indicators** (delegate to `PineIndicatorService`):
 - `RSI` -> `calculateRSI(klines, period).values` -> last non-null
 - `ADX` -> `calculateADX(klines, period).adx` -> last non-null
 - `EMA` -> `calculateEMA(klines, period)` -> last non-null

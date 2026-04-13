@@ -5,9 +5,10 @@ import { autoTradingRouter } from '../routers/auto-trading';
 import { backtestRouter } from '../routers/backtest';
 import { customSymbolRouter } from '../routers/custom-symbol';
 import { drawingRouter } from '../routers/drawing';
+import { layoutRouter } from '../routers/layout';
 import { economicCalendarRouter } from '../routers/economic-calendar';
 import { feesRouter } from '../routers/fees';
-import { futuresTradingRouter } from '../routers/futures-trading';
+import { futuresTradingRouter } from '../routers/futures-trading/index';
 import { healthRouter } from '../routers/health';
 import { klineRouter } from '../routers/kline';
 import { orderSyncRouter } from '../routers/order-sync';
@@ -19,8 +20,8 @@ import { signalSuggestionsRouter } from '../routers/signal-suggestions';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
-import { nestedTradingRouter } from '../routers/trading/index';
 import { scalpingRouter } from '../routers/scalping';
+import { heatmapRouter } from '../routers/heatmap';
 import { router } from '../trpc';
 
 export const appRouter = router({
@@ -40,13 +41,14 @@ export const appRouter = router({
   signalSuggestions: signalSuggestionsRouter,
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
-  trade: nestedTradingRouter,
   preferences: preferencesRouter,
   screener: screenerRouter,
   customSymbol: customSymbolRouter,
   drawing: drawingRouter,
+  layout: layoutRouter,
   scalping: scalpingRouter,
   economicCalendar: economicCalendarRouter,
+  heatmap: heatmapRouter,
 });
 
 export type AppRouter = typeof appRouter;

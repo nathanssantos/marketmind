@@ -6,6 +6,14 @@ import {
   createMockBacktestConfig,
 } from './helpers/mockData';
 
+vi.mock('pinets', () => ({
+  PineTS: class MockPineTS {
+    ready = vi.fn().mockResolvedValue(undefined);
+    run = vi.fn().mockResolvedValue({ plots: {} });
+    constructor() {}
+  },
+}));
+
 vi.mock('../../binance-historical', () => ({
   fetchHistoricalKlinesFromAPI: vi.fn(),
   smartBackfillKlines: vi.fn().mockResolvedValue({ totalInDb: 0, downloaded: 0, gaps: 0, alreadyComplete: false }),

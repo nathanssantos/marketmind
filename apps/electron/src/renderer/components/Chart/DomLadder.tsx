@@ -10,12 +10,11 @@ interface DomLadderProps {
 }
 
 const LEVEL_HEIGHT = 20;
-const MAX_VISIBLE_LEVELS = 10;
 
 export const DomLadder = memo(function DomLadder({ bids, asks, currentPrice, onPriceClick }: DomLadderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const visibleAsks = asks.slice(-MAX_VISIBLE_LEVELS);
-  const visibleBids = bids.slice(0, MAX_VISIBLE_LEVELS);
+  const visibleAsks = asks;
+  const visibleBids = bids;
   const maxQty = Math.max(
     ...visibleBids.map((b) => b.quantity),
     ...visibleAsks.map((a) => a.quantity),

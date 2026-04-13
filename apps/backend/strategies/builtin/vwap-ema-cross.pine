@@ -1,0 +1,52 @@
+// @id vwap-ema-cross
+// @name VWAP + EMA Cross
+// @version 1.0.0
+// @description Combines VWAP (institutional fair value) with EMA crossover. Entry when EMA crosses above/below VWAP and price pulls back to VWAP with volume confirmation.
+// @author MarketMind
+// @tags vwap,ema,institutional,pullback
+// @strategyType TREND_FOLLOWING
+// @momentumType PULLBACK
+// @param emaPeriod EMA period
+// @param pullbackTolerance Pullback tolerance % to VWAP
+// @param targetMultiplier Risk:Reward target
+// @param atrPeriod ATR for stop calculation
+
+//@version=5
+indicator('VWAP + EMA Cross', overlay=true)
+
+emaPeriod = input.int(20, 'emaPeriod', minval=10, maxval=50, step=5)
+pullbackTolerance = input.float(0.5, 'pullbackTolerance', minval=0.2, maxval=1, step=0.1)
+targetMultiplier = input.float(2, 'targetMultiplier', minval=1.5, maxval=3, step=0.5)
+atrPeriod = input.int(14, 'atrPeriod', minval=7, maxval=21, step=1)
+
+ema = ta.ema(close, emaPeriod)
+vwap = ta.vwap(hlc3)
+atr = ta.atr(atrPeriod)
+ema200 = ta.ema(close, 200)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ema > vwap and low <= vwap and close > vwap)
+shortEntry = (ema < vwap and high >= vwap and close < vwap)
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = close > ema200 ? 5 : 0
+confBonus2 = close < ema200 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 95)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * targetMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * targetMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -1,4 +1,4 @@
-import type { MACDResult } from '@marketmind/indicators';
+import type { MACDResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS, OSCILLATOR_CONFIG } from '@shared/constants';
@@ -9,6 +9,7 @@ import {
   drawHistogramBars,
   drawLineOnPanel,
   drawPanelBackground,
+  drawPanelValueTag,
   drawZoneLines,
 } from './utils/oscillatorRendering';
 
@@ -108,6 +109,9 @@ export const useMACDRenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, macdData!.signal, visibleStart, visibleEndClamped, valueToY, chartWidth, colors.macd?.signalLine ?? INDICATOR_COLORS.MACD_SIGNAL);
+    drawPanelValueTag(ctx, macdData!.macd, visibleStart, visibleEndClamped, valueToY, chartWidth, colors.macd?.macdLine ?? INDICATOR_COLORS.MACD_LINE);
   }, [manager, macdData, enabled, colors]);
 
   return { render };

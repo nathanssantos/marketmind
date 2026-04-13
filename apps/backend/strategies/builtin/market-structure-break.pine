@@ -1,0 +1,45 @@
+// @id market-structure-break
+// @name Market Structure Break
+// @version 1.0.0
+// @description Entry em quebras de estrutura de mercado (BOS/CHoCH). Identifica Higher Highs/Lower Lows e entra na quebra.
+// @author MarketMind
+// @tags price-action,structure,bos,smart-money
+// @strategyType ANY
+// @momentumType ANY
+// @param swingLookback Lookback para swing points
+// @param atrMultiplier ATR stop
+
+//@version=5
+indicator('Market Structure Break', overlay=true)
+
+swingLookback = input.int(10, 'swingLookback', minval=5, maxval=20, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+swing_high = ta.pivothigh(high, swingLookback, swingLookback)
+swing_low = ta.pivotlow(low, swingLookback, swingLookback)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = close > swing_high
+shortEntry = close < swing_low
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 15 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

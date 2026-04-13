@@ -30,7 +30,7 @@ describe('IndicatorLayer', () => {
     const layer = createIndicatorLayer({
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: [],
       renderFunctions,
       showStochastic: false,
@@ -38,7 +38,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     expect(layer.render).toBeDefined();
@@ -47,17 +46,15 @@ describe('IndicatorLayer', () => {
 
   it('should call render functions when render is called', () => {
     const manager = createMockManager();
-    const mockRenderMA = vi.fn();
     const mockRenderRSI = vi.fn();
     const renderFunctions = {
-      renderMovingAverages: mockRenderMA,
       renderRSI: mockRenderRSI,
     };
 
     const layer = createIndicatorLayer({
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: [],
       renderFunctions,
       showStochastic: false,
@@ -65,12 +62,10 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     layer.render();
 
-    expect(mockRenderMA).toHaveBeenCalled();
     expect(mockRenderRSI).toHaveBeenCalled();
   });
 
@@ -81,7 +76,7 @@ describe('IndicatorLayer', () => {
     const layer = createIndicatorLayer({
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: ['RSI'],
       renderFunctions,
       showStochastic: false,
@@ -89,13 +84,12 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     const prev = {
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: ['RSI'],
       renderFunctions,
       showStochastic: false,
@@ -103,12 +97,11 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
     const next = {
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: ['RSI', 'MACD'],
       renderFunctions,
       showStochastic: false,
@@ -116,7 +109,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
 
     expect(layer.shouldRerender(prev, next)).toBe(true);
@@ -129,7 +121,7 @@ describe('IndicatorLayer', () => {
     const layer = createIndicatorLayer({
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: [],
       renderFunctions,
       showStochastic: false,
@@ -137,13 +129,12 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     const prev = {
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: [],
       renderFunctions,
       showStochastic: false,
@@ -151,12 +142,11 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
     const next = {
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: [],
       renderFunctions,
       showStochastic: true,
@@ -164,7 +154,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     };
 
     expect(layer.shouldRerender(prev, next)).toBe(true);
@@ -176,7 +165,7 @@ describe('IndicatorLayer', () => {
     const layer = createIndicatorLayer({
       manager: manager as never,
       colors: mockColors,
-      movingAverages: [],
+
       activeIndicators: [],
       renderFunctions: {},
       showStochastic: false,
@@ -184,7 +173,6 @@ describe('IndicatorLayer', () => {
       showBollingerBands: false,
       showATR: false,
       showVWAP: false,
-      showFibonacciProjection: false,
     });
 
     expect(() => layer.render()).not.toThrow();
@@ -199,11 +187,6 @@ describe('getIndicatorRenderOrder', () => {
     expect(order.panels).toBeDefined();
     expect(order.overlays.length).toBeGreaterThan(0);
     expect(order.panels.length).toBeGreaterThan(0);
-  });
-
-  it('should include renderMovingAverages in overlays', () => {
-    const order = getIndicatorRenderOrder();
-    expect(order.overlays).toContain('renderMovingAverages');
   });
 
   it('should include renderRSI in panels', () => {

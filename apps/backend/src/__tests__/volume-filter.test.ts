@@ -1,6 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { checkVolumeCondition, getSetupVolumeType, VOLUME_FILTER } from '../utils/filters';
+import { describe, it, expect, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
+
+const { mockCompute, mockComputeMulti } = vi.hoisted(() => ({
+  mockCompute: vi.fn(),
+  mockComputeMulti: vi.fn(),
+}));
+
+vi.mock('../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = mockComputeMulti;
+  },
+}));
+
+import { checkVolumeCondition, getSetupVolumeType, VOLUME_FILTER } from '../utils/filters';
 
 const createKline = (close: number, volume: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -33,7 +46,16 @@ const createHighVolumeLastKline = (count: number, volumeMultiplier: number): Kli
   return klines;
 };
 
+const buildRisingObvArray = (length: number): (number | null)[] =>
+  Array.from({ length }, (_, i) => 1000 + i * 100);
+
+
 describe('Volume Filter', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCompute.mockResolvedValue(buildRisingObvArray(30));
+  });
+
   describe('getSetupVolumeType', () => {
     it('should return BREAKOUT for breakout setups', () => {
       expect(getSetupVolumeType('breakout-long')).toBe('BREAKOUT');
@@ -42,7 +64,7 @@ describe('Volume Filter', () => {
 
     it('should return PULLBACK for pullback setups', () => {
       expect(getSetupVolumeType('ema9-pullback')).toBe('PULLBACK');
-      expect(getSetupVolumeType('larry-williams-9-1')).toBe('PULLBACK');
+      expect(getSetupVolumeType('trend-continuation')).toBe('PULLBACK');
     });
 
     it('should return REVERSAL for reversal setups', () => {
@@ -57,18 +79,20 @@ describe('Volume Filter', () => {
 
   describe('checkVolumeCondition', () => {
     describe('breakout setups', () => {
-      it('should allow breakout with high volume spike', () => {
+      it('should allow breakout with high volume spike', async () => {
         const klines = createHighVolumeLastKline(30, 2.0);
-        const result = checkVolumeCondition(klines, 'LONG', 'breakout-long');
+        mockCompute.mockResolvedValue(buildRisingObvArray(30));
+        const result = await checkVolumeCondition(klines, 'LONG', 'breakout-long');
 
         expect(result.isVolumeSpike).toBe(true);
         expect(result.volumeRatio).toBeGreaterThan(1.5);
         expect(result.isAllowed).toBe(true);
       });
 
-      it('should block breakout without volume spike', () => {
+      it('should block breakout without volume spike', async () => {
         const klines = createNormalVolumeKlines(30);
-        const result = checkVolumeCondition(klines, 'LONG', 'breakout-long');
+        mockCompute.mockResolvedValue(buildRisingObvArray(30));
+        const result = await checkVolumeCondition(klines, 'LONG', 'breakout-long');
 
         expect(result.isVolumeSpike).toBe(false);
         expect(result.isAllowed).toBe(false);
@@ -77,9 +101,10 @@ describe('Volume Filter', () => {
     });
 
     describe('pullback setups', () => {
-      it('should allow pullback with normal volume', () => {
+      it('should allow pullback with normal volume', async () => {
         const klines = createNormalVolumeKlines(30);
-        const result = checkVolumeCondition(klines, 'LONG', 'ema9-pullback');
+        mockCompute.mockResolvedValue(buildRisingObvArray(30));
+        const result = await checkVolumeCondition(klines, 'LONG', 'ema9-pullback');
 
         expect(result.volumeRatio).toBeGreaterThanOrEqual(0.9);
         expect(result.isAllowed).toBe(true);
@@ -87,17 +112,18 @@ describe('Volume Filter', () => {
     });
 
     describe('edge cases', () => {
-      it('should soft pass when insufficient klines', () => {
+      it('should soft pass when insufficient klines', async () => {
         const klines = createNormalVolumeKlines(10);
-        const result = checkVolumeCondition(klines, 'LONG', 'breakout-long');
+        const result = await checkVolumeCondition(klines, 'LONG', 'breakout-long');
 
         expect(result.isAllowed).toBe(true);
         expect(result.reason).toContain('soft pass');
       });
 
-      it('should return all required fields', () => {
+      it('should return all required fields', async () => {
         const klines = createNormalVolumeKlines(30);
-        const result = checkVolumeCondition(klines, 'LONG', 'ema9-pullback');
+        mockCompute.mockResolvedValue(buildRisingObvArray(30));
+        const result = await checkVolumeCondition(klines, 'LONG', 'ema9-pullback');
 
         expect(result).toHaveProperty('isAllowed');
         expect(result).toHaveProperty('currentVolume');

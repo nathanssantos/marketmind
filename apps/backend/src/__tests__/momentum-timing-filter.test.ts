@@ -84,18 +84,18 @@ const createSidewaysKlines = (): Kline[] => {
 
 describe('checkMomentumTiming', () => {
   describe('LONG direction', () => {
-    it('should allow LONG in bullish market with rising RSI and MFI confirmation', () => {
+    it('should allow LONG in bullish market with rising RSI and MFI confirmation', async () => {
       const klines = createBullishKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(result.rsiValue).not.toBeNull();
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('LONG allowed');
     });
 
-    it('should block LONG in bearish market with low RSI', () => {
+    it('should block LONG in bearish market with low RSI', async () => {
       const klines = createBearishKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(result.rsiValue).not.toBeNull();
       expect(result.rsiValue!).toBeLessThan(MOMENTUM_TIMING_FILTER.RSI_LONG_MIN);
@@ -105,18 +105,18 @@ describe('checkMomentumTiming', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT in bearish market with falling RSI and MFI confirmation', () => {
+    it('should allow SHORT in bearish market with falling RSI and MFI confirmation', async () => {
       const klines = createBearishKlines();
-      const result = checkMomentumTiming(klines, 'SHORT');
+      const result = await checkMomentumTiming(klines, 'SHORT');
 
       expect(result.rsiValue).not.toBeNull();
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('SHORT allowed');
     });
 
-    it('should block SHORT in bullish market with high RSI', () => {
+    it('should block SHORT in bullish market with high RSI', async () => {
       const klines = createBullishKlines();
-      const result = checkMomentumTiming(klines, 'SHORT');
+      const result = await checkMomentumTiming(klines, 'SHORT');
 
       expect(result.rsiValue).not.toBeNull();
       expect(result.rsiValue!).toBeGreaterThanOrEqual(MOMENTUM_TIMING_FILTER.RSI_SHORT_MAX);
@@ -126,13 +126,13 @@ describe('checkMomentumTiming', () => {
   });
 
   describe('edge cases', () => {
-    it('should return isAllowed=true (soft pass) when insufficient klines', () => {
+    it('should return isAllowed=true (soft pass) when insufficient klines', async () => {
       const klines: Kline[] = [];
       for (let i = 0; i < 10; i += 1) {
         klines.push(createKline(100, 105, 95, 100, 1000, i));
       }
 
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.rsiValue).toBeNull();
@@ -140,18 +140,18 @@ describe('checkMomentumTiming', () => {
       expect(result.reason).toContain('soft pass');
     });
 
-    it('should return RSI and MFI values when calculation succeeds', () => {
+    it('should return RSI and MFI values when calculation succeeds', async () => {
       const klines = createSidewaysKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(result.rsiValue).not.toBeNull();
       expect(result.rsiPrevValue).not.toBeNull();
       expect(typeof result.rsiValue).toBe('number');
     });
 
-    it('should return RSI value between 0 and 100', () => {
+    it('should return RSI value between 0 and 100', async () => {
       const klines = createSidewaysKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(result.rsiValue).not.toBeNull();
       expect(result.rsiValue).toBeGreaterThanOrEqual(0);
@@ -172,9 +172,9 @@ describe('checkMomentumTiming', () => {
   });
 
   describe('result structure', () => {
-    it('should return all required fields in MomentumTimingResult', () => {
+    it('should return all required fields in MomentumTimingResult', async () => {
       const klines = createSidewaysKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(result).toHaveProperty('isAllowed');
       expect(result).toHaveProperty('rsiValue');
@@ -185,16 +185,16 @@ describe('checkMomentumTiming', () => {
       expect(result).toHaveProperty('reason');
     });
 
-    it('should return valid momentum value (RISING, FALLING, or NEUTRAL)', () => {
+    it('should return valid momentum value (RISING, FALLING, or NEUTRAL)', async () => {
       const klines = createBullishKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       expect(['RISING', 'FALLING', 'NEUTRAL']).toContain(result.rsiMomentum);
     });
 
-    it('should return rsiPrevValue for momentum calculation', () => {
+    it('should return rsiPrevValue for momentum calculation', async () => {
       const klines = createBearishKlines();
-      const result = checkMomentumTiming(klines, 'SHORT');
+      const result = await checkMomentumTiming(klines, 'SHORT');
 
       expect(result.rsiPrevValue).not.toBeNull();
       expect(typeof result.rsiPrevValue).toBe('number');
@@ -202,9 +202,9 @@ describe('checkMomentumTiming', () => {
   });
 
   describe('MFI confirmation', () => {
-    it('should include MFI in the reason when available', () => {
+    it('should include MFI in the reason when available', async () => {
       const klines = createBullishKlines();
-      const result = checkMomentumTiming(klines, 'LONG');
+      const result = await checkMomentumTiming(klines, 'LONG');
 
       if (result.mfiValue !== null) {
         expect(result.reason).toContain('MFI');

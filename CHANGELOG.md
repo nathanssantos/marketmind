@@ -5,6 +5,224 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.87.0] - 2026-04-13
+
+### Added
+- **PineScript strategy system**: Migrated all 105 JSON strategies to PineScript v5 format (106 total .pine files) via PineTS runtime
+- **PineIndicatorService**: Single-source backend indicator computation using PineTS, replacing `@marketmind/indicators` package
+- **PineIndicatorCache**: Shared indicator cache layer integrated with FilterManager for batch backtesting performance
+- **Frontend PineTS workers**: 15 frontend web workers migrated from `@marketmind/indicators` to PineTS async computation
+- **Frontend pineWorkerService**: Unified PineTS service for all frontend indicator computation (22 indicators: SMA, EMA, RSI, ATR, HMA, WMA, CCI, MFI, ROC, CMO, VWAP, OBV, WPR, TSI, SAR, Highest, Lowest, BB, MACD, Stoch, KC, Supertrend, DMI)
+- **Local indicator implementations**: Moved pivot points, swing points, and zigzag implementations from package to local `lib/indicators/`
+
+### Removed
+- **`@marketmind/indicators` package**: Deleted entirely (124 files, ~17K lines) — all functionality replaced by PineTS + local implementations
+- **JSON strategy files**: Replaced by `.pine` PineScript v5 files in `strategies/builtin/`
+
+### Changed
+- **Backend filters**: All 14 filters migrated from `@marketmind/indicators` to PineIndicatorService
+- **IndicatorEngine**: Migrated to PineTS for all indicator computations
+- **Screener service**: Migrated to PineTS-based indicator computation
+- **Monorepo packages**: Reduced from 7 to 6 shared packages (types, chart-studies, fibonacci, logger, trading-core, risk, utils)
+- **Strategy interpreter**: Now parses PineScript v5 files instead of JSON configs
+
+## [0.86.0] - 2026-04-07
+
+### Added
+- **Standalone Volume Profile**: Kline-based volume profile that works without scalping/wallet — calculates price-level volume distribution with POC, buy/sell separation directly from visible candles
+- **Volume Profile in indicator popover**: Toggle on/off via Order Flow category alongside Footprint, Liquidity Heatmap, and Liquidation Markers
+- **Footprint in indicator popover**: Now accessible from the Order Flow indicator category
+- **Desktop build pipeline**: GitHub Actions workflow builds macOS (DMG+ZIP) and Windows (NSIS) installers on tag push, publishes to GitHub Releases
+- **Auto-update on startup**: UpdateManager now checks for updates every 24h automatically
+- **Release process documentation**: `docs/RELEASE_PROCESS.md` with version checklist and code signing guide
+
+### Fixed
+- **Kline candle corruption on symbol switch**: Invalidate React Query cache on symbol change and set staleTime to 0 — prevents stale cached candles when returning to a previously viewed symbol
+- **Volume Profile coordinate mapping**: Uses `manager.priceToY()` like all other chart renderers instead of custom function that ignored chart padding and bounds
+
+### Changed
+- Default indicators: removed EMA-7 and Daily VWAP from defaults (kept EMA-9, EMA-21, EMA-200, Stochastic, RSI)
+- Volume Profile decoupled from scalping metrics — works independently for any symbol/timeframe
+- electron-builder config: added `publish` (GitHub provider) and `zip` target for macOS auto-update
+
+## [0.85.0] - 2026-04-04
+
+### Added
+- **Open-source release**: Repository is now public under MIT license
+- **Landing page**: MarketMind presentation site at [marketmind-app.vercel.app](https://marketmind-app.vercel.app) with 4 languages (EN/PT/ES/FR), dark/light mode
+- **Backend demo mode**: `DEMO_MODE` env var for read-only deployment (charts + indicators without auth/trading)
+- **Portfolio integration**: MarketMind featured on GitHub profile README
+
+### Changed
+- Updated README with landing page link, current stats (7,200+ tests), and full package list
+- Updated QUICK_START.md with current date
+- Cleaned up repository: removed stale logs, old optimization plans, and internal AI prompts
+
+### Removed
+- `MONOREPO.md` (redundant with QUICK_START.md)
+- `CUSTOM_SYMBOLS_IMPLEMENTATION_PROMPT.md` (internal AI prompt)
+- `docs/plans/PLAN-01` through `PLAN-06` (old optimization plans)
+- Stale log and result files from root and apps/backend
+
+## [0.84.0] - 2026-04-03
+
+### Added
+- **Long/Short Position drawing tools**: New drawing types for projecting trades with entry, SL, TP zones, R:R ratio, percentage badges, and adjustable handles
+- **Drawing lock system**: Lock/unlock button in drawing toolbar prevents accidental editing and deletion of drawings
+- **Order confirmation modal**: Buy/Sell orders now show confirmation dialog with symbol, side, price, quantity, leverage, total value, margin required, and liquidation price
+- **Leverage-aware position sizing**: % buttons in order entry now represent percentage of total margin (balance × leverage) instead of just wallet balance
+
+### Fixed
+- **Drawing position drift on reload**: Deserialized drawings lost time fields needed for index re-resolution when klines changed
+- **Drawing selection after creation**: Redundant `setActiveTool(null)` after `selectDrawing()` was clearing the selection immediately
+- **Drawing handle drag corruption**: Handle drag captured resolved indices instead of raw store indices, causing position corruption on subsequent interactions
+- **Hit testing mismatch**: Hit testing now uses resolved indices matching what the renderer displays
+- **Current price line style not applied**: `currentPriceLineStyle` setting was stored but never passed to renderer (hardcoded `setLineDash`)
+- **Current price line width mismatch**: Default constant was THICK (2px) while config default was 1px
+- **Chart padding not applied**: `paddingTop`/`paddingBottom` config values were ignored by CanvasManager coordinate mapping
+
+### Changed
+- **ORB moved to indicator system**: Opening Range Breakout moved from toolbar toggle to indicator selector under Price Structure category
+- **Drawing toolbar position**: Toolbar now fixed at top-center of chart instead of following the drawing
+- **Ruler icon**: Improved SVG to look like an actual ruler with body and tick marks
+- **Ruler button position**: Moved next to Price Range in toolbar
+- **Default current price line style**: Changed from 'solid' to 'dotted'
+- **P/L areas toggle removed**: Replaced by new Long/Short Position drawing tools
+
+## [0.83.1] - 2026-03-30
+
+### Fixed
+- **Heatmap column alignment**: Columns now align exactly with candlesticks using same coordinate system as CanvasManager
+- **Heatmap real-time updates**: Live bucket emitted every 2s so current candle shows data immediately instead of lagging by 1 minute
+- **Heatmap settings apply immediately**: Adding always-collect symbols starts depth collection instantly, no restart needed
+
+### Changed
+- **TimescaleDB hypertable**: Heatmap table converted to hypertable with auto-compression (>1 day) and retention policy (7 days)
+- **Code review optimizations**: Race condition fix, stack overflow prevention, deduped bid/ask loops, extracted constants, capped snapshot payload
+
+## [0.83.0] - 2026-03-30
+
+### Added
+- **Liquidity Heatmap**: Thermal overlay on the price chart showing order book depth density with bid (green) and ask (red) separation
+- **Full order book sampling**: Aggregator samples all 1000 levels every 2s, bins by price, accumulates into 1-minute time buckets
+- **Heatmap data persistence**: Buckets saved to PostgreSQL (`liquidity_heatmap_buckets` table), loaded on startup (last 24h)
+- **Always-collect symbols**: Settings UI in Data tab to configure symbols that always collect depth data (BTCUSDT by default)
+- **Heatmap always-collect config**: New tRPC router (`heatmap`) with get/add/remove endpoints, changes apply immediately
+- **Order Flow indicator category**: New category in indicator toggle popover with Liquidity Heatmap toggle
+
+### Changed
+- **Removed old OrderBookHeatmap**: Replaced useless sidebar heatmap with chart-integrated thermal overlay
+- **OrderFlowSidebar**: Reduced to 2 tabs (DOM, Metrics) after removing Heatmap tab
+- **Depth stream**: Added `getFullBook()` method exposing full order book Maps for heatmap aggregation
+
+### Removed
+- **OrderBookHeatmap component**: Sidebar-based heatmap with no price alignment (replaced by chart overlay)
+
+## [0.82.0] - 2026-03-29
+
+### Added
+- **Authentication pages**: Login, Register, Forgot Password, Reset Password pages with full i18n (en, pt, es, fr)
+- **Email verification**: Registration now sends verification email; verify-email page with resend support
+- **Two-factor authentication**: Optional email-based 2FA per user; 6-digit code input page with resend
+- **Password recovery**: Resend email service for password reset with secure single-use tokens (1h expiry)
+- **Remember me**: Login supports short (24h) vs long (30d) session duration
+- **User avatar dropdown**: Toolbar avatar with initials, dropdown menu for Account, Settings, and Logout
+- **Account dialog**: Edit profile name, view email verification status, toggle 2FA, member since date
+- **User profile**: `name` column on users table with `updateProfile` endpoint
+- **Auth guard**: Route protection replacing dev-only AutoAuth; redirects to login when unauthenticated
+- **Cleanup scheduler**: Hourly cleanup of expired sessions, tokens, and 2FA codes
+- **Rate limiting**: Password reset (3/email/hr), email verification (5/email/hr), 2FA attempts (5/user/15min)
+- **Security audit events**: PASSWORD_RESET_REQUEST/SUCCESS/FAILURE, EMAIL_VERIFICATION_SENT/SUCCESS, TWO_FACTOR_SENT/SUCCESS/FAILURE/TOGGLED
+
+### Changed
+- **ChakraProvider lifted** from App.tsx to index.tsx so auth pages share the theme
+- **Settings button** moved from toolbar to user avatar dropdown
+- **PasswordInput** fixed to full-width (100%) matching other inputs
+- **Auth constants** extracted to `AUTH_EXPIRY` (backend) and `AUTH_UI` (frontend) for single source of truth
+- **Rate limiter cleanup** deduplicated from 5 identical loops to generic `cleanupStore()` function
+- **Email templates** use extracted `EMAIL_COLORS` constants and derive expiry text from `AUTH_EXPIRY`
+- **Error handling** uses tRPC error codes (`isRateLimited`, `isConflict`) instead of fragile string matching
+
+### Removed
+- **AutoAuth component**: Replaced by proper AuthGuard with login redirect
+
+## [0.75.0] - 2026-03-24
+
+### Added
+- **Daily & Weekly VWAP indicators**: new chart overlays alongside existing Monthly VWAP, with distinct orange tones
+- **RSI(14) indicator**: standard 14-period RSI with 70/30 overbought/oversold levels, alongside existing RSI(2)
+- **Default active indicators**: Stochastic, RSI(14), and Daily VWAP now enabled by default for new users
+- **SIGNAL_COLORS semantic palette**: centralized base colors (BULLISH, BEARISH, PRIMARY, SECONDARY, etc.) eliminating ~60 duplicate color definitions
+- **Drawing color tokens**: fibonacci golden, key level, buy/danger zone, label bg, snap indicator colors now in theme system
+- **VWAP, ATR, and order flow color tokens**: all chart colors now flow through Chakra semantic tokens with light/dark mode support
+
+### Fixed
+- **Overlay indicator clipping**: 15+ overlay renderers (ATR, Supertrend, Ichimoku, Parabolic SAR, Keltner, Donchian, DEMA/TEMA/WMA/HMA, Pivot Points, Fibonacci, Session Boundaries, Volume Profile, Footprint) now clip to chart area, preventing bleeding into oscillator panels
+- **Drawing clipping**: fibonacci drawings, areas, and all user drawings now clip to chart area
+- **Sub-panel oscillator clipping**: 11 oscillators (Vortex, AO, Aroon, CMO, Elder Ray, Klinger, TSI, ROC, MFI, Ultimate Osc, PPO) now clip to their panel boundaries via `applyPanelClip()`
+- **VWAP UTC consistency**: all VWAP variants (daily, weekly, monthly) now use UTC for period boundary detection, fixing timezone-dependent calculation errors
+- **VWAP boundary detection**: daily VWAP now compares year+month+day (not just day), monthly compares year+month (not just month), preventing reset failures across month/year boundaries
+- **Right margin clipping**: overlays no longer cut short at `effectiveWidth`; clip rect uses `chartWidth` matching kline rendering
+- **Token-INDICATOR_COLORS sync**: ADX, Ichimoku chikou, OBV, CCI, MACD, Klinger/PPO zero lines dark mode values now match between theme tokens and fallback constants
+- **RSI line color**: changed from purple to blue (#2196f3) for both RSI(2) and RSI(14)
+
+### Changed
+- **Unified color architecture**: all chart colors now flow from `chartIndicatorTokens.ts` (tokens) → `colorResolvers.ts` → `useChartColors()` → renderers, with `INDICATOR_COLORS` as fallback
+- **INDICATOR_COLORS deduplicated**: ~40 constants now reference `SIGNAL_COLORS` base values instead of repeating hex literals
+- **All hex colors lowercase**: standardized to lowercase format across all color files
+- **Light mode color variants**: ~15 tokens updated with proper light-mode values for VWAP, scalping, FVG, drawing colors
+
+### Removed
+- **Dead code**: `useFibonacciProjectionRenderer.ts` (orphaned, never imported) and all references
+
+## [0.74.0] - 2026-03-22
+
+### Added
+- **Instant position feedback**: all trading mutations (create, close, cancel, update SL/TP, reverse) now return updated open executions in the response, enabling instant UI updates via React Query `setQueryData`
+
+### Changed
+- **Trading mutations enriched response**: `createOrder`, `cancelOrder`, `closePosition`, `reversePosition`, `closePositionAndCancelOrders`, `closeTradeExecution`, `cancelTradeExecution`, `updateTradeExecutionSLTP`, `cancelIndividualProtectionOrder` all return `openExecutions` alongside their normal response
+- **Frontend cache updates**: `useBackendTradingMutations`, `useBackendFuturesTrading`, and `useChartTradingActions` now use `setQueryData` for instant cache updates instead of waiting for query refetch cycle
+
+### Refactored
+- **44 files split to ≤500 lines**: systematic code quality pass across the entire monorepo
+  - `binance-futures-user-stream.ts` (2519→542): handlers extracted to `user-stream/`
+  - `auto-trading.ts` router (2282→index): 9 sub-routers
+  - `ChartCanvas.tsx` (2182→379): hooks extracted for trading data, shortcuts, animations
+  - `trading.ts` router (2085→index): 7 sub-routers
+  - `useOrderLinesRenderer.ts` (1674→244): drawing, hit-test, render sections extracted
+  - `order-executor.ts` (1666→270): validator, sizing, executors extracted
+  - `auto-trading-scheduler.ts` (1628→290): thin facade over modules
+  - `IndicatorEngine.ts` (1582→368): handlers, cache, screener extracted
+  - `futures-trading.ts` (1341→index): 8 sub-routers
+  - `position-monitor.ts` (1328→440): exit, fees, liquidation extracted
+  - `theme/index.ts` (1250→30): tokens, recipes, color resolvers extracted
+  - `ProfileEditorDialog.tsx` (1191→240): form sections and hooks extracted
+  - `kline-maintenance.ts` (1087→343): gap/corruption detection extracted
+  - `pyramiding.ts` (1021→482): calculations and evaluators extracted
+  - `ExitCalculator.ts` (981→432): swing/pivot helpers extracted
+  - Plus 29 more files between 500-973 lines
+
+## [0.73.0] - 2026-03-21
+
+### Added
+- **Opening Range Breakout (ORB) renderer**: new chart overlay that visualizes the opening range of each trading session with breakout levels and tests (276 test cases)
+- **ORB toggle in chart tools toolbar**: users can now enable/disable ORB visualization from the chart tools menu
+
+### Changed
+- **QuickTradeToolbar overhaul**: simplified size presets (0.5, 1, 5, 10, 50, 100), added menu-based actions, cleaner layout
+- **TradingSidebar**: now receives symbol, marketType, and quick trade mode props for better integration with QuickTradeActions
+- **Layout improvements**: updated MainLayout, ChartWindow, and Toolbar for better component composition
+
+### Performance
+- **Parallelize SL+TP protection orders**: stop loss and take profit orders are now placed simultaneously via `Promise.all()`, saving 200-400ms per trade execution
+- **Reduce tRPC polling overhead**: chart trading queries reduced from 18 req/min to ~4 req/min per chart (78% reduction) by using standardized `QUERY_CONFIG` intervals
+- **Eliminate unnecessary overlay redraws**: removed 1-second `setInterval` that forced overlay redraws even with no data changes (60 wasted redraws/min eliminated)
+- **Optimize order animation RAF loop**: replaced 100ms polling with event-driven approach — RAF loop only runs during active loading/flash animations
+
+### Removed
+- **Daily PnL visibility toggle**: removed eye icon button and show/hide logic from Portfolio summary (PnL is now always visible)
+
 ## [0.72.0] - 2026-03-20
 
 ### Added

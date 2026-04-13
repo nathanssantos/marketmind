@@ -1,12 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateSupertrend: vi.fn(),
+const { mockCompute, mockComputeMulti } = vi.hoisted(() => ({
+  mockCompute: vi.fn(),
+  mockComputeMulti: vi.fn(),
+}));
+
+vi.mock('../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = mockComputeMulti;
+  },
 }));
 
 import { checkSupertrendCondition, SUPERTREND_FILTER } from '../utils/filters/supertrend-filter';
-import { calculateSupertrend } from '@marketmind/indicators';
 
 const createKline = (close: number, index: number): Kline => ({
   openTime: Date.now() + index * 60000,
@@ -31,8 +38,8 @@ describe('checkSupertrendCondition', () => {
   });
 
   describe('insufficient klines', () => {
-    it('should return soft pass when klines < period', () => {
-      const result = checkSupertrendCondition(createKlines(5), 'LONG');
+    it('should return soft pass when klines < period', async () => {
+      const result = await checkSupertrendCondition(createKlines(5), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.trend).toBeNull();
@@ -40,13 +47,13 @@ describe('checkSupertrendCondition', () => {
       expect(result.reason).toContain('Insufficient');
     });
 
-    it('should not call calculateSupertrend for insufficient klines', () => {
-      checkSupertrendCondition(createKlines(3), 'LONG');
-      expect(calculateSupertrend).not.toHaveBeenCalled();
+    it('should not call computeMulti for insufficient klines', async () => {
+      await checkSupertrendCondition(createKlines(3), 'LONG');
+      expect(mockComputeMulti).not.toHaveBeenCalled();
     });
 
-    it('should use custom period for kline check', () => {
-      const result = checkSupertrendCondition(createKlines(15), 'LONG', 20);
+    it('should use custom period for kline check', async () => {
+      const result = await checkSupertrendCondition(createKlines(15), 'LONG', 20);
 
       expect(result.isAllowed).toBe(true);
       expect(result.reason).toContain('Insufficient');
@@ -54,12 +61,12 @@ describe('checkSupertrendCondition', () => {
   });
 
   describe('null trend', () => {
-    it('should return soft pass when trend is null', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: [null],
+    it('should return soft pass when trend is null', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [null],
         value: [98.5],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'LONG');
+      const result = await checkSupertrendCondition(createKlines(15), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.trend).toBeNull();
@@ -69,12 +76,12 @@ describe('checkSupertrendCondition', () => {
   });
 
   describe('LONG direction', () => {
-    it('should allow LONG when trend is up (bullish)', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['up'],
+    it('should allow LONG when trend is up (bullish)', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [-1],
         value: [95.0],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'LONG');
+      const result = await checkSupertrendCondition(createKlines(15), 'LONG');
 
       expect(result.isAllowed).toBe(true);
       expect(result.trend).toBe('up');
@@ -83,12 +90,12 @@ describe('checkSupertrendCondition', () => {
       expect(result.reason).toContain('bullish');
     });
 
-    it('should block LONG when trend is down (bearish)', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['down'],
+    it('should block LONG when trend is down (bearish)', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [1],
         value: [105.0],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'LONG');
+      const result = await checkSupertrendCondition(createKlines(15), 'LONG');
 
       expect(result.isAllowed).toBe(false);
       expect(result.trend).toBe('down');
@@ -99,12 +106,12 @@ describe('checkSupertrendCondition', () => {
   });
 
   describe('SHORT direction', () => {
-    it('should allow SHORT when trend is down (bearish)', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['down'],
+    it('should allow SHORT when trend is down (bearish)', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [1],
         value: [105.0],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'SHORT');
+      const result = await checkSupertrendCondition(createKlines(15), 'SHORT');
 
       expect(result.isAllowed).toBe(true);
       expect(result.trend).toBe('down');
@@ -112,12 +119,12 @@ describe('checkSupertrendCondition', () => {
       expect(result.reason).toContain('bearish');
     });
 
-    it('should block SHORT when trend is up (bullish)', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['up'],
+    it('should block SHORT when trend is up (bullish)', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [-1],
         value: [95.0],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'SHORT');
+      const result = await checkSupertrendCondition(createKlines(15), 'SHORT');
 
       expect(result.isAllowed).toBe(false);
       expect(result.trend).toBe('up');
@@ -127,24 +134,24 @@ describe('checkSupertrendCondition', () => {
   });
 
   describe('custom parameters', () => {
-    it('should pass custom period and multiplier to calculateSupertrend', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['up'],
+    it('should pass custom period and multiplier to computeMulti', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [-1],
         value: [95.0],
       });
-      checkSupertrendCondition(createKlines(25), 'LONG', 20, 2.5);
+      await checkSupertrendCondition(createKlines(25), 'LONG', 20, 2.5);
 
-      expect(calculateSupertrend).toHaveBeenCalledWith(expect.any(Array), 20, 2.5);
+      expect(mockComputeMulti).toHaveBeenCalledWith('supertrend', expect.any(Array), { period: 20, multiplier: 2.5 });
     });
   });
 
   describe('uses last value from arrays', () => {
-    it('should use last trend and value from multi-element arrays', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['down', 'down', 'up'],
+    it('should use last trend and value from multi-element arrays', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [1, 1, -1],
         value: [102, 101, 95.0],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'LONG');
+      const result = await checkSupertrendCondition(createKlines(15), 'LONG');
 
       expect(result.trend).toBe('up');
       expect(result.value).toBe(95.0);
@@ -153,12 +160,12 @@ describe('checkSupertrendCondition', () => {
   });
 
   describe('undefined value', () => {
-    it('should handle undefined value gracefully', () => {
-      vi.mocked(calculateSupertrend).mockReturnValue({
-        trend: ['up'],
+    it('should handle undefined value gracefully', async () => {
+      mockComputeMulti.mockResolvedValue({
+        direction: [-1],
         value: [],
       });
-      const result = checkSupertrendCondition(createKlines(15), 'LONG');
+      const result = await checkSupertrendCondition(createKlines(15), 'LONG');
 
       expect(result.value).toBeNull();
       expect(result.isAllowed).toBe(true);

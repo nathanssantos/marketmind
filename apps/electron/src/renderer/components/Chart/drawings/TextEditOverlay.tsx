@@ -1,5 +1,6 @@
 import type { TextDrawing } from '@marketmind/chart-studies';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -89,7 +90,7 @@ export const TextEditOverlay = ({ manager, symbol, interval }: TextEditOverlayPr
         minWidth: '120px',
         minHeight: `${textDrawing.fontSize * 1.5}px`,
         font: `${textDrawing.fontWeight} ${textDrawing.fontSize}px sans-serif`,
-        color: textDrawing.color ?? '#ffffff',
+        color: textDrawing.color ?? INDICATOR_COLORS.LABEL_TEXT,
         background: 'rgba(0, 0, 0, 0.6)',
         border: '1px solid rgba(255, 255, 255, 0.3)',
         outline: 'none',

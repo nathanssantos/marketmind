@@ -9,7 +9,20 @@ export type {
   FibonacciLevel,
   FibonacciDrawing,
   ArrowDrawing,
+  RayDrawing,
+  ChannelDrawing,
+  HorizontalLineDrawing,
   TextDrawing,
+  TrendLineDrawing,
+  PriceRangeDrawing,
+  VerticalLineDrawing,
+  AnchoredVwapDrawing,
+  HighlighterDrawing,
+  EllipseDrawing,
+  PitchforkDrawing,
+  GannFanDrawing,
+  LongPositionDrawing,
+  ShortPositionDrawing,
   Drawing,
   TwoPointDrawingType,
   DrawingHandle,
@@ -25,6 +38,7 @@ export {
   FIBONACCI_DEFAULT_LEVELS,
   DEFAULT_LINE_WIDTH,
   DEFAULT_FONT_SIZE,
+  GANN_ANGLES,
 } from './constants';
 
 export {
@@ -43,3 +57,5 @@ export {
   deserializeDrawingData,
 } from './serialization';
 export type { KlineTimeLookup, TimeToIndexLookup } from './serialization';
+
+export { resolveDrawingIndices } from './resolveIndices';

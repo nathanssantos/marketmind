@@ -106,7 +106,7 @@ export const createOverlayLayer = ({
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
     ctx.fillText(label, labelPadding, y);
 
     ctx.restore();

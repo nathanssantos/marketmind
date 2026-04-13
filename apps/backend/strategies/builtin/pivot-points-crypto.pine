@@ -1,0 +1,47 @@
+// @id pivot-points-crypto
+// @name Pivot Points Crypto
+// @version 1.0.0
+// @description Classic Pivot Points strategy para crypto. Entry em bounces de níveis de suporte/resistência calculados (S1, R1, etc).
+// @author MarketMind
+// @tags support-resistance,pivot-points,levels,intraday
+// @strategyType ANY
+// @momentumType ANY
+// @param pivotType Tipo de pivot
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Pivot Points Crypto', overlay=true)
+
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2.5, step=0.5)
+
+pivots_pivot = (high[1] + low[1] + close[1]) / 3
+pivots_r1 = 2 * pivots_pivot - low[1]
+pivots_s1 = 2 * pivots_pivot - high[1]
+pivots_r2 = pivots_pivot + (high[1] - low[1])
+pivots_s2 = pivots_pivot - (high[1] - low[1])
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (low <= pivots_s1 and close > pivots_s1)
+shortEntry = (high >= pivots_r1 and close < pivots_r1)
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 85)
+
+exitLong = close >= pivots_pivot
+exitShort = close <= pivots_pivot
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

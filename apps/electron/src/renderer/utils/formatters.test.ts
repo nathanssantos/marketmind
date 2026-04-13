@@ -300,28 +300,6 @@ describe('formatters', () => {
       expect(result).toContain('Overall Trend: Bullish');
     });
 
-    it('should include moving averages when visible', () => {
-      const chartData: ChartContextData = {
-        symbol: 'BTCUSDT',
-        timeframe: '1m',
-        chartType: 'kline',
-        klines: mockKlines,
-        movingAverages: [
-          { period: 20, type: 'SMA', color: '#ff0000', visible: true },
-          { period: 50, type: 'EMA', color: '#00ff00', visible: true },
-          { period: 100, type: 'SMA', color: '#0000ff', visible: false },
-        ],
-        showVolume: true,
-      };
-
-      const result = formatChartDataContext(chartData);
-
-      expect(result).toContain('Moving Averages');
-      expect(result).toContain('SMA-20: Active');
-      expect(result).toContain('EMA-50: Active');
-      expect(result).not.toContain('SMA-100');
-    });
-
     it('should limit klines to last 100', () => {
       const manyKlines = Array.from({ length: 200 }, (_, i) => ({
         openTime: 1700000000000 + i * 60000,

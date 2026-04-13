@@ -1,11 +1,10 @@
 import { Checkbox, IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { useIndicatorStore, type IndicatorId } from '@renderer/store';
+import { useIndicatorStore, DEFAULT_INDICATOR_PARAMS, type IndicatorId, type MAParams } from '@renderer/store';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 
 interface IndicatorCategory {
     title: string;
@@ -18,20 +17,23 @@ interface IndicatorCategory {
 }
 
 interface IndicatorTogglePopoverProps {
-    movingAverages: MovingAverageConfig[];
-    onMovingAverageToggle: (index: number) => void;
+    activeIndicatorsOverride?: string[];
+    onToggleIndicatorOverride?: (id: IndicatorId) => void;
 }
 
 export const IndicatorTogglePopover = memo(
     ({
-        movingAverages,
-        onMovingAverageToggle,
+        activeIndicatorsOverride,
+        onToggleIndicatorOverride,
     }: IndicatorTogglePopoverProps) => {
         const { t } = useTranslation();
         const [isOpen, setIsOpen] = useState(false);
-        const { activeIndicators, toggleIndicator } = useIndicatorStore(
+        const storeState = useIndicatorStore(
             useShallow((s) => ({ activeIndicators: s.activeIndicators, toggleIndicator: s.toggleIndicator }))
         );
+
+        const activeIndicators = activeIndicatorsOverride ?? storeState.activeIndicators;
+        const toggleIndicator = onToggleIndicatorOverride ?? storeState.toggleIndicator;
 
         const isIndicatorActive = useCallback(
             (id: IndicatorId): boolean => activeIndicators.includes(id),
@@ -54,6 +56,12 @@ export const IndicatorTogglePopover = memo(
                             label: t('chart.controls.rsi'),
                             isActive: isIndicatorActive('rsi'),
                             onToggle: () => toggleIndicator('rsi'),
+                        },
+                        {
+                            id: 'rsi14',
+                            label: t('chart.controls.rsi14'),
+                            isActive: isIndicatorActive('rsi14'),
+                            onToggle: () => toggleIndicator('rsi14'),
                         },
                         {
                             id: 'williamsR',
@@ -202,6 +210,18 @@ export const IndicatorTogglePopover = memo(
                             onToggle: () => toggleIndicator('volume'),
                         },
                         {
+                            id: 'dailyVwap',
+                            label: t('chart.controls.dailyVwap'),
+                            isActive: isIndicatorActive('dailyVwap'),
+                            onToggle: () => toggleIndicator('dailyVwap'),
+                        },
+                        {
+                            id: 'weeklyVwap',
+                            label: t('chart.controls.weeklyVwap'),
+                            isActive: isIndicatorActive('weeklyVwap'),
+                            onToggle: () => toggleIndicator('weeklyVwap'),
+                        },
+                        {
                             id: 'vwap',
                             label: t('chart.controls.vwap'),
                             isActive: isIndicatorActive('vwap'),
@@ -266,17 +286,26 @@ export const IndicatorTogglePopover = memo(
                             isActive: isIndicatorActive('activityIndicator'),
                             onToggle: () => toggleIndicator('activityIndicator'),
                         },
+                        {
+                            id: 'orb',
+                            label: t('chart.indicators.names.orb', 'Opening Range Breakout'),
+                            isActive: isIndicatorActive('orb'),
+                            onToggle: () => toggleIndicator('orb'),
+                        },
                     ],
                 },
                 {
                     title: t('chart.indicators.categories.movingAverages'),
                     indicators: [
-                        ...movingAverages.map((ma, index) => ({
-                            id: `ma-${index}`,
-                            label: `${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`,
-                            isActive: ma.visible !== false,
-                            onToggle: () => onMovingAverageToggle(index),
-                        })),
+                        ...(['ema-7', 'ema-8', 'ema-9', 'ema-10', 'ema-19', 'ema-20', 'ema-21', 'ema-50', 'ema-70', 'ema-100', 'ema-200'] as const).map(id => {
+                            const params = DEFAULT_INDICATOR_PARAMS[id] as MAParams;
+                            return {
+                                id,
+                                label: `${params.type}${params.period}`,
+                                isActive: isIndicatorActive(id),
+                                onToggle: () => toggleIndicator(id),
+                            };
+                        }),
                         {
                             id: 'dema',
                             label: t('chart.indicators.names.dema', 'DEMA'),
@@ -303,12 +332,39 @@ export const IndicatorTogglePopover = memo(
                         },
                     ],
                 },
+                {
+                    title: t('chart.indicators.categories.orderFlow', 'Order Flow'),
+                    indicators: [
+                        {
+                            id: 'volumeProfile',
+                            label: t('chart.indicators.names.volumeProfile', 'Volume Profile'),
+                            isActive: isIndicatorActive('volumeProfile'),
+                            onToggle: () => toggleIndicator('volumeProfile'),
+                        },
+                        {
+                            id: 'footprint',
+                            label: t('chart.indicators.names.footprint', 'Footprint'),
+                            isActive: isIndicatorActive('footprint'),
+                            onToggle: () => toggleIndicator('footprint'),
+                        },
+                        {
+                            id: 'liquidityHeatmap',
+                            label: t('chart.indicators.names.liquidityHeatmap', 'Liquidity Heatmap'),
+                            isActive: isIndicatorActive('liquidityHeatmap'),
+                            onToggle: () => toggleIndicator('liquidityHeatmap'),
+                        },
+                        {
+                            id: 'liquidationMarkers',
+                            label: t('chart.indicators.names.liquidationMarkers', 'Liquidation Markers'),
+                            isActive: isIndicatorActive('liquidationMarkers'),
+                            onToggle: () => toggleIndicator('liquidationMarkers'),
+                        },
+                    ],
+                },
             ],
             [
                 t,
-                movingAverages,
                 isIndicatorActive,
-                onMovingAverageToggle,
                 toggleIndicator,
             ]
         );

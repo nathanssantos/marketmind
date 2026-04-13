@@ -5,6 +5,7 @@ export interface BackgroundLayerProps {
   manager: CanvasManager | null;
   colors: ChartColors;
   showGrid: boolean;
+  gridLineWidth?: number;
   symbol?: string;
   marketType?: string;
   timeframe?: string;
@@ -19,6 +20,7 @@ export const createBackgroundLayer = ({
   manager,
   colors,
   showGrid,
+  gridLineWidth = 0.5,
   symbol,
   marketType,
   timeframe,
@@ -31,7 +33,7 @@ export const createBackgroundLayer = ({
 
     ctx.save();
     ctx.strokeStyle = colors.grid;
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = gridLineWidth;
 
     const verticalLines = 10;
     const horizontalLines = 8;
@@ -83,6 +85,7 @@ export const createBackgroundLayer = ({
   const shouldRerender = (prev: BackgroundLayerProps, next: BackgroundLayerProps): boolean => {
     return (
       prev.showGrid !== next.showGrid ||
+      prev.gridLineWidth !== next.gridLineWidth ||
       prev.symbol !== next.symbol ||
       prev.marketType !== next.marketType ||
       prev.timeframe !== next.timeframe ||

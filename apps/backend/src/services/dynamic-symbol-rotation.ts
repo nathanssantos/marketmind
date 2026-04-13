@@ -148,7 +148,7 @@ export class DynamicSymbolRotationService {
       }
 
       if (config.useBtcCorrelationFilter && btcKlinesData) {
-        const btcEma21Trend = getEma21Direction(btcKlinesData);
+        const btcEma21Trend = await getEma21Direction(btcKlinesData);
         btcTrend = btcEma21Trend.direction;
 
         logger.info({
@@ -179,7 +179,7 @@ export class DynamicSymbolRotationService {
       }
 
       if (config.useAdxTrendStrength && btcKlinesData && btcKlinesData.length >= ADX_TREND.MIN_KLINES_REQUIRED) {
-        const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+        const adxResult = await checkAdxCondition(btcKlinesData, 'LONG');
         btcAdx = adxResult.adx ?? undefined;
         const adxThreshold = config.adxMinThreshold ?? ADX_TREND.CHOPPY_MARKET_THRESHOLD;
 

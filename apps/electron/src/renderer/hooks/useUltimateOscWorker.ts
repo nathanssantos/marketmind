@@ -1,6 +1,7 @@
-import type { UltimateOscillatorResult } from '@marketmind/indicators';
+import type { UltimateOscillatorResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useWorkerComputation } from './useWorkerComputation';
 
 export const useUltimateOscWorker = (
   klines: Kline[] | null,
@@ -9,33 +10,15 @@ export const useUltimateOscWorker = (
   midPeriod = 14,
   longPeriod = 28,
 ): UltimateOscillatorResult | null => {
-  const [data, setData] = useState<UltimateOscillatorResult | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const message = useMemo(
+    () => klines && klines.length > 0 ? { klines, shortPeriod, midPeriod, longPeriod } : null,
+    [klines, shortPeriod, midPeriod, longPeriod],
+  );
 
-  useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
-
-    workerRef.current = new Worker(
-      new URL('../workers/ultimateOsc.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-
-    workerRef.current.onmessage = (e: MessageEvent<UltimateOscillatorResult | null>) => {
-      setData(e.data);
-    };
-
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!workerRef.current || !klines || !enabled) return;
-    workerRef.current.postMessage({ klines, shortPeriod, midPeriod, longPeriod });
-  }, [klines, enabled, shortPeriod, midPeriod, longPeriod]);
-
-  return data;
+  return useWorkerComputation<UltimateOscillatorResult>(
+    'ultimateOsc',
+    () => new Worker(new URL('../workers/ultimateOsc.worker.ts', import.meta.url), { type: 'module' }),
+    message,
+    enabled,
+  );
 };

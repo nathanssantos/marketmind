@@ -1,7 +1,7 @@
-import { calculateIchimoku } from '@marketmind/indicators';
+import { calculateIchimoku } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateIchimoku: vi.fn(() => ({ tenkan: [100], kijun: [98], chikou: [101], senkouA: [99], senkouB: [97] })),
 }));
 

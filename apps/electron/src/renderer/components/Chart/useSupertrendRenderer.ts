@@ -1,7 +1,7 @@
-import type { SupertrendResult } from '@marketmind/indicators';
+import type { SupertrendResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseSupertrendRendererProps {
@@ -26,7 +26,12 @@ export const useSupertrendRenderer = ({
 
     if (!ctx || !dimensions) return;
 
+    const { chartWidth, chartHeight } = dimensions;
+
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -36,7 +41,7 @@ export const useSupertrendRenderer = ({
     const upColor = colors.supertrend?.up ?? INDICATOR_COLORS.SUPERTREND_UP;
     const downColor = colors.supertrend?.down ?? INDICATOR_COLORS.SUPERTREND_DOWN;
 
-    ctx.lineWidth = 2;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.SUPERTREND;
 
     let currentTrend: 'up' | 'down' | null = null;
     let segmentStart: number | null = null;

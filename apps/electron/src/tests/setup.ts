@@ -1,7 +1,7 @@
 import * as matchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import { afterEach, expect, vi } from 'vitest';
-import { workerPool } from '../renderer/utils/WorkerPool';
+
 
 expect.extend(matchers);
 
@@ -165,7 +165,6 @@ vi.mock('react-i18next', () => ({
 
 afterEach(() => {
   cleanup();
-  workerPool.terminateAll();
   vi.clearAllTimers();
   vi.clearAllMocks();
 });

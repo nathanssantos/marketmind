@@ -1,8 +1,9 @@
-import type { CMOResult } from '@marketmind/indicators';
+import type { CMOResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneFill, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseCMORendererProps {
   manager: CanvasManager | null;
@@ -32,6 +33,7 @@ export const useCMORenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -48,8 +50,8 @@ export const useCMORenderer = ({
     drawZoneFill({ ctx, chartWidth, panelY, panelHeight, topY: overboughtY, bottomY: oversoldY });
     drawZoneLines({ ctx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }, { y: zeroY }] });
 
-    ctx.strokeStyle = colors.cmo?.line ?? '#2196f3';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = colors.cmo?.line ?? INDICATOR_COLORS.CMO_LINE;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.PANEL;
     ctx.beginPath();
 
     let isFirstPoint = true;
@@ -70,7 +72,10 @@ export const useCMORenderer = ({
     }
 
     ctx.stroke();
+
     ctx.restore();
+
+    drawPanelValueTag(ctx, cmoData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.cmo?.line ?? INDICATOR_COLORS.CMO_LINE);
   }, [manager, cmoData, enabled, colors]);
 
   return { render };

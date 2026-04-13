@@ -1,8 +1,9 @@
-import type { KlingerResult } from '@marketmind/indicators';
+import type { KlingerResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseKlingerRendererProps {
   manager: CanvasManager | null;
@@ -32,6 +33,7 @@ export const useKlingerRenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.min(Math.ceil(viewport.end), klingerData.kvo.length);
@@ -96,10 +98,13 @@ export const useKlingerRenderer = ({
       ctx.stroke();
     };
 
-    drawLine(klingerData.kvo, colors.klinger?.kvoLine ?? '#2962ff', 1);
-    drawLine(klingerData.signal, colors.klinger?.signalLine ?? '#ff6d00', 1);
+    drawLine(klingerData.kvo, colors.klinger?.kvoLine ?? INDICATOR_COLORS.KLINGER_LINE, 1);
+    drawLine(klingerData.signal, colors.klinger?.signalLine ?? INDICATOR_COLORS.KLINGER_SIGNAL, 1);
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, klingerData.signal, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.klinger?.signalLine ?? INDICATOR_COLORS.KLINGER_SIGNAL);
+    drawPanelValueTag(ctx, klingerData.kvo, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.klinger?.kvoLine ?? INDICATOR_COLORS.KLINGER_LINE);
   }, [manager, klingerData, enabled, colors]);
 
   return { render };

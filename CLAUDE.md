@@ -32,7 +32,7 @@
 
 **Architecture:**
 - **Monorepo** (pnpm workspaces)
-- **Shared Packages** (7 packages): `@marketmind/types`, `@marketmind/indicators`, `@marketmind/fibonacci`, `@marketmind/logger`, `@marketmind/trading-core`, `@marketmind/risk`, `@marketmind/utils`
+- **Shared Packages** (6 packages): `@marketmind/types`, `@marketmind/chart-studies`, `@marketmind/fibonacci`, `@marketmind/logger`, `@marketmind/trading-core`, `@marketmind/risk`, `@marketmind/utils`
 - **Exchange Abstraction**: Binance (crypto) + Interactive Brokers (US stocks via `@stoqey/ib`)
 - **Real-time API** (tRPC endpoints with React Query)
 - **Session Auth** (secure cookie-based authentication)
@@ -1168,6 +1168,12 @@ Before committing:
 
 ---
 
-**Last Updated:** November 2025
-**Version:** 1.4
-**Project Version:** 0.28.0
+## 🚀 Release Process
+
+When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: version must be updated in **6 places** (3 package.json files, README badge, CHANGELOG, and the landing site repo).
+
+---
+
+**Last Updated:** April 2026
+**Version:** 1.5
+**Project Version:** 0.85.0

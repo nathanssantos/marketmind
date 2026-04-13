@@ -1,0 +1,47 @@
+// @id gap-fill-crypto
+// @name Gap Fill Crypto
+// @version 1.0.0
+// @description Estratégia para preencher gaps em crypto. Gaps de abertura tendem a ser preenchidos. Entry quando gap > 2% do preço.
+// @author MarketMind
+// @tags gap,mean-reversion,intraday
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param minGapPercent Gap mínimo em %
+// @param atrMultiplier ATR para stop
+
+//@version=5
+indicator('Gap Fill Crypto', overlay=true)
+
+minGapPercent = input.float(2, 'minGapPercent', minval=1, maxval=5, step=0.5)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2.5, step=0.5)
+
+gap_percent = (open - close[1]) / close[1] * 100
+gap_isGap = math.abs(gap_percent) >= minGapPercent
+gap_fillLevel = close[1]
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = gap_percent < (-1 * minGapPercent)
+shortEntry = gap_percent > minGapPercent
+
+confBase = 70
+confBonus0 = gap_percent > 4 ? 10 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = close >= gap_fillLevel
+exitShort = close <= gap_fillLevel
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

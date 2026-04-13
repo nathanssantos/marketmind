@@ -1,15 +1,14 @@
-import { calculateKeltner } from '@marketmind/indicators';
+import { computeMulti } from './pineWorkerService';
 import type { Kline } from '@marketmind/types';
 
-interface KeltnerWorkerMessage {
-  klines: Kline[];
-  emaPeriod?: number;
-  atrPeriod?: number;
-  multiplier?: number;
-}
+self.onmessage = async (e: MessageEvent<{ klines: Kline[]; emaPeriod?: number; atrPeriod?: number; multiplier?: number }>) => {
+  const { klines, emaPeriod = 20, multiplier = 2 } = e.data;
 
-self.onmessage = (e: MessageEvent<KeltnerWorkerMessage>) => {
-  const { klines, emaPeriod = 20, atrPeriod = 10, multiplier = 2 } = e.data;
-  const result = calculateKeltner(klines, emaPeriod, atrPeriod, multiplier);
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  const result = await computeMulti('kc', klines, { period: emaPeriod, multiplier });
   self.postMessage(result);
 };

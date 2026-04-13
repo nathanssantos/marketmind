@@ -1,13 +1,14 @@
-import { calculateOBV } from '@marketmind/indicators';
+import { computeOBV } from './pineWorkerService';
 import type { Kline } from '@marketmind/types';
 
-interface OBVWorkerMessage {
-  klines: Kline[];
-  smaPeriod?: number;
-}
-
-self.onmessage = (e: MessageEvent<OBVWorkerMessage>) => {
+self.onmessage = async (e: MessageEvent<{ klines: Kline[]; smaPeriod?: number }>) => {
   const { klines, smaPeriod } = e.data;
-  const result = calculateOBV(klines, smaPeriod);
+
+  if (!klines || klines.length === 0) {
+    self.postMessage(null);
+    return;
+  }
+
+  const result = await computeOBV(klines, smaPeriod);
   self.postMessage(result);
 };

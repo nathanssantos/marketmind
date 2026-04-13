@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 const PANEL_INDICATORS = [
   'stochastic',
   'rsi',
+  'rsi14',
   'obv',
   'cmf',
   'stochRsi',

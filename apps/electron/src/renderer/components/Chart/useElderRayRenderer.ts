@@ -1,8 +1,9 @@
-import type { ElderRayResult } from '@marketmind/indicators';
+import type { ElderRayResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { applyPanelClip, drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseElderRayRendererProps {
   manager: CanvasManager | null;
@@ -33,6 +34,7 @@ export const useElderRayRenderer = ({
 
     ctx.save();
     drawPanelBackground({ ctx, panelY, panelHeight, chartWidth });
+    applyPanelClip({ ctx, panelY, panelHeight, chartWidth });
 
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
@@ -67,14 +69,14 @@ export const useElderRayRenderer = ({
       if (bullValue !== null && bullValue !== undefined) {
         const y = valueToY(bullValue);
         const height = Math.abs(y - zeroY);
-        ctx.fillStyle = colors.elderRay?.bullPower ?? '#26a69a';
+        ctx.fillStyle = colors.elderRay?.bullPower ?? INDICATOR_COLORS.ELDER_BULL;
         ctx.fillRect(x - barWidth - 1, bullValue >= 0 ? y : zeroY, barWidth, height);
       }
 
       if (bearValue !== null && bearValue !== undefined) {
         const y = valueToY(bearValue);
         const height = Math.abs(y - zeroY);
-        ctx.fillStyle = colors.elderRay?.bearPower ?? '#ef5350';
+        ctx.fillStyle = colors.elderRay?.bearPower ?? INDICATOR_COLORS.ELDER_BEAR;
         ctx.fillRect(x + 1, bearValue >= 0 ? y : zeroY, barWidth, height);
       }
     }
@@ -82,6 +84,9 @@ export const useElderRayRenderer = ({
     drawZoneLines({ ctx, chartWidth, levels: [{ y: zeroY }] });
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, elderRayData.bearPower, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.elderRay?.bearPower ?? INDICATOR_COLORS.ELDER_BEAR);
+    drawPanelValueTag(ctx, elderRayData.bullPower, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.elderRay?.bullPower ?? INDICATOR_COLORS.ELDER_BULL);
   }, [manager, elderRayData, enabled, colors]);
 
   return { render };

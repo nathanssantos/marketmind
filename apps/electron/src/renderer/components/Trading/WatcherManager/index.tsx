@@ -1,14 +1,12 @@
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { Button, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
-import { useToast } from '@renderer/hooks/useToast';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
 import { useTradingPref } from '@renderer/store/preferencesStore';
-import { useCallback, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useDebounce } from '@renderer/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
 import { AddWatcherDialog } from '../AddWatcherDialog';
@@ -18,6 +16,7 @@ import { DynamicSelectionSection } from './DynamicSelectionSection';
 import { EmergencyStopSection } from './EmergencyStopSection';
 import { EntrySettingsSection } from './EntrySettingsSection';
 import { FiltersSection } from './FiltersSection';
+import { useWatcherConfig } from './hooks/useWatcherConfig';
 import { useWatcherState } from './hooks/useWatcherState';
 import { LeverageSettingsSection } from './LeverageSettingsSection';
 import { OpportunityCostSection } from './OpportunityCostSection';
@@ -27,13 +26,11 @@ import { RiskManagementSection } from './RiskManagementSection';
 import { TrailingStopSection } from './TrailingStopSection';
 import { TpModeSection } from './TpModeSection';
 import { StopModeSection } from './StopModeSection';
-import type { DirectionMode } from './WatchersList';
 import { WatchersList } from './WatchersList';
 import { SetupToggleSection } from '../SetupToggleSection';
 
 export const WatcherManager = () => {
   const { t } = useTranslation();
-  const { success, info } = useToast();
   const { activeWallet, isIB } = useActiveWallet();
   const walletId = activeWallet?.id ?? '';
 
@@ -52,50 +49,30 @@ export const WatcherManager = () => {
 
   const { profiles, getProfileById } = useTradingProfiles();
 
-  const utils = trpc.useUtils();
-
-  const { data: config } = trpc.autoTrading.getConfig.useQuery(
-    { walletId },
-    { enabled: !!walletId, staleTime: 30_000 }
-  );
-
-  const lastSentBatchRef = useRef<Record<string, unknown>>({});
-
-  const updateConfig = trpc.autoTrading.updateConfig.useMutation({
-    onSuccess: () => {
-      if (Object.keys(pendingUpdates.current).length === 0) {
-        void utils.autoTrading.getConfig.invalidate({ walletId });
-      }
-      const sent = lastSentBatchRef.current;
-      if ('trailingStopEnabled' in sent) {
-        const enabled = sent['trailingStopEnabled'];
-        const key = enabled ? 'trailingStopEnabled' : 'trailingStopDisabled';
-        (enabled ? success : info)(t(`positionTrailingStop.${key}`, { symbol: t('watcherManager.trailingStop.global') }));
-      }
-      lastSentBatchRef.current = {};
-    },
-  });
-
-  const mutateRef = useRef(updateConfig.mutate);
-  mutateRef.current = updateConfig.mutate;
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const pendingUpdates = useRef<Record<string, unknown>>({});
-
-  const handleConfigUpdate = useCallback((updates: Record<string, unknown>): void => {
-    if (!walletId) return;
-    void utils.autoTrading.getConfig.cancel({ walletId });
-    utils.autoTrading.getConfig.setData({ walletId }, (old) =>
-      old ? { ...old, ...updates } : old
-    );
-    pendingUpdates.current = { ...pendingUpdates.current, ...updates };
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      const batch = pendingUpdates.current;
-      pendingUpdates.current = {};
-      lastSentBatchRef.current = { ...batch };
-      mutateRef.current({ walletId, ...batch });
-    }, 300);
-  }, [walletId, utils]);
+  const {
+    config,
+    updateConfig,
+    handleConfigUpdate,
+    handleTpModeChange,
+    handleFibonacciLevelLongChange,
+    handleFibonacciLevelShortChange,
+    handleFibonacciSwingRangeChange,
+    handleInitialStopModeChange,
+    handleFilterToggle,
+    handleDirectionModeChange,
+    handleAutoRotationToggle,
+    handleLeverageChange,
+    handleMaxDrawdownEnabledChange,
+    handleMaxDrawdownChange,
+    handleMaxRiskPerStopEnabledChange,
+    handleMaxRiskPerStopChange,
+    handleMarginTopUpEnabledChange,
+    handleMarginTopUpThresholdChange,
+    handleMarginTopUpPercentChange,
+    handleMarginTopUpMaxCountChange,
+    handleConfluenceMinScoreChange,
+    handleTradingModeChange,
+  } = useWatcherConfig(walletId);
 
   const {
     expandedSections,
@@ -116,12 +93,9 @@ export const WatcherManager = () => {
 
   const { rotationStatus, isLoadingRotationStatus } = useRotationStatus(walletId);
   const { triggerRotation, isTriggeringRotation } = useTriggerRotation(walletId);
-
   const { formatCapitalTooltip } = useCapitalLimits(walletId, quickStartMarketType);
 
   const useBtcCorrelationFilter = config?.useBtcCorrelationFilter ?? false;
-
-  // Debounce o count para não refazer query a cada digitação
   const debouncedQuickStartCount = useDebounce(quickStartCount, 500);
 
   const {
@@ -132,7 +106,6 @@ export const WatcherManager = () => {
     skippedTrend,
   } = useFilteredSymbolsForQuickStart(walletId, quickStartMarketType, quickStartTimeframe, debouncedQuickStartCount, useBtcCorrelationFilter);
 
-  // Usar filteredMaxAffordable como fonte (calculado com minNotional real de cada símbolo)
   const maxAffordableWatchers = filteredMaxAffordable ?? AUTO_TRADING_CONFIG.TARGET_COUNT.MAX;
   const effectiveMax = Math.min(maxAffordableWatchers, AUTO_TRADING_CONFIG.TARGET_COUNT.MAX);
   const isLoadingMax = isLoadingFiltered;
@@ -159,7 +132,6 @@ export const WatcherManager = () => {
         ? fundingRates.filter((f) => f.isExtreme).map((f) => f.symbol)
         : []
     );
-
     return quickStartSymbols.filter(symbol => !extremeSymbols.has(symbol));
   }, [quickStartSymbols, fundingRates, config?.useFundingFilter, quickStartMarketType]);
 
@@ -173,84 +145,6 @@ export const WatcherManager = () => {
   const [dragTpEnabled, setDragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
   const [slTightenOnly, setSlTightenOnly] = useTradingPref<boolean>('slTightenOnly', false);
 
-  const handleTpModeChange = (details: { value: string }): void => {
-    handleConfigUpdate({ tpCalculationMode: details.value as 'default' | 'fibonacci' });
-  };
-
-  const handleFibonacciLevelLongChange = (details: { value: string }): void => {
-    handleConfigUpdate({ fibonacciTargetLevelLong: details.value as FibonacciTargetLevel });
-  };
-
-  const handleFibonacciLevelShortChange = (details: { value: string }): void => {
-    handleConfigUpdate({ fibonacciTargetLevelShort: details.value as FibonacciTargetLevel });
-  };
-
-  const handleFibonacciSwingRangeChange = (details: { value: string }): void => {
-    handleConfigUpdate({ fibonacciSwingRange: details.value as 'extended' | 'nearest' });
-  };
-
-  const handleInitialStopModeChange = (details: { value: string }): void => {
-    handleConfigUpdate({ initialStopMode: details.value as 'fibo_target' | 'nearest_swing' });
-  };
-
-  const handleFilterToggle = (filterKey: string, value: boolean): void => {
-    handleConfigUpdate({ [filterKey]: value });
-  };
-
-  const directionMode: DirectionMode = config?.directionMode ?? 'auto';
-
-  const handleDirectionModeChange = (mode: DirectionMode): void => {
-    handleConfigUpdate({ directionMode: mode });
-  };
-
-  const handleAutoRotationToggle = (value: boolean): void => {
-    handleConfigUpdate({ enableAutoRotation: value });
-  };
-
-  const handleLeverageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const leverage = parseInt(e.target.value, 10);
-    if (isNaN(leverage) || leverage < 1 || leverage > 125) return;
-    handleConfigUpdate({ leverage });
-  };
-
-  const handleMaxDrawdownEnabledChange = (enabled: boolean): void => {
-    handleConfigUpdate({ maxDrawdownEnabled: enabled });
-  };
-
-  const handleMaxDrawdownChange = (value: number): void => {
-    handleConfigUpdate({ maxDrawdownPercent: value.toString() });
-  };
-
-  const handleMaxRiskPerStopEnabledChange = (enabled: boolean): void => {
-    handleConfigUpdate({ maxRiskPerStopEnabled: enabled });
-  };
-
-  const handleMaxRiskPerStopChange = (value: number): void => {
-    handleConfigUpdate({ maxRiskPerStopPercent: value.toString() });
-  };
-
-  const handleMarginTopUpEnabledChange = (enabled: boolean): void => {
-    handleConfigUpdate({ marginTopUpEnabled: enabled });
-  };
-
-  const handleMarginTopUpThresholdChange = (value: number): void => {
-    handleConfigUpdate({ marginTopUpThreshold: value.toString() });
-  };
-
-  const handleMarginTopUpPercentChange = (value: number): void => {
-    handleConfigUpdate({ marginTopUpPercent: value.toString() });
-  };
-
-  const handleMarginTopUpMaxCountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const count = parseInt(e.target.value, 10);
-    if (isNaN(count) || count < 1 || count > 10) return;
-    handleConfigUpdate({ marginTopUpMaxCount: count });
-  };
-
-  const handleConfluenceMinScoreChange = (value: number): void => {
-    handleConfigUpdate({ confluenceMinScore: value });
-  };
-
   const handleTriggerRotation = async (): Promise<void> => {
     if (!walletId) return;
     await triggerRotation();
@@ -263,6 +157,8 @@ export const WatcherManager = () => {
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
   const persistedWatchers = watcherStatus?.persistedWatchers ?? 0;
+  const directionMode = config?.directionMode ?? 'auto';
+  const tradingMode = config?.tradingMode ?? 'auto';
 
   const handleStopWatcher = async (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => {
     await stopWatcher(symbol, interval, marketType);
@@ -286,12 +182,6 @@ export const WatcherManager = () => {
       </Box>
     );
   }
-
-  const tradingMode = config?.tradingMode ?? 'auto';
-
-  const handleTradingModeChange = (mode: 'auto' | 'semi_assisted'): void => {
-    handleConfigUpdate({ tradingMode: mode });
-  };
 
   return (
     <Stack gap={4}>
@@ -387,13 +277,9 @@ export const WatcherManager = () => {
       />
 
       <Separator />
-
       <TradingProfilesManager />
-
       <Separator />
-
       <SetupToggleSection />
-
       <Separator />
 
       {!isIB && (
@@ -405,7 +291,6 @@ export const WatcherManager = () => {
             onLeverageChange={handleLeverageChange}
             isPending={updateConfig.isPending}
           />
-
           <Separator />
         </>
       )}

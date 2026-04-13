@@ -110,6 +110,12 @@ export class BinanceDepthStreamService {
     };
   }
 
+  getFullBook(symbol: string): { bids: Map<number, number>; asks: Map<number, number> } | null {
+    const book = this.books.get(symbol.toLowerCase());
+    if (!book) return null;
+    return { bids: book.bids, asks: book.asks };
+  }
+
   private handleMessage(data: unknown): void {
     try {
       if (typeof data !== 'object' || data === null) return;

@@ -1,4 +1,5 @@
 import type { Viewport } from '@marketmind/types';
+import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
 export interface SetupMarker {
   klineIndex: number;
@@ -26,8 +27,8 @@ export const createSetupMarkerRenderer = (
   const {
     entryColor = theme.bullish,
     exitColor = theme.bearish,
-    stopLossColor = '#ef4444',
-    takeProfitColor = '#10b981',
+    stopLossColor = ORDER_LINE_COLORS.SL_LOSS_LINE,
+    takeProfitColor = ORDER_LINE_COLORS.TP_LINE,
     markerSize = 8,
     showLabels = true,
     fontSize = 11,
@@ -119,7 +120,7 @@ export const createSetupMarkerRenderer = (
           fontSize + padding * 2
         );
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
         ctx.globalAlpha = 1;
         ctx.fillText(marker.label, x + markerSize + 4 + padding, y + fontSize / 3);
       }

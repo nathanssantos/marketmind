@@ -1,5 +1,7 @@
-import { calculateEMA, calculateMACD, calculateRSI } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 const EMA_PERIOD = 21;
 const RSI_PERIOD = 14;
@@ -81,14 +83,14 @@ const getRsiMomentum = (
   rsiValues: (number | null)[],
   lastIndex: number
 ): { momentum: RsiMomentum; currentRsi: number | null } => {
-  const currentRsi = rsiValues[lastIndex];
-  const prevRsi = rsiValues[lastIndex - 1];
+  const currentRsi = rsiValues[lastIndex] ?? null;
+  const prevRsi = rsiValues[lastIndex - 1] ?? null;
 
-  if (currentRsi === undefined || currentRsi === null || isNaN(currentRsi)) {
+  if (currentRsi === null || isNaN(currentRsi)) {
     return { momentum: 'NEUTRAL', currentRsi: null };
   }
 
-  if (prevRsi === undefined || prevRsi === null || isNaN(prevRsi)) {
+  if (prevRsi === null || isNaN(prevRsi)) {
     return { momentum: 'NEUTRAL', currentRsi };
   }
 
@@ -127,7 +129,16 @@ export interface BtcTrendInfo {
   btcEma21: number | null;
 }
 
-export const getBtcTrendInfo = (btcKlines: Kline[]): BtcTrendInfo => {
+const computeIndicators = async (btcKlines: Kline[]) => {
+  const [ema21Values, macdResult, rsiValues] = await Promise.all([
+    pineService.compute('ema', btcKlines, { period: EMA_PERIOD }),
+    pineService.computeMulti('macd', btcKlines),
+    pineService.compute('rsi', btcKlines, { period: RSI_PERIOD }),
+  ]);
+  return { ema21Values, macdResult, rsiValues };
+};
+
+export const getBtcTrendInfo = async (btcKlines: Kline[]): Promise<BtcTrendInfo> => {
   const { ASYMMETRIC_THRESHOLDS } = BTC_CORRELATION_FILTER;
 
   if (btcKlines.length < MIN_KLINES_REQUIRED) {
@@ -142,17 +153,16 @@ export const getBtcTrendInfo = (btcKlines: Kline[]): BtcTrendInfo => {
     };
   }
 
-  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
-  const macdResult = calculateMACD(btcKlines);
-  const rsiResult = calculateRSI(btcKlines, RSI_PERIOD);
+  const { ema21Values, macdResult, rsiValues } = await computeIndicators(btcKlines);
+  const histogramValues = macdResult['histogram'] ?? [];
 
   const lastIndex = btcKlines.length - 1;
-  const btcEma21 = ema21Values[lastIndex];
-  const btcMacdHistogram = macdResult.histogram[lastIndex];
+  const btcEma21 = ema21Values[lastIndex] ?? null;
+  const btcMacdHistogram = histogramValues[lastIndex] ?? null;
   const lastKline = btcKlines[lastIndex];
-  const { momentum: btcRsiMomentum, currentRsi: btcRsi } = getRsiMomentum(rsiResult.values, lastIndex);
+  const { momentum: btcRsiMomentum, currentRsi: btcRsi } = getRsiMomentum(rsiValues, lastIndex);
 
-  if (!lastKline || btcEma21 === null || btcEma21 === undefined) {
+  if (!lastKline || btcEma21 === null) {
     return {
       trend: 'NEUTRAL',
       strength: 'WEAK',
@@ -160,14 +170,14 @@ export const getBtcTrendInfo = (btcKlines: Kline[]): BtcTrendInfo => {
       canLong: true,
       canShort: true,
       btcPrice: lastKline ? parseFloat(String(lastKline.close)) : null,
-      btcEma21: btcEma21 ?? null,
+      btcEma21,
     };
   }
 
   const btcPrice = parseFloat(String(lastKline.close));
   const priceAboveEma = btcPrice > btcEma21;
-  const macdBullish = !isNaN(btcMacdHistogram ?? NaN) && (btcMacdHistogram ?? 0) > 0;
-  const macdBearish = !isNaN(btcMacdHistogram ?? NaN) && (btcMacdHistogram ?? 0) < 0;
+  const macdBullish = btcMacdHistogram !== null && !isNaN(btcMacdHistogram) && btcMacdHistogram > 0;
+  const macdBearish = btcMacdHistogram !== null && !isNaN(btcMacdHistogram) && btcMacdHistogram < 0;
 
   const score = calculateCorrelationScore(priceAboveEma, macdBullish, macdBearish, btcRsiMomentum, btcRsi);
   const strength = getStrength(score);
@@ -202,17 +212,17 @@ export interface Ema21AlignmentResult {
   reason: string;
 }
 
-export const getEma21Direction = (klines: Kline[]): Ema21TrendResult => {
+export const getEma21Direction = async (klines: Kline[]): Promise<Ema21TrendResult> => {
   if (klines.length < MIN_KLINES_REQUIRED) {
     return { direction: 'NEUTRAL', price: null, ema21: null };
   }
 
-  const ema21Values = calculateEMA(klines, EMA_PERIOD);
+  const ema21Values = await pineService.compute('ema', klines, { period: EMA_PERIOD });
   const lastIndex = klines.length - 1;
-  const ema21 = ema21Values[lastIndex];
+  const ema21 = ema21Values[lastIndex] ?? null;
   const lastKline = klines[lastIndex];
 
-  if (!lastKline || ema21 === null || ema21 === undefined) {
+  if (!lastKline || ema21 === null) {
     return { direction: 'NEUTRAL', price: null, ema21: null };
   }
 
@@ -222,12 +232,14 @@ export const getEma21Direction = (klines: Kline[]): Ema21TrendResult => {
   return { direction, price, ema21 };
 };
 
-export const checkEma21Alignment = (
+export const checkEma21Alignment = async (
   btcKlines: Kline[],
   assetKlines: Kline[]
-): Ema21AlignmentResult => {
-  const btcTrend = getEma21Direction(btcKlines);
-  const assetTrend = getEma21Direction(assetKlines);
+): Promise<Ema21AlignmentResult> => {
+  const [btcTrend, assetTrend] = await Promise.all([
+    getEma21Direction(btcKlines),
+    getEma21Direction(assetKlines),
+  ]);
 
   if (btcTrend.direction === 'NEUTRAL' || assetTrend.direction === 'NEUTRAL') {
     return {
@@ -260,14 +272,14 @@ export interface BtcTrendInfoWithHistory extends BtcTrendInfo {
   history: BtcTrendHistoryPoint[];
 }
 
-export const getBtcTrendEmaInfoWithHistory = (btcKlines: Kline[]): BtcTrendInfoWithHistory => {
-  const baseInfo = getBtcTrendEmaInfo(btcKlines);
+export const getBtcTrendEmaInfoWithHistory = async (btcKlines: Kline[]): Promise<BtcTrendInfoWithHistory> => {
+  const baseInfo = await getBtcTrendEmaInfo(btcKlines);
 
   if (btcKlines.length < MIN_KLINES_REQUIRED) {
     return { ...baseInfo, history: [] };
   }
 
-  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
+  const ema21Values = await pineService.compute('ema', btcKlines, { period: EMA_PERIOD });
   const history: BtcTrendHistoryPoint[] = [];
 
   for (let i = Math.max(0, btcKlines.length - 31); i < btcKlines.length; i++) {
@@ -285,7 +297,7 @@ export const getBtcTrendEmaInfoWithHistory = (btcKlines: Kline[]): BtcTrendInfoW
   return { ...baseInfo, history };
 };
 
-export const getBtcTrendEmaInfo = (btcKlines: Kline[]): BtcTrendInfo => {
+export const getBtcTrendEmaInfo = async (btcKlines: Kline[]): Promise<BtcTrendInfo> => {
   if (btcKlines.length < MIN_KLINES_REQUIRED) {
     return {
       trend: 'NEUTRAL',
@@ -298,12 +310,12 @@ export const getBtcTrendEmaInfo = (btcKlines: Kline[]): BtcTrendInfo => {
     };
   }
 
-  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
+  const ema21Values = await pineService.compute('ema', btcKlines, { period: EMA_PERIOD });
   const lastIndex = btcKlines.length - 1;
-  const btcEma21 = ema21Values[lastIndex];
+  const btcEma21 = ema21Values[lastIndex] ?? null;
   const lastKline = btcKlines[lastIndex];
 
-  if (!lastKline || btcEma21 === null || btcEma21 === undefined) {
+  if (!lastKline || btcEma21 === null) {
     return {
       trend: 'NEUTRAL',
       strength: 'WEAK',
@@ -311,7 +323,7 @@ export const getBtcTrendEmaInfo = (btcKlines: Kline[]): BtcTrendInfo => {
       canLong: true,
       canShort: true,
       btcPrice: lastKline ? parseFloat(String(lastKline.close)) : null,
-      btcEma21: btcEma21 ?? null,
+      btcEma21,
     };
   }
 
@@ -334,11 +346,11 @@ export const getBtcTrendEmaInfo = (btcKlines: Kline[]): BtcTrendInfo => {
   };
 };
 
-export const checkBtcCorrelation = (
+export const checkBtcCorrelation = async (
   btcKlines: Kline[],
   direction: 'LONG' | 'SHORT',
   tradingSymbol: string
-): BtcCorrelationResult => {
+): Promise<BtcCorrelationResult> => {
   const isAltcoin = !isBtcPair(tradingSymbol);
 
   if (!isAltcoin) {
@@ -352,21 +364,20 @@ export const checkBtcCorrelation = (
     );
   }
 
-  const ema21Values = calculateEMA(btcKlines, EMA_PERIOD);
-  const macdResult = calculateMACD(btcKlines);
-  const rsiResult = calculateRSI(btcKlines, RSI_PERIOD);
+  const { ema21Values, macdResult, rsiValues } = await computeIndicators(btcKlines);
+  const histogramValues = macdResult['histogram'] ?? [];
 
   const lastIndex = btcKlines.length - 1;
-  const btcEma21 = ema21Values[lastIndex];
-  const btcMacdHistogram = macdResult.histogram[lastIndex];
+  const btcEma21 = ema21Values[lastIndex] ?? null;
+  const btcMacdHistogram = histogramValues[lastIndex] ?? null;
   const lastKline = btcKlines[lastIndex];
-  const { momentum: btcRsiMomentum, currentRsi: btcRsi } = getRsiMomentum(rsiResult.values, lastIndex);
+  const { momentum: btcRsiMomentum, currentRsi: btcRsi } = getRsiMomentum(rsiValues, lastIndex);
 
-  if (!lastKline || btcEma21 === null || btcEma21 === undefined) {
+  if (!lastKline || btcEma21 === null) {
     return createNeutralResult(true, 'BTC EMA calculation incomplete - allowing trade (soft pass)', {
-      btcEma21: btcEma21 ?? null,
+      btcEma21,
       btcPrice: lastKline ? parseFloat(String(lastKline.close)) : null,
-      btcMacdHistogram: isNaN(btcMacdHistogram ?? NaN) ? null : btcMacdHistogram ?? null,
+      btcMacdHistogram: btcMacdHistogram !== null && !isNaN(btcMacdHistogram) ? btcMacdHistogram : null,
       btcRsi,
       btcRsiMomentum,
     });
@@ -374,8 +385,8 @@ export const checkBtcCorrelation = (
 
   const btcPrice = parseFloat(String(lastKline.close));
   const priceAboveEma = btcPrice > btcEma21;
-  const macdBullish = !isNaN(btcMacdHistogram ?? NaN) && (btcMacdHistogram ?? 0) > 0;
-  const macdBearish = !isNaN(btcMacdHistogram ?? NaN) && (btcMacdHistogram ?? 0) < 0;
+  const macdBullish = btcMacdHistogram !== null && !isNaN(btcMacdHistogram) && btcMacdHistogram > 0;
+  const macdBearish = btcMacdHistogram !== null && !isNaN(btcMacdHistogram) && btcMacdHistogram < 0;
 
   const correlationScore = calculateCorrelationScore(priceAboveEma, macdBullish, macdBearish, btcRsiMomentum, btcRsi);
   const btcStrength = getStrength(correlationScore);
@@ -388,7 +399,7 @@ export const checkBtcCorrelation = (
   }
 
   const formatPrice = (p: number) => p.toFixed(2);
-  const safeHistogram = isNaN(btcMacdHistogram ?? NaN) ? null : btcMacdHistogram ?? null;
+  const safeHistogram = btcMacdHistogram !== null && !isNaN(btcMacdHistogram) ? btcMacdHistogram : null;
   const { ASYMMETRIC_THRESHOLDS } = BTC_CORRELATION_FILTER;
 
   const baseResult = {

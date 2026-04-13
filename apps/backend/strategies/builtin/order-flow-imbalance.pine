@@ -1,0 +1,48 @@
+// @id order-flow-imbalance
+// @name Order Flow Imbalance
+// @version 1.0.0
+// @description Detecta desequilíbrios de orderflow via volume. Entry quando volume de compra/venda é significativamente desbalanceado.
+// @author MarketMind
+// @tags orderflow,volume,imbalance,institutional
+// @strategyType ANY
+// @momentumType ANY
+// @param imbalanceRatio Ratio mínimo buy/sell
+// @param volumeMultiplier Volume > média
+// @param atrMultiplier ATR stop
+
+//@version=5
+indicator('Order Flow Imbalance', overlay=true)
+
+imbalanceRatio = input.float(2, 'imbalanceRatio', minval=1.5, maxval=3, step=0.5)
+volumeMultiplier = input.float(1.5, 'volumeMultiplier', minval=1.2, maxval=2, step=0.1)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+deltaVolume = close >= open ? volume : -volume
+deltaVolume_ratio = math.sum(deltaVolume, 14) / math.max(math.sum(math.abs(deltaVolume), 14), 1)
+volumeSma = ta.sma(volume, 20)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (deltaVolume_ratio > imbalanceRatio and volume > (volumeSma * volumeMultiplier) and close > open)
+shortEntry = (deltaVolume_ratio < (1 / imbalanceRatio) and volume > (volumeSma * volumeMultiplier) and close < open)
+
+confBase = 70
+confBonus0 = volume > (volumeSma * 2) ? 15 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

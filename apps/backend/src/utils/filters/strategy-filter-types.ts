@@ -4,7 +4,6 @@ import type {
   SetupVolumeType,
   SetupStrategyType,
   SetupMomentumType,
-  StrategyDefinition,
 } from '@marketmind/types';
 import { logger } from '../../services/logger';
 
@@ -54,22 +53,35 @@ const loadStrategiesFilterTypes = (): void => {
     try {
       const files = fs.readdirSync(basePath);
       for (const file of files) {
-        if (!file.endsWith('.json')) continue;
+        if (!file.endsWith('.pine')) continue;
 
         try {
           const filePath = path.join(basePath, file);
           const content = fs.readFileSync(filePath, 'utf-8');
-          const strategy = JSON.parse(content) as StrategyDefinition;
+          const id = file.replace('.pine', '');
 
-          if (strategy.id && strategy.filters) {
-            filterTypesCache.set(strategy.id, {
-              volumeType: strategy.filters.volumeType ?? 'ANY',
-              strategyType: strategy.filters.strategyType ?? 'ANY',
-              momentumType: strategy.filters.momentumType ?? 'ANY',
-            });
+          let strategyType: string = 'ANY';
+          let momentumType: string = 'ANY';
+          let volumeType: string = 'ANY';
+
+          for (const line of content.split('\n')) {
+            if (!line.startsWith('//')) break;
+            const match = line.match(/^\/\/\s*@(\w+)\s+(.+)$/);
+            if (!match) continue;
+            const idMatch = line.match(/^\/\/\s*@id\s+(.+)$/);
+            if (idMatch) { filterTypesCache.set(idMatch[1]!.trim(), { volumeType: volumeType as SetupVolumeType, strategyType: strategyType as SetupStrategyType, momentumType: momentumType as SetupMomentumType }); }
+            if (match[1] === 'strategyType') strategyType = match[2]!.trim();
+            if (match[1] === 'momentumType') momentumType = match[2]!.trim();
+            if (match[1] === 'volumeType') volumeType = match[2]!.trim();
           }
+
+          filterTypesCache.set(id, {
+            volumeType: volumeType as SetupVolumeType,
+            strategyType: strategyType as SetupStrategyType,
+            momentumType: momentumType as SetupMomentumType,
+          });
         } catch (err) {
-          logger.trace({ file, error: err }, 'Failed to parse strategy file for filter types');
+          logger.trace({ file, error: err }, 'Failed to parse Pine strategy file for filter types');
         }
       }
     } catch (err) {

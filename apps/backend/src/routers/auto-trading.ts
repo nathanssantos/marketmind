@@ -1290,7 +1290,7 @@ export const autoTradingRouter = router({
 
         if (btcDbKlines.length >= 30) {
           const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-          btcTrendInfo = getEma21Direction(btcKlinesData);
+          btcTrendInfo = await getEma21Direction(btcKlinesData);
           log('> BTC Correlation Filter - Trend', {
             direction: btcTrendInfo.direction,
             price: btcTrendInfo.price?.toFixed(2),
@@ -1545,7 +1545,7 @@ export const autoTradingRouter = router({
       });
 
       const mappedKlines = mapDbKlinesReversed(btcKlinesData);
-      const trendInfo = getBtcTrendEmaInfoWithHistory(mappedKlines);
+      const trendInfo = await getBtcTrendEmaInfoWithHistory(mappedKlines);
       const trendEmoji = trendInfo.trend === 'BULLISH' ? '✓' : trendInfo.trend === 'BEARISH' ? '✗' : '·';
       logApiTable('getBtcTrendStatus', [
         ['Interval', interval],
@@ -1845,7 +1845,7 @@ export const autoTradingRouter = router({
       }
 
       const mappedKlines = mapDbKlinesReversed(dbKlines);
-      const indicators = getCurrentIndicatorValues(mappedKlines);
+      const indicators = await getCurrentIndicatorValues(mappedKlines);
 
       let trendStrength: 'strong' | 'moderate' | 'weak' | 'unknown' = 'unknown';
       if (indicators.adx !== null) {
@@ -2038,7 +2038,7 @@ export const autoTradingRouter = router({
       }
 
       const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-      const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+      const adxResult = await checkAdxCondition(btcKlinesData, 'LONG');
       const isChoppy = adxResult.adx !== null && adxResult.adx < 20;
 
       logApiTable('getBtcAdxTrendStrength', [
@@ -2192,7 +2192,7 @@ export const autoTradingRouter = router({
     let adxSaved = false;
     if (btcDbKlines.length >= 50) {
       const btcKlinesData = mapDbKlinesReversed(btcDbKlines);
-      const adxResult = checkAdxCondition(btcKlinesData, 'LONG');
+      const adxResult = await checkAdxCondition(btcKlinesData, 'LONG');
       if (adxResult.adx !== null) {
         await historyService.saveIndicatorValue('ADX', adxResult.adx, {
           plusDI: adxResult.plusDI,

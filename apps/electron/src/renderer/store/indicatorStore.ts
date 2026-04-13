@@ -1,13 +1,18 @@
-import { FIBONACCI_LEVELS } from '@marketmind/indicators';
+import { FIBONACCI_LEVELS } from '../lib/indicators';
 import { create } from 'zustand';
 import { usePreferencesStore } from './preferencesStore';
 
 export type IndicatorId =
+  | 'ema-7' | 'ema-8' | 'ema-9' | 'ema-10' | 'ema-19' | 'ema-20' | 'ema-21'
+  | 'ema-50' | 'ema-70' | 'ema-100' | 'ema-200'
   | 'volume'
   | 'rsi'
+  | 'rsi14'
   | 'stochastic'
   | 'bollingerBands'
   | 'atr'
+  | 'dailyVwap'
+  | 'weeklyVwap'
   | 'vwap'
   | 'macd'
   | 'adx'
@@ -44,7 +49,10 @@ export type IndicatorId =
   | 'cvd'
   | 'bookImbalance'
   | 'volumeProfile'
-  | 'footprint';
+  | 'footprint'
+  | 'liquidityHeatmap'
+  | 'liquidationMarkers'
+  | 'orb';
 
 export type IndicatorCategory =
   | 'oscillators'
@@ -57,7 +65,25 @@ export type IndicatorCategory =
   | 'crypto'
   | 'orderFlow';
 
+export interface MAParams {
+  period: number;
+  type: 'SMA' | 'EMA';
+  color: string;
+  lineWidth: number;
+}
+
 export interface IndicatorParams {
+  'ema-7'?: MAParams;
+  'ema-8'?: MAParams;
+  'ema-9'?: MAParams;
+  'ema-10'?: MAParams;
+  'ema-19'?: MAParams;
+  'ema-20'?: MAParams;
+  'ema-21'?: MAParams;
+  'ema-50'?: MAParams;
+  'ema-70'?: MAParams;
+  'ema-100'?: MAParams;
+  'ema-200'?: MAParams;
   macd?: { fast: number; slow: number; signal: number };
   adx?: { period: number };
   williamsR?: { period: number };
@@ -87,6 +113,17 @@ export interface IndicatorParams {
 }
 
 export const DEFAULT_INDICATOR_PARAMS: IndicatorParams = {
+  'ema-7': { period: 7, type: 'EMA', color: '#00bfff', lineWidth: 1 },
+  'ema-8': { period: 8, type: 'EMA', color: '#00bcd4', lineWidth: 1 },
+  'ema-9': { period: 9, type: 'EMA', color: '#ff00ff', lineWidth: 1 },
+  'ema-10': { period: 10, type: 'EMA', color: '#14b8a6', lineWidth: 1 },
+  'ema-19': { period: 19, type: 'EMA', color: '#ff00ff', lineWidth: 1 },
+  'ema-20': { period: 20, type: 'EMA', color: '#2196f3', lineWidth: 1 },
+  'ema-21': { period: 21, type: 'EMA', color: '#00e676', lineWidth: 1 },
+  'ema-50': { period: 50, type: 'EMA', color: '#607d8b', lineWidth: 1 },
+  'ema-70': { period: 70, type: 'EMA', color: '#9c27b0', lineWidth: 1 },
+  'ema-100': { period: 100, type: 'EMA', color: '#607d8b', lineWidth: 2 },
+  'ema-200': { period: 200, type: 'EMA', color: '#607d8b', lineWidth: 3 },
   macd: { fast: 12, slow: 26, signal: 9 },
   adx: { period: 14 },
   williamsR: { period: 14 },
@@ -116,19 +153,20 @@ export const DEFAULT_INDICATOR_PARAMS: IndicatorParams = {
 };
 
 export const INDICATOR_CATEGORIES: Record<IndicatorCategory, IndicatorId[]> = {
-  oscillators: ['rsi', 'stochastic', 'williamsR', 'cci', 'stochRsi', 'cmo', 'mfi', 'ultimateOsc'],
+  oscillators: ['rsi', 'rsi14', 'stochastic', 'williamsR', 'cci', 'stochRsi', 'cmo', 'mfi', 'ultimateOsc'],
   momentum: ['macd', 'tsi', 'ppo', 'roc', 'ao'],
   trend: ['adx', 'aroon', 'vortex', 'parabolicSar', 'supertrend'],
   volatility: ['bollingerBands', 'atr', 'keltner', 'donchian'],
-  volume: ['volume', 'vwap', 'obv', 'cmf', 'klinger', 'elderRay'],
-  movingAverages: ['dema', 'tema', 'wma', 'hma'],
-  priceStructure: ['ichimoku', 'pivotPoints', 'fibonacci', 'fvg', 'liquidityLevels'],
+  volume: ['volume', 'dailyVwap', 'weeklyVwap', 'vwap', 'obv', 'cmf', 'klinger', 'elderRay'],
+  movingAverages: ['ema-7', 'ema-8', 'ema-9', 'ema-10', 'ema-19', 'ema-20', 'ema-21', 'ema-50', 'ema-70', 'ema-100', 'ema-200', 'dema', 'tema', 'wma', 'hma'],
+  priceStructure: ['ichimoku', 'pivotPoints', 'fibonacci', 'fvg', 'liquidityLevels', 'orb'],
   crypto: [],
-  orderFlow: ['cvd', 'bookImbalance', 'volumeProfile', 'footprint'],
+  orderFlow: ['cvd', 'bookImbalance', 'volumeProfile', 'footprint', 'liquidityHeatmap', 'liquidationMarkers'],
 };
 
 export const PANEL_INDICATORS: IndicatorId[] = [
   'rsi',
+  'rsi14',
   'stochastic',
   'macd',
   'adx',
@@ -153,9 +191,13 @@ export const PANEL_INDICATORS: IndicatorId[] = [
 ];
 
 export const OVERLAY_INDICATORS: IndicatorId[] = [
+  'ema-7', 'ema-8', 'ema-9', 'ema-10', 'ema-19', 'ema-20', 'ema-21',
+  'ema-50', 'ema-70', 'ema-100', 'ema-200',
   'volume',
   'bollingerBands',
   'atr',
+  'dailyVwap',
+  'weeklyVwap',
   'vwap',
   'ichimoku',
   'supertrend',
@@ -173,7 +215,15 @@ export const OVERLAY_INDICATORS: IndicatorId[] = [
   'activityIndicator',
   'volumeProfile',
   'footprint',
+  'liquidityHeatmap',
+  'liquidationMarkers',
+  'orb',
 ];
+
+export const isMAIndicator = (id: string): boolean => id.startsWith('ema-') || id.startsWith('sma-');
+
+export const getMAParams = (id: IndicatorId, params: IndicatorParams): MAParams | undefined =>
+  params[id as keyof IndicatorParams] as MAParams | undefined;
 
 const syncToPreferences = (activeIndicators: IndicatorId[], indicatorParams: IndicatorParams) => {
   const prefs = usePreferencesStore.getState();
@@ -202,7 +252,7 @@ interface IndicatorState {
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
-    activeIndicators: ['volume'],
+    activeIndicators: ['volume', 'ema-9', 'ema-21', 'ema-200', 'stochastic', 'rsi'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
 
     hydrate: (data) => {

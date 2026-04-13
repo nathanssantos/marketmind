@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useATRRenderer } from './useATRRenderer';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../../lib/indicators', () => ({
   calculateATR: vi.fn((klines: unknown[], period: number) => {
     const klinesArray = klines as Array<{ high: string; low: string; close: string }>;
     return klinesArray.map((_, i) => (i >= period - 1 ? 100 + i * 10 : undefined));

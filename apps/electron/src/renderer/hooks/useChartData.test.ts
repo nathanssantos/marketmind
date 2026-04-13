@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import type { Timeframe } from '../components/Chart/TimeframeSelector';
-import type { MovingAverageConfig } from '../components/Chart/useMovingAverageRenderer';
 import { ChartProvider } from '../context/ChartContext';
 import { useChartData } from './useChartData';
 
@@ -23,7 +22,6 @@ describe('useChartData', () => {
     timeframe: '1h' as Timeframe,
     chartType: 'kline' as 'kline' | 'line',
     showVolume: true,
-    movingAverages: [] as MovingAverageConfig[],
   };
 
   it('should update chart context with provided params', () => {
@@ -116,11 +114,7 @@ describe('useChartData', () => {
       }
     );
 
-    const movingAverages: MovingAverageConfig[] = [
-      { period: 20, type: 'SMA', color: '#ff0000', visible: true },
-    ];
-
-    rerender({ params: { ...mockParams, movingAverages } });
+    rerender({ params: { ...mockParams } });
 
     expect(true).toBe(true);
   });

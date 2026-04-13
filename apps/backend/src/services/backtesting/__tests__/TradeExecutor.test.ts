@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Kline } from '@marketmind/types';
 
-vi.mock('@marketmind/indicators', () => ({
-  calculateATR: vi.fn(() => []),
+const { mockCompute } = vi.hoisted(() => ({
+  mockCompute: vi.fn().mockResolvedValue([]),
+}));
+vi.mock('../../../services/pine/PineIndicatorService', () => ({
+  PineIndicatorService: class {
+    compute = mockCompute;
+    computeMulti = vi.fn().mockResolvedValue({});
+  },
 }));
 
 vi.mock('../../../utils/id', () => ({
@@ -20,7 +26,6 @@ vi.mock('../PositionSizer', () => ({
 }));
 
 import { TradeExecutor, type TradeExecutorConfig } from '../TradeExecutor';
-import { calculateATR } from '@marketmind/indicators';
 import { PositionSizer } from '../PositionSizer';
 
 const createMockKline = (options: {
@@ -67,7 +72,7 @@ const createMockTrade = (pnlPercent: number) => ({
 describe('TradeExecutor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(calculateATR).mockReturnValue([]);
+    mockCompute.mockResolvedValue([]);
   });
 
   describe('constructor', () => {
@@ -258,48 +263,48 @@ describe('TradeExecutor', () => {
   });
 
   describe('applyVolatilityAdjustment', () => {
-    it('should not adjust when insufficient klines', () => {
+    it('should not adjust when insufficient klines', async () => {
       const executor = new TradeExecutor({});
       const klines: Kline[] = [];
 
-      const result = executor.applyVolatilityAdjustment(0.1, 50000, klines, 5, 0);
+      const result = await executor.applyVolatilityAdjustment(0.1, 50000, klines, 5, 0);
 
       expect(result.positionSize).toBe(0.1);
       expect(result.positionValue).toBe(5000);
     });
 
-    it('should not adjust when no ATR available', () => {
-      vi.mocked(calculateATR).mockReturnValue([]);
+    it('should not adjust when no ATR available', async () => {
+      mockCompute.mockResolvedValue([]);
       const executor = new TradeExecutor({});
       const klines = Array(20).fill(null).map((_, i) =>
         createMockKline({ openTime: Date.now() + i * 3600000, open: '50000', high: '51000', low: '49000', close: '50000' })
       );
 
-      const result = executor.applyVolatilityAdjustment(0.1, 50000, klines, 15, 0);
+      const result = await executor.applyVolatilityAdjustment(0.1, 50000, klines, 15, 0);
 
       expect(result.positionSize).toBe(0.1);
     });
 
-    it('should reduce position size in high volatility', () => {
-      vi.mocked(calculateATR).mockReturnValue([2000]);
+    it('should reduce position size in high volatility', async () => {
+      mockCompute.mockResolvedValue([2000]);
       const executor = new TradeExecutor({});
       const klines = Array(20).fill(null).map((_, i) =>
         createMockKline({ openTime: Date.now() + i * 3600000, open: '50000', high: '52000', low: '48000', close: '50000' })
       );
 
-      const result = executor.applyVolatilityAdjustment(0.1, 50000, klines, 15, 0);
+      const result = await executor.applyVolatilityAdjustment(0.1, 50000, klines, 15, 0);
 
       expect(result.positionSize).toBeCloseTo(0.07, 5);
     });
 
-    it('should not reduce in normal volatility', () => {
-      vi.mocked(calculateATR).mockReturnValue([500]);
+    it('should not reduce in normal volatility', async () => {
+      mockCompute.mockResolvedValue([500]);
       const executor = new TradeExecutor({});
       const klines = Array(20).fill(null).map((_, i) =>
         createMockKline({ openTime: Date.now() + i * 3600000, open: '50000', high: '50500', low: '49500', close: '50000' })
       );
 
-      const result = executor.applyVolatilityAdjustment(0.1, 50000, klines, 15, 0);
+      const result = await executor.applyVolatilityAdjustment(0.1, 50000, klines, 15, 0);
 
       expect(result.positionSize).toBe(0.1);
     });

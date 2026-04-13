@@ -1,0 +1,56 @@
+// @id vwap-pullback
+// @name VWAP Pullback Strategy
+// @version 1.0.0
+// @description VWAP pullback strategy (LONG ONLY). Enters when price is above VWAP with RSI pullback. Best on intraday timeframes (5-15m).
+// @author Institutional Trading
+// @tags vwap,pullback,intraday,trend-following,2025
+// @strategyType TREND_FOLLOWING
+// @momentumType PULLBACK
+// @param rsiPeriod RSI period
+// @param rsiOversold RSI oversold for long (relaxed)
+// @param rsiOverbought RSI overbought for short
+// @param emaTrend Trend EMA
+// @param atrPeriod ATR period
+// @param slMultiplier SL ATR multiplier
+// @param tpMultiplier TP ATR multiplier
+
+//@version=5
+indicator('VWAP Pullback Strategy', overlay=true)
+
+rsiPeriod = input.int(7, 'rsiPeriod', minval=5, maxval=14, step=2)
+rsiOversold = input.int(45, 'rsiOversold', minval=35, maxval=55, step=5)
+rsiOverbought = input.int(60, 'rsiOverbought', minval=50, maxval=70, step=5)
+atrPeriod = input.int(14, 'atrPeriod', minval=10, maxval=20, step=2)
+slMultiplier = input.float(1.2, 'slMultiplier', minval=0.8, maxval=2, step=0.2)
+tpMultiplier = input.float(2, 'tpMultiplier', minval=1.5, maxval=3, step=0.5)
+
+vwap = ta.vwap(hlc3)
+rsi = ta.rsi(close, rsiPeriod)
+emaTrend = ta.ema(close, emaTrend)
+atr = ta.atr(atrPeriod)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > vwap and rsi < rsiOversold)
+shortEntry = false
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = close > open ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * tpMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * tpMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

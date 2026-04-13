@@ -200,6 +200,32 @@ export interface ChartThemeColors extends BaseChartColors {
     valueAreaFill: string;
   };
   indicatorZone?: string;
+  panel?: {
+    background: string;
+    scaleLabel: string;
+    label: string;
+  };
+  vwap?: {
+    daily: string;
+    weekly: string;
+    monthly: string;
+  };
+  atrTrailing?: {
+    long: string;
+    short: string;
+  };
+  drawing?: {
+    fibonacci: string;
+    fibGolden: string;
+    fibKeyLevel: string;
+    buyZone: string;
+    dangerZone: string;
+    selected: string;
+    labelBg: string;
+    areaFill: string;
+    snapIndicator: string;
+    snapLabel: string;
+  };
 }
 
 export type ChartColors = ChartThemeColors;

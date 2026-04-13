@@ -1,5 +1,6 @@
-import { calculateEMA, calculateFVG } from '@marketmind/indicators';
+import { calculateFVG } from '../../lib/indicators';
 import type { Kline } from '@marketmind/types';
+import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { isDirectionAllowed } from '../../utils/trading-validation';
 import {
   checkBtcCorrelation,
@@ -124,6 +125,7 @@ export class FilterManager {
   private emaTrend: number[] = [];
   private openPositionsBySymbol: Map<string, 'LONG' | 'SHORT'> = new Map();
   private positionsPerStrategy: Map<string, number> = new Map();
+  private pineService = new PineIndicatorService();
 
   public stats: FilterStats = {
     ...createFilterStatsInit(),
@@ -148,16 +150,16 @@ export class FilterManager {
     this.config = config;
   }
 
-  runRegisteredFilters(
+  async runRegisteredFilters(
     klines: Kline[],
     setupIndex: number,
     direction: 'LONG' | 'SHORT',
     setupType: string,
-  ): boolean {
+  ): Promise<boolean> {
     const filterKlines = klines.slice(0, setupIndex + 1);
     for (const filter of getSyncFilters()) {
       if (!this.config[filter.enableKey as keyof FilterConfig]) continue;
-      const result = filter.run!(filterKlines, direction, setupType, this.config as unknown as Record<string, unknown>);
+      const result = await filter.run!(filterKlines, direction, setupType, this.config as unknown as Record<string, unknown>);
       if (!result.isAllowed) {
         const statsRecord = this.stats as unknown as Record<string, number>;
         statsRecord[filter.statsKey] = (statsRecord[filter.statsKey] ?? 0) + 1;
@@ -167,16 +169,16 @@ export class FilterManager {
     return true;
   }
 
-  runValidatorFilters(
+  async runValidatorFilters(
     klines: Kline[],
     setupIndex: number,
     direction: 'LONG' | 'SHORT',
     setupType: string,
-  ): boolean {
+  ): Promise<boolean> {
     const filterKlines = klines.slice(0, setupIndex + 1);
     for (const filter of getFilterValidatorSyncFilters()) {
       if (!this.config[filter.enableKey as keyof FilterConfig]) continue;
-      const result = filter.run!(filterKlines, direction, setupType, this.config as unknown as Record<string, unknown>);
+      const result = await filter.run!(filterKlines, direction, setupType, this.config as unknown as Record<string, unknown>);
       if (!result.isAllowed) {
         const statsRecord = this.stats as unknown as Record<string, number>;
         statsRecord[filter.statsKey] = (statsRecord[filter.statsKey] ?? 0) + 1;
@@ -188,7 +190,7 @@ export class FilterManager {
 
   async initialize(klines: Kline[], _startDate: string, _endDate: string, _symbol: string): Promise<void> {
     const trendPeriod = this.config.trendFilterPeriod ?? 21;
-    const emaResult = calculateEMA(klines, trendPeriod);
+    const emaResult = await this.pineService.compute('ema', klines, { period: trendPeriod });
     this.emaTrend = emaResult.map(v => v ?? 0);
   }
 
@@ -269,16 +271,16 @@ export class FilterManager {
     return true;
   }
 
-  checkStochasticHtfFilter(
+  async checkStochasticHtfFilter(
     htfKlines: Kline[],
     setupTimestamp: number,
     direction: 'LONG' | 'SHORT',
     tradesCount: number
-  ): boolean {
+  ): Promise<boolean> {
     if (!this.config.useStochasticHtfFilter) return true;
     if (htfKlines.length === 0) return true;
 
-    const result = checkStochasticHtfCondition(htfKlines, setupTimestamp, direction);
+    const result = await checkStochasticHtfCondition(htfKlines, setupTimestamp, direction);
 
     if (!result.isAllowed) {
       this.stats.skippedStochasticHtf++;
@@ -296,16 +298,16 @@ export class FilterManager {
     return true;
   }
 
-  checkStochasticRecoveryHtfFilter(
+  async checkStochasticRecoveryHtfFilter(
     htfKlines: Kline[],
     setupTimestamp: number,
     direction: 'LONG' | 'SHORT',
     tradesCount: number
-  ): boolean {
+  ): Promise<boolean> {
     if (!this.config.useStochasticRecoveryHtfFilter) return true;
     if (htfKlines.length === 0) return true;
 
-    const result = checkStochasticRecoveryHtfCondition(htfKlines, setupTimestamp, direction);
+    const result = await checkStochasticRecoveryHtfCondition(htfKlines, setupTimestamp, direction);
 
     if (!result.isAllowed) {
       this.stats.skippedStochasticRecoveryHtf++;
@@ -323,19 +325,19 @@ export class FilterManager {
     return true;
   }
 
-  checkTrendFilter(
+  async checkTrendFilter(
     klines: Kline[],
     setupIndex: number,
     direction: 'LONG' | 'SHORT',
     useTrendFilter: boolean,
     tradesCount: number
-  ): boolean {
+  ): Promise<boolean> {
     if (!useTrendFilter) return true;
 
     const trendKlines = klines.slice(0, setupIndex + 1);
     if (trendKlines.length < 2) return true;
 
-    const result = checkTrendCondition(trendKlines, direction);
+    const result = await checkTrendCondition(trendKlines, direction);
 
     if (!result.isAllowed) {
       this.stats.skippedTrend++;
@@ -384,12 +386,12 @@ export class FilterManager {
     this.stats.skippedLimitExpired++;
   }
 
-  checkMtfFilter(
+  async checkMtfFilter(
     htfKlines: Kline[],
     direction: 'LONG' | 'SHORT',
     htfInterval: string | null,
     tradesCount: number
-  ): { passed: boolean; result: MtfFilterResult | null } {
+  ): Promise<{ passed: boolean; result: MtfFilterResult | null }> {
     if (!this.config.useMtfFilter || !htfInterval) {
       return { passed: true, result: null };
     }
@@ -398,7 +400,7 @@ export class FilterManager {
       return { passed: true, result: null };
     }
 
-    const result = checkMtfCondition(htfKlines, direction, htfInterval);
+    const result = await checkMtfCondition(htfKlines, direction, htfInterval);
 
     if (!result.isAllowed) {
       this.stats.skippedMtf++;
@@ -411,12 +413,12 @@ export class FilterManager {
     return { passed: true, result };
   }
 
-  checkBtcCorrelationFilter(
+  async checkBtcCorrelationFilter(
     btcKlines: Kline[],
     direction: 'LONG' | 'SHORT',
     symbol: string,
     tradesCount: number
-  ): { passed: boolean; result: BtcCorrelationResult | null } {
+  ): Promise<{ passed: boolean; result: BtcCorrelationResult | null }> {
     if (!this.config.useBtcCorrelationFilter) {
       return { passed: true, result: null };
     }
@@ -425,7 +427,7 @@ export class FilterManager {
       return { passed: true, result: null };
     }
 
-    const result = checkBtcCorrelation(btcKlines, direction, symbol);
+    const result = await checkBtcCorrelation(btcKlines, direction, symbol);
 
     if (!result.isAllowed) {
       this.stats.skippedBtcCorrelation++;
@@ -438,12 +440,12 @@ export class FilterManager {
     return { passed: true, result };
   }
 
-  checkMarketRegimeFilter(
+  async checkMarketRegimeFilter(
     klines: Kline[],
     setupIndex: number,
     setupType: string,
     tradesCount: number
-  ): { passed: boolean; result: MarketRegimeResult | null } {
+  ): Promise<{ passed: boolean; result: MarketRegimeResult | null }> {
     if (!this.config.useMarketRegimeFilter) {
       return { passed: true, result: null };
     }
@@ -453,7 +455,7 @@ export class FilterManager {
     }
 
     const regimeKlines = klines.slice(Math.max(0, setupIndex - 50), setupIndex + 1);
-    const result = checkMarketRegime(regimeKlines, setupType);
+    const result = await checkMarketRegime(regimeKlines, setupType);
 
     if (!result.isAllowed) {
       this.stats.skippedMarketRegime++;
@@ -466,13 +468,13 @@ export class FilterManager {
     return { passed: true, result };
   }
 
-  checkVolumeFilter(
+  async checkVolumeFilter(
     klines: Kline[],
     setupIndex: number,
     direction: 'LONG' | 'SHORT',
     setupType: string,
     tradesCount: number
-  ): { passed: boolean; result: VolumeFilterResult | null } {
+  ): Promise<{ passed: boolean; result: VolumeFilterResult | null }> {
     if (!this.config.useVolumeFilter) {
       return { passed: true, result: null };
     }
@@ -482,7 +484,7 @@ export class FilterManager {
     }
 
     const volumeKlines = klines.slice(Math.max(0, setupIndex - 30), setupIndex + 1);
-    const result = checkVolumeCondition(volumeKlines, direction, setupType, this.config.volumeFilterConfig);
+    const result = await checkVolumeCondition(volumeKlines, direction, setupType, this.config.volumeFilterConfig);
 
     if (!result.isAllowed) {
       this.stats.skippedVolume++;

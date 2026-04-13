@@ -1,5 +1,7 @@
-import { calculateBollingerBands, calculateBBWidth } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { BollingerSqueezeFilterResult, Kline } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 const DEFAULT_BB_PERIOD = 20;
 const DEFAULT_BB_STD_DEV = 2;
@@ -13,12 +15,12 @@ export const BOLLINGER_SQUEEZE_FILTER = {
 
 export type { BollingerSqueezeFilterResult };
 
-export const checkBollingerSqueezeCondition = (
+export const checkBollingerSqueezeCondition = async (
   klines: Kline[],
   threshold: number = DEFAULT_SQUEEZE_THRESHOLD,
   period: number = DEFAULT_BB_PERIOD,
   stdDev: number = DEFAULT_BB_STD_DEV,
-): BollingerSqueezeFilterResult => {
+): Promise<BollingerSqueezeFilterResult> => {
   if (klines.length < period) {
     return {
       isAllowed: true,
@@ -28,9 +30,17 @@ export const checkBollingerSqueezeCondition = (
     };
   }
 
-  const bb = calculateBollingerBands(klines, period, stdDev);
+  const bbResult = await pineService.computeMulti('bb', klines, { period, stdDev });
+  const upperValues = bbResult['upper'] ?? [];
+  const middleValues = bbResult['middle'] ?? [];
+  const lowerValues = bbResult['lower'] ?? [];
 
-  if (!bb) {
+  const lastIndex = upperValues.length - 1;
+  const upper = upperValues[lastIndex] ?? null;
+  const middle = middleValues[lastIndex] ?? null;
+  const lower = lowerValues[lastIndex] ?? null;
+
+  if (upper === null || middle === null || lower === null || middle === 0) {
     return {
       isAllowed: true,
       bbWidth: null,
@@ -39,7 +49,7 @@ export const checkBollingerSqueezeCondition = (
     };
   }
 
-  const bbWidth = calculateBBWidth(bb);
+  const bbWidth = (upper - lower) / middle;
   const isSqueezing = bbWidth < threshold;
 
   if (isSqueezing) {

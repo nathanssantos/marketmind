@@ -1,0 +1,48 @@
+// @id bollinger-breakout-crypto
+// @name Bollinger Bands Breakout Crypto
+// @version 1.0.0
+// @description Estratégia de breakout usando Bollinger Bands: entry quando preço cruza abaixo da lower band e depois volta para dentro. Exit na middle band. Efetivo em mercados voláteis.
+// @author MarketMind
+// @tags mean-reversion,bollinger,breakout,volatility
+// @strategyType MEAN_REVERSION
+// @momentumType BREAKOUT
+// @param bbPeriod Período das Bollinger Bands
+// @param bbStdDev Desvios padrão
+// @param atrMultiplier Multiplicador ATR para stop
+
+//@version=5
+indicator('Bollinger Bands Breakout Crypto', overlay=true)
+
+bbPeriod = input.int(20, 'bbPeriod', minval=15, maxval=30, step=5)
+bbStdDev = input.float(2, 'bbStdDev', minval=1.5, maxval=3, step=0.5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+[bb_middle, bb_upper, bb_lower] = ta.bb(close, bbPeriod, bbStdDev)
+bb_bandwidth = (bb_upper - bb_lower) / bb_middle
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close[1] < bb_lower[1] and close > bb_lower)
+shortEntry = (close[1] > bb_upper[1] and close < bb_upper)
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = bb_bandwidth < 0.1 ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 90)
+
+exitLong = close >= bb_middle
+exitShort = close <= bb_middle
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

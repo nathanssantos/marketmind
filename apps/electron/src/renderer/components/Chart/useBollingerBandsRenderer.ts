@@ -1,8 +1,8 @@
-import { calculateBollingerBandsArray } from '@marketmind/indicators';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import { useBBWorker } from '@renderer/hooks/useBBWorker';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
-import { useCallback, useMemo } from 'react';
+import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
+import { useCallback } from 'react';
 
 export interface UseBollingerBandsRendererProps {
   manager: CanvasManager | null;
@@ -21,12 +21,8 @@ export const useBollingerBandsRenderer = ({
   stdDev = 2,
   rightMargin,
 }: UseBollingerBandsRendererProps) => {
-  const bollingerData = useMemo(() => {
-    if (!manager || !enabled) return null;
-    const klines = manager.getKlines();
-    if (!klines || klines.length === 0) return null;
-    return calculateBollingerBandsArray(klines, period, stdDev);
-  }, [manager, enabled, period, stdDev, manager?.getKlines()?.length]);
+  const klines = manager?.getKlines() ?? [];
+  const bollingerData = useBBWorker(klines, period, stdDev, enabled && klines.length > 0);
 
   const render = useCallback((): void => {
     if (!manager || !enabled || !bollingerData) return;
@@ -51,7 +47,7 @@ export const useBollingerBandsRenderer = ({
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, effectiveWidth, chartHeight);
+    ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
     const upperPoints: Array<{ x: number; y: number }> = [];
@@ -59,15 +55,15 @@ export const useBollingerBandsRenderer = ({
     const middlePoints: Array<{ x: number; y: number }> = [];
 
     for (let i = startIndex; i < endIndex; i++) {
-      const bb = bollingerData[i];
-      if (!bb) continue;
+      const upper = bollingerData.upper[i];
+      const middle = bollingerData.middle[i];
+      const lower = bollingerData.lower[i];
+      if (upper == null || middle == null || lower == null) continue;
 
       const x = manager.indexToX(i) + klineCenterOffset;
-      if (x > effectiveWidth) break;
-
-      upperPoints.push({ x, y: manager.priceToY(bb.upper) });
-      middlePoints.push({ x, y: manager.priceToY(bb.middle) });
-      lowerPoints.push({ x, y: manager.priceToY(bb.lower) });
+      upperPoints.push({ x, y: manager.priceToY(upper) });
+      middlePoints.push({ x, y: manager.priceToY(middle) });
+      lowerPoints.push({ x, y: manager.priceToY(lower) });
     }
 
     if (upperPoints.length > 1 && lowerPoints.length > 1) {
@@ -88,7 +84,7 @@ export const useBollingerBandsRenderer = ({
     }
 
     ctx.strokeStyle = colors.bollingerBands?.upper ?? INDICATOR_COLORS.BOLLINGER_UPPER;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.OVERLAY;
     ctx.beginPath();
     if (upperPoints.length > 0) {
       ctx.moveTo(upperPoints[0]!.x, upperPoints[0]!.y);
@@ -109,7 +105,7 @@ export const useBollingerBandsRenderer = ({
     ctx.stroke();
 
     ctx.strokeStyle = colors.bollingerBands?.middle ?? INDICATOR_COLORS.BOLLINGER_MIDDLE;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.OVERLAY_MIDDLE;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
     if (middlePoints.length > 0) {

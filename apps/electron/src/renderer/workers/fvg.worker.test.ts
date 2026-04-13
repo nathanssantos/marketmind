@@ -1,7 +1,7 @@
-import { calculateFVG } from '@marketmind/indicators';
+import { calculateFVG } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateFVG: vi.fn(() => ({ gaps: [] })),
 }));
 

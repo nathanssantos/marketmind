@@ -1,0 +1,50 @@
+// @id altcoin-season
+// @name Altcoin Season
+// @version 1.0.0
+// @description Detecta altcoin season via BTC dominance e performance relativa. Entry em altcoins quando BTC dominance cai e altcoins outperformam.
+// @author MarketMind
+// @tags altcoin,season,dominance,relative-strength
+// @strategyType ANY
+// @momentumType ANY
+// @param dominanceThreshold BTC dominance threshold %
+// @param dominanceFalling Dominance queda % em 30 dias
+// @param atrMultiplier ATR stop
+
+//@version=5
+indicator('Altcoin Season', overlay=true)
+
+dominanceThreshold = input.float(50, 'dominanceThreshold', minval=45, maxval=55, step=2.5)
+dominanceFalling = input.int(5, 'dominanceFalling', minval=2, maxval=10, step=1)
+atrMultiplier = input.float(2.5, 'atrMultiplier', minval=2, maxval=3.5, step=0.5)
+
+btcDominance_value = 50.0
+btcDominance_sma = 50.0
+btcDominance_change30d = 0.0
+relativeStrength = ta.rsi(close, 14)
+ema50 = ta.ema(close, 50)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (btcDominance_value < dominanceThreshold and btcDominance_change30d < (-1 * dominanceFalling) and relativeStrength > 1 and close > ema50)
+shortEntry = (btcDominance_value > dominanceThreshold and btcDominance_change30d > dominanceFalling and relativeStrength < 1 and close < ema50)
+
+confBase = 70
+confBonus0 = relativeStrength > 1.5 ? 15 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = btcDominance_change30d > 0
+exitShort = btcDominance_change30d < 0
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 3 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 3 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

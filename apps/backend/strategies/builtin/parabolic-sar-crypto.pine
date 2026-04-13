@@ -1,0 +1,49 @@
+// @id parabolic-sar-crypto
+// @name Parabolic SAR Crypto
+// @version 1.0.0
+// @description Parabolic SAR stop and reverse strategy. SAR segue preço e acelera em tendências. Entry quando SAR flip de acima para abaixo ou vice-versa.
+// @author MarketMind
+// @tags trend-following,parabolic-sar,stop-reverse
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param sarStart SAR acceleration start
+// @param sarIncrement SAR acceleration increment
+// @param sarMax SAR max acceleration
+// @param atrMultiplier ATR backup stop
+
+//@version=5
+indicator('Parabolic SAR Crypto', overlay=true)
+
+sarStart = input.float(0.02, 'sarStart', minval=0.01, maxval=0.03, step=0.005)
+sarIncrement = input.float(0.02, 'sarIncrement', minval=0.01, maxval=0.03, step=0.005)
+sarMax = input.float(0.2, 'sarMax', minval=0.1, maxval=0.3, step=0.05)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2.5, step=0.5)
+
+sar = ta.sar(sarStart, sarIncrement, sarMax)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (close > sar and close[1] <= sar[1])
+shortEntry = (close < sar and close[1] >= sar[1])
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = atr > atr[1] ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 85)
+
+exitLong = close < sar
+exitShort = close > sar
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 2 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 2 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

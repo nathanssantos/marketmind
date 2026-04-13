@@ -207,3 +207,6 @@ apps/backend/backtest-results/
 apps/backend/models/
 apps/backend/logs/
 results/
+*.log
+optimization-log*.txt
+.vercel

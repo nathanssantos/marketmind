@@ -1,7 +1,7 @@
-import { calculateCMF } from '@marketmind/indicators';
+import { calculateCMF } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateCMF: vi.fn(() => ({ values: [0.2, -0.1, 0.3] })),
 }));
 

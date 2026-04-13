@@ -1,0 +1,50 @@
+// @id supertrend-follow
+// @name Supertrend Trend Following
+// @version 1.0.0
+// @description Simple but effective trend following strategy using Supertrend indicator. Entry on Supertrend flip, trails with Supertrend value. Works well in trending markets.
+// @author MarketMind
+// @tags trend-following,supertrend,simple,trailing
+// @strategyType TREND_FOLLOWING
+// @momentumType PULLBACK
+// @param supertrendPeriod Supertrend ATR period
+// @param supertrendMultiplier Supertrend multiplier
+// @param atrMultiplier ATR multiplier for stop loss
+// @param rrMultiplier Risk-reward multiplier
+
+//@version=5
+indicator('Supertrend Trend Following', overlay=true)
+
+supertrendPeriod = input.int(10, 'supertrendPeriod', minval=7, maxval=14, step=1)
+supertrendMultiplier = input.float(3, 'supertrendMultiplier', minval=2, maxval=4, step=0.5)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2.5, step=0.5)
+rrMultiplier = input.float(2, 'rrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+[supertrend_value, supertrend_trend] = ta.supertrend(supertrendMultiplier, supertrendPeriod)
+atr = ta.atr(14)
+ema20 = ta.ema(close, 20)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (ta.crossover(close, ema20) and supertrend_trend > 0)
+shortEntry = (ta.crossunder(close, ema20) and supertrend_trend < 0)
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = atr > 0 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1, 85)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * rrMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * rrMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

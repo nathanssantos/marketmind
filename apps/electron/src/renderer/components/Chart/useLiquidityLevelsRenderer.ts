@@ -1,7 +1,7 @@
-import type { LiquidityLevel } from '@marketmind/indicators';
+import type { LiquidityLevel } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
 import { useCallback } from 'react';
 
 interface UseLiquidityLevelsRendererProps {
@@ -29,6 +29,9 @@ export const useLiquidityLevelsRenderer = ({
     const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const topLevels = liquidityData.slice(0, 10);
 
@@ -37,12 +40,11 @@ export const useLiquidityLevelsRenderer = ({
 
       if (y < 0 || y > chartHeight) continue;
 
-      const opacity = Math.min(0.8, level.strength / 100);
       const isResistance = level.type === 'resistance';
 
       ctx.strokeStyle = isResistance
-        ? (colors.liquidityLevels?.resistance ?? `rgba(239, 68, 68, ${opacity})`)
-        : (colors.liquidityLevels?.support ?? `rgba(34, 197, 94, ${opacity})`);
+        ? (colors.liquidityLevels?.resistance ?? INDICATOR_COLORS.LIQUIDITY_RESISTANCE)
+        : (colors.liquidityLevels?.support ?? INDICATOR_COLORS.LIQUIDITY_SUPPORT);
       ctx.lineWidth = Math.max(1, level.touches * 0.5);
       ctx.setLineDash([8, 4]);
       ctx.beginPath();
@@ -52,8 +54,8 @@ export const useLiquidityLevelsRenderer = ({
       ctx.setLineDash([]);
 
       const labelBg = isResistance
-        ? (colors.liquidityLevels?.resistanceBg ?? 'rgba(239, 68, 68, 0.2)')
-        : (colors.liquidityLevels?.supportBg ?? 'rgba(34, 197, 94, 0.2)');
+        ? (colors.liquidityLevels?.resistanceBg ?? INDICATOR_COLORS.LIQUIDITY_RESISTANCE_BG)
+        : (colors.liquidityLevels?.supportBg ?? INDICATOR_COLORS.LIQUIDITY_SUPPORT_BG);
 
       const label = `${level.type.charAt(0).toUpperCase()} (${level.touches})`;
       ctx.font = '9px monospace';
@@ -63,8 +65,8 @@ export const useLiquidityLevelsRenderer = ({
       ctx.fillRect(effectiveWidth - textWidth - 8, y - 8, textWidth + 6, 16);
 
       ctx.fillStyle = isResistance
-        ? (colors.liquidityLevels?.resistance ?? 'rgba(239, 68, 68, 0.9)')
-        : (colors.liquidityLevels?.support ?? 'rgba(34, 197, 94, 0.9)');
+        ? (colors.liquidityLevels?.resistance ?? INDICATOR_COLORS.LIQUIDITY_RESISTANCE)
+        : (colors.liquidityLevels?.support ?? INDICATOR_COLORS.LIQUIDITY_SUPPORT);
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(label, effectiveWidth - 4, y);

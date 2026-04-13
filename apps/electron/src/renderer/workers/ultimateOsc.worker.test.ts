@@ -1,7 +1,7 @@
-import { calculateUltimateOscillator } from '@marketmind/indicators';
+import { calculateUltimateOscillator } from '../lib/indicators';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@marketmind/indicators', () => ({
+vi.mock('../lib/indicators', () => ({
   calculateUltimateOscillator: vi.fn(() => [50, 55, 60]),
 }));
 

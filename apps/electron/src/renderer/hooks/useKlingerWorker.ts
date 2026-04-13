@@ -1,6 +1,7 @@
-import type { KlingerResult } from '@marketmind/indicators';
+import type { KlingerResult } from '@marketmind/types';
 import type { Kline } from '@marketmind/types';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useWorkerComputation } from './useWorkerComputation';
 
 export const useKlingerWorker = (
   klines: Kline[] | null,
@@ -9,33 +10,15 @@ export const useKlingerWorker = (
   slowPeriod = 55,
   signalPeriod = 13,
 ): KlingerResult | null => {
-  const [data, setData] = useState<KlingerResult | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const message = useMemo(
+    () => klines && klines.length > 0 ? { klines, fastPeriod, slowPeriod, signalPeriod } : null,
+    [klines, fastPeriod, slowPeriod, signalPeriod],
+  );
 
-  useEffect(() => {
-    if (!enabled) {
-      setData(null);
-      return;
-    }
-
-    workerRef.current = new Worker(
-      new URL('../workers/klinger.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-
-    workerRef.current.onmessage = (e: MessageEvent<KlingerResult | null>) => {
-      setData(e.data);
-    };
-
-    return () => {
-      workerRef.current?.terminate();
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!workerRef.current || !klines || !enabled) return;
-    workerRef.current.postMessage({ klines, fastPeriod, slowPeriod, signalPeriod });
-  }, [klines, enabled, fastPeriod, slowPeriod, signalPeriod]);
-
-  return data;
+  return useWorkerComputation<KlingerResult>(
+    'klinger',
+    () => new Worker(new URL('../workers/klinger.worker.ts', import.meta.url), { type: 'module' }),
+    message,
+    enabled,
+  );
 };

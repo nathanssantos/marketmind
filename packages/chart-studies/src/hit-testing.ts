@@ -1,4 +1,4 @@
-import { HIT_THRESHOLD, HANDLE_HIT_RADIUS, PENCIL_HIT_THRESHOLD } from './constants';
+import { HIT_THRESHOLD, HANDLE_HIT_RADIUS, PENCIL_HIT_THRESHOLD, GANN_ANGLES } from './constants';
 import type { Drawing, CoordinateMapper, DrawingHandle } from './types';
 
 export const pointToLineDistance = (
@@ -85,7 +85,12 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
     case 'ruler':
     case 'arrow':
     case 'rectangle':
-    case 'area': {
+    case 'area':
+    case 'ray':
+    case 'trendLine':
+    case 'priceRange':
+    case 'ellipse':
+    case 'gannFan': {
       const sx = mapper.indexToCenterX(drawing.startIndex);
       const sy = mapper.priceToY(drawing.startPrice);
       const ex = mapper.indexToCenterX(drawing.endIndex);
@@ -105,7 +110,8 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
         { drawingId: drawing.id, handleType: 'swingHigh', x: highX, y: highY },
       ];
     }
-    case 'pencil': {
+    case 'pencil':
+    case 'highlighter': {
       if (drawing.points.length === 0) return [];
       const first = drawing.points[0]!;
       const last = drawing.points[drawing.points.length - 1]!;
@@ -118,6 +124,39 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
       const tx = mapper.indexToCenterX(drawing.index);
       const ty = mapper.priceToY(drawing.price);
       return [{ drawingId: drawing.id, handleType: 'start', x: tx, y: ty }];
+    }
+    case 'horizontalLine':
+    case 'verticalLine':
+    case 'anchoredVwap': {
+      const hx = mapper.indexToCenterX(drawing.index);
+      const hy = mapper.priceToY(drawing.price);
+      return [{ drawingId: drawing.id, handleType: 'start', x: hx, y: hy }];
+    }
+    case 'longPosition':
+    case 'shortPosition': {
+      const ex = mapper.indexToCenterX(drawing.entryIndex);
+      const entryY = mapper.priceToY(drawing.entryPrice);
+      const slY = mapper.priceToY(drawing.stopLossPrice);
+      const tpY = mapper.priceToY(drawing.takeProfitPrice);
+      return [
+        { drawingId: drawing.id, handleType: 'start', x: ex, y: entryY },
+        { drawingId: drawing.id, handleType: 'end', x: ex, y: slY },
+        { drawingId: drawing.id, handleType: 'width', x: ex, y: tpY },
+      ];
+    }
+    case 'channel':
+    case 'pitchfork': {
+      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sy = mapper.priceToY(drawing.startPrice);
+      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ey = mapper.priceToY(drawing.endPrice);
+      const wx = mapper.indexToCenterX(drawing.widthIndex);
+      const wy = mapper.priceToY(drawing.widthPrice);
+      return [
+        { drawingId: drawing.id, handleType: 'start', x: sx, y: sy },
+        { drawingId: drawing.id, handleType: 'end', x: ex, y: ey },
+        { drawingId: drawing.id, handleType: 'width', x: wx, y: wy },
+      ];
     }
   }
 };
@@ -148,7 +187,8 @@ export const hitTestDrawing = (
   switch (drawing.type) {
     case 'line':
     case 'ruler':
-    case 'arrow': {
+    case 'arrow':
+    case 'ray': {
       const sx = mapper.indexToCenterX(drawing.startIndex);
       const sy = mapper.priceToY(drawing.startPrice);
       const ex = mapper.indexToCenterX(drawing.endIndex);
@@ -157,8 +197,39 @@ export const hitTestDrawing = (
       if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
       break;
     }
+    case 'trendLine': {
+      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sy = mapper.priceToY(drawing.startPrice);
+      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ey = mapper.priceToY(drawing.endPrice);
+      const dx = ex - sx;
+      const dy = ey - sy;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len === 0) break;
+      const dist = Math.abs(dy * px - dx * py + ex * sy - ey * sx) / len;
+      if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
+      break;
+    }
+    case 'longPosition':
+    case 'shortPosition': {
+      const entryY = mapper.priceToY(drawing.entryPrice);
+      const slY = mapper.priceToY(drawing.stopLossPrice);
+      const tpY = mapper.priceToY(drawing.takeProfitPrice);
+      const x1 = mapper.indexToCenterX(drawing.entryIndex);
+      const minY = Math.min(entryY, slY, tpY);
+      const maxY = Math.max(entryY, slY, tpY);
+      if (px >= x1 - 20 && py >= minY - HIT_THRESHOLD && py <= maxY + HIT_THRESHOLD) {
+        if (Math.abs(py - entryY) <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: Math.abs(py - entryY) };
+        if (Math.abs(py - slY) <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: Math.abs(py - slY) };
+        if (Math.abs(py - tpY) <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: Math.abs(py - tpY) };
+        if (py >= minY && py <= maxY) return { drawingId: drawing.id, handleType: 'body', distance: 0 };
+      }
+      break;
+    }
     case 'rectangle':
-    case 'area': {
+    case 'area':
+    case 'priceRange':
+    case 'ellipse': {
       const sx = mapper.indexToCenterX(drawing.startIndex);
       const sy = mapper.priceToY(drawing.startPrice);
       const ex = mapper.indexToCenterX(drawing.endIndex);
@@ -167,7 +238,8 @@ export const hitTestDrawing = (
       if (pointNearRectBorder(px, py, sx, sy, ex, ey)) return { drawingId: drawing.id, handleType: null, distance: 0 };
       break;
     }
-    case 'pencil': {
+    case 'pencil':
+    case 'highlighter': {
       const screenPoints = drawing.points.map(p => ({
         x: mapper.indexToCenterX(p.index),
         y: mapper.priceToY(p.price),
@@ -201,6 +273,77 @@ export const hitTestDrawing = (
       const w = drawing.text.length * drawing.fontSize * 0.6;
       const h = drawing.fontSize * 1.2;
       if (pointInRect(px, py, tx, ty - h, tx + w, ty)) return { drawingId: drawing.id, handleType: 'body', distance: 0 };
+      break;
+    }
+    case 'horizontalLine': {
+      const hy = mapper.priceToY(drawing.price);
+      const dist = Math.abs(py - hy);
+      if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
+      break;
+    }
+    case 'verticalLine': {
+      const vx = mapper.indexToCenterX(drawing.index);
+      const dist = Math.abs(px - vx);
+      if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
+      break;
+    }
+    case 'anchoredVwap': {
+      const ax = mapper.indexToCenterX(drawing.index);
+      const ay = mapper.priceToY(drawing.price);
+      const dist = Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+      if (dist <= HIT_THRESHOLD * 2) return { drawingId: drawing.id, handleType: null, distance: dist };
+      break;
+    }
+    case 'channel': {
+      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sy = mapper.priceToY(drawing.startPrice);
+      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ey = mapper.priceToY(drawing.endPrice);
+      const wx = mapper.indexToCenterX(drawing.widthIndex);
+      const wy = mapper.priceToY(drawing.widthPrice);
+      const dx = ex - sx;
+      const dy = ey - sy;
+      const d1 = pointToLineDistance(px, py, sx, sy, ex, ey);
+      if (d1 <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: d1 };
+      const d2 = pointToLineDistance(px, py, wx, wy, wx + dx, wy + dy);
+      if (d2 <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: d2 };
+      break;
+    }
+    case 'pitchfork': {
+      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sy = mapper.priceToY(drawing.startPrice);
+      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ey = mapper.priceToY(drawing.endPrice);
+      const wx = mapper.indexToCenterX(drawing.widthIndex);
+      const wy = mapper.priceToY(drawing.widthPrice);
+      const mx = (ex + wx) / 2;
+      const my = (ey + wy) / 2;
+      const d1 = pointToLineDistance(px, py, sx, sy, mx, my);
+      if (d1 <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: d1 };
+      const mdx = mx - sx;
+      const mdy = my - sy;
+      const d2 = pointToLineDistance(px, py, ex, ey, ex + mdx, ey + mdy);
+      if (d2 <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: d2 };
+      const d3 = pointToLineDistance(px, py, wx, wy, wx + mdx, wy + mdy);
+      if (d3 <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: d3 };
+      break;
+    }
+    case 'gannFan': {
+      const ox = mapper.indexToCenterX(drawing.startIndex);
+      const oy = mapper.priceToY(drawing.startPrice);
+      const rx = mapper.indexToCenterX(drawing.endIndex);
+      const ry = mapper.priceToY(drawing.endPrice);
+      const refDx = rx - ox;
+      const refDy = ry - oy;
+      const refLen = Math.sqrt(refDx * refDx + refDy * refDy);
+      if (refLen === 0) break;
+      for (const angle of GANN_ANGLES) {
+        const scale = angle.slope;
+        const lx = ox + refDx;
+        const ly = oy + refDy * scale;
+        const dist = pointToLineDistance(px, py, ox, oy, lx, ly);
+        if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
+      }
       break;
     }
   }

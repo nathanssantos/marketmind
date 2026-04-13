@@ -1,0 +1,136 @@
+import { Spinner, VStack } from '@chakra-ui/react';
+import { type FormEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { AuthLayout } from '../components/Auth/AuthLayout';
+import { Alert, Button, Field, Link, PasswordInput } from '../components/ui';
+import { useBackendAuth } from '../hooks/useBackendAuth';
+import { AUTH_UI } from '../utils/auth';
+import { trpc } from '../utils/trpc';
+
+export const ResetPasswordPage = () => {
+  const { t } = useTranslation();
+  const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
+  const { resetPassword, isResettingPassword, resetError } = useBackendAuth();
+
+  const { data: tokenStatus, isLoading: isValidating } = trpc.auth.validateResetToken.useQuery(
+    { token: token ?? '' },
+    { enabled: !!token, retry: false }
+  );
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mismatch, setMismatch] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!success) return;
+    const timer = setTimeout(() => navigate('/login'), AUTH_UI.FEEDBACK_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [success, navigate]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setMismatch(false);
+
+    if (password !== confirmPassword) {
+      setMismatch(true);
+      return;
+    }
+
+    try {
+      await resetPassword(token!, password);
+      setSuccess(true);
+    } catch {
+      // Error handled by resetError
+    }
+  };
+
+  if (isValidating) {
+    return (
+      <AuthLayout title={t('auth.resetPassword.title')}>
+        <VStack py={8}><Spinner size="lg" /></VStack>
+      </AuthLayout>
+    );
+  }
+
+  if (!tokenStatus?.valid) {
+    return (
+      <AuthLayout title={t('auth.resetPassword.title')}>
+        <VStack gap={4} align="stretch">
+          <Alert.Root status="error" size="sm">
+            <Alert.Indicator />
+            <Alert.Description>{t('auth.resetPassword.invalidToken')}</Alert.Description>
+          </Alert.Root>
+          <VStack gap={2}>
+            <Link asChild colorPalette="blue" fontSize="sm">
+              <RouterLink to="/forgot-password">{t('auth.resetPassword.requestNew')}</RouterLink>
+            </Link>
+            <Link asChild colorPalette="blue" fontSize="sm">
+              <RouterLink to="/login">{t('auth.resetPassword.backToLogin')}</RouterLink>
+            </Link>
+          </VStack>
+        </VStack>
+      </AuthLayout>
+    );
+  }
+
+  if (success) {
+    return (
+      <AuthLayout title={t('auth.resetPassword.successTitle')}>
+        <Alert.Root status="success" size="sm">
+          <Alert.Indicator />
+          <Alert.Description>{t('auth.resetPassword.successMessage')}</Alert.Description>
+        </Alert.Root>
+      </AuthLayout>
+    );
+  }
+
+  const errorMessage = mismatch
+    ? t('auth.register.passwordMismatch')
+    : resetError?.message ?? null;
+
+  return (
+    <AuthLayout title={t('auth.resetPassword.title')} subtitle={t('auth.resetPassword.subtitle')}>
+      <form onSubmit={handleSubmit}>
+        <VStack gap={4} align="stretch">
+          {errorMessage && (
+            <Alert.Root status="error" size="sm">
+              <Alert.Indicator />
+              <Alert.Description>{errorMessage}</Alert.Description>
+            </Alert.Root>
+          )}
+
+          <Field label={t('auth.resetPassword.newPassword')}>
+            <PasswordInput
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              autoFocus
+            />
+          </Field>
+
+          <Field label={t('auth.resetPassword.confirmPassword')}>
+            <PasswordInput
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+          </Field>
+
+          <Button
+            type="submit"
+            colorPalette="blue"
+            width="full"
+            loading={isResettingPassword}
+          >
+            {t('auth.resetPassword.submit')}
+          </Button>
+        </VStack>
+      </form>
+    </AuthLayout>
+  );
+};

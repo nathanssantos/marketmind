@@ -1,6 +1,6 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { CHART_CONFIG, INDICATOR_LINE_WIDTHS } from '@shared/constants/chartConfig';
 import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 
@@ -39,7 +39,7 @@ export const useLineChartRenderer = ({
     ctx.save();
 
     ctx.strokeStyle = colors.lineDefault;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = INDICATOR_LINE_WIDTHS.LINE_CHART;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 

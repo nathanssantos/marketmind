@@ -2,7 +2,7 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
 import { calculateVolumeMA, getVolumeMAPeriod } from '@renderer/utils/indicators/volume';
-import { CHART_CONFIG } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import { useCallback } from 'react';
 
@@ -143,7 +143,7 @@ export const useVolumeRenderer = ({
 
       ctx.strokeStyle = colors.volume;
       ctx.globalAlpha = 0.5;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = INDICATOR_LINE_WIDTHS.VOLUME_MA;
       ctx.beginPath();
 
       let hasMovedTo = false;

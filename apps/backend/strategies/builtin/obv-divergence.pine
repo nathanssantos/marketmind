@@ -1,0 +1,55 @@
+// @id obv-divergence
+// @name OBV Divergence
+// @version 1.0.0
+// @description Classic divergence trading using On-Balance Volume. Entry when price makes new high/low but OBV doesn't confirm. Early reversal detection with volume analysis.
+// @author MarketMind
+// @tags divergence,obv,volume,reversal,early-detection
+// @strategyType ANY
+// @momentumType REVERSAL
+// @param obvSmaPeriod OBV SMA period
+// @param lookbackPeriod Lookback for divergence
+// @param rsiPeriod RSI period for confirmation
+// @param atrMultiplier ATR multiplier for stop
+// @param rrMultiplier Risk-reward multiplier
+
+//@version=5
+indicator('OBV Divergence', overlay=true)
+
+obvSmaPeriod = input.int(20, 'obvSmaPeriod', minval=10, maxval=30, step=5)
+lookbackPeriod = input.int(10, 'lookbackPeriod', minval=5, maxval=20, step=5)
+rsiPeriod = input.int(14, 'rsiPeriod', minval=10, maxval=20, step=2)
+atrMultiplier = input.float(1.5, 'atrMultiplier', minval=1, maxval=2, step=0.25)
+rrMultiplier = input.float(2, 'rrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+obv_raw = ta.obv()
+obv_obv = obv_raw
+obv_sma = ta.sma(obv_raw, obvSmaPeriod)
+rsi = ta.rsi(close, rsiPeriod)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (obv_obv > obv_sma and rsi < 40)
+shortEntry = (obv_obv < obv_sma and rsi > 60)
+
+confBase = 65
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus1 = rsi < 30 ? 10 : 0
+confBonus2 = rsi > 70 ? 10 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * rrMultiplier : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * rrMultiplier : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -158,16 +158,6 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   contextText += `- Bearish Klines: ${bearishKlines} (${((bearishKlines / recentKlines.length) * 100).toFixed(1)}%)\n`;
   contextText += `- Overall Trend: ${trend}\n\n`;
   
-  if (chartData.movingAverages && chartData.movingAverages.length > 0) {
-    contextText += `## Moving Averages\n`;
-    chartData.movingAverages
-      .filter((ma) => ma.visible)
-      .forEach((ma) => {
-        contextText += `- ${ma.type}-${ma.period}: Active\n`;
-      });
-    contextText += `\n`;
-  }
-  
   return contextText;
 };
 

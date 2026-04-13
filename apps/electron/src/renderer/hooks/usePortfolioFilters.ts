@@ -1,25 +1,6 @@
+import type { PortfolioPosition } from '@renderer/components/Trading/portfolioTypes';
 import { type PortfolioFilterOption, type PortfolioSortOption } from '@renderer/store/uiStore';
 import { useMemo } from 'react';
-
-interface PortfolioPosition {
-  symbol: string;
-  side: 'LONG' | 'SHORT';
-  quantity: number;
-  avgPrice: number;
-  currentPrice: number;
-  pnl: number;
-  pnlPercent: number;
-  stopLoss?: number;
-  takeProfit?: number;
-  setupType?: string;
-  openedAt: Date;
-  id: string;
-  status: 'open' | 'pending';
-  limitEntryPrice?: number;
-  expiresAt?: Date;
-  count: number;
-  leverage: number;
-}
 
 export const filterPositions = (
   positions: PortfolioPosition[],

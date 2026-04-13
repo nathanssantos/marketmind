@@ -1,0 +1,55 @@
+// @id rsi-oversold-bounce
+// @name RSI Oversold Bounce
+// @version 1.0.0
+// @description RSI mean-reversion. Long: RSI crosses above 30 (oversold bounce). Short: RSI crosses below 70 (overbought reversal).
+// @author MarketMind
+// @tags reversal,rsi,oversold,momentum
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @param rsiPeriod Período do RSI
+// @param oversoldLevel RSI oversold level for long entry
+// @param overboughtLevel RSI overbought level for short entry
+// @param exitLevelLong RSI exit level for long (neutral zone)
+// @param exitLevelShort RSI exit level for short (neutral zone)
+// @param atrMultiplier Multiplicador do ATR para stop loss
+
+//@version=5
+indicator('RSI Oversold Bounce', overlay=true)
+
+rsiPeriod = input.int(14, 'rsiPeriod', minval=7, maxval=21, step=1)
+oversoldLevel = input.int(30, 'oversoldLevel', minval=20, maxval=35, step=5)
+overboughtLevel = input.int(70, 'overboughtLevel', minval=65, maxval=80, step=5)
+exitLevelLong = input.int(50, 'exitLevelLong', minval=40, maxval=60, step=5)
+exitLevelShort = input.int(50, 'exitLevelShort', minval=40, maxval=60, step=5)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1, maxval=3, step=0.5)
+
+rsi = ta.rsi(close, rsiPeriod)
+atr = ta.atr(14)
+ema20 = ta.ema(close, 20)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (rsi[1] < oversoldLevel and rsi >= oversoldLevel)
+shortEntry = (rsi[1] > overboughtLevel and rsi <= overboughtLevel)
+
+confBase = 60
+confBonus0 = rsi < 25 ? 15 : 0
+confBonus1 = volume > ta.sma(volume, 20) ? 10 : 0
+confBonus2 = close > ema20 ? 5 : 0
+confValue = math.min(confBase + confBonus0 + confBonus1 + confBonus2, 95)
+
+exitLong = rsi > exitLevelLong
+exitShort = rsi < exitLevelShort
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + atrVal * 4 : shortEntry ? close - atrVal * 4 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

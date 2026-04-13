@@ -1,6 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { FootprintBar } from '@marketmind/types';
+import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 import { useCallback } from 'react';
 
 interface UseFootprintRendererProps {
@@ -27,9 +28,16 @@ export const useFootprintRenderer = ({
     if (!ctx) return;
 
     const viewport = manager.getViewport();
+    const dimensions = manager.getDimensions();
+    if (!dimensions) return;
+
     const chartHeight = viewport.height;
+    const clipHeight = dimensions.chartHeight ?? chartHeight;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, dimensions.chartWidth, clipHeight);
+    ctx.clip();
     ctx.font = `${FONT_SIZE}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -64,7 +72,7 @@ export const useFootprintRenderer = ({
         ctx.fillRect(barCenterX - halfWidth + bidWidth, y - LEVEL_HEIGHT / 2, askWidth, LEVEL_HEIGHT);
 
         if (barWidth > 30) {
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
           const bidText = formatVolume(level.bidVol);
           const askText = formatVolume(level.askVol);
           ctx.textAlign = 'right';

@@ -1,10 +1,11 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
 import { IconButton, SidebarContainer, Tabs } from '../ui';
+import { QuickTradeActions, type QuickTradeMode } from '../Layout/QuickTradeToolbar';
 import { OrdersList } from './OrdersList';
 import { OrdersDialog } from './OrdersDialog';
 import { Portfolio } from './Portfolio';
@@ -12,9 +13,13 @@ import { Portfolio } from './Portfolio';
 interface TradingSidebarProps {
   width: number;
   onClose?: () => void;
+  symbol?: string;
+  marketType?: 'SPOT' | 'FUTURES';
+  quickTradeMode?: QuickTradeMode;
+  onQuickTradeModeChange?: (mode: QuickTradeMode) => void;
 }
 
-const TradingSidebarComponent = ({ width, onClose }: TradingSidebarProps) => {
+const TradingSidebarComponent = ({ width, onClose, symbol, marketType, quickTradeMode, onQuickTradeModeChange }: TradingSidebarProps) => {
   const { t } = useTranslation();
 
   const { tradingSidebarTab, setTradingSidebarTab } = useUIStore(useShallow((s) => ({
@@ -25,6 +30,18 @@ const TradingSidebarComponent = ({ width, onClose }: TradingSidebarProps) => {
   const handleTabChange = useCallback((details: { value: string }) => {
     setTradingSidebarTab(details.value as TradingSidebarTab);
   }, [setTradingSidebarTab]);
+
+  const quickTradeHeader = useMemo(() => {
+    if (!symbol || quickTradeMode !== 'sidebar' || !onQuickTradeModeChange) return undefined;
+    return (
+      <QuickTradeActions
+        symbol={symbol}
+        marketType={marketType}
+        onMenuAction={onQuickTradeModeChange}
+        currentMode={quickTradeMode}
+      />
+    );
+  }, [symbol, marketType, quickTradeMode, onQuickTradeModeChange]);
 
   return (
     <SidebarContainer width={width}>
@@ -52,7 +69,7 @@ const TradingSidebarComponent = ({ width, onClose }: TradingSidebarProps) => {
           </Tabs.Content>
 
           <Tabs.Content value="portfolio">
-            <Portfolio />
+            <Portfolio headerContent={quickTradeHeader} />
           </Tabs.Content>
         </Box>
       </Tabs.Root>

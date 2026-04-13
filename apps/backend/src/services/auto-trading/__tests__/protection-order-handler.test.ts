@@ -50,7 +50,7 @@ vi.mock('../../websocket', () => ({
 
 vi.mock('../utils', () => ({ log: vi.fn() }));
 
-import { ProtectionOrderHandler } from '../protection-order-handler';
+import { ProtectionOrderHandler } from '../execution/protection-order-handler';
 import { withRetrySafe } from '../../../utils/retry';
 import { autoTradingService } from '../../auto-trading';
 import { ocoOrderService } from '../../oco-orders';
@@ -876,7 +876,7 @@ describe('ProtectionOrderHandler', () => {
 
   describe('exported singleton', () => {
     it('should export a protectionOrderHandler instance', async () => {
-      const { protectionOrderHandler } = await import('../protection-order-handler');
+      const { protectionOrderHandler } = await import('../execution/protection-order-handler');
       expect(protectionOrderHandler).toBeInstanceOf(ProtectionOrderHandler);
     });
   });

@@ -1,8 +1,8 @@
 import type { Kline } from '@marketmind/types';
-import { calculateEMA, calculateCCI, calculateParabolicSAR, calculateATR } from '@marketmind/indicators';
 import type { KlineUpdate } from '../binance-kline-stream';
 import { getBinanceFuturesDataService } from '../binance-futures-data';
 import { logger } from '../logger';
+import { PineIndicatorService } from '../pine/PineIndicatorService';
 import type { IndicatorState } from './types';
 
 const BUFFER_SIZE = 60;
@@ -64,7 +64,7 @@ export class KlineIndicatorManager {
       const rawKlines = await service.getFuturesKlines(symbol, interval, undefined, undefined, BUFFER_SIZE);
       const klines = rawKlines.map(toKline);
       this.klineBuffers.set(symbol, klines);
-      this.computeIndicators(symbol);
+      await this.computeIndicators(symbol);
       logger.info({ symbol, interval, bars: klines.length }, 'KlineIndicatorManager initialized');
     } catch (error) {
       logger.error({ error, symbol, interval }, 'Failed to initialize kline indicator buffer');
@@ -72,14 +72,14 @@ export class KlineIndicatorManager {
     }
   }
 
-  processKlineClose(update: KlineUpdate): void {
+  async processKlineClose(update: KlineUpdate): Promise<void> {
     const buffer = this.klineBuffers.get(update.symbol);
     if (!buffer) return;
 
     buffer.push(klineFromUpdate(update));
     if (buffer.length > BUFFER_SIZE) buffer.shift();
 
-    this.computeIndicators(update.symbol);
+    await this.computeIndicators(update.symbol);
   }
 
   getIndicators(symbol: string): IndicatorState | null {
@@ -91,26 +91,32 @@ export class KlineIndicatorManager {
     this.indicatorCache.clear();
   }
 
-  private computeIndicators(symbol: string): void {
+  private async computeIndicators(symbol: string): Promise<void> {
     const klines = this.klineBuffers.get(symbol);
     if (!klines || klines.length < EMA_LONG_PERIOD) return;
 
-    const ema7Raw = calculateEMA(klines, EMA_SHORT_PERIOD);
-    const ema9Raw = calculateEMA(klines, EMA_LONG_PERIOD);
-    const cciRaw = calculateCCI(klines, CCI_PERIOD);
-    const sarResult = calculateParabolicSAR(klines, SAR_AF_START, SAR_AF_INCREMENT, SAR_AF_MAX);
+    const pineService = new PineIndicatorService();
 
-    const atrRaw = calculateATR(klines, ATR_PERIOD);
+    const [ema7Raw, ema9Raw, cciRaw, sarRaw, atrRaw] = await Promise.all([
+      pineService.compute('ema', klines, { period: EMA_SHORT_PERIOD }),
+      pineService.compute('ema', klines, { period: EMA_LONG_PERIOD }),
+      pineService.compute('cci', klines, { period: CCI_PERIOD }),
+      pineService.compute('sar', klines, { start: SAR_AF_START, increment: SAR_AF_INCREMENT, max: SAR_AF_MAX }),
+      pineService.compute('atr', klines, { period: ATR_PERIOD }),
+    ]);
 
     const ema7 = ema7Raw.filter((v): v is number => v !== null);
     const ema9 = ema9Raw.filter((v): v is number => v !== null);
     const cci = cciRaw.filter((v): v is number => v !== null);
 
-    const lastTrend = sarResult.trend[sarResult.trend.length - 1];
-    const sarTrend: 'UP' | 'DOWN' | null = lastTrend === 'up' ? 'UP' : lastTrend === 'down' ? 'DOWN' : null;
+    const lastClose = parseFloat(klines[klines.length - 1]?.close ?? '0');
+    const lastSar = sarRaw[sarRaw.length - 1];
+    const sarTrend: 'UP' | 'DOWN' | null = lastSar !== null && lastSar !== undefined
+      ? (lastSar < lastClose ? 'UP' : 'DOWN')
+      : null;
 
-    const lastAtr = atrRaw.length > 0 ? atrRaw[atrRaw.length - 1]! : null;
-    const atr = lastAtr && !isNaN(lastAtr) ? lastAtr : null;
+    const lastAtr = atrRaw.length > 0 ? atrRaw[atrRaw.length - 1] : null;
+    const atr = lastAtr !== null && lastAtr !== undefined && !isNaN(lastAtr) ? lastAtr : null;
 
     this.indicatorCache.set(symbol, { ema7, ema9, cci, sarTrend, atr });
   }

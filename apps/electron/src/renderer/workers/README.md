@@ -6,7 +6,6 @@ This directory contains all Web Worker implementations for offloading heavy comp
 
 ```
 workers/
-├── movingAverages.worker.ts      # SMA/EMA calculations
 ├── bounds.worker.ts               # Chart bounds (min/max prices/volume)
 ├── klineOptimizer.worker.ts     # Kline data optimization for AI
 ├── conversation.worker.ts         # AI conversation summarization

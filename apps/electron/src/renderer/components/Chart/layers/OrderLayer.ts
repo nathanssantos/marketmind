@@ -1,6 +1,7 @@
 import type { Viewport } from '@marketmind/types';
 import type { Order } from '@marketmind/types';
 import { getOrderPrice, getOrderType, isOrderLong, isOrderPending } from '@shared/utils';
+import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
 export interface OrderLayerConfig {
   longColor?: string;
@@ -70,7 +71,7 @@ export const createOrderRenderer = (
           textHeight + padding * 2
         );
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
         ctx.globalAlpha = 1;
         ctx.fillText(label, width - textWidth - padding, y + fontSize / 3);
       }

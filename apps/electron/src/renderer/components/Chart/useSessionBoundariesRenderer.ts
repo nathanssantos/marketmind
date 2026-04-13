@@ -2,9 +2,10 @@ import type { MarketEvent } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useCallback, useMemo } from 'react';
+import { INDICATOR_COLORS } from '@shared/constants';
 import { getSessionById } from '@shared/constants/marketSessions';
 
-interface SessionWindow {
+export interface SessionWindow {
   sessionId: string;
   openTimestamp: number;
   closeTimestamp: number;
@@ -26,7 +27,7 @@ const SESSION_LINE_ALPHA = 0.35;
 const SESSION_LINE_DASH = [6, 4];
 const OVERLAP_ALPHA_PER_SESSION = 0.02;
 
-const buildSessionWindows = (events: MarketEvent[]): SessionWindow[] => {
+export const buildSessionWindows = (events: MarketEvent[]): SessionWindow[] => {
   const opensBySession = new Map<string, MarketEvent[]>();
   const windows: SessionWindow[] = [];
 
@@ -58,7 +59,7 @@ const buildSessionWindows = (events: MarketEvent[]): SessionWindow[] => {
         sessionId,
         openTimestamp: bestOpen.timestamp,
         closeTimestamp: event.timestamp,
-        color: session.color ?? '#888888',
+        color: session.color ?? INDICATOR_COLORS.SESSION_BOUNDARY_DEFAULT,
       });
     }
   }
@@ -93,6 +94,9 @@ export const useSessionBoundariesRenderer = ({
     const { chartWidth, chartHeight } = dimensions;
 
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, chartWidth, chartHeight);
+    ctx.clip();
 
     const drawnLines = new Set<number>();
 
@@ -146,7 +150,7 @@ export const useSessionBoundariesRenderer = ({
         const batchStart = i;
         while (i < chartWidth && pixelCoverage[i] === currentCount) i++;
         ctx.globalAlpha = OVERLAP_ALPHA_PER_SESSION * currentCount;
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = INDICATOR_COLORS.LABEL_TEXT;
         ctx.fillRect(batchStart, 0, i - batchStart, chartHeight);
       } else {
         i++;

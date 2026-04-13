@@ -1,0 +1,48 @@
+// @id triple-screen
+// @name Triple Screen
+// @version 1.0.0
+// @description Sistema Triple Screen de Elder. Três timeframes: weekly para tendência, daily para entry, 4h para timing. Filtragem multi-nível.
+// @author MarketMind
+// @tags multi-timeframe,triple-screen,elder,trend-filter
+// @strategyType TREND_FOLLOWING
+// @momentumType ANY
+// @param trendEma EMA para tendência (weekly)
+// @param entryOscillator RSI para entry (daily)
+// @param atrMultiplier ATR stop
+
+//@version=5
+indicator('Triple Screen', overlay=true)
+
+trendEma = input.int(26, 'trendEma', minval=20, maxval=30, step=2)
+entryOscillator = input.int(14, 'entryOscillator', minval=10, maxval=21, step=1)
+atrMultiplier = input.float(2, 'atrMultiplier', minval=1.5, maxval=3, step=0.5)
+
+emaWeekly = ta.ema(close, trendEma)
+[macdWeekly_line, macdWeekly_signal, macdWeekly_histogram] = ta.macd(close, 12, 26, 9)
+rsiDaily = ta.rsi(close, entryOscillator)
+atr = ta.atr(14)
+atrVal = atr
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (macdWeekly_histogram > 0 and ta.crossover(rsiDaily, 30))
+shortEntry = (macdWeekly_histogram < 0 and ta.crossunder(rsiDaily, 70))
+
+confBase = 75
+confBonus0 = close > emaWeekly ? 10 : 0
+confValue = math.min(confBase + confBonus0, 90)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - atrVal * 0.6 : shortEntry ? close + atrVal * 0.6 : na
+tp = longEntry ? close + math.abs(close - (close - atrVal * 0.6)) * 3 : shortEntry ? close - math.abs((close + atrVal * 0.6) - close) * 3 : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

@@ -337,14 +337,14 @@ describe('PyramidingService Extended', () => {
     it('should reject when dynamic conditions are not met', async () => {
       const { user } = await createTestUser();
       const wallet = await createTestWallet({ userId: user.id });
-      const db = getTestDatabase();
+      const db = await getTestDatabase();
 
       await insertAutoTradingConfig(db, user.id, wallet.id, {
         pyramidingEnabled: true,
         pyramidingMode: 'dynamic',
       });
 
-      mockedEvaluateDynamic.mockReturnValue({
+      mockedEvaluateDynamic.mockResolvedValue({
         canPyramid: false,
         adjustedMinDistance: 0.005,
         adjustedScaleFactor: 0.8,
@@ -370,7 +370,7 @@ describe('PyramidingService Extended', () => {
     it('should pass adjusted config to static evaluation when dynamic conditions pass', async () => {
       const { user } = await createTestUser();
       const wallet = await createTestWallet({ userId: user.id });
-      const db = getTestDatabase();
+      const db = await getTestDatabase();
 
       await insertAutoTradingConfig(db, user.id, wallet.id, {
         pyramidingEnabled: true,
@@ -382,7 +382,7 @@ describe('PyramidingService Extended', () => {
         quantity: '0.1',
       });
 
-      mockedEvaluateDynamic.mockReturnValue({
+      mockedEvaluateDynamic.mockResolvedValue({
         canPyramid: true,
         adjustedMinDistance: 0.003,
         adjustedScaleFactor: 0.6,
@@ -407,7 +407,7 @@ describe('PyramidingService Extended', () => {
     it('should return static rejection with dynamic metadata when static check fails', async () => {
       const { user } = await createTestUser();
       const wallet = await createTestWallet({ userId: user.id });
-      const db = getTestDatabase();
+      const db = await getTestDatabase();
 
       await insertAutoTradingConfig(db, user.id, wallet.id, {
         pyramidingEnabled: true,
@@ -420,7 +420,7 @@ describe('PyramidingService Extended', () => {
         quantity: '0.1',
       });
 
-      mockedEvaluateDynamic.mockReturnValue({
+      mockedEvaluateDynamic.mockResolvedValue({
         canPyramid: true,
         adjustedMinDistance: 0.005,
         adjustedScaleFactor: 0.8,

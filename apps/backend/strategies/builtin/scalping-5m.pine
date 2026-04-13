@@ -1,0 +1,51 @@
+// @id scalping-5m
+// @name Scalping 5M
+// @version 1.0.0
+// @description Estratégia de scalping para timeframe de 5 minutos. RSI + EMA rápida para entries frequentes com pequenos targets.
+// @author MarketMind
+// @tags scalping,5m,short-term,high-frequency
+// @strategyType ANY
+// @momentumType ANY
+// @param rsiPeriod RSI rápido
+// @param emaPeriod EMA rápida
+// @param oversold Oversold
+// @param overbought Overbought
+// @param targetPercent Target %
+// @param stopPercent Stop %
+
+//@version=5
+indicator('Scalping 5M', overlay=true)
+
+rsiPeriod = input.int(7, 'rsiPeriod', minval=5, maxval=10, step=1)
+emaPeriod = input.int(9, 'emaPeriod', minval=5, maxval=15, step=2)
+oversold = input.int(30, 'oversold', minval=20, maxval=35, step=5)
+overbought = input.int(70, 'overbought', minval=65, maxval=80, step=5)
+targetPercent = input.float(0.5, 'targetPercent', minval=0.3, maxval=1, step=0.1)
+stopPercent = input.float(0.3, 'stopPercent', minval=0.2, maxval=0.5, step=0.1)
+
+rsi = ta.rsi(close, rsiPeriod)
+ema = ta.ema(close, emaPeriod)
+
+volSma20 = ta.sma(volume, 20)
+
+longEntry = (rsi < oversold and close > ema)
+shortEntry = (rsi > overbought and close < ema)
+
+confBase = 70
+confBonus0 = volume > ta.sma(volume, 20) ? 10 : 0
+confValue = math.min(confBase + confBonus0, 85)
+
+exitLong = false
+exitShort = false
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close * (1 - 2 / 100) : shortEntry ? close * (1 + 2 / 100) : na
+tp = longEntry ? close * (1 + 4 / 100) : shortEntry ? close * (1 - 4 / 100) : na
+conf = longEntry or shortEntry ? confValue : 0
+exitSig = exitLong ? 1 : exitShort ? -1 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)
+plot(exitSig, 'exitSignal', display=display.none)

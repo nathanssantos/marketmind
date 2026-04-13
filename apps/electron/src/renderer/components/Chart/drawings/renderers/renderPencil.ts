@@ -1,5 +1,6 @@
 import type { PencilDrawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { applyDrawingStyle } from '@renderer/utils/canvas/canvasHelpers';
 
 export const renderPencil = (
   ctx: CanvasRenderingContext2D,
@@ -9,10 +10,8 @@ export const renderPencil = (
 ): void => {
   if (drawing.points.length < 2) return;
 
-  const baseWidth = drawing.lineWidth ?? DEFAULT_LINE_WIDTH;
   ctx.save();
-  ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.pencil);
-  ctx.lineWidth = isSelected ? baseWidth + 0.5 : baseWidth;
+  applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.pencil);
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();

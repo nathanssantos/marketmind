@@ -10,9 +10,6 @@ import { WatchersTab } from '../MarketSidebar/tabs/WatchersTab';
 import { LogsTab } from '../MarketSidebar/tabs/LogsTab';
 import { ScalpingDashboard } from '../Trading/ScalpingDashboard';
 import { ScalpingConfigDialog } from '../Trading/ScalpingConfig';
-import { DomLadder } from '../Chart/DomLadder';
-import { useDepth } from '../../hooks/useDepth';
-import { usePriceStore } from '../../store/priceStore';
 
 interface AutoTradingSidebarProps {
   width: number;
@@ -24,8 +21,6 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
   const { chartData } = useChartContext();
   const currentSymbol = chartData?.symbol ?? 'BTCUSDT';
   const [scalpingConfigOpen, setScalpingConfigOpen] = useState(false);
-  const { bids, asks } = useDepth(currentSymbol);
-  const currentPrice = usePriceStore((s) => s.prices[currentSymbol]?.price ?? 0);
 
   const { autoTradingSidebarTab, setAutoTradingSidebarTab, activeWalletId } = useUIStore(useShallow((s) => ({
     autoTradingSidebarTab: s.autoTradingSidebarTab,
@@ -76,12 +71,6 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
                 <Text fontSize="sm" color="fg.muted">
                   {t('trading.wallets.selectWallet', 'Select a wallet first')}
                 </Text>
-              </Box>
-            )}
-            {bids.length > 0 && (
-              <Box p={3} bg="bg.muted" borderRadius="md" mx={4} mb={4} gap={2.5} display="flex" flexDirection="column" flexShrink={0}>
-                <Text fontSize="xs" color="fg.muted" fontWeight="medium">{t('scalping.metric.domLadder', 'DOM Ladder')}</Text>
-                <DomLadder bids={bids} asks={asks} currentPrice={currentPrice} />
               </Box>
             )}
           </Tabs.Content>

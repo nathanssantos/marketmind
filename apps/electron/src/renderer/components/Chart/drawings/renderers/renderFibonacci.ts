@@ -3,23 +3,17 @@ import { DRAWING_COLORS } from '@marketmind/chart-studies';
 import { getLevelColor as getFibLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { formatChartPrice } from '@renderer/utils/formatters';
+import { CANVAS_FONTS, INDICATOR_COLORS, LINE_DASHES } from '@shared/constants';
 
 const SWING_LINE_WIDTH = 2;
-const SWING_LINE_DASH = [2, 4] as const;
 const SWING_POINT_RADIUS = 4;
 const FULL_CIRCLE = Math.PI * 2;
 const LINE_WIDTH = 1;
-const LEVEL_DASH = [4, 4] as const;
-const LABEL_FONT = '10px monospace';
 const LABEL_OFFSET_X = 4;
 const LABEL_OFFSET_Y = 10;
 const HIDDEN_LEVELS = new Set([0.886, 1.382]);
 const GOLDEN_LEVEL = 1.618;
-const GOLDEN_COLOR = 'rgba(255, 215, 0, 0.8)';
-const KEY_LEVEL_COLOR = 'rgba(180, 180, 180, 0.55)';
 const KEY_LEVELS = new Set([0, 0.5, 1]);
-const BUY_ZONE_COLOR = 'rgba(34, 197, 94, 0.08)';
-const DANGER_ZONE_COLOR = 'rgba(239, 68, 68, 0.08)';
 const BUY_ZONE_TOP = 0.5;
 const BUY_ZONE_BOTTOM = 0.236;
 const DANGER_ZONE_TOP = 0.236;
@@ -46,7 +40,7 @@ export const renderFibonacci = (
 
   ctx.strokeStyle = isSelected ? DRAWING_COLORS.selected : (drawing.color ?? DRAWING_COLORS.fibonacci);
   ctx.lineWidth = SWING_LINE_WIDTH;
-  ctx.setLineDash([...SWING_LINE_DASH]);
+  ctx.setLineDash([...LINE_DASHES.FIBONACCI_SWING]);
   ctx.beginPath();
   ctx.moveTo(lowX, lowY);
   ctx.lineTo(highX, highY);
@@ -79,8 +73,10 @@ export const renderFibonacci = (
     }
   };
 
-  drawZone(BUY_ZONE_TOP, BUY_ZONE_BOTTOM, BUY_ZONE_COLOR);
-  drawZone(DANGER_ZONE_TOP, DANGER_ZONE_BOTTOM, DANGER_ZONE_COLOR);
+  const buyZoneColor = themeColors?.drawing?.buyZone ?? INDICATOR_COLORS.FIBONACCI_BUY_ZONE;
+  const dangerZoneColor = themeColors?.drawing?.dangerZone ?? INDICATOR_COLORS.FIBONACCI_DANGER_ZONE;
+  drawZone(BUY_ZONE_TOP, BUY_ZONE_BOTTOM, buyZoneColor);
+  drawZone(DANGER_ZONE_TOP, DANGER_ZONE_BOTTOM, dangerZoneColor);
 
   for (const level of drawing.levels) {
     if (HIDDEN_LEVELS.has(level.level)) continue;
@@ -88,18 +84,20 @@ export const renderFibonacci = (
     if (y < 0 || y > chartHeight) continue;
 
     const isGolden = level.level === GOLDEN_LEVEL;
+    const goldenColor = themeColors?.drawing?.fibGolden ?? INDICATOR_COLORS.FIBONACCI_GOLDEN;
+    const keyLevelColor = themeColors?.drawing?.fibKeyLevel ?? INDICATOR_COLORS.FIBONACCI_KEY_LEVEL;
 
     const color = isGolden
-      ? GOLDEN_COLOR
+      ? goldenColor
       : KEY_LEVELS.has(level.level)
-        ? KEY_LEVEL_COLOR
+        ? keyLevelColor
         : themeColors
           ? getFibLevelColor(level.level, themeColors.fibonacci, FIBONACCI_DEFAULT_COLOR)
           : `hsl(${level.level * 240}, 70%, 50%)`;
 
     ctx.strokeStyle = color;
     ctx.lineWidth = LINE_WIDTH;
-    ctx.setLineDash([...LEVEL_DASH]);
+    ctx.setLineDash([...LINE_DASHES.FIBONACCI]);
     ctx.beginPath();
     ctx.moveTo(fibStartX, y);
     ctx.lineTo(chartWidth, y);
@@ -107,7 +105,7 @@ export const renderFibonacci = (
     ctx.setLineDash([]);
 
     ctx.fillStyle = color;
-    ctx.font = LABEL_FONT;
+    ctx.font = CANVAS_FONTS.SMALL;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${level.label} (${formatChartPrice(level.price)})`, fibStartX + LABEL_OFFSET_X, y - LABEL_OFFSET_Y);

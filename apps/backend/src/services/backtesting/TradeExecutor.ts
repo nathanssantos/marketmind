@@ -201,14 +201,14 @@ export class TradeExecutor {
     };
   }
 
-  applyVolatilityAdjustment(
+  async applyVolatilityAdjustment(
     positionSize: number,
     entryPrice: number,
     klines: Kline[],
     setupIndex: number,
     tradesCount: number
-  ): { positionSize: number; positionValue: number } {
-    const result = calculateVolatilityAdjustment({
+  ): Promise<{ positionSize: number; positionValue: number }> {
+    const result = await calculateVolatilityAdjustment({
       klines,
       entryPrice,
       klineIndex: setupIndex,

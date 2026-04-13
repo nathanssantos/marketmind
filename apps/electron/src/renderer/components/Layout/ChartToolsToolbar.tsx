@@ -3,62 +3,81 @@ import { Separator, ToggleIconButton, TooltipWrapper } from '@renderer/component
 import type { DrawingType } from '@marketmind/chart-studies';
 import { useChartPref } from '@renderer/store/preferencesStore';
 import { useDrawingStore } from '@renderer/store/drawingStore';
+import { useLayoutStore } from '@renderer/store/layoutStore';
+import type { IndicatorId } from '@renderer/store/indicatorStore';
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LuArrowUpRight,
+  PencilIcon,
+  LineIcon,
+  HorizontalLineIcon,
+  VerticalLineIcon,
+  TrendLineIcon,
+  ArrowIcon,
+  RayIcon,
+  ChannelIcon,
+  RectangleIcon,
+  EllipseIcon,
+  AreaIcon,
+  FibonacciIcon,
+  PriceRangeIcon,
+  PitchforkIcon,
+  GannFanIcon,
+  HighlighterIcon,
+  TextIcon,
+  AnchoredVwapIcon,
+  RulerIcon,
+  LongPositionIcon,
+  ShortPositionIcon,
+} from '@renderer/components/icons';
+import {
   LuCalendarDays,
   LuMagnet,
   LuMessageSquare,
-  LuMinus,
-  LuPencil,
-  LuRectangleHorizontal,
-  LuRuler,
-  LuScan,
-  LuSquare,
-  LuTriangleRight,
-  LuType,
 } from 'react-icons/lu';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
-export interface ChartToolsToolbarProps {
-  movingAverages: MovingAverageConfig[];
-  onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
-}
 
-export const ChartToolsToolbar = memo(({
-  movingAverages,
-  onMovingAveragesChange,
-}: ChartToolsToolbarProps) => {
+const DrawingToolButton = memo(({ tool, label, icon }: { tool: DrawingType; label: string; icon: React.ReactNode }) => {
+  const activeTool = useDrawingStore(s => s.activeTool);
+  const setActiveTool = useDrawingStore(s => s.setActiveTool);
+
+  return (
+    <TooltipWrapper label={label} showArrow placement="right">
+      <ToggleIconButton
+        active={activeTool === tool}
+        size="2xs"
+        aria-label={label}
+        onClick={() => setActiveTool(tool)}
+      >
+        {icon}
+      </ToggleIconButton>
+    </TooltipWrapper>
+  );
+});
+
+DrawingToolButton.displayName = 'DrawingToolButton';
+
+export const ChartToolsToolbar = memo(() => {
   const { t } = useTranslation();
 
-  const [showProfitLossAreas, setShowProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
 
-  const activeTool = useDrawingStore(s => s.activeTool);
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
-  const setActiveTool = useDrawingStore(s => s.setActiveTool);
   const setMagnetEnabled = useDrawingStore(s => s.setMagnetEnabled);
 
-  const toggleMA = useCallback((index: number): void => {
-    const updated = movingAverages.map((ma, i) =>
-      i === index ? { ...ma, visible: !ma.visible } : ma
-    );
-    onMovingAveragesChange(updated);
-  }, [movingAverages, onMovingAveragesChange]);
+  const focusedPanel = useLayoutStore(s => s.getFocusedPanel());
+  const activeLayout = useLayoutStore(s => s.getActiveLayout());
+  const togglePanelIndicator = useLayoutStore(s => s.togglePanelIndicator);
 
-  const handleProfitLossToggle = useCallback(() => setShowProfitLossAreas(!showProfitLossAreas), [showProfitLossAreas, setShowProfitLossAreas]);
+  const handleToggleFocusedIndicator = useCallback((id: IndicatorId) => {
+    if (focusedPanel && activeLayout) togglePanelIndicator(activeLayout.id, focusedPanel.id, id);
+  }, [focusedPanel, activeLayout, togglePanelIndicator]);
+
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
   const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
-
-  const handleToolClick = useCallback((tool: DrawingType) => {
-    setActiveTool(tool);
-  }, [setActiveTool]);
-
-  const isToolActive = (tool: DrawingType) => activeTool === tool;
 
   return (
     <Box
@@ -72,100 +91,36 @@ export const ChartToolsToolbar = memo(({
     >
       <VStack gap={0.5}>
         <IndicatorTogglePopover
-          movingAverages={movingAverages}
-          onMovingAverageToggle={toggleMA}
+          activeIndicatorsOverride={focusedPanel?.activeIndicators}
+          onToggleIndicatorOverride={focusedPanel ? handleToggleFocusedIndicator : undefined}
         />
         <Separator orientation="horizontal" width="100%" />
-        <TooltipWrapper label={t('chart.tools.pencil', 'Pencil')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('pencil')}
-            size="2xs"
-            aria-label={t('chart.tools.pencil', 'Pencil')}
-            onClick={() => handleToolClick('pencil')}
-          >
-            <LuPencil />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.line', 'Line')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('line')}
-            size="2xs"
-            aria-label={t('chart.tools.line', 'Line')}
-            onClick={() => handleToolClick('line')}
-          >
-            <LuMinus />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.arrow', 'Arrow')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('arrow')}
-            size="2xs"
-            aria-label={t('chart.tools.arrow', 'Arrow')}
-            onClick={() => handleToolClick('arrow')}
-          >
-            <LuArrowUpRight />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.text', 'Text')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('text')}
-            size="2xs"
-            aria-label={t('chart.tools.text', 'Text')}
-            onClick={() => handleToolClick('text')}
-          >
-            <LuType />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.rectangle', 'Rectangle')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('rectangle')}
-            size="2xs"
-            aria-label={t('chart.tools.rectangle', 'Rectangle')}
-            onClick={() => handleToolClick('rectangle')}
-          >
-            <LuSquare />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.fibonacci', 'Fibonacci')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('fibonacci')}
-            size="2xs"
-            aria-label={t('chart.tools.fibonacci', 'Fibonacci')}
-            onClick={() => handleToolClick('fibonacci')}
-          >
-            <LuTriangleRight />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.ruler', 'Ruler')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('ruler')}
-            size="2xs"
-            aria-label={t('chart.tools.ruler', 'Ruler')}
-            onClick={() => handleToolClick('ruler')}
-          >
-            <LuRuler />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.tools.area', 'Area')} showArrow placement="right">
-          <ToggleIconButton
-            active={isToolActive('area')}
-            size="2xs"
-            aria-label={t('chart.tools.area', 'Area')}
-            onClick={() => handleToolClick('area')}
-          >
-            <LuScan />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.profitLossAreas')} showArrow placement="right">
-          <ToggleIconButton
-            active={showProfitLossAreas}
-            size="2xs"
-            aria-label={t('chart.controls.profitLossAreas')}
-            onClick={handleProfitLossToggle}
-          >
-            <LuRectangleHorizontal />
-          </ToggleIconButton>
-        </TooltipWrapper>
+        <DrawingToolButton tool="pencil" label={t('chart.tools.pencil', 'Pencil')} icon={<PencilIcon />} />
+        <DrawingToolButton tool="highlighter" label={t('chart.tools.highlighter', 'Highlighter')} icon={<HighlighterIcon />} />
+        <Separator orientation="horizontal" width="100%" />
+        <DrawingToolButton tool="line" label={t('chart.tools.line', 'Line')} icon={<LineIcon />} />
+        <DrawingToolButton tool="horizontalLine" label={t('chart.tools.horizontalLine', 'Horizontal Line')} icon={<HorizontalLineIcon />} />
+        <DrawingToolButton tool="verticalLine" label={t('chart.tools.verticalLine', 'Vertical Line')} icon={<VerticalLineIcon />} />
+        <DrawingToolButton tool="trendLine" label={t('chart.tools.trendLine', 'Trend Line')} icon={<TrendLineIcon />} />
+        <DrawingToolButton tool="arrow" label={t('chart.tools.arrow', 'Arrow')} icon={<ArrowIcon />} />
+        <DrawingToolButton tool="ray" label={t('chart.tools.ray', 'Ray')} icon={<RayIcon />} />
+        <Separator orientation="horizontal" width="100%" />
+        <DrawingToolButton tool="channel" label={t('chart.tools.channel', 'Channel')} icon={<ChannelIcon />} />
+        <DrawingToolButton tool="rectangle" label={t('chart.tools.rectangle', 'Rectangle')} icon={<RectangleIcon />} />
+        <DrawingToolButton tool="ellipse" label={t('chart.tools.ellipse', 'Ellipse')} icon={<EllipseIcon />} />
+        <DrawingToolButton tool="area" label={t('chart.tools.area', 'Area')} icon={<AreaIcon />} />
+        <Separator orientation="horizontal" width="100%" />
+        <DrawingToolButton tool="fibonacci" label={t('chart.tools.fibonacci', 'Fibonacci')} icon={<FibonacciIcon />} />
+        <DrawingToolButton tool="priceRange" label={t('chart.tools.priceRange', 'Price Range')} icon={<PriceRangeIcon />} />
+        <DrawingToolButton tool="ruler" label={t('chart.tools.ruler', 'Ruler')} icon={<RulerIcon />} />
+        <DrawingToolButton tool="pitchfork" label={t('chart.tools.pitchfork', 'Pitchfork')} icon={<PitchforkIcon />} />
+        <DrawingToolButton tool="gannFan" label={t('chart.tools.gannFan', 'Gann Fan')} icon={<GannFanIcon />} />
+        <Separator orientation="horizontal" width="100%" />
+        <DrawingToolButton tool="longPosition" label={t('chart.tools.longPosition', 'Long Position')} icon={<LongPositionIcon />} />
+        <DrawingToolButton tool="shortPosition" label={t('chart.tools.shortPosition', 'Short Position')} icon={<ShortPositionIcon />} />
+        <Separator orientation="horizontal" width="100%" />
+        <DrawingToolButton tool="text" label={t('chart.tools.text', 'Text')} icon={<TextIcon />} />
+        <DrawingToolButton tool="anchoredVwap" label={t('chart.tools.anchoredVwap', 'Anchored VWAP')} icon={<AnchoredVwapIcon />} />
         <Separator orientation="horizontal" width="100%" />
         <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="right">
           <ToggleIconButton

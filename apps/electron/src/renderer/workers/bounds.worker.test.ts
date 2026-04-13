@@ -22,9 +22,8 @@ describe('bounds.worker', () => {
   it('should calculate bounds and post result', async () => {
     await import('./bounds.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'calculateBounds', klines: mockKlines, viewportStart: 0, viewportEnd: 2 } } as MessageEvent);
+    handler({ data: { klines: mockKlines, viewportStart: 0, viewportEnd: 2 } } as MessageEvent);
     expect(mockPostMessage).toHaveBeenCalledWith({
-      type: 'boundsResult',
       minPrice: 95,
       maxPrice: 110,
       minVolume: 1000,
@@ -32,11 +31,11 @@ describe('bounds.worker', () => {
     });
   });
 
-  it('should ignore messages with wrong type', async () => {
+  it('should post null for empty klines', async () => {
     vi.resetModules();
     await import('./bounds.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => void } }).self.onmessage;
-    handler({ data: { type: 'wrongType', klines: mockKlines, viewportStart: 0, viewportEnd: 2 } } as MessageEvent);
-    expect(mockPostMessage).not.toHaveBeenCalled();
+    handler({ data: { klines: [], viewportStart: 0, viewportEnd: 2 } } as MessageEvent);
+    expect(mockPostMessage).toHaveBeenCalledWith(null);
   });
 });

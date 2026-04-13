@@ -1,9 +1,9 @@
-import type { CMFResult } from '@marketmind/indicators';
+import type { CMFResult } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
+import { INDICATOR_COLORS, INDICATOR_PANEL_HEIGHTS } from '@shared/constants';
 import { useCallback } from 'react';
-import { drawPanelBackground, drawZoneLines } from './utils/oscillatorRendering';
+import { drawPanelBackground, drawPanelValueTag, drawZoneLines } from './utils/oscillatorRendering';
 
 interface UseCMFRendererProps {
   manager: CanvasManager | null;
@@ -63,7 +63,7 @@ export const useCMFRenderer = ({
       const x = manager.indexToCenterX(i) - barWidth / 2;
       const y = valueToY(value);
 
-      ctx.fillStyle = value >= 0 ? (colors.cmf?.positive ?? '#4caf50') : (colors.cmf?.negative ?? '#f44336');
+      ctx.fillStyle = value >= 0 ? (colors.cmf?.positive ?? INDICATOR_COLORS.CMF_POSITIVE) : (colors.cmf?.negative ?? INDICATOR_COLORS.CMF_NEGATIVE);
 
       const barHeight = Math.abs(y - zeroY);
       const barY = value >= 0 ? y : zeroY;
@@ -72,6 +72,8 @@ export const useCMFRenderer = ({
     }
 
     ctx.restore();
+
+    drawPanelValueTag(ctx, cmfData.values, visibleStartIndex, visibleEndIndex, valueToY, chartWidth, colors.cmf?.positive ?? INDICATOR_COLORS.CMF_POSITIVE);
   }, [manager, cmfData, enabled, colors]);
 
   return { render, panelId: PANEL_ID, panelHeight: PANEL_HEIGHT };

@@ -1,20 +1,21 @@
-import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
-import { Box, Flex, HStack, Text } from '@chakra-ui/react';
-import { IconButton, Logo, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
-import { memo } from 'react';
+import { Box, Flex, HStack, Portal, Text } from '@chakra-ui/react';
+import { IconButton, Logo, Menu, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
+import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuActivity,
+  LuBookOpen,
   LuBot,
   LuChartBar,
   LuDollarSign,
   LuLayers,
+  LuPlus,
   LuSquareArrowOutUpRight,
   LuScanLine,
-  LuSettings,
   LuZoomIn,
   LuZoomOut,
 } from 'react-icons/lu';
+import { useLayoutStore } from '../../store/layoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
@@ -24,9 +25,55 @@ import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
 import type { ChartType } from '@marketmind/types';
-import type { MovingAverageConfig } from '../Chart/useMovingAverageRenderer';
 import { SymbolSelector } from '../SymbolSelector';
+import { UserAvatar } from '../UserAvatar';
 import { WalletSelector } from '../WalletSelector';
+
+const TIMEFRAME_OPTIONS = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'] as const;
+
+const ToolbarLayoutActions = memo(({ showNewWindowButton, onOpenNewWindow }: { showNewWindowButton: boolean; onOpenNewWindow: () => void }) => {
+  const { t } = useTranslation();
+  const activeLayout = useLayoutStore(s => s.getActiveLayout());
+  const addPanel = useLayoutStore(s => s.addPanel);
+
+  const handleAddPanel = useCallback((tf: string) => {
+    if (activeLayout) addPanel(activeLayout.id, tf);
+  }, [activeLayout, addPanel]);
+
+  return (
+    <HStack gap={1} flexShrink={0}>
+      <Menu.Root>
+        <Menu.Trigger asChild>
+          <Box>
+            <TooltipWrapper label={t('chart.controls.addChart', 'Add chart')} showArrow>
+              <IconButton size="2xs" aria-label={t('chart.controls.addChart', 'Add chart')} variant="ghost" color="fg.muted">
+                <LuPlus />
+              </IconButton>
+            </TooltipWrapper>
+          </Box>
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content>
+              {TIMEFRAME_OPTIONS.map(tf => (
+                <Menu.Item key={tf} value={tf} onClick={() => handleAddPanel(tf)}>{tf}</Menu.Item>
+              ))}
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
+      {showNewWindowButton && (
+        <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
+          <IconButton size="2xs" aria-label={t('chart.controls.newWindow')} onClick={onOpenNewWindow} variant="ghost" color="fg.muted">
+            <LuSquareArrowOutUpRight />
+          </IconButton>
+        </TooltipWrapper>
+      )}
+    </HStack>
+  );
+});
+
+ToolbarLayoutActions.displayName = 'ToolbarLayoutActions';
 
 export interface ToolbarProps {
   symbol: string;
@@ -35,12 +82,12 @@ export interface ToolbarProps {
   timeframe: Timeframe;
   chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
-  movingAverages: MovingAverageConfig[];
   isTradingOpen: boolean;
   isAutoTradingOpen: boolean;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
   showZoomControls?: boolean;
+  rightExtra?: React.ReactNode;
   onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onToggleTrading: () => void;
@@ -54,26 +101,27 @@ export const Toolbar = memo(({
   timeframe,
   chartType,
   onChartTypeChange,
-  movingAverages: _movingAverages,
   isTradingOpen,
   isAutoTradingOpen,
   showNewWindowButton = true,
   showSidebarButtons = true,
   showZoomControls = true,
+  rightExtra,
   onSymbolChange,
   onTimeframeChange,
   onToggleTrading,
   onToggleAutoTrading,
 }: ToolbarProps) => {
   const { t } = useTranslation();
-  const globalActions = useGlobalActionsOptional();
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
-  const { marketSidebarOpen, toggleMarketSidebar, isAnalyticsOpen, toggleAnalytics, isCustomSymbolsOpen, toggleCustomSymbols } = useUIStore(
+  const { marketSidebarOpen, toggleMarketSidebar, orderFlowSidebarOpen, toggleOrderFlowSidebar, isAnalyticsOpen, toggleAnalytics, isCustomSymbolsOpen, toggleCustomSymbols } = useUIStore(
     useShallow((state) => ({
       marketSidebarOpen: state.marketSidebarOpen,
       toggleMarketSidebar: state.toggleMarketSidebar,
+      orderFlowSidebarOpen: state.orderFlowSidebarOpen,
+      toggleOrderFlowSidebar: state.toggleOrderFlowSidebar,
       isAnalyticsOpen: state.isAnalyticsOpen,
       toggleAnalytics: state.toggleAnalytics,
       isCustomSymbolsOpen: state.isCustomSymbolsOpen,
@@ -140,20 +188,6 @@ export const Toolbar = memo(({
           showMarketTypeToggle
         />
 
-        {showNewWindowButton && (
-          <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
-            <IconButton
-              size="2xs"
-              aria-label={t('chart.controls.newWindow')}
-              onClick={handleOpenNewWindow}
-              variant="outline"
-              color="fg.muted"
-            >
-              <LuSquareArrowOutUpRight />
-            </IconButton>
-          </TooltipWrapper>
-        )}
-
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
         <TimeframeSelector
@@ -170,6 +204,13 @@ export const Toolbar = memo(({
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
+        <ToolbarLayoutActions
+          showNewWindowButton={showNewWindowButton}
+          onOpenNewWindow={handleOpenNewWindow}
+        />
+
+        <Box w="1px" h="22px" bg="border" flexShrink={0} />
+
         {showSidebarButtons && (
           <HStack gap={1} flexShrink={0}>
             <TooltipWrapper label={t('marketSidebar.title')} showArrow>
@@ -180,6 +221,16 @@ export const Toolbar = memo(({
                 onClick={toggleMarketSidebar}
               >
                 <LuActivity />
+              </ToggleIconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('orderFlow.title', 'Order Flow')} showArrow>
+              <ToggleIconButton
+                active={orderFlowSidebarOpen}
+                size="2xs"
+                aria-label={t('orderFlow.title', 'Order Flow')}
+                onClick={toggleOrderFlowSidebar}
+              >
+                <LuBookOpen />
               </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('screener.title')} showArrow>
@@ -270,30 +321,16 @@ export const Toolbar = memo(({
           </>
         )}
 
-        {showSidebarButtons && (
-          <>
-            <Box w="1px" h="22px" bg="border" flexShrink={0} />
-            <TooltipWrapper label={t('header.settings')} placement="bottom" showArrow>
-              <IconButton
-                aria-label={t('header.settings')}
-                onClick={globalActions?.openSettings}
-                variant="outline"
-                color="fg.muted"
-                size="2xs"
-              >
-                <LuSettings />
-              </IconButton>
-            </TooltipWrapper>
-          </>
-        )}
       </Flex>
 
       {showSidebarButtons && (
-        <Box flexShrink={0}>
+        <HStack gap={1} flexShrink={0}>
           <WalletSelector />
-        </Box>
+          <UserAvatar />
+        </HStack>
       )}
 
+      {rightExtra && <Box flexShrink={0}>{rightExtra}</Box>}
     </Flex>
   );
 });

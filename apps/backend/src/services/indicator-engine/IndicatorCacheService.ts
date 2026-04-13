@@ -43,30 +43,30 @@ export class IndicatorCacheService {
     this.cache.set(key, { indicators, timestamp: Date.now() });
   }
 
-  computeOrGet(
+  async computeOrGet(
     klines: Kline[],
     indicators: Record<string, IndicatorDefinition>,
     params: Record<string, number>,
     symbol?: string,
     interval?: string,
-  ): ComputedIndicators {
+  ): Promise<ComputedIndicators> {
     const key = this.generateKey(klines, indicators, params, symbol, interval);
     const cached = this.get(key);
     if (cached) return cached;
 
-    const computed = this.engine.computeIndicators(klines, indicators, params);
+    const computed = await this.engine.computeIndicators(klines, indicators, params);
     this.set(key, computed);
     return computed;
   }
 
-  precompute(
+  async precompute(
     klines: Kline[],
     indicatorSets: Array<{ indicators: Record<string, IndicatorDefinition>; params: Record<string, number> }>,
     symbol?: string,
     interval?: string,
-  ): void {
+  ): Promise<void> {
     for (const set of indicatorSets) {
-      this.computeOrGet(klines, set.indicators, set.params, symbol, interval);
+      await this.computeOrGet(klines, set.indicators, set.params, symbol, interval);
     }
   }
 

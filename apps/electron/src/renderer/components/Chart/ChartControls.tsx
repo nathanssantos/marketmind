@@ -1,5 +1,5 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { useCallback, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuChartBar,
@@ -15,7 +15,6 @@ import { ControlPanel } from './ControlPanel';
 import { PinnableControl } from './PinnableControl';
 import { usePinnedControls } from './PinnedControlsContext';
 import { TimeframeSelector, type Timeframe } from './TimeframeSelector';
-import type { MovingAverageConfig } from './useMovingAverageRenderer';
 
 export interface ChartControlsProps {
   showVolume: boolean;
@@ -23,7 +22,6 @@ export interface ChartControlsProps {
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
   chartType: 'kline' | 'line';
-  movingAverages: MovingAverageConfig[];
   advancedConfig?: AdvancedControlsConfig;
   timeframe: Timeframe;
   onShowVolumeChange: (show: boolean) => void;
@@ -31,7 +29,6 @@ export interface ChartControlsProps {
   onShowCurrentPriceLineChange: (show: boolean) => void;
   onShowCrosshairChange: (show: boolean) => void;
   onChartTypeChange: (type: 'kline' | 'line') => void;
-  onMovingAveragesChange: (mas: MovingAverageConfig[]) => void;
   onAdvancedConfigChange?: (config: AdvancedControlsConfig) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
 }
@@ -42,7 +39,6 @@ export const ChartControls = ({
   showCurrentPriceLine,
   showCrosshair,
   chartType,
-  movingAverages,
   advancedConfig,
   timeframe,
   onShowVolumeChange,
@@ -50,19 +46,11 @@ export const ChartControls = ({
   onShowCurrentPriceLineChange,
   onShowCrosshairChange,
   onChartTypeChange,
-  onMovingAveragesChange,
   onAdvancedConfigChange,
   onTimeframeChange,
 }: ChartControlsProps): ReactElement => {
   const { t } = useTranslation();
   const { pinnedControls } = usePinnedControls();
-
-  const toggleMA = useCallback((index: number): void => {
-    const updated = movingAverages.map((ma, i) =>
-      i === index ? { ...ma, visible: !ma.visible } : ma
-    );
-    onMovingAveragesChange(updated);
-  }, [movingAverages, onMovingAveragesChange]);
 
   const handleAdvancedChange = (key: keyof AdvancedControlsConfig, value: number): void => {
     if (advancedConfig && onAdvancedConfigChange) {
@@ -174,33 +162,6 @@ export const ChartControls = ({
           </HStack>
         </Box>
 
-        {movingAverages.length > 0 && (
-          <Box flex="1" minW="180px">
-            <Text fontSize="xs" color="fg.muted" mb={1} fontWeight="semibold">
-              {t('chart.controls.indicators')}
-            </Text>
-            <HStack gap={2} flexWrap="wrap">
-              {movingAverages.map((ma, index) => (
-                <TooltipWrapper key={index} label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}>
-                  <ToggleIconButton
-                    active={ma.visible !== false}
-                    size="sm"
-                    aria-label={`${ma.type === 'EMA' ? 'EMA' : 'SMA'}${ma.period}`}
-                    onClick={() => toggleMA(index)}
-                    style={{
-                      position: 'relative',
-                      borderLeft: ma.visible !== false ? `3px solid ${ma.color}` : undefined
-                    }}
-                  >
-                    <Text fontSize="xs" fontWeight="medium">
-                      {ma.type === 'EMA' ? 'EMA' : 'SMA'}{ma.period}
-                    </Text>
-                  </ToggleIconButton>
-                </TooltipWrapper>
-              ))}
-            </HStack>
-          </Box>
-        )}
       </Flex>
 
       {pinnedControls.size > 0 && advancedConfig && (
