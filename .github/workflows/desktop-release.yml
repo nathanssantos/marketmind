@@ -8,6 +8,9 @@ env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build (${{ matrix.os }})

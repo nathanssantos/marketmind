@@ -14,6 +14,8 @@ export default {
         buildResources: 'build',
     },
 
+    artifactName: '${productName}-${version}-${arch}.${ext}',
+
     files: [
         'dist/**/*',
         'dist-electron/**/*',
