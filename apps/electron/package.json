@@ -6,6 +6,10 @@
   "author": "Nathan Santos",
   "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathanssantos/marketmind.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "VITE_TARGET=electron vite",

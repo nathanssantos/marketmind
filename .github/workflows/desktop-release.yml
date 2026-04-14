@@ -36,14 +36,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build shared packages
-        run: |
-          pnpm --filter @marketmind/types build
-          pnpm --filter @marketmind/chart-studies build
-          pnpm --filter @marketmind/fibonacci build
-          pnpm --filter @marketmind/logger build
-          pnpm --filter @marketmind/trading-core build
-          pnpm --filter @marketmind/risk build
-          pnpm --filter @marketmind/utils build
+        run: pnpm -r --filter './packages/**' build
 
       - name: Build Electron app
         working-directory: apps/electron
