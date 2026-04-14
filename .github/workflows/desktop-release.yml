@@ -38,7 +38,7 @@ jobs:
       - name: Build shared packages
         run: |
           pnpm --filter @marketmind/types build
-          pnpm --filter @marketmind/indicators build
+          pnpm --filter @marketmind/chart-studies build
           pnpm --filter @marketmind/fibonacci build
           pnpm --filter @marketmind/logger build
           pnpm --filter @marketmind/trading-core build
