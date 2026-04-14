@@ -24,6 +24,7 @@ export default {
 
     extraMetadata: {
         main: 'dist-electron/main/index.js',
+        name: 'marketmind',
     },
 
     mac: {
