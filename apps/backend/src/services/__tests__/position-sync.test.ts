@@ -28,12 +28,14 @@ const mockCreateBinanceFuturesClient = vi.fn().mockReturnValue({});
 const mockIsPaperWallet = vi.fn((wallet) => wallet.walletType === 'paper');
 
 const mockClosePosition = vi.fn().mockResolvedValue({});
+const mockGetAllTradeFeesForPosition = vi.fn().mockResolvedValue(null);
 
 vi.mock('../binance-futures-client', () => ({
   createBinanceFuturesClient: (wallet: unknown) => mockCreateBinanceFuturesClient(wallet),
   isPaperWallet: (wallet: { walletType: string }) => mockIsPaperWallet(wallet),
   getPositions: (client: unknown) => mockGetPositions(client),
   closePosition: (...args: unknown[]) => mockClosePosition(...args),
+  getAllTradeFeesForPosition: (...args: unknown[]) => mockGetAllTradeFeesForPosition(...args),
 }));
 
 const mockGetMarkPrice = vi.fn().mockResolvedValue({ markPrice: 50000 });

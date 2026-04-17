@@ -3,8 +3,8 @@ import { FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 const FIBONACCI_LINE_COLOR = FIBONACCI_DEFAULT_COLOR;
 
 export const chartIndicatorTokens = {
-  'chart.stochastic.k': { value: { base: '#ea580c', _dark: '#ff5722' } },
-  'chart.stochastic.d': { value: { base: '#2563eb', _dark: '#2196f3' } },
+  'chart.stochastic.k': { value: { base: '#2563eb', _dark: '#2196f3' } },
+  'chart.stochastic.d': { value: { base: '#ea580c', _dark: '#ff5722' } },
   'chart.stochastic.zone': { value: { base: 'rgba(128, 128, 128, 0.7)', _dark: 'rgba(128, 128, 128, 0.7)' } },
   'chart.rsi.line': { value: { base: '#2563eb', _dark: '#2196f3' } },
   'chart.rsi.zone': { value: { base: 'rgba(128, 128, 128, 0.7)', _dark: 'rgba(128, 128, 128, 0.7)' } },

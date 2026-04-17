@@ -6,7 +6,7 @@ import { db } from '../db';
 import { realizedPnlEvents, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { BinanceIpBannedError } from './binance-api-cache';
-import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition } from './binance-futures-client';
+import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition, getAllTradeFeesForPosition } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
@@ -166,16 +166,26 @@ export class PositionSyncService {
           let pnlPercent = 0;
           let exitPrice = 0;
           let totalFees = 0;
-          const actualEntryFee = parseFloat(dbPosition.entryFee || '0');
-          let estimatedExitFee = 0;
+          let actualEntryFee = parseFloat(dbPosition.entryFee || '0');
+          let actualExitFee = 0;
           const entryPrice = parseFloat(dbPosition.entryPrice);
           const quantity = parseFloat(dbPosition.quantity);
           const accumulatedFunding = parseFloat(dbPosition.accumulatedFunding || '0');
 
           try {
-            const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbPosition.symbol);
-            if (markPriceData) {
-              exitPrice = markPriceData.markPrice;
+            const openedAt = dbPosition.openedAt?.getTime() || dbPosition.createdAt?.getTime() || Date.now();
+            const realFees = await getAllTradeFeesForPosition(client, dbPosition.symbol, dbPosition.side, openedAt).catch(() => null);
+
+            if (realFees && realFees.exitPrice > 0) {
+              exitPrice = realFees.exitPrice;
+              if (realFees.entryFee > 0) actualEntryFee = realFees.entryFee;
+              if (realFees.exitFee > 0) actualExitFee = realFees.exitFee;
+            } else {
+              const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbPosition.symbol);
+              if (markPriceData) exitPrice = markPriceData.markPrice;
+            }
+
+            if (exitPrice > 0) {
               const leverage = dbPosition.leverage || 1;
 
               const pnlResult = calculatePnl({
@@ -186,12 +196,13 @@ export class PositionSyncService {
                 marketType: 'FUTURES',
                 leverage,
                 accumulatedFunding,
+                entryFee: actualEntryFee,
+                exitFee: actualExitFee,
               });
               const existingPartialPnl = parseFloat(dbPosition.partialClosePnl || '0');
               pnl = pnlResult.netPnl + existingPartialPnl;
               pnlPercent = pnlResult.pnlPercent;
               totalFees = pnlResult.totalFees;
-              estimatedExitFee = totalFees - actualEntryFee;
 
               const currentBalance = parseFloat(wallet.currentBalance || '0');
               const newBalance = currentBalance + pnl;
@@ -269,7 +280,7 @@ export class PositionSyncService {
               pnlPercent: pnlPercent !== 0 ? pnlPercent.toString() : null,
               fees: totalFees > 0 ? totalFees.toString() : null,
               entryFee: actualEntryFee > 0 ? actualEntryFee.toString() : null,
-              exitFee: estimatedExitFee > 0 ? estimatedExitFee.toString() : null,
+              exitFee: actualExitFee > 0 ? actualExitFee.toString() : null,
               stopLossAlgoId: null,
               stopLossOrderId: null,
               takeProfitAlgoId: null,
