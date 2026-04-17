@@ -26,7 +26,7 @@ export const TIMING = {
 export const LIQUIDATION_THRESHOLDS = {
   WARNING: 0.15,
   DANGER: 0.08,
-  CRITICAL: 0.03,
+  CRITICAL: 0.05,
 } as const;
 
 export const AUTO_TRADING_CACHE = {

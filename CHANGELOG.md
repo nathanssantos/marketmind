@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.88.0] - 2026-04-17
+
+### Added
+- **OHLC row on chart header**: Hovering candles now shows OHLC + delta% + volume + buy/sell pressure inline in the chart header (shared `KlineOHLCRow` component also used by the tooltip)
+- **Liquidity heatmap intensity mode**: New "intensity" color mode with warm ramp (olive → amber → red → magenta) that encodes magnitude without green/red bid/ask coloring; toggle in Settings → Chart
+- **Fear & Greed reference lines**: 4 horizontal reference lines (25/45/55/75) on the Fear & Greed mini-chart, driven by the new `FEAR_GREED_LEVELS` constant (single source for colors and thresholds)
+- **`useOrderQuantity` hook**: Single formula for order quantity calculation shared by the Quick Trade toolbar and chart canvas-direct entries (click/drag/Shift+Alt)
+- **Fear & Greed level localization keys**: `extremeFear` / `fear` / `neutral` / `greed` / `extremeGreed` in en/pt/es/fr
+
+### Fixed
+- **Leverage missing in canvas-direct entries**: Click/drag/shortcut entries from the chart canvas were using `balance × pct / price` instead of `balance × leverage × pct / price`, producing smaller quantities than the Quick Trade sidebar
+- **Liquidation CRITICAL threshold**: Raised from 3% to 5% (`LIQUIDATION_THRESHOLDS.CRITICAL` in `@marketmind/trading-core`) so critical alerts fire earlier
+- **ORB label collision**: TSE and ASX zones that overlap during DST periods now concatenate into a single label (`ORB TSE / ASX`) instead of stacking on top of each other
+- **Zoom cursor anchoring**: Candle under the cursor stays under the cursor during scroll zoom, even when the viewport was pinned to the last candle (snap-to-end override now only applies when the cursor is in the rightmost 5%)
+- **Y-pan multiplication after Y-scale stretch**: Vertical pan was amplified proportionally to `priceScale` after stretching the Y axis — now `panVerticalOffset` honors the current `priceScale` so 1px of mouse motion equals 1px of chart motion regardless of zoom
+- **"More actions" button border**: Quick Trade toolbar chevron now uses `variant="outline"` to match the other toolbar buttons
+- **OHLC header overflow**: Header row now uses `nowrap` + `overflow="hidden"` on all inner stacks so OHLC/volume/buy% cannot wrap to a second line
+- **Stochastic K/D colors swapped**: K and D line colors corrected in the Stochastic indicator
+- **Position-sync fee correctness**: Real fees used during position sync instead of synthetic values
+
+### Changed
+- **Liquidity LUTs**: Moved inline LUTs out of `useLiquidityHeatmapRenderer` into a new `liquidityLUTs.ts` module (single source of truth for `BID_LUT_COLORED`, `ASK_LUT_COLORED`, `INTENSITY_LUT` + `getLiquidityLUTs(mode)`)
+- **Fear & Greed color resolution**: `getFearGreedColor` now iterates `FEAR_GREED_LEVELS` instead of carrying hardcoded thresholds
+
 ## [0.87.0] - 2026-04-13
 
 ### Added

@@ -311,7 +311,9 @@
       "colorPalette": "Palette de Couleurs",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Activer la Saisie d'Ordres Shift/Alt",
-      "enableShiftAltOrderEntryHelper": "Maintenez Shift pour prévisualiser les ordres long ou Alt/Option pour prévisualiser les ordres short en cliquant sur le graphique"
+      "enableShiftAltOrderEntryHelper": "Maintenez Shift pour prévisualiser les ordres long ou Alt/Option pour prévisualiser les ordres short en cliquant sur le graphique",
+      "liquidityIntensity": "Carte de liquidité par intensité",
+      "liquidityIntensityHelper": "Utilise une seule rampe chaude pour bid et ask — les cellules plus claires indiquent plus de liquidité ; le côté est déduit par la position relative au prix"
     },
     "tradingSimulator": {
       "title": "Paramètres du Simulateur de Trading",
@@ -1768,6 +1770,13 @@
       "today": "Aujourd'hui",
       "yesterday": "Hier",
       "lastWeek": "Il y a 7j"
+    },
+    "fearGreed": {
+      "extremeFear": "Peur Extrême",
+      "fear": "Peur",
+      "neutral": "Neutre",
+      "greed": "Avidité",
+      "extremeGreed": "Avidité Extrême"
     },
     "watchers": {
       "title": "Watchers Actifs",

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import {
   CHART_MARGIN,
+  FEAR_GREED_LEVELS,
   TOOLTIP_STYLE,
   formatLargeNumber,
   formatTooltipDate,
@@ -87,7 +88,15 @@ export const FearGreedSection = ({ fearGreed, isLoading, hasWidth }: FearGreedSe
                 </linearGradient>
               </defs>
               <YAxis domain={[0, 100]} hide />
-              <ReferenceLine y={50} stroke="var(--chakra-colors-gray-500)" strokeDasharray="3 3" strokeOpacity={0.5} />
+              {FEAR_GREED_LEVELS.slice(0, -1).map((level) => (
+                <ReferenceLine
+                  key={level.max}
+                  y={level.max}
+                  stroke={`var(--chakra-colors-${level.color}-500)`}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.35}
+                />
+              ))}
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}
                 labelFormatter={formatTooltipDate}

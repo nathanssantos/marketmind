@@ -1,6 +1,6 @@
 import type { MarketType, Order } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { roundTradingPrice, roundTradingQty } from '@shared/utils';
+import { roundTradingPrice } from '@shared/utils';
 import type { MutableRefObject } from 'react';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 
@@ -125,13 +125,3 @@ export const mapExecutionToOrder = (exec: BackendExecution, backendWalletId: str
   isPendingLimitOrder: exec.status === 'pending',
 } as Order);
 
-export const getOrderQuantity = (
-  price: number,
-  activeWalletBalance: string | undefined,
-  quickTradeSizePercent: number,
-): string => {
-  const balance = parseFloat(activeWalletBalance ?? '0');
-  const pct = quickTradeSizePercent / 100;
-  const qty = balance > 0 && price > 0 ? (balance * pct) / price : 1;
-  return roundTradingQty(qty);
-};

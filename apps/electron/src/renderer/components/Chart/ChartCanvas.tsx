@@ -11,6 +11,7 @@ import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
+import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
@@ -84,6 +85,7 @@ export const ChartCanvas = ({
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
+  const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const storeIsActive = useIndicatorStore((s) => s.isActive);
   const storeShowVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
   const storeShowActivity = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
@@ -123,7 +125,6 @@ export const ChartCanvas = ({
 
   const tradingData = useChartTradingData({ symbol, marketType, chartType });
   const {
-    activeWallet,
     backendWalletId,
     hasTradingEnabled,
     backendExecutions,
@@ -169,6 +170,18 @@ export const ChartCanvas = ({
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines });
   const { tooltipData, orderToClose, stochasticData } = chartState;
+
+  const setHoveredKlineGlobal = useChartHoverStore((s) => s.setHoveredKline);
+  useEffect(() => {
+    const chartKey = makeChartKey(symbol, timeframe);
+    const kline = tooltipData.visible ? tooltipData.kline : null;
+    setHoveredKlineGlobal(chartKey, kline);
+  }, [tooltipData.visible, tooltipData.kline, symbol, timeframe, setHoveredKlineGlobal]);
+
+  useEffect(() => {
+    const chartKey = makeChartKey(symbol, timeframe);
+    return () => setHoveredKlineGlobal(chartKey, null);
+  }, [symbol, timeframe, setHoveredKlineGlobal]);
   const { setTooltip: setTooltipData, setOrderToClose, setStochasticData } = chartActions;
   const { mousePosition: mousePositionRef, orderPreview: orderPreviewRef, hoveredMAIndex: hoveredMAIndexRef, hoveredOrderId: hoveredOrderIdRef, lastHoveredOrder: lastHoveredOrderRef, lastTooltipOrder: lastTooltipOrderRef, tooltipEnabled: tooltipEnabledRef, tooltipDebounce: tooltipDebounceRef } = chartRefs;
 
@@ -184,7 +197,7 @@ export const ChartCanvas = ({
     backendExecutions: backendExecutions as any, allExecutions,
     setOptimisticExecutions, orderLoadingMapRef, orderFlashMapRef,
     closingSnapshotsRef, setClosingVersion, applyOptimistic, clearOptimistic,
-    activeWalletBalance: activeWallet?.currentBalance ?? undefined, latestKlinesPriceRef, setOrderToClose,
+    latestKlinesPriceRef, setOrderToClose,
   });
 
   const { handleLongEntry, handleShortEntry, handleOrderCloseRequest, handleConfirmCloseOrder, handleUpdateOrder, handleGridConfirm, draggableOrders, updateTsConfig, warning: tradingWarning } = tradingActions;
@@ -252,6 +265,7 @@ export const ChartCanvas = ({
     manager, colors, chartType, indicatorData, indicatorParams: storeIndicatorParams, stochasticData,
     showEventRow, marketEvents, cvdValuesRef, imbalanceValuesRef,
     volumeProfile: volumeProfileData ?? null, footprintBars, heatmapDataRef,
+    liquidityColorMode,
   });
 
   const { getEventAtPosition } = indicatorRenderers;

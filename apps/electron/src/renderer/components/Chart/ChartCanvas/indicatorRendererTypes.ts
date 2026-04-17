@@ -4,6 +4,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { FootprintBar, LiquidityHeatmapSnapshot, MarketEvent, VolumeProfile } from '@marketmind/types';
 import type { StochasticResult } from '@marketmind/types';
 import type { IndicatorParams } from '@renderer/store/indicatorStore';
+import type { LiquidityColorMode } from '../liquidityLUTs';
 import type { UseChartIndicatorsResult } from './useChartIndicators';
 
 export interface UseChartIndicatorRenderersProps {
@@ -20,6 +21,7 @@ export interface UseChartIndicatorRenderersProps {
   volumeProfile?: VolumeProfile | null;
   footprintBars?: FootprintBar[];
   heatmapDataRef: MutableRefObject<LiquidityHeatmapSnapshot | null>;
+  liquidityColorMode?: LiquidityColorMode;
 }
 
 export interface UseChartIndicatorRenderersResult {

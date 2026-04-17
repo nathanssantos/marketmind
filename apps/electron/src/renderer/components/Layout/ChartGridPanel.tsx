@@ -1,6 +1,8 @@
-import { Text } from '@chakra-ui/react';
+import { HStack, Text } from '@chakra-ui/react';
+import { KlineOHLCRow } from '@renderer/components/Chart/ChartCanvas/KlineOHLCRow';
 import { GridWindow } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
+import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
 import type { GridPanelConfig } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import { memo, useCallback } from 'react';
@@ -26,8 +28,13 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
   const handleRestore = useCallback((id: string) => setPanelWindowState(layoutId, id, 'normal'), [setPanelWindowState, layoutId]);
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
 
+  const hoveredKline = useChartHoverStore((s) => s.hoveredKlineByChart[makeChartKey(symbol, panelConfig.timeframe)]);
+
   const header = (
-    <Text fontSize="xs" color="fg.muted">{panelConfig.timeframe} {panelConfig.chartType}</Text>
+    <HStack gap={3} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
+      <Text fontSize="xs" color="fg.muted" flexShrink={0}>{panelConfig.timeframe} {panelConfig.chartType}</Text>
+      {hoveredKline && <KlineOHLCRow kline={hoveredKline} compact />}
+    </HStack>
   );
 
   return (

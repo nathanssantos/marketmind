@@ -68,6 +68,7 @@ export const useChartIndicatorRenderers = ({
   volumeProfile = null,
   footprintBars = [],
   heatmapDataRef,
+  liquidityColorMode = 'colored',
 }: UseChartIndicatorRenderersProps): UseChartIndicatorRenderersResult => {
   const { isIndicatorActive, maData } = indicatorData;
 
@@ -399,6 +400,7 @@ export const useChartIndicatorRenderers = ({
     heatmapDataRef,
     enabled: isIndicatorActive('liquidityHeatmap'),
     liquidationMarkersEnabled: isIndicatorActive('liquidationMarkers'),
+    colorMode: liquidityColorMode,
   });
 
   const renderMAIndicators = useCallback((): void => {
