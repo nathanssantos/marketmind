@@ -126,12 +126,12 @@ export const mapCoinGeckoToBinance = (coingeckoId: string): string | null => {
   const mapped = COINGECKO_TO_BINANCE[coingeckoId.toLowerCase()];
   if (mapped) return mapped;
 
-  const normalized = coingeckoId.replace(/-/g, '').toUpperCase() + 'USDT';
+  const normalized = `${coingeckoId.replace(/-/g, '').toUpperCase()  }USDT`;
   return normalized;
 };
 
 export const mapCoinGeckoSymbolToBinance = (symbol: string): string => {
-  return symbol.toUpperCase() + 'USDT';
+  return `${symbol.toUpperCase()  }USDT`;
 };
 
 export interface MappedSymbol {

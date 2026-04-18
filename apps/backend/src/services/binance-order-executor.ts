@@ -4,6 +4,7 @@ import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { getFuturesClient, getSpotClient } from '../exchange';
+import type { FuturesOrderParams, SpotOrderParams } from '../exchange';
 import { isPaperWallet } from './binance-client';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
@@ -49,7 +50,7 @@ export const executeBinanceOrder = async (
     if (marketType === 'FUTURES') {
       const client = getFuturesClient(wallet);
 
-      const futuresParams: import('../exchange').FuturesOrderParams = {
+      const futuresParams: FuturesOrderParams = {
         symbol: orderParams.symbol,
         side: orderParams.side,
         type: orderParams.type as 'LIMIT' | 'MARKET' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
@@ -103,10 +104,10 @@ export const executeBinanceOrder = async (
 
     const client = getSpotClient(wallet);
 
-    const spotParams: import('../exchange').SpotOrderParams = {
+    const spotParams: SpotOrderParams = {
       symbol: orderParams.symbol,
       side: orderParams.side,
-      type: orderParams.type as import('../exchange').SpotOrderParams['type'],
+      type: orderParams.type as SpotOrderParams['type'],
       quantity: formattedQuantity,
     };
 

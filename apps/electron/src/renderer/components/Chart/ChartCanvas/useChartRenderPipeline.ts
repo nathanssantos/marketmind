@@ -7,6 +7,7 @@ import type { useOrderDragHandler } from '../useOrderDragHandler';
 import type { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode';
 import type { UseChartBaseRenderersResult } from './useChartBaseRenderers';
 import type { UseChartIndicatorRenderersResult } from './useChartIndicatorRenderers';
+import type { UseGenericChartIndicatorRenderersResult } from './useGenericChartIndicatorRenderers';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
 import { renderDragPreview, renderSlTpPreview, renderTsPreview, renderOrderPreview } from './chartPreviewRenderers';
 
@@ -17,6 +18,7 @@ export interface UseChartRenderPipelineProps {
   allExecutions: BackendExecution[];
   baseRenderers: UseChartBaseRenderersResult;
   indicatorRenderers: UseChartIndicatorRenderersResult;
+  genericRenderers: UseGenericChartIndicatorRenderersResult;
   renderOrderLines: () => void;
   renderGridPreview: () => void;
   renderDrawings: () => void;
@@ -34,6 +36,7 @@ export const useChartRenderPipeline = ({
   allExecutions,
   baseRenderers,
   indicatorRenderers,
+  genericRenderers,
   renderOrderLines,
   renderGridPreview,
   renderDrawings,
@@ -107,6 +110,8 @@ export const useChartRenderPipeline = ({
     renderMAIndicators,
   } = indicatorRenderers;
 
+  const { renderAllOverlayIndicators, renderAllPanelIndicators } = genericRenderers;
+
   useEffect(() => {
     if (!manager) return;
 
@@ -124,6 +129,7 @@ export const useChartRenderPipeline = ({
         renderLineChart();
       }
       renderMAIndicators();
+      renderAllOverlayIndicators();
       renderStochastic();
       renderRSI();
       renderRSI14();
@@ -165,6 +171,7 @@ export const useChartRenderPipeline = ({
       renderPPO();
       renderCMO();
       renderUltimateOsc();
+      renderAllPanelIndicators();
       renderCVD();
       renderImbalance();
       renderVolumeProfile();
@@ -204,6 +211,8 @@ export const useChartRenderPipeline = ({
     renderKlines,
     renderLineChart,
     renderMAIndicators,
+    renderAllOverlayIndicators,
+    renderAllPanelIndicators,
     renderStochastic,
     renderRSI,
     renderRSI14,

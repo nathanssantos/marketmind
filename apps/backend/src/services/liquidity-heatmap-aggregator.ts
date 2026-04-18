@@ -230,7 +230,7 @@ export class LiquidityHeatmapAggregator {
 
       const bucketTime = alignToBucket(now);
 
-      if (!state.currentBucket || state.currentBucket.time !== bucketTime) {
+      if (state.currentBucket?.time !== bucketTime) {
         if (state.currentBucket) {
           const evicted = this.finalizeBucket(state);
           const lastBucket = state.buckets[state.buckets.length - 1];

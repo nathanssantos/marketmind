@@ -21,6 +21,7 @@ import {
   getOneStepAboveTimeframe,
 } from '../../utils/filters';
 import type { FilterResults } from '../../utils/confluence-scoring';
+import type { PineStrategy } from '../pine/types';
 import { FilterManager, type FilterConfig } from './FilterManager';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -40,7 +41,7 @@ interface WatcherState {
   klines: Kline[];
   klineIndexMap: Map<number, number>;
   detectedSetups: TradingSetup[];
-  strategies: import('../pine/types').PineStrategy[];
+  strategies: PineStrategy[];
   stats: WatcherStats;
   filterManager: FilterManager;
 }
@@ -207,7 +208,7 @@ export class MultiWatcherBacktestEngine {
         if (htfInterval && !this.htfKlinesCache.has(`${interval}-htf`)) {
           const htfKlines = await fetchKlinesFromDbWithBackfill(
             'BTCUSDT',
-            htfInterval as Interval,
+            htfInterval,
             marketType,
             new Date(this.config.startDate),
             new Date(this.config.endDate),
@@ -231,7 +232,7 @@ export class MultiWatcherBacktestEngine {
         if (htfInterval && !this.htfKlinesCache.has(`${watcherId}-htf`)) {
           const htfKlines = await fetchKlinesFromDbWithBackfill(
             watcherConfig.symbol,
-            htfInterval as Interval,
+            htfInterval,
             watcherConfig.marketType ?? 'FUTURES',
             new Date(this.config.startDate),
             new Date(this.config.endDate),
@@ -298,7 +299,7 @@ export class MultiWatcherBacktestEngine {
   private async detectSetups(
     _watcherConfig: WatcherConfig,
     klines: Kline[],
-    pineStrategies: import('../pine/types').PineStrategy[]
+    pineStrategies: PineStrategy[]
   ): Promise<TradingSetup[]> {
     if (pineStrategies.length === 0) return [];
 
@@ -793,7 +794,7 @@ export class MultiWatcherBacktestEngine {
     direction: 'LONG' | 'SHORT',
     entryPrice: number
   ): number | null {
-    if (!fib || !fib.levels || fib.levels.length === 0) return null;
+    if (!fib?.levels || fib.levels.length === 0) return null;
 
     const targetLevel = this.config.fibonacciTpLevel ?? fib.primaryLevel;
 

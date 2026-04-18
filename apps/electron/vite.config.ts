@@ -97,6 +97,7 @@ export default defineConfig(({ mode }) => {
         '@marketmind/types': resolve(__dirname, '../../packages/types/src'),
         '@marketmind/fibonacci': resolve(__dirname, '../../packages/fibonacci/src'),
         '@marketmind/utils': resolve(__dirname, '../../packages/utils/src'),
+        '@marketmind/trading-core': resolve(__dirname, '../../packages/trading-core/src'),
       },
     },
     define: {

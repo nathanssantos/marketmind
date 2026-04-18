@@ -268,7 +268,7 @@ function printResultsTables(results: TestResult[]) {
 
   console.log('═'.repeat(150));
   console.log('> TOP 20 FIBONACCI CONFIGURATIONS (by P&L)');
-  console.log('═'.repeat(150) + '\n');
+  console.log(`${'═'.repeat(150)  }\n`);
 
   console.log('Rank  Configuration                   P&L          P&L%    Trades   WinRate    PF    MaxDD    AvgWin    AvgLoss    LONG P&L    SHORT P&L');
   console.log('─'.repeat(150));
@@ -295,9 +295,9 @@ function printResultsTables(results: TestResult[]) {
 
   console.log('─'.repeat(150));
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> BEST LONG LEVELS (averaged across all SHORT levels)');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   const longLevelStats = new Map<FibonacciLevel, { pnls: number[]; trades: number[]; winRates: number[] }>();
 
@@ -341,9 +341,9 @@ function printResultsTables(results: TestResult[]) {
 
   console.log('─'.repeat(100));
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> BEST SHORT LEVELS (averaged across all LONG levels)');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   const shortLevelStats = new Map<FibonacciLevel, { pnls: number[]; trades: number[]; winRates: number[] }>();
 
@@ -387,9 +387,9 @@ function printResultsTables(results: TestResult[]) {
 
   console.log('─'.repeat(100));
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> SUMMARY: FIBONACCI vs DEFAULT TP');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   const fibResults = results.filter(r => r.tpMode === 'fibonacci');
   const bestFib = [...fibResults].sort((a, b) => b.pnl - a.pnl)[0]!;

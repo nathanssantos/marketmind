@@ -12,7 +12,8 @@ import type {
   SpotTradeFees,
 } from '../spot-client';
 import type { ExchangeCredentials, ExchangeId } from '../types';
-import { IBConnectionManager, createConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { createConnectionManager } from './connection-manager';
 import {
   IB_ACCOUNT_SUMMARY_TAGS,
   IB_PORTS,
@@ -131,7 +132,7 @@ export class IBStockClient implements IExchangeSpotClient {
     return filtered.map((o) => ({
       orderId: String(o.orderId),
       symbol: o.contract.symbol ?? '',
-      side: (o.order.action === OrderAction.BUY ? 'BUY' : 'SELL') as 'BUY' | 'SELL',
+      side: (o.order.action === OrderAction.BUY ? 'BUY' : 'SELL'),
       type: o.order.orderType ?? 'LIMIT',
       status: o.orderState?.status ?? 'UNKNOWN',
       price: o.order.lmtPrice?.toString(),

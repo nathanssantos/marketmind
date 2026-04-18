@@ -160,7 +160,7 @@ export const calculateCompositeScore = (
 export const formatCurrency = (value: number): string =>
   value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export const formatPercent = (value: number): string => value.toFixed(2) + '%';
+export const formatPercent = (value: number): string => `${value.toFixed(2)  }%`;
 
 export const parseCliArgs = (defaults = OPTIMIZATION_DEFAULTS) => {
   const symbolArg = process.argv.find(arg => arg.startsWith('--symbol='));

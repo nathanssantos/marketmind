@@ -75,6 +75,7 @@ describe('useGridRenderer', () => {
       getStochasticPanelHeight: vi.fn(() => 0),
       getRSIPanelHeight: vi.fn(() => 0),
       getTotalPanelHeight: vi.fn(() => 0),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

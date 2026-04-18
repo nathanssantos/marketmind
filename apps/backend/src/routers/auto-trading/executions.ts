@@ -437,7 +437,7 @@ export const executionsRouter = router({
         entryPrice,
         exitPrice,
         quantity: qty,
-        side: execution.side as 'LONG' | 'SHORT',
+        side: execution.side,
         marketType,
       });
 

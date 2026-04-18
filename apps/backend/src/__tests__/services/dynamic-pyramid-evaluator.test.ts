@@ -52,11 +52,11 @@ const setupMocks = (opts: {
     return Promise.resolve([]);
   });
   mockComputeMulti.mockImplementation((type: string) => {
-    if (type === 'dmi') return Promise.resolve({
+    if (type === 'dmi') {return Promise.resolve({
       adx: opts.adx ?? [],
       plusDI: opts.plusDI ?? [],
       minusDI: opts.minusDI ?? [],
-    });
+    });}
     return Promise.resolve({});
   });
 };

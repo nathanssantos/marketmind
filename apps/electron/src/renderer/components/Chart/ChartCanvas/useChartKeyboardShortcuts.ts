@@ -1,5 +1,5 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { useDrawingStore } from '@renderer/store/drawingStore';
+import { getDrawingClipboard, setDrawingClipboard, useDrawingStore } from '@renderer/store/drawingStore';
 import { useEffect } from 'react';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { useOrderDragHandler } from '../useOrderDragHandler';
@@ -95,4 +95,45 @@ export const useChartKeyboardShortcuts = ({
       slTpPlacement.deactivate();
     }
   }, [allExecutions, slTpPlacement]);
+
+  useEffect(() => {
+    const handleClipboardShortcut = (event: KeyboardEvent) => {
+      if (!event.metaKey && !event.ctrlKey) return;
+      const key = event.key.toLowerCase();
+      if (key !== 'c' && key !== 'v') return;
+
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      }
+
+      const store = useDrawingStore.getState();
+
+      if (key === 'c') {
+        if (!store.selectedDrawingId || !symbol) return;
+        const drawings = store.getDrawingsForSymbol(symbol, timeframe);
+        const selected = drawings.find((d) => d.id === store.selectedDrawingId);
+        if (!selected) return;
+        event.preventDefault();
+        setDrawingClipboard(selected);
+        return;
+      }
+
+      if (key === 'v') {
+        const source = getDrawingClipboard();
+        if (!source || !symbol) return;
+        event.preventDefault();
+        store.duplicateDrawing(source, {
+          offsetIndex: 3,
+          targetSymbol: symbol,
+          targetInterval: timeframe,
+        });
+        manager?.markDirty('overlays');
+      }
+    };
+
+    window.addEventListener('keydown', handleClipboardShortcut);
+    return () => window.removeEventListener('keydown', handleClipboardShortcut);
+  }, [symbol, timeframe, manager]);
 };

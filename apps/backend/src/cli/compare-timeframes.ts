@@ -83,9 +83,9 @@ async function runTimeframeComparison() {
     console.log(`   ✓ P&L: $${formatCurrency(result.metrics.totalPnl)} | WR: ${formatPercent(result.metrics.winRate)} | Trades: ${result.metrics.totalTrades}`);
   }
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> RESULTADOS POR P&L');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   console.log('Interval    P&L          P&L%     Trades   WinRate    PF     MaxDD    AvgDuration   LONG P&L     SHORT P&L');
   console.log('─'.repeat(115));
@@ -112,9 +112,9 @@ async function runTimeframeComparison() {
 
   console.log('─'.repeat(115));
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> RESULTADOS POR WIN RATE');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   const sortedByWinRate = [...results].sort((a, b) => b.winRate - a.winRate);
 
@@ -138,9 +138,9 @@ async function runTimeframeComparison() {
 
   console.log('─'.repeat(80));
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> RESULTADOS POR DRAWDOWN (menor é melhor)');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   const sortedByDrawdown = [...results].sort((a, b) => a.maxDrawdown - b.maxDrawdown);
 
@@ -167,9 +167,9 @@ async function runTimeframeComparison() {
   const bestByWinRate = sortedByWinRate[0]!;
   const bestByDrawdown = sortedByDrawdown[0]!;
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log('> RESUMO FINAL');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   console.log(`> MELHOR P&L: ${bestByPnl.interval}`);
   console.log(`   • P&L: $${formatCurrency(bestByPnl.pnl)} (${formatPercent(bestByPnl.pnlPct)})`);
@@ -208,7 +208,7 @@ async function runTimeframeComparison() {
   console.log(`   • Win Rate médio: ${formatPercent(avgWinRate)}`);
   console.log(`   • Trades médio: ${avgTrades.toFixed(0)}`);
 
-  console.log('\n' + '═'.repeat(120));
+  console.log(`\n${  '═'.repeat(120)}`);
   console.log(`\n✓ Análise completa! Recomendação: usar timeframe ${bestByPnl.interval} para melhor P&L.`);
 
   process.exit(0);

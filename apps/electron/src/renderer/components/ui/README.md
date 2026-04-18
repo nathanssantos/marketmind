@@ -40,6 +40,7 @@ See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 | `Switch` | Toggle switch |
 | `Checkbox` | Checkbox |
 | `Radio` / `RadioGroup` | Radio button group |
+| `ColorPicker` | Hex color picker with preset swatches + custom hex input (`DEFAULT_COLOR_PRESETS` export) |
 | `Field` | Input wrapper with label, helper, error text |
 
 ### Data Display

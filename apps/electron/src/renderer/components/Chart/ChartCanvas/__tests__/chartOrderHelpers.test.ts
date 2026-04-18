@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createOptimisticEntry,
   mapExecutionToOrder,
-  getOrderQuantity,
   submitEntryOrder,
 } from '../chartOrderHelpers';
 import type { BackendExecution } from '../../useOrderLinesRenderer';
@@ -139,33 +138,6 @@ describe('mapExecutionToOrder', () => {
     const exec: BackendExecution = { ...baseExec, status: 'open', entryOrderType: undefined };
     const order = mapExecutionToOrder(exec, 'wallet-1');
     expect(order.type).toBe('MARKET');
-  });
-});
-
-describe('getOrderQuantity', () => {
-  it('calculates quantity from balance and percentage', () => {
-    const result = getOrderQuantity(50000, '10000', 10);
-    expect(result).toBe('0.0200');
-  });
-
-  it('returns 1 when balance is zero', () => {
-    const result = getOrderQuantity(50000, '0', 10);
-    expect(result).toBe('1.0000');
-  });
-
-  it('returns 1 when price is zero', () => {
-    const result = getOrderQuantity(0, '10000', 10);
-    expect(result).toBe('1.0000');
-  });
-
-  it('returns 1 when balance is undefined', () => {
-    const result = getOrderQuantity(50000, undefined, 10);
-    expect(result).toBe('1.0000');
-  });
-
-  it('handles 100% position size', () => {
-    const result = getOrderQuantity(50000, '50000', 100);
-    expect(result).toBe('1.0000');
   });
 });
 

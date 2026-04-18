@@ -285,7 +285,9 @@
       "colorPalette": "Color Palette",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Enable Shift/Alt Order Entry",
-      "enableShiftAltOrderEntryHelper": "Hold Shift to preview long orders or Alt/Option to preview short orders when clicking on the chart"
+      "enableShiftAltOrderEntryHelper": "Hold Shift to preview long orders or Alt/Option to preview short orders when clicking on the chart",
+      "liquidityIntensity": "Intensity-based liquidity heatmap",
+      "liquidityIntensityHelper": "Use a single warm color ramp for both bid and ask — brighter cells mean higher liquidity; side is inferred from position relative to price"
     },
     "tradingSimulator": {
       "title": "Trading Simulator Settings",
@@ -597,6 +599,8 @@
       "grid": "Grid",
       "currentPrice": "Current Price",
       "crosshair": "Crosshair",
+      "flipVertical": "Flip Vertical",
+      "flipVerticalHelper": "Invert the price axis so short-side setups visually move upward.",
       "profitLossAreas": "Profit/Loss Areas",
       "fibonacciProjection": "Fibonacci Projection",
       "measurementRuler": "Measurement Ruler",
@@ -1725,6 +1729,13 @@
       "today": "Today",
       "yesterday": "Yesterday",
       "lastWeek": "7d ago"
+    },
+    "fearGreed": {
+      "extremeFear": "Extreme Fear",
+      "fear": "Fear",
+      "neutral": "Neutral",
+      "greed": "Greed",
+      "extremeGreed": "Extreme Greed"
     },
     "watchers": {
       "title": "Active Watchers",

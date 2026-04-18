@@ -287,9 +287,30 @@ describe('CanvasManager', () => {
     it('should pan vertically', () => {
       const initialBounds = manager.getBounds();
       manager.panVertical(50);
-      
+
       const newBounds = manager.getBounds();
       expect(newBounds?.minPrice).not.toBe(initialBounds?.minPrice);
+    });
+
+    it('inverts vertical pan when flipped (drag down still moves view down)', () => {
+      const initialBounds = manager.getBounds();
+      const initialMin = initialBounds!.minPrice;
+
+      manager.panVertical(50);
+      const notFlippedBounds = manager.getBounds();
+      const notFlippedDelta = notFlippedBounds!.minPrice - initialMin;
+
+      manager.panVertical(-50);
+      const restored = manager.getBounds();
+      expect(restored?.minPrice).toBeCloseTo(initialMin, 5);
+
+      manager.setFlipped(true);
+      manager.panVertical(50);
+      const flippedBounds = manager.getBounds();
+      const flippedDelta = flippedBounds!.minPrice - initialMin;
+
+      expect(Math.sign(flippedDelta)).toBe(-Math.sign(notFlippedDelta));
+      expect(Math.abs(flippedDelta)).toBeCloseTo(Math.abs(notFlippedDelta), 5);
     });
 
     it('should zoom vertically', () => {

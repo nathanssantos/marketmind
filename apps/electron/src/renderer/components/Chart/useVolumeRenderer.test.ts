@@ -68,6 +68,7 @@ describe('useVolumeRenderer', () => {
       getKlines: vi.fn(() => klines),
       indexToX: vi.fn((index: number) => index * 145.6),
       indexToCenterX: vi.fn((index: number) => index * 145.6 + 72.8),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

@@ -1,6 +1,7 @@
 import type { FuturesOrder } from '@marketmind/types';
 import type { wallets, tradeExecutions } from '../../db/schema';
 import type { FuturesAlgoOrder } from '../binance-futures-client';
+import type { createBinanceFuturesClient } from '../binance-futures-client';
 
 export interface AuditSummary {
   walletId: string;
@@ -30,7 +31,7 @@ export interface AuditContext {
   wallet: WalletRecord;
   dryRun: boolean;
   summary: AuditSummary;
-  client: ReturnType<typeof import('../binance-futures-client').createBinanceFuturesClient>;
+  client: ReturnType<typeof createBinanceFuturesClient>;
   dbOpenExecutions: TradeExecutionRecord[];
   dbPendingExecutions: TradeExecutionRecord[];
   exchangePositionsBySymbol: Map<string, { symbol: string; positionAmt: string | number; entryPrice: string | number; leverage?: number }>;

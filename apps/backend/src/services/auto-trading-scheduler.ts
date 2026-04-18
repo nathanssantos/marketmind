@@ -7,7 +7,7 @@ import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
 import type { RotationConfig, RotationResult } from './dynamic-symbol-rotation';
 import { opportunityCostManagerService } from './opportunity-cost-manager';
-import { WatcherLogBuffer } from './watcher-batch-logger';
+import type { WatcherLogBuffer } from './watcher-batch-logger';
 import {
   SignalProcessor,
   OrderExecutor,
@@ -15,9 +15,7 @@ import {
   BtcStreamManager,
   WatcherManager,
   RotationManager,
-  type ActiveWatcher as ModuleActiveWatcher,
 } from './auto-trading/index';
-import type { ActiveWatcher } from './auto-trading/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,10 +66,10 @@ export class AutoTradingScheduler {
 
     this.signalProcessor = new SignalProcessor(
       {
-        getActiveWatchers: () => this.watcherManager.getActiveWatchersMap() as Map<string, ModuleActiveWatcher>,
+        getActiveWatchers: () => this.watcherManager.getActiveWatchersMap(),
         executeSetupSafe: (watcher, setup, strategies, cycleKlines, logBuffer) =>
           this.orderExecutor.executeSetupSafe(
-            watcher as ActiveWatcher,
+            watcher,
             setup as TradingSetup,
             strategies as PineStrategy[],
             cycleKlines,
@@ -79,7 +77,7 @@ export class AutoTradingScheduler {
           ),
         validateSetupFilters: (watcher, setup, strategies, cycleKlines, logBuffer) =>
           this.orderExecutor.validateSetupFilters(
-            watcher as ActiveWatcher,
+            watcher,
             setup as TradingSetup,
             strategies as PineStrategy[],
             cycleKlines,

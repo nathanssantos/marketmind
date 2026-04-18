@@ -51,9 +51,12 @@ export const useTSIRenderer = ({
     const maxValue = Math.max(25, ...allValues);
     const range = maxValue - minValue;
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const normalizedValue = (value - minValue) / range;
-      return panelY + panelHeight - normalizedValue * panelHeight;
+      return flipped
+        ? panelY + normalizedValue * panelHeight
+        : panelY + panelHeight - normalizedValue * panelHeight;
     };
 
     const zeroY = valueToY(0);

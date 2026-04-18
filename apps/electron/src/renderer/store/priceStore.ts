@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import type { MarketType } from '@marketmind/types';
 
 interface PriceEntry {
   price: number;
@@ -8,10 +9,26 @@ interface PriceEntry {
   source: 'chart' | 'websocket' | 'api';
 }
 
+export interface DailyOpenEntry {
+  open: number;
+  lastPrice: number;
+  openTime: number;
+  updatedAt: number;
+}
+
+export const dailyOpenKey = (symbol: string, marketType: MarketType): string =>
+  `${symbol}:${marketType}`;
+
 interface PriceState {
   prices: Record<string, PriceEntry>;
+  dailyOpen: Record<string, DailyOpenEntry>;
   updatePrice: (symbol: string, price: number, source: PriceEntry['source']) => void;
   updatePriceBatch: (updates: Map<string, number>) => void;
+  setDailyOpen: (symbol: string, marketType: MarketType, entry: Omit<DailyOpenEntry, 'updatedAt'>) => void;
+  setDailyOpenBatch: (
+    marketType: MarketType,
+    entries: Array<{ symbol: string; open: number; lastPrice: number; openTime: number }>,
+  ) => void;
   getPrice: (symbol: string) => number | null;
   getPriceEntry: (symbol: string) => PriceEntry | null;
   cleanupStaleSymbols: () => void;
@@ -23,6 +40,28 @@ const STALE_CLEANUP_THRESHOLD_MS = 5 * 60 * 1000;
 
 export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   prices: {},
+  dailyOpen: {},
+
+  setDailyOpen: (symbol, marketType, entry) => {
+    const now = Date.now();
+    set((state) => {
+      state.dailyOpen[dailyOpenKey(symbol, marketType)] = {
+        open: entry.open,
+        lastPrice: entry.lastPrice,
+        openTime: entry.openTime,
+        updatedAt: now,
+      };
+    });
+  },
+
+  setDailyOpenBatch: (marketType, entries) => {
+    const now = Date.now();
+    set((state) => {
+      for (const { symbol, open, lastPrice, openTime } of entries) {
+        state.dailyOpen[dailyOpenKey(symbol, marketType)] = { open, lastPrice, openTime, updatedAt: now };
+      }
+    });
+  },
 
   updatePrice: (symbol, price, source) => {
     const now = Date.now();
@@ -97,6 +136,14 @@ const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
 
 export const useFastPriceForSymbol = (symbol: string): number | null =>
   usePriceStore((state) => state.prices[symbol]?.price ?? null);
+
+export const useDailyChangePct = (symbol: string, marketType: MarketType): number | null =>
+  usePriceStore((state) => {
+    const entry = state.dailyOpen[dailyOpenKey(symbol, marketType)];
+    if (!entry || entry.open <= 0) return null;
+    const livePrice = state.prices[symbol]?.price ?? entry.lastPrice;
+    return ((livePrice - entry.open) / entry.open) * 100;
+  });
 
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');

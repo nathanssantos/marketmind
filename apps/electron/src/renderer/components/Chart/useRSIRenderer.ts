@@ -38,7 +38,8 @@ export const useRSIRenderer = ({
     if (!setup) return;
 
     const { ctx, chartWidth, panelTop, panelHeight, visibleStart, visibleEnd, indexToX } = setup;
-    const valueToY = createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING);
+    const flipped = manager!.isFlipped();
+    const valueToY = createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, flipped);
 
     ctx.save();
     applyPanelClip({ ctx, panelY: panelTop, panelHeight, chartWidth });

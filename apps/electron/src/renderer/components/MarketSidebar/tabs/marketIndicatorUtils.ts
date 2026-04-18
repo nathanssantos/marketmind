@@ -64,13 +64,28 @@ export const formatLargeNumber = (num: number): string => {
   return num.toFixed(2);
 };
 
-export const getFearGreedColor = (value: number): string => {
-  if (value <= 25) return 'red';
-  if (value <= 45) return 'orange';
-  if (value <= 55) return 'gray';
-  if (value <= 75) return 'green';
-  return 'green';
+export interface FearGreedLevel {
+  max: number;
+  labelKey: string;
+  color: string;
+}
+
+export const FEAR_GREED_LEVELS: readonly FearGreedLevel[] = [
+  { max: 25, labelKey: 'marketSidebar.fearGreed.extremeFear', color: 'red' },
+  { max: 45, labelKey: 'marketSidebar.fearGreed.fear', color: 'orange' },
+  { max: 55, labelKey: 'marketSidebar.fearGreed.neutral', color: 'gray' },
+  { max: 75, labelKey: 'marketSidebar.fearGreed.greed', color: 'green' },
+  { max: 100, labelKey: 'marketSidebar.fearGreed.extremeGreed', color: 'green' },
+] as const;
+
+export const getFearGreedLevel = (value: number): FearGreedLevel => {
+  for (const level of FEAR_GREED_LEVELS) {
+    if (value <= level.max) return level;
+  }
+  return FEAR_GREED_LEVELS[FEAR_GREED_LEVELS.length - 1]!;
 };
+
+export const getFearGreedColor = (value: number): string => getFearGreedLevel(value).color;
 
 export const getAltSeasonColor = (seasonType: string): string => {
   if (seasonType === 'ALT_SEASON') return 'green';

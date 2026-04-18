@@ -65,7 +65,7 @@ export const resolveTrailingStopConfig = (
     : walletConfig?.trailingDistanceMode ?? baseConfig.trailingDistanceMode ?? 'fixed';
 
   const trailingStopOffsetPercent = useOverride && symbolOverride.trailingStopOffsetPercent !== null
-    ? parseFloat(symbolOverride.trailingStopOffsetPercent!)
+    ? parseFloat(symbolOverride.trailingStopOffsetPercent)
     : walletConfig?.trailingStopOffsetPercent
       ? parseFloat(walletConfig.trailingStopOffsetPercent)
       : baseConfig.trailingStopOffsetPercent ?? 0;

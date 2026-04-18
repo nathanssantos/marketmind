@@ -191,7 +191,7 @@ export class MarketHoursService {
 
   getNextMarketOpen(date: Date = new Date()): Date {
     const nyDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    let checkDate = new Date(nyDate);
+    const checkDate = new Date(nyDate);
 
     const { hours, minutes } = getNYTime(date);
     const currentMinutes = getTimeInMinutes(hours, minutes);

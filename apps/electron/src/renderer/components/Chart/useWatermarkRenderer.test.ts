@@ -32,6 +32,7 @@ describe('useWatermarkRenderer', () => {
         chartHeight: 575,
         volumeHeight: 0,
       })),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

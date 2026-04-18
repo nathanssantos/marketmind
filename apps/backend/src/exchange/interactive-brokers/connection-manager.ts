@@ -1,5 +1,6 @@
 import { IBApiNext, ConnectionState } from '@stoqey/ib';
-import { Subscription, BehaviorSubject, firstValueFrom, filter, timeout, take } from 'rxjs';
+import type { Subscription} from 'rxjs';
+import { BehaviorSubject, firstValueFrom, filter, timeout, take } from 'rxjs';
 import {
   IB_DEFAULT_HOST,
   IB_DEFAULT_CLIENT_ID,

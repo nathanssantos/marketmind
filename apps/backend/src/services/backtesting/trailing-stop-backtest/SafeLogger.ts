@@ -1,4 +1,5 @@
-import { createWriteStream, WriteStream } from 'fs';
+import type { WriteStream } from 'fs';
+import { createWriteStream } from 'fs';
 import type { LogLevel, OutputConfig, BacktestProgress } from './types';
 
 const DEFAULT_CONFIG: OutputConfig = {
@@ -49,7 +50,7 @@ export class SafeLogger {
 
   private writeToFile(message: string): void {
     if (this.fileStream) {
-      this.fileStream.write(message + '\n');
+      this.fileStream.write(`${message  }\n`);
     }
   }
 

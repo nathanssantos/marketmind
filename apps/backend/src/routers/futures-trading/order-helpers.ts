@@ -2,11 +2,12 @@ import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { orders, tradeExecutions } from '../../db/schema';
 import { autoTradingService } from '../../services/auto-trading';
+import type {
+  createBinanceFuturesClient} from '../../services/binance-futures-client';
 import {
-  createBinanceFuturesClient,
   submitFuturesAlgoOrder,
 } from '../../services/binance-futures-client';
-import { walletQueries } from '../../services/database/walletQueries';
+import type { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';

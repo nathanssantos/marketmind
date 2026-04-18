@@ -1,6 +1,7 @@
 import { SecType, OrderAction, OrderType, TimeInForce } from '@stoqey/ib';
 import type { Contract, Order } from '@stoqey/ib';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 import type {
   IBAccountSummary,
   IBMarginImpact,

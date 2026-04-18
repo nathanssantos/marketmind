@@ -177,7 +177,7 @@ export class BinanceAggTradeStreamService {
         quantity: String(t.quantity),
         quoteQuantity: String(t.quoteQuantity),
         isBuyerMaker: t.isBuyerMaker,
-        marketType: t.marketType as 'FUTURES' | 'SPOT',
+        marketType: t.marketType,
         timestamp: new Date(t.timestamp),
       }));
 

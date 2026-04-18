@@ -20,7 +20,6 @@ import { serializeError } from '../../utils/errors';
 import { SCALPING_ENGINE } from '../../constants/scalping';
 import { BinanceIpBannedError } from '../binance-api-cache';
 import { getAvailableSymbols } from '../binance-exchange-info';
-import type { Wallet } from '../../db/schema';
 import type { StrategyContext, BalanceCache } from './types';
 
 interface ActiveSession {
@@ -76,7 +75,7 @@ export class ScalpingScheduler {
     const metricsComputer = new MetricsComputer();
     const signalEngine = new SignalEngine({
       enabledStrategies,
-      directionMode: (config.directionMode as 'auto' | 'long_only' | 'short_only') ?? 'auto',
+      directionMode: (config.directionMode) ?? 'auto',
       imbalanceThreshold: parseFloat(config.imbalanceThreshold ?? String(SCALPING_DEFAULTS.IMBALANCE_THRESHOLD)),
       cvdDivergenceBars: config.cvdDivergenceBars ?? SCALPING_DEFAULTS.CVD_DIVERGENCE_BARS,
       vwapDeviationSigma: parseFloat(config.vwapDeviationSigma ?? String(SCALPING_DEFAULTS.VWAP_DEVIATION_SIGMA)),
@@ -172,10 +171,10 @@ export class ScalpingScheduler {
       binanceFuturesKlineStreamService.subscribe(symbol, signalInterval);
     }
 
-    const klineUnsub = binanceFuturesKlineStreamService.onKlineClose(async (update) => {
+    const klineUnsub = binanceFuturesKlineStreamService.onKlineClose((update) => {
       if (update.interval !== signalInterval) return;
       if (!symbols.includes(update.symbol)) return;
-      await klineIndicatorManager.processKlineClose(update);
+      void klineIndicatorManager.processKlineClose(update);
     });
     unsubscribers.push(klineUnsub);
 
@@ -188,7 +187,7 @@ export class ScalpingScheduler {
       executionEngine,
       klineIndicatorManager,
       signalInterval,
-      directionMode: (config.directionMode as 'auto' | 'long_only' | 'short_only') ?? 'auto',
+      directionMode: (config.directionMode) ?? 'auto',
       unsubscribers,
       isAutoTrading,
       balanceCache: null,
@@ -326,7 +325,7 @@ export class ScalpingScheduler {
 
     try {
       const wallet = await walletQueries.getByIdAndUser(session.walletId, session.userId);
-      const client = getFuturesClient(wallet as Wallet);
+      const client = getFuturesClient(wallet);
       const account = await client.getAccountInfo();
       const balance = parseFloat(account.availableBalance);
       session.balanceCache = { balance, timestamp: now };

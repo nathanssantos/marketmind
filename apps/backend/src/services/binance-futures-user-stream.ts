@@ -99,9 +99,9 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     const existing = this.pendingSlTpUpdates.get(key);
     if (existing) clearTimeout(existing);
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       this.pendingSlTpUpdates.delete(key);
-      await executeDebouncedSlTpUpdate(this, executionId, walletId, symbol);
+      void executeDebouncedSlTpUpdate(this, executionId, walletId, symbol);
     }, BinanceFuturesUserStreamService.PYRAMID_SLTP_DEBOUNCE_MS);
 
     this.pendingSlTpUpdates.set(key, timer);
@@ -135,7 +135,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
           const lp = parseFloat(pos.liquidationPrice || '0');
           if (lp > 0) pyramidLiquidationPrice = lp.toString();
         }
-      } catch {}
+      } catch { /* best-effort */ }
     }
 
     await db.update(tradeExecutions).set({
@@ -168,7 +168,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       if (exchangeQty === 0) return false;
 
       const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, executionId)).limit(1);
-      if (!freshExec || freshExec.status !== 'open') return false;
+      if (freshExec?.status !== 'open') return false;
 
       const currentQty = parseFloat(freshExec.quantity);
       const currentPrice = parseFloat(freshExec.entryPrice);
@@ -425,7 +425,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       this.invalidateWalletCache(walletId);
       const wallet = await this.getCachedWallet(walletId);
       if (wallet && wallet.isActive && !isPaperWallet(wallet) && wallet.marketType === 'FUTURES') {
-        await this.subscribeWallet(wallet as Wallet);
+        await this.subscribeWallet(wallet);
         logger.info({ walletId }, '[FuturesUserStream] Successfully resubscribed after listenKey expiry');
       }
     } catch (error) {

@@ -83,16 +83,16 @@ async function compare() {
     });
 
     console.log('━'.repeat(60));
-    console.log('> ' + filterName.toUpperCase());
+    console.log(`> ${  filterName.toUpperCase()}`);
     console.log('━'.repeat(60));
     console.log('');
     console.log('Total Trades:', result.metrics.totalTrades);
     console.log(
-      'Total P&L: $' + result.metrics.totalPnl.toFixed(2),
-      '(' + result.metrics.totalPnlPercent.toFixed(1) + '%)'
+      `Total P&L: $${  result.metrics.totalPnl.toFixed(2)}`,
+      `(${  result.metrics.totalPnlPercent.toFixed(1)  }%)`
     );
-    console.log('Win Rate:', result.metrics.winRate.toFixed(1) + '%');
-    console.log('Max Drawdown:', result.metrics.maxDrawdownPercent.toFixed(1) + '%');
+    console.log('Win Rate:', `${result.metrics.winRate.toFixed(1)  }%`);
+    console.log('Max Drawdown:', `${result.metrics.maxDrawdownPercent.toFixed(1)  }%`);
     console.log('');
     console.log(`LONG:  ${longTrades.length} trades | P&L: $${longPnl.toFixed(2)}`);
     console.log(`SHORT: ${shortTrades.length} trades | P&L: $${shortPnl.toFixed(2)}`);
@@ -108,7 +108,7 @@ async function compare() {
     console.log('');
   }
 
-  console.log('\n' + '═'.repeat(60));
+  console.log(`\n${  '═'.repeat(60)}`);
   console.log('> RESUMO COMPARATIVO');
   console.log('═'.repeat(60));
   console.log('');

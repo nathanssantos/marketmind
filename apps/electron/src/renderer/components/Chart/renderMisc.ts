@@ -15,6 +15,7 @@ import {
 import type { GroupedPosition, TrailingStopLineConfig } from './orderLineTypes';
 import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
+import { getDirectionArrow } from './utils/directionArrow';
 
 export const renderPendingSetups = (
   rc: RenderContext,
@@ -61,7 +62,7 @@ export const renderPendingSetups = (
     drawHorizontalLine(ctx, entryY, chartWidth, lineColor);
 
     const setupLabel = setup.label ?? setup.type;
-    const directionSymbol = isLong ? '↑' : '↓';
+    const directionSymbol = getDirectionArrow(isLong, manager.isFlipped());
     const orderTypeLabel = isLimitOrder ? 'LIMIT' : 'MKT';
     const infoText = `${directionSymbol} ${setupLabel} (${orderTypeLabel})`;
 
@@ -139,7 +140,8 @@ export const renderTrailingStops = (
 
     const activationPctDisplay = ((activationPercent - 1) * 100);
     const pctSign = activationPctDisplay >= 0 ? '+' : '';
-    const tsLabel = `TS ${pos.side === 'long' ? '↑' : '↓'} (${pctSign}${activationPctDisplay.toFixed(1)}%)`;
+    const tsArrow = getDirectionArrow(pos.side === 'long', manager.isFlipped());
+    const tsLabel = `TS ${tsArrow} (${pctSign}${activationPctDisplay.toFixed(1)}%)`;
 
     ctx.save();
     ctx.strokeStyle = ORDER_LINE_COLORS.TRAILING_STOP_LINE;
@@ -190,7 +192,8 @@ export const renderLiquidationLines = (
     ctx.setLineDash([]);
 
     setStandardFont(ctx);
-    const liqLabel = `LIQ ${side === 'LONG' ? '↑' : '↓'}`;
+    const liqArrow = getDirectionArrow(side === 'LONG', manager.isFlipped());
+    const liqLabel = `LIQ ${liqArrow}`;
     drawInfoTag(ctx, liqLabel, liqY, ORDER_LINE_COLORS.LIQUIDATION_FILL, false);
 
     const liqPriceText = formatChartPrice(liqPrice);

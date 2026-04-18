@@ -45,7 +45,7 @@ export async function handlePendingFill(
     )
     .limit(1);
 
-  if (existingOpen && existingOpen.side === pendingExecution.side) {
+  if (existingOpen?.side === pendingExecution.side) {
     await ctx.withPyramidLock(walletId, symbol, async () => {
       await ctx.mergeIntoExistingPosition(walletId, symbol, existingOpen.id, fillQty, fillPrice, pendingExecution.id, 'Pyramided via LIMIT order into existing position');
     });
@@ -118,7 +118,7 @@ export async function handlePendingFill(
         const lp = parseFloat(pos.liquidationPrice || '0');
         if (lp > 0) activationLiquidationPrice = lp.toString();
       }
-    } catch {}
+    } catch { /* best-effort */ }
   }
 
   await db

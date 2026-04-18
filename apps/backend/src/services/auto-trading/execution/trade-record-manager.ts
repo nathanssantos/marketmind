@@ -3,8 +3,9 @@ import { getDefaultFee, calculateLiquidationPrice } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { BACKTEST_DEFAULTS } from '../../../constants';
 import { db } from '../../../db';
+import type {
+  autoTradingConfig} from '../../../db/schema';
 import {
-  autoTradingConfig,
   setupDetections,
   tradeExecutions,
   type Wallet,
@@ -255,8 +256,7 @@ export const createAndExecuteTrade = async (
       15,
       'Trade executed'
     );
-  } catch {
-  }
+  } catch { /* best-effort */ }
 
   await positionMonitorService.invalidatePriceCache(watcher.symbol);
 };

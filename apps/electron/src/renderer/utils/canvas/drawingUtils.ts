@@ -68,27 +68,31 @@ export const drawKline = (
   bullishColor: string,
   bearishColor: string,
   isHighlighted: boolean = false,
+  isBullish?: boolean,
 ): void => {
-  const isBullish = closeY < openY;
-  const color = isBullish ? bullishColor : bearishColor;
+  const bullish = isBullish ?? closeY < openY;
+  const color = bullish ? bullishColor : bearishColor;
 
   const bodyTop = Math.min(openY, closeY);
   const bodyBottom = Math.max(openY, closeY);
   const bodyHeight = bodyBottom - bodyTop;
 
+  const wickTop = Math.min(highY, lowY);
+  const wickBottom = Math.max(highY, lowY);
+
   ctx.save();
-  
+
   if (isHighlighted) {
     ctx.shadowColor = color;
     ctx.shadowBlur = 8;
   }
 
-  if (highY < bodyTop) {
-    drawLine(ctx, x + width / 2, highY, x + width / 2, bodyTop, color, wickWidth);
+  if (wickTop < bodyTop) {
+    drawLine(ctx, x + width / 2, wickTop, x + width / 2, bodyTop, color, wickWidth);
   }
-  
-  if (lowY > bodyBottom) {
-    drawLine(ctx, x + width / 2, bodyBottom, x + width / 2, lowY, color, wickWidth);
+
+  if (wickBottom > bodyBottom) {
+    drawLine(ctx, x + width / 2, bodyBottom, x + width / 2, wickBottom, color, wickWidth);
   }
   
   ctx.restore();

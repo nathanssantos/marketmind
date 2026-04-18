@@ -236,7 +236,7 @@ export const positionsRouter = router({
         entryPrice,
         exitPrice,
         quantity: qty,
-        side: position.side as 'LONG' | 'SHORT',
+        side: position.side,
         marketType,
         leverage,
       });

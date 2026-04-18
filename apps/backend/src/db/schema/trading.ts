@@ -211,6 +211,7 @@ export const tradingProfiles = pgTable('trading_profiles', {
   volumeFilterObvLookbackShort: integer('volume_filter_obv_lookback_short'),
   useObvCheckLong: boolean('use_obv_check_long'),
   useObvCheckShort: boolean('use_obv_check_short'),
+  checklistConditions: text('checklist_conditions').default('[]').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

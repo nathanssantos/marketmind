@@ -53,9 +53,12 @@ export const useElderRayRenderer = ({
     const range = maxValue - minValue || 1;
     const padding = range * 0.1;
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const normalizedValue = (value - (minValue - padding)) / (range + padding * 2);
-      return panelY + panelHeight - normalizedValue * panelHeight;
+      return flipped
+        ? panelY + normalizedValue * panelHeight
+        : panelY + panelHeight - normalizedValue * panelHeight;
     };
 
     const zeroY = valueToY(0);

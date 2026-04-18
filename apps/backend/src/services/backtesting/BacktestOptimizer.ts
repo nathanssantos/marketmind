@@ -210,7 +210,7 @@ export class BacktestOptimizer {
 
       if (criteria.minWinRate != null && m.winRate < criteria.minWinRate) return false;
       if (criteria.minProfitFactor != null && m.profitFactor < criteria.minProfitFactor) return false;
-      if (criteria.minSharpeRatio != null && (m.sharpeRatio || 0) < criteria.minSharpeRatio) return false;
+      if (criteria.minSharpeRatio != null && (m.sharpeRatio ?? 0) < criteria.minSharpeRatio) return false;
       if (criteria.maxDrawdownPercent != null && m.maxDrawdownPercent > criteria.maxDrawdownPercent) return false;
       if (criteria.minTrades != null && m.totalTrades < criteria.minTrades) return false;
 

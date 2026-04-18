@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { ScalpingSignal, ScalpingExecutionMode } from '@marketmind/types';
 import { db } from '../../db';
-import { tradeExecutions, type Wallet } from '../../db/schema';
+import { tradeExecutions } from '../../db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { ACTIVE_TRADE_STATUSES } from '@marketmind/types';
 import { logger } from '../logger';
@@ -72,15 +72,15 @@ export class ExecutionEngine {
       }
 
       const wallet = await walletQueries.getByIdAndUser(this.config.walletId, this.config.userId);
-      const walletBalance = parseFloat((wallet as Wallet).currentBalance ?? '0');
+      const walletBalance = parseFloat((wallet).currentBalance ?? '0');
       if (walletBalance <= 0) {
         logger.warn({ walletId: this.config.walletId }, 'Insufficient wallet balance for scalping');
         return;
       }
 
-      await autoTradingService.setFuturesMarginType(wallet as Wallet, signal.symbol, this.config.marginType);
+      await autoTradingService.setFuturesMarginType(wallet, signal.symbol, this.config.marginType);
 
-      const client = (await import('../../exchange')).getFuturesClient(wallet as Wallet);
+      const client = (await import('../../exchange')).getFuturesClient(wallet);
       const pos = await client.getPosition(signal.symbol);
       const actualLeverage = pos ? Number(pos.leverage) : 1;
 
@@ -112,7 +112,7 @@ export class ExecutionEngine {
       let orderResult;
       try {
         orderResult = await autoTradingService.executeBinanceOrder(
-          wallet as Wallet,
+          wallet,
           orderParams,
           'FUTURES',
         );
@@ -132,7 +132,7 @@ export class ExecutionEngine {
       try {
         const results = await Promise.allSettled([
           createStopLossOrder({
-            wallet: wallet as Wallet,
+            wallet: wallet,
             symbol: signal.symbol,
             side: signal.direction,
             quantity: executedQty,
@@ -140,7 +140,7 @@ export class ExecutionEngine {
             marketType: 'FUTURES',
           }),
           createTakeProfitOrder({
-            wallet: wallet as Wallet,
+            wallet: wallet,
             symbol: signal.symbol,
             side: signal.direction,
             quantity: executedQty,
@@ -174,7 +174,7 @@ export class ExecutionEngine {
         try {
           const closeSide: 'BUY' | 'SELL' = signal.direction === 'LONG' ? 'SELL' : 'BUY';
           await autoTradingService.executeBinanceOrder(
-            wallet as Wallet,
+            wallet,
             { symbol: signal.symbol, side: closeSide, type: 'MARKET', quantity: executedQty, reduceOnly: true },
             'FUTURES',
           );
@@ -248,7 +248,7 @@ export class ExecutionEngine {
 
         try {
           await autoTradingService.executeBinanceOrder(
-            wallet as Wallet,
+            wallet,
             {
               symbol,
               side: closeSide,
@@ -277,7 +277,7 @@ export class ExecutionEngine {
 
       this.activePositions.delete(symbol);
 
-      const walletBalance = parseFloat((wallet as Wallet).currentBalance ?? '0');
+      const walletBalance = parseFloat((wallet).currentBalance ?? '0');
       this.signalEngine.recordTrade(pnl, walletBalance);
 
       logger.info({ executionId, symbol, exitPrice, pnl }, 'Scalping position closed');
@@ -299,7 +299,7 @@ export class ExecutionEngine {
 
     try {
       const wallet = await walletQueries.getByIdAndUser(this.config.walletId, this.config.userId);
-      const walletBalance = parseFloat((wallet as Wallet).currentBalance ?? '0');
+      const walletBalance = parseFloat((wallet).currentBalance ?? '0');
       this.signalEngine.recordTrade(pnl, walletBalance);
     } catch (error) {
       logger.error({ error: serializeError(error), symbol }, 'Failed to fetch balance for recordTrade, using 0');

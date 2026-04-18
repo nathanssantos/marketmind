@@ -131,7 +131,7 @@ export class BinanceUserStreamService {
       });
 
       const wsKey = wallet.walletType === 'testnet' ? 'mainTestnetUserData' : 'main';
-      wsClient.subscribeSpotUserDataStreamWithListenKey(wsKey, listenKey);
+      void wsClient.subscribeSpotUserDataStreamWithListenKey(wsKey, listenKey);
 
       this.connections.set(wallet.id, { client: wsClient, listenKey });
 

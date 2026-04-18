@@ -111,7 +111,7 @@ const createBaseConfig = (): Omit<MultiWatcherBacktestConfig, 'watchers' | 'star
 });
 
 const logSection = (title: string) => {
-  console.log('\n' + '═'.repeat(80));
+  console.log(`\n${  '═'.repeat(80)}`);
   console.log(`  ${title}`);
   console.log('═'.repeat(80));
 };
@@ -335,7 +335,7 @@ function printRecommendation(results: OptimizationResult[]) {
     console.log(`    ${line}`);
   }
 
-  console.log('\n' + '═'.repeat(80));
+  console.log(`\n${  '═'.repeat(80)}`);
 }
 
 function getFilterConfigFromName(name: string): string[] {

@@ -50,7 +50,7 @@ export class GranularPriceIndex implements KlineIndex {
   getRange(startTs: number, endTs: number): Kline[] {
     const result: Kline[] = [];
 
-    let startIdx = this.findStartIndex(startTs);
+    const startIdx = this.findStartIndex(startTs);
     if (startIdx === -1) return result;
 
     for (let i = startIdx; i < this.sortedTimestamps.length; i++) {
@@ -65,7 +65,7 @@ export class GranularPriceIndex implements KlineIndex {
   }
 
   *iterate(startTs: number, endTs: number): Generator<Kline> {
-    let startIdx = this.findStartIndex(startTs);
+    const startIdx = this.findStartIndex(startTs);
     if (startIdx === -1) return;
 
     for (let i = startIdx; i < this.sortedTimestamps.length; i++) {

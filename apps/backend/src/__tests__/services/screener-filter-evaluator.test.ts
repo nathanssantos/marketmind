@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluateFilter, evaluateFilters, needsPreviousValues, getLookbackBars } from '../../services/screener/filter-evaluator';
 
 const makeCondition = (overrides: Partial<ScreenerFilterCondition> & Pick<ScreenerFilterCondition, 'indicator' | 'operator'>): ScreenerFilterCondition => ({
-  id: 'test-' + Math.random().toString(36).slice(2, 6),
+  id: `test-${  Math.random().toString(36).slice(2, 6)}`,
   ...overrides,
 });
 

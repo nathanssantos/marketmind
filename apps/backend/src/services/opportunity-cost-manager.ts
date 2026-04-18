@@ -153,7 +153,7 @@ export class OpportunityCostManagerService {
       .limit(1)
       .then(rows => rows[0]);
 
-    if (!execution || execution.status !== 'open') return null;
+    if (execution?.status !== 'open') return null;
 
     const entryPrice = parseNumeric(execution.entryPrice);
     const currentBars = execution.barsInTrade ?? 0;
@@ -253,7 +253,7 @@ export class OpportunityCostManagerService {
           exitPrice: currentPrice,
           quantity,
           side: execution.side,
-          marketType: (execution.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES',
+          marketType: (execution.marketType ?? 'FUTURES'),
           leverage,
           accumulatedFunding,
         });

@@ -22,11 +22,11 @@ export const applyStopLossUpdate = async (
     try {
       const [wallet] = await db.select().from(wallets).where(eq(wallets.id, execution.walletId)).limit(1);
 
-      if (wallet && wallet.walletType === 'live') {
+      if (wallet?.walletType === 'live') {
         const result = await updateStopLossOrder({
           wallet,
           symbol: execution.symbol,
-          side: execution.side as 'LONG' | 'SHORT',
+          side: execution.side,
           quantity: parseFloat(execution.quantity),
           triggerPrice: newStopLoss,
           marketType: 'FUTURES',

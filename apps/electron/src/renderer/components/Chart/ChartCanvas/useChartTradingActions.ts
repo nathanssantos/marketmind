@@ -1,6 +1,6 @@
 import type { MarketType, Order } from '@marketmind/types';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
-import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
+import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
 import { getKlineClose, roundTradingPrice } from '@shared/utils';
@@ -14,7 +14,6 @@ import {
   createOptimisticEntry,
   submitEntryOrder,
   mapExecutionToOrder,
-  getOrderQuantity as getOrderQuantityHelper,
 } from './chartOrderHelpers';
 
 export interface UseChartTradingActionsProps {
@@ -31,7 +30,6 @@ export interface UseChartTradingActionsProps {
   setClosingVersion: React.Dispatch<React.SetStateAction<number>>;
   applyOptimistic: (id: string, patches: OptimisticOverride['patches'], previousValues: OptimisticOverride['previousValues']) => void;
   clearOptimistic: (id: string, expectedPatches?: OptimisticOverride['patches']) => void;
-  activeWalletBalance: string | undefined;
   latestKlinesPriceRef: MutableRefObject<number>;
   setOrderToClose: (id: string | null) => void;
 }
@@ -50,7 +48,6 @@ export const useChartTradingActions = ({
   setClosingVersion,
   applyOptimistic,
   clearOptimistic,
-  activeWalletBalance,
   latestKlinesPriceRef,
   setOrderToClose,
 }: UseChartTradingActionsProps) => {
@@ -94,11 +91,7 @@ export const useChartTradingActions = ({
     updatePendingEntry,
   } = useBackendTradingMutations();
 
-  const quickTradeSizePercent = useQuickTradeStore((s) => s.sizePercent);
-
-  const getOrderQuantity = useCallback((price: number): string =>
-    getOrderQuantityHelper(price, activeWalletBalance, quickTradeSizePercent),
-  [activeWalletBalance, quickTradeSizePercent]);
+  const { getQuantity: getOrderQuantity } = useOrderQuantity(symbol, marketType);
 
   const handleLongEntry = useCallback(async (price: number) => {
     if (!backendWalletId) { warning(t('trading.ticket.noWallet')); return; }

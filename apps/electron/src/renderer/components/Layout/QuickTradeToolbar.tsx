@@ -4,18 +4,18 @@ import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBookTicker } from '@renderer/hooks/useBookTicker';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
+import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
-import { trpc } from '@renderer/utils/trpc';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { roundTradingQty } from '@shared/utils';
 import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuShield, LuX } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
+import { ChecklistSection } from '../Trading/ChecklistSection';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
@@ -54,6 +54,7 @@ export type QuickTradeMode = 'sidebar' | 'chart';
 interface QuickTradeActionsProps {
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
+  interval?: string;
   showDragHandle?: boolean;
   onDragStart?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
@@ -62,7 +63,7 @@ interface QuickTradeActionsProps {
   onClose?: () => void;
 }
 
-export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDragHandle, onDragStart, isDragging, onMenuAction, currentMode, onClose }: QuickTradeActionsProps) => {
+export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interval = '1h', showDragHandle, onDragStart, isDragging, onMenuAction, currentMode, onClose }: QuickTradeActionsProps) => {
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
@@ -172,24 +173,12 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
     }
   }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
-  const balance = parseFloat(activeWallet?.currentBalance ?? '0');
   const currentPrice = usePriceStore((s) => s.prices[symbol]?.price ?? 0);
   const { bidPrice, askPrice } = useBookTicker(symbol);
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
 
-  const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
-    { walletId: activeWallet?.id!, symbol },
-    { enabled: !!activeWallet?.id && !!symbol && marketType === 'FUTURES' },
-  );
-  const leverage = symbolLeverage?.leverage ?? 1;
-
-  const getQuantity = useCallback((price: number): string => {
-    const pct = sizePercent / 100;
-    const marginPower = balance * leverage;
-    const qty = marginPower > 0 && price > 0 ? (marginPower * pct) / price : 0;
-    return roundTradingQty(qty);
-  }, [balance, sizePercent, leverage]);
+  const { getQuantity, leverage } = useOrderQuantity(symbol, marketType);
 
   const handleQuickOrder = useCallback((side: 'BUY' | 'SELL') => {
     if (!activeWallet?.id) {
@@ -305,7 +294,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
           <TooltipWrapper label={showAdvanced ? t('common.hideActions', 'Hide actions') : t('common.moreActions', 'More actions')} showArrow>
             <IconButton
               size="2xs"
-              variant="ghost"
+              variant="outline"
               aria-label="Toggle advanced"
               onClick={() => setShowAdvanced((prev) => !prev)}
               h="34px"
@@ -332,6 +321,8 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
             } />
           </VStack>
         )}
+
+        <ChecklistSection symbol={symbol} interval={interval} marketType={marketType} />
       </VStack>
 
       <ConfirmationDialog
@@ -441,12 +432,13 @@ QuickTradeActions.displayName = 'QuickTradeActions';
 interface QuickTradeToolbarProps {
   symbol: string;
   marketType?: 'SPOT' | 'FUTURES';
+  interval?: string;
   onMenuAction?: (mode: QuickTradeMode) => void;
   currentMode?: QuickTradeMode;
   onClose?: () => void;
 }
 
-export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onMenuAction, currentMode, onClose }: QuickTradeToolbarProps) => {
+export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interval, onMenuAction, currentMode, onClose }: QuickTradeToolbarProps) => {
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -529,6 +521,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onMenuA
         <QuickTradeActions
           symbol={symbol}
           marketType={marketType}
+          interval={interval}
           showDragHandle
           onDragStart={handleDragStart}
           isDragging={isDragging}

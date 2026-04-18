@@ -19,7 +19,9 @@ import {
   Textarea,
 } from '@renderer/components/ui';
 import type { TradingProfile } from '@marketmind/types';
+import { trpc } from '@renderer/utils/trpc';
 import { useTranslation } from 'react-i18next';
+import { ChecklistEditor } from './ChecklistEditor';
 import { DIRECTION_MODE_OPTIONS, MODE_KEYS, TRADING_MODE_OPTIONS } from './profileEditorConstants';
 import { OverrideBadge, OverrideRow, ovStr } from './profileEditorUtils';
 import { ProfileFibEntrySection } from './ProfileFibEntrySection';
@@ -38,6 +40,9 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
   const { t } = useTranslation();
   const form = useProfileEditorForm(profile, isOpen, onClose);
   const { overrideActions } = form;
+  const { data: availableIndicators = [] } = trpc.userIndicators.list.useQuery(undefined, {
+    enabled: isOpen,
+  });
 
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
@@ -199,6 +204,39 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                     </SimpleGrid>
                   )}
                 </Stack>
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title={t('tradingProfiles.sections.checklist', { defaultValue: 'Pre-trade checklist' })}
+                description={t('tradingProfiles.sections.checklistDescription', {
+                  defaultValue:
+                    'Conditions evaluated before each trade. Required = must pass. Preferred = adds to confidence score.',
+                })}
+                badge={
+                  <Box
+                    px={2}
+                    py={0.5}
+                    bg={form.checklistConditions.length > 0 ? 'blue.100' : 'gray.100'}
+                    color={form.checklistConditions.length > 0 ? 'blue.800' : 'gray.700'}
+                    borderRadius="full"
+                    fontSize="xs"
+                    fontWeight="medium"
+                    _dark={{
+                      bg: form.checklistConditions.length > 0 ? 'blue.900' : 'gray.700',
+                      color: form.checklistConditions.length > 0 ? 'blue.200' : 'gray.300',
+                    }}
+                  >
+                    {form.checklistConditions.length}
+                  </Box>
+                }
+                size="lg"
+              >
+                <ChecklistEditor
+                  conditions={form.checklistConditions}
+                  availableIndicators={availableIndicators}
+                  onChange={form.setChecklistConditions}
+                  isSaving={form.isSubmitting}
+                />
               </CollapsibleSection>
 
               <ProfileFiltersSection actions={overrideActions} />

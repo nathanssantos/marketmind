@@ -149,7 +149,7 @@ const makeTopCoin = (binanceSymbol: string, overrides: Partial<TopCoin> = {}): T
 const makeCondition = (
   overrides: Partial<ScreenerFilterCondition> & Pick<ScreenerFilterCondition, 'indicator' | 'operator'>,
 ): ScreenerFilterCondition => ({
-  id: 'cond-' + Math.random().toString(36).slice(2, 6),
+  id: `cond-${  Math.random().toString(36).slice(2, 6)}`,
   ...overrides,
 });
 

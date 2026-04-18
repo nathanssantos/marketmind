@@ -38,9 +38,12 @@ export const useCMORenderer = ({
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const normalizedValue = (value + 100) / 200;
-      return panelY + panelHeight - normalizedValue * panelHeight;
+      return flipped
+        ? panelY + normalizedValue * panelHeight
+        : panelY + panelHeight - normalizedValue * panelHeight;
     };
 
     const overboughtY = valueToY(50);

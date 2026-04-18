@@ -17,6 +17,8 @@ export { calculateDonchian } from './donchian';
 export type { DonchianResult } from './donchian';
 export { calculateDEMA } from './dema';
 export type { DEMAResult } from './dema';
+export { calculateChoppiness } from './choppiness';
+export type { ChoppinessResult } from './choppiness';
 export { calculateLiquidityLevels, findSwingHighs, findSwingLows } from './liquidityLevels';
 export type { LiquidityLevel, LiquidityZone, LiquidityLevelsConfig } from './liquidityLevels';
 export { calculateUltimateOscillator } from './ultimateOscillator';

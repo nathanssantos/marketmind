@@ -18,6 +18,7 @@ const hydrateDomainStores = (prefs: Record<string, Record<string, unknown>>) => 
   useIndicatorStore.getState().hydrate({
     activeIndicators: chart['activeIndicators'] as string[] | undefined,
     indicatorParams: chart['indicatorParams'] as Record<string, unknown> | undefined,
+    instances: chart['indicatorInstances'],
   });
 
   useUIStore.getState().hydrate(ui);

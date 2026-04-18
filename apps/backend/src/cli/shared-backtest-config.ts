@@ -77,7 +77,7 @@ export const parseCliArgs = () => {
 export const formatCurrency = (value: number): string =>
   value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export const formatPercent = (value: number): string => value.toFixed(2) + '%';
+export const formatPercent = (value: number): string => `${value.toFixed(2)  }%`;
 
 export const formatDuration = (minutes: number): string => {
   if (minutes < 60) return `${minutes.toFixed(0)}m`;

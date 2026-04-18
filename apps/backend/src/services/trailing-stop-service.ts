@@ -255,10 +255,10 @@ export class TrailingStopService {
         const useOverride = symbolOverride?.useIndividualConfig === true;
         const activationMode = execution.side === 'LONG'
           ? (useOverride && symbolOverride?.trailingActivationModeLong !== null
-              ? symbolOverride!.trailingActivationModeLong
+              ? symbolOverride.trailingActivationModeLong
               : walletConfig?.trailingActivationModeLong ?? 'auto')
           : (useOverride && symbolOverride?.trailingActivationModeShort !== null
-              ? symbolOverride!.trailingActivationModeShort
+              ? symbolOverride.trailingActivationModeShort
               : walletConfig?.trailingActivationModeShort ?? 'auto');
 
         if (activationMode === 'manual') {

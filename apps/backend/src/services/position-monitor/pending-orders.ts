@@ -25,7 +25,7 @@ export const checkPendingOrders = async (): Promise<void> => {
     .filter(e => e.limitEntryPrice && (!e.expiresAt || e.expiresAt >= now))
     .map(e => ({
       symbol: e.symbol,
-      marketType: (e.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT') as 'SPOT' | 'FUTURES',
+      marketType: e.marketType === 'FUTURES' ? 'FUTURES' as const : 'SPOT' as const,
     }));
 
   const uniqueSymbols = Array.from(
@@ -104,7 +104,7 @@ export const checkPendingOrders = async (): Promise<void> => {
 
       if (execution.entryOrderType === 'STOP_MARKET' || execution.entryOrderType === 'TAKE_PROFIT_MARKET') continue;
 
-      const marketType = (execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT') as 'SPOT' | 'FUTURES';
+      const marketType = (execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT');
       const priceKey = `${execution.symbol}-${marketType}`;
       const currentPrice = priceMap.get(priceKey) ?? await getCurrentPrice(execution.symbol, marketType);
       const limitPrice = parseFloat(execution.limitEntryPrice);

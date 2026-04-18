@@ -34,6 +34,8 @@ const ORB_MID_ALPHA = 0.3;
 const ORB_LINE_DASH: number[] = [6, 3];
 const ORB_MID_DASH: number[] = [2, 4];
 const ORB_LABEL_FONT = '9px sans-serif';
+const ORB_LABEL_X_TOLERANCE = 30;
+const ORB_LABEL_Y_TOLERANCE = 14;
 
 const getIntervalMinutes = (klines: Kline[]): number => {
   if (klines.length < 2) return 0;
@@ -135,6 +137,8 @@ export const useORBRenderer = ({
     ctx.rect(0, 0, chartWidth, chartHeight);
     ctx.clip();
 
+    const labelGroups: { x: number; y: number; names: string[]; color: string }[] = [];
+
     for (const zone of orbZones) {
       const orbStartX = manager.timestampToX(zone.orbEndTimestamp, intervalMs);
       const sessionEndX = manager.timestampToX(zone.sessionCloseTimestamp, intervalMs);
@@ -186,14 +190,26 @@ export const useORBRenderer = ({
       ctx.lineTo(clampedRight, midY);
       ctx.stroke();
 
-      ctx.setLineDash([]);
-      ctx.globalAlpha = ORB_LINE_ALPHA;
-      ctx.font = ORB_LABEL_FONT;
-      ctx.textBaseline = 'bottom';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = zone.color;
       const labelX = clampedLeft + 3;
-      ctx.fillText(`ORB ${zone.shortName}`, labelX, topY - 2);
+      const labelY = topY - 2;
+      const existing = labelGroups.find(
+        (g) => Math.abs(g.x - labelX) < ORB_LABEL_X_TOLERANCE && Math.abs(g.y - labelY) < ORB_LABEL_Y_TOLERANCE,
+      );
+      if (existing) {
+        if (!existing.names.includes(zone.shortName)) existing.names.push(zone.shortName);
+      } else {
+        labelGroups.push({ x: labelX, y: labelY, names: [zone.shortName], color: zone.color });
+      }
+    }
+
+    ctx.setLineDash([]);
+    ctx.globalAlpha = ORB_LINE_ALPHA;
+    ctx.font = ORB_LABEL_FONT;
+    ctx.textBaseline = 'bottom';
+    ctx.textAlign = 'left';
+    for (const group of labelGroups) {
+      ctx.fillStyle = group.color;
+      ctx.fillText(`ORB ${group.names.join(' / ')}`, group.x, group.y);
     }
 
     ctx.restore();

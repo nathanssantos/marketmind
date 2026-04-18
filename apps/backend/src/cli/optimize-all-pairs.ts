@@ -261,7 +261,7 @@ function printResults(results: TestResult[]) {
 
   console.log('═'.repeat(140));
   console.log('> ALL PAIR COMBINATIONS SORTED BY P&L');
-  console.log('═'.repeat(140) + '\n');
+  console.log(`${'═'.repeat(140)  }\n`);
 
   console.log('Rank  Combination                                      P&L          P&L%    Trades   WinRate    PF    MaxDD    LONG P&L    SHORT P&L   vs Base');
   console.log('─'.repeat(140));
@@ -293,9 +293,9 @@ function printResults(results: TestResult[]) {
   const trendAdxResult = sortedResults.find(r => r.filters.includes('TrendEMA') && r.filters.includes('ADX') && !r.filters.includes('Fib'));
   const trendAdxFibResult = sortedResults.find(r => r.filters.includes('TrendEMA') && r.filters.includes('ADX') && r.filters.includes('Fib'));
 
-  console.log('\n' + '═'.repeat(80));
+  console.log(`\n${  '═'.repeat(80)}`);
   console.log('> TRENDEMA + ADX ANALYSIS');
-  console.log('═'.repeat(80) + '\n');
+  console.log(`${'═'.repeat(80)  }\n`);
 
   if (trendAdxResult) {
     console.log(`> TrendEMA + ADX (no Fib):`);
@@ -310,9 +310,9 @@ function printResults(results: TestResult[]) {
   }
 
   const best = sortedResults[0]!;
-  console.log('\n' + '═'.repeat(80));
+  console.log(`\n${  '═'.repeat(80)}`);
   console.log('> BEST COMBINATION');
-  console.log('═'.repeat(80) + '\n');
+  console.log(`${'═'.repeat(80)  }\n`);
 
   console.log(`   ${best.name}`);
   console.log(`   P&L: $${formatCurrency(best.pnl)} (${formatPercent(best.pnlPct)})`);

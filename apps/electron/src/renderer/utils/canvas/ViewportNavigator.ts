@@ -61,13 +61,14 @@ export const panVerticalOffset = (
   deltaY: number,
   chartHeight: number,
   klines: Kline[],
-  viewport: Viewport
+  viewport: Viewport,
+  priceScale: number = 1
 ): number => {
   const baseBounds = klines.length > 0 ? calculateBounds(klines, viewport) : null;
   if (!baseBounds) return currentOffset;
 
-  const baseRange = baseBounds.maxPrice - baseBounds.minPrice;
-  const priceDelta = (deltaY / chartHeight) * baseRange;
+  const visibleRange = (baseBounds.maxPrice - baseBounds.minPrice) * priceScale;
+  const priceDelta = (deltaY / chartHeight) * visibleRange;
   return currentOffset + priceDelta;
 };
 

@@ -1,12 +1,39 @@
 import { Flex, HStack, Text } from '@chakra-ui/react';
 import { CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { useTabTickers, type TabTickerTarget } from '@renderer/hooks/useTabTickers';
+import { useDailyChangePct } from '@renderer/store/priceStore';
 import { useLayoutStore } from '@renderer/store/layoutStore';
-import { memo, useCallback, useState } from 'react';
+import type { MarketType } from '@marketmind/types';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { LuPlus, LuX } from 'react-icons/lu';
+
+const DailyChangeBadge = memo(function DailyChangeBadge({
+  symbol,
+  marketType,
+}: {
+  symbol: string;
+  marketType: MarketType;
+}) {
+  const pct = useDailyChangePct(symbol, marketType);
+  if (pct === null) return null;
+  const isPositive = pct >= 0;
+  return (
+    <Text
+      fontSize="2xs"
+      fontWeight="semibold"
+      color={isPositive ? 'trading.profit' : 'trading.loss'}
+      fontVariantNumeric="tabular-nums"
+    >
+      {isPositive ? '+' : ''}
+      {pct.toFixed(2)}%
+    </Text>
+  );
+});
 
 const SymbolTab = memo(function SymbolTab({
   id,
   symbol,
+  marketType,
   isActive,
   canClose,
   onActivate,
@@ -14,6 +41,7 @@ const SymbolTab = memo(function SymbolTab({
 }: {
   id: string;
   symbol: string;
+  marketType: MarketType;
   isActive: boolean;
   canClose: boolean;
   onActivate: (id: string) => void;
@@ -39,6 +67,7 @@ const SymbolTab = memo(function SymbolTab({
       <Text fontSize="xs" fontWeight={isActive ? 'semibold' : 'normal'} color={isActive ? 'fg' : 'fg.muted'}>
         {symbol}
       </Text>
+      <DailyChangeBadge symbol={symbol} marketType={marketType} />
       {canClose && hovered && (
         <TooltipWrapper label="Close tab" showArrow>
           <IconButton
@@ -65,6 +94,18 @@ export const SymbolTabBar = memo(function SymbolTabBar() {
   const addSymbolTab = useLayoutStore((s) => s.addSymbolTab);
   const removeSymbolTab = useLayoutStore((s) => s.removeSymbolTab);
 
+  const tickerTargets = useMemo<TabTickerTarget[]>(() => {
+    const uniq = new Map<string, TabTickerTarget>();
+    for (const t of symbolTabs) {
+      if (!t.symbol) continue;
+      const key = `${t.symbol}:${t.marketType}`;
+      if (!uniq.has(key)) uniq.set(key, { symbol: t.symbol, marketType: t.marketType });
+    }
+    return Array.from(uniq.values());
+  }, [symbolTabs]);
+
+  useTabTickers(tickerTargets);
+
   const handleActivate = useCallback(
     (id: string) => setActiveSymbolTab(id),
     [setActiveSymbolTab],
@@ -90,6 +131,7 @@ export const SymbolTabBar = memo(function SymbolTabBar() {
             key={tab.id}
             id={tab.id}
             symbol={tab.symbol}
+            marketType={tab.marketType}
             isActive={tab.id === activeSymbolTabId}
             canClose={canClose}
             onActivate={handleActivate}

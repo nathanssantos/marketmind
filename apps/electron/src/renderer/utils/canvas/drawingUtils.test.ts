@@ -169,9 +169,63 @@ describe('drawingUtils', () => {
       const isHighlighted = true;
 
       drawKline(mockCtx, x, openY, closeY, highY, lowY, width, wickWidth, bullishColor, bearishColor, isHighlighted);
-      
+
       expect(mockCtx.save).toHaveBeenCalled();
       expect(mockCtx.restore).toHaveBeenCalled();
+    });
+
+    it('uses isBullish parameter when provided (does not infer from screen Y)', () => {
+      const x = 100;
+      const openY = 150;
+      const closeY = 200;
+      const highY = 140;
+      const lowY = 210;
+      const width = 10;
+      const wickWidth = 1;
+
+      drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000', false, true);
+      expect(ctx.fillStyle).toContain('00ff00');
+    });
+
+    it('preserves color when chart is flipped (Y axis inverted)', () => {
+      const x = 100;
+      const openY = 150;
+      const closeY = 100;
+      const highY = 220;
+      const lowY = 80;
+      const width = 10;
+      const wickWidth = 1;
+
+      drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000', false, false);
+      expect(ctx.fillStyle).toContain('ff0000');
+    });
+
+    it('draws both wicks when chart is flipped (highY > lowY in screen space)', () => {
+      const ctxSpy = {
+        ...ctx,
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        beginPath: vi.fn(),
+        stroke: vi.fn(),
+        fillRect: vi.fn(),
+        save: vi.fn(),
+        restore: vi.fn(),
+      } as unknown as CanvasRenderingContext2D;
+
+      const x = 100;
+      const openY = 160;
+      const closeY = 200;
+      const highY = 250;
+      const lowY = 100;
+      const width = 10;
+      const wickWidth = 1;
+
+      drawKline(ctxSpy, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000', false, true);
+
+      const moveCalls = (ctxSpy.moveTo as ReturnType<typeof vi.fn>).mock.calls;
+      const wickEndpoints = moveCalls.map((c) => c[1]);
+      expect(wickEndpoints).toContain(100);
+      expect(wickEndpoints.some((y) => y === 200 || y === 160)).toBe(true);
     });
   });
 

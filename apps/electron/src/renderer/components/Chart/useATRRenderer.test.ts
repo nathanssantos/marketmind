@@ -93,6 +93,7 @@ describe('useATRRenderer', () => {
       indexToX: vi.fn((index: number) => index * 20),
       indexToCenterX: vi.fn((index: number) => index * 20 + 10),
       getVisibleKlines: vi.fn(() => klines),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
   });
 

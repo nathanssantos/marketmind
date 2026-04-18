@@ -170,11 +170,11 @@ async function compare() {
     console.log('');
     console.log('Total Trades:', result.metrics.totalTrades);
     console.log(
-      'Total P&L: $' + result.metrics.totalPnl.toFixed(2),
-      '(' + result.metrics.totalPnlPercent.toFixed(1) + '%)'
+      `Total P&L: $${  result.metrics.totalPnl.toFixed(2)}`,
+      `(${  result.metrics.totalPnlPercent.toFixed(1)  }%)`
     );
-    console.log('Win Rate:', result.metrics.winRate.toFixed(1) + '%');
-    console.log('Max Drawdown:', result.metrics.maxDrawdownPercent.toFixed(1) + '%');
+    console.log('Win Rate:', `${result.metrics.winRate.toFixed(1)  }%`);
+    console.log('Max Drawdown:', `${result.metrics.maxDrawdownPercent.toFixed(1)  }%`);
     console.log('Profit Factor:', (result.metrics.profitFactor ?? 0).toFixed(2));
     console.log('');
     console.log(`LONG:  ${longTrades.length} trades | P&L: $${longPnl.toFixed(2)}`);
@@ -184,7 +184,7 @@ async function compare() {
     console.log('');
   }
 
-  console.log('\n' + '═'.repeat(80));
+  console.log(`\n${  '═'.repeat(80)}`);
   console.log('> RESUMO COMPARATIVO (ordenado por P&L)');
   console.log('═'.repeat(80));
   console.log('');

@@ -39,6 +39,8 @@ export default [
                 {
                     argsIgnorePattern: '^_',
                     varsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                    destructuredArrayIgnorePattern: '^_',
                 },
             ],
             '@typescript-eslint/consistent-type-imports': [
@@ -55,7 +57,7 @@ export default [
             ],
             'prefer-const': 'error',
             'no-var': 'error',
-            'eqeqeq': ['error', 'always'],
+            'eqeqeq': ['error', 'always', { null: 'ignore' }],
             'curly': ['error', 'multi-line'],
             'prefer-arrow-callback': 'warn',
             'prefer-template': 'warn',

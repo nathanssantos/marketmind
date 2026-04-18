@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.90.0] - 2026-04-18
+
+### Fixed
+- **Pane indicators flip with main pane**: Stochastic, RSI, MACD, ADX, AO, Aroon, CCI, CMO, CMF, Elder Ray, Klinger, MFI, OBV, PPO, ROC, TSI, Ultimate Osc, Vortex, Williams %R now invert their Y axis when `chartFlipped` is enabled. Both the legacy per-indicator renderers and the new generic pipeline (`renderPaneLine`, `renderPaneMulti`, `renderPaneHistogram`) read `manager.isFlipped()` and pass it to the value-to-Y factories.
+- **Direction arrows flip with chart**: Position tags (`↑/↓` next to leverage), trailing-stop labels (`TS ↑`), and liquidation tags (`LIQ ↓`) now mirror direction when the chart is flipped — extracted to a shared `getDirectionArrow(isLong, flipped)` helper.
+- **Vertical mouse/touch pan inverted under flipped chart**: Dragging down was moving content up (and vice-versa) when `chartFlipped` was on. `CanvasManager.panVertical` now negates `deltaY` when flipped, restoring "drag follows finger/mouse" semantics. Keyboard pan (`Cmd+ArrowUp/Down`) and touch pan inherit the same fix.
+
+### Added
+- **`createNormalizedValueToY` / `createDynamicValueToY` flip parameter**: `oscillatorRendering.ts` factories accept an optional `flipped: boolean` and invert the Y mapping symmetrically. `drawZoneFill` is now flip-safe (uses `Math.min(topY, bottomY)` + `Math.abs`).
+- **`OscillatorSetup.flipped` field**: Surfaced via `useOscillatorSetup` so panel renderers can pass it through.
+- **`getDirectionArrow` helper** at `Chart/utils/directionArrow.ts` + 4 unit tests covering all `(isLong × flipped)` combinations.
+- **`createNormalizedValueToY` / `createDynamicValueToY` tests** (6 tests) — verify min/max mapping, flip mirroring, and symmetric range behavior.
+- **`CanvasManager.panVertical` flip test** — verifies pan delta is negated under flipped state and magnitude is preserved.
+
+### Changed
+- **Test infra**: ~45 renderer hook test files now mock `isFlipped: vi.fn(() => false)` on their `CanvasManager` stubs, restoring suite green after the new `manager.isFlipped()` calls in the renderers.
+- **Generic indicator pipeline wired into `ChartCanvas`** (additive). `useGenericChartIndicators` + `useGenericChartIndicatorRenderers` now run alongside the legacy renderers. With no `IndicatorInstance`s in the store (default), they are no-ops — zero behavior change for existing users. When the user opts in via the new `IndicatorTogglePopoverGeneric` (flag default `true`, override with `VITE_USE_GENERIC_INDICATOR_PIPELINE=false`), added instances render through the catalog-driven `RENDERER_REGISTRY`. Legacy renderers still fire for `activeIndicators` so prior preferences keep working; full legacy deletion is queued for v0.91 after manual UI QA.
+
+## [0.89.0] - 2026-04-18
+
+### Added
+- **Pre-trade checklist**: Per-profile list of indicator conditions (`ChecklistCondition`) evaluated before every trade. `required` conditions must pass; `preferred` conditions add to a 0-100 confidence score (required × 2 weight, preferred × 1).
+- **ChecklistEditor component**: New section in `ProfileEditorDialog` to add / reorder / enable / edit / delete conditions, backed by `trpc.tradingProfiles.updateChecklist`.
+- **ChecklistSection in Quick Trade toolbar**: Live evaluation badge (`requiredPassed/requiredTotal` + score %) plus expandable per-condition pass/fail list, driven by `trpc.trading.evaluateChecklist` polling every 15s for the default profile.
+- **Default seeded checklist**: New profiles are auto-populated via `materializeDefaultChecklist` with conditions mirroring the currently enabled auto-trade filters (trend, RSI, choppiness, etc.).
+- **Declarative `INDICATOR_CATALOG`** (`@marketmind/trading-core`): Single source of truth for indicator metadata (params, outputs, valueRange, evaluator { service: 'pine' | 'native', scriptId, outputKey }) — foundation for zero-hardcoded-id indicator pipeline.
+- **`user_indicators` table + router**: Per-user indicator instances with auto-seed of defaults on first access (`userIndicatorsRouter` + `seedDefaultUserIndicators`).
+- **Generic `IndicatorConfigDialog`**: Unified create/edit/checklist-condition modes for indicator configuration (replaces per-indicator modal variants).
+- **New condition operators**: `priceAbove`, `priceBelow` for comparing indicator series to close price.
+- **Choppiness as a native indicator** in the checklist evaluator (ATR + highest/lowest composition via `PineIndicatorService`).
+- **Flip chart toolbar button**: `LuFlipVertical2` toggle in `ChartToolsToolbar` now mirrors the `chartFlipped` chart preference (previously only reachable via Settings → Chart).
+
+### Changed
+- **`TradingProfile`** (`@marketmind/types`): New `checklistConditions: ChecklistConditionDto[]` field (persisted as JSON text in the new `checklist_conditions` DB column, migration `0030_checklist_conditions.sql`).
+- **`ChecklistConditionDto.op`** is now typed as the `ChecklistConditionOp` union (was `string`) so frontend and backend agree on the allowed operators.
+
+### Fixed
+- **`handleToggleEnabled` switch signature**: `onCheckedChange` in `ChecklistEditor` now correctly handles the Chakra switch callback shape (was causing a TS error).
+
+## [0.88.0] - 2026-04-17
+
+### Added
+- **OHLC row on chart header**: Hovering candles now shows OHLC + delta% + volume + buy/sell pressure inline in the chart header (shared `KlineOHLCRow` component also used by the tooltip)
+- **Liquidity heatmap intensity mode**: New "intensity" color mode with warm ramp (olive → amber → red → magenta) that encodes magnitude without green/red bid/ask coloring; toggle in Settings → Chart
+- **Fear & Greed reference lines**: 4 horizontal reference lines (25/45/55/75) on the Fear & Greed mini-chart, driven by the new `FEAR_GREED_LEVELS` constant (single source for colors and thresholds)
+- **`useOrderQuantity` hook**: Single formula for order quantity calculation shared by the Quick Trade toolbar and chart canvas-direct entries (click/drag/Shift+Alt)
+- **Fear & Greed level localization keys**: `extremeFear` / `fear` / `neutral` / `greed` / `extremeGreed` in en/pt/es/fr
+
+### Fixed
+- **Leverage missing in canvas-direct entries**: Click/drag/shortcut entries from the chart canvas were using `balance × pct / price` instead of `balance × leverage × pct / price`, producing smaller quantities than the Quick Trade sidebar
+- **Liquidation CRITICAL threshold**: Raised from 3% to 5% (`LIQUIDATION_THRESHOLDS.CRITICAL` in `@marketmind/trading-core`) so critical alerts fire earlier
+- **ORB label collision**: TSE and ASX zones that overlap during DST periods now concatenate into a single label (`ORB TSE / ASX`) instead of stacking on top of each other
+- **Zoom cursor anchoring**: Candle under the cursor stays under the cursor during scroll zoom, even when the viewport was pinned to the last candle (snap-to-end override now only applies when the cursor is in the rightmost 5%)
+- **Y-pan multiplication after Y-scale stretch**: Vertical pan was amplified proportionally to `priceScale` after stretching the Y axis — now `panVerticalOffset` honors the current `priceScale` so 1px of mouse motion equals 1px of chart motion regardless of zoom
+- **"More actions" button border**: Quick Trade toolbar chevron now uses `variant="outline"` to match the other toolbar buttons
+- **OHLC header overflow**: Header row now uses `nowrap` + `overflow="hidden"` on all inner stacks so OHLC/volume/buy% cannot wrap to a second line
+- **Stochastic K/D colors swapped**: K and D line colors corrected in the Stochastic indicator
+- **Position-sync fee correctness**: Real fees used during position sync instead of synthetic values
+
+### Changed
+- **Liquidity LUTs**: Moved inline LUTs out of `useLiquidityHeatmapRenderer` into a new `liquidityLUTs.ts` module (single source of truth for `BID_LUT_COLORED`, `ASK_LUT_COLORED`, `INTENSITY_LUT` + `getLiquidityLUTs(mode)`)
+- **Fear & Greed color resolution**: `getFearGreedColor` now iterates `FEAR_GREED_LEVELS` instead of carrying hardcoded thresholds
+
 ## [0.87.0] - 2026-04-13
 
 ### Added

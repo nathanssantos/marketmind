@@ -66,6 +66,7 @@ export class CanvasManager {
   private resizeObserver: ResizeObserver | null = null;
   private paddingTop: number = CHART_CONFIG.CANVAS_PADDING_TOP;
   private paddingBottom: number = CHART_CONFIG.CANVAS_PADDING_BOTTOM;
+  private flipped: boolean = false;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -287,14 +288,24 @@ export class CanvasManager {
     this.paddingBottom = bottom;
   }
 
+  public setFlipped(flipped: boolean): void {
+    if (this.flipped === flipped) return;
+    this.flipped = flipped;
+    this.markDirty('all');
+  }
+
+  public isFlipped(): boolean {
+    return this.flipped;
+  }
+
   public priceToY(price: number): number {
     if (!this.bounds || !this.dimensions) return 0;
-    return priceToY(price, this.bounds, this.dimensions, this.paddingTop, this.paddingBottom);
+    return priceToY(price, this.bounds, this.dimensions, this.paddingTop, this.paddingBottom, this.flipped);
   }
 
   public yToPrice(y: number): number {
     if (!this.bounds || !this.dimensions) return 0;
-    return yToPrice(y, this.bounds, this.dimensions, this.paddingTop, this.paddingBottom);
+    return yToPrice(y, this.bounds, this.dimensions, this.paddingTop, this.paddingBottom, this.flipped);
   }
 
   public volumeToHeight(volume: number): number {
@@ -388,7 +399,8 @@ export class CanvasManager {
 
   public panVertical(deltaY: number): void {
     if (!this.dimensions) return;
-    this.priceOffset = panVerticalOffset(this.priceOffset, deltaY, this.dimensions.chartHeight, this.klines, this.viewport);
+    const adjustedDeltaY = this.flipped ? -deltaY : deltaY;
+    this.priceOffset = panVerticalOffset(this.priceOffset, adjustedDeltaY, this.dimensions.chartHeight, this.klines, this.viewport, this.priceScale);
     this.updateBounds();
     this.markDirty('viewport');
   }

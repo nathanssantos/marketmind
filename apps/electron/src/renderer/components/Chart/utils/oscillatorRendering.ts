@@ -40,7 +40,9 @@ export const drawZoneFill = ({
   bottomY,
 }: OscillatorPanelConfig & { topY: number; bottomY: number }): void => {
   ctx.fillStyle = PANEL_COLORS.ZONE_FILL;
-  ctx.fillRect(0, topY, chartWidth, bottomY - topY);
+  const y = Math.min(topY, bottomY);
+  const height = Math.abs(bottomY - topY);
+  ctx.fillRect(0, y, chartWidth, height);
 };
 
 export const drawZoneLines = ({
@@ -143,9 +145,15 @@ export const createNormalizedValueToY = (
   panelTop: number,
   panelHeight: number,
   padding: number,
+  flipped: boolean = false,
 ): ((value: number) => number) => {
   const innerHeight = panelHeight - padding * 2;
-  return (value: number) => panelTop + padding + innerHeight - (value / 100) * innerHeight;
+  return (value: number) => {
+    const ratio = value / 100;
+    return flipped
+      ? panelTop + padding + ratio * innerHeight
+      : panelTop + padding + innerHeight - ratio * innerHeight;
+  };
 };
 
 export const createDynamicValueToY = (
@@ -154,12 +162,15 @@ export const createDynamicValueToY = (
   padding: number,
   minValue: number,
   maxValue: number,
+  flipped: boolean = false,
 ): ((value: number) => number) => {
   const innerHeight = panelHeight - padding * 2;
   const range = maxValue - minValue || 1;
   return (value: number) => {
     const normalized = (value - minValue) / range;
-    return panelTop + padding + innerHeight * (1 - normalized);
+    return flipped
+      ? panelTop + padding + innerHeight * normalized
+      : panelTop + padding + innerHeight * (1 - normalized);
   };
 };
 

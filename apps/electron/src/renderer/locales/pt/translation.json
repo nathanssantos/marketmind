@@ -311,7 +311,9 @@
       "colorPalette": "Paleta de Cores",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Habilitar Entrada de Ordens com Shift/Alt",
-      "enableShiftAltOrderEntryHelper": "Segure Shift para visualizar ordens long ou Alt/Option para visualizar ordens short ao clicar no gráfico"
+      "enableShiftAltOrderEntryHelper": "Segure Shift para visualizar ordens long ou Alt/Option para visualizar ordens short ao clicar no gráfico",
+      "liquidityIntensity": "Mapa de liquidez por intensidade",
+      "liquidityIntensityHelper": "Usa uma única rampa quente para bid e ask — células mais claras indicam maior liquidez; o lado é inferido pela posição em relação ao preço"
     },
     "tradingSimulator": {
       "title": "Configurações do Simulador de Trading",
@@ -624,6 +626,8 @@
       "grid": "Grade",
       "currentPrice": "Preço Atual",
       "crosshair": "Mira",
+      "flipVertical": "Inverter Verticalmente",
+      "flipVerticalHelper": "Inverte o eixo de preço para que operações vendidas subam visualmente.",
       "profitLossAreas": "Áreas de Lucro/Prejuízo",
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",
@@ -1760,6 +1764,13 @@
       "today": "Hoje",
       "yesterday": "Ontem",
       "lastWeek": "7d atrás"
+    },
+    "fearGreed": {
+      "extremeFear": "Medo Extremo",
+      "fear": "Medo",
+      "neutral": "Neutro",
+      "greed": "Ganância",
+      "extremeGreed": "Ganância Extrema"
     },
     "watchers": {
       "title": "Watchers Ativos",

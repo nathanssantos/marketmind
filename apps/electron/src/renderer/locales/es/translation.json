@@ -312,6 +312,8 @@
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Habilitar Entrada de Órdenes con Shift/Alt",
       "enableShiftAltOrderEntryHelper": "Mantén Shift para previsualizar órdenes long o Alt/Option para previsualizar órdenes short al hacer clic en el gráfico",
+      "liquidityIntensity": "Mapa de liquidez por intensidad",
+      "liquidityIntensityHelper": "Usa una única rampa cálida para bid y ask — las celdas más brillantes indican mayor liquidez; el lado se deduce por la posición respecto al precio",
       "patternExtensions": "Extensiones de Patrones",
       "showAllExtensions": "Activar Todas las Extensiones",
       "showAllExtensionsHelper": "Control maestro para extender patrones más allá de la última vela",
@@ -654,6 +656,8 @@
       "grid": "Cuadrícula",
       "currentPrice": "Precio Actual",
       "crosshair": "Cruz",
+      "flipVertical": "Invertir Verticalmente",
+      "flipVerticalHelper": "Invierte el eje de precio para que las operaciones en corto suban visualmente.",
       "profitLossAreas": "Áreas de Ganancia/Pérdida",
       "fibonacciProjection": "Proyección de Fibonacci",
       "measurementRuler": "Regla de Medición",
@@ -1779,6 +1783,13 @@
       "today": "Hoy",
       "yesterday": "Ayer",
       "lastWeek": "Hace 7d"
+    },
+    "fearGreed": {
+      "extremeFear": "Miedo Extremo",
+      "fear": "Miedo",
+      "neutral": "Neutral",
+      "greed": "Codicia",
+      "extremeGreed": "Codicia Extrema"
     },
     "watchers": {
       "title": "Watchers Activos",

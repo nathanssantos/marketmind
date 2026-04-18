@@ -77,7 +77,7 @@ export class MarketCapDataService {
 
     const topCoins: TopCoin[] = coins
       .map((coin) => {
-        const binanceSymbol = coin.symbol.toUpperCase() + 'USDT';
+        const binanceSymbol = `${coin.symbol.toUpperCase()  }USDT`;
         return {
           binanceSymbol,
           coingeckoId: coin.id,

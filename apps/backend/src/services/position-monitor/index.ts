@@ -37,19 +37,21 @@ export class PositionMonitorService {
     logger.trace('Starting position monitor service');
 
     const scheduleNext = () => {
-      this.monitoringTimeout = setTimeout(async () => {
-        try {
-          await this.checkAllPositions();
-        } catch (error) {
-          if (error instanceof BinanceIpBannedError) {
-            logger.warn('[PositionMonitor] Skipping check cycle - IP banned');
-          } else {
-            logger.error({
-              error: serializeError(error),
-            }, 'Error in position monitoring loop');
+      this.monitoringTimeout = setTimeout(() => {
+        void (async () => {
+          try {
+            await this.checkAllPositions();
+          } catch (error) {
+            if (error instanceof BinanceIpBannedError) {
+              logger.warn('[PositionMonitor] Skipping check cycle - IP banned');
+            } else {
+              logger.error({
+                error: serializeError(error),
+              }, 'Error in position monitoring loop');
+            }
           }
-        }
-        scheduleNext();
+          scheduleNext();
+        })();
       }, this.CHECK_INTERVAL_MS);
     };
 
@@ -83,21 +85,23 @@ export class PositionMonitorService {
 
   private startTrailingStopLoop(): void {
     const scheduleNext = () => {
-      this.trailingStopTimeout = setTimeout(async () => {
-        try {
-          if (binanceApiCache.isBanned()) { scheduleNext(); return; }
-          const trailingUpdates = await trailingStopService.updateTrailingStops();
-          if (trailingUpdates.length > 0) {
-            logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
+      this.trailingStopTimeout = setTimeout(() => {
+        void (async () => {
+          try {
+            if (binanceApiCache.isBanned()) { scheduleNext(); return; }
+            const trailingUpdates = await trailingStopService.updateTrailingStops();
+            if (trailingUpdates.length > 0) {
+              logger.info({ updateCount: trailingUpdates.length }, 'Trailing stops updated');
+            }
+          } catch (error) {
+            if (!(error instanceof BinanceIpBannedError)) {
+              logger.error({
+                error: serializeError(error),
+              }, 'Error updating trailing stops');
+            }
           }
-        } catch (error) {
-          if (!(error instanceof BinanceIpBannedError)) {
-            logger.error({
-              error: serializeError(error),
-            }, 'Error updating trailing stops');
-          }
-        }
-        scheduleNext();
+          scheduleNext();
+        })();
       }, this.TRAILING_STOP_INTERVAL_MS);
     };
     scheduleNext();
@@ -112,16 +116,18 @@ export class PositionMonitorService {
 
   private startOpportunityCostLoop(): void {
     const scheduleNext = () => {
-      this.opportunityCostTimeout = setTimeout(async () => {
-        try {
-          if (binanceApiCache.isBanned()) { scheduleNext(); return; }
-          await opportunityCostManagerService.checkAllPositions();
-        } catch (error) {
-          logger.error({
-            error: serializeError(error),
-          }, 'Error checking opportunity cost');
-        }
-        scheduleNext();
+      this.opportunityCostTimeout = setTimeout(() => {
+        void (async () => {
+          try {
+            if (binanceApiCache.isBanned()) { scheduleNext(); return; }
+            await opportunityCostManagerService.checkAllPositions();
+          } catch (error) {
+            logger.error({
+              error: serializeError(error),
+            }, 'Error checking opportunity cost');
+          }
+          scheduleNext();
+        })();
       }, this.OPPORTUNITY_COST_INTERVAL_MS);
     };
     scheduleNext();

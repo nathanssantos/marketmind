@@ -32,6 +32,7 @@ DROP TABLE IF EXISTS trade_cooldowns CASCADE;
 DROP TABLE IF EXISTS klines CASCADE;
 DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
+DROP TABLE IF EXISTS user_indicators CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
 DROP TABLE IF EXISTS trading_profiles CASCADE;
 DROP TABLE IF EXISTS two_factor_codes CASCADE;
@@ -171,6 +172,7 @@ CREATE TABLE IF NOT EXISTS trading_profiles (
   volume_filter_obv_lookback_short INTEGER,
   use_obv_check_long BOOLEAN,
   use_obv_check_short BOOLEAN,
+  checklist_conditions TEXT DEFAULT '[]' NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -645,6 +647,18 @@ CREATE TABLE IF NOT EXISTS custom_symbol_components (
 );
 CREATE INDEX custom_symbol_components_idx ON custom_symbol_components(custom_symbol_id);
 
+CREATE TABLE IF NOT EXISTS user_indicators (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  catalog_type VARCHAR(64) NOT NULL,
+  label VARCHAR(120) NOT NULL,
+  params TEXT NOT NULL,
+  is_custom BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX user_indicators_user_id_idx ON user_indicators(user_id);
+
 CREATE TABLE IF NOT EXISTS realized_pnl_events (
   id SERIAL PRIMARY KEY,
   wallet_id VARCHAR(255) NOT NULL,
@@ -726,6 +740,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.autoTradingConfig);
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);
+  await db.delete(schema.userIndicators);
   await db.delete(schema.userPreferences);
   await db.delete(schema.tradingProfiles);
   await db.delete(schema.twoFactorCodes);

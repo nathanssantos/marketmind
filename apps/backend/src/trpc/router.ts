@@ -17,8 +17,10 @@ import { screenerRouter } from '../routers/screener';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { signalSuggestionsRouter } from '../routers/signal-suggestions';
+import { tickerRouter } from '../routers/ticker';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
+import { userIndicatorsRouter } from '../routers/user-indicators';
 import { walletRouter } from '../routers/wallet';
 import { scalpingRouter } from '../routers/scalping';
 import { heatmapRouter } from '../routers/heatmap';
@@ -39,6 +41,7 @@ export const appRouter = router({
   backtest: backtestRouter,
   tradingProfiles: tradingProfilesRouter,
   signalSuggestions: signalSuggestionsRouter,
+  ticker: tickerRouter,
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
   preferences: preferencesRouter,
@@ -49,6 +52,7 @@ export const appRouter = router({
   scalping: scalpingRouter,
   economicCalendar: economicCalendarRouter,
   heatmap: heatmapRouter,
+  userIndicators: userIndicatorsRouter,
 });
 
 export type AppRouter = typeof appRouter;

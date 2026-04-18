@@ -266,7 +266,7 @@ export async function cancelAllSymbolOrders(client: USDMClient, symbol: string):
     if (r.status === 'rejected') {
       const msg = serializeError(r.reason);
       if (!msg.includes('No orders') && !msg.includes('not found'))
-        logger.warn({ symbol, error: msg }, '[Futures] Partial failure in cancelAllSymbolOrders');
+        {logger.warn({ symbol, error: msg }, '[Futures] Partial failure in cancelAllSymbolOrders');}
     }
   }
 }

@@ -47,9 +47,12 @@ export const useCCIRenderer = ({
     const maxValue = Math.max(200, ...visibleValues);
     const range = maxValue - minValue;
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const normalizedValue = (value - minValue) / range;
-      return panelY + panelHeight - normalizedValue * panelHeight;
+      return flipped
+        ? panelY + normalizedValue * panelHeight
+        : panelY + panelHeight - normalizedValue * panelHeight;
     };
 
     const oversoldY = valueToY(-150);

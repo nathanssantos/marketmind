@@ -1,4 +1,5 @@
 import { router } from '../../trpc';
+import { checklistRouter } from './checklist';
 import { orderMutationsRouter } from './order-mutations';
 import { orderQueriesRouter } from './order-queries';
 import { positionsRouter } from './positions';
@@ -15,4 +16,5 @@ export const tradingRouter = router({
   ...executionUpdatesRouter._def.procedures,
   ...futuresConfigRouter._def.procedures,
   ...marketDataRouter._def.procedures,
+  ...checklistRouter._def.procedures,
 });

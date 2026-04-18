@@ -123,7 +123,8 @@ export const fetchMissingEntryFee = async (
     quantity: number;
   }
 ): Promise<{ actualEntryFee: number; actualFees: number; actualPnl: number }> => {
-  let { actualEntryFee, actualExitFee, actualExitPrice, accumulatedFunding, entryPrice, quantity } = currentValues;
+  const { actualExitFee, actualExitPrice, accumulatedFunding, entryPrice, quantity } = currentValues;
+  let { actualEntryFee } = currentValues;
   let actualFees = actualEntryFee + actualExitFee;
   let actualPnl = recalcPnl(entryPrice, actualExitPrice, quantity, execution.side, actualFees, accumulatedFunding).pnl;
 

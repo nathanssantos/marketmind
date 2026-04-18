@@ -101,6 +101,7 @@ describe('useORBRenderer', () => {
       indexToX: vi.fn((index: number) => index * 35),
       indexToCenterX: vi.fn((index: number) => index * 35 + 17.5),
       timestampToX: vi.fn((ts: number) => ((ts - sessionOpen) / (5 * 60_000)) * 35),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
   });
 

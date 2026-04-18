@@ -16,6 +16,7 @@ import {
 import type { GroupedPosition } from './orderLineTypes';
 import { PRICE_TAG_WIDTH, SLTP_BUTTON } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
+import { getDirectionArrow } from './utils/directionArrow';
 
 export const groupActivePositions = (
   activeOrdersList: Order[],
@@ -118,7 +119,7 @@ const renderPositionEntry = (
   const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
 
   const leveragePrefix = position.leverage > 1 ? `${position.leverage}x ` : '';
-  const directionSymbol = isLong ? '↑' : '↓';
+  const directionSymbol = getDirectionArrow(isLong, manager.isFlipped());
 
   let infoText: string;
   if (isHovered && position.orders.length > 1) {

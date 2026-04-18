@@ -2,24 +2,18 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_INDICATOR_PARAMS, INDICATOR_CATEGORIES, OVERLAY_INDICATORS, PANEL_INDICATORS, useIndicatorStore } from './indicatorStore';
 
-describe('indicatorStore', () => {
-  beforeEach(() => {
-    act(() => {
-      useIndicatorStore.setState({
-        activeIndicators: ['volume'],
-        indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
-      });
+const resetState = () =>
+  act(() => {
+    useIndicatorStore.setState({
+      activeIndicators: ['volume'],
+      indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
+      instances: [],
     });
   });
 
-  afterEach(() => {
-    act(() => {
-      useIndicatorStore.setState({
-        activeIndicators: ['volume'],
-        indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
-      });
-    });
-  });
+describe('indicatorStore', () => {
+  beforeEach(resetState);
+  afterEach(resetState);
 
   it('should have default volume indicator active', () => {
     const { result } = renderHook(() => useIndicatorStore());
@@ -142,5 +136,160 @@ describe('indicatorStore', () => {
     expect(OVERLAY_INDICATORS).toContain('ichimoku');
     expect(OVERLAY_INDICATORS).not.toContain('rsi');
     expect(OVERLAY_INDICATORS).not.toContain('macd');
+  });
+
+  describe('instances slice', () => {
+    it('should default to an empty instances array', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      expect(result.current.instances).toEqual([]);
+    });
+
+    it('should preserve legacy fields when hydrating without instances', () => {
+      act(() => {
+        useIndicatorStore.getState().hydrate({
+          activeIndicators: ['rsi', 'macd'],
+        });
+      });
+      const state = useIndicatorStore.getState();
+      expect(state.activeIndicators).toEqual(['rsi', 'macd']);
+      expect(state.instances).toEqual([]);
+    });
+
+    it('should not wipe legacy fields when hydrating instances', () => {
+      act(() => {
+        useIndicatorStore.getState().hydrate({
+          activeIndicators: ['rsi'],
+          instances: [
+            {
+              id: 'persisted-1',
+              userIndicatorId: 'user-1',
+              catalogType: 'rsi',
+              params: { period: 14 },
+              visible: true,
+            },
+          ],
+        });
+      });
+      const state = useIndicatorStore.getState();
+      expect(state.activeIndicators).toEqual(['rsi']);
+      expect(state.instances).toHaveLength(1);
+      expect(state.instances[0]?.id).toBe('persisted-1');
+    });
+
+    it('should drop malformed instances during hydration', () => {
+      act(() => {
+        useIndicatorStore.getState().hydrate({
+          instances: [
+            { id: 'good', userIndicatorId: 'u-1', catalogType: 'rsi', params: { period: 14 }, visible: true },
+            { id: 'bad-no-userid', catalogType: 'rsi', params: {}, visible: true },
+            null,
+            'not-an-object',
+          ],
+        });
+      });
+      const state = useIndicatorStore.getState();
+      expect(state.instances).toHaveLength(1);
+      expect(state.instances[0]?.id).toBe('good');
+    });
+
+    it('should generate ids and add instances', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      let id = '';
+      act(() => {
+        id = result.current.addInstance({
+          userIndicatorId: 'user-1',
+          catalogType: 'rsi',
+          params: { period: 14 },
+          visible: true,
+        });
+      });
+      expect(id).toBeTruthy();
+      expect(result.current.instances).toHaveLength(1);
+      expect(result.current.instances[0]?.id).toBe(id);
+    });
+
+    it('should remove an instance by id', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      let id = '';
+      act(() => {
+        id = result.current.addInstance({
+          userIndicatorId: 'user-1',
+          catalogType: 'ema',
+          params: { period: 9 },
+          visible: true,
+        });
+      });
+      act(() => result.current.removeInstance(id));
+      expect(result.current.instances).toHaveLength(0);
+    });
+
+    it('should remove all instances tied to a userIndicatorId', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      act(() => {
+        result.current.addInstance({ userIndicatorId: 'u-1', catalogType: 'ema', params: { period: 9 }, visible: true });
+        result.current.addInstance({ userIndicatorId: 'u-1', catalogType: 'ema', params: { period: 21 }, visible: true });
+        result.current.addInstance({ userIndicatorId: 'u-2', catalogType: 'rsi', params: { period: 14 }, visible: true });
+      });
+      act(() => result.current.removeInstancesByUserIndicatorId('u-1'));
+      expect(result.current.instances).toHaveLength(1);
+      expect(result.current.instances[0]?.userIndicatorId).toBe('u-2');
+    });
+
+    it('should patch an instance and merge params', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      let id = '';
+      act(() => {
+        id = result.current.addInstance({
+          userIndicatorId: 'u-1',
+          catalogType: 'rsi',
+          params: { period: 14, color: '#000' },
+          visible: true,
+        });
+      });
+      act(() => result.current.updateInstance(id, { params: { period: 21 }, visible: false }));
+      const updated = result.current.instances[0];
+      expect(updated?.params).toEqual({ period: 21, color: '#000' });
+      expect(updated?.visible).toBe(false);
+    });
+
+    it('should toggle instance visibility', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      let id = '';
+      act(() => {
+        id = result.current.addInstance({
+          userIndicatorId: 'u-1',
+          catalogType: 'rsi',
+          params: { period: 14 },
+          visible: true,
+        });
+      });
+      act(() => result.current.toggleInstanceVisible(id));
+      expect(result.current.instances[0]?.visible).toBe(false);
+      act(() => result.current.toggleInstanceVisible(id));
+      expect(result.current.instances[0]?.visible).toBe(true);
+    });
+
+    it('should reorder instances by id list', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      const ids: string[] = [];
+      act(() => {
+        ids.push(result.current.addInstance({ userIndicatorId: 'u-1', catalogType: 'ema', params: { period: 9 }, visible: true }));
+        ids.push(result.current.addInstance({ userIndicatorId: 'u-2', catalogType: 'ema', params: { period: 21 }, visible: true }));
+        ids.push(result.current.addInstance({ userIndicatorId: 'u-3', catalogType: 'ema', params: { period: 200 }, visible: true }));
+      });
+      act(() => result.current.reorderInstances([ids[2]!, ids[0]!, ids[1]!]));
+      expect(result.current.instances.map((i) => i.id)).toEqual([ids[2], ids[0], ids[1]]);
+    });
+
+    it('should filter visible instances and group by paneId', () => {
+      const { result } = renderHook(() => useIndicatorStore());
+      act(() => {
+        result.current.addInstance({ userIndicatorId: 'u-1', catalogType: 'rsi', params: { period: 14 }, visible: true, paneId: 'rsi' });
+        result.current.addInstance({ userIndicatorId: 'u-2', catalogType: 'rsi', params: { period: 21 }, visible: false, paneId: 'rsi' });
+        result.current.addInstance({ userIndicatorId: 'u-3', catalogType: 'macd', params: {}, visible: true, paneId: 'macd' });
+      });
+      expect(result.current.getVisibleInstances()).toHaveLength(2);
+      expect(result.current.getInstancesByPaneId('rsi')).toHaveLength(2);
+    });
   });
 });

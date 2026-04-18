@@ -292,11 +292,12 @@ export const useChartCanvas = ({
       const mouseX = event.clientX - rect.left;
       const delta = event.deltaY > 0 ? -1 : 1;
       const wasAtEndBeforeZoom = wasAtEndRef.current;
+      const cursorNearRightEdge = mouseX >= rect.width * 0.95;
 
       managerRef.current.zoom(delta, mouseX);
       let newViewport = managerRef.current.getViewport();
-      
-      if (wasAtEndBeforeZoom) {
+
+      if (wasAtEndBeforeZoom && cursorNearRightEdge) {
         const visibleRange = newViewport.end - newViewport.start;
         newViewport = {
           ...newViewport,
@@ -308,7 +309,7 @@ export const useChartCanvas = ({
       } else {
         wasAtEndRef.current = Math.abs(newViewport.end - klines.length) < 1;
       }
-      
+
       updateViewport(newViewport);
     };
 

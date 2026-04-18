@@ -1,7 +1,8 @@
 import type { Contract, OpenOrder, Position } from '@stoqey/ib';
-import { Subscription } from 'rxjs';
+import type { Subscription } from 'rxjs';
 import type { ExchangeId } from '../types';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 import type { IBPosition, IBOrderResult, IBExecution } from './types';
 
 export interface UserStreamUpdate {
@@ -115,8 +116,7 @@ export class IBUserStream {
       };
 
       const hasChanged =
-        !existing ||
-        existing.status !== orderInfo.status ||
+        existing?.status !== orderInfo.status ||
         existing.filled !== orderInfo.filled;
 
       if (hasChanged) {
@@ -150,8 +150,7 @@ export class IBUserStream {
         };
 
         const hasChanged =
-          !existing ||
-          existing.position !== positionInfo.position ||
+          existing?.position !== positionInfo.position ||
           existing.avgCost !== positionInfo.avgCost;
 
         if (hasChanged) {
@@ -178,8 +177,8 @@ export class IBUserStream {
       clientId: order.order?.clientId ?? 0,
       permId: order.order?.permId ?? 0,
       contract: order.contract,
-      order: order.order!,
-      orderState: order.orderState!,
+      order: order.order,
+      orderState: order.orderState,
       status: order.orderState?.status ?? 'Unknown',
       filled: filledQty,
       remaining: totalQty - filledQty,

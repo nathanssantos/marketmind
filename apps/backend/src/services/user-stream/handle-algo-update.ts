@@ -278,7 +278,7 @@ export async function handleAlgoOrderUpdate(
     );
 
     const executionId = execution.id;
-    const executionSide = execution.side as 'LONG' | 'SHORT';
+    const executionSide = execution.side;
     const openedAt = execution.openedAt ? new Date(execution.openedAt).getTime() : execution.createdAt ? new Date(execution.createdAt).getTime() : 0;
 
     setTimeout(() => {

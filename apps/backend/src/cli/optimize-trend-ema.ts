@@ -104,7 +104,7 @@ async function runOptimization() {
 
   console.log('\n\n═'.repeat(120));
   console.log('> TREND EMA PERIOD COMPARISON');
-  console.log('═'.repeat(120) + '\n');
+  console.log(`${'═'.repeat(120)  }\n`);
 
   console.log('Rank  Period    P&L          P&L%    Trades   WinRate    PF    MaxDD    LONG P&L (n)    SHORT P&L (n)');
   console.log('─'.repeat(120));

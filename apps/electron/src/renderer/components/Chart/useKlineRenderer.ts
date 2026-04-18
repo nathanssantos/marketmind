@@ -79,10 +79,14 @@ export const useKlineRenderer = ({
 
       const klineX = x + (widthPerKline - klineWidth) / 2;
 
-      const openY = manager.priceToY(getKlineOpen(kline));
-      const closeY = manager.priceToY(getKlineClose(kline));
+      const open = getKlineOpen(kline);
+      const close = getKlineClose(kline);
+      const openY = manager.priceToY(open);
+      const closeY = manager.priceToY(close);
       const highY = manager.priceToY(getKlineHigh(kline));
       const lowY = manager.priceToY(getKlineLow(kline));
+      const isBullish = close >= open;
+      const visualTopY = Math.min(highY, lowY);
 
       const highlightedCandle = highlightedIndicesMap.get(actualIndex);
       const isHovered = hoveredKlineIndex === actualIndex || !!highlightedCandle;
@@ -104,13 +108,14 @@ export const useKlineRenderer = ({
         colors.bullish,
         colors.bearish,
         isHovered,
+        isBullish,
       );
 
       if (highlightedCandle && klineWidth >= 4) {
         const labelColor = HIGHLIGHT_LABEL_COLORS[highlightedCandle.role] ?? HIGHLIGHT_LABEL_COLORS.context;
         const labelText = highlightedCandle.offset.toString();
         const labelX = klineX + klineWidth / 2;
-        drawCandleLabel(ctx, labelX, highY, labelText, labelColor);
+        drawCandleLabel(ctx, labelX, visualTopY, labelText, labelColor);
       }
 
       if (showActivityIndicator && klineWidth >= 4 && avgTrades > 0) {
@@ -123,7 +128,7 @@ export const useKlineRenderer = ({
         if (isHighActivity || isLowActivity) {
           const indicatorSize = Math.min(klineWidth * 0.3, 3);
           const indicatorX = klineX + klineWidth / 2;
-          const indicatorY = highY - indicatorSize - 4;
+          const indicatorY = visualTopY - indicatorSize - 4;
 
           ctx.save();
           ctx.fillStyle = isHighActivity ? ACTIVITY_COLORS.HIGH_ACTIVITY : ACTIVITY_COLORS.LOW_ACTIVITY;

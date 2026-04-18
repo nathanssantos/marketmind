@@ -292,7 +292,7 @@ export const executionsRouter = router({
             entryPrice: execEntryPrice,
             exitPrice,
             quantity: execQty,
-            side: exec.side as 'LONG' | 'SHORT',
+            side: exec.side,
             marketType,
             leverage: execLeverage,
           });
@@ -355,7 +355,7 @@ export const executionsRouter = router({
           entryPrice: parseFloat(exec.entryPrice),
           exitPrice,
           quantity: parseFloat(exec.quantity),
-          side: exec.side as 'LONG' | 'SHORT',
+          side: exec.side,
           marketType,
           leverage: exec.leverage || 1,
         });

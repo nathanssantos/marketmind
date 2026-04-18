@@ -33,7 +33,7 @@ function acquireLock(): boolean {
 function releaseLock(): void {
   try {
     if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE);
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 process.on('exit', releaseLock);

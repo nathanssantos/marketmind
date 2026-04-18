@@ -68,7 +68,8 @@ export const useMACDRenderer = ({
 
     const range = maxValue - minValue || 1;
     const padding = range * 0.1;
-    const valueToY = createDynamicValueToY(panelTop, panelHeight, 0, minValue - padding, maxValue + padding);
+    const flipped = manager!.isFlipped();
+    const valueToY = createDynamicValueToY(panelTop, panelHeight, 0, minValue - padding, maxValue + padding, flipped);
     const zeroY = valueToY(0);
     const barWidth = Math.max(1, klineWidth * OSCILLATOR_CONFIG.BAR_WIDTH_RATIO);
 

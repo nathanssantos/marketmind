@@ -27,8 +27,8 @@ class KlineMaintenance {
   async start(options: KlineMaintenanceStartOptions = {}): Promise<void> {
     if (this.checkInterval) return;
 
-    this.checkInterval = setInterval(async () => {
-      await this.checkAndFillGaps();
+    this.checkInterval = setInterval(() => {
+      void this.checkAndFillGaps();
     }, GAP_CHECK_INTERVAL);
 
     if (options.skipStartupSync) {
