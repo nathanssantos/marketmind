@@ -23,6 +23,11 @@ export const DEFAULT_USER_INDICATOR_SEEDS: IndicatorSeed[] = [
   { catalogType: 'vwap', label: 'VWAP', params: { color: '#ffc107', lineWidth: 1 } },
   { catalogType: 'aroon', label: 'Aroon 25', params: { period: 25, color: '#26a69a', lineWidth: 1 } },
   { catalogType: 'vortex', label: 'Vortex 14', params: { period: 14, color: '#26a69a', lineWidth: 1 } },
+  { catalogType: 'ichimoku', label: 'Ichimoku 9/26/52', params: { tenkanPeriod: 9, kijunPeriod: 26, senkouPeriod: 52, tenkanColor: '#2962ff', kijunColor: '#b71c1c', chikouColor: '#7c4dff', lineWidth: 1 } },
+  { catalogType: 'pivotPoints', label: 'Pivot Points', params: { lookback: 5, lookahead: 2, highColor: '#ef4444', lowColor: '#22c55e' } },
+  { catalogType: 'volumeProfile', label: 'Volume Profile', params: { numBuckets: 100, maxBarWidth: 120, opacity: 30 } },
+  { catalogType: 'dailyVwap', label: 'Daily VWAP', params: { color: '#03a9f4', lineWidth: 1 } },
+  { catalogType: 'weeklyVwap', label: 'Weekly VWAP', params: { color: '#7c4dff', lineWidth: 1 } },
 ];
 
 export const DEFAULT_ACTIVE_SEED_LABELS = new Set([

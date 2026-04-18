@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.93.0] - 2026-04-18
+
+### Added
+- **5 new catalog indicators** with custom render kinds: **Ichimoku Cloud** (`ichimoku` — cloud fill polygon + tenkan/kijun/chikou), **Pivot Points** (`pivotPoints` — sparse high/low markers with dashed projection lines), **Volume Profile** (`volumeProfile` — viewport-aware horizontal histogram with POC line), **Daily VWAP** (`dailyVwap`), **Weekly VWAP** (`weeklyVwap`). All wired through `INDICATOR_CATALOG` with `evaluator: { service: 'native', scriptId: <X> }`.
+- **Custom-render dispatch pipeline**: `CUSTOM_RENDERER_REGISTRY` (keyed by `rendererId`) plus `getCustomRenderer` / `registerCustomRenderer` in `apps/electron/src/renderer/components/Chart/ChartCanvas/renderers/index.ts`. `useGenericChartIndicatorRenderers` exposes a new `renderAllCustomIndicators()` that iterates instances whose `definition.render.kind === 'custom'` and dispatches to the registry; `useChartRenderPipeline` wires it in between panel and CVD rendering.
+- **Native evaluators** for `ichimoku`, `pivotPoints`, `dailyVwap`, `weeklyVwap`, `volumeProfile` in `nativeEvaluators.ts` — all reuse existing pure-function calculators from `lib/indicators/*`.
+- **Default seeds** for all 5 new indicators in `DEFAULT_USER_INDICATOR_SEEDS` so users get them on auto-seed.
+
+### Fixed
+- **`buildBatches` now batches custom-render indicators**: Previously skipped (`if (def.render.kind === 'custom') continue`), which meant any catalog entry with `kind: 'custom'` had its evaluator silently dropped. Without evaluator output, the renderer received nothing and never drew. Now custom kinds batch like overlay/pane kinds; entries without a registered renderer in `CUSTOM_RENDERER_REGISTRY` are simply ignored by `renderAllCustomIndicators` (safe no-op for legacy fibonacci/fvg/etc.).
+
+### Locales
+- Extended root-level `indicators.*` block in **en**, **pt**, **es**, **fr** with names (`ichimoku`, `pivotPoints`, `volumeProfile`, `dailyVwap`, `weeklyVwap`), params (`tenkanPeriod`, `kijunPeriod`, `senkouPeriod`, `tenkanColor`, `kijunColor`, `chikouColor`, `lookback`, `lookahead`, `highColor`, `lowColor`, `numBuckets`, `maxBarWidth`, `opacity`), outputs (`tenkan`, `kijun`, `senkouA`, `senkouB`, `chikou`, `pivotHigh`, `pivotLow`, `rendered`).
+
+### Notes
+- 5 deferred indicators remain (`orb`, `sessionBoundaries`, `footprint`, `liquidityHeatmap`, `liquidationMarkers`) — all require non-kline external data feeds (market events, footprint tick data, liquidation feed). Bringing them into the generic pipeline will require extending the evaluator interface to accept extra context, planned for v0.94.
+- `activityIndicator` is a chart-display toggle (not a catalog indicator) and intentionally stays out of the catalog.
+
 ## [0.92.0] - 2026-04-18
 
 ### Added
