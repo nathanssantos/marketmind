@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.90.0] - 2026-04-18
+
+### Fixed
+- **Pane indicators flip with main pane**: Stochastic, RSI, MACD, ADX, AO, Aroon, CCI, CMO, CMF, Elder Ray, Klinger, MFI, OBV, PPO, ROC, TSI, Ultimate Osc, Vortex, Williams %R now invert their Y axis when `chartFlipped` is enabled. Both the legacy per-indicator renderers and the new generic pipeline (`renderPaneLine`, `renderPaneMulti`, `renderPaneHistogram`) read `manager.isFlipped()` and pass it to the value-to-Y factories.
+- **Direction arrows flip with chart**: Position tags (`↑/↓` next to leverage), trailing-stop labels (`TS ↑`), and liquidation tags (`LIQ ↓`) now mirror direction when the chart is flipped — extracted to a shared `getDirectionArrow(isLong, flipped)` helper.
+- **Vertical mouse/touch pan inverted under flipped chart**: Dragging down was moving content up (and vice-versa) when `chartFlipped` was on. `CanvasManager.panVertical` now negates `deltaY` when flipped, restoring "drag follows finger/mouse" semantics. Keyboard pan (`Cmd+ArrowUp/Down`) and touch pan inherit the same fix.
+
+### Added
+- **`createNormalizedValueToY` / `createDynamicValueToY` flip parameter**: `oscillatorRendering.ts` factories accept an optional `flipped: boolean` and invert the Y mapping symmetrically. `drawZoneFill` is now flip-safe (uses `Math.min(topY, bottomY)` + `Math.abs`).
+- **`OscillatorSetup.flipped` field**: Surfaced via `useOscillatorSetup` so panel renderers can pass it through.
+- **`getDirectionArrow` helper** at `Chart/utils/directionArrow.ts` + 4 unit tests covering all `(isLong × flipped)` combinations.
+- **`createNormalizedValueToY` / `createDynamicValueToY` tests** (6 tests) — verify min/max mapping, flip mirroring, and symmetric range behavior.
+- **`CanvasManager.panVertical` flip test** — verifies pan delta is negated under flipped state and magnitude is preserved.
+
+### Changed
+- **Test infra**: ~45 renderer hook test files now mock `isFlipped: vi.fn(() => false)` on their `CanvasManager` stubs, restoring suite green after the new `manager.isFlipped()` calls in the renderers.
+
 ## [0.89.0] - 2026-04-18
 
 ### Added

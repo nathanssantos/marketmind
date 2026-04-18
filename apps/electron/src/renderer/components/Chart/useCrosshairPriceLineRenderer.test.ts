@@ -48,6 +48,7 @@ describe('useCrosshairPriceLineRenderer', () => {
         maxPrice: 110,
       })),
       yToPrice: vi.fn((y: number) => 100 - (y - 300) * 0.1),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

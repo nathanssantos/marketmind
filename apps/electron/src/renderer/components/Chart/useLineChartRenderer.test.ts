@@ -75,6 +75,7 @@ describe('useLineChartRenderer', () => {
       indexToCenterX: vi.fn((index: number) => 100 + index * 50 + 25),
       priceToY: vi.fn((price: number) => 200 - price),
       getKlines: vi.fn(() => mockKlines),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

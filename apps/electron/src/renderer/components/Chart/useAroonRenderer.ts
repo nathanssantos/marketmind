@@ -38,9 +38,12 @@ export const useAroonRenderer = ({
     const visibleStartIndex = Math.floor(viewport.start);
     const visibleEndIndex = Math.ceil(viewport.end);
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const normalizedValue = value / 100;
-      return panelY + panelHeight - normalizedValue * panelHeight;
+      return flipped
+        ? panelY + normalizedValue * panelHeight
+        : panelY + panelHeight - normalizedValue * panelHeight;
     };
 
     const top70Y = valueToY(70);

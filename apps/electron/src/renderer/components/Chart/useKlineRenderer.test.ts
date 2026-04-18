@@ -52,6 +52,7 @@ describe('useKlineRenderer', () => {
       indexToX: vi.fn((index: number) => index * 145.6),
       indexToCenterX: vi.fn((index: number) => index * 145.6 + 72.8),
       priceToY: vi.fn((price: number) => 575 - (price - 90) * 19),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

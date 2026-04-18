@@ -43,10 +43,13 @@ export const useCMFRenderer = ({
     const maxValue = 1;
     const range = maxValue - minValue;
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const clamped = Math.max(minValue, Math.min(maxValue, value));
       const normalized = (clamped - minValue) / range;
-      return panelTop + padding + innerHeight - normalized * innerHeight;
+      return flipped
+        ? panelTop + padding + normalized * innerHeight
+        : panelTop + padding + innerHeight - normalized * innerHeight;
     };
 
     const zeroY = valueToY(0);

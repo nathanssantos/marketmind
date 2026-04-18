@@ -98,6 +98,7 @@ describe('useBollingerBandsRenderer', () => {
       indexToX: vi.fn((index: number) => index * 140),
       indexToCenterX: vi.fn((index: number) => index * 140 + 70),
       getVisibleKlines: vi.fn(() => klines),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
   });
 

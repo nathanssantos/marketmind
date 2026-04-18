@@ -60,9 +60,10 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     }
   }
 
+  const flipped = ctx.manager.isFlipped();
   const valueToY = valueRange && valueRange.min === 0 && valueRange.max === 100
-    ? createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING)
-    : createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, minValue, maxValue);
+    ? createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, flipped)
+    : createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, minValue, maxValue, flipped);
 
   const baseColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_LINE_COLOR;
   const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? OSCILLATOR_CONFIG.LINE_WIDTH) as number;

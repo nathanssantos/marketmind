@@ -65,9 +65,12 @@ export const useOBVRenderer = ({
 
     const range = maxValue - minValue || 1;
 
+    const flipped = manager.isFlipped();
     const valueToY = (value: number): number => {
       const normalized = (value - minValue) / range;
-      return panelTop + padding + innerHeight - normalized * innerHeight;
+      return flipped
+        ? panelTop + padding + normalized * innerHeight
+        : panelTop + padding + innerHeight - normalized * innerHeight;
     };
 
     ctx.strokeStyle = colors.obv?.line ?? INDICATOR_COLORS.OBV_LINE;

@@ -399,7 +399,8 @@ export class CanvasManager {
 
   public panVertical(deltaY: number): void {
     if (!this.dimensions) return;
-    this.priceOffset = panVerticalOffset(this.priceOffset, deltaY, this.dimensions.chartHeight, this.klines, this.viewport, this.priceScale);
+    const adjustedDeltaY = this.flipped ? -deltaY : deltaY;
+    this.priceOffset = panVerticalOffset(this.priceOffset, adjustedDeltaY, this.dimensions.chartHeight, this.klines, this.viewport, this.priceScale);
     this.updateBounds();
     this.markDirty('viewport');
   }

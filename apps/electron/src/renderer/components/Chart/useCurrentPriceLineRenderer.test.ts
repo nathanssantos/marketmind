@@ -48,6 +48,7 @@ describe('useCurrentPriceLineRenderer', () => {
         { openTime: 2000, closeTime: 3000, open: '102', high: '108', low: '101', close: '105', volume: '1200', quoteVolume: '126000', trades: 120, takerBuyBaseVolume: '600', takerBuyQuoteVolume: '63000' },
       ]),
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 10),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
 
     mockColors = {

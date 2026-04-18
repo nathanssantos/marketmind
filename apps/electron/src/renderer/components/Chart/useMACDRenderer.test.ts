@@ -40,6 +40,7 @@ describe('useMACDRenderer', () => {
       getPanelInfo: vi.fn(() => ({ y: 400, height: 80 })),
       indexToX: vi.fn((index: number) => index * 140),
       indexToCenterX: vi.fn((index: number) => index * 140 + 70),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
   });
 

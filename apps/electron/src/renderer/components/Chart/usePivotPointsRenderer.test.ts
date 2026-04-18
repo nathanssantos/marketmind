@@ -69,6 +69,7 @@ describe('usePivotPointsRenderer', () => {
       priceToY: vi.fn((price: number) => 300 - (price - 100) * 5),
       indexToX: vi.fn((index: number) => index * 35),
       indexToCenterX: vi.fn((index: number) => index * 35 + 17.5),
+      isFlipped: vi.fn(() => false),
     } as unknown as CanvasManager;
   });
 

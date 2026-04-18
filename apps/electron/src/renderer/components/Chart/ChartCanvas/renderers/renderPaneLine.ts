@@ -28,18 +28,19 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
   const series = input.values[primaryOutput];
   if (!series) return;
 
+  const flipped = ctx.manager.isFlipped();
   const valueRange = input.definition.valueRange;
   const valueToY = valueRange
     ? (() => {
         if (valueRange.min === 0 && valueRange.max === 100) {
-          return createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING);
+          return createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, flipped);
         }
-        return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, valueRange.min, valueRange.max);
+        return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, valueRange.min, valueRange.max, flipped);
       })()
     : (() => {
         const range = calculateVisibleRange(series, visibleStart, visibleEnd);
-        if (!range.hasData) return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, 0, 1);
-        return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, range.min, range.max);
+        if (!range.hasData) return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, 0, 1, flipped);
+        return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, range.min, range.max, flipped);
       })();
 
   const color = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_LINE_COLOR;

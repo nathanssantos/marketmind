@@ -9,6 +9,7 @@ export interface OscillatorSetup {
   visibleEnd: number;
   klineWidth: number;
   indexToX: (i: number) => number;
+  flipped: boolean;
 }
 
 export const getOscillatorSetup = (
@@ -40,5 +41,6 @@ export const getOscillatorSetup = (
     visibleEnd,
     klineWidth,
     indexToX: (i: number) => (i - viewport.start) * klineWidth + klineWidth / 2,
+    flipped: manager.isFlipped(),
   };
 };

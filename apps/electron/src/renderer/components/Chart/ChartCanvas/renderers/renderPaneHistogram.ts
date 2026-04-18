@@ -32,7 +32,8 @@ export const renderPaneHistogram: GenericRenderer = (ctx, input) => {
   const maxValue = Math.max(0, range.max);
   const safeMax = minValue === maxValue ? maxValue + 1 : maxValue;
 
-  const valueToY = createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, minValue, safeMax);
+  const flipped = ctx.manager.isFlipped();
+  const valueToY = createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, minValue, safeMax, flipped);
   const zeroY = valueToY(0);
 
   const positiveColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_POSITIVE_COLOR;
