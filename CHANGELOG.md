@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.91.0] - 2026-04-18
+
+### Added
+- **Indicator Library UI**: New `Indicators` tab in Settings (`SettingsDialog`) mounting `IndicatorLibrary`, the management surface for user indicators. Supports create / edit / duplicate / delete and "Reset to defaults". Indicators are grouped by catalog category and show a parameters summary; custom ones get a "Custom" badge.
+- **Inline indicator management on chart popover**: `IndicatorTogglePopoverGeneric` now exposes per-row Edit/Delete buttons plus a "+ New" button in the header — no need to open Settings to add or tweak an indicator. Deleting an indicator also tears down its active chart instances.
+- **`useUserIndicators` shared hook**: Single React-Query hook (`apps/electron/src/renderer/hooks/useUserIndicators.ts`) wrapping `trpc.userIndicators.{list,create,update,delete,duplicate,reset}` with a 5-min `staleTime` and unified cache invalidation. Used by `IndicatorLibrary`, `IndicatorTogglePopoverGeneric`, and `ProfileEditorDialog` so all surfaces share one source of truth.
+- **`userIndicators.duplicate` tRPC mutation**: Server-side clone with " (copy)" label suffix and `isCustom=true`. Includes ownership check (rejects cloning another user's indicator) + 2 router tests covering happy-path and cross-user isolation.
+
+### Changed
+- **`ProfileEditorDialog` now consumes `useUserIndicators`** instead of calling `trpc.userIndicators.list.useQuery` directly, so checklist editing benefits from the shared cache.
+
+### Locales
+- Added `settings.tabs.indicators` and the `settings.indicators.*` block (`title`, `count`, `reset`, `new`, `empty`, `custom`, `duplicate`, `deleteTitle`, `deleteDescription`, `resetTitle`, `resetDescription`) in **en**, **pt**, **es**, **fr**.
+
 ## [0.90.0] - 2026-04-18
 
 ### Fixed

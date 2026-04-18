@@ -52,8 +52,7 @@
     "remove": "Remove",
     "economicEvent": "Economic Event",
     "actual": "Actual",
-    "estimate": "Estimate",
-    "previous": "Previous"
+    "estimate": "Estimate"
   },
   "app": {
     "title": "MarketMind",
@@ -167,7 +166,8 @@
       "setupDetection": "Setup Detection",
       "tradingSimulator": "Trading Simulator",
       "data": "Data",
-      "about": "About"
+      "about": "About",
+      "indicators": "Indicators"
     },
     "language": {
       "title": "Language",
@@ -576,6 +576,19 @@
         "fiboAll": "All Levels (1.0 - 2.618)",
         "fiboAllDesc": "Maximum entries at all Fibonacci extensions."
       }
+    },
+    "indicators": {
+      "title": "Indicators",
+      "count": "{{count}} indicators",
+      "reset": "Reset",
+      "new": "New",
+      "empty": "No indicators yet. Click \"New\" to add one.",
+      "custom": "Custom",
+      "duplicate": "Duplicate",
+      "deleteTitle": "Delete indicator?",
+      "deleteDescription": "Permanently remove \"{{label}}\". This cannot be undone.",
+      "resetTitle": "Reset to defaults?",
+      "resetDescription": "All custom indicators will be deleted and the default set will be restored."
     }
   },
   "chart": {

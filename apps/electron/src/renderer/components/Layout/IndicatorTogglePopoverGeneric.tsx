@@ -1,14 +1,25 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { IndicatorCategory, UserIndicator } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
-import { Checkbox, IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
+import {
+  Button,
+  Checkbox,
+  ConfirmationDialog,
+  IconButton,
+  Popover,
+  TooltipWrapper,
+} from '@renderer/components/ui';
+import { useUserIndicators } from '@renderer/hooks';
 import { useIndicatorStore } from '@renderer/store';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
-import { trpc } from '@renderer/utils/trpc';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuGauge } from 'react-icons/lu';
+import { LuGauge, LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
 import { useShallow } from 'zustand/shallow';
+import {
+  IndicatorConfigDialog,
+  type IndicatorConfigResult,
+} from '../Indicators/IndicatorConfigDialog';
 
 export interface CategoryGroup {
   category: IndicatorCategory;
@@ -49,13 +60,18 @@ export const groupByCategory = (indicators: UserIndicator[]): CategoryGroup[] =>
   return groups;
 };
 
+type DialogState =
+  | { kind: 'closed' }
+  | { kind: 'create' }
+  | { kind: 'edit'; indicator: UserIndicator };
+
 export const IndicatorTogglePopoverGeneric = memo(() => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [dialog, setDialog] = useState<DialogState>({ kind: 'closed' });
+  const [confirmDelete, setConfirmDelete] = useState<UserIndicator | null>(null);
 
-  const { data: userIndicators = [] } = trpc.userIndicators.list.useQuery(undefined, {
-    enabled: isOpen,
-  });
+  const { indicators, create, update, remove } = useUserIndicators();
 
   const { instances, addInstance, removeInstancesByUserIndicatorId } = useIndicatorStore(
     useShallow((s) => ({
@@ -75,7 +91,7 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
     return map;
   }, [instances]);
 
-  const groups = useMemo(() => groupByCategory(userIndicators), [userIndicators]);
+  const groups = useMemo(() => groupByCategory(indicators), [indicators]);
 
   const handleToggle = useCallback(
     (ui: UserIndicator, isActive: boolean) => {
@@ -93,87 +109,169 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
     [addInstance, removeInstancesByUserIndicatorId],
   );
 
-  const totalCount = userIndicators.length;
+  const handleSubmit = useCallback(
+    async (result: IndicatorConfigResult) => {
+      if (result.mode === 'create') {
+        await create.mutateAsync({
+          catalogType: result.catalogType,
+          label: result.label,
+          params: result.params,
+        });
+      } else if (result.mode === 'edit') {
+        await update.mutateAsync({ id: result.id, label: result.label, params: result.params });
+      }
+      setDialog({ kind: 'closed' });
+    },
+    [create, update],
+  );
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!confirmDelete) return;
+    removeInstancesByUserIndicatorId(confirmDelete.id);
+    await remove.mutateAsync({ id: confirmDelete.id });
+    setConfirmDelete(null);
+  }, [confirmDelete, remove, removeInstancesByUserIndicatorId]);
+
+  const totalCount = indicators.length;
   const activeCount = useMemo(() => {
     let count = 0;
-    for (const ui of userIndicators) {
+    for (const ui of indicators) {
       const list = instancesByUserIndicatorId.get(ui.id);
       if (list && list.length > 0) count++;
     }
     return count;
-  }, [userIndicators, instancesByUserIndicatorId]);
+  }, [indicators, instancesByUserIndicatorId]);
 
   return (
-    <Popover
-      open={isOpen}
-      onOpenChange={(e) => setIsOpen(e.open)}
-      showArrow={false}
-      width="320px"
-      positioning={{ placement: 'right-start', offset: { mainAxis: 8 } }}
-      trigger={
-        <Flex>
-          <TooltipWrapper
-            label={t('chart.indicators.configure')}
-            showArrow
-            placement="right"
-            isDisabled={isOpen}
-          >
-            <IconButton
-              aria-label={t('chart.indicators.configure')}
-              size="2xs"
-              variant="outline"
-              color="fg.muted"
+    <>
+      <Popover
+        open={isOpen}
+        onOpenChange={(e) => setIsOpen(e.open)}
+        showArrow={false}
+        width="360px"
+        positioning={{ placement: 'right-start', offset: { mainAxis: 8 } }}
+        trigger={
+          <Flex>
+            <TooltipWrapper
+              label={t('chart.indicators.configure')}
+              showArrow
+              placement="right"
+              isDisabled={isOpen}
             >
-              <LuGauge />
-            </IconButton>
-          </TooltipWrapper>
-        </Flex>
-      }
-    >
-      <Box p={4} maxH="600px" overflowY="auto">
-        <Stack gap={4}>
-          <Flex justify="space-between" align="center">
-            <Text fontSize="sm" fontWeight="bold">
-              {t('chart.indicators.title')}
-            </Text>
-            <Text fontSize="xs" color="fg.muted">
-              {activeCount}/{totalCount}
-            </Text>
+              <IconButton
+                aria-label={t('chart.indicators.configure')}
+                size="2xs"
+                variant="outline"
+                color="fg.muted"
+              >
+                <LuGauge />
+              </IconButton>
+            </TooltipWrapper>
           </Flex>
-
-          <Stack gap={4} maxH="500px" overflowY="auto">
-            {groups.map((group) => (
-              <Stack key={group.category} gap={2}>
-                <Text
-                  fontSize="xs"
-                  fontWeight="bold"
-                  color="fg.muted"
-                  textTransform="uppercase"
-                  letterSpacing="wide"
-                >
-                  {t(group.titleKey)}
+        }
+      >
+        <Box p={4} maxH="600px" overflowY="auto">
+          <Stack gap={4}>
+            <Flex justify="space-between" align="center">
+              <Text fontSize="sm" fontWeight="bold">
+                {t('chart.indicators.title')}
+              </Text>
+              <HStack gap={2}>
+                <Text fontSize="xs" color="fg.muted">
+                  {activeCount}/{totalCount}
                 </Text>
-                <Stack gap={1.5} pl={2}>
-                  {group.items.map((ui) => {
-                    const matched = instancesByUserIndicatorId.get(ui.id) ?? [];
-                    const isActive = matched.length > 0;
-                    return (
-                      <Checkbox
-                        key={ui.id}
-                        checked={isActive}
-                        onCheckedChange={() => handleToggle(ui, isActive)}
-                      >
-                        <Text fontSize="sm">{ui.label}</Text>
-                      </Checkbox>
-                    );
-                  })}
+                <Button
+                  size="2xs"
+                  colorPalette="blue"
+                  onClick={() => setDialog({ kind: 'create' })}
+                >
+                  <LuPlus />
+                  {t('settings.indicators.new')}
+                </Button>
+              </HStack>
+            </Flex>
+
+            <Stack gap={4} maxH="500px" overflowY="auto">
+              {groups.map((group) => (
+                <Stack key={group.category} gap={2}>
+                  <Text
+                    fontSize="xs"
+                    fontWeight="bold"
+                    color="fg.muted"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                  >
+                    {t(group.titleKey)}
+                  </Text>
+                  <Stack gap={1.5} pl={2}>
+                    {group.items.map((ui) => {
+                      const matched = instancesByUserIndicatorId.get(ui.id) ?? [];
+                      const isActive = matched.length > 0;
+                      return (
+                        <Flex key={ui.id} align="center" justify="space-between" gap={2}>
+                          <Box flex={1} minW={0}>
+                            <Checkbox
+                              checked={isActive}
+                              onCheckedChange={() => handleToggle(ui, isActive)}
+                            >
+                              <Text fontSize="sm" truncate>
+                                {ui.label}
+                              </Text>
+                            </Checkbox>
+                          </Box>
+                          <HStack gap={0.5}>
+                            <TooltipWrapper label={t('common.edit')}>
+                              <IconButton
+                                aria-label={t('common.edit')}
+                                size="2xs"
+                                variant="ghost"
+                                onClick={() => setDialog({ kind: 'edit', indicator: ui })}
+                              >
+                                <LuPencil />
+                              </IconButton>
+                            </TooltipWrapper>
+                            <TooltipWrapper label={t('common.delete')}>
+                              <IconButton
+                                aria-label={t('common.delete')}
+                                size="2xs"
+                                variant="ghost"
+                                colorPalette="red"
+                                onClick={() => setConfirmDelete(ui)}
+                              >
+                                <LuTrash2 />
+                              </IconButton>
+                            </TooltipWrapper>
+                          </HStack>
+                        </Flex>
+                      );
+                    })}
+                  </Stack>
                 </Stack>
-              </Stack>
-            ))}
+              ))}
+            </Stack>
           </Stack>
-        </Stack>
-      </Box>
-    </Popover>
+        </Box>
+      </Popover>
+
+      <IndicatorConfigDialog
+        isOpen={dialog.kind !== 'closed'}
+        onClose={() => setDialog({ kind: 'closed' })}
+        mode={dialog.kind === 'edit' ? 'edit' : 'create'}
+        instance={dialog.kind === 'edit' ? dialog.indicator : undefined}
+        isLoading={create.isPending || update.isPending}
+        onSubmit={handleSubmit}
+      />
+
+      <ConfirmationDialog
+        isOpen={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('settings.indicators.deleteTitle')}
+        description={t('settings.indicators.deleteDescription', { label: confirmDelete?.label ?? '' })}
+        isDestructive
+        isLoading={remove.isPending}
+      />
+    </>
   );
 });
 

@@ -19,7 +19,7 @@ import {
   Textarea,
 } from '@renderer/components/ui';
 import type { TradingProfile } from '@marketmind/types';
-import { trpc } from '@renderer/utils/trpc';
+import { useUserIndicators } from '@renderer/hooks';
 import { useTranslation } from 'react-i18next';
 import { ChecklistEditor } from './ChecklistEditor';
 import { DIRECTION_MODE_OPTIONS, MODE_KEYS, TRADING_MODE_OPTIONS } from './profileEditorConstants';
@@ -40,9 +40,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
   const { t } = useTranslation();
   const form = useProfileEditorForm(profile, isOpen, onClose);
   const { overrideActions } = form;
-  const { data: availableIndicators = [] } = trpc.userIndicators.list.useQuery(undefined, {
-    enabled: isOpen,
-  });
+  const { indicators: availableIndicators } = useUserIndicators();
 
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">

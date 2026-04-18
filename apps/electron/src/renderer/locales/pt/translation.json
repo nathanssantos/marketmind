@@ -56,8 +56,7 @@
     "remove": "Remover",
     "economicEvent": "Evento Econômico",
     "actual": "Real",
-    "estimate": "Estimativa",
-    "previous": "Anterior"
+    "estimate": "Estimativa"
   },
   "app": {
     "title": "MarketMind",
@@ -173,7 +172,8 @@
       "setupDetection": "Detecção de Setups",
       "tradingSimulator": "Simulador de Trading",
       "data": "Dados",
-      "about": "Sobre"
+      "about": "Sobre",
+      "indicators": "Indicadores"
     },
     "contextConfig": {
       "title": "Configuração de Contexto de Mercado",
@@ -603,6 +603,19 @@
           "fiboAllDesc": "Máximo de entradas em todas extensões Fibonacci."
         }
       }
+    },
+    "indicators": {
+      "title": "Indicadores",
+      "count": "{{count}} indicadores",
+      "reset": "Redefinir",
+      "new": "Novo",
+      "empty": "Nenhum indicador ainda. Clique em \"Novo\" para adicionar.",
+      "custom": "Personalizado",
+      "duplicate": "Duplicar",
+      "deleteTitle": "Excluir indicador?",
+      "deleteDescription": "Remover permanentemente \"{{label}}\". Esta ação não pode ser desfeita.",
+      "resetTitle": "Restaurar padrões?",
+      "resetDescription": "Todos os indicadores personalizados serão excluídos e o conjunto padrão será restaurado."
     }
   },
   "chart": {
@@ -643,7 +656,13 @@
       "indicators": "Indicadores",
       "quickSettings": "Configurações Rápidas"
     },
-    "type": { "candle": "Vela", "line": "Linha", "tick": "Tick", "volume": "Volume", "footprint": "Footprint" },
+    "type": {
+      "candle": "Vela",
+      "line": "Linha",
+      "tick": "Tick",
+      "volume": "Volume",
+      "footprint": "Footprint"
+    },
     "tools": {
       "pencil": "Lápis",
       "line": "Linha",

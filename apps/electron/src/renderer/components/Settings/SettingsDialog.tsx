@@ -8,6 +8,7 @@ import { AboutTab } from './AboutTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { DataTab } from './DataTab';
 import { GeneralTab } from './GeneralTab';
+import { IndicatorsTab } from './IndicatorsTab';
 import { TradingProfilesTab } from './TradingProfilesTab';
 
 interface SettingsDialogProps {
@@ -43,6 +44,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="general">{t('settings.tabs.general')}</Tabs.Trigger>
                 <Tabs.Trigger value="wallets">{t('settings.tabs.wallets')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
+                <Tabs.Trigger value="indicators">{t('settings.tabs.indicators')}</Tabs.Trigger>
                 <Tabs.Trigger value="autoTrading">{t('settings.tabs.autoTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="data">{t('settings.tabs.data')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
@@ -62,6 +64,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                     config={advancedConfig}
                     onConfigChange={onAdvancedConfigChange}
                   />
+                </Tabs.Content>
+
+                <Tabs.Content value="indicators">
+                  <IndicatorsTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="autoTrading">

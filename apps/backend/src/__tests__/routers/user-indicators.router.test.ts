@@ -153,6 +153,42 @@ describe('User Indicators Router', () => {
     });
   });
 
+  describe('duplicate', () => {
+    it('creates a clone with " (copy)" suffix and isCustom=true', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const source = await caller.userIndicators.create({
+        catalogType: 'ema',
+        label: 'EMA 21',
+        params: { period: 21, color: '#aabbcc', lineWidth: 2 },
+      });
+
+      const copy = await caller.userIndicators.duplicate({ id: source.id });
+
+      expect(copy.id).not.toBe(source.id);
+      expect(copy.catalogType).toBe(source.catalogType);
+      expect(copy.label).toBe('EMA 21 (copy)');
+      expect(copy.params).toEqual(source.params);
+      expect(copy.isCustom).toBe(true);
+    });
+
+    it('rejects duplicating an indicator that does not belong to the caller', async () => {
+      const { user: u1, session: s1 } = await createAuthenticatedUser({ email: 'd1@test.com' });
+      const { user: u2, session: s2 } = await createAuthenticatedUser({ email: 'd2@test.com' });
+      const c1 = createAuthenticatedCaller(u1, s1);
+      const c2 = createAuthenticatedCaller(u2, s2);
+
+      const owned = await c1.userIndicators.create({
+        catalogType: 'rsi',
+        label: 'RSI',
+        params: { period: 14 },
+      });
+
+      await expect(c2.userIndicators.duplicate({ id: owned.id })).rejects.toThrow(/not found/i);
+    });
+  });
+
   describe('reset', () => {
     it('restores default seeds after deletion', async () => {
       const { user, session } = await createAuthenticatedUser();

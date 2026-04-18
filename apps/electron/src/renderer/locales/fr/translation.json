@@ -56,8 +56,7 @@
     "remove": "Supprimer",
     "economicEvent": "Événement Économique",
     "actual": "Réel",
-    "estimate": "Estimé",
-    "previous": "Précédent"
+    "estimate": "Estimé"
   },
   "app": {
     "title": "MarketMind",
@@ -173,7 +172,8 @@
       "setupDetection": "Détection de Setups",
       "tradingSimulator": "Simulateur de Trading",
       "data": "Données",
-      "about": "À propos"
+      "about": "À propos",
+      "indicators": "Indicateurs"
     },
     "contextConfig": {
       "title": "Configuration du Contexte de Marché",
@@ -603,6 +603,19 @@
           "fiboAllDesc": "Maximum d'entrées à toutes les extensions Fibonacci."
         }
       }
+    },
+    "indicators": {
+      "title": "Indicateurs",
+      "count": "{{count}} indicateurs",
+      "reset": "Réinitialiser",
+      "new": "Nouveau",
+      "empty": "Aucun indicateur pour l'instant. Cliquez sur « Nouveau » pour en ajouter.",
+      "custom": "Personnalisé",
+      "duplicate": "Dupliquer",
+      "deleteTitle": "Supprimer l'indicateur ?",
+      "deleteDescription": "Supprimer définitivement « {{label}} ». Cette action est irréversible.",
+      "resetTitle": "Restaurer les valeurs par défaut ?",
+      "resetDescription": "Tous les indicateurs personnalisés seront supprimés et l'ensemble par défaut sera restauré."
     }
   },
   "context": {
@@ -1949,13 +1962,50 @@
     }
   },
   "scalping": {
-    "config": { "title": "Configuration Scalping", "strategies": "Stratégies", "execution": "Exécution", "risk": "Gestion des Risques", "symbols": "Symboles", "chart": "Graphique", "noSymbols": "Aucun symbole configuré", "signalInterval": "Intervalle de Signal" },
-    "strategy": { "imbalance": "Déséquilibre", "cvd-divergence": "Divergence CVD", "mean-reversion": "Retour à la Moyenne", "momentum-burst": "Burst de Momentum", "absorption-reversal": "Renversement par Absorption", "ema-cross": "Croisement EMA" },
-    "dashboard": { "title": "Scalping" },
-    "status": { "running": "En cours", "stopped": "Arrêté" },
-    "metric": { "sessionPnl": "P&L Session", "trades": "Trades", "winRate": "Taux de Réussite", "orderFlow": "Flux d'Ordres", "imbalance": "Déséquilibre", "spread": "Spread", "absorption": "Absorption", "domLadder": "Carnet d'Ordres", "microprice": "Microprix", "exhaustion": "Épuisement" },
-    "signals": { "title": "Signaux" },
-    "circuitBreaker": { "tripped": "CB Déclenché", "reset": "Réinitialiser" }
+    "config": {
+      "title": "Configuration Scalping",
+      "strategies": "Stratégies",
+      "execution": "Exécution",
+      "risk": "Gestion des Risques",
+      "symbols": "Symboles",
+      "chart": "Graphique",
+      "noSymbols": "Aucun symbole configuré",
+      "signalInterval": "Intervalle de Signal"
+    },
+    "strategy": {
+      "imbalance": "Déséquilibre",
+      "cvd-divergence": "Divergence CVD",
+      "mean-reversion": "Retour à la Moyenne",
+      "momentum-burst": "Burst de Momentum",
+      "absorption-reversal": "Renversement par Absorption",
+      "ema-cross": "Croisement EMA"
+    },
+    "dashboard": {
+      "title": "Scalping"
+    },
+    "status": {
+      "running": "En cours",
+      "stopped": "Arrêté"
+    },
+    "metric": {
+      "sessionPnl": "P&L Session",
+      "trades": "Trades",
+      "winRate": "Taux de Réussite",
+      "orderFlow": "Flux d'Ordres",
+      "imbalance": "Déséquilibre",
+      "spread": "Spread",
+      "absorption": "Absorption",
+      "domLadder": "Carnet d'Ordres",
+      "microprice": "Microprix",
+      "exhaustion": "Épuisement"
+    },
+    "signals": {
+      "title": "Signaux"
+    },
+    "circuitBreaker": {
+      "tripped": "CB Déclenché",
+      "reset": "Réinitialiser"
+    }
   },
   "orderFlow": {
     "title": "Flux d'Ordres",

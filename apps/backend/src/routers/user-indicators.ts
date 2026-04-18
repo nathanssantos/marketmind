@@ -113,6 +113,37 @@ export const userIndicatorsRouter = router({
       return { id: row.id };
     }),
 
+  duplicate: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const [source] = await db
+        .select()
+        .from(userIndicators)
+        .where(and(eq(userIndicators.id, input.id), eq(userIndicators.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!source) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Indicator not found' });
+      }
+
+      const now = new Date();
+      const [row] = await db
+        .insert(userIndicators)
+        .values({
+          id: generateEntityId(),
+          userId: ctx.user.id,
+          catalogType: source.catalogType,
+          label: `${source.label} (copy)`,
+          params: source.params,
+          isCustom: true,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      return parseIndicator(row!);
+    }),
+
   reset: protectedProcedure.mutation(async ({ ctx }) => {
     await db.delete(userIndicators).where(eq(userIndicators.userId, ctx.user.id));
     await seedDefaultUserIndicators(ctx.user.id);
