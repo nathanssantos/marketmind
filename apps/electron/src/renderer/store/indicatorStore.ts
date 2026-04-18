@@ -1,6 +1,24 @@
 import { FIBONACCI_LEVELS } from '../lib/indicators';
+import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { create } from 'zustand';
 import { usePreferencesStore } from './preferencesStore';
+
+export interface IndicatorInstance {
+  id: string;
+  userIndicatorId: string;
+  catalogType: string;
+  params: Record<string, IndicatorParamValue>;
+  visible: boolean;
+  paneId?: string;
+  zIndex?: number;
+}
+
+const generateInstanceId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `inst_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export type IndicatorId =
   | 'ema-7' | 'ema-8' | 'ema-9' | 'ema-10' | 'ema-19' | 'ema-20' | 'ema-21'
@@ -232,11 +250,22 @@ const syncToPreferences = (activeIndicators: IndicatorId[], indicatorParams: Ind
   prefs.set('chart', 'indicatorParams', indicatorParams);
 };
 
+const syncInstancesToPreferences = (instances: IndicatorInstance[]) => {
+  const prefs = usePreferencesStore.getState();
+  if (!prefs.isHydrated) return;
+  prefs.set('chart', 'indicatorInstances', instances);
+};
+
 interface IndicatorState {
   activeIndicators: IndicatorId[];
   indicatorParams: IndicatorParams;
+  instances: IndicatorInstance[];
 
-  hydrate: (data: { activeIndicators?: string[] | undefined; indicatorParams?: Record<string, unknown> | undefined }) => void;
+  hydrate: (data: {
+    activeIndicators?: string[] | undefined;
+    indicatorParams?: Record<string, unknown> | undefined;
+    instances?: IndicatorInstance[] | unknown;
+  }) => void;
   toggleIndicator: (id: IndicatorId) => void;
   setIndicatorActive: (id: IndicatorId, active: boolean) => void;
   isActive: (id: IndicatorId) => boolean;
@@ -248,17 +277,52 @@ interface IndicatorState {
   getActivePanelIndicators: () => IndicatorId[];
   getActiveOverlayIndicators: () => IndicatorId[];
   resetParams: (indicator: keyof IndicatorParams) => void;
+
+  addInstance: (input: Omit<IndicatorInstance, 'id'>) => string;
+  removeInstance: (id: string) => void;
+  removeInstancesByUserIndicatorId: (userIndicatorId: string) => void;
+  updateInstance: (id: string, patch: Partial<Omit<IndicatorInstance, 'id'>>) => void;
+  toggleInstanceVisible: (id: string) => void;
+  reorderInstances: (ids: string[]) => void;
+  getVisibleInstances: () => IndicatorInstance[];
+  getInstancesByPaneId: (paneId: string) => IndicatorInstance[];
 }
+
+const sanitizeInstance = (raw: unknown): IndicatorInstance | null => {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as Partial<IndicatorInstance>;
+  if (typeof candidate.userIndicatorId !== 'string') return null;
+  if (typeof candidate.catalogType !== 'string') return null;
+  if (!candidate.params || typeof candidate.params !== 'object') return null;
+  return {
+    id: typeof candidate.id === 'string' && candidate.id.length > 0 ? candidate.id : generateInstanceId(),
+    userIndicatorId: candidate.userIndicatorId,
+    catalogType: candidate.catalogType,
+    params: candidate.params as Record<string, IndicatorParamValue>,
+    visible: candidate.visible !== false,
+    paneId: typeof candidate.paneId === 'string' ? candidate.paneId : undefined,
+    zIndex: typeof candidate.zIndex === 'number' ? candidate.zIndex : undefined,
+  };
+};
+
+const sanitizeInstances = (raw: unknown): IndicatorInstance[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(sanitizeInstance)
+    .filter((inst): inst is IndicatorInstance => inst !== null);
+};
 
 export const useIndicatorStore = create<IndicatorState>()(
   (set, get) => ({
     activeIndicators: ['volume', 'ema-9', 'ema-21', 'ema-200', 'stochastic', 'rsi'],
     indicatorParams: { ...DEFAULT_INDICATOR_PARAMS },
+    instances: [],
 
     hydrate: (data) => {
       const updates: Partial<IndicatorState> = {};
       if (data.activeIndicators) updates.activeIndicators = data.activeIndicators as IndicatorId[];
       if (data.indicatorParams) updates.indicatorParams = { ...DEFAULT_INDICATOR_PARAMS, ...data.indicatorParams } as IndicatorParams;
+      if (data.instances !== undefined) updates.instances = sanitizeInstances(data.instances);
       if (Object.keys(updates).length > 0) set(updates);
     },
 
@@ -328,5 +392,87 @@ export const useIndicatorStore = create<IndicatorState>()(
         syncToPreferences(state.activeIndicators, indicatorParams);
         return { indicatorParams };
       }),
+
+    addInstance: (input) => {
+      const id = generateInstanceId();
+      const next: IndicatorInstance = {
+        id,
+        userIndicatorId: input.userIndicatorId,
+        catalogType: input.catalogType,
+        params: { ...input.params },
+        visible: input.visible !== false,
+        paneId: input.paneId,
+        zIndex: input.zIndex,
+      };
+      set((state) => {
+        const instances = [...state.instances, next];
+        syncInstancesToPreferences(instances);
+        return { instances };
+      });
+      return id;
+    },
+
+    removeInstance: (id) =>
+      set((state) => {
+        const instances = state.instances.filter((inst) => inst.id !== id);
+        if (instances.length === state.instances.length) return state;
+        syncInstancesToPreferences(instances);
+        return { instances };
+      }),
+
+    removeInstancesByUserIndicatorId: (userIndicatorId) =>
+      set((state) => {
+        const instances = state.instances.filter((inst) => inst.userIndicatorId !== userIndicatorId);
+        if (instances.length === state.instances.length) return state;
+        syncInstancesToPreferences(instances);
+        return { instances };
+      }),
+
+    updateInstance: (id, patch) =>
+      set((state) => {
+        let mutated = false;
+        const instances = state.instances.map((inst) => {
+          if (inst.id !== id) return inst;
+          mutated = true;
+          return {
+            ...inst,
+            ...patch,
+            id: inst.id,
+            params: patch.params ? { ...inst.params, ...patch.params } : inst.params,
+          };
+        });
+        if (!mutated) return state;
+        syncInstancesToPreferences(instances);
+        return { instances };
+      }),
+
+    toggleInstanceVisible: (id) =>
+      set((state) => {
+        let mutated = false;
+        const instances = state.instances.map((inst) => {
+          if (inst.id !== id) return inst;
+          mutated = true;
+          return { ...inst, visible: !inst.visible };
+        });
+        if (!mutated) return state;
+        syncInstancesToPreferences(instances);
+        return { instances };
+      }),
+
+    reorderInstances: (ids) =>
+      set((state) => {
+        const order = new Map(ids.map((id, idx) => [id, idx]));
+        const instances = [...state.instances].sort((a, b) => {
+          const ai = order.has(a.id) ? order.get(a.id)! : Number.MAX_SAFE_INTEGER;
+          const bi = order.has(b.id) ? order.get(b.id)! : Number.MAX_SAFE_INTEGER;
+          return ai - bi;
+        });
+        syncInstancesToPreferences(instances);
+        return { instances };
+      }),
+
+    getVisibleInstances: () => get().instances.filter((inst) => inst.visible),
+
+    getInstancesByPaneId: (paneId) => get().instances.filter((inst) => inst.paneId === paneId),
   })
 );
