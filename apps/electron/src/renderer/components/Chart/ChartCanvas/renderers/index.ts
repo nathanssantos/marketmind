@@ -1,3 +1,4 @@
+import { renderIchimoku } from './renderIchimoku';
 import { renderOverlayBands } from './renderOverlayBands';
 import { renderOverlayLine } from './renderOverlayLine';
 import { renderOverlayPoints } from './renderOverlayPoints';
@@ -18,9 +19,12 @@ export const RENDERER_REGISTRY: RendererRegistry = {
   'pane-histogram': renderPaneHistogram,
 };
 
-export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {};
+export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {
+  ichimoku: renderIchimoku,
+};
 
 export {
+  renderIchimoku,
   renderOverlayBands,
   renderOverlayLine,
   renderOverlayPoints,

@@ -2127,7 +2127,13 @@
       "midPeriod": "Période Moyenne",
       "longPeriod": "Période Longue",
       "color": "Couleur",
-      "lineWidth": "Épaisseur de Ligne"
+      "lineWidth": "Épaisseur de Ligne",
+      "tenkanPeriod": "Période Tenkan",
+      "kijunPeriod": "Période Kijun",
+      "senkouPeriod": "Période Senkou",
+      "tenkanColor": "Couleur Tenkan",
+      "kijunColor": "Couleur Kijun",
+      "chikouColor": "Couleur Chikou"
     },
     "outputs": {
       "value": "Valeur",
@@ -2139,7 +2145,15 @@
       "kvo": "KVO",
       "signal": "Signal",
       "viPlus": "VI+",
-      "viMinus": "VI−"
-    }
+      "viMinus": "VI−",
+      "tenkan": "Tenkan-sen",
+      "kijun": "Kijun-sen",
+      "senkouA": "Senkou Span A",
+      "senkouB": "Senkou Span B",
+      "chikou": "Chikou Span"
+    },
+    "ichimoku": "Nuage Ichimoku",
+    "dailyVwap": "VWAP Journalier",
+    "weeklyVwap": "VWAP Hebdomadaire"
   }
 }

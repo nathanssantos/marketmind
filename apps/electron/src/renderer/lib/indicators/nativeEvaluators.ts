@@ -8,6 +8,7 @@ import { calculateChoppiness } from './choppiness';
 import { calculateDEMA } from './dema';
 import { calculateDonchian } from './donchian';
 import { calculateElderRay } from './elderRay';
+import { calculateIchimoku } from './ichimoku';
 import { calculateKlinger } from './klinger';
 import { calculatePPO } from './ppo';
 import { calculateStochRSI } from './stochRsi';
@@ -126,6 +127,23 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
   dailyVwap: (klines) => ({ value: calculateIntradayVWAP(klines) }),
 
   weeklyVwap: (klines) => ({ value: calculateWeeklyVWAP(klines) }),
+
+  ichimoku: (klines, params) => {
+    const result = calculateIchimoku(
+      klines,
+      num(params['tenkanPeriod'], 9),
+      num(params['kijunPeriod'], 26),
+      num(params['senkouPeriod'], 52),
+      num(params['kijunPeriod'], 26),
+    );
+    return {
+      tenkan: result.tenkan,
+      kijun: result.kijun,
+      senkouA: result.senkouA,
+      senkouB: result.senkouB,
+      chikou: result.chikou,
+    };
+  },
 };
 
 export const hasNativeEvaluator = (scriptId: string): boolean =>
