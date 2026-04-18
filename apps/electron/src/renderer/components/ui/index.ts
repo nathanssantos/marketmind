@@ -11,6 +11,8 @@ export { CloseButton } from './close-button';
 export type { CloseButtonProps } from './close-button';
 export { CollapsibleSection } from './CollapsibleSection';
 export { ColorModeProvider, useColorMode } from './color-mode';
+export { ColorPicker, DEFAULT_COLOR_PRESETS } from './color-picker';
+export type { ColorPickerProps } from './color-picker';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { CryptoIcon } from './CryptoIcon';
 export { DirectionModeSelector } from './DirectionModeSelector';
