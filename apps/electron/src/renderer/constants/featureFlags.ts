@@ -5,7 +5,7 @@ const envFlag = (key: string, fallback: boolean): boolean => {
 };
 
 export const FEATURE_FLAGS = {
-  USE_GENERIC_INDICATOR_PIPELINE: envFlag('VITE_USE_GENERIC_INDICATOR_PIPELINE', true),
+  USE_GENERIC_INDICATOR_PIPELINE: envFlag('VITE_USE_GENERIC_INDICATOR_PIPELINE', false),
 } as const;
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;

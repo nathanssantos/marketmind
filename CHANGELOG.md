@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Test infra**: ~45 renderer hook test files now mock `isFlipped: vi.fn(() => false)` on their `CanvasManager` stubs, restoring suite green after the new `manager.isFlipped()` calls in the renderers.
+- **`USE_GENERIC_INDICATOR_PIPELINE` flag remains default `false`** for v0.90.0. Foundation work (instance store slice, generic renderers in `ChartCanvas/renderers/*`, `useGenericChartIndicators`, `useGenericChartIndicatorRenderers`, `IndicatorTogglePopoverGeneric`) is in place and exercised by unit tests, but the production `ChartCanvas` still calls the legacy `useChartIndicatorRenderers`. The cutover (wire generic dispatcher into `ChartCanvas` + delete legacy code) is deferred to v0.91 pending manual UI QA across all 40+ indicators. Dev can opt in via `VITE_USE_GENERIC_INDICATOR_PIPELINE=true` to test the new popover; chart rendering of new instances will be a no-op until the wiring lands.
 
 ## [0.89.0] - 2026-04-18
 
