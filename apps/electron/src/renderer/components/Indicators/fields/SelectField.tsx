@@ -12,7 +12,7 @@ export interface SelectFieldProps {
 export const SelectField = ({ label, value, options, onChange }: SelectFieldProps) => {
   return (
     <Field label={label}>
-      <Select value={value} options={options} onChange={onChange} size="sm" />
+      <Select value={value} options={options} onChange={onChange} size="sm" usePortal={false} />
     </Field>
   );
 };

@@ -146,6 +146,7 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                     options={ASSET_CLASS_OPTIONS}
                     onChange={(v) => setAssetClass(v as typeof assetClass)}
                     minWidth="90px"
+                    usePortal={false}
                   />
                   <Select
                     size="xs"
@@ -153,6 +154,7 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                     options={MARKET_TYPE_OPTIONS}
                     onChange={(v) => setMarketType(v as typeof marketType)}
                     minWidth="90px"
+                    usePortal={false}
                   />
                   <Select
                     size="xs"
@@ -160,6 +162,7 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                     options={SCREENER_INTERVAL_OPTIONS}
                     onChange={(v) => setInterval(v as typeof interval)}
                     minWidth="70px"
+                    usePortal={false}
                   />
                   <DialogCloseTrigger position="static" />
                 </HStack>

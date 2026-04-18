@@ -207,7 +207,7 @@ const OrdersDialogComponent = () => {
                     { value: 'cancelled', label: t('trading.orders.statusCancelled') },
                     { value: 'expired', label: t('trading.orders.statusExpired') },
                   ]}
-                  usePortal
+                  usePortal={false}
                 />
               </ChakraField.Root>
               <Group attached ml="auto">

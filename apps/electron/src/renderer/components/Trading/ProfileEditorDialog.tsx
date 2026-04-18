@@ -116,6 +116,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       options={TRADING_MODE_OPTIONS}
                       onChange={(v) => overrideActions.setOv('tradingMode', v)}
                       size="sm"
+                      usePortal={false}
                     />
                   </OverrideRow>
                   <OverrideRow
@@ -129,6 +130,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       options={DIRECTION_MODE_OPTIONS}
                       onChange={(v) => overrideActions.setOv('directionMode', v)}
                       size="sm"
+                      usePortal={false}
                     />
                   </OverrideRow>
                 </Stack>
