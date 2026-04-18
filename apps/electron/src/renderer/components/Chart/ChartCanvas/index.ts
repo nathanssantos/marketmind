@@ -46,6 +46,15 @@ export type {
   UseChartIndicatorRenderersResult,
 } from './useChartIndicatorRenderers';
 
+export { useGenericChartIndicators } from './useGenericChartIndicators';
+export type { IndicatorOutputs, UseGenericChartIndicatorsResult } from './useGenericChartIndicators';
+
+export { useGenericChartIndicatorRenderers } from './useGenericChartIndicatorRenderers';
+export type {
+  UseGenericChartIndicatorRenderersProps,
+  UseGenericChartIndicatorRenderersResult,
+} from './useGenericChartIndicatorRenderers';
+
 export { useChartInteraction } from './useChartInteraction';
 export type {
   UseChartInteractionProps,

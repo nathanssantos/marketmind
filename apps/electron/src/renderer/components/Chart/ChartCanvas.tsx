@@ -33,6 +33,8 @@ import {
   useChartPanelHeights,
   useChartBaseRenderers,
   useChartIndicatorRenderers,
+  useGenericChartIndicators,
+  useGenericChartIndicatorRenderers,
   useChartInteraction,
   useChartTradingData,
   useChartTradingActions,
@@ -269,6 +271,12 @@ export const ChartCanvas = ({
     liquidityColorMode,
   });
 
+  const instances = useIndicatorStore(useShallow((s) => s.instances));
+  const { outputs: genericOutputs } = useGenericChartIndicators(klines, instances);
+  const genericRenderers = useGenericChartIndicatorRenderers({
+    manager, colors, instances, outputs: genericOutputs,
+  });
+
   const { getEventAtPosition } = indicatorRenderers;
 
   const draggedOrderIdRef = useRef<string | null>(null);
@@ -356,7 +364,7 @@ export const ChartCanvas = ({
   useChartRenderPipeline({
     manager, chartType, colors, allExecutions,
     baseRenderers: { renderGrid, renderKlines, renderLineChart, renderVolume, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark },
-    indicatorRenderers, renderOrderLines, renderGridPreview, renderDrawings,
+    indicatorRenderers, genericRenderers, renderOrderLines, renderGridPreview, renderDrawings,
     orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, orderPreviewRef,
   });
 
