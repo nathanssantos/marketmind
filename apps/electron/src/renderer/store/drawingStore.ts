@@ -1,10 +1,20 @@
 import type { Drawing, DrawingType } from '@marketmind/chart-studies';
 import { create } from 'zustand';
+import { duplicateDrawing, type DuplicateOptions } from '@renderer/components/Chart/drawings/duplicateDrawing';
 
 export const compositeKey = (symbol: string, interval: string) => `${symbol}:${interval}`;
 
 const hydratedKeys = new Set<string>();
 const backendIdMaps = new Map<string, Map<string, number>>();
+
+let clipboardDrawing: Drawing | null = null;
+
+export const setDrawingClipboard = (drawing: Drawing | null): void => {
+  clipboardDrawing = drawing ? structuredClone(drawing) : null;
+};
+
+export const getDrawingClipboard = (): Drawing | null =>
+  clipboardDrawing ? structuredClone(clipboardDrawing) : null;
 
 interface DrawingState {
   drawingsByKey: Record<string, Drawing[]>;
@@ -19,6 +29,7 @@ interface DrawingState {
   addDrawing: (drawing: Drawing) => void;
   updateDrawing: (id: string, updates: Partial<Drawing>) => void;
   deleteDrawing: (id: string, symbol: string, interval: string) => void;
+  duplicateDrawing: (source: Drawing, options?: DuplicateOptions) => Drawing;
   getDrawingsForSymbol: (symbol: string, interval: string) => Drawing[];
 
   setDrawingsForSymbol: (symbol: string, interval: string, drawings: Drawing[]) => void;
@@ -81,6 +92,22 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
       selectedDrawingId: state.selectedDrawingId === id ? null : state.selectedDrawingId,
     };
   }),
+
+  duplicateDrawing: (source, options) => {
+    const clone = duplicateDrawing(source, options);
+    set((state) => {
+      const key = compositeKey(clone.symbol, clone.interval);
+      const existing = state.drawingsByKey[key] ?? [];
+      return {
+        drawingsByKey: {
+          ...state.drawingsByKey,
+          [key]: [...existing, clone],
+        },
+        selectedDrawingId: clone.id,
+      };
+    });
+    return clone;
+  },
 
   getDrawingsForSymbol: (symbol, interval) => get().drawingsByKey[compositeKey(symbol, interval)] ?? [],
 
