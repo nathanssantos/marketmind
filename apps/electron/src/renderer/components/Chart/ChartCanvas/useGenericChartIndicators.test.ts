@@ -47,11 +47,11 @@ describe('buildBatches', () => {
     expect(batches).toHaveLength(0);
   });
 
-  it('skips custom-render indicators (e.g. fibonacci)', () => {
+  it('includes custom-render indicators (their evaluator may produce series for the renderer)', () => {
     const batches = buildBatches([
       makeInstance({ id: 'a', catalogType: 'fibonacci', params: {} }),
     ]);
-    expect(batches).toHaveLength(0);
+    expect(batches).toHaveLength(1);
   });
 
   it('builds one batch per unique (scriptId, params) pair', () => {

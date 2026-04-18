@@ -43,7 +43,6 @@ export const buildBatches = (instances: IndicatorInstance[]): BatchKey[] => {
     if (!instance.visible) continue;
     const def = INDICATOR_CATALOG[instance.catalogType];
     if (!def) continue;
-    if (def.render.kind === 'custom') continue;
     const { scriptId, service } = def.evaluator;
     const mergedParams = def.params.reduce<Record<string, IndicatorParamValue>>((acc, p) => {
       acc[p.key] = instance.params[p.key] ?? p.default;
