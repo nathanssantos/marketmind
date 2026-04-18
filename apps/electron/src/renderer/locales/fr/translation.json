@@ -2137,7 +2137,10 @@
       "lookback": "Période passée",
       "lookahead": "Période future",
       "highColor": "Couleur Haute",
-      "lowColor": "Couleur Basse"
+      "lowColor": "Couleur Basse",
+      "numBuckets": "Nombre de Compartiments",
+      "maxBarWidth": "Largeur Max de Barre",
+      "opacity": "Opacité"
     },
     "outputs": {
       "value": "Valeur",
@@ -2156,11 +2159,13 @@
       "senkouB": "Senkou Span B",
       "chikou": "Chikou Span",
       "pivotHigh": "Pivot Haut",
-      "pivotLow": "Pivot Bas"
+      "pivotLow": "Pivot Bas",
+      "rendered": "Rendu"
     },
     "ichimoku": "Nuage Ichimoku",
     "dailyVwap": "VWAP Journalier",
     "weeklyVwap": "VWAP Hebdomadaire",
-    "pivotPoints": "Points Pivot"
+    "pivotPoints": "Points Pivot",
+    "volumeProfile": "Profil de Volume"
   }
 }

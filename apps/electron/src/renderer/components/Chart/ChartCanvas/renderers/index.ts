@@ -6,6 +6,7 @@ import { renderPaneHistogram } from './renderPaneHistogram';
 import { renderPaneLine } from './renderPaneLine';
 import { renderPaneMulti } from './renderPaneMulti';
 import { renderPivotPoints } from './renderPivotPoints';
+import { renderVolumeProfile } from './renderVolumeProfile';
 import type { GenericRenderer, RendererRegistry } from './types';
 
 export type { GenericRenderer, GenericRendererCtx, GenericRendererInput, IndicatorValueSeries, RendererRegistry } from './types';
@@ -23,6 +24,7 @@ export const RENDERER_REGISTRY: RendererRegistry = {
 export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {
   ichimoku: renderIchimoku,
   pivotPoints: renderPivotPoints,
+  volumeProfile: renderVolumeProfile,
 };
 
 export {
@@ -34,6 +36,7 @@ export {
   renderPaneLine,
   renderPaneMulti,
   renderPivotPoints,
+  renderVolumeProfile,
 };
 
 export const isGenericRenderKind = (kind: string): kind is keyof typeof RENDERER_REGISTRY =>

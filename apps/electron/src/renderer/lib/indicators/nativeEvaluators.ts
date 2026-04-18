@@ -163,6 +163,8 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
     }
     return { pivotHigh, pivotLow };
   },
+
+  volumeProfile: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
 };
 
 export const hasNativeEvaluator = (scriptId: string): boolean =>

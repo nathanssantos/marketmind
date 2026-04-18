@@ -777,6 +777,48 @@ const entries: IndicatorDefinition[] = [
     evaluator: { service: 'native', scriptId: 'pivotPoints' },
     defaultLabel: () => 'Pivot Points',
   },
+
+  {
+    type: 'volumeProfile',
+    labelKey: 'indicators.volumeProfile',
+    category: 'volume',
+    params: [
+      {
+        key: 'numBuckets',
+        labelKey: 'indicators.params.numBuckets',
+        type: 'integer',
+        default: 100,
+        min: 10,
+        max: 500,
+        step: 5,
+      },
+      {
+        key: 'maxBarWidth',
+        labelKey: 'indicators.params.maxBarWidth',
+        type: 'integer',
+        default: 120,
+        min: 20,
+        max: 400,
+        step: 10,
+        cosmetic: true,
+      },
+      {
+        key: 'opacity',
+        labelKey: 'indicators.params.opacity',
+        type: 'integer',
+        default: 30,
+        min: 5,
+        max: 100,
+        step: 5,
+        cosmetic: true,
+      },
+    ],
+    outputs: [{ key: 'rendered', labelKey: 'indicators.outputs.rendered' }],
+    render: { kind: 'custom', rendererId: 'volumeProfile' },
+    conditionOps: [],
+    evaluator: { service: 'native', scriptId: 'volumeProfile' },
+    defaultLabel: () => 'Volume Profile',
+  },
 ];
 
 export const INDICATOR_CATALOG: Record<string, IndicatorDefinition> = Object.fromEntries(
