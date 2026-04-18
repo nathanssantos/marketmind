@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.92.0] - 2026-04-18
+
+### Added
+- **7 new catalog indicators** in `INDICATOR_CATALOG`: **Awesome Oscillator** (`ao`), **Aroon** (`aroon`), **Chaikin Money Flow** (`cmf`), **Elder Ray** (`elderRay`), **Klinger Oscillator** (`klinger`), **Ultimate Oscillator** (`ultimateOsc`), **Vortex** (`vortex`). All wired to existing native evaluators via `evaluator: { service: 'native', scriptId: <X> }` and rendered through the generic pipeline (`pane-line` / `pane-multi` / `pane-histogram`).
+- **Native evaluator dispatch** for the 7 new indicators in `apps/electron/src/renderer/lib/indicators/nativeEvaluators.ts` (calls existing `calculateAO`/`calculateAroon`/`calculateCMF`/`calculateElderRay`/`calculateKlinger`/`calculateUltimateOscillator`/`calculateVortex`).
+- **Default seeds** for `aroon` (period 25) and `vortex` (period 14) in `DEFAULT_USER_INDICATOR_SEEDS` so new users get them on first auto-seed.
+
+### Locales
+- Root-level `indicators.*` block in **en**, **pt**, **es**, **fr**: indicator names (ao, aroon, cmf, elderRay, klinger, ultimateOsc, vortex), shared `params` (period, fastPeriod, slowPeriod, signalPeriod, shortPeriod, midPeriod, longPeriod, color, lineWidth), and `outputs` (value, aroonUp, aroonDown, aroonOscillator, bullPower, bearPower, kvo, signal, viPlus, viMinus).
+
+### Notes
+- 10 legacy popover indicators (`ichimoku`, `pivotPoints`, `dailyVwap`, `weeklyVwap`, `volumeProfile`, `footprint`, `liquidationMarkers`, `liquidityHeatmap`, `orb`, `activityIndicator`) are still **deferred** — they require custom render kinds and dedicated dispatch wiring outside the generic `RENDERER_REGISTRY`. The `VITE_USE_GENERIC_INDICATOR_PIPELINE` flag and the legacy `IndicatorTogglePopover` stay in place so users keep access to those visualizations until v0.93 closes the gap.
+
 ## [0.91.0] - 2026-04-18
 
 ### Added

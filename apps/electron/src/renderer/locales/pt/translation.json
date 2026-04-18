@@ -2125,5 +2125,37 @@
     "saved": "Salvo",
     "logout": "Sair",
     "settings": "Configurações"
+  },
+  "indicators": {
+    "ao": "Awesome Oscillator",
+    "aroon": "Aroon",
+    "cmf": "Chaikin Money Flow",
+    "elderRay": "Elder Ray",
+    "klinger": "Oscilador Klinger",
+    "ultimateOsc": "Oscilador Ultimate",
+    "vortex": "Vortex",
+    "params": {
+      "period": "Período",
+      "fastPeriod": "Período Rápido",
+      "slowPeriod": "Período Lento",
+      "signalPeriod": "Período do Sinal",
+      "shortPeriod": "Período Curto",
+      "midPeriod": "Período Médio",
+      "longPeriod": "Período Longo",
+      "color": "Cor",
+      "lineWidth": "Espessura da Linha"
+    },
+    "outputs": {
+      "value": "Valor",
+      "aroonUp": "Aroon Up",
+      "aroonDown": "Aroon Down",
+      "aroonOscillator": "Aroon Oscilador",
+      "bullPower": "Bull Power",
+      "bearPower": "Bear Power",
+      "kvo": "KVO",
+      "signal": "Sinal",
+      "viPlus": "VI+",
+      "viMinus": "VI−"
+    }
   }
 }

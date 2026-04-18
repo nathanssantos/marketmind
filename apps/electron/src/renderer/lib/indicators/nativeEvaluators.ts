@@ -1,12 +1,19 @@
 import type { Kline } from '@marketmind/types';
 import { getKlineVolume } from '@marketmind/types';
 import type { IndicatorParamValue } from '@marketmind/trading-core';
+import { calculateAO } from './ao';
+import { calculateAroon } from './aroon';
+import { calculateCMF } from './cmf';
 import { calculateChoppiness } from './choppiness';
 import { calculateDEMA } from './dema';
 import { calculateDonchian } from './donchian';
+import { calculateElderRay } from './elderRay';
+import { calculateKlinger } from './klinger';
 import { calculatePPO } from './ppo';
 import { calculateStochRSI } from './stochRsi';
 import { calculateTEMA } from './tema';
+import { calculateUltimateOscillator } from './ultimateOscillator';
+import { calculateVortex } from './vortex';
 
 export type NativeEvaluatorOutput = Record<string, (number | null)[]>;
 
@@ -69,6 +76,51 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
   volume: (klines) => ({
     value: klines.map((k) => getKlineVolume(k)),
   }),
+
+  ao: (klines, params) => {
+    const result = calculateAO(klines, num(params['fastPeriod'], 5), num(params['slowPeriod'], 34));
+    return { value: result.values };
+  },
+
+  aroon: (klines, params) => {
+    const result = calculateAroon(klines, num(params['period'], 25));
+    return { up: result.aroonUp, down: result.aroonDown, oscillator: result.oscillator };
+  },
+
+  cmf: (klines, params) => {
+    const result = calculateCMF(klines, num(params['period'], 20));
+    return { value: result.values };
+  },
+
+  elderRay: (klines, params) => {
+    const result = calculateElderRay(klines, num(params['period'], 13));
+    return { bullPower: result.bullPower, bearPower: result.bearPower };
+  },
+
+  klinger: (klines, params) => {
+    const result = calculateKlinger(
+      klines,
+      num(params['fastPeriod'], 34),
+      num(params['slowPeriod'], 55),
+      num(params['signalPeriod'], 13),
+    );
+    return { kvo: result.kvo, signal: result.signal };
+  },
+
+  ultimateOsc: (klines, params) => {
+    const result = calculateUltimateOscillator(
+      klines,
+      num(params['shortPeriod'], 7),
+      num(params['midPeriod'], 14),
+      num(params['longPeriod'], 28),
+    );
+    return { value: result.values };
+  },
+
+  vortex: (klines, params) => {
+    const result = calculateVortex(klines, num(params['period'], 14));
+    return { viPlus: result.viPlus, viMinus: result.viMinus };
+  },
 };
 
 export const hasNativeEvaluator = (scriptId: string): boolean =>

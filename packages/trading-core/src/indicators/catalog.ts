@@ -519,6 +519,124 @@ const entries: IndicatorDefinition[] = [
     evaluator: { service: 'native', scriptId: 'liquidityLevels' },
     defaultLabel: () => 'Liquidity',
   },
+
+  {
+    type: 'ao',
+    labelKey: 'indicators.ao',
+    category: 'momentum',
+    params: [
+      { key: 'fastPeriod', labelKey: 'indicators.params.fastPeriod', type: 'integer', default: 5, min: 2, max: 100, step: 1 },
+      { key: 'slowPeriod', labelKey: 'indicators.params.slowPeriod', type: 'integer', default: 34, min: 2, max: 200, step: 1 },
+      colorParam('#26a69a'),
+      lineWidthParam(),
+    ],
+    outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
+    render: { kind: 'pane-histogram', paneId: 'ao' },
+    conditionOps: [...trendOps, 'crossAbove', 'crossBelow'],
+    evaluator: { service: 'native', scriptId: 'ao' },
+    defaultLabel: (p) => `AO ${p['fastPeriod'] ?? 5}/${p['slowPeriod'] ?? 34}`,
+  },
+
+  {
+    type: 'aroon',
+    labelKey: 'indicators.aroon',
+    category: 'trend',
+    params: [periodParam(25, 2, 200), colorParam('#26a69a'), lineWidthParam()],
+    outputs: [
+      { key: 'up', labelKey: 'indicators.outputs.aroonUp' },
+      { key: 'down', labelKey: 'indicators.outputs.aroonDown' },
+      { key: 'oscillator', labelKey: 'indicators.outputs.aroonOscillator' },
+    ],
+    render: { kind: 'pane-multi', paneId: 'aroon' },
+    conditionOps: [...trendOps, 'crossAbove', 'crossBelow'],
+    valueRange: { min: -100, max: 100 },
+    evaluator: { service: 'native', scriptId: 'aroon', outputKey: 'oscillator' },
+    defaultLabel: (p) => `Aroon ${p['period'] ?? 25}`,
+  },
+
+  {
+    type: 'cmf',
+    labelKey: 'indicators.cmf',
+    category: 'volume',
+    params: [periodParam(20, 2, 200), colorParam('#4caf50'), lineWidthParam()],
+    outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
+    render: { kind: 'pane-line', paneId: 'cmf' },
+    conditionOps: [...trendOps, 'crossAbove', 'crossBelow'],
+    valueRange: { min: -1, max: 1 },
+    evaluator: { service: 'native', scriptId: 'cmf' },
+    defaultLabel: (p) => `CMF ${p['period'] ?? 20}`,
+  },
+
+  {
+    type: 'elderRay',
+    labelKey: 'indicators.elderRay',
+    category: 'volume',
+    params: [periodParam(13, 2, 200), colorParam('#4caf50'), lineWidthParam()],
+    outputs: [
+      { key: 'bullPower', labelKey: 'indicators.outputs.bullPower' },
+      { key: 'bearPower', labelKey: 'indicators.outputs.bearPower' },
+    ],
+    render: { kind: 'pane-multi', paneId: 'elderRay' },
+    conditionOps: [...trendOps, 'crossAbove', 'crossBelow'],
+    evaluator: { service: 'native', scriptId: 'elderRay', outputKey: 'bullPower' },
+    defaultLabel: (p) => `Elder Ray ${p['period'] ?? 13}`,
+  },
+
+  {
+    type: 'klinger',
+    labelKey: 'indicators.klinger',
+    category: 'volume',
+    params: [
+      { key: 'fastPeriod', labelKey: 'indicators.params.fastPeriod', type: 'integer', default: 34, min: 2, max: 200, step: 1 },
+      { key: 'slowPeriod', labelKey: 'indicators.params.slowPeriod', type: 'integer', default: 55, min: 2, max: 300, step: 1 },
+      { key: 'signalPeriod', labelKey: 'indicators.params.signalPeriod', type: 'integer', default: 13, min: 2, max: 100, step: 1 },
+      colorParam('#9c27b0'),
+      lineWidthParam(),
+    ],
+    outputs: [
+      { key: 'kvo', labelKey: 'indicators.outputs.kvo' },
+      { key: 'signal', labelKey: 'indicators.outputs.macdSignal' },
+    ],
+    render: { kind: 'pane-multi', paneId: 'klinger' },
+    conditionOps: [...trendOps, 'crossAbove', 'crossBelow'],
+    evaluator: { service: 'native', scriptId: 'klinger', outputKey: 'kvo' },
+    defaultLabel: () => 'Klinger',
+  },
+
+  {
+    type: 'ultimateOsc',
+    labelKey: 'indicators.ultimateOsc',
+    category: 'oscillators',
+    params: [
+      { key: 'shortPeriod', labelKey: 'indicators.params.shortPeriod', type: 'integer', default: 7, min: 2, max: 100, step: 1 },
+      { key: 'midPeriod', labelKey: 'indicators.params.midPeriod', type: 'integer', default: 14, min: 2, max: 200, step: 1 },
+      { key: 'longPeriod', labelKey: 'indicators.params.longPeriod', type: 'integer', default: 28, min: 2, max: 300, step: 1 },
+      colorParam('#673ab7'),
+      lineWidthParam(),
+    ],
+    outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
+    render: { kind: 'pane-line', paneId: 'ultimateOsc' },
+    conditionOps: oscillatorOps,
+    valueRange: { min: 0, max: 100 },
+    defaultThresholds: { oversold: 30, overbought: 70 },
+    evaluator: { service: 'native', scriptId: 'ultimateOsc' },
+    defaultLabel: () => 'Ultimate Osc',
+  },
+
+  {
+    type: 'vortex',
+    labelKey: 'indicators.vortex',
+    category: 'trend',
+    params: [periodParam(14, 2, 200), colorParam('#26a69a'), lineWidthParam()],
+    outputs: [
+      { key: 'viPlus', labelKey: 'indicators.outputs.viPlus' },
+      { key: 'viMinus', labelKey: 'indicators.outputs.viMinus' },
+    ],
+    render: { kind: 'pane-multi', paneId: 'vortex' },
+    conditionOps: [...trendOps, 'crossAbove', 'crossBelow'],
+    evaluator: { service: 'native', scriptId: 'vortex', outputKey: 'viPlus' },
+    defaultLabel: (p) => `Vortex ${p['period'] ?? 14}`,
+  },
 ];
 
 export const INDICATOR_CATALOG: Record<string, IndicatorDefinition> = Object.fromEntries(

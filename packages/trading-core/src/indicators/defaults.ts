@@ -21,6 +21,8 @@ export const DEFAULT_USER_INDICATOR_SEEDS: IndicatorSeed[] = [
   { catalogType: 'stoch', label: 'Stoch 14', params: { period: 14, smoothK: 3, smoothD: 3, color: '#00e676', lineWidth: 1 } },
   { catalogType: 'volume', label: 'Volume', params: { color: '#607d8b' } },
   { catalogType: 'vwap', label: 'VWAP', params: { color: '#ffc107', lineWidth: 1 } },
+  { catalogType: 'aroon', label: 'Aroon 25', params: { period: 25, color: '#26a69a', lineWidth: 1 } },
+  { catalogType: 'vortex', label: 'Vortex 14', params: { period: 14, color: '#26a69a', lineWidth: 1 } },
 ];
 
 export const DEFAULT_ACTIVE_SEED_LABELS = new Set([

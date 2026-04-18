@@ -2084,5 +2084,37 @@
     "saved": "Saved",
     "logout": "Sign out",
     "settings": "Settings"
+  },
+  "indicators": {
+    "ao": "Awesome Oscillator",
+    "aroon": "Aroon",
+    "cmf": "Chaikin Money Flow",
+    "elderRay": "Elder Ray",
+    "klinger": "Klinger Oscillator",
+    "ultimateOsc": "Ultimate Oscillator",
+    "vortex": "Vortex",
+    "params": {
+      "period": "Period",
+      "fastPeriod": "Fast Period",
+      "slowPeriod": "Slow Period",
+      "signalPeriod": "Signal Period",
+      "shortPeriod": "Short Period",
+      "midPeriod": "Mid Period",
+      "longPeriod": "Long Period",
+      "color": "Color",
+      "lineWidth": "Line Width"
+    },
+    "outputs": {
+      "value": "Value",
+      "aroonUp": "Aroon Up",
+      "aroonDown": "Aroon Down",
+      "aroonOscillator": "Aroon Oscillator",
+      "bullPower": "Bull Power",
+      "bearPower": "Bear Power",
+      "kvo": "KVO",
+      "signal": "Signal",
+      "viPlus": "VI+",
+      "viMinus": "VI−"
+    }
   }
 }
