@@ -10,6 +10,7 @@ import { calculateDonchian } from './donchian';
 import { calculateElderRay } from './elderRay';
 import { calculateIchimoku } from './ichimoku';
 import { calculateKlinger } from './klinger';
+import { findEnhancedPivotHighs, findEnhancedPivotLows } from './pivotPoints';
 import { calculatePPO } from './ppo';
 import { calculateStochRSI } from './stochRsi';
 import { calculateTEMA } from './tema';
@@ -143,6 +144,24 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
       senkouB: result.senkouB,
       chikou: result.chikou,
     };
+  },
+
+  pivotPoints: (klines, params) => {
+    const config = {
+      lookback: num(params['lookback'], 5),
+      lookahead: num(params['lookahead'], 2),
+      volumeLookback: num(params['volumeLookback'], 20),
+    };
+    const len = klines.length;
+    const pivotHigh: (number | null)[] = new Array(len).fill(null);
+    const pivotLow: (number | null)[] = new Array(len).fill(null);
+    for (const p of findEnhancedPivotHighs(klines, config)) {
+      pivotHigh[p.index] = p.price;
+    }
+    for (const p of findEnhancedPivotLows(klines, config)) {
+      pivotLow[p.index] = p.price;
+    }
+    return { pivotHigh, pivotLow };
   },
 };
 

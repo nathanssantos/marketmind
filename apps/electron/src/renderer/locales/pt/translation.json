@@ -2149,7 +2149,11 @@
       "senkouPeriod": "Período Senkou",
       "tenkanColor": "Cor Tenkan",
       "kijunColor": "Cor Kijun",
-      "chikouColor": "Cor Chikou"
+      "chikouColor": "Cor Chikou",
+      "lookback": "Lookback",
+      "lookahead": "Lookahead",
+      "highColor": "Cor Alta",
+      "lowColor": "Cor Baixa"
     },
     "outputs": {
       "value": "Valor",
@@ -2166,10 +2170,13 @@
       "kijun": "Kijun-sen",
       "senkouA": "Senkou Span A",
       "senkouB": "Senkou Span B",
-      "chikou": "Chikou Span"
+      "chikou": "Chikou Span",
+      "pivotHigh": "Pivô Alto",
+      "pivotLow": "Pivô Baixo"
     },
     "ichimoku": "Nuvem de Ichimoku",
     "dailyVwap": "VWAP Diário",
-    "weeklyVwap": "VWAP Semanal"
+    "weeklyVwap": "VWAP Semanal",
+    "pivotPoints": "Pontos de Pivô"
   }
 }

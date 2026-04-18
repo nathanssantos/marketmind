@@ -729,6 +729,54 @@ const entries: IndicatorDefinition[] = [
     evaluator: { service: 'native', scriptId: 'ichimoku' },
     defaultLabel: (p) => `Ichimoku ${p['tenkanPeriod'] ?? 9}/${p['kijunPeriod'] ?? 26}/${p['senkouPeriod'] ?? 52}`,
   },
+
+  {
+    type: 'pivotPoints',
+    labelKey: 'indicators.pivotPoints',
+    category: 'priceStructure',
+    params: [
+      {
+        key: 'lookback',
+        labelKey: 'indicators.params.lookback',
+        type: 'integer',
+        default: 5,
+        min: 1,
+        max: 100,
+        step: 1,
+      },
+      {
+        key: 'lookahead',
+        labelKey: 'indicators.params.lookahead',
+        type: 'integer',
+        default: 2,
+        min: 1,
+        max: 50,
+        step: 1,
+      },
+      {
+        key: 'highColor',
+        labelKey: 'indicators.params.highColor',
+        type: 'color',
+        default: '#ef4444',
+        cosmetic: true,
+      },
+      {
+        key: 'lowColor',
+        labelKey: 'indicators.params.lowColor',
+        type: 'color',
+        default: '#22c55e',
+        cosmetic: true,
+      },
+    ],
+    outputs: [
+      { key: 'pivotHigh', labelKey: 'indicators.outputs.pivotHigh' },
+      { key: 'pivotLow', labelKey: 'indicators.outputs.pivotLow' },
+    ],
+    render: { kind: 'custom', rendererId: 'pivotPoints' },
+    conditionOps: overlayLineOps,
+    evaluator: { service: 'native', scriptId: 'pivotPoints' },
+    defaultLabel: () => 'Pivot Points',
+  },
 ];
 
 export const INDICATOR_CATALOG: Record<string, IndicatorDefinition> = Object.fromEntries(
