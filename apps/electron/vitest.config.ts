@@ -39,6 +39,7 @@ export default defineConfig({
       '@renderer': path.resolve(__dirname, './src/renderer'),
       '@main': path.resolve(__dirname, './src/main'),
       '@marketmind/types': path.resolve(__dirname, '../../packages/types/src/index.ts'),
+      '@marketmind/trading-core': path.resolve(__dirname, '../../packages/trading-core/src/index.ts'),
     },
   },
 });

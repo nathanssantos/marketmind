@@ -83,6 +83,14 @@ export interface IndicatorDefinition {
   defaultLabel: (params: Record<string, IndicatorParamValue>) => string;
 }
 
+export interface UserIndicator {
+  id: string;
+  catalogType: string;
+  label: string;
+  params: Record<string, IndicatorParamValue>;
+  isCustom: boolean;
+}
+
 export interface ChecklistCondition {
   id: string;
   userIndicatorId: string;

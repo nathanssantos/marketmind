@@ -38,7 +38,9 @@
       "@marketmind/fibonacci": ["../../packages/fibonacci/src"],
       "@marketmind/fibonacci/*": ["../../packages/fibonacci/src/*"],
       "@marketmind/utils": ["../../packages/utils/src"],
-      "@marketmind/utils/*": ["../../packages/utils/src/*"]
+      "@marketmind/utils/*": ["../../packages/utils/src/*"],
+      "@marketmind/trading-core": ["../../packages/trading-core/src"],
+      "@marketmind/trading-core/*": ["../../packages/trading-core/src/*"]
     }
   },
   "include": ["src"],
