@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { LuBold, LuLock, LuLockOpen, LuMinus, LuTrash2, LuUnderline } from 'react-icons/lu';
 
 const COLOR_PRESETS = ['#ffffff', '#ef4444', '#22c55e', '#2196F3', '#eab308', '#f97316', '#a855f7', '#06b6d4'] as const;
-const LINE_WIDTHS = [1, DEFAULT_LINE_WIDTH, 3] as const;
+const LINE_WIDTHS = [1, 2, 3] as const;
 const FONT_SIZES = [12, 14, 16, 18, 20, 24] as const;
 
 interface DrawingToolbarProps {

@@ -28,7 +28,7 @@ export const DRAWING_COLORS = {
   selected: '#2196F3',
 } as const;
 
-export const DEFAULT_LINE_WIDTH = 2;
+export const DEFAULT_LINE_WIDTH = 1;
 export const DEFAULT_FONT_SIZE = 14;
 
 export const GANN_ANGLES = [
