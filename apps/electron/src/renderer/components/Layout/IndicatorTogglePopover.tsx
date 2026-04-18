@@ -1,10 +1,12 @@
 import { Checkbox, IconButton, Popover, TooltipWrapper } from '@renderer/components/ui';
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { FEATURE_FLAGS } from '@renderer/constants/featureFlags';
 import { useIndicatorStore, DEFAULT_INDICATOR_PARAMS, type IndicatorId, type MAParams } from '@renderer/store';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
 import { LuGauge } from 'react-icons/lu';
+import { IndicatorTogglePopoverGeneric } from './IndicatorTogglePopoverGeneric';
 
 interface IndicatorCategory {
     title: string;
@@ -22,6 +24,23 @@ interface IndicatorTogglePopoverProps {
 }
 
 export const IndicatorTogglePopover = memo(
+    ({
+        activeIndicatorsOverride,
+        onToggleIndicatorOverride,
+    }: IndicatorTogglePopoverProps) => {
+        if (FEATURE_FLAGS.USE_GENERIC_INDICATOR_PIPELINE && !activeIndicatorsOverride && !onToggleIndicatorOverride) {
+            return <IndicatorTogglePopoverGeneric />;
+        }
+        return <IndicatorTogglePopoverLegacy
+            activeIndicatorsOverride={activeIndicatorsOverride}
+            onToggleIndicatorOverride={onToggleIndicatorOverride}
+        />;
+    }
+);
+
+IndicatorTogglePopover.displayName = 'IndicatorTogglePopover';
+
+const IndicatorTogglePopoverLegacy = memo(
     ({
         activeIndicatorsOverride,
         onToggleIndicatorOverride,
@@ -459,4 +478,4 @@ export const IndicatorTogglePopover = memo(
     }
 );
 
-IndicatorTogglePopover.displayName = 'IndicatorTogglePopover';
+IndicatorTogglePopoverLegacy.displayName = 'IndicatorTogglePopoverLegacy';
