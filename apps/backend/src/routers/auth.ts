@@ -21,6 +21,7 @@ import {
   verifyEmailToken,
 } from '../services/auth';
 import { sendPasswordResetEmail, sendTwoFactorCode, sendVerificationEmail } from '../services/email';
+import { seedDefaultUserIndicators } from '../services/user-indicators';
 import {
   checkEmailVerificationRateLimit,
   checkLoginRateLimit,
@@ -98,6 +99,7 @@ export const authRouter = router({
       }
 
       const userId = await createUser(input.email, input.password);
+      await seedDefaultUserIndicators(userId);
       const { sessionId, expiresAt } = await createSession(userId);
 
       const verificationToken = await createEmailVerificationToken(userId);
