@@ -4,6 +4,7 @@ import { binancePriceStreamService } from './binance-price-stream';
 import { binanceAggTradeStreamService } from './binance-agg-trade-stream';
 import { binanceBookTickerStreamService } from './binance-book-ticker-stream';
 import { binanceDepthStreamService } from './binance-depth-stream';
+import { binanceTickerStreamService, type TickerUpdate } from './binance-ticker-stream';
 import type { FrontendLogEntry } from './auto-trading-log-buffer';
 import type { AggTrade, BookTickerUpdate, DepthUpdate, LiquidityHeatmapBucket, ScalpingMetrics, ScalpingSignal } from '@marketmind/types';
 
@@ -108,6 +109,23 @@ export class WebSocketService {
             }
           }
         }
+      });
+
+      socket.on('subscribe:tickers:batch', (symbols: string[]) => {
+        if (!Array.isArray(symbols)) return;
+        for (const symbol of symbols) {
+          const room = `tickers:${symbol}`;
+          if (!socket.rooms.has(room)) {
+            socket.join(room);
+            if (!isCustomSymbol(symbol)) {
+              binanceTickerStreamService.subscribe(symbol);
+            }
+          }
+        }
+      });
+
+      socket.on('unsubscribe:tickers', (symbol: string) => {
+        socket.leave(`tickers:${symbol}`);
       });
 
       socket.on('subscribe:klines', (data: { symbol: string; interval: string }) => {
@@ -261,6 +279,10 @@ export class WebSocketService {
 
   public emitPriceUpdate(symbol: string, price: number, timestamp: number): void {
     this.io.to(`prices:${symbol}`).emit('price:update', { symbol, price, timestamp });
+  }
+
+  public emitTickerUpdate(symbol: string, update: TickerUpdate): void {
+    this.io.to(`tickers:${symbol}`).emit('ticker:update', update);
   }
 
   public emitKlineUpdate(kline: {

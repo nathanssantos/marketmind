@@ -1,8 +1,27 @@
 import { Flex, HStack, Text } from '@chakra-ui/react';
 import { CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { useTabTickers } from '@renderer/hooks/useTabTickers';
+import { useDailyChangePct } from '@renderer/store/priceStore';
 import { useLayoutStore } from '@renderer/store/layoutStore';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { LuPlus, LuX } from 'react-icons/lu';
+
+const DailyChangeBadge = memo(function DailyChangeBadge({ symbol }: { symbol: string }) {
+  const pct = useDailyChangePct(symbol);
+  if (pct === null) return null;
+  const isPositive = pct >= 0;
+  return (
+    <Text
+      fontSize="2xs"
+      fontWeight="semibold"
+      color={isPositive ? 'trading.profit' : 'trading.loss'}
+      fontVariantNumeric="tabular-nums"
+    >
+      {isPositive ? '+' : ''}
+      {pct.toFixed(2)}%
+    </Text>
+  );
+});
 
 const SymbolTab = memo(function SymbolTab({
   id,
@@ -39,6 +58,7 @@ const SymbolTab = memo(function SymbolTab({
       <Text fontSize="xs" fontWeight={isActive ? 'semibold' : 'normal'} color={isActive ? 'fg' : 'fg.muted'}>
         {symbol}
       </Text>
+      <DailyChangeBadge symbol={symbol} />
       {canClose && hovered && (
         <TooltipWrapper label="Close tab" showArrow>
           <IconButton
@@ -64,6 +84,14 @@ export const SymbolTabBar = memo(function SymbolTabBar() {
   const setActiveSymbolTab = useLayoutStore((s) => s.setActiveSymbolTab);
   const addSymbolTab = useLayoutStore((s) => s.addSymbolTab);
   const removeSymbolTab = useLayoutStore((s) => s.removeSymbolTab);
+
+  const tabSymbols = useMemo(() => {
+    const uniq = new Set<string>();
+    for (const t of symbolTabs) if (t.symbol) uniq.add(t.symbol);
+    return Array.from(uniq);
+  }, [symbolTabs]);
+
+  useTabTickers(tabSymbols);
 
   const handleActivate = useCallback(
     (id: string) => setActiveSymbolTab(id),

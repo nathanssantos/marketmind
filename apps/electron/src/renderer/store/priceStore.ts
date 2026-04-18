@@ -8,10 +8,19 @@ interface PriceEntry {
   source: 'chart' | 'websocket' | 'api';
 }
 
+export interface DailyChangeEntry {
+  pct: number;
+  lastPrice: number;
+  updatedAt: number;
+}
+
 interface PriceState {
   prices: Record<string, PriceEntry>;
+  dailyChange: Record<string, DailyChangeEntry>;
   updatePrice: (symbol: string, price: number, source: PriceEntry['source']) => void;
   updatePriceBatch: (updates: Map<string, number>) => void;
+  setDailyChange: (symbol: string, entry: Omit<DailyChangeEntry, 'updatedAt'>) => void;
+  setDailyChangeBatch: (entries: Array<{ symbol: string; pct: number; lastPrice: number }>) => void;
   getPrice: (symbol: string) => number | null;
   getPriceEntry: (symbol: string) => PriceEntry | null;
   cleanupStaleSymbols: () => void;
@@ -23,6 +32,23 @@ const STALE_CLEANUP_THRESHOLD_MS = 5 * 60 * 1000;
 
 export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   prices: {},
+  dailyChange: {},
+
+  setDailyChange: (symbol, entry) => {
+    const now = Date.now();
+    set((state) => {
+      state.dailyChange[symbol] = { pct: entry.pct, lastPrice: entry.lastPrice, updatedAt: now };
+    });
+  },
+
+  setDailyChangeBatch: (entries) => {
+    const now = Date.now();
+    set((state) => {
+      for (const { symbol, pct, lastPrice } of entries) {
+        state.dailyChange[symbol] = { pct, lastPrice, updatedAt: now };
+      }
+    });
+  },
 
   updatePrice: (symbol, price, source) => {
     const now = Date.now();
@@ -97,6 +123,9 @@ const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
 
 export const useFastPriceForSymbol = (symbol: string): number | null =>
   usePriceStore((state) => state.prices[symbol]?.price ?? null);
+
+export const useDailyChangePct = (symbol: string): number | null =>
+  usePriceStore((state) => state.dailyChange[symbol]?.pct ?? null);
 
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');

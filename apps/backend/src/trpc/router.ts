@@ -17,6 +17,7 @@ import { screenerRouter } from '../routers/screener';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { signalSuggestionsRouter } from '../routers/signal-suggestions';
+import { tickerRouter } from '../routers/ticker';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { walletRouter } from '../routers/wallet';
@@ -39,6 +40,7 @@ export const appRouter = router({
   backtest: backtestRouter,
   tradingProfiles: tradingProfilesRouter,
   signalSuggestions: signalSuggestionsRouter,
+  ticker: tickerRouter,
   apiKey: apiKeyRouter,
   orderSync: orderSyncRouter,
   preferences: preferencesRouter,
