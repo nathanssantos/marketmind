@@ -637,6 +637,30 @@ const entries: IndicatorDefinition[] = [
     evaluator: { service: 'native', scriptId: 'vortex', outputKey: 'viPlus' },
     defaultLabel: (p) => `Vortex ${p['period'] ?? 14}`,
   },
+
+  {
+    type: 'dailyVwap',
+    labelKey: 'indicators.dailyVwap',
+    category: 'volume',
+    params: [colorParam('#03a9f4'), lineWidthParam()],
+    outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
+    render: { kind: 'overlay-line' },
+    conditionOps: overlayLineOps,
+    evaluator: { service: 'native', scriptId: 'dailyVwap' },
+    defaultLabel: () => 'Daily VWAP',
+  },
+
+  {
+    type: 'weeklyVwap',
+    labelKey: 'indicators.weeklyVwap',
+    category: 'volume',
+    params: [colorParam('#7c4dff'), lineWidthParam()],
+    outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
+    render: { kind: 'overlay-line' },
+    conditionOps: overlayLineOps,
+    evaluator: { service: 'native', scriptId: 'weeklyVwap' },
+    defaultLabel: () => 'Weekly VWAP',
+  },
 ];
 
 export const INDICATOR_CATALOG: Record<string, IndicatorDefinition> = Object.fromEntries(

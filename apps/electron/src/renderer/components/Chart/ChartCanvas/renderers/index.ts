@@ -18,6 +18,8 @@ export const RENDERER_REGISTRY: RendererRegistry = {
   'pane-histogram': renderPaneHistogram,
 };
 
+export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {};
+
 export {
   renderOverlayBands,
   renderOverlayLine,
@@ -32,3 +34,10 @@ export const isGenericRenderKind = (kind: string): kind is keyof typeof RENDERER
 
 export const getRenderer = (kind: string): GenericRenderer | undefined =>
   RENDERER_REGISTRY[kind as keyof typeof RENDERER_REGISTRY];
+
+export const getCustomRenderer = (rendererId: string): GenericRenderer | undefined =>
+  CUSTOM_RENDERER_REGISTRY[rendererId];
+
+export const registerCustomRenderer = (rendererId: string, renderer: GenericRenderer): void => {
+  CUSTOM_RENDERER_REGISTRY[rendererId] = renderer;
+};

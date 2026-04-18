@@ -5,7 +5,8 @@ import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useCallback, useMemo } from 'react';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
-import { getRenderer } from './renderers';
+import type { GenericRenderer as GenericRendererFn } from './renderers';
+import { getCustomRenderer, getRenderer } from './renderers';
 
 export interface UseGenericChartIndicatorRenderersProps {
   manager: CanvasManager | null;
@@ -17,6 +18,7 @@ export interface UseGenericChartIndicatorRenderersProps {
 export interface UseGenericChartIndicatorRenderersResult {
   renderAllOverlayIndicators: () => void;
   renderAllPanelIndicators: () => void;
+  renderAllCustomIndicators: () => void;
   renderInstance: (instanceId: string) => void;
 }
 
@@ -27,6 +29,15 @@ interface ResolvedInstance {
 
 const isOverlayKind = (kind: string): boolean => kind.startsWith('overlay-');
 const isPaneKind = (kind: string): boolean => kind.startsWith('pane-');
+const isCustomKind = (kind: string): boolean => kind === 'custom';
+
+const resolveRenderer = (definition: IndicatorDefinition): GenericRendererFn | undefined => {
+  if (isCustomKind(definition.render.kind)) {
+    const id = definition.render.rendererId;
+    return id ? getCustomRenderer(id) : undefined;
+  }
+  return getRenderer(definition.render.kind);
+};
 
 export const useGenericChartIndicatorRenderers = ({
   manager,
@@ -50,7 +61,7 @@ export const useGenericChartIndicatorRenderers = ({
       if (!manager) return;
       const entry = resolved.find((r) => r.instance.id === instanceId);
       if (!entry) return;
-      const renderer = getRenderer(entry.definition.render.kind);
+      const renderer = resolveRenderer(entry.definition);
       if (!renderer) return;
       const values = outputs.get(instanceId);
       if (!values) return;
@@ -83,8 +94,22 @@ export const useGenericChartIndicatorRenderers = ({
     }
   }, [manager, resolved, outputs, colors]);
 
+  const renderAllCustomIndicators = useCallback(() => {
+    if (!manager) return;
+    for (const { instance, definition } of resolved) {
+      if (!isCustomKind(definition.render.kind)) continue;
+      const id = definition.render.rendererId;
+      if (!id) continue;
+      const renderer = getCustomRenderer(id);
+      if (!renderer) continue;
+      const values = outputs.get(instance.id);
+      if (!values) continue;
+      renderer({ manager, colors }, { instance, definition, values });
+    }
+  }, [manager, resolved, outputs, colors]);
+
   return useMemo(
-    () => ({ renderAllOverlayIndicators, renderAllPanelIndicators, renderInstance }),
-    [renderAllOverlayIndicators, renderAllPanelIndicators, renderInstance],
+    () => ({ renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators, renderInstance }),
+    [renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators, renderInstance],
   );
 };

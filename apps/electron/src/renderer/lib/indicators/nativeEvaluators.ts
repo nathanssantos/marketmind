@@ -14,6 +14,7 @@ import { calculateStochRSI } from './stochRsi';
 import { calculateTEMA } from './tema';
 import { calculateUltimateOscillator } from './ultimateOscillator';
 import { calculateVortex } from './vortex';
+import { calculateIntradayVWAP, calculateWeeklyVWAP } from './vwap';
 
 export type NativeEvaluatorOutput = Record<string, (number | null)[]>;
 
@@ -121,6 +122,10 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
     const result = calculateVortex(klines, num(params['period'], 14));
     return { viPlus: result.viPlus, viMinus: result.viMinus };
   },
+
+  dailyVwap: (klines) => ({ value: calculateIntradayVWAP(klines) }),
+
+  weeklyVwap: (klines) => ({ value: calculateWeeklyVWAP(klines) }),
 };
 
 export const hasNativeEvaluator = (scriptId: string): boolean =>

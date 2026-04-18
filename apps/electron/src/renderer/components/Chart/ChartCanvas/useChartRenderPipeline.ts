@@ -110,7 +110,7 @@ export const useChartRenderPipeline = ({
     renderMAIndicators,
   } = indicatorRenderers;
 
-  const { renderAllOverlayIndicators, renderAllPanelIndicators } = genericRenderers;
+  const { renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators } = genericRenderers;
 
   useEffect(() => {
     if (!manager) return;
@@ -172,6 +172,7 @@ export const useChartRenderPipeline = ({
       renderCMO();
       renderUltimateOsc();
       renderAllPanelIndicators();
+      renderAllCustomIndicators();
       renderCVD();
       renderImbalance();
       renderVolumeProfile();
@@ -213,6 +214,7 @@ export const useChartRenderPipeline = ({
     renderMAIndicators,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,
+    renderAllCustomIndicators,
     renderStochastic,
     renderRSI,
     renderRSI14,
