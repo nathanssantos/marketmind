@@ -60,42 +60,6 @@ export const useChartRenderPipeline = ({
   } = baseRenderers;
 
   const {
-    renderStochastic,
-    renderRSI,
-    renderRSI14,
-    renderBollingerBands,
-    renderATR,
-    renderDailyVWAP,
-    renderWeeklyVWAP,
-    renderVWAP,
-    renderParabolicSAR,
-    renderKeltner,
-    renderDonchian,
-    renderSupertrend,
-    renderIchimoku,
-    renderOBV,
-    renderCMF,
-    renderStochRSI,
-    renderMACD,
-    renderADX,
-    renderWilliamsR,
-    renderCCI,
-    renderKlinger,
-    renderElderRay,
-    renderAroon,
-    renderVortex,
-    renderMFI,
-    renderROC,
-    renderAO,
-    renderTSI,
-    renderPPO,
-    renderCMO,
-    renderUltimateOsc,
-    renderDEMA,
-    renderTEMA,
-    renderWMA,
-    renderHMA,
-    renderPivotPoints,
     renderFibonacci,
     renderFVG,
     renderLiquidityLevels,
@@ -104,10 +68,6 @@ export const useChartRenderPipeline = ({
     renderImbalance,
     renderVolumeProfile,
     renderFootprint,
-    renderSessionBoundaries,
-    renderORB,
-    renderLiquidityHeatmap,
-    renderMAIndicators,
   } = indicatorRenderers;
 
   const { renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators } = genericRenderers;
@@ -119,64 +79,24 @@ export const useChartRenderPipeline = ({
       manager.clear();
       renderWatermark();
       renderGrid();
-      renderSessionBoundaries();
-      renderORB();
-      renderLiquidityHeatmap();
+      renderAllCustomIndicators();
       renderVolume();
       if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
         renderKlines();
       } else {
         renderLineChart();
       }
-      renderMAIndicators();
       renderAllOverlayIndicators();
-      renderStochastic();
-      renderRSI();
-      renderRSI14();
-      renderBollingerBands();
-      renderATR();
-      renderDailyVWAP();
-      renderWeeklyVWAP();
-      renderVWAP();
-      renderParabolicSAR();
-      renderKeltner();
-      renderDonchian();
-      renderSupertrend();
-      renderIchimoku();
-      renderDEMA();
-      renderTEMA();
-      renderWMA();
-      renderHMA();
-      renderPivotPoints();
-      renderFibonacci();
       renderDrawings();
+      renderFibonacci();
       renderFVG();
       renderLiquidityLevels();
       renderEventScale();
-      renderOBV();
-      renderCMF();
-      renderStochRSI();
-      renderMACD();
-      renderADX();
-      renderWilliamsR();
-      renderCCI();
-      renderKlinger();
-      renderElderRay();
-      renderAroon();
-      renderVortex();
-      renderMFI();
-      renderROC();
-      renderAO();
-      renderTSI();
-      renderPPO();
-      renderCMO();
-      renderUltimateOsc();
       renderAllPanelIndicators();
-      renderAllCustomIndicators();
       renderCVD();
       renderImbalance();
       renderVolumeProfile();
-      renderFootprint();
+      if (chartType === 'footprint') renderFootprint();
       renderCurrentPriceLine_Line();
       renderOrderLines();
       renderGridPreview();
@@ -205,52 +125,12 @@ export const useChartRenderPipeline = ({
     manager,
     renderWatermark,
     renderGrid,
-    renderSessionBoundaries,
-    renderORB,
-    renderLiquidityHeatmap,
     renderVolume,
     renderKlines,
     renderLineChart,
-    renderMAIndicators,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,
     renderAllCustomIndicators,
-    renderStochastic,
-    renderRSI,
-    renderRSI14,
-    renderBollingerBands,
-    renderATR,
-    renderDailyVWAP,
-    renderWeeklyVWAP,
-    renderVWAP,
-    renderParabolicSAR,
-    renderKeltner,
-    renderDonchian,
-    renderSupertrend,
-    renderIchimoku,
-    renderOBV,
-    renderCMF,
-    renderStochRSI,
-    renderMACD,
-    renderADX,
-    renderWilliamsR,
-    renderCCI,
-    renderKlinger,
-    renderElderRay,
-    renderAroon,
-    renderVortex,
-    renderMFI,
-    renderROC,
-    renderAO,
-    renderTSI,
-    renderPPO,
-    renderCMO,
-    renderUltimateOsc,
-    renderDEMA,
-    renderTEMA,
-    renderWMA,
-    renderHMA,
-    renderPivotPoints,
     renderFibonacci,
     renderFVG,
     renderLiquidityLevels,

@@ -58,7 +58,7 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
     const upper = upperSeries[i];
     const lower = lowerSeries[i];
     if (upper == null || lower == null) continue;
-    const x = manager.indexToX(i);
+    const x = manager.indexToCenterX(i);
     upperPts.push({ x, y: manager.priceToY(upper) });
     lowerPts.push({ x, y: manager.priceToY(lower) });
     if (middleSeries) {

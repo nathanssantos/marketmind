@@ -35,7 +35,7 @@ export const renderOverlayPoints: GenericRenderer = (ctx, input) => {
   for (let i = visibleStart; i < visibleEnd; i++) {
     const value = series[i];
     if (value === null || value === undefined || Number.isNaN(value)) continue;
-    const x = manager.indexToX(i);
+    const x = manager.indexToCenterX(i);
     const y = manager.priceToY(value);
     canvasCtx.beginPath();
     canvasCtx.arc(x, y, DEFAULT_RADIUS, 0, Math.PI * 2);

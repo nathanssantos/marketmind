@@ -44,7 +44,7 @@ export const renderOverlayLine: GenericRenderer = (ctx, input) => {
       started = false;
       continue;
     }
-    const x = manager.indexToX(i);
+    const x = manager.indexToCenterX(i);
     const y = manager.priceToY(value);
     if (!started) {
       canvasCtx.moveTo(x, y);
