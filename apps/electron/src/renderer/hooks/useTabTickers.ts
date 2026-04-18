@@ -1,95 +1,84 @@
-import { useEffect, useMemo, useRef } from 'react';
-import type { Socket } from 'socket.io-client';
-import { socketService } from '../services/socketService';
+import { useEffect, useMemo } from 'react';
+import type { MarketType } from '@marketmind/types';
 import { usePriceStore } from '../store/priceStore';
 import { trpc } from '../utils/trpc';
 
-interface TickerUpdate {
+export interface TabTickerTarget {
   symbol: string;
-  priceChangePercent: number;
-  lastPrice: number;
-  timestamp: number;
+  marketType: MarketType;
 }
 
-export const useTabTickers = (symbols: string[]): void => {
-  const sortedKey = useMemo(() => [...symbols].sort().join(','), [symbols]);
-  const subscribedRef = useRef<Set<string>>(new Set());
-  const socketRef = useRef<Socket | null>(null);
+const MS_PER_DAY = 86_400_000;
 
-  const { data: snapshot } = trpc.ticker.get24hBatch.useQuery(
-    { symbols, marketType: 'FUTURES' },
+const msUntilNextUtcMidnight = (now: number = Date.now()): number => {
+  const nextOpen = Math.floor(now / MS_PER_DAY) * MS_PER_DAY + MS_PER_DAY;
+  return nextOpen - now;
+};
+
+const groupByMarketType = (targets: TabTickerTarget[]): Record<MarketType, string[]> => {
+  const groups: Record<MarketType, string[]> = { SPOT: [], FUTURES: [] };
+  const seen: Record<MarketType, Set<string>> = { SPOT: new Set(), FUTURES: new Set() };
+  for (const { symbol, marketType } of targets) {
+    if (seen[marketType].has(symbol)) continue;
+    seen[marketType].add(symbol);
+    groups[marketType].push(symbol);
+  }
+  return groups;
+};
+
+export const useTabTickers = (targets: TabTickerTarget[]): void => {
+  const groups = useMemo(() => groupByMarketType(targets), [targets]);
+
+  const spotKey = useMemo(() => [...groups.SPOT].sort().join(','), [groups.SPOT]);
+  const futuresKey = useMemo(() => [...groups.FUTURES].sort().join(','), [groups.FUTURES]);
+
+  const utils = trpc.useUtils();
+
+  const { data: spotData } = trpc.ticker.getDailyBatch.useQuery(
+    { symbols: groups.SPOT, marketType: 'SPOT' },
     {
-      enabled: symbols.length > 0,
-      staleTime: 30_000,
+      enabled: groups.SPOT.length > 0,
+      staleTime: 60_000,
+      refetchOnWindowFocus: false,
+    },
+  );
+
+  const { data: futuresData } = trpc.ticker.getDailyBatch.useQuery(
+    { symbols: groups.FUTURES, marketType: 'FUTURES' },
+    {
+      enabled: groups.FUTURES.length > 0,
+      staleTime: 60_000,
       refetchOnWindowFocus: false,
     },
   );
 
   useEffect(() => {
-    if (!snapshot || snapshot.length === 0) return;
-    usePriceStore.getState().setDailyChangeBatch(
-      snapshot.map((t) => ({ symbol: t.symbol, pct: t.priceChangePercent, lastPrice: t.lastPrice })),
+    if (!spotData || spotData.length === 0) return;
+    usePriceStore.getState().setDailyOpenBatch(
+      'SPOT',
+      spotData.map((t) => ({ symbol: t.symbol, open: t.dailyOpen, lastPrice: t.lastPrice, openTime: t.openTime })),
     );
-  }, [snapshot]);
+  }, [spotData]);
 
   useEffect(() => {
-    const socket = socketService.connect();
-    socketRef.current = socket;
-
-    const handleTicker = (data: TickerUpdate) => {
-      usePriceStore.getState().setDailyChange(data.symbol, {
-        pct: data.priceChangePercent,
-        lastPrice: data.lastPrice,
-      });
-    };
-
-    socket.on('ticker:update', handleTicker);
-
-    return () => {
-      socket.off('ticker:update', handleTicker);
-      const symbolsToUnsubscribe = Array.from(subscribedRef.current);
-      subscribedRef.current.clear();
-      if (socket.connected) {
-        for (const symbol of symbolsToUnsubscribe) socket.emit('unsubscribe:tickers', symbol);
-      }
-      socketService.disconnect();
-      socketRef.current = null;
-    };
-  }, []);
+    if (!futuresData || futuresData.length === 0) return;
+    usePriceStore.getState().setDailyOpenBatch(
+      'FUTURES',
+      futuresData.map((t) => ({ symbol: t.symbol, open: t.dailyOpen, lastPrice: t.lastPrice, openTime: t.openTime })),
+    );
+  }, [futuresData]);
 
   useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
+    if (!spotKey && !futuresKey) return;
 
-    const desired = new Set(sortedKey ? sortedKey.split(',') : []);
-    const currentlySubscribed = subscribedRef.current;
-
-    const toAdd: string[] = [];
-    for (const symbol of desired) {
-      if (!currentlySubscribed.has(symbol)) {
-        toAdd.push(symbol);
-        currentlySubscribed.add(symbol);
-      }
-    }
-    const toRemove: string[] = [];
-    for (const symbol of currentlySubscribed) {
-      if (!desired.has(symbol)) {
-        toRemove.push(symbol);
-        currentlySubscribed.delete(symbol);
-      }
-    }
-
-    const doSubscribe = () => {
-      if (toAdd.length > 0) socket.emit('subscribe:tickers:batch', toAdd);
-      if (toRemove.length > 0) {
-        for (const symbol of toRemove) socket.emit('unsubscribe:tickers', symbol);
-      }
+    const scheduleRollover = (): ReturnType<typeof setTimeout> => {
+      return setTimeout(() => {
+        void utils.ticker.getDailyBatch.invalidate();
+        timer = scheduleRollover();
+      }, msUntilNextUtcMidnight() + 1_000);
     };
 
-    if (socket.connected) {
-      doSubscribe();
-    } else {
-      socket.once('connect', doSubscribe);
-    }
-  }, [sortedKey]);
+    let timer = scheduleRollover();
+    return () => clearTimeout(timer);
+  }, [spotKey, futuresKey, utils]);
 };

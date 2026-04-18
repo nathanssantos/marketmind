@@ -107,17 +107,14 @@ const start = async (): Promise<void> => {
     const [
       { binancePriceStreamService },
       { binanceKlineStreamService, binanceFuturesKlineStreamService },
-      { binanceTickerStreamService },
     ] = await Promise.all([
       import('./services/binance-price-stream'),
       import('./services/binance-kline-stream'),
-      import('./services/binance-ticker-stream'),
     ]);
 
     binancePriceStreamService.start();
     binanceKlineStreamService.start();
     binanceFuturesKlineStreamService.start();
-    binanceTickerStreamService.start();
 
     if (env.DEMO_MODE) {
       const klineMaintenance = initializeKlineMaintenance();
