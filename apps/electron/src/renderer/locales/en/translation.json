@@ -599,6 +599,8 @@
       "grid": "Grid",
       "currentPrice": "Current Price",
       "crosshair": "Crosshair",
+      "flipVertical": "Flip Vertical",
+      "flipVerticalHelper": "Invert the price axis so short-side setups visually move upward.",
       "profitLossAreas": "Profit/Loss Areas",
       "fibonacciProjection": "Fibonacci Projection",
       "measurementRuler": "Measurement Ruler",

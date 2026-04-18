@@ -86,6 +86,7 @@ export const ChartCanvas = ({
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
+  const [chartFlipped] = useChartPref<boolean>('chartFlipped', false);
   const storeIsActive = useIndicatorStore((s) => s.isActive);
   const storeShowVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
   const storeShowActivity = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
@@ -328,6 +329,11 @@ export const ChartCanvas = ({
     manager.setChartPadding(advancedConfig.paddingTop, advancedConfig.paddingBottom);
     manager.markDirty('all');
   }, [manager, advancedConfig?.paddingTop, advancedConfig?.paddingBottom]);
+
+  useEffect(() => {
+    if (!manager) return;
+    manager.setFlipped(chartFlipped);
+  }, [manager, chartFlipped]);
 
   useEffect(() => {
     if (!shiftPressed && !altPressed) {

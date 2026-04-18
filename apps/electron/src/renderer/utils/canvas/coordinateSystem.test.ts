@@ -106,6 +106,34 @@ describe('coordinateSystem', () => {
 
       expect(y).toBe(mockDimensions.chartHeight / 2);
     });
+
+    describe('flipped', () => {
+      it('should place min price at top and max at bottom when flipped', () => {
+        const yMin = priceToY(100, bounds, mockDimensions, 10, 10, true);
+        const yMax = priceToY(200, bounds, mockDimensions, 10, 10, true);
+
+        expect(yMin).toBe(10);
+        expect(yMax).toBe(mockDimensions.chartHeight - 10);
+      });
+
+      it('should mirror Y values around the mid point relative to non-flipped', () => {
+        const yLow = priceToY(125, bounds, mockDimensions, 10, 10, false);
+        const yHigh = priceToY(175, bounds, mockDimensions, 10, 10, false);
+        const yLowFlipped = priceToY(125, bounds, mockDimensions, 10, 10, true);
+        const yHighFlipped = priceToY(175, bounds, mockDimensions, 10, 10, true);
+
+        expect(yLowFlipped).toBeCloseTo(yHigh, 2);
+        expect(yHighFlipped).toBeCloseTo(yLow, 2);
+      });
+
+      it('should roundtrip price through priceToY -> yToPrice when flipped', () => {
+        const originalPrice = 175;
+        const y = priceToY(originalPrice, bounds, mockDimensions, 10, 10, true);
+        const recoveredPrice = yToPrice(y, bounds, mockDimensions, 10, 10, true);
+
+        expect(recoveredPrice).toBeCloseTo(originalPrice, 2);
+      });
+    });
   });
 
   describe('volumeToHeight', () => {

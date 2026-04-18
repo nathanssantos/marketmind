@@ -23,6 +23,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   const [showGrid, setShowGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair, setShowCrosshair] = useChartPref('showCrosshair', true);
+  const [chartFlipped, setChartFlipped] = useChartPref<boolean>('chartFlipped', false);
   const [liquidityColorMode, setLiquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
   const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
@@ -85,6 +86,12 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
           <Switch checked={showCrosshair} onCheckedChange={setShowCrosshair} size="sm">
             {t('chart.controls.crosshair')}
           </Switch>
+          <Switch checked={chartFlipped} onCheckedChange={setChartFlipped} size="sm">
+            {t('chart.controls.flipVertical')}
+          </Switch>
+          <Text fontSize="xs" color="fg.muted" ml={6} mt={-2}>
+            {t('chart.controls.flipVerticalHelper')}
+          </Text>
           <Switch
             checked={liquidityColorMode === 'intensity'}
             onCheckedChange={(checked) => setLiquidityColorMode(checked ? 'intensity' : 'colored')}

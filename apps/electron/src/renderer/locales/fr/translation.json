@@ -645,6 +645,8 @@
       "grid": "Grille",
       "currentPrice": "Prix Actuel",
       "crosshair": "Réticule",
+      "flipVertical": "Inverser Verticalement",
+      "flipVerticalHelper": "Inverse l'axe des prix pour que les positions courtes montent visuellement.",
       "profitLossAreas": "Zones de Profit/Perte",
       "fibonacciProjection": "Projection de Fibonacci",
       "measurementRuler": "Règle de Mesure",

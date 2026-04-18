@@ -656,6 +656,8 @@
       "grid": "Cuadrícula",
       "currentPrice": "Precio Actual",
       "crosshair": "Cruz",
+      "flipVertical": "Invertir Verticalmente",
+      "flipVerticalHelper": "Invierte el eje de precio para que las operaciones en corto suban visualmente.",
       "profitLossAreas": "Áreas de Ganancia/Pérdida",
       "fibonacciProjection": "Proyección de Fibonacci",
       "measurementRuler": "Regla de Medición",

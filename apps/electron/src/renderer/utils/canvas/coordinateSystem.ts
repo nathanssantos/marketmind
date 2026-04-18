@@ -71,6 +71,7 @@ export const priceToY = (
   dimensions: Dimensions,
   paddingTop: number,
   paddingBottom: number,
+  flipped: boolean = false,
 ): number => {
   const { minPrice, maxPrice } = bounds;
   const { chartHeight } = dimensions;
@@ -80,7 +81,9 @@ export const priceToY = (
 
   const availableHeight = chartHeight - paddingTop - paddingBottom;
   const ratio = (price - minPrice) / priceRange;
-  return chartHeight - paddingBottom - ratio * availableHeight;
+  return flipped
+    ? paddingTop + ratio * availableHeight
+    : chartHeight - paddingBottom - ratio * availableHeight;
 };
 
 export const yToPrice = (
@@ -89,6 +92,7 @@ export const yToPrice = (
   dimensions: Dimensions,
   paddingTop: number,
   paddingBottom: number,
+  flipped: boolean = false,
 ): number => {
   const { minPrice, maxPrice } = bounds;
   const { chartHeight } = dimensions;
@@ -97,7 +101,9 @@ export const yToPrice = (
   if (priceRange === 0) return minPrice;
 
   const availableHeight = chartHeight - paddingTop - paddingBottom;
-  const ratio = (chartHeight - paddingBottom - y) / availableHeight;
+  const ratio = flipped
+    ? (y - paddingTop) / availableHeight
+    : (chartHeight - paddingBottom - y) / availableHeight;
   return minPrice + ratio * priceRange;
 };
 

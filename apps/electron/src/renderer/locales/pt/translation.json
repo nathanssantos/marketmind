@@ -626,6 +626,8 @@
       "grid": "Grade",
       "currentPrice": "Preço Atual",
       "crosshair": "Mira",
+      "flipVertical": "Inverter Verticalmente",
+      "flipVerticalHelper": "Inverte o eixo de preço para que operações vendidas subam visualmente.",
       "profitLossAreas": "Áreas de Lucro/Prejuízo",
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",
