@@ -172,7 +172,7 @@ export const KLINE_COLORS = {
 } as const;
 
 export const PANEL_COLORS = {
-  BACKGROUND: 'rgba(128, 128, 128, 0.02)',
+  BACKGROUND: 'transparent',
   ZONE_FILL: 'rgba(128, 128, 128, 0.08)',
   ZONE_LINE: SIGNAL_COLORS.ZONE_FILL,
   LABEL_TEXT: 'rgba(128, 128, 128, 0.5)',

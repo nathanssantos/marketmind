@@ -8,19 +8,20 @@ import {
   drawLineOnPanel,
   drawPanelBackground,
   drawPanelValueTag,
+  drawZoneFill,
+  drawZoneLines,
 } from '../../utils/oscillatorRendering';
 import { getOscillatorSetup } from '../../hooks/useOscillatorSetup';
 import type { GenericRenderer, IndicatorValueSeries } from './types';
 import { getInstanceParam } from './types';
+import { PANE_SERIES_COLORS } from './paneColors';
 
-const DEFAULT_LINE_COLOR = '#00e676';
-const DEFAULT_SECONDARY_COLOR = '#ff5252';
-const DEFAULT_HIST_POSITIVE = '#26a69a';
-const DEFAULT_HIST_NEGATIVE = '#ef5350';
+const DEFAULT_LINE_COLOR = '#2196f3';
+const DEFAULT_HIST_POSITIVE = 'rgba(38, 166, 154, 0.7)';
+const DEFAULT_HIST_NEGATIVE = 'rgba(239, 83, 80, 0.7)';
+const FALLBACK_PALETTE = ['#2196f3', '#ff9800', '#ffd54f', '#9c27b0', '#26a69a'];
 
 const HISTOGRAM_OUTPUT_KEYS = new Set(['histogram', 'hist']);
-
-const palette = ['#00e676', '#ff5252', '#ffd54f', '#42a5f5', '#ab47bc'];
 
 export const renderPaneMulti: GenericRenderer = (ctx, input) => {
   const paneId = input.definition.render.paneId ?? input.definition.type;
@@ -65,18 +66,41 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     ? createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, flipped)
     : createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, minValue, maxValue, flipped);
 
-  const baseColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_LINE_COLOR;
+  const userColor = getInstanceParam<string>(input.instance, input.definition, 'color');
   const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? OSCILLATOR_CONFIG.LINE_WIDTH) as number;
+  const paneColors = PANE_SERIES_COLORS[paneId];
+
+  const resolveColor = (outputKey: string, idx: number): string => {
+    const mapped = paneColors?.outputs[outputKey];
+    if (mapped) return mapped;
+    if (idx === 0 && userColor) return userColor;
+    return FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length] ?? DEFAULT_LINE_COLOR;
+  };
 
   canvasCtx.save();
   applyPanelClip({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
   drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
+  const oversold = input.definition.defaultThresholds?.oversold;
+  const overbought = input.definition.defaultThresholds?.overbought;
+  if (typeof oversold === 'number' && typeof overbought === 'number' && valueRange) {
+    const overboughtY = valueToY(overbought);
+    const oversoldY = valueToY(oversold);
+    drawZoneFill({ ctx: canvasCtx, chartWidth, panelY: panelTop, panelHeight, topY: overboughtY, bottomY: oversoldY });
+    drawZoneLines({ ctx: canvasCtx, chartWidth, levels: [{ y: overboughtY }, { y: oversoldY }] });
+  }
+
   const zeroY = minValue <= 0 && maxValue >= 0 ? valueToY(0) : panelTop + panelHeight;
+  if (paneColors?.zeroLine && minValue < 0 && maxValue > 0) {
+    drawZoneLines({ ctx: canvasCtx, chartWidth, levels: [{ y: zeroY }] });
+  }
+
+  const histPositive = paneColors?.histogramPositive ?? DEFAULT_HIST_POSITIVE;
+  const histNegative = paneColors?.histogramNegative ?? DEFAULT_HIST_NEGATIVE;
 
   let lineIdx = 0;
-  for (const { values, isHistogram } of seriesEntries) {
-    const seriesColor = lineIdx === 0 ? baseColor : palette[lineIdx % palette.length] ?? DEFAULT_SECONDARY_COLOR;
+  for (const { key, values, isHistogram } of seriesEntries) {
+    const seriesColor = resolveColor(key, lineIdx);
     if (isHistogram) {
       drawHistogramBars(
         canvasCtx,
@@ -86,8 +110,8 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
         indexToX,
         valueToY,
         zeroY,
-        DEFAULT_HIST_POSITIVE,
-        DEFAULT_HIST_NEGATIVE,
+        histPositive,
+        histNegative,
         Math.max(1, klineWidth * 0.7),
       );
     } else {
@@ -100,6 +124,7 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
 
   const tagSeries = seriesEntries.find((e) => !e.isHistogram) ?? seriesEntries[0];
   if (tagSeries) {
-    drawPanelValueTag(canvasCtx, tagSeries.values, visibleStart, visibleEnd, valueToY, chartWidth, baseColor);
+    const tagColor = resolveColor(tagSeries.key, seriesEntries.indexOf(tagSeries));
+    drawPanelValueTag(canvasCtx, tagSeries.values, visibleStart, visibleEnd, valueToY, chartWidth, tagColor);
   }
 };

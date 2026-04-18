@@ -1,10 +1,11 @@
+import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { IndicatorId } from '@renderer/store/indicatorStore';
-import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { CHART_CONFIG } from '@shared/constants';
-import { useEffect } from 'react';
+import { INDICATOR_CATALOG } from '@marketmind/trading-core';
+import { useEffect, useMemo, useRef } from 'react';
+import type { AdvancedControlsConfig } from '../AdvancedControls';
 
-const PANEL_INDICATORS = [
+export const PANEL_INDICATORS = [
   'stochastic',
   'rsi',
   'rsi14',
@@ -33,45 +34,55 @@ export type PanelIndicatorId = (typeof PANEL_INDICATORS)[number];
 export interface UseChartPanelHeightsProps {
   manager: CanvasManager | null;
   showEventRow: boolean;
-  activeIndicators: IndicatorId[];
+  instances: IndicatorInstance[];
   advancedConfig?: AdvancedControlsConfig;
 }
+
+const isPaneKind = (kind: string): boolean => kind.startsWith('pane-');
 
 export const useChartPanelHeights = ({
   manager,
   showEventRow,
-  activeIndicators,
+  instances,
   advancedConfig,
 }: UseChartPanelHeightsProps): void => {
+  const previousPaneIdsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (!manager || !advancedConfig) return;
-
     if (advancedConfig.rightMargin !== undefined) {
       manager.setRightMargin(advancedConfig.rightMargin);
     }
   }, [manager, advancedConfig]);
 
-  useEffect(() => {
-    if (!manager) return;
-    const height = activeIndicators.includes('stochastic') ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : 0;
-    manager.setStochasticPanelHeight(height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    const height = activeIndicators.includes('rsi') ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-    manager.setRSIPanelHeight(height);
-  }, [manager, activeIndicators]);
-
-  useEffect(() => {
-    if (!manager) return;
-    for (const indicator of PANEL_INDICATORS) {
-      if (indicator === 'stochastic' || indicator === 'rsi') continue;
-      const isActive = activeIndicators.includes(indicator as IndicatorId);
-      const height = isActive ? CHART_CONFIG.RSI_PANEL_HEIGHT : 0;
-      manager.setPanelHeight(indicator, height);
+  const activePaneIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const instance of instances) {
+      if (!instance.visible) continue;
+      const definition = INDICATOR_CATALOG[instance.catalogType];
+      if (!definition) continue;
+      if (!isPaneKind(definition.render.kind)) continue;
+      const paneId = definition.render.paneId ?? definition.type;
+      ids.add(paneId);
     }
-  }, [manager, activeIndicators]);
+    return ids;
+  }, [instances]);
+
+  useEffect(() => {
+    if (!manager) return;
+    const previous = previousPaneIdsRef.current;
+
+    for (const paneId of activePaneIds) {
+      const height = paneId === 'stochastic' ? CHART_CONFIG.STOCHASTIC_PANEL_HEIGHT : CHART_CONFIG.RSI_PANEL_HEIGHT;
+      manager.setPanelHeight(paneId, height);
+    }
+
+    for (const paneId of previous) {
+      if (!activePaneIds.has(paneId)) manager.setPanelHeight(paneId, 0);
+    }
+
+    previousPaneIdsRef.current = new Set(activePaneIds);
+  }, [manager, activePaneIds]);
 
   useEffect(() => {
     if (!manager) return;

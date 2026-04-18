@@ -24,6 +24,7 @@ import { useChartData } from './hooks/useChartData';
 import { useLayoutSync } from './hooks/useLayoutSync';
 
 import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { useAutoActivateDefaultIndicators } from './hooks/useAutoActivateDefaultIndicators';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useChartPref, useUIPref } from './store/preferencesStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
@@ -136,6 +137,7 @@ function AppContent(): ReactElement {
 
   useCurrencyAutoRefresh();
   useOrderNotifications();
+  useAutoActivateDefaultIndicators();
 
   const [chartType] = useChartPref<ChartType>('chartType', 'kline');
   const [timeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);

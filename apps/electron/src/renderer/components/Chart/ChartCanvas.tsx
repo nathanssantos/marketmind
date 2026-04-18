@@ -340,7 +340,7 @@ export const ChartCanvas = ({
     setStochasticData(stochasticResult);
   }, [stochasticResult, setStochasticData]);
 
-  useChartPanelHeights({ manager, showEventRow, activeIndicators: activeIndicators as IndicatorId[], advancedConfig });
+  useChartPanelHeights({ manager, showEventRow, instances, advancedConfig });
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;

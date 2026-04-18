@@ -53,6 +53,7 @@ export { usePortfolioFilters } from './usePortfolioFilters';
 export { useProfileEditor } from './useProfileEditor';
 export { useTradingProfiles } from './useTradingProfiles';
 export { useUserIndicators } from './useUserIndicators';
+export { useAutoActivateDefaultIndicators } from './useAutoActivateDefaultIndicators';
 export { useTradingShortcuts } from './useTradingShortcuts';
 export { useBackendAutoTrading, useCapitalLimits, useTopSymbols } from './useBackendAutoTrading';
 export { useBackendKlines, useKlineStream } from './useBackendKlines';

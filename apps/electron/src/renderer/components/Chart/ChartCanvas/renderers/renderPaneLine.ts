@@ -13,8 +13,9 @@ import {
 import { getOscillatorSetup } from '../../hooks/useOscillatorSetup';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
+import { PANE_LINE_COLORS } from './paneColors';
 
-const DEFAULT_LINE_COLOR = '#8b5cf6';
+const DEFAULT_LINE_COLOR = '#2196f3';
 const DEFAULT_LINE_WIDTH = OSCILLATOR_CONFIG.LINE_WIDTH;
 
 export const renderPaneLine: GenericRenderer = (ctx, input) => {
@@ -43,7 +44,9 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
         return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, range.min, range.max, flipped);
       })();
 
-  const color = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_LINE_COLOR;
+  const color = PANE_LINE_COLORS[paneId]
+    ?? getInstanceParam<string>(input.instance, input.definition, 'color')
+    ?? DEFAULT_LINE_COLOR;
   const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
 
   canvasCtx.save();
