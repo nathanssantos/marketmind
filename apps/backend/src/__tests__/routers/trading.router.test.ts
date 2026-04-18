@@ -1034,4 +1034,64 @@ describe('Trading Router', () => {
       expect(result.results[0]!.error).toContain('not found');
     });
   });
+
+  describe('evaluateChecklist', () => {
+    it('should require authentication', async () => {
+      const caller = createUnauthenticatedCaller();
+      await expect(
+        caller.trading.evaluateChecklist({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          marketType: 'FUTURES',
+          conditions: [],
+        }),
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('should return empty results and zero totals when conditions are empty', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.trading.evaluateChecklist({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        marketType: 'FUTURES',
+        conditions: [],
+      });
+
+      expect(result.results).toEqual([]);
+      expect(result.score.requiredTotal).toBe(0);
+      expect(result.score.preferredTotal).toBe(0);
+      expect(result.score.requiredAllPassed).toBe(true);
+    });
+
+    it('should return NOT_FOUND when profileId does not exist', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.trading.evaluateChecklist({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          marketType: 'FUTURES',
+          profileId: 'nonexistent-profile-id',
+        }),
+      ).rejects.toThrow(
+        expect.objectContaining({ code: 'NOT_FOUND' }),
+      );
+    });
+
+    it('should reject when neither profileId nor conditions are supplied', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.trading.evaluateChecklist({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          marketType: 'FUTURES',
+        }),
+      ).rejects.toThrow();
+    });
+  });
 });

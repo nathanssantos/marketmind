@@ -1,4 +1,9 @@
-import type { CreateTradingProfileInput, TradingProfile, UpdateTradingProfileInput } from '@marketmind/types';
+import type {
+  ChecklistConditionDto,
+  CreateTradingProfileInput,
+  TradingProfile,
+  UpdateTradingProfileInput,
+} from '@marketmind/types';
 import { PROFILE_CONFIG_KEYS } from '@marketmind/types';
 import { useAvailableSetups } from '@renderer/hooks/useProfileEditor';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
@@ -7,7 +12,14 @@ import { extractConfigOverrides } from './profileEditorUtils';
 import type { ProfileOverrideActions } from './profileEditorUtils';
 
 export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boolean, onClose: () => void) => {
-  const { createProfile, updateProfile, isCreatingProfile, isUpdatingProfile } = useTradingProfiles();
+  const {
+    createProfile,
+    updateProfile,
+    updateChecklist,
+    isCreatingProfile,
+    isUpdatingProfile,
+    isUpdatingChecklist,
+  } = useTradingProfiles();
   const { setups: availableSetups, isLoading: isLoadingSetups } = useAvailableSetups();
 
   const [name, setName] = useState('');
@@ -19,6 +31,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
   const [overridePositionSize, setOverridePositionSize] = useState(false);
   const [overrideConcurrentPositions, setOverrideConcurrentPositions] = useState(false);
   const [co, setCo] = useState<Record<string, unknown>>({});
+  const [checklistConditions, setChecklistConditions] = useState<ChecklistConditionDto[]>([]);
 
   const isEditing = profile !== null;
 
@@ -33,6 +46,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
       setOverridePositionSize(profile.maxPositionSize !== null && profile.maxPositionSize !== undefined);
       setOverrideConcurrentPositions(profile.maxConcurrentPositions !== null && profile.maxConcurrentPositions !== undefined);
       setCo(extractConfigOverrides(profile));
+      setChecklistConditions(profile.checklistConditions ?? []);
     } else {
       setName('');
       setDescription('');
@@ -43,6 +57,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
       setOverridePositionSize(false);
       setOverrideConcurrentPositions(false);
       setCo({});
+      setChecklistConditions([]);
     }
   }, [profile, isOpen]);
 
@@ -107,6 +122,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
         ...overridesPayload,
       } as UpdateTradingProfileInput;
       await updateProfile(profile.id, data);
+      await updateChecklist(profile.id, checklistConditions);
     } else {
       const data: CreateTradingProfileInput = {
         name: name.trim(),
@@ -117,13 +133,16 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
         isDefault,
         ...overridesPayload,
       } as CreateTradingProfileInput;
-      await createProfile(data);
+      const created = await createProfile(data);
+      if (checklistConditions.length > 0 && created?.id) {
+        await updateChecklist(created.id, checklistConditions);
+      }
     }
 
     onClose();
   };
 
-  const isSubmitting = isCreatingProfile || isUpdatingProfile;
+  const isSubmitting = isCreatingProfile || isUpdatingProfile || isUpdatingChecklist;
   const canSubmit = name.trim().length > 0 && enabledSetupTypes.length > 0 && !isSubmitting;
   const allSetupsEnabled = availableSetups.length > 0 && availableSetups.every((s) => enabledSetupTypes.includes(s.id));
   const enabledCount = enabledSetupTypes.length;
@@ -137,6 +156,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
     maxPositionSize, setMaxPositionSize,
     maxConcurrentPositions, setMaxConcurrentPositions,
     isDefault, setIsDefault,
+    checklistConditions, setChecklistConditions,
     overridePositionSize, setOverridePositionSize,
     overrideConcurrentPositions, setOverrideConcurrentPositions,
     isEditing,

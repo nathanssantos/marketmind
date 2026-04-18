@@ -91,4 +91,28 @@ describe('evaluateCondition', () => {
       expect(evaluateCondition({ series: [null, 50], op: 'rising' }).passed).toBe(false);
     });
   });
+
+  describe('priceAbove / priceBelow', () => {
+    it('priceAbove passes when latest close > latest indicator value', () => {
+      expect(
+        evaluateCondition({ series: [100, 120], op: 'priceAbove', closeSeries: [110, 125] }).passed,
+      ).toBe(true);
+    });
+
+    it('priceAbove fails when close <= indicator', () => {
+      expect(
+        evaluateCondition({ series: [100, 120], op: 'priceAbove', closeSeries: [110, 120] }).passed,
+      ).toBe(false);
+    });
+
+    it('priceBelow passes when latest close < latest indicator value', () => {
+      expect(
+        evaluateCondition({ series: [100, 120], op: 'priceBelow', closeSeries: [110, 115] }).passed,
+      ).toBe(true);
+    });
+
+    it('priceBelow fails when closeSeries missing', () => {
+      expect(evaluateCondition({ series: [100], op: 'priceBelow' }).passed).toBe(false);
+    });
+  });
 });

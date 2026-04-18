@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.89.0] - 2026-04-18
+
+### Added
+- **Pre-trade checklist**: Per-profile list of indicator conditions (`ChecklistCondition`) evaluated before every trade. `required` conditions must pass; `preferred` conditions add to a 0-100 confidence score (required × 2 weight, preferred × 1).
+- **ChecklistEditor component**: New section in `ProfileEditorDialog` to add / reorder / enable / edit / delete conditions, backed by `trpc.tradingProfiles.updateChecklist`.
+- **ChecklistSection in Quick Trade toolbar**: Live evaluation badge (`requiredPassed/requiredTotal` + score %) plus expandable per-condition pass/fail list, driven by `trpc.trading.evaluateChecklist` polling every 15s for the default profile.
+- **Default seeded checklist**: New profiles are auto-populated via `materializeDefaultChecklist` with conditions mirroring the currently enabled auto-trade filters (trend, RSI, choppiness, etc.).
+- **Declarative `INDICATOR_CATALOG`** (`@marketmind/trading-core`): Single source of truth for indicator metadata (params, outputs, valueRange, evaluator { service: 'pine' | 'native', scriptId, outputKey }) — foundation for zero-hardcoded-id indicator pipeline.
+- **`user_indicators` table + router**: Per-user indicator instances with auto-seed of defaults on first access (`userIndicatorsRouter` + `seedDefaultUserIndicators`).
+- **Generic `IndicatorConfigDialog`**: Unified create/edit/checklist-condition modes for indicator configuration (replaces per-indicator modal variants).
+- **New condition operators**: `priceAbove`, `priceBelow` for comparing indicator series to close price.
+- **Choppiness as a native indicator** in the checklist evaluator (ATR + highest/lowest composition via `PineIndicatorService`).
+- **Flip chart toolbar button**: `LuFlipVertical2` toggle in `ChartToolsToolbar` now mirrors the `chartFlipped` chart preference (previously only reachable via Settings → Chart).
+
+### Changed
+- **`TradingProfile`** (`@marketmind/types`): New `checklistConditions: ChecklistConditionDto[]` field (persisted as JSON text in the new `checklist_conditions` DB column, migration `0030_checklist_conditions.sql`).
+- **`ChecklistConditionDto.op`** is now typed as the `ChecklistConditionOp` union (was `string`) so frontend and backend agree on the allowed operators.
+
+### Fixed
+- **`handleToggleEnabled` switch signature**: `onCheckedChange` in `ChecklistEditor` now correctly handles the Chakra switch callback shape (was causing a TS error).
+
 ## [0.88.0] - 2026-04-17
 
 ### Added

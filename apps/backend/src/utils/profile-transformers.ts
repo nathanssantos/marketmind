@@ -1,4 +1,5 @@
 import type { FibLevel } from '@marketmind/types';
+import type { ChecklistCondition } from '@marketmind/trading-core';
 import type { tradingProfiles, autoTradingConfig } from '../db/schema';
 
 type TradingProfileRow = typeof tradingProfiles.$inferSelect;
@@ -18,8 +19,10 @@ export interface TransformedTradingProfile extends Omit<TradingProfileRow,
   | 'trailingStopMode' | 'trailingDistanceMode'
   | 'trailingActivationModeLong' | 'trailingActivationModeShort'
   | 'tradingMode' | 'directionMode'
+  | 'checklistConditions'
 > {
   enabledSetupTypes: string[];
+  checklistConditions: ChecklistCondition[];
   maxPositionSize: number | null;
   positionSizePercent: number | null;
   maxFibonacciEntryProgressPercentLong: number | null;
@@ -62,6 +65,20 @@ export const stringifyEnabledSetupTypes = (types: string[]): string => {
   return JSON.stringify(types);
 };
 
+export const parseChecklistConditions = (json: string | null | undefined): ChecklistCondition[] => {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    return Array.isArray(parsed) ? (parsed as ChecklistCondition[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const stringifyChecklistConditions = (conditions: ChecklistCondition[]): string => {
+  return JSON.stringify(conditions);
+};
+
 const parseNumericField = (value: string | null | undefined): number | null => {
   if (value == null || value === '') return null;
   const parsed = parseFloat(value);
@@ -71,6 +88,7 @@ const parseNumericField = (value: string | null | undefined): number | null => {
 export const transformTradingProfile = (profile: TradingProfileRow): TransformedTradingProfile => ({
   ...profile,
   enabledSetupTypes: parseEnabledSetupTypes(profile.enabledSetupTypes),
+  checklistConditions: parseChecklistConditions(profile.checklistConditions),
   maxPositionSize: parseNumericField(profile.maxPositionSize),
   positionSizePercent: parseNumericField(profile.positionSizePercent),
   maxFibonacciEntryProgressPercentLong: parseNumericField(profile.maxFibonacciEntryProgressPercentLong),

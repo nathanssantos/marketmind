@@ -1,5 +1,9 @@
 import { useCallback } from 'react';
-import type { CreateTradingProfileInput, UpdateTradingProfileInput } from '@marketmind/types';
+import type {
+  ChecklistConditionDto,
+  CreateTradingProfileInput,
+  UpdateTradingProfileInput,
+} from '@marketmind/types';
 import { trpc } from '../utils/trpc';
 
 export const useTradingProfiles = () => {
@@ -14,6 +18,12 @@ export const useTradingProfiles = () => {
   });
 
   const updateProfileMutation = trpc.tradingProfiles.update.useMutation({
+    onSuccess: () => {
+      utils.tradingProfiles.list.invalidate();
+    },
+  });
+
+  const updateChecklistMutation = trpc.tradingProfiles.updateChecklist.useMutation({
     onSuccess: () => {
       utils.tradingProfiles.list.invalidate();
     },
@@ -50,6 +60,13 @@ export const useTradingProfiles = () => {
       return updateProfileMutation.mutateAsync({ id, ...data });
     },
     [updateProfileMutation]
+  );
+
+  const updateChecklist = useCallback(
+    async (id: string, checklistConditions: ChecklistConditionDto[]) => {
+      return updateChecklistMutation.mutateAsync({ id, checklistConditions });
+    },
+    [updateChecklistMutation]
   );
 
   const deleteProfile = useCallback(
@@ -89,6 +106,7 @@ export const useTradingProfiles = () => {
     isLoadingProfiles,
     createProfile,
     updateProfile,
+    updateChecklist,
     deleteProfile,
     duplicateProfile,
     assignToWatcher,
@@ -96,11 +114,13 @@ export const useTradingProfiles = () => {
     getDefaultProfile,
     isCreatingProfile: createProfileMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
+    isUpdatingChecklist: updateChecklistMutation.isPending,
     isDeletingProfile: deleteProfileMutation.isPending,
     isDuplicatingProfile: duplicateProfileMutation.isPending,
     isAssigningToWatcher: assignToWatcherMutation.isPending,
     createProfileError: createProfileMutation.error,
     updateProfileError: updateProfileMutation.error,
+    updateChecklistError: updateChecklistMutation.error,
     deleteProfileError: deleteProfileMutation.error,
     duplicateProfileError: duplicateProfileMutation.error,
     assignToWatcherError: assignToWatcherMutation.error,

@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS trading_profiles (
   volume_filter_obv_lookback_short INTEGER,
   use_obv_check_long BOOLEAN,
   use_obv_check_short BOOLEAN,
+  checklist_conditions TEXT DEFAULT '[]' NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

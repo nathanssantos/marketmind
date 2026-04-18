@@ -60,12 +60,39 @@ export interface ProfileConfigOverrides {
   useObvCheckShort?: boolean | null;
 }
 
+export type ChecklistConditionOp =
+  | 'gt'
+  | 'lt'
+  | 'between'
+  | 'outside'
+  | 'crossAbove'
+  | 'crossBelow'
+  | 'oversold'
+  | 'overbought'
+  | 'rising'
+  | 'falling'
+  | 'priceAbove'
+  | 'priceBelow';
+
+export interface ChecklistConditionDto {
+  id: string;
+  userIndicatorId: string;
+  timeframe: string;
+  op: ChecklistConditionOp;
+  threshold?: number | [number, number];
+  tier: 'required' | 'preferred';
+  side: 'LONG' | 'SHORT' | 'BOTH';
+  enabled: boolean;
+  order: number;
+}
+
 export interface TradingProfile extends ProfileConfigOverrides {
   id: string;
   userId: string;
   name: string;
   description?: string | null;
   enabledSetupTypes: string[];
+  checklistConditions: ChecklistConditionDto[];
   maxPositionSize?: number | null;
   maxConcurrentPositions?: number | null;
   isDefault: boolean;

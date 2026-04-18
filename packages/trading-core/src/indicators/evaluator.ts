@@ -9,6 +9,7 @@ interface EvaluateInput {
   threshold?: ConditionThreshold;
   valueRange?: { min: number; max: number };
   compareSeries?: (number | null)[];
+  closeSeries?: (number | null)[];
 }
 
 const latestDefined = (series: (number | null)[]): { index: number; value: number } | null => {
@@ -39,7 +40,7 @@ const resolveBound = (
 };
 
 export const evaluateCondition = (input: EvaluateInput): ConditionEvaluationResult => {
-  const { series, op, threshold, valueRange, compareSeries } = input;
+  const { series, op, threshold, valueRange, compareSeries, closeSeries } = input;
 
   const latest = latestDefined(series);
   if (!latest) return { passed: false, value: null };
@@ -122,6 +123,18 @@ export const evaluateCondition = (input: EvaluateInput): ConditionEvaluationResu
       const prev = previousDefined(series, index);
       if (!prev) return { passed: false, value };
       return { passed: value < prev.value, value };
+    }
+
+    case 'priceAbove': {
+      const latestClose = closeSeries ? latestDefined(closeSeries) : null;
+      if (!latestClose) return { passed: false, value };
+      return { passed: latestClose.value > value, value };
+    }
+
+    case 'priceBelow': {
+      const latestClose = closeSeries ? latestDefined(closeSeries) : null;
+      if (!latestClose) return { passed: false, value };
+      return { passed: latestClose.value < value, value };
     }
 
     default:

@@ -16,6 +16,8 @@ export const DEFAULT_USER_INDICATOR_SEEDS: IndicatorSeed[] = [
   { catalogType: 'macd', label: 'MACD', params: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, color: '#2196f3', lineWidth: 1 } },
   { catalogType: 'bollingerBands', label: 'BB 20 / 2σ', params: { period: 20, stdDev: 2, color: '#9c27b0', lineWidth: 1 } },
   { catalogType: 'atr', label: 'ATR 14', params: { period: 14, color: '#ff5722', lineWidth: 1 } },
+  { catalogType: 'adx', label: 'ADX 14', params: { period: 14, color: '#e91e63', lineWidth: 1 } },
+  { catalogType: 'choppinessIndex', label: 'CHOP 14', params: { period: 14, color: '#9e9e9e', lineWidth: 1 } },
   { catalogType: 'stoch', label: 'Stoch 14', params: { period: 14, smoothK: 3, smoothD: 3, color: '#00e676', lineWidth: 1 } },
   { catalogType: 'volume', label: 'Volume', params: { color: '#607d8b' } },
   { catalogType: 'vwap', label: 'VWAP', params: { color: '#ffc107', lineWidth: 1 } },

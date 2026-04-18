@@ -1,4 +1,8 @@
-import { DEFAULT_USER_INDICATOR_SEEDS } from '@marketmind/trading-core';
+import {
+  DEFAULT_CHECKLIST_TEMPLATE,
+  DEFAULT_USER_INDICATOR_SEEDS,
+  type ChecklistCondition,
+} from '@marketmind/trading-core';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { userIndicators } from '../db/schema';
@@ -26,4 +30,34 @@ export const seedDefaultUserIndicators = async (userId: string): Promise<void> =
   }));
 
   await db.insert(userIndicators).values(rows);
+};
+
+export const materializeDefaultChecklist = async (userId: string): Promise<ChecklistCondition[]> => {
+  await seedDefaultUserIndicators(userId);
+
+  const rows = await db
+    .select({ id: userIndicators.id, label: userIndicators.label })
+    .from(userIndicators)
+    .where(eq(userIndicators.userId, userId));
+
+  const byLabel = new Map(rows.map((r) => [r.label, r.id]));
+
+  const conditions: ChecklistCondition[] = [];
+  for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+    const userIndicatorId = byLabel.get(entry.seedLabel);
+    if (!userIndicatorId) continue;
+    conditions.push({
+      id: generateEntityId(),
+      userIndicatorId,
+      timeframe: entry.timeframe,
+      op: entry.op,
+      threshold: entry.threshold,
+      tier: entry.tier,
+      side: entry.side,
+      enabled: entry.enabled,
+      order: entry.order,
+    });
+  }
+
+  return conditions;
 };

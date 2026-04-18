@@ -50,7 +50,18 @@ const oscillatorOps: ConditionOp[] = [
 
 const trendOps: ConditionOp[] = ['gt', 'lt', 'crossAbove', 'crossBelow', 'rising', 'falling'];
 
-const overlayLineOps: ConditionOp[] = ['gt', 'lt', 'crossAbove', 'crossBelow', 'rising', 'falling'];
+const overlayLineOps: ConditionOp[] = [
+  'priceAbove',
+  'priceBelow',
+  'crossAbove',
+  'crossBelow',
+  'rising',
+  'falling',
+  'gt',
+  'lt',
+];
+
+const bandOps: ConditionOp[] = ['priceAbove', 'priceBelow', 'crossAbove', 'crossBelow', 'gt', 'lt'];
 
 const maDef = (
   type: string,
@@ -213,7 +224,7 @@ const entries: IndicatorDefinition[] = [
       { key: 'lower', labelKey: 'indicators.outputs.lower' },
     ],
     render: { kind: 'overlay-bands' },
-    conditionOps: ['gt', 'lt', 'crossAbove', 'crossBelow'],
+    conditionOps: bandOps,
     evaluator: { service: 'pine', scriptId: 'bb', outputKey: 'middle' },
     defaultLabel: (p) => `BB ${p['period'] ?? 20} / ${p['stdDev'] ?? 2}σ`,
   },
@@ -234,7 +245,7 @@ const entries: IndicatorDefinition[] = [
       { key: 'lower', labelKey: 'indicators.outputs.lower' },
     ],
     render: { kind: 'overlay-bands' },
-    conditionOps: ['gt', 'lt', 'crossAbove', 'crossBelow'],
+    conditionOps: bandOps,
     evaluator: { service: 'pine', scriptId: 'kc', outputKey: 'middle' },
     defaultLabel: (p) => `KC ${p['period'] ?? 20}`,
   },
@@ -250,7 +261,7 @@ const entries: IndicatorDefinition[] = [
       { key: 'lower', labelKey: 'indicators.outputs.lower' },
     ],
     render: { kind: 'overlay-bands' },
-    conditionOps: ['gt', 'lt', 'crossAbove', 'crossBelow'],
+    conditionOps: bandOps,
     evaluator: { service: 'native', scriptId: 'donchian', outputKey: 'middle' },
     defaultLabel: (p) => `Donchian ${p['period'] ?? 20}`,
   },
@@ -408,7 +419,7 @@ const entries: IndicatorDefinition[] = [
       { key: 'direction', labelKey: 'indicators.outputs.direction' },
     ],
     render: { kind: 'overlay-line' },
-    conditionOps: ['gt', 'lt', 'crossAbove', 'crossBelow'],
+    conditionOps: ['priceAbove', 'priceBelow', 'crossAbove', 'crossBelow', 'gt', 'lt'],
     evaluator: { service: 'pine', scriptId: 'supertrend', outputKey: 'value' },
     defaultLabel: (p) => `ST ${p['period'] ?? 10}/${p['multiplier'] ?? 3}`,
   },
@@ -425,7 +436,7 @@ const entries: IndicatorDefinition[] = [
     ],
     outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
     render: { kind: 'overlay-points' },
-    conditionOps: ['gt', 'lt', 'crossAbove', 'crossBelow'],
+    conditionOps: ['priceAbove', 'priceBelow', 'crossAbove', 'crossBelow', 'gt', 'lt'],
     evaluator: { service: 'pine', scriptId: 'sar' },
     defaultLabel: () => 'SAR',
   },
@@ -452,6 +463,20 @@ const entries: IndicatorDefinition[] = [
     conditionOps: ['gt', 'lt', 'rising', 'falling'],
     evaluator: { service: 'native', scriptId: 'volume' },
     defaultLabel: () => 'Volume',
+  },
+
+  {
+    type: 'choppinessIndex',
+    labelKey: 'indicators.choppinessIndex',
+    category: 'volatility',
+    params: [periodParam(14, 2, 200), colorParam('#9e9e9e'), lineWidthParam()],
+    outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
+    render: { kind: 'pane-line', paneId: 'choppiness' },
+    conditionOps: ['gt', 'lt', 'between', 'outside', 'rising', 'falling'],
+    valueRange: { min: 0, max: 100 },
+    defaultThresholds: { lt: 61.8, gt: 38.2, between: [38.2, 61.8] },
+    evaluator: { service: 'native', scriptId: 'choppiness' },
+    defaultLabel: (p) => `CHOP ${p['period'] ?? 14}`,
   },
 
   {

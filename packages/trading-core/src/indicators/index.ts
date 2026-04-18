@@ -1,5 +1,6 @@
 export * from './types';
 export * from './catalog';
 export * from './defaults';
+export * from './checklistDefaults';
 export * from './evaluator';
 export * from './score';

@@ -32,6 +32,7 @@ import {
 } from '@renderer/components/icons';
 import {
   LuCalendarDays,
+  LuFlipVertical2,
   LuMagnet,
   LuMessageSquare,
 } from 'react-icons/lu';
@@ -63,6 +64,7 @@ export const ChartToolsToolbar = memo(() => {
 
   const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
+  const [chartFlipped, setChartFlipped] = useChartPref<boolean>('chartFlipped', false);
 
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
   const setMagnetEnabled = useDrawingStore(s => s.setMagnetEnabled);
@@ -78,6 +80,7 @@ export const ChartToolsToolbar = memo(() => {
   const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
   const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
+  const handleFlipToggle = useCallback(() => setChartFlipped(!chartFlipped), [chartFlipped, setChartFlipped]);
 
   return (
     <Box
@@ -151,6 +154,16 @@ export const ChartToolsToolbar = memo(() => {
             onClick={handleEventRowToggle}
           >
             <LuCalendarDays />
+          </ToggleIconButton>
+        </TooltipWrapper>
+        <TooltipWrapper label={t('chart.controls.flip', { defaultValue: 'Flip chart (invert Y axis)' })} showArrow placement="right">
+          <ToggleIconButton
+            active={chartFlipped}
+            size="2xs"
+            aria-label={t('chart.controls.flip', { defaultValue: 'Flip chart' })}
+            onClick={handleFlipToggle}
+          >
+            <LuFlipVertical2 />
           </ToggleIconButton>
         </TooltipWrapper>
       </VStack>

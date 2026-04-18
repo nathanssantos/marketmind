@@ -17,3 +17,5 @@ export { ProfileEditorDialog } from './ProfileEditorDialog';
 export { WatcherManager } from './WatcherManager';
 export { AddWatcherDialog } from './AddWatcherDialog';
 export { StrategyInfoPopover } from './StrategyInfoPopover';
+export { ChecklistEditor } from './ChecklistEditor';
+export { ChecklistSection } from './ChecklistSection';

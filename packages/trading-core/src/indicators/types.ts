@@ -19,7 +19,9 @@ export type ConditionOp =
   | 'oversold'
   | 'overbought'
   | 'rising'
-  | 'falling';
+  | 'falling'
+  | 'priceAbove'
+  | 'priceBelow';
 
 export type IndicatorCategory =
   | 'oscillators'

@@ -6,11 +6,48 @@ import { activeWatchers, tradingProfiles } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 import type { NewTradingProfileRow } from '../db/schema';
 import { generateEntityId } from '../utils/id';
-import { transformTradingProfile, stringifyEnabledSetupTypes } from '../utils/profile-transformers';
+import {
+  transformTradingProfile,
+  stringifyChecklistConditions,
+  stringifyEnabledSetupTypes,
+} from '../utils/profile-transformers';
 import { applyProfileFieldsToUpdate } from '../utils/config-field-registry';
+import { materializeDefaultChecklist } from '../services/user-indicators';
 import { FIB_LEVELS } from '@marketmind/types';
 
 const fibLevelSchema = z.enum(FIB_LEVELS);
+
+const conditionOpSchema = z.enum([
+  'gt',
+  'lt',
+  'between',
+  'outside',
+  'crossAbove',
+  'crossBelow',
+  'oversold',
+  'overbought',
+  'rising',
+  'falling',
+  'priceAbove',
+  'priceBelow',
+]);
+
+const conditionThresholdSchema = z.union([
+  z.number(),
+  z.tuple([z.number(), z.number()]),
+]);
+
+const checklistConditionSchema = z.object({
+  id: z.string(),
+  userIndicatorId: z.string(),
+  timeframe: z.string(),
+  op: conditionOpSchema,
+  threshold: conditionThresholdSchema.optional(),
+  tier: z.enum(['required', 'preferred']),
+  side: z.enum(['LONG', 'SHORT', 'BOTH']),
+  enabled: z.boolean(),
+  order: z.number().int(),
+});
 
 const profileConfigFields = {
   tradingMode: z.enum(['auto', 'semi_assisted']).optional().nullable(),
@@ -136,6 +173,8 @@ export const tradingProfilesRouter = router({
         .where(and(eq(tradingProfiles.userId, ctx.user.id), eq(tradingProfiles.isDefault, true)));
     }
 
+    const defaultChecklist = await materializeDefaultChecklist(ctx.user.id);
+
     const values: NewTradingProfileRow = {
       id,
       userId: ctx.user.id,
@@ -145,6 +184,7 @@ export const tradingProfilesRouter = router({
       maxPositionSize: input.maxPositionSize?.toString() ?? null,
       maxConcurrentPositions: input.maxConcurrentPositions ?? null,
       isDefault: input.isDefault ?? false,
+      checklistConditions: stringifyChecklistConditions(defaultChecklist),
     };
 
     const configFieldKeys = Object.keys(profileConfigFields) as (keyof typeof profileConfigFields)[];
@@ -189,6 +229,36 @@ export const tradingProfilesRouter = router({
 
     return transformTradingProfile(profile!);
   }),
+
+  updateChecklist: protectedProcedure
+    .input(z.object({ id: z.string(), checklistConditions: z.array(checklistConditionSchema) }))
+    .mutation(async ({ ctx, input }) => {
+      const [existing] = await db
+        .select()
+        .from(tradingProfiles)
+        .where(and(eq(tradingProfiles.id, input.id), eq(tradingProfiles.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+      }
+
+      await db
+        .update(tradingProfiles)
+        .set({
+          checklistConditions: stringifyChecklistConditions(input.checklistConditions),
+          updatedAt: new Date(),
+        })
+        .where(eq(tradingProfiles.id, input.id));
+
+      const [profile] = await db
+        .select()
+        .from(tradingProfiles)
+        .where(eq(tradingProfiles.id, input.id))
+        .limit(1);
+
+      return transformTradingProfile(profile!);
+    }),
 
   delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const [existing] = await db
@@ -240,6 +310,7 @@ export const tradingProfilesRouter = router({
     .input(importFromBacktestSchema)
     .mutation(async ({ ctx, input }) => {
       const id = generateEntityId();
+      const defaultChecklist = await materializeDefaultChecklist(ctx.user.id);
 
       const values: NewTradingProfileRow = {
         id,
@@ -248,6 +319,7 @@ export const tradingProfilesRouter = router({
         description: input.description ?? null,
         enabledSetupTypes: stringifyEnabledSetupTypes(input.enabledSetupTypes),
         isDefault: false,
+        checklistConditions: stringifyChecklistConditions(defaultChecklist),
       };
 
       const configFieldKeys = Object.keys(profileConfigFields) as (keyof typeof profileConfigFields)[];
