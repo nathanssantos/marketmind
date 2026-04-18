@@ -99,7 +99,7 @@ const main = async () => {
   testAdxFilter();
   await testAltcoinSeasonIndex();
 
-  console.log('\n' + '='.repeat(50));
+  console.log(`\n${  '='.repeat(50)}`);
   console.log('✓ All tests completed');
 };
 

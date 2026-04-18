@@ -1,6 +1,7 @@
 import type { Kline } from '@marketmind/types';
 import { IBKlineStream } from './kline-stream';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 import { IB_RATE_LIMITS, IB_OPTIMAL_DURATION, IB_BARS_PER_REQUEST } from './constants';
 import type { BackfillChunk, BackfillResult } from './types';
 

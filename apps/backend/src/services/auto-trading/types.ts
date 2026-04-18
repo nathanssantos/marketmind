@@ -1,6 +1,6 @@
-import type { ExchangeId } from '@marketmind/types';
-import type { Kline, MarketType } from '@marketmind/types';
+import type { ExchangeId, Kline, MarketType, VolumeFilterConfig } from '@marketmind/types';
 import type { RotationConfig } from '../dynamic-symbol-rotation';
+import type { FilterResults } from '../../utils/confluence-scoring';
 
 export interface ActiveWatcher {
   walletId: string;
@@ -140,18 +140,18 @@ export interface FilterValidatorConfig {
   useDirectionFilter: boolean;
   enableLongInBearMarket: boolean;
   enableShortInBullMarket: boolean;
-  volumeFilterConfig?: import('@marketmind/types').VolumeFilterConfig;
+  volumeFilterConfig?: VolumeFilterConfig;
 }
 
 export interface FilterValidatorDeps {
-  getBtcKlines: (interval: string, marketType: MarketType) => Promise<import('@marketmind/types').Kline[]>;
-  getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => Promise<import('@marketmind/types').Kline[]>;
+  getBtcKlines: (interval: string, marketType: MarketType) => Promise<Kline[]>;
+  getHtfKlines: (symbol: string, htfInterval: string, marketType: MarketType) => Promise<Kline[]>;
   getCachedFundingRate: (symbol: string) => Promise<number | null>;
 }
 
 export interface FilterValidationResult {
   passed: boolean;
-  filterResults: import('../../utils/confluence-scoring').FilterResults;
+  filterResults: FilterResults;
   rejectionReason?: string;
   rejectionDetails?: Record<string, unknown>;
 }

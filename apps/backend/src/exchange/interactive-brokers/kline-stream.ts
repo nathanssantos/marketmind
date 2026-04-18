@@ -1,10 +1,11 @@
 import { SecType, WhatToShow, BarSizeSetting } from '@stoqey/ib';
 import type { Contract, Bar } from '@stoqey/ib';
 import type { Kline } from '@marketmind/types';
-import { Subscription } from 'rxjs';
+import type { Subscription } from 'rxjs';
 import type { IExchangeKlineStream, KlineUpdate } from '../kline-stream';
 import type { ExchangeId } from '../types';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 
 type KlineUpdateHandler = (update: KlineUpdate) => void;
 

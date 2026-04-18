@@ -1,4 +1,5 @@
-import { WebsocketClient, MainClient } from 'binance';
+import type { MainClient } from 'binance';
+import { WebsocketClient } from 'binance';
 import type { DepthLevel, DepthUpdate } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { SCALPING_STREAM } from '../constants/scalping';

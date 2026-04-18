@@ -13,7 +13,8 @@ import {
   getWalletById,
   syncProtectionOrderIdFromExchange,
 } from '../../services/execution-manager';
-import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
+import type { getTestDatabase} from '../helpers/test-db';
+import { cleanupTables, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
 import * as schema from '../../db/schema';
 import { generateEntityId } from '../../utils/id';
 

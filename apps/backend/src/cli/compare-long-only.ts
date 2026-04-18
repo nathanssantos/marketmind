@@ -89,11 +89,11 @@ async function compare() {
     console.log('');
     console.log('Total Trades:', result.metrics.totalTrades);
     console.log(
-      'Total P&L: $' + result.metrics.totalPnl.toFixed(2),
-      '(' + result.metrics.totalPnlPercent.toFixed(1) + '%)'
+      `Total P&L: $${  result.metrics.totalPnl.toFixed(2)}`,
+      `(${  result.metrics.totalPnlPercent.toFixed(1)  }%)`
     );
-    console.log('Win Rate:', result.metrics.winRate.toFixed(1) + '%');
-    console.log('Max Drawdown:', result.metrics.maxDrawdownPercent.toFixed(1) + '%');
+    console.log('Win Rate:', `${result.metrics.winRate.toFixed(1)  }%`);
+    console.log('Max Drawdown:', `${result.metrics.maxDrawdownPercent.toFixed(1)  }%`);
     console.log('Profit Factor:', (result.metrics.profitFactor ?? 0).toFixed(2));
     console.log('Sharpe Ratio:', (result.metrics.sharpeRatio ?? 0).toFixed(3));
     console.log('');
@@ -115,7 +115,7 @@ async function compare() {
     console.log('');
   }
 
-  console.log('\n' + '═'.repeat(60));
+  console.log(`\n${  '═'.repeat(60)}`);
   console.log('> RESUMO COMPARATIVO');
   console.log('═'.repeat(60));
   console.log('');

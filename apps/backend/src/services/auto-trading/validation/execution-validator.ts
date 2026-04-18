@@ -3,8 +3,9 @@ import type { PineStrategy } from '../../pine/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { BACKTEST_DEFAULTS } from '../../../constants';
 import { db } from '../../../db';
+import type {
+  autoTradingConfig} from '../../../db/schema';
 import {
-  autoTradingConfig,
   tradeExecutions,
   tradingProfiles,
 } from '../../../db/schema';
@@ -15,7 +16,8 @@ import { pyramidingService } from '../../pyramiding';
 import { riskManagerService } from '../../risk-manager';
 import { walletLockService } from '../../wallet-lock';
 import { buildFilterConfigFromDb } from '../../../utils/filters/filter-registry';
-import { FilterValidator, type FilterValidatorConfig, type FilterValidatorDeps } from './filter-validator';
+import type { FilterValidator} from './filter-validator';
+import { type FilterValidatorConfig, type FilterValidatorDeps } from './filter-validator';
 import type { WatcherLogBuffer } from '../../watcher-batch-logger';
 import type { ActiveWatcher } from '../types';
 import { calculateFibonacciTakeProfit } from './fibonacci-calculator';

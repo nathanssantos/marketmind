@@ -93,7 +93,7 @@ async function validate() {
 
   for (const ws of result.watcherStats) {
     const blockedReasons = Object.entries(ws.skippedReasons)
-      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .sort((a, b) => (b[1]) - (a[1]))
       .slice(0, 3)
       .map(([k, v]) => `${k}:${v}`)
       .join(', ');
@@ -111,7 +111,7 @@ async function validate() {
   for (const ws of result.watcherStats) {
     totalBlocked += ws.tradesSkipped;
     for (const [reason, count] of Object.entries(ws.skippedReasons)) {
-      blockReasons[reason] = (blockReasons[reason] || 0) + (count as number);
+      blockReasons[reason] = (blockReasons[reason] || 0) + (count);
     }
   }
 

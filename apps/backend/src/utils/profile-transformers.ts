@@ -114,8 +114,8 @@ export const transformTradingProfile = (profile: TradingProfileRow): Transformed
   trailingDistanceMode: profile.trailingDistanceMode as 'auto' | 'fixed' | null,
   trailingActivationModeLong: profile.trailingActivationModeLong as 'auto' | 'manual' | null,
   trailingActivationModeShort: profile.trailingActivationModeShort as 'auto' | 'manual' | null,
-  tradingMode: profile.tradingMode as 'auto' | 'semi_assisted' | null,
-  directionMode: profile.directionMode as 'auto' | 'long_only' | 'short_only' | null,
+  tradingMode: profile.tradingMode,
+  directionMode: profile.directionMode,
 });
 
 export const parseDynamicSymbolExcluded = (json: string | null): string[] => {

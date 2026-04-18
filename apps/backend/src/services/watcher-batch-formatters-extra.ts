@@ -182,9 +182,9 @@ export const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult
 
       lines.push(
         `    ${colorize(actionIcon, actionColor)} ${action.symbol} ${colorize(action.side, sideColor)} ` +
-        `${colorize(action.action, actionColor)}` +
-        (action.limitPrice ? ` limit=${action.limitPrice.toPrecision(6)}` : '') +
-        (details ? ` ${colorize(details, 'dim')}` : '')
+        `${colorize(action.action, actionColor)}${ 
+        action.limitPrice ? ` limit=${action.limitPrice.toPrecision(6)}` : '' 
+        }${details ? ` ${colorize(details, 'dim')}` : ''}`
       );
     }
   }

@@ -75,21 +75,21 @@ export class WebSocketService {
       socket.on('subscribe:orders', (walletId: string) => {
         const room = `orders:${walletId}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
         }
       });
 
       socket.on('subscribe:positions', (walletId: string) => {
         const room = `positions:${walletId}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
         }
       });
 
       socket.on('subscribe:prices', (symbol: string) => {
         const room = `prices:${symbol}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
           if (!isCustomSymbol(symbol)) {
             binancePriceStreamService.subscribeSymbol(symbol);
           }
@@ -102,7 +102,7 @@ export class WebSocketService {
         for (const symbol of symbols) {
           const room = `prices:${symbol}`;
           if (!socket.rooms.has(room)) {
-            socket.join(room);
+            void socket.join(room);
             if (!isCustomSymbol(symbol)) {
               binancePriceStreamService.subscribeSymbol(symbol);
             }
@@ -113,125 +113,125 @@ export class WebSocketService {
       socket.on('subscribe:klines', (data: { symbol: string; interval: string }) => {
         const room = `klines:${data.symbol}:${data.interval}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
         }
       });
 
       socket.on('unsubscribe:klines', (data: { symbol: string; interval: string }) => {
         const room = `klines:${data.symbol}:${data.interval}`;
-        socket.leave(room);
+        void socket.leave(room);
       });
 
       socket.on('unsubscribe:orders', (walletId: string) => {
-        socket.leave(`orders:${walletId}`);
+        void socket.leave(`orders:${walletId}`);
       });
 
       socket.on('unsubscribe:positions', (walletId: string) => {
-        socket.leave(`positions:${walletId}`);
+        void socket.leave(`positions:${walletId}`);
       });
 
       socket.on('unsubscribe:prices', (symbol: string) => {
-        socket.leave(`prices:${symbol}`);
+        void socket.leave(`prices:${symbol}`);
         this.emitActiveSymbolsChanged();
       });
 
       socket.on('subscribe:wallet', (walletId: string) => {
         const room = `wallet:${walletId}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
         }
       });
 
       socket.on('unsubscribe:wallet', (walletId: string) => {
-        socket.leave(`wallet:${walletId}`);
+        void socket.leave(`wallet:${walletId}`);
       });
 
       socket.on('subscribe:setups', (userId: string) => {
         const room = `user:${userId}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
         }
       });
 
       socket.on('unsubscribe:setups', (userId: string) => {
-        socket.leave(`user:${userId}`);
+        void socket.leave(`user:${userId}`);
       });
 
       socket.on('subscribe:autoTradingLogs', (walletId: string) => {
         const room = `autoTradingLogs:${walletId}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
         }
       });
 
       socket.on('unsubscribe:autoTradingLogs', (walletId: string) => {
-        socket.leave(`autoTradingLogs:${walletId}`);
+        void socket.leave(`autoTradingLogs:${walletId}`);
       });
 
       socket.on('subscribe:bookTicker', (symbol: string) => {
         const room = `bookTicker:${symbol}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
           if (!isCustomSymbol(symbol)) binanceBookTickerStreamService.subscribe(symbol);
         }
       });
 
       socket.on('unsubscribe:bookTicker', (symbol: string) => {
-        socket.leave(`bookTicker:${symbol}`);
+        void socket.leave(`bookTicker:${symbol}`);
       });
 
       socket.on('subscribe:aggTrades', (symbol: string) => {
         const room = `aggTrades:${symbol}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
           if (!isCustomSymbol(symbol)) binanceAggTradeStreamService.subscribe(symbol);
         }
       });
 
       socket.on('unsubscribe:aggTrades', (symbol: string) => {
-        socket.leave(`aggTrades:${symbol}`);
+        void socket.leave(`aggTrades:${symbol}`);
       });
 
       socket.on('subscribe:depth', (symbol: string) => {
         const room = `depth:${symbol}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
           if (!isCustomSymbol(symbol)) binanceDepthStreamService.subscribe(symbol);
         }
       });
 
       socket.on('unsubscribe:depth', (symbol: string) => {
-        socket.leave(`depth:${symbol}`);
+        void socket.leave(`depth:${symbol}`);
       });
 
       socket.on('subscribe:liquidityHeatmap', (symbol: string) => {
         const room = `liquidityHeatmap:${symbol}`;
         if (!socket.rooms.has(room)) {
-          socket.join(room);
+          void socket.join(room);
           void this.sendLiquidityHeatmapSnapshot(socket, symbol);
         }
       });
 
       socket.on('unsubscribe:liquidityHeatmap', (symbol: string) => {
-        socket.leave(`liquidityHeatmap:${symbol}`);
+        void socket.leave(`liquidityHeatmap:${symbol}`);
       });
 
       socket.on('subscribe:scalpingMetrics', (symbol: string) => {
         const room = `scalpingMetrics:${symbol}`;
-        if (!socket.rooms.has(room)) socket.join(room);
+        if (!socket.rooms.has(room)) void socket.join(room);
       });
 
       socket.on('unsubscribe:scalpingMetrics', (symbol: string) => {
-        socket.leave(`scalpingMetrics:${symbol}`);
+        void socket.leave(`scalpingMetrics:${symbol}`);
       });
 
       socket.on('subscribe:scalpingSignals', (walletId: string) => {
         const room = `scalpingSignals:${walletId}`;
-        if (!socket.rooms.has(room)) socket.join(room);
+        if (!socket.rooms.has(room)) void socket.join(room);
       });
 
       socket.on('unsubscribe:scalpingSignals', (walletId: string) => {
-        socket.leave(`scalpingSignals:${walletId}`);
+        void socket.leave(`scalpingSignals:${walletId}`);
       });
 
       socket.on('disconnect', () => {

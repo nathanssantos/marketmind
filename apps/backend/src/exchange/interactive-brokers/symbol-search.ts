@@ -1,6 +1,7 @@
 import { SecType } from '@stoqey/ib';
 import type { ContractDescription } from '@stoqey/ib';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 import type { IBSymbolSearchResult } from './types';
 
 export interface SymbolSearchOptions {

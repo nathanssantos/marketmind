@@ -172,7 +172,7 @@ export async function verifyAlgoFillProcessed(
     getPositionEventBus().emitPositionClosed({
       walletId,
       symbol,
-      side: execution.side as 'LONG' | 'SHORT',
+      side: execution.side,
       pnl,
       executionId,
     });
@@ -338,7 +338,7 @@ export async function closeResidualPosition(
           getPositionEventBus().emitPositionClosed({
             walletId,
             symbol,
-            side: orphan.side as 'LONG' | 'SHORT',
+            side: orphan.side,
             pnl,
             executionId: orphan.id,
           });
@@ -377,7 +377,7 @@ export async function closeResidualPosition(
     } catch (cleanupErr) {
       const msg = serializeError(cleanupErr);
       if (!msg.includes('No orders') && !msg.includes('not found'))
-        logger.warn({ walletId, symbol, error: msg }, '[FuturesUserStream] Failed to cleanup remaining orders after close');
+        {logger.warn({ walletId, symbol, error: msg }, '[FuturesUserStream] Failed to cleanup remaining orders after close');}
     }
   } catch (error) {
     logger.error(

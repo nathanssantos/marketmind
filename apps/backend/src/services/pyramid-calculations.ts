@@ -1,5 +1,6 @@
 import { colorize } from '@marketmind/logger';
 import type { TradeExecution } from '../db/schema';
+import type { FiboLevel } from './fibonacci-pyramid-evaluator';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
 
@@ -39,7 +40,7 @@ export interface PyramidConfig {
   adxThreshold: number;
   rsiLowerBound: number;
   rsiUpperBound: number;
-  fiboLevels: import('./fibonacci-pyramid-evaluator').FiboLevel[];
+  fiboLevels: FiboLevel[];
   leverage: number;
   leverageAware: boolean;
 }

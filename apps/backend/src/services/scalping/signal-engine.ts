@@ -81,7 +81,7 @@ export class SignalEngine {
 
     for (const strategy of this.config.enabledStrategies) {
       const result = this.evaluateStrategy(strategy, context);
-      if (!result || !result.shouldTrade) continue;
+      if (!result?.shouldTrade) continue;
 
       if (this.config.directionMode === 'long_only' && result.direction === 'SHORT') continue;
       if (this.config.directionMode === 'short_only' && result.direction === 'LONG') continue;

@@ -310,7 +310,7 @@ export const authRouter = router({
   updateProfile: protectedProcedure
     .input(z.object({ name: z.string().max(255).optional() }))
     .mutation(async ({ input, ctx }) => {
-      const user = ctx.user!;
+      const user = ctx.user;
       await ctx.db
         .update(users)
         .set({ name: input.name ?? null, updatedAt: new Date() })
@@ -411,7 +411,7 @@ export const authRouter = router({
   resendVerificationEmail: protectedProcedure.mutation(async ({ ctx }) => {
     const req = ctx.req as FastifyRequest;
     const metadata = extractRequestMetadata(req);
-    const user = ctx.user!;
+    const user = ctx.user;
 
     if (user.emailVerified) {
       throw new TRPCError({
@@ -439,7 +439,7 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       const req = ctx.req as FastifyRequest;
       const metadata = extractRequestMetadata(req);
-      const user = ctx.user!;
+      const user = ctx.user;
 
       if (input.enabled && !user.emailVerified) {
         throw new TRPCError({

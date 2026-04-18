@@ -2,10 +2,11 @@ import { SecType } from '@stoqey/ib';
 import { TickType } from '@stoqey/ib/dist/api/market/tickType';
 import type { Contract, MarketDataTicks } from '@stoqey/ib';
 import type { MarketType } from '@marketmind/types';
-import { Subscription } from 'rxjs';
+import type { Subscription } from 'rxjs';
 import type { IExchangePriceStream, PriceUpdate } from '../price-stream';
 import type { ExchangeId } from '../types';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 import type { IBPriceData } from './types';
 
 const getTickValue = (ticks: MarketDataTicks, tickType: number): number | undefined => {

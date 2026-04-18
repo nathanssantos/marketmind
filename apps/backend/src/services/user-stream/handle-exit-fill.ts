@@ -326,7 +326,7 @@ export async function handleExitFill(
   getPositionEventBus().emitPositionClosed({
     walletId,
     symbol,
-    side: execution.side as 'LONG' | 'SHORT',
+    side: execution.side,
     pnl,
     executionId: execution.id,
   });

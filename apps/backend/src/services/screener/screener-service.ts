@@ -318,7 +318,7 @@ export class ScreenerService {
     isIB: boolean,
     interval: string,
   ) {
-    let symbols: string[] = [];
+    const symbols: string[] = [];
     const topCoinMap = new Map<string, TopCoin>();
     let btcKlines: Kline[] = [];
 

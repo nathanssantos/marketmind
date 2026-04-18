@@ -56,7 +56,7 @@ export const executionUpdatesRouter = router({
       const isFutures = execution.marketType === 'FUTURES';
       const marketType = execution.marketType as 'SPOT' | 'FUTURES';
       const qty = parseFloat(execution.quantity);
-      const side = execution.side as 'LONG' | 'SHORT';
+      const side = execution.side;
 
       let newStopLossOrderId: string | null = execution.stopLossOrderId;
       let newStopLossAlgoId: string | null = execution.stopLossAlgoId;

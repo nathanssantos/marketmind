@@ -1,6 +1,6 @@
 import type { ScalpingSignal, ScalpingExecutionMode } from '@marketmind/types';
 import { db } from '../../db';
-import { tradeExecutions, type Wallet } from '../../db/schema';
+import { tradeExecutions } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../logger';
 import { serializeError } from '../../utils/errors';
@@ -82,7 +82,7 @@ export const checkMicroTrailing = async (
 
     if (!state.activePositions.has(symbol)) return;
 
-    if (!execution || execution.status !== 'open') {
+    if (execution?.status !== 'open') {
       if (!execution) {
         state.activePositions.delete(symbol);
         logger.warn({ symbol, executionId }, 'Stale execution in micro-trailing, cleaned up');
@@ -103,7 +103,7 @@ export const checkMicroTrailing = async (
     if (currentSL <= 0) return;
 
     const trailingDistance = config.microTrailingTicks * tickSize;
-    const side = execution.side as 'LONG' | 'SHORT';
+    const side = execution.side;
 
     let newSL: number;
     if (side === 'LONG') {
@@ -120,7 +120,7 @@ export const checkMicroTrailing = async (
     const quantity = parseFloat(execution.quantity);
 
     const result = await updateStopLossOrder({
-      wallet: wallet as Wallet,
+      wallet: wallet,
       symbol,
       side,
       quantity,

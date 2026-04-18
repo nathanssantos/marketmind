@@ -308,7 +308,7 @@ export async function cancelPendingEntryOrders(
         } catch (cancelErr) {
           const msg = serializeError(cancelErr);
           if (!msg.includes('Unknown order') && !msg.includes('Order does not exist') && !msg.includes('not found'))
-            logger.warn({ walletId, symbol, entryOrderId: pending.entryOrderId, error: msg }, '[FuturesUserStream] Failed to cancel pending entry order on exchange');
+            {logger.warn({ walletId, symbol, entryOrderId: pending.entryOrderId, error: msg }, '[FuturesUserStream] Failed to cancel pending entry order on exchange');}
         }
       }
 

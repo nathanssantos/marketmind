@@ -163,7 +163,7 @@ Example:
   console.log(`  R:R Min LONG: ${minRRLongs.join(', ')}`);
   console.log(`  R:R Min SHORT: ${minRRShorts.join(', ')}`);
   console.log(`\nTotal combinations: ${totalCombinations}`);
-  console.log('\n' + '='.repeat(60) + '\n');
+  console.log(`\n${  '='.repeat(60)  }\n`);
 
   const baseConfig = createBaseConfig();
   const results: OptimizationResult[] = [];
@@ -258,9 +258,9 @@ Example:
 
   results.sort((a, b) => b.score - a.score);
 
-  console.log('\n' + '='.repeat(100));
+  console.log(`\n${  '='.repeat(100)}`);
   console.log('TOP RESULTS BY SCORE');
-  console.log('='.repeat(100) + '\n');
+  console.log(`${'='.repeat(100)  }\n`);
 
   console.log('Rank  Entry%  R:R(L/S)   Trades   WinRate     P&L         P&L%     MaxDD      PF     Sharpe   Score');
   console.log('-'.repeat(105));
@@ -284,9 +284,9 @@ Example:
 
   console.log('-'.repeat(105));
 
-  console.log('\n' + '='.repeat(100));
+  console.log(`\n${  '='.repeat(100)}`);
   console.log('ANALYSIS BY ENTRY LEVEL');
-  console.log('='.repeat(100) + '\n');
+  console.log(`${'='.repeat(100)  }\n`);
 
   for (const level of entryLevels) {
     const levelResults = results.filter(r => r.entryLevel === level);
@@ -305,7 +305,7 @@ Example:
 
   console.log('='.repeat(100));
   console.log('ANALYSIS BY R:R MINIMUM');
-  console.log('='.repeat(100) + '\n');
+  console.log(`${'='.repeat(100)  }\n`);
 
   for (const rr of minRRLongs) {
     const rrResults = results.filter(r => r.minRRLong === rr);
@@ -325,7 +325,7 @@ Example:
   if (!longOnly) {
     console.log('='.repeat(100));
     console.log('LONG vs SHORT COMPARISON');
-    console.log('='.repeat(100) + '\n');
+    console.log(`${'='.repeat(100)  }\n`);
 
     const best = results[0]!;
     console.log(`Best Configuration:`);
@@ -345,9 +345,9 @@ Example:
     console.log(`  Recommendation: ${longTotalPnl > shortTotalPnl ? 'Consider LONG-only mode' : 'Keep both directions'}`);
   }
 
-  console.log('\n' + '='.repeat(100));
+  console.log(`\n${  '='.repeat(100)}`);
   console.log('BEST CONFIGURATION');
-  console.log('='.repeat(100) + '\n');
+  console.log(`${'='.repeat(100)  }\n`);
 
   const best = results[0]!;
   console.log('Copy these values to your trading config:\n');

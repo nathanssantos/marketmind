@@ -194,7 +194,7 @@ export async function handleUntrackedReduceFill(
     getPositionEventBus().emitPositionClosed({
       walletId,
       symbol,
-      side: oppositeExec.side as 'LONG' | 'SHORT',
+      side: oppositeExec.side,
       pnl: totalPnl,
       executionId: oppositeExec.id,
     });
@@ -268,7 +268,7 @@ export async function handleManualOrderFill(
         const lp = parseFloat(pos.liquidationPrice || '0');
         if (lp > 0) manualLiquidationPrice = lp.toString();
       }
-    } catch {}
+    } catch { /* best-effort */ }
   }
 
   await db.insert(tradeExecutions).values({

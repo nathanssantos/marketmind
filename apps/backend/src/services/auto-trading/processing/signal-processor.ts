@@ -325,7 +325,7 @@ export class SignalProcessor {
     const requiredKlines = calculateRequiredKlines();
     const minRequired = ABSOLUTE_MINIMUM_KLINES;
 
-    let klinesData = await db.query.klines.findMany({
+    const klinesData = await db.query.klines.findMany({
       where: and(
         eq(klines.symbol, watcher.symbol),
         eq(klines.interval, watcher.interval),

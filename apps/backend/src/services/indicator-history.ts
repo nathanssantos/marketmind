@@ -189,9 +189,9 @@ export class IndicatorHistoryService {
       }
     };
 
-    saveAll();
+    void saveAll();
 
-    this.saveInterval = setInterval(saveAll, intervalMs);
+    this.saveInterval = setInterval(() => { void saveAll(); }, intervalMs);
     logger.info({ intervalMs }, '[IndicatorHistory] Periodic save started');
   }
 

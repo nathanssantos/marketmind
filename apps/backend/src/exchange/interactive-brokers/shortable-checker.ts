@@ -1,7 +1,8 @@
 import { SecType } from '@stoqey/ib';
-import { TickType } from '@stoqey/ib/dist/api/market/tickType';
+import type { TickType } from '@stoqey/ib/dist/api/market/tickType';
 import type { Contract, MarketDataTicks } from '@stoqey/ib';
-import { IBConnectionManager, getDefaultConnectionManager } from './connection-manager';
+import type { IBConnectionManager} from './connection-manager';
+import { getDefaultConnectionManager } from './connection-manager';
 import type { ShortabilityInfo, ShortDifficulty } from './types';
 
 const SHORTABLE_GENERIC_TICK = '236';

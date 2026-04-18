@@ -6,7 +6,7 @@ const FALLBACK_LEVEL = 1.618;
 export const resolveFibonacciTarget = (input: FibonacciResolverInput): FibonacciResolverResult => {
   const { fibonacciProjection, entryPrice, direction, targetLevel, targetLevelLong, targetLevelShort } = input;
 
-  if (!fibonacciProjection || !fibonacciProjection.levels || fibonacciProjection.levels.length === 0) {
+  if (!fibonacciProjection?.levels || fibonacciProjection.levels.length === 0) {
     return {
       price: null,
       level: null,

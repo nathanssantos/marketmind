@@ -9,7 +9,7 @@ import { logger } from '../../services/logger';
 import { getOpportunityScoringService } from '../../services/opportunity-scoring';
 import { protectedProcedure } from '../../trpc';
 import { intervalSchema, marketTypeSchema } from './shared';
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, Interval } from '@marketmind/types';
 import { CHART_INITIAL_KLINES } from '../../constants';
 
 export const maintenanceProcedures = {
@@ -57,7 +57,7 @@ export const maintenanceProcedures = {
 
       const result = await gapFiller.forceCheckSymbol(
         input.symbol,
-        input.interval as import('@marketmind/types').Interval,
+        input.interval as Interval,
         marketType
       );
 

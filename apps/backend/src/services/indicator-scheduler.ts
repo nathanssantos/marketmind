@@ -26,8 +26,8 @@ class IndicatorSchedulerService {
 
     await this.saveSnapshot();
 
-    this.intervalId = setInterval(async () => {
-      await this.saveSnapshot();
+    this.intervalId = setInterval(() => {
+      void this.saveSnapshot();
     }, SNAPSHOT_INTERVAL_MS);
 
     logger.info({

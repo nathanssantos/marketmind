@@ -1,5 +1,6 @@
 import type { TradingSetup } from '@marketmind/types';
-import { autoTradingConfig, type Wallet } from '../../../db/schema';
+import type { autoTradingConfig} from '../../../db/schema';
+import { type Wallet } from '../../../db/schema';
 import { serializeError } from '../../../utils/errors';
 import { autoTradingService } from '../../auto-trading';
 import { getFuturesClient } from '../../../exchange';

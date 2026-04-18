@@ -18,7 +18,7 @@ import {
     type TradeExecutionEntry,
     type WatcherResult,
 } from '@marketmind/logger';
-import type { PendingOrdersCheckResult } from '@marketmind/logger';
+import type { PendingOrdersCheckResult, PositionSyncResult, ReconnectionValidationResult } from '@marketmind/logger';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -195,7 +195,7 @@ export const formatStartupResults = (
         : '';
 
       lines.push(
-        `  ${colorize(ICONS.ACTION, 'dim')} ${colorize(w.symbol, 'bright')}/${w.interval} ${w.marketType} ${colorize(typeStr, typeColor as 'cyan' | 'magenta')} ` +
+        `  ${colorize(ICONS.ACTION, 'dim')} ${colorize(w.symbol, 'bright')}/${w.interval} ${w.marketType} ${colorize(typeStr, typeColor)} ` +
         `${icon} ${joinParts([klinesStr, nextCandle].filter(Boolean))}`
       );
     }
@@ -247,7 +247,7 @@ export const outputRotationResults = (result: RotationResult): void => {
   writeToFile(`${summary}\n`);
 };
 
-export const outputReconnectionValidationResults = (result: import('@marketmind/logger').ReconnectionValidationResult): void => {
+export const outputReconnectionValidationResults = (result: ReconnectionValidationResult): void => {
   if (result.totalMismatches === 0) return;
 
   const summary = formatReconnectionValidationResults(result);
@@ -255,7 +255,7 @@ export const outputReconnectionValidationResults = (result: import('@marketmind/
   writeToFile(`${summary}\n`);
 };
 
-export const outputPositionSyncResults = (result: import('@marketmind/logger').PositionSyncResult): void => {
+export const outputPositionSyncResults = (result: PositionSyncResult): void => {
   const hasIssues = result.totalOrphaned > 0 || result.totalUnknown > 0 || result.totalUpdated > 0;
   if (!hasIssues) return;
 

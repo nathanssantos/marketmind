@@ -1,4 +1,5 @@
 import type { Contract, Order, OrderState, Bar, SecType } from '@stoqey/ib';
+import type { Kline } from '@marketmind/types';
 import type { IB_ORDER_TYPES, IB_ORDER_ACTIONS, IB_TIME_IN_FORCE } from './constants';
 
 export interface IBConnectionConfig {
@@ -183,7 +184,7 @@ export interface BackfillChunk {
 export interface BackfillResult {
   symbol: string;
   interval: string;
-  klines: import('@marketmind/types').Kline[];
+  klines: Kline[];
   totalRequests: number;
   durationMs: number;
   avgRequestTime?: number;

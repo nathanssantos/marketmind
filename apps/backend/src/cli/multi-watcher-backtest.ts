@@ -11,7 +11,7 @@ const formatCurrency = (value: number): string => {
 };
 
 const formatPercent = (value: number): string => {
-  return value.toFixed(2) + '%';
+  return `${value.toFixed(2)  }%`;
 };
 
 async function runMultiWatcherBacktest() {
@@ -69,7 +69,7 @@ async function runMultiWatcherBacktest() {
       return {
         symbol: w.symbol,
         interval: w.interval,
-        marketType: w.marketType as 'SPOT' | 'FUTURES',
+        marketType: w.marketType,
         setupTypes: watcherSetupTypes,
         profileId: w.profileId ?? undefined,
       };

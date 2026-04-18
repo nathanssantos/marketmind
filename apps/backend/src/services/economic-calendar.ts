@@ -74,6 +74,7 @@ const parseTimestamp = (date: string, time: string): number => {
 
 export class EconomicCalendarService {
   private cache: { data: EconomicEvent[]; from: string; to: string; timestamp: number } | null = null;
+  private missingKeyWarned = false;
 
   async getEvents(from: string, to: string): Promise<EconomicEvent[]> {
     const cached = this.getFromCache(from, to);
@@ -81,7 +82,10 @@ export class EconomicCalendarService {
 
     const apiKey = process.env['FINNHUB_API_KEY'];
     if (!apiKey) {
-      logger.warn('FINNHUB_API_KEY not set, economic calendar disabled');
+      if (!this.missingKeyWarned) {
+        logger.warn('FINNHUB_API_KEY not set, economic calendar disabled');
+        this.missingKeyWarned = true;
+      }
       return [];
     }
 

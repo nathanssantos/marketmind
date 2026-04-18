@@ -171,7 +171,7 @@ const start = async (): Promise<void> => {
       await orderSyncService.start({ autoCancelOrphans: false, autoFixMismatches: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
 
       setTimeout(() => {
-        import('./services/startup-audit').then(({ runStartupAudit }) => {
+        void import('./services/startup-audit').then(({ runStartupAudit }) => {
           runStartupAudit().catch((err) => {
             fastify.log.error({ err }, '[startup-audit] Unhandled error');
           });
@@ -206,13 +206,15 @@ const start = async (): Promise<void> => {
       const { liquidityHeatmapAggregator } = await import('./services/liquidity-heatmap-aggregator');
       liquidityHeatmapAggregator.start(binanceDepthStreamService, binanceLiquidationStreamService, symbols);
 
-      setTimeout(async () => {
-        try {
-          const { getScalpingScheduler } = await import('./services/scalping/scalping-scheduler');
-          await getScalpingScheduler().restoreFromDb();
-        } catch (err) {
-          fastify.log.error({ err }, '[scalping-scheduler] Failed to restore from DB');
-        }
+      setTimeout(() => {
+        void (async () => {
+          try {
+            const { getScalpingScheduler } = await import('./services/scalping/scalping-scheduler');
+            await getScalpingScheduler().restoreFromDb();
+          } catch (err) {
+            fastify.log.error({ err }, '[scalping-scheduler] Failed to restore from DB');
+          }
+        })();
       }, STARTUP_CONFIG.AUDIT_DELAY_MS);
 
       fastify.log.info(`> Backend server running on http://localhost:${port}`);
@@ -231,6 +233,6 @@ const start = async (): Promise<void> => {
   }
 };
 
-start();
+void start();
 
 export type { AppRouter } from './trpc/router';

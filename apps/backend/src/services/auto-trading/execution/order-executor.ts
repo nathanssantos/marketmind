@@ -2,8 +2,9 @@ import type { FibLevel, Kline, TradingSetup } from '@marketmind/types';
 import type { PineStrategy } from '../../pine/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../../../db';
+import type {
+  autoTradingConfig} from '../../../db/schema';
 import {
-  autoTradingConfig,
   wallets,
 } from '../../../db/schema';
 import { env } from '../../../env';

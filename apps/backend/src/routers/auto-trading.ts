@@ -702,7 +702,7 @@ export const autoTradingRouter = router({
         entryPrice,
         exitPrice,
         quantity: qty,
-        side: execution.side as 'LONG' | 'SHORT',
+        side: execution.side,
         marketType,
       });
 
@@ -1702,7 +1702,7 @@ export const autoTradingRouter = router({
                 entryPrice,
                 exitPrice: exitPriceNum,
                 quantity: qty,
-                side: execution.side as 'LONG' | 'SHORT',
+                side: execution.side,
                 marketType,
               });
 
@@ -1905,7 +1905,7 @@ export const autoTradingRouter = router({
       }
 
       const wallet = await walletQueries.getByIdAndUser(execution.walletId, ctx.user.id);
-      const marketType = (execution.marketType || 'FUTURES') as 'SPOT' | 'FUTURES';
+      const marketType = (execution.marketType || 'FUTURES');
 
       const currentPrice = await positionMonitorService.getCurrentPrice(execution.symbol, marketType);
 
@@ -1929,7 +1929,7 @@ export const autoTradingRouter = router({
         execution.symbol,
         parseFloat(execution.quantity),
         stopLoss,
-        execution.side as 'LONG' | 'SHORT',
+        execution.side,
         marketType
       );
 

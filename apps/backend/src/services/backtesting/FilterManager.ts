@@ -565,8 +565,8 @@ export class FilterManager {
 
     const proximityFactor = proximityPercent / 100;
     const prevCandle = klines[setupIndex - 1];
-    const prevHigh = prevCandle ? parseFloat(prevCandle.high as string) : entryPrice;
-    const prevLow = prevCandle ? parseFloat(prevCandle.low as string) : entryPrice;
+    const prevHigh = prevCandle ? parseFloat(prevCandle.high) : entryPrice;
+    const prevLow = prevCandle ? parseFloat(prevCandle.low) : entryPrice;
 
     const nearGap = unfilledGaps.some(gap => {
       const zoneLow = gap.low * (1 - proximityFactor);

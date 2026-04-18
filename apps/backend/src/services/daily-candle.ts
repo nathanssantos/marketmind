@@ -72,8 +72,7 @@ export const getDailyCandles = async (
   for (const symbol of symbols) {
     const cached = cache.get(symbol);
     if (
-      cached &&
-      cached.candle.openTime === todayOpen &&
+      cached?.candle.openTime === todayOpen &&
       now - cached.fetchedAt < FETCH_TTL_MS
     ) {
       result.set(symbol, cached.candle);

@@ -66,7 +66,7 @@ export const getActivePairsWithSubscriptions = async (): Promise<ActivePair[]> =
         const key = `${exec.symbol}@${log.interval}@${exec.marketType}`;
         if (!seen.has(key)) {
           seen.add(key);
-          pairs.push({ symbol: exec.symbol, interval: log.interval as Interval, marketType: (exec.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES' });
+          pairs.push({ symbol: exec.symbol, interval: log.interval as Interval, marketType: (exec.marketType ?? 'FUTURES') });
         }
       }
     }
