@@ -28,6 +28,11 @@ export const DEFAULT_USER_INDICATOR_SEEDS: IndicatorSeed[] = [
   { catalogType: 'volumeProfile', label: 'Volume Profile', params: { numBuckets: 100, maxBarWidth: 120, opacity: 30 } },
   { catalogType: 'dailyVwap', label: 'Daily VWAP', params: { color: '#03a9f4', lineWidth: 1 } },
   { catalogType: 'weeklyVwap', label: 'Weekly VWAP', params: { color: '#7c4dff', lineWidth: 1 } },
+  { catalogType: 'orb', label: 'ORB 15m', params: { orbPeriodMinutes: 15 } },
+  { catalogType: 'sessionBoundaries', label: 'Session Boundaries', params: {} },
+  { catalogType: 'footprint', label: 'Footprint', params: {} },
+  { catalogType: 'liquidityHeatmap', label: 'Liquidity Heatmap', params: {} },
+  { catalogType: 'liquidationMarkers', label: 'Liquidation Markers', params: {} },
 ];
 
 export const DEFAULT_ACTIVE_SEED_LABELS = new Set([

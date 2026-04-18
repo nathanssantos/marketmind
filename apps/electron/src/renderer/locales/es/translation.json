@@ -2151,7 +2151,8 @@
       "lowColor": "Color Bajo",
       "numBuckets": "Número de Cubetas",
       "maxBarWidth": "Ancho Máx. de Barra",
-      "opacity": "Opacidad"
+      "opacity": "Opacidad",
+      "orbPeriodMinutes": "Período ORB (minutos)"
     },
     "outputs": {
       "value": "Valor",
@@ -2177,6 +2178,11 @@
     "dailyVwap": "VWAP Diario",
     "weeklyVwap": "VWAP Semanal",
     "pivotPoints": "Puntos Pivote",
-    "volumeProfile": "Perfil de Volumen"
+    "volumeProfile": "Perfil de Volumen",
+    "orb": "Ruptura del Rango de Apertura",
+    "sessionBoundaries": "Límites de Sesión",
+    "footprint": "Footprint",
+    "liquidityHeatmap": "Mapa de Calor de Liquidez",
+    "liquidationMarkers": "Marcadores de Liquidación"
   }
 }

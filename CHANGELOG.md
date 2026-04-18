@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.94.0] - 2026-04-18
+
+### Added
+- **5 deferred catalog indicators ported** to the generic pipeline with custom render dispatch: `orb` (Opening Range Breakout), `sessionBoundaries`, `footprint`, `liquidityHeatmap`, `liquidationMarkers`. All wired through `INDICATOR_CATALOG` with `evaluator: { service: 'native', scriptId: <X> }` and rendered via `CUSTOM_RENDERER_REGISTRY`.
+- **External-data plumbing for generic renderers**: `useGenericChartIndicators` and `useGenericChartIndicatorRenderers` now accept `marketEvents`, `footprintBars`, `liquidityHeatmap`, and `liquidityColorMode` so custom renderers can consume non-kline feeds. `NativeEvaluatorContext` and `GenericRendererExternal` formalize the contract.
+- **Per-panel override props** on `IndicatorTogglePopoverGeneric`: `activeUserIndicatorIdsOverride` + `onToggleUserIndicatorOverride` operate on `UserIndicator.id`, ready for per-panel toggling of catalog instances in a future revision.
+- **Locales**: 5 new indicator names + `orbPeriodMinutes` param key in **en**, **pt**, **es**, **fr** root-level `indicators.*` block.
+
+### Removed
+- **Legacy `IndicatorTogglePopover`** (~440 lines): the file is now a re-export shim for `IndicatorTogglePopoverGeneric`. All callers automatically use the generic pipeline.
+- **`VITE_USE_GENERIC_INDICATOR_PIPELINE` feature flag** + `apps/electron/src/renderer/constants/featureFlags.ts`: the generic pipeline is the only path now.
+- **`ChartToolsToolbar` per-panel override wiring**: simplified to `<IndicatorTogglePopover />` (no `useLayoutStore` / `IndicatorId` imports). Per-panel control will return on the new `UserIndicator`-id-based override interface when the panel layout system migrates to catalog instances.
+
+### Notes
+- Per-indicator legacy render hooks for `fibonacci`, `fvg`, and `liquidityLevels` remain in place because their catalog entries reference `scriptId` / `rendererId` strings without working `NATIVE_EVALUATORS` or `CUSTOM_RENDERER_REGISTRY` entries. Removing the legacy hooks now would silently break those visualizations. Full per-hook removal is queued for v0.95 once those three are ported.
+
 ## [0.93.0] - 2026-04-18
 
 ### Added

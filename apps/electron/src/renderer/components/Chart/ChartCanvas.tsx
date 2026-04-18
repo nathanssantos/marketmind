@@ -272,9 +272,19 @@ export const ChartCanvas = ({
   });
 
   const instances = useIndicatorStore(useShallow((s) => s.instances));
-  const { outputs: genericOutputs } = useGenericChartIndicators(klines, instances);
+  const { outputs: genericOutputs } = useGenericChartIndicators(klines, instances, {
+    marketEvents,
+    footprintBars,
+    liquidityHeatmap: heatmapDataRef.current,
+  });
   const genericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, instances, outputs: genericOutputs,
+    external: {
+      marketEvents,
+      footprintBars,
+      liquidityHeatmap: heatmapDataRef.current,
+      liquidityColorMode,
+    },
   });
 
   const { getEventAtPosition } = indicatorRenderers;

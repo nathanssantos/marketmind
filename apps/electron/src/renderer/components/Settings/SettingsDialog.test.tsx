@@ -33,6 +33,10 @@ vi.mock('./DataTab', () => ({
     DataTab: () => <div>DataTab Content</div>,
 }));
 
+vi.mock('./IndicatorsTab', () => ({
+    IndicatorsTab: () => <div>IndicatorsTab Content</div>,
+}));
+
 vi.mock('../Trading/WalletManager', () => ({
     WalletManager: () => <div>WalletManager Content</div>,
 }));

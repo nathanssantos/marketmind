@@ -1,4 +1,9 @@
-import type { Kline } from '@marketmind/types';
+import type {
+  FootprintBar,
+  Kline,
+  LiquidityHeatmapSnapshot,
+  MarketEvent,
+} from '@marketmind/types';
 import { getKlineVolume } from '@marketmind/types';
 import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { calculateAO } from './ao';
@@ -20,9 +25,17 @@ import { calculateIntradayVWAP, calculateWeeklyVWAP } from './vwap';
 
 export type NativeEvaluatorOutput = Record<string, (number | null)[]>;
 
+export interface NativeEvaluatorContext {
+  marketEvents?: MarketEvent[];
+  footprintBars?: FootprintBar[];
+  liquidityHeatmap?: LiquidityHeatmapSnapshot | null;
+  intervalMinutes?: number;
+}
+
 export type NativeEvaluator = (
   klines: Kline[],
   params: Record<string, IndicatorParamValue>,
+  ctx?: NativeEvaluatorContext,
 ) => NativeEvaluatorOutput;
 
 const num = (v: IndicatorParamValue | undefined, fallback: number): number => {
@@ -165,6 +178,16 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
   },
 
   volumeProfile: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  orb: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  sessionBoundaries: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  footprint: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  liquidityHeatmap: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  liquidationMarkers: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
 };
 
 export const hasNativeEvaluator = (scriptId: string): boolean =>

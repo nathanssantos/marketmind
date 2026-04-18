@@ -3,9 +3,9 @@ import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
-import type { GenericRenderer as GenericRendererFn } from './renderers';
+import type { GenericRenderer as GenericRendererFn, GenericRendererExternal } from './renderers';
 import { getCustomRenderer, getRenderer } from './renderers';
 
 export interface UseGenericChartIndicatorRenderersProps {
@@ -13,6 +13,7 @@ export interface UseGenericChartIndicatorRenderersProps {
   colors: ChartThemeColors;
   instances: IndicatorInstance[];
   outputs: Map<string, IndicatorOutputs>;
+  external?: GenericRendererExternal;
 }
 
 export interface UseGenericChartIndicatorRenderersResult {
@@ -44,7 +45,11 @@ export const useGenericChartIndicatorRenderers = ({
   colors,
   instances,
   outputs,
+  external,
 }: UseGenericChartIndicatorRenderersProps): UseGenericChartIndicatorRenderersResult => {
+  const externalRef = useRef<GenericRendererExternal | undefined>(external);
+  externalRef.current = external;
+
   const resolved = useMemo<ResolvedInstance[]>(() => {
     const list: ResolvedInstance[] = [];
     for (const instance of instances) {
@@ -65,7 +70,10 @@ export const useGenericChartIndicatorRenderers = ({
       if (!renderer) return;
       const values = outputs.get(instanceId);
       if (!values) return;
-      renderer({ manager, colors }, { instance: entry.instance, definition: entry.definition, values });
+      renderer(
+        { manager, colors, external: externalRef.current },
+        { instance: entry.instance, definition: entry.definition, values },
+      );
     },
     [manager, resolved, outputs, colors],
   );
@@ -78,7 +86,7 @@ export const useGenericChartIndicatorRenderers = ({
       if (!renderer) continue;
       const values = outputs.get(instance.id);
       if (!values) continue;
-      renderer({ manager, colors }, { instance, definition, values });
+      renderer({ manager, colors, external: externalRef.current }, { instance, definition, values });
     }
   }, [manager, resolved, outputs, colors]);
 
@@ -90,7 +98,7 @@ export const useGenericChartIndicatorRenderers = ({
       if (!renderer) continue;
       const values = outputs.get(instance.id);
       if (!values) continue;
-      renderer({ manager, colors }, { instance, definition, values });
+      renderer({ manager, colors, external: externalRef.current }, { instance, definition, values });
     }
   }, [manager, resolved, outputs, colors]);
 
@@ -104,7 +112,7 @@ export const useGenericChartIndicatorRenderers = ({
       if (!renderer) continue;
       const values = outputs.get(instance.id);
       if (!values) continue;
-      renderer({ manager, colors }, { instance, definition, values });
+      renderer({ manager, colors, external: externalRef.current }, { instance, definition, values });
     }
   }, [manager, resolved, outputs, colors]);
 

@@ -2,7 +2,7 @@ import type { Kline } from '@marketmind/types';
 import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import { computeMulti, computeSingle } from '@renderer/workers/pineWorkerService';
-import { getNativeEvaluator } from '@renderer/lib/indicators/nativeEvaluators';
+import { getNativeEvaluator, type NativeEvaluatorContext } from '@renderer/lib/indicators/nativeEvaluators';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -95,19 +95,23 @@ const runNativeBatch = (
   klines: Kline[],
   scriptId: string,
   params: Record<string, IndicatorParamValue>,
+  ctx: NativeEvaluatorContext,
 ): IndicatorOutputs => {
   const evaluator = getNativeEvaluator(scriptId);
   if (!evaluator) return {};
-  return evaluator(klines, params);
+  return evaluator(klines, params, ctx);
 };
 
 export const useGenericChartIndicators = (
   klines: Kline[],
   instances: IndicatorInstance[],
+  externalCtx: NativeEvaluatorContext = {},
 ): UseGenericChartIndicatorsResult => {
   const batches = useMemo(() => buildBatches(instances), [instances]);
   const klinesRef = useRef(klines);
   klinesRef.current = klines;
+  const ctxRef = useRef<NativeEvaluatorContext>(externalCtx);
+  ctxRef.current = externalCtx;
 
   const klinesSignature = useMemo(() => {
     if (klines.length === 0) return 'empty';
@@ -115,6 +119,15 @@ export const useGenericChartIndicators = (
     const last = klines[klines.length - 1]!;
     return `${klines.length}:${first.openTime}:${last.openTime}`;
   }, [klines]);
+
+  const ctxSignature = useMemo(() => {
+    const events = externalCtx.marketEvents?.length ?? 0;
+    const fp = externalCtx.footprintBars?.length ?? 0;
+    const heat = externalCtx.liquidityHeatmap?.buckets.length ?? 0;
+    const liq = externalCtx.liquidityHeatmap?.liquidations?.length ?? 0;
+    const interval = externalCtx.intervalMinutes ?? 0;
+    return `e${events}|f${fp}|h${heat}|l${liq}|i${interval}`;
+  }, [externalCtx]);
 
   const [outputs, setOutputs] = useState<Map<string, IndicatorOutputs>>(() => new Map());
   const [isComputing, setIsComputing] = useState(false);
@@ -136,7 +149,7 @@ export const useGenericChartIndicators = (
         try {
           const result = batch.service === 'pine'
             ? await runPineBatch(klinesRef.current, batch.scriptId, batch.params)
-            : runNativeBatch(klinesRef.current, batch.scriptId, batch.params);
+            : runNativeBatch(klinesRef.current, batch.scriptId, batch.params, ctxRef.current);
           for (const id of batch.instanceIds) next.set(id, result);
         } catch (err) {
           console.error(`[useGenericChartIndicators] batch failed: ${batch.service}/${batch.scriptId}`, err);
@@ -154,7 +167,7 @@ export const useGenericChartIndicators = (
     return () => {
       cancelled = true;
     };
-  }, [batches, klinesSignature, klines.length]);
+  }, [batches, klinesSignature, klines.length, ctxSignature]);
 
   return useMemo(() => ({ outputs, isComputing }), [outputs, isComputing]);
 };

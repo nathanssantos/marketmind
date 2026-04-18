@@ -819,6 +819,76 @@ const entries: IndicatorDefinition[] = [
     evaluator: { service: 'native', scriptId: 'volumeProfile' },
     defaultLabel: () => 'Volume Profile',
   },
+
+  {
+    type: 'orb',
+    labelKey: 'indicators.orb',
+    category: 'priceStructure',
+    params: [
+      {
+        key: 'orbPeriodMinutes',
+        labelKey: 'indicators.params.orbPeriodMinutes',
+        type: 'integer',
+        default: 15,
+        min: 1,
+        max: 240,
+        step: 1,
+      },
+    ],
+    outputs: [{ key: 'rendered', labelKey: 'indicators.outputs.rendered' }],
+    render: { kind: 'custom', rendererId: 'orb' },
+    conditionOps: [],
+    evaluator: { service: 'native', scriptId: 'orb' },
+    defaultLabel: (p) => `ORB ${p['orbPeriodMinutes'] ?? 15}m`,
+  },
+
+  {
+    type: 'sessionBoundaries',
+    labelKey: 'indicators.sessionBoundaries',
+    category: 'priceStructure',
+    params: [],
+    outputs: [{ key: 'rendered', labelKey: 'indicators.outputs.rendered' }],
+    render: { kind: 'custom', rendererId: 'sessionBoundaries' },
+    conditionOps: [],
+    evaluator: { service: 'native', scriptId: 'sessionBoundaries' },
+    defaultLabel: () => 'Session Boundaries',
+  },
+
+  {
+    type: 'footprint',
+    labelKey: 'indicators.footprint',
+    category: 'orderFlow',
+    params: [],
+    outputs: [{ key: 'rendered', labelKey: 'indicators.outputs.rendered' }],
+    render: { kind: 'custom', rendererId: 'footprint' },
+    conditionOps: [],
+    evaluator: { service: 'native', scriptId: 'footprint' },
+    defaultLabel: () => 'Footprint',
+  },
+
+  {
+    type: 'liquidityHeatmap',
+    labelKey: 'indicators.liquidityHeatmap',
+    category: 'orderFlow',
+    params: [],
+    outputs: [{ key: 'rendered', labelKey: 'indicators.outputs.rendered' }],
+    render: { kind: 'custom', rendererId: 'liquidityHeatmap' },
+    conditionOps: [],
+    evaluator: { service: 'native', scriptId: 'liquidityHeatmap' },
+    defaultLabel: () => 'Liquidity Heatmap',
+  },
+
+  {
+    type: 'liquidationMarkers',
+    labelKey: 'indicators.liquidationMarkers',
+    category: 'orderFlow',
+    params: [],
+    outputs: [{ key: 'rendered', labelKey: 'indicators.outputs.rendered' }],
+    render: { kind: 'custom', rendererId: 'liquidationMarkers' },
+    conditionOps: [],
+    evaluator: { service: 'native', scriptId: 'liquidationMarkers' },
+    defaultLabel: () => 'Liquidation Markers',
+  },
 ];
 
 export const INDICATOR_CATALOG: Record<string, IndicatorDefinition> = Object.fromEntries(

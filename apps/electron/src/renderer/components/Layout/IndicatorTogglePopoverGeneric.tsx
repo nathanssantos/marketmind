@@ -65,11 +65,21 @@ type DialogState =
   | { kind: 'create' }
   | { kind: 'edit'; indicator: UserIndicator };
 
-export const IndicatorTogglePopoverGeneric = memo(() => {
+export interface IndicatorTogglePopoverGenericProps {
+  activeUserIndicatorIdsOverride?: string[];
+  onToggleUserIndicatorOverride?: (userIndicatorId: string) => void;
+}
+
+export const IndicatorTogglePopoverGeneric = memo(
+  ({
+    activeUserIndicatorIdsOverride,
+    onToggleUserIndicatorOverride,
+  }: IndicatorTogglePopoverGenericProps = {}) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [dialog, setDialog] = useState<DialogState>({ kind: 'closed' });
   const [confirmDelete, setConfirmDelete] = useState<UserIndicator | null>(null);
+  const isOverrideMode = activeUserIndicatorIdsOverride !== undefined && onToggleUserIndicatorOverride !== undefined;
 
   const { indicators, create, update, remove } = useUserIndicators();
 
@@ -91,10 +101,28 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
     return map;
   }, [instances]);
 
+  const overrideActiveSet = useMemo(
+    () => (activeUserIndicatorIdsOverride ? new Set(activeUserIndicatorIdsOverride) : null),
+    [activeUserIndicatorIdsOverride],
+  );
+
+  const isUserIndicatorActive = useCallback(
+    (ui: UserIndicator): boolean => {
+      if (overrideActiveSet) return overrideActiveSet.has(ui.id);
+      const matched = instancesByUserIndicatorId.get(ui.id);
+      return !!matched && matched.length > 0;
+    },
+    [overrideActiveSet, instancesByUserIndicatorId],
+  );
+
   const groups = useMemo(() => groupByCategory(indicators), [indicators]);
 
   const handleToggle = useCallback(
     (ui: UserIndicator, isActive: boolean) => {
+      if (isOverrideMode) {
+        onToggleUserIndicatorOverride!(ui.id);
+        return;
+      }
       if (isActive) {
         removeInstancesByUserIndicatorId(ui.id);
         return;
@@ -106,7 +134,7 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
         visible: true,
       });
     },
-    [addInstance, removeInstancesByUserIndicatorId],
+    [addInstance, removeInstancesByUserIndicatorId, isOverrideMode, onToggleUserIndicatorOverride],
   );
 
   const handleSubmit = useCallback(
@@ -135,12 +163,9 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
   const totalCount = indicators.length;
   const activeCount = useMemo(() => {
     let count = 0;
-    for (const ui of indicators) {
-      const list = instancesByUserIndicatorId.get(ui.id);
-      if (list && list.length > 0) count++;
-    }
+    for (const ui of indicators) if (isUserIndicatorActive(ui)) count++;
     return count;
-  }, [indicators, instancesByUserIndicatorId]);
+  }, [indicators, isUserIndicatorActive]);
 
   return (
     <>
@@ -205,8 +230,7 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
                   </Text>
                   <Stack gap={1.5} pl={2}>
                     {group.items.map((ui) => {
-                      const matched = instancesByUserIndicatorId.get(ui.id) ?? [];
-                      const isActive = matched.length > 0;
+                      const isActive = isUserIndicatorActive(ui);
                       return (
                         <Flex key={ui.id} align="center" justify="space-between" gap={2}>
                           <Box flex={1} minW={0}>
@@ -273,6 +297,7 @@ export const IndicatorTogglePopoverGeneric = memo(() => {
       />
     </>
   );
-});
+  },
+);
 
 IndicatorTogglePopoverGeneric.displayName = 'IndicatorTogglePopoverGeneric';
