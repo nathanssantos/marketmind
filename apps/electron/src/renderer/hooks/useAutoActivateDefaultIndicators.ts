@@ -31,7 +31,6 @@ export const useAutoActivateDefaultIndicators = (): void => {
         visible: true,
       });
     }
-
     setDefaultsAutoActivated(true);
   }, [defaultsAutoActivated, isLoading, indicators, setDefaultsAutoActivated]);
 };

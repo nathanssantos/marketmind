@@ -63,10 +63,15 @@ const MULTI_SCRIPTS: Record<MultiIndicatorType, (p: Record<string, number>) => {
     decl: `[_mc_l, _mc_s, _mc_h] = ta.macd(close, ${p['fastPeriod'] ?? 12}, ${p['slowPeriod'] ?? 26}, ${p['signalPeriod'] ?? 9})`,
     plots: ['line:_mc_l', 'signal:_mc_s', 'histogram:_mc_h'],
   }),
-  stoch: (p) => ({
-    decl: `_st_k = ta.stoch(close, high, low, ${p['period'] ?? 14}, ${p['smoothK'] ?? 3}, 3)\n_st_d = ta.sma(_st_k, 3)`,
-    plots: ['k:_st_k', 'd:_st_d'],
-  }),
+  stoch: (p) => {
+    const period = p['period'] ?? 14;
+    const smoothK = p['smoothK'] ?? 3;
+    const smoothD = p['smoothD'] ?? 3;
+    return {
+      decl: `_raw_k = ta.stoch(close, high, low, ${period})\n_st_k = ta.sma(_raw_k, ${smoothK})\n_st_d = ta.sma(_st_k, ${smoothD})`,
+      plots: ['k:_st_k', 'd:_st_d'],
+    };
+  },
   kc: (p) => ({
     decl: `[_kc_m, _kc_u, _kc_l] = ta.kc(close, ${p['period'] ?? 20}, ${p['multiplier'] ?? 2})`,
     plots: ['middle:_kc_m', 'upper:_kc_u', 'lower:_kc_l'],

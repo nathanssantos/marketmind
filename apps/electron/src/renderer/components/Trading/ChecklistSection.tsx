@@ -1,8 +1,10 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Badge, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { trpc } from '@renderer/utils/trpc';
+import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCheck, LuChevronDown, LuChevronRight, LuTriangle, LuX } from 'react-icons/lu';
@@ -96,11 +98,73 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   const isLoading = checklistQuery.isLoading;
   const isError = checklistQuery.isError;
-  const longScore = checklistQuery.data?.scoreLong;
-  const shortScore = checklistQuery.data?.scoreShort;
+
+  const checklistConditions = useMemo<ChecklistCondition[]>(
+    () => (defaultProfile?.checklistConditions ?? []) as ChecklistCondition[],
+    [defaultProfile?.checklistConditions],
+  );
+  const clientResults = useChecklistEvaluation({
+    symbol,
+    interval: effectiveInterval,
+    marketType,
+    conditions: checklistConditions,
+  });
+
+  const mergedData = useMemo(() => {
+    const backendData = checklistQuery.data;
+    if (!backendData) return null;
+    if (clientResults.size === 0) return backendData;
+
+    const mergedResults = backendData.results.map((r) => {
+      const c = clientResults.get(r.conditionId);
+      if (!c) return r;
+      return { ...r, evaluated: c.evaluated, passed: c.passed, value: c.value };
+    });
+
+    let longRequiredTotal = 0, longRequiredPassed = 0;
+    let longPreferredTotal = 0, longPreferredPassed = 0;
+    let shortRequiredTotal = 0, shortRequiredPassed = 0;
+    let shortPreferredTotal = 0, shortPreferredPassed = 0;
+    for (const r of mergedResults) {
+      if (r.countedLong) {
+        if (r.tier === 'required') {
+          longRequiredTotal += 1;
+          if (r.passed) longRequiredPassed += 1;
+        } else {
+          longPreferredTotal += 1;
+          if (r.passed) longPreferredPassed += 1;
+        }
+      }
+      if (r.countedShort) {
+        if (r.tier === 'required') {
+          shortRequiredTotal += 1;
+          if (r.passed) shortRequiredPassed += 1;
+        } else {
+          shortPreferredTotal += 1;
+          if (r.passed) shortPreferredPassed += 1;
+        }
+      }
+    }
+    const scoreLong = calculateChecklistScore({
+      requiredTotal: longRequiredTotal,
+      requiredPassed: longRequiredPassed,
+      preferredTotal: longPreferredTotal,
+      preferredPassed: longPreferredPassed,
+    });
+    const scoreShort = calculateChecklistScore({
+      requiredTotal: shortRequiredTotal,
+      requiredPassed: shortRequiredPassed,
+      preferredTotal: shortPreferredTotal,
+      preferredPassed: shortPreferredPassed,
+    });
+    return { ...backendData, results: mergedResults, scoreLong, scoreShort };
+  }, [checklistQuery.data, clientResults]);
+
+  const longScore = mergedData?.scoreLong;
+  const shortScore = mergedData?.scoreShort;
 
   const groups = useMemo(() => {
-    const allResults = (checklistQuery.data?.results ?? []) as EvaluationResult[];
+    const allResults = (mergedData?.results ?? []) as EvaluationResult[];
     const long: EvaluationResult[] = [];
     const short: EvaluationResult[] = [];
     const both: EvaluationResult[] = [];
@@ -110,7 +174,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       else both.push(r);
     }
     return { long, short, both };
-  }, [checklistQuery.data]);
+  }, [mergedData]);
 
   if (isLoadingProfiles || !defaultProfile) return null;
 

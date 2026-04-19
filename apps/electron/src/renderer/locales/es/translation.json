@@ -2142,6 +2142,7 @@
       "tenkanPeriod": "Período Tenkan",
       "kijunPeriod": "Período Kijun",
       "senkouPeriod": "Período Senkou",
+      "displacement": "Desplazamiento",
       "tenkanColor": "Color Tenkan",
       "kijunColor": "Color Kijun",
       "chikouColor": "Color Chikou",
@@ -2184,5 +2185,20 @@
     "footprint": "Footprint",
     "liquidityHeatmap": "Mapa de Calor de Liquidez",
     "liquidationMarkers": "Marcadores de Liquidación"
+  },
+  "checklist": {
+    "section": {
+      "long": "Long",
+      "short": "Short",
+      "both": "Ambos"
+    },
+    "editor": {
+      "moveUp": "Mover arriba",
+      "moveDown": "Mover abajo"
+    },
+    "ops": {
+      "rising": "subiendo (barra actual > anterior)",
+      "falling": "bajando (barra actual < anterior)"
+    }
   }
 }

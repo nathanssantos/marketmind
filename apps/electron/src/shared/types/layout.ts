@@ -1,5 +1,4 @@
 import type { MarketType } from '@marketmind/types';
-import type { IndicatorId } from '@renderer/store/indicatorStore';
 
 export type ChartType = 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
 
@@ -16,8 +15,6 @@ export interface GridPanelConfig {
   id: string;
   timeframe: string;
   chartType: ChartType;
-  activeIndicators: IndicatorId[];
-  indicatorParams: Record<string, unknown>;
   gridPosition: GridPosition;
   windowState: PanelWindowState;
   savedGridPosition?: GridPosition;
