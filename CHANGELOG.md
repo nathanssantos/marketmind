@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.97.0] - 2026-04-19
+
+### Added
+- **Per-condition weights on the pre-trade checklist** — every condition now carries a `weight` (range 0.1–5, step 0.25) that multiplies its contribution to the score. Defaults follow the timeframe: `1m=0.5`, `5m=0.75`, `15m=1`, `30m=1.25`, `1h=1.5`, `2h=1.75`, `4h=2`, `6h=2.25`, `8h=2.5`, `12h=2.75`, `1d=3`, `3d=3.5`, `1w=4`, `current=1`. Higher timeframes contribute more to the final score, so a 4h oversold outweighs a 15m oversold. Exposed via `getDefaultChecklistWeight()` in `@marketmind/types`.
+- **Weighted score formula** — `calculateChecklistScore` now uses `requiredWeightPassed × 2 + preferredWeightPassed × 1` over `requiredWeightTotal × 2 + preferredWeightTotal × 1`. Tier multiplier (required = 2×, preferred = 1×) unchanged. Backend evaluator tracks both count and weight totals per side/tier.
+- **Weight UI** — `ChecklistFields` dialog gets a number input (auto-updates to timeframe default when TF changes); `ChecklistEditor` card and `ChecklistSection` row render a `×multiplier` badge.
+- **QuickTradeToolbar +/− buttons** — between the size slider and leverage badge, stepping 5% at a time with snap-to-5 behavior.
+- **i18n keys** — `checklist.weight` and `checklist.weightHint` across en/pt/es/fr.
+
+### Fixed
+- **Dialog X close button** — `FormDialog` now wires `<DialogCloseTrigger asChild><CloseButton size="sm" /></DialogCloseTrigger>`, so every dialog built on `FormDialog` (plus `ProfileEditorDialog`, `ImportProfileDialog`, `DynamicSymbolRankings`, `ScreenerModal`, `ChartCloseDialog`) renders its close button. Chakra v3's `DialogCloseTrigger` uses `forwardAsChild: true`, which rendered nothing when passed no child element — the root cause of the missing X.
+- **Checklist reorder arrows** — `commit()` was calling `.sort(sortByOrder)` before `.map((c, idx) => ({ ...c, order: idx }))`, which undid the swap from `handleMove` by re-sorting on the old `order` field. Removing the redundant sort restores up/down reordering.
+
+### Changed
+- **Size preset buttons** — replaced `0.5%` / `1%` with `25%` / `75%`. Final presets: `5, 10, 25, 50, 75, 100`.
+- **Legacy checklist records** — `parseChecklistConditions` in `apps/backend/src/utils/profile-transformers.ts` now fills `weight` with `getDefaultChecklistWeight(timeframe)` when absent, so existing profiles in the JSON column work without a migration.
+
 ## [0.96.0] - 2026-04-19
 
 ### Fixed
