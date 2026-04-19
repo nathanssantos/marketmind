@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
 import { orders, tradeExecutions } from '../../db/schema';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient } from '../../exchange';
@@ -194,7 +195,8 @@ export const orderMutationsRouter = router({
             type: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
             triggerPrice,
             quantity: formatQuantityForBinance(requestedQty, stepSize),
-            workingType: 'CONTRACT_PRICE',
+            workingType: ALGO_ORDER_DEFAULTS.workingType,
+            priceProtect: ALGO_ORDER_DEFAULTS.priceProtect,
             ...(orderInput.reduceOnly && { reduceOnly: true }),
           });
 

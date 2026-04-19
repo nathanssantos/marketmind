@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
 import { orders, tradeExecutions } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
@@ -246,7 +247,8 @@ export const executionUpdatesRouter = router({
             type: execution.entryOrderType as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
             triggerPrice: formattedPrice,
             quantity: formattedQty,
-            workingType: 'CONTRACT_PRICE',
+            workingType: ALGO_ORDER_DEFAULTS.workingType,
+            priceProtect: ALGO_ORDER_DEFAULTS.priceProtect,
           });
           newOrderId = algoOrder.algoId;
           await ctx.db.insert(orders).values({

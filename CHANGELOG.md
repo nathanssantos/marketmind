@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.96.0] - 2026-04-19
+
+### Fixed
+- **SL/TP anti-slippage protection (Binance Futures)** — closing orders now ship `workingType: MARK_PRICE` + `priceProtect: true` so wicks no longer trigger stops and abnormal Last vs Mark divergence blocks execution at market. Previously, `STOP_MARKET` / `TAKE_PROFIT_MARKET` triggers used `CONTRACT_PRICE` (Last) without `priceProtect`, producing significant slippage on closes — including stops already in profit flipping to a loss. Centralized in `apps/backend/src/constants/algo-orders.ts` (`ALGO_ORDER_DEFAULTS`) and consumed from every algo-order call site: `protection-orders.ts` (SL + TP create), `exchange-trailing-stop.ts` (futures trailing), `routers/trading/order-mutations.ts` (manual algo), `routers/trading/execution-updates.ts` (drag pending entry), `routers/futures-trading/order-helpers.ts` (conditional orders). Updates cancel+recreate through the same helpers, so the defaults propagate automatically. `submitFuturesAlgoOrder` was extended to forward `priceProtect` as the SDK's `BooleanString`.
+- **Stochastic chart vs checklist disagreement** — `smoothK` / `smoothD` parameters were silently dropped in the chart pipeline, so the rendered series diverged from the checklist evaluator's result. Catalog-driven indicator params now flow end-to-end (fix: 851995c9).
+- **Screener Stochastic params** — aligned with catalog definition + duplicate metadata file removed (fix: 4c11afdf).
+- **Stale liquidation-threshold assertions** — `position-monitor-extended.test.ts` referenced 0.30/0.15 distances from a prior threshold regime; updated to the current 0.12 (warning) / 0.07 (danger) bands. `trading-core/constants.test.ts` CRITICAL threshold corrected to 0.05.
+
+### Added
+- **Catalog-validated tRPC inputs** for indicator params (`packages/trading-core/schemas`) — single source of truth shared by backend routers and frontend type-checks; legacy param keys dropped (feat: 497053ea + e1c5dc92).
+- **One-shot legacy → catalog migration on startup** — existing user indicators are materialized against `INDICATOR_CATALOG` on boot so upgraded installs inherit the new param shapes without manual intervention (feat: d37cd979).
+- **`fibonacci`, `fvg`, `liquidityLevels` ported to the generic pipeline** — the three deferred legacy render hooks now consume `CUSTOM_RENDERER_REGISTRY`, completing the v0.94 migration (feat: cfbba9ec).
+
+### Changed
+- **Backend indicator handlers** aligned to catalog param keys — no more hand-maintained drift between handler input shapes and catalog definitions (refactor: 96cd6611).
+- **Legacy chart pipeline deleted** — generic indicator instances API is now the only code path. Removed ~12 legacy files (`indicatorRendererImports.ts`, `indicatorRendererTypes.ts`, `layers/{Background,Data,Indicator,Overlay}Layer.ts`, `useChartIndicatorRenderers.ts`, `useChartIndicators.ts`, `useChartRendering.test.ts`, etc.) and their tests (refactor: 83b22870).
+
+### Notes
+- **Edge case (documented, not fixed)**: when the market suffers a real crash (not a wick), `priceProtect=true` will **block** SL execution. The position is temporarily unprotected. Existing mitigations (liquidation-monitor + position-sync) still detect the state and can force-close — no new logic added this release.
+
 ## [0.95.0] - 2026-04-18
 
 ### Added

@@ -35,6 +35,7 @@ export interface FuturesAlgoOrderParams {
   callbackRate?: string;
   clientAlgoId?: string;
   workingType?: 'MARK_PRICE' | 'CONTRACT_PRICE';
+  priceProtect?: boolean;
   positionSide?: 'LONG' | 'SHORT' | 'BOTH';
 }
 

@@ -1,3 +1,4 @@
+import { ALGO_ORDER_DEFAULTS } from '../constants/algo-orders';
 import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
@@ -163,6 +164,9 @@ export class ExchangeTrailingStopService {
         type: 'TRAILING_STOP_MARKET',
         quantity: formattedQuantity,
         callbackRate: params.callbackRate.toString(),
+        reduceOnly: true,
+        workingType: ALGO_ORDER_DEFAULTS.workingType,
+        priceProtect: ALGO_ORDER_DEFAULTS.priceProtect,
         ...(formattedActivationPrice && { activationPrice: formattedActivationPrice }),
         ...(params.positionSide && { positionSide: params.positionSide }),
       });
