@@ -13,7 +13,7 @@ import { formatChartPrice } from '@renderer/utils/formatters';
 import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuShield, LuX } from 'react-icons/lu';
+import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuMinus, LuPlus, LuShield, LuX } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
 import { ChecklistSection } from '../Trading/ChecklistSection';
 import { GridOrderPopover } from './GridOrderPopover';
@@ -45,7 +45,7 @@ const ActionRow = ({ icon, label, onClick, loading, disabled, children }: {
   </Flex>
 );
 
-const SIZE_PRESETS = [0.5, 1, 5, 10, 50, 100] as const;
+const SIZE_PRESETS = [5, 10, 25, 50, 75, 100] as const;
 const SNAP_THRESHOLD = 16;
 const EDGE_PADDING = 8;
 
@@ -217,6 +217,14 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     const v = value[0];
     if (v !== undefined && v !== sizePercent) setSizePercent(v);
   }, [setSizePercent, sizePercent]);
+  const handleDecrement = useCallback(() => {
+    const next = Math.max(0.1, Math.ceil(sizePercent / 5) * 5 - 5);
+    if (next !== sizePercent) setSizePercent(next);
+  }, [sizePercent, setSizePercent]);
+  const handleIncrement = useCallback(() => {
+    const next = Math.min(100, Math.floor(sizePercent / 5) * 5 + 5);
+    if (next !== sizePercent) setSizePercent(next);
+  }, [sizePercent, setSizePercent]);
 
   return (
     <>
@@ -272,9 +280,31 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
 
         <HStack gap={1.5} px={0.5}>
           <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.1} max={100} step={0.1} />
-          <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="right" lineHeight="1" whiteSpace="nowrap">
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            aria-label="Decrease size 5%"
+            onClick={handleDecrement}
+            disabled={sizePercent <= 0.1}
+            h="20px"
+            minW="20px"
+          >
+            <LuMinus />
+          </IconButton>
+          <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="center" lineHeight="1" whiteSpace="nowrap">
             {`${Math.round(sizePercent * 10) / 10}%`}
           </Text>
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            aria-label="Increase size 5%"
+            onClick={handleIncrement}
+            disabled={sizePercent >= 100}
+            h="20px"
+            minW="20px"
+          >
+            <LuPlus />
+          </IconButton>
           {marketType === 'FUTURES' && <LeveragePopover symbol={symbol} />}
         </HStack>
 

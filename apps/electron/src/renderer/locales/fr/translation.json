@@ -2188,6 +2188,8 @@
     "ops": {
       "rising": "en hausse (barre actuelle > précédente)",
       "falling": "en baisse (barre actuelle < précédente)"
-    }
+    },
+    "weight": "Poids (× multiplicateur)",
+    "weightHint": "Les timeframes plus élevés pèsent plus. Les conditions requises valent 2× ; préférées 1×."
   }
 }

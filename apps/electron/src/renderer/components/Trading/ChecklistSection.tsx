@@ -5,6 +5,7 @@ import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { trpc } from '@renderer/utils/trpc';
 import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
+import { getDefaultChecklistWeight } from '@marketmind/types';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCheck, LuChevronDown, LuChevronRight, LuTriangle, LuX } from 'react-icons/lu';
@@ -23,6 +24,7 @@ type EvaluationResult = {
   tier: 'required' | 'preferred';
   op: string;
   value: number | null;
+  weight?: number | null;
   indicatorLabel?: string | null;
   catalogType?: string | null;
   timeframe?: string | null;
@@ -122,40 +124,72 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     });
 
     let longRequiredTotal = 0, longRequiredPassed = 0;
+    let longRequiredWeightTotal = 0, longRequiredWeightPassed = 0;
     let longPreferredTotal = 0, longPreferredPassed = 0;
+    let longPreferredWeightTotal = 0, longPreferredWeightPassed = 0;
     let shortRequiredTotal = 0, shortRequiredPassed = 0;
+    let shortRequiredWeightTotal = 0, shortRequiredWeightPassed = 0;
     let shortPreferredTotal = 0, shortPreferredPassed = 0;
+    let shortPreferredWeightTotal = 0, shortPreferredWeightPassed = 0;
     for (const r of mergedResults) {
+      const w =
+        typeof r.weight === 'number' && Number.isFinite(r.weight) && r.weight > 0
+          ? r.weight
+          : getDefaultChecklistWeight(r.timeframe ?? 'current');
       if (r.countedLong) {
         if (r.tier === 'required') {
           longRequiredTotal += 1;
-          if (r.passed) longRequiredPassed += 1;
+          longRequiredWeightTotal += w;
+          if (r.passed) {
+            longRequiredPassed += 1;
+            longRequiredWeightPassed += w;
+          }
         } else {
           longPreferredTotal += 1;
-          if (r.passed) longPreferredPassed += 1;
+          longPreferredWeightTotal += w;
+          if (r.passed) {
+            longPreferredPassed += 1;
+            longPreferredWeightPassed += w;
+          }
         }
       }
       if (r.countedShort) {
         if (r.tier === 'required') {
           shortRequiredTotal += 1;
-          if (r.passed) shortRequiredPassed += 1;
+          shortRequiredWeightTotal += w;
+          if (r.passed) {
+            shortRequiredPassed += 1;
+            shortRequiredWeightPassed += w;
+          }
         } else {
           shortPreferredTotal += 1;
-          if (r.passed) shortPreferredPassed += 1;
+          shortPreferredWeightTotal += w;
+          if (r.passed) {
+            shortPreferredPassed += 1;
+            shortPreferredWeightPassed += w;
+          }
         }
       }
     }
     const scoreLong = calculateChecklistScore({
       requiredTotal: longRequiredTotal,
       requiredPassed: longRequiredPassed,
+      requiredWeightTotal: longRequiredWeightTotal,
+      requiredWeightPassed: longRequiredWeightPassed,
       preferredTotal: longPreferredTotal,
       preferredPassed: longPreferredPassed,
+      preferredWeightTotal: longPreferredWeightTotal,
+      preferredWeightPassed: longPreferredWeightPassed,
     });
     const scoreShort = calculateChecklistScore({
       requiredTotal: shortRequiredTotal,
       requiredPassed: shortRequiredPassed,
+      requiredWeightTotal: shortRequiredWeightTotal,
+      requiredWeightPassed: shortRequiredWeightPassed,
       preferredTotal: shortPreferredTotal,
       preferredPassed: shortPreferredPassed,
+      preferredWeightTotal: shortPreferredWeightTotal,
+      preferredWeightPassed: shortPreferredWeightPassed,
     });
     return { ...backendData, results: mergedResults, scoreLong, scoreShort };
   }, [checklistQuery.data, clientResults]);
@@ -228,6 +262,11 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         <Badge size="xs" variant="outline" colorPalette={r.tier === 'required' ? 'orange' : 'blue'}>
           {t(`checklist.tier.${r.tier}`, { defaultValue: r.tier })}
         </Badge>
+        {typeof r.weight === 'number' && Number.isFinite(r.weight) && r.weight > 0 && (
+          <Badge size="xs" variant="subtle" colorPalette="purple">
+            ×{r.weight.toFixed(2)}
+          </Badge>
+        )}
         <Text color="fg.muted" minW="32px" textAlign="right">
           {opLabel}
         </Text>

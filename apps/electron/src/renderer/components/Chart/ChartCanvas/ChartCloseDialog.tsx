@@ -1,5 +1,6 @@
 import {
   Button,
+  CloseButton,
   DialogActionTrigger,
   DialogBackdrop,
   DialogBody,
@@ -47,7 +48,9 @@ export const ChartCloseDialog = ({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('trading.closeOrder')}</DialogTitle>
-              <DialogCloseTrigger />
+              <DialogCloseTrigger asChild>
+                <CloseButton size="sm" />
+              </DialogCloseTrigger>
             </DialogHeader>
             <DialogBody>
               {orderToClose && (() => {

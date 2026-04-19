@@ -93,6 +93,7 @@ export interface ChecklistCondition {
   threshold?: ConditionThreshold;
   tier: ConditionTier;
   side: ConditionSide;
+  weight: number;
   enabled: boolean;
   order: number;
 }
@@ -105,8 +106,12 @@ export interface ConditionEvaluationResult {
 export interface ChecklistScoreBreakdown {
   requiredTotal: number;
   requiredPassed: number;
+  requiredWeightTotal: number;
+  requiredWeightPassed: number;
   preferredTotal: number;
   preferredPassed: number;
+  preferredWeightTotal: number;
+  preferredWeightPassed: number;
   score: number;
   requiredAllPassed: boolean;
 }

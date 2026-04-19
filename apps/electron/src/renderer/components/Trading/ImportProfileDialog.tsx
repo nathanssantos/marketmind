@@ -2,6 +2,7 @@ import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import {
   Badge,
   Button,
+  CloseButton,
   DialogBackdrop,
   DialogBody,
   DialogCloseTrigger,
@@ -91,7 +92,9 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('tradingProfiles.import.title')}</DialogTitle>
-            <DialogCloseTrigger />
+            <DialogCloseTrigger asChild>
+              <CloseButton size="sm" />
+            </DialogCloseTrigger>
           </DialogHeader>
 
           <DialogBody>
