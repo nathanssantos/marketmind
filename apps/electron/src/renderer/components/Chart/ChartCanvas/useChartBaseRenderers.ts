@@ -5,7 +5,6 @@ import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { useGridRenderer } from '../useGridRenderer';
 import { useKlineRenderer } from '../useKlineRenderer';
 import { useLineChartRenderer } from '../useLineChartRenderer';
-import { useVolumeRenderer } from '../useVolumeRenderer';
 import { useCurrentPriceLineRenderer } from '../useCurrentPriceLineRenderer';
 import { useCrosshairPriceLineRenderer } from '../useCrosshairPriceLineRenderer';
 import { useWatermarkRenderer } from '../useWatermarkRenderer';
@@ -16,7 +15,6 @@ export interface UseChartBaseRenderersProps {
   chartType: string;
   advancedConfig?: AdvancedControlsConfig;
   showGrid: boolean;
-  showVolume: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
   showActivityIndicator: boolean;
@@ -32,7 +30,6 @@ export interface UseChartBaseRenderersResult {
   renderGrid: () => void;
   renderKlines: () => void;
   renderLineChart: () => void;
-  renderVolume: () => void;
   renderCurrentPriceLine_Line: () => void;
   renderCurrentPriceLine_Label: () => void;
   renderCrosshairPriceLine: () => void;
@@ -45,7 +42,6 @@ export const useChartBaseRenderers = ({
   chartType,
   advancedConfig,
   showGrid,
-  showVolume,
   showCurrentPriceLine,
   showCrosshair,
   showActivityIndicator,
@@ -89,21 +85,6 @@ export const useChartBaseRenderers = ({
     }),
   });
 
-  const { render: renderVolume } = useVolumeRenderer({
-    manager,
-    colors,
-    enabled: showVolume,
-    ...(advancedConfig?.rightMargin !== undefined && {
-      rightMargin: advancedConfig.rightMargin,
-    }),
-    ...(advancedConfig?.volumeHeightRatio !== undefined && {
-      volumeHeightRatio: advancedConfig.volumeHeightRatio,
-    }),
-    ...(hoveredKlineIndex !== undefined && { hoveredKlineIndex }),
-    timeframe,
-    showVolumeMA: true,
-  });
-
   const { renderLine: renderCurrentPriceLine_Line, renderLabel: renderCurrentPriceLine_Label } =
     useCurrentPriceLineRenderer({
       manager,
@@ -143,7 +124,6 @@ export const useChartBaseRenderers = ({
     renderGrid,
     renderKlines,
     renderLineChart,
-    renderVolume,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,

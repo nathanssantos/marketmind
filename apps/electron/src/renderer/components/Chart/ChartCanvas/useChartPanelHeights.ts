@@ -5,32 +5,6 @@ import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import { useEffect, useMemo, useRef } from 'react';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 
-export const PANEL_INDICATORS = [
-  'stochastic',
-  'rsi',
-  'rsi14',
-  'obv',
-  'cmf',
-  'stochRsi',
-  'macd',
-  'adx',
-  'williamsR',
-  'cci',
-  'klinger',
-  'elderRay',
-  'aroon',
-  'vortex',
-  'mfi',
-  'roc',
-  'ao',
-  'tsi',
-  'ppo',
-  'cmo',
-  'ultimateOsc',
-] as const;
-
-export type PanelIndicatorId = (typeof PANEL_INDICATORS)[number];
-
 export interface UseChartPanelHeightsProps {
   manager: CanvasManager | null;
   showEventRow: boolean;

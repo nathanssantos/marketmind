@@ -1,5 +1,5 @@
 import { INDICATOR_COLORS } from '@shared/constants';
-import { buildSessionWindows } from '@renderer/components/Chart/useSessionBoundariesRenderer';
+import { buildSessionWindows } from './sessionWindows';
 import type { GenericRenderer } from './types';
 
 const SESSION_LINE_ALPHA = 0.35;

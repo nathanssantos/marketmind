@@ -265,7 +265,7 @@ export const useChartTradingData = ({
 
   const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
   const needsScalpingMetrics = useIndicatorStore((s) =>
-    s.activeIndicators.includes('cvd') || s.activeIndicators.includes('bookImbalance')
+    s.instances.some((i) => i.visible && (i.catalogType === 'cvd' || i.catalogType === 'bookImbalance'))
   );
 
   const { data: scalpingCfg } = trpc.scalping.getConfig.useQuery(
@@ -275,7 +275,9 @@ export const useChartTradingData = ({
   const resolvedTicksPerBar = scalpingCfg?.ticksPerBar ?? SCALPING_DEFAULTS.TICK_SIZE;
   const resolvedVolumePerBar = scalpingCfg?.volumePerBar ? Number(scalpingCfg.volumePerBar) : SCALPING_DEFAULTS.VOLUME_BAR_SIZE;
 
-  const needsVolumeProfile = useIndicatorStore((s) => s.activeIndicators.includes('volumeProfile'));
+  const needsVolumeProfile = useIndicatorStore((s) =>
+    s.instances.some((i) => i.visible && i.catalogType === 'volumeProfile')
+  );
   const { data: volumeProfileData } = trpc.scalping.getVolumeProfile.useQuery(
     { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
     { enabled: needsVolumeProfile && !!backendWalletId && !!symbol, refetchInterval: SCALPING_DEFAULTS.BOOK_SNAPSHOT_INTERVAL_MS },

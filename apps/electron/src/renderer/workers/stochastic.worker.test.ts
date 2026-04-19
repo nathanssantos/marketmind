@@ -20,7 +20,7 @@ describe('stochastic.worker', () => {
     await import('./stochastic.worker');
     const handler = (globalThis as unknown as { self: { onmessage: (e: MessageEvent) => Promise<void> } }).self.onmessage;
     await handler({ data: { klines: mockKlines, kPeriod: 14, kSmoothing: 3, dPeriod: 3 } } as MessageEvent);
-    expect(mockComputeMulti).toHaveBeenCalledWith('stoch', mockKlines, { period: 14, smoothK: 3 });
+    expect(mockComputeMulti).toHaveBeenCalledWith('stoch', mockKlines, { period: 14, smoothK: 3, smoothD: 3 });
     expect(mockPostMessage).toHaveBeenCalled();
   });
 

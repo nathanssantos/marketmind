@@ -23,18 +23,17 @@ const createMockKline = (overrides?: Partial<Kline>): Kline => ({
 describe('useChartState', () => {
   it('should initialize with default state', () => {
     const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     expect(result.current.state.tooltipData.visible).toBe(false);
     expect(result.current.state.tooltipData.kline).toBeNull();
     expect(result.current.state.orderToClose).toBeNull();
-    expect(result.current.state.stochasticData).toBeNull();
   });
 
   it('should set tooltip data', () => {
     const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     const mockKline = createMockKline();
@@ -58,7 +57,7 @@ describe('useChartState', () => {
 
   it('should hide tooltip', () => {
     const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     const mockKline = createMockKline();
@@ -84,7 +83,7 @@ describe('useChartState', () => {
 
   it('should set orderToClose', () => {
     const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     act(() => {
@@ -102,7 +101,7 @@ describe('useChartState', () => {
 
   it('should provide refs for interaction tracking', () => {
     const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     expect(result.current.refs.mousePosition.current).toBeNull();
@@ -114,7 +113,7 @@ describe('useChartState', () => {
 
   it('should allow modifying refs', () => {
     const { result } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     result.current.refs.mousePosition.current = { x: 50, y: 100 };
@@ -185,7 +184,7 @@ describe('useChartState cleanup', () => {
   it('should clean up timeouts on unmount', () => {
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
     const { result, unmount } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     result.current.refs.interactionTimeout.current = setTimeout(() => {}, 1000);
@@ -200,7 +199,7 @@ describe('useChartState cleanup', () => {
   it('should clean up animation frames on unmount', () => {
     const cancelAnimationFrameSpy = vi.spyOn(global, 'cancelAnimationFrame');
     const { result, unmount } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     result.current.refs.mouseMoveRaf.current = requestAnimationFrame(() => {});
@@ -213,7 +212,7 @@ describe('useChartState cleanup', () => {
 
   it('should handle cleanup when refs are null', () => {
     const { unmount } = renderHook(() =>
-      useChartState({ klines: [], movingAverages: [] })
+      useChartState({ klines: [] })
     );
 
     expect(() => unmount()).not.toThrow();

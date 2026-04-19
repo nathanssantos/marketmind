@@ -12,6 +12,9 @@ export interface GenericRendererExternal {
   footprintBars?: FootprintBar[];
   liquidityHeatmap?: LiquidityHeatmapSnapshot | null;
   liquidityColorMode?: LiquidityColorMode;
+  timeframe?: string;
+  hoveredKlineIndex?: number;
+  volumeHeightRatio?: number;
 }
 
 export interface GenericRendererCtx {

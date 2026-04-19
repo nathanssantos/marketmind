@@ -26,6 +26,7 @@ import { useLayoutSync } from './hooks/useLayoutSync';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useAutoActivateDefaultIndicators } from './hooks/useAutoActivateDefaultIndicators';
 import { useIndicatorStore } from './store/indicatorStore';
+import { useShallow } from 'zustand/shallow';
 import { useChartPref, useUIPref } from './store/preferencesStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { getToasterNavigateToSymbol, setToasterNavigateToSymbol, toaster } from './utils/toaster';
@@ -157,7 +158,11 @@ function AppContent(): ReactElement {
     paddingRight: CHART_CONFIG.CANVAS_PADDING_RIGHT,
   });
 
-  const showVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
+  const indicatorInstances = useIndicatorStore(useShallow((s) => s.instances));
+  const showVolume = useMemo(
+    () => indicatorInstances.some((i) => i.visible && i.catalogType === 'volume'),
+    [indicatorInstances],
+  );
 
   const toggleTrading = useCallback(() => {
     setIsTradingOpen((prev) => !prev);

@@ -1,4 +1,5 @@
-import { INDICATOR_CATALOG } from '@marketmind/trading-core';
+import { INDICATOR_CATALOG, sanitizeIndicatorParams } from '@marketmind/trading-core';
+import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { TRPCError } from '@trpc/server';
 import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -9,7 +10,7 @@ import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
 import { parseIndicatorParams, stringifyIndicatorParams } from '../utils/profile-transformers';
 
-const paramsSchema = z.record(z.string(), z.union([z.number(), z.string(), z.boolean()]));
+const rawParamsSchema = z.record(z.string(), z.unknown());
 
 const assertCatalogType = (catalogType: string): void => {
   if (!INDICATOR_CATALOG[catalogType]) {
@@ -18,6 +19,21 @@ const assertCatalogType = (catalogType: string): void => {
       message: `Unknown indicator type: ${catalogType}`,
     });
   }
+};
+
+const validateParams = (
+  catalogType: string,
+  raw: Record<string, unknown> | undefined,
+): Record<string, IndicatorParamValue> => {
+  const { params, errors } = sanitizeIndicatorParams(catalogType, raw ?? {});
+  const blocking = errors.filter((e) => !e.message.startsWith('Unknown param'));
+  if (blocking.length > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid params: ${blocking.map((e) => `${e.field}: ${e.message}`).join('; ')}`,
+    });
+  }
+  return params;
 };
 
 const parseIndicator = (row: typeof userIndicators.$inferSelect) => ({
@@ -48,11 +64,12 @@ export const userIndicatorsRouter = router({
       z.object({
         catalogType: z.string().min(1).max(64),
         label: z.string().min(1).max(120),
-        params: paramsSchema,
+        params: rawParamsSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
       assertCatalogType(input.catalogType);
+      const validated = validateParams(input.catalogType, input.params);
 
       const now = new Date();
       const [row] = await db
@@ -62,7 +79,7 @@ export const userIndicatorsRouter = router({
           userId: ctx.user.id,
           catalogType: input.catalogType,
           label: input.label,
-          params: stringifyIndicatorParams(input.params),
+          params: stringifyIndicatorParams(validated),
           isCustom: true,
           createdAt: now,
           updatedAt: now,
@@ -77,14 +94,26 @@ export const userIndicatorsRouter = router({
       z.object({
         id: z.string(),
         label: z.string().min(1).max(120).optional(),
-        params: paramsSchema.optional(),
+        params: rawParamsSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id, label, params } = input;
+
       const updates: Partial<typeof userIndicators.$inferInsert> = { updatedAt: new Date() };
       if (label !== undefined) updates.label = label;
-      if (params !== undefined) updates.params = stringifyIndicatorParams(params);
+
+      if (params !== undefined) {
+        const [existing] = await db
+          .select({ catalogType: userIndicators.catalogType })
+          .from(userIndicators)
+          .where(and(eq(userIndicators.id, id), eq(userIndicators.userId, ctx.user.id)))
+          .limit(1);
+        if (!existing) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Indicator not found' });
+        }
+        updates.params = stringifyIndicatorParams(validateParams(existing.catalogType, params));
+      }
 
       const [row] = await db
         .update(userIndicators)

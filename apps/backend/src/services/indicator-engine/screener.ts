@@ -130,7 +130,8 @@ export const SCREENER_KLINE_EVALUATORS: Partial<Record<ScreenerIndicatorId, Scre
   STOCHASTIC_K: async (klines, params) => {
     const result = await pineService.computeMulti('stoch', klines, {
       period: params['period'] ?? 14,
-      smoothK: params['kSmoothing'] ?? 3,
+      smoothK: params['smoothK'] ?? 3,
+      smoothD: params['smoothD'] ?? 3,
     });
     return getLastNonNull(result['k'] ?? []);
   },
@@ -138,7 +139,8 @@ export const SCREENER_KLINE_EVALUATORS: Partial<Record<ScreenerIndicatorId, Scre
   STOCHASTIC_D: async (klines, params) => {
     const result = await pineService.computeMulti('stoch', klines, {
       period: params['period'] ?? 14,
-      smoothK: params['kSmoothing'] ?? 3,
+      smoothK: params['smoothK'] ?? 3,
+      smoothD: params['smoothD'] ?? 3,
     });
     return getLastNonNull(result['d'] ?? []);
   },

@@ -188,6 +188,12 @@ export const NATIVE_EVALUATORS: Record<string, NativeEvaluator> = {
   liquidityHeatmap: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
 
   liquidationMarkers: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  fibonacci: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  fvg: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
+
+  liquidityLevels: (klines) => ({ rendered: new Array(klines.length).fill(null) }),
 };
 
 export const hasNativeEvaluator = (scriptId: string): boolean =>

@@ -93,6 +93,32 @@ describe('User Indicators Router', () => {
         }),
       ).rejects.toThrow(/Unknown indicator type/);
     });
+
+    it('rejects params that fail catalog validation', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.userIndicators.create({
+          catalogType: 'rsi',
+          label: 'Bad RSI',
+          params: { period: 'not-a-number' },
+        }),
+      ).rejects.toThrow(/Invalid params/);
+    });
+
+    it('coerces and clamps params to catalog schema', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.userIndicators.create({
+        catalogType: 'rsi',
+        label: 'Coerced RSI',
+        params: { period: '14.7' },
+      });
+
+      expect(result.params.period).toBe(15);
+    });
   });
 
   describe('update', () => {

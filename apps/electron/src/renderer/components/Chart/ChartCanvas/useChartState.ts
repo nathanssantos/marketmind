@@ -1,5 +1,4 @@
 import type { Kline, MarketEvent, Order, TradingSetup, Viewport } from '@marketmind/types';
-import type { StochasticResult } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
 export interface TooltipData {
@@ -37,14 +36,12 @@ export interface OrderPreview {
 export interface ChartState {
   tooltipData: TooltipData;
   orderToClose: string | null;
-  stochasticData: StochasticResult | null;
 }
 
 type ChartAction =
   | { type: 'SET_TOOLTIP'; payload: TooltipData }
   | { type: 'HIDE_TOOLTIP' }
-  | { type: 'SET_ORDER_TO_CLOSE'; payload: string | null }
-  | { type: 'SET_STOCHASTIC_DATA'; payload: StochasticResult | null };
+  | { type: 'SET_ORDER_TO_CLOSE'; payload: string | null };
 
 const initialTooltipData: TooltipData = {
   kline: null,
@@ -56,7 +53,6 @@ const initialTooltipData: TooltipData = {
 const initialState: ChartState = {
   tooltipData: initialTooltipData,
   orderToClose: null,
-  stochasticData: null,
 };
 
 const chartReducer = (state: ChartState, action: ChartAction): ChartState => {
@@ -67,8 +63,6 @@ const chartReducer = (state: ChartState, action: ChartAction): ChartState => {
       return { ...state, tooltipData: initialTooltipData };
     case 'SET_ORDER_TO_CLOSE':
       return { ...state, orderToClose: action.payload };
-    case 'SET_STOCHASTIC_DATA':
-      return { ...state, stochasticData: action.payload };
     default:
       return state;
   }
@@ -85,7 +79,6 @@ export interface UseChartStateResult {
     setTooltip: (data: TooltipData) => void;
     hideTooltip: () => void;
     setOrderToClose: (orderId: string | null) => void;
-    setStochasticData: (data: StochasticResult | null) => void;
   };
   refs: {
     mousePosition: React.MutableRefObject<{ x: number; y: number } | null>;
@@ -125,8 +118,6 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
       hideTooltip: () => dispatch({ type: 'HIDE_TOOLTIP' }),
       setOrderToClose: (orderId: string | null) =>
         dispatch({ type: 'SET_ORDER_TO_CLOSE', payload: orderId }),
-      setStochasticData: (data: StochasticResult | null) =>
-        dispatch({ type: 'SET_STOCHASTIC_DATA', payload: data }),
     }),
     []
   );

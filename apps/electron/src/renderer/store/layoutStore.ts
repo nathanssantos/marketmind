@@ -9,19 +9,10 @@ import type {
   ChartType,
 } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
-import { useIndicatorStore, type IndicatorId } from './indicatorStore';
 import { usePreferencesStore } from './preferencesStore';
 import { trpc } from '@renderer/services/trpc';
 
 const generateId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-const getGlobalActiveIndicators = (): IndicatorId[] => {
-  try {
-    return [...useIndicatorStore.getState().activeIndicators];
-  } catch {
-    return ['volume', 'stochastic', 'rsi', 'dailyVwap'];
-  }
-};
 
 const createDefaultPanel = (
   timeframe: string,
@@ -30,8 +21,6 @@ const createDefaultPanel = (
   id: generateId(),
   timeframe,
   chartType: 'kline',
-  activeIndicators: getGlobalActiveIndicators(),
-  indicatorParams: {},
   gridPosition,
   windowState: 'normal',
 });
@@ -86,7 +75,6 @@ interface LayoutActions {
 
   setFocusedPanel: (panelId: string | null) => void;
 
-  togglePanelIndicator: (layoutId: string, panelId: string, indicator: IndicatorId) => void;
   setPanelTimeframe: (layoutId: string, panelId: string, timeframe: string) => void;
   setPanelChartType: (layoutId: string, panelId: string, chartType: ChartType) => void;
 
@@ -235,26 +223,6 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
   })),
 
   setFocusedPanel: (panelId) => set({ focusedPanelId: panelId }),
-
-  togglePanelIndicator: (layoutId, panelId, indicator) => set(state => ({
-    layoutPresets: state.layoutPresets.map(l =>
-      l.id === layoutId
-        ? {
-            ...l,
-            grid: l.grid.map(p => {
-              if (p.id !== panelId) return p;
-              const has = p.activeIndicators.includes(indicator);
-              return {
-                ...p,
-                activeIndicators: has
-                  ? p.activeIndicators.filter(i => i !== indicator)
-                  : [...p.activeIndicators, indicator],
-              };
-            }),
-          }
-        : l
-    ),
-  })),
 
   setPanelTimeframe: (layoutId, panelId, timeframe) => set(state => ({
     layoutPresets: state.layoutPresets.map(l =>
