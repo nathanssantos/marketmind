@@ -117,7 +117,7 @@ export const useGenericChartIndicators = (
     if (klines.length === 0) return 'empty';
     const first = klines[0]!;
     const last = klines[klines.length - 1]!;
-    return `${klines.length}:${first.openTime}:${last.openTime}`;
+    return `${klines.length}:${first.openTime}:${last.openTime}:${last.close}:${last.high}:${last.low}:${last.volume}`;
   }, [klines]);
 
   const ctxSignature = useMemo(() => {
