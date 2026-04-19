@@ -2,11 +2,12 @@ import { calculatePnl } from '../../utils/pnl-calculator';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
-import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
 import { walletQueries } from '../../services/database/walletQueries';
+import { emitPositionClose } from '../../services/income-events';
 import { logger } from '../../services/logger';
 import { cancelAllProtectionOrders } from '../../services/protection-orders';
 import { protectedProcedure, router } from '../../trpc';
@@ -281,6 +282,13 @@ export const executionsRouter = router({
       let totalNetPnl = 0;
       let totalGrossPnl = 0;
       let totalAllFees = 0;
+      const paperCloseEmits: Array<{
+        executionId: string;
+        userId: string;
+        symbol: string;
+        grossPnl: number;
+        totalFees: number;
+      }> = [];
 
       await ctx.db.transaction(async (tx) => {
         for (const exec of allExecutionsToClose) {
@@ -324,16 +332,12 @@ export const executionsRouter = router({
             })
             .where(eq(tradeExecutions.id, exec.id));
 
-          await tx.insert(realizedPnlEvents).values({
-            walletId: wallet.id,
-            userId: ctx.user.id,
+          paperCloseEmits.push({
             executionId: exec.id,
+            userId: ctx.user.id,
             symbol: exec.symbol,
-            eventType: 'full_close',
-            pnl: netPnl.toString(),
-            fees: totalFees.toString(),
-            quantity: execQty.toString(),
-            price: exitPrice.toString(),
+            grossPnl,
+            totalFees,
           });
         }
 
@@ -348,6 +352,15 @@ export const executionsRouter = router({
           })
           .where(eq(wallets.id, wallet.id));
       });
+
+      for (const emit of paperCloseEmits) {
+        await emitPositionClose({
+          wallet,
+          execution: { id: emit.executionId, userId: emit.userId, symbol: emit.symbol },
+          grossPnl: emit.grossPnl,
+          totalFees: emit.totalFees,
+        });
+      }
 
       const wsService = getWebSocketService();
       for (const exec of allExecutionsToClose) {

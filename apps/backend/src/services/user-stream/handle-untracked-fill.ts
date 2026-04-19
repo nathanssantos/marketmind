@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets, orders } from '../../db/schema';
+import { tradeExecutions, wallets, orders } from '../../db/schema';
 import { getPosition } from '../binance-futures-client';
 import { generateEntityId } from '../../utils/id';
 import { logger } from '../logger';
@@ -91,18 +91,6 @@ export async function handleUntrackedReduceFill(
       })
       .where(eq(wallets.id, walletId));
 
-    await db.insert(realizedPnlEvents).values({
-      walletId,
-      userId: oppositeExec.userId,
-      executionId: oppositeExec.id,
-      symbol,
-      eventType: 'partial_close',
-      pnl: partialPnl.toString(),
-      fees: '0',
-      quantity: closedQty.toString(),
-      price: exitPrice.toString(),
-    });
-
     logger.info(
       { executionId: oppositeExec.id, symbol, closedQty, remainingQty, partialPnl: partialPnl.toFixed(4) },
       '[FuturesUserStream] Untracked reduce fill — partial close applied'
@@ -145,17 +133,6 @@ export async function handleUntrackedReduceFill(
       })
       .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
 
-    await db.insert(realizedPnlEvents).values({
-      walletId,
-      userId: oppositeExec.userId,
-      executionId: oppositeExec.id,
-      symbol,
-      eventType: 'full_close',
-      pnl: partialPnl.toString(),
-      fees: exitFee.toString(),
-      quantity: closedQty.toString(),
-      price: exitPrice.toString(),
-    });
 
     await db
       .update(wallets)

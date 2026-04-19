@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { realizedPnlEvents, tradeExecutions } from '../../db/schema';
+import { tradeExecutions } from '../../db/schema';
+import { getDailyIncomeSum } from '../../services/income-events';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
 
@@ -62,6 +63,7 @@ export const tradeProcedures = {
       z.object({
         walletId: z.string(),
         period: z.enum(['day', 'week', 'month', 'all']).default('all'),
+        tz: z.string().default('UTC'),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -110,21 +112,24 @@ export const tradeProcedures = {
         return sum + pnl;
       }, 0);
 
-      if (input.period === 'day') {
-        const dayStart = new Date();
-        dayStart.setDate(dayStart.getDate() - 1);
-        const dayEvents = await ctx.db
-          .select({ pnl: realizedPnlEvents.pnl })
-          .from(realizedPnlEvents)
-          .where(
-            and(
-              eq(realizedPnlEvents.walletId, input.walletId),
-              eq(realizedPnlEvents.userId, ctx.user.id),
-              gte(realizedPnlEvents.createdAt, dayStart),
-            )
-          );
-        const eventPnl = dayEvents.reduce((sum, e) => sum + parseFloat(e.pnl || '0'), 0);
-        if (eventPnl !== 0) totalPnL = eventPnl;
+      if (input.period !== 'all') {
+        const now = new Date();
+        const periodStart = new Date();
+        switch (input.period) {
+          case 'day': periodStart.setDate(now.getDate() - 1); break;
+          case 'week': periodStart.setDate(now.getDate() - 7); break;
+          case 'month': periodStart.setMonth(now.getMonth() - 1); break;
+        }
+        const dailyMap = await getDailyIncomeSum({
+          walletId: input.walletId,
+          userId: ctx.user.id,
+          from: periodStart,
+          to: now,
+          tz: input.tz,
+        });
+        let sum = 0;
+        for (const v of dailyMap.values()) sum += v;
+        if (sum !== 0) totalPnL = sum;
       }
 
       const totalFees = trades.reduce((sum, t) => {

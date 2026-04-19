@@ -52,7 +52,6 @@ Available checks:
 | `protection` | Stale/missing SL/TP IDs, orphan algo orders | 0-N (cancel orphans) |
 | `fees` | Fee discrepancies on recent closed trades (last 3 days) | 1 per trade (max 10) |
 | `balance` | DB balance vs Binance wallet balance | 0 (uses initial fetch) |
-| `pnl-events` | Missing/incorrect realizedPnlEvents (last 7 days) | 0 (DB only) |
 
 Rate limiting: initial data fetched via `Promise.all` (5 requests), fees check uses 1.5s delay between API calls, respects IP ban detection.
 

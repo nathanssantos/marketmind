@@ -1,8 +1,14 @@
 import { and, eq, gte, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { realizedPnlEvents, tradeExecutions } from '../../db/schema';
+import { tradeExecutions } from '../../db/schema';
+import {
+  getDailyIncomeSum,
+  getEquityCurvePoints,
+} from '../../services/income-events';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const statsProcedures = {
   getSetupStats: protectedProcedure
@@ -104,6 +110,7 @@ export const statsProcedures = {
         walletId: z.string(),
         year: z.number().int().min(2000).max(2100),
         month: z.number().int().min(1).max(12),
+        tz: z.string().default('UTC'),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -118,75 +125,89 @@ export const statsProcedures = {
       const monthStart = new Date(input.year, input.month - 1, 1);
       const monthEnd = new Date(input.year, input.month, 1);
 
-      const priorEvents = await ctx.db
-        .select({ pnl: realizedPnlEvents.pnl })
-        .from(realizedPnlEvents)
+      const priorDailySum = await getDailyIncomeSum({
+        walletId: input.walletId,
+        userId: ctx.user.id,
+        from: new Date(0),
+        to: monthStart,
+        tz: input.tz,
+      });
+      let runningBalance = effectiveCapital;
+      for (const v of priorDailySum.values()) runningBalance += v;
+
+      const monthDailySum = await getDailyIncomeSum({
+        walletId: input.walletId,
+        userId: ctx.user.id,
+        from: monthStart,
+        to: monthEnd,
+        tz: input.tz,
+      });
+
+      const monthClosedTrades = await ctx.db
+        .select({
+          closedAt: tradeExecutions.closedAt,
+          pnl: tradeExecutions.pnl,
+        })
+        .from(tradeExecutions)
         .where(
           and(
-            eq(realizedPnlEvents.walletId, input.walletId),
-            eq(realizedPnlEvents.userId, ctx.user.id),
-            lt(realizedPnlEvents.createdAt, monthStart),
-          )
+            eq(tradeExecutions.walletId, input.walletId),
+            eq(tradeExecutions.userId, ctx.user.id),
+            eq(tradeExecutions.status, 'closed'),
+            gte(tradeExecutions.closedAt, monthStart),
+            lt(tradeExecutions.closedAt, monthEnd),
+          ),
         );
 
-      let runningBalance = effectiveCapital;
-      for (const e of priorEvents) {
-        runningBalance += parseFloat(e.pnl || '0');
+      const tradeStatsByDay = new Map<string, { wins: number; losses: number; closedPositions: number; grossProfit: number; grossLoss: number }>();
+      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: input.tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+      for (const t of monthClosedTrades) {
+        if (!t.closedAt) continue;
+        const dateKey = fmt.format(t.closedAt);
+        const stats = tradeStatsByDay.get(dateKey) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
+        stats.closedPositions++;
+        const pnl = parseFloat(t.pnl || '0');
+        if (pnl > 0) { stats.wins++; stats.grossProfit += pnl; }
+        else if (pnl < 0) { stats.losses++; stats.grossLoss += Math.abs(pnl); }
+        tradeStatsByDay.set(dateKey, stats);
       }
 
-      const events = await ctx.db
-        .select()
-        .from(realizedPnlEvents)
-        .where(
-          and(
-            eq(realizedPnlEvents.walletId, input.walletId),
-            eq(realizedPnlEvents.userId, ctx.user.id),
-            gte(realizedPnlEvents.createdAt, monthStart),
-            lt(realizedPnlEvents.createdAt, monthEnd),
-          )
-        )
-        .orderBy(realizedPnlEvents.createdAt);
+      const days = new Set<string>([...monthDailySum.keys(), ...tradeStatsByDay.keys()]);
+      const sortedDays = Array.from(days).sort();
 
-      const dailyData: Record<string, {
+      const results: Array<{
+        date: string;
         pnl: number;
-        closedPositions: number;
-        balanceAtStart: number;
+        pnlPercent: number;
+        tradesCount: number;
         wins: number;
         losses: number;
         grossProfit: number;
         grossLoss: number;
-      }> = {};
+      }> = [];
 
-      for (const event of events) {
-        const dateKey = event.createdAt.toISOString().slice(0, 10);
-        if (!dailyData[dateKey]) dailyData[dateKey] = { pnl: 0, closedPositions: 0, balanceAtStart: runningBalance, wins: 0, losses: 0, grossProfit: 0, grossLoss: 0 };
-        const pnl = parseFloat(event.pnl || '0');
-        dailyData[dateKey].pnl += pnl;
-        if (event.eventType === 'full_close') {
-          dailyData[dateKey].closedPositions++;
-          if (pnl > 0) {
-            dailyData[dateKey].wins++;
-            dailyData[dateKey].grossProfit += pnl;
-          } else if (pnl < 0) {
-            dailyData[dateKey].losses++;
-            dailyData[dateKey].grossLoss += Math.abs(pnl);
-          }
-        }
-        runningBalance += pnl;
+      let balanceAtStart = runningBalance;
+      for (const date of sortedDays) {
+        const dailyPnl = monthDailySum.get(date) ?? 0;
+        const stats = tradeStatsByDay.get(date) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
+
+        results.push({
+          date,
+          pnl: parseFloat(dailyPnl.toFixed(2)),
+          pnlPercent: balanceAtStart > 0
+            ? parseFloat(((dailyPnl / balanceAtStart) * 100).toFixed(2))
+            : 0,
+          tradesCount: stats.closedPositions,
+          wins: stats.wins,
+          losses: stats.losses,
+          grossProfit: parseFloat(stats.grossProfit.toFixed(2)),
+          grossLoss: parseFloat(stats.grossLoss.toFixed(2)),
+        });
+
+        balanceAtStart += dailyPnl;
       }
 
-      return Object.entries(dailyData).map(([date, data]) => ({
-        date,
-        pnl: parseFloat(data.pnl.toFixed(2)),
-        pnlPercent: data.balanceAtStart > 0
-          ? parseFloat(((data.pnl / data.balanceAtStart) * 100).toFixed(2))
-          : 0,
-        tradesCount: data.closedPositions,
-        wins: data.wins,
-        losses: data.losses,
-        grossProfit: parseFloat(data.grossProfit.toFixed(2)),
-        grossLoss: parseFloat(data.grossLoss.toFixed(2)),
-      }));
+      return results;
     }),
 
   getEquityCurve: protectedProcedure
@@ -194,29 +215,26 @@ export const statsProcedures = {
       z.object({
         walletId: z.string(),
         interval: z.enum(['1h', '1d']).default('1d'),
+        tz: z.string().default('UTC'),
       })
     )
     .query(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      const events = await ctx.db
-        .select()
-        .from(realizedPnlEvents)
-        .where(
-          and(
-            eq(realizedPnlEvents.walletId, input.walletId),
-            eq(realizedPnlEvents.userId, ctx.user.id),
-          )
-        )
-        .orderBy(realizedPnlEvents.createdAt);
-
       const initialBalance = parseFloat(wallet.initialBalance || '0');
       const curveDeposits = parseFloat(wallet.totalDeposits || '0');
       const curveWithdrawals = parseFloat(wallet.totalWithdrawals || '0');
       const effectiveCapital = initialBalance + curveDeposits - curveWithdrawals;
-      let runningBalance = effectiveCapital;
 
-      const equityPoints = [
+      const points = await getEquityCurvePoints({
+        walletId: input.walletId,
+        userId: ctx.user.id,
+        from: wallet.createdAt,
+        to: new Date(Date.now() + DAY_MS),
+        tz: input.tz,
+      });
+
+      const equityPoints: Array<{ timestamp: string; balance: number; pnl: number }> = [
         {
           timestamp: wallet.createdAt.toISOString(),
           balance: effectiveCapital,
@@ -224,14 +242,13 @@ export const statsProcedures = {
         },
       ];
 
-      for (const event of events) {
-        const pnl = parseFloat(event.pnl || '0');
-        runningBalance += pnl;
-
+      let runningBalance = effectiveCapital;
+      for (const point of points) {
+        runningBalance += point.delta;
         equityPoints.push({
-          timestamp: event.createdAt.toISOString(),
+          timestamp: new Date(point.time).toISOString(),
           balance: parseFloat(runningBalance.toFixed(2)),
-          pnl: parseFloat(pnl.toFixed(2)),
+          pnl: parseFloat(point.delta.toFixed(2)),
         });
       }
 

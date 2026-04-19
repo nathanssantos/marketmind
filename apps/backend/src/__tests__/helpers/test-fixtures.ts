@@ -198,7 +198,7 @@ const hashPassword = async (password: string): Promise<string> => {
 export const createTestUser = async (options: CreateUserOptions = {}): Promise<{ user: User; password: string }> => {
   const db = getTestDatabase();
   const {
-    email = `test-${Date.now()}@example.com`,
+    email = `test-${Date.now()}-${Math.random().toString(36).slice(2, 10)}@example.com`,
     password = 'Test123!@#',
   } = options;
 

@@ -164,8 +164,8 @@ export const walletSyncRouter = router({
       }
 
       try {
-        const { incomeSyncService } = await import('../../services/income-sync-service');
-        const result = await incomeSyncService.backfillTransfers(wallet.id);
+        const { syncWalletIncome } = await import('../../services/income-events');
+        await syncWalletIncome(wallet);
 
         const [updatedWallet] = await ctx.db
           .select({
@@ -180,7 +180,7 @@ export const walletSyncRouter = router({
           success: true,
           totalDeposits: updatedWallet?.totalDeposits ?? '0',
           totalWithdrawals: updatedWallet?.totalWithdrawals ?? '0',
-          walletsProcessed: result.walletsProcessed,
+          walletsProcessed: 1,
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

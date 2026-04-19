@@ -191,25 +191,32 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       toastError(t('chart.quickTrade.noPriceError'));
       return;
     }
-    const quantity = getQuantity(price);
-    if (!quantity || parseFloat(quantity) <= 0) {
+    const previewQty = getQuantity(price);
+    if (!previewQty || parseFloat(previewQty) <= 0) {
       toastError(t('chart.quickTrade.invalidQuantityError'));
       return;
     }
-    setPendingOrder({ side, price, quantity });
+    setPendingOrder({ side, price, quantity: previewQty });
   }, [activeWallet?.id, symbol, buyPrice, sellPrice, getQuantity, warning, toastError, t]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;
     try {
-      await createOrder({ walletId: activeWallet.id, symbol, side: pendingOrder.side, type: 'MARKET', quantity: pendingOrder.quantity });
+      await createOrder({
+        walletId: activeWallet.id,
+        symbol,
+        side: pendingOrder.side,
+        type: 'MARKET',
+        percent: sizePercent,
+        referencePrice: pendingOrder.price,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
     } finally {
       setPendingOrder(null);
     }
-  }, [activeWallet?.id, symbol, pendingOrder, createOrder, toastError, t]);
+  }, [activeWallet?.id, symbol, pendingOrder, createOrder, sizePercent, toastError, t]);
 
   const handleBuy = useCallback(() => handleQuickOrder('BUY'), [handleQuickOrder]);
   const handleSell = useCallback(() => handleQuickOrder('SELL'), [handleQuickOrder]);
