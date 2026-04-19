@@ -49,6 +49,41 @@ const SIZE_PRESETS = [10, 25, 50, 75, 100] as const;
 const SNAP_THRESHOLD = 16;
 const EDGE_PADDING = 8;
 
+interface BuySellButtonsProps {
+  symbol: string;
+  currentPrice: number;
+  isCreatingOrder: boolean;
+  onPlaceOrder: (side: 'BUY' | 'SELL', price: number) => void;
+  buyLabel: string;
+  sellLabel: string;
+}
+
+const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel }: BuySellButtonsProps) => {
+  const { bidPrice, askPrice } = useBookTicker(symbol);
+  const buyPrice = askPrice > 0 ? askPrice : currentPrice;
+  const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
+  const onBuy = useCallback(() => onPlaceOrder('BUY', buyPrice), [onPlaceOrder, buyPrice]);
+  const onSell = useCallback(() => onPlaceOrder('SELL', sellPrice), [onPlaceOrder, sellPrice]);
+
+  return (
+    <>
+      <Button size="2xs" fontSize="2xs" h="34px" colorPalette="green" variant="solid" onClick={onBuy} loading={isCreatingOrder} flex={1}>
+        <VStack gap={0} lineHeight="1">
+          <Text fontSize="2xs">{buyLabel}</Text>
+          <Text fontSize="2xs" fontWeight="bold">{buyPrice > 0 ? formatChartPrice(buyPrice) : '—'}</Text>
+        </VStack>
+      </Button>
+      <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={onSell} loading={isCreatingOrder} flex={1}>
+        <VStack gap={0} lineHeight="1">
+          <Text fontSize="2xs">{sellLabel}</Text>
+          <Text fontSize="2xs" fontWeight="bold">{sellPrice > 0 ? formatChartPrice(sellPrice) : '—'}</Text>
+        </VStack>
+      </Button>
+    </>
+  );
+});
+BuySellButtons.displayName = 'BuySellButtons';
+
 export type QuickTradeMode = 'sidebar' | 'chart';
 
 interface QuickTradeActionsProps {
@@ -174,19 +209,15 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
   }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
   const currentPrice = useFastPriceForSymbol(symbol) ?? 0;
-  const { bidPrice, askPrice } = useBookTicker(symbol);
-  const buyPrice = askPrice > 0 ? askPrice : currentPrice;
-  const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
 
   const { getQuantity, leverage } = useOrderQuantity(symbol, marketType);
 
-  const handleQuickOrder = useCallback((side: 'BUY' | 'SELL') => {
+  const handleQuickOrder = useCallback((side: 'BUY' | 'SELL', price: number) => {
     if (!activeWallet?.id) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
-    const price = side === 'BUY' ? buyPrice : sellPrice;
     if (!price || price <= 0) {
       toastError(t('chart.quickTrade.noPriceError'));
       return;
@@ -197,7 +228,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       return;
     }
     setPendingOrder({ side, price, quantity: previewQty });
-  }, [activeWallet?.id, symbol, buyPrice, sellPrice, getQuantity, warning, toastError, t]);
+  }, [activeWallet?.id, symbol, getQuantity, warning, toastError, t]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;
@@ -218,8 +249,6 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     }
   }, [activeWallet?.id, symbol, pendingOrder, createOrder, sizePercent, toastError, t]);
 
-  const handleBuy = useCallback(() => handleQuickOrder('BUY'), [handleQuickOrder]);
-  const handleSell = useCallback(() => handleQuickOrder('SELL'), [handleQuickOrder]);
   const handleSliderChange = useCallback((value: number[]) => {
     const v = value[0];
     if (v !== undefined && v !== sizePercent) setSizePercent(v);
@@ -316,18 +345,14 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
         </HStack>
 
         <HStack gap={1.5}>
-          <Button size="2xs" fontSize="2xs" h="34px" colorPalette="green" variant="solid" onClick={handleBuy} loading={isCreatingOrder} flex={1}>
-            <VStack gap={0} lineHeight="1">
-              <Text fontSize="2xs">{t('chart.quickTrade.buy')}</Text>
-              <Text fontSize="2xs" fontWeight="bold">{buyPrice > 0 ? formatChartPrice(buyPrice) : '—'}</Text>
-            </VStack>
-          </Button>
-          <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={handleSell} loading={isCreatingOrder} flex={1}>
-            <VStack gap={0} lineHeight="1">
-              <Text fontSize="2xs">{t('chart.quickTrade.sell')}</Text>
-              <Text fontSize="2xs" fontWeight="bold">{sellPrice > 0 ? formatChartPrice(sellPrice) : '—'}</Text>
-            </VStack>
-          </Button>
+          <BuySellButtons
+            symbol={symbol}
+            currentPrice={currentPrice}
+            isCreatingOrder={isCreatingOrder}
+            onPlaceOrder={handleQuickOrder}
+            buyLabel={t('chart.quickTrade.buy')}
+            sellLabel={t('chart.quickTrade.sell')}
+          />
           <TooltipWrapper label={showAdvanced ? t('common.hideActions', 'Hide actions') : t('common.moreActions', 'More actions')} showArrow>
             <IconButton
               size="2xs"
