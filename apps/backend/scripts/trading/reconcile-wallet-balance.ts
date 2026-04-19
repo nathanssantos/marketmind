@@ -32,11 +32,9 @@ async function main() {
 
     const sumIncome = parseFloat(row?.total ?? '0');
     const initialBalance = parseFloat(wallet.initialBalance ?? '0');
-    const totalDeposits = parseFloat(wallet.totalDeposits ?? '0');
-    const totalWithdrawals = parseFloat(wallet.totalWithdrawals ?? '0');
     const dbBalance = parseFloat(wallet.currentBalance ?? '0');
 
-    const expected = initialBalance + sumIncome + totalDeposits - totalWithdrawals;
+    const expected = initialBalance + sumIncome;
 
     let binanceBalance: number | null = null;
     try {
