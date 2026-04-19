@@ -4,6 +4,7 @@ import {
   INDICATOR_CATALOG,
   calculateChecklistScore,
   evaluateCondition,
+  getNativeSeriesEvaluator,
   type ChecklistCondition,
   type ChecklistScoreBreakdown,
   type ConditionEvaluationResult,
@@ -103,47 +104,6 @@ const fetchKlinesForTimeframe = async (
   return mapDbKlinesToApi(rows);
 };
 
-const computeChoppiness = async (klines: Kline[], period: number): Promise<(number | null)[]> => {
-  if (klines.length === 0) return [];
-  if (klines.length < period) return Array(klines.length).fill(null);
-
-  const [atrValues, highestValues, lowestValues] = await Promise.all([
-    pineService.compute('atr', klines, { period: 1 }),
-    pineService.compute('highest', klines, { period }),
-    pineService.compute('lowest', klines, { period }),
-  ]);
-
-  const result: (number | null)[] = [];
-  for (let i = 0; i < klines.length; i++) {
-    if (i < period - 1) {
-      result.push(null);
-      continue;
-    }
-    let atrSum = 0;
-    let validAtrCount = 0;
-    for (let j = i - period + 1; j <= i; j++) {
-      const atr = atrValues[j];
-      if (atr !== null && atr !== undefined && !isNaN(atr)) {
-        atrSum += atr;
-        validAtrCount++;
-      }
-    }
-    const highest = highestValues[i];
-    const lowest = lowestValues[i];
-    if (highest == null || lowest == null) {
-      result.push(null);
-      continue;
-    }
-    const range = highest - lowest;
-    if (range === 0 || validAtrCount < period) {
-      result.push(null);
-      continue;
-    }
-    result.push((100 * Math.log10(atrSum / range)) / Math.log10(period));
-  }
-  return result;
-};
-
 type PineSingle = 'sma' | 'ema' | 'rsi' | 'atr' | 'hma' | 'wma' | 'cci' | 'mfi'
   | 'roc' | 'cmo' | 'vwap' | 'obv' | 'wpr' | 'tsi' | 'sar';
 type PineMulti = 'bb' | 'macd' | 'stoch' | 'kc' | 'supertrend' | 'dmi';
@@ -176,12 +136,15 @@ const computeIndicatorSeries = async (
     throw new Error(`Pine scriptId not supported: ${scriptId}`);
   }
 
-  if (scriptId === 'choppiness') {
-    const period = numericParams['period'] ?? 14;
-    return computeChoppiness(klines, period);
-  }
+  const evaluator = getNativeSeriesEvaluator(scriptId);
+  if (!evaluator) throw new Error(`Native scriptId not supported: ${scriptId}`);
 
-  throw new Error(`Native scriptId not supported yet in checklist evaluator: ${scriptId}`);
+  const outputs = evaluator(klines, numericParams);
+  const key = outputKey ?? def.outputs[0]?.key;
+  if (!key) throw new Error(`No outputKey available for ${def.type}`);
+  const series = outputs[key];
+  if (!series) throw new Error(`Output "${key}" not found for native ${def.type}`);
+  return series;
 };
 
 const closeSeriesFromKlines = (klines: Kline[]): (number | null)[] =>
