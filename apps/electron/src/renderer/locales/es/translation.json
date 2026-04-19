@@ -2200,6 +2200,13 @@
       "rising": "subiendo (barra actual > anterior)",
       "falling": "bajando (barra actual < anterior)"
     },
+    "tier": {
+      "requiredShort": "req",
+      "preferredShort": "pref"
+    },
+    "timeframes": {
+      "current": "curr"
+    },
     "weight": "Peso (× multiplicador)",
     "weightHint": "Los timeframes mayores pesan más. Condiciones requeridas valen 2×; preferidas 1×."
   }

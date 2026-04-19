@@ -3,7 +3,6 @@ import {
   DEFAULT_USER_INDICATOR_SEEDS,
   type ChecklistCondition,
 } from '@marketmind/trading-core';
-import { getDefaultChecklistWeight } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradingProfiles, userIndicators } from '../db/schema';
@@ -90,7 +89,7 @@ export const materializeDefaultChecklist = async (userId: string): Promise<Check
       threshold: entry.threshold,
       tier: entry.tier,
       side: entry.side,
-      weight: getDefaultChecklistWeight(entry.timeframe),
+      weight: entry.weight,
       enabled: entry.enabled,
       order: entry.order,
     });
