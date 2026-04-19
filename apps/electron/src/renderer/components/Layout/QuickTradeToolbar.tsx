@@ -7,7 +7,7 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
-import { usePriceStore } from '@renderer/store/priceStore';
+import { useFastPriceForSymbol } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { calculateLiquidationPrice } from '@marketmind/types';
@@ -173,7 +173,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     }
   }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
-  const currentPrice = usePriceStore((s) => s.prices[symbol]?.price ?? 0);
+  const currentPrice = useFastPriceForSymbol(symbol) ?? 0;
   const { bidPrice, askPrice } = useBookTicker(symbol);
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;

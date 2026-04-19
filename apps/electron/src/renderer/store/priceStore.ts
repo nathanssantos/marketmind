@@ -134,8 +134,44 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
 
 const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
 
-export const useFastPriceForSymbol = (symbol: string): number | null =>
-  usePriceStore((state) => state.prices[symbol]?.price ?? null);
+const LIVE_PRICE_THROTTLE_MS = 250;
+
+export const useFastPriceForSymbol = (symbol: string): number | null => {
+  const [price, setPrice] = useState<number | null>(
+    () => usePriceStore.getState().prices[symbol]?.price ?? null,
+  );
+  const lastPriceRef = useRef<number | null>(price);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pending = false;
+
+    const run = () => {
+      timer = null;
+      pending = false;
+      const next = usePriceStore.getState().prices[symbol]?.price ?? null;
+      if (next === lastPriceRef.current) return;
+      lastPriceRef.current = next;
+      setPrice(next);
+    };
+
+    const schedule = () => {
+      if (pending) return;
+      pending = true;
+      timer = setTimeout(run, LIVE_PRICE_THROTTLE_MS);
+    };
+
+    run();
+    const unsub = usePriceStore.subscribe(schedule);
+
+    return () => {
+      unsub();
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [symbol]);
+
+  return price;
+};
 
 const DAILY_CHANGE_THROTTLE_MS = 250;
 
