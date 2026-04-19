@@ -82,9 +82,34 @@ export interface ChecklistConditionDto {
   threshold?: number | [number, number];
   tier: 'required' | 'preferred';
   side: 'LONG' | 'SHORT' | 'BOTH';
+  weight: number;
   enabled: boolean;
   order: number;
 }
+
+export const CHECKLIST_TIMEFRAME_WEIGHTS: Record<string, number> = {
+  current: 1,
+  '1m': 0.5,
+  '5m': 0.75,
+  '15m': 1,
+  '30m': 1.25,
+  '1h': 1.5,
+  '2h': 1.75,
+  '4h': 2,
+  '6h': 2.25,
+  '8h': 2.5,
+  '12h': 2.75,
+  '1d': 3,
+  '3d': 3.5,
+  '1w': 4,
+};
+
+export const CHECKLIST_WEIGHT_MIN = 0.1;
+export const CHECKLIST_WEIGHT_MAX = 5;
+export const CHECKLIST_WEIGHT_STEP = 0.25;
+
+export const getDefaultChecklistWeight = (timeframe: string): number =>
+  CHECKLIST_TIMEFRAME_WEIGHTS[timeframe] ?? 1;
 
 export interface TradingProfile extends ProfileConfigOverrides {
   id: string;

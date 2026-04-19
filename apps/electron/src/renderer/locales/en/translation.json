@@ -2163,6 +2163,8 @@
     "ops": {
       "rising": "rising (current bar > previous)",
       "falling": "falling (current bar < previous)"
-    }
+    },
+    "weight": "Weight (× multiplier)",
+    "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×."
   }
 }

@@ -2,6 +2,7 @@ import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import type { MarketType } from '@marketmind/types';
 import {
   Button,
+  CloseButton,
   CryptoIcon,
   DialogActionTrigger,
   DialogBackdrop,
@@ -108,7 +109,9 @@ export const DynamicSymbolRankings = ({
               <Button variant="outline">{t('common.close')}</Button>
             </DialogActionTrigger>
           </DialogFooter>
-          <DialogCloseTrigger />
+          <DialogCloseTrigger asChild>
+            <CloseButton size="sm" />
+          </DialogCloseTrigger>
         </DialogContent>
       </DialogPositioner>
     </DialogRoot>

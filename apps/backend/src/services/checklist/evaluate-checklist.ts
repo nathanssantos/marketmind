@@ -1,4 +1,5 @@
 import type { Kline, MarketType } from '@marketmind/types';
+import { getDefaultChecklistWeight } from '@marketmind/types';
 import {
   INDICATOR_CATALOG,
   calculateChecklistScore,
@@ -39,6 +40,7 @@ export interface EvaluateChecklistConditionResult {
   op: ChecklistCondition['op'];
   tier: ChecklistCondition['tier'];
   side: ChecklistCondition['side'];
+  weight: number;
   enabled: boolean;
   evaluated: boolean;
   passed: boolean;
@@ -237,8 +239,12 @@ export const evaluateChecklist = async (
   const emptyScore = calculateChecklistScore({
     requiredTotal: 0,
     requiredPassed: 0,
+    requiredWeightTotal: 0,
+    requiredWeightPassed: 0,
     preferredTotal: 0,
     preferredPassed: 0,
+    preferredWeightTotal: 0,
+    preferredWeightPassed: 0,
   });
 
   if (enabledConditions.length === 0) {
@@ -291,17 +297,29 @@ export const evaluateChecklist = async (
   const results: EvaluateChecklistConditionResult[] = [];
   let longRequiredTotal = 0;
   let longRequiredPassed = 0;
+  let longRequiredWeightTotal = 0;
+  let longRequiredWeightPassed = 0;
   let longPreferredTotal = 0;
   let longPreferredPassed = 0;
+  let longPreferredWeightTotal = 0;
+  let longPreferredWeightPassed = 0;
   let shortRequiredTotal = 0;
   let shortRequiredPassed = 0;
+  let shortRequiredWeightTotal = 0;
+  let shortRequiredWeightPassed = 0;
   let shortPreferredTotal = 0;
   let shortPreferredPassed = 0;
+  let shortPreferredWeightTotal = 0;
+  let shortPreferredWeightPassed = 0;
 
   for (const cond of enabledConditions) {
     const resolvedTf = resolveTimeframe(cond.timeframe, interval);
     const countsTowardLong = longRepIds.has(cond.id);
     const countsTowardShort = shortRepIds.has(cond.id);
+    const condWeight =
+      typeof cond.weight === 'number' && Number.isFinite(cond.weight) && cond.weight > 0
+        ? cond.weight
+        : getDefaultChecklistWeight(cond.timeframe);
 
     const userIndicator = indicatorMap.get(cond.userIndicatorId);
     if (!userIndicator) {
@@ -315,6 +333,7 @@ export const evaluateChecklist = async (
         op: cond.op,
         tier: cond.tier,
         side: cond.side,
+        weight: condWeight,
         enabled: cond.enabled,
         evaluated: false,
         passed: false,
@@ -338,6 +357,7 @@ export const evaluateChecklist = async (
         op: cond.op,
         tier: cond.tier,
         side: cond.side,
+        weight: condWeight,
         enabled: cond.enabled,
         evaluated: false,
         passed: false,
@@ -370,6 +390,7 @@ export const evaluateChecklist = async (
           op: cond.op,
           tier: cond.tier,
           side: cond.side,
+          weight: condWeight,
           enabled: cond.enabled,
           evaluated: false,
           passed: false,
@@ -405,6 +426,7 @@ export const evaluateChecklist = async (
         op: cond.op,
         tier: cond.tier,
         side: cond.side,
+        weight: condWeight,
         enabled: cond.enabled,
         evaluated: false,
         passed: false,
@@ -419,19 +441,35 @@ export const evaluateChecklist = async (
     if (countsTowardLong) {
       if (cond.tier === 'required') {
         longRequiredTotal += 1;
-        if (evaluation.passed) longRequiredPassed += 1;
+        longRequiredWeightTotal += condWeight;
+        if (evaluation.passed) {
+          longRequiredPassed += 1;
+          longRequiredWeightPassed += condWeight;
+        }
       } else {
         longPreferredTotal += 1;
-        if (evaluation.passed) longPreferredPassed += 1;
+        longPreferredWeightTotal += condWeight;
+        if (evaluation.passed) {
+          longPreferredPassed += 1;
+          longPreferredWeightPassed += condWeight;
+        }
       }
     }
     if (countsTowardShort) {
       if (cond.tier === 'required') {
         shortRequiredTotal += 1;
-        if (evaluation.passed) shortRequiredPassed += 1;
+        shortRequiredWeightTotal += condWeight;
+        if (evaluation.passed) {
+          shortRequiredPassed += 1;
+          shortRequiredWeightPassed += condWeight;
+        }
       } else {
         shortPreferredTotal += 1;
-        if (evaluation.passed) shortPreferredPassed += 1;
+        shortPreferredWeightTotal += condWeight;
+        if (evaluation.passed) {
+          shortPreferredPassed += 1;
+          shortPreferredWeightPassed += condWeight;
+        }
       }
     }
 
@@ -445,6 +483,7 @@ export const evaluateChecklist = async (
       op: cond.op,
       tier: cond.tier,
       side: cond.side,
+      weight: condWeight,
       enabled: cond.enabled,
       evaluated: true,
       passed: evaluation.passed,
@@ -457,14 +496,22 @@ export const evaluateChecklist = async (
   const scoreLong = calculateChecklistScore({
     requiredTotal: longRequiredTotal,
     requiredPassed: longRequiredPassed,
+    requiredWeightTotal: longRequiredWeightTotal,
+    requiredWeightPassed: longRequiredWeightPassed,
     preferredTotal: longPreferredTotal,
     preferredPassed: longPreferredPassed,
+    preferredWeightTotal: longPreferredWeightTotal,
+    preferredWeightPassed: longPreferredWeightPassed,
   });
   const scoreShort = calculateChecklistScore({
     requiredTotal: shortRequiredTotal,
     requiredPassed: shortRequiredPassed,
+    requiredWeightTotal: shortRequiredWeightTotal,
+    requiredWeightPassed: shortRequiredWeightPassed,
     preferredTotal: shortPreferredTotal,
     preferredPassed: shortPreferredPassed,
+    preferredWeightTotal: shortPreferredWeightTotal,
+    preferredWeightPassed: shortPreferredWeightPassed,
   });
 
   const score = side === 'LONG' ? scoreLong : side === 'SHORT' ? scoreShort : scoreLong;

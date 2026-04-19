@@ -8,6 +8,7 @@ import { useScreener } from '../../hooks/useScreener';
 import { useScreenerStore } from '../../store/screenerStore';
 import {
   Button,
+  CloseButton,
   DialogBackdrop,
   DialogBody,
   DialogCloseTrigger,
@@ -164,7 +165,9 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                     minWidth="70px"
                     usePortal={false}
                   />
-                  <DialogCloseTrigger position="static" />
+                  <DialogCloseTrigger asChild position="static">
+                    <CloseButton size="sm" />
+                  </DialogCloseTrigger>
                 </HStack>
               </Flex>
             </DialogHeader>

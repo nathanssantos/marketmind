@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './button';
+import { CloseButton } from './close-button';
 import {
   DialogBackdrop,
   DialogBody,
@@ -82,7 +83,11 @@ export const FormDialog = ({
           <DialogHeader px={4} pt={4}>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          {!hideCloseButton && <DialogCloseTrigger />}
+          {!hideCloseButton && (
+            <DialogCloseTrigger asChild>
+              <CloseButton size="sm" />
+            </DialogCloseTrigger>
+          )}
 
           <DialogBody p={bodyPadding} overflowY={contentMaxH ? 'auto' : undefined}>{children}</DialogBody>
 

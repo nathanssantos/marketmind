@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  CloseButton,
   CollapsibleSection,
   DialogBackdrop,
   DialogBody,
@@ -53,7 +54,9 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
               {form.isEditing ? t('tradingProfiles.editProfile') : t('tradingProfiles.createProfile')}
             </DialogTitle>
           </DialogHeader>
-          <DialogCloseTrigger />
+          <DialogCloseTrigger asChild>
+            <CloseButton size="sm" />
+          </DialogCloseTrigger>
 
           <DialogBody p={4} maxH="70vh" overflowY="auto">
             <Stack gap={2}>

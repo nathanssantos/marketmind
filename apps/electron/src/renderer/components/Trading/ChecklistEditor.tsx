@@ -67,20 +67,18 @@ export const ChecklistEditor = ({
 
   const commit = useCallback(
     (next: ChecklistConditionDto[]) => {
-      const normalized = [...next]
-        .sort(sortByOrder)
-        .map((c, idx) => ({ ...c, order: idx }));
+      const normalized = next.map((c, idx) => ({ ...c, order: idx }));
       onChange(normalized);
     },
     [onChange],
   );
 
   const handleToggleEnabled = (id: string, enabled: boolean) => {
-    commit(conditions.map((c) => (c.id === id ? { ...c, enabled } : c)));
+    commit(sorted.map((c) => (c.id === id ? { ...c, enabled } : c)));
   };
 
   const handleDelete = (id: string) => {
-    commit(conditions.filter((c) => c.id !== id));
+    commit(sorted.filter((c) => c.id !== id));
   };
 
   const handleMove = (id: string, direction: -1 | 1) => {
@@ -113,6 +111,7 @@ export const ChecklistEditor = ({
         threshold: cond.threshold,
         tier: cond.tier,
         side: cond.side,
+        weight: cond.weight,
       },
     });
   };
@@ -122,7 +121,7 @@ export const ChecklistEditor = ({
 
     if (editorState?.mode === 'edit' && editorState.conditionId) {
       commit(
-        conditions.map((c) =>
+        sorted.map((c) =>
           c.id === editorState.conditionId
             ? {
                 ...c,
@@ -132,12 +131,12 @@ export const ChecklistEditor = ({
                 threshold: result.threshold,
                 tier: result.tier,
                 side: result.side,
+                weight: result.weight,
               }
             : c,
         ),
       );
     } else {
-      const maxOrder = conditions.reduce((m, c) => Math.max(m, c.order), -1);
       const newCondition: ChecklistConditionDto = {
         id: generateConditionId(),
         userIndicatorId: result.userIndicatorId,
@@ -146,10 +145,11 @@ export const ChecklistEditor = ({
         threshold: result.threshold,
         tier: result.tier,
         side: result.side,
+        weight: result.weight,
         enabled: true,
-        order: maxOrder + 1,
+        order: sorted.length,
       };
-      commit([...conditions, newCondition]);
+      commit([...sorted, newCondition]);
     }
 
     setEditorState(null);
@@ -209,6 +209,9 @@ export const ChecklistEditor = ({
                       </Badge>
                       <Badge size="sm" variant="outline">
                         {tfLabel}
+                      </Badge>
+                      <Badge size="sm" variant="subtle" colorPalette="purple">
+                        ×{cond.weight.toFixed(2)}
                       </Badge>
                     </HStack>
                     <Text fontSize="xs" color="fg.muted">

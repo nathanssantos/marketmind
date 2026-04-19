@@ -38,6 +38,7 @@ export const checklistConditionSchema = z.object({
   threshold: conditionThresholdSchema.optional(),
   tier: conditionTierSchema,
   side: conditionSideSchema,
+  weight: z.number().positive(),
   enabled: z.boolean(),
   order: z.number().int(),
 });
