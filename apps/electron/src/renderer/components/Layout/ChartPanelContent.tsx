@@ -64,7 +64,6 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
       timeframe={panelConfig.timeframe}
       onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
       isLoadingMore={isLoadingMore}
-      activeIndicatorsOverride={panelConfig.activeIndicators}
     />
   );
 }

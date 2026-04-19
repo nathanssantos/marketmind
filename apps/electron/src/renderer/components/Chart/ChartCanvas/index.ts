@@ -8,43 +8,14 @@ export type {
   CursorManager,
 } from './useChartState';
 
-export { useChartIndicators } from './useChartIndicators';
-export type {
-  IndicatorId,
-  UseChartIndicatorsProps,
-  UseChartIndicatorsResult,
-} from './useChartIndicators';
-
-export {
-  useChartRendering,
-  useLayerDirtyTracking,
-  useOffscreenCache,
-  useAnimationFrame,
-  useThrottledRender,
-} from './useChartRendering';
-export type {
-  RenderLayerId,
-  RenderLayer,
-  UseChartRenderingProps,
-  UseChartRenderingResult,
-  LayerDirtyState,
-  OffscreenCacheEntry,
-} from './useChartRendering';
-
 export { useChartPanelHeights } from './useChartPanelHeights';
-export type { UseChartPanelHeightsProps, PanelIndicatorId } from './useChartPanelHeights';
+export type { UseChartPanelHeightsProps } from './useChartPanelHeights';
 
 export { useChartBaseRenderers } from './useChartBaseRenderers';
 export type {
   UseChartBaseRenderersProps,
   UseChartBaseRenderersResult,
 } from './useChartBaseRenderers';
-
-export { useChartIndicatorRenderers } from './useChartIndicatorRenderers';
-export type {
-  UseChartIndicatorRenderersProps,
-  UseChartIndicatorRenderersResult,
-} from './useChartIndicatorRenderers';
 
 export { useGenericChartIndicators } from './useGenericChartIndicators';
 export type { IndicatorOutputs, UseGenericChartIndicatorsResult } from './useGenericChartIndicators';
@@ -110,32 +81,6 @@ export type {
   UseKeyboardNavigationProps,
   UseKeyboardNavigationResult,
 } from './useKeyboardNavigation';
-
-export { useOptimizedRendering } from './useOptimizedRendering';
-export type {
-  UseOptimizedRenderingProps,
-  UseOptimizedRenderingResult,
-} from './useOptimizedRendering';
-
-export {
-  createBackgroundLayer,
-  createDataLayer,
-  createIndicatorLayer,
-  createOverlayLayer,
-  getIndicatorRenderOrder,
-} from './layers';
-export type {
-  BackgroundLayerProps,
-  BackgroundLayerResult,
-  DataLayerProps,
-  DataLayerResult,
-  IndicatorLayerProps,
-  IndicatorLayerResult,
-  IndicatorRenderFunctions,
-  OverlayLayerProps,
-  OverlayLayerResult,
-  OverlayRenderFunctions,
-} from './layers';
 
 export { useChartTradingData } from './useChartTradingData';
 export type { OptimisticOverride } from './useChartTradingData';

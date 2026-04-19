@@ -1,6 +1,6 @@
 import type { Kline, MarketEvent } from '@marketmind/types';
 import { getSessionById } from '@shared/constants/marketSessions';
-import { buildSessionWindows } from '@renderer/components/Chart/useSessionBoundariesRenderer';
+import { buildSessionWindows } from './sessionWindows';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
 

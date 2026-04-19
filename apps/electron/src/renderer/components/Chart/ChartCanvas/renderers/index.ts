@@ -14,6 +14,7 @@ import { renderPaneLine } from './renderPaneLine';
 import { renderPaneMulti } from './renderPaneMulti';
 import { renderPivotPoints } from './renderPivotPoints';
 import { renderSessionBoundaries } from './renderSessionBoundaries';
+import { renderVolume } from './renderVolume';
 import { renderVolumeProfile } from './renderVolumeProfile';
 import type { GenericRenderer, RendererRegistry } from './types';
 
@@ -47,6 +48,7 @@ export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {
   pivotPoints: renderPivotPoints,
   sessionBoundaries: renderSessionBoundaries,
   footprint: renderFootprint,
+  volume: renderVolume,
   volumeProfile: renderVolumeProfile,
 };
 

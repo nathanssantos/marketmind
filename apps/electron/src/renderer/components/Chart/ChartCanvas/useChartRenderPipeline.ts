@@ -6,7 +6,6 @@ import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { useOrderDragHandler } from '../useOrderDragHandler';
 import type { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode';
 import type { UseChartBaseRenderersResult } from './useChartBaseRenderers';
-import type { UseChartIndicatorRenderersResult } from './useChartIndicatorRenderers';
 import type { UseGenericChartIndicatorRenderersResult } from './useGenericChartIndicatorRenderers';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
 import { renderDragPreview, renderSlTpPreview, renderTsPreview, renderOrderPreview } from './chartPreviewRenderers';
@@ -17,11 +16,11 @@ export interface UseChartRenderPipelineProps {
   colors: ChartColors;
   allExecutions: BackendExecution[];
   baseRenderers: UseChartBaseRenderersResult;
-  indicatorRenderers: UseChartIndicatorRenderersResult;
   genericRenderers: UseGenericChartIndicatorRenderersResult;
   renderOrderLines: () => void;
   renderGridPreview: () => void;
   renderDrawings: () => void;
+  renderEventScale: () => void;
   orderDragHandler: ReturnType<typeof useOrderDragHandler>;
   slTpPlacement: ReturnType<typeof useSlTpPlacementMode>;
   tsPlacementActive: boolean;
@@ -35,11 +34,11 @@ export const useChartRenderPipeline = ({
   colors: _colors,
   allExecutions,
   baseRenderers,
-  indicatorRenderers,
   genericRenderers,
   renderOrderLines,
   renderGridPreview,
   renderDrawings,
+  renderEventScale,
   orderDragHandler,
   slTpPlacement,
   tsPlacementActive,
@@ -52,23 +51,11 @@ export const useChartRenderPipeline = ({
     renderGrid,
     renderKlines,
     renderLineChart,
-    renderVolume,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,
     renderWatermark,
   } = baseRenderers;
-
-  const {
-    renderFibonacci,
-    renderFVG,
-    renderLiquidityLevels,
-    renderEventScale,
-    renderCVD,
-    renderImbalance,
-    renderVolumeProfile,
-    renderFootprint,
-  } = indicatorRenderers;
 
   const { renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators } = genericRenderers;
 
@@ -80,7 +67,6 @@ export const useChartRenderPipeline = ({
       renderWatermark();
       renderGrid();
       renderAllCustomIndicators();
-      renderVolume();
       if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
         renderKlines();
       } else {
@@ -88,15 +74,8 @@ export const useChartRenderPipeline = ({
       }
       renderAllOverlayIndicators();
       renderDrawings();
-      renderFibonacci();
-      renderFVG();
-      renderLiquidityLevels();
       renderEventScale();
       renderAllPanelIndicators();
-      renderCVD();
-      renderImbalance();
-      renderVolumeProfile();
-      if (chartType === 'footprint') renderFootprint();
       renderCurrentPriceLine_Line();
       renderOrderLines();
       renderGridPreview();
@@ -125,26 +104,18 @@ export const useChartRenderPipeline = ({
     manager,
     renderWatermark,
     renderGrid,
-    renderVolume,
     renderKlines,
     renderLineChart,
     renderAllOverlayIndicators,
     renderAllPanelIndicators,
     renderAllCustomIndicators,
-    renderFibonacci,
-    renderFVG,
-    renderLiquidityLevels,
-    renderEventScale,
-    renderCVD,
-    renderImbalance,
-    renderVolumeProfile,
-    renderFootprint,
     renderCurrentPriceLine_Line,
     renderCurrentPriceLine_Label,
     renderCrosshairPriceLine,
     renderOrderLines,
     renderGridPreview,
     renderDrawings,
+    renderEventScale,
     chartType,
     allExecutions,
     orderDragHandler,

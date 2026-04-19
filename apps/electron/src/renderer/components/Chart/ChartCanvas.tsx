@@ -1,28 +1,28 @@
 import { Box } from '@chakra-ui/react';
 import type { Kline, MarketType, TimeInterval, Viewport } from '@marketmind/types';
-import { getDefaultParamsForType } from '@marketmind/trading-core';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
 import { useChartPref, useTradingPref } from '@renderer/store/preferencesStore';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
-import { useStochasticWorker } from '@renderer/hooks/useStochasticWorker';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorStore, useSetupStore } from '@renderer/store';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
+import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartTooltip } from './ChartTooltip';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
+import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
@@ -30,10 +30,8 @@ import { TextEditOverlay } from './drawings/TextEditOverlay';
 import {
   useChartState,
   useCursorManager,
-  useChartIndicators,
   useChartPanelHeights,
   useChartBaseRenderers,
-  useChartIndicatorRenderers,
   useGenericChartIndicators,
   useGenericChartIndicatorRenderers,
   useChartInteraction,
@@ -46,7 +44,6 @@ import {
   useChartAuxiliarySetup,
   useChartPlacementHandlers,
   ChartCloseDialog,
-  type IndicatorId,
 } from './ChartCanvas/index';
 
 const TOOLTIP_DEBOUNCE_MS = 150;
@@ -64,7 +61,6 @@ export interface ChartCanvasProps {
   timeframe?: string;
   onNearLeftEdge?: () => void;
   isLoadingMore?: boolean;
-  activeIndicatorsOverride?: string[];
 }
 
 export const ChartCanvas = ({
@@ -80,7 +76,6 @@ export const ChartCanvas = ({
   timeframe = '1h',
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
-  activeIndicatorsOverride,
 }: ChartCanvasProps): ReactElement => {
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
@@ -88,28 +83,21 @@ export const ChartCanvas = ({
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
+  const [showActivityIndicator] = useChartPref<boolean>('showActivityIndicator', true);
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [chartFlipped] = useChartPref<boolean>('chartFlipped', false);
-  const storeIsActive = useIndicatorStore((s) => s.isActive);
-  const storeShowVolume = useIndicatorStore((s) => s.activeIndicators.includes('volume'));
-  const storeShowActivity = useIndicatorStore((s) => s.activeIndicators.includes('activityIndicator'));
-  const showOrb = useIndicatorStore((s) => s.activeIndicators.includes('orb'));
 
-  const isIndicatorActive = activeIndicatorsOverride
-    ? (id: IndicatorId) => activeIndicatorsOverride.includes(id)
-    : storeIsActive;
-  const showVolume = activeIndicatorsOverride
-    ? activeIndicatorsOverride.includes('volume')
-    : storeShowVolume;
-  const showActivityIndicator = activeIndicatorsOverride
-    ? activeIndicatorsOverride.includes('activityIndicator')
-    : storeShowActivity;
+  const instances = useIndicatorStore(useShallow((s) => s.instances));
+  const hasVisibleType = useCallback(
+    (type: string): boolean => instances.some((i) => i.visible && i.catalogType === type),
+    [instances],
+  );
+  const showVolume = hasVisibleType('volume');
+  const showOrb = hasVisibleType('orb');
+  const heatmapEnabled = hasVisibleType('liquidityHeatmap') || hasVisibleType('liquidationMarkers');
   const colors = useChartColors();
 
-  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(
-    symbol ?? null,
-    isIndicatorActive('liquidityHeatmap') || isIndicatorActive('liquidationMarkers')
-  );
+  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled);
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -148,12 +136,11 @@ export const ChartCanvas = ({
     needsScalpingMetrics,
     resolvedTicksPerBar,
     resolvedVolumePerBar,
-    volumeProfileData,
   } = tradingData;
 
   const managerRef = useRef<import('@renderer/utils/canvas/CanvasManager').CanvasManager | null>(null);
 
-  const { effectiveKlines, footprintBars, cvdValuesRef, imbalanceValuesRef } = useChartAlternativeKlines({
+  const { effectiveKlines, footprintBars } = useChartAlternativeKlines({
     klines,
     chartType,
     symbol,
@@ -173,7 +160,7 @@ export const ChartCanvas = ({
   managerRef.current = manager;
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines });
-  const { tooltipData, orderToClose, stochasticData } = chartState;
+  const { tooltipData, orderToClose } = chartState;
 
   const setHoveredKlineGlobal = useChartHoverStore((s) => s.setHoveredKline);
   useEffect(() => {
@@ -186,7 +173,7 @@ export const ChartCanvas = ({
     const chartKey = makeChartKey(symbol, timeframe);
     return () => setHoveredKlineGlobal(chartKey, null);
   }, [symbol, timeframe, setHoveredKlineGlobal]);
-  const { setTooltip: setTooltipData, setOrderToClose, setStochasticData } = chartActions;
+  const { setTooltip: setTooltipData, setOrderToClose } = chartActions;
   const { mousePosition: mousePositionRef, orderPreview: orderPreviewRef, hoveredMAIndex: hoveredMAIndexRef, hoveredOrderId: hoveredOrderIdRef, lastHoveredOrder: lastHoveredOrderRef, lastTooltipOrder: lastTooltipOrderRef, tooltipEnabled: tooltipEnabledRef, tooltipDebounce: tooltipDebounceRef } = chartRefs;
 
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
@@ -230,25 +217,6 @@ export const ChartCanvas = ({
   });
 
   const cursorManager = useCursorManager(canvasRef);
-  const storeInstances = useIndicatorStore(useShallow((s) => s.instances));
-  const stochInstance = useMemo(
-    () => storeInstances.find((i) => i.catalogType === 'stoch' && i.visible),
-    [storeInstances],
-  );
-  const stochParams = stochInstance?.params ?? getDefaultParamsForType('stoch');
-  const showStochasticEarly = isIndicatorActive('stochastic') || Boolean(stochInstance);
-  const stochasticResult = useStochasticWorker(
-    klines,
-    showStochasticEarly,
-    Number(stochParams['period'] ?? 14),
-    Number(stochParams['smoothK'] ?? 3),
-    Number(stochParams['smoothD'] ?? 3),
-  );
-  const storeActiveIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
-  const storeIndicatorParams = useIndicatorStore((s) => s.indicatorParams);
-  const activeIndicators = (activeIndicatorsOverride ?? storeActiveIndicators) as IndicatorId[];
-
-  const indicatorData = useChartIndicators({ klines, activeIndicators, indicatorParams: storeIndicatorParams });
 
   const { events: marketEvents, refetch: refetchMarketEvents } = useMarketEvents({ klines, enabled: showEventRow || showOrb });
 
@@ -270,26 +238,35 @@ export const ChartCanvas = ({
     return () => { if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current); };
   }, [isPanning]);
 
-  const { renderGrid, renderKlines, renderLineChart, renderVolume, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
+  const { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
     manager, colors, chartType, advancedConfig,
-    showGrid, showVolume, showCurrentPriceLine, showCrosshair, showActivityIndicator,
+    showGrid, showCurrentPriceLine, showCrosshair, showActivityIndicator,
     hoveredKlineIndex: tooltipData.klineIndex, highlightedCandlesRef, mousePositionRef,
     timeframe, symbol, marketType,
   });
 
-  const indicatorRenderers = useChartIndicatorRenderers({
-    manager, colors, chartType, indicatorData, indicatorParams: storeIndicatorParams, stochasticData,
-    showEventRow, marketEvents, cvdValuesRef, imbalanceValuesRef,
-    volumeProfile: volumeProfileData ?? null, footprintBars, heatmapDataRef,
-    liquidityColorMode,
-  });
-
-  const instances = useIndicatorStore(useShallow((s) => s.instances));
   const { outputs: genericOutputs } = useGenericChartIndicators(klines, instances, {
     marketEvents,
     footprintBars,
     liquidityHeatmap: heatmapDataRef.current,
   });
+
+  const setLiveDataEntry = useChartLiveDataStore((s) => s.setEntry);
+  const clearLiveDataEntry = useChartLiveDataStore((s) => s.clearEntry);
+  useEffect(() => {
+    if (!symbol || !marketType || !timeframe) return;
+    const key = buildChartLiveDataKey(symbol, timeframe, marketType);
+    const indicators = new Map<string, ChartLiveIndicatorEntry>();
+    for (const inst of instances) {
+      if (!inst.visible) continue;
+      const outputs = genericOutputs.get(inst.id);
+      if (!outputs) continue;
+      indicators.set(inst.userIndicatorId, { catalogType: inst.catalogType, outputs });
+    }
+    setLiveDataEntry(key, { symbol, interval: timeframe, marketType, klines, indicators });
+    return () => clearLiveDataEntry(key);
+  }, [symbol, marketType, timeframe, klines, instances, genericOutputs, setLiveDataEntry, clearLiveDataEntry]);
+
   const genericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, instances, outputs: genericOutputs,
     external: {
@@ -297,10 +274,18 @@ export const ChartCanvas = ({
       footprintBars,
       liquidityHeatmap: heatmapDataRef.current,
       liquidityColorMode,
+      timeframe,
+      ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
+      ...(advancedConfig?.volumeHeightRatio !== undefined && { volumeHeightRatio: advancedConfig.volumeHeightRatio }),
     },
   });
 
-  const { getEventAtPosition } = indicatorRenderers;
+  const { render: renderEventScale, getEventAtPosition } = useEventScaleRenderer({
+    manager,
+    events: marketEvents,
+    colors,
+    enabled: showEventRow,
+  });
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
@@ -349,10 +334,6 @@ export const ChartCanvas = ({
 
   useChartOverlayEffects({ manager, allExecutions, orderLoadingMapRef, orderFlashMapRef, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders });
 
-  useEffect(() => {
-    setStochasticData(stochasticResult);
-  }, [stochasticResult, setStochasticData]);
-
   useChartPanelHeights({ manager, showEventRow, instances, advancedConfig });
 
   useEffect(() => {
@@ -386,8 +367,8 @@ export const ChartCanvas = ({
 
   useChartRenderPipeline({
     manager, chartType, colors, allExecutions,
-    baseRenderers: { renderGrid, renderKlines, renderLineChart, renderVolume, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark },
-    indicatorRenderers, genericRenderers, renderOrderLines, renderGridPreview, renderDrawings,
+    baseRenderers: { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark },
+    genericRenderers, renderOrderLines, renderGridPreview, renderDrawings, renderEventScale,
     orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, orderPreviewRef,
   });
 

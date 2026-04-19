@@ -459,7 +459,7 @@ const entries: IndicatorDefinition[] = [
     category: 'volume',
     params: [colorParam('#607d8b')],
     outputs: [{ key: 'value', labelKey: 'indicators.outputs.value' }],
-    render: { kind: 'pane-histogram', paneId: 'volume' },
+    render: { kind: 'custom', rendererId: 'volume' },
     conditionOps: ['gt', 'lt', 'rising', 'falling'],
     evaluator: { service: 'native', scriptId: 'volume' },
     defaultLabel: () => 'Volume',
