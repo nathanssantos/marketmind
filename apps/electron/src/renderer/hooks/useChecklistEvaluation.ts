@@ -75,22 +75,27 @@ export const useChecklistEvaluation = ({
   marketType,
   conditions,
 }: UseChecklistEvaluationProps): Map<string, ClientChecklistResult> => {
-  const key = buildChartLiveDataKey(symbol, interval, marketType);
-  const entry = useChartLiveDataStore((s) => s.entries.get(key));
+  const entries = useChartLiveDataStore((s) => s.entries);
 
   return useMemo(() => {
     const out = new Map<string, ClientChecklistResult>();
-    if (!entry) return out;
-
-    const closeSeries = closeSeriesFromKlines(entry.klines);
+    const closeSeriesCache = new Map<string, (number | null)[]>();
 
     for (const cond of conditions) {
       if (!cond.enabled) continue;
       const resolvedTf = resolveTimeframe(cond.timeframe, interval);
-      if (resolvedTf !== interval) continue;
+      const entry = entries.get(buildChartLiveDataKey(symbol, resolvedTf, marketType));
+      if (!entry) continue;
+
+      let closeSeries = closeSeriesCache.get(resolvedTf);
+      if (!closeSeries) {
+        closeSeries = closeSeriesFromKlines(entry.klines);
+        closeSeriesCache.set(resolvedTf, closeSeries);
+      }
+
       const res = evaluateOne(cond, entry, closeSeries);
       if (res) out.set(cond.id, res);
     }
     return out;
-  }, [entry, conditions, interval]);
+  }, [entries, conditions, interval, symbol, marketType]);
 };
