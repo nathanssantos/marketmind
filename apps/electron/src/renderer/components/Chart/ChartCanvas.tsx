@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { Kline, MarketType, TimeInterval, Viewport } from '@marketmind/types';
+import { getDefaultParamsForType } from '@marketmind/trading-core';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
@@ -15,7 +16,7 @@ import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStor
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { ChartNavigation } from './ChartNavigation';
@@ -229,8 +230,20 @@ export const ChartCanvas = ({
   });
 
   const cursorManager = useCursorManager(canvasRef);
-  const showStochasticEarly = isIndicatorActive('stochastic');
-  const stochasticResult = useStochasticWorker(klines, showStochasticEarly, 14, 3, 3);
+  const storeInstances = useIndicatorStore(useShallow((s) => s.instances));
+  const stochInstance = useMemo(
+    () => storeInstances.find((i) => i.catalogType === 'stoch' && i.visible),
+    [storeInstances],
+  );
+  const stochParams = stochInstance?.params ?? getDefaultParamsForType('stoch');
+  const showStochasticEarly = isIndicatorActive('stochastic') || Boolean(stochInstance);
+  const stochasticResult = useStochasticWorker(
+    klines,
+    showStochasticEarly,
+    Number(stochParams['period'] ?? 14),
+    Number(stochParams['smoothK'] ?? 3),
+    Number(stochParams['smoothD'] ?? 3),
+  );
   const storeActiveIndicators = useIndicatorStore(useShallow((s) => s.activeIndicators));
   const storeIndicatorParams = useIndicatorStore((s) => s.indicatorParams);
   const activeIndicators = (activeIndicatorsOverride ?? storeActiveIndicators) as IndicatorId[];
