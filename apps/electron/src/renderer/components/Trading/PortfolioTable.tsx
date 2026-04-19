@@ -125,17 +125,17 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
                   {walletBalance > 0 ? ((position.avgPrice * position.quantity / walletBalance) * 100).toFixed(1) : '0.0'}%
                 </Text>
                 {position.leverage > 1 && (
-                  <Badge colorPalette="purple" size="xs" px={1}>{position.leverage}x</Badge>
+                  <Badge colorPalette="purple" size="xs">{position.leverage}x</Badge>
                 )}
               </Flex>
             </TradingTableCell>
             <TradingTableCell>
               <Flex align="center" gap={1}>
-                <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
+                <Badge colorPalette={isLong ? 'green' : 'red'} size="xs">
                   {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
                 </Badge>
                 {position.count > 1 && (
-                  <Badge colorPalette="yellow" size="xs" px={1}>
+                  <Badge colorPalette="yellow" size="xs">
                     {t('trading.portfolio.entriesCount', { count: position.count })}
                   </Badge>
                 )}
@@ -149,18 +149,18 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
                     executionId={position.id}
                     symbol={position.symbol}
                   >
-                    <Badge colorPalette="purple" size="xs" px={1}>{position.setupType}</Badge>
+                    <Badge colorPalette="purple" size="xs">{position.setupType}</Badge>
                   </StrategyInfoPopover>
                 ) : (
-                  <Badge colorPalette="purple" size="xs" px={1}>{position.setupType}</Badge>
+                  <Badge colorPalette="purple" size="xs">{position.setupType}</Badge>
                 )
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
               {position.marketType === 'FUTURES' ? (
-                <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
+                <Badge colorPalette="orange" size="xs">FUTURES</Badge>
               ) : (
-                <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
+                <Badge colorPalette="gray" size="xs">SPOT</Badge>
               )}
             </TradingTableCell>
             <TradingTableCell>

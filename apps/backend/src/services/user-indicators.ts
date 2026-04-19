@@ -5,8 +5,16 @@ import {
 } from '@marketmind/trading-core';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { userIndicators } from '../db/schema';
+import { tradingProfiles, userIndicators } from '../db/schema';
+import type { NewTradingProfileRow } from '../db/schema';
+import { DEFAULT_ENABLED_SETUPS } from '../constants';
 import { generateEntityId } from '../utils/id';
+import {
+  parseIndicatorParams,
+  stringifyChecklistConditions,
+  stringifyEnabledSetupTypes,
+  stringifyIndicatorParams,
+} from '../utils/profile-transformers';
 
 export const seedDefaultUserIndicators = async (userId: string): Promise<void> => {
   const existing = await db
@@ -32,7 +40,7 @@ export const seedDefaultUserIndicators = async (userId: string): Promise<void> =
       userId,
       catalogType: seed.catalogType,
       label: seed.label,
-      params: JSON.stringify(seed.params),
+      params: stringifyIndicatorParams(seed.params),
       isCustom: false,
       createdAt: now,
       updatedAt: now,
@@ -43,12 +51,7 @@ export const seedDefaultUserIndicators = async (userId: string): Promise<void> =
   for (const seed of DEFAULT_USER_INDICATOR_SEEDS) {
     const row = existingByKey.get(`${seed.catalogType}::${seed.label}`);
     if (!row || row.isCustom) continue;
-    let parsed: Record<string, unknown> = {};
-    try {
-      parsed = JSON.parse(row.params) as Record<string, unknown>;
-    } catch {
-      parsed = {};
-    }
+    const parsed = parseIndicatorParams(row.params);
     let drift = false;
     for (const [key, value] of Object.entries(seed.params)) {
       if (parsed[key] !== value) {
@@ -59,7 +62,7 @@ export const seedDefaultUserIndicators = async (userId: string): Promise<void> =
     if (!drift) continue;
     await db
       .update(userIndicators)
-      .set({ params: JSON.stringify({ ...parsed, ...seed.params }), updatedAt: now })
+      .set({ params: stringifyIndicatorParams({ ...parsed, ...seed.params }), updatedAt: now })
       .where(and(eq(userIndicators.id, row.id), eq(userIndicators.isCustom, false)));
   }
 };
@@ -92,4 +95,28 @@ export const materializeDefaultChecklist = async (userId: string): Promise<Check
   }
 
   return conditions;
+};
+
+export const seedDefaultTradingProfile = async (userId: string): Promise<void> => {
+  const existing = await db
+    .select({ id: tradingProfiles.id })
+    .from(tradingProfiles)
+    .where(eq(tradingProfiles.userId, userId))
+    .limit(1);
+
+  if (existing.length > 0) return;
+
+  const checklist = await materializeDefaultChecklist(userId);
+
+  const values: NewTradingProfileRow = {
+    id: generateEntityId(),
+    userId,
+    name: 'Default Profile',
+    description: 'Auto-generated default profile with standard checklist',
+    enabledSetupTypes: stringifyEnabledSetupTypes([...DEFAULT_ENABLED_SETUPS]),
+    isDefault: true,
+    checklistConditions: stringifyChecklistConditions(checklist),
+  };
+
+  await db.insert(tradingProfiles).values(values);
 };

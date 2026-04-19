@@ -1,5 +1,6 @@
-import { Box, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import {
+  Badge,
   Button,
   DialogBackdrop,
   DialogBody,
@@ -114,6 +115,8 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
                   rows={8}
                   fontFamily="mono"
                   fontSize="xs"
+                  px={3}
+                  py={2}
                 />
               </Field>
 
@@ -129,35 +132,18 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
                       })}
                     </Text>
                     {parsedData.enabledSetupTypes && (
-                      <Box display="flex" flexWrap="wrap" gap={1}>
+                      <Flex flexWrap="wrap" gap={1}>
                         {parsedData.enabledSetupTypes.slice(0, 6).map((setup) => (
-                          <Box
-                            key={setup}
-                            px={2}
-                            py={0.5}
-                            bg="blue.100"
-                            color="blue.800"
-                            borderRadius="sm"
-                            fontSize="2xs"
-                            _dark={{ bg: 'blue.900', color: 'blue.200' }}
-                          >
+                          <Badge key={setup} size="sm" colorPalette="blue" variant="subtle">
                             {setup}
-                          </Box>
+                          </Badge>
                         ))}
                         {parsedData.enabledSetupTypes.length > 6 && (
-                          <Box
-                            px={2}
-                            py={0.5}
-                            bg="gray.100"
-                            color="gray.600"
-                            borderRadius="sm"
-                            fontSize="2xs"
-                            _dark={{ bg: 'gray.800', color: 'gray.300' }}
-                          >
+                          <Badge size="sm" colorPalette="gray" variant="subtle">
                             +{parsedData.enabledSetupTypes.length - 6}
-                          </Box>
+                          </Badge>
                         )}
-                      </Box>
+                      </Flex>
                     )}
                   </Stack>
                 </Box>

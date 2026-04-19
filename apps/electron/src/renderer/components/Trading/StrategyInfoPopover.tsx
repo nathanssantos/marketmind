@@ -75,7 +75,7 @@ const IndicatorValues = memo(({ data }: { data: StrategyVisualizationData }) => 
       <Text fontSize="xs" fontWeight="medium" mb={1}>{t('strategyInfo.indicators')}</Text>
       <Flex gap={2} flexWrap="wrap">
         {displayIndicators.map(([key, value]) => (
-          <Badge key={key} size="sm" colorPalette="gray" px={1}>
+          <Badge key={key} size="xs" colorPalette="gray">
             {key}: {typeof value === 'number' ? value.toFixed(2) : '-'}
           </Badge>
         ))}

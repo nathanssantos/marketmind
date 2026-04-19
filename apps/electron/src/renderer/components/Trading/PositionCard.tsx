@@ -56,16 +56,16 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
           </Text>
         </Flex>
         <Flex gap={2} align="center" flexWrap="wrap">
-          <Badge colorPalette={isLong ? 'green' : 'red'} size="xs" px={1}>
+          <Badge colorPalette={isLong ? 'green' : 'red'} size="xs">
             {t(`trading.ticket.${isLong ? 'long' : 'short'}`)}
           </Badge>
           {position.count > 1 && (
-            <Badge colorPalette="yellow" size="xs" px={1}>
+            <Badge colorPalette="yellow" size="xs">
               {t('trading.portfolio.entriesCount', { count: position.count })}
             </Badge>
           )}
           {position.isAutoTrade && (
-            <Badge colorPalette="blue" size="xs" px={1}>
+            <Badge colorPalette="blue" size="xs">
               <Flex align="center" gap={1}>
                 <LuBot size={10} />
                 AUTO
@@ -73,12 +73,12 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
             </Badge>
           )}
           {position.marketType === 'FUTURES' && (
-            <Badge colorPalette="orange" size="xs" px={1}>
+            <Badge colorPalette="orange" size="xs">
               FUTURES
             </Badge>
           )}
           {position.leverage > 1 && (
-            <Badge colorPalette="purple" size="xs" px={1}>
+            <Badge colorPalette="purple" size="xs">
               {position.leverage}x
             </Badge>
           )}
@@ -89,12 +89,12 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
                 executionId={position.id}
                 symbol={position.symbol}
               >
-                <Badge colorPalette="purple" size="xs" px={1}>
+                <Badge colorPalette="purple" size="xs">
                   {position.setupType}
                 </Badge>
               </StrategyInfoPopover>
             ) : (
-              <Badge colorPalette="purple" size="xs" px={1}>
+              <Badge colorPalette="purple" size="xs">
                 {position.setupType}
               </Badge>
             )

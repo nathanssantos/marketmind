@@ -7,6 +7,7 @@ import { userIndicators } from '../db/schema';
 import { seedDefaultUserIndicators } from '../services/user-indicators';
 import { protectedProcedure, router } from '../trpc';
 import { generateEntityId } from '../utils/id';
+import { parseIndicatorParams, stringifyIndicatorParams } from '../utils/profile-transformers';
 
 const paramsSchema = z.record(z.string(), z.union([z.number(), z.string(), z.boolean()]));
 
@@ -23,7 +24,7 @@ const parseIndicator = (row: typeof userIndicators.$inferSelect) => ({
   id: row.id,
   catalogType: row.catalogType,
   label: row.label,
-  params: JSON.parse(row.params) as Record<string, number | string | boolean>,
+  params: parseIndicatorParams(row.params),
   isCustom: row.isCustom,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
@@ -61,7 +62,7 @@ export const userIndicatorsRouter = router({
           userId: ctx.user.id,
           catalogType: input.catalogType,
           label: input.label,
-          params: JSON.stringify(input.params),
+          params: stringifyIndicatorParams(input.params),
           isCustom: true,
           createdAt: now,
           updatedAt: now,
@@ -83,7 +84,7 @@ export const userIndicatorsRouter = router({
       const { id, label, params } = input;
       const updates: Partial<typeof userIndicators.$inferInsert> = { updatedAt: new Date() };
       if (label !== undefined) updates.label = label;
-      if (params !== undefined) updates.params = JSON.stringify(params);
+      if (params !== undefined) updates.params = stringifyIndicatorParams(params);
 
       const [row] = await db
         .update(userIndicators)

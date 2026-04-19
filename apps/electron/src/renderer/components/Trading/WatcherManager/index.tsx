@@ -11,7 +11,6 @@ import { useDebounce } from '@renderer/hooks/useDebounce';
 import { useTranslation } from 'react-i18next';
 import { AddWatcherDialog } from '../AddWatcherDialog';
 import { DynamicSymbolRankings } from '../DynamicSymbolRankings';
-import { TradingProfilesManager } from '../TradingProfilesManager';
 import { DynamicSelectionSection } from './DynamicSelectionSection';
 import { EmergencyStopSection } from './EmergencyStopSection';
 import { EntrySettingsSection } from './EntrySettingsSection';
@@ -276,8 +275,6 @@ export const WatcherManager = () => {
         isPending={updateConfig.isPending}
       />
 
-      <Separator />
-      <TradingProfilesManager />
       <Separator />
       <SetupToggleSection />
       <Separator />

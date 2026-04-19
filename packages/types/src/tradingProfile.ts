@@ -101,9 +101,9 @@ export interface TradingProfile extends ProfileConfigOverrides {
 }
 
 export interface CreateTradingProfileInput extends ProfileConfigOverrides {
-  name: string;
+  name?: string;
   description?: string;
-  enabledSetupTypes: string[];
+  enabledSetupTypes?: string[];
   maxPositionSize?: number;
   maxConcurrentPositions?: number;
   isDefault?: boolean;

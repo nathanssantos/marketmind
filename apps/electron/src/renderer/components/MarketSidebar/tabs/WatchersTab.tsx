@@ -65,7 +65,7 @@ const WatchersTabComponent = () => {
           <Text fontSize="sm" fontWeight="bold">
             {t('marketSidebar.watchers.title')}
           </Text>
-          <Badge colorPalette="blue" size="xs" px={1}>
+          <Badge colorPalette="blue" size="xs">
             {activeWatchers.length}
           </Badge>
         </Flex>
@@ -176,7 +176,7 @@ const SuggestionsSection = memo(({ walletId, userId }: { walletId: string; userI
           <Text fontSize="sm" fontWeight="bold">
             {t('trading.suggestions.title')}
           </Text>
-          <Badge colorPalette="yellow" size="xs" px={1}>
+          <Badge colorPalette="yellow" size="xs">
             {suggestions.length}
           </Badge>
         </Flex>
@@ -423,15 +423,15 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
             </Flex>
           </TradingTableCell>
           <TradingTableCell>
-            <Badge colorPalette="blue" size="xs" px={1}>
+            <Badge colorPalette="blue" size="xs">
               {watcher.interval}
             </Badge>
           </TradingTableCell>
           <TradingTableCell>
             {watcher.marketType === 'FUTURES' ? (
-              <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
+              <Badge colorPalette="orange" size="xs">FUTURES</Badge>
             ) : (
-              <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
+              <Badge colorPalette="gray" size="xs">SPOT</Badge>
             )}
           </TradingTableCell>
           <TradingTableCell>

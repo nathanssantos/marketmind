@@ -8,6 +8,7 @@ import {
   EmptyState,
   IconButton,
   Switch,
+  TooltipWrapper,
 } from '@renderer/components/ui';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -156,12 +157,7 @@ export const ChecklistEditor = ({
 
   return (
     <Stack gap={2}>
-      <Flex justify="space-between" align="center">
-        <Text fontSize="sm" color="fg.muted">
-          {t('checklist.editor.description', {
-            defaultValue: 'Conditions evaluated before each trade. Required = must pass. Preferred = adds to confidence score.',
-          })}
-        </Text>
+      <Flex justify="flex-end" align="center">
         <Button
           size="2xs"
           variant="outline"
@@ -233,24 +229,34 @@ export const ChecklistEditor = ({
                       onCheckedChange={(v) => handleToggleEnabled(cond.id, Boolean(v))}
                       size="sm"
                     />
-                    <IconButton
-                      size="2xs"
-                      variant="ghost"
-                      aria-label={t('common.moveUp', { defaultValue: 'Move up' })}
-                      onClick={() => handleMove(cond.id, -1)}
-                      disabled={idx === 0 || isSaving}
+                    <TooltipWrapper
+                      label={t('checklist.editor.moveUp', { defaultValue: 'Move up' })}
+                      showArrow
                     >
-                      <LuChevronUp />
-                    </IconButton>
-                    <IconButton
-                      size="2xs"
-                      variant="ghost"
-                      aria-label={t('common.moveDown', { defaultValue: 'Move down' })}
-                      onClick={() => handleMove(cond.id, 1)}
-                      disabled={idx === sorted.length - 1 || isSaving}
+                      <IconButton
+                        size="2xs"
+                        variant="ghost"
+                        aria-label={t('checklist.editor.moveUp', { defaultValue: 'Move up' })}
+                        onClick={() => handleMove(cond.id, -1)}
+                        disabled={idx === 0 || isSaving}
+                      >
+                        <LuChevronUp />
+                      </IconButton>
+                    </TooltipWrapper>
+                    <TooltipWrapper
+                      label={t('checklist.editor.moveDown', { defaultValue: 'Move down' })}
+                      showArrow
                     >
-                      <LuChevronDown />
-                    </IconButton>
+                      <IconButton
+                        size="2xs"
+                        variant="ghost"
+                        aria-label={t('checklist.editor.moveDown', { defaultValue: 'Move down' })}
+                        onClick={() => handleMove(cond.id, 1)}
+                        disabled={idx === sorted.length - 1 || isSaving}
+                      >
+                        <LuChevronDown />
+                      </IconButton>
+                    </TooltipWrapper>
                     <IconButton
                       size="2xs"
                       variant="ghost"

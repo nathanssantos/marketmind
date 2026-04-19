@@ -139,12 +139,12 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={isOrderLong(order) ? 'green' : 'red'} size="xs" px={1}>
+              <Badge colorPalette={isOrderLong(order) ? 'green' : 'red'} size="xs">
                 {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
               </Badge>
             </TradingTableCell>
             <TradingTableCell>
-              <Badge colorPalette={getStatusColor(order.status)} size="xs" px={1}>
+              <Badge colorPalette={getStatusColor(order.status)} size="xs">
                 {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
               </Badge>
             </TradingTableCell>
@@ -155,21 +155,21 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
                   executionId={order.id}
                   symbol={order.symbol}
                 >
-                  <Badge colorPalette="purple" size="xs" px={1} cursor="pointer">
+                  <Badge colorPalette="purple" size="xs" cursor="pointer">
                     {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                   </Badge>
                 </StrategyInfoPopover>
               ) : order.setupType ? (
-                <Badge colorPalette="purple" size="xs" px={1}>
+                <Badge colorPalette="purple" size="xs">
                   {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                 </Badge>
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
               {order.marketType === 'FUTURES' ? (
-                <Badge colorPalette="orange" size="xs" px={1}>FUTURES</Badge>
+                <Badge colorPalette="orange" size="xs">FUTURES</Badge>
               ) : (
-                <Badge colorPalette="gray" size="xs" px={1}>SPOT</Badge>
+                <Badge colorPalette="gray" size="xs">SPOT</Badge>
               )}
             </TradingTableCell>
             <TradingTableCell>{formatDate(order.createdAt)}</TradingTableCell>

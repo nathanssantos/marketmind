@@ -1,41 +1,10 @@
 import type { MarketType } from '@marketmind/types';
-import { TRPCError } from '@trpc/server';
-import { and, eq } from 'drizzle-orm';
+import { checklistConditionSchema, conditionSideSchema } from '@marketmind/trading-core';
 import { z } from 'zod';
-import { db } from '../../db';
-import { tradingProfiles } from '../../db/schema';
+import { tradingProfileQueries } from '../../services/database/tradingProfileQueries';
 import { evaluateChecklist } from '../../services/checklist/evaluate-checklist';
 import { protectedProcedure, router } from '../../trpc';
 import { parseChecklistConditions } from '../../utils/profile-transformers';
-
-const conditionOpSchema = z.enum([
-  'gt',
-  'lt',
-  'between',
-  'outside',
-  'crossAbove',
-  'crossBelow',
-  'oversold',
-  'overbought',
-  'rising',
-  'falling',
-  'priceAbove',
-  'priceBelow',
-]);
-
-const conditionThresholdSchema = z.union([z.number(), z.tuple([z.number(), z.number()])]);
-
-const checklistConditionSchema = z.object({
-  id: z.string(),
-  userIndicatorId: z.string(),
-  timeframe: z.string(),
-  op: conditionOpSchema,
-  threshold: conditionThresholdSchema.optional(),
-  tier: z.enum(['required', 'preferred']),
-  side: z.enum(['LONG', 'SHORT', 'BOTH']),
-  enabled: z.boolean(),
-  order: z.number().int(),
-});
 
 export const checklistRouter = router({
   evaluateChecklist: protectedProcedure
@@ -45,7 +14,7 @@ export const checklistRouter = router({
           symbol: z.string().min(1),
           interval: z.string().min(1),
           marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
-          side: z.enum(['LONG', 'SHORT', 'BOTH']).optional(),
+          side: conditionSideSchema.optional(),
           profileId: z.string().optional(),
           conditions: z.array(checklistConditionSchema).optional(),
         })
@@ -57,21 +26,7 @@ export const checklistRouter = router({
       let conditions = input.conditions;
 
       if (!conditions && input.profileId) {
-        const [profile] = await db
-          .select()
-          .from(tradingProfiles)
-          .where(
-            and(
-              eq(tradingProfiles.id, input.profileId),
-              eq(tradingProfiles.userId, ctx.user.id),
-            ),
-          )
-          .limit(1);
-
-        if (!profile) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-        }
-
+        const profile = await tradingProfileQueries.getByIdAndUser(input.profileId, ctx.user.id);
         conditions = parseChecklistConditions(profile.checklistConditions);
       }
 

@@ -1,3 +1,4 @@
+export * from './schemas';
 export * from './types';
 export * from './catalog';
 export * from './defaults';

@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.95.0] - 2026-04-18
+
+### Added
+- **Trading Checklist system end-to-end** — per-profile checklist of indicator conditions (EMA, RSI, Stoch, Volume, etc.) evaluated against live klines. Backend evaluator (`apps/backend/src/services/checklist/evaluate-checklist.ts`) computes per-condition `passed/value` plus weighted score (required ×2, preferred ×1). New tRPC procedure `trading.evaluateChecklist` (`profileId | conditions`, `symbol`, `interval`, `marketType`).
+- **Combined per-side scoring in one call** — `evaluateChecklist` now returns `{ results, score, scoreLong, scoreShort }`. Frontend dropped from 2 parallel queries (LONG + SHORT) to a single call; klines and indicator series are fetched/computed once.
+- **Score deduplication by composite key** — when two conditions resolve to the same `(userIndicatorId, resolvedTimeframe, op, threshold)` for a given side (e.g. `RSI 14 current` + `RSI 14 1h` on a 1h chart), only one counts toward the score. Explicit-timeframe entries take precedence over `current`. Each result row reports `countedLong` / `countedShort`; deduped rows render at reduced opacity with a tooltip explanation.
+- **Focused-panel timeframe resolution** — `current` now resolves against the focused chart panel's timeframe via `useLayoutStore.getFocusedPanel()?.timeframe`, falling back to the prop. Multi-chart layouts pick the right interval per active panel.
+- **Default checklist template** (`packages/trading-core/src/indicators/checklistDefaults.ts`) — 21 entries covering EMA 200 / EMA 21 (priceAbove/priceBelow current, required), RSI 14 oversold/overbought (current + 15m/1h/4h, preferred), Stoch 14 oversold/overbought (current + 15m/1h/4h, preferred), Volume rising 1h. All `enabled: false` so users opt-in per condition.
+- **Default profile auto-seeded on registration** — `seedDefaultTradingProfile` runs after `seedDefaultUserIndicators` in the auth router; new accounts ship with a `Default Profile` containing the materialized checklist + `DEFAULT_ENABLED_SETUPS`.
+- **Maintenance scripts** in `apps/backend/scripts/maintenance/`:
+  - `sync-default-checklist.ts` — adds missing template entries (e.g. newly added Stoch 14) to existing user profiles without overwriting customizations.
+  - `seed-default-trading-profile.ts` — backfills default profiles for existing users who registered before the auto-seed flow.
+  - `enable-stoch-checklist.ts` — one-off enabler for Stoch 14 conditions on existing profiles.
+- **Frontend Checklist UI**:
+  - `ChecklistSection` (chart-side) — collapsible row under QuickTradeToolbar with two score badges (`L 29% S 29%`), three groups (LONG / SHORT / BOTH), 15s refetch.
+  - `ChecklistEditor` — full editor with reorder chevrons (TooltipWrapper i18n: `checklist.editor.moveUp/moveDown`), per-condition tier/side/timeframe badges, indicator picker via `IndicatorConfigDialog`.
+- **`AutoTradingTab`** in Settings — extracted Settings tab wrapping `WatcherManager` for cleaner navigation.
+- **`tradingProfileQueries`** util (`apps/backend/src/services/database/`) — centralized profile lookup (`getByIdAndUser` / `findByIdAndUser`) mirroring the `walletQueries` pattern; replaces ad-hoc queries in the trading-profiles router.
+- **`schemas.ts`** in `@marketmind/trading-core` — `CONDITION_OPS` / `CONDITION_TIERS` / `CONDITION_SIDES` const arrays plus matching Zod schemas (`conditionOpSchema`, `conditionTierSchema`, `conditionSideSchema`, `conditionThresholdSchema`, `checklistConditionSchema`). `ConditionOp/Tier/Side` types now derive from these arrays — single source of truth shared by backend router validation and frontend type-checking.
+
+### Fixed
+- **Badge & Button padding regression** — Chakra v3's system recipe size variants overrode the project's wrapper inline padding (`<Badge size="sm">` collapsed to `px=1.5`). Resolved by extending `badgeRecipe.variants.size` in `apps/electron/src/renderer/theme/recipes.ts` and applying `!important` raw CSS via the `css` prop in `apps/electron/src/renderer/components/ui/{badge,button}.tsx`. Badges and buttons now have visible breathing room across setup chips, checklist tier/side/timeframe pills, score badges, and dialogs.
+- **Select options inside Dialogs** — `usePortal=false` propagation guard so Chakra `DialogPositioner` no longer intercepts portal clicks (fix: 7c0bfa9e).
+- **Indicator pane colors / thresholds + auto-seed** restored after the v0.94 generic-pipeline migration; empty pane gap dropped (fix: 94a3dae4).
+- **Generic line indicators wick alignment** — X coordinate now centered on candle wick instead of body edge; duplicate legacy renderers removed (fix: 398bc71b).
+
+### Changed
+- **`trading-profiles` router**: `name` and `enabledSetupTypes` are now optional in `createProfileSchema` (defaults applied server-side from `DEFAULT_ENABLED_SETUPS`); inline duplicate Zod schemas removed in favor of imports from `@marketmind/trading-core/schemas`.
+- **`badgeRecipe`**: `base` slot trimmed of size-specific styles; new `variants.size` block (`xs/sm/md/lg`) drives padding/min-height/font-size/gap so sizing comes from the project recipe instead of Chakra's defaults. `defaultVariants.size = 'sm'`.
+- **`profile-transformers`**: added `parseChecklistConditions` / `stringifyChecklistConditions` / `parseIndicatorParams` / `stringifyIndicatorParams` helpers; consumers (`auth`, `user-indicators`, `trading-profiles`, sync scripts) standardized on these instead of ad-hoc `JSON.parse/stringify`.
+- **`CreateTradingProfileInput`** in `@marketmind/types`: `name` and `enabledSetupTypes` optional.
+
 ## [0.94.0] - 2026-04-18
 
 ### Added

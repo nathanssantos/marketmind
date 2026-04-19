@@ -21,9 +21,9 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     }
   });
 
-  it('all entries are enabled by default', () => {
+  it('all entries are disabled by default (opt-in)', () => {
     for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
-      expect(entry.enabled).toBe(true);
+      expect(entry.enabled).toBe(false);
     }
   });
 
@@ -32,11 +32,17 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     expect(new Set(orders).size).toBe(orders.length);
   });
 
-  it('mirrors autotrade default filters (ADX, trend, choppiness, VWAP)', () => {
+  it('covers EMA 200, EMA 21, RSI 14, and Volume seeds', () => {
     const seedLabels = DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.seedLabel);
-    expect(seedLabels).toContain('ADX 14');
+    expect(seedLabels).toContain('EMA 200');
     expect(seedLabels).toContain('EMA 21');
-    expect(seedLabels).toContain('CHOP 14');
-    expect(seedLabels).toContain('VWAP');
+    expect(seedLabels).toContain('RSI 14');
+    expect(seedLabels).toContain('Volume');
+  });
+
+  it('pairs LONG and SHORT entries for direction-aware ops', () => {
+    const longEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'LONG');
+    const shortEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'SHORT');
+    expect(longEntries.length).toBe(shortEntries.length);
   });
 });

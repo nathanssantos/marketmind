@@ -1,5 +1,6 @@
 import { Box, Flex, HStack, SimpleGrid, Spinner, Stack, Text } from '@chakra-ui/react';
 import {
+  Badge,
   Button,
   Checkbox,
   CollapsibleSection,
@@ -63,7 +64,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 size="lg"
               >
                 <Stack gap={4}>
-                  <Field label={t('tradingProfiles.fields.name')} required>
+                  <Field label={t('tradingProfiles.fields.name')} required={form.isEditing}>
                     <Input
                       size="sm"
                       value={form.name}
@@ -141,21 +142,18 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 description={t('tradingProfiles.sections.setupsDescription')}
                 defaultOpen={true}
                 badge={
-                  <Box
-                    px={2}
-                    py={0.5}
-                    bg={form.enabledCount === form.availableSetups.length ? 'green.100' : form.enabledCount > 0 ? 'blue.100' : 'red.100'}
-                    color={form.enabledCount === form.availableSetups.length ? 'green.800' : form.enabledCount > 0 ? 'blue.800' : 'red.800'}
-                    borderRadius="full"
-                    fontSize="xs"
-                    fontWeight="medium"
-                    _dark={{
-                      bg: form.enabledCount === form.availableSetups.length ? 'green.900' : form.enabledCount > 0 ? 'blue.900' : 'red.900',
-                      color: form.enabledCount === form.availableSetups.length ? 'green.200' : form.enabledCount > 0 ? 'blue.200' : 'red.200',
-                    }}
+                  <Badge
+                    size="sm"
+                    colorPalette={
+                      form.enabledCount === form.availableSetups.length
+                        ? 'green'
+                        : form.enabledCount > 0
+                          ? 'blue'
+                          : 'red'
+                    }
                   >
                     {form.enabledCount}/{form.availableSetups.length}
-                  </Box>
+                  </Badge>
                 }
                 size="lg"
               >
@@ -213,21 +211,9 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                     'Conditions evaluated before each trade. Required = must pass. Preferred = adds to confidence score.',
                 })}
                 badge={
-                  <Box
-                    px={2}
-                    py={0.5}
-                    bg={form.checklistConditions.length > 0 ? 'blue.100' : 'gray.100'}
-                    color={form.checklistConditions.length > 0 ? 'blue.800' : 'gray.700'}
-                    borderRadius="full"
-                    fontSize="xs"
-                    fontWeight="medium"
-                    _dark={{
-                      bg: form.checklistConditions.length > 0 ? 'blue.900' : 'gray.700',
-                      color: form.checklistConditions.length > 0 ? 'blue.200' : 'gray.300',
-                    }}
-                  >
+                  <Badge size="sm" colorPalette={form.checklistConditions.length > 0 ? 'blue' : 'gray'}>
                     {form.checklistConditions.length}
-                  </Box>
+                  </Badge>
                 }
                 size="lg"
               >

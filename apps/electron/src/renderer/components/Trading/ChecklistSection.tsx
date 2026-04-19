@@ -1,8 +1,9 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Badge, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
+import { useLayoutStore } from '@renderer/store/layoutStore';
 import { trpc } from '@renderer/utils/trpc';
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCheck, LuChevronDown, LuChevronRight, LuTriangle, LuX } from 'react-icons/lu';
 
@@ -10,37 +11,106 @@ interface ChecklistSectionProps {
   symbol: string;
   interval: string;
   marketType: 'SPOT' | 'FUTURES';
-  side?: 'LONG' | 'SHORT' | 'BOTH';
 }
 
-const scoreColor = (score: number, requiredAllPassed: boolean): string => {
-  if (!requiredAllPassed) return 'red';
-  if (score >= 80) return 'green';
-  if (score >= 50) return 'blue';
-  return 'orange';
+type EvaluationResult = {
+  conditionId: string;
+  side: 'LONG' | 'SHORT' | 'BOTH';
+  evaluated: boolean;
+  passed: boolean;
+  tier: 'required' | 'preferred';
+  op: string;
+  value: number | null;
+  indicatorLabel?: string | null;
+  catalogType?: string | null;
+  timeframe?: string | null;
+  resolvedTimeframe?: string | null;
+  countedLong?: boolean;
+  countedShort?: boolean;
 };
 
-export const ChecklistSection = memo(({ symbol, interval, marketType, side = 'BOTH' }: ChecklistSectionProps) => {
+type ScoreData = {
+  score: number;
+  requiredPassed: number;
+  requiredTotal: number;
+  preferredPassed: number;
+  preferredTotal: number;
+  requiredAllPassed: boolean;
+};
+
+const ScoreBadgePair = ({
+  letter,
+  color,
+  score,
+}: {
+  letter: string;
+  color: string;
+  score: ScoreData | undefined;
+}) => {
+  const { t } = useTranslation();
+  if (!score) return null;
+  const tooltip = score.requiredAllPassed
+    ? t('checklist.section.requiredAllPassed', {
+        defaultValue: 'All required conditions passed ({{p}}/{{t}})',
+        p: score.requiredPassed,
+        t: score.requiredTotal,
+      })
+    : t('checklist.section.requiredFailed', {
+        defaultValue: 'Required conditions failing ({{p}}/{{t}})',
+        p: score.requiredPassed,
+        t: score.requiredTotal,
+      });
+
+  return (
+    <TooltipWrapper label={tooltip} showArrow>
+      <Text fontSize="2xs" fontWeight="semibold" color={color} lineHeight="1" fontVariantNumeric="tabular-nums">
+        {letter} {Math.round(score.score)}%
+      </Text>
+    </TooltipWrapper>
+  );
+};
+
+export const ChecklistSection = memo(({ symbol, interval, marketType }: ChecklistSectionProps) => {
   const { t } = useTranslation();
   const { getDefaultProfile, isLoadingProfiles } = useTradingProfiles();
+  const focusedInterval = useLayoutStore((s) => s.getFocusedPanel()?.timeframe);
   const [expanded, setExpanded] = useState(false);
 
+  const effectiveInterval = focusedInterval ?? interval;
   const defaultProfile = getDefaultProfile();
+  const queryEnabled = Boolean(defaultProfile?.id) && Boolean(symbol) && Boolean(effectiveInterval);
 
-  const { data, isLoading, isError } = trpc.trading.evaluateChecklist.useQuery(
+  const checklistQuery = trpc.trading.evaluateChecklist.useQuery(
     {
       symbol,
-      interval,
+      interval: effectiveInterval,
       marketType,
-      side,
       profileId: defaultProfile?.id,
     },
     {
-      enabled: Boolean(defaultProfile?.id) && Boolean(symbol) && Boolean(interval),
+      enabled: queryEnabled,
       refetchInterval: 15_000,
       staleTime: 10_000,
     },
   );
+
+  const isLoading = checklistQuery.isLoading;
+  const isError = checklistQuery.isError;
+  const longScore = checklistQuery.data?.scoreLong;
+  const shortScore = checklistQuery.data?.scoreShort;
+
+  const groups = useMemo(() => {
+    const allResults = (checklistQuery.data?.results ?? []) as EvaluationResult[];
+    const long: EvaluationResult[] = [];
+    const short: EvaluationResult[] = [];
+    const both: EvaluationResult[] = [];
+    for (const r of allResults) {
+      if (r.side === 'LONG') long.push(r);
+      else if (r.side === 'SHORT') short.push(r);
+      else both.push(r);
+    }
+    return { long, short, both };
+  }, [checklistQuery.data]);
 
   if (isLoadingProfiles || !defaultProfile) return null;
 
@@ -56,10 +126,74 @@ export const ChecklistSection = memo(({ symbol, interval, marketType, side = 'BO
     );
   }
 
-  const score = data?.score;
-  const results = data?.results ?? [];
+  const renderRow = (r: EvaluationResult) => {
+    const icon = r.evaluated
+      ? r.passed
+        ? <LuCheck color="var(--chakra-colors-green-500)" size={10} />
+        : <LuX color="var(--chakra-colors-red-500)" size={10} />
+      : <LuTriangle color="var(--chakra-colors-orange-500)" size={10} />;
+    const opLabel = t(`checklist.ops.${r.op}`, { defaultValue: r.op });
+    const tfLabel = r.timeframe
+      ? t(`checklist.timeframes.${r.timeframe}`, { defaultValue: r.timeframe })
+      : null;
+    const isExcluded =
+      r.countedLong === false && r.countedShort === false;
+    const dedupTooltip = isExcluded
+      ? t('checklist.section.dedupExcluded', {
+          defaultValue: 'Not counted — same as another condition for this timeframe',
+        })
+      : undefined;
+    return (
+      <Flex
+        key={r.conditionId}
+        align="center"
+        gap={1.5}
+        fontSize="2xs"
+        opacity={isExcluded ? 0.55 : 1}
+        title={dedupTooltip}
+      >
+        <Box flexShrink={0}>{icon}</Box>
+        <Text flex={1} truncate>
+          {r.indicatorLabel || r.catalogType || '—'}
+        </Text>
+        {tfLabel && (
+          <Badge size="xs" variant="outline" colorPalette="gray">
+            {tfLabel}
+          </Badge>
+        )}
+        <Badge size="xs" variant="outline" colorPalette={r.tier === 'required' ? 'orange' : 'blue'}>
+          {t(`checklist.tier.${r.tier}`, { defaultValue: r.tier })}
+        </Badge>
+        <Text color="fg.muted" minW="32px" textAlign="right">
+          {opLabel}
+        </Text>
+        <Text color="fg.muted" minW="40px" textAlign="right">
+          {r.value !== null && Number.isFinite(r.value) ? r.value.toFixed(2) : '—'}
+        </Text>
+      </Flex>
+    );
+  };
 
-  const palette = score ? scoreColor(score.score, score.requiredAllPassed) : 'gray';
+  const renderGroup = (rows: EvaluationResult[], titleKey: string, defaultLabel: string) => {
+    if (rows.length === 0) return null;
+    return (
+      <Stack gap={0.5}>
+        <Text
+          fontSize="2xs"
+          fontWeight="bold"
+          color="fg.muted"
+          textTransform="uppercase"
+          letterSpacing="wider"
+          px={1}
+        >
+          {t(titleKey, { defaultValue: defaultLabel })}
+        </Text>
+        {rows.map(renderRow)}
+      </Stack>
+    );
+  };
+
+  const hasAnyResults = groups.long.length + groups.short.length + groups.both.length > 0;
 
   return (
     <Stack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
@@ -79,67 +213,30 @@ export const ChecklistSection = memo(({ symbol, interval, marketType, side = 'BO
         <Text fontSize="xs" color="fg.muted" flex={1}>
           {t('checklist.section.title', { defaultValue: 'Checklist' })}
         </Text>
-        {isLoading && !data ? (
+        {isLoading && !checklistQuery.data ? (
           <Text fontSize="2xs" color="fg.muted">
             …
           </Text>
-        ) : score ? (
-          <HStack gap={1}>
-            <TooltipWrapper
-              label={
-                score.requiredAllPassed
-                  ? t('checklist.section.requiredAllPassed', {
-                      defaultValue: 'All required conditions passed',
-                    })
-                  : t('checklist.section.requiredFailed', {
-                      defaultValue: 'Required conditions failing',
-                    })
-              }
-              showArrow
-            >
-              <Badge size="sm" colorPalette={score.requiredAllPassed ? 'green' : 'red'} variant="subtle">
-                {score.requiredPassed}/{score.requiredTotal}R
-              </Badge>
-            </TooltipWrapper>
-            <Badge size="sm" colorPalette={palette} variant="solid">
-              {Math.round(score.score)}%
-            </Badge>
+        ) : (
+          <HStack gap={2}>
+            <ScoreBadgePair letter="L" color="green.400" score={longScore} />
+            <ScoreBadgePair letter="S" color="red.400" score={shortScore} />
           </HStack>
-        ) : null}
+        )}
       </Flex>
 
       {expanded && (
-        <Stack gap={0.5} px={1} pb={1}>
-          {results.length === 0 ? (
+        <Stack gap={1.5} px={1} pb={1}>
+          {!hasAnyResults ? (
             <Text fontSize="2xs" color="fg.muted" px={1}>
               {t('checklist.section.empty', { defaultValue: 'No conditions evaluated.' })}
             </Text>
           ) : (
-            results.map((r) => {
-              const icon = r.evaluated
-                ? r.passed
-                  ? <LuCheck color="var(--chakra-colors-green-500)" size={10} />
-                  : <LuX color="var(--chakra-colors-red-500)" size={10} />
-                : <LuTriangle color="var(--chakra-colors-orange-500)" size={10} />;
-              const opLabel = t(`checklist.ops.${r.op}`, { defaultValue: r.op });
-              return (
-                <Flex key={r.conditionId} align="center" gap={1.5} fontSize="2xs">
-                  <Box flexShrink={0}>{icon}</Box>
-                  <Text flex={1} truncate>
-                    {r.indicatorLabel || r.catalogType || '—'}
-                  </Text>
-                  <Badge size="sm" variant="outline" colorPalette={r.tier === 'required' ? 'orange' : 'blue'}>
-                    {t(`checklist.tier.${r.tier}`, { defaultValue: r.tier })}
-                  </Badge>
-                  <Text color="fg.muted" minW="32px" textAlign="right">
-                    {opLabel}
-                  </Text>
-                  <Text color="fg.muted" minW="40px" textAlign="right">
-                    {r.value !== null && Number.isFinite(r.value) ? r.value.toFixed(2) : '—'}
-                  </Text>
-                </Flex>
-              );
-            })
+            <>
+              {renderGroup(groups.long, 'checklist.section.long', 'Long')}
+              {renderGroup(groups.short, 'checklist.section.short', 'Short')}
+              {renderGroup(groups.both, 'checklist.section.both', 'Both')}
+            </>
           )}
         </Stack>
       )}

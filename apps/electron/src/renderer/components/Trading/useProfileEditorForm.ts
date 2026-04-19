@@ -7,6 +7,7 @@ import type {
 import { PROFILE_CONFIG_KEYS } from '@marketmind/types';
 import { useAvailableSetups } from '@renderer/hooks/useProfileEditor';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
+import { trpc } from '@renderer/utils/trpc';
 import { useCallback, useEffect, useState } from 'react';
 import { extractConfigOverrides } from './profileEditorUtils';
 import type { ProfileOverrideActions } from './profileEditorUtils';
@@ -21,6 +22,10 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
     isUpdatingChecklist,
   } = useTradingProfiles();
   const { setups: availableSetups, isLoading: isLoadingSetups } = useAvailableSetups();
+  const { data: defaultChecklistTemplate } = trpc.tradingProfiles.getDefaultChecklistTemplate.useQuery(undefined, {
+    enabled: isOpen && profile === null,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -50,16 +55,16 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
     } else {
       setName('');
       setDescription('');
-      setEnabledSetupTypes([]);
+      setEnabledSetupTypes(availableSetups.map((s) => s.id));
       setMaxPositionSize(undefined);
       setMaxConcurrentPositions(undefined);
       setIsDefault(false);
       setOverridePositionSize(false);
       setOverrideConcurrentPositions(false);
       setCo({});
-      setChecklistConditions([]);
+      setChecklistConditions(defaultChecklistTemplate ?? []);
     }
-  }, [profile, isOpen]);
+  }, [profile, isOpen, defaultChecklistTemplate, availableSetups]);
 
   const isActive = useCallback((key: string) => co[key] !== undefined, [co]);
 
@@ -98,7 +103,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
   }, [availableSetups]);
 
   const handleSubmit = async () => {
-    if (!name.trim() || enabledSetupTypes.length === 0) return;
+    if (isEditing && (!name.trim() || enabledSetupTypes.length === 0)) return;
 
     const overridesPayload: Record<string, unknown> = {};
     if (isEditing) {
@@ -125,9 +130,9 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
       await updateChecklist(profile.id, checklistConditions);
     } else {
       const data: CreateTradingProfileInput = {
-        name: name.trim(),
+        name: name.trim() || undefined,
         description: description.trim() || undefined,
-        enabledSetupTypes,
+        enabledSetupTypes: enabledSetupTypes.length > 0 ? enabledSetupTypes : undefined,
         maxPositionSize: overridePositionSize ? maxPositionSize : undefined,
         maxConcurrentPositions: overrideConcurrentPositions ? maxConcurrentPositions : undefined,
         isDefault,
@@ -143,7 +148,9 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
   };
 
   const isSubmitting = isCreatingProfile || isUpdatingProfile || isUpdatingChecklist;
-  const canSubmit = name.trim().length > 0 && enabledSetupTypes.length > 0 && !isSubmitting;
+  const canSubmit = isEditing
+    ? name.trim().length > 0 && enabledSetupTypes.length > 0 && !isSubmitting
+    : checklistConditions.length > 0 && !isSubmitting;
   const allSetupsEnabled = availableSetups.length > 0 && availableSetups.every((s) => enabledSetupTypes.includes(s.id));
   const enabledCount = enabledSetupTypes.length;
 

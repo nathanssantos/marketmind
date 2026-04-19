@@ -12,6 +12,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { klines as klinesTable, userIndicators } from '../../db/schema';
 import { mapDbKlinesToApi } from '../../utils/kline-mapper';
+import { parseIndicatorParams } from '../../utils/profile-transformers';
 import { prefetchKlines } from '../kline-prefetch';
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 
@@ -34,6 +35,7 @@ export interface EvaluateChecklistConditionResult {
   indicatorLabel: string;
   catalogType: string;
   timeframe: string;
+  resolvedTimeframe: string;
   op: ChecklistCondition['op'];
   tier: ChecklistCondition['tier'];
   side: ChecklistCondition['side'];
@@ -41,12 +43,16 @@ export interface EvaluateChecklistConditionResult {
   evaluated: boolean;
   passed: boolean;
   value: number | null;
+  countedLong: boolean;
+  countedShort: boolean;
   error?: string;
 }
 
 export interface EvaluateChecklistResult {
   results: EvaluateChecklistConditionResult[];
   score: ChecklistScoreBreakdown;
+  scoreLong: ChecklistScoreBreakdown;
+  scoreShort: ChecklistScoreBreakdown;
 }
 
 interface UserIndicatorRow {
@@ -72,8 +78,6 @@ const toNumericParams = (
 
 const resolveTimeframe = (conditionTf: string, currentInterval: string): string =>
   conditionTf === 'current' ? currentInterval : conditionTf;
-
-const resolveInterval = (tf: string): string => tf;
 
 const fetchKlinesForTimeframe = async (
   symbol: string,
@@ -189,30 +193,64 @@ const indicatorComputeKey = (
   timeframe: string,
 ): string => `${userIndicatorId}::${timeframe}`;
 
+const dedupKey = (cond: ChecklistCondition, resolvedTf: string): string =>
+  `${cond.userIndicatorId}::${resolvedTf}::${cond.op}::${JSON.stringify(cond.threshold ?? null)}`;
+
+interface CountableCondition {
+  cond: ChecklistCondition;
+  isExplicitTimeframe: boolean;
+}
+
+const pickRepresentativeConditions = (
+  conditions: ChecklistCondition[],
+  interval: string,
+): Map<string, CountableCondition> => {
+  const byKey = new Map<string, CountableCondition>();
+  for (const cond of conditions) {
+    const tf = resolveTimeframe(cond.timeframe, interval);
+    const key = dedupKey(cond, tf);
+    const isExplicit = cond.timeframe !== 'current';
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { cond, isExplicitTimeframe: isExplicit });
+      continue;
+    }
+    if (!existing.isExplicitTimeframe && isExplicit) {
+      byKey.set(key, { cond, isExplicitTimeframe: isExplicit });
+    }
+  }
+  return byKey;
+};
+
+const conditionAppliesToSide = (
+  cond: ChecklistCondition,
+  side: 'LONG' | 'SHORT',
+): boolean => cond.side === side || cond.side === 'BOTH';
+
 export const evaluateChecklist = async (
   input: EvaluateChecklistInput,
 ): Promise<EvaluateChecklistResult> => {
   const { userId, symbol, interval, marketType, conditions, side } = input;
 
-  const activeConditions = conditions.filter((c) => {
-    if (!c.enabled) return false;
-    if (!side || side === 'BOTH') return true;
-    return c.side === side || c.side === 'BOTH';
+  const enabledConditions = conditions.filter((c) => c.enabled);
+
+  const emptyScore = calculateChecklistScore({
+    requiredTotal: 0,
+    requiredPassed: 0,
+    preferredTotal: 0,
+    preferredPassed: 0,
   });
 
-  if (activeConditions.length === 0) {
+  if (enabledConditions.length === 0) {
     return {
       results: [],
-      score: calculateChecklistScore({
-        requiredTotal: 0,
-        requiredPassed: 0,
-        preferredTotal: 0,
-        preferredPassed: 0,
-      }),
+      score: emptyScore,
+      scoreLong: emptyScore,
+      scoreShort: emptyScore,
     };
   }
 
-  const userIndicatorIds = Array.from(new Set(activeConditions.map((c) => c.userIndicatorId)));
+  const userIndicatorIds = Array.from(new Set(enabledConditions.map((c) => c.userIndicatorId)));
 
   const indicatorRows = await db
     .select()
@@ -226,30 +264,45 @@ export const evaluateChecklist = async (
       id: row.id,
       catalogType: row.catalogType,
       label: row.label,
-      params: JSON.parse(row.params) as Record<string, number | string | boolean>,
+      params: parseIndicatorParams(row.params),
     });
   }
 
   const timeframes = new Set<string>();
-  for (const c of activeConditions) timeframes.add(resolveTimeframe(c.timeframe, interval));
+  for (const c of enabledConditions) timeframes.add(resolveTimeframe(c.timeframe, interval));
 
   const klinesByTimeframe = new Map<string, Kline[]>();
   await Promise.all(
     Array.from(timeframes).map(async (tf) => {
-      const klines = await fetchKlinesForTimeframe(symbol, resolveInterval(tf), marketType);
+      const klines = await fetchKlinesForTimeframe(symbol, tf, marketType);
       klinesByTimeframe.set(tf, klines);
     }),
   );
 
   const seriesCache = new Map<string, (number | null)[]>();
 
-  const results: EvaluateChecklistConditionResult[] = [];
-  let requiredTotal = 0;
-  let requiredPassed = 0;
-  let preferredTotal = 0;
-  let preferredPassed = 0;
+  const longApplicable = enabledConditions.filter((c) => conditionAppliesToSide(c, 'LONG'));
+  const shortApplicable = enabledConditions.filter((c) => conditionAppliesToSide(c, 'SHORT'));
+  const longRepresentatives = pickRepresentativeConditions(longApplicable, interval);
+  const shortRepresentatives = pickRepresentativeConditions(shortApplicable, interval);
+  const longRepIds = new Set(Array.from(longRepresentatives.values()).map((v) => v.cond.id));
+  const shortRepIds = new Set(Array.from(shortRepresentatives.values()).map((v) => v.cond.id));
 
-  for (const cond of activeConditions) {
+  const results: EvaluateChecklistConditionResult[] = [];
+  let longRequiredTotal = 0;
+  let longRequiredPassed = 0;
+  let longPreferredTotal = 0;
+  let longPreferredPassed = 0;
+  let shortRequiredTotal = 0;
+  let shortRequiredPassed = 0;
+  let shortPreferredTotal = 0;
+  let shortPreferredPassed = 0;
+
+  for (const cond of enabledConditions) {
+    const resolvedTf = resolveTimeframe(cond.timeframe, interval);
+    const countsTowardLong = longRepIds.has(cond.id);
+    const countsTowardShort = shortRepIds.has(cond.id);
+
     const userIndicator = indicatorMap.get(cond.userIndicatorId);
     if (!userIndicator) {
       results.push({
@@ -258,6 +311,7 @@ export const evaluateChecklist = async (
         indicatorLabel: '',
         catalogType: '',
         timeframe: cond.timeframe,
+        resolvedTimeframe: resolvedTf,
         op: cond.op,
         tier: cond.tier,
         side: cond.side,
@@ -265,6 +319,8 @@ export const evaluateChecklist = async (
         evaluated: false,
         passed: false,
         value: null,
+        countedLong: countsTowardLong,
+        countedShort: countsTowardShort,
         error: 'User indicator not found',
       });
       continue;
@@ -278,6 +334,7 @@ export const evaluateChecklist = async (
         indicatorLabel: userIndicator.label,
         catalogType: userIndicator.catalogType,
         timeframe: cond.timeframe,
+        resolvedTimeframe: resolvedTf,
         op: cond.op,
         tier: cond.tier,
         side: cond.side,
@@ -285,14 +342,15 @@ export const evaluateChecklist = async (
         evaluated: false,
         passed: false,
         value: null,
+        countedLong: countsTowardLong,
+        countedShort: countsTowardShort,
         error: `Unknown catalog type: ${userIndicator.catalogType}`,
       });
       continue;
     }
 
-    const tf = resolveTimeframe(cond.timeframe, interval);
-    const klines = klinesByTimeframe.get(tf) ?? [];
-    const cacheKey = indicatorComputeKey(cond.userIndicatorId, tf);
+    const klines = klinesByTimeframe.get(resolvedTf) ?? [];
+    const cacheKey = indicatorComputeKey(cond.userIndicatorId, resolvedTf);
 
     let series = seriesCache.get(cacheKey);
     if (!series) {
@@ -308,6 +366,7 @@ export const evaluateChecklist = async (
           indicatorLabel: userIndicator.label,
           catalogType: userIndicator.catalogType,
           timeframe: cond.timeframe,
+          resolvedTimeframe: resolvedTf,
           op: cond.op,
           tier: cond.tier,
           side: cond.side,
@@ -315,6 +374,8 @@ export const evaluateChecklist = async (
           evaluated: false,
           passed: false,
           value: null,
+          countedLong: countsTowardLong,
+          countedShort: countsTowardShort,
           error: message,
         });
         continue;
@@ -340,6 +401,7 @@ export const evaluateChecklist = async (
         indicatorLabel: userIndicator.label,
         catalogType: userIndicator.catalogType,
         timeframe: cond.timeframe,
+        resolvedTimeframe: resolvedTf,
         op: cond.op,
         tier: cond.tier,
         side: cond.side,
@@ -347,17 +409,30 @@ export const evaluateChecklist = async (
         evaluated: false,
         passed: false,
         value: null,
+        countedLong: countsTowardLong,
+        countedShort: countsTowardShort,
         error: message,
       });
       continue;
     }
 
-    if (cond.tier === 'required') {
-      requiredTotal += 1;
-      if (evaluation.passed) requiredPassed += 1;
-    } else {
-      preferredTotal += 1;
-      if (evaluation.passed) preferredPassed += 1;
+    if (countsTowardLong) {
+      if (cond.tier === 'required') {
+        longRequiredTotal += 1;
+        if (evaluation.passed) longRequiredPassed += 1;
+      } else {
+        longPreferredTotal += 1;
+        if (evaluation.passed) longPreferredPassed += 1;
+      }
+    }
+    if (countsTowardShort) {
+      if (cond.tier === 'required') {
+        shortRequiredTotal += 1;
+        if (evaluation.passed) shortRequiredPassed += 1;
+      } else {
+        shortPreferredTotal += 1;
+        if (evaluation.passed) shortPreferredPassed += 1;
+      }
     }
 
     results.push({
@@ -366,6 +441,7 @@ export const evaluateChecklist = async (
       indicatorLabel: userIndicator.label,
       catalogType: userIndicator.catalogType,
       timeframe: cond.timeframe,
+      resolvedTimeframe: resolvedTf,
       op: cond.op,
       tier: cond.tier,
       side: cond.side,
@@ -373,15 +449,25 @@ export const evaluateChecklist = async (
       evaluated: true,
       passed: evaluation.passed,
       value: evaluation.value,
+      countedLong: countsTowardLong,
+      countedShort: countsTowardShort,
     });
   }
 
-  const score = calculateChecklistScore({
-    requiredTotal,
-    requiredPassed,
-    preferredTotal,
-    preferredPassed,
+  const scoreLong = calculateChecklistScore({
+    requiredTotal: longRequiredTotal,
+    requiredPassed: longRequiredPassed,
+    preferredTotal: longPreferredTotal,
+    preferredPassed: longPreferredPassed,
+  });
+  const scoreShort = calculateChecklistScore({
+    requiredTotal: shortRequiredTotal,
+    requiredPassed: shortRequiredPassed,
+    preferredTotal: shortPreferredTotal,
+    preferredPassed: shortPreferredPassed,
   });
 
-  return { results, score };
+  const score = side === 'LONG' ? scoreLong : side === 'SHORT' ? scoreShort : scoreLong;
+
+  return { results, score, scoreLong, scoreShort };
 };

@@ -1,17 +1,24 @@
 import { defineRecipe, defineSlotRecipe } from '@chakra-ui/react';
 
 export const badgeRecipe = defineRecipe({
-  base: { px: 1.5, py: 0.5, borderRadius: 'sm', fontSize: '2xs', fontWeight: 'medium' },
+  base: { borderRadius: 'sm', fontWeight: 'medium', display: 'inline-flex', alignItems: 'center' },
   variants: {
     variant: {
       interval: { bg: { base: 'blue.100', _dark: 'blue.900' }, color: { base: 'blue.800', _dark: 'blue.200' } },
       futures: { bg: { base: 'orange.100', _dark: 'orange.900' }, color: { base: 'orange.800', _dark: 'orange.200' } },
       spot: { bg: { base: 'green.100', _dark: 'green.900' }, color: { base: 'green.800', _dark: 'green.200' } },
-      count: { bg: { base: 'green.100', _dark: 'green.900' }, color: { base: 'green.800', _dark: 'green.200' }, borderRadius: 'full', fontSize: 'xs' },
-      active: { bg: { base: 'purple.100', _dark: 'purple.900' }, color: { base: 'purple.800', _dark: 'purple.200' }, borderRadius: 'full', fontSize: 'xs' },
-      autoRotation: { bg: { base: 'blue.100', _dark: 'blue.900' }, color: { base: 'blue.800', _dark: 'blue.200' }, borderRadius: 'full', fontSize: 'xs' },
+      count: { bg: { base: 'green.100', _dark: 'green.900' }, color: { base: 'green.800', _dark: 'green.200' }, borderRadius: 'full' },
+      active: { bg: { base: 'purple.100', _dark: 'purple.900' }, color: { base: 'purple.800', _dark: 'purple.200' }, borderRadius: 'full' },
+      autoRotation: { bg: { base: 'blue.100', _dark: 'blue.900' }, color: { base: 'blue.800', _dark: 'blue.200' }, borderRadius: 'full' },
+    },
+    size: {
+      xs: { textStyle: '2xs', px: '2', minH: '5', gap: '1' },
+      sm: { textStyle: 'xs', px: '2.5', minH: '6', gap: '1.5' },
+      md: { textStyle: 'sm', px: '3', minH: '7', gap: '1.5' },
+      lg: { textStyle: 'sm', px: '3.5', minH: '8', gap: '2' },
     },
   },
+  defaultVariants: { size: 'sm' },
 });
 
 export const collapsibleSectionRecipe = defineSlotRecipe({

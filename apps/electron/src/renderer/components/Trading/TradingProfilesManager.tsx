@@ -1,12 +1,12 @@
-import { Button, IconButton } from '@renderer/components/ui';
-import { Box, Collapsible, Flex, Grid, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, Button, IconButton } from '@renderer/components/ui';
+import { Box, Flex, Grid, Heading, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { TradingProfile } from '@marketmind/types';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChevronDown, LuChevronUp, LuCopy, LuPencil, LuPlus, LuStar, LuTrash2, LuUpload } from 'react-icons/lu';
+import { LuCopy, LuPencil, LuPlus, LuStar, LuTrash2, LuUpload } from 'react-icons/lu';
 import { ImportProfileDialog } from './ImportProfileDialog';
 import { ProfileEditorDialog } from './ProfileEditorDialog';
 
@@ -23,7 +23,6 @@ export const TradingProfilesManager = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingProfile, setEditingProfile] = useState<TradingProfile | null>(null);
-  const [profilesExpanded, setProfilesExpanded] = useState(false);
 
   const handleDuplicate = async (profile: TradingProfile) => {
     const newName = `${profile.name} (${t('common.copy')})`;
@@ -31,110 +30,70 @@ export const TradingProfilesManager = () => {
   };
 
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={() => setProfilesExpanded(!profilesExpanded)}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
+    <Stack gap={4}>
+      <Flex justify="space-between" align="flex-start" gap={4}>
         <Box>
           <Flex align="center" gap={2}>
-            <Text fontSize="lg" fontWeight="bold">
-              {t('tradingProfiles.title')}
-            </Text>
+            <Heading size="md">{t('tradingProfiles.title')}</Heading>
             {profiles.length > 0 && (
-              <Box
-                px={2}
-                py={0.5}
-                bg="blue.100"
-                color="blue.800"
-                borderRadius="full"
-                fontSize="xs"
-                fontWeight="medium"
-                _dark={{ bg: 'blue.900', color: 'blue.200' }}
-              >
+              <Badge size="sm" colorPalette="blue">
                 {profiles.length}
-              </Box>
+              </Badge>
             )}
           </Flex>
           <Text fontSize="sm" color="fg.muted">
             {t('tradingProfiles.description')}
           </Text>
         </Box>
-        {profilesExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
+        <Flex gap={2}>
+          <Button size="sm" variant="outline" onClick={() => setShowImportDialog(true)}>
+            <LuUpload />
+            {t('tradingProfiles.import.openImport')}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setShowCreateDialog(true)}>
+            <LuPlus />
+            {t('tradingProfiles.create')}
+          </Button>
+        </Flex>
       </Flex>
 
-      <Collapsible.Root open={profilesExpanded}>
-        <Collapsible.Content>
-          <Stack gap={4} mt={4}>
-            <Flex justify="flex-end" gap={2}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowImportDialog(true)}
-              >
-                <LuUpload />
-                {t('tradingProfiles.import.openImport')}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCreateDialog(true)}
-              >
-                <LuPlus />
-                {t('tradingProfiles.create')}
-              </Button>
-            </Flex>
-
-            {isLoadingProfiles ? (
-              <Box p={4} textAlign="center">
-                <Text fontSize="sm" color="fg.muted">
-                  {t('common.loading')}
-                </Text>
-              </Box>
-            ) : profiles.length === 0 ? (
-              <Box
-                p={6}
-                textAlign="center"
-                borderWidth="1px"
-                borderStyle="dashed"
-                borderRadius="lg"
-                borderColor="border"
-              >
-                <Text fontSize="sm" color="fg.muted" mb={2}>
-                  {t('tradingProfiles.empty')}
-                </Text>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowCreateDialog(true)}
-                >
-                  <LuPlus />
-                  {t('tradingProfiles.createFirst')}
-                </Button>
-              </Box>
-            ) : (
-              <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={4}>
-                {profiles.map((profile) => (
-                  <ProfileCard
-                    key={profile.id}
-                    profile={profile}
-                    onEdit={() => setEditingProfile(profile)}
-                    onDelete={() => deleteProfile(profile.id)}
-                    onDuplicate={() => handleDuplicate(profile)}
-                    isDeleting={isDeletingProfile}
-                  />
-                ))}
-              </Grid>
-            )}
-          </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
+      {isLoadingProfiles ? (
+        <Box p={4} textAlign="center">
+          <Text fontSize="sm" color="fg.muted">
+            {t('common.loading')}
+          </Text>
+        </Box>
+      ) : profiles.length === 0 ? (
+        <Box
+          p={6}
+          textAlign="center"
+          borderWidth="1px"
+          borderStyle="dashed"
+          borderRadius="lg"
+          borderColor="border"
+        >
+          <Text fontSize="sm" color="fg.muted" mb={2}>
+            {t('tradingProfiles.empty')}
+          </Text>
+          <Button size="sm" variant="outline" onClick={() => setShowCreateDialog(true)}>
+            <LuPlus />
+            {t('tradingProfiles.createFirst')}
+          </Button>
+        </Box>
+      ) : (
+        <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={4}>
+          {profiles.map((profile) => (
+            <ProfileCard
+              key={profile.id}
+              profile={profile}
+              onEdit={() => setEditingProfile(profile)}
+              onDelete={() => deleteProfile(profile.id)}
+              onDuplicate={() => handleDuplicate(profile)}
+              isDeleting={isDeletingProfile}
+            />
+          ))}
+        </Grid>
+      )}
 
       <ProfileEditorDialog
         isOpen={showCreateDialog}
@@ -152,7 +111,7 @@ export const TradingProfilesManager = () => {
         isOpen={showImportDialog}
         onClose={() => setShowImportDialog(false)}
       />
-    </Box>
+    </Stack>
   );
 };
 
@@ -260,31 +219,14 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
           </Text>
           <Flex flexWrap="wrap" gap={1}>
             {profile.enabledSetupTypes.slice(0, 4).map((setup) => (
-              <Box
-                key={setup}
-                px={2}
-                py={0.5}
-                bg="blue.100"
-                color="blue.800"
-                borderRadius="sm"
-                fontSize="2xs"
-                _dark={{ bg: 'blue.900', color: 'blue.200' }}
-              >
+              <Badge key={setup} size="sm" colorPalette="blue" variant="subtle">
                 {t(`tradingProfiles.setups.${setup}`, setup)}
-              </Box>
+              </Badge>
             ))}
             {profile.enabledSetupTypes.length > 4 && (
-              <Box
-                px={2}
-                py={0.5}
-                bg="gray.100"
-                color="gray.600"
-                borderRadius="sm"
-                fontSize="2xs"
-                _dark={{ bg: 'gray.800', color: 'gray.300' }}
-              >
+              <Badge size="sm" colorPalette="gray" variant="subtle">
                 +{profile.enabledSetupTypes.length - 4}
-              </Box>
+              </Badge>
             )}
           </Flex>
         </Box>

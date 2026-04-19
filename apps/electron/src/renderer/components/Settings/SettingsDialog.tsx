@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import { WalletManager } from '../Trading/WalletManager';
 import { AboutTab } from './AboutTab';
+import { AutoTradingTab } from './AutoTradingTab';
 import { ChartSettingsTab } from './ChartSettingsTab';
 import { DataTab } from './DataTab';
 import { GeneralTab } from './GeneralTab';
@@ -45,6 +46,7 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="wallets">{t('settings.tabs.wallets')}</Tabs.Trigger>
                 <Tabs.Trigger value="chart">{t('settings.tabs.chart')}</Tabs.Trigger>
                 <Tabs.Trigger value="indicators">{t('settings.tabs.indicators')}</Tabs.Trigger>
+                <Tabs.Trigger value="tradingProfiles">{t('settings.tabs.tradingProfiles')}</Tabs.Trigger>
                 <Tabs.Trigger value="autoTrading">{t('settings.tabs.autoTrading')}</Tabs.Trigger>
                 <Tabs.Trigger value="data">{t('settings.tabs.data')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
@@ -70,8 +72,12 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                   <IndicatorsTab />
                 </Tabs.Content>
 
-                <Tabs.Content value="autoTrading">
+                <Tabs.Content value="tradingProfiles">
                   <TradingProfilesTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="autoTrading">
+                  <AutoTradingTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="data">

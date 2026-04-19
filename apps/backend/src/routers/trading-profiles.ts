@@ -13,41 +13,12 @@ import {
 } from '../utils/profile-transformers';
 import { applyProfileFieldsToUpdate } from '../utils/config-field-registry';
 import { materializeDefaultChecklist } from '../services/user-indicators';
+import { tradingProfileQueries } from '../services/database/tradingProfileQueries';
+import { checklistConditionSchema } from '@marketmind/trading-core';
 import { FIB_LEVELS } from '@marketmind/types';
+import { DEFAULT_ENABLED_SETUPS } from '../constants';
 
 const fibLevelSchema = z.enum(FIB_LEVELS);
-
-const conditionOpSchema = z.enum([
-  'gt',
-  'lt',
-  'between',
-  'outside',
-  'crossAbove',
-  'crossBelow',
-  'oversold',
-  'overbought',
-  'rising',
-  'falling',
-  'priceAbove',
-  'priceBelow',
-]);
-
-const conditionThresholdSchema = z.union([
-  z.number(),
-  z.tuple([z.number(), z.number()]),
-]);
-
-const checklistConditionSchema = z.object({
-  id: z.string(),
-  userIndicatorId: z.string(),
-  timeframe: z.string(),
-  op: conditionOpSchema,
-  threshold: conditionThresholdSchema.optional(),
-  tier: z.enum(['required', 'preferred']),
-  side: z.enum(['LONG', 'SHORT', 'BOTH']),
-  enabled: z.boolean(),
-  order: z.number().int(),
-});
 
 const profileConfigFields = {
   tradingMode: z.enum(['auto', 'semi_assisted']).optional().nullable(),
@@ -109,9 +80,9 @@ const profileConfigFields = {
 };
 
 const createProfileSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
-  enabledSetupTypes: z.array(z.string()).min(1),
+  enabledSetupTypes: z.array(z.string()).optional(),
   maxPositionSize: z.number().min(1).max(100).optional(),
   maxConcurrentPositions: z.number().min(1).max(10).optional(),
   isDefault: z.boolean().optional(),
@@ -138,30 +109,20 @@ const importFromBacktestSchema = z.object({
 
 export const tradingProfilesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    const profiles = await db
-      .select()
-      .from(tradingProfiles)
-      .where(eq(tradingProfiles.userId, ctx.user.id))
-      .orderBy(tradingProfiles.createdAt);
-
+    const profiles = await tradingProfileQueries.listByUser(ctx.user.id);
     return profiles.map(transformTradingProfile);
   }),
 
   get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const [profile] = await db
-        .select()
-        .from(tradingProfiles)
-        .where(and(eq(tradingProfiles.id, input.id), eq(tradingProfiles.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!profile) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-      }
-
+      const profile = await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
       return transformTradingProfile(profile);
     }),
+
+  getDefaultChecklistTemplate: protectedProcedure.query(async ({ ctx }) => {
+    return materializeDefaultChecklist(ctx.user.id);
+  }),
 
   create: protectedProcedure.input(createProfileSchema).mutation(async ({ ctx, input }) => {
     const id = generateEntityId();
@@ -174,13 +135,18 @@ export const tradingProfilesRouter = router({
     }
 
     const defaultChecklist = await materializeDefaultChecklist(ctx.user.id);
+    const existingCount = (await tradingProfileQueries.listByUser(ctx.user.id)).length;
+    const profileName = input.name?.trim() || `Profile ${existingCount + 1}`;
+    const profileSetups = input.enabledSetupTypes && input.enabledSetupTypes.length > 0
+      ? input.enabledSetupTypes
+      : [...DEFAULT_ENABLED_SETUPS];
 
     const values: NewTradingProfileRow = {
       id,
       userId: ctx.user.id,
-      name: input.name,
+      name: profileName,
       description: input.description ?? null,
-      enabledSetupTypes: stringifyEnabledSetupTypes(input.enabledSetupTypes),
+      enabledSetupTypes: stringifyEnabledSetupTypes(profileSetups),
       maxPositionSize: input.maxPositionSize?.toString() ?? null,
       maxConcurrentPositions: input.maxConcurrentPositions ?? null,
       isDefault: input.isDefault ?? false,
@@ -197,21 +163,12 @@ export const tradingProfilesRouter = router({
 
     await db.insert(tradingProfiles).values(values);
 
-    const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
-
-    return transformTradingProfile(profile!);
+    const profile = await tradingProfileQueries.getById(id);
+    return transformTradingProfile(profile);
   }),
 
   update: protectedProcedure.input(updateProfileSchema).mutation(async ({ ctx, input }) => {
-    const [existing] = await db
-      .select()
-      .from(tradingProfiles)
-      .where(and(eq(tradingProfiles.id, input.id), eq(tradingProfiles.userId, ctx.user.id)))
-      .limit(1);
-
-    if (!existing) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-    }
+    await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
 
     if (input.isDefault) {
       await db
@@ -225,23 +182,14 @@ export const tradingProfilesRouter = router({
 
     await db.update(tradingProfiles).set(updateData).where(eq(tradingProfiles.id, input.id));
 
-    const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, input.id)).limit(1);
-
-    return transformTradingProfile(profile!);
+    const profile = await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
+    return transformTradingProfile(profile);
   }),
 
   updateChecklist: protectedProcedure
     .input(z.object({ id: z.string(), checklistConditions: z.array(checklistConditionSchema) }))
     .mutation(async ({ ctx, input }) => {
-      const [existing] = await db
-        .select()
-        .from(tradingProfiles)
-        .where(and(eq(tradingProfiles.id, input.id), eq(tradingProfiles.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!existing) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-      }
+      await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
 
       await db
         .update(tradingProfiles)
@@ -251,46 +199,22 @@ export const tradingProfilesRouter = router({
         })
         .where(eq(tradingProfiles.id, input.id));
 
-      const [profile] = await db
-        .select()
-        .from(tradingProfiles)
-        .where(eq(tradingProfiles.id, input.id))
-        .limit(1);
-
-      return transformTradingProfile(profile!);
+      const profile = await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
+      return transformTradingProfile(profile);
     }),
 
   delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
-    const [existing] = await db
-      .select()
-      .from(tradingProfiles)
-      .where(and(eq(tradingProfiles.id, input.id), eq(tradingProfiles.userId, ctx.user.id)))
-      .limit(1);
-
-    if (!existing) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-    }
-
+    await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
     await db.delete(tradingProfiles).where(eq(tradingProfiles.id, input.id));
-
     return { success: true };
   }),
 
   duplicate: protectedProcedure
     .input(z.object({ id: z.string(), newName: z.string().min(1).max(100) }))
     .mutation(async ({ ctx, input }) => {
-      const [existing] = await db
-        .select()
-        .from(tradingProfiles)
-        .where(and(eq(tradingProfiles.id, input.id), eq(tradingProfiles.userId, ctx.user.id)))
-        .limit(1);
-
-      if (!existing) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-      }
+      const existing = await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
 
       const id = generateEntityId();
-
       const { id: _existingId, userId: _userId, createdAt: _created, updatedAt: _updated, ...fieldsToClone } = existing;
 
       await db.insert(tradingProfiles).values({
@@ -301,9 +225,8 @@ export const tradingProfilesRouter = router({
         isDefault: false,
       });
 
-      const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
-
-      return transformTradingProfile(profile!);
+      const profile = await tradingProfileQueries.getById(id);
+      return transformTradingProfile(profile);
     }),
 
   importFromBacktest: protectedProcedure
@@ -332,9 +255,8 @@ export const tradingProfilesRouter = router({
 
       await db.insert(tradingProfiles).values(values);
 
-      const [profile] = await db.select().from(tradingProfiles).where(eq(tradingProfiles.id, id)).limit(1);
-
-      return transformTradingProfile(profile!);
+      const profile = await tradingProfileQueries.getById(id);
+      return transformTradingProfile(profile);
     }),
 
   assignToWatcher: protectedProcedure
@@ -351,15 +273,7 @@ export const tradingProfilesRouter = router({
       }
 
       if (input.profileId) {
-        const [profile] = await db
-          .select()
-          .from(tradingProfiles)
-          .where(and(eq(tradingProfiles.id, input.profileId), eq(tradingProfiles.userId, ctx.user.id)))
-          .limit(1);
-
-        if (!profile) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-        }
+        await tradingProfileQueries.getByIdAndUser(input.profileId, ctx.user.id);
       }
 
       await db

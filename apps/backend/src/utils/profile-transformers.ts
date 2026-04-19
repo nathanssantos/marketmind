@@ -1,5 +1,5 @@
 import type { FibLevel } from '@marketmind/types';
-import type { ChecklistCondition } from '@marketmind/trading-core';
+import type { ChecklistCondition, IndicatorParamValue } from '@marketmind/trading-core';
 import type { tradingProfiles, autoTradingConfig } from '../db/schema';
 
 type TradingProfileRow = typeof tradingProfiles.$inferSelect;
@@ -78,6 +78,25 @@ export const parseChecklistConditions = (json: string | null | undefined): Check
 export const stringifyChecklistConditions = (conditions: ChecklistCondition[]): string => {
   return JSON.stringify(conditions);
 };
+
+export const parseIndicatorParams = (
+  raw: string | null | undefined,
+): Record<string, IndicatorParamValue> => {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, IndicatorParamValue>;
+    }
+    return {};
+  } catch {
+    return {};
+  }
+};
+
+export const stringifyIndicatorParams = (
+  params: Record<string, IndicatorParamValue>,
+): string => JSON.stringify(params);
 
 const parseNumericField = (value: string | null | undefined): number | null => {
   if (value == null || value === '') return null;

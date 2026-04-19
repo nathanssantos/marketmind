@@ -55,14 +55,14 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
             </Text>
           </Flex>
           <Flex gap={2} align="center" flexWrap="wrap">
-            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="xs" px={1}>
+            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="xs">
               {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
-            <Badge colorPalette={getStatusColor(order.status)} size="xs" px={1}>
+            <Badge colorPalette={getStatusColor(order.status)} size="xs">
               {t(`trading.orders.${getStatusTranslationKey(order.status)}`)}
             </Badge>
             {order.isAutoTrade && (
-              <Badge colorPalette="blue" size="xs" px={1}>
+              <Badge colorPalette="blue" size="xs">
                 <Flex align="center" gap={1}>
                   <LuBot size={10} />
                   AUTO
@@ -70,7 +70,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
               </Badge>
             )}
             {order.marketType === 'FUTURES' && (
-              <Badge colorPalette="orange" size="xs" px={1}>
+              <Badge colorPalette="orange" size="xs">
                 FUTURES
               </Badge>
             )}
@@ -80,13 +80,13 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
                 executionId={order.id}
                 symbol={order.symbol}
               >
-                <Badge colorPalette="purple" size="xs" px={1} cursor="pointer">
+                <Badge colorPalette="purple" size="xs" cursor="pointer">
                   {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
                 </Badge>
               </StrategyInfoPopover>
             )}
             {order.setupType && !order.isAutoTrade && (
-              <Badge colorPalette="purple" size="xs" px={1}>
+              <Badge colorPalette="purple" size="xs">
                 {t(`setups.${order.setupType}`, { defaultValue: order.setupType })}
               </Badge>
             )}

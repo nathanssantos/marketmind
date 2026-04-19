@@ -1,3 +1,5 @@
+import { CONDITION_OPS, CONDITION_SIDES, CONDITION_TIERS } from './schemas';
+
 export type ParamType = 'number' | 'integer' | 'select' | 'color' | 'boolean';
 
 export type RenderKind =
@@ -9,19 +11,9 @@ export type RenderKind =
   | 'pane-multi'
   | 'custom';
 
-export type ConditionOp =
-  | 'gt'
-  | 'lt'
-  | 'between'
-  | 'outside'
-  | 'crossAbove'
-  | 'crossBelow'
-  | 'oversold'
-  | 'overbought'
-  | 'rising'
-  | 'falling'
-  | 'priceAbove'
-  | 'priceBelow';
+export type ConditionOp = (typeof CONDITION_OPS)[number];
+export type ConditionTier = (typeof CONDITION_TIERS)[number];
+export type ConditionSide = (typeof CONDITION_SIDES)[number];
 
 export type IndicatorCategory =
   | 'oscillators'
@@ -99,8 +91,8 @@ export interface ChecklistCondition {
   timeframe: string;
   op: ConditionOp;
   threshold?: ConditionThreshold;
-  tier: 'required' | 'preferred';
-  side: 'LONG' | 'SHORT' | 'BOTH';
+  tier: ConditionTier;
+  side: ConditionSide;
   enabled: boolean;
   order: number;
 }
