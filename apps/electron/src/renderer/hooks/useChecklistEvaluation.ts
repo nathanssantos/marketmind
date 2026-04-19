@@ -6,7 +6,7 @@ import {
   useChartLiveDataStore,
   type ChartLiveDataEntry,
 } from '@renderer/store/chartLiveDataStore';
-import { useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface ClientChecklistResult {
   conditionId: string;
@@ -69,33 +69,85 @@ const evaluateOne = (
   }
 };
 
+const computeResults = (
+  entries: Map<string, ChartLiveDataEntry>,
+  conditions: ChecklistCondition[],
+  symbol: string,
+  interval: string,
+  marketType: MarketType,
+): Map<string, ClientChecklistResult> => {
+  const out = new Map<string, ClientChecklistResult>();
+  const closeSeriesCache = new Map<string, (number | null)[]>();
+  for (const cond of conditions) {
+    if (!cond.enabled) continue;
+    const resolvedTf = resolveTimeframe(cond.timeframe, interval);
+    const entry = entries.get(buildChartLiveDataKey(symbol, resolvedTf, marketType));
+    if (!entry) continue;
+    let closeSeries = closeSeriesCache.get(resolvedTf);
+    if (!closeSeries) {
+      closeSeries = closeSeriesFromKlines(entry.klines);
+      closeSeriesCache.set(resolvedTf, closeSeries);
+    }
+    const res = evaluateOne(cond, entry, closeSeries);
+    if (res) out.set(cond.id, res);
+  }
+  return out;
+};
+
+const resultsEqual = (
+  a: Map<string, ClientChecklistResult>,
+  b: Map<string, ClientChecklistResult>,
+): boolean => {
+  if (a.size !== b.size) return false;
+  for (const [k, va] of a) {
+    const vb = b.get(k);
+    if (!vb) return false;
+    if (va.evaluated !== vb.evaluated || va.passed !== vb.passed || va.value !== vb.value) return false;
+  }
+  return true;
+};
+
+const EMPTY: Map<string, ClientChecklistResult> = new Map();
+const THROTTLE_MS = 250;
+
 export const useChecklistEvaluation = ({
   symbol,
   interval,
   marketType,
   conditions,
 }: UseChecklistEvaluationProps): Map<string, ClientChecklistResult> => {
-  const entries = useChartLiveDataStore((s) => s.entries);
+  const [results, setResults] = useState<Map<string, ClientChecklistResult>>(EMPTY);
+  const latestResultsRef = useRef<Map<string, ClientChecklistResult>>(EMPTY);
 
-  return useMemo(() => {
-    const out = new Map<string, ClientChecklistResult>();
-    const closeSeriesCache = new Map<string, (number | null)[]>();
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pending = false;
 
-    for (const cond of conditions) {
-      if (!cond.enabled) continue;
-      const resolvedTf = resolveTimeframe(cond.timeframe, interval);
-      const entry = entries.get(buildChartLiveDataKey(symbol, resolvedTf, marketType));
-      if (!entry) continue;
+    const run = () => {
+      timer = null;
+      pending = false;
+      const entries = useChartLiveDataStore.getState().entries;
+      const next = computeResults(entries, conditions, symbol, interval, marketType);
+      if (resultsEqual(latestResultsRef.current, next)) return;
+      latestResultsRef.current = next;
+      setResults(next);
+    };
 
-      let closeSeries = closeSeriesCache.get(resolvedTf);
-      if (!closeSeries) {
-        closeSeries = closeSeriesFromKlines(entry.klines);
-        closeSeriesCache.set(resolvedTf, closeSeries);
-      }
+    const schedule = () => {
+      if (pending) return;
+      pending = true;
+      timer = setTimeout(run, THROTTLE_MS);
+    };
 
-      const res = evaluateOne(cond, entry, closeSeries);
-      if (res) out.set(cond.id, res);
-    }
-    return out;
-  }, [entries, conditions, interval, symbol, marketType]);
+    run();
+
+    const unsub = useChartLiveDataStore.subscribe(schedule);
+
+    return () => {
+      unsub();
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [conditions, symbol, interval, marketType]);
+
+  return results;
 };

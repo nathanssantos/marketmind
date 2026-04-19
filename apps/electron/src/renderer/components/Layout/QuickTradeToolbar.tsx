@@ -45,7 +45,7 @@ const ActionRow = ({ icon, label, onClick, loading, disabled, children }: {
   </Flex>
 );
 
-const SIZE_PRESETS = [5, 10, 25, 50, 75, 100] as const;
+const SIZE_PRESETS = [10, 25, 50, 75, 100] as const;
 const SNAP_THRESHOLD = 16;
 const EDGE_PADDING = 8;
 

@@ -253,6 +253,8 @@ export const ChartCanvas = ({
 
   const setLiveDataEntry = useChartLiveDataStore((s) => s.setEntry);
   const clearLiveDataEntry = useChartLiveDataStore((s) => s.clearEntry);
+  const liveKlinesRef = useRef(klines);
+  liveKlinesRef.current = klines;
   useEffect(() => {
     if (!symbol || !marketType || !timeframe) return;
     const key = buildChartLiveDataKey(symbol, timeframe, marketType);
@@ -263,9 +265,9 @@ export const ChartCanvas = ({
       if (!outputs) continue;
       indicators.set(inst.userIndicatorId, { catalogType: inst.catalogType, outputs });
     }
-    setLiveDataEntry(key, { symbol, interval: timeframe, marketType, klines, indicators });
+    setLiveDataEntry(key, { symbol, interval: timeframe, marketType, klines: liveKlinesRef.current, indicators });
     return () => clearLiveDataEntry(key);
-  }, [symbol, marketType, timeframe, klines, instances, genericOutputs, setLiveDataEntry, clearLiveDataEntry]);
+  }, [symbol, marketType, timeframe, instances, genericOutputs, setLiveDataEntry, clearLiveDataEntry]);
 
   const genericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, instances, outputs: genericOutputs,
