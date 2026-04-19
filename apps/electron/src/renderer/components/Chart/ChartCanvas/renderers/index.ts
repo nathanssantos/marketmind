@@ -1,7 +1,10 @@
+import { renderFibonacci } from './renderFibonacci';
 import { renderFootprint } from './renderFootprint';
+import { renderFVG } from './renderFVG';
 import { renderIchimoku } from './renderIchimoku';
 import { renderLiquidationMarkers } from './renderLiquidationMarkers';
 import { renderLiquidityHeatmap } from './renderLiquidityHeatmap';
+import { renderLiquidityLevels } from './renderLiquidityLevels';
 import { renderORB } from './renderORB';
 import { renderOverlayBands } from './renderOverlayBands';
 import { renderOverlayLine } from './renderOverlayLine';
@@ -34,21 +37,27 @@ export const RENDERER_REGISTRY: RendererRegistry = {
 };
 
 export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {
+  fibonacci: renderFibonacci,
+  fvg: renderFVG,
   ichimoku: renderIchimoku,
-  pivotPoints: renderPivotPoints,
-  volumeProfile: renderVolumeProfile,
+  liquidationMarkers: renderLiquidationMarkers,
+  liquidityHeatmap: renderLiquidityHeatmap,
+  liquidityLevels: renderLiquidityLevels,
   orb: renderORB,
+  pivotPoints: renderPivotPoints,
   sessionBoundaries: renderSessionBoundaries,
   footprint: renderFootprint,
-  liquidityHeatmap: renderLiquidityHeatmap,
-  liquidationMarkers: renderLiquidationMarkers,
+  volumeProfile: renderVolumeProfile,
 };
 
 export {
+  renderFibonacci,
   renderFootprint,
+  renderFVG,
   renderIchimoku,
   renderLiquidationMarkers,
   renderLiquidityHeatmap,
+  renderLiquidityLevels,
   renderORB,
   renderOverlayBands,
   renderOverlayLine,
