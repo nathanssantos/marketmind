@@ -2204,6 +2204,8 @@
     "ops": {
       "rising": "subindo (barra atual > anterior)",
       "falling": "caindo (barra atual < anterior)"
-    }
+    },
+    "weight": "Peso (× multiplicador)",
+    "weightHint": "Timeframes maiores pesam mais. Condições obrigatórias valem 2×; preferidas 1×."
   }
 }

@@ -12,6 +12,7 @@ import {
   INDICATOR_CATALOG,
   getDefaultParamsForType,
 } from '@marketmind/trading-core';
+import { getDefaultChecklistWeight } from '@marketmind/types';
 import type { SelectOption } from '@renderer/components/ui';
 import { Field, FormDialog, Input } from '@renderer/components/ui';
 import { useEffect, useMemo, useState } from 'react';
@@ -47,6 +48,7 @@ export interface IndicatorConfigChecklistResult {
   threshold?: [number, number] | number;
   tier: 'required' | 'preferred';
   side: 'LONG' | 'SHORT' | 'BOTH';
+  weight: number;
 }
 
 export type IndicatorConfigResult =
@@ -124,6 +126,10 @@ export const IndicatorConfigDialog = ({
     threshold: initialCondition?.threshold,
     tier: initialCondition?.tier ?? 'required',
     side: initialCondition?.side ?? 'BOTH',
+    weight:
+      typeof initialCondition?.weight === 'number' && initialCondition.weight > 0
+        ? initialCondition.weight
+        : getDefaultChecklistWeight(initialCondition?.timeframe ?? 'current'),
   });
 
   useEffect(() => {
@@ -150,12 +156,17 @@ export const IndicatorConfigDialog = ({
 
     if (mode === 'checklist-condition') {
       setUserIndicatorId(initialCondition?.userIndicatorId ?? availableIndicators[0]?.id ?? '');
+      const initialTimeframe = initialCondition?.timeframe ?? 'current';
       setCondition({
-        timeframe: initialCondition?.timeframe ?? 'current',
+        timeframe: initialTimeframe,
         op: initialCondition?.op ?? 'gt',
         threshold: initialCondition?.threshold,
         tier: initialCondition?.tier ?? 'required',
         side: initialCondition?.side ?? 'BOTH',
+        weight:
+          typeof initialCondition?.weight === 'number' && initialCondition.weight > 0
+            ? initialCondition.weight
+            : getDefaultChecklistWeight(initialTimeframe),
       });
     }
   }, [isOpen, mode, instance, initialCondition, availableIndicators, catalogEntries]);
@@ -221,6 +232,7 @@ export const IndicatorConfigDialog = ({
         threshold: condition.threshold,
         tier: condition.tier,
         side: condition.side,
+        weight: condition.weight,
       });
     }
   };

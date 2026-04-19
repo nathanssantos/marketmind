@@ -1,4 +1,5 @@
 import type { FibLevel } from '@marketmind/types';
+import { getDefaultChecklistWeight } from '@marketmind/types';
 import type { ChecklistCondition, IndicatorParamValue } from '@marketmind/trading-core';
 import type { tradingProfiles, autoTradingConfig } from '../db/schema';
 
@@ -69,7 +70,14 @@ export const parseChecklistConditions = (json: string | null | undefined): Check
   if (!json) return [];
   try {
     const parsed = JSON.parse(json) as unknown;
-    return Array.isArray(parsed) ? (parsed as ChecklistCondition[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as ChecklistCondition[]).map((c) => ({
+      ...c,
+      weight:
+        typeof c.weight === 'number' && Number.isFinite(c.weight) && c.weight > 0
+          ? c.weight
+          : getDefaultChecklistWeight(c.timeframe),
+    }));
   } catch {
     return [];
   }

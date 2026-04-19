@@ -1,5 +1,11 @@
 import { Grid, HStack, VStack } from '@chakra-ui/react';
 import type { ConditionOp, ConditionThreshold } from '@marketmind/trading-core';
+import {
+  CHECKLIST_WEIGHT_MAX,
+  CHECKLIST_WEIGHT_MIN,
+  CHECKLIST_WEIGHT_STEP,
+  getDefaultChecklistWeight,
+} from '@marketmind/types';
 import { Radio, RadioGroup } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { NumberField } from './NumberField';
@@ -22,6 +28,7 @@ export interface ChecklistFieldsValue {
   threshold?: ConditionThreshold;
   tier: 'required' | 'preferred';
   side: 'LONG' | 'SHORT' | 'BOTH';
+  weight: number;
 }
 
 export interface ChecklistFieldsProps {
@@ -59,7 +66,9 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           label={t('checklist.timeframe', { defaultValue: 'Timeframe' })}
           value={value.timeframe}
           options={timeframeOptions}
-          onChange={(tf) => onChange({ ...value, timeframe: tf })}
+          onChange={(tf) =>
+            onChange({ ...value, timeframe: tf, weight: getDefaultChecklistWeight(tf) })
+          }
         />
         <SelectField
           label={t('checklist.operator', { defaultValue: 'Operator' })}
@@ -68,6 +77,15 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           onChange={(op) => onChange({ ...value, op: op as ConditionOp })}
         />
       </Grid>
+
+      <NumberField
+        label={t('checklist.weight', { defaultValue: 'Weight (× multiplier)' })}
+        value={value.weight}
+        min={CHECKLIST_WEIGHT_MIN}
+        max={CHECKLIST_WEIGHT_MAX}
+        step={CHECKLIST_WEIGHT_STEP}
+        onChange={(v) => onChange({ ...value, weight: v })}
+      />
 
       {requiresThreshold(value.op) && !requiresRange(value.op) && (
         <NumberField
