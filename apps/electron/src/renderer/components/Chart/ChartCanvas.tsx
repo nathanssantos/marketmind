@@ -178,10 +178,21 @@ export const ChartCanvas = ({
 
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
 
-  const realtimePrice = usePriceStore((s) => symbol ? s.getPrice(symbol) : null);
   const klinePrice = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
-  const latestKlinesPriceRef = useRef(realtimePrice ?? klinePrice);
-  latestKlinesPriceRef.current = realtimePrice ?? klinePrice;
+  const latestKlinesPriceRef = useRef(
+    symbol ? (usePriceStore.getState().getPrice(symbol) ?? klinePrice) : klinePrice,
+  );
+  latestKlinesPriceRef.current = symbol
+    ? (usePriceStore.getState().getPrice(symbol) ?? klinePrice)
+    : klinePrice;
+  useEffect(() => {
+    if (!symbol) return;
+    const unsub = usePriceStore.subscribe(() => {
+      const price = usePriceStore.getState().getPrice(symbol);
+      if (price !== null) latestKlinesPriceRef.current = price;
+    });
+    return () => unsub();
+  }, [symbol]);
 
   const tradingActions = useChartTradingActions({
     symbol, marketType, manager, backendWalletId,
