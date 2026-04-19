@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'MarketMind',
           short_name: 'MarketMind',
-          description: 'AI-powered trading analysis platform',
+          description: 'Trading analysis platform',
           theme_color: '#1e222d',
           background_color: '#1e222d',
           display: 'standalone',

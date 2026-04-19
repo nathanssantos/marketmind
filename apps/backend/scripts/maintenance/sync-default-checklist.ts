@@ -14,8 +14,20 @@ const buildKey = (userIndicatorId: string, timeframe: string, op: string, side: 
   `${userIndicatorId}::${timeframe}::${op}::${side}`;
 
 const main = async (): Promise<void> => {
-  const allUsers = await db.select({ id: users.id, email: users.email }).from(users);
-  console.log(`Found ${allUsers.length} user(s).`);
+  const args = process.argv.slice(2);
+  const prune = args.includes('--prune');
+  const emailFilter = args.find((a) => !a.startsWith('--'));
+
+  const baseQuery = db.select({ id: users.id, email: users.email }).from(users);
+  const allUsers = emailFilter
+    ? await baseQuery.where(eq(users.email, emailFilter))
+    : await baseQuery;
+  console.log(
+    emailFilter
+      ? `Filtering to email: ${emailFilter} — ${allUsers.length} match(es).`
+      : `Found ${allUsers.length} user(s).`,
+  );
+  if (prune) console.log('Prune mode: legacy (non-template) conditions will be removed.');
 
   for (const user of allUsers) {
     await seedDefaultUserIndicators(user.id);
@@ -43,37 +55,58 @@ const main = async (): Promise<void> => {
     }
 
     const existing = parseChecklistConditions(defaultProfile.checklistConditions ?? '[]');
-    const existingKeys = new Set(
-      existing.map((c) => buildKey(c.userIndicatorId, c.timeframe, c.op, c.side)),
+    const existingByKey = new Map(
+      existing.map((c) => [buildKey(c.userIndicatorId, c.timeframe, c.op, c.side), c]),
     );
 
+    const templateKeys = new Set<string>();
     const additions: typeof existing = [];
+    let updated = 0;
     let nextOrder = existing.reduce((m, c) => Math.max(m, c.order), -1) + 1;
 
     for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
       const userIndicatorId = idByLabel.get(entry.seedLabel);
       if (!userIndicatorId) continue;
       const key = buildKey(userIndicatorId, entry.timeframe, entry.op, entry.side);
-      if (existingKeys.has(key)) continue;
-      additions.push({
-        id: generateEntityId(),
-        userIndicatorId,
-        timeframe: entry.timeframe,
-        op: entry.op,
-        threshold: entry.threshold,
-        tier: entry.tier,
-        side: entry.side,
-        enabled: entry.enabled,
-        order: nextOrder++,
-      });
+      templateKeys.add(key);
+
+      const current = existingByKey.get(key);
+      if (!current) {
+        additions.push({
+          id: generateEntityId(),
+          userIndicatorId,
+          timeframe: entry.timeframe,
+          op: entry.op,
+          threshold: entry.threshold,
+          tier: entry.tier,
+          side: entry.side,
+          weight: entry.weight,
+          enabled: entry.enabled,
+          order: nextOrder++,
+        });
+        continue;
+      }
+
+      if (current.tier !== entry.tier || current.weight !== entry.weight) {
+        current.tier = entry.tier;
+        current.weight = entry.weight;
+        updated++;
+      }
     }
 
-    if (additions.length === 0) {
+    const kept = prune
+      ? existing.filter((c) =>
+          templateKeys.has(buildKey(c.userIndicatorId, c.timeframe, c.op, c.side)),
+        )
+      : existing;
+    const pruned = existing.length - kept.length;
+
+    if (additions.length === 0 && updated === 0 && pruned === 0) {
       console.log(`  [${user.email}] already aligned (${existing.length} conditions)`);
       continue;
     }
 
-    const merged = [...existing, ...additions];
+    const merged = [...kept, ...additions].map((c, idx) => ({ ...c, order: idx }));
     await db
       .update(tradingProfiles)
       .set({
@@ -83,7 +116,7 @@ const main = async (): Promise<void> => {
       .where(eq(tradingProfiles.id, defaultProfile.id));
 
     console.log(
-      `  [${user.email}] added ${additions.length} condition(s) to "${defaultProfile.name}" (now ${merged.length})`,
+      `  [${user.email}] profile "${defaultProfile.name}": +${additions.length} added, ${updated} tier/weight updated, ${pruned} pruned (total ${merged.length})`,
     );
   }
 

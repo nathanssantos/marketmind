@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.97.1] - 2026-04-19
+
+### Changed
+- **Default checklist template** — every entry now carries an explicit `weight` (tuned per timeframe × indicator, e.g. `RSI 4h: 2`, `Stoch 4h: 1.75`, `EMA 200: 1.5`, `Volume 1h: 1.5`). EMA 200 and EMA 21 demoted from `required` to `preferred` — no condition is required by default. `ChecklistTemplateEntry` type now requires `weight` explicitly; seeding and materialization no longer fall back to timeframe defaults for template entries.
+- **Short tier labels in checklist UI** — badges render `req` / `pref` instead of the full words; the `current` timeframe renders as `curr`. New i18n keys `checklist.tier.requiredShort`, `checklist.tier.preferredShort`, and `checklist.timeframes.current` across en/pt/es/fr.
+- **`sync-default-checklist.ts` maintenance script** — now updates `tier` + `weight` on existing conditions (matched by composite key), accepts an email argument for per-user runs, and supports an optional `--prune` flag that removes legacy conditions not present in the template. Orders are renumbered after every write.
+- **Package descriptions** — dropped the "AI-powered" framing from `package.json`, `apps/electron/vite.config.ts` (PWA manifest), and the agent-guide docs (`CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/project-instructions.md`, `.gemini/instructions.md`). AI is not part of the current product scope.
+
+### Added
+- **Package keywords + GitHub repo topics** — root, backend, and electron `package.json` files now carry keyword arrays; the GitHub repo was updated with 18 topics (trading, crypto, stocks, charts, klines, candlestick, technical-analysis, indicators, backtesting, auto-trading, binance, futures, interactive-brokers, electron, desktop, react, typescript, cryptocurrency) to improve discoverability.
+
 ## [0.97.0] - 2026-04-19
 
 ### Added

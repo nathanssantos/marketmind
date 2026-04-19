@@ -2,7 +2,7 @@
 
 ## 📋 Project Overview
 
-**MarketMind** is an Electron-based desktop application that combines advanced financial chart visualization (klines) with AI analysis to provide insights on cryptocurrencies, stocks, and other tradeable assets.
+**MarketMind** is an Electron-based desktop application for trading cryptocurrencies, stocks, and other tradeable assets, combining advanced financial chart visualization (klines) with strategy-driven setup detection, backtesting, and auto-trading.
 
 **🚀 QUICK START FOR NEW AGENTS:**
 1. Read this file completely
