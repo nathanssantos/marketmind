@@ -277,6 +277,7 @@ interface IndicatorState {
   getActivePanelIndicators: () => IndicatorId[];
   getActiveOverlayIndicators: () => IndicatorId[];
   resetParams: (indicator: keyof IndicatorParams) => void;
+  clearLegacyState: () => void;
 
   addInstance: (input: Omit<IndicatorInstance, 'id'>) => string;
   removeInstance: (id: string) => void;
@@ -392,6 +393,11 @@ export const useIndicatorStore = create<IndicatorState>()(
         syncToPreferences(state.activeIndicators, indicatorParams);
         return { indicatorParams };
       }),
+
+    clearLegacyState: () => {
+      syncToPreferences([], {} as IndicatorParams);
+      set({ activeIndicators: [], indicatorParams: {} as IndicatorParams });
+    },
 
     addInstance: (input) => {
       const id = generateInstanceId();
