@@ -19,14 +19,12 @@ Available checks:
   protection             Fix stale/missing SL/TP protection order IDs
   fees                   Correct fee discrepancies (last 3 days, up to 10 trades)
   balance                Sync wallet balance with Binance
-  pnl-events             Reconcile realizedPnlEvents with tradeExecutions (last 7 days)
 
 Examples:
   pnpm tsx scripts/audit/startup-audit.ts                     # Full audit
   pnpm tsx scripts/audit/startup-audit.ts --dry-run           # Preview only
   pnpm tsx scripts/audit/startup-audit.ts --only balance      # Balance sync only
   pnpm tsx scripts/audit/startup-audit.ts --only fees,balance # Fees + balance
-  pnpm tsx scripts/audit/startup-audit.ts --only pnl-events   # Fix daily PnL
 `);
   process.exit(0);
 }

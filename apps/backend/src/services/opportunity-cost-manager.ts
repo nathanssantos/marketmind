@@ -2,9 +2,10 @@ import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
-import { autoTradingConfig, realizedPnlEvents, tradeExecutions, wallets } from '../db/schema';
+import { autoTradingConfig, tradeExecutions, wallets } from '../db/schema';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { serializeError } from '../utils/errors';
+import { emitPositionClose } from './income-events';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
@@ -283,17 +284,21 @@ export class OpportunityCostManagerService {
           })
           .where(eq(wallets.id, execution.walletId));
 
-        await db.insert(realizedPnlEvents).values({
-          walletId: execution.walletId,
-          userId: execution.userId,
-          executionId: execution.id,
-          symbol: execution.symbol,
-          eventType: 'full_close',
-          pnl: pnlResult.netPnl.toString(),
-          fees: pnlResult.totalFees.toString(),
-          quantity: quantity.toString(),
-          price: currentPrice.toString(),
-        });
+        const [closedWallet] = await db
+          .select()
+          .from(wallets)
+          .where(eq(wallets.id, execution.walletId))
+          .limit(1);
+
+        if (closedWallet) {
+          await emitPositionClose({
+            wallet: closedWallet,
+            execution: { id: execution.id, userId: execution.userId, symbol: execution.symbol },
+            grossPnl: pnlResult.grossPnl,
+            totalFees: pnlResult.totalFees,
+            accumulatedFunding,
+          });
+        }
 
         if (wsService) {
           wsService.emitPositionUpdate(execution.walletId, {

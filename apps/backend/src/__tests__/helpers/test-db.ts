@@ -14,7 +14,7 @@ let testDb: TestDatabase | null = null;
 let tablesCreated = false;
 
 const dropTablesSQL = `
-DROP TABLE IF EXISTS realized_pnl_events CASCADE;
+DROP TABLE IF EXISTS income_events CASCADE;
 DROP TABLE IF EXISTS custom_symbol_components CASCADE;
 DROP TABLE IF EXISTS custom_symbols CASCADE;
 DROP TABLE IF EXISTS pyramid_entries CASCADE;
@@ -659,20 +659,26 @@ CREATE TABLE IF NOT EXISTS user_indicators (
 );
 CREATE INDEX user_indicators_user_id_idx ON user_indicators(user_id);
 
-CREATE TABLE IF NOT EXISTS realized_pnl_events (
+CREATE TABLE IF NOT EXISTS income_events (
   id SERIAL PRIMARY KEY,
-  wallet_id VARCHAR(255) NOT NULL,
-  user_id VARCHAR(255) NOT NULL,
-  execution_id VARCHAR(255) NOT NULL,
-  symbol VARCHAR(20) NOT NULL,
-  event_type VARCHAR(20) NOT NULL,
-  pnl NUMERIC(20, 8) NOT NULL,
-  fees NUMERIC(20, 8) DEFAULT '0',
-  quantity NUMERIC(20, 8) NOT NULL,
-  price NUMERIC(20, 8) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+  wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  binance_tran_id BIGINT NOT NULL,
+  income_type VARCHAR(30) NOT NULL,
+  amount NUMERIC(20, 8) NOT NULL,
+  asset VARCHAR(10) NOT NULL,
+  symbol VARCHAR(20),
+  execution_id VARCHAR(255),
+  info VARCHAR(120),
+  trade_id VARCHAR(120),
+  source VARCHAR(10) NOT NULL DEFAULT 'binance',
+  income_time TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX realized_pnl_events_wallet_date_idx ON realized_pnl_events(wallet_id, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS income_events_wallet_tran_idx ON income_events (wallet_id, binance_tran_id);
+CREATE INDEX IF NOT EXISTS income_events_wallet_time_idx ON income_events (wallet_id, income_time);
+CREATE INDEX IF NOT EXISTS income_events_wallet_type_time_idx ON income_events (wallet_id, income_type, income_time);
+CREATE INDEX IF NOT EXISTS income_events_execution_idx ON income_events (execution_id);
 `;
 
 export const setupTestDatabase = async (): Promise<TestDatabase> => {
@@ -695,8 +701,20 @@ export const setupTestDatabase = async (): Promise<TestDatabase> => {
   setTestDatabase(testDb as unknown as DatabaseType);
 
   if (!tablesCreated) {
-    await testDb.execute(sql.raw(dropTablesSQL));
-    await testDb.execute(sql.raw(createTablesSQL));
+    const lockKey = 8273451926;
+    await testDb.execute(sql.raw(`SELECT pg_advisory_lock(${lockKey});`));
+    try {
+      const alreadyReady = await testDb.execute(
+        sql.raw(`SELECT to_regclass('public.income_events') IS NOT NULL AS ready;`),
+      );
+      const ready = (alreadyReady as unknown as { rows?: Array<{ ready: boolean }> }).rows?.[0]?.ready;
+      if (!ready) {
+        await testDb.execute(sql.raw(dropTablesSQL));
+        await testDb.execute(sql.raw(createTablesSQL));
+      }
+    } finally {
+      await testDb.execute(sql.raw(`SELECT pg_advisory_unlock(${lockKey});`));
+    }
     tablesCreated = true;
   }
 
@@ -723,7 +741,7 @@ export const getTestDatabase = (): TestDatabase => {
 export const cleanupTables = async (): Promise<void> => {
   const db = getTestDatabase();
   await db.execute(sql`SET session_replication_role = 'replica'`);
-  await db.delete(schema.realizedPnlEvents);
+  await db.delete(schema.incomeEvents);
   await db.delete(schema.customSymbolComponents);
   await db.delete(schema.customSymbols);
   await db.delete(schema.priceCache);

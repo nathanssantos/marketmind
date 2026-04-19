@@ -113,12 +113,27 @@ export const useGenericChartIndicators = (
   const ctxRef = useRef<NativeEvaluatorContext>(externalCtx);
   ctxRef.current = externalCtx;
 
+  const [tickNonce, setTickNonce] = useState(0);
+  const lastTickKeyRef = useRef<string>('');
+  useEffect(() => {
+    const id = setInterval(() => {
+      const arr = klinesRef.current;
+      if (arr.length === 0) return;
+      const last = arr[arr.length - 1]!;
+      const key = `${last.close}:${last.high}:${last.low}:${last.volume}`;
+      if (key === lastTickKeyRef.current) return;
+      lastTickKeyRef.current = key;
+      setTickNonce((n) => n + 1);
+    }, 200);
+    return () => clearInterval(id);
+  }, []);
+
   const klinesSignature = useMemo(() => {
     if (klines.length === 0) return 'empty';
     const first = klines[0]!;
     const last = klines[klines.length - 1]!;
-    return `${klines.length}:${first.openTime}:${last.openTime}`;
-  }, [klines]);
+    return `${klines.length}:${first.openTime}:${last.openTime}:${tickNonce}`;
+  }, [klines, tickNonce]);
 
   const ctxSignature = useMemo(() => {
     const events = externalCtx.marketEvents?.length ?? 0;

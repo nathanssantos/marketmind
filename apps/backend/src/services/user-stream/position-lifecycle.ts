@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { calculatePnl } from '../../utils/pnl-calculator';
 import { getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition, cancelAllSymbolOrders } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
@@ -123,18 +123,6 @@ export async function verifyAlgoFillProcessed(
         updatedAt: new Date(),
       })
       .where(eq(wallets.id, walletId));
-
-    await db.insert(realizedPnlEvents).values({
-      walletId,
-      userId: execution.userId,
-      executionId,
-      symbol,
-      eventType: 'full_close',
-      pnl: pnlResult.netPnl.toString(),
-      fees: totalFees.toString(),
-      quantity: quantity.toString(),
-      price: exitPrice.toString(),
-    });
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
 
@@ -292,18 +280,6 @@ export async function closeResidualPosition(
           if (closeResult.length === 0) continue;
 
           if (wallet) {
-            await db.insert(realizedPnlEvents).values({
-              walletId,
-              userId: wallet.userId,
-              executionId: orphan.id,
-              symbol,
-              eventType: 'full_close',
-              pnl: pnlResult.netPnl.toString(),
-              fees: totalFees.toString(),
-              quantity: quantity.toString(),
-              price: exitPrice.toString(),
-            });
-
             await db
               .update(wallets)
               .set({

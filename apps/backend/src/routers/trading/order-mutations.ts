@@ -10,6 +10,7 @@ import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
+import { calculateQtyFromPercent } from '../../services/trading/order-quantity';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
 
@@ -22,31 +23,38 @@ const generatePaperOrderId = (): string => {
 export const orderMutationsRouter = router({
   createOrder: protectedProcedure
     .input(
-      z.object({
-        walletId: z.string(),
-        symbol: z.string(),
-        side: z.enum(['BUY', 'SELL']),
-        type: z.enum([
-          'LIMIT',
-          'MARKET',
-          'STOP_LOSS',
-          'STOP_LOSS_LIMIT',
-          'TAKE_PROFIT',
-          'TAKE_PROFIT_LIMIT',
-          'STOP_MARKET',
-          'TAKE_PROFIT_MARKET',
-        ]),
-        quantity: z.string(),
-        price: z.string().optional(),
-        stopPrice: z.string().optional(),
-        setupId: z.string().optional(),
-        setupType: z.string().optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
-        reduceOnly: z.boolean().optional(),
-      })
+      z
+        .object({
+          walletId: z.string(),
+          symbol: z.string(),
+          side: z.enum(['BUY', 'SELL']),
+          type: z.enum([
+            'LIMIT',
+            'MARKET',
+            'STOP_LOSS',
+            'STOP_LOSS_LIMIT',
+            'TAKE_PROFIT',
+            'TAKE_PROFIT_LIMIT',
+            'STOP_MARKET',
+            'TAKE_PROFIT_MARKET',
+          ]),
+          quantity: z.string().optional(),
+          percent: z.number().min(0.01).max(100).optional(),
+          referencePrice: z.number().positive().optional(),
+          price: z.string().optional(),
+          stopPrice: z.string().optional(),
+          setupId: z.string().optional(),
+          setupType: z.string().optional(),
+          marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+          reduceOnly: z.boolean().optional(),
+        })
+        .refine(
+          (v) => (v.quantity !== undefined) !== (v.percent !== undefined),
+          { message: 'Exactly one of quantity or percent must be provided' }
+        )
     )
-    .mutation(async ({ input, ctx }) => {
-      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+    .mutation(async ({ input: rawInput, ctx }) => {
+      const wallet = await walletQueries.getByIdAndUser(rawInput.walletId, ctx.user.id);
 
       if (!wallet.isActive) {
         throw new TRPCError({
@@ -55,12 +63,41 @@ export const orderMutationsRouter = router({
         });
       }
 
-      if (wallet.marketType && wallet.marketType !== input.marketType) {
+      if (wallet.marketType && wallet.marketType !== rawInput.marketType) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Cannot create ${input.marketType} order on ${wallet.marketType} wallet`,
+          message: `Cannot create ${rawInput.marketType} order on ${wallet.marketType} wallet`,
         });
       }
+
+      let resolvedQuantity = rawInput.quantity;
+      if (rawInput.percent !== undefined) {
+        const refPrice =
+          rawInput.referencePrice ??
+          (rawInput.price ? parseFloat(rawInput.price) : 0) ??
+          (rawInput.stopPrice ? parseFloat(rawInput.stopPrice) : 0);
+        if (!refPrice || refPrice <= 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'referencePrice (or price/stopPrice) is required when percent is provided',
+          });
+        }
+        const computed = await calculateQtyFromPercent({
+          wallet,
+          symbol: rawInput.symbol,
+          marketType: rawInput.marketType,
+          percent: rawInput.percent,
+          price: refPrice,
+        });
+        resolvedQuantity = computed.quantity;
+        logger.info({ walletId: wallet.id, symbol: rawInput.symbol, percent: rawInput.percent, leverage: computed.leverage, balance: computed.balance, notional: computed.notional, quantity: resolvedQuantity }, 'Computed quantity from percent (server-side)');
+      }
+
+      if (!resolvedQuantity) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Quantity resolution failed' });
+      }
+
+      const input = { ...rawInput, quantity: resolvedQuantity };
 
       try {
         if (isPaperWallet(wallet)) {

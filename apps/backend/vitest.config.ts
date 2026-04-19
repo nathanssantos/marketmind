@@ -12,6 +12,7 @@ const INTEGRATION_SERVICE_TESTS = [
   'src/__tests__/services/opportunity-cost-manager.test.ts',
   'src/__tests__/services/cooldown.test.ts',
   'src/__tests__/services/binance-futures-user-stream.test.ts',
+  'src/__tests__/services/income-events/**/*.test.ts',
 ];
 
 export default defineConfig({

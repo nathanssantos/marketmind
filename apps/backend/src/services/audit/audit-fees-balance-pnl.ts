@@ -1,6 +1,6 @@
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { binanceApiCache } from '../binance-api-cache';
 import { getAllTradeFeesForPosition } from '../binance-futures-client';
 import { logger } from '../logger';
@@ -10,8 +10,6 @@ import {
   BALANCE_DELTA_THRESHOLD,
   FEES_AUDIT_CAP,
   FEES_AUDIT_DAYS,
-  PNL_EVENTS_AUDIT_DAYS,
-  PNL_DELTA_THRESHOLD,
   FEES_RATE_LIMIT_MS,
   sleep,
 } from './audit-types';
@@ -152,99 +150,3 @@ export async function auditBalance(ctx: AuditContext): Promise<void> {
   }
 }
 
-export async function auditPnlEvents(ctx: AuditContext): Promise<void> {
-  const { wallet, dryRun, summary } = ctx;
-
-  const pnlAuditStart = new Date(Date.now() - PNL_EVENTS_AUDIT_DAYS * 24 * 60 * 60 * 1000);
-  const recentClosedForPnl = await db
-    .select()
-    .from(tradeExecutions)
-    .where(
-      and(
-        eq(tradeExecutions.walletId, wallet.id),
-        eq(tradeExecutions.status, 'closed'),
-        gte(tradeExecutions.closedAt, pnlAuditStart)
-      )
-    );
-
-  const allPnlEvents = await db
-    .select()
-    .from(realizedPnlEvents)
-    .where(
-      and(
-        eq(realizedPnlEvents.walletId, wallet.id),
-        gte(realizedPnlEvents.createdAt, pnlAuditStart)
-      )
-    );
-
-  const eventsByExecId = new Map<string, typeof allPnlEvents>();
-  for (const evt of allPnlEvents) {
-    const list = eventsByExecId.get(evt.executionId) ?? [];
-    list.push(evt);
-    eventsByExecId.set(evt.executionId, list);
-  }
-
-  for (const exec of recentClosedForPnl) {
-    const execPnl = parseFloat(exec.pnl || '0');
-    const execFees = parseFloat(exec.fees || '0');
-    const events = eventsByExecId.get(exec.id) ?? [];
-    const eventPnlSum = events.reduce((s, e) => s + parseFloat(e.pnl || '0'), 0);
-
-    if (events.length === 0) {
-      logger.info(
-        { walletId: wallet.id, executionId: exec.id, symbol: exec.symbol, pnl: execPnl },
-        '[startup-audit] Missing realizedPnlEvent — creating'
-      );
-
-      if (!dryRun) {
-        await db.insert(realizedPnlEvents).values({
-          walletId: exec.walletId,
-          userId: exec.userId,
-          executionId: exec.id,
-          symbol: exec.symbol,
-          eventType: 'full_close',
-          pnl: execPnl.toString(),
-          fees: execFees.toString(),
-          quantity: exec.quantity,
-          price: exec.exitPrice || '0',
-          createdAt: exec.closedAt || new Date(),
-        });
-      }
-
-      summary.fixed++;
-      continue;
-    }
-
-    const delta = Math.abs(execPnl - eventPnlSum);
-    if (delta <= PNL_DELTA_THRESHOLD) continue;
-
-    const fullCloseEvent = events.find((e) => e.eventType === 'full_close');
-    if (!fullCloseEvent) continue;
-
-    const partialSum = events
-      .filter((e) => e.eventType === 'partial_close')
-      .reduce((s, e) => s + parseFloat(e.pnl || '0'), 0);
-    const correctFullClosePnl = execPnl - partialSum;
-
-    logger.info(
-      {
-        walletId: wallet.id,
-        executionId: exec.id,
-        symbol: exec.symbol,
-        oldEventPnl: parseFloat(fullCloseEvent.pnl || '0'),
-        correctPnl: correctFullClosePnl,
-        delta,
-      },
-      '[startup-audit] Correcting realizedPnlEvent PnL'
-    );
-
-    if (!dryRun) {
-      await db
-        .update(realizedPnlEvents)
-        .set({ pnl: correctFullClosePnl.toString(), fees: execFees.toString() })
-        .where(eq(realizedPnlEvents.id, fullCloseEvent.id));
-    }
-
-    summary.fixed++;
-  }
-}

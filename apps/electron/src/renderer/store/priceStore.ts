@@ -134,16 +134,91 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
 
 const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
 
-export const useFastPriceForSymbol = (symbol: string): number | null =>
-  usePriceStore((state) => state.prices[symbol]?.price ?? null);
+const LIVE_PRICE_THROTTLE_MS = 250;
 
-export const useDailyChangePct = (symbol: string, marketType: MarketType): number | null =>
-  usePriceStore((state) => {
-    const entry = state.dailyOpen[dailyOpenKey(symbol, marketType)];
-    if (!entry || entry.open <= 0) return null;
-    const livePrice = state.prices[symbol]?.price ?? entry.lastPrice;
-    return ((livePrice - entry.open) / entry.open) * 100;
-  });
+export const useFastPriceForSymbol = (symbol: string): number | null => {
+  const [price, setPrice] = useState<number | null>(
+    () => usePriceStore.getState().prices[symbol]?.price ?? null,
+  );
+  const lastPriceRef = useRef<number | null>(price);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pending = false;
+
+    const run = () => {
+      timer = null;
+      pending = false;
+      const next = usePriceStore.getState().prices[symbol]?.price ?? null;
+      if (next === lastPriceRef.current) return;
+      lastPriceRef.current = next;
+      setPrice(next);
+    };
+
+    const schedule = () => {
+      if (pending) return;
+      pending = true;
+      timer = setTimeout(run, LIVE_PRICE_THROTTLE_MS);
+    };
+
+    run();
+    const unsub = usePriceStore.subscribe(schedule);
+
+    return () => {
+      unsub();
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [symbol]);
+
+  return price;
+};
+
+const DAILY_CHANGE_THROTTLE_MS = 250;
+
+const computeDailyChangePct = (symbol: string, marketType: MarketType): number | null => {
+  const state = usePriceStore.getState();
+  const entry = state.dailyOpen[dailyOpenKey(symbol, marketType)];
+  if (!entry || entry.open <= 0) return null;
+  const livePrice = state.prices[symbol]?.price ?? entry.lastPrice;
+  const pct = ((livePrice - entry.open) / entry.open) * 100;
+  return Math.round(pct * 100) / 100;
+};
+
+export const useDailyChangePct = (symbol: string, marketType: MarketType): number | null => {
+  const [pct, setPct] = useState<number | null>(() => computeDailyChangePct(symbol, marketType));
+  const lastPctRef = useRef<number | null>(pct);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pending = false;
+
+    const run = () => {
+      timer = null;
+      pending = false;
+      const next = computeDailyChangePct(symbol, marketType);
+      if (next === lastPctRef.current) return;
+      lastPctRef.current = next;
+      setPct(next);
+    };
+
+    const schedule = () => {
+      if (pending) return;
+      pending = true;
+      timer = setTimeout(run, DAILY_CHANGE_THROTTLE_MS);
+    };
+
+    run();
+
+    const unsub = usePriceStore.subscribe(schedule);
+
+    return () => {
+      unsub();
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [symbol, marketType]);
+
+  return pct;
+};
 
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');

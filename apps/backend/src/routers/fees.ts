@@ -5,10 +5,9 @@ import {
   clearFeeCache,
   getBacktestFee,
 } from '../services/fee-service';
-import { incomeSyncService } from '../services/income-sync-service';
+import { runIncomeSyncOnce } from '../services/income-events';
 import { walletQueries } from '../services/database/walletQueries';
 import { BINANCE_FEES } from '@marketmind/types';
-import { TIME_MS } from '../constants';
 
 export const feesRouter = router({
   defaults: publicProcedure.query(() => ({
@@ -105,30 +104,14 @@ export const feesRouter = router({
     }),
 
   syncIncome: protectedProcedure.mutation(async () => {
-    const results = await incomeSyncService.runOnce();
+    const results = await runIncomeSyncOnce();
     return {
       walletsProcessed: results.length,
-      totalCommission: results.reduce((sum, r) => sum + r.totalCommission, 0),
-      totalFunding: results.reduce((sum, r) => sum + r.totalFunding, 0),
-      totalTradesUpdated: results.reduce((sum, r) => sum + r.tradesUpdated, 0),
+      totalInserted: results.reduce((sum, r) => sum + r.inserted, 0),
+      totalLinked: results.reduce((sum, r) => sum + r.linked, 0),
+      totalDeposits: results.reduce((sum, r) => sum + r.totalDeposits, 0),
+      totalWithdrawals: results.reduce((sum, r) => sum + r.totalWithdrawals, 0),
       errors: results.flatMap((r) => r.errors),
     };
   }),
-
-  backfillActualFees: protectedProcedure
-    .input(
-      z.object({
-        days: z.number().min(1).max(90).default(30),
-      }).optional()
-    )
-    .mutation(async ({ input }) => {
-      const days = input?.days ?? 30;
-      const startTime = Date.now() - days * 24 * TIME_MS.HOUR;
-      const result = await incomeSyncService.backfillAllTrades(startTime);
-      return {
-        tradesProcessed: result.tradesProcessed,
-        tradesUpdated: result.tradesUpdated,
-        lookbackDays: days,
-      };
-    }),
 });

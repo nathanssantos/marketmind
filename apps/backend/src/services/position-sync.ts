@@ -3,7 +3,7 @@ import type { FuturesPosition } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
-import { realizedPnlEvents, tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition, getAllTradeFeesForPosition } from './binance-futures-client';
@@ -214,18 +214,6 @@ export class PositionSyncService {
                   updatedAt: new Date(),
                 })
                 .where(eq(wallets.id, wallet.id));
-
-              await db.insert(realizedPnlEvents).values({
-                walletId: wallet.id,
-                userId: wallet.userId,
-                executionId: dbPosition.id,
-                symbol: dbPosition.symbol,
-                eventType: 'full_close',
-                pnl: pnlResult.netPnl.toString(),
-                fees: totalFees.toString(),
-                quantity: quantity.toString(),
-                price: exitPrice.toString(),
-              });
 
               result.changes.balanceUpdated = true;
             }

@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { calculatePnl } from '../../utils/pnl-calculator';
 import { getOrderEntryFee, getAllTradeFeesForPosition, getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
@@ -133,18 +133,6 @@ export async function handleExitFill(
             })
             .where(eq(wallets.id, walletId));
 
-          await db.insert(realizedPnlEvents).values({
-            walletId,
-            userId: execution.userId,
-            executionId: execution.id,
-            symbol,
-            eventType: 'partial_close',
-            pnl: partialPnl.toString(),
-            fees: '0',
-            quantity: closedQty.toString(),
-            price: exitPrice.toString(),
-          });
-
           logger.info(
             {
               executionId: execution.id,
@@ -265,18 +253,6 @@ export async function handleExitFill(
     );
     return;
   }
-
-  await db.insert(realizedPnlEvents).values({
-    walletId,
-    userId: execution.userId,
-    executionId: execution.id,
-    symbol,
-    eventType: 'full_close',
-    pnl: pnlResult.netPnl.toString(),
-    fees: totalFees.toString(),
-    quantity: quantity.toString(),
-    price: exitPrice.toString(),
-  });
 
   await db
     .update(wallets)

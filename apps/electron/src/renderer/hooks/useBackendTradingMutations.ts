@@ -126,7 +126,9 @@ export const useBackendTradingMutations = () => {
       symbol: string;
       side: 'BUY' | 'SELL';
       type: 'MARKET' | 'LIMIT' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET';
-      quantity: string;
+      quantity?: string;
+      percent?: number;
+      referencePrice?: number;
       price?: string;
       stopPrice?: string;
       reduceOnly?: boolean;
