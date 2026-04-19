@@ -6,6 +6,7 @@ import { getFuturesClient, getSpotClient } from '../exchange';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
+import { ALGO_ORDER_DEFAULTS } from '../constants/algo-orders';
 import { SCALPING_EXECUTION } from '../constants/scalping';
 
 export interface ProtectionOrderParams {
@@ -125,7 +126,8 @@ export async function createStopLossOrder(params: ProtectionOrderParams): Promis
       triggerPrice: formattedPrice,
       quantity: formattedQuantity,
       reduceOnly: true,
-      workingType: 'CONTRACT_PRICE',
+      workingType: ALGO_ORDER_DEFAULTS.workingType,
+      priceProtect: ALGO_ORDER_DEFAULTS.priceProtect,
     });
 
     logger.info({ algoId: order.algoId, symbol, triggerPrice: formattedPrice }, '[ProtectionOrders] Created futures SL algo order');
@@ -166,7 +168,8 @@ export async function createTakeProfitOrder(params: ProtectionOrderParams): Prom
       triggerPrice: formattedPrice,
       quantity: formattedQuantity,
       reduceOnly: true,
-      workingType: 'CONTRACT_PRICE',
+      workingType: ALGO_ORDER_DEFAULTS.workingType,
+      priceProtect: ALGO_ORDER_DEFAULTS.priceProtect,
     });
 
     logger.info({ algoId: order.algoId, symbol, triggerPrice: formattedPrice }, '[ProtectionOrders] Created futures TP algo order');

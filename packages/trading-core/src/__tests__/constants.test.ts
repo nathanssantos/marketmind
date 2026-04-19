@@ -83,7 +83,7 @@ describe('Trading Core Constants', () => {
     });
 
     it('should have critical threshold', () => {
-      expect(LIQUIDATION_THRESHOLDS.CRITICAL).toBe(0.03);
+      expect(LIQUIDATION_THRESHOLDS.CRITICAL).toBe(0.05);
     });
 
     it('should have thresholds in correct order', () => {

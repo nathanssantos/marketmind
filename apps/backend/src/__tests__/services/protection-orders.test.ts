@@ -447,6 +447,8 @@ describe('protection-orders', () => {
         side: 'SELL',
         type: 'STOP_MARKET',
         reduceOnly: true,
+        workingType: 'MARK_PRICE',
+        priceProtect: true,
       }));
       expect(result.algoId).toBe(NEW_ALGO_ID);
       expect(result.isAlgoOrder).toBe(true);
@@ -491,9 +493,22 @@ describe('protection-orders', () => {
         side: 'SELL',
         type: 'TAKE_PROFIT_MARKET',
         reduceOnly: true,
+        workingType: 'MARK_PRICE',
+        priceProtect: true,
       }));
       expect(result.algoId).toBe(NEW_ALGO_ID);
       expect(result.isAlgoOrder).toBe(true);
+    });
+
+    it('should consume ALGO_ORDER_DEFAULTS for anti-slippage protection (regression)', async () => {
+      mockSubmitAlgoOrder.mockResolvedValueOnce({ algoId: NEW_ALGO_ID });
+      await createTakeProfitOrder(createBaseParams());
+
+      const call = mockSubmitAlgoOrder.mock.calls[0]?.[0];
+      expect(call).toBeDefined();
+      expect(call.workingType).not.toBe('CONTRACT_PRICE');
+      expect(call.workingType).toBe('MARK_PRICE');
+      expect(call.priceProtect).toBe(true);
     });
 
     it('should create spot TP order', async () => {

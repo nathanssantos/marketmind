@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
+import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
 import { orders, tradeExecutions } from '../../db/schema';
 import { autoTradingService } from '../../services/auto-trading';
 import type {
@@ -47,7 +48,8 @@ export const handleConditionalOrder = async (
     type: input.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
     triggerPrice,
     quantity: formatQuantityForBinance(parseFloat(input.quantity), stepSize),
-    workingType: 'CONTRACT_PRICE',
+    workingType: ALGO_ORDER_DEFAULTS.workingType,
+    priceProtect: ALGO_ORDER_DEFAULTS.priceProtect,
     ...(input.reduceOnly && { reduceOnly: true }),
   });
 

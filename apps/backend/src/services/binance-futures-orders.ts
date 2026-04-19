@@ -189,6 +189,7 @@ export async function submitFuturesAlgoOrder(
     if (params.callbackRate) algoParams.callbackRate = params.callbackRate;
     if (params.clientAlgoId) algoParams.clientAlgoId = params.clientAlgoId;
     if (params.workingType) algoParams.workingType = params.workingType;
+    if (params.priceProtect !== undefined) algoParams.priceProtect = params.priceProtect ? 'true' : 'false';
     if (params.positionSide) algoParams.positionSide = params.positionSide;
 
     const result = await guardBinanceCall(() => client.submitNewAlgoOrder(algoParams));

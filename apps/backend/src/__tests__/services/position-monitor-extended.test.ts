@@ -684,7 +684,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
       } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
-      const liquidationPrice = 50000 * (1 - 0.30);
+      const liquidationPrice = 50000 * (1 - 0.12);
       const execution = await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
@@ -708,7 +708,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
       } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
-      const liquidationPrice = 50000 * (1 - 0.15);
+      const liquidationPrice = 50000 * (1 - 0.07);
       const execution = await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
@@ -1933,7 +1933,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
       } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
-      const liquidationPrice = 50000 * (1 - 0.15);
+      const liquidationPrice = 50000 * (1 - 0.07);
       const execution = await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
@@ -1970,7 +1970,7 @@ describe('PositionMonitorService - Extended Coverage', () => {
         getMarkPrice: vi.fn().mockResolvedValue({ markPrice: 50000 }),
       } as unknown as ReturnType<typeof getBinanceFuturesDataService>);
 
-      const liquidationPrice = 50000 * (1 - 0.30);
+      const liquidationPrice = 50000 * (1 - 0.12);
       const execution = await createTestExecution({
         userId: user.id,
         walletId: wallet.id,
