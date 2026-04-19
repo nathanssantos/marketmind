@@ -1,15 +1,18 @@
 # Release Process
 
-## Version Locations (ALL must be updated)
+## Version Locations (ALL must be updated — checklist)
 
-| Location | File | Field |
-|----------|------|-------|
-| Root | `package.json` | `version` |
-| Backend | `apps/backend/package.json` | `version` |
-| Electron | `apps/electron/package.json` | `version` |
-| README badge | `README.md` | `![Version](...badge/version-X.Y.Z...)` |
-| Changelog | `CHANGELOG.md` | New `## [X.Y.Z]` entry at top |
-| Landing site | `marketmind-site/src/config/site.ts` | `stats.version` |
+App repo (`marketmind/`):
+- [ ] `package.json` → `version`
+- [ ] `apps/backend/package.json` → `version`
+- [ ] `apps/electron/package.json` → `version`
+- [ ] `README.md` → version badge
+- [ ] `CHANGELOG.md` → new `## [X.Y.Z]` entry at top
+
+Landing site repo (`marketmind-site/`) — **separate repo, separate commit, EASY TO FORGET**:
+- [ ] `src/config/site.ts` → `stats.version`
+
+If a release ships and the site still shows the old version, this checklist was skipped. Do not skip it.
 
 ## Steps
 
@@ -24,7 +27,7 @@ pnpm --filter @marketmind/electron lint
 
 All must pass. No exceptions.
 
-### 2. Bump version
+### 2. Bump version (app repo)
 
 Update all 3 `package.json` files and README badge to `X.Y.Z`.
 
@@ -41,7 +44,22 @@ Add entry at the top following [Keep a Changelog](https://keepachangelog.com/) f
 ### Removed
 ```
 
-### 4. Commit, tag, push
+### 4. Bump version on landing site (DO NOT SKIP)
+
+Switch to the landing site repo and update `stats.version` in the same session — before tagging the app repo. Doing it now (instead of "later") prevents the site falling out of sync.
+
+```bash
+cd ../marketmind-site
+# edit src/config/site.ts → stats.version: 'vX.Y.Z'
+git add src/config/site.ts
+git commit -m "chore: bump version to vX.Y.Z"
+git push  # Vercel auto-deploys
+cd -
+```
+
+Verify on https://marketmind-app.vercel.app once the deploy finishes (~1-2 min).
+
+### 5. Commit, tag, push (app repo)
 
 ```bash
 git add -A
@@ -54,7 +72,7 @@ Pushing the tag triggers:
 - **Desktop builds** via `.github/workflows/desktop-release.yml` (macOS DMG+ZIP, Windows NSIS)
 - electron-builder uploads installers to the GitHub Release automatically
 
-### 5. Create GitHub release (before tag push)
+### 6. Create GitHub release (before tag push)
 
 Create the release first so electron-builder can attach assets to it:
 
@@ -63,12 +81,6 @@ gh release create vX.Y.Z --title "vX.Y.Z — Release Title" --notes "Release not
 ```
 
 Or let electron-builder create the release automatically (it creates a draft release if none exists).
-
-### 6. Update landing site
-
-In the `marketmind-site` repo:
-- Update `src/config/site.ts` → `stats.version` to `vX.Y.Z`
-- Commit and push (Vercel auto-deploys)
 
 ### 7. Verify desktop builds
 
