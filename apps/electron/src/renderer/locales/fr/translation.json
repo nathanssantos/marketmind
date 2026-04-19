@@ -2189,6 +2189,13 @@
       "rising": "en hausse (barre actuelle > précédente)",
       "falling": "en baisse (barre actuelle < précédente)"
     },
+    "tier": {
+      "requiredShort": "req",
+      "preferredShort": "pref"
+    },
+    "timeframes": {
+      "current": "curr"
+    },
     "weight": "Poids (× multiplicateur)",
     "weightHint": "Les timeframes plus élevés pèsent plus. Les conditions requises valent 2× ; préférées 1×."
   }

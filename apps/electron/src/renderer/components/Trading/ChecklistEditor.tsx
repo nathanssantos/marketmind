@@ -202,7 +202,9 @@ export const ChecklistEditor = ({
                         {label}
                       </Text>
                       <Badge size="sm" colorPalette={cond.tier === 'required' ? 'orange' : 'blue'}>
-                        {t(`checklist.tier.${cond.tier}`, { defaultValue: cond.tier })}
+                        {t(`checklist.tier.${cond.tier}Short`, {
+                          defaultValue: cond.tier === 'required' ? 'req' : 'pref',
+                        })}
                       </Badge>
                       <Badge size="sm" colorPalette={sideColor(cond.side)}>
                         {t(`checklist.side.${cond.side.toLowerCase()}`, { defaultValue: cond.side })}

@@ -260,7 +260,9 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
           </Badge>
         )}
         <Badge size="xs" variant="outline" colorPalette={r.tier === 'required' ? 'orange' : 'blue'}>
-          {t(`checklist.tier.${r.tier}`, { defaultValue: r.tier })}
+          {t(`checklist.tier.${r.tier}Short`, {
+            defaultValue: r.tier === 'required' ? 'req' : 'pref',
+          })}
         </Badge>
         {typeof r.weight === 'number' && Number.isFinite(r.weight) && r.weight > 0 && (
           <Badge size="xs" variant="subtle" colorPalette="purple">
