@@ -695,6 +695,15 @@ const entries: IndicatorDefinition[] = [
         step: 1,
       },
       {
+        key: 'displacement',
+        labelKey: 'indicators.params.displacement',
+        type: 'integer',
+        default: 26,
+        min: 0,
+        max: 200,
+        step: 1,
+      },
+      {
         key: 'tenkanColor',
         labelKey: 'indicators.params.tenkanColor',
         type: 'color',

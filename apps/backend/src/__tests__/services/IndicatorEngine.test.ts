@@ -150,7 +150,7 @@ describe('IndicatorEngine', () => {
     it('should compute Stochastic with k and d values', async () => {
       const klines = generateKlines(30);
       const indicators: Record<string, IndicatorDefinition> = {
-        stoch: { type: 'stochastic', params: { kPeriod: 14, kSmoothing: 3, dPeriod: 3 } },
+        stoch: { type: 'stochastic', params: { period: 14, smoothK: 3, smoothD: 3 } },
       };
 
       const result = await engine.computeIndicators(klines, indicators, {});
@@ -164,7 +164,7 @@ describe('IndicatorEngine', () => {
     it('should compute StochRSI with k and d values', async () => {
       const klines = generateKlines(50);
       const indicators: Record<string, IndicatorDefinition> = {
-        stochRsi: { type: 'stochRsi', params: { rsiPeriod: 14, stochPeriod: 14, kSmooth: 3, dSmooth: 3 } },
+        stochRsi: { type: 'stochRsi', params: { rsiPeriod: 14, stochPeriod: 14, kPeriod: 3, dPeriod: 3 } },
       };
 
       const result = await engine.computeIndicators(klines, indicators, {});
@@ -219,7 +219,7 @@ describe('IndicatorEngine', () => {
     it('should compute Ichimoku with all sub-values', async () => {
       const klines = generateKlines(80);
       const indicators: Record<string, IndicatorDefinition> = {
-        ichimoku: { type: 'ichimoku', params: { tenkanPeriod: 9, kijunPeriod: 26, senkouBPeriod: 52, displacement: 26 } },
+        ichimoku: { type: 'ichimoku', params: { tenkanPeriod: 9, kijunPeriod: 26, senkouPeriod: 52, displacement: 26 } },
       };
 
       const result = await engine.computeIndicators(klines, indicators, {});
@@ -313,7 +313,7 @@ describe('IndicatorEngine', () => {
     it('should compute Keltner Channels with upper, middle, lower', async () => {
       const klines = generateKlines(30);
       const indicators: Record<string, IndicatorDefinition> = {
-        kc: { type: 'keltner', params: { emaPeriod: 20, atrPeriod: 10, multiplier: 2 } },
+        kc: { type: 'keltner', params: { period: 20, atrPeriod: 10, multiplier: 2 } },
       };
 
       const result = await engine.computeIndicators(klines, indicators, {});

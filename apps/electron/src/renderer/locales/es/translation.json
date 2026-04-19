@@ -2142,6 +2142,7 @@
       "tenkanPeriod": "Período Tenkan",
       "kijunPeriod": "Período Kijun",
       "senkouPeriod": "Período Senkou",
+      "displacement": "Desplazamiento",
       "tenkanColor": "Color Tenkan",
       "kijunColor": "Color Kijun",
       "chikouColor": "Color Chikou",

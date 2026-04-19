@@ -24,6 +24,30 @@ import { toNumber } from './types';
 
 const pineService = new PineIndicatorService();
 
+const warnedLegacyKeys = new Set<string>();
+const warnLegacyParam = (handler: string, legacyKey: string, canonicalKey: string): void => {
+  const tag = `${handler}.${legacyKey}`;
+  if (warnedLegacyKeys.has(tag)) return;
+  warnedLegacyKeys.add(tag);
+  // eslint-disable-next-line no-console
+  console.warn(`[indicator-engine] deprecated param "${legacyKey}" on ${handler}; use "${canonicalKey}" (catalog key)`);
+};
+
+const readParam = (
+  handler: string,
+  resolvedParams: Record<string, number | string>,
+  canonicalKey: string,
+  legacyKey: string,
+  fallback: number,
+): number => {
+  if (resolvedParams[canonicalKey] !== undefined) return toNumber(resolvedParams[canonicalKey], fallback);
+  if (resolvedParams[legacyKey] !== undefined) {
+    warnLegacyParam(handler, legacyKey, canonicalKey);
+    return toNumber(resolvedParams[legacyKey], fallback);
+  }
+  return fallback;
+};
+
 type Handler = (klines: Kline[], resolvedParams: Record<string, number | string>) => Promise<ComputedIndicator>;
 
 export const CORE_HANDLERS: Record<string, Handler> = {
@@ -72,8 +96,9 @@ export const CORE_HANDLERS: Record<string, Handler> = {
 
   stochastic: async (klines, resolvedParams) => {
     const result = await pineService.computeMulti('stoch', klines, {
-      period: toNumber(resolvedParams['kPeriod'], 14),
-      smoothK: toNumber(resolvedParams['kSmoothing'], 3),
+      period: readParam('stochastic', resolvedParams, 'period', 'kPeriod', 14),
+      smoothK: readParam('stochastic', resolvedParams, 'smoothK', 'kSmoothing', 3),
+      smoothD: toNumber(resolvedParams['smoothD'], 3),
     });
     return { type: 'stochastic', values: { k: result['k'] ?? [], d: result['d'] ?? [] } };
   },
@@ -83,8 +108,8 @@ export const CORE_HANDLERS: Record<string, Handler> = {
       klines,
       toNumber(resolvedParams['rsiPeriod'], 14),
       toNumber(resolvedParams['stochPeriod'], 14),
-      toNumber(resolvedParams['kSmooth'], 3),
-      toNumber(resolvedParams['dSmooth'], 3)
+      readParam('stochRsi', resolvedParams, 'kPeriod', 'kSmooth', 3),
+      readParam('stochRsi', resolvedParams, 'dPeriod', 'dSmooth', 3)
     );
     return { type: 'stochRsi', values: { k: stochRsiResult.k, d: stochRsiResult.d } };
   },
@@ -94,7 +119,7 @@ export const CORE_HANDLERS: Record<string, Handler> = {
       klines,
       toNumber(resolvedParams['tenkanPeriod'], 9),
       toNumber(resolvedParams['kijunPeriod'], 26),
-      toNumber(resolvedParams['senkouBPeriod'], 52),
+      readParam('ichimoku', resolvedParams, 'senkouPeriod', 'senkouBPeriod', 52),
       toNumber(resolvedParams['displacement'], 26)
     );
     return {
@@ -169,7 +194,7 @@ export const CORE_HANDLERS: Record<string, Handler> = {
 
   keltner: async (klines, resolvedParams) => {
     const result = await pineService.computeMulti('kc', klines, {
-      period: toNumber(resolvedParams['emaPeriod'], 20),
+      period: readParam('keltner', resolvedParams, 'period', 'emaPeriod', 20),
       multiplier: toNumber(resolvedParams['multiplier'], 2),
     });
     return { type: 'keltner', values: { upper: result['upper'] ?? [], middle: result['middle'] ?? [], lower: result['lower'] ?? [] } };
