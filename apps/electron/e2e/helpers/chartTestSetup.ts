@@ -72,6 +72,8 @@ export const readPerfSnapshot = async (page: Page): Promise<PerfSnapshot> =>
         enabled: false,
         fps: 0,
         lastFrameMs: 0,
+        droppedFrames: 0,
+        longSections: 0,
         sections: [],
         componentRenders: [],
       };
@@ -292,6 +294,53 @@ export const appendKline = async (page: Page, kline: FixtureKline): Promise<numb
     );
     return touched;
   }, raw);
+};
+
+/**
+ * Drive `frames` pan steps over the chart canvas. Presses the left mouse
+ * button once, emits `frames` rAF-paced mousemove events horizontally, then
+ * releases. Exercises the same pan path a real user drag triggers.
+ */
+export const drivePan = async (page: Page, frames: number, amplitudePx = 200): Promise<void> => {
+  const rect = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return null;
+    const r = canvas.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+  if (!rect) return;
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 0; i < frames; i += 1) {
+    const offset = Math.sin((i / 30) * Math.PI) * amplitudePx;
+    await page.mouse.move(cx + offset, cy, { steps: 1 });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+  }
+  await page.mouse.up();
+};
+
+/**
+ * Drive `frames` wheel events over the chart canvas. Alternates zoom in/out
+ * so the visible range returns near its starting point.
+ */
+export const driveWheelZoom = async (page: Page, frames: number, deltaPx = 80): Promise<void> => {
+  const rect = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return null;
+    const r = canvas.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  });
+  if (!rect) return;
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  await page.mouse.move(cx, cy);
+  for (let i = 0; i < frames; i += 1) {
+    const dir = i % 2 === 0 ? -1 : 1;
+    await page.mouse.wheel(0, dir * deltaPx);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+  }
 };
 
 export { isKlineListQueryKey };

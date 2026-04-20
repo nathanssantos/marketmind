@@ -70,10 +70,14 @@ The hot-path suite targets the render paths that dominate real trading sessions 
 | `price-tick-storm` | `pushPriceTicks(page, {sym: price})` at ~100 Hz for 10 symbols | `usePricesForSymbols` subscribers, chart imperative subscribe callback. Catches regressions where a component starts subscribing to `usePriceStore` via a selector. |
 | `kline-replace-loop` | `updateLatestKline(page, {close, volume})` every 100ms | React Query `kline.list` cache mutation → `useKlinePagination.allKlines` → ChartCanvas re-render. Catches cache-update cost regressions. |
 | `kline-append` | `appendKline(page, FixtureKline)` every 500ms | Same cache path but array grows (new-bar case). |
+| `pan-drag-loop` | `drivePan(page, frames, amplitudePx)` — synthetic `mousedown` + rAF-paced `mousemove` + `mouseup` | Viewport-driven redraw (`manager.pan`, dirty-rect invalidation). `renderRate` here is expected to stay near 0 because pan bypasses React. |
+| `wheel-zoom-loop` | `driveWheelZoom(page, frames, deltaPx)` — alternating `wheel` events | Zoom path — range recalculation, bounds cache, indicator recompute on viewport change. |
+| `indicator-churn` | `addIndicators` / `clearIndicators` cycled every few frames | Mount / unmount cost for indicator instances (`IndicatorEngine` init, panel layout, overlay renderer wiring). |
 
-**Driver helper contract.** All drivers are `page.evaluate` wrappers over `window.__*` stores:
+**Driver helper contract.** All drivers are `page.evaluate` wrappers over `window.__*` stores or Playwright's synthetic input:
 - `pushPriceTicks` uses `window.__priceStore.getState().updatePriceBatch(Map)`. Note: `usePriceStore` is **not** subscribed via selectors by `ChartCanvas` — the chart uses an imperative `subscribe()` callback — so this scenario primarily stresses the store itself and any React selectors in sibling components.
 - `updateLatestKline` / `appendKline` mutate the React Query cache via `window.__queryClient.setQueriesData({predicate})`. The predicate matches any query keyed on `['kline', 'list']`.
+- `drivePan` / `driveWheelZoom` use Playwright's real `page.mouse.*` API, so they go through the same canvas event listeners the app uses in production. Each call interleaves a `requestAnimationFrame` wait so the render loop gets a chance to run between inputs.
 
 **Running diagnose mode.** To dump the top-5 slowest sections per scenario into `diagnose-<timestamp>.json`:
 
@@ -105,6 +109,8 @@ The `e2eBridge.ts` exposures and the `TrpcProvider` queryClient bridge are gated
 - `lastFrameMs` — wall time of most recent frame. Spikes here point at per-frame stalls.
 - `sections[]` — sorted by `lastMs` desc. Named per-pass costs (`klines`, `overlayIndicators`, `panelIndicators`, `grid`, `orderLines`, …). First entry is the slowest; assert `slowestSectionMs(snap) ≤ 25` as a floor, widen per scenario only when justified.
 - `componentRenders[]` — sorted by `ratePerSec` desc. Use `componentRenderRate(snap, 'ChartCanvas')` to read a specific component's rate. Always assert on rate, not absolute count.
+- `droppedFrames` — count of frames where `lastFrameMs > 33` (i.e. sub-30 fps instantaneous). Incremented in `endFrame`, reset by `reset()`. Stable scenarios should hold this at `0`; a baseline going non-zero is a real signal.
+- `longSections` — count of individual `measure()` calls where a section took `> 16ms` (one 60 fps frame). Captures spikes even when `fps` looks fine because the expensive section only landed once.
 
 ### Troubleshooting low FPS in tests
 
