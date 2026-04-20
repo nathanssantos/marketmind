@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
 import type { GenericRenderer as GenericRendererFn, GenericRendererExternal } from './renderers';
 import { getCustomRenderer, getRenderer } from './renderers';
-import { applyPanelClip, drawPanelBackground } from '../utils/oscillatorRendering';
+import { drawPanelBackground } from '../utils/oscillatorRendering';
 
 export interface UseGenericChartIndicatorRenderersProps {
   manager: CanvasManager | null;
@@ -103,7 +103,6 @@ export const useGenericChartIndicatorRenderers = ({
       if (panelSetup) {
         const { ctx: cctx, dimensions: dims, panelInfo: info } = panelSetup;
         cctx.save();
-        applyPanelClip({ ctx: cctx, panelY: info.y, panelHeight: info.height, chartWidth: dims.chartWidth });
         drawPanelBackground({ ctx: cctx, panelY: info.y, panelHeight: info.height, chartWidth: dims.chartWidth });
       }
 
@@ -183,7 +182,6 @@ export const useGenericChartIndicatorRenderers = ({
       const panelInfo = manager.getPanelInfo(panelId);
       if (panelInfo) {
         canvasCtx.save();
-        applyPanelClip({ ctx: canvasCtx, panelY: panelInfo.y, panelHeight: panelInfo.height, chartWidth: dimensions.chartWidth });
         drawPanelBackground({ ctx: canvasCtx, panelY: panelInfo.y, panelHeight: panelInfo.height, chartWidth: dimensions.chartWidth });
       }
       for (const { instance, definition, renderer, values } of entries) {
