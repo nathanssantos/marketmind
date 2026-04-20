@@ -154,6 +154,7 @@ coverage/
 test-results/
 playwright-report/
 apps/electron/e2e/perf/last-run.json
+apps/electron/e2e/perf/diagnose-*.json
 
 # ===========================
 # Logs

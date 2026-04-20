@@ -2,9 +2,16 @@ import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-qu
 import { httpBatchLink } from '@trpc/client';
 import { useState, useEffect, useRef } from 'react';
 import { BACKEND_TRPC_URL } from '@shared/constants/api';
+import { IS_E2E_BYPASS_AUTH } from '@shared/constants';
 import { useApiBanStore } from '../store/apiBanStore';
 import { trpc } from '../utils/trpc';
 import { QUERY_CONFIGS } from '../services/queryConfig';
+
+declare global {
+    interface Window {
+        __queryClient?: QueryClient;
+    }
+}
 
 const DEFAULT_BAN_DURATION_MS = 5 * 60 * 1000;
 
@@ -86,6 +93,9 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
         if (sessionStorage.getItem('mm-cache-version') !== version) {
             clearStaleCache(queryClient);
             sessionStorage.setItem('mm-cache-version', version);
+        }
+        if (IS_E2E_BYPASS_AUTH && typeof window !== 'undefined') {
+            window.__queryClient = queryClient;
         }
     }, [queryClient]);
 

@@ -1,0 +1,244 @@
+import { test, expect } from '@playwright/test';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { generateKlines, nextKline } from '../helpers/klineFixtures';
+import { installTrpcMock } from '../helpers/trpcMock';
+import { installConsoleCapture, filterNoiseFromErrors, getCapturedErrors } from '../helpers/consoleCapture';
+import {
+  addIndicators,
+  appendKline,
+  clearIndicators,
+  componentRenderRate,
+  driveFrames,
+  enablePerfOverlay,
+  pushPriceTicks,
+  readPerfSnapshot,
+  refreshPerfFlag,
+  resetPerfMonitor,
+  slowestSectionMs,
+  updateLatestKline,
+  waitForChartReady,
+} from '../helpers/chartTestSetup';
+import type { PerfSnapshot } from '../../src/renderer/utils/canvas/perfMonitor';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const RESULTS_PATH = resolve(HERE, 'last-run.json');
+const BASELINE_PATH = resolve(HERE, 'baseline.json');
+const DIAGNOSE_PATH = resolve(HERE, `diagnose-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+const DIAGNOSE = process.env['PERF_DIAGNOSE'] === '1';
+
+const WARMUP_FRAMES = 90;
+const MEASURE_FRAMES = 600;
+const TICK_STORM_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT'];
+const KLINE_REPLACE_ITERATIONS = 60;
+const KLINE_REPLACE_INTERVAL_MS = 100;
+const KLINE_APPEND_ITERATIONS = 12;
+const KLINE_APPEND_INTERVAL_MS = 500;
+
+const NOISE_FLOOR_MS = 0.5;
+const RELATIVE_REGRESSION_CAP = 0.5;
+
+interface BaselineEntry {
+  fps: number;
+  p95FrameMs: number;
+  renderRate: number;
+  generatedAt: string;
+}
+
+type BaselineMap = Record<string, BaselineEntry>;
+
+const loadBaseline = (): BaselineMap => {
+  if (!existsSync(BASELINE_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(BASELINE_PATH, 'utf8')) as BaselineMap;
+  } catch {
+    return {};
+  }
+};
+
+const writeRunResult = (key: string, entry: BaselineEntry): void => {
+  let current: BaselineMap = {};
+  if (existsSync(RESULTS_PATH)) {
+    try {
+      current = JSON.parse(readFileSync(RESULTS_PATH, 'utf8')) as BaselineMap;
+    } catch {
+      current = {};
+    }
+  }
+  current[key] = entry;
+  writeFileSync(RESULTS_PATH, JSON.stringify(current, null, 2));
+};
+
+const writeDiagnose = (key: string, snap: PerfSnapshot): void => {
+  if (!DIAGNOSE) return;
+  let current: Record<string, unknown> = {};
+  if (existsSync(DIAGNOSE_PATH)) {
+    try {
+      current = JSON.parse(readFileSync(DIAGNOSE_PATH, 'utf8')) as Record<string, unknown>;
+    } catch {
+      current = {};
+    }
+  }
+  current[key] = {
+    fps: snap.fps,
+    lastFrameMs: snap.lastFrameMs,
+    topSections: snap.sections.slice(0, 5),
+    topComponents: snap.componentRenders.slice(0, 5),
+  };
+  writeFileSync(DIAGNOSE_PATH, JSON.stringify(current, null, 2));
+};
+
+const assertRegression = (key: string, result: BaselineEntry): void => {
+  const baseline = loadBaseline();
+  if (!baseline[key]) return;
+  const delta = result.p95FrameMs - baseline[key].p95FrameMs;
+  if (delta <= NOISE_FLOOR_MS) return;
+  const relative = delta / Math.max(baseline[key].p95FrameMs, 0.1);
+  expect(relative, `${key}: p95 frame regression vs baseline`).toBeLessThanOrEqual(RELATIVE_REGRESSION_CAP);
+};
+
+const OVERLAY_INDICATORS = [
+  { catalogType: 'sma', params: { period: 20 } },
+  { catalogType: 'ema', params: { period: 50 } },
+];
+
+test.describe('Chart hot-path perf', () => {
+  test.beforeEach(async ({ page }) => {
+    await installConsoleCapture(page);
+    await enablePerfOverlay(page);
+    const klines = generateKlines({ count: 500, symbol: 'BTCUSDT', interval: '1h' });
+    await installTrpcMock(page, { klines });
+
+    await page.goto('/');
+    await waitForChartReady(page);
+    await refreshPerfFlag(page);
+  });
+
+  test('price tick storm: 10 symbols x 100 ticks/sec for 5s', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let stop = false;
+    const tickLoop = (async () => {
+      let seed = 0;
+      while (!stop) {
+        const ticks: Record<string, number> = {};
+        for (const sym of TICK_STORM_SYMBOLS) {
+          seed += 1;
+          ticks[sym] = 50_000 + ((seed % 1000) * 0.1);
+        }
+        await pushPriceTicks(page, ticks);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await tickLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'price-tick-storm';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+
+    const errors = filterNoiseFromErrors(await getCapturedErrors(page));
+    expect(errors, `errors:\n${errors.join('\n---\n')}`).toHaveLength(0);
+  });
+
+  test('kline replace loop: current-bar ticks', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let iter = 0;
+    let stop = false;
+    const replaceLoop = (async () => {
+      while (!stop && iter < KLINE_REPLACE_ITERATIONS) {
+        iter += 1;
+        const drift = (iter % 20) - 10;
+        await updateLatestKline(page, { close: 50_000 + drift * 5, volume: 100 + iter });
+        await new Promise((r) => setTimeout(r, KLINE_REPLACE_INTERVAL_MS));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await replaceLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'kline-replace-loop';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(iter).toBeGreaterThan(0);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+  });
+
+  test('kline append: new bar each 500ms', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    const seed = generateKlines({ count: 1, symbol: 'BTCUSDT', interval: '1h' })[0]!;
+    let prev = seed;
+    let appended = 0;
+    let stop = false;
+    const appendLoop = (async () => {
+      let seedCounter = 1;
+      while (!stop && appended < KLINE_APPEND_ITERATIONS) {
+        seedCounter += 1;
+        const kline = nextKline(prev, seedCounter * 7919);
+        await appendKline(page, kline);
+        prev = kline;
+        appended += 1;
+        await new Promise((r) => setTimeout(r, KLINE_APPEND_INTERVAL_MS));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await appendLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'kline-append';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(appended).toBeGreaterThan(0);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+  });
+});
