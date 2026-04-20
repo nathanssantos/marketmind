@@ -1,8 +1,8 @@
 import { FIBONACCI_PYRAMID_LEVELS, FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { colorize } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
-import type { ExchangeId } from '@marketmind/types';
-import { AUTO_TRADING_CONFIG, CAPITAL_RULES, TRADING_DEFAULTS } from '@marketmind/types';
+import type { ExchangeId, TimeInterval } from '@marketmind/types';
+import { AUTO_TRADING_CONFIG, CAPITAL_RULES, INTERVAL_MS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -2239,28 +2239,11 @@ export const autoTradingRouter = router({
       };
     }
 
-    const intervalToMs: Record<string, number> = {
-      '1m': 60_000,
-      '3m': 180_000,
-      '5m': 300_000,
-      '15m': 900_000,
-      '30m': 1_800_000,
-      '1h': 3_600_000,
-      '2h': 7_200_000,
-      '4h': 14_400_000,
-      '6h': 21_600_000,
-      '8h': 28_800_000,
-      '12h': 43_200_000,
-      '1d': 86_400_000,
-      '3d': 259_200_000,
-      '1w': 604_800_000,
-    };
-
     let minIntervalMs = Number.MAX_SAFE_INTEGER;
     let minInterval = '4h';
 
     for (const watcher of activeWatchers) {
-      const intervalMs = intervalToMs[watcher.interval] ?? 14_400_000;
+      const intervalMs = INTERVAL_MS[watcher.interval as TimeInterval] ?? INTERVAL_MS['4h'];
       if (intervalMs < minIntervalMs) {
         minIntervalMs = intervalMs;
         minInterval = watcher.interval;

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Source-of-truth: interval→ms conversion (PR D)** — replaced six scattered duplicates of the interval→milliseconds map with imports from `@marketmind/types`' canonical `INTERVAL_MS` (backed by `TIME_MS` in `packages/types/src/intervals.ts`). Callers now share one definition: `ib-historical.ts`, `kline-stream.ts`, `gap-classifier.ts`, `routers/auto-trading.ts`, `routers/auto-trading/diagnostics.ts`, `scripts/data/backfill-historical.ts`. `apps/backend/src/constants` now also re-exports `INTERVAL_MINUTES`. Test mocks continue to pin small literal maps on purpose.
+
 ## [0.97.1] - 2026-04-19
 
 ### Changed
