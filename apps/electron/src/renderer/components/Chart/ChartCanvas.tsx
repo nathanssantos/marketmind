@@ -18,7 +18,9 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { ChartNavigation } from './ChartNavigation';
+import { ChartPerfOverlay } from './ChartPerfOverlay';
 import { ChartTooltip } from './ChartTooltip';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
@@ -77,6 +79,8 @@ export const ChartCanvas = ({
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
 }: ChartCanvasProps): ReactElement => {
+  perfMonitor.recordComponentRender('ChartCanvas');
+
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair] = useChartPref('showCrosshair', true);
@@ -417,6 +421,7 @@ export const ChartCanvas = ({
         <DrawingToolbar manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <TextEditOverlay manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <ChartNavigation onResetView={handleResetView} onNextKline={handleNextKline} totalPanelHeight={manager?.getTotalPanelHeight() ?? 0} />
+        <ChartPerfOverlay />
         {showTooltip && (
           <ChartTooltip
             kline={tooltipData.kline} x={tooltipData.x} y={tooltipData.y} visible={tooltipData.visible}
