@@ -78,6 +78,41 @@ export const waitForFrames = async (page: Page, count: number): Promise<void> =>
   );
 };
 
+export const driveFrames = async (page: Page, frames: number): Promise<void> => {
+  await page.evaluate(
+    (n) =>
+      new Promise<void>((resolve) => {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) {
+          resolve();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const radius = Math.min(rect.width, rect.height) / 3;
+        let remaining = n;
+        const step = (t: number): void => {
+          const angle = (t / 50) % (Math.PI * 2);
+          const x = cx + Math.cos(angle) * radius;
+          const y = cy + Math.sin(angle) * radius;
+          const event = new MouseEvent('mousemove', {
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+            cancelable: true,
+          });
+          canvas.dispatchEvent(event);
+          remaining -= 1;
+          if (remaining <= 0) resolve();
+          else requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }),
+    frames,
+  );
+};
+
 export const waitForChartReady = async (page: Page, timeoutMs = 10_000): Promise<void> => {
   await page.waitForFunction(
     () => {

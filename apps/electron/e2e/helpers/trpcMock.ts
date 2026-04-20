@@ -86,10 +86,17 @@ const resolve = (resolverMap: TrpcResolverMap, path: string, input: unknown): un
   return resolver;
 };
 
-const parseBatchInput = (raw: string | null): Record<string, { json: unknown }> => {
+const unwrapJson = (value: unknown): unknown => {
+  if (value && typeof value === 'object' && 'json' in (value as Record<string, unknown>)) {
+    return (value as { json: unknown }).json;
+  }
+  return value;
+};
+
+const parseBatchInput = (raw: string | null): Record<string, unknown> => {
   if (!raw) return {};
   try {
-    return JSON.parse(raw) as Record<string, { json: unknown }>;
+    return JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return {};
   }
@@ -97,13 +104,13 @@ const parseBatchInput = (raw: string | null): Record<string, { json: unknown }> 
 
 const buildBatchResponse = (
   paths: string[],
-  inputs: Record<string, { json: unknown }>,
+  inputs: Record<string, unknown>,
   resolverMap: TrpcResolverMap,
-): Array<{ result: { data: { json: unknown } } }> =>
+): Array<{ result: { data: unknown } }> =>
   paths.map((path, i) => {
-    const input = inputs[String(i)]?.json;
+    const input = unwrapJson(inputs[String(i)]);
     const data = resolve(resolverMap, path, input);
-    return { result: { data: { json: data } } };
+    return { result: { data } };
   });
 
 export const installTrpcMock = async (page: Page, options: TrpcMockOptions = {}): Promise<void> => {
@@ -127,12 +134,12 @@ export const installTrpcMock = async (page: Page, options: TrpcMockOptions = {})
     const pathPart = url.pathname.replace(/^.*\/trpc\//, '');
     const paths = pathPart.split(',');
 
-    let inputs: Record<string, { json: unknown }> = {};
+    let inputs: Record<string, unknown> = {};
     if (request.method() === 'GET') {
       inputs = parseBatchInput(url.searchParams.get('input'));
     } else {
       try {
-        inputs = (request.postDataJSON() as Record<string, { json: unknown }>) ?? {};
+        inputs = (request.postDataJSON() as Record<string, unknown>) ?? {};
       } catch {
         inputs = {};
       }

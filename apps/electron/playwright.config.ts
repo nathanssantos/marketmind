@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const WEB_PORT = Number(process.env.PLAYWRIGHT_WEB_PORT ?? 5173);
+const BASE_URL = `http://localhost:${WEB_PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -11,7 +14,7 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/results.json' }],
   ],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -34,6 +37,8 @@ export default defineConfig({
     {
       name: 'perf',
       testDir: './e2e/perf',
+      fullyParallel: false,
+      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1600, height: 900 },
@@ -46,8 +51,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev:renderer',
-    url: 'http://localhost:5173',
+    command: `VITE_TARGET=web vite --port ${WEB_PORT} --strictPort`,
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     env: {
