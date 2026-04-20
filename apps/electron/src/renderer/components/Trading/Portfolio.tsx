@@ -4,6 +4,7 @@ import { IconButton, Select } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import type { PortfolioFilterOption, PortfolioSortOption } from '@renderer/store/uiStore';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsGrid, BsTable } from 'react-icons/bs';
@@ -17,6 +18,7 @@ import type { PortfolioProps } from './portfolioTypes';
 import { usePortfolioData } from './usePortfolioData';
 
 const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('Portfolio');
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
 

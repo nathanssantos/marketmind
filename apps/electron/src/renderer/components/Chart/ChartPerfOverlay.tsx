@@ -6,7 +6,9 @@ const emptySnapshot: PerfSnapshot = {
   enabled: false,
   fps: 0,
   lastFrameMs: 0,
+  droppedFrames: 0,
   sections: [],
+  longSections: [],
   componentRenders: [],
 };
 
@@ -49,6 +51,28 @@ export const ChartPerfOverlay = (): ReactElement | null => {
         <span style={{ color: '#9ca3af' }}>last frame</span>
         <span style={{ color: frameColor }}>{fmtMs(snap.lastFrameMs)} ms</span>
       </div>
+      {snap.droppedFrames > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#9ca3af' }}>dropped</span>
+          <span style={{ color: '#f87171' }}>{snap.droppedFrames}</span>
+        </div>
+      )}
+      {snap.longSections.length > 0 && (
+        <>
+          <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>
+            long sections ({snap.longSections.length})
+          </div>
+          {snap.longSections.slice(-3).map((ls, idx) => (
+            <div
+              key={`${ls.name}-${ls.ts}-${idx}`}
+              style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24' }}
+            >
+              <span>{ls.name}</span>
+              <span>{fmtMs(ls.ms)} ms</span>
+            </div>
+          ))}
+        </>
+      )}
       {snap.sections.length > 0 && (
         <>
           <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>sections (ms)</div>

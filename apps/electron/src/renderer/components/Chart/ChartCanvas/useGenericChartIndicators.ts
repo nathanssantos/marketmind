@@ -6,6 +6,7 @@ import { getNativeEvaluator, type NativeEvaluatorContext } from '@renderer/lib/i
 import { useIndicatorStore, type IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import type { MutableRefObject } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
@@ -150,6 +151,7 @@ export const useGenericChartIndicators = (
   managerRef?: MutableRefObject<CanvasManager | null>,
   liveDataTarget?: LiveDataTarget | null,
 ): UseGenericChartIndicatorsResult => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('useGenericChartIndicators');
   const initialInstances = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
   const instancesRef = useRef<IndicatorInstance[]>(initialInstances.current);
   const batchesRef = useRef<BatchKey[]>(buildBatches(initialInstances.current));
