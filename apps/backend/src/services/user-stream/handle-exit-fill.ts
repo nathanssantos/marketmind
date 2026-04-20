@@ -1,12 +1,13 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { calculatePnl } from '../../utils/pnl-calculator';
 import { getOrderEntryFee, getAllTradeFeesForPosition, getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
+import { safeInsertRealizedPnlEvent } from './safe-pnl-event';
 import type { UserStreamContext } from './types';
 
 export async function handleExitFill(
@@ -133,7 +134,7 @@ export async function handleExitFill(
             })
             .where(eq(wallets.id, walletId));
 
-          await db.insert(realizedPnlEvents).values({
+          await safeInsertRealizedPnlEvent(db, {
             walletId,
             userId: execution.userId,
             executionId: execution.id,
@@ -266,7 +267,7 @@ export async function handleExitFill(
     return;
   }
 
-  await db.insert(realizedPnlEvents).values({
+  await safeInsertRealizedPnlEvent(db, {
     walletId,
     userId: execution.userId,
     executionId: execution.id,

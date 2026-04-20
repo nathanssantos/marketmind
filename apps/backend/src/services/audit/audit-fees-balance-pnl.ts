@@ -4,6 +4,7 @@ import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
 import { binanceApiCache } from '../binance-api-cache';
 import { getAllTradeFeesForPosition } from '../binance-futures-client';
 import { logger } from '../logger';
+import { safeInsertRealizedPnlEvent } from '../user-stream/safe-pnl-event';
 import type { AuditContext } from './audit-types';
 import {
   FEES_DELTA_THRESHOLD,
@@ -197,7 +198,7 @@ export async function auditPnlEvents(ctx: AuditContext): Promise<void> {
       );
 
       if (!dryRun) {
-        await db.insert(realizedPnlEvents).values({
+        await safeInsertRealizedPnlEvent(db, {
           walletId: exec.walletId,
           userId: exec.userId,
           executionId: exec.id,

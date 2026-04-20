@@ -3,7 +3,7 @@ import type { FuturesPosition } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
-import { realizedPnlEvents, tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition, getAllTradeFeesForPosition } from './binance-futures-client';
@@ -11,6 +11,7 @@ import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { type SyncResult, createEmptySyncResult, createFailedSyncResult, processIntentOrderForAdoptedPosition } from './position-sync-helpers';
+import { safeInsertRealizedPnlEvent } from './user-stream/safe-pnl-event';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -215,7 +216,7 @@ export class PositionSyncService {
                 })
                 .where(eq(wallets.id, wallet.id));
 
-              await db.insert(realizedPnlEvents).values({
+              await safeInsertRealizedPnlEvent(db, {
                 walletId: wallet.id,
                 userId: wallet.userId,
                 executionId: dbPosition.id,

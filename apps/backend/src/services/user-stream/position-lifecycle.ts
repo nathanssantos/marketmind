@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { calculatePnl } from '../../utils/pnl-calculator';
 import { getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition, cancelAllSymbolOrders } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
@@ -8,6 +8,7 @@ import { positionSyncService } from '../position-sync';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
+import { safeInsertRealizedPnlEvent } from './safe-pnl-event';
 import type { UserStreamContext } from './types';
 
 export async function verifyAlgoFillProcessed(
@@ -124,7 +125,7 @@ export async function verifyAlgoFillProcessed(
       })
       .where(eq(wallets.id, walletId));
 
-    await db.insert(realizedPnlEvents).values({
+    await safeInsertRealizedPnlEvent(db, {
       walletId,
       userId: execution.userId,
       executionId,
@@ -292,7 +293,7 @@ export async function closeResidualPosition(
           if (closeResult.length === 0) continue;
 
           if (wallet) {
-            await db.insert(realizedPnlEvents).values({
+            await safeInsertRealizedPnlEvent(db, {
               walletId,
               userId: wallet.userId,
               executionId: orphan.id,

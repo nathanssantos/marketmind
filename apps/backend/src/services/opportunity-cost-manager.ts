@@ -2,11 +2,12 @@ import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
-import { autoTradingConfig, realizedPnlEvents, tradeExecutions, wallets } from '../db/schema';
+import { autoTradingConfig, tradeExecutions, wallets } from '../db/schema';
 import { calculatePnl } from '../utils/pnl-calculator';
 import { serializeError } from '../utils/errors';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
+import { safeInsertRealizedPnlEvent } from './user-stream/safe-pnl-event';
 import { getWebSocketService } from './websocket';
 import {
   type OpportunityCostConfig,
@@ -283,7 +284,7 @@ export class OpportunityCostManagerService {
           })
           .where(eq(wallets.id, execution.walletId));
 
-        await db.insert(realizedPnlEvents).values({
+        await safeInsertRealizedPnlEvent(db, {
           walletId: execution.walletId,
           userId: execution.userId,
           executionId: execution.id,
