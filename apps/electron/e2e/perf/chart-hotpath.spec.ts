@@ -11,6 +11,8 @@ import {
   clearIndicators,
   componentRenderRate,
   driveFrames,
+  drivePan,
+  driveWheelZoom,
   enablePerfOverlay,
   pushPriceTicks,
   readPerfSnapshot,
@@ -35,6 +37,10 @@ const KLINE_REPLACE_ITERATIONS = 60;
 const KLINE_REPLACE_INTERVAL_MS = 100;
 const KLINE_APPEND_ITERATIONS = 12;
 const KLINE_APPEND_INTERVAL_MS = 500;
+const PAN_FRAMES = 240;
+const ZOOM_FRAMES = 120;
+const INDICATOR_CHURN_CYCLES = 20;
+const INDICATOR_CHURN_SETTLE_FRAMES = 6;
 
 const NOISE_FLOOR_MS = 0.5;
 const RELATIVE_REGRESSION_CAP = 0.5;
@@ -43,6 +49,8 @@ interface BaselineEntry {
   fps: number;
   p95FrameMs: number;
   renderRate: number;
+  droppedFrames?: number;
+  longSections?: number;
   generatedAt: string;
 }
 
@@ -83,6 +91,9 @@ const writeDiagnose = (key: string, snap: PerfSnapshot): void => {
   current[key] = {
     fps: snap.fps,
     lastFrameMs: snap.lastFrameMs,
+    droppedFrames: snap.droppedFrames,
+    longSections: snap.longSections.length,
+    longSectionDetails: snap.longSections.slice(-5),
     topSections: snap.sections.slice(0, 5),
     topComponents: snap.componentRenders.slice(0, 5),
   };
@@ -237,6 +248,103 @@ test.describe('Chart hot-path perf', () => {
 
     expect(snap.enabled).toBe(true);
     expect(appended).toBeGreaterThan(0);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+  });
+
+  test('pan drag loop: sustained horizontal drag', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    await drivePan(page, PAN_FRAMES);
+    await driveFrames(page, 60);
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'pan-drag-loop';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      droppedFrames: snap.droppedFrames,
+      longSections: snap.longSections.length,
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+  });
+
+  test('wheel zoom loop: alternating in/out', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    await driveWheelZoom(page, ZOOM_FRAMES);
+    await driveFrames(page, 60);
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'wheel-zoom-loop';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      droppedFrames: snap.droppedFrames,
+      longSections: snap.longSections.length,
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+  });
+
+  test('indicator churn: add/remove indicator instances', async ({ page }) => {
+    await clearIndicators(page);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let cycles = 0;
+    let stop = false;
+    const churnLoop = (async () => {
+      while (!stop && cycles < INDICATOR_CHURN_CYCLES) {
+        await addIndicators(page, OVERLAY_INDICATORS);
+        await driveFrames(page, INDICATOR_CHURN_SETTLE_FRAMES);
+        await clearIndicators(page);
+        await driveFrames(page, INDICATOR_CHURN_SETTLE_FRAMES);
+        cycles += 1;
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await churnLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'indicator-churn';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      droppedFrames: snap.droppedFrames,
+      longSections: snap.longSections.length,
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(cycles).toBeGreaterThan(0);
     expect(snap.fps).toBeGreaterThanOrEqual(20);
     expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
     assertRegression(key, result);
