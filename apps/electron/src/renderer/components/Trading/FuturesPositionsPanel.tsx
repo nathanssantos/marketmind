@@ -5,25 +5,15 @@ import { wouldLiquidate } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import type { RouterOutputs } from '@renderer/services/trpc';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowLeftRight, LuBot, LuTrendingDown, LuTrendingUp, LuTriangleAlert, LuX } from 'react-icons/lu';
 
-interface FuturesPosition {
-  id: string;
-  symbol: string;
-  side: 'LONG' | 'SHORT';
-  entryPrice: string;
-  entryQty: string;
-  currentPrice?: string | null;
-  stopLoss?: string | null;
-  takeProfit?: string | null;
-  leverage?: number | null;
-  marginType?: string | null;
-  liquidationPrice?: string | null;
-  accumulatedFunding?: string | null;
-  status: string | null;
-}
+type FuturesPosition = Extract<
+  RouterOutputs['futuresTrading']['getPositions'][number],
+  { id: string }
+>;
 
 const FuturesPositionCard = memo(({
   position,
@@ -293,29 +283,9 @@ const FuturesPositionsPanelComponent = () => {
 
   const openPositions = useMemo((): FuturesPosition[] => {
     if (!Array.isArray(positions)) return [];
-    return positions
-      .filter((p) =>
-        p !== null &&
-        typeof p === 'object' &&
-        'status' in p &&
-        'id' in p &&
-        p.status === 'open'
-      )
-      .map((p) => ({
-        id: String((p as { id: string }).id),
-        symbol: String((p as { symbol: string }).symbol),
-        side: (p as { side: 'LONG' | 'SHORT' }).side,
-        entryPrice: String((p as { entryPrice: string }).entryPrice),
-        entryQty: String((p as { entryQty: string }).entryQty),
-        currentPrice: (p as { currentPrice?: string | null }).currentPrice ?? null,
-        stopLoss: (p as { stopLoss?: string | null }).stopLoss ?? null,
-        takeProfit: (p as { takeProfit?: string | null }).takeProfit ?? null,
-        leverage: (p as { leverage?: number | null }).leverage ?? null,
-        marginType: (p as { marginType?: string | null }).marginType ?? null,
-        liquidationPrice: (p as { liquidationPrice?: string | null }).liquidationPrice ?? null,
-        accumulatedFunding: (p as { accumulatedFunding?: string | null }).accumulatedFunding ?? null,
-        status: (p as { status: string | null }).status,
-      }));
+    return positions.filter(
+      (p): p is FuturesPosition => p !== null && typeof p === 'object' && 'id' in p && p.status === 'open'
+    );
   }, [positions]);
 
   const handleClosePosition = async (positionId: string, symbol: string) => {
