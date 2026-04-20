@@ -417,6 +417,8 @@ export const useChartStore = create<ChartState>((set) => ({
 
 ## 🧪 Testing Approach
 
+> **Browser automation for agents:** see [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md). Three layers — Playwright MCP (generic web), chart perf harness (`pnpm --filter @marketmind/electron test:perf`), Electron smoke (`pnpm --filter @marketmind/electron test:e2e:electron`). Renderer-only auth bypass via `VITE_E2E_BYPASS_AUTH=true`.
+
 ### Unit Tests (Frontend)
 
 ```typescript

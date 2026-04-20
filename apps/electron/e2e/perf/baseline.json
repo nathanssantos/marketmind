@@ -1,0 +1,14 @@
+{
+  "5-panels": {
+    "fps": 55,
+    "p95FrameMs": 14.2,
+    "renderRate": 0.9,
+    "generatedAt": "2026-04-20T00:00:00.000Z"
+  },
+  "overlay-only": {
+    "fps": 59,
+    "p95FrameMs": 11,
+    "renderRate": 0.9,
+    "generatedAt": "2026-04-20T00:00:00.000Z"
+  }
+}

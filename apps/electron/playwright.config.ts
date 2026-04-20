@@ -18,6 +18,8 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testDir: './e2e',
+      testMatch: /\/e2e\/[^/]+\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -29,11 +31,27 @@ export default defineConfig({
       },
       snapshotPathTemplate: '{testDir}/__snapshots__/{testFilePath}/{arg}{ext}',
     },
+    {
+      name: 'perf',
+      testDir: './e2e/perf',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1600, height: 900 },
+      },
+    },
+    {
+      name: 'electron',
+      testDir: './e2e/electron',
+      testMatch: '*.spec.ts',
+    },
   ],
   webServer: {
     command: 'pnpm dev:renderer',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: {
+      VITE_E2E_BYPASS_AUTH: 'true',
+    },
   },
 });
