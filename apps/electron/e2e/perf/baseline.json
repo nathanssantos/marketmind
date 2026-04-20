@@ -28,5 +28,29 @@
     "p95FrameMs": 0.20000004768371582,
     "renderRate": 154.08320498726704,
     "generatedAt": "2026-04-20T20:36:55.444Z"
+  },
+  "pan-drag-loop": {
+    "fps": 27,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 0,
+    "droppedFrames": 0,
+    "longSections": 0,
+    "generatedAt": "2026-04-20T20:57:27.948Z"
+  },
+  "wheel-zoom-loop": {
+    "fps": 27,
+    "p95FrameMs": 0.20000004768371582,
+    "renderRate": 121.9512193940023,
+    "droppedFrames": 0,
+    "longSections": 0,
+    "generatedAt": "2026-04-20T20:57:33.168Z"
+  },
+  "indicator-churn": {
+    "fps": 27,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 118.04384495158126,
+    "droppedFrames": 0,
+    "longSections": 0,
+    "generatedAt": "2026-04-20T20:57:39.815Z"
   }
 }
