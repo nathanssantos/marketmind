@@ -1,12 +1,13 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { realizedPnlEvents, tradeExecutions, wallets, orders } from '../../db/schema';
+import { tradeExecutions, wallets, orders } from '../../db/schema';
 import { getPosition } from '../binance-futures-client';
 import { generateEntityId } from '../../utils/id';
 import { logger } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
+import { safeInsertRealizedPnlEvent } from './safe-pnl-event';
 import type { UserStreamContext } from './types';
 
 export async function handleUntrackedReduceFill(
@@ -91,7 +92,7 @@ export async function handleUntrackedReduceFill(
       })
       .where(eq(wallets.id, walletId));
 
-    await db.insert(realizedPnlEvents).values({
+    await safeInsertRealizedPnlEvent(db, {
       walletId,
       userId: oppositeExec.userId,
       executionId: oppositeExec.id,
@@ -145,7 +146,7 @@ export async function handleUntrackedReduceFill(
       })
       .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
 
-    await db.insert(realizedPnlEvents).values({
+    await safeInsertRealizedPnlEvent(db, {
       walletId,
       userId: oppositeExec.userId,
       executionId: oppositeExec.id,
