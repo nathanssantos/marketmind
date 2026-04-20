@@ -89,13 +89,12 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     if (marketType !== 'FUTURES' || !Array.isArray(positions)) return null;
     const found = positions.find((p) => {
       if (p === null || typeof p !== 'object' || !('symbol' in p)) return false;
-      if ((p as { symbol: string }).symbol !== symbol) return false;
-      if ('status' in p && 'id' in p) return (p as { status: string }).status === 'open';
-      if ('positionAmt' in p) return parseFloat(String((p as { positionAmt: string }).positionAmt)) !== 0;
+      if (p.symbol !== symbol) return false;
+      if ('id' in p) return p.status === 'open';
+      if ('positionAmt' in p) return parseFloat(String(p.positionAmt)) !== 0;
       return false;
     });
-    if (!found) return null;
-    return found as { id?: string; side?: string; positionAmt?: string };
+    return found ?? null;
   }, [positions, symbol, marketType]);
 
   const positionSide = useMemo(() => {
