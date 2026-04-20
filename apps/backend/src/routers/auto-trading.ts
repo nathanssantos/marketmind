@@ -44,7 +44,7 @@ import { applyFilterInputToUpdate } from '../utils/filters/filter-registry';
 import { getBtcTrendEmaInfoWithHistory, getEma21Direction, type Ema21TrendResult } from '../utils/filters/btc-correlation-filter';
 import { generateEntityId } from '../utils/id';
 import { mapDbKlinesReversed } from '../utils/kline-mapper';
-import { calculatePnl } from '../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { parseEnabledSetupTypes, transformAutoTradingConfig } from '../utils/profile-transformers';
 
 const log = (message: string, data?: Record<string, unknown>): void => {

@@ -5,7 +5,7 @@ import type { TradeExecution, Wallet } from '../../db/schema';
 import { tradeExecutions, wallets } from '../../db/schema';
 import { env } from '../../env';
 import { getFuturesClient, getSpotClient } from '../../exchange';
-import { calculateNotional, calculatePnl, formatQuantityForBinance, roundToDecimals } from '../../utils/formatters';
+import { calculateNotional, calculateGrossPnl, formatQuantityForBinance, roundToDecimals } from '../../utils/formatters';
 import { serializeError } from '../../utils/errors';
 import { getMinNotionalFilterService } from '../min-notional-filter';
 import { isPaperWallet } from '../binance-client';
@@ -139,7 +139,7 @@ export const executeExit = async (
     }
 
     const entryPrice = parseFloat(execution.entryPrice);
-    const grossPnl = calculatePnl(entryPrice, exitPrice, quantity, execution.side);
+    const grossPnl = calculateGrossPnl(entryPrice, exitPrice, quantity, execution.side);
 
     const exitValue = calculateNotional(exitPrice, quantity);
     const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';

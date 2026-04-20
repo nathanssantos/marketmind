@@ -8,7 +8,7 @@ import { walletQueries } from '../../services/database/walletQueries';
 import { riskManagerService } from '../../services/risk-manager';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
-import { calculatePnl } from '../../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { parseEnabledSetupTypes } from '../../utils/profile-transformers';
 import { log } from './utils';
 
