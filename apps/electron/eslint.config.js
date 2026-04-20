@@ -12,6 +12,14 @@ export default [
         ignores: [
             'coverage/**',
             'scripts/**',
+            'dist/**',
+            'dist-web/**',
+            'dist-electron/**',
+            'build/**',
+            'e2e/**',
+            'playwright-report/**',
+            'test-results/**',
+            'public/**',
         ],
     },
     {
@@ -45,6 +53,7 @@ export default [
             },
         },
         rules: {
+            'no-undef': 'off',
             // TypeScript specific rules
             '@typescript-eslint/no-explicit-any': 'error',
             'no-unused-vars': 'off',
@@ -142,6 +151,7 @@ export default [
             },
         },
         rules: {
+            'no-undef': 'off',
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'error',
