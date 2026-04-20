@@ -41,6 +41,15 @@ export const MULTI_PINE_SCRIPTS = new Set(['bb', 'macd', 'stoch', 'kc', 'supertr
 export const COSMETIC_PARAM_KEYS = new Set(['color', 'lineWidth']);
 
 const TICK_POLL_MS = 500;
+const PINE_CONCURRENCY_CAP = 6;
+const PINE_CONCURRENCY_MIN = 2;
+const PINE_CONCURRENCY_FALLBACK = 4;
+
+const getPineConcurrency = (): number => {
+  const hw = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined;
+  const hint = (hw && hw > 1 ? hw : PINE_CONCURRENCY_FALLBACK) - 1;
+  return Math.max(PINE_CONCURRENCY_MIN, Math.min(PINE_CONCURRENCY_CAP, hint));
+};
 
 export const stableSerialize = (params: Record<string, IndicatorParamValue>): string => {
   const keys = Object.keys(params).filter((k) => !COSMETIC_PARAM_KEYS.has(k)).sort();
@@ -185,21 +194,48 @@ export const useGenericChartIndicators = (
       }
 
       const expectedIds = new Set<string>();
+
       for (const batch of currentBatches) {
+        if (batch.service !== 'native') continue;
         if (token.cancelled) return;
         try {
-          const result = batch.service === 'pine'
-            ? await runPineBatch(currentKlines, batch.scriptId, batch.params)
-            : runNativeBatch(currentKlines, batch.scriptId, batch.params, currentCtx);
+          const result = runNativeBatch(currentKlines, batch.scriptId, batch.params, currentCtx);
           for (const id of batch.instanceIds) {
             out.set(id, result);
             expectedIds.add(id);
           }
         } catch (err) {
-          console.error(`[useGenericChartIndicators] batch failed: ${batch.service}/${batch.scriptId}`, err);
+          console.error(`[useGenericChartIndicators] batch failed: native/${batch.scriptId}`, err);
           for (const id of batch.instanceIds) {
             out.set(id, {});
             expectedIds.add(id);
+          }
+        }
+      }
+
+      const pineBatches = currentBatches.filter((b) => b.service === 'pine');
+      const concurrency = getPineConcurrency();
+      for (let i = 0; i < pineBatches.length; i += concurrency) {
+        if (token.cancelled) return;
+        const chunk = pineBatches.slice(i, i + concurrency);
+        const settled = await Promise.allSettled(
+          chunk.map((batch) => runPineBatch(currentKlines, batch.scriptId, batch.params)),
+        );
+        if (token.cancelled) return;
+        for (let j = 0; j < chunk.length; j++) {
+          const batch = chunk[j]!;
+          const outcome = settled[j]!;
+          if (outcome.status === 'fulfilled') {
+            for (const id of batch.instanceIds) {
+              out.set(id, outcome.value);
+              expectedIds.add(id);
+            }
+          } else {
+            console.error(`[useGenericChartIndicators] batch failed: pine/${batch.scriptId}`, outcome.reason);
+            for (const id of batch.instanceIds) {
+              out.set(id, {});
+              expectedIds.add(id);
+            }
           }
         }
       }
