@@ -1,4 +1,4 @@
-import type { Interval, Kline } from '@marketmind/types';
+import { INTERVAL_MS, type Interval, type Kline, type TimeInterval } from '@marketmind/types';
 import { and, asc, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
 import { klines as klinesTable } from '../db/schema';
@@ -18,20 +18,8 @@ export const setIBConnectionManager = (manager: IBConnectionManager): void => {
 const getIBDuration = (interval: string): string =>
   (IB_OPTIMAL_DURATION as Record<string, string>)[interval] ?? '1 M';
 
-const getIntervalMs = (interval: string): number => {
-  const intervals: Record<string, number> = {
-    '1m': 60_000,
-    '5m': 300_000,
-    '15m': 900_000,
-    '30m': 1_800_000,
-    '1h': 3_600_000,
-    '2h': 7_200_000,
-    '4h': 14_400_000,
-    '1d': 86_400_000,
-    '1w': 604_800_000,
-  };
-  return intervals[interval] ?? 3_600_000;
-};
+const getIntervalMs = (interval: string): number =>
+  INTERVAL_MS[interval as TimeInterval] ?? INTERVAL_MS['1h'];
 
 export const smartBackfillIBKlines = async (
   symbol: string,

@@ -1,20 +1,7 @@
-import type { Kline } from '@marketmind/types';
+import { INTERVAL_MS, type Kline, type TimeInterval } from '@marketmind/types';
 import type { GapInfo, MarketCalendar } from './types';
 import { MarketHoursService } from './market-hours';
 import { NYSE_HOLIDAYS, NYSE_EARLY_CLOSES } from './constants';
-
-const TIME_MS = {
-  '1m': 60_000,
-  '5m': 300_000,
-  '15m': 900_000,
-  '30m': 1_800_000,
-  '1h': 3_600_000,
-  '4h': 14_400_000,
-  '1d': 86_400_000,
-  '1w': 604_800_000,
-} as const;
-
-type TimeInterval = keyof typeof TIME_MS;
 
 const NYSE_CALENDAR: MarketCalendar = {
   timezone: 'America/New_York',
@@ -80,7 +67,7 @@ export class GapClassifier {
   classifyGap(gapStart: Date, gapEnd: Date, interval: TimeInterval): GapInfo {
     const durationMs = gapEnd.getTime() - gapStart.getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
-    const expectedKlines = Math.floor(durationMs / TIME_MS[interval]);
+    const expectedKlines = Math.floor(durationMs / INTERVAL_MS[interval]);
 
     const startDay = getDayOfWeek(gapStart);
     const endDay = getDayOfWeek(gapEnd);
@@ -167,7 +154,7 @@ export class GapClassifier {
 
   detectGaps(klines: Kline[], interval: TimeInterval, config: GapDetectionConfig): GapInfo[] {
     const gaps: GapInfo[] = [];
-    const intervalMs = TIME_MS[interval];
+    const intervalMs = INTERVAL_MS[interval];
 
     if (!intervalMs || klines.length < 2) {
       return gaps;
@@ -223,7 +210,7 @@ export class GapClassifier {
   }
 
   getNextExpectedKlineTime(lastKlineClose: Date, interval: TimeInterval): Date {
-    const intervalMs = TIME_MS[interval];
+    const intervalMs = INTERVAL_MS[interval];
     let nextTime = new Date(lastKlineClose.getTime() + intervalMs);
 
     for (let i = 0; i < 10; i++) {
