@@ -54,19 +54,19 @@ export const useOrphanOrders = (
     trpc.futuresTrading.getOpenOrders.useQuery(openOrdersInput, {
       enabled,
       refetchInterval: polling,
-      staleTime: 1000,
+      staleTime: ORPHAN_POLLING_MS,
     });
 
   const { data: exchangeAlgoOrders, isLoading: isLoadingAlgo } =
     trpc.futuresTrading.getOpenAlgoOrders.useQuery(algoOrdersInput, {
       enabled,
       refetchInterval: polling,
-      staleTime: 1000,
+      staleTime: ORPHAN_POLLING_MS,
     });
 
   const { data: dbOrderIds } = trpc.futuresTrading.getOpenDbOrderIds.useQuery(
     { walletId },
-    { enabled, refetchInterval: polling, staleTime: 1000 }
+    { enabled, refetchInterval: polling, staleTime: ORPHAN_POLLING_MS }
   );
 
   const { orphanOrders, trackedOrders } = useMemo(() => {
