@@ -9,6 +9,14 @@ import type { UseChartBaseRenderersResult } from './useChartBaseRenderers';
 import type { UseGenericChartIndicatorRenderersResult } from './useGenericChartIndicatorRenderers';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
 import { renderDragPreview, renderSlTpPreview, renderTsPreview, renderOrderPreview } from './chartPreviewRenderers';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
+
+const timed = <T>(section: string, fn: () => T): T => {
+  const ts = perfMonitor.mark();
+  const result = fn();
+  perfMonitor.measure(section, ts);
+  return result;
+};
 
 export interface UseChartRenderPipelineProps {
   manager: CanvasManager | null;
@@ -63,36 +71,40 @@ export const useChartRenderPipeline = ({
     if (!manager) return;
 
     const render = (): void => {
-      manager.clear();
-      renderWatermark();
-      renderGrid();
-      renderAllCustomIndicators();
+      timed('clear', () => manager.clear());
+      timed('watermark', renderWatermark);
+      timed('grid', renderGrid);
+      timed('customIndicators', renderAllCustomIndicators);
       if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
-        renderKlines();
+        timed('klines', renderKlines);
       } else {
-        renderLineChart();
+        timed('lineChart', renderLineChart);
       }
-      renderAllOverlayIndicators();
-      renderDrawings();
-      renderEventScale();
-      renderAllPanelIndicators();
-      renderCurrentPriceLine_Line();
-      renderOrderLines();
-      renderGridPreview();
+      timed('overlayIndicators', renderAllOverlayIndicators);
+      timed('drawings', renderDrawings);
+      timed('eventScale', renderEventScale);
+      timed('panelIndicators', renderAllPanelIndicators);
+      timed('currentPriceLine', renderCurrentPriceLine_Line);
+      timed('orderLines', renderOrderLines);
+      timed('gridPreview', renderGridPreview);
 
-      renderDragPreview(manager, orderDragHandler, t);
-      renderSlTpPreview(manager, slTpPlacement, allExecutions);
-      renderTsPreview(manager, tsPlacementActive, tsPlacementPreviewPrice);
+      timed('previews', () => {
+        renderDragPreview(manager, orderDragHandler, t);
+        renderSlTpPreview(manager, slTpPlacement, allExecutions);
+        renderTsPreview(manager, tsPlacementActive, tsPlacementPreviewPrice);
+      });
 
-      renderCurrentPriceLine_Label();
-      renderCrosshairPriceLine();
+      timed('currentPriceLabel', renderCurrentPriceLine_Label);
+      timed('crosshair', renderCrosshairPriceLine);
 
-      renderOrderPreview(manager, orderPreviewRef, t);
+      timed('orderPreview', () => renderOrderPreview(manager, orderPreviewRef, t));
     };
 
     const renderWithDirtyFlagCleanup = () => {
+      const frameTs = perfMonitor.beginFrame();
       render();
       manager.clearDirtyFlags();
+      perfMonitor.endFrame(frameTs);
     };
 
     manager.setRenderCallback(renderWithDirtyFlagCleanup);
