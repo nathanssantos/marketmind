@@ -171,7 +171,7 @@ export const useGenericChartIndicators = (
     if (pendingRef.current) return;
     pendingRef.current = true;
 
-    queueMicrotask(async () => {
+    const compute = async (): Promise<void> => {
       pendingRef.current = false;
       if (cancellationRef.current) cancellationRef.current.cancelled = true;
       const token = { cancelled: false };
@@ -247,7 +247,9 @@ export const useGenericChartIndicators = (
 
       currentManagerRef?.current?.markDirty('overlays');
       if (currentTarget) syncLiveData(currentTarget, currentInstances, out, currentKlines);
-    });
+    };
+
+    queueMicrotask(() => void compute());
   }, []);
 
   const klinesSignature = useMemo(() => {
