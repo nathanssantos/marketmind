@@ -47,7 +47,7 @@ export async function calculateQtyFromPercent(input: CalculateQtyInput): Promise
   const stepSize = filters?.stepSize?.toString();
 
   let balance = 0;
-  let leverage = 1;
+  let leverage: number;
 
   if (isPaperWallet(wallet)) {
     balance = parseFloat(wallet.currentBalance ?? '0');

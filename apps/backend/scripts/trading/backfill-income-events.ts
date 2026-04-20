@@ -7,7 +7,9 @@ import { isPaperWallet } from '../../src/services/binance-client';
 import { syncWalletIncome } from '../../src/services/income-events';
 
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-const PROGRESS_FILE = path.resolve(process.cwd(), '/tmp/backfill-income-progress.json');
+const PROGRESS_DIR = path.resolve(process.cwd(), '.progress');
+const PROGRESS_FILE = path.join(PROGRESS_DIR, 'backfill-income-progress.json');
+fs.mkdirSync(PROGRESS_DIR, { recursive: true });
 
 interface Progress {
   [walletId: string]: { lastWindowEnd: number; status: 'done' | 'partial' };
