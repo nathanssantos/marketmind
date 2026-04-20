@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_ROOT = resolve(HERE, '../..');
 const MAIN_ENTRY = resolve(ELECTRON_ROOT, 'dist-electron/main/index.js');
+const WEB_PORT = Number(process.env.PLAYWRIGHT_WEB_PORT ?? 5173);
+const DEV_SERVER_URL = `http://localhost:${WEB_PORT}`;
 
 export interface LaunchedApp {
   app: ElectronApplication;
@@ -17,6 +19,7 @@ export const launchApp = async (): Promise<LaunchedApp> => {
     env: {
       ...process.env,
       VITE_E2E_BYPASS_AUTH: 'true',
+      VITE_DEV_SERVER_URL: DEV_SERVER_URL,
       NODE_ENV: 'test',
     },
   });

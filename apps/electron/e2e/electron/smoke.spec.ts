@@ -1,11 +1,17 @@
 import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type LaunchedApp } from './app-launch';
+import { generateKlines } from '../helpers/klineFixtures';
+import { installTrpcMock } from '../helpers/trpcMock';
 
 let launched: LaunchedApp;
 
 test.describe('Electron smoke', () => {
   test.beforeAll(async () => {
     launched = await launchApp();
+    const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
+    await installTrpcMock(launched.window, { klines });
+    await launched.window.reload();
+    await launched.window.waitForLoadState('domcontentloaded');
   });
 
   test.afterAll(async () => {
