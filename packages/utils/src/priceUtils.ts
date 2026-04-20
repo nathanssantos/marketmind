@@ -1,7 +1,5 @@
 const DEFAULT_PRICE_PRECISION = 8;
 const DEFAULT_QTY_PRECISION = 8;
-const PERCENT_PRECISION = 2;
-const PERCENT_MULTIPLIER = 100;
 const MIN_SYMBOL_LENGTH = 6;
 
 export const parsePrice = (price: string | number): number =>
@@ -26,38 +24,6 @@ export const calculateQuoteQty = (price: string, qty: string): string => {
   const priceNum = parsePrice(price);
   const qtyNum = parseQty(qty);
   return formatPrice(priceNum * qtyNum);
-};
-
-export const calculatePnL = (
-  entryPrice: string,
-  exitPrice: string,
-  qty: string,
-  side: 'BUY' | 'SELL',
-): string => {
-  const entry = parsePrice(entryPrice);
-  const exit = parsePrice(exitPrice);
-  const quantity = parseQty(qty);
-
-  const pnl = side === 'BUY'
-    ? (exit - entry) * quantity
-    : (entry - exit) * quantity;
-
-  return formatPrice(pnl);
-};
-
-export const calculatePnLPercent = (
-  entryPrice: string,
-  exitPrice: string,
-  side: 'BUY' | 'SELL',
-): string => {
-  const entry = parsePrice(entryPrice);
-  const exit = parsePrice(exitPrice);
-
-  const percent = side === 'BUY'
-    ? ((exit - entry) / entry) * PERCENT_MULTIPLIER
-    : ((entry - exit) / entry) * PERCENT_MULTIPLIER;
-
-  return formatPrice(percent, PERCENT_PRECISION);
 };
 
 export const isValidPrice = (price: string): boolean => {

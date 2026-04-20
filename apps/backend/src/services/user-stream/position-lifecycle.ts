@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets } from '../../db/schema';
-import { calculatePnl } from '../../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { getOrderEntryFee, getLastClosingTrade, getAllTradeFeesForPosition, getPosition, closePosition, cancelAllSymbolOrders } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
 import { positionSyncService } from '../position-sync';

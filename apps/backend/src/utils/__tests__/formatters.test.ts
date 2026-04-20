@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPrice,
   roundToDecimals,
-  calculatePnl,
+  calculateGrossPnl,
   calculateNotional,
   formatNumberForBinance,
   formatQuantityForBinance,
@@ -41,26 +41,26 @@ describe('formatters', () => {
     });
   });
 
-  describe('calculatePnl', () => {
+  describe('calculateGrossPnl', () => {
     it('should calculate positive PnL for LONG with price increase', () => {
-      expect(calculatePnl(100, 110, 10, 'LONG')).toBeCloseTo(100, 5);
+      expect(calculateGrossPnl(100, 110, 10, 'LONG')).toBeCloseTo(100, 5);
     });
 
     it('should calculate negative PnL for LONG with price decrease', () => {
-      expect(calculatePnl(100, 90, 10, 'LONG')).toBeCloseTo(-100, 5);
+      expect(calculateGrossPnl(100, 90, 10, 'LONG')).toBeCloseTo(-100, 5);
     });
 
     it('should calculate positive PnL for SHORT with price decrease', () => {
-      expect(calculatePnl(100, 90, 10, 'SHORT')).toBeCloseTo(100, 5);
+      expect(calculateGrossPnl(100, 90, 10, 'SHORT')).toBeCloseTo(100, 5);
     });
 
     it('should calculate negative PnL for SHORT with price increase', () => {
-      expect(calculatePnl(100, 110, 10, 'SHORT')).toBeCloseTo(-100, 5);
+      expect(calculateGrossPnl(100, 110, 10, 'SHORT')).toBeCloseTo(-100, 5);
     });
 
     it('should return 0 when entry and exit prices are equal', () => {
-      expect(calculatePnl(100, 100, 10, 'LONG')).toBe(0);
-      expect(calculatePnl(100, 100, 10, 'SHORT')).toBe(-0);
+      expect(calculateGrossPnl(100, 100, 10, 'LONG')).toBe(0);
+      expect(calculateGrossPnl(100, 100, 10, 'SHORT')).toBe(-0);
     });
   });
 

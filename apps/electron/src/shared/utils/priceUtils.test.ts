@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   addPrice,
   averagePrice,
-  calculatePnL,
-  calculatePnLPercent,
   calculateQuoteQty,
   comparePrice,
   dividePrice,
@@ -100,55 +98,6 @@ describe('priceUtils', () => {
 
     it('should handle decimal prices', () => {
       expect(parseFloat(calculateQuoteQty('42000.50', '0.5'))).toBeCloseTo(21000.25, 2);
-    });
-  });
-
-  describe('calculatePnL', () => {
-    it('should calculate profit for BUY (long) when price increases', () => {
-      const pnl = parseFloat(calculatePnL('100', '110', '1', 'BUY'));
-      expect(pnl).toBe(10);
-    });
-
-    it('should calculate loss for BUY (long) when price decreases', () => {
-      const pnl = parseFloat(calculatePnL('100', '90', '1', 'BUY'));
-      expect(pnl).toBe(-10);
-    });
-
-    it('should calculate profit for SELL (short) when price decreases', () => {
-      const pnl = parseFloat(calculatePnL('100', '90', '1', 'SELL'));
-      expect(pnl).toBe(10);
-    });
-
-    it('should calculate loss for SELL (short) when price increases', () => {
-      const pnl = parseFloat(calculatePnL('100', '110', '1', 'SELL'));
-      expect(pnl).toBe(-10);
-    });
-
-    it('should multiply by quantity', () => {
-      const pnl = parseFloat(calculatePnL('100', '110', '2', 'BUY'));
-      expect(pnl).toBe(20);
-    });
-  });
-
-  describe('calculatePnLPercent', () => {
-    it('should calculate percent profit for BUY', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '110', 'BUY'));
-      expect(percent).toBe(10);
-    });
-
-    it('should calculate percent loss for BUY', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '90', 'BUY'));
-      expect(percent).toBe(-10);
-    });
-
-    it('should calculate percent profit for SELL', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '90', 'SELL'));
-      expect(percent).toBe(10);
-    });
-
-    it('should calculate percent loss for SELL', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '110', 'SELL'));
-      expect(percent).toBe(-10);
     });
   });
 

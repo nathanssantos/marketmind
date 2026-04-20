@@ -7,7 +7,7 @@ export const roundToDecimals = (value: number, decimals: number = 8): number => 
   return Math.round(value * multiplier) / multiplier;
 };
 
-export const calculatePnl = (
+export const calculateGrossPnl = (
   entryPrice: number,
   exitPrice: number,
   quantity: number,

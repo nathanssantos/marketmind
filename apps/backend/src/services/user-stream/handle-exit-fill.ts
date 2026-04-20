@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets } from '../../db/schema';
-import { calculatePnl } from '../../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { getOrderEntryFee, getAllTradeFeesForPosition, getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';

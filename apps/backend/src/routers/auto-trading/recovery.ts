@@ -12,7 +12,7 @@ import { getMinNotionalFilterService } from '../../services/min-notional-filter'
 import { positionMonitorService } from '../../services/position-monitor';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
-import { calculatePnl } from '../../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { log } from './utils';
 
 export const recoveryRouter = router({

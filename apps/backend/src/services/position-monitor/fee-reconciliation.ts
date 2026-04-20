@@ -1,6 +1,6 @@
 import type { TradeExecution, Wallet } from '../../db/schema';
 import { getFuturesClient } from '../../exchange';
-import { calculatePnl, roundToDecimals } from '../../utils/formatters';
+import { calculateGrossPnl, roundToDecimals } from '../../utils/formatters';
 import { serializeError } from '../../utils/errors';
 import { logger } from '../logger';
 
@@ -21,7 +21,7 @@ const recalcPnl = (
   fees: number,
   accumulatedFunding: number,
 ): { pnl: number; pnlPercent: number } => {
-  const grossPnl = calculatePnl(entryPrice, exitPrice, quantity, side);
+  const grossPnl = calculateGrossPnl(entryPrice, exitPrice, quantity, side);
   const pnl = roundToDecimals(grossPnl - fees + accumulatedFunding, 8);
   const pnlPercentCalc = roundToDecimals(((exitPrice - entryPrice) / entryPrice) * 100, 4);
   const pnlPercent = side === 'LONG' ? pnlPercentCalc : -pnlPercentCalc;

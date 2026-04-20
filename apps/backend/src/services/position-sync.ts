@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
-import { calculatePnl } from '../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition, getAllTradeFeesForPosition } from './binance-futures-client';
 import { getBinanceFuturesDataService } from './binance-futures-data';
