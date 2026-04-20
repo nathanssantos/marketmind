@@ -3,7 +3,7 @@ import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import { computeMulti, computeSingle } from '@renderer/workers/pineWorkerService';
 import { getNativeEvaluator, type NativeEvaluatorContext } from '@renderer/lib/indicators/nativeEvaluators';
-import type { IndicatorInstance } from '@renderer/store/indicatorStore';
+import { useIndicatorStore, type IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
 import type { MutableRefObject } from 'react';
@@ -137,19 +137,16 @@ const syncLiveData = (
 
 export const useGenericChartIndicators = (
   klines: Kline[],
-  instances: IndicatorInstance[],
   externalCtx: NativeEvaluatorContext = {},
   managerRef?: MutableRefObject<CanvasManager | null>,
   liveDataTarget?: LiveDataTarget | null,
 ): UseGenericChartIndicatorsResult => {
-  const batches = useMemo(() => buildBatches(instances), [instances]);
+  const initialInstances = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
+  const instancesRef = useRef<IndicatorInstance[]>(initialInstances.current);
+  const batchesRef = useRef<BatchKey[]>(buildBatches(initialInstances.current));
 
   const klinesRef = useRef(klines);
   klinesRef.current = klines;
-  const instancesRef = useRef(instances);
-  instancesRef.current = instances;
-  const batchesRef = useRef(batches);
-  batchesRef.current = batches;
   const ctxRef = useRef<NativeEvaluatorContext>(externalCtx);
   ctxRef.current = externalCtx;
   const managerRefStable = useRef(managerRef);
@@ -234,8 +231,19 @@ export const useGenericChartIndicators = (
   }, [externalCtx]);
 
   useEffect(() => {
+    const unsubscribe = useIndicatorStore.subscribe((state) => {
+      const next = state.instances;
+      if (next === instancesRef.current) return;
+      instancesRef.current = next;
+      batchesRef.current = buildBatches(next);
+      runCompute();
+    });
+    return unsubscribe;
+  }, [runCompute]);
+
+  useEffect(() => {
     runCompute();
-  }, [batches, klinesSignature, ctxSignature, runCompute]);
+  }, [klinesSignature, ctxSignature, runCompute]);
 
   const lastTickKeyRef = useRef<string>('');
   useEffect(() => {

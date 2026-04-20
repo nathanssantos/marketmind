@@ -45,7 +45,7 @@ export const useOrderLinesRenderer = (
   hasTradingEnabled: boolean,
   hoveredOrderIdRef: RefObject<string | null>,
   backendExecutions: BackendExecution[] = [],
-  pendingSetups: TradingSetup[] = [],
+  pendingSetupsRef?: RefObject<TradingSetup[]>,
   showProfitLossAreas: boolean = true,
   orderLoadingMapRef?: RefObject<Map<string, number>>,
   orderFlashMapRef?: RefObject<Map<string, number>>,
@@ -102,6 +102,7 @@ export const useOrderLinesRenderer = (
   const tsCloseButtonsRef = useRef<Array<{ x: number; y: number; size: number }>>([]);
 
   const renderOrderLines = (): boolean => {
+    const pendingSetups = pendingSetupsRef?.current ?? [];
     const hasOrders = activeOrders.length > 0;
     const hasPendingSetups = pendingSetups.filter(s => s.visible).length > 0;
     if (!manager || (!hasOrders && !hasPendingSetups)) return false;
