@@ -92,7 +92,7 @@ export const renderORB: GenericRenderer = (ctx, input) => {
 
   const orbPeriodMinutes =
     (getInstanceParam<number>(input.instance, input.definition, 'orbPeriodMinutes') ??
-      DEFAULT_ORB_PERIOD_MINUTES) as number;
+      DEFAULT_ORB_PERIOD_MINUTES);
 
   const zones = buildORBZones(events, klines, orbPeriodMinutes);
   if (zones.length === 0) return;

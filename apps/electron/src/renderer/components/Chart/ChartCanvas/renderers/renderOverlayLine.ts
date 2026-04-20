@@ -18,7 +18,7 @@ export const renderOverlayLine: GenericRenderer = (ctx, input) => {
   if (visibleEnd <= visibleStart) return;
 
   const color = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_OVERLAY_COLOR;
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH);
 
   const outputs = input.definition.outputs;
   const primaryOutput = outputs[0]?.key;

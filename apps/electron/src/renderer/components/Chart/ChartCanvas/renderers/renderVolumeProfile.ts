@@ -113,13 +113,13 @@ export const renderVolumeProfile: GenericRenderer = (ctx, input) => {
   const end = Math.min(klines.length, Math.ceil(viewport.end) + 1);
 
   const numBuckets =
-    (getInstanceParam<number>(input.instance, input.definition, 'numBuckets') ?? DEFAULT_NUM_BUCKETS) as number;
+    (getInstanceParam<number>(input.instance, input.definition, 'numBuckets') ?? DEFAULT_NUM_BUCKETS);
   const maxBarWidth =
-    (getInstanceParam<number>(input.instance, input.definition, 'maxBarWidth') ?? DEFAULT_MAX_BAR_WIDTH) as number;
+    (getInstanceParam<number>(input.instance, input.definition, 'maxBarWidth') ?? DEFAULT_MAX_BAR_WIDTH);
   const opacity =
-    (getInstanceParam<number>(input.instance, input.definition, 'opacity') ?? DEFAULT_OPACITY * 100) as number / 100;
+    (getInstanceParam<number>(input.instance, input.definition, 'opacity') ?? DEFAULT_OPACITY * 100) / 100;
   const valueAreaPercent =
-    (getInstanceParam<number>(input.instance, input.definition, 'valueAreaPercent') ?? DEFAULT_VALUE_AREA_PERCENT) as number;
+    (getInstanceParam<number>(input.instance, input.definition, 'valueAreaPercent') ?? DEFAULT_VALUE_AREA_PERCENT);
   void valueAreaPercent;
 
   const profile = buildProfile(klines, start, end, numBuckets);

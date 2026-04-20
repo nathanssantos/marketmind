@@ -255,8 +255,7 @@ export class CanvasManager {
     const newLast = klines[klines.length - 1];
 
     const changed =
-      this.klines.length !== klines.length || !oldLast || !newLast ||
-      oldLast.openTime !== newLast.openTime || oldLast.open !== newLast.open ||
+      this.klines.length !== klines.length || !oldLast || oldLast.openTime !== newLast?.openTime || oldLast.open !== newLast.open ||
       oldLast.high !== newLast.high || oldLast.low !== newLast.low ||
       oldLast.close !== newLast.close || oldLast.volume !== newLast.volume;
 

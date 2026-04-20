@@ -8,7 +8,7 @@ const LOWER_KEYS = ['lower', 'bottom', 'low'];
 
 const pickSeries = (values: Record<string, IndicatorValueSeries>, candidates: string[]): IndicatorValueSeries | null => {
   for (const key of candidates) {
-    if (values[key]) return values[key]!;
+    if (values[key]) return values[key];
   }
   return null;
 };
@@ -46,7 +46,7 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
   if (visibleEnd <= visibleStart) return;
 
   const baseColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? INDICATOR_COLORS.BOLLINGER_MIDDLE;
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? INDICATOR_LINE_WIDTHS.OVERLAY) as number;
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? INDICATOR_LINE_WIDTHS.OVERLAY);
 
   const upperPts: Pt[] = [];
   const middlePts: Pt[] = [];

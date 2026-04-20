@@ -26,7 +26,7 @@ export class PanelManager {
       return false;
     }
 
-    if (!existingPanel || existingPanel.height !== height) {
+    if (existingPanel?.height !== height) {
       this.cachedTotalPanelHeight += height - oldHeight;
       this.panels.set(panelId, { id: panelId, height, order: panelOrder });
       return true;

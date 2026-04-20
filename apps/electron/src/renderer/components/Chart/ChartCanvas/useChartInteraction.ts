@@ -342,13 +342,13 @@ export const useChartInteraction = ({
       return;
     }
 
-    if (gridInteraction && gridInteraction.handleMouseDown(mouseX, mouseY)) {
+    if (gridInteraction?.handleMouseDown(mouseX, mouseY)) {
       event.preventDefault();
       event.stopPropagation();
       return;
     }
 
-    if (drawingInteraction && drawingInteraction.handleMouseDown(mouseX, mouseY)) {
+    if (drawingInteraction?.handleMouseDown(mouseX, mouseY)) {
       event.preventDefault();
       event.stopPropagation();
       return;

@@ -60,7 +60,7 @@ export const useLayerCache = ({
     if (!isOffscreenCanvasSupported()) return null;
 
     const existing = cacheRef.current[layerId];
-    if (existing && existing.width === width && existing.height === height) {
+    if (existing?.width === width && existing.height === height) {
       return existing;
     }
 

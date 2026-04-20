@@ -47,8 +47,7 @@ export const useVirtualizedKlines = ({
     const viewportEnd = Math.ceil(viewport.end);
 
     if (
-      cacheRef.current &&
-      cacheRef.current.klines === klines &&
+      cacheRef.current?.klines === klines &&
       cacheRef.current.buffer === buffer &&
       viewportStart >= cacheRef.current.viewportStart + buffer / 2 &&
       viewportEnd <= cacheRef.current.viewportEnd - buffer / 2

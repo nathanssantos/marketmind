@@ -4,7 +4,7 @@ import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useState } from 'react';
 import { LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
 
-const LayoutTab = memo(function LayoutTab({
+const LayoutTab = memo(({
   id,
   name,
   isActive,
@@ -20,7 +20,7 @@ const LayoutTab = memo(function LayoutTab({
   onActivate: (id: string) => void;
   onDelete: (id: string) => void;
   onRename: (id: string) => void;
-}) {
+}) => {
   return (
     <Menu.Root>
       <Menu.ContextTrigger asChild>
@@ -69,7 +69,7 @@ interface NameDialogState {
 
 const INITIAL_DIALOG: NameDialogState = { isOpen: false, mode: 'create', value: '' };
 
-export const LayoutTabBar = memo(function LayoutTabBar() {
+export const LayoutTabBar = memo(() => {
   const layoutPresets = useLayoutStore((s) => s.layoutPresets);
   const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
   const activeLayoutId = useLayoutStore((s) => {
