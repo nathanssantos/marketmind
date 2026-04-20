@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { PerfSnapshot } from '../../src/renderer/utils/canvas/perfMonitor';
+import { toRawKline, type FixtureKline, type RawKlineRow } from './klineFixtures';
 
 interface E2EIndicatorStoreState {
   addInstance: (input: {
@@ -12,6 +13,18 @@ interface E2EIndicatorStoreState {
   instances: Array<{ id: string; catalogType: string }>;
 }
 
+interface E2EPriceStoreState {
+  updatePriceBatch: (updates: Map<string, number>) => void;
+  updatePrice: (symbol: string, price: number, source: 'chart' | 'websocket' | 'api') => void;
+}
+
+interface E2EQueryClient {
+  setQueriesData: (
+    filters: { predicate?: (query: { queryKey: unknown }) => boolean },
+    updater: (old: unknown) => unknown,
+  ) => void;
+}
+
 declare global {
   interface Window {
     __mmPerf?: {
@@ -22,6 +35,10 @@ declare global {
     __indicatorStore?: {
       getState: () => E2EIndicatorStoreState;
     };
+    __priceStore?: {
+      getState: () => E2EPriceStoreState;
+    };
+    __queryClient?: E2EQueryClient;
   }
 }
 
@@ -177,3 +194,104 @@ export const componentRenderRate = (snap: PerfSnapshot, name: string): number =>
   const entry = snap.componentRenders.find((c) => c.name === name);
   return entry?.ratePerSec ?? 0;
 };
+
+const isKlineListQueryKey = (key: unknown): boolean => {
+  if (!Array.isArray(key)) return false;
+  const head = key[0];
+  return Array.isArray(head) && head[0] === 'kline' && head[1] === 'list';
+};
+
+/**
+ * Push a batch of price updates through usePriceStore.updatePriceBatch.
+ * Exercises the sidebar/portfolio re-render path (usePricesForSymbols) and
+ * ChartCanvas's imperative subscribe callback without triggering chart data re-fetch.
+ */
+export const pushPriceTicks = async (page: Page, ticks: Record<string, number>): Promise<void> => {
+  await page.evaluate((payload) => {
+    const store = window.__priceStore;
+    if (!store) throw new Error('price store not exposed on window (VITE_E2E_BYPASS_AUTH not set?)');
+    const map = new Map<string, number>(Object.entries(payload));
+    store.getState().updatePriceBatch(map);
+  }, ticks);
+};
+
+/**
+ * Mutate the latest (current) kline inside the React Query cache for all
+ * `kline.list` queries. Patches close/volume and widens high/low as needed.
+ * Returns the number of caches updated.
+ */
+export const updateLatestKline = async (
+  page: Page,
+  patch: { close: number; volume?: number },
+): Promise<number> =>
+  page.evaluate((p) => {
+    const qc = window.__queryClient;
+    if (!qc) throw new Error('queryClient not exposed on window (VITE_E2E_BYPASS_AUTH not set?)');
+    let touched = 0;
+    qc.setQueriesData(
+      {
+        predicate: (q: { queryKey: unknown }) => {
+          const key = q.queryKey;
+          return (
+            Array.isArray(key) &&
+            Array.isArray(key[0]) &&
+            (key[0] as unknown[])[0] === 'kline' &&
+            (key[0] as unknown[])[1] === 'list'
+          );
+        },
+      },
+      (old: unknown) => {
+        if (!Array.isArray(old) || old.length === 0) return old;
+        touched += 1;
+        const rows = old as Array<Record<string, string | number>>;
+        const last = rows[rows.length - 1];
+        if (!last) return old;
+        const newClose = String(p.close);
+        const newHigh = Math.max(parseFloat(String(last.high)), p.close);
+        const newLow = Math.min(parseFloat(String(last.low)), p.close);
+        const patched: Record<string, string | number> = {
+          ...last,
+          close: newClose,
+          high: String(newHigh),
+          low: String(newLow),
+        };
+        if (typeof p.volume === 'number') patched.volume = String(p.volume);
+        return [...rows.slice(0, -1), patched];
+      },
+    );
+    return touched;
+  }, patch);
+
+/**
+ * Append a new kline to every `kline.list` cache entry. The fixture is
+ * pre-stringified to match the raw-row shape used by the tRPC mock.
+ */
+export const appendKline = async (page: Page, kline: FixtureKline): Promise<number> => {
+  const raw: RawKlineRow = toRawKline(kline);
+  return page.evaluate((rawRow) => {
+    const qc = window.__queryClient;
+    if (!qc) throw new Error('queryClient not exposed on window (VITE_E2E_BYPASS_AUTH not set?)');
+    let touched = 0;
+    qc.setQueriesData(
+      {
+        predicate: (q: { queryKey: unknown }) => {
+          const key = q.queryKey;
+          return (
+            Array.isArray(key) &&
+            Array.isArray(key[0]) &&
+            (key[0] as unknown[])[0] === 'kline' &&
+            (key[0] as unknown[])[1] === 'list'
+          );
+        },
+      },
+      (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        touched += 1;
+        return [...old, rawRow];
+      },
+    );
+    return touched;
+  }, raw);
+};
+
+export { isKlineListQueryKey };

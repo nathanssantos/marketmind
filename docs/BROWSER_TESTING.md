@@ -52,13 +52,65 @@ pnpm --filter @marketmind/electron test:perf
   - **5-panel baseline** — macd + rsi + stoch + adx + bollingerBands; asserts fps ≥ 30, slowest section ≤ 20 ms, regression vs baseline ≤ 25 %
   - **overlay-only baseline** — sma + ema + bollingerBands; asserts fps ≥ 40, slowest section ≤ 15 ms
   - **sanity** — adds the 5-panel set, asserts no console errors
+- `apps/electron/e2e/perf/chart-hotpath.spec.ts` — hot-path regression tests that exercise real-world data churn (see **Hot-path scenarios** below)
 - `apps/electron/e2e/perf/baseline.json` — committed baseline numbers; update via `pnpm --filter @marketmind/electron test:perf:update`
 - `apps/electron/e2e/perf/last-run.json` — written by each run, compared against baseline by `scripts/perf/compare-baseline.ts`
 - `apps/electron/e2e/helpers/`
   - `trpcMock.ts` — intercepts `**/trpc/**`, returns canned responses (auth, wallet, trading, kline, …). `kline.list` respects `input.limit`.
-  - `klineFixtures.ts` — `generateKlines({count, seed, basePrice, volatility, interval, symbol, endTime})` with mulberry32 RNG
-  - `chartTestSetup.ts` — `enablePerfOverlay`, `addIndicators`, `clearIndicators`, `waitForChartReady`, `waitForFrames`, `readPerfSnapshot`, `slowestSectionMs`, `componentRenderRate`
+  - `klineFixtures.ts` — `generateKlines({count, seed, basePrice, volatility, interval, symbol, endTime})` with mulberry32 RNG. Exports `toRawKline()` for shared raw-row serialization.
+  - `chartTestSetup.ts` — `enablePerfOverlay`, `addIndicators`, `clearIndicators`, `waitForChartReady`, `waitForFrames`, `driveFrames`, `readPerfSnapshot`, `slowestSectionMs`, `componentRenderRate`, plus the hot-path drivers `pushPriceTicks`, `updateLatestKline`, `appendKline`
   - `consoleCapture.ts` — captures `console.error/warn` via init script; `filterNoiseFromErrors` drops known networking noise
+
+### Hot-path scenarios
+
+The hot-path suite targets the render paths that dominate real trading sessions — price tick storms, current-bar updates, and new-bar appends. Each test sets up overlay indicators, warms up, resets the monitor, then interleaves data mutations with driven frames. Assertions are deliberately loose (fps ≥ 20, slowest section ≤ 25ms) so the regression signal is in the baseline delta, not the thresholds.
+
+| Scenario | Driver | What it stresses |
+|---|---|---|
+| `price-tick-storm` | `pushPriceTicks(page, {sym: price})` at ~100 Hz for 10 symbols | `usePricesForSymbols` subscribers, chart imperative subscribe callback. Catches regressions where a component starts subscribing to `usePriceStore` via a selector. |
+| `kline-replace-loop` | `updateLatestKline(page, {close, volume})` every 100ms | React Query `kline.list` cache mutation → `useKlinePagination.allKlines` → ChartCanvas re-render. Catches cache-update cost regressions. |
+| `kline-append` | `appendKline(page, FixtureKline)` every 500ms | Same cache path but array grows (new-bar case). |
+
+**Driver helper contract.** All drivers are `page.evaluate` wrappers over `window.__*` stores:
+- `pushPriceTicks` uses `window.__priceStore.getState().updatePriceBatch(Map)`. Note: `usePriceStore` is **not** subscribed via selectors by `ChartCanvas` — the chart uses an imperative `subscribe()` callback — so this scenario primarily stresses the store itself and any React selectors in sibling components.
+- `updateLatestKline` / `appendKline` mutate the React Query cache via `window.__queryClient.setQueriesData({predicate})`. The predicate matches any query keyed on `['kline', 'list']`.
+
+**Running diagnose mode.** To dump the top-5 slowest sections per scenario into `diagnose-<timestamp>.json`:
+
+```bash
+pnpm --filter @marketmind/electron test:perf:diagnose
+```
+
+Output lands next to `baseline.json` and is git-ignored. Use it to point at real bottlenecks after a failing baseline comparison.
+
+### Store exposures for tests
+
+The harness relies on renderer-side "bridges" installed only when `VITE_E2E_BYPASS_AUTH=true`:
+
+| Exposure | Source | Used by |
+|---|---|---|
+| `window.__mmPerf` | `utils/canvas/perfMonitor.ts` (unconditional — only surfaces data when the `chart.perf` flag is on) | `readPerfSnapshot`, `resetPerfMonitor` |
+| `window.__indicatorStore` | `utils/e2eBridge.ts` | `addIndicators`, `clearIndicators` |
+| `window.__preferencesStore` | `utils/e2eBridge.ts` | planned: preference-driven re-render tests |
+| `window.__priceStore` | `utils/e2eBridge.ts` | `pushPriceTicks` |
+| `window.__queryClient` | `components/TrpcProvider.tsx` effect | `updateLatestKline`, `appendKline` |
+
+The `e2eBridge.ts` exposures and the `TrpcProvider` queryClient bridge are gated on `IS_E2E_BYPASS_AUTH`; prod builds dead-code-eliminate both via Vite's `import.meta.env.VITE_*` inlining.
+
+### Reading perfMonitor output
+
+`readPerfSnapshot(page)` returns `PerfSnapshot`:
+- `enabled` — mirrors `localStorage('chart.perf') === '1'`. Always assert this is `true` first; a `false` run means the overlay flag didn't stick (the helper `refreshPerfFlag` resyncs it after navigation).
+- `fps` — rolling 1s window. `driveFrames` paces synthetic mousemove events at rAF rate, which caps effective framerate around 25-30 in headless Chromium. Don't chase higher — assert `≥ 20`.
+- `lastFrameMs` — wall time of most recent frame. Spikes here point at per-frame stalls.
+- `sections[]` — sorted by `lastMs` desc. Named per-pass costs (`klines`, `overlayIndicators`, `panelIndicators`, `grid`, `orderLines`, …). First entry is the slowest; assert `slowestSectionMs(snap) ≤ 25` as a floor, widen per scenario only when justified.
+- `componentRenders[]` — sorted by `ratePerSec` desc. Use `componentRenderRate(snap, 'ChartCanvas')` to read a specific component's rate. Always assert on rate, not absolute count.
+
+### Troubleshooting low FPS in tests
+
+- **Use `driveFrames`, not `waitForFrames`, during measurement.** `waitForFrames` only awaits rAF ticks — the chart's render loop marks dirty on pointer events, so without synthetic mousemove the draw never runs. `driveFrames` dispatches mousemove on every frame; that's what exercises the pipeline. `waitForFrames` is still fine for post-mount settling where no measurement happens.
+- **Dev server reuse.** `playwright.config.ts` has `reuseExistingServer: !process.env.CI`. If you already have a dev server on 5173 that was started *without* `VITE_E2E_BYPASS_AUTH=true`, the harness will reuse it and every bridge will be missing. Either kill the local dev server, or run the perf project on an isolated port: `PLAYWRIGHT_WEB_PORT=5190 pnpm --filter @marketmind/electron test:perf`.
+- **Baseline thrash.** Commit only measured numbers. If `test:perf:update` is run after a *regression* it will silently bless it — review the delta first.
 
 ### How the renderer wiring works
 
@@ -128,3 +180,4 @@ Slower than Layer 2 (~30 s boot). Only covers what the Vite renderer path can't:
 - **Auth bypass does nothing** — the webServer in `playwright.config.ts` sets `VITE_E2E_BYPASS_AUTH=true`. If you run the dev server manually, export it yourself: `VITE_E2E_BYPASS_AUTH=true pnpm dev:renderer`.
 - **Klines don't show** — `trpcMock.ts` has to be installed *before* `page.goto('/')`. Install it in `beforeEach` and always await the install promise.
 - **`window.__indicatorStore` is undefined** — the bridge only installs when the bypass flag is on. Check `localStorage` isn't interfering and that `installE2EBridge()` is called from `index.tsx`.
+- **`window.__queryClient` is undefined** — the queryClient bridge runs inside a `useEffect` in `TrpcProvider`, so it needs one paint to be available. `waitForChartReady` already covers this. Same root cause as the indicator-store miss: reusing a dev server that wasn't started with the bypass flag.
