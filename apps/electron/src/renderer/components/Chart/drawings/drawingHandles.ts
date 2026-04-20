@@ -1,4 +1,4 @@
-import type { Drawing, CoordinateMapper, ChannelDrawing, PitchforkDrawing, FibonacciDrawing, PencilDrawing, HighlighterDrawing, LongPositionDrawing, ShortPositionDrawing } from '@marketmind/chart-studies';
+import type { Drawing, CoordinateMapper, ChannelDrawing, PitchforkDrawing, PencilDrawing, HighlighterDrawing } from '@marketmind/chart-studies';
 import { HANDLE_RADIUS, DRAWING_COLORS } from '@marketmind/chart-studies';
 
 const FULL_CIRCLE = Math.PI * 2;
@@ -32,7 +32,7 @@ const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoin
   }
 
   if (drawing.type === 'fibonacci') {
-    const d = drawing as FibonacciDrawing;
+    const d = drawing;
     return [
       { x: mapper.indexToCenterX(d.swingLowIndex), y: mapper.priceToY(d.swingLowPrice) },
       { x: mapper.indexToCenterX(d.swingHighIndex), y: mapper.priceToY(d.swingHighPrice) },
@@ -56,7 +56,7 @@ const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoin
   }
 
   if (drawing.type === 'longPosition' || drawing.type === 'shortPosition') {
-    const d = drawing as LongPositionDrawing | ShortPositionDrawing;
+    const d = drawing;
     const x = mapper.indexToCenterX(d.entryIndex);
     return [
       { x, y: mapper.priceToY(d.entryPrice) },

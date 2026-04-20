@@ -16,7 +16,13 @@ export default [
     },
     {
         files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
-        ignores: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
+        ignores: [
+            '**/*.test.{ts,tsx}',
+            '**/*.browser.test.{ts,tsx}',
+            'src/tests/**',
+            'e2e/**',
+            'electron-builder.js',
+        ],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -88,6 +94,7 @@ export default [
             ],
 
             // General rules
+            'no-undef': 'off',
             'no-console': [
                 'warn',
                 {
@@ -96,7 +103,7 @@ export default [
             ],
             'prefer-const': 'error',
             'no-var': 'error',
-            'eqeqeq': ['error', 'always'],
+            'eqeqeq': ['error', 'always', { null: 'ignore' }],
             'curly': ['error', 'multi-line'],
             'prefer-arrow-callback': 'warn',
             'prefer-template': 'warn',
@@ -115,7 +122,13 @@ export default [
         },
     },
     {
-        files: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
+        files: [
+            '**/*.test.{ts,tsx}',
+            '**/*.browser.test.{ts,tsx}',
+            'src/tests/**',
+            'e2e/**/*.{ts,tsx}',
+            'electron-builder.js',
+        ],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -151,6 +164,9 @@ export default [
                 },
             ],
             '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/consistent-type-imports': 'off',
+            'no-undef': 'off',
+            'eqeqeq': ['error', 'always', { null: 'ignore' }],
             'no-console': 'off',
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off',

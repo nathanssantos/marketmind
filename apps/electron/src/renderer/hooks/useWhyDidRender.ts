@@ -19,7 +19,7 @@ export const useWhyDidRender = (componentName: string, props: PropsBag): void =>
         }
       }
       if (Object.keys(changed).length > 0) {
-        // eslint-disable-next-line no-console
+         
         console.log(`[why-did-render] ${componentName}`, changed);
       }
     }

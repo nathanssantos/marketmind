@@ -45,7 +45,7 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
   const color = PANE_LINE_COLORS[paneId]
     ?? getInstanceParam<string>(input.instance, input.definition, 'color')
     ?? DEFAULT_LINE_COLOR;
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH);
 
   const oversold = input.definition.defaultThresholds?.oversold;
   const overbought = input.definition.defaultThresholds?.overbought;

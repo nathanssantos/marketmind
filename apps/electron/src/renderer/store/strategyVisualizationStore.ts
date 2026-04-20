@@ -1,5 +1,4 @@
 import type {
-  CandleRole,
   HighlightedCandle,
   StrategyVisualizationData,
 } from '@marketmind/types';
@@ -37,7 +36,7 @@ const createHighlightedCandles = (
   return data.education.candlePattern.candles.map((candle) => ({
     index: baseIndex + candle.offset,
     offset: candle.offset,
-    role: candle.role as CandleRole,
+    role: candle.role,
   }));
 };
 

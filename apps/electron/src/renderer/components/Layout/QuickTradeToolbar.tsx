@@ -390,7 +390,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       <ConfirmationDialog
         isOpen={showReverseConfirm}
         onClose={() => setShowReverseConfirm(false)}
-        onConfirm={handleReverseConfirm}
+        onConfirm={() => { void handleReverseConfirm(); }}
         title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
         description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
           side: positionSide,
@@ -406,7 +406,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       <ConfirmationDialog
         isOpen={showCloseConfirm}
         onClose={() => setShowCloseConfirm(false)}
-        onConfirm={handleClosePositionConfirm}
+        onConfirm={() => { void handleClosePositionConfirm(); }}
         title={t('futures.closePositionConfirmTitle', 'Close Position?')}
         description={t('futures.closePositionConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} at market price and cancel all orders (SL, TP, entries)?', {
           side: positionSide,
@@ -421,7 +421,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       <ConfirmationDialog
         isOpen={showCancelOrdersConfirm}
         onClose={() => setShowCancelOrdersConfirm(false)}
-        onConfirm={handleCancelOrdersConfirm}
+        onConfirm={() => { void handleCancelOrdersConfirm(); }}
         title={t('futures.cancelOrdersConfirmTitle', 'Cancel All Orders?')}
         description={t('futures.cancelOrdersConfirmDescription', 'Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected.', { symbol })}
         confirmLabel={t('futures.cancelOrders', 'Cancel Orders')}
@@ -440,7 +440,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           <ConfirmationDialog
             isOpen
             onClose={() => setPendingOrder(null)}
-            onConfirm={handleConfirmOrder}
+            onConfirm={() => { void handleConfirmOrder(); }}
             title={t('chart.quickTrade.confirmOrder', 'Confirm Order')}
             confirmLabel={isBuy ? t('chart.quickTrade.confirmBuy', 'Confirm Buy') : t('chart.quickTrade.confirmSell', 'Confirm Sell')}
             colorPalette={isBuy ? 'green' : 'red'}

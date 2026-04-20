@@ -11,7 +11,7 @@ interface DomLadderProps {
 
 const LEVEL_HEIGHT = 20;
 
-export const DomLadder = memo(function DomLadder({ bids, asks, currentPrice, onPriceClick }: DomLadderProps) {
+export const DomLadder = memo(({ bids, asks, currentPrice, onPriceClick }: DomLadderProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const visibleAsks = asks;
   const visibleBids = bids;

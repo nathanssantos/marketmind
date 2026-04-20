@@ -24,8 +24,7 @@ const getCachedVolumeMA = (klines: Kline[], period: number): VolumeMovingAverage
   if (length === 0) return { values: [], period };
   const last = klines[length - 1]!;
   if (
-    volumeMACache
-    && volumeMACache.klines === klines
+    volumeMACache?.klines === klines
     && volumeMACache.length === length
     && volumeMACache.lastCloseTime === last.closeTime
     && volumeMACache.lastVolume === last.volume

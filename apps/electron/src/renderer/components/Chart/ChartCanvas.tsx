@@ -16,12 +16,14 @@ import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartPerfOverlay } from './ChartPerfOverlay';
 import { ChartTooltip } from './ChartTooltip';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
+import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
@@ -140,7 +142,7 @@ export const ChartCanvas = ({
     resolvedVolumePerBar,
   } = tradingData;
 
-  const managerRef = useRef<import('@renderer/utils/canvas/CanvasManager').CanvasManager | null>(null);
+  const managerRef = useRef<CanvasManager | null>(null);
 
   useEffect(() => {
     const unsubscribe = useSetupStore.subscribe((state) => {
@@ -207,7 +209,7 @@ export const ChartCanvas = ({
 
   const tradingActions = useChartTradingActions({
     symbol, marketType, manager, backendWalletId,
-    backendExecutions: backendExecutions as any, allExecutions,
+    backendExecutions: backendExecutions as unknown as BackendExecution[] | undefined, allExecutions,
     setOptimisticExecutions, orderLoadingMapRef, orderFlashMapRef,
     closingSnapshotsRef, setClosingVersion, applyOptimistic, clearOptimistic,
     latestKlinesPriceRef, setOrderToClose,
@@ -216,8 +218,8 @@ export const ChartCanvas = ({
   const { handleLongEntry, handleShortEntry, handleOrderCloseRequest, handleConfirmCloseOrder, handleUpdateOrder, handleGridConfirm, draggableOrders, updateTsConfig, warning: tradingWarning } = tradingActions;
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
-    onLongEntry: handleLongEntry,
-    onShortEntry: handleShortEntry,
+    onLongEntry: (price: number) => { void handleLongEntry(price); },
+    onShortEntry: (price: number) => { void handleShortEntry(price); },
     onEscape: () => {
       if (orderPreviewRef.current !== null) {
         orderPreviewRef.current = null;
@@ -323,7 +325,8 @@ export const ChartCanvas = ({
     hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef,
     setTooltipData, setOrderToClose: handleOrderCloseRequest,
     getHoveredOrder, getEventAtPosition, getClickedOrderId, getSLTPAtPosition,
-    onLongEntry: handleLongEntry, onShortEntry: handleShortEntry,
+    onLongEntry: (price: number) => { void handleLongEntry(price); },
+    onShortEntry: (price: number) => { void handleShortEntry(price); },
     orderDragHandler, gridInteraction: isGridModeActive ? gridInteraction : undefined,
     drawingInteraction, cursorManager,
     handleMouseMove, handleMouseDown, handleMouseUp, handleMouseLeave,
@@ -387,7 +390,7 @@ export const ChartCanvas = ({
       <ChartCloseDialog
         orderToClose={orderToClose}
         onOpenChange={(open) => !open && setOrderToClose(null)}
-        onConfirmClose={() => handleConfirmCloseOrder(orderToClose)}
+        onConfirmClose={() => { void handleConfirmCloseOrder(orderToClose); }}
         allExecutions={allExecutions}
         manager={manager}
       />

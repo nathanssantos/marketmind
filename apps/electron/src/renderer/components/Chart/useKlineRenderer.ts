@@ -67,7 +67,7 @@ export const useKlineRenderer = ({
     let avgVolume = 0;
     if (allKlines.length > 0) {
       const cache = avgCacheRef.current;
-      if (cache && cache.klines === allKlines && cache.length === allKlines.length) {
+      if (cache?.klines === allKlines && cache.length === allKlines.length) {
         avgTrades = cache.avgTrades;
         avgVolume = cache.avgVolume;
       } else {

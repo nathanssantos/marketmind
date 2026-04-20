@@ -80,7 +80,7 @@ export const drawCurrentPriceTag = (
   ctx.fillText(priceText, x + labelPadding, y);
 
   if (timerText)
-    ctx.fillText(timerText, x + labelPadding, y + priceHeight / 2 + timerHeight / 2);
+    {ctx.fillText(timerText, x + labelPadding, y + priceHeight / 2 + timerHeight / 2);}
 
   ctx.restore();
 };
@@ -98,9 +98,9 @@ export const formatTimerText = (seconds: number): string => {
   const secs = seconds % 60;
 
   if (days > 0)
-    return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    {return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;}
   if (hours > 0)
-    return `${hours}h ${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    {return `${hours}h ${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;}
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 

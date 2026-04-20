@@ -20,10 +20,10 @@ export const TextEditOverlay = ({ manager, symbol, interval }: TextEditOverlayPr
 
   const selectedDrawing = useMemo(() => drawings?.find(d => d.id === selectedDrawingId) ?? null, [drawings, selectedDrawingId]);
   const isTextDrawing = selectedDrawing?.type === 'text';
-  const textDrawing = isTextDrawing ? (selectedDrawing as TextDrawing) : null;
+  const textDrawing = isTextDrawing ? (selectedDrawing) : null;
 
   useEffect(() => {
-    if (textDrawing && textDrawing.text === '' && textDrawing.id !== editingId) {
+    if (textDrawing?.text === '' && textDrawing.id !== editingId) {
       setEditing(true);
       setEditingId(textDrawing.id);
     }

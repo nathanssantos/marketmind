@@ -7,13 +7,13 @@ import type { MarketType } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { LuPlus, LuX } from 'react-icons/lu';
 
-const DailyChangeBadge = memo(function DailyChangeBadge({
+const DailyChangeBadge = memo(({
   symbol,
   marketType,
 }: {
   symbol: string;
   marketType: MarketType;
-}) {
+}) => {
   const pct = useDailyChangePct(symbol, marketType);
   if (pct === null) return null;
   const isPositive = pct >= 0;
@@ -30,7 +30,7 @@ const DailyChangeBadge = memo(function DailyChangeBadge({
   );
 });
 
-const SymbolTab = memo(function SymbolTab({
+const SymbolTab = memo(({
   id,
   symbol,
   marketType,
@@ -46,7 +46,7 @@ const SymbolTab = memo(function SymbolTab({
   canClose: boolean;
   onActivate: (id: string) => void;
   onClose: (id: string) => void;
-}) {
+}) => {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -87,7 +87,7 @@ const SymbolTab = memo(function SymbolTab({
   );
 });
 
-export const SymbolTabBar = memo(function SymbolTabBar() {
+export const SymbolTabBar = memo(() => {
   const symbolTabs = useLayoutStore((s) => s.symbolTabs);
   const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
   const setActiveSymbolTab = useLayoutStore((s) => s.setActiveSymbolTab);
