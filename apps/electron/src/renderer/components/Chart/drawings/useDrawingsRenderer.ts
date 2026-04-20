@@ -260,8 +260,8 @@ const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: numbe
 
   if (SEMI_INFINITE_TYPES.has(drawing.type)) {
     let idx: number;
-    if ('entryIndex' in drawing) idx = (drawing as Drawing & { entryIndex: number }).entryIndex;
-    else if ('startIndex' in drawing) idx = Math.min(drawing.startIndex, (drawing as Drawing & { endIndex: number }).endIndex);
+    if ('entryIndex' in drawing) idx = drawing.entryIndex;
+    else if ('startIndex' in drawing && 'endIndex' in drawing) idx = Math.min(drawing.startIndex, drawing.endIndex);
     else idx = (drawing as Drawing & { index: number }).index;
     return idx <= viewEnd;
   }
