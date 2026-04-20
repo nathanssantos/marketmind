@@ -5,7 +5,6 @@ import {
   createNormalizedValueToY,
   drawHistogramBars,
   drawLineOnPanel,
-  drawPanelBackground,
   drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
@@ -75,8 +74,6 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     if (idx === 0 && userColor) return userColor;
     return FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length] ?? DEFAULT_LINE_COLOR;
   };
-
-  drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
   const oversold = input.definition.defaultThresholds?.oversold;
   const overbought = input.definition.defaultThresholds?.overbought;

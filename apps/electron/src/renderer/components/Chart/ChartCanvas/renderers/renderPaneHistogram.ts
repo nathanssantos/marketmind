@@ -3,7 +3,6 @@ import {
   getCachedVisibleRange,
   createDynamicValueToY,
   drawHistogramBars,
-  drawPanelBackground,
   drawPanelValueTag,
 } from '../../utils/oscillatorRendering';
 import { getOscillatorSetup } from '../../hooks/useOscillatorSetup';
@@ -36,8 +35,6 @@ export const renderPaneHistogram: GenericRenderer = (ctx, input) => {
   const zeroY = valueToY(0);
 
   const positiveColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_POSITIVE_COLOR;
-
-  drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
   drawHistogramBars(
     canvasCtx,
