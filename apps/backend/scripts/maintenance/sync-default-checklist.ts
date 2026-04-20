@@ -87,9 +87,14 @@ const main = async (): Promise<void> => {
         continue;
       }
 
-      if (current.tier !== entry.tier || current.weight !== entry.weight) {
+      if (
+        current.tier !== entry.tier ||
+        current.weight !== entry.weight ||
+        current.threshold !== entry.threshold
+      ) {
         current.tier = entry.tier;
         current.weight = entry.weight;
+        current.threshold = entry.threshold;
         updated++;
       }
     }
