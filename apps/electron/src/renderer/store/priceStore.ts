@@ -91,7 +91,7 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
     set((state) => {
       for (const [symbol, price] of updates) {
         const current = state.prices[symbol];
-        if (current && current.source === 'chart' && now - current.timestamp <= PRICE_STALENESS_MS) continue;
+        if (current?.source === 'chart' && now - current.timestamp <= PRICE_STALENESS_MS) continue;
         state.prices[symbol] = { price, timestamp: now, source: 'websocket' };
       }
     });

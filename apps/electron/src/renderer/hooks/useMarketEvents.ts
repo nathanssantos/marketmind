@@ -32,8 +32,7 @@ export const useMarketEvents = ({
     if (!enabled) return;
 
     const isSameRange =
-      lastFetchRangeRef.current &&
-      lastFetchRangeRef.current.start === startTime &&
+      lastFetchRangeRef.current?.start === startTime &&
       lastFetchRangeRef.current.end === endTime;
 
     if (isSameRange) return;
@@ -68,7 +67,7 @@ export const useMarketEvents = ({
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
 
     fetchTimeoutRef.current = setTimeout(() => {
-      fetchEvents(startTime, endTime);
+      void fetchEvents(startTime, endTime);
     }, REFETCH_DEBOUNCE_MS);
 
     return () => {
@@ -84,7 +83,7 @@ export const useMarketEvents = ({
     const startTime = now - PAST_DAYS_MS;
     const endTime = now + FUTURE_DAYS_MS;
 
-    fetchEvents(startTime, endTime);
+    void fetchEvents(startTime, endTime);
   }, [klines.length, fetchEvents]);
 
   return { events, loading, error, refetch };

@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
       - name: Lint
         run: pnpm run lint
 
@@ -82,11 +85,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
       - name: Run tests
-        run: pnpm test -- --run
+        run: pnpm test
         env:
           DATABASE_URL: postgresql://marketmind:test_password@localhost:5432/marketmind_test
           NODE_ENV: test
+          ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+          SESSION_SECRET: test_session_secret_please_ignore_0000000000
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4

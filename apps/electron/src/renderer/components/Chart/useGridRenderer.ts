@@ -1,6 +1,6 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { drawGrid, drawLine, drawText } from '@renderer/utils/canvas/drawingUtils';
+import { drawGrid } from '@renderer/utils/canvas/drawingUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback, useMemo } from 'react';
@@ -72,30 +72,49 @@ export const useGridRenderer = ({
     const priceRange = maxPrice - minPrice;
     const priceStep = priceRange / (horizontalLines + 1);
 
+    interface LabelTick { label: string; y: number }
+    const ticks: LabelTick[] = [];
     for (let i = 0; i <= horizontalLines + 1; i++) {
       const price = minPrice + i * priceStep;
       const y = manager.priceToY(price);
-
       if (y >= 0 && y <= chartHeight) {
-        drawText(
-          ctx,
-          formatChartPrice(price),
-          chartRightBoundary + 8,
-          y + 1,
-          colors.axisLabel,
-          CHART_CONFIG.AXIS_LABEL_FONT,
-          'left',
-          'middle',
-        );
-
-        drawLine(ctx, chartRightBoundary, y, chartRightBoundary + 5, y, colors.axisLine, 1);
+        ticks.push({ label: formatChartPrice(price), y });
       }
+    }
+
+    if (ticks.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = colors.axisLine;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const t of ticks) {
+        ctx.moveTo(chartRightBoundary, t.y);
+        ctx.lineTo(chartRightBoundary + 5, t.y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = colors.axisLabel;
+      ctx.font = CHART_CONFIG.AXIS_LABEL_FONT;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      for (const t of ticks) {
+        ctx.fillText(t.label, chartRightBoundary + 8, t.y + 1);
+      }
+      ctx.restore();
     }
 
     timeScaleRenderer(ctx, manager, height, chartWidth);
 
-    drawLine(ctx, chartRightBoundary, 0, chartRightBoundary, totalHeight, colors.axisLine, 2);
-    drawLine(ctx, 0, totalHeight, chartRightBoundary, totalHeight, colors.axisLine, 2);
+    ctx.save();
+    ctx.strokeStyle = colors.axisLine;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(chartRightBoundary, 0);
+    ctx.lineTo(chartRightBoundary, totalHeight);
+    ctx.moveTo(0, totalHeight);
+    ctx.lineTo(chartRightBoundary, totalHeight);
+    ctx.stroke();
+    ctx.restore();
   }, [manager, colors, enabled, horizontalLines, verticalLines, gridLineWidth, timeScaleRenderer]);
 
   return { render };

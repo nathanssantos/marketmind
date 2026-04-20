@@ -1,6 +1,6 @@
 import { Box, HStack } from '@chakra-ui/react';
 import { IconButton, TooltipWrapper } from '@renderer/components/ui';
-import type { Drawing, TextDrawing } from '@marketmind/chart-studies';
+import type { Drawing } from '@marketmind/chart-studies';
 import { DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
@@ -45,7 +45,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
 
   const isLocked = selectedDrawing.locked;
   const isText = selectedDrawing.type === 'text';
-  const textDrawing = isText ? (selectedDrawing as TextDrawing) : null;
+  const textDrawing = isText ? (selectedDrawing) : null;
   const currentLineWidth = selectedDrawing.lineWidth ?? DEFAULT_LINE_WIDTH;
 
   return (

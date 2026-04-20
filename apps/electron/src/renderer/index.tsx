@@ -58,7 +58,7 @@ const Root = () => {
   const [adapter, setAdapter] = useState<PlatformAdapter | null>(null);
 
   useEffect(() => {
-    createPlatformAdapter().then(setAdapter);
+    void createPlatformAdapter().then(setAdapter);
   }, []);
 
   if (!adapter) {

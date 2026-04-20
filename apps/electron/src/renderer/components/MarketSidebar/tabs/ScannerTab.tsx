@@ -59,7 +59,7 @@ const ScannerTabComponent = () => {
     setIsBackfilling(true);
     setBackfillProgress({ completed: 0, total: 0 });
     backfillMutation.mutate(
-      { walletId: activeWalletId, interval: timeframe, marketType: marketType as 'SPOT' | 'FUTURES' },
+      { walletId: activeWalletId, interval: timeframe, marketType: marketType },
       {
         onSuccess: (data) => {
           if (data.symbolCount === 0) {
@@ -82,7 +82,7 @@ const ScannerTabComponent = () => {
   const groupedPresets = (presets ?? []).reduce<Record<string, typeof presets>>((acc, preset) => {
     const cat = preset.category;
     if (!acc[cat]) acc[cat] = [];
-    acc[cat]!.push(preset);
+    acc[cat].push(preset);
     return acc;
   }, {});
 
@@ -91,7 +91,7 @@ const ScannerTabComponent = () => {
   };
 
   const handleNavigate = (symbol: string) => {
-    globalActions?.navigateToSymbol(symbol, marketType as 'SPOT' | 'FUTURES');
+    globalActions?.navigateToSymbol(symbol, marketType);
   };
 
   return (

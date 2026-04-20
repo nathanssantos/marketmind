@@ -54,7 +54,7 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
 
   useEffect(() => {
     if (!data) return;
-    setSymbols(data.symbols as string[] ?? []);
+    setSymbols(data.symbols ?? []);
     setEnabledStrategies((data.enabledStrategies ?? ['imbalance']) as ScalpingStrategy[]);
     setDirectionMode((data.directionMode as DirectionMode) ?? 'auto');
     setParams(buildParams(data as unknown as Record<string, unknown>));

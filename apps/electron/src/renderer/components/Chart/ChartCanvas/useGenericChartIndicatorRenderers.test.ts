@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 vi.mock('./renderers', () => {
@@ -18,24 +18,34 @@ vi.mock('./renderers', () => {
   return {
     RENDERER_REGISTRY,
     getRenderer: (kind: string) => RENDERER_REGISTRY[kind as keyof typeof RENDERER_REGISTRY],
+    getCustomRenderer: () => undefined,
     isGenericRenderKind: (kind: string) => kind in RENDERER_REGISTRY,
     __calls: calls,
   };
 });
 
 import { useGenericChartIndicatorRenderers } from './useGenericChartIndicatorRenderers';
-import type { IndicatorInstance } from '@renderer/store/indicatorStore';
+import { useIndicatorStore, type IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
 
 const mockManager = (): CanvasManager => ({
-  getContext: vi.fn(() => ({}) as CanvasRenderingContext2D),
+  getContext: vi.fn(() => ({
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+    fillRect: vi.fn(),
+  }) as unknown as CanvasRenderingContext2D),
   getDimensions: vi.fn(() => ({ chartWidth: 800, chartHeight: 600 })),
   getViewport: vi.fn(() => ({ start: 0, end: 5, klineWidth: 8 })),
   getKlines: vi.fn(() => []),
+  getPanelInfo: vi.fn(() => null),
   indexToX: vi.fn(() => 0),
   priceToY: vi.fn(() => 0),
+  markDirty: vi.fn(),
 }) as unknown as CanvasManager;
 
 const colors = {} as ChartThemeColors;
@@ -49,17 +59,26 @@ const makeInstance = (overrides: Partial<IndicatorInstance>): IndicatorInstance 
   ...overrides,
 });
 
-const outputsMap = (entries: [string, IndicatorOutputs][]): Map<string, IndicatorOutputs> =>
-  new Map(entries);
+const outputsRef = (entries: [string, IndicatorOutputs][]): { current: Map<string, IndicatorOutputs> } => ({
+  current: new Map(entries),
+});
+
+const setInstances = (instances: IndicatorInstance[]): void => {
+  useIndicatorStore.setState({ instances });
+};
 
 describe('useGenericChartIndicatorRenderers', () => {
+  beforeEach(() => {
+    useIndicatorStore.setState({ instances: [] });
+  });
+
   it('returns no-op functions when manager is null', () => {
+    setInstances([makeInstance({ id: 'a' })]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: null,
         colors,
-        instances: [makeInstance({ id: 'a' })],
-        outputs: outputsMap([['a', { value: [1, 2, 3] }]]),
+        outputsRef: outputsRef([['a', { value: [1, 2, 3] }]]),
       }),
     );
     expect(() => result.current.renderAllOverlayIndicators()).not.toThrow();
@@ -71,12 +90,12 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([makeInstance({ id: 'sma1', catalogType: 'sma' })]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [makeInstance({ id: 'sma1', catalogType: 'sma' })],
-        outputs: outputsMap([['sma1', { value: [1, 2, 3] }]]),
+        outputsRef: outputsRef([['sma1', { value: [1, 2, 3] }]]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -88,12 +107,12 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([makeInstance({ id: 'macd1', catalogType: 'macd' })]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [makeInstance({ id: 'macd1', catalogType: 'macd' })],
-        outputs: outputsMap([['macd1', { line: [], signal: [], histogram: [] }]]),
+        outputsRef: outputsRef([['macd1', { line: [], signal: [], histogram: [] }]]),
       }),
     );
     result.current.renderAllPanelIndicators();
@@ -105,12 +124,12 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([makeInstance({ id: 'a', visible: false })]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [makeInstance({ id: 'a', visible: false })],
-        outputs: outputsMap([['a', { value: [] }]]),
+        outputsRef: outputsRef([['a', { value: [] }]]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -122,12 +141,12 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([makeInstance({ id: 'f', catalogType: 'fibonacci', params: {} })]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [makeInstance({ id: 'f', catalogType: 'fibonacci', params: {} })],
-        outputs: outputsMap([['f', {}]]),
+        outputsRef: outputsRef([['f', {}]]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -139,12 +158,12 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([makeInstance({ id: 'sma1', catalogType: 'sma' })]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [makeInstance({ id: 'sma1', catalogType: 'sma' })],
-        outputs: outputsMap([]),
+        outputsRef: outputsRef([]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -156,15 +175,15 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([
+      makeInstance({ id: 'sma1', catalogType: 'sma' }),
+      makeInstance({ id: 'rsi1', catalogType: 'rsi' }),
+    ]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [
-          makeInstance({ id: 'sma1', catalogType: 'sma' }),
-          makeInstance({ id: 'rsi1', catalogType: 'rsi' }),
-        ],
-        outputs: outputsMap([
+        outputsRef: outputsRef([
           ['sma1', { value: [] }],
           ['rsi1', { value: [] }],
         ]),
@@ -179,15 +198,15 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([
+      makeInstance({ id: 'a', catalogType: 'sma' }),
+      makeInstance({ id: 'b', catalogType: 'ema' }),
+    ]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [
-          makeInstance({ id: 'a', catalogType: 'sma' }),
-          makeInstance({ id: 'b', catalogType: 'ema' }),
-        ],
-        outputs: outputsMap([
+        outputsRef: outputsRef([
           ['a', { value: [] }],
           ['b', { value: [] }],
         ]),
@@ -202,15 +221,15 @@ describe('useGenericChartIndicatorRenderers', () => {
     const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
     calls.length = 0;
 
+    setInstances([
+      makeInstance({ id: 'top', catalogType: 'sma', zIndex: 10 }),
+      makeInstance({ id: 'bottom', catalogType: 'sma', zIndex: 1 }),
+    ]);
     const { result } = renderHook(() =>
       useGenericChartIndicatorRenderers({
         manager: mockManager(),
         colors,
-        instances: [
-          makeInstance({ id: 'top', catalogType: 'sma', zIndex: 10 }),
-          makeInstance({ id: 'bottom', catalogType: 'sma', zIndex: 1 }),
-        ],
-        outputs: outputsMap([
+        outputsRef: outputsRef([
           ['top', { value: [] }],
           ['bottom', { value: [] }],
         ]),

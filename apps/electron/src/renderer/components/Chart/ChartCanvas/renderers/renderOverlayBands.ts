@@ -8,7 +8,7 @@ const LOWER_KEYS = ['lower', 'bottom', 'low'];
 
 const pickSeries = (values: Record<string, IndicatorValueSeries>, candidates: string[]): IndicatorValueSeries | null => {
   for (const key of candidates) {
-    if (values[key]) return values[key]!;
+    if (values[key]) return values[key];
   }
   return null;
 };
@@ -29,9 +29,8 @@ const drawPolyline = (ctx: CanvasRenderingContext2D, pts: Pt[], color: string, l
 
 export const renderOverlayBands: GenericRenderer = (ctx, input) => {
   const { manager } = ctx;
-  const dimensions = manager.getDimensions();
   const canvasCtx = manager.getContext();
-  if (!canvasCtx || !dimensions) return;
+  if (!canvasCtx) return;
 
   const viewport = manager.getViewport();
   const klines = manager.getKlines();
@@ -42,13 +41,12 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
   const lowerSeries = pickSeries(input.values, LOWER_KEYS);
   if (!upperSeries || !lowerSeries) return;
 
-  const { chartWidth, chartHeight } = dimensions;
   const visibleStart = Math.max(0, Math.floor(viewport.start));
   const visibleEnd = Math.min(klines.length, Math.ceil(viewport.end));
   if (visibleEnd <= visibleStart) return;
 
   const baseColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? INDICATOR_COLORS.BOLLINGER_MIDDLE;
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? INDICATOR_LINE_WIDTHS.OVERLAY) as number;
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? INDICATOR_LINE_WIDTHS.OVERLAY);
 
   const upperPts: Pt[] = [];
   const middlePts: Pt[] = [];
@@ -67,11 +65,6 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
     }
   }
 
-  canvasCtx.save();
-  canvasCtx.beginPath();
-  canvasCtx.rect(0, 0, chartWidth, chartHeight);
-  canvasCtx.clip();
-
   if (upperPts.length > 1 && lowerPts.length > 1) {
     canvasCtx.fillStyle = INDICATOR_COLORS.BOLLINGER_FILL;
     canvasCtx.beginPath();
@@ -87,6 +80,4 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
   if (middlePts.length > 0) {
     drawPolyline(canvasCtx, middlePts, baseColor, INDICATOR_LINE_WIDTHS.OVERLAY_MIDDLE, true);
   }
-
-  canvasCtx.restore();
 };

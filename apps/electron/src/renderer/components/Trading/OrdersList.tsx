@@ -7,6 +7,7 @@ import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { trpc } from '@renderer/utils/trpc';
 import { useUIStore, type OrdersFilterOption, type OrdersSortOption } from '@renderer/store/uiStore';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import {
   getOrderId,
   isOrderActive,
@@ -21,6 +22,7 @@ import { OrderCard } from './OrderCard';
 import { OrdersTableContent } from './OrdersTableContent';
 
 const OrdersListComponent = () => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('OrdersList');
   const { t } = useTranslation();
   const { success: toastSuccess, error: toastError } = useToast();
   const globalActions = useGlobalActionsOptional();

@@ -1,7 +1,7 @@
 import { Button, Dialog, IconButton, Input, Select } from '@renderer/components/ui';
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import type { Order } from '@marketmind/types';
+import type { Order, OrderSide, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { trpc } from '@renderer/utils/trpc';
@@ -54,7 +54,7 @@ const OrdersDialogComponent = () => {
   const activeWallet = useMemo(() => {
     const w = backendWallets.find((w) => w.id === activeWalletId);
     if (!w) return null;
-    return { id: w.id, currency: (w.currency || 'USDT') as any };
+    return { id: w.id, currency: (w.currency || 'USDT') as WalletCurrency };
   }, [backendWallets, activeWalletId]);
 
   const orders: Order[] = useMemo(() => {
@@ -67,10 +67,10 @@ const OrdersDialogComponent = () => {
       origQty: o.origQty || '0',
       executedQty: o.executedQty || '0',
       cummulativeQuoteQty: '0',
-      status: (o.status || 'NEW') as any,
-      timeInForce: (o.timeInForce || 'GTC') as any,
-      type: (o.type || 'LIMIT') as any,
-      side: o.side as any,
+      status: (o.status || 'NEW') as OrderStatus,
+      timeInForce: (o.timeInForce || 'GTC') as TimeInForce,
+      type: (o.type || 'LIMIT') as OrderType,
+      side: o.side as OrderSide,
       time: typeof o.time === 'number' ? o.time : Date.now(),
       updateTime: typeof o.updateTime === 'number' ? o.updateTime : Date.now(),
       isWorking: o.status === 'NEW' || o.status === 'PARTIALLY_FILLED',
@@ -132,7 +132,7 @@ const OrdersDialogComponent = () => {
       if (filterStatus === 'expired') return order.status === 'EXPIRED' || order.status === 'EXPIRED_IN_MATCH';
       return true;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [orders, filterStatus]);
 
   const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE);

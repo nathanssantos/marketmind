@@ -46,7 +46,7 @@ export const renderIchimoku: GenericRenderer = (ctx, input) => {
     colors.ichimoku?.senkouBFill ??
     DEFAULT_SENKOU_B_FILL;
   const lineWidth =
-    (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
+    (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH);
 
   const { chartWidth, chartHeight } = dimensions;
   const visibleStart = Math.max(0, Math.floor(viewport.start));

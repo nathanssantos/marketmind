@@ -32,7 +32,7 @@ const formatValue = (value: number, format: PnLFormat, currency: string, showSig
     case 'currency':
       return sign + formatCurrencyValue(value, currency);
     case 'percent':
-      return sign + value.toFixed(2) + '%';
+      return `${sign + value.toFixed(2)  }%`;
     case 'number':
     default:
       return sign + value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });

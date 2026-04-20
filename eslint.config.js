@@ -8,6 +8,7 @@ export default [
         ignores: [
             '**/dist/**',
             '**/dist-electron/**',
+            '**/dist-web/**',
             '**/node_modules/**',
             '**/build/**',
             '**/coverage/**',

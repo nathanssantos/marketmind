@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+- **Chart re-render decoupling (Phase A)** — `ChartCanvas` no longer subscribes to hot Zustand stores via selectors. Prices, aggTrades, live trading data, and preferences now flow through imperative `subscribe()` handlers that write to refs and call `CanvasManager.markDirty(...)`, so React re-renders only on symbol switch, indicator add/remove, or resize. Target: ChartCanvas renders ≤ 1/s during continuous ticks (previously ~5/s).
+- **Panel renderer hot-loop optimizations (Phase B)** — batched `save`/`restore` + `drawPanelBackground` at the dispatcher (`useGenericChartIndicatorRenderers`) so each pane pays the setup cost once per panel group, not once per indicator. Shared visible-range cache via `CanvasManager.getFrameCached` keyed on `(series, visibleStart, visibleEnd)` means MACD/Stoch/DMI/BB with N series compute the range once per frame.
+- **Parallel pine worker batches (Phase C)** — `runCompute` in `useGenericChartIndicators` now runs native evaluators inline and fans out pine batches through `Promise.allSettled` in chunks of `clamp(hardwareConcurrency - 1, 2, 6)`. Cancellation tokens + per-batch error isolation preserved. Prior sequential `await` in a loop was leaving cores idle when multiple pine indicators were active.
+- **Orphan orders polling alignment (Phase D)** — `useOrphanOrders` aligned `staleTime` with `refetchInterval` (`ORPHAN_POLLING_MS = 10_000`), eliminating refetch thrash when the component re-observed stale-by-default queries.
+
+### Fixed
+- **Indicator value tags clipped behind price scale** — Phase B's dispatcher applied `applyPanelClip({chartWidth})` before calling pane renderers, but `drawPanelValueTag` renders at `x=chartWidth` extending `+64px` into the price-scale area. The tag body was clipped out entirely. Removed the clip; `drawPanelBackground` + `save/restore` stay for batched background fill.
+
+### Added
+- **Perf instrumentation overlay (Phase 0)** — `perfMonitor.ts` exposes an opt-in overlay (gated on `localStorage('mm-chart-perf-overlay')`) that tracks FPS median / p95 frame time / per-section ms / ChartCanvas renders per second, rendered in the top-right of the canvas. Intended for regression checks, not production display.
+
 ### Changed
 - **Source-of-truth: interval→ms conversion (PR D)** — replaced six scattered duplicates of the interval→milliseconds map with imports from `@marketmind/types`' canonical `INTERVAL_MS` (backed by `TIME_MS` in `packages/types/src/intervals.ts`). Callers now share one definition: `ib-historical.ts`, `kline-stream.ts`, `gap-classifier.ts`, `routers/auto-trading.ts`, `routers/auto-trading/diagnostics.ts`, `scripts/data/backfill-historical.ts`. `apps/backend/src/constants` now also re-exports `INTERVAL_MINUTES`. Test mocks continue to pin small literal maps on purpose.
 

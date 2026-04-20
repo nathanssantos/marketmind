@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import type { Kline, MarketType, TimeInterval, Viewport } from '@marketmind/types';
+import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@marketmind/types';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
@@ -11,17 +11,19 @@ import { useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
-import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
-import { useShallow } from 'zustand/shallow';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { ChartNavigation } from './ChartNavigation';
+import { ChartPerfOverlay } from './ChartPerfOverlay';
 import { ChartTooltip } from './ChartTooltip';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
+import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
@@ -77,6 +79,8 @@ export const ChartCanvas = ({
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
 }: ChartCanvasProps): ReactElement => {
+  perfMonitor.recordComponentRender('ChartCanvas');
+
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair] = useChartPref('showCrosshair', true);
@@ -87,14 +91,11 @@ export const ChartCanvas = ({
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [chartFlipped] = useChartPref<boolean>('chartFlipped', false);
 
-  const instances = useIndicatorStore(useShallow((s) => s.instances));
-  const hasVisibleType = useCallback(
-    (type: string): boolean => instances.some((i) => i.visible && i.catalogType === type),
-    [instances],
+  const showVolume = useIndicatorStore((s) => s.instances.some((i) => i.visible && i.catalogType === 'volume'));
+  const showOrb = useIndicatorStore((s) => s.instances.some((i) => i.visible && i.catalogType === 'orb'));
+  const heatmapEnabled = useIndicatorStore((s) =>
+    s.instances.some((i) => i.visible && (i.catalogType === 'liquidityHeatmap' || i.catalogType === 'liquidationMarkers')),
   );
-  const showVolume = hasVisibleType('volume');
-  const showOrb = hasVisibleType('orb');
-  const heatmapEnabled = hasVisibleType('liquidityHeatmap') || hasVisibleType('liquidationMarkers');
   const colors = useChartColors();
 
   const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled);
@@ -103,9 +104,12 @@ export const ChartCanvas = ({
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
   const [slTightenOnly] = useTradingPref<boolean>('slTightenOnly', false);
 
-  const detectedSetups = useSetupStore((state) => state.detectedSetups);
+  const detectedSetupsVisibleRef = useRef<TradingSetup[]>(
+    useSetupStore.getState().detectedSetups.filter((s) => s.visible),
+  );
+
   const drawingKey = compositeKey(symbol ?? '', timeframe);
-  const drawingsForContextMenu = useDrawingStore(s => s.drawingsByKey[drawingKey]);
+  const hasDrawings = useDrawingStore((s) => (s.drawingsByKey[drawingKey]?.length ?? 0) > 0);
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {
@@ -138,7 +142,15 @@ export const ChartCanvas = ({
     resolvedVolumePerBar,
   } = tradingData;
 
-  const managerRef = useRef<import('@renderer/utils/canvas/CanvasManager').CanvasManager | null>(null);
+  const managerRef = useRef<CanvasManager | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = useSetupStore.subscribe((state) => {
+      detectedSetupsVisibleRef.current = state.detectedSetups.filter((s) => s.visible);
+      managerRef.current?.markDirty('overlays');
+    });
+    return () => unsubscribe();
+  }, []);
 
   const { effectiveKlines, footprintBars } = useChartAlternativeKlines({
     klines,
@@ -152,6 +164,7 @@ export const ChartCanvas = ({
 
   const { canvasRef, manager, isPanning, handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave } = useChartCanvas({
     klines: effectiveKlines,
+    ...(symbol !== undefined && { symbol }),
     ...(initialViewport !== undefined && { initialViewport }),
     ...(onViewportChange !== undefined && { onViewportChange }),
     onNearLeftEdge,
@@ -185,7 +198,7 @@ export const ChartCanvas = ({
 
   const tradingActions = useChartTradingActions({
     symbol, marketType, manager, backendWalletId,
-    backendExecutions: backendExecutions as any, allExecutions,
+    backendExecutions: backendExecutions as unknown as BackendExecution[] | undefined, allExecutions,
     setOptimisticExecutions, orderLoadingMapRef, orderFlashMapRef,
     closingSnapshotsRef, setClosingVersion, applyOptimistic, clearOptimistic,
     latestKlinesPriceRef, setOrderToClose,
@@ -194,8 +207,8 @@ export const ChartCanvas = ({
   const { handleLongEntry, handleShortEntry, handleOrderCloseRequest, handleConfirmCloseOrder, handleUpdateOrder, handleGridConfirm, draggableOrders, updateTsConfig, warning: tradingWarning } = tradingActions;
 
   const { shiftPressed, altPressed } = useTradingShortcuts({
-    onLongEntry: handleLongEntry,
-    onShortEntry: handleShortEntry,
+    onLongEntry: (price: number) => { void handleLongEntry(price); },
+    onShortEntry: (price: number) => { void handleShortEntry(price); },
     onEscape: () => {
       if (orderPreviewRef.current !== null) {
         orderPreviewRef.current = null;
@@ -245,30 +258,24 @@ export const ChartCanvas = ({
     timeframe, symbol, marketType,
   });
 
-  const { outputs: genericOutputs } = useGenericChartIndicators(klines, instances, {
-    marketEvents,
-    footprintBars,
-    liquidityHeatmap: heatmapDataRef.current,
-  });
+  const liveDataTarget = useMemo(
+    () => (symbol && marketType && timeframe ? { symbol, marketType, timeframe } : null),
+    [symbol, marketType, timeframe],
+  );
 
-  const setLiveDataEntry = useChartLiveDataStore((s) => s.setEntry);
-  const clearLiveDataEntry = useChartLiveDataStore((s) => s.clearEntry);
-  useEffect(() => {
-    if (!symbol || !marketType || !timeframe) return;
-    const key = buildChartLiveDataKey(symbol, timeframe, marketType);
-    const indicators = new Map<string, ChartLiveIndicatorEntry>();
-    for (const inst of instances) {
-      if (!inst.visible) continue;
-      const outputs = genericOutputs.get(inst.id);
-      if (!outputs) continue;
-      indicators.set(inst.userIndicatorId, { catalogType: inst.catalogType, outputs });
-    }
-    setLiveDataEntry(key, { symbol, interval: timeframe, marketType, klines, indicators });
-    return () => clearLiveDataEntry(key);
-  }, [symbol, marketType, timeframe, klines, instances, genericOutputs, setLiveDataEntry, clearLiveDataEntry]);
+  const { outputsRef: genericOutputsRef } = useGenericChartIndicators(
+    klines,
+    {
+      marketEvents,
+      footprintBars,
+      liquidityHeatmap: heatmapDataRef.current,
+    },
+    managerRef,
+    liveDataTarget,
+  );
 
   const genericRenderers = useGenericChartIndicatorRenderers({
-    manager, colors, instances, outputs: genericOutputs,
+    manager, colors, outputsRef: genericOutputsRef,
     external: {
       marketEvents,
       footprintBars,
@@ -289,7 +296,7 @@ export const ChartCanvas = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetups.filter(s => s.visible), showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,
@@ -300,15 +307,6 @@ export const ChartCanvas = ({
 
   const { orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, tsPlacementDeactivate, tsPlacementSetPreview, isGridModeActive, gridInteraction, renderGridPreview, drawingInteraction, renderDrawings } = auxiliarySetup;
 
-  const currentKlines = manager?.getKlines() ?? [];
-  const lastKline = currentKlines[currentKlines.length - 1];
-  const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
-
-  const updatePrice = usePriceStore((s) => s.updatePrice);
-  useEffect(() => {
-    if (symbol && currentPrice > 0 && !isPanning) updatePrice(symbol, currentPrice, 'chart');
-  }, [symbol, currentPrice, updatePrice, isPanning]);
-
   const { handleCanvasMouseMove, handleCanvasMouseDown, handleCanvasMouseUp, handleCanvasMouseLeave, handleWheel } = useChartInteraction({
     manager, canvasRef, klines, advancedConfig,
     showVolume, showEventRow, isPanning, shiftPressed, altPressed,
@@ -316,7 +314,8 @@ export const ChartCanvas = ({
     hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef,
     setTooltipData, setOrderToClose: handleOrderCloseRequest,
     getHoveredOrder, getEventAtPosition, getClickedOrderId, getSLTPAtPosition,
-    onLongEntry: handleLongEntry, onShortEntry: handleShortEntry,
+    onLongEntry: (price: number) => { void handleLongEntry(price); },
+    onShortEntry: (price: number) => { void handleShortEntry(price); },
     orderDragHandler, gridInteraction: isGridModeActive ? gridInteraction : undefined,
     drawingInteraction, cursorManager,
     handleMouseMove, handleMouseDown, handleMouseUp, handleMouseLeave,
@@ -334,7 +333,7 @@ export const ChartCanvas = ({
 
   useChartOverlayEffects({ manager, allExecutions, orderLoadingMapRef, orderFlashMapRef, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders });
 
-  useChartPanelHeights({ manager, showEventRow, instances, advancedConfig });
+  useChartPanelHeights({ manager, showEventRow, advancedConfig });
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -380,12 +379,12 @@ export const ChartCanvas = ({
       <ChartCloseDialog
         orderToClose={orderToClose}
         onOpenChange={(open) => !open && setOrderToClose(null)}
-        onConfirmClose={() => handleConfirmCloseOrder(orderToClose)}
+        onConfirmClose={() => { void handleConfirmCloseOrder(orderToClose); }}
         allExecutions={allExecutions}
         manager={manager}
       />
       <ChartContextMenuManager
-        hasDrawings={(drawingsForContextMenu?.length ?? 0) > 0}
+        hasDrawings={hasDrawings}
         onClearAllDrawings={() => {
           if (symbol) useDrawingStore.getState().setDrawingsForSymbol(symbol, timeframe, []);
           manager?.markDirty('overlays');
@@ -404,6 +403,7 @@ export const ChartCanvas = ({
         <DrawingToolbar manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <TextEditOverlay manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <ChartNavigation onResetView={handleResetView} onNextKline={handleNextKline} totalPanelHeight={manager?.getTotalPanelHeight() ?? 0} />
+        <ChartPerfOverlay />
         {showTooltip && (
           <ChartTooltip
             kline={tooltipData.kline} x={tooltipData.x} y={tooltipData.y} visible={tooltipData.visible}
