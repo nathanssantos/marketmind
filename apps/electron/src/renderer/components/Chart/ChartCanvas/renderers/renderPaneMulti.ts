@@ -1,7 +1,6 @@
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
 import {
-  applyPanelClip,
-  calculateVisibleRange,
+  getCachedVisibleRange,
   createDynamicValueToY,
   createNormalizedValueToY,
   drawHistogramBars,
@@ -49,7 +48,7 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     maxValue = valueRange.max;
   } else {
     for (const { values } of seriesEntries) {
-      const range = calculateVisibleRange(values, visibleStart, visibleEnd);
+      const range = getCachedVisibleRange(ctx.manager, values, visibleStart, visibleEnd);
       if (!range.hasData) continue;
       if (range.min < minValue) minValue = range.min;
       if (range.max > maxValue) maxValue = range.max;
@@ -77,8 +76,6 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     return FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length] ?? DEFAULT_LINE_COLOR;
   };
 
-  canvasCtx.save();
-  applyPanelClip({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
   drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
   const oversold = input.definition.defaultThresholds?.oversold;
@@ -119,8 +116,6 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     }
     lineIdx++;
   }
-
-  canvasCtx.restore();
 
   const tagSeries = seriesEntries.find((e) => !e.isHistogram) ?? seriesEntries[0];
   if (tagSeries) {

@@ -1,11 +1,63 @@
+import type { Kline } from '@marketmind/types';
 import { drawRect } from '@renderer/utils/canvas/drawingUtils';
-import { calculateVolumeMA, getVolumeMAPeriod } from '@renderer/utils/indicators/volume';
+import { calculateVolumeMA, getVolumeMAPeriod, type VolumeMovingAverage } from '@renderer/utils/indicators/volume';
 import { CHART_CONFIG, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
 import type { GenericRenderer } from './types';
 
 const VOLUME_OPACITY = 0.3;
 const HOVER_OPACITY_MULTIPLIER = 2.5;
+
+interface VolumeMACache {
+  klines: Kline[];
+  length: number;
+  lastCloseTime: number;
+  lastVolume: string | number;
+  period: number;
+  result: VolumeMovingAverage;
+}
+
+let volumeMACache: VolumeMACache | null = null;
+
+const getCachedVolumeMA = (klines: Kline[], period: number): VolumeMovingAverage => {
+  const length = klines.length;
+  if (length === 0) return { values: [], period };
+  const last = klines[length - 1]!;
+  if (
+    volumeMACache
+    && volumeMACache.klines === klines
+    && volumeMACache.length === length
+    && volumeMACache.lastCloseTime === last.closeTime
+    && volumeMACache.lastVolume === last.volume
+    && volumeMACache.period === period
+  ) {
+    return volumeMACache.result;
+  }
+  const result = calculateVolumeMA(klines, period);
+  volumeMACache = { klines, length, lastCloseTime: last.closeTime, lastVolume: last.volume, period, result };
+  return result;
+};
+
+interface RgbCache {
+  r: number;
+  g: number;
+  b: number;
+}
+const rgbColorCache = new Map<string, RgbCache | null>();
+
+const parseHexColor = (color: string): RgbCache | null => {
+  const cached = rgbColorCache.get(color);
+  if (cached !== undefined) return cached;
+  const m = color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  const parsed: RgbCache | null = m?.[1] && m[2] && m[3]
+    ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) }
+    : null;
+  rgbColorCache.set(color, parsed);
+  return parsed;
+};
+
+const toRgba = (rgb: RgbCache | null, alpha: number): string =>
+  rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})` : `rgba(120, 120, 120, ${alpha})`;
 
 export const renderVolume: GenericRenderer = (ctx, _input) => {
   const { manager, colors, external } = ctx;
@@ -51,10 +103,8 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
     const isLastKline = actualIndex === lastKlineIndex;
 
     const volumeOpacity = isHovered ? VOLUME_OPACITY * HOVER_OPACITY_MULTIPLIER : VOLUME_OPACITY;
-    const rgbMatch = baseColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-    const finalColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
-      ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${volumeOpacity})`
-      : `rgba(120, 120, 120, ${volumeOpacity})`;
+    const rgb = parseHexColor(baseColor);
+    const finalColor = toRgba(rgb, volumeOpacity);
 
     if (isHovered) {
       canvasCtx.save();
@@ -79,9 +129,7 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
         const projectedHeight = Math.min(projectedRatio * volumeOverlayHeight, volumeOverlayHeight);
 
         if (projectedHeight > barHeight) {
-          const projectionColor = rgbMatch?.[1] && rgbMatch[2] && rgbMatch[3]
-            ? `rgba(${parseInt(rgbMatch[1], 16)}, ${parseInt(rgbMatch[2], 16)}, ${parseInt(rgbMatch[3], 16)}, ${VOLUME_OPACITY * 0.8})`
-            : `rgba(120, 120, 120, ${VOLUME_OPACITY * 0.8})`;
+          const projectionColor = toRgba(rgb, VOLUME_OPACITY * 0.8);
 
           canvasCtx.save();
           canvasCtx.setLineDash([4, 2]);
@@ -110,7 +158,7 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
 
   if (klines.length > 0) {
     const period = getVolumeMAPeriod(timeframe);
-    const volumeMA = calculateVolumeMA(klines, period);
+    const volumeMA = getCachedVolumeMA(klines, period);
 
     canvasCtx.strokeStyle = colors.volume;
     canvasCtx.globalAlpha = 0.5;

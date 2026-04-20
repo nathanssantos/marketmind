@@ -1,7 +1,6 @@
 import { CHART_CONFIG } from '@shared/constants';
 import {
-  applyPanelClip,
-  calculateVisibleRange,
+  getCachedVisibleRange,
   createDynamicValueToY,
   drawHistogramBars,
   drawPanelBackground,
@@ -25,7 +24,7 @@ export const renderPaneHistogram: GenericRenderer = (ctx, input) => {
   const series = input.values[primaryOutput];
   if (!series) return;
 
-  const range = calculateVisibleRange(series, visibleStart, visibleEnd);
+  const range = getCachedVisibleRange(ctx.manager, series, visibleStart, visibleEnd);
   if (!range.hasData) return;
 
   const minValue = Math.min(0, range.min);
@@ -38,8 +37,6 @@ export const renderPaneHistogram: GenericRenderer = (ctx, input) => {
 
   const positiveColor = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_POSITIVE_COLOR;
 
-  canvasCtx.save();
-  applyPanelClip({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
   drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
   drawHistogramBars(
@@ -54,7 +51,6 @@ export const renderPaneHistogram: GenericRenderer = (ctx, input) => {
     DEFAULT_NEGATIVE_COLOR,
     Math.max(1, klineWidth * 0.8),
   );
-  canvasCtx.restore();
 
   drawPanelValueTag(canvasCtx, series, visibleStart, visibleEnd, valueToY, chartWidth, positiveColor);
 };

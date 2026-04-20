@@ -41,6 +41,14 @@ interface ComponentState {
   windowStart: number;
 }
 
+const EMPTY_SNAPSHOT: PerfSnapshot = {
+  enabled: false,
+  fps: 0,
+  lastFrameMs: 0,
+  sections: [],
+  componentRenders: [],
+};
+
 class PerfMonitor {
   private enabled: boolean = readFlag();
   private frameCount: number = 0;
@@ -51,6 +59,8 @@ class PerfMonitor {
   private componentRenders: Map<string, ComponentState> = new Map();
   private subscribers: Set<() => void> = new Set();
   private lastNotify: number = 0;
+  private cachedSnapshot: PerfSnapshot = EMPTY_SNAPSHOT;
+  private snapshotDirty: boolean = true;
 
   isEnabled(): boolean {
     return this.enabled;
@@ -58,6 +68,7 @@ class PerfMonitor {
 
   refreshFlag(): void {
     this.enabled = readFlag();
+    this.snapshotDirty = true;
     this.notifyAll();
   }
 
@@ -83,6 +94,7 @@ class PerfMonitor {
           state.windowStart = now;
         }
       }
+      this.snapshotDirty = true;
       this.maybeNotify(now);
     }
   }
@@ -125,10 +137,13 @@ class PerfMonitor {
     this.lastFrameMs = 0;
     this.sections.clear();
     this.componentRenders.clear();
+    this.snapshotDirty = true;
     this.notifyAll();
   }
 
   getSnapshot(): PerfSnapshot {
+    if (!this.snapshotDirty) return this.cachedSnapshot;
+
     const sections: PerfSection[] = [];
     for (const [name, state] of this.sections) {
       sections.push({
@@ -151,13 +166,16 @@ class PerfMonitor {
     }
     componentRenders.sort((a, b) => b.ratePerSec - a.ratePerSec);
 
-    return {
+    const snap: PerfSnapshot = {
       enabled: this.enabled,
       fps: this.fps,
       lastFrameMs: this.lastFrameMs,
       sections,
       componentRenders,
     };
+    this.cachedSnapshot = snap;
+    this.snapshotDirty = false;
+    return snap;
   }
 
   subscribe(callback: () => void): () => void {
