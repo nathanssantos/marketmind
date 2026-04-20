@@ -73,12 +73,12 @@ export const useChartTradingActions = ({
           data.openExecutions,
         );
       } else {
-        utils.trading.getTradeExecutions.invalidate();
+        void utils.trading.getTradeExecutions.invalidate();
       }
-      utils.futuresTrading.getOpenOrders.invalidate();
-      utils.futuresTrading.getOpenAlgoOrders.invalidate();
-      utils.futuresTrading.getOpenDbOrderIds.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
     },
   });
 
@@ -112,7 +112,7 @@ export const useChartTradingActions = ({
         backendWalletId, symbol, side: 'BUY', price, marketPrice,
         quantity: getOrderQuantity(price), reduceOnly: hasOpenShort, addBackendOrder,
       });
-      utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
       orderFlashMapRef.current.set(optimisticId, performance.now());
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -143,7 +143,7 @@ export const useChartTradingActions = ({
         backendWalletId, symbol, side: 'SELL', price, marketPrice,
         quantity: getOrderQuantity(price), reduceOnly: hasOpenLong, addBackendOrder,
       });
-      utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
       orderFlashMapRef.current.set(optimisticId, performance.now());
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -458,7 +458,7 @@ export const useChartTradingActions = ({
     }
     manager?.markDirty('overlays');
 
-    utils.autoTrading.getActiveExecutions.invalidate();
+    void utils.autoTrading.getActiveExecutions.invalidate();
   }, [backendWalletId, symbol, marketType, getOrderQuantity, addBackendOrder, utils, manager, toastError, t, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
 
   const draggableOrders = useMemo((): Order[] =>

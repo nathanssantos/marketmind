@@ -27,8 +27,8 @@ export interface UseChartPlacementHandlersProps {
   getSlTpButtonAtPosition: (x: number, y: number) => { type: 'stopLoss' | 'takeProfit'; executionId: string } | null;
   applyOptimistic: (id: string, patches: OptimisticOverride['patches'], previousValues: OptimisticOverride['previousValues']) => void;
   orderLoadingMapRef: MutableRefObject<Map<string, number>>;
-  handleUpdateOrder: (id: string, updates: any) => void;
-  updateTsConfig: { mutate: (input: any) => void };
+  handleUpdateOrder: (id: string, updates: Record<string, unknown>) => void;
+  updateTsConfig: { mutate: (input: never) => void };
   warning: (title: string, description?: string) => void;
   handleCanvasMouseMove: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleCanvasMouseDown: (event: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -116,8 +116,8 @@ export const useChartPlacementHandlers = ({
       const exec = allExecutions.find(e => e.id === execId);
       const patchField = placementType === 'stopLoss' ? 'stopLoss' : 'takeProfit';
       const priceStr = price.toString();
-      const patches = { [patchField]: priceStr } as any;
-      const prevValues = { [patchField]: exec?.[patchField] } as any;
+      const patches = { [patchField]: priceStr } as OptimisticOverride['patches'];
+      const prevValues = { [patchField]: exec?.[patchField] } as OptimisticOverride['previousValues'];
       applyOptimistic(execId, patches, prevValues);
       orderLoadingMapRef.current.set(execId, Date.now());
 
@@ -125,7 +125,7 @@ export const useChartPlacementHandlers = ({
       if (placementType === 'stopLoss') updatePayload.stopLoss = price;
       else updatePayload.takeProfit = price;
 
-      handleUpdateOrder(execId, updatePayload as any);
+      handleUpdateOrder(execId, updatePayload as Record<string, unknown>);
 
       event.preventDefault();
       return;
@@ -173,7 +173,7 @@ export const useChartPlacementHandlers = ({
       }
 
       if (backendWalletId && symbol) {
-        updateTsConfig.mutate({ walletId: backendWalletId, symbol, ...updateFields });
+        updateTsConfig.mutate({ walletId: backendWalletId, symbol, ...updateFields } as never);
       }
 
       event.preventDefault();

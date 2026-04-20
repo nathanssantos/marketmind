@@ -10,8 +10,17 @@ export interface SetupMarker {
   profitPercent?: number;
 }
 
+interface TradeInput {
+  entryTime: number;
+  entryPrice: number;
+  exitTime?: number;
+  exitPrice?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+}
+
 export interface UseTradeVisualizationProps {
-  trades: any[];
+  trades: TradeInput[];
   viewport: {
     start: number;
     end: number;
@@ -28,8 +37,8 @@ export interface UseTradeVisualizationResult {
   markers: SetupMarker[];
   visibleMarkers: SetupMarker[];
   tradeMarkers: SetupMarker[];
-  slLines: any[];
-  tpLines: any[];
+  slLines: unknown[];
+  tpLines: unknown[];
   profitableCount: number;
   losingCount: number;
   totalProfit: number;

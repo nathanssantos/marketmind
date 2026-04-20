@@ -22,16 +22,18 @@ export const LanguageSelector = () => {
     if (preferences && !isHydratedRef.current) {
       const savedLanguage = preferences[LANGUAGE_KEY] as string | undefined;
       if (savedLanguage && ['en', 'pt', 'es', 'fr'].includes(savedLanguage)) {
-        i18n.changeLanguage(savedLanguage);
+        void i18n.changeLanguage(savedLanguage);
       }
       isHydratedRef.current = true;
     }
   }, [preferences, i18n]);
 
   const handleLanguageChange = async (newLanguage: string) => {
-    i18n.changeLanguage(newLanguage);
+    void i18n.changeLanguage(newLanguage);
     await set(LANGUAGE_KEY, newLanguage);
   };
+
+  const onLanguageChange = (newLanguage: string) => { void handleLanguageChange(newLanguage); };
 
   return (
     <Box>
@@ -44,7 +46,7 @@ export const LanguageSelector = () => {
         </Text>
         <Select
           value={i18n.language}
-          onChange={handleLanguageChange}
+          onChange={onLanguageChange}
           options={LANGUAGES}
           placeholder={LANGUAGES.find(l => l.value === i18n.language)?.label || 'English'}
           usePortal={false}

@@ -87,7 +87,7 @@ export class EventIconManager {
     const cacheKey = this.getCacheKey(icon, size);
     const cached = this.imageCache.get(cacheKey);
     if (cached?.loaded) return cached.image;
-    this.preloadIcon(icon, size);
+    void this.preloadIcon(icon, size);
     return null;
   }
 

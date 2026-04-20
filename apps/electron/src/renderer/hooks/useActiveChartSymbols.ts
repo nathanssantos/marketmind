@@ -17,7 +17,7 @@ export const useActiveChartSymbols = (): Set<string> => {
     if (!socket) return;
 
     const handler = () => {
-      utils.kline.getActiveSymbols.invalidate();
+      void utils.kline.getActiveSymbols.invalidate();
     };
 
     socket.on('symbols:active:updated', handler);

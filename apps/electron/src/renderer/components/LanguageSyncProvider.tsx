@@ -34,7 +34,7 @@ export const LanguageSyncProvider = ({ children }: LanguageSyncProviderProps) =>
     if (preferences && !isHydratedRef.current) {
       const savedLanguage = preferences[LANGUAGE_KEY] as string | undefined;
       if (savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage) && savedLanguage !== i18n.language) {
-        i18n.changeLanguage(savedLanguage);
+        void i18n.changeLanguage(savedLanguage);
       }
       isHydratedRef.current = true;
     }

@@ -27,7 +27,7 @@ export const SaveScreenerDialog = memo(({ isOpen, onClose, onSave, isLoading }: 
       onClose={onClose}
       title={t('screener.save.title')}
       size="sm"
-      onSubmit={handleSave}
+      onSubmit={() => { void handleSave(); }}
       submitLabel={t('common.save')}
       isLoading={isLoading}
       submitDisabled={!name.trim()}

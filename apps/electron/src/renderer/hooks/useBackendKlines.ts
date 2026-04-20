@@ -17,7 +17,7 @@ export const useBackendKlines = () => {
 
   const subscribe = trpc.kline.subscribe.useMutation({
     onSuccess: () => {
-      utils.kline.list.invalidate();
+      void utils.kline.list.invalidate();
     },
   });
 
@@ -25,7 +25,7 @@ export const useBackendKlines = () => {
 
   const backfill = trpc.kline.backfill.useMutation({
     onSuccess: () => {
-      utils.kline.list.invalidate();
+      void utils.kline.list.invalidate();
     },
   });
 
@@ -106,7 +106,20 @@ export const useKlineStream = (
   useEffect(() => {
     if (!enabled || !isConnected || !symbol || !interval) return;
 
-    const handleKlineUpdate = (kline: any) => {
+    const handleKlineUpdate = (kline: {
+      symbol: string;
+      interval: string;
+      marketType?: MarketType;
+      openTime: number;
+      closeTime: number;
+      open: string;
+      high: string;
+      low: string;
+      close: string;
+      volume: string;
+      isClosed: boolean;
+      timestamp: number;
+    }) => {
       if (
         kline.symbol === symbol &&
         kline.interval === interval &&

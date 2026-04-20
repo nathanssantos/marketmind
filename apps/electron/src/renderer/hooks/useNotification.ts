@@ -24,7 +24,7 @@ export const useNotification = (): UseNotificationReturn => {
       }
     };
 
-    checkSupport();
+    void checkSupport();
   }, [notification]);
 
   const showNotification = useCallback(async (options: NotificationOptions) => {

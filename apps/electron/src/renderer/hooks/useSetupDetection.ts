@@ -42,9 +42,7 @@ export const useSetupDetection = (options: UseSetupDetectionOptions = {}): UseSe
     useRealtimeSetups,
   } = useBackendSetups();
 
-  if (userId && enableRealtimeUpdates) {
-    useRealtimeSetups(userId, true);
-  }
+  useRealtimeSetups(userId ?? '', Boolean(userId && enableRealtimeUpdates));
 
   const { data: result, isPending } = useDetectCurrent({
     symbol: symbol || '',

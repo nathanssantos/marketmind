@@ -1,5 +1,6 @@
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
+import type { TimeInterval } from '@marketmind/types';
 import { Button, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -144,14 +145,14 @@ export const WatcherManager = () => {
   const [dragTpEnabled, setDragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
   const [slTightenOnly, setSlTightenOnly] = useTradingPref<boolean>('slTightenOnly', false);
 
-  const handleTriggerRotation = async (): Promise<void> => {
+  const handleTriggerRotation = (): void => {
     if (!walletId) return;
-    await triggerRotation();
+    void triggerRotation();
   };
 
-  const handleQuickStartFromRankings = async (): Promise<void> => {
+  const handleQuickStartFromRankings = (): void => {
     if (!walletId || filteredSymbols.length === 0) return;
-    await startWatchersBulk(filteredSymbols, quickStartTimeframe, undefined, quickStartMarketType, quickStartCount);
+    void startWatchersBulk(filteredSymbols, quickStartTimeframe, undefined, quickStartMarketType, quickStartCount);
   };
 
   const activeWatchers = watcherStatus?.activeWatchers ?? [];
@@ -159,17 +160,19 @@ export const WatcherManager = () => {
   const directionMode = config?.directionMode ?? 'auto';
   const tradingMode = config?.tradingMode ?? 'auto';
 
-  const handleStopWatcher = async (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => {
-    await stopWatcher(symbol, interval, marketType);
+  const handleStopWatcher = (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => {
+    void stopWatcher(symbol, interval, marketType);
   };
 
-  const handleStopAll = async () => {
-    await stopAllWatchers();
+  const handleStopAll = () => {
+    void stopAllWatchers();
   };
 
-  const handleEmergencyStop = async () => {
-    await emergencyStop();
-    setShowEmergencyConfirm(false);
+  const handleEmergencyStop = () => {
+    void (async () => {
+      await emergencyStop();
+      setShowEmergencyConfirm(false);
+    })();
   };
 
   if (!walletId) {
@@ -353,7 +356,7 @@ export const WatcherManager = () => {
         trailingStopOffsetPercent={Number(config?.trailingStopOffsetPercent ?? 0)}
         onTrailingStopOffsetPercentChange={(value) => handleConfigUpdate({ trailingStopOffsetPercent: value.toString() })}
         isPending={updateConfig.isPending}
-        indicatorInterval={(config?.trailingStopIndicatorInterval ?? '30m') as import('@marketmind/types').TimeInterval}
+        indicatorInterval={(config?.trailingStopIndicatorInterval ?? '30m') as TimeInterval}
         onIndicatorIntervalChange={(interval) => handleConfigUpdate({ trailingStopIndicatorInterval: interval })}
         activationModeLong={config?.trailingActivationModeLong ?? 'auto'}
         onActivationModeLongChange={(mode) => handleConfigUpdate({ trailingActivationModeLong: mode })}

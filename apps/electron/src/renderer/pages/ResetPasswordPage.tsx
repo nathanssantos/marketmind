@@ -26,7 +26,7 @@ export const ResetPasswordPage = () => {
 
   useEffect(() => {
     if (!success) return;
-    const timer = setTimeout(() => navigate('/login'), AUTH_UI.FEEDBACK_TIMEOUT_MS);
+    const timer = setTimeout(() => { void navigate('/login'); }, AUTH_UI.FEEDBACK_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [success, navigate]);
 
@@ -93,7 +93,7 @@ export const ResetPasswordPage = () => {
 
   return (
     <AuthLayout title={t('auth.resetPassword.title')} subtitle={t('auth.resetPassword.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
             <Alert.Root status="error" size="sm">

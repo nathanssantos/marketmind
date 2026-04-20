@@ -17,7 +17,7 @@ export interface FullChartProps {
     symbol: string;
     timeframe: string;
     klines: Kline[];
-    trades?: any[];
+    trades?: unknown[];
     orders?: Order[];
     liveData?: boolean;
     tradingEnabled?: boolean;
@@ -83,14 +83,19 @@ export const FullChart = ({
     });
 
     const { mousePosition } = useChartInteraction({
-        canvasRef: containerRef as any,
-        viewport: viewport as any,
+        canvasRef: containerRef as unknown as React.RefObject<HTMLCanvasElement>,
+        viewport: {
+            start: viewport.start,
+            end: viewport.end,
+            minPrice: viewport.priceMin,
+            maxPrice: viewport.priceMax,
+        },
         onZoom: (delta) => (delta > 0 ? undefined : undefined),
         onPan: (deltaX) => (deltaX > 0 ? undefined : undefined),
     });
 
     useTradeVisualization({
-        trades: showTrades ? (trades ?? []) : [],
+        trades: (showTrades ? (trades ?? []) : []) as Parameters<typeof useTradeVisualization>[0]['trades'],
         viewport: {
             start: viewport.start,
             end: viewport.end,

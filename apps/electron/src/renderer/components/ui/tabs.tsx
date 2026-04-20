@@ -1,8 +1,11 @@
 import { Tabs as ChakraTabs } from '@chakra-ui/react';
+import type { ComponentProps } from 'react';
 import { forwardRef } from 'react';
 
-const TabsTrigger = forwardRef<HTMLButtonElement, any>(({ px = 4, py = 2, ...props }, ref) => (
-  // @ts-expect-error
+type TabsTriggerProps = ComponentProps<typeof ChakraTabs.Trigger>;
+
+const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(({ px = 4, py = 2, ...props }, ref) => (
+  // @ts-expect-error Chakra recipe px/py conflict
   <ChakraTabs.Trigger ref={ref} px={px} py={py} {...props} />
 ));
 TabsTrigger.displayName = 'TabsTrigger';

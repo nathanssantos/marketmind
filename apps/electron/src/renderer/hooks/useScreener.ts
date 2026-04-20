@@ -58,13 +58,13 @@ export const useScreener = () => {
 
   const saveMutation = trpc.screener.saveScreener.useMutation({
     onSuccess: () => {
-      utils.screener.getSavedScreeners.invalidate();
+      void utils.screener.getSavedScreeners.invalidate();
     },
   });
 
   const deleteMutation = trpc.screener.deleteScreener.useMutation({
     onSuccess: () => {
-      utils.screener.getSavedScreeners.invalidate();
+      void utils.screener.getSavedScreeners.invalidate();
     },
   });
 
@@ -77,9 +77,9 @@ export const useScreener = () => {
 
   const refetch = useCallback(() => {
     if (isPresetMode) {
-      presetQuery.refetch();
+      void presetQuery.refetch();
     } else {
-      customQuery.refetch();
+      void customQuery.refetch();
     }
   }, [isPresetMode, presetQuery, customQuery]);
 

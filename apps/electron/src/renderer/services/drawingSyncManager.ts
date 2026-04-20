@@ -53,7 +53,8 @@ const handleCreate = async (drawing: Drawing, sync: SymbolSync) => {
 
     const created = result as BackendDrawing;
     useDrawingStore.getState().setBackendId(drawing.id, drawing.symbol, drawing.interval, created.id);
-  } catch (_e) {
+  } catch {
+    // swallow sync errors
   } finally {
     sync.pendingCreates.delete(drawing.id);
   }
@@ -70,14 +71,15 @@ const handleUpdate = (drawingId: string, drawing: Drawing, sync: SymbolSync) => 
     if (!backendId) return;
 
     try {
-      trpc.drawing.update.mutate({
+      void trpc.drawing.update.mutate({
         id: backendId,
         data: serializeDrawingData(drawing, sync.getOpenTime),
         visible: drawing.visible,
         locked: drawing.locked,
         zIndex: drawing.zIndex,
       });
-    } catch (_e) {
+    } catch {
+      // swallow sync errors
     }
   }, DEBOUNCE_DELAY);
 
@@ -92,8 +94,9 @@ const handleDelete = (drawingId: string, drawing: Drawing) => {
   store.removeBackendId(drawingId, drawing.symbol, drawing.interval);
 
   try {
-    trpc.drawing.delete.mutate({ id: backendId });
-  } catch (_e) {
+    void trpc.drawing.delete.mutate({ id: backendId });
+  } catch {
+    // swallow sync errors
   }
 };
 
@@ -110,7 +113,7 @@ const startSubscription = (syncKey: string, sync: SymbolSync) => {
 
     for (const drawing of currentDrawings) {
       if (!prevIds.has(drawing.id)) {
-        handleCreate(drawing, sync);
+        void handleCreate(drawing, sync);
         continue;
       }
 

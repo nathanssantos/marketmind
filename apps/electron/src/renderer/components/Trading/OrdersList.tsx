@@ -1,7 +1,7 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Button, IconButton, Select } from '@renderer/components/ui';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import type { Order } from '@marketmind/types';
+import type { Order, OrderSide, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -50,10 +50,10 @@ const OrdersListComponent = () => {
       origQty: o.origQty || '0',
       executedQty: o.executedQty || '0',
       cummulativeQuoteQty: '0',
-      status: (o.status || 'NEW') as any,
-      timeInForce: (o.timeInForce || 'GTC') as any,
-      type: (o.type || 'LIMIT') as any,
-      side: o.side as any,
+      status: (o.status || 'NEW') as OrderStatus,
+      timeInForce: (o.timeInForce || 'GTC') as TimeInForce,
+      type: (o.type || 'LIMIT') as OrderType,
+      side: o.side as OrderSide,
       time: typeof o.time === 'number' ? o.time : Date.now(),
       updateTime: typeof o.updateTime === 'number' ? o.updateTime : Date.now(),
       isWorking: o.status === 'NEW' || o.status === 'PARTIALLY_FILLED',
@@ -109,7 +109,7 @@ const OrdersListComponent = () => {
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
     initialBalance: parseFloat(w.initialBalance || '0'),
-    currency: (w.currency || 'USDT') as any,
+    currency: (w.currency || 'USDT') as WalletCurrency,
     createdAt: new Date(w.createdAt),
     performance: [],
     makerCommission: 0,
@@ -129,33 +129,37 @@ const OrdersListComponent = () => {
     permissions: ['SPOT'],
   }));
 
-  const cancelOrder = useCallback(async (id: string) => {
+  const cancelOrder = useCallback((id: string) => {
     const order = orders.find(o => o.id === id);
     if (!order || !activeWalletId) return;
-    try {
-      if (order.isAutoTrade) {
-        await cancelExecution(id);
-      } else {
-        await cancelBackendOrder({
-          walletId: activeWalletId,
-          symbol: order.symbol,
-          orderId: order.orderId || '0',
-        });
+    void (async () => {
+      try {
+        if (order.isAutoTrade) {
+          await cancelExecution(id);
+        } else {
+          await cancelBackendOrder({
+            walletId: activeWalletId,
+            symbol: order.symbol,
+            orderId: order.orderId || '0',
+          });
+        }
+        toastSuccess(t('trading.order.cancelSuccess'));
+      } catch (error) {
+        toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
       }
-      toastSuccess(t('trading.order.cancelSuccess'));
-    } catch (error) {
-      toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
-    }
+    })();
   }, [orders, activeWalletId, cancelExecution, cancelBackendOrder, toastSuccess, toastError, t]);
 
-  const closeOrder = useCallback(async (id: string, price: number) => {
+  const closeOrder = useCallback((id: string, price: number) => {
     const order = orders.find(o => o.id === id);
     if (!order?.isAutoTrade) return;
-    try {
-      await closeExecution(id, price.toString());
-    } catch (error) {
-      toastError(t('trading.order.closeFailed'), error instanceof Error ? error.message : undefined);
-    }
+    void (async () => {
+      try {
+        await closeExecution(id, price.toString());
+      } catch (error) {
+        toastError(t('trading.order.closeFailed'), error instanceof Error ? error.message : undefined);
+      }
+    })();
   }, [orders, closeExecution, toastError, t]);
 
   const {

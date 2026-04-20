@@ -11,7 +11,7 @@ interface StatProps {
 
 export const Stat = ({ label, value, helpText, valueColor, ...rest }: StatProps) => {
     return (
-        <Box {...(rest as any)}>
+        <Box {...(rest as Record<string, unknown>)}>
             <Text fontSize="sm" color="gray.500" mb={1}>
                 {label}
             </Text>

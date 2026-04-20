@@ -7,7 +7,7 @@ import { ColorModeProvider } from '@renderer/components/ui';
 import { PinnedControlsProvider } from '../PinnedControlsContext';
 import { FullChart } from './FullChart';
 
-const mockTheme = {
+const _mockTheme = {
     grid: '#2d3748',
     text: '#cbd5e0',
     bullish: '#48bb78',

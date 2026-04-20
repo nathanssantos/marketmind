@@ -207,13 +207,13 @@ export const IndicatorLibrary = () => {
         mode={dialog.kind === 'edit' ? 'edit' : 'create'}
         instance={dialog.kind === 'edit' ? dialog.indicator : undefined}
         isLoading={create.isPending || update.isPending}
-        onSubmit={handleSubmit}
+        onSubmit={(result) => { void handleSubmit(result); }}
       />
 
       <ConfirmationDialog
         isOpen={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => { void handleConfirmDelete(); }}
         title={t('settings.indicators.deleteTitle')}
         description={t('settings.indicators.deleteDescription', { label: confirmDelete?.label ?? '' })}
         isDestructive
@@ -223,7 +223,7 @@ export const IndicatorLibrary = () => {
       <ConfirmationDialog
         isOpen={confirmReset}
         onClose={() => setConfirmReset(false)}
-        onConfirm={handleConfirmReset}
+        onConfirm={() => { void handleConfirmReset(); }}
         title={t('settings.indicators.resetTitle')}
         description={t('settings.indicators.resetDescription')}
         isDestructive

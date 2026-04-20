@@ -28,11 +28,13 @@ export const RegisterPage = () => {
 
     try {
       await register(email, password);
-      navigate('/verify-email');
+      void navigate('/verify-email');
     } catch {
       // Error is handled by registerError state
     }
   };
+
+  const onFormSubmit = (e: FormEvent) => { void handleSubmit(e); };
 
   const errorMessage = mismatch
     ? t('auth.register.passwordMismatch')
@@ -42,7 +44,7 @@ export const RegisterPage = () => {
 
   return (
     <AuthLayout title={t('auth.register.title')} subtitle={t('auth.register.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onFormSubmit}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
             <Alert.Root status="error" size="sm">

@@ -65,7 +65,7 @@ const getNextMarketEvent = (date: Date): { type: 'open' | 'close'; time: Date } 
   }
 
   switch (session) {
-    case 'CLOSED':
+    case 'CLOSED': {
       if (hour < NYSE_HOURS.PRE_MARKET.start) {
         const preMarketOpen = new Date(today);
         preMarketOpen.setHours(4, 0, 0, 0);
@@ -75,21 +75,25 @@ const getNextMarketEvent = (date: Date): { type: 'open' | 'close'; time: Date } 
       nextDayOpen.setDate(nextDayOpen.getDate() + 1);
       nextDayOpen.setHours(4, 0, 0, 0);
       return { type: 'open', time: nextDayOpen };
+    }
 
-    case 'PRE_MARKET':
+    case 'PRE_MARKET': {
       const regularOpen = new Date(today);
       regularOpen.setHours(9, 30, 0, 0);
       return { type: 'open', time: regularOpen };
+    }
 
-    case 'REGULAR':
+    case 'REGULAR': {
       const regularClose = new Date(today);
       regularClose.setHours(16, 0, 0, 0);
       return { type: 'close', time: regularClose };
+    }
 
-    case 'AFTER_HOURS':
+    case 'AFTER_HOURS': {
       const afterHoursClose = new Date(today);
       afterHoursClose.setHours(20, 0, 0, 0);
       return { type: 'close', time: afterHoursClose };
+    }
 
     default:
       return null;

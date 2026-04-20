@@ -21,14 +21,16 @@ export const LoginPage = () => {
     try {
       const result = await login(email, password, rememberMe);
       if (result.requiresTwoFactor) {
-        navigate('/two-factor', { state: { userId: result.userId, rememberMe } });
+        void navigate('/two-factor', { state: { userId: result.userId, rememberMe } });
       } else {
-        navigate('/');
+        void navigate('/');
       }
     } catch {
       // Error is handled by loginError state
     }
   };
+
+  const onFormSubmit = (e: FormEvent) => { void handleSubmit(e); };
 
   const errorMessage = isRateLimited(loginError)
     ? t('auth.login.rateLimited')
@@ -38,7 +40,7 @@ export const LoginPage = () => {
 
   return (
     <AuthLayout title={t('auth.login.title')} subtitle={t('auth.login.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onFormSubmit}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
             <Alert.Root status="error" size="sm">

@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   useRenderLoop,
@@ -197,7 +197,7 @@ describe('measureRenderTime', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const slowRenderFn = () => {
       const start = Date.now();
-      while (Date.now() - start < 20) {}
+      while (Date.now() - start < 20) { /* busy wait */ }
       return 'slow';
     };
 
@@ -210,7 +210,7 @@ describe('measureRenderTime', () => {
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const slowRenderFn = () => {
       const start = Date.now();
-      while (Date.now() - start < 20) {}
+      while (Date.now() - start < 20) { /* busy wait */ }
       return 'slow';
     };
 

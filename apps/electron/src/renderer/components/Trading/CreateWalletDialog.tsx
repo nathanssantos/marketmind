@@ -115,7 +115,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
       isOpen={isOpen}
       onClose={handleClose}
       title={t('trading.wallets.createTitle')}
-      onSubmit={handleSubmit}
+      onSubmit={() => { void handleSubmit(); }}
       submitLabel={t('trading.wallets.create')}
       submitColorPalette={walletType === 'live' ? 'red' : 'blue'}
       submitDisabled={!isValid}

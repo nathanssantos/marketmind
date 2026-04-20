@@ -44,11 +44,13 @@ export const TwoFactorPage = () => {
     e.preventDefault();
     try {
       await verifyTwoFactor(userId, code, rememberMe);
-      navigate('/');
+      void navigate('/');
     } catch {
       // Error handled by twoFactorError
     }
   };
+
+  const onFormSubmit = (e: FormEvent) => { void handleSubmit(e); };
 
   const handleResend = async () => {
     try {
@@ -60,6 +62,8 @@ export const TwoFactorPage = () => {
     }
   };
 
+  const onResendClick = () => { void handleResend(); };
+
   const errorMessage = isRateLimited(twoFactorError)
     ? t('auth.login.rateLimited')
     : twoFactorError
@@ -68,7 +72,7 @@ export const TwoFactorPage = () => {
 
   return (
     <AuthLayout title={t('auth.twoFactor.title')} subtitle={t('auth.twoFactor.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onFormSubmit}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
             <Alert.Root status="error" size="sm">
@@ -112,7 +116,7 @@ export const TwoFactorPage = () => {
             variant="ghost"
             size="sm"
             width="full"
-            onClick={handleResend}
+            onClick={onResendClick}
             loading={isResendingTwoFactor}
           >
             {t('auth.twoFactor.resend')}

@@ -166,7 +166,7 @@ export const CustomSymbolsModal = memo(() => {
                             size="2xs"
                             variant="ghost"
                             aria-label={t('customSymbols.rebalance')}
-                            onClick={() => handleRebalance(cs.id)}
+                            onClick={() => { void handleRebalance(cs.id); }}
                             disabled={rebalanceCustomSymbol.isPending}
                           >
                             <LuRefreshCw />
@@ -176,7 +176,7 @@ export const CustomSymbolsModal = memo(() => {
                             variant="ghost"
                             colorPalette="red"
                             aria-label={t('common.delete')}
-                            onClick={() => handleDelete(cs.id)}
+                            onClick={() => { void handleDelete(cs.id); }}
                             disabled={deleteCustomSymbol.isPending}
                           >
                             <LuTrash2 />
@@ -331,7 +331,7 @@ export const CustomSymbolsModal = memo(() => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={handleCreate}
+                    onClick={() => { void handleCreate(); }}
                     disabled={!formSymbol || !formName || formComponents.some(c => !c.symbol) || createCustomSymbol.isPending}
                   >
                     {t('customSymbols.createIndex')}

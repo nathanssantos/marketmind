@@ -15,7 +15,7 @@ const parseBanDuration = (message: string): number => {
 };
 
 const clearStaleCache = (client: QueryClient) => {
-    client.invalidateQueries({ queryKey: ['kline'] });
+    void client.invalidateQueries({ queryKey: ['kline'] });
     client.removeQueries({ queryKey: ['kline'], predicate: () => true });
 };
 

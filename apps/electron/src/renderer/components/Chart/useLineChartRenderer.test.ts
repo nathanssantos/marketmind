@@ -310,7 +310,7 @@ describe('useLineChartRenderer', () => {
     );
 
     result.current.render();
-    const initialStrokeStyle = mockCtx.strokeStyle;
+    const _initialStrokeStyle = mockCtx.strokeStyle;
 
     const newColors = { ...mockColors, lineDefault: '#ff0000' };
     rerender({ colors: newColors });

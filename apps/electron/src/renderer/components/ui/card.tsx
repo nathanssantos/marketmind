@@ -23,20 +23,20 @@ const CardRoot = ({ children, ...props }: CardRootProps) => (
         overflow="hidden"
         bg="white"
         _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
-        {...(props as any)}
+        {...(props as Record<string, unknown>)}
     >
         {children}
     </Box>
 );
 
 const CardHeader = ({ children, ...props }: CardHeaderProps) => (
-    <Box p={4} borderBottomWidth="1px" _dark={{ borderColor: 'gray.700' }} {...(props as any)}>
+    <Box p={4} borderBottomWidth="1px" _dark={{ borderColor: 'gray.700' }} {...(props as Record<string, unknown>)}>
         {children}
     </Box>
 );
 
 const CardBody = ({ children, ...props }: CardBodyProps) => (
-    <Box p={4} {...(props as any)}>
+    <Box p={4} {...(props as Record<string, unknown>)}>
         {children}
     </Box>
 );
