@@ -30,7 +30,13 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
 
 const mockManager = (): CanvasManager => ({
-  getContext: vi.fn(() => ({}) as CanvasRenderingContext2D),
+  getContext: vi.fn(() => ({
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+  }) as unknown as CanvasRenderingContext2D),
   getDimensions: vi.fn(() => ({ chartWidth: 800, chartHeight: 600 })),
   getViewport: vi.fn(() => ({ start: 0, end: 5, klineWidth: 8 })),
   getKlines: vi.fn(() => []),
@@ -49,8 +55,9 @@ const makeInstance = (overrides: Partial<IndicatorInstance>): IndicatorInstance 
   ...overrides,
 });
 
-const outputsMap = (entries: [string, IndicatorOutputs][]): Map<string, IndicatorOutputs> =>
-  new Map(entries);
+const outputsRef = (entries: [string, IndicatorOutputs][]): { current: Map<string, IndicatorOutputs> } => ({
+  current: new Map(entries),
+});
 
 describe('useGenericChartIndicatorRenderers', () => {
   it('returns no-op functions when manager is null', () => {
@@ -59,7 +66,7 @@ describe('useGenericChartIndicatorRenderers', () => {
         manager: null,
         colors,
         instances: [makeInstance({ id: 'a' })],
-        outputs: outputsMap([['a', { value: [1, 2, 3] }]]),
+        outputsRef: outputsRef([['a', { value: [1, 2, 3] }]]),
       }),
     );
     expect(() => result.current.renderAllOverlayIndicators()).not.toThrow();
@@ -76,7 +83,7 @@ describe('useGenericChartIndicatorRenderers', () => {
         manager: mockManager(),
         colors,
         instances: [makeInstance({ id: 'sma1', catalogType: 'sma' })],
-        outputs: outputsMap([['sma1', { value: [1, 2, 3] }]]),
+        outputsRef: outputsRef([['sma1', { value: [1, 2, 3] }]]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -93,7 +100,7 @@ describe('useGenericChartIndicatorRenderers', () => {
         manager: mockManager(),
         colors,
         instances: [makeInstance({ id: 'macd1', catalogType: 'macd' })],
-        outputs: outputsMap([['macd1', { line: [], signal: [], histogram: [] }]]),
+        outputsRef: outputsRef([['macd1', { line: [], signal: [], histogram: [] }]]),
       }),
     );
     result.current.renderAllPanelIndicators();
@@ -110,7 +117,7 @@ describe('useGenericChartIndicatorRenderers', () => {
         manager: mockManager(),
         colors,
         instances: [makeInstance({ id: 'a', visible: false })],
-        outputs: outputsMap([['a', { value: [] }]]),
+        outputsRef: outputsRef([['a', { value: [] }]]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -127,7 +134,7 @@ describe('useGenericChartIndicatorRenderers', () => {
         manager: mockManager(),
         colors,
         instances: [makeInstance({ id: 'f', catalogType: 'fibonacci', params: {} })],
-        outputs: outputsMap([['f', {}]]),
+        outputsRef: outputsRef([['f', {}]]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -144,7 +151,7 @@ describe('useGenericChartIndicatorRenderers', () => {
         manager: mockManager(),
         colors,
         instances: [makeInstance({ id: 'sma1', catalogType: 'sma' })],
-        outputs: outputsMap([]),
+        outputsRef: outputsRef([]),
       }),
     );
     result.current.renderAllOverlayIndicators();
@@ -164,7 +171,7 @@ describe('useGenericChartIndicatorRenderers', () => {
           makeInstance({ id: 'sma1', catalogType: 'sma' }),
           makeInstance({ id: 'rsi1', catalogType: 'rsi' }),
         ],
-        outputs: outputsMap([
+        outputsRef: outputsRef([
           ['sma1', { value: [] }],
           ['rsi1', { value: [] }],
         ]),
@@ -187,7 +194,7 @@ describe('useGenericChartIndicatorRenderers', () => {
           makeInstance({ id: 'a', catalogType: 'sma' }),
           makeInstance({ id: 'b', catalogType: 'ema' }),
         ],
-        outputs: outputsMap([
+        outputsRef: outputsRef([
           ['a', { value: [] }],
           ['b', { value: [] }],
         ]),
@@ -210,7 +217,7 @@ describe('useGenericChartIndicatorRenderers', () => {
           makeInstance({ id: 'top', catalogType: 'sma', zIndex: 10 }),
           makeInstance({ id: 'bottom', catalogType: 'sma', zIndex: 1 }),
         ],
-        outputs: outputsMap([
+        outputsRef: outputsRef([
           ['top', { value: [] }],
           ['bottom', { value: [] }],
         ]),

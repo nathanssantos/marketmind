@@ -11,11 +11,10 @@ import { useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
-import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
@@ -249,30 +248,25 @@ export const ChartCanvas = ({
     timeframe, symbol, marketType,
   });
 
-  const { outputs: genericOutputs } = useGenericChartIndicators(klines, instances, {
-    marketEvents,
-    footprintBars,
-    liquidityHeatmap: heatmapDataRef.current,
-  });
+  const liveDataTarget = useMemo(
+    () => (symbol && marketType && timeframe ? { symbol, marketType, timeframe } : null),
+    [symbol, marketType, timeframe],
+  );
 
-  const setLiveDataEntry = useChartLiveDataStore((s) => s.setEntry);
-  const clearLiveDataEntry = useChartLiveDataStore((s) => s.clearEntry);
-  useEffect(() => {
-    if (!symbol || !marketType || !timeframe) return;
-    const key = buildChartLiveDataKey(symbol, timeframe, marketType);
-    const indicators = new Map<string, ChartLiveIndicatorEntry>();
-    for (const inst of instances) {
-      if (!inst.visible) continue;
-      const outputs = genericOutputs.get(inst.id);
-      if (!outputs) continue;
-      indicators.set(inst.userIndicatorId, { catalogType: inst.catalogType, outputs });
-    }
-    setLiveDataEntry(key, { symbol, interval: timeframe, marketType, klines, indicators });
-    return () => clearLiveDataEntry(key);
-  }, [symbol, marketType, timeframe, klines, instances, genericOutputs, setLiveDataEntry, clearLiveDataEntry]);
+  const { outputsRef: genericOutputsRef } = useGenericChartIndicators(
+    klines,
+    instances,
+    {
+      marketEvents,
+      footprintBars,
+      liquidityHeatmap: heatmapDataRef.current,
+    },
+    managerRef,
+    liveDataTarget,
+  );
 
   const genericRenderers = useGenericChartIndicatorRenderers({
-    manager, colors, instances, outputs: genericOutputs,
+    manager, colors, instances, outputsRef: genericOutputsRef,
     external: {
       marketEvents,
       footprintBars,
@@ -308,10 +302,11 @@ export const ChartCanvas = ({
   const lastKline = currentKlines[currentKlines.length - 1];
   const currentPrice = lastKline ? getKlineClose(lastKline) : 0;
 
-  const updatePrice = usePriceStore((s) => s.updatePrice);
   useEffect(() => {
-    if (symbol && currentPrice > 0 && !isPanning) updatePrice(symbol, currentPrice, 'chart');
-  }, [symbol, currentPrice, updatePrice, isPanning]);
+    if (symbol && currentPrice > 0 && !isPanning) {
+      usePriceStore.getState().updatePrice(symbol, currentPrice, 'chart');
+    }
+  }, [symbol, currentPrice, isPanning]);
 
   const { handleCanvasMouseMove, handleCanvasMouseDown, handleCanvasMouseUp, handleCanvasMouseLeave, handleWheel } = useChartInteraction({
     manager, canvasRef, klines, advancedConfig,

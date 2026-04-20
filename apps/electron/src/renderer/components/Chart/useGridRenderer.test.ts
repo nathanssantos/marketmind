@@ -6,11 +6,10 @@ import * as drawingUtils from '../../utils/canvas/drawingUtils';
 import * as formatters from '../../utils/formatters';
 import { useGridRenderer } from './useGridRenderer';
 
-vi.mock('../../utils/canvas/drawingUtils', () => ({
-  drawGrid: vi.fn(),
-  drawLine: vi.fn(),
-  drawText: vi.fn(),
-}));
+vi.mock('../../utils/canvas/drawingUtils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../utils/canvas/drawingUtils')>();
+  return { ...actual, drawGrid: vi.fn() };
+});
 
 vi.mock('../../utils/formatters', () => ({
   formatPriceDisplay: vi.fn((price: number) => price.toFixed(2)),
@@ -33,9 +32,18 @@ describe('useGridRenderer', () => {
       save: vi.fn(),
       restore: vi.fn(),
       fillStyle: '',
-      fillRect: vi.fn(),
-      measureText: vi.fn(() => ({ width: 50 })),
+      strokeStyle: '',
+      lineWidth: 0,
+      textAlign: '',
+      textBaseline: '',
       font: '',
+      fillRect: vi.fn(),
+      fillText: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      measureText: vi.fn(() => ({ width: 50 })),
     } as unknown as CanvasRenderingContext2D;
 
     const klines = [
@@ -281,7 +289,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(drawingUtils.drawText).toHaveBeenCalled();
+      expect(mockCtx.fillText).toHaveBeenCalled();
       expect(formatters.formatChartPrice).toHaveBeenCalled();
     });
 
@@ -308,7 +316,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(drawingUtils.drawLine).toHaveBeenCalled();
+      expect(mockCtx.stroke).toHaveBeenCalled();
     });
 
     it('should clear price scale area with background color', () => {
@@ -351,7 +359,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(drawingUtils.drawText).toHaveBeenCalled();
+      expect(mockCtx.fillText).toHaveBeenCalled();
     });
 
     it('should handle empty klines array', () => {
@@ -398,7 +406,7 @@ describe('useGridRenderer', () => {
 
       result.current.render();
 
-      expect(drawingUtils.drawText).toHaveBeenCalled();
+      expect(mockCtx.fillText).toHaveBeenCalled();
     });
 
     it('should calculate price step correctly', () => {

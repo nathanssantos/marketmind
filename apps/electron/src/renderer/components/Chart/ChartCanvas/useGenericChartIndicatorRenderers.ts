@@ -3,6 +3,7 @@ import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import type { MutableRefObject } from 'react';
 import { useCallback, useMemo, useRef } from 'react';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
 import type { GenericRenderer as GenericRendererFn, GenericRendererExternal } from './renderers';
@@ -12,7 +13,7 @@ export interface UseGenericChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   instances: IndicatorInstance[];
-  outputs: Map<string, IndicatorOutputs>;
+  outputsRef: MutableRefObject<Map<string, IndicatorOutputs>>;
   external?: GenericRendererExternal;
 }
 
@@ -44,11 +45,13 @@ export const useGenericChartIndicatorRenderers = ({
   manager,
   colors,
   instances,
-  outputs,
+  outputsRef,
   external,
 }: UseGenericChartIndicatorRenderersProps): UseGenericChartIndicatorRenderersResult => {
   const externalRef = useRef<GenericRendererExternal | undefined>(external);
   externalRef.current = external;
+  const colorsRef = useRef(colors);
+  colorsRef.current = colors;
 
   const resolved = useMemo<ResolvedInstance[]>(() => {
     const list: ResolvedInstance[] = [];
@@ -61,50 +64,72 @@ export const useGenericChartIndicatorRenderers = ({
     return list.sort((a, b) => (a.instance.zIndex ?? 0) - (b.instance.zIndex ?? 0));
   }, [instances]);
 
+  const resolvedRef = useRef(resolved);
+  resolvedRef.current = resolved;
+
   const renderInstance = useCallback(
     (instanceId: string) => {
       if (!manager) return;
-      const entry = resolved.find((r) => r.instance.id === instanceId);
+      const entry = resolvedRef.current.find((r) => r.instance.id === instanceId);
       if (!entry) return;
       const renderer = resolveRenderer(entry.definition);
       if (!renderer) return;
-      const values = outputs.get(instanceId);
+      const values = outputsRef.current.get(instanceId);
       if (!values) return;
       renderer(
-        { manager, colors, external: externalRef.current },
+        { manager, colors: colorsRef.current, external: externalRef.current },
         { instance: entry.instance, definition: entry.definition, values },
       );
     },
-    [manager, resolved, outputs, colors],
+    [manager, outputsRef],
   );
 
   const renderAllOverlayIndicators = useCallback(() => {
     if (!manager) return;
-    for (const { instance, definition } of resolved) {
+    const outputs = outputsRef.current;
+    const resolvedList = resolvedRef.current;
+    const canvasCtx = manager.getContext();
+    const dimensions = manager.getDimensions();
+    if (!canvasCtx || !dimensions) return;
+
+    let overlayCount = 0;
+    for (const { definition } of resolvedList) {
+      if (isOverlayKind(definition.render.kind)) overlayCount++;
+    }
+    if (overlayCount === 0) return;
+
+    canvasCtx.save();
+    canvasCtx.beginPath();
+    canvasCtx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
+    canvasCtx.clip();
+    for (const { instance, definition } of resolvedList) {
       if (!isOverlayKind(definition.render.kind)) continue;
       const renderer = getRenderer(definition.render.kind);
       if (!renderer) continue;
       const values = outputs.get(instance.id);
       if (!values) continue;
-      renderer({ manager, colors, external: externalRef.current }, { instance, definition, values });
+      renderer({ manager, colors: colorsRef.current, external: externalRef.current }, { instance, definition, values });
     }
-  }, [manager, resolved, outputs, colors]);
+    canvasCtx.restore();
+  }, [manager, outputsRef]);
 
   const renderAllPanelIndicators = useCallback(() => {
     if (!manager) return;
-    for (const { instance, definition } of resolved) {
+    const outputs = outputsRef.current;
+    for (const { instance, definition } of resolvedRef.current) {
       if (!isPaneKind(definition.render.kind)) continue;
       const renderer = getRenderer(definition.render.kind);
       if (!renderer) continue;
       const values = outputs.get(instance.id);
       if (!values) continue;
-      renderer({ manager, colors, external: externalRef.current }, { instance, definition, values });
+      renderer({ manager, colors: colorsRef.current, external: externalRef.current }, { instance, definition, values });
     }
-  }, [manager, resolved, outputs, colors]);
+  }, [manager, outputsRef]);
 
   const renderAllCustomIndicators = useCallback(() => {
     if (!manager) return;
-    for (const { instance, definition } of resolved) {
+    const outputs = outputsRef.current;
+    for (const { instance, definition } of resolvedRef.current) {
       if (!isCustomKind(definition.render.kind)) continue;
       const id = definition.render.rendererId;
       if (!id) continue;
@@ -112,9 +137,9 @@ export const useGenericChartIndicatorRenderers = ({
       if (!renderer) continue;
       const values = outputs.get(instance.id);
       if (!values) continue;
-      renderer({ manager, colors, external: externalRef.current }, { instance, definition, values });
+      renderer({ manager, colors: colorsRef.current, external: externalRef.current }, { instance, definition, values });
     }
-  }, [manager, resolved, outputs, colors]);
+  }, [manager, outputsRef]);
 
   return useMemo(
     () => ({ renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators, renderInstance }),

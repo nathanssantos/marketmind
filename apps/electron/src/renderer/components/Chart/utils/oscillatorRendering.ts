@@ -1,3 +1,4 @@
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { CHART_CONFIG, PANEL_COLORS, OSCILLATOR_CONFIG, LINE_WIDTHS } from '@shared/constants';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 
@@ -108,24 +109,36 @@ export const drawHistogramBars = (
   negativeColor: string,
   barWidth: number,
 ): void => {
+  ctx.fillStyle = positiveColor;
   for (let i = visibleStart; i < visibleEnd; i++) {
     const value = values[i];
-    if (value === null || value === undefined) continue;
-
+    if (value === null || value === undefined || value < 0) continue;
     const x = indexToX(i) - barWidth / 2;
     const y = valueToY(value);
-    const height = zeroY - y;
+    ctx.fillRect(x, Math.min(y, zeroY), barWidth, Math.abs(zeroY - y));
+  }
 
-    ctx.fillStyle = value >= 0 ? positiveColor : negativeColor;
-    ctx.fillRect(x, Math.min(y, zeroY), barWidth, Math.abs(height));
+  ctx.fillStyle = negativeColor;
+  for (let i = visibleStart; i < visibleEnd; i++) {
+    const value = values[i];
+    if (value === null || value === undefined || value >= 0) continue;
+    const x = indexToX(i) - barWidth / 2;
+    const y = valueToY(value);
+    ctx.fillRect(x, Math.min(y, zeroY), barWidth, Math.abs(zeroY - y));
   }
 };
+
+export interface VisibleRange {
+  min: number;
+  max: number;
+  hasData: boolean;
+}
 
 export const calculateVisibleRange = (
   data: (number | null | undefined)[],
   startIndex: number,
   endIndex: number,
-): { min: number; max: number; hasData: boolean } => {
+): VisibleRange => {
   let min = Infinity;
   let max = -Infinity;
   let hasData = false;
@@ -139,6 +152,29 @@ export const calculateVisibleRange = (
   }
 
   return { min, max, hasData };
+};
+
+const seriesIdMap = new WeakMap<(number | null | undefined)[], number>();
+let nextSeriesId = 1;
+
+const getSeriesId = (series: (number | null | undefined)[]): number => {
+  let id = seriesIdMap.get(series);
+  if (id === undefined) {
+    id = nextSeriesId++;
+    seriesIdMap.set(series, id);
+  }
+  return id;
+};
+
+export const getCachedVisibleRange = (
+  manager: CanvasManager,
+  series: (number | null | undefined)[],
+  startIndex: number,
+  endIndex: number,
+): VisibleRange => {
+  const id = getSeriesId(series);
+  const key = `vr:${id}:${startIndex}:${endIndex}`;
+  return manager.getFrameCached<VisibleRange>(key, () => calculateVisibleRange(series, startIndex, endIndex));
 };
 
 export const createNormalizedValueToY = (

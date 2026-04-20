@@ -62,7 +62,15 @@ export class CanvasManager {
   };
   private lastRenderTime: number = 0;
   private minFrameTime: number = 16;
+  private viewportFrameTime: number = 33;
+  private overlayOnlyFrameTime: number = 33;
+  private lastViewportDirtyAt: number = 0;
   private boundsCache: BoundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
+  private frameCache: Map<unknown, unknown> | null = null;
+  private frameCacheGeneration: number = 0;
+  private offscreen: HTMLCanvasElement | null = null;
+  private offscreenCtx: CanvasRenderingContext2D | null = null;
+  private offscreenValid: boolean = false;
   private resizeObserver: ResizeObserver | null = null;
   private paddingTop: number = CHART_CONFIG.CANVAS_PADDING_TOP;
   private paddingBottom: number = CHART_CONFIG.CANVAS_PADDING_BOTTOM;
@@ -92,6 +100,7 @@ export class CanvasManager {
       this.ctx = setupCanvas(this.canvas);
       this.updateDimensions();
       this.updateKlineWidth();
+      this.offscreenValid = false;
       this.markDirty('all');
     });
     this.resizeObserver.observe(parent);
@@ -110,7 +119,16 @@ export class CanvasManager {
       const now = performance.now();
       const elapsed = now - this.lastRenderTime;
 
-      if (elapsed < this.minFrameTime && !this.dirtyFlags.all) {
+      const f = this.dirtyFlags;
+      const isOverlayOnly = f.overlays && !f.all && !f.klines && !f.viewport && !f.dimensions;
+      const isViewportOnly = f.viewport && !f.all && !f.klines && !f.dimensions;
+      const budget = isOverlayOnly
+        ? this.overlayOnlyFrameTime
+        : isViewportOnly
+          ? this.viewportFrameTime
+          : this.minFrameTime;
+
+      if (elapsed < budget && !f.all) {
         this.isAnimating = false;
         this.scheduleRender();
         return;
@@ -136,11 +154,74 @@ export class CanvasManager {
 
   public markDirty(flag: keyof DirtyFlags = 'all'): void {
     this.dirtyFlags[flag] = true;
+    if (flag !== 'overlays') this.offscreenValid = false;
+    if (flag === 'viewport') this.lastViewportDirtyAt = performance.now();
     this.scheduleRender();
+  }
+
+  public isRecentlyPanning(windowMs: number = 200): boolean {
+    return performance.now() - this.lastViewportDirtyAt < windowMs;
   }
 
   public clearDirtyFlags(): void {
     this.dirtyFlags = { klines: false, viewport: false, dimensions: false, overlays: false, all: false };
+    if (this.frameCache) this.frameCache.clear();
+    this.frameCacheGeneration++;
+  }
+
+  public getFrameCached<T>(key: unknown, compute: () => T): T {
+    if (!this.frameCache) this.frameCache = new Map();
+    if (this.frameCache.has(key)) return this.frameCache.get(key) as T;
+    const value = compute();
+    this.frameCache.set(key, value);
+    return value;
+  }
+
+  public getFrameGeneration(): number {
+    return this.frameCacheGeneration;
+  }
+
+  private ensureOffscreen(): boolean {
+    if (!this.canvas.width || !this.canvas.height) return false;
+    if (!this.offscreen) {
+      this.offscreen = document.createElement('canvas');
+    }
+    if (this.offscreen.width !== this.canvas.width || this.offscreen.height !== this.canvas.height) {
+      this.offscreen.width = this.canvas.width;
+      this.offscreen.height = this.canvas.height;
+      this.offscreenCtx = this.offscreen.getContext('2d');
+      this.offscreenValid = false;
+    }
+    if (!this.offscreenCtx) {
+      this.offscreenCtx = this.offscreen.getContext('2d');
+    }
+    return this.offscreenCtx !== null;
+  }
+
+  public snapshotBaseLayer(): void {
+    if (!this.ensureOffscreen() || !this.offscreen || !this.offscreenCtx) return;
+    this.offscreenCtx.setTransform(1, 0, 0, 1, 0, 0);
+    this.offscreenCtx.clearRect(0, 0, this.offscreen.width, this.offscreen.height);
+    this.offscreenCtx.drawImage(this.canvas, 0, 0);
+    this.offscreenValid = true;
+  }
+
+  public restoreBaseLayer(): boolean {
+    if (!this.ctx || !this.offscreen || !this.offscreenValid) return false;
+    this.ctx.save();
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.drawImage(this.offscreen, 0, 0);
+    this.ctx.restore();
+    return true;
+  }
+
+  public invalidateBaseLayer(): void {
+    this.offscreenValid = false;
+  }
+
+  public hasBaseSnapshot(): boolean {
+    return this.offscreenValid;
   }
 
   public getDirtyFlags(): Readonly<DirtyFlags> {

@@ -1,17 +1,25 @@
-import type { Kline } from '@marketmind/types';
+import type { Kline, MarketType } from '@marketmind/types';
 import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import { computeMulti, computeSingle } from '@renderer/workers/pineWorkerService';
 import { getNativeEvaluator, type NativeEvaluatorContext } from '@renderer/lib/indicators/nativeEvaluators';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
+import type { MutableRefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 export type IndicatorOutputSeries = (number | null)[];
 export type IndicatorOutputs = Record<string, IndicatorOutputSeries>;
 
 export interface UseGenericChartIndicatorsResult {
-  outputs: Map<string, IndicatorOutputs>;
-  isComputing: boolean;
+  outputsRef: MutableRefObject<Map<string, IndicatorOutputs>>;
+}
+
+export interface LiveDataTarget {
+  symbol: string;
+  marketType: MarketType;
+  timeframe: string;
 }
 
 export interface BatchKey {
@@ -31,6 +39,8 @@ export const SINGLE_PINE_SCRIPTS = new Set([
 export const MULTI_PINE_SCRIPTS = new Set(['bb', 'macd', 'stoch', 'kc', 'supertrend', 'dmi']);
 
 export const COSMETIC_PARAM_KEYS = new Set(['color', 'lineWidth']);
+
+const TICK_POLL_MS = 500;
 
 export const stableSerialize = (params: Record<string, IndicatorParamValue>): string => {
   const keys = Object.keys(params).filter((k) => !COSMETIC_PARAM_KEYS.has(k)).sort();
@@ -102,16 +112,110 @@ const runNativeBatch = (
   return evaluator(klines, params, ctx);
 };
 
+const syncLiveData = (
+  target: LiveDataTarget,
+  instances: IndicatorInstance[],
+  outputs: Map<string, IndicatorOutputs>,
+  klines: Kline[],
+): void => {
+  const key = buildChartLiveDataKey(target.symbol, target.timeframe, target.marketType);
+  const indicators = new Map<string, ChartLiveIndicatorEntry>();
+  for (const inst of instances) {
+    if (!inst.visible) continue;
+    const out = outputs.get(inst.id);
+    if (!out) continue;
+    indicators.set(inst.userIndicatorId, { catalogType: inst.catalogType, outputs: out });
+  }
+  useChartLiveDataStore.getState().setEntry(key, {
+    symbol: target.symbol,
+    interval: target.timeframe,
+    marketType: target.marketType,
+    klines,
+    indicators,
+  });
+};
+
 export const useGenericChartIndicators = (
   klines: Kline[],
   instances: IndicatorInstance[],
   externalCtx: NativeEvaluatorContext = {},
+  managerRef?: MutableRefObject<CanvasManager | null>,
+  liveDataTarget?: LiveDataTarget | null,
 ): UseGenericChartIndicatorsResult => {
   const batches = useMemo(() => buildBatches(instances), [instances]);
+
   const klinesRef = useRef(klines);
   klinesRef.current = klines;
+  const instancesRef = useRef(instances);
+  instancesRef.current = instances;
+  const batchesRef = useRef(batches);
+  batchesRef.current = batches;
   const ctxRef = useRef<NativeEvaluatorContext>(externalCtx);
   ctxRef.current = externalCtx;
+  const managerRefStable = useRef(managerRef);
+  managerRefStable.current = managerRef;
+  const liveTargetRef = useRef(liveDataTarget ?? null);
+  liveTargetRef.current = liveDataTarget ?? null;
+
+  const outputsRef = useRef<Map<string, IndicatorOutputs>>(new Map());
+  const cancellationRef = useRef<{ cancelled: boolean } | null>(null);
+  const pendingRef = useRef(false);
+
+  const runCompute = useCallback(() => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+
+    queueMicrotask(async () => {
+      pendingRef.current = false;
+      if (cancellationRef.current) cancellationRef.current.cancelled = true;
+      const token = { cancelled: false };
+      cancellationRef.current = token;
+
+      const currentBatches = batchesRef.current;
+      const currentKlines = klinesRef.current;
+      const currentCtx = ctxRef.current;
+      const currentInstances = instancesRef.current;
+      const currentTarget = liveTargetRef.current;
+      const currentManagerRef = managerRefStable.current;
+
+      const out = outputsRef.current;
+
+      if (currentKlines.length === 0 || currentBatches.length === 0) {
+        if (out.size > 0) out.clear();
+        currentManagerRef?.current?.markDirty('overlays');
+        if (currentTarget) syncLiveData(currentTarget, currentInstances, out, currentKlines);
+        return;
+      }
+
+      const expectedIds = new Set<string>();
+      for (const batch of currentBatches) {
+        if (token.cancelled) return;
+        try {
+          const result = batch.service === 'pine'
+            ? await runPineBatch(currentKlines, batch.scriptId, batch.params)
+            : runNativeBatch(currentKlines, batch.scriptId, batch.params, currentCtx);
+          for (const id of batch.instanceIds) {
+            out.set(id, result);
+            expectedIds.add(id);
+          }
+        } catch (err) {
+          console.error(`[useGenericChartIndicators] batch failed: ${batch.service}/${batch.scriptId}`, err);
+          for (const id of batch.instanceIds) {
+            out.set(id, {});
+            expectedIds.add(id);
+          }
+        }
+      }
+      if (token.cancelled) return;
+
+      for (const id of Array.from(out.keys())) {
+        if (!expectedIds.has(id)) out.delete(id);
+      }
+
+      currentManagerRef?.current?.markDirty('overlays');
+      if (currentTarget) syncLiveData(currentTarget, currentInstances, out, currentKlines);
+    });
+  }, []);
 
   const klinesSignature = useMemo(() => {
     if (klines.length === 0) return 'empty';
@@ -129,45 +233,32 @@ export const useGenericChartIndicators = (
     return `e${events}|f${fp}|h${heat}|l${liq}|i${interval}`;
   }, [externalCtx]);
 
-  const [outputs, setOutputs] = useState<Map<string, IndicatorOutputs>>(() => new Map());
-  const [isComputing, setIsComputing] = useState(false);
+  useEffect(() => {
+    runCompute();
+  }, [batches, klinesSignature, ctxSignature, runCompute]);
+
+  const lastTickKeyRef = useRef<string>('');
+  useEffect(() => {
+    const id = setInterval(() => {
+      const arr = klinesRef.current;
+      if (arr.length === 0) return;
+      const manager = managerRefStable.current?.current;
+      if (manager?.isRecentlyPanning?.()) return;
+      const last = arr[arr.length - 1]!;
+      const key = `${last.close}:${last.high}:${last.low}:${last.volume}`;
+      if (key === lastTickKeyRef.current) return;
+      lastTickKeyRef.current = key;
+      runCompute();
+    }, TICK_POLL_MS);
+    return () => clearInterval(id);
+  }, [runCompute]);
 
   useEffect(() => {
-    if (klines.length === 0 || batches.length === 0) {
-      setOutputs(new Map());
-      setIsComputing(false);
-      return;
-    }
+    const target = liveDataTarget;
+    if (!target) return;
+    const key = buildChartLiveDataKey(target.symbol, target.timeframe, target.marketType);
+    return () => useChartLiveDataStore.getState().clearEntry(key);
+  }, [liveDataTarget?.symbol, liveDataTarget?.marketType, liveDataTarget?.timeframe]);
 
-    let cancelled = false;
-    setIsComputing(true);
-
-    const compute = async () => {
-      const next = new Map<string, IndicatorOutputs>();
-      for (const batch of batches) {
-        if (cancelled) return;
-        try {
-          const result = batch.service === 'pine'
-            ? await runPineBatch(klinesRef.current, batch.scriptId, batch.params)
-            : runNativeBatch(klinesRef.current, batch.scriptId, batch.params, ctxRef.current);
-          for (const id of batch.instanceIds) next.set(id, result);
-        } catch (err) {
-          console.error(`[useGenericChartIndicators] batch failed: ${batch.service}/${batch.scriptId}`, err);
-          for (const id of batch.instanceIds) next.set(id, {});
-        }
-      }
-      if (!cancelled) {
-        setOutputs(next);
-        setIsComputing(false);
-      }
-    };
-
-    void compute();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [batches, klinesSignature, klines.length, ctxSignature]);
-
-  return useMemo(() => ({ outputs, isComputing }), [outputs, isComputing]);
+  return useMemo(() => ({ outputsRef }), []);
 };

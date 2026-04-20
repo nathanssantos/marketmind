@@ -1,6 +1,6 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { MutableRefObject } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { useOrderDragHandler } from '../useOrderDragHandler';
@@ -10,13 +10,6 @@ import type { UseGenericChartIndicatorRenderersResult } from './useGenericChartI
 import type { ChartColors } from '@renderer/hooks/useChartColors';
 import { renderDragPreview, renderSlTpPreview, renderTsPreview, renderOrderPreview } from './chartPreviewRenderers';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
-
-const timed = <T>(section: string, fn: () => T): T => {
-  const ts = perfMonitor.mark();
-  const result = fn();
-  perfMonitor.measure(section, ts);
-  return result;
-};
 
 export interface UseChartRenderPipelineProps {
   manager: CanvasManager | null;
@@ -34,6 +27,23 @@ export interface UseChartRenderPipelineProps {
   tsPlacementActive: boolean;
   tsPlacementPreviewPrice: number | null;
   orderPreviewRef: MutableRefObject<{ price: number; type: 'long' | 'short' } | null>;
+}
+
+interface PipelineRefs {
+  chartType: string;
+  allExecutions: BackendExecution[];
+  base: UseChartBaseRenderersResult;
+  generic: UseGenericChartIndicatorRenderersResult;
+  renderOrderLines: () => void;
+  renderGridPreview: () => void;
+  renderDrawings: () => void;
+  renderEventScale: () => void;
+  orderDragHandler: ReturnType<typeof useOrderDragHandler>;
+  slTpPlacement: ReturnType<typeof useSlTpPlacementMode>;
+  tsPlacementActive: boolean;
+  tsPlacementPreviewPrice: number | null;
+  orderPreviewRef: MutableRefObject<{ price: number; type: 'long' | 'short' } | null>;
+  t: ReturnType<typeof useTranslation>['t'];
 }
 
 export const useChartRenderPipeline = ({
@@ -55,54 +65,101 @@ export const useChartRenderPipeline = ({
 }: UseChartRenderPipelineProps): void => {
   const { t } = useTranslation();
 
-  const {
-    renderGrid,
-    renderKlines,
-    renderLineChart,
-    renderCurrentPriceLine_Line,
-    renderCurrentPriceLine_Label,
-    renderCrosshairPriceLine,
-    renderWatermark,
-  } = baseRenderers;
+  const refs = useRef<PipelineRefs>({
+    chartType,
+    allExecutions,
+    base: baseRenderers,
+    generic: genericRenderers,
+    renderOrderLines,
+    renderGridPreview,
+    renderDrawings,
+    renderEventScale,
+    orderDragHandler,
+    slTpPlacement,
+    tsPlacementActive,
+    tsPlacementPreviewPrice,
+    orderPreviewRef,
+    t,
+  });
 
-  const { renderAllOverlayIndicators, renderAllPanelIndicators, renderAllCustomIndicators } = genericRenderers;
+  refs.current.chartType = chartType;
+  refs.current.allExecutions = allExecutions;
+  refs.current.base = baseRenderers;
+  refs.current.generic = genericRenderers;
+  refs.current.renderOrderLines = renderOrderLines;
+  refs.current.renderGridPreview = renderGridPreview;
+  refs.current.renderDrawings = renderDrawings;
+  refs.current.renderEventScale = renderEventScale;
+  refs.current.orderDragHandler = orderDragHandler;
+  refs.current.slTpPlacement = slTpPlacement;
+  refs.current.tsPlacementActive = tsPlacementActive;
+  refs.current.tsPlacementPreviewPrice = tsPlacementPreviewPrice;
+  refs.current.orderPreviewRef = orderPreviewRef;
+  refs.current.t = t;
 
   useEffect(() => {
     if (!manager) return;
 
-    const render = (): void => {
-      timed('clear', () => manager.clear());
-      timed('watermark', renderWatermark);
-      timed('grid', renderGrid);
-      timed('customIndicators', renderAllCustomIndicators);
-      if (chartType === 'kline' || chartType === 'tick' || chartType === 'volume' || chartType === 'footprint') {
-        timed('klines', renderKlines);
-      } else {
-        timed('lineChart', renderLineChart);
-      }
-      timed('overlayIndicators', renderAllOverlayIndicators);
-      timed('drawings', renderDrawings);
-      timed('eventScale', renderEventScale);
-      timed('panelIndicators', renderAllPanelIndicators);
-      timed('currentPriceLine', renderCurrentPriceLine_Line);
-      timed('orderLines', renderOrderLines);
-      timed('gridPreview', renderGridPreview);
-
-      timed('previews', () => {
-        renderDragPreview(manager, orderDragHandler, t);
-        renderSlTpPreview(manager, slTpPlacement, allExecutions);
-        renderTsPreview(manager, tsPlacementActive, tsPlacementPreviewPrice);
-      });
-
-      timed('currentPriceLabel', renderCurrentPriceLine_Label);
-      timed('crosshair', renderCrosshairPriceLine);
-
-      timed('orderPreview', () => renderOrderPreview(manager, orderPreviewRef, t));
+    const timed = <T,>(section: string, fn: () => T): T => {
+      const ts = perfMonitor.mark();
+      const result = fn();
+      perfMonitor.measure(section, ts);
+      return result;
     };
 
-    const renderWithDirtyFlagCleanup = () => {
+    const renderBase = (): void => {
+      const r = refs.current;
+      const b = r.base;
+      const g = r.generic;
+
+      timed('clear', () => manager.clear());
+      timed('watermark', b.renderWatermark);
+      timed('grid', b.renderGrid);
+      timed('customIndicators', g.renderAllCustomIndicators);
+      if (r.chartType === 'kline' || r.chartType === 'tick' || r.chartType === 'volume' || r.chartType === 'footprint') {
+        timed('klines', b.renderKlines);
+      } else {
+        timed('lineChart', b.renderLineChart);
+      }
+      timed('overlayIndicators', g.renderAllOverlayIndicators);
+      timed('panelIndicators', g.renderAllPanelIndicators);
+      timed('currentPriceLine', b.renderCurrentPriceLine_Line);
+    };
+
+    const renderOverlayOnly = (): void => {
+      const r = refs.current;
+      const b = r.base;
+
+      timed('drawings', r.renderDrawings);
+      timed('eventScale', r.renderEventScale);
+      timed('orderLines', r.renderOrderLines);
+      timed('gridPreview', r.renderGridPreview);
+
+      timed('previews', () => {
+        renderDragPreview(manager, r.orderDragHandler, r.t);
+        renderSlTpPreview(manager, r.slTpPlacement, r.allExecutions);
+        renderTsPreview(manager, r.tsPlacementActive, r.tsPlacementPreviewPrice);
+      });
+
+      timed('currentPriceLabel', b.renderCurrentPriceLine_Label);
+      timed('crosshair', b.renderCrosshairPriceLine);
+
+      timed('orderPreview', () => renderOrderPreview(manager, r.orderPreviewRef, r.t));
+    };
+
+    const renderWithDirtyFlagCleanup = (): void => {
       const frameTs = perfMonitor.beginFrame();
-      render();
+      const flags = manager.getDirtyFlags();
+      const isOverlayOnly = flags.overlays && !flags.all && !flags.klines && !flags.viewport && !flags.dimensions;
+
+      if (isOverlayOnly && manager.hasBaseSnapshot() && manager.restoreBaseLayer()) {
+        renderOverlayOnly();
+      } else {
+        renderBase();
+        manager.snapshotBaseLayer();
+        renderOverlayOnly();
+      }
+
       manager.clearDirtyFlags();
       perfMonitor.endFrame(frameTs);
     };
@@ -112,28 +169,5 @@ export const useChartRenderPipeline = ({
     return () => {
       manager.setRenderCallback(null);
     };
-  }, [
-    manager,
-    renderWatermark,
-    renderGrid,
-    renderKlines,
-    renderLineChart,
-    renderAllOverlayIndicators,
-    renderAllPanelIndicators,
-    renderAllCustomIndicators,
-    renderCurrentPriceLine_Line,
-    renderCurrentPriceLine_Label,
-    renderCrosshairPriceLine,
-    renderOrderLines,
-    renderGridPreview,
-    renderDrawings,
-    renderEventScale,
-    chartType,
-    allExecutions,
-    orderDragHandler,
-    slTpPlacement,
-    tsPlacementActive,
-    tsPlacementPreviewPrice,
-    t,
-  ]);
+  }, [manager]);
 };
