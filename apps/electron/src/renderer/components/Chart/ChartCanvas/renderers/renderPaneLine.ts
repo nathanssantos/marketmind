@@ -3,7 +3,6 @@ import {
   createDynamicValueToY,
   createNormalizedValueToY,
   drawLineOnPanel,
-  drawPanelBackground,
   drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
@@ -47,8 +46,6 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
     ?? getInstanceParam<string>(input.instance, input.definition, 'color')
     ?? DEFAULT_LINE_COLOR;
   const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
-
-  drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
   const oversold = input.definition.defaultThresholds?.oversold;
   const overbought = input.definition.defaultThresholds?.overbought;
