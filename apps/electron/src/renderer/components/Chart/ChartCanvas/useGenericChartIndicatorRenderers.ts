@@ -1,10 +1,10 @@
 import type { IndicatorDefinition } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
-import type { IndicatorInstance } from '@renderer/store/indicatorStore';
+import { useIndicatorStore, type IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { MutableRefObject } from 'react';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
 import type { GenericRenderer as GenericRendererFn, GenericRendererExternal } from './renderers';
 import { getCustomRenderer, getRenderer } from './renderers';
@@ -12,7 +12,6 @@ import { getCustomRenderer, getRenderer } from './renderers';
 export interface UseGenericChartIndicatorRenderersProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
-  instances: IndicatorInstance[];
   outputsRef: MutableRefObject<Map<string, IndicatorOutputs>>;
   external?: GenericRendererExternal;
 }
@@ -41,10 +40,20 @@ const resolveRenderer = (definition: IndicatorDefinition): GenericRendererFn | u
   return getRenderer(definition.render.kind);
 };
 
+const buildResolved = (instances: IndicatorInstance[]): ResolvedInstance[] => {
+  const list: ResolvedInstance[] = [];
+  for (const instance of instances) {
+    if (!instance.visible) continue;
+    const definition = INDICATOR_CATALOG[instance.catalogType];
+    if (!definition) continue;
+    list.push({ instance, definition });
+  }
+  return list.sort((a, b) => (a.instance.zIndex ?? 0) - (b.instance.zIndex ?? 0));
+};
+
 export const useGenericChartIndicatorRenderers = ({
   manager,
   colors,
-  instances,
   outputsRef,
   external,
 }: UseGenericChartIndicatorRenderersProps): UseGenericChartIndicatorRenderersResult => {
@@ -53,19 +62,19 @@ export const useGenericChartIndicatorRenderers = ({
   const colorsRef = useRef(colors);
   colorsRef.current = colors;
 
-  const resolved = useMemo<ResolvedInstance[]>(() => {
-    const list: ResolvedInstance[] = [];
-    for (const instance of instances) {
-      if (!instance.visible) continue;
-      const definition = INDICATOR_CATALOG[instance.catalogType];
-      if (!definition) continue;
-      list.push({ instance, definition });
-    }
-    return list.sort((a, b) => (a.instance.zIndex ?? 0) - (b.instance.zIndex ?? 0));
-  }, [instances]);
+  const resolvedRef = useRef<ResolvedInstance[]>(buildResolved(useIndicatorStore.getState().instances));
+  const instancesRef = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
 
-  const resolvedRef = useRef(resolved);
-  resolvedRef.current = resolved;
+  useEffect(() => {
+    const unsubscribe = useIndicatorStore.subscribe((state) => {
+      const next = state.instances;
+      if (next === instancesRef.current) return;
+      instancesRef.current = next;
+      resolvedRef.current = buildResolved(next);
+      manager?.markDirty('all');
+    });
+    return unsubscribe;
+  }, [manager]);
 
   const renderInstance = useCallback(
     (instanceId: string) => {
