@@ -14,6 +14,38 @@ export interface FixtureKline {
   takerBuyQuoteVolume: number;
 }
 
+export interface RawKlineRow {
+  symbol: string;
+  interval: string;
+  openTime: string;
+  closeTime: string;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  quoteVolume: string;
+  trades: number;
+  takerBuyBaseVolume: string;
+  takerBuyQuoteVolume: string;
+}
+
+export const toRawKline = (k: FixtureKline): RawKlineRow => ({
+  symbol: k.symbol,
+  interval: k.interval,
+  openTime: new Date(k.openTime).toISOString(),
+  closeTime: new Date(k.closeTime).toISOString(),
+  open: String(k.open),
+  high: String(k.high),
+  low: String(k.low),
+  close: String(k.close),
+  volume: String(k.volume),
+  quoteVolume: String(k.quoteVolume),
+  trades: k.trades,
+  takerBuyBaseVolume: String(k.takerBuyBaseVolume),
+  takerBuyQuoteVolume: String(k.takerBuyQuoteVolume),
+});
+
 const INTERVAL_MS: Record<string, number> = {
   '1m': 60_000,
   '5m': 5 * 60_000,

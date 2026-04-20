@@ -10,5 +10,23 @@
     "p95FrameMs": 0.20000004768371582,
     "renderRate": 124.80499215326704,
     "generatedAt": "2026-04-20T16:24:10.081Z"
+  },
+  "price-tick-storm": {
+    "fps": 28,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 124.30939230612938,
+    "generatedAt": "2026-04-20T20:36:41.941Z"
+  },
+  "kline-replace-loop": {
+    "fps": 28,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 119.04761919779452,
+    "generatedAt": "2026-04-20T20:36:48.667Z"
+  },
+  "kline-append": {
+    "fps": 28,
+    "p95FrameMs": 0.20000004768371582,
+    "renderRate": 154.08320498726704,
+    "generatedAt": "2026-04-20T20:36:55.444Z"
   }
 }

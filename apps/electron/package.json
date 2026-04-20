@@ -56,6 +56,7 @@
     "test:visual": "playwright test --project=visual-regression",
     "test:visual:update": "playwright test --project=visual-regression --update-snapshots",
     "test:perf": "playwright test --project=perf --reporter=list",
+    "test:perf:diagnose": "PERF_DIAGNOSE=1 playwright test --project=perf --reporter=list",
     "test:perf:update": "tsx ../../scripts/perf/update-baseline.ts",
     "build:main": "VITE_TARGET=electron vite build",
     "test:e2e:electron": "pnpm build:main && playwright test --project=electron --reporter=list",
