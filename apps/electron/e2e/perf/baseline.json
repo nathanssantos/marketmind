@@ -52,5 +52,39 @@
     "droppedFrames": 0,
     "longSections": 0,
     "generatedAt": "2026-04-20T20:57:39.815Z"
+  },
+  "many-drawings": {
+    "fps": 28,
+    "p95FrameMs": 0.20000004768371582,
+    "renderRate": 78.1250002910383,
+    "droppedFrames": 0,
+    "longSections": 0,
+    "generatedAt": "2026-04-21T14:57:36.362Z"
+  },
+  "price-tick-storm-20": {
+    "fps": 27,
+    "p95FrameMs": 0.30000007152557373,
+    "renderRate": 123.45679021430368,
+    "generatedAt": "2026-04-21T14:57:43.060Z"
+  },
+  "mobile-overlay": {
+    "fps": 28,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 113.63636348242602,
+    "generatedAt": "2026-04-21T14:57:49.773Z"
+  },
+  "mobile-pan-zoom": {
+    "fps": 28,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 39.603960396039604,
+    "droppedFrames": 0,
+    "longSections": 0,
+    "generatedAt": "2026-04-21T14:57:57.487Z"
+  },
+  "mobile-tick-storm": {
+    "fps": 27,
+    "p95FrameMs": 0.10000002384185791,
+    "renderRate": 136.45224168369128,
+    "generatedAt": "2026-04-21T14:58:04.159Z"
   }
 }

@@ -13,9 +13,25 @@ interface E2EIndicatorStoreState {
   instances: Array<{ id: string; catalogType: string }>;
 }
 
+interface E2EDrawingPayload {
+  id: string;
+  type: string;
+  symbol: string;
+  interval: string;
+  createdAt: number;
+  updatedAt: number;
+  visible: boolean;
+  locked: boolean;
+  zIndex: number;
+  [extra: string]: unknown;
+}
+
 interface E2EDrawingStoreState {
   activeTool: string | null;
   setActiveTool: (tool: string | null) => void;
+  addDrawing: (drawing: E2EDrawingPayload) => void;
+  clearAll: () => void;
+  setDrawingsForSymbol: (symbol: string, interval: string, drawings: E2EDrawingPayload[]) => void;
 }
 
 interface E2EPriceStoreState {
@@ -360,6 +376,75 @@ export const driveWheelZoom = async (page: Page, frames: number, deltaPx = 80): 
     await page.mouse.wheel(0, dir * deltaPx);
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
   }
+};
+
+export interface StressDrawingSeed {
+  type: 'line' | 'rectangle' | 'horizontalLine';
+  startIndex: number;
+  startPrice: number;
+  endIndex?: number;
+  endPrice?: number;
+}
+
+/**
+ * Populate the drawing store with a batch of drawings for stress-testing the
+ * drawing renderer layer. Uses store mutations directly (not UI drag) so the
+ * scenario is deterministic and fast to set up.
+ */
+export const seedDrawings = async (
+  page: Page,
+  symbol: string,
+  interval: string,
+  seeds: StressDrawingSeed[],
+): Promise<number> => {
+  await waitForE2EBridge(page);
+  return page.evaluate(
+    ({ symbol: sym, interval: intv, seeds: s }) => {
+      const store = window.__drawingStore;
+      if (!store) throw new Error('drawing store not exposed on window');
+      const state = store.getState();
+      const now = Date.now();
+      const drawings = s.map((seed, i) => {
+        const base = {
+          id: `e2e_draw_${i}_${now}`,
+          type: seed.type,
+          symbol: sym,
+          interval: intv,
+          createdAt: now,
+          updatedAt: now,
+          visible: true,
+          locked: false,
+          zIndex: i,
+        };
+        if (seed.type === 'horizontalLine') {
+          return {
+            ...base,
+            index: seed.startIndex,
+            price: seed.startPrice,
+          };
+        }
+        return {
+          ...base,
+          startIndex: seed.startIndex,
+          startPrice: seed.startPrice,
+          endIndex: seed.endIndex ?? seed.startIndex + 10,
+          endPrice: seed.endPrice ?? seed.startPrice,
+        };
+      });
+      state.setDrawingsForSymbol(sym, intv, drawings);
+      return drawings.length;
+    },
+    { symbol, interval, seeds },
+  );
+};
+
+export const clearDrawings = async (page: Page): Promise<void> => {
+  await waitForE2EBridge(page);
+  await page.evaluate(() => {
+    const store = window.__drawingStore;
+    if (!store) return;
+    store.getState().clearAll();
+  });
 };
 
 export { isKlineListQueryKey };
