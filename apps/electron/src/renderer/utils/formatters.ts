@@ -1,5 +1,8 @@
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
+import { formatPriceDisplay } from '@marketmind/utils';
 import type { ChartContextData } from '../context/ChartContext';
+
+export { formatPriceDisplay };
 
 export const getChartPriceDecimals = (price: number): number => {
   const absPrice = Math.abs(price);
@@ -12,22 +15,6 @@ export const getChartPriceDecimals = (price: number): number => {
 
 export const formatChartPrice = (price: number): string => {
   return price.toFixed(getChartPriceDecimals(price));
-};
-
-export const formatPriceDisplay = (price: number): string => {
-  if (price >= 1000000) {
-    return `${(price / 1000000).toFixed(2)}M`;
-  }
-  if (price >= 1000) {
-    return `${(price / 1000).toFixed(2)}K`;
-  }
-  if (price >= 1) {
-    return price.toFixed(2);
-  }
-  if (price >= 0.01) {
-    return price.toFixed(4);
-  }
-  return price.toFixed(8);
 };
 
 export const formatTimestamp = (timestamp: number, interval?: string, previousTimestamp?: number): string => {

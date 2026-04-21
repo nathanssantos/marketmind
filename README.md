@@ -171,7 +171,16 @@ pnpm --filter @marketmind/backend test
 
 # Run with coverage report
 pnpm --filter @marketmind/electron test:coverage
+
+# Chart perf regression harness (Playwright)
+pnpm --filter @marketmind/electron test:perf           # run the perf suite
+pnpm --filter @marketmind/electron test:perf:diagnose  # + top-5 bottleneck dump
+
+# Electron IPC / preload / packaged-boot smoke
+pnpm --filter @marketmind/electron test:e2e:electron
 ```
+
+See [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md) for the full layered-testing picture (Playwright MCP, chart perf harness, Electron smoke) and [`apps/electron/e2e/perf/README.md`](apps/electron/e2e/perf/README.md) for the perf-specific workflow.
 
 **Test Stats:**
 - **~7,500+ tests** across the monorepo

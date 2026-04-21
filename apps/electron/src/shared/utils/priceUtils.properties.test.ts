@@ -6,7 +6,7 @@ import {
   calculateQuoteQty,
   comparePrice,
   dividePrice,
-  formatPrice,
+  formatPriceExact,
   maxPrice,
   minPrice,
   multiplyPrice,
@@ -40,11 +40,11 @@ describe('Property-Based Testing: Price Utils', () => {
     });
   });
 
-  describe('formatPrice Properties', () => {
+  describe('formatPriceExact Properties', () => {
     it('should return string with correct decimal places', () => {
       fc.assert(
         fc.property(positiveDoubleArb, fc.integer({ min: 0, max: 10 }), (price, precision) => {
-          const formatted = formatPrice(price, precision);
+          const formatted = formatPriceExact(price, precision);
           const parts = formatted.split('.');
           return parts.length === 1 ? precision === 0 : parts[1]?.length === precision;
         }),
@@ -55,7 +55,7 @@ describe('Property-Based Testing: Price Utils', () => {
     it('should round-trip correctly', () => {
       fc.assert(
         fc.property(positiveDoubleArb, (price) => {
-          const formatted = formatPrice(price, 8);
+          const formatted = formatPriceExact(price, 8);
           const parsed = parseFloat(formatted);
           return Math.abs(parsed - price) < 0.00000001;
         }),

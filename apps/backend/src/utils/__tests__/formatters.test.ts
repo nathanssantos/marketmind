@@ -10,7 +10,7 @@ import {
 } from '../formatters';
 
 describe('formatters', () => {
-  describe('formatPrice', () => {
+  describe('formatPrice (re-exported from @marketmind/utils)', () => {
     it('should format prices >= 1 to 2 decimal places', () => {
       expect(formatPrice(1)).toBe('1.00');
       expect(formatPrice(100.456)).toBe('100.46');
@@ -21,6 +21,12 @@ describe('formatters', () => {
       expect(formatPrice(0.5)).toBe('0.500000');
       expect(formatPrice(0.000123)).toBe('0.000123');
       expect(formatPrice(0.99)).toBe('0.990000');
+    });
+
+    it('should use fixed decimals when options.decimals is provided', () => {
+      expect(formatPrice(1234.5678, { decimals: 0 })).toBe('1235');
+      expect(formatPrice(1234.5678, { decimals: 3 })).toBe('1234.568');
+      expect(formatPrice(0.5, { decimals: 2 })).toBe('0.50');
     });
   });
 
