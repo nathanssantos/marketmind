@@ -171,8 +171,11 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @marketmind/electron exec playwright install --with-deps chromium
 
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
       - name: Run E2E tests
-        run: pnpm --filter @marketmind/electron test:e2e
+        run: pnpm --filter @marketmind/electron exec playwright test --project=chromium
         env:
           CI: true
 
