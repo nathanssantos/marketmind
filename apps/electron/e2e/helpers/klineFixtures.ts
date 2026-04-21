@@ -1,18 +1,6 @@
-export interface FixtureKline {
-  symbol: string;
-  interval: string;
-  openTime: number;
-  closeTime: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  quoteVolume: number;
-  trades: number;
-  takerBuyBaseVolume: number;
-  takerBuyQuoteVolume: number;
-}
+import type { TestKline } from '@marketmind/types';
+
+export type { TestKline } from '@marketmind/types';
 
 export interface RawKlineRow {
   symbol: string;
@@ -30,7 +18,7 @@ export interface RawKlineRow {
   takerBuyQuoteVolume: string;
 }
 
-export const toRawKline = (k: FixtureKline): RawKlineRow => ({
+export const toRawKline = (k: TestKline): RawKlineRow => ({
   symbol: k.symbol,
   interval: k.interval,
   openTime: new Date(k.openTime).toISOString(),
@@ -83,7 +71,7 @@ export interface GenerateKlinesOptions {
   endTime?: number;
 }
 
-export const generateKlines = (opts: GenerateKlinesOptions): FixtureKline[] => {
+export const generateKlines = (opts: GenerateKlinesOptions): TestKline[] => {
   const count = opts.count;
   const seed = opts.seed ?? 42;
   const basePrice = opts.basePrice ?? 50_000;
@@ -94,7 +82,7 @@ export const generateKlines = (opts: GenerateKlinesOptions): FixtureKline[] => {
   const endTime = opts.endTime ?? Math.floor(Date.now() / intervalMs) * intervalMs;
 
   const rng = mulberry32(seed);
-  const klines: FixtureKline[] = [];
+  const klines: TestKline[] = [];
   let price = basePrice;
 
   for (let i = 0; i < count; i++) {
@@ -133,7 +121,7 @@ export const generateKlines = (opts: GenerateKlinesOptions): FixtureKline[] => {
   return klines;
 };
 
-export const nextKline = (prev: FixtureKline, seed: number): FixtureKline => {
+export const nextKline = (prev: TestKline, seed: number): TestKline => {
   const rng = mulberry32(seed);
   const intervalMs = (prev.closeTime - prev.openTime) + 1;
   const drift = (rng.next() - 0.5) * 0.008;

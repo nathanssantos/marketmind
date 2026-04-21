@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { PerfSnapshot } from '../../src/renderer/utils/canvas/perfMonitor';
-import { toRawKline, type FixtureKline, type RawKlineRow } from './klineFixtures';
+import { toRawKline, type TestKline, type RawKlineRow } from './klineFixtures';
 
 interface E2EIndicatorStoreState {
   addInstance: (input: {
@@ -268,7 +268,7 @@ export const updateLatestKline = async (
  * Append a new kline to every `kline.list` cache entry. The fixture is
  * pre-stringified to match the raw-row shape used by the tRPC mock.
  */
-export const appendKline = async (page: Page, kline: FixtureKline): Promise<number> => {
+export const appendKline = async (page: Page, kline: TestKline): Promise<number> => {
   const raw: RawKlineRow = toRawKline(kline);
   return page.evaluate((rawRow) => {
     const qc = window.__queryClient;

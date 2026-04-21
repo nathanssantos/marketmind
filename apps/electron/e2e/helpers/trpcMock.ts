@@ -1,11 +1,11 @@
 import type { Page, Route } from '@playwright/test';
-import { toRawKline, type FixtureKline } from './klineFixtures';
+import { toRawKline, type TestKline } from './klineFixtures';
 
 type TrpcResolver = (input: unknown) => unknown;
 type TrpcResolverMap = Record<string, TrpcResolver | unknown>;
 
 export interface TrpcMockOptions {
-  klines?: FixtureKline[];
+  klines?: TestKline[];
   overrides?: TrpcResolverMap;
 }
 
