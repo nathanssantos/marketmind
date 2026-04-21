@@ -78,8 +78,8 @@ export const useCurrencyAutoRefresh = () => {
   const refreshRate = useCurrencyStore((s) => s.refreshRate);
 
   useEffect(() => {
-    refreshRate();
-    const interval = setInterval(refreshRate, REFRESH_INTERVAL_MS);
+    void refreshRate();
+    const interval = setInterval(() => { void refreshRate(); }, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [refreshRate]);
 };

@@ -21,9 +21,9 @@ export const LoginPage = () => {
     try {
       const result = await login(email, password, rememberMe);
       if (result.requiresTwoFactor) {
-        navigate('/two-factor', { state: { userId: result.userId, rememberMe } });
+        void navigate('/two-factor', { state: { userId: result.userId, rememberMe } });
       } else {
-        navigate('/');
+        void navigate('/');
       }
     } catch {
       // Error is handled by loginError state
@@ -38,7 +38,7 @@ export const LoginPage = () => {
 
   return (
     <AuthLayout title={t('auth.login.title')} subtitle={t('auth.login.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
             <Alert.Root status="error" size="sm">

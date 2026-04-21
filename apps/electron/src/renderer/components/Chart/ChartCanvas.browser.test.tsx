@@ -152,8 +152,6 @@ describe('Canvas Drawing Functions - Real Browser Tests', () => {
     });
 
     test('drawLine draws a line on canvas', () => {
-        const initialWidth = ctx.lineWidth;
-
         expect(() => {
             drawLine(ctx, 0, 0, 800, 600, '#ffffff', 2);
         }).not.toThrow();

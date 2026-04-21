@@ -32,7 +32,7 @@ export const VerifyEmailPage = () => {
 
   useEffect(() => {
     if (!verified) return;
-    const timer = setTimeout(() => navigate('/'), AUTH_UI.FEEDBACK_TIMEOUT_MS);
+    const timer = setTimeout(() => { void navigate('/'); }, AUTH_UI.FEEDBACK_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [verified, navigate]);
 
@@ -102,7 +102,7 @@ export const VerifyEmailPage = () => {
         <Button
           variant="outline"
           width="full"
-          onClick={handleResend}
+          onClick={() => { void handleResend(); }}
           loading={isResendingVerification}
         >
           {t('auth.verifyEmail.resend')}
@@ -111,7 +111,7 @@ export const VerifyEmailPage = () => {
         <Button
           variant="ghost"
           width="full"
-          onClick={() => navigate('/')}
+          onClick={() => { void navigate('/'); }}
         >
           {t('auth.verifyEmail.continueWithout')}
         </Button>

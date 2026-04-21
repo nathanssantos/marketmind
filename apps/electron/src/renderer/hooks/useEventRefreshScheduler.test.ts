@@ -105,7 +105,7 @@ describe('useEventRefreshScheduler', () => {
   it('should clean up timers on unmount', () => {
     const onRefresh = vi.fn();
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
-    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+    vi.spyOn(global, 'clearInterval');
 
     const { unmount } = renderHook(() =>
       useEventRefreshScheduler({

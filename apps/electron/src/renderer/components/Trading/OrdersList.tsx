@@ -1,7 +1,7 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Button, IconButton, Select } from '@renderer/components/ui';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import type { Order } from '@marketmind/types';
+import type { Order, OrderSide, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -52,10 +52,10 @@ const OrdersListComponent = () => {
       origQty: o.origQty || '0',
       executedQty: o.executedQty || '0',
       cummulativeQuoteQty: '0',
-      status: (o.status || 'NEW') as any,
-      timeInForce: (o.timeInForce || 'GTC') as any,
-      type: (o.type || 'LIMIT') as any,
-      side: o.side as any,
+      status: (o.status || 'NEW') as OrderStatus,
+      timeInForce: (o.timeInForce || 'GTC') as TimeInForce,
+      type: (o.type || 'LIMIT') as OrderType,
+      side: o.side as OrderSide,
       time: typeof o.time === 'number' ? o.time : Date.now(),
       updateTime: typeof o.updateTime === 'number' ? o.updateTime : Date.now(),
       isWorking: o.status === 'NEW' || o.status === 'PARTIALLY_FILLED',
@@ -111,7 +111,7 @@ const OrdersListComponent = () => {
     name: w.name,
     balance: parseFloat(w.currentBalance || '0'),
     initialBalance: parseFloat(w.initialBalance || '0'),
-    currency: (w.currency || 'USDT') as any,
+    currency: (w.currency || 'USDT') as WalletCurrency,
     createdAt: new Date(w.createdAt),
     performance: [],
     makerCommission: 0,
@@ -339,8 +339,8 @@ const OrdersListComponent = () => {
             <OrdersTableContent
               orders={filteredOrders}
               currency={activeWallet.currency}
-              onCancel={cancelOrder}
-              onClose={closeOrder}
+              onCancel={(id) => { void cancelOrder(id); }}
+              onClose={(id, price) => { void closeOrder(id, price); }}
               onNavigateToSymbol={globalActions?.navigateToSymbol}
             />
           ) : (
@@ -350,8 +350,8 @@ const OrdersListComponent = () => {
                   key={getOrderId(order)}
                   order={order}
                   currency={activeWallet.currency}
-                  onCancel={cancelOrder}
-                  onClose={closeOrder}
+                  onCancel={(id) => { void cancelOrder(id); }}
+                  onClose={(id, price) => { void closeOrder(id, price); }}
                   onNavigateToSymbol={globalActions?.navigateToSymbol}
                 />
               ))}

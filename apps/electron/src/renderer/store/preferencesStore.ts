@@ -45,7 +45,7 @@ const flushToBackend = async () => {
 
 const queueFlush = () => {
   if (flushTimer) clearTimeout(flushTimer);
-  flushTimer = setTimeout(flushToBackend, FLUSH_DEBOUNCE_MS);
+  flushTimer = setTimeout(() => { void flushToBackend(); }, FLUSH_DEBOUNCE_MS);
 };
 
 export const immediateFlushPreferences = async (): Promise<void> => {

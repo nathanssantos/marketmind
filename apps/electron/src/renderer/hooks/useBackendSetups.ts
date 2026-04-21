@@ -79,10 +79,10 @@ export const useBackendSetups = () => {
 
   const updateConfig = trpc.setup.updateConfig.useMutation({
     onSuccess: () => {
-      utils.setup.getConfig.invalidate();
-      utils.setup.detectCurrent.invalidate();
-      utils.setup.getHistory.invalidate();
-      utils.setup.getStats.invalidate();
+      void utils.setup.getConfig.invalidate();
+      void utils.setup.detectCurrent.invalidate();
+      void utils.setup.getHistory.invalidate();
+      void utils.setup.getStats.invalidate();
     },
   });
 
@@ -95,9 +95,9 @@ export const useBackendSetups = () => {
       subscribe.setups(userId);
 
       const handleSetupDetected = () => {
-        utils.setup.detectCurrent.invalidate();
-        utils.setup.getHistory.invalidate();
-        utils.setup.getStats.invalidate();
+        void utils.setup.detectCurrent.invalidate();
+        void utils.setup.getHistory.invalidate();
+        void utils.setup.getStats.invalidate();
       };
 
       on('setup-detected', handleSetupDetected);

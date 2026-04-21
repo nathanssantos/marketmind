@@ -87,8 +87,8 @@ export const TradingProfilesManager = () => {
               key={profile.id}
               profile={profile}
               onEdit={() => setEditingProfile(profile)}
-              onDelete={() => deleteProfile(profile.id)}
-              onDuplicate={() => handleDuplicate(profile)}
+              onDelete={() => { void deleteProfile(profile.id); }}
+              onDuplicate={() => { void handleDuplicate(profile); }}
               isDeleting={isDeletingProfile}
             />
           ))}

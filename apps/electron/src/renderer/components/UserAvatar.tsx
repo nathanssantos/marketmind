@@ -26,7 +26,7 @@ export const UserAvatar = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    void navigate('/login');
   };
 
   const initials = getInitials(currentUser?.name, currentUser?.email);
@@ -78,7 +78,7 @@ export const UserAvatar = () => {
                 {t('account.settings')}
               </Menu.Item>
               <Menu.Separator />
-              <Menu.Item value="logout" onClick={handleLogout} color="red.400">
+              <Menu.Item value="logout" onClick={() => { void handleLogout(); }} color="red.400">
                 <LuLogOut />
                 {t('account.logout')}
               </Menu.Item>

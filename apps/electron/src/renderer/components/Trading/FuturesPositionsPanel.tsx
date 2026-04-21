@@ -330,9 +330,9 @@ const FuturesPositionsPanelComponent = () => {
             key={position.id}
             position={position}
             currentPrice={realtimePrices[position.symbol]}
-            onClose={() => handleClosePosition(position.id, position.symbol)}
+            onClose={() => { void handleClosePosition(position.id, position.symbol); }}
             isClosing={isClosingPosition}
-            onReverse={() => handleReversePosition(position.id, position.symbol)}
+            onReverse={() => { void handleReversePosition(position.id, position.symbol); }}
             isReversing={isReversingPosition}
             onNavigateToSymbol={globalActions?.navigateToSymbol}
           />

@@ -28,7 +28,7 @@ export const SetupTogglePopover = memo(() => {
 
     const updateConfigMutation = trpc.autoTrading.updateConfig.useMutation({
         onSuccess: () => {
-            utils.autoTrading.getConfig.invalidate();
+            void utils.autoTrading.getConfig.invalidate();
         },
     });
 

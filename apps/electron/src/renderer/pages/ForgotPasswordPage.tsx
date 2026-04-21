@@ -45,7 +45,7 @@ export const ForgotPasswordPage = () => {
 
   return (
     <AuthLayout title={t('auth.forgotPassword.title')} subtitle={t('auth.forgotPassword.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           <Field label={t('auth.forgotPassword.email')}>
             <Input

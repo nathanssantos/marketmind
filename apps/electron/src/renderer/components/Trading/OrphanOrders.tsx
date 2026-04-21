@@ -49,7 +49,7 @@ const OrphanOrderCardComponent = ({ orphan, onCancel, onNavigateToSymbol }: Orph
           variant="ghost"
           colorPalette="red"
           loading={cancelling}
-          onClick={(e) => { e.stopPropagation(); handleCancel(); }}
+          onClick={(e) => { e.stopPropagation(); void handleCancel(); }}
         >
           <LuX />
         </IconButton>
@@ -120,17 +120,19 @@ const OrphanOrdersTableComponent = ({ orphans, walletId, cancelFuturesOrder, onN
                 variant="ghost"
                 colorPalette="red"
                 loading={cancellingId === orphan.id}
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
                   setCancellingId(orphan.id);
-                  try {
-                    await cancelFuturesOrder({ walletId, symbol: orphan.symbol, orderId: orphan.exchangeOrderId, isAlgo: orphan.isAlgo });
-                    toastSuccess(t('trading.portfolio.orphanOrdersCancelSuccess'));
-                  } catch {
-                    toastError(t('trading.portfolio.orphanOrdersCancelFailed'));
-                  } finally {
-                    setCancellingId(null);
-                  }
+                  void (async () => {
+                    try {
+                      await cancelFuturesOrder({ walletId, symbol: orphan.symbol, orderId: orphan.exchangeOrderId, isAlgo: orphan.isAlgo });
+                      toastSuccess(t('trading.portfolio.orphanOrdersCancelSuccess'));
+                    } catch {
+                      toastError(t('trading.portfolio.orphanOrdersCancelFailed'));
+                    } finally {
+                      setCancellingId(null);
+                    }
+                  })();
                 }}
               >
                 <LuX />
