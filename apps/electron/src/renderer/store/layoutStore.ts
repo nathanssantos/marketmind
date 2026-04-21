@@ -287,7 +287,9 @@ export const hydrateLayoutStore = async (): Promise<void> => {
       });
       return;
     }
-  } catch {}
+  } catch (e) {
+    console.warn('layoutStore hydrate failed', e);
+  }
 
   const chartPrefs = usePreferencesStore.getState().chart;
   const savedSymbol = chartPrefs['symbol'] as string | undefined;

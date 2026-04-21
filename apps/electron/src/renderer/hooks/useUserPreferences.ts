@@ -14,29 +14,29 @@ export const useUserPreferences = <T = unknown>(category: PreferenceCategory) =>
 
   const setMutation = trpc.preferences.set.useMutation({
     onSuccess: () => {
-      utils.preferences.getByCategory.invalidate({ category });
-      utils.preferences.getAll.invalidate();
+      void utils.preferences.getByCategory.invalidate({ category });
+      void utils.preferences.getAll.invalidate();
     },
   });
 
   const deleteMutation = trpc.preferences.delete.useMutation({
     onSuccess: () => {
-      utils.preferences.getByCategory.invalidate({ category });
-      utils.preferences.getAll.invalidate();
+      void utils.preferences.getByCategory.invalidate({ category });
+      void utils.preferences.getAll.invalidate();
     },
   });
 
   const bulkSetMutation = trpc.preferences.bulkSet.useMutation({
     onSuccess: () => {
-      utils.preferences.getByCategory.invalidate({ category });
-      utils.preferences.getAll.invalidate();
+      void utils.preferences.getByCategory.invalidate({ category });
+      void utils.preferences.getAll.invalidate();
     },
   });
 
   const deleteCategoryMutation = trpc.preferences.deleteCategory.useMutation({
     onSuccess: () => {
-      utils.preferences.getByCategory.invalidate({ category });
-      utils.preferences.getAll.invalidate();
+      void utils.preferences.getByCategory.invalidate({ category });
+      void utils.preferences.getAll.invalidate();
     },
   });
 
@@ -120,7 +120,7 @@ export const useAllPreferences = () => {
 
   const clearAllMutation = trpc.preferences.clearAll.useMutation({
     onSuccess: () => {
-      utils.preferences.invalidate();
+      void utils.preferences.invalidate();
     },
   });
 

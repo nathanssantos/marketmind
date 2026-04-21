@@ -7,15 +7,6 @@ import { ColorModeProvider } from '@renderer/components/ui';
 import { PinnedControlsProvider } from '../PinnedControlsContext';
 import { FullChart } from './FullChart';
 
-const mockTheme = {
-    grid: '#2d3748',
-    text: '#cbd5e0',
-    bullish: '#48bb78',
-    bearish: '#f56565',
-    background: '#1a202c',
-    crosshair: '#cbd5e0',
-};
-
 const renderWithProvider = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>

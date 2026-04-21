@@ -9,7 +9,7 @@ import { useChartData } from '../hooks/useChartData';
 import { useChartInteraction } from '../hooks/useChartInteraction';
 import { useChartLayers } from '../hooks/useChartLayers';
 import { useChartViewport } from '../hooks/useChartViewport';
-import { useTradeVisualization } from '../hooks/useTradeVisualization';
+import { useTradeVisualization, type TradeMarker } from '../hooks/useTradeVisualization';
 import type { Timeframe } from '../TimeframeSelector';
 import { LayeredCanvas, useLayerManager } from './LayeredCanvas';
 
@@ -17,7 +17,7 @@ export interface FullChartProps {
     symbol: string;
     timeframe: string;
     klines: Kline[];
-    trades?: any[];
+    trades?: TradeMarker[];
     orders?: Order[];
     liveData?: boolean;
     tradingEnabled?: boolean;
@@ -83,8 +83,13 @@ export const FullChart = ({
     });
 
     const { mousePosition } = useChartInteraction({
-        canvasRef: containerRef as any,
-        viewport: viewport as any,
+        canvasRef: containerRef as unknown as React.RefObject<HTMLCanvasElement>,
+        viewport: {
+            start: viewport.start,
+            end: viewport.end,
+            minPrice: viewport.priceMin,
+            maxPrice: viewport.priceMax,
+        },
         onZoom: (delta) => (delta > 0 ? undefined : undefined),
         onPan: (deltaX) => (deltaX > 0 ? undefined : undefined),
     });

@@ -122,8 +122,6 @@ describe('useChartData', () => {
       }
     );
 
-    const initialLength = result.current.visibleKlines.length;
-
     const newViewport: Viewport = {
       ...mockViewport,
       start: 25,

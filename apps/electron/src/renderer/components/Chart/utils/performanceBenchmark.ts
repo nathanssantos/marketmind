@@ -20,7 +20,7 @@ export const runBenchmark = async (config: BenchmarkConfig): Promise<BenchmarkRe
     const frameTimes: number[] = [];
     let frameCount = 0;
 
-    const initialMemory = (performance as any).memory?.usedJSHeapSize;
+    const initialMemory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize;
 
     return new Promise((resolve) => {
         const measureFrame = () => {
@@ -43,7 +43,7 @@ export const runBenchmark = async (config: BenchmarkConfig): Promise<BenchmarkRe
                     frameTimes.reduce((sum, time) => sum + time, 0) / frameTimes.length;
                 const fps = 1000 / averageFrameTime;
 
-                const finalMemory = (performance as any).memory?.usedJSHeapSize;
+                const finalMemory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize;
                 const memoryUsed = finalMemory && initialMemory 
                     ? finalMemory - initialMemory 
                     : undefined;
@@ -120,8 +120,8 @@ export const printBenchmarkResults = (results: BenchmarkResult[]) => {
 };
 
 export const runChartBenchmark = async (
-    klines: any[],
-    _viewport: any
+    klines: readonly unknown[],
+    _viewport: unknown
 ): Promise<void> => {
     const operations = {
         singleCanvas: () => {

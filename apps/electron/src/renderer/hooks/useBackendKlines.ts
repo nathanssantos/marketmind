@@ -17,7 +17,7 @@ export const useBackendKlines = () => {
 
   const subscribe = trpc.kline.subscribe.useMutation({
     onSuccess: () => {
-      utils.kline.list.invalidate();
+      void utils.kline.list.invalidate();
     },
   });
 
@@ -25,7 +25,7 @@ export const useBackendKlines = () => {
 
   const backfill = trpc.kline.backfill.useMutation({
     onSuccess: () => {
-      utils.kline.list.invalidate();
+      void utils.kline.list.invalidate();
     },
   });
 
@@ -106,7 +106,7 @@ export const useKlineStream = (
   useEffect(() => {
     if (!enabled || !isConnected || !symbol || !interval) return;
 
-    const handleKlineUpdate = (kline: any) => {
+    const handleKlineUpdate = (kline: Parameters<typeof onKlineUpdate>[0]) => {
       if (
         kline.symbol === symbol &&
         kline.interval === interval &&

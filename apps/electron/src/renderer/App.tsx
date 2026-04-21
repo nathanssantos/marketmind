@@ -42,74 +42,84 @@ function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+interface ToastLike {
+  id: string;
+  type?: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  meta?: unknown;
+}
+
+function ToastContent({ toast }: { toast: ToastLike }): ReactElement {
+  const { t } = useTranslation();
+  const symbol = (toast.meta as Record<string, unknown> | undefined)?.['symbol'] as string | undefined;
+  const marketType = (toast.meta as Record<string, unknown> | undefined)?.['marketType'] as MarketType | undefined;
+  const navigate = getToasterNavigateToSymbol();
+  const canNavigate = !!symbol && !!navigate;
+
+  return (
+    <Box
+      key={toast.id}
+      p={4}
+      bg={
+        toast.type === 'error'
+          ? 'red.500'
+          : toast.type === 'success'
+            ? 'green.500'
+            : toast.type === 'warning'
+              ? 'orange.500'
+              : 'blue.500'
+      }
+      color="white"
+      borderRadius="md"
+      boxShadow="lg"
+      maxW="400px"
+      position="relative"
+    >
+      <IconButton
+        aria-label={t('common.close')}
+        size="xs"
+        position="absolute"
+        top={2}
+        right={2}
+        onClick={() => toaster.dismiss(toast.id)}
+        variant="ghost"
+        color="white"
+        _hover={{ bg: 'whiteAlpha.200' }}
+      >
+        <LuX />
+      </IconButton>
+      {symbol ? (
+        <Flex
+          align="center"
+          gap={2}
+          mb={1}
+          pr={6}
+          cursor={canNavigate ? 'pointer' : 'default'}
+          onClick={canNavigate && navigate ? () => navigate(symbol, marketType) : undefined}
+          _hover={canNavigate ? { opacity: 0.8 } : undefined}
+        >
+          <CryptoIcon symbol={symbol} size={24} />
+          <ChakraText fontWeight="bold" fontSize="sm">{toast.title}</ChakraText>
+        </Flex>
+      ) : (
+        <ChakraText fontWeight="bold" fontSize="sm" mb={1} pr={6}>
+          {toast.title}
+        </ChakraText>
+      )}
+      {toast.description && (
+        <ChakraText fontSize="xs" pl={symbol ? 8 : 0}>{toast.description}</ChakraText>
+      )}
+    </Box>
+  );
+}
+
 function App(): ReactElement {
   return (
     <ErrorBoundary>
       <PreferencesHydrator>
         <Toaster toaster={toaster}>
-          {(toast) => {
-            const { t } = useTranslation();
-            const symbol = (toast.meta as Record<string, unknown> | undefined)?.['symbol'] as string | undefined;
-            const marketType = (toast.meta as Record<string, unknown> | undefined)?.['marketType'] as MarketType | undefined;
-            const navigate = getToasterNavigateToSymbol();
-            const canNavigate = !!symbol && !!navigate;
-
-            return (
-              <Box
-                key={toast.id}
-                p={4}
-                bg={
-                  toast.type === 'error'
-                    ? 'red.500'
-                    : toast.type === 'success'
-                      ? 'green.500'
-                      : toast.type === 'warning'
-                        ? 'orange.500'
-                        : 'blue.500'
-                }
-                color="white"
-                borderRadius="md"
-                boxShadow="lg"
-                maxW="400px"
-                position="relative"
-              >
-                <IconButton
-                  aria-label={t('common.close')}
-                  size="xs"
-                  position="absolute"
-                  top={2}
-                  right={2}
-                  onClick={() => toaster.dismiss(toast.id)}
-                  variant="ghost"
-                  color="white"
-                  _hover={{ bg: 'whiteAlpha.200' }}
-                >
-                  <LuX />
-                </IconButton>
-                {symbol ? (
-                  <Flex
-                    align="center"
-                    gap={2}
-                    mb={1}
-                    pr={6}
-                    cursor={canNavigate ? 'pointer' : 'default'}
-                    onClick={canNavigate ? () => navigate(symbol, marketType) : undefined}
-                    _hover={canNavigate ? { opacity: 0.8 } : undefined}
-                  >
-                    <CryptoIcon symbol={symbol} size={24} />
-                    <ChakraText fontWeight="bold" fontSize="sm">{toast.title}</ChakraText>
-                  </Flex>
-                ) : (
-                  <ChakraText fontWeight="bold" fontSize="sm" mb={1} pr={6}>
-                    {toast.title}
-                  </ChakraText>
-                )}
-                {toast.description && (
-                  <ChakraText fontSize="xs" pl={symbol ? 8 : 0}>{toast.description}</ChakraText>
-                )}
-              </Box>
-            );
-          }}
+          {(toast) => <ToastContent toast={toast as ToastLike} />}
         </Toaster>
         <ChartProvider>
           <PinnedControlsProvider>
@@ -177,7 +187,7 @@ function AppContent(): ReactElement {
     refetch: refetchKlines,
   } = useKlinePagination({
     symbol,
-    interval: timeframe as any,
+    interval: timeframe,
     marketType,
     enabled: !!symbol,
   });

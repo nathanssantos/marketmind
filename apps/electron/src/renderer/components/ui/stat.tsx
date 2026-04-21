@@ -1,17 +1,17 @@
-import { Box, HStack, Text } from '@chakra-ui/react';
+import { Box, type BoxProps, HStack, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 
-interface StatProps {
+interface StatProps extends BoxProps {
     label: string;
     value: ReactNode;
     helpText?: ReactNode;
     valueColor?: string;
-    [key: string]: unknown;
 }
 
 export const Stat = ({ label, value, helpText, valueColor, ...rest }: StatProps) => {
     return (
-        <Box {...(rest as any)}>
+        // @ts-expect-error Chakra v3 accentColor BoxProps spread type conflict
+        <Box {...rest}>
             <Text fontSize="sm" color="gray.500" mb={1}>
                 {label}
             </Text>

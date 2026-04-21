@@ -13,38 +13,38 @@ export const useTradingProfiles = () => {
 
   const createProfileMutation = trpc.tradingProfiles.create.useMutation({
     onSuccess: () => {
-      utils.tradingProfiles.list.invalidate();
+      void utils.tradingProfiles.list.invalidate();
     },
   });
 
   const updateProfileMutation = trpc.tradingProfiles.update.useMutation({
     onSuccess: () => {
-      utils.tradingProfiles.list.invalidate();
+      void utils.tradingProfiles.list.invalidate();
     },
   });
 
   const updateChecklistMutation = trpc.tradingProfiles.updateChecklist.useMutation({
     onSuccess: () => {
-      utils.tradingProfiles.list.invalidate();
+      void utils.tradingProfiles.list.invalidate();
     },
   });
 
   const deleteProfileMutation = trpc.tradingProfiles.delete.useMutation({
     onSuccess: () => {
-      utils.tradingProfiles.list.invalidate();
+      void utils.tradingProfiles.list.invalidate();
     },
   });
 
   const duplicateProfileMutation = trpc.tradingProfiles.duplicate.useMutation({
     onSuccess: () => {
-      utils.tradingProfiles.list.invalidate();
+      void utils.tradingProfiles.list.invalidate();
     },
   });
 
   const assignToWatcherMutation = trpc.tradingProfiles.assignToWatcher.useMutation({
     onSuccess: () => {
-      utils.tradingProfiles.list.invalidate();
-      utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.tradingProfiles.list.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
     },
   });
 

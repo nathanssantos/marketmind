@@ -200,7 +200,7 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                 <SavedScreenersList
                   savedScreeners={typedSavedScreeners}
                   onLoad={handleLoadSaved}
-                  onDelete={deleteScreener}
+                  onDelete={(id) => { void deleteScreener(id); }}
                   isDeleting={isDeleting}
                 />
 

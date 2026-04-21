@@ -63,7 +63,7 @@ export const useOrderNotifications = () => {
       success(toastTitle, toastBody, meta);
 
       if (isSupported) {
-        showNotification({
+        void showNotification({
           title: toastTitle,
           body: toastBody,
           urgency: 'normal',
@@ -79,7 +79,7 @@ export const useOrderNotifications = () => {
       warning(cancelledTitle, cancelledBody, meta);
 
       if (isSupported) {
-        showNotification({
+        void showNotification({
           title: cancelledTitle,
           body: cancelledBody,
           urgency: 'low',
@@ -95,7 +95,7 @@ export const useOrderNotifications = () => {
       info(expiredTitle, expiredBody, meta);
 
       if (isSupported) {
-        showNotification({
+        void showNotification({
           title: expiredTitle,
           body: expiredBody,
           urgency: 'low',

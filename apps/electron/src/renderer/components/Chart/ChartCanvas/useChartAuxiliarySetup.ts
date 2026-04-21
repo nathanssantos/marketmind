@@ -24,13 +24,13 @@ export interface UseChartAuxiliarySetupProps {
   hasTradingEnabled: boolean;
   allExecutions: BackendExecution[];
   draggableOrders: Order[];
-  handleUpdateOrder: (id: string, updates: any) => void;
+  handleUpdateOrder: (id: string, updates: Partial<Order>) => void;
   handleGridConfirm: (prices: number[], side: 'BUY' | 'SELL') => Promise<void>;
   dragSlEnabled: boolean;
   dragTpEnabled: boolean;
   slTightenOnly: boolean;
   symbolFiltersData: { tickSize: number } | undefined;
-  getOrderAtPosition: (x: number, y: number) => any;
+  getOrderAtPosition: (x: number, y: number) => Order | null;
   draggedOrderIdRef: MutableRefObject<string | null>;
 }
 
@@ -97,7 +97,7 @@ export const useChartAuxiliarySetup = ({
     manager,
     enabled: isGridModeActive && hasTradingEnabled,
     getSnappedPrice,
-    onGridConfirm: handleGridConfirm,
+    onGridConfirm: (prices, side) => { void handleGridConfirm(prices, side); },
   });
 
   const { renderGridPreview } = useGridPreviewRenderer({

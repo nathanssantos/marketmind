@@ -22,15 +22,15 @@ export const AboutTab = () => {
   const debouncedSetUpdateCheckInterval = useDebounceCallback(setUpdateCheckInterval, 300);
 
   useEffect(() => {
-    if (status === 'available' && autoDownloadUpdates) downloadUpdate();
+    if (status === 'available' && autoDownloadUpdates) void downloadUpdate();
   }, [status, autoDownloadUpdates, downloadUpdate]);
 
   const handleAutoCheckChange = (checked: boolean) => {
     setAutoCheckUpdates(checked);
     if (checked) {
-      startAutoCheck(updateCheckInterval);
+      void startAutoCheck(updateCheckInterval);
     } else {
-      stopAutoCheck();
+      void stopAutoCheck();
     }
   };
 
@@ -42,13 +42,13 @@ export const AboutTab = () => {
     const interval = value[0] ?? DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval;
     debouncedSetUpdateCheckInterval(interval);
     if (autoCheckUpdates) {
-      stopAutoCheck();
-      startAutoCheck(interval);
+      void stopAutoCheck();
+      void startAutoCheck(interval);
     }
   };
 
   const handleCheckNow = () => {
-    checkForUpdates();
+    void checkForUpdates();
   };
 
   const handleResetAutoUpdate = () => {
@@ -56,9 +56,9 @@ export const AboutTab = () => {
     setAutoDownloadUpdates(DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
     setUpdateCheckInterval(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
     if (DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates) {
-      startAutoCheck(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
+      void startAutoCheck(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
     } else {
-      stopAutoCheck();
+      void stopAutoCheck();
     }
   };
 

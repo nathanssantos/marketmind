@@ -146,9 +146,9 @@ export const WalletManager = () => {
                 key={wallet.id}
                 wallet={wallet}
                 isActive={wallet.id === activeWalletId}
-                onDelete={() => handleDeleteWallet(wallet.id)}
+                onDelete={() => { void handleDeleteWallet(wallet.id); }}
                 onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
-                onSync={() => handleSyncBalance(wallet.id)}
+                onSync={() => { void handleSyncBalance(wallet.id); }}
                 isDeleting={isDeleting}
                 isSyncing={syncingWalletId === wallet.id || isSyncing}
               />
@@ -160,7 +160,7 @@ export const WalletManager = () => {
       <CreateWalletDialog
         isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
-        onCreate={handleAddPaperWallet}
+        onCreate={(params) => { void handleAddPaperWallet(params); }}
         onCreateReal={handleAddRealWallet}
         isCreating={isCreatingPaper || isCreating}
       />

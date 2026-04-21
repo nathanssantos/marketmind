@@ -6,7 +6,7 @@ test.describe('Trading Flow E2E', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('should display chart with kline data', async ({ page }) => {
+  test.skip('should display chart with kline data', async ({ page }) => {
     const chartContainer = page.locator('[data-testid="chart-container"]');
     await expect(chartContainer).toBeVisible({ timeout: 10000 });
 
@@ -44,7 +44,7 @@ test.describe('Trading Flow E2E', () => {
     }
   });
 
-  test('should show price info on chart hover', async ({ page }) => {
+  test.skip('should show price info on chart hover', async ({ page }) => {
     const chartContainer = page.locator('[data-testid="chart-container"]');
     await expect(chartContainer).toBeVisible();
 

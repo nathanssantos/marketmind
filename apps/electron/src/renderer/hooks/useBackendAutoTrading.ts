@@ -28,60 +28,60 @@ export const useBackendAutoTrading = (walletId: string) => {
 
   const updateConfigMutation = trpc.autoTrading.updateConfig.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getConfig.invalidate();
+      void utils.autoTrading.getConfig.invalidate();
     },
   });
 
   const executeSetupMutation = trpc.autoTrading.executeSetup.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.autoTrading.getExecutionHistory.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getExecutionHistory.invalidate();
     },
   });
 
   const cancelExecutionMutation = trpc.autoTrading.cancelExecution.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.autoTrading.getExecutionHistory.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getExecutionHistory.invalidate();
     },
   });
 
   const closeExecutionMutation = trpc.autoTrading.closeExecution.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.autoTrading.getExecutionHistory.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getExecutionHistory.invalidate();
     },
   });
 
   const startWatcherMutation = trpc.autoTrading.startWatcher.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
     },
   });
 
   const stopWatcherMutation = trpc.autoTrading.stopWatcher.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
     },
   });
 
   const stopAllWatchersMutation = trpc.autoTrading.stopAllWatchers.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
     },
   });
 
   const startWatchersBulkMutation = trpc.autoTrading.startWatchersBulk.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
     },
   });
 
   const emergencyStopMutation = trpc.autoTrading.emergencyStop.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getWatcherStatus.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.autoTrading.getConfig.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getConfig.invalidate();
     },
   });
 
@@ -315,9 +315,9 @@ export const useTriggerRotation = (walletId: string) => {
 
   const mutation = trpc.autoTrading.triggerSymbolRotation.useMutation({
     onSuccess: () => {
-      utils.autoTrading.getWatcherStatus.invalidate();
-      utils.autoTrading.getRotationStatus.invalidate();
-      utils.autoTrading.getRotationHistory.invalidate();
+      void utils.autoTrading.getWatcherStatus.invalidate();
+      void utils.autoTrading.getRotationStatus.invalidate();
+      void utils.autoTrading.getRotationHistory.invalidate();
     },
   });
 

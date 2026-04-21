@@ -113,7 +113,7 @@ export const useExecutionNotifications = () => {
     persistentSuccess(title, body);
 
     if (isSupported) {
-      showNotification({
+      void showNotification({
         title,
         body,
         urgency: 'normal',
@@ -166,7 +166,7 @@ export const useExecutionNotifications = () => {
     }
 
     if (isSupported) {
-      showNotification({
+      void showNotification({
         title,
         body,
         urgency: 'critical',
@@ -188,7 +188,7 @@ export const useExecutionNotifications = () => {
     persistentInfo(title, body);
 
     if (isSupported) {
-      showNotification({
+      void showNotification({
         title,
         body,
         urgency: 'low',
