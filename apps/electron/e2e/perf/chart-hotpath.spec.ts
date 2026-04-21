@@ -8,6 +8,7 @@ import { installConsoleCapture, filterNoiseFromErrors, getCapturedErrors } from 
 import {
   addIndicators,
   appendKline,
+  clearDrawings,
   clearIndicators,
   componentRenderRate,
   driveFrames,
@@ -18,9 +19,11 @@ import {
   readPerfSnapshot,
   refreshPerfFlag,
   resetPerfMonitor,
+  seedDrawings,
   slowestSectionMs,
   updateLatestKline,
   waitForChartReady,
+  type StressDrawingSeed,
 } from '../helpers/chartTestSetup';
 import type { PerfSnapshot } from '../../src/renderer/utils/canvas/perfMonitor';
 
@@ -33,6 +36,14 @@ const DIAGNOSE = process.env['PERF_DIAGNOSE'] === '1';
 const WARMUP_FRAMES = 90;
 const MEASURE_FRAMES = 600;
 const TICK_STORM_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT'];
+const TICK_STORM_SYMBOLS_X20 = [
+  ...TICK_STORM_SYMBOLS,
+  'TRXUSDT', 'LTCUSDT', 'BCHUSDT', 'ATOMUSDT', 'NEARUSDT',
+  'APTUSDT', 'ARBUSDT', 'OPUSDT', 'FILUSDT', 'ETCUSDT',
+];
+const MANY_DRAWINGS_COUNT = 80;
+const STRESS_PAN_FRAMES = 180;
+const STRESS_ZOOM_FRAMES = 90;
 const KLINE_REPLACE_ITERATIONS = 60;
 const KLINE_REPLACE_INTERVAL_MS = 100;
 const KLINE_APPEND_ITERATIONS = 12;
@@ -345,6 +356,108 @@ test.describe('Chart hot-path perf', () => {
 
     expect(snap.enabled).toBe(true);
     expect(cycles).toBeGreaterThan(0);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+  });
+
+  test('many drawings: 80 mixed drawings under pan+zoom', async ({ page }) => {
+    await clearIndicators(page);
+    await clearDrawings(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+
+    const seeds: StressDrawingSeed[] = [];
+    for (let i = 0; i < MANY_DRAWINGS_COUNT; i += 1) {
+      const mod = i % 3;
+      const startIndex = 50 + i * 5;
+      const startPrice = 50_000 + (i % 20) * 100;
+      if (mod === 0) {
+        seeds.push({
+          type: 'line',
+          startIndex,
+          startPrice,
+          endIndex: startIndex + 30,
+          endPrice: startPrice + 500,
+        });
+      } else if (mod === 1) {
+        seeds.push({
+          type: 'rectangle',
+          startIndex,
+          startPrice,
+          endIndex: startIndex + 40,
+          endPrice: startPrice + 800,
+        });
+      } else {
+        seeds.push({ type: 'horizontalLine', startIndex, startPrice });
+      }
+    }
+    const seeded = await seedDrawings(page, 'BTCUSDT', '1h', seeds);
+
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    await drivePan(page, STRESS_PAN_FRAMES);
+    await driveWheelZoom(page, STRESS_ZOOM_FRAMES);
+    await driveFrames(page, 60);
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'many-drawings';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      droppedFrames: snap.droppedFrames,
+      longSections: snap.longSections.length,
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(seeded).toBe(MANY_DRAWINGS_COUNT);
+    expect(snap.fps).toBeGreaterThanOrEqual(20);
+    expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    assertRegression(key, result);
+
+    await clearDrawings(page);
+  });
+
+  test('20-symbol tick storm: double-width price batch path', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let stop = false;
+    const tickLoop = (async () => {
+      let seed = 0;
+      while (!stop) {
+        const ticks: Record<string, number> = {};
+        for (const sym of TICK_STORM_SYMBOLS_X20) {
+          seed += 1;
+          ticks[sym] = 50_000 + ((seed % 1000) * 0.1);
+        }
+        await pushPriceTicks(page, ticks);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await tickLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'price-tick-storm-20';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
     expect(snap.fps).toBeGreaterThanOrEqual(20);
     expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
     assertRegression(key, result);
