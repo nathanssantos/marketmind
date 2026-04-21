@@ -45,6 +45,7 @@ const DEFAULT_RESPONSES: TrpcResolverMap = {
   'screener.getSavedScreeners': () => [],
   'fees.getUserFees': () => null,
   'orderSync.getStatus': () => ({ lastSyncAt: null, isRunning: false }),
+  'heatmap.getAlwaysCollectSymbols': () => [],
 };
 
 const resolve = (resolverMap: TrpcResolverMap, path: string, input: unknown): unknown => {

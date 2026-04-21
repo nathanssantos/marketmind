@@ -14,6 +14,7 @@ export const ToggleIconButton = forwardRef<HTMLButtonElement, ToggleIconButtonPr
       ref={ref}
       variant="outline"
       color={active ? activeColor : 'fg.muted'}
+      aria-pressed={active}
       {...props}
     />
   )

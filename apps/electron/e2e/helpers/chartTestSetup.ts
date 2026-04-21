@@ -13,6 +13,11 @@ interface E2EIndicatorStoreState {
   instances: Array<{ id: string; catalogType: string }>;
 }
 
+interface E2EDrawingStoreState {
+  activeTool: string | null;
+  setActiveTool: (tool: string | null) => void;
+}
+
 interface E2EPriceStoreState {
   updatePriceBatch: (updates: Map<string, number>) => void;
   updatePrice: (symbol: string, price: number, source: 'chart' | 'websocket' | 'api') => void;
@@ -34,6 +39,9 @@ declare global {
     };
     __indicatorStore?: {
       getState: () => E2EIndicatorStoreState;
+    };
+    __drawingStore?: {
+      getState: () => E2EDrawingStoreState;
     };
     __priceStore?: {
       getState: () => E2EPriceStoreState;
