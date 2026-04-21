@@ -1,5 +1,5 @@
 import type { Interval, Kline, MarketType } from '@marketmind/types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CHART_INITIAL_LOAD, CHART_PAGE_SIZE } from '../constants/defaults';
 import { trpc } from '../utils/trpc';
 
@@ -77,13 +77,15 @@ export const useKlinePagination = ({
     loadingRef.current = false;
   }, [symbol, interval, marketType, utils.kline.list]);
 
-  const baseKlines = initialQuery.data
-    ? initialQuery.data.map(mapToKline)
-    : [];
+  const baseKlines = useMemo(
+    () => (initialQuery.data ? initialQuery.data.map(mapToKline) : []),
+    [initialQuery.data],
+  );
 
-  const allKlines = olderKlines.length > 0
-    ? [...olderKlines, ...baseKlines]
-    : baseKlines;
+  const allKlines = useMemo(
+    () => (olderKlines.length > 0 ? [...olderKlines, ...baseKlines] : baseKlines),
+    [olderKlines, baseKlines],
+  );
 
   const loadOlderKlines = useCallback(async () => {
     if (loadingRef.current || !hasMore || allKlines.length === 0) return;

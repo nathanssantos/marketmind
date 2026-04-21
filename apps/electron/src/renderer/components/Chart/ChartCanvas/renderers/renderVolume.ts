@@ -75,7 +75,7 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
   const widthPerKline = chartWidth / visibleRange;
 
   const volumeHeightRatio = external?.volumeHeightRatio ?? CHART_CONFIG.VOLUME_HEIGHT_RATIO;
-  const hoveredKlineIndex = external?.hoveredKlineIndex;
+  const hoveredKlineIndex = external?.hoveredKlineIndexRef?.current;
   const timeframe = external?.timeframe ?? '1h';
 
   canvasCtx.save();

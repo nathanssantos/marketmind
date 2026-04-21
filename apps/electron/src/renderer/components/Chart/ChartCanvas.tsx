@@ -6,7 +6,8 @@ import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
 import { useChartPref, useTradingPref } from '@renderer/store/preferencesStore';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
 import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
-import { useIndicatorStore, useSetupStore } from '@renderer/store';
+import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
+import { useSetupStore } from '@renderer/store';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
@@ -20,7 +21,8 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartPerfOverlay } from './ChartPerfOverlay';
-import { ChartTooltip } from './ChartTooltip';
+import { ChartTooltipOverlay } from './ChartCanvas/ChartTooltipOverlay';
+import { tooltipStore } from './ChartCanvas/tooltipStore';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import type { BackendExecution } from './useOrderLinesRenderer';
@@ -91,11 +93,7 @@ export const ChartCanvas = ({
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [chartFlipped] = useChartPref<boolean>('chartFlipped', false);
 
-  const showVolume = useIndicatorStore((s) => s.instances.some((i) => i.visible && i.catalogType === 'volume'));
-  const showOrb = useIndicatorStore((s) => s.instances.some((i) => i.visible && i.catalogType === 'orb'));
-  const heatmapEnabled = useIndicatorStore((s) =>
-    s.instances.some((i) => i.visible && (i.catalogType === 'liquidityHeatmap' || i.catalogType === 'liquidationMarkers')),
-  );
+  const { showVolume, showOrb, heatmapEnabled } = useIndicatorVisibility();
   const colors = useChartColors();
 
   const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled);
@@ -173,28 +171,74 @@ export const ChartCanvas = ({
   managerRef.current = manager;
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines });
-  const { tooltipData, orderToClose } = chartState;
+  const { orderToClose } = chartState;
+
+  const hoveredKlineIndexRef = useRef<number | undefined>(tooltipStore.getSnapshot().klineIndex);
+  useEffect(() => {
+    const unsubscribe = tooltipStore.subscribeHoveredKlineIndex((index) => {
+      if (hoveredKlineIndexRef.current === index) return;
+      hoveredKlineIndexRef.current = index;
+      managerRef.current?.markDirty('overlays');
+    });
+    return unsubscribe;
+  }, []);
 
   const setHoveredKlineGlobal = useChartHoverStore((s) => s.setHoveredKline);
   useEffect(() => {
     const chartKey = makeChartKey(symbol, timeframe);
-    const kline = tooltipData.visible ? tooltipData.kline : null;
-    setHoveredKlineGlobal(chartKey, kline);
-  }, [tooltipData.visible, tooltipData.kline, symbol, timeframe, setHoveredKlineGlobal]);
-
-  useEffect(() => {
-    const chartKey = makeChartKey(symbol, timeframe);
-    return () => setHoveredKlineGlobal(chartKey, null);
+    let lastVisible = false;
+    let lastKline = tooltipStore.getSnapshot().kline;
+    const unsubscribe = tooltipStore.subscribe(() => {
+      const snap = tooltipStore.getSnapshot();
+      if (snap.visible === lastVisible && snap.kline === lastKline) return;
+      lastVisible = snap.visible;
+      lastKline = snap.kline;
+      setHoveredKlineGlobal(chartKey, snap.visible ? snap.kline : null);
+    });
+    return () => {
+      unsubscribe();
+      setHoveredKlineGlobal(chartKey, null);
+    };
   }, [symbol, timeframe, setHoveredKlineGlobal]);
   const { setTooltip: setTooltipData, setOrderToClose } = chartActions;
   const { mousePosition: mousePositionRef, orderPreview: orderPreviewRef, hoveredMAIndex: hoveredMAIndexRef, hoveredOrderId: hoveredOrderIdRef, lastHoveredOrder: lastHoveredOrderRef, lastTooltipOrder: lastTooltipOrderRef, tooltipEnabled: tooltipEnabledRef, tooltipDebounce: tooltipDebounceRef } = chartRefs;
 
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
 
-  const realtimePrice = usePriceStore((s) => symbol ? s.getPrice(symbol) : null);
   const klinePrice = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
-  const latestKlinesPriceRef = useRef(realtimePrice ?? klinePrice);
-  latestKlinesPriceRef.current = realtimePrice ?? klinePrice;
+  const klinePriceRef = useRef(klinePrice);
+  klinePriceRef.current = klinePrice;
+  const latestKlinesPriceRef = useRef<number>(
+    (symbol ? usePriceStore.getState().getPrice(symbol) : null) ?? klinePrice,
+  );
+  const symbolPriceRef = useRef<number | null>(symbol ? usePriceStore.getState().getPrice(symbol) : null);
+
+  useEffect(() => {
+    const apply = (next: number): void => {
+      if (next === latestKlinesPriceRef.current) return;
+      latestKlinesPriceRef.current = next;
+      managerRef.current?.markDirty('overlays');
+    };
+    if (!symbol) {
+      symbolPriceRef.current = null;
+      apply(klinePriceRef.current);
+      return;
+    }
+    symbolPriceRef.current = usePriceStore.getState().getPrice(symbol);
+    apply(symbolPriceRef.current ?? klinePriceRef.current);
+    const unsubscribe = usePriceStore.subscribe((state) => {
+      const p = state.getPrice(symbol);
+      if (p === symbolPriceRef.current) return;
+      symbolPriceRef.current = p;
+      apply(p ?? klinePriceRef.current);
+    });
+    return unsubscribe;
+  }, [symbol]);
+
+  useEffect(() => {
+    if (symbolPriceRef.current !== null) return;
+    latestKlinesPriceRef.current = klinePrice;
+  }, [klinePrice]);
 
   const tradingActions = useChartTradingActions({
     symbol, marketType, manager, backendWalletId,
@@ -254,7 +298,7 @@ export const ChartCanvas = ({
   const { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
     manager, colors, chartType, advancedConfig,
     showGrid, showCurrentPriceLine, showCrosshair, showActivityIndicator,
-    hoveredKlineIndex: tooltipData.klineIndex, highlightedCandlesRef, mousePositionRef,
+    hoveredKlineIndexRef, highlightedCandlesRef, mousePositionRef,
     timeframe, symbol, marketType,
   });
 
@@ -274,17 +318,20 @@ export const ChartCanvas = ({
     liveDataTarget,
   );
 
+  const volumeHeightRatio = advancedConfig?.volumeHeightRatio;
+  const external = useMemo(() => ({
+    marketEvents,
+    footprintBars,
+    liquidityHeatmapRef: heatmapDataRef,
+    liquidityColorMode,
+    timeframe,
+    hoveredKlineIndexRef,
+    ...(volumeHeightRatio !== undefined && { volumeHeightRatio }),
+  }), [marketEvents, footprintBars, heatmapDataRef, liquidityColorMode, timeframe, hoveredKlineIndexRef, volumeHeightRatio]);
+
   const genericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, outputsRef: genericOutputsRef,
-    external: {
-      marketEvents,
-      footprintBars,
-      liquidityHeatmap: heatmapDataRef.current,
-      liquidityColorMode,
-      timeframe,
-      ...(tooltipData.klineIndex !== undefined && { hoveredKlineIndex: tooltipData.klineIndex }),
-      ...(advancedConfig?.volumeHeightRatio !== undefined && { volumeHeightRatio: advancedConfig.volumeHeightRatio }),
-    },
+    external,
   });
 
   const { render: renderEventScale, getEventAtPosition } = useEventScaleRenderer({
@@ -404,19 +451,7 @@ export const ChartCanvas = ({
         <TextEditOverlay manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <ChartNavigation onResetView={handleResetView} onNextKline={handleNextKline} totalPanelHeight={manager?.getTotalPanelHeight() ?? 0} />
         <ChartPerfOverlay />
-        {showTooltip && (
-          <ChartTooltip
-            kline={tooltipData.kline} x={tooltipData.x} y={tooltipData.y} visible={tooltipData.visible}
-            containerWidth={tooltipData.containerWidth ?? window.innerWidth}
-            containerHeight={tooltipData.containerHeight ?? window.innerHeight}
-            {...(tooltipData.movingAverage && { movingAverage: tooltipData.movingAverage })}
-            {...(tooltipData.measurement && { measurement: tooltipData.measurement })}
-            {...(tooltipData.order && { order: tooltipData.order })}
-            {...(tooltipData.currentPrice && { currentPrice: tooltipData.currentPrice })}
-            {...(tooltipData.setup && { setup: tooltipData.setup })}
-            {...(tooltipData.marketEvent && { marketEvent: tooltipData.marketEvent })}
-          />
-        )}
+        <ChartTooltipOverlay enabled={showTooltip} />
       </Box>
       </ChartContextMenuManager>
     </>

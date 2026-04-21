@@ -20,7 +20,7 @@ export interface UseKlineRendererProps {
   enabled?: boolean;
   showActivityIndicator?: boolean;
   klineWickWidth?: number;
-  hoveredKlineIndex?: number;
+  hoveredKlineIndexRef?: MutableRefObject<number | undefined>;
   highlightedCandlesRef?: MutableRefObject<HighlightedCandle[]>;
 }
 
@@ -41,7 +41,7 @@ export const useKlineRenderer = ({
   enabled = true,
   showActivityIndicator = true,
   klineWickWidth,
-  hoveredKlineIndex,
+  hoveredKlineIndexRef,
   highlightedCandlesRef,
 }: UseKlineRendererProps): UseKlineRendererReturn => {
   const avgCacheRef = useRef<AvgCache | null>(null);
@@ -135,7 +135,8 @@ export const useKlineRenderer = ({
       const visualTopY = Math.min(highY, lowY);
 
       const highlighted = highlightedIndicesMap?.get(actualIndex);
-      const isHovered = hoveredKlineIndex === actualIndex || !!highlighted;
+      const hoveredIdx = hoveredKlineIndexRef?.current;
+      const isHovered = hoveredIdx === actualIndex || !!highlighted;
 
       const bodyTop = Math.min(openY, closeY);
       const bodyHeight = Math.max(openY, closeY) - bodyTop;
@@ -266,7 +267,7 @@ export const useKlineRenderer = ({
     }
 
     ctx.restore();
-  }, [manager, colors, enabled, showActivityIndicator, klineWickWidth, hoveredKlineIndex, highlightedCandlesRef]);
+  }, [manager, colors, enabled, showActivityIndicator, klineWickWidth, hoveredKlineIndexRef, highlightedCandlesRef]);
 
   return { render };
 };

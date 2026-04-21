@@ -1,5 +1,6 @@
 import type { Kline, MarketEvent, Order, TradingSetup, Viewport } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { tooltipStore } from './tooltipStore';
 
 export interface TooltipData {
   kline: Kline | null;
@@ -34,33 +35,15 @@ export interface OrderPreview {
 }
 
 export interface ChartState {
-  tooltipData: TooltipData;
   orderToClose: string | null;
 }
 
-type ChartAction =
-  | { type: 'SET_TOOLTIP'; payload: TooltipData }
-  | { type: 'HIDE_TOOLTIP' }
-  | { type: 'SET_ORDER_TO_CLOSE'; payload: string | null };
+type ChartAction = { type: 'SET_ORDER_TO_CLOSE'; payload: string | null };
 
-const initialTooltipData: TooltipData = {
-  kline: null,
-  x: 0,
-  y: 0,
-  visible: false,
-};
-
-const initialState: ChartState = {
-  tooltipData: initialTooltipData,
-  orderToClose: null,
-};
+const initialState: ChartState = { orderToClose: null };
 
 const chartReducer = (state: ChartState, action: ChartAction): ChartState => {
   switch (action.type) {
-    case 'SET_TOOLTIP':
-      return { ...state, tooltipData: action.payload };
-    case 'HIDE_TOOLTIP':
-      return { ...state, tooltipData: initialTooltipData };
     case 'SET_ORDER_TO_CLOSE':
       return { ...state, orderToClose: action.payload };
     default:
@@ -114,8 +97,8 @@ export const useChartState = (_props: UseChartStateProps): UseChartStateResult =
 
   const actions = useMemo(
     () => ({
-      setTooltip: (data: TooltipData) => dispatch({ type: 'SET_TOOLTIP', payload: data }),
-      hideTooltip: () => dispatch({ type: 'HIDE_TOOLTIP' }),
+      setTooltip: (data: TooltipData) => tooltipStore.setTooltip(data),
+      hideTooltip: () => tooltipStore.hideTooltip(),
       setOrderToClose: (orderId: string | null) =>
         dispatch({ type: 'SET_ORDER_TO_CLOSE', payload: orderId }),
     }),

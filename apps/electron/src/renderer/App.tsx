@@ -234,7 +234,6 @@ function AppContent(): ReactElement {
   return (
     <>
       <MainLayout
-        onOpenSymbolSelector={() => { }}
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
         isTradingOpen={isTradingOpen}

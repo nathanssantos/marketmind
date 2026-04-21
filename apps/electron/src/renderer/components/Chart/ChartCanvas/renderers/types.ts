@@ -4,16 +4,17 @@ import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { LiquidityColorMode } from '@renderer/components/Chart/liquidityLUTs';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import type { MutableRefObject } from 'react';
 
 export type IndicatorValueSeries = (number | null | undefined)[];
 
 export interface GenericRendererExternal {
   marketEvents?: MarketEvent[];
   footprintBars?: FootprintBar[];
-  liquidityHeatmap?: LiquidityHeatmapSnapshot | null;
+  liquidityHeatmapRef?: MutableRefObject<LiquidityHeatmapSnapshot | null>;
   liquidityColorMode?: LiquidityColorMode;
   timeframe?: string;
-  hoveredKlineIndex?: number;
+  hoveredKlineIndexRef?: MutableRefObject<number | undefined>;
   volumeHeightRatio?: number;
 }
 

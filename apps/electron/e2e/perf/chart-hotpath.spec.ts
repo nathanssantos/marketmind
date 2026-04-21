@@ -129,6 +129,7 @@ test.describe('Chart hot-path perf', () => {
   test.beforeEach(async ({ page }) => {
     await installConsoleCapture(page);
     await enablePerfOverlay(page);
+    await page.route('**/socket.io/**', (route) => route.abort());
     const klines = generateKlines({ count: 500, symbol: 'BTCUSDT', interval: '1h' });
     await installTrpcMock(page, { klines });
 
@@ -422,7 +423,7 @@ test.describe('Chart hot-path perf', () => {
     await clearDrawings(page);
   });
 
-  test.fixme('hover-and-tick-storm: ChartCanvas + QuickTradeToolbar stay bounded during hover + ticks', async ({ page }) => {
+  test('hover-and-tick-storm: ChartCanvas + QuickTradeToolbar stay bounded during hover + ticks', async ({ page }) => {
     await clearIndicators(page);
     await addIndicators(page, OVERLAY_INDICATORS);
     await driveFrames(page, WARMUP_FRAMES);

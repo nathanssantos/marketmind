@@ -67,7 +67,7 @@ function paintLevels(
 
 export const renderLiquidityHeatmap: GenericRenderer = (ctx) => {
   const { manager, external } = ctx;
-  const data = external?.liquidityHeatmap;
+  const data = external?.liquidityHeatmapRef?.current;
   if (!data || data.buckets.length === 0 || data.maxQuantity <= 0) return;
 
   const colorMode = external?.liquidityColorMode ?? 'colored';

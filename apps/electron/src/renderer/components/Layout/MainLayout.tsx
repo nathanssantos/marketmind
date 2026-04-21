@@ -51,7 +51,7 @@ const DEFAULT_MARKET_WIDTH = MIN_MARKET_WIDTH;
 
 const MAX_SIDEBAR_RATIO = 0.75;
 
-export const MainLayout = ({
+const MainLayoutComponent = ({
   onOpenSymbolSelector,
   advancedConfig,
   onAdvancedConfigChange,
@@ -69,7 +69,7 @@ export const MainLayout = ({
   onTimeframeChange,
   onNavigateToSymbol,
 }: MainLayoutProps) => {
-  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('MainLayout');
+  perfMonitor.recordComponentRender('MainLayout');
   const [quickTradeMode, setQuickTradeMode] = useUIPref<QuickTradeMode>('quickTradeMode', 'sidebar');
   const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);
@@ -272,3 +272,5 @@ export const MainLayout = ({
     </GlobalActionsProvider>
   );
 };
+
+export const MainLayout = React.memo(MainLayoutComponent);

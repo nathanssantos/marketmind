@@ -9,7 +9,7 @@ const SHORT_LIQ_LINE = 'rgba(80, 255, 140, 0.4)';
 
 export const renderLiquidationMarkers: GenericRenderer = (ctx) => {
   const { manager, external } = ctx;
-  const data = external?.liquidityHeatmap;
+  const data = external?.liquidityHeatmapRef?.current;
   if (!data) return;
 
   const hasReal = (data.liquidations?.length ?? 0) > 0;
