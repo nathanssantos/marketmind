@@ -24,3 +24,4 @@ export * from './scalping';
 export * from './screener';
 export * from './liquidityHeatmap';
 export * from './indicators';
+export * from './test-fixtures';
