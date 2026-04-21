@@ -86,5 +86,11 @@
     "p95FrameMs": 0.10000002384185791,
     "renderRate": 136.45224168369128,
     "generatedAt": "2026-04-21T14:58:04.159Z"
+  },
+  "idle-tick-poll": {
+    "fps": 2,
+    "p95FrameMs": 0.20000004768371582,
+    "renderRate": 0,
+    "generatedAt": "2026-04-21T21:26:09.763Z"
   }
 }

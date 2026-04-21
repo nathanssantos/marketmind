@@ -151,7 +151,7 @@ export const useGenericChartIndicators = (
   managerRef?: MutableRefObject<CanvasManager | null>,
   liveDataTarget?: LiveDataTarget | null,
 ): UseGenericChartIndicatorsResult => {
-  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('useGenericChartIndicators');
+  perfMonitor.recordComponentRender('useGenericChartIndicators');
   const initialInstances = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
   const instancesRef = useRef<IndicatorInstance[]>(initialInstances.current);
   const batchesRef = useRef<BatchKey[]>(buildBatches(initialInstances.current));
