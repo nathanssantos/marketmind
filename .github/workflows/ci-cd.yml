@@ -46,7 +46,7 @@ jobs:
       - name: Type check (Backend)
         run: pnpm --filter @marketmind/backend type-check
 
-  # Job 2: Test
+  # Job 2: Unit Tests (+ coverage artifact)
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -88,25 +88,60 @@ jobs:
       - name: Build shared packages
         run: pnpm --filter "./packages/*" build
 
-      - name: Install Playwright browsers
-        run: pnpm --filter @marketmind/electron exec playwright install --with-deps chromium
-
-      - name: Run tests
-        run: pnpm test
+      - name: Run backend unit tests
+        run: pnpm --filter @marketmind/backend test:unit -- --coverage
         env:
           DATABASE_URL: postgresql://marketmind:test_password@localhost:5432/marketmind_test
           NODE_ENV: test
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           SESSION_SECRET: "test_session_secret_please_ignore_0000000000"
 
+      - name: Run frontend unit tests
+        run: pnpm --filter @marketmind/electron test:unit -- --coverage
+
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: success()
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+          name: coverage-${{ github.run_id }}
+          path: |
+            apps/backend/coverage/
+            apps/electron/coverage/
+          retention-days: 14
+          if-no-files-found: warn
+
+  # Job 3: Browser Tests (Playwright-backed vitest)
+  browser-tests:
+    name: Browser Tests
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @marketmind/electron exec playwright install --with-deps chromium
+
+      - name: Run browser tests
+        run: pnpm --filter @marketmind/electron test:browser:run
 
   # Job 4: E2E Tests
   e2e:
