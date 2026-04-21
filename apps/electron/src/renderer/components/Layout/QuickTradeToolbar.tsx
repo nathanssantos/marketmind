@@ -7,7 +7,7 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
-import { usePriceStore } from '@renderer/store/priceStore';
+import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
@@ -49,6 +49,7 @@ const ActionRow = ({ icon, label, onClick, loading, disabled, children }: {
 const SIZE_PRESETS = [5, 10, 25, 50, 75, 100] as const;
 const SNAP_THRESHOLD = 16;
 const EDGE_PADDING = 8;
+const BOOK_TICKER_THROTTLE_MS = 250;
 
 export type QuickTradeMode = 'sidebar' | 'chart';
 
@@ -65,6 +66,7 @@ interface QuickTradeActionsProps {
 }
 
 export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interval = '1h', showDragHandle, onDragStart, isDragging, onMenuAction, currentMode, onClose }: QuickTradeActionsProps) => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
@@ -173,8 +175,9 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     }
   }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
-  const currentPrice = usePriceStore((s) => s.prices[symbol]?.price ?? 0);
-  const { bidPrice, askPrice } = useBookTicker(symbol);
+  const priceSymbols = useMemo(() => [symbol], [symbol]);
+  const currentPrice = usePricesForSymbols(priceSymbols)[symbol] ?? 0;
+  const { bidPrice, askPrice } = useBookTicker(symbol, true, BOOK_TICKER_THROTTLE_MS);
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
 
@@ -469,7 +472,6 @@ interface QuickTradeToolbarProps {
 }
 
 export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interval, onMenuAction, currentMode, onClose }: QuickTradeToolbarProps) => {
-  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);

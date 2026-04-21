@@ -9,6 +9,7 @@ import {
   clearIndicators,
   componentRenderRate,
   driveFrames,
+  enableChartQuickTrade,
   enablePerfOverlay,
   pushPriceTicks,
   readPerfSnapshot,
@@ -115,8 +116,16 @@ test.describe('Sibling renderer hot-path', () => {
     ).toBeLessThanOrEqual(MAX_ORDERS_LIST_RENDERS_PER_SEC);
   });
 
-  test.fixme('quick-trade-toolbar-tick-storm: QuickTradeToolbar stays bounded under price ticks', async ({ page }) => {
+  test('quick-trade-toolbar-tick-storm: QuickTradeToolbar stays bounded under price ticks', async ({ page }) => {
     await clearIndicators(page);
+    await enableChartQuickTrade(page);
+    await page.waitForFunction(
+      () => {
+        const snap = window.__mmPerf?.getSnapshot();
+        return snap?.componentRenders.some((c) => c.name === 'QuickTradeToolbar') ?? false;
+      },
+      { timeout: 5_000 },
+    );
     await driveFrames(page, WARMUP_FRAMES);
     await resetPerfMonitor(page);
 
