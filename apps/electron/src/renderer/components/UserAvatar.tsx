@@ -37,6 +37,7 @@ export const UserAvatar = () => {
         <Menu.Trigger asChild>
           <Box
             as="button"
+            aria-label={t('account.title')}
             w="22px"
             h="22px"
             borderRadius="full"
