@@ -88,6 +88,9 @@ jobs:
       - name: Build shared packages
         run: pnpm --filter "./packages/*" build
 
+      - name: Install Playwright browsers
+        run: pnpm --filter @marketmind/electron exec playwright install --with-deps chromium
+
       - name: Run tests
         run: pnpm test
         env:
