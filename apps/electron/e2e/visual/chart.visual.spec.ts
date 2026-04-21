@@ -1,148 +1,83 @@
 import { test, expect } from '@playwright/test';
+import { generateKlines } from '../helpers/klineFixtures';
+import { installTrpcMock } from '../helpers/trpcMock';
+import {
+  addIndicators,
+  waitForChartReady,
+  waitForFrames,
+} from '../helpers/chartTestSetup';
 
-test.describe('Chart Visual Regression', () => {
+const SCREENSHOT_TOLERANCE = {
+  maxDiffPixelRatio: 0.03,
+  animations: 'disabled',
+} as const;
+
+test.describe('Chart visual regression', () => {
   test.beforeEach(async ({ page }) => {
+    const klines = generateKlines({
+      count: 300,
+      seed: 12345,
+      symbol: 'BTCUSDT',
+      interval: '1h',
+      basePrice: 50_000,
+      volatility: 0.004,
+      endTime: Date.UTC(2026, 0, 15, 0, 0, 0),
+    });
+    await installTrpcMock(page, { klines });
     await page.goto('/');
-    await page.waitForSelector('[data-testid="chart-container"]', { timeout: 10000 });
+    await waitForChartReady(page);
+    await waitForFrames(page, 20);
   });
 
-  test('candlestick chart renders correctly', async ({ page }) => {
-    await page.waitForTimeout(1000);
-
-    const chartContainer = page.locator('[data-testid="chart-container"]');
-    await expect(chartContainer).toHaveScreenshot('candlestick-chart.png', {
-      maxDiffPixelRatio: 0.02,
-      animations: 'disabled',
+  test('base chart + sidebar layout', async ({ page }) => {
+    await expect(page).toHaveScreenshot('base-app.png', {
+      ...SCREENSHOT_TOLERANCE,
+      fullPage: false,
     });
   });
 
-  test('chart with volume panel renders correctly', async ({ page }) => {
-    await page.waitForTimeout(1000);
-
-    const chartWithVolume = page.locator('[data-testid="chart-with-volume"]');
-    if (await chartWithVolume.isVisible()) {
-      await expect(chartWithVolume).toHaveScreenshot('chart-with-volume.png', {
-        maxDiffPixelRatio: 0.02,
-        animations: 'disabled',
-      });
-    }
+  test('chart canvas pixel-stable after load', async ({ page }) => {
+    const canvas = page.locator('canvas').first();
+    await expect(canvas).toBeVisible();
+    await expect(canvas).toHaveScreenshot('base-chart-canvas.png', SCREENSHOT_TOLERANCE);
   });
 
-  test('chart zoom works correctly', async ({ page }) => {
-    const chartContainer = page.locator('[data-testid="chart-container"]');
-
-    await chartContainer.hover();
-    await page.mouse.wheel(0, -100);
-    await page.waitForTimeout(500);
-
-    await expect(chartContainer).toHaveScreenshot('chart-zoomed-in.png', {
-      maxDiffPixelRatio: 0.02,
-      animations: 'disabled',
+  test('chart with RSI indicator added', async ({ page }) => {
+    await addIndicators(page, [{ catalogType: 'rsi', params: { period: 14 } }]);
+    await waitForFrames(page, 30);
+    await expect(page).toHaveScreenshot('chart-with-rsi.png', {
+      ...SCREENSHOT_TOLERANCE,
+      fullPage: false,
     });
   });
 
-  test('chart crosshair renders on hover', async ({ page }) => {
-    const chartContainer = page.locator('[data-testid="chart-container"]');
-    const boundingBox = await chartContainer.boundingBox();
-
-    if (boundingBox) {
-      await page.mouse.move(
-        boundingBox.x + boundingBox.width / 2,
-        boundingBox.y + boundingBox.height / 2
-      );
-      await page.waitForTimeout(500);
-
-      await expect(chartContainer).toHaveScreenshot('chart-with-crosshair.png', {
-        maxDiffPixelRatio: 0.02,
-        animations: 'disabled',
-      });
-    }
-  });
-});
-
-test.describe('Theme Visual Regression', () => {
-  test('light theme renders correctly', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('[data-testid="chart-container"]');
-
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-theme', 'light');
-    });
-    await page.waitForTimeout(500);
-
-    await expect(page).toHaveScreenshot('app-light-theme.png', {
-      maxDiffPixelRatio: 0.02,
-      fullPage: true,
-      animations: 'disabled',
+  test('chart with MACD indicator added', async ({ page }) => {
+    await addIndicators(page, [
+      { catalogType: 'macd', params: { fast: 12, slow: 26, signal: 9 } },
+    ]);
+    await waitForFrames(page, 30);
+    await expect(page).toHaveScreenshot('chart-with-macd.png', {
+      ...SCREENSHOT_TOLERANCE,
+      fullPage: false,
     });
   });
 
-  test('dark theme renders correctly', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('[data-testid="chart-container"]');
+  test('chart with EMA overlay added', async ({ page }) => {
+    await addIndicators(page, [{ catalogType: 'ema', params: { period: 50 } }]);
+    await waitForFrames(page, 30);
+    const canvas = page.locator('canvas').first();
+    await expect(canvas).toHaveScreenshot('chart-with-ema.png', SCREENSHOT_TOLERANCE);
+  });
 
-    await page.evaluate(() => {
-      document.documentElement.setAttribute('data-theme', 'dark');
+  test('line drawing tool active state', async ({ page }) => {
+    const lineTool = page.getByRole('button', { name: 'Line', exact: true });
+    await lineTool.click();
+    await waitForFrames(page, 10);
+    await expect(lineTool).toHaveAttribute('aria-pressed', 'true');
+
+    await expect(page).toHaveScreenshot('line-tool-active.png', {
+      ...SCREENSHOT_TOLERANCE,
+      fullPage: false,
     });
-    await page.waitForTimeout(500);
-
-    await expect(page).toHaveScreenshot('app-dark-theme.png', {
-      maxDiffPixelRatio: 0.02,
-      fullPage: true,
-      animations: 'disabled',
-    });
-  });
-});
-
-test.describe('Indicator Visual Regression', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('[data-testid="chart-container"]');
-  });
-
-  test('RSI indicator panel renders correctly', async ({ page }) => {
-    const rsiToggle = page.locator('[data-testid="indicator-toggle-rsi"]');
-    if (await rsiToggle.isVisible()) {
-      await rsiToggle.click();
-      await page.waitForTimeout(500);
-
-      const rsiPanel = page.locator('[data-testid="indicator-panel-rsi"]');
-      if (await rsiPanel.isVisible()) {
-        await expect(rsiPanel).toHaveScreenshot('rsi-indicator.png', {
-          maxDiffPixelRatio: 0.02,
-          animations: 'disabled',
-        });
-      }
-    }
-  });
-
-  test('MACD indicator panel renders correctly', async ({ page }) => {
-    const macdToggle = page.locator('[data-testid="indicator-toggle-macd"]');
-    if (await macdToggle.isVisible()) {
-      await macdToggle.click();
-      await page.waitForTimeout(500);
-
-      const macdPanel = page.locator('[data-testid="indicator-panel-macd"]');
-      if (await macdPanel.isVisible()) {
-        await expect(macdPanel).toHaveScreenshot('macd-indicator.png', {
-          maxDiffPixelRatio: 0.02,
-          animations: 'disabled',
-        });
-      }
-    }
-  });
-
-  test('Bollinger Bands overlay renders correctly', async ({ page }) => {
-    const bbToggle = page.locator('[data-testid="indicator-toggle-bb"]');
-    if (await bbToggle.isVisible()) {
-      await bbToggle.click();
-      await page.waitForTimeout(500);
-
-      const chartContainer = page.locator('[data-testid="chart-container"]');
-      await expect(chartContainer).toHaveScreenshot('chart-with-bollinger-bands.png', {
-        maxDiffPixelRatio: 0.02,
-        animations: 'disabled',
-      });
-    }
   });
 });

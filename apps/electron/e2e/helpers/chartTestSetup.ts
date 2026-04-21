@@ -157,11 +157,21 @@ export interface AddIndicatorInput {
   visible?: boolean;
 }
 
+export const waitForE2EBridge = async (page: Page, timeoutMs = 10_000): Promise<void> => {
+  await page.waitForFunction(
+    () =>
+      typeof window.__indicatorStore !== 'undefined' &&
+      typeof window.__drawingStore !== 'undefined',
+    { timeout: timeoutMs },
+  );
+};
+
 export const addIndicators = async (
   page: Page,
   indicators: AddIndicatorInput[],
-): Promise<string[]> =>
-  page.evaluate((inputs) => {
+): Promise<string[]> => {
+  await waitForE2EBridge(page);
+  return page.evaluate((inputs) => {
     const ids: string[] = [];
     const store = window.__indicatorStore;
     if (!store) throw new Error('indicator store not exposed on window');
@@ -177,6 +187,7 @@ export const addIndicators = async (
     }
     return ids;
   }, indicators);
+};
 
 export const clearIndicators = async (page: Page): Promise<void> => {
   await page.evaluate(() => {
