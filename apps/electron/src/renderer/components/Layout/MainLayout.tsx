@@ -1,6 +1,7 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useUIPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
+import { perfMonitor } from '@/renderer/utils/canvas/perfMonitor';
 import { Box, Flex } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -68,6 +69,7 @@ export const MainLayout = ({
   onTimeframeChange,
   onNavigateToSymbol,
 }: MainLayoutProps) => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('MainLayout');
   const [quickTradeMode, setQuickTradeMode] = useUIPref<QuickTradeMode>('quickTradeMode', 'sidebar');
   const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);

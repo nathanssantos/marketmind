@@ -422,6 +422,52 @@ test.describe('Chart hot-path perf', () => {
     await clearDrawings(page);
   });
 
+  test.fixme('hover-and-tick-storm: ChartCanvas + QuickTradeToolbar stay bounded during hover + ticks', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let stop = false;
+    const tickLoop = (async () => {
+      let seed = 0;
+      while (!stop) {
+        const ticks: Record<string, number> = {};
+        for (const sym of TICK_STORM_SYMBOLS) {
+          seed += 1;
+          ticks[sym] = 50_000 + ((seed % 1000) * 0.1);
+        }
+        await pushPriceTicks(page, ticks);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await tickLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'hover-and-tick-storm';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(
+      componentRenderRate(snap, 'ChartCanvas'),
+      'ChartCanvas re-rendering under hover+tick storm — likely hoveredKlineIndex in external + hot selectors (Parts 2-3)',
+    ).toBeLessThanOrEqual(2);
+    expect(
+      componentRenderRate(snap, 'QuickTradeToolbar'),
+      'QuickTradeToolbar re-rendering under tick storm — subscribed to usePriceStore via selector (Part 2)',
+    ).toBeLessThanOrEqual(10);
+  });
+
   test('20-symbol tick storm: double-width price batch path', async ({ page }) => {
     await clearIndicators(page);
     await addIndicators(page, OVERLAY_INDICATORS);

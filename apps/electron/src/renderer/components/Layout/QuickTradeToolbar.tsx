@@ -10,6 +10,7 @@ import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePriceStore } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { formatChartPrice } from '@renderer/utils/formatters';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -468,6 +469,7 @@ interface QuickTradeToolbarProps {
 }
 
 export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interval, onMenuAction, currentMode, onClose }: QuickTradeToolbarProps) => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);

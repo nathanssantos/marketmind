@@ -26,6 +26,7 @@ const TICK_STORM_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT
 
 const MAX_PORTFOLIO_RENDERS_PER_SEC = 10;
 const MAX_ORDERS_LIST_RENDERS_PER_SEC = 10;
+const MAX_QUICK_TRADE_RENDERS_PER_SEC = 10;
 
 interface SiblingResult {
   portfolioRate: number;
@@ -35,7 +36,14 @@ interface SiblingResult {
   generatedAt: string;
 }
 
-const writeRunResult = (key: string, entry: SiblingResult): void => {
+interface QuickTradeResult {
+  quickTradeRate: number;
+  chartCanvasRate: number;
+  fps: number;
+  generatedAt: string;
+}
+
+const writeRunResult = (key: string, entry: SiblingResult | QuickTradeResult): void => {
   let current: Record<string, unknown> = {};
   if (existsSync(RESULTS_PATH)) {
     try {
@@ -105,5 +113,46 @@ test.describe('Sibling renderer hot-path', () => {
       ordersListRate,
       `OrdersList re-rendering ${ordersListRate.toFixed(1)}/s under tick storm — likely subscribed to a hot store via a selector`,
     ).toBeLessThanOrEqual(MAX_ORDERS_LIST_RENDERS_PER_SEC);
+  });
+
+  test.fixme('quick-trade-toolbar-tick-storm: QuickTradeToolbar stays bounded under price ticks', async ({ page }) => {
+    await clearIndicators(page);
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let stop = false;
+    const tickLoop = (async () => {
+      let seed = 0;
+      while (!stop) {
+        const ticks: Record<string, number> = {};
+        for (const sym of TICK_STORM_SYMBOLS) {
+          seed += 1;
+          ticks[sym] = 50_000 + ((seed % 1000) * 0.1);
+        }
+        await pushPriceTicks(page, ticks);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await tickLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const quickTradeRate = componentRenderRate(snap, 'QuickTradeToolbar');
+    const chartCanvasRate = componentRenderRate(snap, 'ChartCanvas');
+
+    writeRunResult('quick-trade-toolbar-tick-storm', {
+      quickTradeRate,
+      chartCanvasRate,
+      fps: snap.fps,
+      generatedAt: new Date().toISOString(),
+    });
+
+    expect(snap.enabled).toBe(true);
+    expect(
+      quickTradeRate,
+      `QuickTradeToolbar re-rendering ${quickTradeRate.toFixed(1)}/s under tick storm — selector on usePriceStore (Part 2)`,
+    ).toBeLessThanOrEqual(MAX_QUICK_TRADE_RENDERS_PER_SEC);
   });
 });
