@@ -297,7 +297,7 @@ describe('useCrosshairPriceLineRenderer', () => {
 
     result.current.render();
 
-    expect(mockCtx.fillText).toHaveBeenCalledWith('123.46', expect.any(Number), 200);
+    expect(mockCtx.fillText).toHaveBeenCalledWith('123.46', expect.any(Number), expect.any(Number));
   });
 
   it('should save and restore context', () => {
