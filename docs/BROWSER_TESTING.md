@@ -70,7 +70,7 @@ The hot-path suite targets the render paths that dominate real trading sessions 
 |---|---|---|
 | `price-tick-storm` | `pushPriceTicks(page, {sym: price})` at ~100 Hz for 10 symbols | `usePricesForSymbols` subscribers, chart imperative subscribe callback. Catches regressions where a component starts subscribing to `usePriceStore` via a selector. |
 | `kline-replace-loop` | `updateLatestKline(page, {close, volume})` every 100ms | React Query `kline.list` cache mutation → `useKlinePagination.allKlines` → ChartCanvas re-render. Catches cache-update cost regressions. |
-| `kline-append` | `appendKline(page, FixtureKline)` every 500ms | Same cache path but array grows (new-bar case). |
+| `kline-append` | `appendKline(page, TestKline)` every 500ms | Same cache path but array grows (new-bar case). |
 | `pan-drag-loop` | `drivePan(page, frames, amplitudePx)` — synthetic `mousedown` + rAF-paced `mousemove` + `mouseup` | Viewport-driven redraw (`manager.pan`, dirty-rect invalidation). `renderRate` here is expected to stay near 0 because pan bypasses React. |
 | `wheel-zoom-loop` | `driveWheelZoom(page, frames, deltaPx)` — alternating `wheel` events | Zoom path — range recalculation, bounds cache, indicator recompute on viewport change. |
 | `indicator-churn` | `addIndicators` / `clearIndicators` cycled every few frames | Mount / unmount cost for indicator instances (`IndicatorEngine` init, panel layout, overlay renderer wiring). |
