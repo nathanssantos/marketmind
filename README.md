@@ -172,6 +172,9 @@ pnpm --filter @marketmind/backend test
 # Run with coverage report
 pnpm --filter @marketmind/electron test:coverage
 
+# Run renderer browser tests only (Playwright-backed vitest)
+pnpm --filter @marketmind/electron test:browser:run
+
 # Chart perf regression harness (Playwright)
 pnpm --filter @marketmind/electron test:perf           # run the perf suite
 pnpm --filter @marketmind/electron test:perf:diagnose  # + top-5 bottleneck dump
@@ -183,9 +186,11 @@ pnpm --filter @marketmind/electron test:e2e:electron
 See [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md) for the full layered-testing picture (Playwright MCP, chart perf harness, Electron smoke) and [`apps/electron/e2e/perf/README.md`](apps/electron/e2e/perf/README.md) for the perf-specific workflow.
 
 **Test Stats:**
-- **~7,500+ tests** across the monorepo
-- **5,129 backend tests** + 40 skipped (IB integration)
-- **2,368 frontend tests** (2,341 unit + 27 browser)
+- **~7,600+ tests** across the monorepo
+- **5,129 backend tests** + 40 skipped (IB integration) — now includes a golden-output snapshot per builtin strategy (106 snapshots)
+- **2,400+ frontend tests** (2,341 unit + 86 browser across 5 files)
+- **Browser tests** (`apps/electron/src/**/*.browser.test.ts(x)`) cover Canvas pixel math, `getBoundingClientRect` hit-testing, and other surfaces jsdom can't exercise — run via `pnpm --filter @marketmind/electron test:browser:run`
+- **CI** runs lint, unit tests (with coverage artifact), browser tests, E2E, and backend build on every PR
 - All type checks passing
 
 ## Production Build
