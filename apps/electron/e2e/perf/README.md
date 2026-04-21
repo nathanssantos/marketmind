@@ -29,7 +29,8 @@ pnpm --filter @marketmind/electron test:perf:update
 | File | Role |
 |---|---|
 | `chart-perf.spec.ts` | Indicator-panel baselines — 5-panel full stack, overlay-only, sanity. Drives the chart with `addIndicators` + `driveFrames`. |
-| `chart-hotpath.spec.ts` | Hot-path scenarios — `price-tick-storm`, `kline-replace-loop`, `kline-append`, `pan-drag-loop`, `wheel-zoom-loop`, `indicator-churn`. |
+| `chart-hotpath.spec.ts` | Hot-path scenarios — `price-tick-storm`, `kline-replace-loop`, `kline-append`, `pan-drag-loop`, `wheel-zoom-loop`, `indicator-churn`, `many-drawings` (80 mixed drawings under pan+zoom), `price-tick-storm-20` (20-symbol tick storm). |
+| `chart-mobile.spec.ts` | Narrow-viewport scenarios (`390×844`) — `mobile-overlay`, `mobile-pan-zoom`, `mobile-tick-storm`. Same assertions as desktop baselines. |
 | `sibling-renders.spec.ts` | Sentinel — `Portfolio` + `OrdersList` renders/sec stay ≤ 10 under 10-symbol tick storm. |
 | `baseline.json` | Committed. Current accepted numbers for each scenario. |
 | `last-run.json` | Git-ignored. Written per run by the specs, diffed by `scripts/perf/compare-baseline.ts`. |

@@ -188,3 +188,84 @@ Slower than Layer 2 (~30 s boot). Only covers what the Vite renderer path can't:
 - **Klines don't show** — `trpcMock.ts` has to be installed *before* `page.goto('/')`. Install it in `beforeEach` and always await the install promise.
 - **`window.__indicatorStore` is undefined** — the bridge only installs when the bypass flag is on. Check `localStorage` isn't interfering and that `installE2EBridge()` is called from `index.tsx`.
 - **`window.__queryClient` is undefined** — the queryClient bridge runs inside a `useEffect` in `TrpcProvider`, so it needs one paint to be available. `waitForChartReady` already covers this. Same root cause as the indicator-store miss: reusing a dev server that wasn't started with the bypass flag.
+
+---
+
+## Writing a new browser test
+
+Browser tests live next to the source they cover, suffixed `.browser.test.ts(x)`, and run via `pnpm --filter @marketmind/electron test:browser:run` on the Playwright-backed vitest provider (real Chromium, real DOM, real canvas). Use them **only** where jsdom is demonstrably insufficient — Canvas pixel math, `getBoundingClientRect`, font metrics, hit-testing. Everything else should stay in jsdom.
+
+### Pattern A — isolated pure function / renderer
+
+Best for pixel-drawing renderers and viewport math. No React, no full chart mount.
+
+```ts
+// apps/electron/src/renderer/components/Chart/ChartCanvas/renderers/renderFVG.browser.test.tsx
+import { describe, expect, test } from 'vitest';
+import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { renderFVG } from './renderFVG';
+
+const makeCtx = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  document.body.appendChild(canvas);
+  const manager = new CanvasManager(canvas);
+  return { manager, ctx: canvas.getContext('2d')! };
+};
+
+test('unfilled gap created before visible window still renders', () => {
+  const { manager, ctx } = makeCtx();
+  renderFVG({ manager, /* viewport, klines, indicators */ });
+  // Read pixel at expected zone coords — value != 0 means drawn.
+  const { data } = ctx.getImageData(200, 150, 1, 1);
+  expect(data[3]).toBeGreaterThan(0);
+});
+```
+
+Key rules:
+- Mount the canvas in `document.body` — otherwise `getBoundingClientRect` returns zeros.
+- Use `ctx.getImageData` to assert on pixels, not on internal function calls.
+- Clean up between tests with `afterEach(() => document.body.innerHTML = '')`.
+
+### Pattern B — hook under `renderHook`
+
+Best for hooks that touch pointer events or layout measurements. Uses `@testing-library/react`'s `renderHook` plus synthetic input dispatched on real DOM.
+
+```tsx
+// apps/electron/src/renderer/components/Chart/useOrderDragHandler.browser.test.tsx
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, test, vi } from 'vitest';
+import { useOrderDragHandler } from './useOrderDragHandler';
+
+test('drag SL 20px up updates order at yToPrice(newY)', async () => {
+  const updateOrder = vi.fn();
+  const yToPrice = vi.fn((y: number) => y);
+  const hook = renderHook(() =>
+    useOrderDragHandler({ orders: [/* ... */], updateOrder, yToPrice, /* ... */ }),
+  );
+  // Dispatch mousedown/mousemove/mouseup via document.dispatchEvent(...)
+  await act(async () => { /* dispatch + wait two rAF */ });
+  expect(updateOrder).toHaveBeenCalledWith(expect.objectContaining({ stopLoss: 180 }));
+});
+```
+
+Key rules:
+- Wait two `requestAnimationFrame` ticks (`waitTwoFrames()`) after pointer events — the chart throttles on rAF.
+- Assert on callback args (`updateOrder` invocation), not on internal hook state. Testing internals means the test fails on any refactor, even when behavior is preserved.
+
+### What doesn't belong here
+
+- Anything that fits in jsdom — keep those in `*.test.ts(x)`. The browser provider is slower and costs a Playwright browser per run.
+- Full-app E2E flows — those belong in `apps/electron/e2e/*.spec.ts` against the Vite dev server with `VITE_E2E_BYPASS_AUTH=true`.
+- Perf assertions — those belong in `apps/electron/e2e/perf/` against the full chart with the perf overlay enabled.
+
+### Where the browser tests currently live
+
+| File | What it exercises |
+|---|---|
+| `ChartCanvas.browser.test.tsx` | End-to-end chart mount — baseline render + resize |
+| `useOrderDragHandler.browser.test.tsx` | SL/TP pixel drag → `yToPrice` conversion, clamping, disable prefs |
+| `ChartCanvas/renderers/renderFVG.browser.test.tsx` | FVG zone pixel sampling, viewport-culling regression |
+| `ChartCanvas/renderers/renderFibonacci.browser.test.tsx` | Fibonacci "nearest" pivot-selection regression, level hit-testing |
+| `utils/canvas/ViewportNavigator.browser.test.ts` | `clientX - rect.left` pixel → data-index math |
