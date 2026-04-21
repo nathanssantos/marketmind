@@ -5,7 +5,7 @@ const MIN_SYMBOL_LENGTH = 6;
 export const parsePrice = (price: string | number): number =>
   typeof price === 'string' ? parseFloat(price) : price;
 
-export const formatPrice = (price: number, precision = DEFAULT_PRICE_PRECISION): string =>
+export const formatPriceExact = (price: number, precision = DEFAULT_PRICE_PRECISION): string =>
   price.toFixed(precision);
 
 export const parseQty = (qty: string | number): number =>
@@ -23,7 +23,7 @@ export const formatVolume = (volume: number, precision = DEFAULT_QTY_PRECISION):
 export const calculateQuoteQty = (price: string, qty: string): string => {
   const priceNum = parsePrice(price);
   const qtyNum = parseQty(qty);
-  return formatPrice(priceNum * qtyNum);
+  return formatPriceExact(priceNum * qtyNum);
 };
 
 export const isValidPrice = (price: string): boolean => {
@@ -45,41 +45,41 @@ export const comparePrice = (a: string, b: string): number => {
 export const addPrice = (a: string, b: string): string => {
   const aNum = parsePrice(a);
   const bNum = parsePrice(b);
-  return formatPrice(aNum + bNum);
+  return formatPriceExact(aNum + bNum);
 };
 
 export const subtractPrice = (a: string, b: string): string => {
   const aNum = parsePrice(a);
   const bNum = parsePrice(b);
-  return formatPrice(aNum - bNum);
+  return formatPriceExact(aNum - bNum);
 };
 
 export const multiplyPrice = (price: string, multiplier: number): string => {
   const priceNum = parsePrice(price);
-  return formatPrice(priceNum * multiplier);
+  return formatPriceExact(priceNum * multiplier);
 };
 
 export const dividePrice = (price: string, divisor: number): string => {
   const priceNum = parsePrice(price);
-  return formatPrice(priceNum / divisor);
+  return formatPriceExact(priceNum / divisor);
 };
 
 export const averagePrice = (prices: string[]): string => {
   if (prices.length === 0) return '0';
   const sum = prices.reduce((acc, p) => acc + parsePrice(p), 0);
-  return formatPrice(sum / prices.length);
+  return formatPriceExact(sum / prices.length);
 };
 
 export const maxPrice = (prices: string[]): string => {
   if (prices.length === 0) return '0';
   const nums = prices.map(parsePrice);
-  return formatPrice(Math.max(...nums));
+  return formatPriceExact(Math.max(...nums));
 };
 
 export const minPrice = (prices: string[]): string => {
   if (prices.length === 0) return '0';
   const nums = prices.map(parsePrice);
-  return formatPrice(Math.min(...nums));
+  return formatPriceExact(Math.min(...nums));
 };
 
 export const normalizeSymbol = (symbol: string): string =>

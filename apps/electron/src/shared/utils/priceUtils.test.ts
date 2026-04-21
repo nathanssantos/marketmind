@@ -5,7 +5,7 @@ import {
   calculateQuoteQty,
   comparePrice,
   dividePrice,
-  formatPrice,
+  formatPriceExact,
   formatQty,
   formatVolume,
   isValidPrice,
@@ -37,17 +37,17 @@ describe('priceUtils', () => {
     });
   });
 
-  describe('formatPrice', () => {
+  describe('formatPriceExact', () => {
     it('should format with default precision (8)', () => {
-      expect(formatPrice(100.5)).toBe('100.50000000');
+      expect(formatPriceExact(100.5)).toBe('100.50000000');
     });
 
     it('should format with custom precision', () => {
-      expect(formatPrice(100.5, 2)).toBe('100.50');
+      expect(formatPriceExact(100.5, 2)).toBe('100.50');
     });
 
     it('should format large numbers', () => {
-      expect(formatPrice(42000.12345678, 4)).toBe('42000.1235');
+      expect(formatPriceExact(42000.12345678, 4)).toBe('42000.1235');
     });
   });
 
