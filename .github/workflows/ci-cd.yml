@@ -209,11 +209,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: |
-          pnpm --filter @marketmind/types build
-          pnpm --filter @marketmind/indicators build
-          pnpm --filter @marketmind/backend build
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Build backend
+        run: pnpm --filter @marketmind/backend build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
