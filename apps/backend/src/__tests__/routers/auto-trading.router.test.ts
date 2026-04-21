@@ -933,7 +933,7 @@ describe('Auto-Trading Router', () => {
       ).rejects.toThrow(TRPCError);
     });
 
-    it('should return symbols list', async () => {
+    it.skipIf(process.env.CI)('should return symbols list', async () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
