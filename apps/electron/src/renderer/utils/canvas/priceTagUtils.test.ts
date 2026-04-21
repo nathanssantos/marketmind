@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ORDER_LINE_LAYOUT } from '@shared/constants';
 import { drawPriceTag } from './priceTagUtils';
 
 describe('priceTagUtils', () => {
@@ -32,7 +33,7 @@ describe('priceTagUtils', () => {
       const result = drawPriceTag(ctx, '99.99', 150, 50, 'rgba(239, 68, 68, 0.9)', customWidth);
 
       expect(result).toEqual({ width: 106, height: 18 });
-      expect(ctx.fillText).toHaveBeenCalledWith('99.99', 58, 150);
+      expect(ctx.fillText).toHaveBeenCalledWith('99.99', 58, 150 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     });
 
     it('should return correct dimensions for standard width (72px)', () => {
@@ -122,7 +123,7 @@ describe('priceTagUtils', () => {
 
       drawPriceTag(ctx, '123.45', y, x, 'rgba(0, 0, 0, 0.9)');
 
-      expect(ctx.fillText).toHaveBeenCalledWith('123.45', x + labelPadding, y);
+      expect(ctx.fillText).toHaveBeenCalledWith('123.45', x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     });
 
     it('should set fill style to white for text', () => {

@@ -178,7 +178,15 @@ const renderPositionEntry = (
   drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
 
   const percentBadgeWidth = ctx.measureText(percentText).width + 8;
-  const buttonsX = badgeX + percentBadgeWidth + 6;
+  const pnl = position.totalPnL;
+  const pnlText = pnl === 0
+    ? '$0.00'
+    : `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`;
+  const pnlBadgeX = badgeX + percentBadgeWidth + 4;
+  drawPercentBadge(ctx, pnlText, pnlBadgeX, y, pnl >= 0);
+
+  const pnlBadgeWidth = ctx.measureText(pnlText).width + 8;
+  const buttonsX = pnlBadgeX + pnlBadgeWidth + 6;
   const hasStopLoss = position.orders.some(o => o.stopLoss);
   const hasTakeProfit = position.orders.some(o => o.takeProfit);
 

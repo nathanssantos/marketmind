@@ -152,7 +152,7 @@ export const drawInfoTag = (
   }
 
   ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(text, currentX, y);
+  ctx.fillText(text, currentX, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
 
   ctx.restore();
   return { width: tagWidth + ARROW_WIDTH, height: LABEL_HEIGHT };
@@ -180,7 +180,7 @@ export const drawPercentBadge = (
   ctx.fill();
 
   ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(percentText, x + percentPadding, y);
+  ctx.fillText(percentText, x + percentPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
 
   ctx.restore();
   return { width: badgeWidth, height: percentHeight };
@@ -212,7 +212,7 @@ export const drawSlTpButtons = (
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
-    ctx.fillText('SL', currentX + SLTP_BUTTON.WIDTH / 2, y);
+    ctx.fillText('SL', currentX + SLTP_BUTTON.WIDTH / 2, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     slButton = { x: currentX, y: btnY };
     currentX += SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP;
   }
@@ -227,7 +227,7 @@ export const drawSlTpButtons = (
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
-    ctx.fillText('TP', currentX + SLTP_BUTTON.WIDTH / 2, y);
+    ctx.fillText('TP', currentX + SLTP_BUTTON.WIDTH / 2, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     tpButton = { x: currentX, y: btnY };
     currentX += SLTP_BUTTON.WIDTH;
   }
