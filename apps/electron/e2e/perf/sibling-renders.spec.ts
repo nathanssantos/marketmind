@@ -1,7 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { generateKlines } from '../helpers/klineFixtures';
 import { installTrpcMock } from '../helpers/trpcMock';
 import { installConsoleCapture } from '../helpers/consoleCapture';
@@ -17,13 +14,7 @@ import {
   resetPerfMonitor,
   waitForChartReady,
 } from '../helpers/chartTestSetup';
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const RESULTS_PATH = resolve(HERE, 'last-run.json');
-
-const WARMUP_FRAMES = 90;
-const MEASURE_FRAMES = 600;
-const TICK_STORM_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT'];
+import { TICK_STORM_SYMBOLS, WARMUP_FRAMES, MEASURE_FRAMES, writeRunResult } from './harness';
 
 const MAX_PORTFOLIO_RENDERS_PER_SEC = 10;
 const MAX_ORDERS_LIST_RENDERS_PER_SEC = 10;
@@ -35,6 +26,7 @@ interface SiblingResult {
   chartCanvasRate: number;
   fps: number;
   generatedAt: string;
+  [key: string]: unknown;
 }
 
 interface QuickTradeResult {
@@ -42,20 +34,8 @@ interface QuickTradeResult {
   chartCanvasRate: number;
   fps: number;
   generatedAt: string;
+  [key: string]: unknown;
 }
-
-const writeRunResult = (key: string, entry: SiblingResult | QuickTradeResult): void => {
-  let current: Record<string, unknown> = {};
-  if (existsSync(RESULTS_PATH)) {
-    try {
-      current = JSON.parse(readFileSync(RESULTS_PATH, 'utf8')) as Record<string, unknown>;
-    } catch {
-      current = {};
-    }
-  }
-  current[key] = entry;
-  writeFileSync(RESULTS_PATH, JSON.stringify(current, null, 2));
-};
 
 test.describe('Sibling renderer hot-path', () => {
   test.beforeEach(async ({ page }) => {
