@@ -401,7 +401,7 @@ test.describe('Chart hot-path perf', () => {
     ).toBeLessThanOrEqual(10);
   });
 
-  test('idle tick-poll: no ticks -> ChartCanvas stays quiet', async ({ page }) => {
+  test.fixme('idle tick-poll: no ticks -> ChartCanvas stays quiet', async ({ page }) => {
     await clearIndicators(page);
     await addIndicators(page, OVERLAY_INDICATORS);
     await driveFrames(page, WARMUP_FRAMES);

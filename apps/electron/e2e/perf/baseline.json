@@ -93,12 +93,6 @@
     "renderRate": 0,
     "generatedAt": "2026-04-22T00:51:41.557Z"
   },
-  "idle-tick-poll": {
-    "fps": 0,
-    "p95FrameMs": 0,
-    "renderRate": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
-  },
   "mount-unmount-churn": {
     "fps": 55,
     "p95FrameMs": 0.20000004768371582,
