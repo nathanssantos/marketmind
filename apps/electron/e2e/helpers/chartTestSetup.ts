@@ -246,6 +246,11 @@ export const componentRenderRate = (snap: PerfSnapshot, name: string): number =>
   return entry?.ratePerSec ?? 0;
 };
 
+export const componentRenderTotal = (snap: PerfSnapshot, name: string): number => {
+  const entry = snap.componentRenders.find((c) => c.name === name);
+  return entry?.total ?? 0;
+};
+
 const isKlineListQueryKey = (key: unknown): boolean => {
   if (!Array.isArray(key)) return false;
   const head = key[0];

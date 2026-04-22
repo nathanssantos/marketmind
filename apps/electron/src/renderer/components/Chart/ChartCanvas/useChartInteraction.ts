@@ -158,6 +158,12 @@ export const useChartInteraction = ({
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
+    if (isPanning) {
+      handleMouseMove(event);
+      mousePositionRef.current = { x: mouseX, y: mouseY };
+      return;
+    }
+
     if (orderDragHandler.isDragging) {
       orderDragHandler.handleMouseMove(mouseY);
       return;
@@ -183,13 +189,6 @@ export const useChartInteraction = ({
       if (handled) {
         updateCursor('grab');
       }
-    }
-
-    handleMouseMove(event);
-
-    if (isPanning) {
-      mousePositionRef.current = { x: mouseX, y: mouseY };
-      return;
     }
 
     if (!manager) return;

@@ -8,6 +8,7 @@ import {
   clearDrawings,
   clearIndicators,
   componentRenderRate,
+  componentRenderTotal,
   driveFrames,
   drivePan,
   driveWheelZoom,
@@ -47,6 +48,7 @@ const KLINE_REPLACE_INTERVAL_MS = 100;
 const KLINE_APPEND_ITERATIONS = 12;
 const KLINE_APPEND_INTERVAL_MS = 500;
 const PAN_FRAMES = 240;
+const PAN_RERENDER_CAP = 10;
 const ZOOM_FRAMES = 120;
 const INDICATOR_CHURN_CYCLES = 20;
 const INDICATOR_CHURN_SETTLE_FRAMES = 6;
@@ -204,6 +206,7 @@ test.describe('Chart hot-path perf', () => {
     await resetPerfMonitor(page);
 
     await drivePan(page, PAN_FRAMES);
+    const panEndSnap = await readPerfSnapshot(page);
     await driveFrames(page, 60);
 
     const snap = await readPerfSnapshot(page);
@@ -222,6 +225,8 @@ test.describe('Chart hot-path perf', () => {
     expect(snap.enabled).toBe(true);
     expect(snap.fps).toBeGreaterThanOrEqual(20);
     expect(slowestSectionMs(snap)).toBeLessThanOrEqual(25);
+    const panRerenders = componentRenderTotal(panEndSnap, 'ChartCanvas');
+    expect(panRerenders, `ChartCanvas re-rendered ${panRerenders}x during pan (cap: ${PAN_RERENDER_CAP})`).toBeLessThanOrEqual(PAN_RERENDER_CAP);
     assertRegression(key, result);
   });
 
