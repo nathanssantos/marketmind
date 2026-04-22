@@ -55,6 +55,10 @@ const INDICATOR_CHURN_CYCLES = 20;
 const INDICATOR_CHURN_SETTLE_FRAMES = 6;
 const IDLE_TICK_POLL_FRAMES = 300;
 const IDLE_TICK_POLL_CHARTCANVAS_CAP = 1;
+const MOUNT_UNMOUNT_CYCLES = 10;
+const MOUNT_UNMOUNT_DRIVE_FRAMES = 30;
+const MOUNT_UNMOUNT_UNMOUNT_FRAMES = 15;
+const MOUNT_UNMOUNT_HEAP_GROWTH_CAP = 1.0;
 
 const NOISE_FLOOR_MS = 0.5;
 const RELATIVE_REGRESSION_CAP = 0.5;
@@ -498,6 +502,81 @@ test.describe('Chart hot-path perf', () => {
       'ChartCanvas re-rendering while idle (no ticks, no mouse) — tick-poll gate regressed',
     ).toBeLessThanOrEqual(IDLE_TICK_POLL_CHARTCANVAS_CAP);
     assertRegression(key, result);
+  });
+
+  test('mount-unmount churn: chart heap + instances bounded across 10 cycles', async ({ page }) => {
+    await clearIndicators(page);
+    await addIndicators(page, OVERLAY_INDICATORS);
+    await driveFrames(page, WARMUP_FRAMES);
+
+    const baseline = await page.evaluate(async () => {
+      const g = globalThis as unknown as {
+        gc?: () => void;
+        __canvasManagerInstances?: Set<unknown>;
+      };
+      if (typeof g.gc === 'function') g.gc();
+      await new Promise<void>((r) => setTimeout(r, 50));
+      const mem = (window.performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
+      return {
+        heap: mem?.usedJSHeapSize ?? 0,
+        instances: g.__canvasManagerInstances?.size ?? 0,
+      };
+    });
+
+    await resetPerfMonitor(page);
+
+    for (let i = 0; i < MOUNT_UNMOUNT_CYCLES; i += 1) {
+      await page.evaluate(() => {
+        window.history.pushState(null, '', '/login');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      await waitForFrames(page, MOUNT_UNMOUNT_UNMOUNT_FRAMES);
+      await page.evaluate(() => {
+        window.history.pushState(null, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+      await waitForChartReady(page);
+      await driveFrames(page, MOUNT_UNMOUNT_DRIVE_FRAMES);
+    }
+
+    const final = await page.evaluate(async () => {
+      const g = globalThis as unknown as {
+        gc?: () => void;
+        __canvasManagerInstances?: Set<unknown>;
+      };
+      if (typeof g.gc === 'function') g.gc();
+      await new Promise<void>((r) => setTimeout(r, 100));
+      const mem = (window.performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
+      return {
+        heap: mem?.usedJSHeapSize ?? 0,
+        instances: g.__canvasManagerInstances?.size ?? 0,
+      };
+    });
+
+    const snap = await readPerfSnapshot(page);
+    const key = 'mount-unmount-churn';
+    const result: BaselineEntry = {
+      fps: snap.fps,
+      p95FrameMs: slowestSectionMs(snap),
+      renderRate: componentRenderRate(snap, 'ChartCanvas'),
+      generatedAt: new Date().toISOString(),
+    };
+    writeRunResult(key, result);
+    writeDiagnose(key, snap);
+
+    expect(snap.enabled).toBe(true);
+    expect(
+      final.instances,
+      `canvas manager instances leaked: ${final.instances} alive after ${MOUNT_UNMOUNT_CYCLES} cycles (baseline ${baseline.instances})`,
+    ).toBeLessThanOrEqual(baseline.instances + 1);
+
+    if (baseline.heap > 0) {
+      const growth = (final.heap - baseline.heap) / baseline.heap;
+      expect(
+        growth,
+        `heap grew ${(growth * 100).toFixed(1)}% across ${MOUNT_UNMOUNT_CYCLES} mount/unmount cycles (baseline ${baseline.heap}, final ${final.heap})`,
+      ).toBeLessThan(MOUNT_UNMOUNT_HEAP_GROWTH_CAP);
+    }
   });
 
   test('20-symbol tick storm: double-width price batch path', async ({ page }) => {

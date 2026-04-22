@@ -42,6 +42,9 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1600, height: 900 },
+        launchOptions: {
+          args: ['--enable-precise-memory-info', '--js-flags=--expose-gc'],
+        },
       },
     },
     {
