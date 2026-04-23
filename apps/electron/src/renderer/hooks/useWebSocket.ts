@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Socket } from 'socket.io-client';
 import { BACKEND_URL } from '@shared/constants/api';
 import { socketService } from '../services/socketService';
@@ -168,21 +168,21 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     },
   };
 
-  const on = <K extends keyof WebSocketEvents>(
+  const on = useCallback(<K extends keyof WebSocketEvents>(
     event: K,
     handler: WebSocketEvents[K]
   ): void => {
     const socket = socketService.getSocket();
     socket?.on(event, handler as never);
-  };
+  }, []);
 
-  const off = <K extends keyof WebSocketEvents>(
+  const off = useCallback(<K extends keyof WebSocketEvents>(
     event: K,
     handler: WebSocketEvents[K]
   ): void => {
     const socket = socketService.getSocket();
     socket?.off(event, handler as never);
-  };
+  }, []);
 
   return {
     socket: socketRef.current,

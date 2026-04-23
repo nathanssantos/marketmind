@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWebSocket } from './useWebSocket';
 
 const LOCAL_SILENCE_THRESHOLD_MS = 60_000;
@@ -20,6 +20,20 @@ export interface UseStreamHealthOptions {
   enabled?: boolean;
 }
 
+interface StreamHealthPayload {
+  symbol: string;
+  interval: string;
+  marketType: 'SPOT' | 'FUTURES';
+  status: StreamHealthStatus;
+  reason?: string;
+  lastMessageAt: number | null;
+}
+
+interface KlineUpdatePayload {
+  symbol: string;
+  interval: string;
+}
+
 export const useStreamHealth = ({
   symbol,
   interval,
@@ -32,6 +46,15 @@ export const useStreamHealth = ({
   const [lastMessageAt, setLastMessageAt] = useState<number | null>(null);
   const lastMessageAtRef = useRef<number | null>(null);
 
+  const symbolRef = useRef(symbol);
+  const intervalRef = useRef(interval);
+  const marketTypeRef = useRef(marketType);
+  useEffect(() => {
+    symbolRef.current = symbol;
+    intervalRef.current = interval;
+    marketTypeRef.current = marketType;
+  }, [symbol, interval, marketType]);
+
   useEffect(() => {
     setStatus('healthy');
     setReason(null);
@@ -39,50 +62,39 @@ export const useStreamHealth = ({
     lastMessageAtRef.current = null;
   }, [symbol, interval, marketType]);
 
-  const handleStreamHealth = useCallback(
-    (payload: {
-      symbol: string;
-      interval: string;
-      marketType: 'SPOT' | 'FUTURES';
-      status: StreamHealthStatus;
-      reason?: string;
-      lastMessageAt: number | null;
-    }) => {
-      if (payload.symbol !== symbol || payload.interval !== interval || payload.marketType !== marketType) return;
+  useEffect(() => {
+    if (!enabled || !isConnected || !symbol || !interval) return;
+
+    const onStreamHealth = (payload: StreamHealthPayload): void => {
+      if (payload.symbol !== symbolRef.current) return;
+      if (payload.interval !== intervalRef.current) return;
+      if (payload.marketType !== marketTypeRef.current) return;
       setStatus(payload.status);
       setReason(payload.reason ?? null);
       if (payload.lastMessageAt) {
         setLastMessageAt(payload.lastMessageAt);
         lastMessageAtRef.current = payload.lastMessageAt;
       }
-    },
-    [symbol, interval, marketType],
-  );
-
-  const handleKlineUpdate = useCallback(
-    (kline: { symbol: string; interval: string }) => {
-      if (kline.symbol !== symbol || kline.interval !== interval) return;
-      const now = Date.now();
-      lastMessageAtRef.current = now;
-      setLastMessageAt(now);
-    },
-    [symbol, interval],
-  );
-
-  useEffect(() => {
-    if (!enabled || !isConnected || !symbol || !interval) return;
-    on('stream:health', handleStreamHealth);
-    on('kline:update', handleKlineUpdate);
-    return () => {
-      off('stream:health', handleStreamHealth);
-      off('kline:update', handleKlineUpdate);
     };
-  }, [enabled, isConnected, symbol, interval, marketType, on, off, handleStreamHealth, handleKlineUpdate]);
+
+    const onKlineUpdate = (kline: KlineUpdatePayload): void => {
+      if (kline.symbol !== symbolRef.current) return;
+      if (kline.interval !== intervalRef.current) return;
+      lastMessageAtRef.current = Date.now();
+    };
+
+    on('stream:health', onStreamHealth);
+    on('kline:update', onKlineUpdate);
+    return () => {
+      off('stream:health', onStreamHealth);
+      off('kline:update', onKlineUpdate);
+    };
+  }, [enabled, isConnected, symbol, interval, marketType, on, off]);
 
   useEffect(() => {
     if (!enabled || !symbol || !interval) return;
 
-    const checkLocalSilence = () => {
+    const checkLocalSilence = (): void => {
       const last = lastMessageAtRef.current;
       if (last === null) return;
       const now = Date.now();
