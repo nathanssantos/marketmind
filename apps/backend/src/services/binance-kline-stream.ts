@@ -208,14 +208,22 @@ export class BinanceKlineStreamService {
     try {
       void this.client.subscribeSpotKline(symbol, interval as KlineInterval);
 
-      this.subscriptions.set(key, {
+      const inheritDegraded = this.isMarketCurrentlyDegraded();
+      const newSub: KlineStreamSubscription = {
         symbol,
         interval,
         clientCount: 1,
         lastMessageAt: Date.now(),
-        healthStatus: 'healthy',
+        healthStatus: inheritDegraded ? 'degraded' : 'healthy',
         lastReconnectAt: 0,
-      });
+      };
+      this.subscriptions.set(key, newSub);
+
+      if (inheritDegraded) {
+        logger.info({ symbol, interval, marketType: 'SPOT' }, 'New subscription inherits degraded state from existing market');
+        this.emitHealth(newSub);
+        klineSynthesisService.enable(symbol, interval, 'SPOT');
+      }
 
     } catch (error) {
       logger.error({
@@ -224,6 +232,13 @@ export class BinanceKlineStreamService {
         error: serializeError(error),
       }, 'Failed to subscribe to kline stream');
     }
+  }
+
+  private isMarketCurrentlyDegraded(): boolean {
+    for (const sub of this.subscriptions.values()) {
+      if (sub.healthStatus === 'degraded') return true;
+    }
+    return false;
   }
 
   unsubscribe(symbol: string, interval: string): void {
@@ -509,14 +524,22 @@ export class BinanceFuturesKlineStreamService {
     try {
       void this.client.subscribeKlines(symbol, interval as KlineInterval, 'usdm');
 
-      this.subscriptions.set(key, {
+      const inheritDegraded = this.isMarketCurrentlyDegraded();
+      const newSub: KlineStreamSubscription = {
         symbol,
         interval,
         clientCount: 1,
         lastMessageAt: Date.now(),
-        healthStatus: 'healthy',
+        healthStatus: inheritDegraded ? 'degraded' : 'healthy',
         lastReconnectAt: 0,
-      });
+      };
+      this.subscriptions.set(key, newSub);
+
+      if (inheritDegraded) {
+        logger.info({ symbol, interval, marketType: 'FUTURES' }, 'New subscription inherits degraded state from existing market');
+        this.emitHealth(newSub);
+        klineSynthesisService.enable(symbol, interval, 'FUTURES');
+      }
 
     } catch (error) {
       logger.error({
@@ -525,6 +548,13 @@ export class BinanceFuturesKlineStreamService {
         error: serializeError(error),
       }, 'Failed to subscribe to futures kline stream');
     }
+  }
+
+  private isMarketCurrentlyDegraded(): boolean {
+    for (const sub of this.subscriptions.values()) {
+      if (sub.healthStatus === 'degraded') return true;
+    }
+    return false;
   }
 
   unsubscribe(symbol: string, interval: string): void {
