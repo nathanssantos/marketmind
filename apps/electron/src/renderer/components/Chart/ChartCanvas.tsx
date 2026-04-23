@@ -22,6 +22,9 @@ import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartPerfOverlay } from './ChartPerfOverlay';
 import { ChartTooltipOverlay } from './ChartCanvas/ChartTooltipOverlay';
+import { StreamHealthBanner } from './ChartCanvas/StreamHealthBanner';
+import { useStreamHealth } from '@renderer/hooks/useStreamHealth';
+import { exposeCanvasManagerForE2E, exposeIsPanningForE2E } from '@renderer/utils/e2eBridge';
 import { tooltipStore } from './ChartCanvas/tooltipStore';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
@@ -168,7 +171,23 @@ export const ChartCanvas = ({
     onNearLeftEdge,
   });
 
+  const streamHealth = useStreamHealth({
+    symbol: symbol ?? '',
+    interval: timeframe,
+    marketType: marketType ?? 'FUTURES',
+    enabled: !!symbol,
+  });
+
   managerRef.current = manager;
+
+  useEffect(() => {
+    exposeCanvasManagerForE2E(manager);
+    return () => exposeCanvasManagerForE2E(null);
+  }, [manager]);
+
+  useEffect(() => {
+    exposeIsPanningForE2E(isPanning);
+  }, [isPanning]);
 
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines });
   const { orderToClose } = chartState;
@@ -451,6 +470,7 @@ export const ChartCanvas = ({
         <TextEditOverlay manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <ChartNavigation onResetView={handleResetView} onNextKline={handleNextKline} totalPanelHeight={manager?.getTotalPanelHeight() ?? 0} />
         <ChartPerfOverlay />
+        <StreamHealthBanner status={streamHealth.status} />
         <ChartTooltipOverlay enabled={showTooltip} />
       </Box>
       </ChartContextMenuManager>

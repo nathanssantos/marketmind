@@ -8,6 +8,7 @@ import { logger } from './logger';
 import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
 import { ReconnectionGuard, parseKlineMessage, persistKline } from './kline-stream-persistence';
+import { klineSynthesisService } from './kline-synthesis';
 
 export interface KlineUpdate {
   symbol: string;
@@ -32,14 +33,22 @@ interface KlineStreamSubscription {
   symbol: string;
   interval: string;
   clientCount: number;
+  lastMessageAt: number;
+  healthStatus: 'healthy' | 'degraded';
+  lastReconnectAt: number;
 }
 
 const spotReconnectionGuard = new ReconnectionGuard();
 const futuresReconnectionGuard = new ReconnectionGuard();
 
+const STREAM_HEALTH_CHECK_INTERVAL_MS = 15_000;
+const STREAM_STALE_THRESHOLD_MS = 60_000;
+const STREAM_FORCED_RECONNECT_COOLDOWN_MS = 120_000;
+
 export class BinanceKlineStreamService {
   private client: WebsocketClient | null = null;
   private subscriptions: Map<string, KlineStreamSubscription> = new Map();
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   start(): void {
     if (this.client) {
@@ -66,13 +75,116 @@ export class BinanceKlineStreamService {
     this.client.on('reconnected', () => {
       this.resubscribeAll();
     });
+
+    this.startHealthWatchdog();
   }
 
   stop(): void {
+    this.stopHealthWatchdog();
     if (this.client) {
       this.client.closeAll(true);
       this.client = null;
       this.subscriptions.clear();
+    }
+  }
+
+  private startHealthWatchdog(): void {
+    if (this.healthCheckInterval) return;
+    this.healthCheckInterval = setInterval(() => this.checkStreamHealth(), STREAM_HEALTH_CHECK_INTERVAL_MS);
+  }
+
+  private stopHealthWatchdog(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+  }
+
+  private checkStreamHealth(): void {
+    const now = Date.now();
+    let anyStale = false;
+
+    for (const sub of this.subscriptions.values()) {
+      const silenceMs = now - sub.lastMessageAt;
+
+      if (silenceMs > STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'healthy') {
+        sub.healthStatus = 'degraded';
+        anyStale = true;
+        logger.warn({
+          symbol: sub.symbol,
+          interval: sub.interval,
+          silenceMs,
+          marketType: 'SPOT',
+        }, 'Kline stream silent — marking degraded');
+        this.emitHealth(sub);
+        klineSynthesisService.enable(sub.symbol, sub.interval, 'SPOT');
+      } else if (silenceMs <= STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'degraded') {
+        sub.healthStatus = 'healthy';
+        logger.info({
+          symbol: sub.symbol,
+          interval: sub.interval,
+          marketType: 'SPOT',
+        }, 'Kline stream recovered');
+        this.emitHealth(sub);
+        klineSynthesisService.disable(sub.symbol, sub.interval, 'SPOT');
+      }
+    }
+
+    if (anyStale && now - this.getLatestReconnectAt() > STREAM_FORCED_RECONNECT_COOLDOWN_MS) {
+      this.forceReconnect();
+    }
+  }
+
+  private getLatestReconnectAt(): number {
+    let latest = 0;
+    for (const sub of this.subscriptions.values()) {
+      if (sub.lastReconnectAt > latest) latest = sub.lastReconnectAt;
+    }
+    return latest;
+  }
+
+  private emitHealth(sub: KlineStreamSubscription): void {
+    const wsService = getWebSocketService();
+    if (!wsService) return;
+    wsService.emitStreamHealth({
+      symbol: sub.symbol,
+      interval: sub.interval,
+      marketType: 'SPOT',
+      status: sub.healthStatus,
+      lastMessageAt: sub.lastMessageAt || null,
+      ...(sub.healthStatus === 'degraded' ? { reason: 'binance-stream-silent' } : {}),
+    });
+  }
+
+  private forceReconnect(): void {
+    logger.warn({ marketType: 'SPOT' }, 'Forcing SPOT kline WebSocket reconnect due to stale streams');
+    const now = Date.now();
+    for (const sub of this.subscriptions.values()) {
+      sub.lastReconnectAt = now;
+    }
+
+    if (!this.client) return;
+
+    try {
+      this.client.closeAll(true);
+    } catch (error) {
+      logger.error({ error: serializeError(error) }, 'Error closing SPOT kline client during forced reconnect');
+    }
+
+    this.client = null;
+    const subsSnapshot = Array.from(this.subscriptions.values());
+    this.subscriptions.clear();
+
+    this.start();
+
+    for (const sub of subsSnapshot) {
+      this.subscribe(sub.symbol, sub.interval);
+      const key = `${sub.symbol}_${sub.interval}`.toLowerCase();
+      const restored = this.subscriptions.get(key);
+      if (restored) {
+        restored.clientCount = sub.clientCount;
+        restored.lastReconnectAt = now;
+      }
     }
   }
 
@@ -100,6 +212,9 @@ export class BinanceKlineStreamService {
         symbol,
         interval,
         clientCount: 1,
+        lastMessageAt: Date.now(),
+        healthStatus: 'healthy',
+        lastReconnectAt: 0,
       });
 
     } catch (error) {
@@ -132,6 +247,7 @@ export class BinanceKlineStreamService {
         }
       }
       this.subscriptions.delete(key);
+      klineSynthesisService.disable(symbol, interval, 'SPOT');
     } else {
       logger.trace({
         count: existing.clientCount,
@@ -152,6 +268,7 @@ export class BinanceKlineStreamService {
 
   private async processKlineUpdate(update: KlineUpdate): Promise<void> {
     try {
+      this.recordMessageReceived(update.symbol, update.interval);
       priceCache.updateFromWebSocket(update.symbol, update.marketType, parseFloat(update.close));
 
       const wsService = getWebSocketService();
@@ -163,6 +280,19 @@ export class BinanceKlineStreamService {
         symbol: update.symbol,
         error: serializeError(error),
       }, 'Error processing kline update');
+    }
+  }
+
+  private recordMessageReceived(symbol: string, interval: string): void {
+    const key = `${symbol}_${interval}`.toLowerCase();
+    const sub = this.subscriptions.get(key);
+    if (!sub) return;
+    sub.lastMessageAt = Date.now();
+    if (sub.healthStatus === 'degraded') {
+      sub.healthStatus = 'healthy';
+      logger.info({ symbol, interval, marketType: 'SPOT' }, 'Kline stream recovered on message receipt');
+      this.emitHealth(sub);
+      klineSynthesisService.disable(symbol, interval, 'SPOT');
     }
   }
 
@@ -198,6 +328,7 @@ export class BinanceFuturesKlineStreamService {
   private client: WebsocketClient | null = null;
   private subscriptions: Map<string, KlineStreamSubscription> = new Map();
   private klineCloseHandlers: KlineCloseHandler[] = [];
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   start(): void {
     if (this.client) {
@@ -224,15 +355,131 @@ export class BinanceFuturesKlineStreamService {
     this.client.on('reconnected', () => {
       this.resubscribeAll();
     });
+
+    this.startHealthWatchdog();
   }
 
   stop(): void {
+    this.stopHealthWatchdog();
     if (this.client) {
       this.client.closeAll(true);
       this.client = null;
       this.subscriptions.clear();
     }
     this.klineCloseHandlers = [];
+  }
+
+  private startHealthWatchdog(): void {
+    if (this.healthCheckInterval) return;
+    this.healthCheckInterval = setInterval(() => this.checkStreamHealth(), STREAM_HEALTH_CHECK_INTERVAL_MS);
+  }
+
+  private stopHealthWatchdog(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+  }
+
+  private checkStreamHealth(): void {
+    const now = Date.now();
+    let anyStale = false;
+
+    for (const sub of this.subscriptions.values()) {
+      const silenceMs = now - sub.lastMessageAt;
+
+      if (silenceMs > STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'healthy') {
+        sub.healthStatus = 'degraded';
+        anyStale = true;
+        logger.warn({
+          symbol: sub.symbol,
+          interval: sub.interval,
+          silenceMs,
+          marketType: 'FUTURES',
+        }, 'Futures kline stream silent — marking degraded');
+        this.emitHealth(sub);
+        klineSynthesisService.enable(sub.symbol, sub.interval, 'FUTURES');
+      } else if (silenceMs <= STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'degraded') {
+        sub.healthStatus = 'healthy';
+        logger.info({
+          symbol: sub.symbol,
+          interval: sub.interval,
+          marketType: 'FUTURES',
+        }, 'Futures kline stream recovered');
+        this.emitHealth(sub);
+        klineSynthesisService.disable(sub.symbol, sub.interval, 'FUTURES');
+      }
+    }
+
+    if (anyStale && now - this.getLatestReconnectAt() > STREAM_FORCED_RECONNECT_COOLDOWN_MS) {
+      this.forceReconnect();
+    }
+  }
+
+  private getLatestReconnectAt(): number {
+    let latest = 0;
+    for (const sub of this.subscriptions.values()) {
+      if (sub.lastReconnectAt > latest) latest = sub.lastReconnectAt;
+    }
+    return latest;
+  }
+
+  private emitHealth(sub: KlineStreamSubscription): void {
+    const wsService = getWebSocketService();
+    if (!wsService) return;
+    wsService.emitStreamHealth({
+      symbol: sub.symbol,
+      interval: sub.interval,
+      marketType: 'FUTURES',
+      status: sub.healthStatus,
+      lastMessageAt: sub.lastMessageAt || null,
+      ...(sub.healthStatus === 'degraded' ? { reason: 'binance-stream-silent' } : {}),
+    });
+  }
+
+  private forceReconnect(): void {
+    logger.warn({ marketType: 'FUTURES' }, 'Forcing FUTURES kline WebSocket reconnect due to stale streams');
+    const now = Date.now();
+    for (const sub of this.subscriptions.values()) {
+      sub.lastReconnectAt = now;
+    }
+
+    if (!this.client) return;
+
+    try {
+      this.client.closeAll(true);
+    } catch (error) {
+      logger.error({ error: serializeError(error) }, 'Error closing FUTURES kline client during forced reconnect');
+    }
+
+    this.client = null;
+    const subsSnapshot = Array.from(this.subscriptions.values());
+    this.subscriptions.clear();
+
+    this.start();
+
+    for (const sub of subsSnapshot) {
+      this.subscribe(sub.symbol, sub.interval);
+      const key = `${sub.symbol}_${sub.interval}`.toLowerCase();
+      const restored = this.subscriptions.get(key);
+      if (restored) {
+        restored.clientCount = sub.clientCount;
+        restored.lastReconnectAt = now;
+      }
+    }
+  }
+
+  private recordMessageReceived(symbol: string, interval: string): void {
+    const key = `${symbol}_${interval}`.toLowerCase();
+    const sub = this.subscriptions.get(key);
+    if (!sub) return;
+    sub.lastMessageAt = Date.now();
+    if (sub.healthStatus === 'degraded') {
+      sub.healthStatus = 'healthy';
+      logger.info({ symbol, interval, marketType: 'FUTURES' }, 'Futures kline stream recovered on message receipt');
+      this.emitHealth(sub);
+      klineSynthesisService.disable(symbol, interval, 'FUTURES');
+    }
   }
 
   onKlineClose(handler: KlineCloseHandler): () => void {
@@ -266,6 +513,9 @@ export class BinanceFuturesKlineStreamService {
         symbol,
         interval,
         clientCount: 1,
+        lastMessageAt: Date.now(),
+        healthStatus: 'healthy',
+        lastReconnectAt: 0,
       });
 
     } catch (error) {
@@ -298,6 +548,7 @@ export class BinanceFuturesKlineStreamService {
         }
       }
       this.subscriptions.delete(key);
+      klineSynthesisService.disable(symbol, interval, 'FUTURES');
     }
   }
 
@@ -314,6 +565,7 @@ export class BinanceFuturesKlineStreamService {
 
   private async processKlineUpdate(update: KlineUpdate): Promise<void> {
     try {
+      this.recordMessageReceived(update.symbol, update.interval);
       priceCache.updateFromWebSocket(update.symbol, update.marketType, parseFloat(update.close));
 
       const wsService = getWebSocketService();

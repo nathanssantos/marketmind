@@ -16,6 +16,16 @@ export interface PriceUpdate {
   timestamp: number;
 }
 
+export interface TradeTick {
+  symbol: string;
+  price: number;
+  quantity: number;
+  timestamp: number;
+  marketType: 'SPOT' | 'FUTURES';
+}
+
+export type TradeTickHandler = (tick: TradeTick) => void;
+
 const POSITION_CHECK_THROTTLE_MS = AUTO_TRADING_TIMING.POSITION_CHECK_THROTTLE_MS;
 const SUBSCRIPTION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.SUBSCRIPTION_CHECK_INTERVAL_MS;
 const EXECUTION_CACHE_TTL_MS = 10_000;
@@ -29,6 +39,7 @@ export class BinancePriceStreamService {
   private lastPositionCheck: Map<string, number> = new Map();
   private openExecutionsCache: Map<string, { executions: TradeExecution[]; timestamp: number }> = new Map();
   private priceObservers: Array<(symbol: string, price: number, timestamp: number) => void> = [];
+  private tradeTickObservers: TradeTickHandler[] = [];
 
   start(): void {
     if (this.client) {
@@ -135,6 +146,30 @@ export class BinancePriceStreamService {
 
         const timestamp = (message['tradeTime'] ?? message['T'] ?? Date.now()) as number;
 
+        const quantityValue = message['quantity'] ?? message['q'];
+        const quantity = typeof quantityValue === 'number'
+          ? quantityValue
+          : typeof quantityValue === 'string'
+            ? parseFloat(quantityValue)
+            : 0;
+
+        if (this.tradeTickObservers.length > 0 && !isNaN(quantity)) {
+          const tick: TradeTick = {
+            symbol,
+            price,
+            quantity,
+            timestamp,
+            marketType: 'FUTURES',
+          };
+          for (const observer of this.tradeTickObservers) {
+            try {
+              observer(tick);
+            } catch (err) {
+              logger.warn({ error: serializeError(err) }, 'tradeTick observer error');
+            }
+          }
+        }
+
         void this.processPriceUpdate({
           symbol,
           price,
@@ -153,6 +188,14 @@ export class BinancePriceStreamService {
     return () => {
       const idx = this.priceObservers.indexOf(handler);
       if (idx >= 0) this.priceObservers.splice(idx, 1);
+    };
+  }
+
+  public onTradeTick(handler: TradeTickHandler): () => void {
+    this.tradeTickObservers.push(handler);
+    return () => {
+      const idx = this.tradeTickObservers.indexOf(handler);
+      if (idx >= 0) this.tradeTickObservers.splice(idx, 1);
     };
   }
 

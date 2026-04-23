@@ -280,6 +280,18 @@ export class WebSocketService {
     this.io.to(room).emit('kline:update', kline);
   }
 
+  public emitStreamHealth(payload: {
+    symbol: string;
+    interval: string;
+    marketType: 'SPOT' | 'FUTURES';
+    status: 'healthy' | 'degraded';
+    reason?: string;
+    lastMessageAt: number | null;
+  }): void {
+    const room = `klines:${payload.symbol}:${payload.interval}`;
+    this.io.to(room).emit('stream:health', payload);
+  }
+
   public emitSetupDetected(userId: string, data: unknown): void {
     this.io.to(`user:${userId}`).emit('setup-detected', data);
   }

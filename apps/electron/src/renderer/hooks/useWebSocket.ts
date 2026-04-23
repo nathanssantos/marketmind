@@ -42,6 +42,14 @@ interface WebSocketEvents {
     isClosed: boolean;
     timestamp: number;
   }) => void;
+  'stream:health': (payload: {
+    symbol: string;
+    interval: string;
+    marketType: 'SPOT' | 'FUTURES';
+    status: 'healthy' | 'degraded';
+    reason?: string;
+    lastMessageAt: number | null;
+  }) => void;
   'setup-detected': (data: {
     symbol: string;
     interval: string;
