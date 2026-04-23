@@ -347,6 +347,12 @@ export const useChartInteraction = ({
       return;
     }
 
+    if (drawingInteraction?.isDrawing) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (drawingInteraction?.handleMouseDown(mouseX, mouseY)) {
       event.preventDefault();
       event.stopPropagation();
@@ -373,6 +379,7 @@ export const useChartInteraction = ({
       if (mousePos) {
         drawingInteraction.handleMouseUp(mousePos.x, mousePos.y);
       }
+      handleMouseUp();
       return;
     }
 
