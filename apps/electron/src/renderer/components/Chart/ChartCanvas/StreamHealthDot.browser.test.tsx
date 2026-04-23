@@ -2,6 +2,11 @@ import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+vi.mock('../../../components/ui/color-mode', () => ({
+  useColorMode: () => ({ colorMode: 'dark', toggleColorMode: vi.fn(), setColorMode: vi.fn() }),
+  ColorModeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 type Handler = (...args: unknown[]) => void;
 
 const listeners: Record<string, Handler[]> = {};
@@ -34,7 +39,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { useStreamHealth } from '../../../hooks/useStreamHealth';
-import { StreamHealthBanner } from './StreamHealthBanner';
+import { StreamHealthDot } from './StreamHealthDot';
 
 const emit = (event: string, payload: unknown): void => {
   (listeners[event] ?? []).forEach((h) => h(payload));
@@ -44,12 +49,12 @@ function TestHarness(): JSX.Element {
   const health = useStreamHealth({ symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES' });
   return (
     <ChakraProvider value={defaultSystem}>
-      <StreamHealthBanner status={health.status} />
+      <StreamHealthDot status={health.status} />
     </ChakraProvider>
   );
 }
 
-describe('StreamHealthBanner + useStreamHealth (browser)', () => {
+describe('StreamHealthDot + useStreamHealth (browser)', () => {
   beforeEach(() => {
     Object.keys(listeners).forEach((k) => delete listeners[k]);
     on.mockClear();
@@ -60,61 +65,26 @@ describe('StreamHealthBanner + useStreamHealth (browser)', () => {
     vi.useRealTimers();
   });
 
-  test('does not render the banner while stream is healthy', () => {
+  test('no dot while stream is healthy', () => {
     render(<TestHarness />);
-    expect(screen.queryByText('Exchange stream degraded')).toBeNull();
+    expect(screen.queryByTestId('stream-health-dot')).toBeNull();
   });
 
-  test('renders the banner when backend emits stream:health degraded', async () => {
+  test('dot appears immediately when backend emits degraded', async () => {
     render(<TestHarness />);
 
     await act(async () => {
       emit('stream:health', {
-        symbol: 'BTCUSDT',
-        interval: '1m',
-        marketType: 'FUTURES',
-        status: 'degraded',
-        reason: 'binance-stream-silent',
+        symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES',
+        status: 'degraded', reason: 'binance-stream-silent',
         lastMessageAt: Date.now() - 120_000,
       });
     });
 
-    expect(screen.getByText('Exchange stream degraded')).toBeTruthy();
+    expect(screen.getByTestId('stream-health-dot')).toBeTruthy();
   });
 
-  test('hides the banner after a hide-debounce when backend emits stream:health healthy', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    render(<TestHarness />);
-
-    await act(async () => {
-      emit('stream:health', {
-        symbol: 'BTCUSDT',
-        interval: '1m',
-        marketType: 'FUTURES',
-        status: 'degraded',
-        lastMessageAt: Date.now(),
-      });
-    });
-    expect(screen.queryByText('Exchange stream degraded')).toBeTruthy();
-
-    await act(async () => {
-      emit('stream:health', {
-        symbol: 'BTCUSDT',
-        interval: '1m',
-        marketType: 'FUTURES',
-        status: 'healthy',
-        lastMessageAt: Date.now(),
-      });
-    });
-    expect(screen.queryByText('Exchange stream degraded')).toBeTruthy();
-
-    await act(async () => {
-      vi.advanceTimersByTime(3_500);
-    });
-    expect(screen.queryByText('Exchange stream degraded')).toBeNull();
-  });
-
-  test('stays visible during a flicker (degraded → healthy → degraded within hide-debounce)', async () => {
+  test('dot disappears after hide-debounce when backend reports healthy', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<TestHarness />);
 
@@ -124,7 +94,32 @@ describe('StreamHealthBanner + useStreamHealth (browser)', () => {
         status: 'degraded', lastMessageAt: Date.now(),
       });
     });
-    expect(screen.queryByText('Exchange stream degraded')).toBeTruthy();
+    expect(screen.getByTestId('stream-health-dot')).toBeTruthy();
+
+    await act(async () => {
+      emit('stream:health', {
+        symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES',
+        status: 'healthy', lastMessageAt: Date.now(),
+      });
+    });
+    expect(screen.getByTestId('stream-health-dot')).toBeTruthy();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3_500);
+    });
+    expect(screen.queryByTestId('stream-health-dot')).toBeNull();
+  });
+
+  test('stays visible during a flicker (degraded → healthy → degraded within debounce)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(<TestHarness />);
+
+    await act(async () => {
+      emit('stream:health', {
+        symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES',
+        status: 'degraded', lastMessageAt: Date.now(),
+      });
+    });
 
     await act(async () => {
       emit('kline:update', {
@@ -135,7 +130,7 @@ describe('StreamHealthBanner + useStreamHealth (browser)', () => {
       });
       vi.advanceTimersByTime(500);
     });
-    expect(screen.queryByText('Exchange stream degraded')).toBeTruthy();
+    expect(screen.getByTestId('stream-health-dot')).toBeTruthy();
 
     await act(async () => {
       emit('stream:health', {
@@ -144,22 +139,19 @@ describe('StreamHealthBanner + useStreamHealth (browser)', () => {
       });
       vi.advanceTimersByTime(100);
     });
-    expect(screen.queryByText('Exchange stream degraded')).toBeTruthy();
+    expect(screen.getByTestId('stream-health-dot')).toBeTruthy();
   });
 
-  test('ignores stream:health events for a different symbol', async () => {
+  test('ignores events for a different symbol', async () => {
     render(<TestHarness />);
 
     await act(async () => {
       emit('stream:health', {
-        symbol: 'ETHUSDT',
-        interval: '1m',
-        marketType: 'FUTURES',
-        status: 'degraded',
-        lastMessageAt: Date.now(),
+        symbol: 'ETHUSDT', interval: '1m', marketType: 'FUTURES',
+        status: 'degraded', lastMessageAt: Date.now(),
       });
     });
 
-    expect(screen.queryByText('Exchange stream degraded')).toBeNull();
+    expect(screen.queryByTestId('stream-health-dot')).toBeNull();
   });
 });

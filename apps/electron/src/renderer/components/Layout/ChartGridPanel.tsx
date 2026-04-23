@@ -1,10 +1,12 @@
 import { HStack, Text } from '@chakra-ui/react';
 import { KlineOHLCRow } from '@renderer/components/Chart/ChartCanvas/KlineOHLCRow';
+import { StreamHealthDot } from '@renderer/components/Chart/ChartCanvas/StreamHealthDot';
 import { GridWindow } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
+import { useStreamHealth } from '@renderer/hooks/useStreamHealth';
 import type { GridPanelConfig } from '@shared/types/layout';
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, Interval } from '@marketmind/types';
 import { memo, useCallback } from 'react';
 import { ChartPanelContent } from './ChartPanelContent';
 
@@ -30,8 +32,16 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
 
   const hoveredKline = useChartHoverStore((s) => s.hoveredKlineByChart[makeChartKey(symbol, panelConfig.timeframe)]);
 
+  const streamHealth = useStreamHealth({
+    symbol,
+    interval: panelConfig.timeframe as Interval,
+    marketType,
+    enabled: !!symbol,
+  });
+
   const header = (
-    <HStack gap={3} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
+    <HStack gap={2} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
+      <StreamHealthDot status={streamHealth.status} />
       <Text fontSize="xs" color="fg.muted" flexShrink={0}>{panelConfig.timeframe} {panelConfig.chartType}</Text>
       {hoveredKline && <KlineOHLCRow kline={hoveredKline} compact />}
     </HStack>
