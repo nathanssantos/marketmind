@@ -49,6 +49,11 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 - **Setup Cooldown**: Prevents duplicate detections
 - **Real-time Monitoring**: WebSocket live updates from Binance
 
+#### Exchange Stream Resilience
+- **Watchdog + Forced Reconnect**: Detects silent Binance WS stream degradation (frame silence > 60s) and forces reconnect per subscription
+- **Synthesized Klines**: When aggregated streams (`@kline`, `@aggTrade`, `@markPrice`) stop emitting but `@trade` stays alive, constructs OHLCV candles in real time from trade ticks so the chart never freezes during partial outages
+- **Degradation Indicator**: Pulsing dot in each chart's header panel shows when its stream is degraded, with tooltip explaining the status; hides automatically on recovery
+
 #### Backtesting Engine
 - **Historical Testing**: Test strategies on historical data
 - **Walk-Forward Optimization**: Parameter optimization with out-of-sample validation

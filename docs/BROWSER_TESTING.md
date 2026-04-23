@@ -1,14 +1,15 @@
 # Browser Testing & Automation
 
-This document describes the browser-automation surface wired up for the repo. It has three layers, each usable on its own.
+This document describes the browser-automation surface wired up for the repo. It has four layers, each usable on its own.
 
 | Layer | What it is | When to use |
 |---|---|---|
 | 1. Playwright MCP server | Global MCP, drives a generic Chromium from any agent | Ad-hoc "go look at this page" work, console/network inspection, screenshots |
 | 2. Chart perf harness | `apps/electron/e2e/perf/` — Playwright specs that exercise the real chart with mocked tRPC | Reproducible FPS / p95 frame / render-rate numbers, regression checks |
-| 3. Electron smoke | `apps/electron/e2e/electron/` — `_electron.launch()` against `dist-electron/main/index.js` | Preload bridge, IPC, packaged-build sanity |
+| 3. Feature E2E specs | `apps/electron/e2e/*.spec.ts` — Playwright specs covering full user flows + runtime bridges (drawings, stream health, wallet, trading) | Behavioral regression tests that need real DOM + canvas + socket events |
+| 4. Electron smoke | `apps/electron/e2e/electron/` — `_electron.launch()` against `dist-electron/main/index.js` | Preload bridge, IPC, packaged-build sanity |
 
-All three rely on the renderer-only `VITE_E2E_BYPASS_AUTH=true` flag to skip `AuthGuard` + `useBackendAuth`. In prod builds the branch is dead-code-eliminated — zero runtime cost.
+All four rely on the renderer-only `VITE_E2E_BYPASS_AUTH=true` flag to skip `AuthGuard` + `useBackendAuth`. In prod builds the branch is dead-code-eliminated — zero runtime cost.
 
 ---
 
@@ -98,6 +99,12 @@ The harness relies on renderer-side "bridges" installed only when `VITE_E2E_BYPA
 | `window.__indicatorStore` | `utils/e2eBridge.ts` | `addIndicators`, `clearIndicators` |
 | `window.__preferencesStore` | `utils/e2eBridge.ts` | planned: preference-driven re-render tests |
 | `window.__priceStore` | `utils/e2eBridge.ts` | `pushPriceTicks` |
+| `window.__drawingStore` | `utils/e2eBridge.ts` | drawing seeds, tool activation (`drawing-pan.spec.ts`) |
+| `window.__connectionStore` | `utils/e2eBridge.ts` | `setWsConnected` — force WS state when no backend is running |
+| `window.__canvasManager` | `utils/e2eBridge.ts` (via `exposeCanvasManagerForE2E` in `ChartCanvas` effect) | Read viewport from E2E (`drawing-pan.spec.ts`) |
+| `window.__isPanning` | `utils/e2eBridge.ts` (via `exposeIsPanningForE2E` in `ChartCanvas` effect) | Regression guard for pan-stuck bugs |
+| `window.__socket` | `services/socketService.ts` (via `exposeSocketForE2E` on connect/disconnect) | Direct socket inspection |
+| `window.__socketTestBridge` | `utils/e2eBridge.ts` (paired with `exposeSocketForE2E`) | `emitSocketEvent` — simulate any backend event in E2E |
 | `window.__queryClient` | `components/TrpcProvider.tsx` effect | `updateLatestKline`, `appendKline` |
 
 The `e2eBridge.ts` exposures and the `TrpcProvider` queryClient bridge are gated on `IS_E2E_BYPASS_AUTH`; prod builds dead-code-eliminate both via Vite's `import.meta.env.VITE_*` inlining.
@@ -147,7 +154,84 @@ Only do this when a real improvement lands — regressions should fail, not rewr
 
 ---
 
-## Layer 3 — Electron smoke
+## Layer 3 — Feature E2E specs
+
+`apps/electron/e2e/*.spec.ts` covers user-flow regression tests. These specs run against the real Vite dev server (same as perf) with mocked tRPC, and drive synthetic mouse/keyboard input and synthetic socket events — **no real backend required**.
+
+### Run
+
+```bash
+# single spec
+npx playwright test --project=chromium e2e/stream-health.spec.ts
+
+# all feature specs
+pnpm --filter @marketmind/electron test:e2e
+```
+
+### What's in it
+
+| Spec | What it covers |
+|---|---|
+| `drawing-pan.spec.ts` | Guard against the "chart pans after drawing" regression — 2-click + drag-release ray flows both asserted `__isPanning === false` afterward |
+| `stream-health.spec.ts` | Chart-header degradation dot — fires synthetic `stream:health` / `kline:update` events via the socket test bridge, asserts dot visibility + hide-debounce + flicker immunity |
+| `trading-flow.spec.ts` | End-to-end trading interactions (symbol selector, chart mount, order placement UI) |
+| `wallet-management.spec.ts` | Wallet picker + CRUD flows with the sidebar exposed |
+
+### Socket test bridge (simulate any backend event)
+
+The frontend connects to the backend via `socket.io-client`. In E2E mode there is no backend running, so `socketService.ts` exposes the socket instance on `window.__socket` + a helper bridge on `window.__socketTestBridge` that lets tests invoke the real listeners directly.
+
+Playwright helpers in `apps/electron/e2e/helpers/socketBridge.ts`:
+
+```ts
+import { emitSocketEvent, setWsConnected, waitForSocket } from './helpers/socketBridge';
+
+// 1. force the connection-state flag (hooks that gate on isConnected bail without this)
+await setWsConnected(page, true);
+
+// 2. wait until a hook has actually registered a listener
+await waitForSocket(page, { event: 'stream:health' });
+
+// 3. fire the event — all registered handlers run synchronously
+await emitSocketEvent(page, 'stream:health', {
+  symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES',
+  status: 'degraded', reason: 'binance-stream-silent',
+  lastMessageAt: Date.now(),
+});
+
+// Also available for diagnosing: listSocketEvents(page) returns names of
+// every event with at least one listener attached.
+```
+
+The bridge walks `socket.listeners(event)` and invokes each callback with the payload — same effect as if the backend had emitted the event, without any network round-trip. Any future spec that needs to simulate `order:update`, `setup-detected`, `price:update`, etc. uses the same one-liner.
+
+### Canvas + pan state probes
+
+`exposeCanvasManagerForE2E` and `exposeIsPanningForE2E` (wired in `ChartCanvas` effects under the bypass flag) put the live `CanvasManager` and `isPanning` boolean on `window`. Tests can read viewport or assert on pan state without digging into React internals:
+
+```ts
+const viewport = await page.evaluate(() => window.__canvasManager?.getViewport());
+const isPanning = await page.evaluate(() => window.__isPanning);
+```
+
+### Adding a new feature E2E spec
+
+1. Start from the beforeEach pattern in `stream-health.spec.ts`:
+   ```ts
+   await installTrpcMock(page, { klines });
+   await page.goto('/');
+   await waitForChartReady(page);
+   await waitForE2EBridge(page);
+   await setWsConnected(page, true);        // only if your spec uses the socket
+   await waitForSocket(page, { event: X }); // only if your spec uses the socket
+   ```
+2. Drive state via the `window.__*` bridges (stores) or `emitSocketEvent` (backend events).
+3. Assert via Playwright locators on visible DOM (`getByTestId`, `getByRole`, etc.) or via `page.evaluate` reading bridge state.
+4. Kill any stale `vite` dev server on port 5173 before running tests — Playwright's `reuseExistingServer: !CI` will reuse a server that was started without the bypass flag.
+
+---
+
+## Layer 4 — Electron smoke
 
 ### Run
 

@@ -335,13 +335,44 @@ pnpm --filter @marketmind/backend db:migrate
 - **TimescaleDB:** Optimized time-series queries for klines
 - **Compression:** Automatic chunk compression after 7 days
 
+## Exchange stream resilience
+
+Both `BinanceKlineStreamService` (SPOT) and `BinanceFuturesKlineStreamService` (USDT-M futures) ship with a watchdog + synthesis fallback that keeps the chart alive during partial Binance WS incidents (e.g. when `@kline_*` / `@aggTrade` / `@markPrice` stop emitting but `@trade` stays alive).
+
+### Watchdog (`services/binance-kline-stream.ts`)
+
+- Each subscription tracks `lastMessageAt` + `healthStatus` (`'healthy' | 'degraded'`) + `lastReconnectAt`.
+- A 15 s interval checks every sub. Silence > 60 s flips `healthy → degraded`, emits `stream:health` on the socket, and triggers a forced reconnect (`closeAll(true)` + fresh `start()` + `resubscribeAll()`), rate-limited to once per 120 s.
+- Any real frame arriving resets `lastMessageAt` via `recordMessageReceived`. If status was degraded, it flips back to healthy and emits.
+- New subscriptions created while any existing sub is already degraded inherit the degraded state immediately — avoids the 60 s blind spot when the user switches symbols mid-incident.
+
+### Synthesis (`services/kline-synthesis.ts`)
+
+- Owns its own WS client subscribed to `@trade` (which typically stays alive during aggregated-stream outages).
+- Enabled from the stream service on `healthy → degraded` transitions.
+- Aligns each trade to the interval's bucket boundary, accumulates OHLCV (open=first, high/low=minmax, close=last, volume=sum), emits progressive `kline:update` via the same `WebSocketService.emitKlineUpdate` path (≤ 1 per 200 ms), emits `isClosed: true` when a new bucket begins.
+- On recovery (or unsubscribe), `disable(symbol, interval, marketType)` clears per-combo state so native frames take over seamlessly.
+
+### Socket events emitted
+
+| Event | Payload | Emitted when |
+|---|---|---|
+| `kline:update` | `{ symbol, interval, openTime, closeTime, open, high, low, close, volume, isClosed, timestamp }` | Every real frame from Binance + every synthesis emit (frontend doesn't distinguish; **backend is the single source of truth for health**) |
+| `stream:health` | `{ symbol, interval, marketType, status, reason?, lastMessageAt }` | State transitions on a subscription (`healthy → degraded` or `degraded → healthy`) |
+| `price:update` | `{ symbol, price, timestamp }` | Via `BinancePriceStreamService` — unrelated to kline health |
+
+### Tuning
+
+Constants in `services/binance-kline-stream.ts`:
+
+- `STREAM_HEALTH_CHECK_INTERVAL_MS` (15 s)
+- `STREAM_STALE_THRESHOLD_MS` (60 s) — how long a sub can be silent before being marked degraded
+- `STREAM_FORCED_RECONNECT_COOLDOWN_MS` (120 s) — minimum gap between forced reconnect attempts
+
 ## Next Steps
 
-- [ ] Socket.io real-time updates
-- [ ] Kline synchronization service
 - [ ] Rate limiting
 - [ ] Request validation middleware
-- [ ] Comprehensive test suite
 - [ ] Production deployment guide
 
 ## License
