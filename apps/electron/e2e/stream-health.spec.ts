@@ -55,14 +55,20 @@ test.describe('Stream health dot — backend degradation surfaces in chart heade
     await expect(dot).toHaveCount(0, { timeout: 5_000 });
   });
 
-  test('dot appears on degraded and disappears when a kline frame arrives', async ({ page }) => {
+  test('dot stays visible while synthesized kline frames arrive — backend remains authoritative', async ({ page }) => {
     const dot = page.getByTestId('stream-health-dot');
 
     await emitSocketEvent(page, 'stream:health', mkStreamHealthPayload('degraded'));
     await waitForFrames(page, 2);
     await expect(dot).toBeVisible();
 
-    await emitSocketEvent(page, 'kline:update', mkKlineUpdatePayload());
+    for (let i = 0; i < 5; i++) {
+      await emitSocketEvent(page, 'kline:update', mkKlineUpdatePayload());
+      await page.waitForTimeout(200);
+    }
+    await expect(dot).toBeVisible();
+
+    await emitSocketEvent(page, 'stream:health', mkStreamHealthPayload('healthy'));
     await expect(dot).toHaveCount(0, { timeout: 5_000 });
   });
 

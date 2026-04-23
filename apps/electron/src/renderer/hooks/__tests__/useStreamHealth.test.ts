@@ -97,7 +97,7 @@ describe('useStreamHealth', () => {
     expect(result.current.status).toBe('healthy');
   });
 
-  it('flips to healthy on any matching kline:update', () => {
+  it('does NOT flip to healthy on kline:update (backend is source of truth)', () => {
     const { result } = renderHook(() =>
       useStreamHealth({ symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES' }),
     );
@@ -118,7 +118,45 @@ describe('useStreamHealth', () => {
       emit('kline:update', { symbol: 'BTCUSDT', interval: '1m' });
     });
 
+    expect(result.current.status).toBe('degraded');
+
+    act(() => {
+      emit('stream:health', {
+        symbol: 'BTCUSDT',
+        interval: '1m',
+        marketType: 'FUTURES',
+        status: 'healthy',
+        lastMessageAt: 2000,
+      });
+    });
     expect(result.current.status).toBe('healthy');
+  });
+
+  it('kline:update keeps the local silence timer quiet even while backend reports degraded', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useStreamHealth({ symbol: 'BTCUSDT', interval: '1m', marketType: 'FUTURES' }),
+    );
+
+    act(() => {
+      emit('stream:health', {
+        symbol: 'BTCUSDT',
+        interval: '1m',
+        marketType: 'FUTURES',
+        status: 'degraded',
+        lastMessageAt: Date.now(),
+      });
+    });
+
+    for (let i = 0; i < 5; i++) {
+      act(() => {
+        vi.advanceTimersByTime(15_000);
+        emit('kline:update', { symbol: 'BTCUSDT', interval: '1m' });
+      });
+    }
+
+    expect(result.current.status).toBe('degraded');
+    expect(result.current.reason).not.toBe('local-silence-timeout');
   });
 
   it('marks degraded via local silence timer when no frames arrive', () => {

@@ -65,8 +65,6 @@ export const useStreamHealth = ({
       const now = Date.now();
       lastMessageAtRef.current = now;
       setLastMessageAt(now);
-      setStatus((prev) => (prev === 'degraded' ? 'healthy' : prev));
-      setReason((prev) => (prev ? null : prev));
     },
     [symbol, interval],
   );
