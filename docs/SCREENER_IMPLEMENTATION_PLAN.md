@@ -2,7 +2,7 @@
 
 ## Overview
 
-Standalone market screener accessible via a modal, with pre-built presets and a custom filter builder using the 35+ indicators available via PineIndicatorService (PineTS). Works for both Binance (crypto) and Interactive Brokers (stocks).
+Standalone market screener accessible via a modal, with pre-built presets and a custom filter builder using the 35+ indicators available via PineIndicatorService (PineTS). Works for Binance (crypto).
 
 ---
 
@@ -108,7 +108,7 @@ interface ScreenerConfig {
   description?: string
   assetClass: 'CRYPTO' | 'STOCKS'
   marketType: 'SPOT' | 'FUTURES'
-  exchange?: 'BINANCE' | 'INTERACTIVE_BROKERS'
+  exchange?: 'BINANCE'
   interval: TimeInterval  // uses existing TimeInterval type
   filters: ScreenerFilterCondition[]
   sortBy?: ScreenerSortField
@@ -152,7 +152,7 @@ interface ScreenerPreset {
   icon: string
   category: 'momentum' | 'mean_reversion' | 'volatility' | 'volume' | 'trend' | 'market_data'
   assetClassRestriction?: 'CRYPTO' | 'STOCKS'
-  exchangeRestriction?: 'BINANCE' | 'INTERACTIVE_BROKERS'
+  exchangeRestriction?: 'BINANCE'
   config: Omit<ScreenerConfig, 'assetClass' | 'marketType' | 'interval'>
 }
 
@@ -339,13 +339,11 @@ Main orchestrator class (singleton pattern like `MarketCapDataService`).
 1. **Cache check** — hash config, check `Map<string, { response, timestamp }>`, return if within TTL
 2. **Get candidate symbols:**
    - Crypto: `MarketCapDataService.getTopCoinsByMarketCap(limit, marketType)` -> symbol list + TopCoin data
-   - Stocks: IB symbol list (if available) or skip
 3. **Get ticker data:** `Ticker24hrCache.getForSymbols(symbols, marketType)` -> Map<symbol, Ticker24hr>
 4. **Pre-filter with ticker-based conditions** (cheap): price change, volume, market cap rank
    - Only conditions whose indicator `requiresKlines === false` can be pre-filtered
 5. **Fetch klines on-demand** for remaining symbols:
    - Use `smartBackfillKlines(symbol, interval, MIN_KLINES_REQUIRED, marketType)` for Binance
-   - Use `smartBackfillIBKlines(symbol, interval, MIN_KLINES_REQUIRED)` for IB
    - Batch with `p-limit(KLINE_BATCH_SIZE)` concurrency
    - After backfill, query DB for klines and convert with `mapDbKlinesToApi()`
 6. **Compute indicators** via `IndicatorEvaluator` for each symbol
@@ -358,7 +356,6 @@ Main orchestrator class (singleton pattern like `MarketCapDataService`).
 - `getMarketCapDataService()` from `../market-cap-data`
 - `getTicker24hrCache()` from `../binance-exchange-info`
 - `smartBackfillKlines` from `../binance-historical`
-- `smartBackfillIBKlines` from `../ib-historical`
 - `mapDbKlinesToApi` from `../../utils/kline-mapper`
 - DB access for kline query after backfill
 - `IndicatorEvaluator` and `FilterEvaluator` (local)

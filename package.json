@@ -1,12 +1,11 @@
 {
   "name": "marketmind-monorepo",
-  "version": "0.98.1",
+  "version": "0.98.2",
   "description": "MarketMind Monorepo - trading platform",
   "keywords": [
     "trading",
     "crypto",
     "cryptocurrency",
-    "stocks",
     "charts",
     "klines",
     "candlestick",
@@ -16,7 +15,6 @@
     "auto-trading",
     "binance",
     "futures",
-    "interactive-brokers",
     "electron",
     "desktop"
   ],

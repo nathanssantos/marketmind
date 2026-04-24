@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.2] - 2026-04-24
+
+### Changed
+- **Docs + landing-site cleanup** — removed Interactive Brokers / stocks references from every public surface (README, landing site across all 4 locales, package keywords, screener plan). The exchange abstraction code under `apps/backend/src/exchange/interactive-brokers/` stays intact; the feature is simply no longer advertised while stock support is incomplete. Landing site's `stats.exchanges` drops from 2 → 1 and the "Multi-Exchange" feature card is reframed as "Binance Integration".
+
+### Removed
+- `docs/INTERACTIVE_BROKERS_INTEGRATION.md` — planning doc for an unshipped feature.
+- `docs/EXCHANGE_ABSTRACTION_PLAN.md` — internal refactor plan whose motivation (IB support) isn't part of the shipped product.
+
 ## [0.98.1] - 2026-04-23
 
 ### Fixed
@@ -63,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Indicator value tags clipped behind price scale** — Phase B's dispatcher applied `applyPanelClip({chartWidth})` before calling pane renderers, but `drawPanelValueTag` renders at `x=chartWidth` extending `+64px` into the price-scale area. The tag body was clipped out entirely. Removed the clip; `drawPanelBackground` + `save/restore` stay for batched background fill.
 
 ### Changed
-- **Source-of-truth: interval→ms conversion (PR D)** — replaced six scattered duplicates of the interval→milliseconds map with imports from `@marketmind/types`' canonical `INTERVAL_MS` (backed by `TIME_MS` in `packages/types/src/intervals.ts`). Callers now share one definition: `ib-historical.ts`, `kline-stream.ts`, `gap-classifier.ts`, `routers/auto-trading.ts`, `routers/auto-trading/diagnostics.ts`, `scripts/data/backfill-historical.ts`. `apps/backend/src/constants` now also re-exports `INTERVAL_MINUTES`. Test mocks continue to pin small literal maps on purpose.
+- **Source-of-truth: interval→ms conversion (PR D)** — replaced six scattered duplicates of the interval→milliseconds map with imports from `@marketmind/types`' canonical `INTERVAL_MS` (backed by `TIME_MS` in `packages/types/src/intervals.ts`). Callers now share one definition: `kline-stream.ts`, `gap-classifier.ts`, `routers/auto-trading.ts`, `routers/auto-trading/diagnostics.ts`, `scripts/data/backfill-historical.ts`. `apps/backend/src/constants` now also re-exports `INTERVAL_MINUTES`. Test mocks continue to pin small literal maps on purpose.
 - **Source-of-truth: TestKline fixture type (PR #80)** — promoted the e2e-local `FixtureKline` interface into `@marketmind/types` as `TestKline`. `apps/electron/e2e/helpers/klineFixtures.ts`, `chartTestSetup.ts`, and `trpcMock.ts` now consume the canonical type; no more drift risk between fixture shape and the production `Kline`.
 - **Source-of-truth: price formatters (PR #81)** — consolidated `formatPrice` + `formatPriceDisplay` into `packages/utils/src/formatters.ts`. `formatPrice(value, { decimals? })` is threshold-based (>=1 → 2d, else 6) when no `decimals` passed and fixed-decimal otherwise; `formatPriceDisplay(value, { abbreviated? })` keeps the chart-granularity thresholds plus opt-out K/M abbreviation. Backend `apps/backend/src/utils/formatters.ts` and renderer `apps/electron/src/renderer/utils/formatters.ts` now re-export from `@marketmind/utils`. The math-precision helper previously named `priceUtils.formatPrice` was renamed to `formatPriceExact` to eliminate the name collision; `formatChartPrice` and exchange-specific formatters (`formatPriceForBinance`, `formatQuantityForBinance`) stay where they are — they solve different problems.
 
@@ -91,7 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Package descriptions** — dropped the "AI-powered" framing from `package.json`, `apps/electron/vite.config.ts` (PWA manifest), and the agent-guide docs (`CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/project-instructions.md`, `.gemini/instructions.md`). AI is not part of the current product scope.
 
 ### Added
-- **Package keywords + GitHub repo topics** — root, backend, and electron `package.json` files now carry keyword arrays; the GitHub repo was updated with 18 topics (trading, crypto, stocks, charts, klines, candlestick, technical-analysis, indicators, backtesting, auto-trading, binance, futures, interactive-brokers, electron, desktop, react, typescript, cryptocurrency) to improve discoverability.
+- **Package keywords + GitHub repo topics** — root, backend, and electron `package.json` files now carry keyword arrays; the GitHub repo was updated with topics (trading, crypto, charts, klines, candlestick, technical-analysis, indicators, backtesting, auto-trading, binance, futures, electron, desktop, react, typescript, cryptocurrency) to improve discoverability.
 
 ## [0.97.0] - 2026-04-19
 
@@ -1071,7 +1080,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gap check intervals updated to 2 hours for improved performance
 - Backtest configuration handling optimized with improved simulation results logging
 - marketType parameter added to setup detection and setup routers
-- Filter validation enhanced for Interactive Brokers support
 - Import paths updated for consistency and readability
 
 ### Fixed
@@ -1085,13 +1093,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.50.0] - 2026-02-05
 
 ### Added
-- **Interactive Brokers - Phase 6 Completion (Backend)**
-  - `IBFeeCalculator` with tiered commission support (TIER_1-4, LITE accounts)
-  - `calculateTieredCommission`, `calculateRoundTripCommission`, `estimateCommissionRate` utilities
-  - `smartBackfillIBKlines` service for IB historical data backfill with DB caching
-  - BacktestEngine exchange routing: kline fetching routes to IB or Binance based on `--exchange` flag
+- **Exchange abstraction — Phase 6 (backend)**
+  - BacktestEngine routing for multiple kline sources via `--exchange` flag
   - CLI `--exchange` and `--asset-class` flags for `validate` and `batch` backtest commands
-  - Integration test stubs for IB connection manager, stock client, kline stream, price stream (40 skipped)
+  - Generic tiered commission utilities (`calculateTieredCommission`, `calculateRoundTripCommission`, `estimateCommissionRate`)
   - 17 new fee calculator tests, all 2662 backend tests passing
 - **Order Book Integration** for Dynamic Symbol Rotation
   - `OrderBookAnalyzerService` with imbalance ratio and liquidity wall detection
@@ -1109,8 +1114,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OPTIMIZATION_MASTER_PLAN completed** at 100% (v2.5.0)
 
 ### Changed
-- `IBStockClient.getAccountInfo()` now uses `estimateCommissionRate` instead of hardcoded commission rates
-- `IBStockClient` accepts `accountType` parameter for fee calculation
 - `BacktestEngine` and `MultiWatcherBacktestEngine` accept `exchange` parameter for kline source routing
 - `BacktestConfig` type extended with `exchange` and `assetClass` fields
 - Dynamic Symbol Rotation now considers order book conditions
@@ -1131,7 +1134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `detectSetupsInRange` now yields to event loop every 500 iterations (prevents blocking on 36K+ sync calls)
 - `BacktestEngine.findIndex` replaced O(n) lookup with O(1) `klineIndexMap`
 - `MultiWatcherBacktestEngine` O(n) `findIndex` replaced with O(1) Map in `buildUnifiedTimeline` and `checkAndClosePositions`
-- Fixed IB `subscribe()` race condition: async call is now properly awaited in watcher-manager
+- Fixed exchange-adapter `subscribe()` race condition: async call is now properly awaited in watcher-manager
 
 ---
 
