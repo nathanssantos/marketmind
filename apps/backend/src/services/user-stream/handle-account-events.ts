@@ -6,6 +6,8 @@ import { cancelAllProtectionOrders } from '../protection-orders';
 import { clearProtectionOrderIds, type ProtectionOrderField } from '../execution-manager';
 import { logger, serializeError } from '../logger';
 import { getWebSocketService } from '../websocket';
+import { applyTransferDelta } from '../wallet-balance';
+import { isTransferReason } from '../../constants/income-types';
 import type {
   UserStreamContext,
   FuturesAccountUpdate,
@@ -20,7 +22,7 @@ export async function handleAccountUpdate(
   event: FuturesAccountUpdate
 ): Promise<void> {
   try {
-    const { a: accountData } = event;
+    const { E: eventTime, a: accountData } = event;
     const { m: reason, B: balances, P: positionUpdates } = accountData;
 
     logger.info(
@@ -33,26 +35,39 @@ export async function handleAccountUpdate(
       '[FuturesUserStream] Account update received'
     );
 
-    for (const balance of balances) {
-      if (balance.a === 'USDT') {
-        const wallet = await ctx.getCachedWallet(walletId);
+    const usdtBalance = balances.find((b) => b.a === 'USDT');
+    const wallet = usdtBalance ? await ctx.getCachedWallet(walletId) : null;
 
-        if (wallet) {
-          const newBalance = parseFloat(balance.wb);
-          ctx.invalidateWalletCache(walletId);
-          await db
-            .update(wallets)
-            .set({
-              currentBalance: newBalance.toString(),
-              updatedAt: new Date(),
-            })
-            .where(eq(wallets.id, walletId));
+    if (usdtBalance && wallet) {
+      const newBalance = parseFloat(usdtBalance.wb);
+      const previousBalance = wallet.currentBalance ? parseFloat(wallet.currentBalance) : 0;
+      const delta = newBalance - previousBalance;
 
-          logger.trace(
-            { walletId, newBalance, reason },
-            '[FuturesUserStream] Wallet balance synced from account update'
-          );
-        }
+      ctx.invalidateWalletCache(walletId);
+
+      if (isTransferReason(reason) && delta !== 0) {
+        await applyTransferDelta({
+          walletId,
+          userId: wallet.userId,
+          asset: 'USDT',
+          deltaAmount: delta,
+          eventTime: eventTime ?? Date.now(),
+          reason,
+          newBalance,
+        });
+      } else {
+        await db
+          .update(wallets)
+          .set({
+            currentBalance: newBalance.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(wallets.id, walletId));
+
+        logger.trace(
+          { walletId, newBalance, reason },
+          '[FuturesUserStream] Wallet balance synced from account update'
+        );
       }
     }
 

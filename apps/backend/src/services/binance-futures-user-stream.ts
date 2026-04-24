@@ -525,8 +525,13 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
           logger.warn({ walletId }, '[FuturesUserStream] Listen key expired - will reconnect');
           void this.resubscribeWallet(walletId);
           break;
+        case 'TRADE_LITE':
+        case 'STRATEGY_UPDATE':
+        case 'GRID_UPDATE':
+          logger.trace({ walletId, eventType }, '[FuturesUserStream] Known non-essential event — ignored');
+          break;
         default:
-          logger.trace({ walletId, eventType }, '[FuturesUserStream] Unhandled event type');
+          logger.warn({ walletId, eventType }, '[FuturesUserStream] Unhandled event type');
       }
     } catch (error) {
       logger.error(

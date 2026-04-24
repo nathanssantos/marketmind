@@ -24,6 +24,8 @@ export {
   type SynthesizePaperCloseInput,
 } from './synthesizePaperClose';
 
+export { nextSyntheticTranId, isSyntheticTranId } from './syntheticTranId';
+
 export {
   syncWalletIncome,
   syncAllWalletsIncome,
