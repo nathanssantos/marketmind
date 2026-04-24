@@ -275,6 +275,7 @@ export class WebSocketService {
     volume: string;
     isClosed: boolean;
     timestamp: number;
+    synthetic?: boolean;
   }): void {
     const room = `klines:${kline.symbol}:${kline.interval}`;
     this.io.to(room).emit('kline:update', kline);
