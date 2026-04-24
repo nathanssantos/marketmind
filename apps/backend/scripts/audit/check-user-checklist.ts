@@ -18,13 +18,22 @@ if (!def) { console.log('no profile'); process.exit(1); }
 const conds = parseChecklistConditions(def.checklistConditions ?? '[]');
 console.log(`\nUser: ${email}  Profile: ${def.name}  Conditions: ${conds.length}\n`);
 const rows = conds
-  .map((c) => ({ label: labelById.get(c.userIndicatorId) ?? '?', tf: c.timeframe, op: c.op, side: c.side, weight: c.weight, tier: c.tier }))
-  .sort((a, b) => {
-    const tfOrder: Record<string, number> = { '15m': 1, '1h': 2, '4h': 3, '1d': 4, current: 0 };
-    return (a.label.localeCompare(b.label)) || ((tfOrder[a.tf] ?? 99) - (tfOrder[b.tf] ?? 99)) || a.side.localeCompare(b.side);
-  });
+  .map((c) => ({
+    order: c.order,
+    label: labelById.get(c.userIndicatorId) ?? '?',
+    tf: c.timeframe,
+    op: c.op,
+    side: c.side,
+    weight: c.weight,
+    tier: c.tier,
+    threshold: c.threshold,
+  }))
+  .sort((a, b) => a.order - b.order);
 
 for (const r of rows) {
-  console.log(`  ${r.label.padEnd(10)} ${r.tf.padEnd(5)} ${r.side.padEnd(6)} ${r.op.padEnd(12)} weight=${r.weight}  tier=${r.tier}`);
+  const thr = r.threshold === undefined ? '—' : JSON.stringify(r.threshold);
+  console.log(
+    `  #${String(r.order).padStart(2)}  ${r.label.padEnd(10)} ${r.tf.padEnd(3)} ${r.side.padEnd(6)} ${r.op.padEnd(12)} weight=${String(r.weight).padEnd(4)} threshold=${thr}`,
+  );
 }
 process.exit(0);

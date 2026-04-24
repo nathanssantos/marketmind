@@ -20,10 +20,19 @@ export interface ChecklistTemplateEntry {
 const TF_WEIGHTS = { '15m': 0, '1h': 0.5, '4h': 1.0, '1d': 1.5 } as const;
 const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
 
-type IndicatorSpec = { seedLabel: string; base: number };
+// Thresholds — RSI 2 gets tight extremes (7/93) because it's fast and noisy
+// without them; the tight bound is what makes the high weight usable across
+// TFs. RSI 14 and Stoch 14 use `undefined` so the evaluator falls back to the
+// catalog default (20/80 of valueRange — classic 20/80 on the 0-100 scale).
+type IndicatorSpec = {
+  seedLabel: string;
+  base: number;
+  oversold?: number;
+  overbought?: number;
+};
 const INDICATORS: IndicatorSpec[] = [
   { seedLabel: 'RSI 14', base: 1.0 },
-  { seedLabel: 'RSI 2', base: 2.0 },
+  { seedLabel: 'RSI 2', base: 2.0, oversold: 7, overbought: 93 },
   { seedLabel: 'Stoch 14', base: 1.0 },
 ];
 
@@ -35,10 +44,12 @@ const buildTemplate = (): ChecklistTemplateEntry[] => {
       const weight = ind.base + TF_WEIGHTS[tf];
       out.push({
         seedLabel: ind.seedLabel, timeframe: tf, op: 'oversold',
+        threshold: ind.oversold,
         tier: 'preferred', side: 'LONG', weight, enabled: false, order: order++,
       });
       out.push({
         seedLabel: ind.seedLabel, timeframe: tf, op: 'overbought',
+        threshold: ind.overbought,
         tier: 'preferred', side: 'SHORT', weight, enabled: false, order: order++,
       });
     }
