@@ -16,7 +16,7 @@ interface OptimisticOverride {
   timestamp: number;
 }
 
-const OPTIMISTIC_OVERRIDE_TTL_MS = 30_000;
+const OPTIMISTIC_OVERRIDE_TTL_MS = 5_000;
 
 export interface UseChartTradingDataProps {
   symbol?: string;
