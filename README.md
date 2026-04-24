@@ -62,7 +62,8 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 - **Performance Metrics**: Win rate, profit factor, Sharpe ratio, max drawdown
 
 #### Market Analysis
-- **Screener & Scanners**: Market-wide screening with customizable filters and real-time setup detection
+- **Screener & Scanners** _(beta)_: Market-wide screening with customizable filters and real-time setup detection
+- **Custom Symbols** _(beta)_: Compose user-defined indices from multiple components with weighting strategies (equal, market-cap, capped, sqrt, manual)
 - **Footprint Chart**: Intra-bar bid/ask volume split visualization
 
 #### User Experience

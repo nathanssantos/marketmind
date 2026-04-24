@@ -2,6 +2,8 @@ export { Alert } from './alert';
 export type { AlertRootProps } from './alert';
 export { Badge } from './badge';
 export type { BadgeProps } from './badge';
+export { BetaBadge } from './beta-badge';
+export type { BetaBadgeProps } from './beta-badge';
 export { Button } from './button';
 export type { ButtonProps } from './button';
 export { Card } from './card';

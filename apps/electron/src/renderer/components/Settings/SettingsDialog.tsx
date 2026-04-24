@@ -1,8 +1,9 @@
-import { Box } from '@chakra-ui/react';
-import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
+import { Box, HStack } from '@chakra-ui/react';
+import { BetaBadge, CloseButton, Dialog, Tabs } from '@renderer/components/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
+import { CustomSymbolsTab } from '../CustomSymbols';
 import { WalletManager } from '../Trading/WalletManager';
 import { AboutTab } from './AboutTab';
 import { AutoTradingTab } from './AutoTradingTab';
@@ -48,6 +49,12 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
                 <Tabs.Trigger value="indicators">{t('settings.tabs.indicators')}</Tabs.Trigger>
                 <Tabs.Trigger value="tradingProfiles">{t('settings.tabs.tradingProfiles')}</Tabs.Trigger>
                 <Tabs.Trigger value="autoTrading">{t('settings.tabs.autoTrading')}</Tabs.Trigger>
+                <Tabs.Trigger value="customSymbols">
+                  <HStack gap={2}>
+                    <span>{t('settings.tabs.customSymbols')}</span>
+                    <BetaBadge />
+                  </HStack>
+                </Tabs.Trigger>
                 <Tabs.Trigger value="data">{t('settings.tabs.data')}</Tabs.Trigger>
                 <Tabs.Trigger value="about">{t('settings.tabs.about')}</Tabs.Trigger>
               </Tabs.List>
@@ -78,6 +85,10 @@ export const SettingsDialog = ({ isOpen, onClose, advancedConfig, onAdvancedConf
 
                 <Tabs.Content value="autoTrading">
                   <AutoTradingTab />
+                </Tabs.Content>
+
+                <Tabs.Content value="customSymbols">
+                  <CustomSymbolsTab />
                 </Tabs.Content>
 
                 <Tabs.Content value="data">
