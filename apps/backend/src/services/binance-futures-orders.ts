@@ -185,7 +185,7 @@ export async function submitFuturesAlgoOrder(
     if (params.timeInForce) algoParams.timeInForce = params.timeInForce;
     if (params.reduceOnly !== undefined) algoParams.reduceOnly = params.reduceOnly ? 'true' : 'false';
     if (params.closePosition !== undefined) algoParams.closePosition = params.closePosition ? 'true' : 'false';
-    if (params.activationPrice) algoParams.activationPrice = params.activationPrice;
+    if (params.activationPrice) algoParams.activatePrice = params.activationPrice;
     if (params.callbackRate) algoParams.callbackRate = params.callbackRate;
     if (params.clientAlgoId) algoParams.clientAlgoId = params.clientAlgoId;
     if (params.workingType) algoParams.workingType = params.workingType;
