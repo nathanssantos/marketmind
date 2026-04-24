@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useChartState, useCursorManager } from './useChartState';
+import { tooltipStore } from './tooltipStore';
 import type { Kline } from '@marketmind/types';
 
 const createMockKline = (overrides?: Partial<Kline>): Kline => ({
@@ -21,17 +22,21 @@ const createMockKline = (overrides?: Partial<Kline>): Kline => ({
 });
 
 describe('useChartState', () => {
+  beforeEach(() => {
+    tooltipStore.hideTooltip();
+  });
+
   it('should initialize with default state', () => {
     const { result } = renderHook(() =>
       useChartState({ klines: [] })
     );
 
-    expect(result.current.state.tooltipData.visible).toBe(false);
-    expect(result.current.state.tooltipData.kline).toBeNull();
     expect(result.current.state.orderToClose).toBeNull();
+    expect(tooltipStore.getSnapshot().visible).toBe(false);
+    expect(tooltipStore.getSnapshot().kline).toBeNull();
   });
 
-  it('should set tooltip data', () => {
+  it('should set tooltip data via tooltipStore', () => {
     const { result } = renderHook(() =>
       useChartState({ klines: [] })
     );
@@ -48,11 +53,12 @@ describe('useChartState', () => {
       });
     });
 
-    expect(result.current.state.tooltipData.visible).toBe(true);
-    expect(result.current.state.tooltipData.kline).toEqual(mockKline);
-    expect(result.current.state.tooltipData.x).toBe(100);
-    expect(result.current.state.tooltipData.y).toBe(200);
-    expect(result.current.state.tooltipData.klineIndex).toBe(5);
+    const snap = tooltipStore.getSnapshot();
+    expect(snap.visible).toBe(true);
+    expect(snap.kline).toEqual(mockKline);
+    expect(snap.x).toBe(100);
+    expect(snap.y).toBe(200);
+    expect(snap.klineIndex).toBe(5);
   });
 
   it('should hide tooltip', () => {
@@ -71,14 +77,14 @@ describe('useChartState', () => {
       });
     });
 
-    expect(result.current.state.tooltipData.visible).toBe(true);
+    expect(tooltipStore.getSnapshot().visible).toBe(true);
 
     act(() => {
       result.current.actions.hideTooltip();
     });
 
-    expect(result.current.state.tooltipData.visible).toBe(false);
-    expect(result.current.state.tooltipData.kline).toBeNull();
+    expect(tooltipStore.getSnapshot().visible).toBe(false);
+    expect(tooltipStore.getSnapshot().kline).toBeNull();
   });
 
   it('should set orderToClose', () => {

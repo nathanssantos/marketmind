@@ -1,7 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { generateKlines } from '../helpers/klineFixtures';
 import { installTrpcMock } from '../helpers/trpcMock';
 import { installConsoleCapture, filterNoiseFromErrors, getCapturedErrors } from '../helpers/consoleCapture';
@@ -20,67 +17,19 @@ import {
   slowestSectionMs,
   waitForChartReady,
 } from '../helpers/chartTestSetup';
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const RESULTS_PATH = resolve(HERE, 'last-run.json');
-const BASELINE_PATH = resolve(HERE, 'baseline.json');
+import {
+  OVERLAY_INDICATORS,
+  WARMUP_FRAMES,
+  MEASURE_FRAMES,
+  assertRegression,
+  writeRunResult,
+  type BaselineEntry,
+} from './harness';
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 } as const;
-const WARMUP_FRAMES = 90;
-const MEASURE_FRAMES = 600;
 const PAN_FRAMES = 180;
 const ZOOM_FRAMES = 90;
 const TICK_STORM_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
-
-const NOISE_FLOOR_MS = 0.5;
-const RELATIVE_REGRESSION_CAP = 0.5;
-
-const OVERLAY_INDICATORS = [
-  { catalogType: 'sma', params: { period: 20 } },
-  { catalogType: 'ema', params: { period: 50 } },
-];
-
-interface BaselineEntry {
-  fps: number;
-  p95FrameMs: number;
-  renderRate: number;
-  droppedFrames?: number;
-  longSections?: number;
-  generatedAt: string;
-}
-
-type BaselineMap = Record<string, BaselineEntry>;
-
-const loadBaseline = (): BaselineMap => {
-  if (!existsSync(BASELINE_PATH)) return {};
-  try {
-    return JSON.parse(readFileSync(BASELINE_PATH, 'utf8')) as BaselineMap;
-  } catch {
-    return {};
-  }
-};
-
-const writeRunResult = (key: string, entry: BaselineEntry): void => {
-  let current: BaselineMap = {};
-  if (existsSync(RESULTS_PATH)) {
-    try {
-      current = JSON.parse(readFileSync(RESULTS_PATH, 'utf8')) as BaselineMap;
-    } catch {
-      current = {};
-    }
-  }
-  current[key] = entry;
-  writeFileSync(RESULTS_PATH, JSON.stringify(current, null, 2));
-};
-
-const assertRegression = (key: string, result: BaselineEntry): void => {
-  const baseline = loadBaseline();
-  if (!baseline[key]) return;
-  const delta = result.p95FrameMs - baseline[key].p95FrameMs;
-  if (delta <= NOISE_FLOOR_MS) return;
-  const relative = delta / Math.max(baseline[key].p95FrameMs, 0.1);
-  expect(relative, `${key}: p95 frame regression vs baseline`).toBeLessThanOrEqual(RELATIVE_REGRESSION_CAP);
-};
 
 test.describe('Chart mobile-viewport perf', () => {
   test.beforeEach(async ({ page }) => {

@@ -201,11 +201,12 @@ describe('useKlineRenderer', () => {
     });
 
     it('should render hovered kline with shadow blur isolation', () => {
+      const hoveredKlineIndexRef = { current: 2 as number | undefined };
       const { result } = renderHook(() =>
         useKlineRenderer({
           manager: mockManager,
           colors: mockColors,
-          hoveredKlineIndex: 2,
+          hoveredKlineIndexRef,
         })
       );
       result.current.render();

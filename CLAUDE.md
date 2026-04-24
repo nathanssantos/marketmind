@@ -575,6 +575,7 @@ describe('Wallet Router', () => {
 - **✅ Futures Auto-Trading**: User stream, liquidation monitoring, margin manager, max drawdown
 - **✅ Trailing Stop System**: v0.51.0+, volatility-based with ATR multiplier
 - **✅ Risk Management**: Real-time alerts, margin top-up, position sizing
+- **✅ Stream Resilience**: Watchdog + forced reconnect + synthesized klines from `@trade` when `@kline_*` degrades (covers Binance partial-outage scenarios) — `services/binance-kline-stream.ts`, `services/kline-synthesis.ts`
 - **✅ Integration Tests**: testcontainers with PostgreSQL + TimescaleDB
 - **✅ Strategy System**: 105 strategy JSON files in `strategies/builtin/`
 - **✅ Backtesting Infrastructure**: BacktestEngine, MultiWatcherBacktestEngine, 3 optimization scripts

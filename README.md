@@ -49,6 +49,11 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 - **Setup Cooldown**: Prevents duplicate detections
 - **Real-time Monitoring**: WebSocket live updates from Binance
 
+#### Exchange Stream Resilience
+- **Watchdog + Forced Reconnect**: Detects silent Binance WS stream degradation (frame silence > 60s) and forces reconnect per subscription
+- **Synthesized Klines**: When aggregated streams (`@kline`, `@aggTrade`, `@markPrice`) stop emitting but `@trade` stays alive, constructs OHLCV candles in real time from trade ticks so the chart never freezes during partial outages
+- **Degradation Indicator**: Pulsing dot in each chart's header panel shows when its stream is degraded, with tooltip explaining the status; hides automatically on recovery
+
 #### Backtesting Engine
 - **Historical Testing**: Test strategies on historical data
 - **Walk-Forward Optimization**: Parameter optimization with out-of-sample validation
@@ -188,8 +193,8 @@ See [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md) for the full layered-te
 **Test Stats:**
 - **~7,600+ tests** across the monorepo
 - **5,129 backend tests** + 40 skipped (IB integration) — now includes a golden-output snapshot per builtin strategy (106 snapshots)
-- **2,400+ frontend tests** (2,341 unit + 86 browser across 5 files)
-- **Browser tests** (`apps/electron/src/**/*.browser.test.ts(x)`) cover Canvas pixel math, `getBoundingClientRect` hit-testing, and other surfaces jsdom can't exercise — run via `pnpm --filter @marketmind/electron test:browser:run`
+- **2,400+ frontend tests** (2,341 unit + 92 browser across 6 files)
+- **Browser tests** (`apps/electron/src/**/*.browser.test.ts(x)`) cover Canvas pixel math, `getBoundingClientRect` hit-testing, and `CanvasManager` mount/unmount lifecycle — surfaces jsdom can't exercise. Run via `pnpm --filter @marketmind/electron test:browser:run`
 - **CI** runs lint, unit tests (with coverage artifact), browser tests, E2E, and backend build on every PR
 - All type checks passing
 

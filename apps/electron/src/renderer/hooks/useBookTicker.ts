@@ -2,10 +2,11 @@ import { useEffect, useState, useRef } from 'react';
 import type { BookTickerUpdate } from '@marketmind/types';
 import { socketService } from '../services/socketService';
 
-export const useBookTicker = (symbol: string | null, enabled = true) => {
+export const useBookTicker = (symbol: string | null, enabled = true, throttleMs = 0) => {
   const [data, setData] = useState<BookTickerUpdate | null>(null);
   const latestRef = useRef<BookTickerUpdate | null>(null);
   const frameRef = useRef<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!symbol || !enabled) return;
@@ -16,11 +17,23 @@ export const useBookTicker = (symbol: string | null, enabled = true) => {
     setData(null);
     socket.emit('subscribe:bookTicker', symbol);
 
+    const flush = () => {
+      if (latestRef.current) setData(latestRef.current);
+    };
+
     const handler = (update: BookTickerUpdate) => {
       latestRef.current = update;
+      if (throttleMs > 0) {
+        if (timeoutRef.current) return;
+        timeoutRef.current = setTimeout(() => {
+          flush();
+          timeoutRef.current = null;
+        }, throttleMs);
+        return;
+      }
       if (!frameRef.current) {
         frameRef.current = requestAnimationFrame(() => {
-          if (latestRef.current) setData(latestRef.current);
+          flush();
           frameRef.current = null;
         });
       }
@@ -35,8 +48,12 @@ export const useBookTicker = (symbol: string | null, enabled = true) => {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     };
-  }, [symbol, enabled]);
+  }, [symbol, enabled, throttleMs]);
 
   return {
     bidPrice: data?.bidPrice ?? 0,

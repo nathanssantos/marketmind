@@ -46,6 +46,10 @@ interface E2EQueryClient {
   ) => void;
 }
 
+interface E2EPreferencesStoreState {
+  set: (category: 'chart' | 'ui' | 'trading' | 'layout', key: string, value: unknown) => void;
+}
+
 declare global {
   interface Window {
     __mmPerf?: {
@@ -61,6 +65,9 @@ declare global {
     };
     __priceStore?: {
       getState: () => E2EPriceStoreState;
+    };
+    __preferencesStore?: {
+      getState: () => E2EPreferencesStoreState;
     };
     __queryClient?: E2EQueryClient;
   }
@@ -205,6 +212,13 @@ export const addIndicators = async (
   }, indicators);
 };
 
+export const enableChartQuickTrade = async (page: Page): Promise<void> => {
+  await page.waitForFunction(() => typeof window.__preferencesStore !== 'undefined', { timeout: 10_000 });
+  await page.evaluate(() => {
+    window.__preferencesStore?.getState().set('ui', 'quickTradeMode', 'chart');
+  });
+};
+
 export const clearIndicators = async (page: Page): Promise<void> => {
   await page.evaluate(() => {
     const store = window.__indicatorStore;
@@ -230,6 +244,11 @@ export const slowestSectionMs = (snap: PerfSnapshot): number => {
 export const componentRenderRate = (snap: PerfSnapshot, name: string): number => {
   const entry = snap.componentRenders.find((c) => c.name === name);
   return entry?.ratePerSec ?? 0;
+};
+
+export const componentRenderTotal = (snap: PerfSnapshot, name: string): number => {
+  const entry = snap.componentRenders.find((c) => c.name === name);
+  return entry?.total ?? 0;
 };
 
 const isKlineListQueryKey = (key: unknown): boolean => {

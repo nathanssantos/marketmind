@@ -1,6 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
+vi.mock('../utils/oscillatorRendering', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/oscillatorRendering')>();
+  return { ...actual, drawPanelBackground: vi.fn() };
+});
+
 vi.mock('./renderers', () => {
   const calls: Array<{ kind: string; instanceId: string }> = [];
   const make = (kind: string) =>
@@ -30,7 +35,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorOutputs } from './useGenericChartIndicators';
 
-const mockManager = (): CanvasManager => ({
+const mockManager = (panels?: Record<string, { y: number; height: number }>): CanvasManager => ({
   getContext: vi.fn(() => ({
     save: vi.fn(),
     restore: vi.fn(),
@@ -42,7 +47,7 @@ const mockManager = (): CanvasManager => ({
   getDimensions: vi.fn(() => ({ chartWidth: 800, chartHeight: 600 })),
   getViewport: vi.fn(() => ({ start: 0, end: 5, klineWidth: 8 })),
   getKlines: vi.fn(() => []),
-  getPanelInfo: vi.fn(() => null),
+  getPanelInfo: vi.fn((id: string) => panels?.[id] ?? null),
   indexToX: vi.fn(() => 0),
   priceToY: vi.fn(() => 0),
   markDirty: vi.fn(),
@@ -237,5 +242,62 @@ describe('useGenericChartIndicatorRenderers', () => {
     );
     result.current.renderAllOverlayIndicators();
     expect(calls.map((c) => c.instanceId)).toEqual(['bottom', 'top']);
+  });
+
+  it('renderAllPanelIndicators draws panel background once per unique panel, not per indicator', async () => {
+    const oscillator = await import('../utils/oscillatorRendering');
+    const bgSpy = oscillator.drawPanelBackground as unknown as ReturnType<typeof vi.fn>;
+    bgSpy.mockClear();
+
+    const renderers = await import('./renderers');
+    const calls = (renderers as unknown as { __calls: Array<{ kind: string; instanceId: string }> }).__calls;
+    calls.length = 0;
+
+    setInstances([
+      makeInstance({ id: 'rsi-a', catalogType: 'rsi' }),
+      makeInstance({ id: 'rsi-b', catalogType: 'rsi' }),
+      makeInstance({ id: 'macd-1', catalogType: 'macd' }),
+      makeInstance({ id: 'atr-1', catalogType: 'atr' }),
+    ]);
+    const { result } = renderHook(() =>
+      useGenericChartIndicatorRenderers({
+        manager: mockManager({
+          rsi: { y: 400, height: 80 },
+          macd: { y: 480, height: 80 },
+          atr: { y: 560, height: 40 },
+        }),
+        colors,
+        outputsRef: outputsRef([
+          ['rsi-a', { value: [] }],
+          ['rsi-b', { value: [] }],
+          ['macd-1', { line: [], signal: [], histogram: [] }],
+          ['atr-1', { value: [] }],
+        ]),
+      }),
+    );
+    result.current.renderAllPanelIndicators();
+
+    expect(calls).toHaveLength(4);
+    expect(bgSpy).toHaveBeenCalledTimes(3);
+    const yValues = bgSpy.mock.calls.map((args) => (args[0] as { panelY: number }).panelY).sort((a, b) => a - b);
+    expect(yValues).toEqual([400, 480, 560]);
+  });
+
+  it('renderAllPanelIndicators skips background when no pane-kind indicators are active', async () => {
+    const oscillator = await import('../utils/oscillatorRendering');
+    const bgSpy = oscillator.drawPanelBackground as unknown as ReturnType<typeof vi.fn>;
+    bgSpy.mockClear();
+
+    setInstances([makeInstance({ id: 'sma1', catalogType: 'sma' })]);
+    const { result } = renderHook(() =>
+      useGenericChartIndicatorRenderers({
+        manager: mockManager({ rsi: { y: 400, height: 80 } }),
+        colors,
+        outputsRef: outputsRef([['sma1', { value: [] }]]),
+      }),
+    );
+    result.current.renderAllPanelIndicators();
+
+    expect(bgSpy).not.toHaveBeenCalled();
   });
 });

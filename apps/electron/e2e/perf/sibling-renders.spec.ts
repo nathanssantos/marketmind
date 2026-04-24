@@ -1,7 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { generateKlines } from '../helpers/klineFixtures';
 import { installTrpcMock } from '../helpers/trpcMock';
 import { installConsoleCapture } from '../helpers/consoleCapture';
@@ -9,6 +6,7 @@ import {
   clearIndicators,
   componentRenderRate,
   driveFrames,
+  enableChartQuickTrade,
   enablePerfOverlay,
   pushPriceTicks,
   readPerfSnapshot,
@@ -16,16 +14,11 @@ import {
   resetPerfMonitor,
   waitForChartReady,
 } from '../helpers/chartTestSetup';
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const RESULTS_PATH = resolve(HERE, 'last-run.json');
-
-const WARMUP_FRAMES = 90;
-const MEASURE_FRAMES = 600;
-const TICK_STORM_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT'];
+import { TICK_STORM_SYMBOLS, WARMUP_FRAMES, MEASURE_FRAMES, writeRunResult } from './harness';
 
 const MAX_PORTFOLIO_RENDERS_PER_SEC = 10;
 const MAX_ORDERS_LIST_RENDERS_PER_SEC = 10;
+const MAX_QUICK_TRADE_RENDERS_PER_SEC = 10;
 
 interface SiblingResult {
   portfolioRate: number;
@@ -33,20 +26,16 @@ interface SiblingResult {
   chartCanvasRate: number;
   fps: number;
   generatedAt: string;
+  [key: string]: unknown;
 }
 
-const writeRunResult = (key: string, entry: SiblingResult): void => {
-  let current: Record<string, unknown> = {};
-  if (existsSync(RESULTS_PATH)) {
-    try {
-      current = JSON.parse(readFileSync(RESULTS_PATH, 'utf8')) as Record<string, unknown>;
-    } catch {
-      current = {};
-    }
-  }
-  current[key] = entry;
-  writeFileSync(RESULTS_PATH, JSON.stringify(current, null, 2));
-};
+interface QuickTradeResult {
+  quickTradeRate: number;
+  chartCanvasRate: number;
+  fps: number;
+  generatedAt: string;
+  [key: string]: unknown;
+}
 
 test.describe('Sibling renderer hot-path', () => {
   test.beforeEach(async ({ page }) => {
@@ -105,5 +94,54 @@ test.describe('Sibling renderer hot-path', () => {
       ordersListRate,
       `OrdersList re-rendering ${ordersListRate.toFixed(1)}/s under tick storm — likely subscribed to a hot store via a selector`,
     ).toBeLessThanOrEqual(MAX_ORDERS_LIST_RENDERS_PER_SEC);
+  });
+
+  test('quick-trade-toolbar-tick-storm: QuickTradeToolbar stays bounded under price ticks', async ({ page }) => {
+    await clearIndicators(page);
+    await enableChartQuickTrade(page);
+    await page.waitForFunction(
+      () => {
+        const snap = window.__mmPerf?.getSnapshot();
+        return snap?.componentRenders.some((c) => c.name === 'QuickTradeToolbar') ?? false;
+      },
+      { timeout: 5_000 },
+    );
+    await driveFrames(page, WARMUP_FRAMES);
+    await resetPerfMonitor(page);
+
+    let stop = false;
+    const tickLoop = (async () => {
+      let seed = 0;
+      while (!stop) {
+        const ticks: Record<string, number> = {};
+        for (const sym of TICK_STORM_SYMBOLS) {
+          seed += 1;
+          ticks[sym] = 50_000 + ((seed % 1000) * 0.1);
+        }
+        await pushPriceTicks(page, ticks);
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    })();
+
+    await driveFrames(page, MEASURE_FRAMES);
+    stop = true;
+    await tickLoop;
+
+    const snap = await readPerfSnapshot(page);
+    const quickTradeRate = componentRenderRate(snap, 'QuickTradeToolbar');
+    const chartCanvasRate = componentRenderRate(snap, 'ChartCanvas');
+
+    writeRunResult('quick-trade-toolbar-tick-storm', {
+      quickTradeRate,
+      chartCanvasRate,
+      fps: snap.fps,
+      generatedAt: new Date().toISOString(),
+    });
+
+    expect(snap.enabled).toBe(true);
+    expect(
+      quickTradeRate,
+      `QuickTradeToolbar re-rendering ${quickTradeRate.toFixed(1)}/s under tick storm — selector on usePriceStore (Part 2)`,
+    ).toBeLessThanOrEqual(MAX_QUICK_TRADE_RENDERS_PER_SEC);
   });
 });

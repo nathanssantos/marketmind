@@ -273,15 +273,16 @@ export const useChartCanvas = ({
     }
   }, [klines, symbol]);
 
-  useEffect(() => {
-    if (managerRef.current) {
-      managerRef.current.setViewport(viewport);
-    }
-  }, [viewport]);
-
   const updateViewport = useCallback(
     (newViewport: Viewport): void => {
       setViewport(newViewport);
+      onViewportChangeRef.current?.(newViewport);
+    },
+    [],
+  );
+
+  const notifyViewportChange = useCallback(
+    (newViewport: Viewport): void => {
       onViewportChangeRef.current?.(newViewport);
     },
     [],
@@ -367,7 +368,7 @@ export const useChartCanvas = ({
           
           if (timeSinceLastUpdate > VIEWPORT_UPDATE_THROTTLE_MS) {
             const newViewport = managerRef.current.getViewport();
-            updateViewport(newViewport);
+            notifyViewportChange(newViewport);
             wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
             lastViewportUpdateRef.current = now;
 
@@ -383,7 +384,7 @@ export const useChartCanvas = ({
       
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
     },
-    [isPanning, isPanningOnScale, updateViewport],
+    [isPanning, isPanningOnScale, notifyViewportChange],
   );
 
   const handleMouseUp = useCallback((): void => {

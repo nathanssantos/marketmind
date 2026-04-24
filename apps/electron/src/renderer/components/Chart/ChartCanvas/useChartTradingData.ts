@@ -4,7 +4,7 @@ import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useOrphanOrders } from '@renderer/hooks/useOrphanOrders';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
-import { useIndicatorStore } from '@renderer/store';
+import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants/queryConfig';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -264,9 +264,7 @@ export const useChartTradingData = ({
   );
 
   const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
-  const needsScalpingMetrics = useIndicatorStore((s) =>
-    s.instances.some((i) => i.visible && (i.catalogType === 'cvd' || i.catalogType === 'bookImbalance'))
-  );
+  const { needsScalpingMetrics, needsVolumeProfile } = useIndicatorVisibility();
 
   const { data: scalpingCfg } = trpc.scalping.getConfig.useQuery(
     { walletId: backendWalletId ?? '' },
@@ -275,9 +273,6 @@ export const useChartTradingData = ({
   const resolvedTicksPerBar = scalpingCfg?.ticksPerBar ?? SCALPING_DEFAULTS.TICK_SIZE;
   const resolvedVolumePerBar = scalpingCfg?.volumePerBar ? Number(scalpingCfg.volumePerBar) : SCALPING_DEFAULTS.VOLUME_BAR_SIZE;
 
-  const needsVolumeProfile = useIndicatorStore((s) =>
-    s.instances.some((i) => i.visible && i.catalogType === 'volumeProfile')
-  );
   const { data: volumeProfileData } = trpc.scalping.getVolumeProfile.useQuery(
     { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
     { enabled: needsVolumeProfile && !!backendWalletId && !!symbol, refetchInterval: SCALPING_DEFAULTS.BOOK_SNAPSHOT_INTERVAL_MS },

@@ -592,6 +592,10 @@
     }
   },
   "chart": {
+    "streamHealth": {
+      "degradedTitle": "Exchange stream degraded",
+      "degradedDescription": "No updates received from the exchange — reconnecting automatically."
+    },
     "controls": {
       "title": "Chart Controls",
       "timeframe": "Timeframe",

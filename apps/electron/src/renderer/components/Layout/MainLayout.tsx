@@ -1,6 +1,7 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useUIPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
+import { perfMonitor } from '@/renderer/utils/canvas/perfMonitor';
 import { Box, Flex } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -50,7 +51,7 @@ const DEFAULT_MARKET_WIDTH = MIN_MARKET_WIDTH;
 
 const MAX_SIDEBAR_RATIO = 0.75;
 
-export const MainLayout = ({
+const MainLayoutComponent = ({
   onOpenSymbolSelector,
   advancedConfig,
   onAdvancedConfigChange,
@@ -68,6 +69,7 @@ export const MainLayout = ({
   onTimeframeChange,
   onNavigateToSymbol,
 }: MainLayoutProps) => {
+  perfMonitor.recordComponentRender('MainLayout');
   const [quickTradeMode, setQuickTradeMode] = useUIPref<QuickTradeMode>('quickTradeMode', 'sidebar');
   const [tradingWidth, setTradingWidth] = useUIPref('tradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);
@@ -270,3 +272,5 @@ export const MainLayout = ({
     </GlobalActionsProvider>
   );
 };
+
+export const MainLayout = React.memo(MainLayoutComponent);
