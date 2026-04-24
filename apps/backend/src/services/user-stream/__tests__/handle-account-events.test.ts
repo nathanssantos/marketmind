@@ -49,10 +49,12 @@ vi.mock('../../logger', () => ({
 
 const mockEmitRiskAlert = vi.fn();
 const mockEmitWalletUpdate = vi.fn();
+const mockEmitPositionUpdate = vi.fn();
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitRiskAlert: mockEmitRiskAlert,
     emitWalletUpdate: mockEmitWalletUpdate,
+    emitPositionUpdate: mockEmitPositionUpdate,
   })),
 }));
 
@@ -216,9 +218,11 @@ describe('handleConfigUpdate', () => {
     mockDbUpdate.mockReturnValue({
       set: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: vi.fn().mockImplementation((cb: (r: unknown) => void) => {
-            cb({ rowCount: 1 });
-            return { catch: vi.fn() };
+          returning: vi.fn().mockReturnValue({
+            then: vi.fn().mockImplementation((cb: (r: unknown) => void) => {
+              cb([{ id: 'exec-1', leverage: 20 }]);
+              return { catch: vi.fn() };
+            }),
           }),
         }),
       }),

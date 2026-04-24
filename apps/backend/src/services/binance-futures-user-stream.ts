@@ -9,6 +9,7 @@ import { createBinanceFuturesClient, isPaperWallet, getWalletType, getPosition }
 import { decryptApiKey } from './encryption';
 import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
+import { getWebSocketService } from './websocket';
 import type {
   FuturesAccountUpdate,
   FuturesOrderUpdate,
@@ -152,7 +153,20 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
     if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
 
-    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty }, `[FuturesUserStream] ${logContext || 'Pyramided into existing position'}`);
+    const wsService = getWebSocketService();
+    if (wsService) {
+      wsService.emitPositionUpdate(walletId, {
+        ...freshExec,
+        entryPrice: newAvgPrice.toString(),
+        quantity: newQty.toString(),
+        liquidationPrice: pyramidLiquidationPrice ?? freshExec.liquidationPrice,
+      });
+      if (deleteExecId) {
+        wsService.emitPositionUpdate(walletId, { id: deleteExecId, status: 'merged' });
+      }
+    }
+
+    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, deleteExecId }, `[FuturesUserStream] ${logContext || 'Pyramided into existing position'} + emitted WS`);
   }
 
   async syncPositionFromExchange(walletId: string, symbol: string, executionId: string, logContext: string): Promise<boolean> {

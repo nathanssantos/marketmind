@@ -96,6 +96,21 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
+          const paperWsService = getWebSocketService();
+          if (paperWsService) {
+            paperWsService.emitOrderCreated(input.walletId, {
+              orderId: simulatedOrderId,
+              symbol: input.symbol,
+              side: input.side,
+              type: input.type,
+              status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
+              price,
+              origQty: quantity,
+              executedQty: input.type === 'MARKET' ? quantity : '0',
+              marketType: 'FUTURES',
+            });
+          }
+
           return {
             orderId: simulatedOrderId,
             symbol: input.symbol,
@@ -258,10 +273,11 @@ export const orderMutationsRouter = router({
             .set({ status: 'CANCELED', updateTime: Date.now() })
             .where(eq(orders.orderId, input.orderId));
 
-          await ctx.db
+          const paperCancelledExecs = await ctx.db
             .update(tradeExecutions)
             .set({ status: 'cancelled', updatedAt: new Date() })
-            .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
+            .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')))
+            .returning();
 
           const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -269,6 +285,15 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.userId, ctx.user.id),
               eq(tradeExecutions.status, 'open'),
             ));
+
+          const paperWsService = getWebSocketService();
+          if (paperWsService) {
+            paperWsService.emitOrderCancelled(input.walletId, input.orderId);
+            for (const exec of paperCancelledExecs) {
+              paperWsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
+              paperWsService.emitPositionUpdate(input.walletId, exec);
+            }
+          }
 
           return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
@@ -288,10 +313,11 @@ export const orderMutationsRouter = router({
           .set({ status: 'CANCELED', updateTime: Date.now() })
           .where(eq(orders.orderId, input.orderId));
 
-        await ctx.db
+        const cancelledExecs = await ctx.db
           .update(tradeExecutions)
           .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
-          .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')));
+          .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')))
+          .returning();
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
@@ -299,6 +325,15 @@ export const orderMutationsRouter = router({
             eq(tradeExecutions.userId, ctx.user.id),
             eq(tradeExecutions.status, 'open'),
           ));
+
+        const cancelWsService = getWebSocketService();
+        if (cancelWsService) {
+          cancelWsService.emitOrderCancelled(input.walletId, input.orderId);
+          for (const exec of cancelledExecs) {
+            cancelWsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
+            cancelWsService.emitPositionUpdate(input.walletId, exec);
+          }
+        }
 
         return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions };
       } catch (error) {

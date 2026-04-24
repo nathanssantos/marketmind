@@ -269,12 +269,22 @@ export async function handleAlgoOrderUpdate(
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
 
+    const wsService = getWebSocketService();
+    if (wsService) {
+      wsService.emitPositionUpdate(walletId, {
+        ...execution,
+        exitReason,
+        ...clearFields,
+      });
+    }
+
     logger.info(
       {
         executionId: execution.id,
         clearedFields: Object.keys(clearFields),
+        exitReason,
       },
-      '[FuturesUserStream] Cleared triggered protection order IDs'
+      '[FuturesUserStream] Cleared triggered protection order IDs + emitted position update'
     );
 
     const executionId = execution.id;
