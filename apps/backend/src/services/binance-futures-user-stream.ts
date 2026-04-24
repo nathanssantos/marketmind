@@ -24,10 +24,18 @@ import { verifyAlgoFillProcessed as verifyAlgoFillProcessedFn, closeResidualPosi
 import { handleAccountUpdate as handleAccountUpdateFn, handleMarginCall as handleMarginCallFn, handleConfigUpdate as handleConfigUpdateFn, handleConditionalOrderReject as handleConditionalOrderRejectFn, cancelPendingEntryOrders as cancelPendingEntryOrdersFn } from './user-stream/handle-account-events';
 import { executeDebouncedSlTpUpdate } from './user-stream/debounced-sltp-update';
 
+interface WalletHealthState {
+  lastMessageAt: number;
+  lastReconnectAt: number;
+  healthStatus: 'healthy' | 'degraded';
+}
+
 export class BinanceFuturesUserStreamService implements UserStreamContext {
   connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }> = new Map();
   private isRunning = false;
   private walletSubscriptionInterval: ReturnType<typeof setInterval> | null = null;
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private walletHealth: Map<string, WalletHealthState> = new Map();
   private pyramidQueues = new Map<string, Array<{ resolve: () => void; timer: ReturnType<typeof setTimeout> }>>();
   private pyramidActive = new Set<string>();
   private pendingSlTpUpdates = new Map<string, ReturnType<typeof setTimeout>>();
@@ -37,6 +45,9 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
   private static readonly PYRAMID_SLTP_DEBOUNCE_MS = 3000;
   private static readonly PYRAMID_LOCK_TIMEOUT_MS = 30_000;
   private static readonly WALLET_CACHE_TTL_MS = 60_000;
+  private static readonly HEALTH_CHECK_INTERVAL_MS = 15_000;
+  private static readonly STALE_THRESHOLD_MS = 60_000;
+  private static readonly FORCED_RECONNECT_COOLDOWN_MS = 120_000;
 
   async getCachedWallet(walletId: string): Promise<Wallet | null> {
     const cached = this.walletCache.get(walletId);
@@ -233,6 +244,8 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     this.walletSubscriptionInterval = setInterval(() => {
       void this.subscribeAllActiveWallets();
     }, 60000);
+
+    this.startHealthWatchdog();
   }
 
   stop(): void {
@@ -243,13 +256,102 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       this.walletSubscriptionInterval = null;
     }
 
+    this.stopHealthWatchdog();
+
     for (const [walletId, connection] of this.connections) {
       connection.wsClient.closeAll(true);
       this.connections.delete(walletId);
     }
+    this.walletHealth.clear();
 
     this.shutdown();
     logger.info('[FuturesUserStream] Service stopped');
+  }
+
+  private startHealthWatchdog(): void {
+    if (this.healthCheckInterval) return;
+    this.healthCheckInterval = setInterval(
+      () => { void this.checkUserStreamHealth(); },
+      BinanceFuturesUserStreamService.HEALTH_CHECK_INTERVAL_MS,
+    );
+  }
+
+  private stopHealthWatchdog(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+  }
+
+  private async checkUserStreamHealth(): Promise<void> {
+    const now = Date.now();
+    for (const [walletId, health] of this.walletHealth) {
+      const silenceMs = now - health.lastMessageAt;
+
+      if (silenceMs > BinanceFuturesUserStreamService.STALE_THRESHOLD_MS && health.healthStatus === 'healthy') {
+        health.healthStatus = 'degraded';
+        logger.warn(
+          { walletId, silenceMs, lastMessageAt: new Date(health.lastMessageAt).toISOString() },
+          '[FuturesUserStream] User stream silent — marking degraded',
+        );
+
+        if (now - health.lastReconnectAt > BinanceFuturesUserStreamService.FORCED_RECONNECT_COOLDOWN_MS) {
+          health.lastReconnectAt = now;
+          await this.forceReconnectWallet(walletId, `silent for ${Math.floor(silenceMs / 1000)}s`);
+        }
+      } else if (silenceMs <= BinanceFuturesUserStreamService.STALE_THRESHOLD_MS && health.healthStatus === 'degraded') {
+        health.healthStatus = 'healthy';
+        logger.info({ walletId }, '[FuturesUserStream] User stream recovered');
+      }
+    }
+  }
+
+  private async forceReconnectWallet(walletId: string, reason: string): Promise<void> {
+    logger.warn({ walletId, reason }, '[FuturesUserStream] Forcing reconnect');
+    try {
+      this.unsubscribeWallet(walletId);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      this.invalidateWalletCache(walletId);
+
+      const wallet = await this.getCachedWallet(walletId);
+      if (!wallet || !wallet.isActive || isPaperWallet(wallet) || wallet.marketType !== 'FUTURES') {
+        logger.info({ walletId }, '[FuturesUserStream] Skipping reconnect — wallet no longer eligible');
+        return;
+      }
+
+      await this.subscribeWallet(wallet);
+
+      try {
+        const syncResult = await positionSyncService.syncWallet(wallet);
+        logger.info(
+          {
+            walletId,
+            orphanedPositions: syncResult.changes.orphanedPositions.length,
+            unknownPositions: syncResult.changes.unknownPositions.length,
+            updatedPositions: syncResult.changes.updatedPositions.length,
+            balanceUpdated: syncResult.changes.balanceUpdated,
+          },
+          '[FuturesUserStream] Post-forced-reconnect REST sync completed',
+        );
+      } catch (syncError) {
+        logger.error(
+          { walletId, error: serializeError(syncError) },
+          '[FuturesUserStream] Post-forced-reconnect REST sync failed',
+        );
+      }
+    } catch (error) {
+      logger.error({ walletId, error: serializeError(error) }, '[FuturesUserStream] forceReconnectWallet failed');
+    }
+  }
+
+  private recordUserStreamActivity(walletId: string): void {
+    const existing = this.walletHealth.get(walletId);
+    if (!existing) return;
+    existing.lastMessageAt = Date.now();
+    if (existing.healthStatus === 'degraded') {
+      existing.healthStatus = 'healthy';
+      logger.info({ walletId }, '[FuturesUserStream] User stream recovered on message receipt');
+    }
   }
 
   private async subscribeAllActiveWallets(): Promise<void> {
@@ -358,6 +460,11 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       await wsClient.subscribeUsdFuturesUserDataStream(wsKey);
 
       this.connections.set(wallet.id, { wsClient, apiClient });
+      this.walletHealth.set(wallet.id, {
+        lastMessageAt: Date.now(),
+        lastReconnectAt: 0,
+        healthStatus: 'healthy',
+      });
 
       logger.info({ walletId: wallet.id, walletType }, '[FuturesUserStream] Subscribed successfully');
     } catch (error) {
@@ -373,6 +480,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
   private handleUserDataMessage(walletId: string, data: unknown): void {
     try {
+      this.recordUserStreamActivity(walletId);
       if (typeof data !== 'object' || data === null) {
         return;
       }
@@ -441,6 +549,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     if (connection) {
       connection.wsClient.closeAll(true);
       this.connections.delete(walletId);
+      this.walletHealth.delete(walletId);
       logger.info({ walletId }, '[FuturesUserStream] Unsubscribed');
     }
   }
