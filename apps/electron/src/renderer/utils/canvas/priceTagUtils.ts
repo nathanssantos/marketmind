@@ -1,3 +1,4 @@
+import { ORDER_LINE_LAYOUT } from '@shared/constants';
 
 export const drawPriceTag = (
   ctx: CanvasRenderingContext2D,
@@ -29,7 +30,7 @@ export const drawPriceTag = (
   ctx.fill();
 
   ctx.fillStyle = textColor;
-  ctx.fillText(priceText, x + labelPadding, y);
+  ctx.fillText(priceText, x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
   ctx.restore();
 
   return { width: fixedWidth + arrowWidth, height: labelHeight };
@@ -51,10 +52,11 @@ export const drawCurrentPriceTag = (
   const labelPadding = 8;
   const arrowWidth = 6;
   const priceHeight = 18;
-  const timerHeight = 16;
+  const timerHeight = 13;
+  const timerGap = 1;
 
   const topY = y - priceHeight / 2;
-  const bottomY = timerText ? y + priceHeight / 2 + timerHeight : y + priceHeight / 2;
+  const bottomY = timerText ? y + priceHeight / 2 + timerGap + timerHeight : y + priceHeight / 2;
   const endX = x + fixedWidth;
 
   ctx.save();
@@ -77,10 +79,12 @@ export const drawCurrentPriceTag = (
   ctx.stroke();
 
   ctx.fillStyle = textColor;
-  ctx.fillText(priceText, x + labelPadding, y);
+  ctx.fillText(priceText, x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
 
-  if (timerText)
-    ctx.fillText(timerText, x + labelPadding, y + priceHeight / 2 + timerHeight / 2);
+  if (timerText) {
+    ctx.font = '9px monospace';
+    ctx.fillText(timerText, x + labelPadding, y + priceHeight / 2 + timerGap + timerHeight / 2 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+  }
 
   ctx.restore();
 };
@@ -98,9 +102,9 @@ export const formatTimerText = (seconds: number): string => {
   const secs = seconds % 60;
 
   if (days > 0)
-    return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    {return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;}
   if (hours > 0)
-    return `${hours}h ${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    {return `${hours}h ${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;}
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 

@@ -1,5 +1,6 @@
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
+import type { TimeInterval } from '@marketmind/types';
 import { Button, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -188,7 +189,7 @@ export const WatcherManager = () => {
         showConfirm={showEmergencyConfirm}
         onShowConfirm={() => setShowEmergencyConfirm(true)}
         onHideConfirm={() => setShowEmergencyConfirm(false)}
-        onEmergencyStop={handleEmergencyStop}
+        onEmergencyStop={() => { void handleEmergencyStop(); }}
         isEmergencyStopping={isEmergencyStopping}
         hasActiveWatchers={activeWatchers.length > 0 || persistedWatchers > 0}
       />
@@ -231,8 +232,8 @@ export const WatcherManager = () => {
         isExpanded={expandedSections.watchers}
         onToggle={() => toggleSection('watchers')}
         onAddWatcher={() => setShowAddDialog(true)}
-        onStopWatcher={handleStopWatcher}
-        onStopAll={handleStopAll}
+        onStopWatcher={(symbol, interval, marketType) => { void handleStopWatcher(symbol, interval, marketType); }}
+        onStopAll={() => { void handleStopAll(); }}
         isStoppingWatcher={isStoppingWatcher}
         isStoppingAll={isStoppingAllWatchers}
         getProfileById={getProfileById}
@@ -252,7 +253,7 @@ export const WatcherManager = () => {
         onAutoRotationToggle={handleAutoRotationToggle}
         rotationStatus={rotationStatus}
         isLoadingRotationStatus={isLoadingRotationStatus}
-        onTriggerRotation={handleTriggerRotation}
+        onTriggerRotation={() => { void handleTriggerRotation(); }}
         isTriggeringRotation={isTriggeringRotation}
         quickStartMarketType={quickStartMarketType}
         quickStartTimeframe={quickStartTimeframe}
@@ -270,7 +271,7 @@ export const WatcherManager = () => {
         onMarketTypeChange={setQuickStartMarketType}
         onTimeframeChange={setQuickStartTimeframe}
         onCountChange={setQuickStartCount}
-        onQuickStart={handleQuickStartFromRankings}
+        onQuickStart={() => { void handleQuickStartFromRankings(); }}
         onViewRankings={() => setShowRankingsDialog(true)}
         isPending={updateConfig.isPending}
       />
@@ -353,7 +354,7 @@ export const WatcherManager = () => {
         trailingStopOffsetPercent={Number(config?.trailingStopOffsetPercent ?? 0)}
         onTrailingStopOffsetPercentChange={(value) => handleConfigUpdate({ trailingStopOffsetPercent: value.toString() })}
         isPending={updateConfig.isPending}
-        indicatorInterval={(config?.trailingStopIndicatorInterval ?? '30m') as import('@marketmind/types').TimeInterval}
+        indicatorInterval={(config?.trailingStopIndicatorInterval ?? '30m') as TimeInterval}
         onIndicatorIntervalChange={(interval) => handleConfigUpdate({ trailingStopIndicatorInterval: interval })}
         activationModeLong={config?.trailingActivationModeLong ?? 'auto'}
         onActivationModeLongChange={(mode) => handleConfigUpdate({ trailingActivationModeLong: mode })}

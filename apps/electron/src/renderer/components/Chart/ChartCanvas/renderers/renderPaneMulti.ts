@@ -1,12 +1,10 @@
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
 import {
-  applyPanelClip,
-  calculateVisibleRange,
+  getCachedVisibleRange,
   createDynamicValueToY,
   createNormalizedValueToY,
   drawHistogramBars,
   drawLineOnPanel,
-  drawPanelBackground,
   drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
@@ -49,7 +47,7 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     maxValue = valueRange.max;
   } else {
     for (const { values } of seriesEntries) {
-      const range = calculateVisibleRange(values, visibleStart, visibleEnd);
+      const range = getCachedVisibleRange(ctx.manager, values, visibleStart, visibleEnd);
       if (!range.hasData) continue;
       if (range.min < minValue) minValue = range.min;
       if (range.max > maxValue) maxValue = range.max;
@@ -62,12 +60,12 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
   }
 
   const flipped = ctx.manager.isFlipped();
-  const valueToY = valueRange && valueRange.min === 0 && valueRange.max === 100
+  const valueToY = valueRange?.min === 0 && valueRange.max === 100
     ? createNormalizedValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, flipped)
     : createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, minValue, maxValue, flipped);
 
   const userColor = getInstanceParam<string>(input.instance, input.definition, 'color');
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? OSCILLATOR_CONFIG.LINE_WIDTH) as number;
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? OSCILLATOR_CONFIG.LINE_WIDTH);
   const paneColors = PANE_SERIES_COLORS[paneId];
 
   const resolveColor = (outputKey: string, idx: number): string => {
@@ -76,10 +74,6 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     if (idx === 0 && userColor) return userColor;
     return FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length] ?? DEFAULT_LINE_COLOR;
   };
-
-  canvasCtx.save();
-  applyPanelClip({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
-  drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
 
   const oversold = input.definition.defaultThresholds?.oversold;
   const overbought = input.definition.defaultThresholds?.overbought;
@@ -119,8 +113,6 @@ export const renderPaneMulti: GenericRenderer = (ctx, input) => {
     }
     lineIdx++;
   }
-
-  canvasCtx.restore();
 
   const tagSeries = seriesEntries.find((e) => !e.isHistogram) ?? seriesEntries[0];
   if (tagSeries) {

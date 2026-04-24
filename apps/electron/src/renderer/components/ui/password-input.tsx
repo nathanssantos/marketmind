@@ -12,8 +12,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((p
 
   return (
     <Box position="relative" width="100%">
+      {/* @ts-expect-error Chakra v3 accentColor InputProps spread type conflict */}
       <Input
-        {...(props as any)}
+        {...props}
         ref={ref}
         type={show ? 'text' : 'password'}
         pr="44px"

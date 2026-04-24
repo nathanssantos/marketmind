@@ -417,6 +417,8 @@ export const useChartStore = create<ChartState>((set) => ({
 
 ## 🧪 Testing Approach
 
+> **Browser automation for agents:** see [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md). Three layers — Playwright MCP (generic web), chart perf harness (`pnpm --filter @marketmind/electron test:perf`), Electron smoke (`pnpm --filter @marketmind/electron test:e2e:electron`). Renderer-only auth bypass via `VITE_E2E_BYPASS_AUTH=true`.
+
 ### Unit Tests (Frontend)
 
 ```typescript
@@ -573,6 +575,7 @@ describe('Wallet Router', () => {
 - **✅ Futures Auto-Trading**: User stream, liquidation monitoring, margin manager, max drawdown
 - **✅ Trailing Stop System**: v0.51.0+, volatility-based with ATR multiplier
 - **✅ Risk Management**: Real-time alerts, margin top-up, position sizing
+- **✅ Stream Resilience**: Watchdog + forced reconnect + synthesized klines from `@trade` when `@kline_*` degrades (covers Binance partial-outage scenarios) — `services/binance-kline-stream.ts`, `services/kline-synthesis.ts`
 - **✅ Integration Tests**: testcontainers with PostgreSQL + TimescaleDB
 - **✅ Strategy System**: 105 strategy JSON files in `strategies/builtin/`
 - **✅ Backtesting Infrastructure**: BacktestEngine, MultiWatcherBacktestEngine, 3 optimization scripts

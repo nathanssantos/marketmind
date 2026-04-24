@@ -59,7 +59,7 @@ export const ColorModeProvider = ({ children }: ColorModeProviderProps) => {
 
   const setMutation = trpc.preferences.set.useMutation({
     onSuccess: () => {
-      utils.preferences.getByCategory.invalidate({ category: 'ui' });
+      void utils.preferences.getByCategory.invalidate({ category: 'ui' });
     },
   });
 

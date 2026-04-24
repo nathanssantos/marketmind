@@ -133,7 +133,6 @@ export async function handleUntrackedReduceFill(
       })
       .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
 
-
     await db
       .update(wallets)
       .set({
@@ -248,8 +247,9 @@ export async function handleManualOrderFill(
     } catch { /* best-effort */ }
   }
 
+  const newExecutionId = generateEntityId();
   await db.insert(tradeExecutions).values({
-    id: generateEntityId(),
+    id: newExecutionId,
     userId: walletRow.userId,
     walletId,
     symbol,
@@ -265,5 +265,27 @@ export async function handleManualOrderFill(
     liquidationPrice: manualLiquidationPrice,
   });
 
-  logger.info({ symbol, orderId, direction, fillPrice, fillQty }, '[FuturesUserStream] Created tradeExecution for manual order fill');
+  binancePriceStreamService.invalidateExecutionCache(symbol);
+
+  const [insertedExec] = await db
+    .select()
+    .from(tradeExecutions)
+    .where(eq(tradeExecutions.id, newExecutionId))
+    .limit(1);
+
+  const wsService = getWebSocketService();
+  if (wsService && insertedExec) {
+    wsService.emitPositionUpdate(walletId, insertedExec);
+    wsService.emitOrderUpdate(walletId, {
+      id: insertedExec.id,
+      orderId: String(orderId),
+      symbol,
+      side: direction,
+      status: 'open',
+      entryPrice: fillPrice.toString(),
+      quantity: fillQty.toString(),
+    });
+  }
+
+  logger.info({ symbol, orderId, direction, fillPrice, fillQty, executionId: newExecutionId }, '[FuturesUserStream] Created tradeExecution for manual order fill + emitted WS');
 }

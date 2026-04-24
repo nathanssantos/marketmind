@@ -107,7 +107,7 @@ export const createWebUpdateAdapter = (): UpdateAdapter => ({
     addCallback(callbacks.available, callback);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
+      void navigator.serviceWorker.ready.then(registration => {
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {

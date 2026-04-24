@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type TradeExecution, type Wallet } from '../db/schema';
-import { calculatePnl } from '../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { cancelProtectionOrder } from './protection-orders';
 import { logger } from './logger';
 

@@ -1,194 +1,154 @@
 import { test, expect } from '@playwright/test';
+import { generateKlines } from './helpers/klineFixtures';
+import { installTrpcMock } from './helpers/trpcMock';
+import { waitForChartReady } from './helpers/chartTestSetup';
 
-test.describe('Wallet Management E2E', () => {
+interface MockWallet {
+  id: string;
+  name: string;
+  walletType: 'paper' | 'testnet' | 'live';
+  marketType: 'SPOT' | 'FUTURES';
+  currency: string;
+  exchange: string;
+  initialBalance: string;
+  currentBalance: string;
+  totalWalletBalance: string | null;
+  totalDeposits: string;
+  totalWithdrawals: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const makePaperWallet = (overrides: Partial<MockWallet> = {}): MockWallet => ({
+  id: `wallet_${Math.random().toString(36).slice(2, 10)}`,
+  name: 'Paper Trader',
+  walletType: 'paper',
+  marketType: 'FUTURES',
+  currency: 'USDT',
+  exchange: 'BINANCE',
+  initialBalance: '10000',
+  currentBalance: '10000',
+  totalWalletBalance: '10000',
+  totalDeposits: '0',
+  totalWithdrawals: '0',
+  isActive: true,
+  createdAt: '2026-04-01T00:00:00.000Z',
+  updatedAt: '2026-04-01T00:00:00.000Z',
+  ...overrides,
+});
+
+test.describe('Wallet Selector E2E', () => {
   test.beforeEach(async ({ page }) => {
+    const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
+    await installTrpcMock(page, {
+      klines,
+      overrides: { 'wallet.list': () => [] },
+    });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await waitForChartReady(page);
   });
 
-  test('should display wallet selector', async ({ page }) => {
-    const walletSelector = page.locator('[data-testid="wallet-selector"]');
-    if (await walletSelector.isVisible()) {
-      await expect(walletSelector).toBeVisible();
-    }
+  test('shows "No wallets created" placeholder with empty wallet list', async ({ page }) => {
+    await expect(page.getByText('No wallets created')).toBeVisible();
   });
 
-  test('should open wallet creation modal', async ({ page }) => {
-    const createWalletButton = page.locator('[data-testid="create-wallet-button"]');
-    if (await createWalletButton.isVisible()) {
-      await createWalletButton.click();
-
-      const walletModal = page.locator('[data-testid="wallet-modal"]');
-      await expect(walletModal).toBeVisible();
-
-      const walletNameInput = page.locator('[data-testid="wallet-name-input"]');
-      await expect(walletNameInput).toBeVisible();
-    }
-  });
-
-  test('should create a paper wallet', async ({ page }) => {
-    const createWalletButton = page.locator('[data-testid="create-wallet-button"]');
-    if (await createWalletButton.isVisible()) {
-      await createWalletButton.click();
-
-      const walletModal = page.locator('[data-testid="wallet-modal"]');
-      await expect(walletModal).toBeVisible();
-
-      const paperWalletOption = page.locator('[data-testid="wallet-type-paper"]');
-      if (await paperWalletOption.isVisible()) {
-        await paperWalletOption.click();
-      }
-
-      const walletNameInput = page.locator('[data-testid="wallet-name-input"]');
-      await walletNameInput.fill('E2E Test Wallet');
-
-      const initialBalanceInput = page.locator('[data-testid="initial-balance-input"]');
-      if (await initialBalanceInput.isVisible()) {
-        await initialBalanceInput.fill('10000');
-      }
-
-      const submitButton = page.locator('[data-testid="submit-wallet-button"]');
-      await submitButton.click();
-
-      await page.waitForTimeout(1000);
-
-      const successToast = page.locator('[data-testid="success-toast"]');
-      if (await successToast.isVisible({ timeout: 5000 })) {
-        await expect(successToast).toBeVisible();
-      }
-    }
-  });
-
-  test('should switch between wallets', async ({ page }) => {
-    const walletSelector = page.locator('[data-testid="wallet-selector"]');
-    if (await walletSelector.isVisible()) {
-      await walletSelector.click();
-
-      const walletOptions = page.locator('[data-testid^="wallet-option-"]');
-      const count = await walletOptions.count();
-
-      if (count > 1) {
-        await walletOptions.nth(1).click();
-        await page.waitForTimeout(500);
-      }
-    }
-  });
-
-  test('should display wallet balance', async ({ page }) => {
-    const walletBalance = page.locator('[data-testid="wallet-balance"]');
-    if (await walletBalance.isVisible()) {
-      await expect(walletBalance).toBeVisible();
-      const text = await walletBalance.textContent();
-      expect(text).toBeTruthy();
-    }
-  });
-
-  test('should display wallet details', async ({ page }) => {
-    const walletDetailsButton = page.locator('[data-testid="wallet-details-button"]');
-    if (await walletDetailsButton.isVisible()) {
-      await walletDetailsButton.click();
-
-      const walletDetails = page.locator('[data-testid="wallet-details-modal"]');
-      await expect(walletDetails).toBeVisible();
-
-      const walletType = page.locator('[data-testid="wallet-type"]');
-      await expect(walletType).toBeVisible();
-
-      const walletCreatedAt = page.locator('[data-testid="wallet-created-at"]');
-      await expect(walletCreatedAt).toBeVisible();
-    }
+  test('hides Active Wallet button when no wallets exist', async ({ page }) => {
+    const walletButton = page.getByRole('button', { name: 'Active Wallet' });
+    await expect(walletButton).toHaveCount(0);
   });
 });
 
-test.describe('Authentication Flow E2E', () => {
-  test('should display login form when not authenticated', async ({ page }) => {
-    await page.goto('/login');
-
-    const loginForm = page.locator('[data-testid="login-form"]');
-    if (await loginForm.isVisible()) {
-      const emailInput = page.locator('[data-testid="email-input"]');
-      const passwordInput = page.locator('[data-testid="password-input"]');
-
-      await expect(emailInput).toBeVisible();
-      await expect(passwordInput).toBeVisible();
-    }
+test.describe('Wallet Selector with existing wallet E2E', () => {
+  test.beforeEach(async ({ page }) => {
+    const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
+    await installTrpcMock(page, {
+      klines,
+      overrides: {
+        'wallet.list': () => [makePaperWallet({ name: 'E2E Paper Wallet' })],
+      },
+    });
+    await page.goto('/');
+    await waitForChartReady(page);
   });
 
-  test('should validate login form', async ({ page }) => {
-    await page.goto('/login');
-
-    const loginForm = page.locator('[data-testid="login-form"]');
-    if (await loginForm.isVisible()) {
-      const submitButton = page.locator('[data-testid="login-submit"]');
-      await submitButton.click();
-
-      const errorMessage = page.locator('[data-testid="validation-error"]');
-      if (await errorMessage.isVisible({ timeout: 3000 })) {
-        await expect(errorMessage).toBeVisible();
-      }
-    }
+  test('shows wallet name in selector button', async ({ page }) => {
+    const walletButton = page.getByRole('button', { name: 'Active Wallet' });
+    await expect(walletButton).toBeVisible();
+    await expect(walletButton).toContainText('E2E Paper Wallet');
   });
 
-  test('should navigate to registration', async ({ page }) => {
-    await page.goto('/login');
-
-    const registerLink = page.locator('[data-testid="register-link"]');
-    if (await registerLink.isVisible()) {
-      await registerLink.click();
-      await page.waitForURL('**/register');
-
-      const registerForm = page.locator('[data-testid="register-form"]');
-      if (await registerForm.isVisible()) {
-        await expect(registerForm).toBeVisible();
-      }
-    }
+  test('opens popover with Crypto section on click', async ({ page }) => {
+    await page.getByRole('button', { name: 'Active Wallet' }).click();
+    const popover = page.locator('[data-scope="popover"][data-part="content"]');
+    await expect(popover.getByText('Crypto', { exact: true })).toBeVisible();
+    await expect(popover.getByText('E2E Paper Wallet')).toBeVisible();
   });
 });
 
-test.describe('Settings E2E', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('Wallet Creation E2E', () => {
+  test('creates paper wallet via Settings → Wallets and it appears in selector', async ({ page }) => {
+    const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
+    const walletList: MockWallet[] = [];
+    await installTrpcMock(page, {
+      klines,
+      overrides: {
+        'wallet.list': () => [...walletList],
+        'wallet.createPaper': (input: unknown) => {
+          const { name, initialBalance, currency } =
+            input as { name: string; initialBalance?: string; currency?: string };
+          const wallet = makePaperWallet({
+            name,
+            initialBalance: initialBalance ?? '10000',
+            currentBalance: initialBalance ?? '10000',
+            currency: currency ?? 'USDT',
+          });
+          walletList.push(wallet);
+          return wallet;
+        },
+      },
+    });
+
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await waitForChartReady(page);
+
+    await page.getByRole('button', { name: 'Account' }).click();
+    await page.getByRole('menuitem', { name: 'Settings' }).click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('tab', { name: 'Wallets' }).click();
+
+    await page.getByRole('button', { name: 'Create Wallet', exact: true }).first().click();
+    await expect(page.getByText('Create New Wallet')).toBeVisible();
+
+    const nameInput = page.getByRole('textbox').filter({ hasText: '' }).first();
+    await nameInput.fill('E2E Created Wallet');
+
+    await page.getByRole('button', { name: 'Create Wallet', exact: true }).last().click();
+
+    await expect(page.getByText('E2E Created Wallet').first()).toBeVisible();
+    expect(walletList).toHaveLength(1);
+    expect(walletList[0]?.name).toBe('E2E Created Wallet');
+  });
+});
+
+test.describe('Authentication pages E2E', () => {
+  test('/login renders email, password, and submit controls', async ({ page }) => {
+    await installTrpcMock(page);
+    await page.goto('/login');
+
+    await expect(page.getByText('Sign In', { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole('textbox', { name: /email/i })).toBeVisible();
+    await expect(page.locator('input[type="password"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: /sign in|log in/i })).toBeVisible();
   });
 
-  test('should open settings modal', async ({ page }) => {
-    const settingsButton = page.locator('[data-testid="settings-button"]');
-    if (await settingsButton.isVisible()) {
-      await settingsButton.click();
+  test('clicking Create account navigates to /register', async ({ page }) => {
+    await installTrpcMock(page);
+    await page.goto('/login');
 
-      const settingsModal = page.locator('[data-testid="settings-modal"]');
-      await expect(settingsModal).toBeVisible();
-    }
-  });
-
-  test('should change theme', async ({ page }) => {
-    const settingsButton = page.locator('[data-testid="settings-button"]');
-    if (await settingsButton.isVisible()) {
-      await settingsButton.click();
-
-      const themeToggle = page.locator('[data-testid="theme-toggle"]');
-      if (await themeToggle.isVisible()) {
-        await themeToggle.click();
-        await page.waitForTimeout(500);
-      }
-    }
-  });
-
-  test('should change language', async ({ page }) => {
-    const settingsButton = page.locator('[data-testid="settings-button"]');
-    if (await settingsButton.isVisible()) {
-      await settingsButton.click();
-
-      const languageSelector = page.locator('[data-testid="language-selector"]');
-      if (await languageSelector.isVisible()) {
-        await languageSelector.click();
-
-        const ptOption = page.locator('[data-testid="language-option-pt"]');
-        if (await ptOption.isVisible()) {
-          await ptOption.click();
-          await page.waitForTimeout(500);
-        }
-      }
-    }
+    await page.getByRole('link', { name: /create account|sign up/i }).click();
+    await expect(page).toHaveURL(/\/register$/);
+    await expect(page.locator('input[type="email"]').first()).toBeVisible();
   });
 });

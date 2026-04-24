@@ -2,6 +2,7 @@ import type { Socket } from 'socket.io-client';
 import { io } from 'socket.io-client';
 import { BACKEND_URL } from '@shared/constants/api';
 import { useConnectionStore } from '../store/connectionStore';
+import { exposeSocketForE2E } from '../utils/e2eBridge';
 
 class SocketService {
   private socket: Socket | null = null;
@@ -40,6 +41,7 @@ class SocketService {
     });
 
     this.connectionCount = 1;
+    exposeSocketForE2E(this.socket);
     return this.socket;
   }
 
@@ -51,6 +53,7 @@ class SocketService {
       this.socket = null;
       this.connectionCount = 0;
       useConnectionStore.getState().setWsConnected(false);
+      exposeSocketForE2E(null);
     }
   }
 

@@ -1,5 +1,7 @@
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { usePriceStore } from '@renderer/store/priceStore';
 import { CHART_CONFIG } from '@shared/constants';
+import { getKlineClose } from '@shared/utils';
 import type { Kline, Viewport } from '@marketmind/types';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,6 +14,7 @@ const calculateVisibleKlines = (): number => CHART_CONFIG.INITIAL_KLINES_VISIBLE
 
 export interface UseChartCanvasProps {
   klines: Kline[];
+  symbol?: string;
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
   onNearLeftEdge?: () => void;
@@ -41,6 +44,7 @@ const DEFAULT_VIEWPORT: Viewport = {
 
 export const useChartCanvas = ({
   klines,
+  symbol,
   initialViewport = DEFAULT_VIEWPORT,
   onViewportChange,
   onNearLeftEdge,
@@ -257,21 +261,28 @@ export const useChartCanvas = ({
         wasAtEndRef.current = Math.abs(currentViewport.end - currentCount) < 1;
       }
 
+      if (symbol && currentCount > 0) {
+        const lastKline = klines[currentCount - 1]!;
+        const closePrice = getKlineClose(lastKline);
+        if (closePrice > 0) usePriceStore.getState().updatePrice(symbol, closePrice, 'chart');
+      }
+
       prevKlineCountRef.current = currentCount;
       prevFirstKlineTimestampRef.current = firstKlineTimestamp;
       prevLastKlineTimestampRef.current = klines[klines.length - 1]?.openTime ?? 0;
     }
-  }, [klines]);
-
-  useEffect(() => {
-    if (managerRef.current) {
-      managerRef.current.setViewport(viewport);
-    }
-  }, [viewport]);
+  }, [klines, symbol]);
 
   const updateViewport = useCallback(
     (newViewport: Viewport): void => {
       setViewport(newViewport);
+      onViewportChangeRef.current?.(newViewport);
+    },
+    [],
+  );
+
+  const notifyViewportChange = useCallback(
+    (newViewport: Viewport): void => {
       onViewportChangeRef.current?.(newViewport);
     },
     [],
@@ -357,7 +368,7 @@ export const useChartCanvas = ({
           
           if (timeSinceLastUpdate > VIEWPORT_UPDATE_THROTTLE_MS) {
             const newViewport = managerRef.current.getViewport();
-            updateViewport(newViewport);
+            notifyViewportChange(newViewport);
             wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
             lastViewportUpdateRef.current = now;
 
@@ -373,7 +384,7 @@ export const useChartCanvas = ({
       
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
     },
-    [isPanning, isPanningOnScale, updateViewport],
+    [isPanning, isPanningOnScale, notifyViewportChange],
   );
 
   const handleMouseUp = useCallback((): void => {

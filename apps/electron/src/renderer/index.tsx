@@ -5,6 +5,7 @@ import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom';
 import { createPlatformAdapter } from './adapters/factory';
 import type { PlatformAdapter } from './adapters/types';
 import App from './App';
+import { installE2EBridge } from './utils/e2eBridge';
 import { AuthGuard } from './components/Auth/AuthGuard';
 import { LanguageSyncProvider } from './components/LanguageSyncProvider';
 import { TrpcProvider } from './components/TrpcProvider';
@@ -47,6 +48,8 @@ const setupPerformanceCleanup = (): (() => void) => {
 
 const cleanupPerformance = setupPerformanceCleanup();
 
+installE2EBridge();
+
 const RouterComponent = ({ platform, children }: { platform: 'electron' | 'web'; children: React.ReactNode }) => {
   if (platform === 'web') {
     return <BrowserRouter>{children}</BrowserRouter>;
@@ -58,7 +61,7 @@ const Root = () => {
   const [adapter, setAdapter] = useState<PlatformAdapter | null>(null);
 
   useEffect(() => {
-    createPlatformAdapter().then(setAdapter);
+    void createPlatformAdapter().then(setAdapter);
   }, []);
 
   if (!adapter) {

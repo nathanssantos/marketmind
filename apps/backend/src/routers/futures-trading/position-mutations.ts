@@ -1,6 +1,6 @@
 import { calculateLiquidationPrice } from '@marketmind/types';
 
-import { calculatePnl } from '../../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';

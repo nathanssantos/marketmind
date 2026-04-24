@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPrice,
   roundToDecimals,
-  calculatePnl,
+  calculateGrossPnl,
   calculateNotional,
   formatNumberForBinance,
   formatQuantityForBinance,
@@ -10,7 +10,7 @@ import {
 } from '../formatters';
 
 describe('formatters', () => {
-  describe('formatPrice', () => {
+  describe('formatPrice (re-exported from @marketmind/utils)', () => {
     it('should format prices >= 1 to 2 decimal places', () => {
       expect(formatPrice(1)).toBe('1.00');
       expect(formatPrice(100.456)).toBe('100.46');
@@ -21,6 +21,12 @@ describe('formatters', () => {
       expect(formatPrice(0.5)).toBe('0.500000');
       expect(formatPrice(0.000123)).toBe('0.000123');
       expect(formatPrice(0.99)).toBe('0.990000');
+    });
+
+    it('should use fixed decimals when options.decimals is provided', () => {
+      expect(formatPrice(1234.5678, { decimals: 0 })).toBe('1235');
+      expect(formatPrice(1234.5678, { decimals: 3 })).toBe('1234.568');
+      expect(formatPrice(0.5, { decimals: 2 })).toBe('0.50');
     });
   });
 
@@ -41,26 +47,26 @@ describe('formatters', () => {
     });
   });
 
-  describe('calculatePnl', () => {
+  describe('calculateGrossPnl', () => {
     it('should calculate positive PnL for LONG with price increase', () => {
-      expect(calculatePnl(100, 110, 10, 'LONG')).toBeCloseTo(100, 5);
+      expect(calculateGrossPnl(100, 110, 10, 'LONG')).toBeCloseTo(100, 5);
     });
 
     it('should calculate negative PnL for LONG with price decrease', () => {
-      expect(calculatePnl(100, 90, 10, 'LONG')).toBeCloseTo(-100, 5);
+      expect(calculateGrossPnl(100, 90, 10, 'LONG')).toBeCloseTo(-100, 5);
     });
 
     it('should calculate positive PnL for SHORT with price decrease', () => {
-      expect(calculatePnl(100, 90, 10, 'SHORT')).toBeCloseTo(100, 5);
+      expect(calculateGrossPnl(100, 90, 10, 'SHORT')).toBeCloseTo(100, 5);
     });
 
     it('should calculate negative PnL for SHORT with price increase', () => {
-      expect(calculatePnl(100, 110, 10, 'SHORT')).toBeCloseTo(-100, 5);
+      expect(calculateGrossPnl(100, 110, 10, 'SHORT')).toBeCloseTo(-100, 5);
     });
 
     it('should return 0 when entry and exit prices are equal', () => {
-      expect(calculatePnl(100, 100, 10, 'LONG')).toBe(0);
-      expect(calculatePnl(100, 100, 10, 'SHORT')).toBe(-0);
+      expect(calculateGrossPnl(100, 100, 10, 'LONG')).toBe(0);
+      expect(calculateGrossPnl(100, 100, 10, 'SHORT')).toBe(-0);
     });
   });
 

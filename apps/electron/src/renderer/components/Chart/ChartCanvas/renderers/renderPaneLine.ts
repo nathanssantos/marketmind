@@ -1,14 +1,12 @@
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
 import {
-  applyPanelClip,
   createDynamicValueToY,
   createNormalizedValueToY,
   drawLineOnPanel,
-  drawPanelBackground,
   drawPanelValueTag,
   drawZoneFill,
   drawZoneLines,
-  calculateVisibleRange,
+  getCachedVisibleRange,
 } from '../../utils/oscillatorRendering';
 import { getOscillatorSetup } from '../../hooks/useOscillatorSetup';
 import type { GenericRenderer } from './types';
@@ -39,7 +37,7 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
         return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, valueRange.min, valueRange.max, flipped);
       })()
     : (() => {
-        const range = calculateVisibleRange(series, visibleStart, visibleEnd);
+        const range = getCachedVisibleRange(ctx.manager, series, visibleStart, visibleEnd);
         if (!range.hasData) return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, 0, 1, flipped);
         return createDynamicValueToY(panelTop, panelHeight, CHART_CONFIG.PANEL_PADDING, range.min, range.max, flipped);
       })();
@@ -47,11 +45,7 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
   const color = PANE_LINE_COLORS[paneId]
     ?? getInstanceParam<string>(input.instance, input.definition, 'color')
     ?? DEFAULT_LINE_COLOR;
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
-
-  canvasCtx.save();
-  applyPanelClip({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
-  drawPanelBackground({ ctx: canvasCtx, panelY: panelTop, panelHeight, chartWidth });
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH);
 
   const oversold = input.definition.defaultThresholds?.oversold;
   const overbought = input.definition.defaultThresholds?.overbought;
@@ -63,7 +57,6 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
   }
 
   drawLineOnPanel(canvasCtx, series, visibleStart, visibleEnd, indexToX, valueToY, color, lineWidth);
-  canvasCtx.restore();
 
   drawPanelValueTag(canvasCtx, series, visibleStart, visibleEnd, valueToY, chartWidth, color);
 };

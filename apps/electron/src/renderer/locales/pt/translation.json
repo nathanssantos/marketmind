@@ -619,6 +619,10 @@
     }
   },
   "chart": {
+    "streamHealth": {
+      "degradedTitle": "Stream da corretora degradado",
+      "degradedDescription": "Sem atualizações da corretora — reconectando automaticamente."
+    },
     "controls": {
       "title": "Controles do Gráfico",
       "timeframe": "Período",

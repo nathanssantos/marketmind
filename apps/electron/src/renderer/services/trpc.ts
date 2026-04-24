@@ -1,5 +1,6 @@
 import type { AppRouter } from '@marketmind/backend';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { BACKEND_TRPC_URL } from '@shared/constants/api';
 
 export const trpc = createTRPCClient<AppRouter>({
@@ -15,3 +16,6 @@ export const trpc = createTRPCClient<AppRouter>({
     }),
   ],
 });
+
+export type RouterInputs = inferRouterInputs<AppRouter>;
+export type RouterOutputs = inferRouterOutputs<AppRouter>;

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { QUERY_CONFIG } from '@shared/constants';
+import { IS_E2E_BYPASS_AUTH, QUERY_CONFIG, SYNTHETIC_E2E_USER } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 
 export const useBackendAuth = () => {
@@ -14,10 +14,14 @@ export const useBackendAuth = () => {
   const resendTwoFactorMutation = trpc.auth.resendTwoFactorCode.useMutation();
   const toggleTwoFactorMutation = trpc.auth.toggleTwoFactor.useMutation();
 
-  const { data: currentUser, isLoading, refetch } = trpc.auth.me.useQuery(undefined, {
+  const { data: realUser, isLoading: realIsLoading, refetch } = trpc.auth.me.useQuery(undefined, {
     retry: false,
     staleTime: QUERY_CONFIG.STALE_TIME.LONG,
+    enabled: !IS_E2E_BYPASS_AUTH,
   });
+
+  const currentUser = IS_E2E_BYPASS_AUTH ? SYNTHETIC_E2E_USER : realUser;
+  const isLoading = IS_E2E_BYPASS_AUTH ? false : realIsLoading;
 
   const login = useCallback(
     async (email: string, password: string, rememberMe = false) => {

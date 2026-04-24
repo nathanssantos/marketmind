@@ -110,7 +110,7 @@ export const AccountDialog = ({ isOpen, onClose }: AccountDialogProps) => {
                   </VStack>
                   <Switch
                     checked={currentUser?.twoFactorEnabled ?? false}
-                    onCheckedChange={handleToggle2FA}
+                    onCheckedChange={(checked) => { void handleToggle2FA(checked); }}
                     disabled={!currentUser?.emailVerified || isTogglingTwoFactor}
                   />
                 </Flex>

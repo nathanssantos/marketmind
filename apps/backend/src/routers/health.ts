@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { publicProcedure, router } from '../trpc';
+import { binanceKlineStreamService, binanceFuturesKlineStreamService } from '../services/binance-kline-stream';
+import { klineSynthesisService } from '../services/kline-synthesis';
+import { binanceFuturesUserStreamService } from '../services/binance-futures-user-stream';
 
 export const healthRouter = router({
   check: publicProcedure.query(() => ({
@@ -14,4 +17,25 @@ export const healthRouter = router({
       pong: true,
       echo: input.message || 'No message provided',
     })),
+
+  streams: publicProcedure.query(() => {
+    const spotKlineSubs = binanceKlineStreamService.getActiveSubscriptions();
+    const futuresKlineSubs = binanceFuturesKlineStreamService.getActiveSubscriptions();
+    const synthesisActive = klineSynthesisService.getActiveCount();
+    const userStreamWallets = binanceFuturesUserStreamService.getHealthSnapshot();
+
+    return {
+      timestamp: new Date().toISOString(),
+      kline: {
+        spot: spotKlineSubs,
+        futures: futuresKlineSubs,
+      },
+      klineSynthesis: {
+        activeCombinations: synthesisActive,
+      },
+      userStream: {
+        wallets: userStreamWallets,
+      },
+    };
+  }),
 });

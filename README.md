@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.97.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.98.1-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-7,500%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -48,6 +48,11 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 - **Trend Filter**: EMA-based trend detection (optional counter-trend blocking)
 - **Setup Cooldown**: Prevents duplicate detections
 - **Real-time Monitoring**: WebSocket live updates from Binance
+
+#### Exchange Stream Resilience
+- **Watchdog + Forced Reconnect**: Detects silent Binance WS stream degradation (frame silence > 60s) and forces reconnect per subscription
+- **Synthesized Klines**: When aggregated streams (`@kline`, `@aggTrade`, `@markPrice`) stop emitting but `@trade` stays alive, constructs OHLCV candles in real time from trade ticks so the chart never freezes during partial outages
+- **Degradation Indicator**: Pulsing dot in each chart's header panel shows when its stream is degraded, with tooltip explaining the status; hides automatically on recovery
 
 #### Backtesting Engine
 - **Historical Testing**: Test strategies on historical data
@@ -171,12 +176,26 @@ pnpm --filter @marketmind/backend test
 
 # Run with coverage report
 pnpm --filter @marketmind/electron test:coverage
+
+# Run renderer browser tests only (Playwright-backed vitest)
+pnpm --filter @marketmind/electron test:browser:run
+
+# Chart perf regression harness (Playwright)
+pnpm --filter @marketmind/electron test:perf           # run the perf suite
+pnpm --filter @marketmind/electron test:perf:diagnose  # + top-5 bottleneck dump
+
+# Electron IPC / preload / packaged-boot smoke
+pnpm --filter @marketmind/electron test:e2e:electron
 ```
 
+See [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md) for the full layered-testing picture (Playwright MCP, chart perf harness, Electron smoke) and [`apps/electron/e2e/perf/README.md`](apps/electron/e2e/perf/README.md) for the perf-specific workflow.
+
 **Test Stats:**
-- **~7,500+ tests** across the monorepo
-- **5,129 backend tests** + 40 skipped (IB integration)
-- **2,368 frontend tests** (2,341 unit + 27 browser)
+- **~7,600+ tests** across the monorepo
+- **5,129 backend tests** + 40 skipped (IB integration) — now includes a golden-output snapshot per builtin strategy (106 snapshots)
+- **2,400+ frontend tests** (2,341 unit + 92 browser across 6 files)
+- **Browser tests** (`apps/electron/src/**/*.browser.test.ts(x)`) cover Canvas pixel math, `getBoundingClientRect` hit-testing, and `CanvasManager` mount/unmount lifecycle — surfaces jsdom can't exercise. Run via `pnpm --filter @marketmind/electron test:browser:run`
+- **CI** runs lint, unit tests (with coverage artifact), browser tests, E2E, and backend build on every PR
 - All type checks passing
 
 ## Production Build

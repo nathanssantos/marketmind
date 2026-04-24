@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { autoTradingConfig, tradeExecutions, wallets } from '../db/schema';
-import { calculatePnl } from '../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { serializeError } from '../utils/errors';
 import { emitPositionClose } from './income-events';
 import { logger } from './logger';

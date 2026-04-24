@@ -65,15 +65,19 @@ vi.mock('../../scalping/position-event-bus', () => ({
   })),
 }));
 
-vi.mock('../../../utils/pnl-calculator', () => ({
-  calculatePnl: vi.fn(() => ({
-    grossPnl: 100,
-    totalFees: 2,
-    netPnl: 98,
-    pnlPercent: 4.9,
-    marginValue: 2000,
-  })),
-}));
+vi.mock('@marketmind/utils', async () => {
+  const actual = await vi.importActual<typeof import('@marketmind/utils')>('@marketmind/utils');
+  return {
+    ...actual,
+    calculatePnl: vi.fn(() => ({
+      grossPnl: 100,
+      totalFees: 2,
+      netPnl: 98,
+      pnlPercent: 4.9,
+      marginValue: 2000,
+    })),
+  };
+});
 
 import { handleExitFill } from '../handle-exit-fill';
 import type { UserStreamContext } from '../types';

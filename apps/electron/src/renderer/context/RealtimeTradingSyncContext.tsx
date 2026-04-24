@@ -75,6 +75,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
   const currentWalletIdRef = useRef<string | undefined>(undefined);
+  const hasDisconnectedRef = useRef<boolean>(false);
   const pendingPriceUpdates = useRef(new Map<string, number>());
   const priceFlushScheduled = useRef(false);
 
@@ -95,10 +96,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     const symbols = new Set<string>();
 
     for (const exec of (tradeExecutions ?? []))
-      if (exec.status === 'open' || exec.status === 'pending') symbols.add(exec.symbol);
+      {if (exec.status === 'open' || exec.status === 'pending') symbols.add(exec.symbol);}
 
     for (const order of (orders ?? []))
-      if (order.status === 'NEW' || order.status === 'PARTIALLY_FILLED') symbols.add(order.symbol);
+      {if (order.status === 'NEW' || order.status === 'PARTIALLY_FILLED') symbols.add(order.symbol);}
 
     const newKey = [...symbols].sort().join(',');
     const oldKey = [...stableSymbolsRef.current].sort().join(',');
@@ -118,19 +119,19 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     flushTimeoutRef.current = null;
 
     if (keys.has('positions')) {
-      utils.trading.getTradeExecutions.invalidate();
-      utils.trading.getPositions.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.autoTrading.getExecutionHistory.invalidate();
+      void utils.trading.getTradeExecutions.invalidate();
+      void utils.trading.getPositions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.autoTrading.getExecutionHistory.invalidate();
     }
-    if (keys.has('orders')) utils.trading.getOrders.invalidate();
+    if (keys.has('orders')) void utils.trading.getOrders.invalidate();
     if (keys.has('wallet')) {
-      utils.wallet.list.invalidate();
-      utils.analytics.getPerformance.invalidate();
-      utils.analytics.getDailyPerformance.invalidate();
+      void utils.wallet.list.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.analytics.getDailyPerformance.invalidate();
     }
-    if (keys.has('setupStats')) utils.analytics.getSetupStats.invalidate();
-    if (keys.has('equityCurve')) utils.analytics.getEquityCurve.invalidate();
+    if (keys.has('setupStats')) void utils.analytics.getSetupStats.invalidate();
+    if (keys.has('equityCurve')) void utils.analytics.getEquityCurve.invalidate();
   }, [utils]);
 
   const scheduleInvalidation = useCallback((...keys: string[]) => {
@@ -204,10 +205,17 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     const handleConnect = () => {
       if (import.meta.env.DEV) console.log('[RealtimeSync] WebSocket connected');
       subscribeAll();
+
+      if (hasDisconnectedRef.current) {
+        hasDisconnectedRef.current = false;
+        if (import.meta.env.DEV) console.log('[RealtimeSync] Reconnected after disconnect — forcing full trading-query refetch');
+        scheduleRef.current('positions', 'orders', 'wallet', 'setupStats', 'equityCurve');
+      }
     };
 
     const handleDisconnect = (reason: string) => {
       if (import.meta.env.DEV) console.log('[RealtimeSync] WebSocket disconnected:', reason);
+      hasDisconnectedRef.current = true;
     };
 
     const handleConnectError = (err: Error) => {

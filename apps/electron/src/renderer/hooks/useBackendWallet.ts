@@ -13,40 +13,40 @@ export const useBackendWallet = () => {
 
   const createMutation = trpc.wallet.create.useMutation({
     onSuccess: () => {
-      utils.wallet.list.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
   const createPaperMutation = trpc.wallet.createPaper.useMutation({
     onSuccess: () => {
-      utils.wallet.list.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
   const updateMutation = trpc.wallet.update.useMutation({
     onSuccess: () => {
-      utils.wallet.list.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
   const deleteMutation = trpc.wallet.delete.useMutation({
     onSuccess: () => {
-      utils.wallet.list.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
   const syncBalanceMutation = trpc.wallet.syncBalance.useMutation({
     onSuccess: () => {
-      utils.wallet.list.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.futuresTrading.getPositions.invalidate();
+      void utils.wallet.list.invalidate();
+      void utils.trading.getTradeExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
     },
   });
 
   const syncTransfersMutation = trpc.wallet.syncTransfers.useMutation({
     onSuccess: () => {
-      utils.wallet.list.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 

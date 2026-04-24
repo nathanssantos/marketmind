@@ -213,6 +213,78 @@ describe('BinanceKlineStreamService', () => {
       expect(() => messageHandler({ e: 'trade' })).not.toThrow();
     });
   });
+
+  describe('stream health watchdog', () => {
+    it('marks subscription degraded and emits stream:health after 60s silence', async () => {
+      vi.useFakeTimers();
+      const emitStreamHealth = vi.fn();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
+        emitKlineUpdate: vi.fn(),
+        emitStreamHealth,
+      });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+
+      vi.advanceTimersByTime(61_000);
+      vi.advanceTimersByTime(15_000);
+
+      expect(emitStreamHealth).toHaveBeenCalledWith(expect.objectContaining({
+        symbol: 'BTCUSDT',
+        interval: '1m',
+        marketType: 'SPOT',
+        status: 'degraded',
+      }));
+      expect(mockCloseAll).toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it('emits healthy when a degraded subscription sees a fresh lastMessageAt', async () => {
+      vi.useFakeTimers();
+      const emitStreamHealth = vi.fn();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
+        emitKlineUpdate: vi.fn(),
+        emitStreamHealth,
+      });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+
+      const subsMap = (service as unknown as { subscriptions: Map<string, { lastMessageAt: number; healthStatus: string }> }).subscriptions;
+      const sub = subsMap.get('btcusdt_1m')!;
+      sub.healthStatus = 'degraded';
+      sub.lastMessageAt = Date.now();
+
+      vi.advanceTimersByTime(15_000);
+
+      const healthyCalls = emitStreamHealth.mock.calls.filter(c => c[0].status === 'healthy');
+      expect(healthyCalls.length).toBeGreaterThan(0);
+
+      vi.useRealTimers();
+    });
+
+    it('stops the watchdog on stop()', async () => {
+      vi.useFakeTimers();
+      const emitStreamHealth = vi.fn();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
+        emitKlineUpdate: vi.fn(),
+        emitStreamHealth,
+      });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+      service.stop();
+
+      vi.advanceTimersByTime(120_000);
+      expect(emitStreamHealth).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+  });
 });
 
 describe('BinanceFuturesKlineStreamService', () => {
@@ -329,6 +401,110 @@ describe('BinanceFuturesKlineStreamService', () => {
       };
 
       expect(() => messageHandler(klineMessage)).not.toThrow();
+    });
+  });
+
+  describe('stream health watchdog', () => {
+    it('marks futures subscription degraded and forces reconnect after silence', async () => {
+      vi.useFakeTimers();
+      const emitStreamHealth = vi.fn();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
+        emitKlineUpdate: vi.fn(),
+        emitStreamHealth,
+      });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+
+      vi.advanceTimersByTime(61_000);
+      vi.advanceTimersByTime(15_000);
+
+      expect(emitStreamHealth).toHaveBeenCalledWith(expect.objectContaining({
+        symbol: 'BTCUSDT',
+        interval: '1m',
+        marketType: 'FUTURES',
+        status: 'degraded',
+      }));
+      expect(mockCloseAll).toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it('synthesized kline:update emits never trigger a false stream:health=healthy on the native stream', async () => {
+      vi.useFakeTimers();
+      const emitStreamHealth = vi.fn();
+      const emitKlineUpdate = vi.fn();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
+        emitKlineUpdate,
+        emitStreamHealth,
+      });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+
+      vi.advanceTimersByTime(61_000);
+      vi.advanceTimersByTime(15_000);
+
+      const degradedCount = emitStreamHealth.mock.calls.filter((c) => c[0].status === 'degraded').length;
+      expect(degradedCount).toBeGreaterThan(0);
+
+      for (let i = 0; i < 10; i++) {
+        getWebSocketService()?.emitKlineUpdate?.({
+          symbol: 'BTCUSDT', interval: '1m',
+          openTime: Date.now(), closeTime: Date.now() + 59_999,
+          open: '50000', high: '50500', low: '49500', close: '50200',
+          volume: '10', isClosed: false, timestamp: Date.now(),
+        });
+        vi.advanceTimersByTime(1_000);
+      }
+
+      const healthyEmits = emitStreamHealth.mock.calls.filter((c) => c[0].status === 'healthy');
+      expect(healthyEmits.length).toBe(0);
+
+      vi.useRealTimers();
+    });
+
+    it('new subscription inherits degraded state when market is currently degraded', async () => {
+      const emitStreamHealth = vi.fn();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
+        emitKlineUpdate: vi.fn(),
+        emitStreamHealth,
+      });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+
+      const subsMap = (service as unknown as { subscriptions: Map<string, { healthStatus: string }> }).subscriptions;
+      const btcSub = subsMap.get('btcusdt_1m');
+      expect(btcSub).toBeDefined();
+      btcSub!.healthStatus = 'degraded';
+
+      emitStreamHealth.mockClear();
+
+      service.subscribe('ETHUSDT', '1m');
+
+      const ethDegradedEmit = emitStreamHealth.mock.calls.find(
+        (c) => c[0].symbol === 'ETHUSDT' && c[0].status === 'degraded',
+      );
+      expect(ethDegradedEmit).toBeDefined();
+
+      const ethSub = subsMap.get('ethusdt_1m');
+      expect(ethSub?.healthStatus).toBe('degraded');
+    });
+
+    it('new subscription starts healthy when no existing subs are degraded', () => {
+      const emitStreamHealth = vi.fn();
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+      service.subscribe('ETHUSDT', '1m');
+
+      const subsMap = (service as unknown as { subscriptions: Map<string, { healthStatus: string }> }).subscriptions;
+      expect(subsMap.get('btcusdt_1m')?.healthStatus).toBe('healthy');
+      expect(subsMap.get('ethusdt_1m')?.healthStatus).toBe('healthy');
+      expect(emitStreamHealth).not.toHaveBeenCalled();
     });
   });
 });

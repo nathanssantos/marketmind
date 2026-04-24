@@ -44,7 +44,7 @@ export const TwoFactorPage = () => {
     e.preventDefault();
     try {
       await verifyTwoFactor(userId, code, rememberMe);
-      navigate('/');
+      void navigate('/');
     } catch {
       // Error handled by twoFactorError
     }
@@ -68,7 +68,7 @@ export const TwoFactorPage = () => {
 
   return (
     <AuthLayout title={t('auth.twoFactor.title')} subtitle={t('auth.twoFactor.subtitle')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
             <Alert.Root status="error" size="sm">
@@ -112,7 +112,7 @@ export const TwoFactorPage = () => {
             variant="ghost"
             size="sm"
             width="full"
-            onClick={handleResend}
+            onClick={() => { void handleResend(); }}
             loading={isResendingTwoFactor}
           >
             {t('auth.twoFactor.resend')}

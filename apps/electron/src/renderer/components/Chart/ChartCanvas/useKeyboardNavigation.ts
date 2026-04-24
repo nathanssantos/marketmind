@@ -88,7 +88,7 @@ export const useKeyboardNavigation = ({
         onViewportChangeRef.current?.();
         break;
 
-      case 'End':
+      case 'End': {
         event.preventDefault();
         const endViewport = manager.getViewport();
         const endVisibleRange = endViewport.end - endViewport.start;
@@ -102,6 +102,7 @@ export const useKeyboardNavigation = ({
           onViewportChangeRef.current?.();
         }
         break;
+      }
 
       default:
         break;

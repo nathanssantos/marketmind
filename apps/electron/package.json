@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "0.97.2",
+  "version": "0.98.1",
   "description": "MarketMind Electron Desktop App",
   "keywords": [
     "trading",
@@ -53,8 +53,13 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:visual": "playwright test --project=visual-regression",
-    "test:visual:update": "playwright test --project=visual-regression --update-snapshots",
+    "test:visual": "playwright test --project=visual-regression --workers=1",
+    "test:visual:update": "playwright test --project=visual-regression --update-snapshots --workers=1",
+    "test:perf": "playwright test --project=perf --reporter=list",
+    "test:perf:diagnose": "PERF_DIAGNOSE=1 playwright test --project=perf --reporter=list",
+    "test:perf:update": "tsx ../../scripts/perf/update-baseline.ts",
+    "build:main": "VITE_TARGET=electron vite build",
+    "test:e2e:electron": "pnpm build:main && playwright test --project=electron --reporter=list",
     "clear-storage": "node ../../scripts/clear-storage.mjs",
     "clean": "rm -rf dist dist-web dist-electron node_modules"
   },
@@ -68,6 +73,7 @@
     "@tanstack/react-query": "^5.90.12",
     "@trpc/client": "^11.7.2",
     "@trpc/react-query": "^11.7.2",
+    "@trpc/server": "^11.7.2",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "electron-log": "^5.4.3",
@@ -93,6 +99,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -120,7 +127,7 @@
     "fast-check": "^4.5.3",
     "happy-dom": "^20.0.11",
     "jsdom": "^27.3.0",
-    "playwright": "^1.57.0",
+    "playwright": "^1.59.1",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",

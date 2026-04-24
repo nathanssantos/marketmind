@@ -36,11 +36,11 @@ export const UpdateNotification = () => {
   };
 
   const handleDownload = () => {
-    downloadUpdate();
+    void downloadUpdate();
   };
 
   const handleInstall = () => {
-    installUpdate();
+    void installUpdate();
   };
 
   const handleDismiss = () => {

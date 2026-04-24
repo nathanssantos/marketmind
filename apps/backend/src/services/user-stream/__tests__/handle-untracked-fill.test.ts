@@ -54,10 +54,12 @@ vi.mock('../../binance-price-stream', () => ({
 
 const mockEmitPositionUpdate = vi.fn();
 const mockEmitPositionClosed = vi.fn();
+const mockEmitOrderUpdate = vi.fn();
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
     emitPositionClosed: mockEmitPositionClosed,
+    emitOrderUpdate: mockEmitOrderUpdate,
   })),
 }));
 
@@ -284,8 +286,17 @@ describe('handleManualOrderFill', () => {
     expect(mockDbInsert).not.toHaveBeenCalled();
   });
 
-  it('should create trade execution for manual order fill', async () => {
+  it('should create trade execution for manual order fill and emit WS events', async () => {
     const manualOrder = { walletId: 'wallet-1', orderId: '12345', type: 'MARKET', origQty: '0.1' };
+    const insertedExec = {
+      id: 'generated-id',
+      walletId: 'wallet-1',
+      symbol: 'BTCUSDT',
+      side: 'LONG',
+      status: 'open',
+      entryPrice: '50000',
+      quantity: '0.1',
+    };
     let selectCallCount = 0;
     mockDbSelect.mockImplementation(() => ({
       from: vi.fn().mockReturnValue({
@@ -293,7 +304,8 @@ describe('handleManualOrderFill', () => {
           limit: vi.fn().mockImplementation(() => {
             selectCallCount++;
             if (selectCallCount === 1) return Promise.resolve([manualOrder]);
-            return Promise.resolve([]);
+            if (selectCallCount === 2) return Promise.resolve([]);
+            return Promise.resolve([insertedExec]);
           }),
         }),
       }),
@@ -306,6 +318,15 @@ describe('handleManualOrderFill', () => {
     );
 
     expect(mockDbInsert).toHaveBeenCalled();
+    expect(mockInvalidateExecutionCache).toHaveBeenCalledWith('BTCUSDT');
+    expect(mockEmitPositionUpdate).toHaveBeenCalledWith('wallet-1', insertedExec);
+    expect(mockEmitOrderUpdate).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
+      id: 'generated-id',
+      orderId: '12345',
+      symbol: 'BTCUSDT',
+      side: 'LONG',
+      status: 'open',
+    }));
   });
 
   it('should skip execution creation when opposite position exists', async () => {

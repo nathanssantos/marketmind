@@ -5,6 +5,7 @@ import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useToast } from '@renderer/hooks/useToast';
 import { useTrailingStopPlacementStore } from '@renderer/store/trailingStopPlacementStore';
 import { trpc } from '@renderer/utils/trpc';
+import type { TimeInterval } from '@marketmind/types';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCrosshair, LuShield } from 'react-icons/lu';
@@ -106,14 +107,14 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
             ? parseFloat(walletConfig.trailingDistancePercentShort)
             : 0.3,
         useAdaptiveTrailing: symbolConfig.useAdaptiveTrailing ?? walletConfig?.useAdaptiveTrailing ?? true,
-        trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+        trailingDistanceMode: (symbolConfig.trailingDistanceMode ?? walletConfig?.trailingDistanceMode ?? 'fixed'),
         trailingStopOffsetPercent: symbolConfig.trailingStopOffsetPercent
           ? parseFloat(symbolConfig.trailingStopOffsetPercent)
           : walletConfig?.trailingStopOffsetPercent
             ? parseFloat(walletConfig.trailingStopOffsetPercent)
             : 0,
-        activationModeLong: (symbolConfig.trailingActivationModeLong ?? walletConfig?.trailingActivationModeLong ?? 'auto') as 'auto' | 'manual',
-        activationModeShort: (symbolConfig.trailingActivationModeShort ?? walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
+        activationModeLong: (symbolConfig.trailingActivationModeLong ?? walletConfig?.trailingActivationModeLong ?? 'auto'),
+        activationModeShort: (symbolConfig.trailingActivationModeShort ?? walletConfig?.trailingActivationModeShort ?? 'auto'),
         manualTrailingActivatedLong: symbolConfig.manualTrailingActivatedLong ?? false,
         manualTrailingActivatedShort: symbolConfig.manualTrailingActivatedShort ?? false,
         indicatorInterval: symbolConfig.indicatorInterval ?? walletConfig?.trailingStopIndicatorInterval ?? '30m',
@@ -135,12 +136,12 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
         ? parseFloat(walletConfig.trailingDistancePercentShort)
         : 0.3,
       useAdaptiveTrailing: walletConfig?.useAdaptiveTrailing ?? true,
-      trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed') as 'auto' | 'fixed',
+      trailingDistanceMode: (walletConfig?.trailingDistanceMode ?? 'fixed'),
       trailingStopOffsetPercent: walletConfig?.trailingStopOffsetPercent
         ? parseFloat(walletConfig.trailingStopOffsetPercent)
         : 0,
-      activationModeLong: (walletConfig?.trailingActivationModeLong ?? 'auto') as 'auto' | 'manual',
-      activationModeShort: (walletConfig?.trailingActivationModeShort ?? 'auto') as 'auto' | 'manual',
+      activationModeLong: (walletConfig?.trailingActivationModeLong ?? 'auto'),
+      activationModeShort: (walletConfig?.trailingActivationModeShort ?? 'auto'),
       manualTrailingActivatedLong: false,
       manualTrailingActivatedShort: false,
       indicatorInterval: walletConfig?.trailingStopIndicatorInterval ?? '30m',
@@ -264,7 +265,7 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
               onTrailingDistancePercentLongChange={(value) => debouncedUpdate({ trailingDistancePercentLong: value.toString() })}
               trailingDistancePercentShort={effectiveValues.trailingDistancePercentShort}
               onTrailingDistancePercentShortChange={(value) => debouncedUpdate({ trailingDistancePercentShort: value.toString() })}
-              indicatorInterval={effectiveValues.indicatorInterval as import('@marketmind/types').TimeInterval}
+              indicatorInterval={effectiveValues.indicatorInterval as TimeInterval}
               onIndicatorIntervalChange={(interval) => debouncedUpdate({ indicatorInterval: interval })}
               useAdaptiveTrailing={effectiveValues.useAdaptiveTrailing}
               onUseAdaptiveTrailingChange={(enabled) => debouncedUpdate({ useAdaptiveTrailing: enabled })}

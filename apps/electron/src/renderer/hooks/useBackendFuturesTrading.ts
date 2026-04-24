@@ -44,14 +44,14 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const setLeverageMutation = trpc.futuresTrading.setLeverage.useMutation({
     onSuccess: () => {
 
-      utils.futuresTrading.getPositions.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
     },
   });
 
   const setMarginTypeMutation = trpc.futuresTrading.setMarginType.useMutation({
     onSuccess: () => {
 
-      utils.futuresTrading.getPositions.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
     },
   });
 
@@ -64,14 +64,14 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
           data.openExecutions,
         );
       } else {
-        utils.trading.getTradeExecutions.invalidate();
+        void utils.trading.getTradeExecutions.invalidate();
       }
-      utils.futuresTrading.getOpenOrders.invalidate();
-      utils.futuresTrading.getOpenDbOrderIds.invalidate();
-      utils.futuresTrading.getPositions.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.analytics.getPerformance.invalidate();
-      utils.wallet.list.invalidate();
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -84,23 +84,23 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
           data.openExecutions,
         );
       } else {
-        utils.trading.getTradeExecutions.invalidate();
+        void utils.trading.getTradeExecutions.invalidate();
       }
-      utils.futuresTrading.getOpenOrders.invalidate();
-      utils.futuresTrading.getOpenDbOrderIds.invalidate();
-      utils.trading.getOrders.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.analytics.getPerformance.invalidate();
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
+      void utils.trading.getOrders.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.analytics.getPerformance.invalidate();
     },
   });
 
   const createPositionMutation = trpc.futuresTrading.createPosition.useMutation({
     onSuccess: () => {
-      utils.futuresTrading.getPositions.invalidate();
-      utils.trading.getTradeExecutions.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.analytics.getPerformance.invalidate();
-      utils.wallet.list.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
+      void utils.trading.getTradeExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -113,13 +113,13 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
           data.openExecutions,
         );
       } else {
-        utils.trading.getTradeExecutions.invalidate();
+        void utils.trading.getTradeExecutions.invalidate();
       }
-      utils.futuresTrading.getPositions.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.analytics.getPerformance.invalidate();
-      utils.analytics.getDailyPerformance.invalidate();
-      utils.wallet.list.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.analytics.getDailyPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -132,13 +132,13 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
           data.openExecutions,
         );
       } else {
-        utils.trading.getTradeExecutions.invalidate();
+        void utils.trading.getTradeExecutions.invalidate();
       }
-      utils.futuresTrading.getPositions.invalidate();
-      utils.futuresTrading.getOpenOrders.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.analytics.getPerformance.invalidate();
-      utils.wallet.list.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -210,8 +210,8 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const cancelAllOrdersMutation = trpc.futuresTrading.cancelAllOrders.useMutation({
     onSuccess: () => {
-      utils.futuresTrading.getOpenOrders.invalidate();
-      utils.trading.getOrders.invalidate();
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.trading.getOrders.invalidate();
     },
   });
 
@@ -224,14 +224,14 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
           data.openExecutions,
         );
       } else {
-        utils.trading.getTradeExecutions.invalidate();
+        void utils.trading.getTradeExecutions.invalidate();
       }
-      utils.futuresTrading.getPositions.invalidate();
-      utils.futuresTrading.getOpenOrders.invalidate();
-      utils.autoTrading.getActiveExecutions.invalidate();
-      utils.analytics.getPerformance.invalidate();
-      utils.analytics.getDailyPerformance.invalidate();
-      utils.wallet.list.invalidate();
+      void utils.futuresTrading.getPositions.invalidate();
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.analytics.getDailyPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 

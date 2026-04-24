@@ -87,7 +87,7 @@ export const useIncrementalIndicator = <T>(
   return useMemo(() => {
     const paramsChecksum = JSON.stringify(params);
 
-    if (!stateRef.current || stateRef.current.checksum !== paramsChecksum) {
+    if (stateRef.current?.checksum !== paramsChecksum) {
       const result = fullCalculator(klines);
       stateRef.current = {
         checksum: paramsChecksum,

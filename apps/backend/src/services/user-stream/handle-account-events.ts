@@ -145,8 +145,15 @@ export function handleConfigUpdate(
           eq(tradeExecutions.marketType, 'FUTURES')
         )
       )
-      .then((result) => {
-        logger.info({ walletId, symbol, newLeverage, rowsUpdated: result.rowCount }, '[FuturesUserStream] Updated leverage on open executions');
+      .returning()
+      .then((updatedRows) => {
+        logger.info({ walletId, symbol, newLeverage, rowsUpdated: updatedRows.length }, '[FuturesUserStream] Updated leverage on open executions');
+        const wsService = getWebSocketService();
+        if (wsService) {
+          for (const row of updatedRows) {
+            wsService.emitPositionUpdate(walletId, row);
+          }
+        }
       })
       .catch((err) => {
         logger.error({ walletId, symbol, error: serializeError(err) }, '[FuturesUserStream] Failed to update leverage on open executions');

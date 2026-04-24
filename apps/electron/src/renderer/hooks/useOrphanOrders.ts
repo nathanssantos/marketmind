@@ -54,19 +54,19 @@ export const useOrphanOrders = (
     trpc.futuresTrading.getOpenOrders.useQuery(openOrdersInput, {
       enabled,
       refetchInterval: polling,
-      staleTime: 1000,
+      staleTime: ORPHAN_POLLING_MS,
     });
 
   const { data: exchangeAlgoOrders, isLoading: isLoadingAlgo } =
     trpc.futuresTrading.getOpenAlgoOrders.useQuery(algoOrdersInput, {
       enabled,
       refetchInterval: polling,
-      staleTime: 1000,
+      staleTime: ORPHAN_POLLING_MS,
     });
 
   const { data: dbOrderIds } = trpc.futuresTrading.getOpenDbOrderIds.useQuery(
     { walletId },
-    { enabled, refetchInterval: polling, staleTime: 1000 }
+    { enabled, refetchInterval: polling, staleTime: ORPHAN_POLLING_MS }
   );
 
   const { orphanOrders, trackedOrders } = useMemo(() => {
@@ -83,7 +83,7 @@ export const useOrphanOrders = (
         exchangeOrderId: oid,
         isAlgo: false,
         symbol: String(order.symbol),
-        side: order.side as 'BUY' | 'SELL',
+        side: order.side,
         type: String(order.type),
         price: String(order.price),
         quantity: String(order.origQty),
@@ -101,7 +101,7 @@ export const useOrphanOrders = (
         exchangeOrderId: aid,
         isAlgo: true,
         symbol: String(algo.symbol),
-        side: algo.side as 'BUY' | 'SELL',
+        side: algo.side,
         type: String(algo.type),
         price: String((algo as { triggerPrice?: string }).triggerPrice ?? '0'),
         quantity: String(algo.quantity ?? '0'),

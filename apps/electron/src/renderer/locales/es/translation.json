@@ -649,6 +649,10 @@
     }
   },
   "chart": {
+    "streamHealth": {
+      "degradedTitle": "Stream del exchange degradado",
+      "degradedDescription": "Sin actualizaciones del exchange — reconectando automáticamente."
+    },
     "controls": {
       "title": "Controles del Gráfico",
       "timeframe": "Marco Temporal",

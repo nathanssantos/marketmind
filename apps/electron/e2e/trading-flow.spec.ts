@@ -1,172 +1,126 @@
 import { test, expect } from '@playwright/test';
+import { generateKlines } from './helpers/klineFixtures';
+import { installTrpcMock } from './helpers/trpcMock';
+import { addIndicators, waitForChartReady, waitForFrames } from './helpers/chartTestSetup';
 
 test.describe('Trading Flow E2E', () => {
   test.beforeEach(async ({ page }) => {
+    const klines = generateKlines({ count: 300, symbol: 'BTCUSDT', interval: '1h' });
+    await installTrpcMock(page, { klines });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await waitForChartReady(page);
   });
 
-  test('should display chart with kline data', async ({ page }) => {
-    const chartContainer = page.locator('[data-testid="chart-container"]');
-    await expect(chartContainer).toBeVisible({ timeout: 10000 });
-
-    const canvas = chartContainer.locator('canvas');
+  test('chart canvas mounts with kline fixture data', async ({ page }) => {
+    const canvas = page.locator('canvas').first();
     await expect(canvas).toBeVisible();
-  });
 
-  test('should be able to change symbol', async ({ page }) => {
-    const symbolSelector = page.locator('[data-testid="symbol-selector"]');
-    if (await symbolSelector.isVisible()) {
-      await symbolSelector.click();
+    const box = await canvas.boundingBox();
+    expect(box, 'canvas should have non-zero size').not.toBeNull();
+    expect(box!.width).toBeGreaterThan(100);
+    expect(box!.height).toBeGreaterThan(100);
 
-      const symbolOption = page.locator('[data-testid="symbol-option-ETHUSDT"]');
-      if (await symbolOption.isVisible()) {
-        await symbolOption.click();
+    const canvasCount = await page.locator('canvas').count();
+    expect(canvasCount).toBeGreaterThan(0);
 
-        await page.waitForTimeout(1000);
-
-        const currentSymbol = page.locator('[data-testid="current-symbol"]');
-        await expect(currentSymbol).toContainText('ETH');
+    const paintedPixels = await page.evaluate(() => {
+      const canvases = Array.from(document.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      let total = 0;
+      for (const c of canvases) {
+        if (c.width === 0 || c.height === 0) continue;
+        const ctx = c.getContext('2d');
+        if (!ctx) continue;
+        try {
+          const img = ctx.getImageData(0, 0, c.width, c.height).data;
+          for (let i = 3; i < img.length; i += 4) {
+            if (img[i]! > 0) total += 1;
+          }
+        } catch {
+          continue;
+        }
       }
-    }
+      return total;
+    });
+    expect(paintedPixels, 'canvases must have painted non-transparent pixels').toBeGreaterThan(1000);
   });
 
-  test('should be able to change timeframe', async ({ page }) => {
-    const timeframeSelector = page.locator('[data-testid="timeframe-selector"]');
-    if (await timeframeSelector.isVisible()) {
-      await timeframeSelector.click();
+  test('symbol selector opens popover and switches to ETHUSDT', async ({ page }) => {
+    const symbolButton = page.getByRole('button', { name: 'Exchange' });
+    await expect(symbolButton).toBeVisible();
+    await expect(symbolButton).toContainText('BTC');
 
-      const timeframeOption = page.locator('[data-testid="timeframe-option-4h"]');
-      if (await timeframeOption.isVisible()) {
-        await timeframeOption.click();
-        await page.waitForTimeout(500);
-      }
-    }
+    await symbolButton.click();
+
+    const ethRow = page.getByText('ETH/USDT').first();
+    await expect(ethRow).toBeVisible();
+    await ethRow.click();
+
+    await expect(symbolButton).toContainText('ETH');
   });
 
-  test('should show price info on chart hover', async ({ page }) => {
-    const chartContainer = page.locator('[data-testid="chart-container"]');
-    await expect(chartContainer).toBeVisible();
+  test('timeframe selector opens popover and switches to 4h', async ({ page }) => {
+    const timeframeButton = page.getByRole('button', { name: 'Timeframe' });
+    await expect(timeframeButton).toBeVisible();
+    await expect(timeframeButton).toContainText('1h');
 
-    const boundingBox = await chartContainer.boundingBox();
-    if (boundingBox) {
-      await page.mouse.move(
-        boundingBox.x + boundingBox.width / 2,
-        boundingBox.y + boundingBox.height / 2
-      );
+    await timeframeButton.click();
 
-      await page.waitForTimeout(500);
+    const fourHour = page.getByText('4h', { exact: true });
+    await expect(fourHour.first()).toBeVisible();
+    await fourHour.first().click();
 
-      const tooltip = page.locator('[data-testid="chart-tooltip"]');
-      if (await tooltip.isVisible()) {
-        await expect(tooltip).toBeVisible();
-      }
-    }
+    await expect(timeframeButton).toContainText('4h');
   });
 
-  test('should be able to toggle indicators', async ({ page }) => {
-    const indicatorsButton = page.locator('[data-testid="indicators-button"]');
-    if (await indicatorsButton.isVisible()) {
-      await indicatorsButton.click();
+  test('indicator store accepts RSI instance via bridge', async ({ page }) => {
+    const ids = await addIndicators(page, [
+      { catalogType: 'rsi', params: { period: 14 } },
+    ]);
+    expect(ids).toHaveLength(1);
 
-      const indicatorsList = page.locator('[data-testid="indicators-list"]');
-      await expect(indicatorsList).toBeVisible();
+    const count = await page.evaluate(() => {
+      const store = window.__indicatorStore;
+      return store?.getState().instances.filter((i) => i.catalogType === 'rsi').length ?? 0;
+    });
+    expect(count).toBe(1);
 
-      const rsiCheckbox = page.locator('[data-testid="indicator-checkbox-rsi"]');
-      if (await rsiCheckbox.isVisible()) {
-        await rsiCheckbox.click();
-        await page.waitForTimeout(500);
-
-        const rsiPanel = page.locator('[data-testid="indicator-panel-rsi"]');
-        await expect(rsiPanel).toBeVisible();
-      }
-    }
-  });
-});
-
-test.describe('Order Entry E2E', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await waitForFrames(page, 10);
+    const canvasCountAfter = await page.locator('canvas').count();
+    expect(canvasCountAfter).toBeGreaterThan(0);
   });
 
-  test('should display order entry panel', async ({ page }) => {
-    const orderPanel = page.locator('[data-testid="order-entry-panel"]');
-    if (await orderPanel.isVisible()) {
-      await expect(orderPanel).toBeVisible();
+  test('drawing tool activation updates drawing store and aria-pressed', async ({ page }) => {
+    const lineTool = page.getByRole('button', { name: 'Line', exact: true });
+    await expect(lineTool).toBeVisible();
+    await expect(lineTool).toHaveAttribute('aria-pressed', 'false');
 
-      const buyButton = page.locator('[data-testid="buy-button"]');
-      const sellButton = page.locator('[data-testid="sell-button"]');
+    await lineTool.click();
 
-      await expect(buyButton).toBeVisible();
-      await expect(sellButton).toBeVisible();
-    }
+    await expect(lineTool).toHaveAttribute('aria-pressed', 'true');
+
+    const activeTool = await page.evaluate(
+      () => window.__drawingStore?.getState().activeTool ?? null,
+    );
+    expect(activeTool).toBe('line');
+
+    await lineTool.click();
+    await expect(lineTool).toHaveAttribute('aria-pressed', 'false');
+    const clearedTool = await page.evaluate(
+      () => window.__drawingStore?.getState().activeTool ?? null,
+    );
+    expect(clearedTool).toBeNull();
   });
 
-  test('should validate order quantity', async ({ page }) => {
-    const quantityInput = page.locator('[data-testid="quantity-input"]');
-    if (await quantityInput.isVisible()) {
-      await quantityInput.fill('0');
+  test('chart re-renders on viewport resize', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await waitForFrames(page, 5);
+    const before = await page.locator('canvas').first().boundingBox();
+    expect(before).not.toBeNull();
 
-      const submitButton = page.locator('[data-testid="submit-order-button"]');
-      if (await submitButton.isVisible()) {
-        await expect(submitButton).toBeDisabled();
-      }
-    }
-  });
-
-  test('should calculate position value', async ({ page }) => {
-    const quantityInput = page.locator('[data-testid="quantity-input"]');
-    if (await quantityInput.isVisible()) {
-      await quantityInput.fill('0.1');
-      await page.waitForTimeout(300);
-
-      const positionValue = page.locator('[data-testid="position-value"]');
-      if (await positionValue.isVisible()) {
-        const text = await positionValue.textContent();
-        expect(text).toBeTruthy();
-        expect(parseFloat(text?.replace(/[^0-9.]/g, '') || '0')).toBeGreaterThan(0);
-      }
-    }
-  });
-});
-
-test.describe('Portfolio View E2E', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-  });
-
-  test('should display portfolio summary', async ({ page }) => {
-    const portfolioTab = page.locator('[data-testid="portfolio-tab"]');
-    if (await portfolioTab.isVisible()) {
-      await portfolioTab.click();
-      await page.waitForTimeout(500);
-
-      const portfolioSummary = page.locator('[data-testid="portfolio-summary"]');
-      await expect(portfolioSummary).toBeVisible();
-    }
-  });
-
-  test('should display open positions', async ({ page }) => {
-    const positionsTab = page.locator('[data-testid="positions-tab"]');
-    if (await positionsTab.isVisible()) {
-      await positionsTab.click();
-      await page.waitForTimeout(500);
-
-      const positionsList = page.locator('[data-testid="positions-list"]');
-      await expect(positionsList).toBeVisible();
-    }
-  });
-
-  test('should display order history', async ({ page }) => {
-    const historyTab = page.locator('[data-testid="history-tab"]');
-    if (await historyTab.isVisible()) {
-      await historyTab.click();
-      await page.waitForTimeout(500);
-
-      const orderHistory = page.locator('[data-testid="order-history"]');
-      await expect(orderHistory).toBeVisible();
-    }
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await waitForFrames(page, 10);
+    const after = await page.locator('canvas').first().boundingBox();
+    expect(after).not.toBeNull();
+    expect(after!.width).toBeGreaterThan(before!.width);
   });
 });

@@ -1,6 +1,6 @@
 import { SecType, WhatToShow, BarSizeSetting } from '@stoqey/ib';
 import type { Contract, Bar } from '@stoqey/ib';
-import type { Kline } from '@marketmind/types';
+import { INTERVAL_MS, type Kline, type TimeInterval } from '@marketmind/types';
 import type { Subscription } from 'rxjs';
 import type { IExchangeKlineStream, KlineUpdate } from '../kline-stream';
 import type { ExchangeId } from '../types';
@@ -62,21 +62,8 @@ const parseIBDateTime = (ibTime: string): number => {
   return new Date(`${year}-${month}-${day}T09:30:00${offset}`).getTime();
 };
 
-const getIntervalMs = (interval: string): number => {
-  const intervals: Record<string, number> = {
-    '1m': 60_000,
-    '5m': 300_000,
-    '15m': 900_000,
-    '30m': 1_800_000,
-    '1h': 3_600_000,
-    '2h': 7_200_000,
-    '4h': 14_400_000,
-    '1d': 86_400_000,
-    '1w': 604_800_000,
-    '1M': 2_592_000_000,
-  };
-  return intervals[interval] ?? 60_000;
-};
+const getIntervalMs = (interval: string): number =>
+  INTERVAL_MS[interval as TimeInterval] ?? INTERVAL_MS['1m'];
 
 const mapIBBarToKline = (bar: Bar, interval: string): Kline => {
   const openTime = parseIBDateTime(bar.time ?? '');

@@ -91,7 +91,7 @@ export const useChartKeyboardShortcuts = ({
   useEffect(() => {
     if (!slTpPlacement.active || !slTpPlacement.executionId) return;
     const targetExec = allExecutions.find(e => e.id === slTpPlacement.executionId);
-    if (!targetExec || targetExec.status !== 'open') {
+    if (targetExec && targetExec.status !== 'open') {
       slTpPlacement.deactivate();
     }
   }, [allExecutions, slTpPlacement]);

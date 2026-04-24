@@ -1,5 +1,8 @@
 import { getKlineClose, getKlineOpen, getKlineVolume } from '@shared/utils';
+import { formatPriceDisplay } from '@marketmind/utils';
 import type { ChartContextData } from '../context/ChartContext';
+
+export { formatPriceDisplay };
 
 export const getChartPriceDecimals = (price: number): number => {
   const absPrice = Math.abs(price);
@@ -14,22 +17,6 @@ export const formatChartPrice = (price: number): string => {
   return price.toFixed(getChartPriceDecimals(price));
 };
 
-export const formatPriceDisplay = (price: number): string => {
-  if (price >= 1000000) {
-    return `${(price / 1000000).toFixed(2)}M`;
-  }
-  if (price >= 1000) {
-    return `${(price / 1000).toFixed(2)}K`;
-  }
-  if (price >= 1) {
-    return price.toFixed(2);
-  }
-  if (price >= 0.01) {
-    return price.toFixed(4);
-  }
-  return price.toFixed(8);
-};
-
 export const formatTimestamp = (timestamp: number, interval?: string, previousTimestamp?: number): string => {
   const date = new Date(timestamp);
   const prevDate = previousTimestamp ? new Date(previousTimestamp) : null;
@@ -40,8 +27,7 @@ export const formatTimestamp = (timestamp: number, interval?: string, previousTi
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
 
-  const sameDay = prevDate && 
-    prevDate.getDate() === date.getDate() && 
+  const sameDay = prevDate?.getDate() === date.getDate() && 
     prevDate.getMonth() === date.getMonth() && 
     prevDate.getFullYear() === date.getFullYear();
 
@@ -60,7 +46,7 @@ export const formatTimestamp = (timestamp: number, interval?: string, previousTi
   }
 
   if (interval === '1d' || interval === '3d') {
-    const sameYear = prevDate && prevDate.getFullYear() === date.getFullYear();
+    const sameYear = prevDate?.getFullYear() === date.getFullYear();
     if (!sameYear && prevDate) {
       return `${day}/${month}/${year}`;
     }
@@ -172,7 +158,7 @@ export const getTimeLabelPriority = (
   const date = new Date(timestamp);
   const prev = prevTimestamp ? new Date(prevTimestamp) : null;
 
-  if (!prev || date.getFullYear() !== prev.getFullYear()) return 'year';
+  if (date.getFullYear() !== prev?.getFullYear()) return 'year';
   if (date.getMonth() !== prev.getMonth()) return 'month';
   if (date.getDate() !== prev.getDate()) return 'day';
   if (date.getHours() !== prev.getHours()) return 'hour';

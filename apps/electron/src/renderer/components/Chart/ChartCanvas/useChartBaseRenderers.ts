@@ -1,6 +1,7 @@
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { HighlightedCandle, MarketType } from '@marketmind/types';
+import type { MutableRefObject } from 'react';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { useGridRenderer } from '../useGridRenderer';
 import { useKlineRenderer } from '../useKlineRenderer';
@@ -18,7 +19,7 @@ export interface UseChartBaseRenderersProps {
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
   showActivityIndicator: boolean;
-  hoveredKlineIndex?: number;
+  hoveredKlineIndexRef: MutableRefObject<number | undefined>;
   highlightedCandlesRef: React.MutableRefObject<HighlightedCandle[]>;
   mousePositionRef: React.MutableRefObject<{ x: number; y: number } | null>;
   timeframe: string;
@@ -45,7 +46,7 @@ export const useChartBaseRenderers = ({
   showCurrentPriceLine,
   showCrosshair,
   showActivityIndicator,
-  hoveredKlineIndex,
+  hoveredKlineIndexRef,
   highlightedCandlesRef,
   mousePositionRef,
   timeframe,
@@ -72,7 +73,7 @@ export const useChartBaseRenderers = ({
     ...(advancedConfig?.klineWickWidth !== undefined && {
       klineWickWidth: advancedConfig.klineWickWidth,
     }),
-    ...(hoveredKlineIndex !== undefined && { hoveredKlineIndex }),
+    hoveredKlineIndexRef,
     highlightedCandlesRef,
   });
 

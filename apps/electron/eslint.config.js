@@ -12,11 +12,25 @@ export default [
         ignores: [
             'coverage/**',
             'scripts/**',
+            'dist/**',
+            'dist-web/**',
+            'dist-electron/**',
+            'build/**',
+            'e2e/**',
+            'playwright-report/**',
+            'test-results/**',
+            'public/**',
         ],
     },
     {
         files: ['**/*.{js,jsx,mjs,cjs,ts,tsx}'],
-        ignores: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
+        ignores: [
+            '**/*.test.{ts,tsx}',
+            '**/*.browser.test.{ts,tsx}',
+            'src/tests/**',
+            'e2e/**',
+            'electron-builder.js',
+        ],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -45,6 +59,7 @@ export default [
             },
         },
         rules: {
+            'no-undef': 'off',
             // TypeScript specific rules
             '@typescript-eslint/no-explicit-any': 'error',
             'no-unused-vars': 'off',
@@ -88,6 +103,7 @@ export default [
             ],
 
             // General rules
+            'no-undef': 'off',
             'no-console': [
                 'warn',
                 {
@@ -96,7 +112,7 @@ export default [
             ],
             'prefer-const': 'error',
             'no-var': 'error',
-            'eqeqeq': ['error', 'always'],
+            'eqeqeq': ['error', 'always', { null: 'ignore' }],
             'curly': ['error', 'multi-line'],
             'prefer-arrow-callback': 'warn',
             'prefer-template': 'warn',
@@ -115,7 +131,13 @@ export default [
         },
     },
     {
-        files: ['**/*.test.{ts,tsx}', '**/*.browser.test.{ts,tsx}', 'src/tests/**'],
+        files: [
+            '**/*.test.{ts,tsx}',
+            '**/*.browser.test.{ts,tsx}',
+            'src/tests/**',
+            'e2e/**/*.{ts,tsx}',
+            'electron-builder.js',
+        ],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -142,6 +164,7 @@ export default [
             },
         },
         rules: {
+            'no-undef': 'off',
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'error',
@@ -151,6 +174,9 @@ export default [
                 },
             ],
             '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/consistent-type-imports': 'off',
+            'no-undef': 'off',
+            'eqeqeq': ['error', 'always', { null: 'ignore' }],
             'no-console': 'off',
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off',

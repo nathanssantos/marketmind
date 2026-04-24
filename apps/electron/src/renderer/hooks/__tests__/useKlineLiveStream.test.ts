@@ -309,7 +309,7 @@ describe('useKlineLiveStream', () => {
     const lastBase = baseKlines[baseKlines.length - 1]!;
     const gapOpenTime = lastBase.openTime + INTERVAL_MS_1H * 5;
 
-    const { result } = renderHook(() =>
+    renderHook(() =>
       useKlineLiveStream({
         symbol: 'BTCUSDT',
         timeframe: '1h',

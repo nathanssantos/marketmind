@@ -1,4 +1,4 @@
-import { calculatePnl } from '../../utils/pnl-calculator';
+import { calculatePnl } from '@marketmind/utils';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';

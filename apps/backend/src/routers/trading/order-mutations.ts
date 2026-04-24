@@ -8,6 +8,7 @@ import { getFuturesClient } from '../../exchange';
 import { createMarketClient } from '../../services/market-client-factory';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
+import { getWebSocketService } from '../../services/websocket';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { calculateQtyFromPercent } from '../../services/trading/order-quantity';
@@ -132,6 +133,21 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.userId, ctx.user.id),
               eq(tradeExecutions.status, 'open'),
             ));
+
+          const wsService = getWebSocketService();
+          if (wsService) {
+            wsService.emitOrderCreated(input.walletId, {
+              orderId: simulatedOrderId,
+              symbol: input.symbol,
+              side: input.side,
+              type: input.type,
+              status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
+              price,
+              origQty: quantity,
+              executedQty: input.type === 'MARKET' ? quantity : '0',
+              marketType: input.marketType,
+            });
+          }
 
           return {
             orderId: simulatedOrderId,
@@ -472,6 +488,11 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
+          const wsService = getWebSocketService();
+          if (wsService) {
+            wsService.emitOrderCancelled(input.walletId, input.orderId);
+          }
+
           return {
             orderId: input.orderId,
             symbol: input.symbol,
@@ -511,7 +532,7 @@ export const orderMutationsRouter = router({
           .set({ status: 'CANCELED', updateTime: Date.now() })
           .where(eq(orders.orderId, input.orderId));
 
-        await ctx.db
+        const cancelledExecs = await ctx.db
           .update(tradeExecutions)
           .set({ status: 'cancelled', updatedAt: new Date() })
           .where(
@@ -520,7 +541,8 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.entryOrderId, input.orderId),
               eq(tradeExecutions.status, 'pending')
             )
-          );
+          )
+          .returning();
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
@@ -528,6 +550,15 @@ export const orderMutationsRouter = router({
             eq(tradeExecutions.userId, ctx.user.id),
             eq(tradeExecutions.status, 'open'),
           ));
+
+        const wsService = getWebSocketService();
+        if (wsService) {
+          wsService.emitOrderCancelled(input.walletId, input.orderId);
+          for (const exec of cancelledExecs) {
+            wsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
+            wsService.emitPositionUpdate(input.walletId, exec);
+          }
+        }
 
         return {
           orderId: input.orderId,

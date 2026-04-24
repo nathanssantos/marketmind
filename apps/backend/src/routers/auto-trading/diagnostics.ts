@@ -1,3 +1,4 @@
+import { INTERVAL_MS, type TimeInterval } from '@marketmind/types';
 import { z } from 'zod';
 import { autoTradingLogBuffer } from '../../services/auto-trading-log-buffer';
 import { autoTradingScheduler } from '../../services/auto-trading-scheduler';
@@ -30,28 +31,11 @@ export const diagnosticsRouter = router({
       };
     }
 
-    const intervalToMs: Record<string, number> = {
-      '1m': 60_000,
-      '3m': 180_000,
-      '5m': 300_000,
-      '15m': 900_000,
-      '30m': 1_800_000,
-      '1h': 3_600_000,
-      '2h': 7_200_000,
-      '4h': 14_400_000,
-      '6h': 21_600_000,
-      '8h': 28_800_000,
-      '12h': 43_200_000,
-      '1d': 86_400_000,
-      '3d': 259_200_000,
-      '1w': 604_800_000,
-    };
-
     let minIntervalMs = Number.MAX_SAFE_INTEGER;
     let minInterval = '4h';
 
     for (const watcher of activeWatchersList) {
-      const intervalMs = intervalToMs[watcher.interval] ?? 14_400_000;
+      const intervalMs = INTERVAL_MS[watcher.interval as TimeInterval] ?? INTERVAL_MS['4h'];
       if (intervalMs < minIntervalMs) {
         minIntervalMs = intervalMs;
         minInterval = watcher.interval;

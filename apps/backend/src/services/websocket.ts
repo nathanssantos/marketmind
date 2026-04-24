@@ -275,9 +275,22 @@ export class WebSocketService {
     volume: string;
     isClosed: boolean;
     timestamp: number;
+    synthetic?: boolean;
   }): void {
     const room = `klines:${kline.symbol}:${kline.interval}`;
     this.io.to(room).emit('kline:update', kline);
+  }
+
+  public emitStreamHealth(payload: {
+    symbol: string;
+    interval: string;
+    marketType: 'SPOT' | 'FUTURES';
+    status: 'healthy' | 'degraded';
+    reason?: string;
+    lastMessageAt: number | null;
+  }): void {
+    const room = `klines:${payload.symbol}:${payload.interval}`;
+    this.io.to(room).emit('stream:health', payload);
   }
 
   public emitSetupDetected(userId: string, data: unknown): void {

@@ -6,32 +6,25 @@ const DEFAULT_LINE_WIDTH = 1;
 
 export const renderOverlayLine: GenericRenderer = (ctx, input) => {
   const { manager } = ctx;
-  const dimensions = manager.getDimensions();
   const canvasCtx = manager.getContext();
-  if (!canvasCtx || !dimensions) return;
+  if (!canvasCtx) return;
 
   const viewport = manager.getViewport();
   const klines = manager.getKlines();
   if (!klines.length) return;
 
-  const { chartWidth, chartHeight } = dimensions;
   const visibleStart = Math.max(0, Math.floor(viewport.start));
   const visibleEnd = Math.min(klines.length, Math.ceil(viewport.end));
   if (visibleEnd <= visibleStart) return;
 
   const color = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_OVERLAY_COLOR;
-  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH) as number;
+  const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH);
 
   const outputs = input.definition.outputs;
   const primaryOutput = outputs[0]?.key;
   if (!primaryOutput) return;
   const series = input.values[primaryOutput];
   if (!series) return;
-
-  canvasCtx.save();
-  canvasCtx.beginPath();
-  canvasCtx.rect(0, 0, chartWidth, chartHeight);
-  canvasCtx.clip();
 
   canvasCtx.strokeStyle = color;
   canvasCtx.lineWidth = lineWidth;
@@ -54,5 +47,4 @@ export const renderOverlayLine: GenericRenderer = (ctx, input) => {
     }
   }
   canvasCtx.stroke();
-  canvasCtx.restore();
 };

@@ -7,9 +7,10 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
-import { useFastPriceForSymbol } from '@renderer/store/priceStore';
+import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { formatChartPrice } from '@renderer/utils/formatters';
+import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -99,6 +100,7 @@ interface QuickTradeActionsProps {
 }
 
 export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interval = '1h', showDragHandle, onDragStart, isDragging, onMenuAction, currentMode, onClose }: QuickTradeActionsProps) => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
@@ -124,13 +126,12 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     if (marketType !== 'FUTURES' || !Array.isArray(positions)) return null;
     const found = positions.find((p) => {
       if (p === null || typeof p !== 'object' || !('symbol' in p)) return false;
-      if ((p as { symbol: string }).symbol !== symbol) return false;
-      if ('status' in p && 'id' in p) return (p as { status: string }).status === 'open';
-      if ('positionAmt' in p) return parseFloat(String((p as { positionAmt: string }).positionAmt)) !== 0;
+      if (p.symbol !== symbol) return false;
+      if ('id' in p) return p.status === 'open';
+      if ('positionAmt' in p) return parseFloat(String(p.positionAmt)) !== 0;
       return false;
     });
-    if (!found) return null;
-    return found as { id?: string; side?: string; positionAmt?: string };
+    return found ?? null;
   }, [positions, symbol, marketType]);
 
   const positionSide = useMemo(() => {
@@ -208,7 +209,8 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     }
   }, [activeWallet?.id, symbol, cancelAllOrders, toastError, t]);
 
-  const currentPrice = useFastPriceForSymbol(symbol) ?? 0;
+  const priceSymbols = useMemo(() => [symbol], [symbol]);
+  const currentPrice = usePricesForSymbols(priceSymbols)[symbol] ?? 0;
 
   const { getQuantity, leverage } = useOrderQuantity(symbol, marketType);
 
@@ -390,7 +392,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       <ConfirmationDialog
         isOpen={showReverseConfirm}
         onClose={() => setShowReverseConfirm(false)}
-        onConfirm={handleReverseConfirm}
+        onConfirm={() => { void handleReverseConfirm(); }}
         title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
         description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
           side: positionSide,
@@ -406,7 +408,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       <ConfirmationDialog
         isOpen={showCloseConfirm}
         onClose={() => setShowCloseConfirm(false)}
-        onConfirm={handleClosePositionConfirm}
+        onConfirm={() => { void handleClosePositionConfirm(); }}
         title={t('futures.closePositionConfirmTitle', 'Close Position?')}
         description={t('futures.closePositionConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} at market price and cancel all orders (SL, TP, entries)?', {
           side: positionSide,
@@ -421,7 +423,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       <ConfirmationDialog
         isOpen={showCancelOrdersConfirm}
         onClose={() => setShowCancelOrdersConfirm(false)}
-        onConfirm={handleCancelOrdersConfirm}
+        onConfirm={() => { void handleCancelOrdersConfirm(); }}
         title={t('futures.cancelOrdersConfirmTitle', 'Cancel All Orders?')}
         description={t('futures.cancelOrdersConfirmDescription', 'Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected.', { symbol })}
         confirmLabel={t('futures.cancelOrders', 'Cancel Orders')}
@@ -440,7 +442,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           <ConfirmationDialog
             isOpen
             onClose={() => setPendingOrder(null)}
-            onConfirm={handleConfirmOrder}
+            onConfirm={() => { void handleConfirmOrder(); }}
             title={t('chart.quickTrade.confirmOrder', 'Confirm Order')}
             confirmLabel={isBuy ? t('chart.quickTrade.confirmBuy', 'Confirm Buy') : t('chart.quickTrade.confirmSell', 'Confirm Sell')}
             colorPalette={isBuy ? 'green' : 'red'}

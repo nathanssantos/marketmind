@@ -638,6 +638,10 @@
     }
   },
   "chart": {
+    "streamHealth": {
+      "degradedTitle": "Flux d'échange dégradé",
+      "degradedDescription": "Aucune mise à jour reçue — reconnexion automatique en cours."
+    },
     "controls": {
       "title": "Contrôles du Graphique",
       "timeframe": "Période",

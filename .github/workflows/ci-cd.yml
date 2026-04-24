@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
       - name: Lint
         run: pnpm run lint
 
@@ -43,7 +46,7 @@ jobs:
       - name: Type check (Backend)
         run: pnpm --filter @marketmind/backend type-check
 
-  # Job 2: Test
+  # Job 2: Unit Tests (+ coverage artifact)
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -82,27 +85,36 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run tests
-        run: pnpm test -- --run
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Run backend unit tests
+        run: pnpm --filter @marketmind/backend test:unit -- --coverage
         env:
           DATABASE_URL: postgresql://marketmind:test_password@localhost:5432/marketmind_test
           NODE_ENV: test
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          SESSION_SECRET: "test_session_secret_please_ignore_0000000000"
+
+      - name: Run frontend unit tests
+        run: pnpm --filter @marketmind/electron test:unit -- --coverage
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: success()
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+          name: coverage-${{ github.run_id }}
+          path: |
+            apps/backend/coverage/
+            apps/electron/coverage/
+          retention-days: 14
+          if-no-files-found: warn
 
-  # Job 3: Performance Benchmarks
-  benchmark:
-    name: Performance Benchmarks
+  # Job 3: Browser Tests (Playwright-backed vitest)
+  browser-tests:
+    name: Browser Tests
     runs-on: ubuntu-latest
-    needs: lint
-    if: github.event_name == 'pull_request'
+    needs: test
 
     steps:
       - name: Checkout code
@@ -122,15 +134,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run benchmarks
-        run: pnpm --filter @marketmind/indicators bench -- --outputJson=benchmark-results.json
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
 
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results
-          path: packages/indicators/benchmark-results.json
-          retention-days: 30
+      - name: Install Playwright browsers
+        run: pnpm --filter @marketmind/electron exec playwright install --with-deps chromium
+
+      - name: Run browser tests
+        run: pnpm --filter @marketmind/electron test:browser:run
 
   # Job 4: E2E Tests
   e2e:
@@ -160,8 +171,11 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @marketmind/electron exec playwright install --with-deps chromium
 
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
       - name: Run E2E tests
-        run: pnpm --filter @marketmind/electron test:e2e
+        run: pnpm --filter @marketmind/electron exec playwright test --project=chromium
         env:
           CI: true
 
@@ -198,11 +212,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: |
-          pnpm --filter @marketmind/types build
-          pnpm --filter @marketmind/indicators build
-          pnpm --filter @marketmind/backend build
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Build backend
+        run: pnpm --filter @marketmind/backend build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

@@ -1,4 +1,4 @@
-import type { Order } from '@marketmind/types';
+import type { FibonacciProjectionData, Order } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
@@ -16,7 +16,7 @@ export interface BackendExecution {
   marketType?: 'SPOT' | 'FUTURES' | null;
   openedAt?: string | Date | null;
   triggerKlineOpenTime?: number | null;
-  fibonacciProjection?: import('@marketmind/types').FibonacciProjectionData | null;
+  fibonacciProjection?: FibonacciProjectionData | null;
   leverage?: number;
   liquidationPrice?: string | null;
 }

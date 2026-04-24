@@ -120,7 +120,7 @@ export const IndicatorTogglePopoverGeneric = memo(
   const handleToggle = useCallback(
     (ui: UserIndicator, isActive: boolean) => {
       if (isOverrideMode) {
-        onToggleUserIndicatorOverride!(ui.id);
+        onToggleUserIndicatorOverride(ui.id);
         return;
       }
       if (isActive) {
@@ -283,13 +283,13 @@ export const IndicatorTogglePopoverGeneric = memo(
         mode={dialog.kind === 'edit' ? 'edit' : 'create'}
         instance={dialog.kind === 'edit' ? dialog.indicator : undefined}
         isLoading={create.isPending || update.isPending}
-        onSubmit={handleSubmit}
+        onSubmit={(values) => { void handleSubmit(values); }}
       />
 
       <ConfirmationDialog
         isOpen={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => { void handleConfirmDelete(); }}
         title={t('settings.indicators.deleteTitle')}
         description={t('settings.indicators.deleteDescription', { label: confirmDelete?.label ?? '' })}
         isDestructive

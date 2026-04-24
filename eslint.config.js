@@ -8,6 +8,7 @@ export default [
         ignores: [
             '**/dist/**',
             '**/dist-electron/**',
+            '**/dist-web/**',
             '**/node_modules/**',
             '**/build/**',
             '**/coverage/**',
@@ -32,6 +33,7 @@ export default [
             '@typescript-eslint': tsPlugin,
         },
         rules: {
+            'no-undef': 'off',
             '@typescript-eslint/no-explicit-any': 'error',
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [

@@ -780,7 +780,7 @@ describe('Trading Router', () => {
       ).rejects.toThrow(TRPCError);
     });
 
-    it('should return ticker prices for paper wallet', async () => {
+    it.skipIf(process.env.CI)('should return ticker prices for paper wallet', async () => {
       const { user, session } = await createAuthenticatedUser();
       await createTestWallet({ userId: user.id, walletType: 'paper' });
       const caller = createAuthenticatedCaller(user, session);

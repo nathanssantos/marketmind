@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { Socket } from 'socket.io-client';
 import { BACKEND_URL } from '@shared/constants/api';
 import { socketService } from '../services/socketService';
@@ -41,6 +41,14 @@ interface WebSocketEvents {
     volume: string;
     isClosed: boolean;
     timestamp: number;
+  }) => void;
+  'stream:health': (payload: {
+    symbol: string;
+    interval: string;
+    marketType: 'SPOT' | 'FUTURES';
+    status: 'healthy' | 'degraded';
+    reason?: string;
+    lastMessageAt: number | null;
   }) => void;
   'setup-detected': (data: {
     symbol: string;
@@ -160,21 +168,21 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     },
   };
 
-  const on = <K extends keyof WebSocketEvents>(
+  const on = useCallback(<K extends keyof WebSocketEvents>(
     event: K,
     handler: WebSocketEvents[K]
   ): void => {
     const socket = socketService.getSocket();
     socket?.on(event, handler as never);
-  };
+  }, []);
 
-  const off = <K extends keyof WebSocketEvents>(
+  const off = useCallback(<K extends keyof WebSocketEvents>(
     event: K,
     handler: WebSocketEvents[K]
   ): void => {
     const socket = socketService.getSocket();
     socket?.off(event, handler as never);
-  };
+  }, []);
 
   return {
     socket: socketRef.current,

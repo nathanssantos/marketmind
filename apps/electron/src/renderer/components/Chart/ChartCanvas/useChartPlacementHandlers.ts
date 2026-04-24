@@ -1,3 +1,4 @@
+import type { Order } from '@marketmind/types';
 import type { MutableRefObject, RefObject } from 'react';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -5,6 +6,12 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { OptimisticOverride } from './useChartTradingData';
 import type { CursorManager } from './useChartState';
+
+interface UpdateTsConfigInput {
+  walletId: string;
+  symbol: string;
+  [key: string]: unknown;
+}
 
 export interface UseChartPlacementHandlersProps {
   manager: CanvasManager | null;
@@ -27,8 +34,8 @@ export interface UseChartPlacementHandlersProps {
   getSlTpButtonAtPosition: (x: number, y: number) => { type: 'stopLoss' | 'takeProfit'; executionId: string } | null;
   applyOptimistic: (id: string, patches: OptimisticOverride['patches'], previousValues: OptimisticOverride['previousValues']) => void;
   orderLoadingMapRef: MutableRefObject<Map<string, number>>;
-  handleUpdateOrder: (id: string, updates: any) => void;
-  updateTsConfig: { mutate: (input: any) => void };
+  handleUpdateOrder: (id: string, updates: Partial<Order>) => void;
+  updateTsConfig: { mutate: (input: UpdateTsConfigInput) => void };
   warning: (title: string, description?: string) => void;
   handleCanvasMouseMove: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleCanvasMouseDown: (event: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -116,8 +123,8 @@ export const useChartPlacementHandlers = ({
       const exec = allExecutions.find(e => e.id === execId);
       const patchField = placementType === 'stopLoss' ? 'stopLoss' : 'takeProfit';
       const priceStr = price.toString();
-      const patches = { [patchField]: priceStr } as any;
-      const prevValues = { [patchField]: exec?.[patchField] } as any;
+      const patches = { [patchField]: priceStr } as OptimisticOverride['patches'];
+      const prevValues = { [patchField]: exec?.[patchField] } as OptimisticOverride['previousValues'];
       applyOptimistic(execId, patches, prevValues);
       orderLoadingMapRef.current.set(execId, Date.now());
 
@@ -125,7 +132,7 @@ export const useChartPlacementHandlers = ({
       if (placementType === 'stopLoss') updatePayload.stopLoss = price;
       else updatePayload.takeProfit = price;
 
-      handleUpdateOrder(execId, updatePayload as any);
+      handleUpdateOrder(execId, updatePayload as Partial<Order>);
 
       event.preventDefault();
       return;

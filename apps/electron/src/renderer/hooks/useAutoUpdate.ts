@@ -30,7 +30,7 @@ export const useAutoUpdate = () => {
       setCurrentVersion(info.currentVersion);
     };
 
-    loadUpdateInfo();
+    void loadUpdateInfo();
 
     update.onChecking(() => {
       setStatus('checking');

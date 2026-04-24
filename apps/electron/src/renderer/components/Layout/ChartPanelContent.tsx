@@ -3,7 +3,7 @@ import { ChartCanvas } from '@renderer/components/Chart/ChartCanvas';
 import { ErrorMessage, LoadingSpinner } from '@renderer/components/ui';
 import { useKlinePagination } from '@renderer/hooks/useKlinePagination';
 import { useKlineLiveStream } from '@renderer/hooks/useKlineLiveStream';
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, Interval } from '@marketmind/types';
 import type { GridPanelConfig } from '@shared/types/layout';
 import { memo, useMemo } from 'react';
 
@@ -24,7 +24,7 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
     refetch,
   } = useKlinePagination({
     symbol,
-    interval: panelConfig.timeframe as any,
+    interval: panelConfig.timeframe as Interval,
     marketType,
     enabled: !!symbol,
   });
@@ -45,11 +45,11 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
 
   if (isInitialLoading) return <LoadingSpinner />;
 
-  if (error) return (
+  if (error) {return (
     <Flex align="center" justify="center" h="100%">
       <ErrorMessage title="Failed to load data" message={error.message} onRetry={() => window.location.reload()} />
     </Flex>
-  );
+  );}
 
   if (!marketData) return <Box h="100%" />;
 
@@ -62,7 +62,7 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
       height="100%"
       chartType={panelConfig.chartType}
       timeframe={panelConfig.timeframe}
-      onNearLeftEdge={hasMore ? loadOlderKlines : undefined}
+      onNearLeftEdge={hasMore ? () => { void loadOlderKlines(); } : undefined}
       isLoadingMore={isLoadingMore}
     />
   );

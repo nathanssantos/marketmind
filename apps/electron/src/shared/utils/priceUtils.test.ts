@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   addPrice,
   averagePrice,
-  calculatePnL,
-  calculatePnLPercent,
   calculateQuoteQty,
   comparePrice,
   dividePrice,
-  formatPrice,
+  formatPriceExact,
   formatQty,
   formatVolume,
   isValidPrice,
@@ -39,17 +37,17 @@ describe('priceUtils', () => {
     });
   });
 
-  describe('formatPrice', () => {
+  describe('formatPriceExact', () => {
     it('should format with default precision (8)', () => {
-      expect(formatPrice(100.5)).toBe('100.50000000');
+      expect(formatPriceExact(100.5)).toBe('100.50000000');
     });
 
     it('should format with custom precision', () => {
-      expect(formatPrice(100.5, 2)).toBe('100.50');
+      expect(formatPriceExact(100.5, 2)).toBe('100.50');
     });
 
     it('should format large numbers', () => {
-      expect(formatPrice(42000.12345678, 4)).toBe('42000.1235');
+      expect(formatPriceExact(42000.12345678, 4)).toBe('42000.1235');
     });
   });
 
@@ -100,55 +98,6 @@ describe('priceUtils', () => {
 
     it('should handle decimal prices', () => {
       expect(parseFloat(calculateQuoteQty('42000.50', '0.5'))).toBeCloseTo(21000.25, 2);
-    });
-  });
-
-  describe('calculatePnL', () => {
-    it('should calculate profit for BUY (long) when price increases', () => {
-      const pnl = parseFloat(calculatePnL('100', '110', '1', 'BUY'));
-      expect(pnl).toBe(10);
-    });
-
-    it('should calculate loss for BUY (long) when price decreases', () => {
-      const pnl = parseFloat(calculatePnL('100', '90', '1', 'BUY'));
-      expect(pnl).toBe(-10);
-    });
-
-    it('should calculate profit for SELL (short) when price decreases', () => {
-      const pnl = parseFloat(calculatePnL('100', '90', '1', 'SELL'));
-      expect(pnl).toBe(10);
-    });
-
-    it('should calculate loss for SELL (short) when price increases', () => {
-      const pnl = parseFloat(calculatePnL('100', '110', '1', 'SELL'));
-      expect(pnl).toBe(-10);
-    });
-
-    it('should multiply by quantity', () => {
-      const pnl = parseFloat(calculatePnL('100', '110', '2', 'BUY'));
-      expect(pnl).toBe(20);
-    });
-  });
-
-  describe('calculatePnLPercent', () => {
-    it('should calculate percent profit for BUY', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '110', 'BUY'));
-      expect(percent).toBe(10);
-    });
-
-    it('should calculate percent loss for BUY', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '90', 'BUY'));
-      expect(percent).toBe(-10);
-    });
-
-    it('should calculate percent profit for SELL', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '90', 'SELL'));
-      expect(percent).toBe(10);
-    });
-
-    it('should calculate percent loss for SELL', () => {
-      const percent = parseFloat(calculatePnLPercent('100', '110', 'SELL'));
-      expect(percent).toBe(-10);
     });
   });
 
