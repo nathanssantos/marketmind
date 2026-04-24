@@ -32,6 +32,15 @@ const closeSeriesFromKlines = (klines: Kline[]): (number | null)[] =>
 const resolveTimeframe = (conditionTf: string, currentInterval: string): string =>
   conditionTf === 'current' ? currentInterval : conditionTf;
 
+// Oscillators are gated on candle close — the last element of the live series/klines
+// array is the currently-forming bar, so we drop it to prevent the checklist from
+// flipping mid-bar. Trend/price indicators (EMA, price vs level) keep the live last
+// element so they update in real time against the current price.
+const CLOSE_ONLY_CATALOG_TYPES = new Set(['rsi', 'stoch', 'stochRsi', 'macd']);
+
+const dropOpenBar = <T>(series: T[]): T[] =>
+  series.length > 1 ? series.slice(0, -1) : series;
+
 const evaluateOne = (
   cond: ChecklistCondition,
   entry: ChartLiveDataEntry,
@@ -49,13 +58,17 @@ const evaluateOne = (
   const series = indicator.outputs[outputKey];
   if (!series) return null;
 
+  const closeOnly = CLOSE_ONLY_CATALOG_TYPES.has(indicator.catalogType);
+  const effectiveSeries = closeOnly ? dropOpenBar(series) : series;
+  const effectiveCloseSeries = closeOnly ? dropOpenBar(closeSeries) : closeSeries;
+
   try {
     const result = evaluateCondition({
-      series,
+      series: effectiveSeries,
       op: cond.op,
       threshold: cond.threshold,
       valueRange: def.valueRange,
-      closeSeries,
+      closeSeries: effectiveCloseSeries,
     });
     return {
       conditionId: cond.id,
