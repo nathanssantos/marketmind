@@ -178,8 +178,8 @@ const start = async (): Promise<void> => {
         });
       }, STARTUP_CONFIG.AUDIT_DELAY_MS);
 
-      const { incomeSyncService } = await import('./services/income-sync-service');
-      incomeSyncService.start({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
+      const { startIncomeSync } = await import('./services/income-events');
+      startIncomeSync({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
 
       const { indicatorSchedulerService } = await import('./services/indicator-scheduler');
       await indicatorSchedulerService.start();

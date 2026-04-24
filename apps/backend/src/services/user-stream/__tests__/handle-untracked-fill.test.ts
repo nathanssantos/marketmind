@@ -29,7 +29,6 @@ vi.mock('../../../db', () => ({
 vi.mock('../../../db/schema', () => ({
   tradeExecutions: { id: 'id', walletId: 'walletId', symbol: 'symbol', status: 'status', marketType: 'marketType', side: 'side' },
   wallets: { id: 'id', currentBalance: 'currentBalance' },
-  realizedPnlEvents: {},
   orders: { walletId: 'walletId', orderId: 'orderId' },
 }));
 
@@ -166,7 +165,6 @@ describe('handleUntrackedReduceFill', () => {
 
     expect(result).toBe(true);
     expect(mockDbUpdate).toHaveBeenCalled();
-    expect(mockDbInsert).toHaveBeenCalled();
     expect(mockInvalidateExecutionCache).toHaveBeenCalledWith('BTCUSDT');
   });
 

@@ -11,7 +11,6 @@ import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { type SyncResult, createEmptySyncResult, createFailedSyncResult, processIntentOrderForAdoptedPosition } from './position-sync-helpers';
-import { safeInsertRealizedPnlEvent } from './user-stream/safe-pnl-event';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -215,18 +214,6 @@ export class PositionSyncService {
                   updatedAt: new Date(),
                 })
                 .where(eq(wallets.id, wallet.id));
-
-              await safeInsertRealizedPnlEvent(db, {
-                walletId: wallet.id,
-                userId: wallet.userId,
-                executionId: dbPosition.id,
-                symbol: dbPosition.symbol,
-                eventType: 'full_close',
-                pnl: pnlResult.netPnl.toString(),
-                fees: totalFees.toString(),
-                quantity: quantity.toString(),
-                price: exitPrice.toString(),
-              });
 
               result.changes.balanceUpdated = true;
             }

@@ -24,8 +24,16 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
   const usdtBrlRate = useCurrencyStore((s) => s.usdtBrlRate);
   const showBrlValues = useCurrencyStore((s) => s.showBrlValues);
 
+  const tz = (() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch {
+      return 'UTC';
+    }
+  })();
+
   const { data = [], isLoading } = trpc.analytics.getDailyPerformance.useQuery(
-    { walletId, year, month },
+    { walletId, year, month, tz },
     { enabled: !!walletId, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 

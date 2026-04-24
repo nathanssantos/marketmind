@@ -8,7 +8,6 @@ import { positionSyncService } from '../position-sync';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
-import { safeInsertRealizedPnlEvent } from './safe-pnl-event';
 import type { UserStreamContext } from './types';
 
 export async function verifyAlgoFillProcessed(
@@ -124,18 +123,6 @@ export async function verifyAlgoFillProcessed(
         updatedAt: new Date(),
       })
       .where(eq(wallets.id, walletId));
-
-    await safeInsertRealizedPnlEvent(db, {
-      walletId,
-      userId: execution.userId,
-      executionId,
-      symbol,
-      eventType: 'full_close',
-      pnl: pnlResult.netPnl.toString(),
-      fees: totalFees.toString(),
-      quantity: quantity.toString(),
-      price: exitPrice.toString(),
-    });
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
 
@@ -293,18 +280,6 @@ export async function closeResidualPosition(
           if (closeResult.length === 0) continue;
 
           if (wallet) {
-            await safeInsertRealizedPnlEvent(db, {
-              walletId,
-              userId: wallet.userId,
-              executionId: orphan.id,
-              symbol,
-              eventType: 'full_close',
-              pnl: pnlResult.netPnl.toString(),
-              fees: totalFees.toString(),
-              quantity: quantity.toString(),
-              price: exitPrice.toString(),
-            });
-
             await db
               .update(wallets)
               .set({
