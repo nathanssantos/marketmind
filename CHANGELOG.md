@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.98.3] - 2026-04-24
+
+### Added
+- **Real-time deposit/withdrawal handling** — Spot user-data stream now dispatches `outboundAccountPosition` (overwrites `currentBalance`), `balanceUpdate` (routes through the shared `applyTransferDelta` writer), `listenKeyExpired`, and `eventStreamTerminated` (close + 1 s + resubscribe, mirroring the futures pattern). Was previously only handling `executionReport`.
+- **Futures `ACCOUNT_UPDATE` transfer reasons → real-time totals** — when `m` is `DEPOSIT`, `WITHDRAW`, `TRANSFER`, `INTERNAL_TRANSFER`, `ADMIN_DEPOSIT`, or `ADMIN_WITHDRAW`, the USDT delta now also bumps `wallets.totalDeposits`/`totalWithdrawals` (alongside the existing `currentBalance` overwrite). Other reasons keep the direct-update path.
+- **Hourly REST income-sync becomes reconciliation** — `takeOverSyntheticTransferRow` finds the matching synthetic sibling (same wallet, |amount| match, ±60 s) for each TRANSFER record, deletes it, lets the real Binance `tranId` row insert, and skips the totals bump for that record so we don't double-count.
+- **Single-source-of-truth helpers**: `services/income-events/syntheticTranId.ts` (paper close + real-time both consume it), `services/wallet-balance/applyTransferDelta.ts` (the only writer that touches `currentBalance + totals + synthetic income_event` in a single DB transaction), `constants/income-types.ts::TRANSFER_REASONS`, expanded `services/user-stream/types.ts` (sole registry of Binance WS event payload types — spot + futures), and `services/user-stream/dispatcher.ts` (typed `switch(e)` helper shared by both streams).
+
+### Changed
+- **Futures stream**: `TRADE_LITE`, `STRATEGY_UPDATE`, `GRID_UPDATE` now have explicit trace-only cases instead of falling through to the `default:` "Unhandled event type" warn — these were polluting prod logs.
+- `binance-user-stream.ts` no longer carries an inline `OrderUpdateEvent` type; consumes the shared `SpotExecutionReport` from `user-stream/types.ts`.
+
+### Notes
+- New tests: `syntheticTranId` (monotonic / negative / collision-free), `applyTransferDelta` (deposit, withdrawal, `newBalance` override, zero no-op), spot-stream dispatch coverage for the 4 new events, `handle-account-events` transfer-routing branches, `syncFromBinance` takeover (sibling found / amount mismatch / out-of-window cases), and futures-stream trace-only behavior for TRADE_LITE/STRATEGY_UPDATE/GRID_UPDATE.
+- A `BaseUserStreamService` extraction was deliberately deferred — spot manages its listenKey via REST keepalive, futures via SDK subscribe; merging the two lifecycles loses more clarity than it saves duplication.
+
 ## [0.98.2] - 2026-04-24
 
 ### Changed
