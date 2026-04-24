@@ -4,17 +4,9 @@ export const useBackendTradingMutations = () => {
   const utils = trpc.useUtils();
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
-    onSuccess: (data) => {
-      if (data.openExecutions) {
-        utils.trading.getTradeExecutions.setData(
-          { walletId: data.openExecutions[0]?.walletId ?? '', status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-        void utils.autoTrading.getActiveExecutions.invalidate();
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
-        void utils.autoTrading.getActiveExecutions.invalidate();
-      }
+    onSuccess: () => {
+      void utils.trading.getTradeExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.trading.getOrders.invalidate();
       void utils.trading.getPositions.invalidate();
       void utils.analytics.getPerformance.invalidate();

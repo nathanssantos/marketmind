@@ -75,6 +75,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const priceCallbacksRef = useRef<Map<string, Set<(price: number) => void>>>(new Map());
   const subscribedSymbolsRef = useRef<Set<string>>(new Set());
   const currentWalletIdRef = useRef<string | undefined>(undefined);
+  const hasDisconnectedRef = useRef<boolean>(false);
   const pendingPriceUpdates = useRef(new Map<string, number>());
   const priceFlushScheduled = useRef(false);
 
@@ -204,10 +205,17 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     const handleConnect = () => {
       if (import.meta.env.DEV) console.log('[RealtimeSync] WebSocket connected');
       subscribeAll();
+
+      if (hasDisconnectedRef.current) {
+        hasDisconnectedRef.current = false;
+        if (import.meta.env.DEV) console.log('[RealtimeSync] Reconnected after disconnect — forcing full trading-query refetch');
+        scheduleRef.current('positions', 'orders', 'wallet', 'setupStats', 'equityCurve');
+      }
     };
 
     const handleDisconnect = (reason: string) => {
       if (import.meta.env.DEV) console.log('[RealtimeSync] WebSocket disconnected:', reason);
+      hasDisconnectedRef.current = true;
     };
 
     const handleConnectError = (err: Error) => {
