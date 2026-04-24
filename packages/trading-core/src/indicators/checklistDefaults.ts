@@ -12,26 +12,49 @@ export interface ChecklistTemplateEntry {
   order: number;
 }
 
-export const DEFAULT_CHECKLIST_TEMPLATE: ChecklistTemplateEntry[] = [
-  { seedLabel: 'EMA 200', timeframe: 'current', op: 'priceAbove', tier: 'preferred', side: 'LONG', weight: 1.5, enabled: false, order: 0 },
-  { seedLabel: 'EMA 200', timeframe: 'current', op: 'priceBelow', tier: 'preferred', side: 'SHORT', weight: 1.5, enabled: false, order: 1 },
-  { seedLabel: 'EMA 21', timeframe: 'current', op: 'priceAbove', tier: 'preferred', side: 'LONG', weight: 1, enabled: false, order: 2 },
-  { seedLabel: 'EMA 21', timeframe: 'current', op: 'priceBelow', tier: 'preferred', side: 'SHORT', weight: 1, enabled: false, order: 3 },
-  { seedLabel: 'RSI 14', timeframe: 'current', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 1, enabled: false, order: 4 },
-  { seedLabel: 'RSI 14', timeframe: 'current', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 1, enabled: false, order: 5 },
-  { seedLabel: 'RSI 14', timeframe: '15m', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 1, enabled: false, order: 6 },
-  { seedLabel: 'RSI 14', timeframe: '15m', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 1, enabled: false, order: 7 },
-  { seedLabel: 'RSI 14', timeframe: '1h', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 1.5, enabled: false, order: 8 },
-  { seedLabel: 'RSI 14', timeframe: '1h', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 1.5, enabled: false, order: 9 },
-  { seedLabel: 'RSI 14', timeframe: '4h', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 2, enabled: false, order: 10 },
-  { seedLabel: 'RSI 14', timeframe: '4h', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 2, enabled: false, order: 11 },
-  { seedLabel: 'Stoch 14', timeframe: 'current', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 0.75, enabled: false, order: 12 },
-  { seedLabel: 'Stoch 14', timeframe: 'current', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 0.75, enabled: false, order: 13 },
-  { seedLabel: 'Stoch 14', timeframe: '15m', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 0.75, enabled: false, order: 14 },
-  { seedLabel: 'Stoch 14', timeframe: '15m', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 0.75, enabled: false, order: 15 },
-  { seedLabel: 'Stoch 14', timeframe: '1h', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 1.25, enabled: false, order: 16 },
-  { seedLabel: 'Stoch 14', timeframe: '1h', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 1.25, enabled: false, order: 17 },
-  { seedLabel: 'Stoch 14', timeframe: '4h', op: 'oversold', tier: 'preferred', side: 'LONG', weight: 1.75, enabled: false, order: 18 },
-  { seedLabel: 'Stoch 14', timeframe: '4h', op: 'overbought', tier: 'preferred', side: 'SHORT', weight: 1.75, enabled: false, order: 19 },
-  { seedLabel: 'Volume', timeframe: '1h', op: 'rising', tier: 'preferred', side: 'BOTH', weight: 1.5, enabled: false, order: 20 },
+// Weight matrix — drives both per-indicator importance and per-timeframe importance.
+//   TF multipliers (higher TF = more confirmation weight): 15m=1.0, 1h=1.5, 4h=2.0, 1d=2.5
+//   Indicator base (RSI 2 is faster + premium-weighted in this strategy):
+//     RSI 14 / Stoch 14 = base 1.0 → 1.0 / 1.5 / 2.0 / 2.5
+//     RSI 2             = base 2.0 → 2.0 / 2.5 / 3.0 / 3.5
+const TF_WEIGHTS = { '15m': 0, '1h': 0.5, '4h': 1.0, '1d': 1.5 } as const;
+const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
+
+// Thresholds — RSI 2 gets tight extremes (7/93) because it's fast and noisy
+// without them; the tight bound is what makes the high weight usable across
+// TFs. RSI 14 and Stoch 14 use `undefined` so the evaluator falls back to the
+// catalog default (20/80 of valueRange — classic 20/80 on the 0-100 scale).
+type IndicatorSpec = {
+  seedLabel: string;
+  base: number;
+  oversold?: number;
+  overbought?: number;
+};
+const INDICATORS: IndicatorSpec[] = [
+  { seedLabel: 'RSI 14', base: 1.0 },
+  { seedLabel: 'RSI 2', base: 2.0, oversold: 7, overbought: 93 },
+  { seedLabel: 'Stoch 14', base: 1.0 },
 ];
+
+const buildTemplate = (): ChecklistTemplateEntry[] => {
+  const out: ChecklistTemplateEntry[] = [];
+  let order = 0;
+  for (const ind of INDICATORS) {
+    for (const tf of TIMEFRAMES) {
+      const weight = ind.base + TF_WEIGHTS[tf];
+      out.push({
+        seedLabel: ind.seedLabel, timeframe: tf, op: 'oversold',
+        threshold: ind.oversold,
+        tier: 'preferred', side: 'LONG', weight, enabled: false, order: order++,
+      });
+      out.push({
+        seedLabel: ind.seedLabel, timeframe: tf, op: 'overbought',
+        threshold: ind.overbought,
+        tier: 'preferred', side: 'SHORT', weight, enabled: false, order: order++,
+      });
+    }
+  }
+  return out;
+};
+
+export const DEFAULT_CHECKLIST_TEMPLATE: ChecklistTemplateEntry[] = buildTemplate();

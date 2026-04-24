@@ -32,17 +32,68 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     expect(new Set(orders).size).toBe(orders.length);
   });
 
-  it('covers EMA 200, EMA 21, RSI 14, and Volume seeds', () => {
+  it('covers RSI 2, RSI 14, and Stoch 14 across 15m/1h/4h/1d', () => {
     const seedLabels = DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.seedLabel);
-    expect(seedLabels).toContain('EMA 200');
-    expect(seedLabels).toContain('EMA 21');
+    expect(seedLabels).toContain('RSI 2');
     expect(seedLabels).toContain('RSI 14');
-    expect(seedLabels).toContain('Volume');
+    expect(seedLabels).toContain('Stoch 14');
+
+    const timeframes = new Set(DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.timeframe));
+    expect(timeframes).toEqual(new Set(['15m', '1h', '4h', '1d']));
   });
 
   it('pairs LONG and SHORT entries for direction-aware ops', () => {
     const longEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'LONG');
     const shortEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'SHORT');
     expect(longEntries.length).toBe(shortEntries.length);
+  });
+
+  it('weights scale with both indicator base and timeframe (1d > 4h > 1h > 15m)', () => {
+    for (const seedLabel of ['RSI 14', 'RSI 2', 'Stoch 14']) {
+      const byTf = (tf: string) =>
+        DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === seedLabel && e.timeframe === tf && e.side === 'LONG')!.weight;
+      expect(byTf('15m')).toBeLessThan(byTf('1h'));
+      expect(byTf('1h')).toBeLessThan(byTf('4h'));
+      expect(byTf('4h')).toBeLessThan(byTf('1d'));
+    }
+    // RSI 2 premium-weighted over RSI 14 at every timeframe
+    for (const tf of ['15m', '1h', '4h', '1d']) {
+      const rsi14 = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'RSI 14' && e.timeframe === tf && e.side === 'LONG')!.weight;
+      const rsi2 = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'RSI 2' && e.timeframe === tf && e.side === 'LONG')!.weight;
+      expect(rsi2).toBeGreaterThan(rsi14);
+    }
+  });
+
+  it('contains 24 entries (3 indicators × 4 timeframes × 2 sides)', () => {
+    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(24);
+  });
+
+  it('RSI 2 ships tight thresholds (7 oversold / 93 overbought) — RSI 14 and Stoch 14 use evaluator defaults', () => {
+    for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+      if (entry.seedLabel === 'RSI 2') {
+        expect(entry.threshold).toBe(entry.op === 'oversold' ? 7 : 93);
+      } else {
+        expect(entry.threshold).toBeUndefined();
+      }
+    }
+  });
+
+  it('orders are logically grouped: RSI 14 block → RSI 2 block → Stoch 14 block, TFs ascending within each', () => {
+    const sorted = [...DEFAULT_CHECKLIST_TEMPLATE].sort((a, b) => a.order - b.order);
+    const blocks = sorted.reduce<string[]>((acc, e) => {
+      if (acc[acc.length - 1] !== e.seedLabel) acc.push(e.seedLabel);
+      return acc;
+    }, []);
+    expect(blocks).toEqual(['RSI 14', 'RSI 2', 'Stoch 14']);
+
+    const tfOrder: Record<string, number> = { '15m': 0, '1h': 1, '4h': 2, '1d': 3 };
+    for (const seedLabel of blocks) {
+      const block = sorted.filter((e) => e.seedLabel === seedLabel);
+      for (let i = 1; i < block.length; i += 1) {
+        const prev = tfOrder[block[i - 1]!.timeframe]!;
+        const curr = tfOrder[block[i]!.timeframe]!;
+        expect(curr).toBeGreaterThanOrEqual(prev);
+      }
+    }
   });
 });

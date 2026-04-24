@@ -60,15 +60,17 @@ const main = async (): Promise<void> => {
     );
 
     const templateKeys = new Set<string>();
+    const templateOrder = new Map<string, number>();
     const additions: typeof existing = [];
     let updated = 0;
-    let nextOrder = existing.reduce((m, c) => Math.max(m, c.order), -1) + 1;
+    let reordered = 0;
 
     for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
       const userIndicatorId = idByLabel.get(entry.seedLabel);
       if (!userIndicatorId) continue;
       const key = buildKey(userIndicatorId, entry.timeframe, entry.op, entry.side);
       templateKeys.add(key);
+      templateOrder.set(key, entry.order);
 
       const current = existingByKey.get(key);
       if (!current) {
@@ -82,16 +84,19 @@ const main = async (): Promise<void> => {
           side: entry.side,
           weight: entry.weight,
           enabled: entry.enabled,
-          order: nextOrder++,
+          order: entry.order,
         });
         continue;
       }
 
-      if (current.tier !== entry.tier || current.weight !== entry.weight) {
+      const thresholdChanged = JSON.stringify(current.threshold ?? null) !== JSON.stringify(entry.threshold ?? null);
+      if (current.tier !== entry.tier || current.weight !== entry.weight || thresholdChanged) {
         current.tier = entry.tier;
         current.weight = entry.weight;
+        current.threshold = entry.threshold;
         updated++;
       }
+      if (current.order !== entry.order) reordered++;
     }
 
     const kept = prune
@@ -101,12 +106,21 @@ const main = async (): Promise<void> => {
       : existing;
     const pruned = existing.length - kept.length;
 
-    if (additions.length === 0 && updated === 0 && pruned === 0) {
+    if (additions.length === 0 && updated === 0 && pruned === 0 && reordered === 0) {
       console.log(`  [${user.email}] already aligned (${existing.length} conditions)`);
       continue;
     }
 
-    const merged = [...kept, ...additions].map((c, idx) => ({ ...c, order: idx }));
+    // Reorder: template entries get their canonical template.order, non-template
+    // entries (kept when --prune is off) go after, appended in their existing order.
+    const templateMax = DEFAULT_CHECKLIST_TEMPLATE.length;
+    const withOrder = [...kept, ...additions].map((c) => {
+      const tplOrder = templateOrder.get(buildKey(c.userIndicatorId, c.timeframe, c.op, c.side));
+      return { ...c, order: tplOrder ?? templateMax + c.order };
+    });
+    const merged = withOrder
+      .sort((a, b) => a.order - b.order)
+      .map((c, idx) => ({ ...c, order: idx }));
     await db
       .update(tradingProfiles)
       .set({
@@ -116,7 +130,7 @@ const main = async (): Promise<void> => {
       .where(eq(tradingProfiles.id, defaultProfile.id));
 
     console.log(
-      `  [${user.email}] profile "${defaultProfile.name}": +${additions.length} added, ${updated} tier/weight updated, ${pruned} pruned (total ${merged.length})`,
+      `  [${user.email}] profile "${defaultProfile.name}": +${additions.length} added, ${updated} tier/weight/threshold updated, ${reordered} reordered, ${pruned} pruned (total ${merged.length})`,
     );
   }
 

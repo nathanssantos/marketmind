@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.98.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.98.2-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-7,500%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
@@ -16,7 +16,7 @@
 
 ## About the Project
 
-**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (klines) with algorithmic setup detection. The goal is to provide automated trading insights on cryptocurrencies and stocks through mathematical pattern recognition and backtested strategies.
+**MarketMind** is a desktop application developed in Electron that combines advanced financial chart visualization (klines) with algorithmic setup detection. The goal is to provide automated trading insights on cryptocurrencies through mathematical pattern recognition and backtested strategies.
 
 Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overview of features, tech stack, and screenshots.
 
@@ -93,7 +93,7 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 ### Architecture
 - **Monorepo** - pnpm workspaces
 - **Shared Packages** - 6 packages (@marketmind/types, chart-studies, fibonacci, logger, trading-core, risk, utils)
-- **Exchange Abstraction** - Binance (crypto) + Interactive Brokers (US stocks)
+- **Exchange Abstraction** - Binance (crypto)
 - **Real-time API** - Backend server with tRPC endpoints
 - **Session Auth** - Secure cookie-based authentication
 - **Encrypted Storage** - AES-256-CBC for API keys
@@ -192,7 +192,7 @@ See [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md) for the full layered-te
 
 **Test Stats:**
 - **~7,600+ tests** across the monorepo
-- **5,129 backend tests** + 40 skipped (IB integration) — now includes a golden-output snapshot per builtin strategy (106 snapshots)
+- **5,129 backend tests** + 40 skipped — now includes a golden-output snapshot per builtin strategy (106 snapshots)
 - **2,400+ frontend tests** (2,341 unit + 92 browser across 6 files)
 - **Browser tests** (`apps/electron/src/**/*.browser.test.ts(x)`) cover Canvas pixel math, `getBoundingClientRect` hit-testing, and `CanvasManager` mount/unmount lifecycle — surfaces jsdom can't exercise. Run via `pnpm --filter @marketmind/electron test:browser:run`
 - **CI** runs lint, unit tests (with coverage artifact), browser tests, E2E, and backend build on every PR
