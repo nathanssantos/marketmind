@@ -97,6 +97,15 @@ export const installTrpcMock = async (page: Page, options: TrpcMockOptions = {})
     ...(options.overrides ?? {}),
   };
 
+  await page.exposeFunction('__mmTrpcHitCount', () => 0);
+
+  await page.addInitScript(() => {
+    const counters = new Map<string, number>();
+    (window as unknown as { __mmTrpcCounters: Map<string, number> }).__mmTrpcCounters = counters;
+    (window as unknown as { __mmTrpcHits: (path: string) => number }).__mmTrpcHits = (path: string) =>
+      counters.get(path) ?? 0;
+  });
+
   await page.route('**/trpc/**', async (route: Route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -114,6 +123,14 @@ export const installTrpcMock = async (page: Page, options: TrpcMockOptions = {})
       }
     }
 
+    await page.evaluate((pathsToCount: string[]) => {
+      const counters = (window as unknown as { __mmTrpcCounters: Map<string, number> }).__mmTrpcCounters;
+      if (!counters) return;
+      for (const path of pathsToCount) {
+        counters.set(path, (counters.get(path) ?? 0) + 1);
+      }
+    }, paths).catch(() => { /* best effort — ignore if page not ready */ });
+
     const body = buildBatchResponse(paths, inputs, resolverMap);
     await route.fulfill({
       status: 200,
@@ -122,3 +139,13 @@ export const installTrpcMock = async (page: Page, options: TrpcMockOptions = {})
     });
   });
 };
+
+/**
+ * Read how many times a given tRPC path was hit by the mock.
+ * Handy for asserting that a WS event triggered a React Query invalidation → refetch.
+ */
+export const getTrpcHitCount = (page: Page, path: string): Promise<number> =>
+  page.evaluate((p: string) => {
+    const reader = (window as unknown as { __mmTrpcHits?: (path: string) => number }).__mmTrpcHits;
+    return reader ? reader(p) : 0;
+  }, path);
