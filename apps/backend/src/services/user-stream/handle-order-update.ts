@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { tradeExecutions } from '../../db/schema';
 import { detectExitReason, isClosingSide } from '../execution-manager';
 import { logger, serializeError } from '../logger';
+import { getWebSocketService } from '../websocket';
 import type { UserStreamContext, FuturesOrderUpdate } from './types';
 import { handlePendingFill } from './handle-pending-fill';
 import { handleUntrackedReduceFill, handleManualOrderFill } from './handle-untracked-fill';
@@ -44,7 +45,7 @@ export async function handleOrderUpdate(
     );
 
     if (status === 'CANCELED') {
-      await db
+      const cancelled = await db
         .update(tradeExecutions)
         .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
         .where(
@@ -53,7 +54,17 @@ export async function handleOrderUpdate(
             eq(tradeExecutions.status, 'pending'),
             eq(tradeExecutions.entryOrderId, String(orderId))
           )
-        );
+        )
+        .returning();
+
+      const wsService = getWebSocketService();
+      if (wsService) {
+        wsService.emitOrderCancelled(walletId, String(orderId));
+        for (const exec of cancelled) {
+          wsService.emitOrderUpdate(walletId, { id: exec.id, status: 'cancelled' });
+          wsService.emitPositionUpdate(walletId, exec);
+        }
+      }
       return;
     }
 
