@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, lte, sql } from 'drizzle-orm';
 import { TIME_MS } from '../../constants';
 import { db } from '../../db';
 import { incomeEvents, wallets } from '../../db/schema';
@@ -14,6 +14,8 @@ import { serializeError } from '../../utils/errors';
 import { INCOME_TYPES, type IncomeType } from '../../constants/income-types';
 import { insertIncomeEventsBatch, type InsertIncomeEventInput } from './insertIncomeEvent';
 import { linkIncomeToExecution } from './matcher';
+
+const SYNTHETIC_WINDOW_MS = 60_000;
 
 const DEFAULT_LOOKBACK_MS = 24 * TIME_MS.HOUR;
 const MAX_INITIAL_LOOKBACK_MS = 30 * 24 * TIME_MS.HOUR;
@@ -77,7 +79,47 @@ const toInsertRows = (wallet: Wallet, records: IncomeHistoryRecord[]): InsertInc
   return rows;
 };
 
-const updateTransferTotals = async (wallet: Wallet, records: IncomeHistoryRecord[]): Promise<{ deposits: number; withdrawals: number }> => {
+const takeOverSyntheticTransferRow = async (
+  walletId: string,
+  record: IncomeHistoryRecord,
+): Promise<{ tookOver: boolean }> => {
+  if (record.incomeType !== 'TRANSFER') return { tookOver: false };
+
+  const amount = parseFloat(record.income);
+  const absAmount = Math.abs(amount);
+  const windowStart = new Date(record.time - SYNTHETIC_WINDOW_MS);
+  const windowEnd = new Date(record.time + SYNTHETIC_WINDOW_MS);
+
+  const [sibling] = await db
+    .select({ id: incomeEvents.id })
+    .from(incomeEvents)
+    .where(
+      and(
+        eq(incomeEvents.walletId, walletId),
+        eq(incomeEvents.incomeType, 'TRANSFER'),
+        lt(incomeEvents.binanceTranId, 0),
+        gte(incomeEvents.incomeTime, windowStart),
+        lte(incomeEvents.incomeTime, windowEnd),
+        sql`ABS(${incomeEvents.amount}::numeric) = ${absAmount}`,
+      ),
+    )
+    .limit(1);
+
+  if (!sibling) return { tookOver: false };
+
+  await db.delete(incomeEvents).where(eq(incomeEvents.id, sibling.id));
+  logger.info(
+    { walletId, syntheticId: sibling.id, realTranId: record.tranId, amount },
+    '[IncomeSync] Took over synthetic TRANSFER row with real Binance tran_id',
+  );
+  return { tookOver: true };
+};
+
+const updateTransferTotals = async (
+  wallet: Wallet,
+  records: IncomeHistoryRecord[],
+  skipTranIds: ReadonlySet<number>,
+): Promise<{ deposits: number; withdrawals: number }> => {
   const walletCreatedAt = wallet.createdAt.getTime();
   let deposits = 0;
   let withdrawals = 0;
@@ -85,6 +127,7 @@ const updateTransferTotals = async (wallet: Wallet, records: IncomeHistoryRecord
   for (const record of records) {
     if (record.incomeType !== 'TRANSFER') continue;
     if (record.time < walletCreatedAt) continue;
+    if (skipTranIds.has(record.tranId)) continue;
 
     const amount = parseFloat(record.income);
     if (amount > 0) deposits += amount;
@@ -149,10 +192,17 @@ export const syncWalletIncome = async (wallet: Wallet, options: SyncOptions = {}
 
     result.fetched = records.length;
 
+    const skipTranIds = new Set<number>();
+    for (const record of records) {
+      if (record.incomeType !== 'TRANSFER') continue;
+      const { tookOver } = await takeOverSyntheticTransferRow(wallet.id, record);
+      if (tookOver) skipTranIds.add(record.tranId);
+    }
+
     const insertRows = toInsertRows(wallet, records);
     result.inserted = await insertIncomeEventsBatch(insertRows);
 
-    const { deposits, withdrawals } = await updateTransferTotals(wallet, records);
+    const { deposits, withdrawals } = await updateTransferTotals(wallet, records, skipTranIds);
     result.totalDeposits = deposits;
     result.totalWithdrawals = withdrawals;
 

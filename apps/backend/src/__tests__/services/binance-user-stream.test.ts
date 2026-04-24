@@ -41,6 +41,9 @@ vi.mock('../../db/schema', () => ({
 vi.mock('drizzle-orm', () => ({
   and: vi.fn((...args) => ({ type: 'and', args })),
   eq: vi.fn((a, b) => ({ type: 'eq', a, b })),
+  sql: Object.assign((...args: unknown[]) => ({ type: 'sql', args }), {
+    raw: (value: string) => ({ type: 'raw', value }),
+  }),
 }));
 
 const mockGetSpotUserDataListenKey = vi.fn();
@@ -58,11 +61,19 @@ vi.mock('../../services/binance-client', () => ({
 }));
 
 const mockEmitPositionUpdate = vi.fn();
+const mockEmitWalletUpdate = vi.fn();
 
 vi.mock('../../services/websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
+    emitWalletUpdate: mockEmitWalletUpdate,
   })),
+}));
+
+const mockApplyTransferDelta = vi.fn();
+
+vi.mock('../../services/wallet-balance', () => ({
+  applyTransferDelta: (input: unknown) => mockApplyTransferDelta(input),
 }));
 
 const { BinanceUserStreamService, binanceUserStreamService } = await import('../../services/binance-user-stream');
@@ -342,7 +353,7 @@ describe('BinanceUserStreamService', () => {
       expect(() => messageHandler(null)).not.toThrow();
     });
 
-    it('should ignore non-executionReport messages', async () => {
+    it('short-circuits outboundAccountPosition without a USDT entry', async () => {
       const wallet = {
         id: 'wallet-1',
         walletType: 'live',
@@ -352,13 +363,187 @@ describe('BinanceUserStreamService', () => {
       };
 
       await service.subscribeWallet(wallet as any);
+      mockDbSelect.mockClear();
+      mockDbUpdate.mockClear();
 
       const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
 
-      const balanceUpdate = { e: 'outboundAccountPosition' };
+      const balanceUpdate = { e: 'outboundAccountPosition', B: [] };
       messageHandler(balanceUpdate);
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(mockDbUpdate).not.toHaveBeenCalled();
+    });
+
+    it('dispatches outboundAccountPosition USDT entry to a wallet balance update', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockDbUpdate.mockClear();
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+
+      const event = {
+        e: 'outboundAccountPosition',
+        E: Date.now(),
+        B: [
+          { a: 'USDT', f: '100', l: '50' },
+          { a: 'BTC', f: '0.01', l: '0' },
+        ],
+      };
+
+      messageHandler(event);
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(mockDbUpdate).toHaveBeenCalled();
+    });
+
+    it('routes balanceUpdate to applyTransferDelta with positive deposit delta', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockDbSelect.mockClear();
+      mockApplyTransferDelta.mockClear();
+
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{ userId: 'user-1' }]),
+          }),
+        }),
+      });
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+      const eventTime = Date.now();
+      messageHandler({ e: 'balanceUpdate', a: 'USDT', d: '25', E: eventTime, T: eventTime });
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(mockApplyTransferDelta).toHaveBeenCalledWith(expect.objectContaining({
+        walletId: 'wallet-1',
+        userId: 'user-1',
+        asset: 'USDT',
+        deltaAmount: 25,
+        reason: 'BALANCE_UPDATE',
+        eventTime,
+      }));
+    });
+
+    it('routes balanceUpdate with negative delta as withdrawal', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockApplyTransferDelta.mockClear();
+
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{ userId: 'user-1' }]),
+          }),
+        }),
+      });
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+      messageHandler({ e: 'balanceUpdate', a: 'USDT', d: '-10', E: Date.now(), T: Date.now() });
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(mockApplyTransferDelta).toHaveBeenCalledWith(expect.objectContaining({
+        deltaAmount: -10,
+        reason: 'BALANCE_UPDATE',
+      }));
+    });
+
+    it('ignores balanceUpdate for non-USDT assets', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockDbSelect.mockClear();
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+      messageHandler({ e: 'balanceUpdate', a: 'BTC', d: '0.01', E: Date.now(), T: Date.now() });
+      await vi.runOnlyPendingTimersAsync();
 
       expect(mockDbSelect).not.toHaveBeenCalled();
+    });
+
+    it('ignores balanceUpdate with zero delta', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockDbSelect.mockClear();
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+      messageHandler({ e: 'balanceUpdate', a: 'USDT', d: '0', E: Date.now(), T: Date.now() });
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(mockDbSelect).not.toHaveBeenCalled();
+    });
+
+    it('triggers resubscribe on listenKeyExpired', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockCloseAll.mockClear();
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+      messageHandler({ e: 'listenKeyExpired', E: Date.now() });
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(mockCloseAll).toHaveBeenCalled();
+    });
+
+    it('triggers resubscribe on eventStreamTerminated', async () => {
+      const wallet = {
+        id: 'wallet-1',
+        walletType: 'live',
+        marketType: 'SPOT',
+        apiKeyEncrypted: 'encrypted-key',
+        apiSecretEncrypted: 'encrypted-secret',
+      };
+
+      await service.subscribeWallet(wallet as any);
+      mockCloseAll.mockClear();
+
+      const messageHandler = mockOn.mock.calls.find((c) => c[0] === 'message')?.[1];
+      messageHandler({ e: 'eventStreamTerminated', E: Date.now() });
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(mockCloseAll).toHaveBeenCalled();
     });
   });
 

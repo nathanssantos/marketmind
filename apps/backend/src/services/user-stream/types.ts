@@ -118,6 +118,135 @@ export interface FuturesConditionalOrderReject {
   };
 }
 
+export interface FuturesTradeLite {
+  e: 'TRADE_LITE';
+  E: number;
+  T: number;
+  s: string;
+  q: string;
+  p: string;
+  m: boolean;
+  c: string;
+  S: 'BUY' | 'SELL';
+  L: string;
+  l: string;
+  t: number;
+  i: number;
+}
+
+export interface FuturesStrategyUpdate {
+  e: 'STRATEGY_UPDATE';
+  E: number;
+  T: number;
+  su: Record<string, unknown>;
+}
+
+export interface FuturesGridUpdate {
+  e: 'GRID_UPDATE';
+  E: number;
+  T: number;
+  gu: Record<string, unknown>;
+}
+
+export interface FuturesListenKeyExpired {
+  e: 'listenKeyExpired';
+  E: number;
+}
+
+export type FuturesUserDataEvent =
+  | FuturesOrderUpdate
+  | FuturesAccountUpdate
+  | FuturesMarginCall
+  | FuturesAccountConfigUpdate
+  | FuturesAlgoOrderUpdate
+  | FuturesConditionalOrderReject
+  | FuturesTradeLite
+  | FuturesStrategyUpdate
+  | FuturesGridUpdate
+  | FuturesListenKeyExpired;
+
+export interface SpotExecutionReport {
+  e: 'executionReport';
+  E: number;
+  s: string;
+  c: string;
+  S: 'BUY' | 'SELL';
+  o: string;
+  f: string;
+  q: string;
+  p: string;
+  P: string;
+  F: string;
+  g: number;
+  C: string;
+  x: string;
+  X: string;
+  r: string;
+  i: number;
+  l: string;
+  z: string;
+  L: string;
+  n: string;
+  N: string | null;
+  T: number;
+  t: number;
+  I: number;
+  w: boolean;
+  m: boolean;
+  M: boolean;
+  O: number;
+  Z: string;
+  Y: string;
+  Q: string;
+}
+
+export interface SpotOutboundAccountPosition {
+  e: 'outboundAccountPosition';
+  E: number;
+  u: number;
+  B: Array<{ a: string; f: string; l: string }>;
+}
+
+export interface SpotBalanceUpdate {
+  e: 'balanceUpdate';
+  E: number;
+  a: string;
+  d: string;
+  T: number;
+}
+
+export interface SpotListStatus {
+  e: 'listStatus';
+  E: number;
+  s: string;
+  g: number;
+  c: string;
+  l: string;
+  L: string;
+  r: string;
+  C: string;
+  T: number;
+  O: Array<{ s: string; i: number; c: string }>;
+}
+
+export interface SpotListenKeyExpired {
+  e: 'listenKeyExpired';
+  E: number;
+}
+
+export interface SpotEventStreamTerminated {
+  e: 'eventStreamTerminated';
+  E: number;
+}
+
+export type SpotUserDataEvent =
+  | SpotExecutionReport
+  | SpotOutboundAccountPosition
+  | SpotBalanceUpdate
+  | SpotListStatus
+  | SpotListenKeyExpired
+  | SpotEventStreamTerminated;
+
 export interface UserStreamContext {
   connections: Map<string, { wsClient: WebsocketClient; apiClient: USDMClient }>;
   getCachedWallet(walletId: string): Promise<Wallet | null>;

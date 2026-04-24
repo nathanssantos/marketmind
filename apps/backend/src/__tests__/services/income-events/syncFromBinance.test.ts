@@ -118,4 +118,108 @@ describe('syncWalletIncome', () => {
     expect(result.fetched).toBe(0);
     expect(vi.mocked(getIncomeHistory)).not.toHaveBeenCalled();
   });
+
+  it('takes over a synthetic TRANSFER row: deletes synthetic, inserts real, skips totals bump', async () => {
+    const { user, wallet } = await makeLiveWallet();
+    const db = getTestDatabase();
+
+    const syntheticTime = new Date(wallet.createdAt.getTime() + 60_000);
+    const restTime = syntheticTime.getTime() + 10_000;
+
+    await db.insert(incomeEvents).values({
+      walletId: wallet.id,
+      userId: user.id,
+      binanceTranId: -999_888,
+      incomeType: 'TRANSFER',
+      amount: '150',
+      asset: 'USDT',
+      source: 'binance',
+      info: 'realtime:BALANCE_UPDATE',
+      incomeTime: syntheticTime,
+    });
+
+    await db
+      .update(wallets)
+      .set({ totalDeposits: '150', lastTransferSyncAt: syntheticTime })
+      .where(eq(wallets.id, wallet.id));
+
+    vi.mocked(getIncomeHistory).mockResolvedValue([
+      { tranId: 400001, incomeType: 'TRANSFER', income: '150', asset: 'USDT', time: restTime, info: '', tradeId: '' },
+    ]);
+
+    const result = await syncWalletIncome(wallet);
+    expect(result.inserted).toBe(1);
+    expect(result.totalDeposits).toBe(0);
+
+    const rows = await db.select().from(incomeEvents).where(eq(incomeEvents.walletId, wallet.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.binanceTranId).toBe(400001);
+
+    const [updated] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+    expect(parseFloat(updated!.totalDeposits ?? '0')).toBeCloseTo(150, 2);
+  });
+
+  it('does not take over when amount does not match the synthetic sibling', async () => {
+    const { user, wallet } = await makeLiveWallet();
+    const db = getTestDatabase();
+
+    const syntheticTime = new Date(wallet.createdAt.getTime() + 60_000);
+    const restTime = syntheticTime.getTime() + 5_000;
+
+    await db.insert(incomeEvents).values({
+      walletId: wallet.id,
+      userId: user.id,
+      binanceTranId: -777_666,
+      incomeType: 'TRANSFER',
+      amount: '200',
+      asset: 'USDT',
+      source: 'binance',
+      incomeTime: syntheticTime,
+    });
+
+    await db
+      .update(wallets)
+      .set({ totalDeposits: '200' })
+      .where(eq(wallets.id, wallet.id));
+
+    vi.mocked(getIncomeHistory).mockResolvedValue([
+      { tranId: 500001, incomeType: 'TRANSFER', income: '75', asset: 'USDT', time: restTime, info: '', tradeId: '' },
+    ]);
+
+    const result = await syncWalletIncome(wallet);
+    expect(result.inserted).toBe(1);
+    expect(result.totalDeposits).toBeCloseTo(75, 2);
+
+    const rows = await db.select().from(incomeEvents).where(eq(incomeEvents.walletId, wallet.id));
+    expect(rows).toHaveLength(2);
+  });
+
+  it('does not take over when the synthetic row is outside the 60s window', async () => {
+    const { user, wallet } = await makeLiveWallet();
+    const db = getTestDatabase();
+
+    const syntheticTime = new Date(wallet.createdAt.getTime() + 60_000);
+    const restTime = syntheticTime.getTime() + 5 * 60_000;
+
+    await db.insert(incomeEvents).values({
+      walletId: wallet.id,
+      userId: user.id,
+      binanceTranId: -555_444,
+      incomeType: 'TRANSFER',
+      amount: '40',
+      asset: 'USDT',
+      source: 'binance',
+      incomeTime: syntheticTime,
+    });
+
+    vi.mocked(getIncomeHistory).mockResolvedValue([
+      { tranId: 600001, incomeType: 'TRANSFER', income: '40', asset: 'USDT', time: restTime, info: '', tradeId: '' },
+    ]);
+
+    const result = await syncWalletIncome(wallet);
+    expect(result.totalDeposits).toBeCloseTo(40, 2);
+
+    const rows = await db.select().from(incomeEvents).where(eq(incomeEvents.walletId, wallet.id));
+    expect(rows).toHaveLength(2);
+  });
 });

@@ -1,11 +1,5 @@
 import { insertIncomeEventsBatch, type InsertIncomeEventInput } from './insertIncomeEvent';
-
-let paperSynthCounter = 0;
-
-const nextPaperTranId = (): number => {
-  paperSynthCounter += 1;
-  return -(Date.now() * 1000 + paperSynthCounter);
-};
+import { nextSyntheticTranId } from './syntheticTranId';
 
 export interface SynthesizePaperCloseInput {
   walletId: string;
@@ -28,7 +22,7 @@ export const synthesizePaperClose = async (input: SynthesizePaperCloseInput): Pr
     {
       walletId: input.walletId,
       userId: input.userId,
-      binanceTranId: nextPaperTranId(),
+      binanceTranId: nextSyntheticTranId(),
       incomeType: 'REALIZED_PNL',
       amount: input.grossPnl,
       asset,
@@ -43,7 +37,7 @@ export const synthesizePaperClose = async (input: SynthesizePaperCloseInput): Pr
     rows.push({
       walletId: input.walletId,
       userId: input.userId,
-      binanceTranId: nextPaperTranId(),
+      binanceTranId: nextSyntheticTranId(),
       incomeType: 'COMMISSION',
       amount: -Math.abs(input.totalFees),
       asset,
@@ -58,7 +52,7 @@ export const synthesizePaperClose = async (input: SynthesizePaperCloseInput): Pr
     rows.push({
       walletId: input.walletId,
       userId: input.userId,
-      binanceTranId: nextPaperTranId(),
+      binanceTranId: nextSyntheticTranId(),
       incomeType: 'FUNDING_FEE',
       amount: funding,
       asset,

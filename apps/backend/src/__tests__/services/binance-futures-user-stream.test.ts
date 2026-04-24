@@ -599,6 +599,90 @@ describe('BinanceFuturesUserStreamService', () => {
 
       service.stop();
     });
+
+    it('ignores known non-essential events (TRADE_LITE, STRATEGY_UPDATE, GRID_UPDATE) without DB writes', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+        initialBalance: '10000',
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      getMockWsClient()?.emit('message', { e: 'TRADE_LITE', E: Date.now(), T: Date.now(), s: 'BTCUSDT', q: '0.1', p: '50000', m: false, c: 'x', S: 'BUY', L: '50000', l: '0.1', t: 1, i: 1 });
+      getMockWsClient()?.emit('message', { e: 'STRATEGY_UPDATE', E: Date.now(), T: Date.now(), su: {} });
+      getMockWsClient()?.emit('message', { e: 'GRID_UPDATE', E: Date.now(), T: Date.now(), gu: {} });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const [updated] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+      expect(parseFloat(updated!.currentBalance ?? '0')).toBe(10000);
+
+      service.stop();
+    });
+  });
+
+  describe('handleAccountUpdate transfers', () => {
+    it('routes transfer reasons through applyTransferDelta and bumps totalDeposits', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+        initialBalance: '10000',
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      getMockWsClient()?.emit('message', createFuturesAccountUpdateEvent({
+        reason: 'DEPOSIT',
+        balances: [{ asset: 'USDT', walletBalance: '12000', crossWalletBalance: '12000', balanceChange: '2000' }],
+      }));
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const [updated] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+      expect(parseFloat(updated!.currentBalance ?? '0')).toBe(12000);
+      expect(parseFloat(updated!.totalDeposits ?? '0')).toBe(2000);
+
+      service.stop();
+    });
+
+    it('ORDER reason does not bump totalDeposits (existing behavior preserved)', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+        initialBalance: '10000',
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      getMockWsClient()?.emit('message', createFuturesAccountUpdateEvent({
+        reason: 'ORDER',
+        balances: [{ asset: 'USDT', walletBalance: '10050', crossWalletBalance: '10050', balanceChange: '50' }],
+      }));
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const [updated] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+      expect(parseFloat(updated!.currentBalance ?? '0')).toBe(10050);
+      expect(parseFloat(updated!.totalDeposits ?? '0')).toBe(0);
+
+      service.stop();
+    });
   });
 
   describe('handleAlgoOrderUpdate - OCO-like behavior', () => {
