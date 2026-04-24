@@ -242,6 +242,7 @@ export class KlineSynthesisService {
       volume: toNumberString(state.volume),
       isClosed,
       timestamp: Date.now(),
+      synthetic: true,
     });
     state.lastEmitAt = Date.now();
     state.dirty = false;

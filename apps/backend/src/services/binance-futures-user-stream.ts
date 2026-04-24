@@ -557,6 +557,16 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
   isWalletSubscribed(walletId: string): boolean {
     return this.connections.has(walletId);
   }
+
+  getHealthSnapshot(): Array<{ walletId: string; healthStatus: 'healthy' | 'degraded'; silenceMs: number; lastReconnectAt: number }> {
+    const now = Date.now();
+    return Array.from(this.walletHealth.entries()).map(([walletId, state]) => ({
+      walletId,
+      healthStatus: state.healthStatus,
+      silenceMs: now - state.lastMessageAt,
+      lastReconnectAt: state.lastReconnectAt,
+    }));
+  }
 }
 
 export const binanceFuturesUserStreamService = new BinanceFuturesUserStreamService();

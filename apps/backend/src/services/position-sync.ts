@@ -320,8 +320,8 @@ export class PositionSyncService {
               liquidationPrice: exchangeLiqPrice,
               updatedAt: new Date(),
             };
-            if (qtyChanged) updateSet.quantity = exchangeQty.toString();
-            if (priceChanged) updateSet.entryPrice = exchangeEntryPrice.toString();
+            if (qtyChanged) updateSet['quantity'] = exchangeQty.toString();
+            if (priceChanged) updateSet['entryPrice'] = exchangeEntryPrice.toString();
 
             await db
               .update(tradeExecutions)
