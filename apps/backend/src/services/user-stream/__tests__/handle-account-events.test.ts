@@ -58,6 +58,11 @@ vi.mock('../../websocket', () => ({
   })),
 }));
 
+const mockApplyTransferDelta = vi.fn().mockResolvedValue({ tranId: -1, newBalance: 0, depositsAdded: 0, withdrawalsAdded: 0 });
+vi.mock('../../wallet-balance', () => ({
+  applyTransferDelta: (...args: unknown[]) => mockApplyTransferDelta(...args),
+}));
+
 import {
   handleAccountUpdate,
   handleMarginCall,
@@ -147,6 +152,56 @@ describe('handleAccountUpdate', () => {
     expect(mockEmitWalletUpdate).toHaveBeenCalledWith('wallet-1', expect.objectContaining({
       reason: 'DEPOSIT',
     }));
+  });
+
+  it('routes DEPOSIT/WITHDRAW/TRANSFER reasons through applyTransferDelta (not direct update)', async () => {
+    const ctx = createMockCtx({
+      getCachedWallet: vi.fn().mockResolvedValue({ id: 'wallet-1', userId: 'user-1', currentBalance: '100' }),
+    });
+    const event: FuturesAccountUpdate = {
+      e: 'ACCOUNT_UPDATE',
+      E: 1700000000000,
+      T: 1700000000000,
+      a: {
+        m: 'DEPOSIT',
+        B: [{ a: 'USDT', wb: '150', cw: '150', bc: '50' }],
+        P: [],
+      },
+    };
+
+    await handleAccountUpdate(ctx, 'wallet-1', event);
+
+    expect(mockApplyTransferDelta).toHaveBeenCalledWith(expect.objectContaining({
+      walletId: 'wallet-1',
+      userId: 'user-1',
+      asset: 'USDT',
+      deltaAmount: 50,
+      newBalance: 150,
+      reason: 'DEPOSIT',
+      eventTime: 1700000000000,
+    }));
+    expect(mockDbUpdate).not.toHaveBeenCalled();
+  });
+
+  it('uses direct db.update when reason is not a transfer (e.g. ORDER)', async () => {
+    const ctx = createMockCtx({
+      getCachedWallet: vi.fn().mockResolvedValue({ id: 'wallet-1', userId: 'user-1', currentBalance: '100' }),
+    });
+    const event: FuturesAccountUpdate = {
+      e: 'ACCOUNT_UPDATE',
+      E: Date.now(),
+      T: Date.now(),
+      a: {
+        m: 'ORDER',
+        B: [{ a: 'USDT', wb: '105', cw: '105', bc: '5' }],
+        P: [],
+      },
+    };
+
+    await handleAccountUpdate(ctx, 'wallet-1', event);
+
+    expect(mockApplyTransferDelta).not.toHaveBeenCalled();
+    expect(mockDbUpdate).toHaveBeenCalled();
   });
 
   it('should skip wallet update when wallet not found in cache', async () => {

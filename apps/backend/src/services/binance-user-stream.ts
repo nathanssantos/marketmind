@@ -8,41 +8,17 @@ import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
 import { binancePriceStreamService } from './binance-price-stream';
 import { TIME_MS } from '../constants';
-
-interface OrderUpdateEvent {
-  e: 'executionReport';
-  E: number;
-  s: string;
-  c: string;
-  S: 'BUY' | 'SELL';
-  o: string;
-  f: string;
-  q: string;
-  p: string;
-  P: string;
-  F: string;
-  g: number;
-  C: string;
-  x: string;
-  X: string;
-  r: string;
-  i: number;
-  l: string;
-  z: string;
-  L: string;
-  n: string;
-  N: string | null;
-  T: number;
-  t: number;
-  I: number;
-  w: boolean;
-  m: boolean;
-  M: boolean;
-  O: number;
-  Z: string;
-  Y: string;
-  Q: string;
-}
+import {
+  dispatchUserDataEvent,
+  type EventHandlerMap,
+  type SpotExecutionReport,
+  type SpotOutboundAccountPosition,
+  type SpotBalanceUpdate,
+} from './user-stream';
+import {
+  handleOutboundAccountPosition,
+  handleSpotBalanceUpdate,
+} from './user-stream/handle-spot-balance';
 
 export class BinanceUserStreamService {
   private connections: Map<string, { client: WebsocketClient; listenKey: string }> = new Map();
@@ -163,17 +139,29 @@ export class BinanceUserStreamService {
     }
   }
 
+  private readonly handlers: EventHandlerMap = {
+    executionReport: (walletId, event) =>
+      this.handleOrderUpdate(walletId, event as SpotExecutionReport),
+    outboundAccountPosition: (walletId, event) =>
+      handleOutboundAccountPosition(walletId, event as SpotOutboundAccountPosition),
+    balanceUpdate: (walletId, event) =>
+      handleSpotBalanceUpdate(walletId, event as SpotBalanceUpdate),
+    listenKeyExpired: (walletId) => {
+      logger.warn({ walletId }, '[SpotUserStream] Listen key expired - will reconnect');
+      return this.resubscribeWallet(walletId);
+    },
+    eventStreamTerminated: (walletId) => {
+      logger.warn({ walletId }, '[SpotUserStream] Event stream terminated - will reconnect');
+      return this.resubscribeWallet(walletId);
+    },
+  };
+
   private handleUserDataMessage(walletId: string, data: unknown): void {
     try {
-      if (typeof data !== 'object' || data === null) {
-        return;
-      }
-
-      const message = data as Record<string, unknown>;
-
-      if (message['e'] === 'executionReport') {
-        void this.handleOrderUpdate(walletId, message as unknown as OrderUpdateEvent);
-      }
+      dispatchUserDataEvent(data, this.handlers, {
+        walletId,
+        logPrefix: '[SpotUserStream]',
+      });
     } catch (error) {
       logger.error({
         walletId,
@@ -182,7 +170,25 @@ export class BinanceUserStreamService {
     }
   }
 
-  private async handleOrderUpdate(walletId: string, event: OrderUpdateEvent): Promise<void> {
+  private async resubscribeWallet(walletId: string): Promise<void> {
+    try {
+      this.unsubscribeWallet(walletId);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const [wallet] = await db.select().from(wallets).where(eq(wallets.id, walletId)).limit(1);
+      if (wallet && wallet.isActive && !isPaperWallet(wallet) && wallet.marketType === 'SPOT') {
+        await this.subscribeWallet(wallet);
+        logger.info({ walletId }, '[SpotUserStream] Successfully resubscribed');
+      }
+    } catch (error) {
+      logger.error(
+        { walletId, error: serializeError(error) },
+        '[SpotUserStream] Failed to resubscribe wallet',
+      );
+    }
+  }
+
+  private async handleOrderUpdate(walletId: string, event: SpotExecutionReport): Promise<void> {
     try {
       const { s: symbol, X: status, x: execType, i: rawOrderId, L: lastFilledPrice, z: executedQty, o: orderType, n: commissionAmount, N: commissionAsset } = event;
       const orderId = String(rawOrderId);

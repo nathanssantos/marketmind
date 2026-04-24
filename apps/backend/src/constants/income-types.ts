@@ -32,3 +32,19 @@ export type IncomeSource = (typeof INCOME_SOURCES)[number];
 
 export const isPnlContributing = (type: IncomeType): type is PnlContributingType =>
   (PNL_CONTRIBUTING_TYPES as readonly string[]).includes(type);
+
+export const TRANSFER_REASONS = [
+  'DEPOSIT',
+  'WITHDRAW',
+  'TRANSFER',
+  'INTERNAL_TRANSFER',
+  'ADMIN_DEPOSIT',
+  'ADMIN_WITHDRAW',
+] as const;
+
+export type TransferReason = (typeof TRANSFER_REASONS)[number];
+
+export const TRANSFER_REASON_SET: ReadonlySet<string> = new Set(TRANSFER_REASONS);
+
+export const isTransferReason = (reason: string): reason is TransferReason =>
+  TRANSFER_REASON_SET.has(reason);
