@@ -18,7 +18,7 @@ import { ALL_AUDIT_CHECKS } from './audit/audit-types';
 import { auditPositions } from './audit/audit-positions';
 import { auditPending } from './audit/audit-pending';
 import { auditProtection } from './audit/audit-protection';
-import { auditFees, auditBalance, auditPnlEvents } from './audit/audit-fees-balance-pnl';
+import { auditFees, auditBalance } from './audit/audit-fees-balance-pnl';
 
 async function auditWallet(
   wallet: (typeof wallets.$inferSelect),
@@ -98,7 +98,6 @@ async function auditWallet(
     if (enabledChecks.has('protection')) await auditProtection(ctx);
     if (enabledChecks.has('fees')) await auditFees(ctx);
     if (enabledChecks.has('balance')) await auditBalance(ctx);
-    if (enabledChecks.has('pnl-events')) await auditPnlEvents(ctx);
 
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

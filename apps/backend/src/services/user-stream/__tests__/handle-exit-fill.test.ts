@@ -22,7 +22,6 @@ vi.mock('../../../db', () => ({
 vi.mock('../../../db/schema', () => ({
   tradeExecutions: { id: 'trade_executions.id', status: 'trade_executions.status' },
   wallets: { id: 'wallets.id', currentBalance: 'wallets.currentBalance' },
-  realizedPnlEvents: {},
 }));
 
 const mockGetAllTradeFeesForPosition = vi.fn().mockResolvedValue(null);

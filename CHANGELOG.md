@@ -70,6 +70,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - **Boleta + chart leverage/quantity parity verified** — both the quick-trade toolbar (`QuickTradeToolbar.tsx`) and chart modifier+click entries (`useChartTradingActions.ts`) already consume the exact same `useOrderQuantity(symbol, marketType)` hook — one leverage query, one margin formula (`balance × leverage × pct / price`). Only `price` differs between them: boleta uses bid/ask, chart uses the clicked price — intentional for margin-based sizing.
 
+## [0.97.2] - 2026-04-19
+
+### Fixed
+- **Daily P&L semantics** — replaced the derived `realized_pnl_events` table with `income_events`, a 1:1 mirror of Binance income history. Daily aggregation is now `SUM(amount)` grouped by `income_time AT TIME ZONE $tz` across `REALIZED_PNL`, `COMMISSION`, and `FUNDING_FEE` rows — so yesterday's entry fees and hourly fundings stay on yesterday even when a multi-day position closes today. Paper wallets synthesize 3 rows at close (negative `binance_tran_id`, scoped unique per wallet) so the same math applies. Analytics endpoints (`getDailyPerformance`, `getEquityCurve`, `getPerformance`) accept an optional `tz` (frontend passes `Intl.DateTimeFormat().resolvedOptions().timeZone`). Two-step deploy: migration `0031` adds the table → run `backfill-income-events.ts` / `reconcile-wallet-balance.ts` / `synthesize-paper-history.ts` → migration `0032` drops `realized_pnl_events`.
+- **Boleta % position sizing** — moved quantity-from-percent math to the backend (`services/trading/order-quantity.ts`). `createOrder` now accepts `percent` + `referencePrice` and computes the quantity server-side from **live** Binance `availableBalance` and per-symbol `leverage` (falling back to `accountInfo.positions[symbol].leverage`, never `1` when a real leverage is readable). Frontend `useOrderQuantity` still runs for the size-preview display, but `QuickTradeToolbar` now sends `percent` instead of `quantity`, eliminating the stale-cache + leverage-fallback-to-1 drift that was letting 75% @ 10x open at ~1.7× exposure instead of ~7.5×.
+- **Drag pending entry "Margin insufficient"** — `updatePendingEntry` now cancels the prior LIMIT/STOP_MARKET before submitting the replacement, so free margin is released first (previously both orders held margin for a beat and Binance rejected the replacement when the account was tight).
+
+### Changed
+- **Unified income-type constants** — `apps/backend/src/constants/income-types.ts` is the only place the literal income-type strings live. `PNL_CONTRIBUTING_TYPES` = `['REALIZED_PNL','COMMISSION','FUNDING_FEE']`.
+- **`services/income-events/` module** — single source of truth: `insertIncomeEvent` (idempotent upsert on `UNIQUE(wallet_id, binance_tran_id)`), `syncFromBinance` (wallet-scoped backfill window from last `income_time`), `synthesizePaperClose` (3 rows per paper close), `matcher.linkIncomeToExecution`, `dailyAggregate.{getDailyIncomeSum, getDailyIncomeBreakdown, getEquityCurvePoints}`, `emitPositionClose` (single call site for the 8 former writers).
+- **Test-infra hardening** — `setupTestDatabase` now takes a Postgres advisory lock before `DROP/CREATE`, so concurrent vitest workers serialize instead of racing on `pg_type_typname_nsp_index`. Default test email gained a random suffix so two workers that grab the same `Date.now()` no longer collide on `users_email_key`.
+
 ## [0.97.1] - 2026-04-19
 
 ### Changed

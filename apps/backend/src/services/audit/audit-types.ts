@@ -11,16 +11,14 @@ export interface AuditSummary {
   durationMs: number;
 }
 
-export type AuditCheck = 'positions' | 'pending' | 'protection' | 'fees' | 'balance' | 'pnl-events';
+export type AuditCheck = 'positions' | 'pending' | 'protection' | 'fees' | 'balance';
 
-export const ALL_AUDIT_CHECKS: AuditCheck[] = ['positions', 'pending', 'protection', 'fees', 'balance', 'pnl-events'];
+export const ALL_AUDIT_CHECKS: AuditCheck[] = ['positions', 'pending', 'protection', 'fees', 'balance'];
 
 export const FEES_DELTA_THRESHOLD = 0.01;
 export const BALANCE_DELTA_THRESHOLD = 1.0;
 export const FEES_AUDIT_CAP = 10;
 export const FEES_AUDIT_DAYS = 3;
-export const PNL_EVENTS_AUDIT_DAYS = 7;
-export const PNL_DELTA_THRESHOLD = 0.005;
 export const FEES_RATE_LIMIT_MS = 1500;
 export const PENDING_GRACE_PERIOD_MS = 5 * 60 * 1000;
 

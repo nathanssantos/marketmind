@@ -4,13 +4,22 @@ import { usePollingInterval } from './usePollingInterval';
 
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 
+const getBrowserTimezone = (): string => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+};
+
 export const useBackendAnalytics = (walletId: string, period: AnalyticsPeriod = 'all') => {
   const performancePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.SLOW);
   const statsPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL);
+  const tz = getBrowserTimezone();
 
   const { data: performance, isLoading: isLoadingPerformance } =
     trpc.analytics.getPerformance.useQuery(
-      { walletId, period },
+      { walletId, period, tz },
       { enabled: !!walletId, refetchInterval: performancePolling, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM, refetchOnMount: true }
     );
 

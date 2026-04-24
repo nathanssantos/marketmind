@@ -237,6 +237,25 @@ export const executionUpdatesRouter = router({
       const apiClient = createBinanceFuturesClient(wallet);
 
       const binarySide = execution.side === 'LONG' ? 'BUY' : 'SELL';
+      const oldEntryOrderId = execution.entryOrderId;
+
+      if (oldEntryOrderId) {
+        try {
+          if (isAlgoEntry) {
+            await cancelFuturesAlgoOrder(apiClient, oldEntryOrderId);
+          } else {
+            await cancelFuturesOrder(apiClient, execution.symbol, oldEntryOrderId);
+          }
+          logger.info({ orderId: oldEntryOrderId, symbol: execution.symbol }, 'Cancelled old entry order before replacing for pending entry move');
+        } catch (error) {
+          logger.warn({
+            orderId: oldEntryOrderId,
+            symbol: execution.symbol,
+            error: serializeError(error),
+          }, 'Failed to cancel old entry order (may already be filled/cancelled)');
+        }
+      }
+
       let newOrderId: string;
 
       try {
@@ -298,6 +317,11 @@ export const executionUpdatesRouter = router({
           });
         }
       } catch (error) {
+        await ctx.db
+          .update(tradeExecutions)
+          .set({ entryOrderId: null, updatedAt: new Date() })
+          .where(eq(tradeExecutions.id, input.id));
+
         logger.error({
           executionId: execution.id,
           symbol: execution.symbol,
@@ -309,8 +333,6 @@ export const executionUpdatesRouter = router({
         });
       }
 
-      const oldEntryOrderId = execution.entryOrderId;
-
       await ctx.db
         .update(tradeExecutions)
         .set({
@@ -321,23 +343,6 @@ export const executionUpdatesRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(tradeExecutions.id, input.id));
-
-      if (oldEntryOrderId) {
-        try {
-          if (isAlgoEntry) {
-            await cancelFuturesAlgoOrder(apiClient, oldEntryOrderId);
-          } else {
-            await cancelFuturesOrder(apiClient, execution.symbol, oldEntryOrderId);
-          }
-          logger.info({ orderId: oldEntryOrderId, symbol: execution.symbol }, 'Cancelled old entry order for pending entry move');
-        } catch (error) {
-          logger.warn({
-            orderId: oldEntryOrderId,
-            symbol: execution.symbol,
-            error: serializeError(error),
-          }, 'Failed to cancel old entry order (may already be filled/cancelled)');
-        }
-      }
 
       logger.info({
         executionId: execution.id,

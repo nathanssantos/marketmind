@@ -15,6 +15,7 @@ import {
 import { users } from './auth';
 import { wallets } from './wallets';
 import { orders } from './orders';
+import type { IncomeType } from '../../constants/income-types';
 
 export const autoTradingConfig = pgTable('auto_trading_config', {
   id: varchar({ length: 255 }).primaryKey(),
@@ -295,20 +296,33 @@ export const tradeExecutions = pgTable('trade_executions', {
   walletClosedIdx: index('trade_executions_wallet_closed_idx').on(table.walletId, table.status, table.closedAt),
 }));
 
-export const realizedPnlEvents = pgTable('realized_pnl_events', {
+export const incomeEvents = pgTable('income_events', {
   id: serial('id').primaryKey(),
-  walletId: varchar('wallet_id', { length: 255 }).notNull(),
-  userId: varchar('user_id', { length: 255 }).notNull(),
-  executionId: varchar('execution_id', { length: 255 }).notNull(),
-  symbol: varchar({ length: 20 }).notNull(),
-  eventType: varchar('event_type', { length: 20 }).notNull().$type<'partial_close' | 'full_close'>(),
-  pnl: numeric({ precision: 20, scale: 8 }).notNull(),
-  fees: numeric({ precision: 20, scale: 8 }).default('0'),
-  quantity: numeric({ precision: 20, scale: 8 }).notNull(),
-  price: numeric({ precision: 20, scale: 8 }).notNull(),
+  walletId: varchar('wallet_id', { length: 255 })
+    .notNull()
+    .references(() => wallets.id, { onDelete: 'cascade' }),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  binanceTranId: bigint('binance_tran_id', { mode: 'number' }).notNull(),
+  incomeType: varchar('income_type', { length: 30 }).$type<IncomeType>().notNull(),
+  amount: numeric({ precision: 20, scale: 8 }).notNull(),
+  asset: varchar({ length: 10 }).notNull(),
+  symbol: varchar({ length: 20 }),
+  executionId: varchar('execution_id', { length: 255 }),
+  info: varchar({ length: 120 }),
+  tradeId: varchar('trade_id', { length: 120 }),
+  source: varchar({ length: 10 })
+    .$type<'binance' | 'paper' | 'manual'>()
+    .default('binance')
+    .notNull(),
+  incomeTime: timestamp('income_time', { withTimezone: true, mode: 'date' }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
-  walletDateIdx: index('realized_pnl_events_wallet_date_idx').on(table.walletId, table.createdAt),
+  walletTranUnique: uniqueIndex('income_events_wallet_tran_idx').on(table.walletId, table.binanceTranId),
+  walletTimeIdx: index('income_events_wallet_time_idx').on(table.walletId, table.incomeTime),
+  walletTypeTimeIdx: index('income_events_wallet_type_time_idx').on(table.walletId, table.incomeType, table.incomeTime),
+  executionIdx: index('income_events_execution_idx').on(table.executionId),
 }));
 
 export const tradeCooldowns = pgTable('trade_cooldowns', {
@@ -441,8 +455,8 @@ export type NewTradingProfileRow = typeof tradingProfiles.$inferInsert;
 export type TradeExecution = typeof tradeExecutions.$inferSelect;
 export type NewTradeExecution = typeof tradeExecutions.$inferInsert;
 
-export type RealizedPnlEvent = typeof realizedPnlEvents.$inferSelect;
-export type NewRealizedPnlEvent = typeof realizedPnlEvents.$inferInsert;
+export type IncomeEvent = typeof incomeEvents.$inferSelect;
+export type NewIncomeEvent = typeof incomeEvents.$inferInsert;
 
 export type TradeCooldown = typeof tradeCooldowns.$inferSelect;
 export type NewTradeCooldown = typeof tradeCooldowns.$inferInsert;

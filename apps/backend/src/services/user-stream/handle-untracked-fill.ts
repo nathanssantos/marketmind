@@ -7,7 +7,6 @@ import { logger } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
-import { safeInsertRealizedPnlEvent } from './safe-pnl-event';
 import type { UserStreamContext } from './types';
 
 export async function handleUntrackedReduceFill(
@@ -92,18 +91,6 @@ export async function handleUntrackedReduceFill(
       })
       .where(eq(wallets.id, walletId));
 
-    await safeInsertRealizedPnlEvent(db, {
-      walletId,
-      userId: oppositeExec.userId,
-      executionId: oppositeExec.id,
-      symbol,
-      eventType: 'partial_close',
-      pnl: partialPnl.toString(),
-      fees: '0',
-      quantity: closedQty.toString(),
-      price: exitPrice.toString(),
-    });
-
     logger.info(
       { executionId: oppositeExec.id, symbol, closedQty, remainingQty, partialPnl: partialPnl.toFixed(4) },
       '[FuturesUserStream] Untracked reduce fill — partial close applied'
@@ -145,18 +132,6 @@ export async function handleUntrackedReduceFill(
         updatedAt: new Date(),
       })
       .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
-
-    await safeInsertRealizedPnlEvent(db, {
-      walletId,
-      userId: oppositeExec.userId,
-      executionId: oppositeExec.id,
-      symbol,
-      eventType: 'full_close',
-      pnl: partialPnl.toString(),
-      fees: exitFee.toString(),
-      quantity: closedQty.toString(),
-      price: exitPrice.toString(),
-    });
 
     await db
       .update(wallets)

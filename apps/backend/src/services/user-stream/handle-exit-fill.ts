@@ -7,7 +7,6 @@ import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
-import { safeInsertRealizedPnlEvent } from './safe-pnl-event';
 import type { UserStreamContext } from './types';
 
 export async function handleExitFill(
@@ -134,18 +133,6 @@ export async function handleExitFill(
             })
             .where(eq(wallets.id, walletId));
 
-          await safeInsertRealizedPnlEvent(db, {
-            walletId,
-            userId: execution.userId,
-            executionId: execution.id,
-            symbol,
-            eventType: 'partial_close',
-            pnl: partialPnl.toString(),
-            fees: '0',
-            quantity: closedQty.toString(),
-            price: exitPrice.toString(),
-          });
-
           logger.info(
             {
               executionId: execution.id,
@@ -266,18 +253,6 @@ export async function handleExitFill(
     );
     return;
   }
-
-  await safeInsertRealizedPnlEvent(db, {
-    walletId,
-    userId: execution.userId,
-    executionId: execution.id,
-    symbol,
-    eventType: 'full_close',
-    pnl: pnlResult.netPnl.toString(),
-    fees: totalFees.toString(),
-    quantity: quantity.toString(),
-    price: exitPrice.toString(),
-  });
 
   await db
     .update(wallets)
