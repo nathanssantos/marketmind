@@ -5,7 +5,7 @@ import { useKlinePagination } from '@renderer/hooks/useKlinePagination';
 import { useKlineLiveStream } from '@renderer/hooks/useKlineLiveStream';
 import type { MarketType, Interval } from '@marketmind/types';
 import type { GridPanelConfig } from '@shared/types/layout';
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 interface ChartPanelContentProps {
   symbol: string;
@@ -43,6 +43,10 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
     refetchKlines: refetch,
   });
 
+  const onNearLeftEdge = useCallback(() => {
+    void loadOlderKlines();
+  }, [loadOlderKlines]);
+
   if (isInitialLoading) return <LoadingSpinner />;
 
   if (error) {return (
@@ -63,7 +67,7 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
       height="100%"
       chartType={panelConfig.chartType}
       timeframe={panelConfig.timeframe}
-      onNearLeftEdge={hasMore ? () => { void loadOlderKlines(); } : undefined}
+      onNearLeftEdge={hasMore ? onNearLeftEdge : undefined}
       isLoadingMore={isLoadingMore}
     />
   );
