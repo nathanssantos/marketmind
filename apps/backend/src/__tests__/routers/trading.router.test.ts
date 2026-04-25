@@ -1,10 +1,26 @@
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tradeExecutions } from '../../db/schema';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
 import { cleanupTables, getTestDatabase, setupTestDatabase, teardownTestDatabase } from '../helpers/test-db';
 import { createAuthenticatedUser, createTestTradeExecution, createTestWallet } from '../helpers/test-fixtures';
+
+vi.mock('binance', async () => {
+  const actual = await vi.importActual<typeof import('binance')>('binance');
+  const stubTickers = [
+    { symbol: 'BTCUSDT', price: '95000.00' },
+    { symbol: 'ETHUSDT', price: '3500.00' },
+    { symbol: 'BNBUSDT', price: '700.00' },
+  ];
+  class StubUSDMClient {
+    async getSymbolPriceTicker() { return stubTickers; }
+  }
+  class StubMainClient {
+    async getSymbolPriceTicker() { return stubTickers; }
+  }
+  return { ...actual, USDMClient: StubUSDMClient, MainClient: StubMainClient };
+});
 
 describe('Trading Router', () => {
   beforeAll(async () => {
@@ -780,7 +796,7 @@ describe('Trading Router', () => {
       ).rejects.toThrow(TRPCError);
     });
 
-    it.skipIf(process.env.CI)('should return ticker prices for paper wallet', async () => {
+    it('should return ticker prices for paper wallet', async () => {
       const { user, session } = await createAuthenticatedUser();
       await createTestWallet({ userId: user.id, walletType: 'paper' });
       const caller = createAuthenticatedCaller(user, session);
@@ -789,8 +805,7 @@ describe('Trading Router', () => {
         symbols: ['BTCUSDT', 'ETHUSDT'],
       });
 
-      expect(result).toBeDefined();
-      expect(typeof result).toBe('object');
+      expect(result).toEqual({ BTCUSDT: '95000.00', ETHUSDT: '3500.00' });
     });
   });
 
