@@ -7,6 +7,7 @@ export default {
         provider: 'github',
         owner: 'nathanssantos',
         repo: 'marketmind',
+        releaseType: 'release',
     },
 
     directories: {
