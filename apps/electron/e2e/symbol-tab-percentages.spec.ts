@@ -41,7 +41,7 @@ const readBadgeText = async (page: Page, symbol: string): Promise<string> => {
 
 const expectBadgePctClose = async (page: Page, symbol: string, expectedPct: number): Promise<void> => {
   await expect.poll(
-    async () => parseFloat((await readBadgeText(page, symbol)).replace('%', '').replace('+', '')),
+    async () => parseFloat((await readBadgeText(page, symbol)).replace(/[%+]/g, '')),
     { timeout: 5_000, intervals: [100, 200, 400] },
   ).toBeCloseTo(expectedPct, 1);
 };
