@@ -1,4 +1,4 @@
-import type { BacktestConfig, BacktestMetrics, BacktestResult } from '@marketmind/types';
+import type { BacktestConfig, BacktestMetrics, BacktestResult, Kline } from '@marketmind/types';
 import { BacktestEngine } from './BacktestEngine';
 import { ParameterGenerator, type ParameterCombination } from './ParameterGenerator';
 
@@ -26,7 +26,7 @@ export class BacktestOptimizer {
 
   async optimize(
     config: OptimizationConfig,
-    klines?: any[]
+    klines?: Kline[]
   ): Promise<OptimizationResult[]> {
     const { baseConfig, parameterGrid, parallelWorkers = 1, sortBy = 'totalPnlPercent', onProgress } = config;
 
@@ -96,9 +96,9 @@ export class BacktestOptimizer {
   private async runSingle(
     baseConfig: BacktestConfig,
     params: ParameterCombination,
-    klines?: any[]
+    klines?: Kline[]
   ): Promise<OptimizationResult> {
-    const backtestConfigParams: any = {};
+    const backtestConfigParams: Record<string, number> = {};
     const strategyParams: Record<string, number> = {};
 
     const BACKTEST_CONFIG_FIELDS = [

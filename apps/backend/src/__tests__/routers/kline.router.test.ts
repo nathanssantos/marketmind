@@ -507,8 +507,8 @@ describe('Kline Router', () => {
       });
 
       expect(result1.length).toBe(2);
-      expect(result1[0].symbol).toBe('BTCUSDT');
-      expect(result1[1].symbol).toBe('BTCBUSD');
+      expect(result1[0]?.symbol).toBe('BTCUSDT');
+      expect(result1[1]?.symbol).toBe('BTCBUSD');
 
       const result2 = await caller.kline.searchSymbols({
         query: 'ETH',
@@ -516,7 +516,7 @@ describe('Kline Router', () => {
       });
 
       expect(result2.length).toBe(1);
-      expect(result2[0].symbol).toBe('ETHUSDT');
+      expect(result2[0]?.symbol).toBe('ETHUSDT');
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
@@ -540,7 +540,7 @@ describe('Kline Router', () => {
       });
 
       expect(result.length).toBe(1);
-      expect(result[0].symbol).toBe('ETHUSDT');
+      expect(result[0]?.symbol).toBe('ETHUSDT');
       expect(mockFetch).toHaveBeenCalledWith('https://fapi.binance.com/fapi/v1/exchangeInfo');
     });
 

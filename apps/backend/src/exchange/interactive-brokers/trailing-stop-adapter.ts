@@ -1,4 +1,5 @@
 import type { PositionSide } from '@marketmind/types';
+import { SecType } from '@stoqey/ib';
 import { IB_ORDER_TYPES, IB_ORDER_ACTIONS, IB_TIME_IN_FORCE } from './constants';
 import type { IBOrderParams, IBStockContract } from './types';
 
@@ -41,7 +42,7 @@ export const createTrailingStopOrderParams = (params: CreateTrailingStopParams):
 
   const contract: IBStockContract = {
     symbol,
-    secType: 'STK' as any,
+    secType: SecType.STK,
     exchange: 'SMART',
     currency: 'USD',
   };

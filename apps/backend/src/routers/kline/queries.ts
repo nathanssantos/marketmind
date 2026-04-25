@@ -212,10 +212,17 @@ export const queryProcedures = {
           throw new Error(`Failed to fetch exchange info: ${response.status}`);
         }
 
-        const data = await response.json();
+        interface ExchangeSymbolInfo {
+          symbol: string;
+          baseAsset: string;
+          quoteAsset: string;
+          status?: string;
+          contractStatus?: string;
+        }
+        const data = (await response.json()) as { symbols: ExchangeSymbolInfo[] };
         const fetchedSymbols = data.symbols
-          .filter((s: any) => s.status === 'TRADING' || s.contractStatus === 'TRADING')
-          .map((s: any) => ({
+          .filter((s) => s.status === 'TRADING' || s.contractStatus === 'TRADING')
+          .map((s) => ({
             symbol: s.symbol,
             baseAsset: s.baseAsset,
             quoteAsset: s.quoteAsset,
@@ -229,9 +236,9 @@ export const queryProcedures = {
 
       const query = input.query.toUpperCase();
       const symbolList = symbols ?? [];
-      const filtered = symbolList.filter((s: any) =>
-        s.symbol.includes(query) ??
-        s.baseAsset.includes(query) ??
+      const filtered = symbolList.filter((s) =>
+        s.symbol.includes(query) ||
+        s.baseAsset.includes(query) ||
         s.quoteAsset.includes(query)
       );
 

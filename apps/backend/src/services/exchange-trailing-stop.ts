@@ -92,10 +92,11 @@ export class ExchangeTrailingStopService {
       }, 'Exchange trailing stop placed');
 
       const response = result as unknown as Record<string, unknown>;
+      const status = typeof response.status === 'string' ? response.status : 'NEW';
       return {
         orderId: String(result.orderId),
         symbol: result.symbol,
-        status: String((response.status ?? 'NEW') as string),
+        status,
         clientOrderId: result.clientOrderId ?? '',
       };
     } catch (error) {
