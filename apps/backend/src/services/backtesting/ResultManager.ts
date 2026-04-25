@@ -12,10 +12,11 @@ export interface SavedBacktestResult {
     start: string;
     end: string;
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy file format permits arbitrary BacktestConfig variants from older runs
   config: any;
   result: BacktestResult;
   metrics: BacktestMetrics;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
 }
 
 export interface OptimizationSummary {
@@ -31,7 +32,7 @@ export interface OptimizationSummary {
   totalCombinations: number;
   successfulRuns: number;
   topResults: Array<{
-    params: Record<string, any>;
+    params: Record<string, unknown>;
     metrics: BacktestMetrics;
   }>;
   statistics: {
@@ -55,8 +56,9 @@ export class ResultManager {
     strategy: string,
     symbol: string,
     interval: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- saveValidation accepts any config dialect (legacy + current)
     config: any,
-    result: BacktestResult
+    result: BacktestResult,
   ): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${strategy}_${symbol}_${interval}_${timestamp}.json`;
@@ -86,9 +88,10 @@ export class ResultManager {
     strategy: string,
     symbol: string,
     interval: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- saveOptimization accepts any config dialect (legacy + current)
     config: any,
-    results: Array<{ params: any; metrics: BacktestMetrics }>,
-    statistics: any
+    results: Array<{ params: Record<string, unknown>; metrics: BacktestMetrics }>,
+    statistics: OptimizationSummary['statistics'],
   ): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${strategy}_${symbol}_${interval}_${timestamp}.json`;
@@ -144,7 +147,7 @@ export class ResultManager {
     let csv = 'Trade,Type,Entry Date,Entry Price,Exit Date,Exit Price,Reason,PnL ($),PnL (%),Commission,Net PnL,Equity\n';
 
     trades.forEach((trade, index) => {
-      const tradeData: any = trade; // Type assertion for flexibility
+      const tradeData = trade as { side?: string; type?: string };
       csv += `${[
         index + 1,
         tradeData.side ?? tradeData.type ?? 'UNKNOWN',
@@ -214,7 +217,7 @@ export class ResultManager {
     strategy: string,
     symbol: string,
     interval: string,
-    result: any
+    result: unknown,
   ): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${strategy}_${symbol}_${interval}_wf_${timestamp}.json`;
@@ -240,7 +243,7 @@ export class ResultManager {
     strategy: string,
     symbol: string,
     interval: string,
-    result: any
+    result: unknown,
   ): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${strategy}_${symbol}_${interval}_mc_${timestamp}.json`;
@@ -266,7 +269,7 @@ export class ResultManager {
     strategy: string,
     symbol: string,
     interval: string,
-    result: any
+    result: unknown,
   ): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${strategy}_${symbol}_${interval}_sensitivity_${timestamp}.json`;
@@ -288,7 +291,7 @@ export class ResultManager {
     }
   }
 
-  async saveRobustnessValidation(result: any): Promise<string> {
+  async saveRobustnessValidation(result: unknown): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `robustness_validation_${timestamp}.json`;
     const filepath = path.join(this.baseDir, 'robustness', filename);
@@ -309,7 +312,25 @@ export class ResultManager {
     }
   }
 
-  compareResults(results: Array<SavedBacktestResult | OptimizationSummary>): any {
+  compareResults(results: Array<SavedBacktestResult | OptimizationSummary>): Array<{
+    type: 'validation' | 'optimization';
+    strategy: string;
+    symbol: string;
+    interval: string;
+    period: string;
+    trades?: number;
+    winRate?: number;
+    profitFactor?: number;
+    totalPnl?: number;
+    maxDrawdown?: number;
+    sharpeRatio?: number;
+    combinations?: number;
+    bestWinRate?: number;
+    bestProfitFactor?: number;
+    bestPnl?: number;
+    avgWinRate?: number;
+    avgPnl?: number;
+  }> {
     return results.map(result => {
       if (result.type === 'validation') {
         const validationResult = result;

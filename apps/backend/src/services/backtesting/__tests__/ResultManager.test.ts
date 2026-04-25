@@ -393,9 +393,9 @@ describe('ResultManager', () => {
       const comparison = resultManager.compareResults(results);
 
       expect(comparison).toHaveLength(2);
-      expect(comparison[0].strategy).toBe('strategy-a');
-      expect(comparison[0].winRate).toBe(60);
-      expect(comparison[1].winRate).toBe(50);
+      expect(comparison[0]!.strategy).toBe('strategy-a');
+      expect(comparison[0]!.winRate).toBe(60);
+      expect(comparison[1]!.winRate).toBe(50);
     });
 
     it('should compare optimization results', () => {
@@ -419,9 +419,9 @@ describe('ResultManager', () => {
       const comparison = resultManager.compareResults(results);
 
       expect(comparison).toHaveLength(1);
-      expect(comparison[0].type).toBe('optimization');
-      expect(comparison[0].combinations).toBe(100);
-      expect(comparison[0].avgWinRate).toBe(55);
+      expect(comparison[0]!.type).toBe('optimization');
+      expect(comparison[0]!.combinations).toBe(100);
+      expect(comparison[0]!.avgWinRate).toBe(55);
     });
 
     it('should handle mixed results', () => {
@@ -456,8 +456,8 @@ describe('ResultManager', () => {
       const comparison = resultManager.compareResults(results);
 
       expect(comparison).toHaveLength(2);
-      expect(comparison[0].type).toBe('validation');
-      expect(comparison[1].type).toBe('optimization');
+      expect(comparison[0]!.type).toBe('validation');
+      expect(comparison[1]!.type).toBe('optimization');
     });
   });
 
@@ -711,10 +711,11 @@ describe('ResultManager', () => {
       const comparison = resultManager.compareResults(results);
 
       expect(comparison).toHaveLength(1);
-      expect(comparison[0].type).toBe('optimization');
-      expect(comparison[0].bestWinRate).toBe(0);
-      expect(comparison[0].bestProfitFactor).toBe(0);
-      expect(comparison[0].bestPnl).toBe(0);
+      const first = comparison[0]!;
+      expect(first.type).toBe('optimization');
+      expect(first.bestWinRate).toBe(0);
+      expect(first.bestProfitFactor).toBe(0);
+      expect(first.bestPnl).toBe(0);
     });
 
     it('should handle validation result with sharpeRatio of 0', () => {
@@ -737,7 +738,7 @@ describe('ResultManager', () => {
       const comparison = resultManager.compareResults(results);
 
       expect(comparison).toHaveLength(1);
-      expect(comparison[0].sharpeRatio).toBe(0);
+      expect(comparison[0]!.sharpeRatio).toBe(0);
     });
   });
 });

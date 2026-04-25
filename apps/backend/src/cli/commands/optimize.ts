@@ -281,7 +281,7 @@ export async function optimizeCommand(options: OptimizeOptions) {
       options.interval,
       baseConfig,
       topResults.map((r) => ({ params: r.params, metrics: r.metrics })),
-      stats
+      stats ?? { average: { winRate: 0, totalPnlPercent: 0, profitFactor: 0, sharpeRatio: 0 } },
     );
 
     saveSpinner.succeed(chalk.green(`Results saved to: ${savedPath}`));
