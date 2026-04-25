@@ -115,7 +115,6 @@
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
     "eslint": "^10.2.1",
-    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "fast-check": "^4.7.0",
@@ -125,8 +124,7 @@
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
-    "vite-plugin-electron": "^0.29.1",
-    "vite-plugin-electron-renderer": "^0.14.6",
+    "vite-plugin-electron": "0.29.1",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.5",
     "vitest-canvas-mock": "^1.1.4"

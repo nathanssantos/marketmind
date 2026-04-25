@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
-import electron from 'vite-plugin-electron/simple';
+import electron from 'vite-plugin-electron';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const target = process.env.VITE_TARGET || 'electron';
@@ -60,8 +60,8 @@ export default defineConfig(({ mode }) => {
           ],
         },
       }),
-      !isWeb && electron({
-        main: {
+      !isWeb && electron([
+        {
           entry: 'src/main/index.ts',
           vite: {
             build: {
@@ -77,16 +77,24 @@ export default defineConfig(({ mode }) => {
             },
           },
         },
-        preload: {
-          input: 'src/main/preload.ts',
+        {
+          onstart: ({ reload }) => reload(),
           vite: {
             build: {
               outDir: 'dist-electron/preload',
+              rollupOptions: {
+                input: 'src/main/preload.ts',
+                output: {
+                  format: 'cjs',
+                  entryFileNames: '[name].mjs',
+                  chunkFileNames: '[name].mjs',
+                  assetFileNames: '[name].[ext]',
+                },
+              },
             },
           },
         },
-        renderer: {},
-      }),
+      ]),
     ].filter(Boolean),
     resolve: {
       alias: {
