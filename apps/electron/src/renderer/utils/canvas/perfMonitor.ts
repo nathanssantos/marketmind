@@ -24,6 +24,20 @@ export interface ComponentRenderStat {
   total: number;
 }
 
+export interface StoreWakeStat {
+  name: string;
+  ratePerSec: number;
+  total: number;
+}
+
+export interface SocketDispatchStat {
+  event: string;
+  ratePerSec: number;
+  total: number;
+  /** Sum of handlers invoked per dispatch over the window. */
+  handlersPerSec: number;
+}
+
 export interface LongSectionEntry {
   name: string;
   ms: number;
@@ -38,6 +52,8 @@ export interface PerfSnapshot {
   sections: PerfSection[];
   longSections: LongSectionEntry[];
   componentRenders: ComponentRenderStat[];
+  storeWakes: StoreWakeStat[];
+  socketDispatches: SocketDispatchStat[];
 }
 
 interface SectionState {
@@ -52,6 +68,19 @@ interface ComponentState {
   windowStart: number;
 }
 
+interface StoreWakeState {
+  count: number;
+  total: number;
+  windowStart: number;
+}
+
+interface SocketDispatchState {
+  count: number;
+  total: number;
+  handlerCount: number;
+  windowStart: number;
+}
+
 const EMPTY_SNAPSHOT: PerfSnapshot = {
   enabled: false,
   fps: 0,
@@ -60,6 +89,8 @@ const EMPTY_SNAPSHOT: PerfSnapshot = {
   sections: [],
   longSections: [],
   componentRenders: [],
+  storeWakes: [],
+  socketDispatches: [],
 };
 
 class PerfMonitor {
@@ -73,6 +104,8 @@ class PerfMonitor {
   private longSections: LongSectionEntry[] = [];
   private longSectionsHead: number = 0;
   private componentRenders: Map<string, ComponentState> = new Map();
+  private storeWakes: Map<string, StoreWakeState> = new Map();
+  private socketDispatches: Map<string, SocketDispatchState> = new Map();
   private subscribers: Set<() => void> = new Set();
   private lastNotify: number = 0;
   private cachedSnapshot: PerfSnapshot = EMPTY_SNAPSHOT;
@@ -111,6 +144,19 @@ class PerfMonitor {
           state.windowStart = now;
         }
       }
+      for (const [, state] of this.storeWakes) {
+        if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
+          state.count = 0;
+          state.windowStart = now;
+        }
+      }
+      for (const [, state] of this.socketDispatches) {
+        if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
+          state.count = 0;
+          state.handlerCount = 0;
+          state.windowStart = now;
+        }
+      }
       this.snapshotDirty = true;
       this.maybeNotify(now);
     }
@@ -145,17 +191,52 @@ class PerfMonitor {
     }
   }
 
-  recordComponentRender(componentName: string): void {
+  recordComponentRender(componentName: string, instanceKey?: string): void {
     if (!this.enabled) return;
     const now = performance.now();
-    const state = this.componentRenders.get(componentName) ?? { count: 0, total: 0, windowStart: now };
+    const key = instanceKey ? `${componentName}#${instanceKey}` : componentName;
+    const state = this.componentRenders.get(key) ?? { count: 0, total: 0, windowStart: now };
     state.count += 1;
     state.total += 1;
     if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
       state.count = 1;
       state.windowStart = now;
     }
-    this.componentRenders.set(componentName, state);
+    this.componentRenders.set(key, state);
+  }
+
+  recordStoreWake(storeName: string, slice?: string): void {
+    if (!this.enabled) return;
+    const now = performance.now();
+    const key = slice ? `${storeName}.${slice}` : storeName;
+    const state = this.storeWakes.get(key) ?? { count: 0, total: 0, windowStart: now };
+    state.count += 1;
+    state.total += 1;
+    if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
+      state.count = 1;
+      state.windowStart = now;
+    }
+    this.storeWakes.set(key, state);
+  }
+
+  recordSocketDispatch(event: string, handlerCount: number): void {
+    if (!this.enabled) return;
+    const now = performance.now();
+    const state = this.socketDispatches.get(event) ?? {
+      count: 0,
+      total: 0,
+      handlerCount: 0,
+      windowStart: now,
+    };
+    state.count += 1;
+    state.total += 1;
+    state.handlerCount += handlerCount;
+    if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
+      state.count = 1;
+      state.handlerCount = handlerCount;
+      state.windowStart = now;
+    }
+    this.socketDispatches.set(event, state);
   }
 
   reset(): void {
@@ -168,6 +249,8 @@ class PerfMonitor {
     this.longSections = [];
     this.longSectionsHead = 0;
     this.componentRenders.clear();
+    this.storeWakes.clear();
+    this.socketDispatches.clear();
     this.snapshotDirty = true;
     this.notifyAll();
   }
@@ -197,6 +280,29 @@ class PerfMonitor {
     }
     componentRenders.sort((a, b) => b.ratePerSec - a.ratePerSec);
 
+    const storeWakes: StoreWakeStat[] = [];
+    for (const [name, state] of this.storeWakes) {
+      const elapsed = Math.max(1, now - state.windowStart);
+      storeWakes.push({
+        name,
+        ratePerSec: (state.count * 1000) / elapsed,
+        total: state.total,
+      });
+    }
+    storeWakes.sort((a, b) => b.ratePerSec - a.ratePerSec);
+
+    const socketDispatches: SocketDispatchStat[] = [];
+    for (const [event, state] of this.socketDispatches) {
+      const elapsed = Math.max(1, now - state.windowStart);
+      socketDispatches.push({
+        event,
+        ratePerSec: (state.count * 1000) / elapsed,
+        total: state.total,
+        handlersPerSec: (state.handlerCount * 1000) / elapsed,
+      });
+    }
+    socketDispatches.sort((a, b) => b.handlersPerSec - a.handlersPerSec);
+
     const orderedLongSections: LongSectionEntry[] = [];
     if (this.longSections.length < LONG_SECTION_BUFFER_SIZE) {
       orderedLongSections.push(...this.longSections);
@@ -215,6 +321,8 @@ class PerfMonitor {
       sections,
       longSections: orderedLongSections,
       componentRenders,
+      storeWakes,
+      socketDispatches,
     };
     this.cachedSnapshot = snap;
     this.snapshotDirty = false;

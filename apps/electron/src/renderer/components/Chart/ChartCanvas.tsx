@@ -82,7 +82,7 @@ export const ChartCanvas = ({
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
 }: ChartCanvasProps): ReactElement => {
-  perfMonitor.recordComponentRender('ChartCanvas');
+  perfMonitor.recordComponentRender('ChartCanvas', `${symbol ?? '?'}@${timeframe}`);
 
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
@@ -113,6 +113,7 @@ export const ChartCanvas = ({
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {
     const unsubscribe = useStrategyVisualizationStore.subscribe((state) => {
+      perfMonitor.recordStoreWake('strategyVisualizationStore');
       highlightedCandlesRef.current = state.highlightedCandles;
     });
     return () => unsubscribe();
@@ -145,6 +146,7 @@ export const ChartCanvas = ({
 
   useEffect(() => {
     const unsubscribe = useSetupStore.subscribe((state) => {
+      perfMonitor.recordStoreWake('setupStore');
       detectedSetupsVisibleRef.current = state.detectedSetups.filter((s) => s.visible);
       managerRef.current?.markDirty('overlays');
     });
@@ -186,6 +188,7 @@ export const ChartCanvas = ({
   const hoveredKlineIndexRef = useRef<number | undefined>(tooltipStore.getSnapshot().klineIndex);
   useEffect(() => {
     const unsubscribe = tooltipStore.subscribeHoveredKlineIndex((index) => {
+      perfMonitor.recordStoreWake('tooltipStore', 'klineIndex');
       if (hoveredKlineIndexRef.current === index) return;
       hoveredKlineIndexRef.current = index;
       managerRef.current?.markDirty('overlays');
@@ -199,6 +202,7 @@ export const ChartCanvas = ({
     let lastVisible = false;
     let lastKline = tooltipStore.getSnapshot().kline;
     const unsubscribe = tooltipStore.subscribe(() => {
+      perfMonitor.recordStoreWake('tooltipStore', 'full');
       const snap = tooltipStore.getSnapshot();
       if (snap.visible === lastVisible && snap.kline === lastKline) return;
       lastVisible = snap.visible;
@@ -237,6 +241,7 @@ export const ChartCanvas = ({
     symbolPriceRef.current = usePriceStore.getState().getPrice(symbol);
     apply(symbolPriceRef.current ?? klinePriceRef.current);
     const unsubscribe = usePriceStore.subscribe((state) => {
+      perfMonitor.recordStoreWake('priceStore');
       const p = state.getPrice(symbol);
       if (p === symbolPriceRef.current) return;
       symbolPriceRef.current = p;
