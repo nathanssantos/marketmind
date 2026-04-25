@@ -34,9 +34,9 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
 
   const effectiveCapital = useMemo(() => {
     if (!backendWallet) return 0;
-    const initial = parseFloat(backendWallet.initialBalance || '0');
-    const deposits = parseFloat(backendWallet.totalDeposits || '0');
-    const withdrawals = parseFloat(backendWallet.totalWithdrawals || '0');
+    const initial = parseFloat(backendWallet.initialBalance ?? '0');
+    const deposits = parseFloat(backendWallet.totalDeposits ?? '0');
+    const withdrawals = parseFloat(backendWallet.totalWithdrawals ?? '0');
     return initial + deposits - withdrawals;
   }, [backendWallet]);
 

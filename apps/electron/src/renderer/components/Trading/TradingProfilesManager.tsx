@@ -231,7 +231,7 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
           </Flex>
         </Box>
 
-        {(profile.maxPositionSize || profile.maxConcurrentPositions) && (
+        {(profile.maxPositionSize ?? profile.maxConcurrentPositions) && (
           <Flex gap={4} mt={1}>
             {profile.maxPositionSize && (
               <Text color="fg.muted">

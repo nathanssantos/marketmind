@@ -61,7 +61,7 @@ export const createKlineRenderer = (
       const yHigh = height - ((high - priceMin) / (priceMax - priceMin)) * height;
       const yLow = height - ((low - priceMin) / (priceMax - priceMin)) * height;
 
-      ctx.strokeStyle = wickColor || color;
+      ctx.strokeStyle = wickColor ?? color;
       ctx.beginPath();
       ctx.moveTo(x, yHigh);
       ctx.lineTo(x, yLow);

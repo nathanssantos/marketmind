@@ -246,7 +246,7 @@ export class OpportunityCostManagerService {
 
         const entryPrice = parseNumeric(execution.entryPrice);
         const quantity = parseNumeric(execution.quantity);
-        const leverage = execution.leverage || 1;
+        const leverage = execution.leverage ?? 1;
         const accumulatedFunding = parseNumeric(execution.accumulatedFunding);
         const partialClosePnl = parseNumeric(execution.partialClosePnl);
 

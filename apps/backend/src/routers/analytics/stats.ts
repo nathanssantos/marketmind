@@ -51,19 +51,17 @@ export const statsProcedures = {
 
       const statsBySetup = trades.reduce(
         (acc, trade) => {
-          const setupType = trade.setupType || 'Unknown';
+          const setupType = trade.setupType ?? 'Unknown';
 
-          if (!acc[setupType]) {
-            acc[setupType] = {
-              setupType,
-              totalTrades: 0,
-              winningTrades: 0,
-              losingTrades: 0,
-              totalPnL: 0,
-              avgPnL: 0,
-              winRate: 0,
-            };
-          }
+          acc[setupType] ??= {
+            setupType,
+            totalTrades: 0,
+            winningTrades: 0,
+            losingTrades: 0,
+            totalPnL: 0,
+            avgPnL: 0,
+            winRate: 0,
+          };
 
           const pnl = trade.pnl ? parseFloat(trade.pnl) : 0;
 
@@ -118,9 +116,9 @@ export const statsProcedures = {
       if (!wallet) return [];
 
       const effectiveCapital =
-        parseFloat(wallet.initialBalance || '0') +
-        parseFloat(wallet.totalDeposits || '0') -
-        parseFloat(wallet.totalWithdrawals || '0');
+        parseFloat(wallet.initialBalance ?? '0') +
+        parseFloat(wallet.totalDeposits ?? '0') -
+        parseFloat(wallet.totalWithdrawals ?? '0');
 
       const monthStart = new Date(input.year, input.month - 1, 1);
       const monthEnd = new Date(input.year, input.month, 1);
@@ -166,7 +164,7 @@ export const statsProcedures = {
         const dateKey = fmt.format(t.closedAt);
         const stats = tradeStatsByDay.get(dateKey) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
         stats.closedPositions++;
-        const pnl = parseFloat(t.pnl || '0');
+        const pnl = parseFloat(t.pnl ?? '0');
         if (pnl > 0) { stats.wins++; stats.grossProfit += pnl; }
         else if (pnl < 0) { stats.losses++; stats.grossLoss += Math.abs(pnl); }
         tradeStatsByDay.set(dateKey, stats);
@@ -221,9 +219,9 @@ export const statsProcedures = {
     .query(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      const initialBalance = parseFloat(wallet.initialBalance || '0');
-      const curveDeposits = parseFloat(wallet.totalDeposits || '0');
-      const curveWithdrawals = parseFloat(wallet.totalWithdrawals || '0');
+      const initialBalance = parseFloat(wallet.initialBalance ?? '0');
+      const curveDeposits = parseFloat(wallet.totalDeposits ?? '0');
+      const curveWithdrawals = parseFloat(wallet.totalWithdrawals ?? '0');
       const effectiveCapital = initialBalance + curveDeposits - curveWithdrawals;
 
       const points = await getEquityCurvePoints({

@@ -586,7 +586,7 @@ describe('ResultManager', () => {
               exitTime: '2024-01-16T00:00:00Z',
               exitPrice: 50500,
               quantity: 1,
-              side: '' as any,
+              side: undefined as any,
               type: 'BUY',
               pnl: 500,
               pnlPercent: 1,

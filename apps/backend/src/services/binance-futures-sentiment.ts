@@ -203,7 +203,7 @@ export const getLiquidations = async (
       const timeKey = Math.floor(liq.time / 60000) * 60000;
       const qty = parseFloat(liq.executedQty) * parseFloat(liq.averagePrice);
 
-      const existing = grouped.get(timeKey) || { long: 0, short: 0 };
+      const existing = grouped.get(timeKey) ?? { long: 0, short: 0 };
       if (liq.side === 'SELL') {
         existing.long += qty;
       } else {

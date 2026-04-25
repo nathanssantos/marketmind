@@ -147,12 +147,12 @@ export class ResultManager {
       const tradeData: any = trade; // Type assertion for flexibility
       csv += `${[
         index + 1,
-        tradeData.side || tradeData.type || 'UNKNOWN',
+        tradeData.side ?? tradeData.type ?? 'UNKNOWN',
         trade.entryTime,
         trade.entryPrice.toFixed(2),
-        trade.exitTime || '',
-        trade.exitPrice?.toFixed(2) || '',
-        trade.exitReason || '',
+        trade.exitTime ?? '',
+        trade.exitPrice?.toFixed(2) ?? '',
+        trade.exitReason ?? '',
         (trade.pnl ?? 0).toFixed(2),
         (trade.pnlPercent ?? 0).toFixed(2),
         trade.commission.toFixed(4),
@@ -167,7 +167,7 @@ export class ResultManager {
     csv += `Profit Factor,${result.metrics.profitFactor.toFixed(2)}\n`;
     csv += `Total PnL,${result.metrics.totalPnlPercent.toFixed(2)}%\n`;
     csv += `Max Drawdown,${result.metrics.maxDrawdownPercent.toFixed(2)}%\n`;
-    csv += `Sharpe Ratio,${(result.metrics.sharpeRatio || 0).toFixed(2)}\n`;
+    csv += `Sharpe Ratio,${(result.metrics.sharpeRatio ?? 0).toFixed(2)}\n`;
 
     const finalEquity = result.config.initialCapital + result.metrics.totalPnl;
     csv += `Final Equity,${finalEquity.toFixed(2)}\n`;
@@ -195,7 +195,7 @@ export class ResultManager {
         result.metrics.profitFactor.toFixed(2),
         result.metrics.totalPnlPercent.toFixed(2),
         result.metrics.maxDrawdownPercent.toFixed(2),
-        (result.metrics.sharpeRatio || 0).toFixed(2),
+        (result.metrics.sharpeRatio ?? 0).toFixed(2),
       ];
       csv += `${row.join(',')  }\n`;
     });
@@ -324,7 +324,7 @@ export class ResultManager {
           profitFactor: validationResult.metrics.profitFactor,
           totalPnl: validationResult.metrics.totalPnlPercent,
           maxDrawdown: validationResult.metrics.maxDrawdownPercent,
-          sharpeRatio: validationResult.metrics.sharpeRatio || 0,
+          sharpeRatio: validationResult.metrics.sharpeRatio ?? 0,
         };
       } else {
         const optimizationResult = result as OptimizationSummary;
@@ -336,9 +336,9 @@ export class ResultManager {
           interval: optimizationResult.interval,
           period: `${optimizationResult.period.start} → ${optimizationResult.period.end}`,
           combinations: optimizationResult.totalCombinations,
-          bestWinRate: best?.metrics.winRate || 0,
-          bestProfitFactor: best?.metrics.profitFactor || 0,
-          bestPnl: best?.metrics.totalPnlPercent || 0,
+          bestWinRate: best?.metrics.winRate ?? 0,
+          bestProfitFactor: best?.metrics.profitFactor ?? 0,
+          bestPnl: best?.metrics.totalPnlPercent ?? 0,
           avgWinRate: optimizationResult.statistics.average.winRate,
           avgPnl: optimizationResult.statistics.average.totalPnlPercent,
         };

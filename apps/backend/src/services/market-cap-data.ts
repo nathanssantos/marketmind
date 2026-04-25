@@ -177,9 +177,7 @@ export class MarketCapDataService {
 let marketCapDataService: MarketCapDataService | null = null;
 
 export const getMarketCapDataService = (): MarketCapDataService => {
-  if (!marketCapDataService) {
-    marketCapDataService = new MarketCapDataService();
-  }
+  marketCapDataService ??= new MarketCapDataService();
   return marketCapDataService;
 };
 

@@ -298,7 +298,7 @@ export class BacktestEngine {
 
       if (detectedSetups.length > 0) {
         const setupTypes = detectedSetups.reduce((acc: any, s: any) => {
-          acc[s.type] = (acc[s.type] || 0) + 1;
+          acc[s.type] = (acc[s.type] ?? 0) + 1;
           return acc;
         }, {});
         console.log('[Backtest] Setup breakdown:', setupTypes);
@@ -556,7 +556,7 @@ export class BacktestEngine {
     const pineService = new PineIndicatorService();
     const emaTrend = (await pineService.compute('ema', klines, { period: emaTrendPeriod })).map(v => v ?? 0);
 
-    const anyHtfStochastic = configs.some(c => c.useStochasticHtfFilter || c.useStochasticRecoveryHtfFilter);
+    const anyHtfStochastic = configs.some(c => c.useStochasticHtfFilter ?? c.useStochasticRecoveryHtfFilter);
     let batchStochasticHtfKlines: Kline[] = [];
     if (anyHtfStochastic) {
       const htfInterval = getOneStepAboveTimeframe(baseConfig.interval);

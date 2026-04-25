@@ -50,7 +50,7 @@ export const usePrefSnapshot = <T extends Record<string, unknown>>(
         const stored = state[descriptor.category][key];
         const value = stored !== undefined ? stored : descriptor.defaultValue;
         if (!Object.is((current as Record<string, unknown>)[key], value)) {
-          if (!next) next = { ...(current as Record<string, unknown>) };
+          next ??= { ...(current as Record<string, unknown>) };
           next[key] = value;
           changed = true;
         }

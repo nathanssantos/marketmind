@@ -331,7 +331,7 @@ export const setupRouter = router({
       let totalRiskReward = 0;
 
       for (const result of results) {
-        byType[result.setupType] = (byType[result.setupType] || 0) + 1;
+        byType[result.setupType] = (byType[result.setupType] ?? 0) + 1;
         byDirection[result.direction] += 1;
         totalConfidence += result.confidence;
         if (result.riskReward) {

@@ -77,12 +77,10 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
     'aggTrade:update',
     (data) => {
       bufferRef.current.push(data);
-      if (!frameRef.current) {
-        frameRef.current = requestAnimationFrame(() => {
-          flush();
-          frameRef.current = null;
-        });
-      }
+      frameRef.current ??= requestAnimationFrame(() => {
+        flush();
+        frameRef.current = null;
+      });
     },
     enabled && !!symbol,
   );

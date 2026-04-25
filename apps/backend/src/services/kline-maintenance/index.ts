@@ -325,9 +325,7 @@ class KlineMaintenance {
 let klineMaintenanceInstance: KlineMaintenance | null = null;
 
 export const getKlineMaintenance = (): KlineMaintenance => {
-  if (!klineMaintenanceInstance) {
-    klineMaintenanceInstance = new KlineMaintenance();
-  }
+  klineMaintenanceInstance ??= new KlineMaintenance();
   return klineMaintenanceInstance;
 };
 

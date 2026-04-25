@@ -62,10 +62,10 @@ const LogsTabComponent = () => {
   const { activeWallet } = useActiveWallet();
   const activeWalletId = activeWallet?.id;
 
-  const { watcherStatus } = useBackendAutoTrading(activeWalletId || '');
+  const { watcherStatus } = useBackendAutoTrading(activeWalletId ?? '');
   const hasActiveWatchers = (watcherStatus?.activeWatchers?.length ?? 0) > 0;
 
-  const { logs, clearLogs } = useAutoTradingLogs(activeWalletId || '', hasActiveWatchers);
+  const { logs, clearLogs } = useAutoTradingLogs(activeWalletId ?? '', hasActiveWatchers);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [fontSizeIndex, setFontSizeIndex] = useUIPref<number>('logsTabFontSizeIndex', DEFAULT_FONT_SIZE_INDEX);

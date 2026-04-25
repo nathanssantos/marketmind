@@ -71,7 +71,7 @@ const ScannerTabComponent = () => {
 
   const groupedPresets = (presets ?? []).reduce<Record<string, typeof presets>>((acc, preset) => {
     const cat = preset.category;
-    if (!acc[cat]) acc[cat] = [];
+    acc[cat] ??= [];
     acc[cat].push(preset);
     return acc;
   }, {});

@@ -96,7 +96,7 @@ export const validateOrder = async (
     }
 
     if (!options.skipBalanceCheck) {
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = params.leverage ?? 1;
       const availableCapital = walletBalance * leverage;
       const marginRequired = notionalValue / leverage;

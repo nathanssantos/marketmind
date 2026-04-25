@@ -128,7 +128,7 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   },
 
   getPriceEntry: (symbol) => {
-    return get().prices[symbol] || null;
+    return get().prices[symbol] ?? null;
   },
 
   cleanupStaleSymbols: () => {

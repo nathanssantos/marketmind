@@ -105,7 +105,7 @@ export const orderMutationsRouter = router({
         if (isPaperWallet(wallet)) {
           const simulatedTimestamp = Date.now();
           const simulatedOrderId = generatePaperOrderId();
-          const price = input.price || '0';
+          const price = input.price ?? '0';
           const quantity = input.quantity;
 
           await ctx.db.insert(orders).values({
@@ -410,7 +410,7 @@ export const orderMutationsRouter = router({
                 side: intendedSide,
                 entryPrice: String(targetPrice),
                 limitEntryPrice: String(targetPrice),
-                quantity: String(binanceOrder.origQty || orderInput.quantity),
+                quantity: String(binanceOrder.origQty ?? orderInput.quantity),
                 entryOrderId: binanceOrder.orderId,
                 entryOrderType: 'LIMIT',
                 status: 'pending',

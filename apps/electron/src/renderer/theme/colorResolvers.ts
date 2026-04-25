@@ -5,7 +5,7 @@ const resolveTokenValue = (token: unknown, colorMode: 'light' | 'dark'): string 
   if (!token || typeof token !== 'object' || !('value' in token)) return '';
   const tokenValue = (token as { value: string | { base: string; _dark?: string } }).value;
   if (typeof tokenValue === 'string') return tokenValue;
-  return colorMode === 'dark' ? (tokenValue._dark || tokenValue.base) : tokenValue.base;
+  return colorMode === 'dark' ? (tokenValue._dark ?? tokenValue.base) : tokenValue.base;
 };
 
 const resolve = (key: string, colorMode: 'light' | 'dark'): string =>

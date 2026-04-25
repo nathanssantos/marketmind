@@ -25,11 +25,11 @@ export async function auditPositions(ctx: AuditContext): Promise<void> {
       let pnlPercent = 0;
       let totalFees = 0;
       let estimatedExitFee = 0;
-      const actualEntryFee = parseFloat(dbExec.entryFee || '0');
+      const actualEntryFee = parseFloat(dbExec.entryFee ?? '0');
       const entryPrice = parseFloat(dbExec.entryPrice);
       const quantity = parseFloat(dbExec.quantity);
-      const accumulatedFunding = parseFloat(dbExec.accumulatedFunding || '0');
-      const leverage = dbExec.leverage || 1;
+      const accumulatedFunding = parseFloat(dbExec.accumulatedFunding ?? '0');
+      const leverage = dbExec.leverage ?? 1;
 
       try {
         const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbExec.symbol);
@@ -57,7 +57,7 @@ export async function auditPositions(ctx: AuditContext): Promise<void> {
 
       if (!dryRun) {
         if (exitPrice > 0) {
-          const currentBalance = parseFloat(wallet.currentBalance || '0');
+          const currentBalance = parseFloat(wallet.currentBalance ?? '0');
           const newBalance = currentBalance + pnl;
           await db
             .update(wallets)
@@ -129,7 +129,7 @@ export async function auditPositions(ctx: AuditContext): Promise<void> {
         status: 'open',
         entryOrderType: 'MARKET',
         marketType: 'FUTURES',
-        leverage: position.leverage || 1,
+        leverage: position.leverage ?? 1,
         highestPriceSinceEntry: entryPrice.toString(),
         lowestPriceSinceEntry: entryPrice.toString(),
         exitSource: 'MANUAL',

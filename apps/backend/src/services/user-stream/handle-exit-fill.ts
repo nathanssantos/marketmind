@@ -96,7 +96,7 @@ export async function handleExitFill(
   const exitPrice = parseFloat(avgPrice || lastFilledPrice);
   const closedQty = parseFloat(executedQty);
   const entryPrice = parseFloat(execution.entryPrice);
-  const leverage = execution.leverage || 1;
+  const leverage = execution.leverage ?? 1;
   const executionQty = parseFloat(execution.quantity);
 
   const connection = ctx.connections.get(walletId);
@@ -112,7 +112,7 @@ export async function handleExitFill(
             ? (exitPrice - entryPrice) * closedQty
             : (entryPrice - exitPrice) * closedQty;
 
-          const existingPartialPnl = parseFloat(execution.partialClosePnl || '0');
+          const existingPartialPnl = parseFloat(execution.partialClosePnl ?? '0');
           const newPartialClosePnl = existingPartialPnl + partialPnl;
 
           await db
@@ -145,7 +145,7 @@ export async function handleExitFill(
             '[FuturesUserStream] Partial close detected — updated quantity, position remains open'
           );
 
-          const hasProtection = execution.stopLoss || execution.takeProfit;
+          const hasProtection = execution.stopLoss ?? execution.takeProfit;
           if (hasProtection) ctx.scheduleDebouncedSlTpUpdate(execution.id, walletId, symbol);
 
           binancePriceStreamService.invalidateExecutionCache(symbol);
@@ -169,7 +169,7 @@ export async function handleExitFill(
 
   const quantity = closedQty;
   let actualExitFee = parseFloat(commission || '0');
-  let actualEntryFee = parseFloat(execution.entryFee || '0');
+  let actualEntryFee = parseFloat(execution.entryFee ?? '0');
 
   try {
     const feeConnection = ctx.connections.get(walletId);
@@ -200,7 +200,7 @@ export async function handleExitFill(
     } catch (_e) { /* entry fee fetch is best-effort */ }
   }
 
-  const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
+  const accumulatedFunding = parseFloat(execution.accumulatedFunding ?? '0');
 
   const pnlResult = calculatePnl({
     entryPrice,
@@ -213,7 +213,7 @@ export async function handleExitFill(
     entryFee: actualEntryFee,
     exitFee: actualExitFee,
   });
-  const partialClosePnl = parseFloat(execution.partialClosePnl || '0');
+  const partialClosePnl = parseFloat(execution.partialClosePnl ?? '0');
   const pnl = pnlResult.netPnl + partialClosePnl;
   const pnlPercent = pnlResult.pnlPercent;
   const totalFees = actualEntryFee + actualExitFee;

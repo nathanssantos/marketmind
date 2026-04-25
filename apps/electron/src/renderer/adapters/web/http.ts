@@ -4,7 +4,7 @@ export const createWebHttpAdapter = (): HttpAdapter => ({
   fetch: async (url: string, options?: HttpOptions) => {
     try {
       const response = await fetch(url, {
-        method: options?.method || 'GET',
+        method: options?.method ?? 'GET',
         headers: options?.headers,
         body: options?.body ? JSON.stringify(options.body) : undefined,
       });

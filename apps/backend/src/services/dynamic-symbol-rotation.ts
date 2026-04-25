@@ -139,7 +139,7 @@ export class DynamicSymbolRotationService {
 
       let btcKlinesData: ReturnType<typeof mapDbKlinesReversed> | null = null;
 
-      const needsBtcKlines = config.useBtcCorrelationFilter || config.useAdxTrendStrength;
+      const needsBtcKlines = config.useBtcCorrelationFilter ?? config.useAdxTrendStrength;
       if (needsBtcKlines) {
         const btcDbKlines = await fetchBtcKlines(config.interval, config.marketType);
         if (btcDbKlines.length >= ROTATION_FILTERS.MIN_BTC_KLINES) {
@@ -491,9 +491,7 @@ export class DynamicSymbolRotationService {
 let dynamicSymbolRotationService: DynamicSymbolRotationService | null = null;
 
 export const getDynamicSymbolRotationService = (): DynamicSymbolRotationService => {
-  if (!dynamicSymbolRotationService) {
-    dynamicSymbolRotationService = new DynamicSymbolRotationService();
-  }
+  dynamicSymbolRotationService ??= new DynamicSymbolRotationService();
   return dynamicSymbolRotationService;
 };
 

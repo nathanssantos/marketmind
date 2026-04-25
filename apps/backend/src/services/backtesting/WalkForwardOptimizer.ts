@@ -280,11 +280,11 @@ export class WalkForwardOptimizer {
 
   private static calculateAggregatedMetrics(windows: WalkForwardWindow[]) {
     const inSampleSharpes = windows
-      .map((w) => w.optimizationResult?.sharpeRatio || 0)
+      .map((w) => w.optimizationResult?.sharpeRatio ?? 0)
       .filter((s) => !isNaN(s));
 
     const outOfSampleSharpes = windows
-      .map((w) => w.testResult?.metrics.sharpeRatio || 0)
+      .map((w) => w.testResult?.metrics.sharpeRatio ?? 0)
       .filter((s) => !isNaN(s));
 
     const avgInSampleSharpe =
@@ -332,11 +332,11 @@ export class WalkForwardOptimizer {
 
   private static calculateDegradation(windows: WalkForwardWindow[]): number {
     const inSampleSharpes = windows
-      .map((w) => w.optimizationResult?.sharpeRatio || 0)
+      .map((w) => w.optimizationResult?.sharpeRatio ?? 0)
       .filter((s) => !isNaN(s));
 
     const outOfSampleSharpes = windows
-      .map((w) => w.testResult?.metrics.sharpeRatio || 0)
+      .map((w) => w.testResult?.metrics.sharpeRatio ?? 0)
       .filter((s) => !isNaN(s));
 
     const avgInSample =

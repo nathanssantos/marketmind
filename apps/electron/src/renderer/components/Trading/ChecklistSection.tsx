@@ -253,7 +253,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       >
         <Box flexShrink={0}>{icon}</Box>
         <Text flex={1} truncate>
-          {r.indicatorLabel || r.catalogType || '—'}
+          {r.indicatorLabel ?? r.catalogType ?? '—'}
         </Text>
         {tfLabel && (
           <Badge size="xs" variant="outline" colorPalette="gray">

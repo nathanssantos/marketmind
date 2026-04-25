@@ -71,7 +71,7 @@ export async function handleUntrackedReduceFill(
   }
 
   if (remainingQty > 0 && remainingQty < execQty) {
-    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl || '0');
+    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl ?? '0');
     const newPartialClosePnl = existingPartialPnl + partialPnl;
 
     await db
@@ -97,7 +97,7 @@ export async function handleUntrackedReduceFill(
       '[FuturesUserStream] Untracked reduce fill — partial close applied'
     );
 
-    const hasProtection = oppositeExec.stopLoss || oppositeExec.takeProfit;
+    const hasProtection = oppositeExec.stopLoss ?? oppositeExec.takeProfit;
     if (hasProtection) ctx.scheduleDebouncedSlTpUpdate(oppositeExec.id, walletId, symbol);
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
@@ -111,7 +111,7 @@ export async function handleUntrackedReduceFill(
       });
     }
   } else {
-    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl || '0');
+    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl ?? '0');
     const totalPnl = partialPnl + existingPartialPnl;
     const exitFee = parseFloat(commission || '0');
 
@@ -210,7 +210,7 @@ export async function handleManualOrderFill(
   const direction: PositionSide = orderSide === 'BUY' ? 'LONG' : 'SHORT';
   const oppositeDirection = direction === 'LONG' ? 'SHORT' : 'LONG';
   const fillPrice = parseFloat(avgPrice || lastFilledPrice);
-  const fillQty = parseFloat(executedQty || manualOrder.origQty || '0');
+  const fillQty = parseFloat(executedQty || (manualOrder.origQty ?? '0'));
 
   const [existingOpposite] = await db
     .select({ id: tradeExecutions.id })

@@ -105,21 +105,19 @@ export class TradeExecutor {
     entryPrice: number,
     tradesCount: number
   ): { stopLoss: number | undefined; takeProfit: number | undefined } {
-    const stopLoss = setup.stopLoss
-      ? setup.stopLoss
-      : this.config.stopLossPercent
-        ? setup.direction === 'LONG'
+    const stopLoss: number | undefined = setup.stopLoss
+      ?? (this.config.stopLossPercent
+        ? (setup.direction === 'LONG'
           ? entryPrice * (1 - this.config.stopLossPercent / 100)
-          : entryPrice * (1 + this.config.stopLossPercent / 100)
-        : undefined;
+          : entryPrice * (1 + this.config.stopLossPercent / 100))
+        : undefined);
 
-    let takeProfit = setup.takeProfit
-      ? setup.takeProfit
-      : this.config.takeProfitPercent
-        ? setup.direction === 'LONG'
+    let takeProfit: number | undefined = setup.takeProfit
+      ?? (this.config.takeProfitPercent
+        ? (setup.direction === 'LONG'
           ? entryPrice * (1 + this.config.takeProfitPercent / 100)
-          : entryPrice * (1 - this.config.takeProfitPercent / 100)
-        : undefined;
+          : entryPrice * (1 - this.config.takeProfitPercent / 100))
+        : undefined);
 
     let tpSource = setup.takeProfit ? 'setup-ATR' : 'config-fixed';
 

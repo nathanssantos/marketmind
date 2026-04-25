@@ -117,8 +117,8 @@ export const executeExit = async (
     const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
     if (shouldExecuteReal) {
-      const hasExchangeSLProtection = currentExecution.stopLossAlgoId || currentExecution.stopLossOrderId;
-      const hasExchangeTPProtection = currentExecution.takeProfitAlgoId || currentExecution.takeProfitOrderId;
+      const hasExchangeSLProtection = currentExecution.stopLossAlgoId ?? currentExecution.stopLossOrderId;
+      const hasExchangeTPProtection = currentExecution.takeProfitAlgoId ?? currentExecution.takeProfitOrderId;
 
       if ((reason === 'STOP_LOSS' && hasExchangeSLProtection) ||
         (reason === 'TAKE_PROFIT' && hasExchangeTPProtection)) {
@@ -144,10 +144,10 @@ export const executeExit = async (
 
     const exitValue = calculateNotional(exitPrice, quantity);
     const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
-    const actualEntryFeeFromRecord = parseFloat(currentExecution.entryFee || '0');
+    const actualEntryFeeFromRecord = parseFloat(currentExecution.entryFee ?? '0');
     const { exitFee: estimatedExitFee } = calculateTotalFees(0, exitValue, { marketType });
     const totalFees = actualEntryFeeFromRecord + estimatedExitFee;
-    const accumulatedFunding = parseFloat(currentExecution.accumulatedFunding || '0');
+    const accumulatedFunding = parseFloat(currentExecution.accumulatedFunding ?? '0');
     const pnl = roundToDecimals(grossPnl - totalFees + accumulatedFunding, 8);
 
     const pnlPercent = roundToDecimals(((exitPrice - entryPrice) / entryPrice) * 100, 4);
@@ -249,7 +249,7 @@ export const executeExit = async (
       return;
     }
 
-    const currentBalance = parseFloat(wallet.currentBalance || '0');
+    const currentBalance = parseFloat(wallet.currentBalance ?? '0');
 
     await db
       .update(wallets)
@@ -269,8 +269,8 @@ export const executeExit = async (
 
     binancePriceStreamService.invalidateExecutionCache(execution.symbol);
 
-    const hasProtectionOrders = execution.stopLossAlgoId || execution.stopLossOrderId ||
-      execution.takeProfitAlgoId || execution.takeProfitOrderId;
+    const hasProtectionOrders = execution.stopLossAlgoId ?? execution.stopLossOrderId ??
+      execution.takeProfitAlgoId ?? execution.takeProfitOrderId;
 
     if (hasProtectionOrders && !isPaperWallet(wallet)) {
       try {

@@ -173,7 +173,7 @@ export const ChartControls = ({
             {Array.from(pinnedControls).map((controlKey) => (
               <PinnableControl
                 key={controlKey}
-                label={controlLabels[controlKey] || controlKey}
+                label={controlLabels[controlKey] ?? controlKey}
                 value={advancedConfig[controlKey]}
                 onChange={(value) => handleAdvancedChange(controlKey, value)}
                 controlKey={controlKey}

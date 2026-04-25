@@ -44,7 +44,7 @@ export const formatQuantityForBinance = (quantity: number, stepSize?: string): s
   }
 
   const precision = stepSize.includes('.')
-    ? stepSize.split('.')[1]?.replace(/0+$/, '').length || 0
+    ? stepSize.split('.')[1]?.replace(/0+$/, '').length ?? 0
     : 0;
 
   const rawSteps = quantity / stepSizeNum;
@@ -65,7 +65,7 @@ export const formatPriceForBinance = (price: number, tickSize?: string): string 
   }
 
   const precision = tickSize.includes('.')
-    ? tickSize.split('.')[1]?.replace(/0+$/, '').length || 0
+    ? tickSize.split('.')[1]?.replace(/0+$/, '').length ?? 0
     : 0;
 
   const adjusted = Math.round(price / tickSizeNum) * tickSizeNum;

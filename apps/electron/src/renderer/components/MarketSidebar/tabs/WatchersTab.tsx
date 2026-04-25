@@ -34,7 +34,7 @@ const WatchersTabComponent = () => {
   const { activeWallet } = useActiveWallet();
   const activeWalletId = activeWallet?.id;
 
-  const { watcherStatus, isLoadingWatcherStatus, stopAllWatchers, isStoppingAllWatchers, config, updateConfig, isUpdatingConfig } = useBackendAutoTrading(activeWalletId || '');
+  const { watcherStatus, isLoadingWatcherStatus, stopAllWatchers, isStoppingAllWatchers, config, updateConfig, isUpdatingConfig } = useBackendAutoTrading(activeWalletId ?? '');
   const utils = trpc.useUtils();
   const updateConfigFull = trpc.autoTrading.updateConfig.useMutation({
     onSuccess: () => { void utils.autoTrading.getConfig.invalidate(); },
@@ -381,7 +381,7 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
         case 'type':
           return dir * a.marketType.localeCompare(b.marketType);
         case 'profile':
-          return dir * (a.profileName || '').localeCompare(b.profileName || '');
+          return dir * (a.profileName ?? '').localeCompare(b.profileName ?? '');
         default:
           return 0;
       }

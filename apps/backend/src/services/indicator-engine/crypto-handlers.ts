@@ -108,7 +108,7 @@ export const createCryptoIndicatorHandlers = (): CryptoHandlerMap => ({
 
   relativeStrength: (klines, _resolvedParams, cryptoData) => {
     const closes = klines.map((k) => parseFloat(k.close));
-    const baseAssetCloses = cryptoData.baseAssetCloses || closes;
+    const baseAssetCloses = cryptoData.baseAssetCloses ?? closes;
     const result = calculateRelativeStrength(closes, baseAssetCloses);
 
     const values: (number | null)[] = new Array(klines.length).fill(null);

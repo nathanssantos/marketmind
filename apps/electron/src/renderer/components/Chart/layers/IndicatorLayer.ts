@@ -13,7 +13,7 @@ export const createMovingAverageRenderer = (
   configs: MovingAverageLayerConfig[]
 ) => {
   const maData = configs.map((config) => {
-    const values = calculateMovingAverage(klines, config.period, config.type || 'SMA');
+    const values = calculateMovingAverage(klines, config.period, config.type ?? 'SMA');
     return { ...config, values };
   });
 

@@ -286,13 +286,9 @@ export const applyFilterDefaults = (
 ): Record<string, unknown> => {
   const result = { ...config };
   for (const f of FILTER_REGISTRY) {
-    if (result[f.enableKey] === undefined || result[f.enableKey] === null) {
-      result[f.enableKey] = defaults[f.enableKey] ?? false;
-    }
+    result[f.enableKey] ??= defaults[f.enableKey] ?? false;
     for (const p of f.params) {
-      if (result[p.key] === undefined || result[p.key] === null) {
-        result[p.key] = defaults[p.key] ?? p.default;
-      }
+      result[p.key] ??= defaults[p.key] ?? p.default;
     }
   }
   return result;

@@ -69,8 +69,8 @@ export const backfillHistoricalKlines = async (
         closeTime: new Date(candle[6]),
         quoteVolume: candle[7],
         trades: candle[8],
-        takerBuyBaseVolume: candle[9] || '0',
-        takerBuyQuoteVolume: candle[10] || '0',
+        takerBuyBaseVolume: candle[9] ?? '0',
+        takerBuyQuoteVolume: candle[10] ?? '0',
       }));
 
       await db.insert(klines).values(klinesData).onConflictDoNothing();

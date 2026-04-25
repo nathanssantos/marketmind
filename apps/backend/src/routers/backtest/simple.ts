@@ -75,7 +75,7 @@ export const simpleProcedures = {
           startDate: input.startDate,
           endDate: input.endDate,
           initialCapital: input.initialCapital,
-          setupTypes: input.setupTypes || [...DEFAULT_ENABLED_SETUPS],
+          setupTypes: input.setupTypes ?? [...DEFAULT_ENABLED_SETUPS],
           minConfidence: input.minConfidence,
           useTrendFilter: input.useTrendFilter,
           useAlgorithmicLevels: input.useAlgorithmicLevels,

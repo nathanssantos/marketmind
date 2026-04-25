@@ -82,7 +82,7 @@ export const executionsRouter = router({
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
       const isFutures = execution.marketType === 'FUTURES';
-      const leverage = execution.leverage || 1;
+      const leverage = execution.leverage ?? 1;
 
       if (execution.status === 'pending') {
         logger.info({
@@ -295,7 +295,7 @@ export const executionsRouter = router({
         for (const exec of allExecutionsToClose) {
           const execEntryPrice = parseFloat(exec.entryPrice);
           const execQty = parseFloat(exec.quantity);
-          const execLeverage = exec.leverage || 1;
+          const execLeverage = exec.leverage ?? 1;
 
           const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
             entryPrice: execEntryPrice,
@@ -310,7 +310,7 @@ export const executionsRouter = router({
           totalGrossPnl += grossPnl;
           totalAllFees += totalFees;
 
-          const existingPartialPnl = parseFloat(exec.partialClosePnl || '0');
+          const existingPartialPnl = parseFloat(exec.partialClosePnl ?? '0');
           const finalPnl = netPnl + existingPartialPnl;
 
           await tx
@@ -342,7 +342,7 @@ export const executionsRouter = router({
           });
         }
 
-        const currentBalance = parseFloat(wallet.currentBalance || '0');
+        const currentBalance = parseFloat(wallet.currentBalance ?? '0');
         const newBalance = currentBalance + totalNetPnl;
 
         await tx
@@ -371,7 +371,7 @@ export const executionsRouter = router({
           quantity: parseFloat(exec.quantity),
           side: exec.side,
           marketType,
-          leverage: exec.leverage || 1,
+          leverage: exec.leverage ?? 1,
         });
         wsService?.emitPositionClosed(execution.walletId, {
           positionId: exec.id,

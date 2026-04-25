@@ -77,7 +77,7 @@ export class RiskManagerService {
         };
       }
 
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const leverage = config.leverage ?? 1;
 
       const openPositions = await this.getOpenPositions(walletId);
@@ -159,13 +159,13 @@ export class RiskManagerService {
       }
 
       if (config.maxDrawdownEnabled) {
-        const maxDrawdownPercent = parseFloat(config.maxDrawdownPercent || '15');
+        const maxDrawdownPercent = parseFloat(config.maxDrawdownPercent ?? '15');
         const drawdownResult = await this.validateDrawdownForNewPosition(walletId, maxDrawdownPercent);
         if (!drawdownResult.isValid) return drawdownResult;
       }
 
       if (config.maxRiskPerStopEnabled && stopRiskParams) {
-        const maxRiskPercent = parseFloat(config.maxRiskPerStopPercent || '2');
+        const maxRiskPercent = parseFloat(config.maxRiskPerStopPercent ?? '2');
         const stopRiskResult = this.validateStopRisk(
           walletBalance,
           stopRiskParams.entryPrice,
@@ -208,7 +208,7 @@ export class RiskManagerService {
 
       const openPositions = await this.getOpenPositions(walletId);
       const totalValue = calculatePositionExposure(mapDbPositionsToNumeric(openPositions));
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
 
       const maxAllowed = walletBalance * (RISK_MANAGER.MAX_EXPOSURE_PERCENT / 100);
 
@@ -249,7 +249,7 @@ export class RiskManagerService {
       }
 
       const dailyPnL = await this.calculateDailyPnL(walletId);
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const limit = walletBalance * 0.05;
 
       return {
@@ -320,8 +320,8 @@ export class RiskManagerService {
         };
       }
 
-      const initialBalance = parseFloat(wallet.initialBalance || '0');
-      const currentBalance = parseFloat(wallet.currentBalance || '0');
+      const initialBalance = parseFloat(wallet.initialBalance ?? '0');
+      const currentBalance = parseFloat(wallet.currentBalance ?? '0');
 
       const drawdown = calculateDrawdownPercent(initialBalance, currentBalance);
 

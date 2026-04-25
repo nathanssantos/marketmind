@@ -343,7 +343,7 @@ export const orchestrateFilters = async (input: FilterOrchestrationInput): Promi
     }
   }
 
-  const shouldApplyTrendFilter = config.useTrendFilter || strategyHasTrendFilter;
+  const shouldApplyTrendFilter = config.useTrendFilter ?? strategyHasTrendFilter;
 
   if (shouldApplyTrendFilter && klines.length >= 2) {
     const trendResult = await checkTrendCondition(klines, direction);

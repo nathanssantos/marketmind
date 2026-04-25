@@ -42,7 +42,7 @@ export const orderQueriesRouter = router({
       try {
         guardBinanceBan();
 
-        const cacheKey = input.symbol || 'all';
+        const cacheKey = input.symbol ?? 'all';
         const cached = binanceApiCache.get<Awaited<ReturnType<typeof getOpenOrders>>>('OPEN_ORDERS', input.walletId, cacheKey);
         if (cached) return cached;
 

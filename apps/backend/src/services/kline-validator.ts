@@ -188,7 +188,7 @@ export class KlineValidator {
 
     if (highEqualsOpen && !lowEqualsOpen) {
       const hasNeighborWithHigherHigh =
-        (prevKline && parseFloat(prevKline.high) > high) ||
+        (prevKline && parseFloat(prevKline.high) > high) ??
         (nextKline && parseFloat(nextKline.high) > high);
 
       if (hasNeighborWithHigherHigh) {
@@ -198,7 +198,7 @@ export class KlineValidator {
 
     if (lowEqualsOpen && !highEqualsOpen) {
       const hasNeighborWithLowerLow =
-        (prevKline && parseFloat(prevKline.low) < low) ||
+        (prevKline && parseFloat(prevKline.low) < low) ??
         (nextKline && parseFloat(nextKline.low) < low);
 
       if (hasNeighborWithLowerLow) {

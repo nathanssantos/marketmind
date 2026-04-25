@@ -155,9 +155,7 @@ export class EventIconManager {
 let iconManagerInstance: EventIconManager | null = null;
 
 export const getEventIconManager = (): EventIconManager => {
-  if (!iconManagerInstance) {
-    iconManagerInstance = new EventIconManager();
-  }
+  iconManagerInstance ??= new EventIconManager();
   return iconManagerInstance;
 };
 

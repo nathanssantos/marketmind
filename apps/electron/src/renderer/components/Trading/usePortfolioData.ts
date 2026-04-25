@@ -21,7 +21,7 @@ export const usePortfolioData = () => {
   const { activeWallet: rawActiveWallet, isIB, wallets: backendWallets } = useActiveWallet();
   const activeWalletId = rawActiveWallet?.id;
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
-  const { tickerPrices } = useBackendTrading(activeWalletId || '', undefined);
+  const { tickerPrices } = useBackendTrading(activeWalletId ?? '', undefined);
   const { data: openTradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId: activeWalletId ?? '', status: 'open', limit: 500 },
     { enabled: !!activeWalletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
@@ -86,7 +86,7 @@ export const usePortfolioData = () => {
       const pnl = primary.side === 'LONG'
         ? (currentPrice - avgPrice) * totalQty
         : (avgPrice - currentPrice) * totalQty;
-      const pnlPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 * (primary.leverage || 1) : 0;
+      const pnlPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 * (primary.leverage ?? 1) : 0;
       const adjustedPnlPercent = primary.side === 'LONG' ? pnlPercent : -pnlPercent;
 
       return {
@@ -100,13 +100,13 @@ export const usePortfolioData = () => {
         pnlPercent: adjustedPnlPercent,
         stopLoss: primary.stopLoss ? parseFloat(primary.stopLoss) : undefined,
         takeProfit: primary.takeProfit ? parseFloat(primary.takeProfit) : undefined,
-        setupType: primary.setupType || undefined,
+        setupType: primary.setupType ?? undefined,
         openedAt: new Date(primary.openedAt),
         status: 'open' as const,
-        marketType: primary.marketType || 'FUTURES',
+        marketType: primary.marketType ?? 'FUTURES',
         isAutoTrade: !!primary.setupType,
         count: group.length,
-        leverage: primary.leverage || 1,
+        leverage: primary.leverage ?? 1,
       };
     });
   }, [tradeExecutions, tickerPrices, centralizedPrices]);
@@ -114,12 +114,12 @@ export const usePortfolioData = () => {
   const wallets = backendWallets.map((w) => ({
     id: w.id,
     name: w.name,
-    balance: parseFloat(w.currentBalance || '0'),
-    walletBalance: parseFloat(w.totalWalletBalance || w.currentBalance || '0'),
-    initialBalance: parseFloat(w.initialBalance || '0'),
-    totalDeposits: parseFloat(w.totalDeposits || '0'),
-    totalWithdrawals: parseFloat(w.totalWithdrawals || '0'),
-    currency: (w.currency || 'USDT'),
+    balance: parseFloat(w.currentBalance ?? '0'),
+    walletBalance: parseFloat(w.totalWalletBalance ?? w.currentBalance ?? '0'),
+    initialBalance: parseFloat(w.initialBalance ?? '0'),
+    totalDeposits: parseFloat(w.totalDeposits ?? '0'),
+    totalWithdrawals: parseFloat(w.totalWithdrawals ?? '0'),
+    currency: (w.currency ?? 'USDT'),
     createdAt: new Date(w.createdAt),
   }));
 

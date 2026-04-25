@@ -258,8 +258,6 @@ export class OrderBookAnalyzerService {
 let orderBookAnalyzerService: OrderBookAnalyzerService | null = null;
 
 export const getOrderBookAnalyzerService = (): OrderBookAnalyzerService => {
-  if (!orderBookAnalyzerService) {
-    orderBookAnalyzerService = new OrderBookAnalyzerService();
-  }
+  orderBookAnalyzerService ??= new OrderBookAnalyzerService();
   return orderBookAnalyzerService;
 };

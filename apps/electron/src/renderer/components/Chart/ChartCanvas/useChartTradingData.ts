@@ -121,9 +121,9 @@ export const useChartTradingData = ({
 
   const filteredBackendExecutions = useMemo((): BackendExecution[] => {
     if (!backendExecutions || !symbol) return [];
-    const currentMarketType = marketType || 'FUTURES';
+    const currentMarketType = marketType ?? 'FUTURES';
     return backendExecutions
-      .filter(exec => exec.symbol === symbol && (exec.marketType || 'FUTURES') === currentMarketType)
+      .filter(exec => exec.symbol === symbol && (exec.marketType ?? 'FUTURES') === currentMarketType)
       .map(exec => ({
         id: exec.id,
         symbol: exec.symbol,

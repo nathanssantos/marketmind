@@ -325,7 +325,7 @@ export class PyramidingService {
       };
     }
 
-    const baseQuantity = parseFloat(openExecutions[0]?.quantity || '0');
+    const baseQuantity = parseFloat(openExecutions[0]?.quantity ?? '0');
     const pyramidSize = baseQuantity * Math.pow(this.config.scaleFactor, openExecutions.length);
 
     const pyramidValue = pyramidSize * entryPrice;

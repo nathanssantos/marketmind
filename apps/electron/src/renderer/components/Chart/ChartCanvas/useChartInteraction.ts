@@ -197,14 +197,14 @@ export const useChartInteraction = ({
     const hoveredSLTP = getSLTPAtPosition(mouseX, mouseY);
     const hoveredOrder = hoveredSLTP ? null : getHoveredOrder(mouseX, mouseY);
 
-    const newHoveredId = hoveredOrder?.id || null;
+    const newHoveredId = hoveredOrder?.id ?? null;
     if (newHoveredId !== lastHoveredOrderRef.current && !orderDragHandler.isDragging) {
       lastHoveredOrderRef.current = newHoveredId;
       hoveredOrderIdRef.current = newHoveredId;
       manager.markDirty('overlays');
     }
 
-    const isOverOrderElement = orderDragHandler.isDragging || hoveredOrderButton || hoveredSLTP || hoveredOrder;
+    const isOverOrderElement = orderDragHandler.isDragging || (hoveredOrderButton ?? hoveredSLTP ?? hoveredOrder);
 
     if (orderDragHandler.isDragging) {
       updateCursor('ns-resize');
@@ -255,15 +255,13 @@ export const useChartInteraction = ({
     }
 
     pendingMouseEventRef.current = { x: mouseX, y: mouseY, rect };
-    if (mouseMoveRafRef.current === null) {
-      mouseMoveRafRef.current = requestAnimationFrame(() => {
-        mouseMoveRafRef.current = null;
-        const pending = pendingMouseEventRef.current;
-        if (pending) {
-          processMouseMoveTooltip(pending.x, pending.y, pending.rect);
-        }
-      });
-    }
+    mouseMoveRafRef.current ??= requestAnimationFrame(() => {
+      mouseMoveRafRef.current = null;
+      const pending = pendingMouseEventRef.current;
+      if (pending) {
+        processMouseMoveTooltip(pending.x, pending.y, pending.rect);
+      }
+    });
   }, [
     canvasRef, manager, klines, advancedConfig, isPanning,
     shiftPressed, altPressed,
