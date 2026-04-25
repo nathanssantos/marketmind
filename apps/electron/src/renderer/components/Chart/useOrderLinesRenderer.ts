@@ -127,6 +127,9 @@ export const useOrderLinesRenderer = (
     slTpButtonHitboxesRef.current = [];
     tsCloseButtonsRef.current = [];
 
+    const flashStoreState = useOrderFlashStore.getState();
+    const flashMap = flashStoreState.flashes;
+
     const rc: RenderContext = {
       ctx,
       manager,
@@ -138,13 +141,13 @@ export const useOrderLinesRenderer = (
       isOrderLoading: (orderId: string) => orderLoadingMapRef?.current?.has(orderId) ?? false,
       getFlashAlpha: (orderId: string) => {
         const localFlashTime = orderFlashMapRef?.current?.get(orderId);
-        const storeFlashTime = useOrderFlashStore.getState().getFlashTime(orderId);
+        const storeFlashTime = flashMap.get(orderId);
         const flashTime = Math.max(localFlashTime ?? 0, storeFlashTime ?? 0) || 0;
         if (!flashTime) return 0;
         const elapsed = now - flashTime;
         if (elapsed >= ORDER_LINE_ANIMATION.FLASH_DURATION_MS) {
           orderFlashMapRef?.current?.delete(orderId);
-          if (storeFlashTime) useOrderFlashStore.getState().clearFlash(orderId);
+          if (storeFlashTime) flashStoreState.clearFlash(orderId);
           return 0;
         }
         rc.needsAnimation = true;

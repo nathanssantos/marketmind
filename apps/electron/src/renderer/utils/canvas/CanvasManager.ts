@@ -91,15 +91,20 @@ export class CanvasManager {
     globalThis.__canvasManagerInstances.add(this);
   }
 
+  private resizeRafId: number | null = null;
   private observeResize(): void {
     const parent = this.canvas.parentElement;
     if (!parent) return;
     this.resizeObserver = new ResizeObserver(() => {
-      this.ctx = setupCanvas(this.canvas);
-      this.updateDimensions();
-      this.updateKlineWidth();
-      this.offscreenValid = false;
-      this.markDirty('all');
+      if (this.resizeRafId !== null) return;
+      this.resizeRafId = requestAnimationFrame(() => {
+        this.resizeRafId = null;
+        this.ctx = setupCanvas(this.canvas);
+        this.updateDimensions();
+        this.updateKlineWidth();
+        this.offscreenValid = false;
+        this.markDirty('all');
+      });
     });
     this.resizeObserver.observe(parent);
   }
@@ -547,6 +552,10 @@ export class CanvasManager {
 
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    if (this.resizeRafId !== null) {
+      cancelAnimationFrame(this.resizeRafId);
+      this.resizeRafId = null;
+    }
 
     if (globalThis.__canvasManagerInstances) {
       globalThis.__canvasManagerInstances.delete(this);
