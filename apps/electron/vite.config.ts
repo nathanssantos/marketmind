@@ -109,12 +109,13 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react/jsx-runtime'],
-            'vendor-chakra': ['@chakra-ui/react'],
-            'vendor-query': ['@tanstack/react-query'],
-            'vendor-i18n': ['i18next', 'react-i18next'],
-            'vendor-zustand': ['zustand', 'immer'],
+          manualChunks: (id) => {
+            if (/[\\/]node_modules[\\/](react|react-dom)[\\/]/.test(id)) return 'vendor-react';
+            if (id.includes('/node_modules/@chakra-ui/')) return 'vendor-chakra';
+            if (id.includes('/node_modules/@tanstack/react-query/')) return 'vendor-query';
+            if (/[\\/]node_modules[\\/](i18next|react-i18next)[\\/]/.test(id)) return 'vendor-i18n';
+            if (/[\\/]node_modules[\\/](zustand|immer)[\\/]/.test(id)) return 'vendor-zustand';
+            return undefined;
           },
         },
       },
