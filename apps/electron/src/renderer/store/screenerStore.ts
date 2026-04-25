@@ -72,16 +72,16 @@ export const useScreenerStore = create<ScreenerState>()(
     clearFilters: () => set({ customFilters: [], activePresetId: null }),
     setFilters: (filters) => set({ customFilters: filters }),
 
-    assetClass: 'CRYPTO' as AssetClass,
+    assetClass: 'CRYPTO',
     setAssetClass: (assetClass) => { set({ assetClass }); syncUI('screenerAssetClass', assetClass); },
 
-    marketType: 'FUTURES' as MarketType,
+    marketType: 'FUTURES',
     setMarketType: (marketType) => { set({ marketType }); syncUI('screenerMarketType', marketType); },
 
-    interval: '30m' as TimeInterval,
+    interval: '30m',
     setInterval: (interval) => { set({ interval }); syncUI('screenerInterval', interval); },
 
-    sortBy: 'compositeScore' as ScreenerSortField,
+    sortBy: 'compositeScore',
     setSortBy: (sortBy) => { set({ sortBy }); syncUI('screenerSortBy', sortBy); },
 
     sortDirection: 'desc',

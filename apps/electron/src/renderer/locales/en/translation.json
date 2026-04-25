@@ -167,7 +167,8 @@
       "tradingSimulator": "Trading Simulator",
       "data": "Data",
       "about": "About",
-      "indicators": "Indicators"
+      "indicators": "Indicators",
+      "customSymbols": "Custom Symbols"
     },
     "language": {
       "title": "Language",

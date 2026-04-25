@@ -1,9 +1,9 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 import { usePollingInterval } from './usePollingInterval';
-export const useBackendTrading = (walletId: string, symbol?: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES') => {
+export const useBackendTrading = (walletId: string, symbol?: string, _marketType: 'SPOT' | 'FUTURES' = 'FUTURES') => {
   const utils = trpc.useUtils();
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
 
@@ -25,27 +25,11 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
     return [...new Set(openExecutions.map((e) => e.symbol))];
   }, [tradeExecutions]);
 
-  const realtimePrices = usePricesForSymbols(openPositionSymbols);
-
-  const { data: tickerPrices, isLoading: isLoadingPrices } = trpc.trading.getTickerPrices.useQuery(
-    { symbols: openPositionSymbols, marketType },
-    { enabled: openPositionSymbols.length > 0, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
-  );
-
-  const prevMergedRef = useRef<Record<string, number>>({});
-
-  const mergedTickerPrices = useMemo(() => {
-    const base = tickerPrices ?? {};
-    const merged: Record<string, number> = {};
-    for (const [k, v] of Object.entries(base)) merged[k] = typeof v === 'string' ? parseFloat(v) : v;
-    for (const [k, v] of Object.entries(realtimePrices)) merged[k] = v;
-    const prev = prevMergedRef.current;
-    const keys = Object.keys(merged);
-    if (keys.length === Object.keys(prev).length && keys.every((k) => prev[k] === merged[k]))
-      {return prev;}
-    prevMergedRef.current = merged;
-    return merged;
-  }, [tickerPrices, realtimePrices]);
+  // Live prices for open positions come from the priceStore (fed by socket
+  // price:update events via socketBus). The legacy ticker REST polling has been
+  // removed — socket is canonical, REST snapshots are unnecessary churn.
+  const tickerPrices = usePricesForSymbols(openPositionSymbols);
+  const isLoadingPrices = false;
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
@@ -201,7 +185,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, marketType:
     orders: orders ?? [],
     positions: positions ?? [],
     tradeExecutions: tradeExecutions ?? [],
-    tickerPrices: mergedTickerPrices,
+    tickerPrices,
     isLoadingOrders,
     isLoadingPositions,
     isLoadingExecutions,

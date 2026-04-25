@@ -366,7 +366,7 @@ export class ScreenerService {
       const topCoin = topCoinMap.get(symbol);
 
       for (const filter of tickerFilters) {
-        let value: number | null = null;
+        let value: number | null;
 
         switch (filter.indicator) {
           case 'PRICE_CHANGE_24H':

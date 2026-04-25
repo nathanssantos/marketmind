@@ -1,59 +1,17 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import type { BookTickerUpdate } from '@marketmind/types';
-import { socketService } from '../services/socketService';
+import { useSocketEvent, useSymbolStreamSubscription } from './socket';
 
-export const useBookTicker = (symbol: string | null, enabled = true, throttleMs = 0) => {
+export const useBookTicker = (symbol: string | null, enabled = true) => {
   const [data, setData] = useState<BookTickerUpdate | null>(null);
-  const latestRef = useRef<BookTickerUpdate | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!symbol || !enabled) return;
-
-    const socket = socketService.getSocket();
-    if (!socket) return;
-
     setData(null);
-    socket.emit('subscribe:bookTicker', symbol);
+  }, [symbol]);
 
-    const flush = () => {
-      if (latestRef.current) setData(latestRef.current);
-    };
+  useSymbolStreamSubscription('bookTicker', enabled && symbol ? symbol : undefined);
 
-    const handler = (update: BookTickerUpdate) => {
-      latestRef.current = update;
-      if (throttleMs > 0) {
-        if (timeoutRef.current) return;
-        timeoutRef.current = setTimeout(() => {
-          flush();
-          timeoutRef.current = null;
-        }, throttleMs);
-        return;
-      }
-      if (!frameRef.current) {
-        frameRef.current = requestAnimationFrame(() => {
-          flush();
-          frameRef.current = null;
-        });
-      }
-    };
-
-    socket.on('bookTicker:update', handler);
-
-    return () => {
-      socket.off('bookTicker:update', handler);
-      socket.emit('unsubscribe:bookTicker', symbol);
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-  }, [symbol, enabled, throttleMs]);
+  useSocketEvent('bookTicker:update', (update) => setData(update), enabled && !!symbol);
 
   return {
     bidPrice: data?.bidPrice ?? 0,

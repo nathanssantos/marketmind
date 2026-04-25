@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { socketService } from '../services/socketService';
+import { useMemo } from 'react';
 import { trpc } from '../utils/trpc';
 import { usePollingInterval } from './usePollingInterval';
+import { useSocketEvent } from './socket';
 
 export const useActiveChartSymbols = (): Set<string> => {
   const utils = trpc.useUtils();
@@ -12,17 +12,9 @@ export const useActiveChartSymbols = (): Set<string> => {
     refetchInterval: pollingInterval,
   });
 
-  useEffect(() => {
-    const socket = socketService.getSocket();
-    if (!socket) return;
-
-    const handler = () => {
-      void utils.kline.getActiveSymbols.invalidate();
-    };
-
-    socket.on('symbols:active:updated', handler);
-    return () => { socket.off('symbols:active:updated', handler); };
-  }, [utils]);
+  useSocketEvent('symbols:active:updated', () => {
+    void utils.kline.getActiveSymbols.invalidate();
+  });
 
   return useMemo(() => new Set(data ?? []), [data]);
 };

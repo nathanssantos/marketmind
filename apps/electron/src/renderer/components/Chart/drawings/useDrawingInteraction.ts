@@ -65,7 +65,7 @@ const applyDragUpdate = (
         startTime: timeAt(si), endTime: timeAt(ei),
         widthIndex: wi, widthPrice: originalDrawing.widthPrice + deltaPrice,
         widthTime: timeAt(wi),
-      } as Partial<Drawing>);
+      });
       return;
     }
 
@@ -76,7 +76,7 @@ const applyDragUpdate = (
         startIndex: si, startPrice: originalDrawing.startPrice + deltaPrice,
         endIndex: ei, endPrice: originalDrawing.endPrice + deltaPrice,
         startTime: timeAt(si), endTime: timeAt(ei),
-      } as Partial<Drawing>);
+      });
       return;
     }
 
@@ -90,7 +90,7 @@ const applyDragUpdate = (
         swingHighIndex: shi, swingHighPrice: highPrice,
         swingLowTime: timeAt(sli), swingHighTime: timeAt(shi),
         levels: computeFibLevels(Math.min(lowPrice, highPrice), Math.max(lowPrice, highPrice), originalDrawing.direction),
-      } as Partial<Drawing>);
+      });
       return;
     }
 
@@ -101,7 +101,7 @@ const applyDragUpdate = (
         entryTime: timeAt(ei),
         stopLossPrice: originalDrawing.stopLossPrice + deltaPrice,
         takeProfitPrice: originalDrawing.takeProfitPrice + deltaPrice,
-      } as Partial<Drawing>);
+      });
       return;
     }
 
@@ -110,7 +110,7 @@ const applyDragUpdate = (
         index: originalDrawing.index + deltaIndex,
         price: originalDrawing.price + deltaPrice,
         time: timeAt(originalDrawing.index + deltaIndex),
-      } as Partial<Drawing>);
+      });
       return;
     }
 
@@ -120,13 +120,13 @@ const applyDragUpdate = (
           const ni = p.index + deltaIndex;
           return { index: ni, price: p.price + deltaPrice, time: timeAt(ni) };
         }),
-      } as Partial<Drawing>);
+      });
     }
     return;
   }
 
   if (handleType === 'width' && (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork')) {
-    store.updateDrawing(originalDrawing.id, { widthIndex: newIndex, widthPrice: newPrice, widthTime: newTime } as Partial<Drawing>);
+    store.updateDrawing(originalDrawing.id, { widthIndex: newIndex, widthPrice: newPrice, widthTime: newTime });
     return;
   }
 
@@ -134,7 +134,7 @@ const applyDragUpdate = (
     const field = handleType === 'start'
       ? { startIndex: newIndex, startPrice: newPrice, startTime: newTime }
       : { endIndex: newIndex, endPrice: newPrice, endTime: newTime };
-    store.updateDrawing(originalDrawing.id, field as Partial<Drawing>);
+    store.updateDrawing(originalDrawing.id, field);
     return;
   }
 
@@ -143,7 +143,7 @@ const applyDragUpdate = (
     store.updateDrawing(originalDrawing.id, {
       swingLowIndex: newIndex, swingLowPrice: newPrice, swingLowTime: newTime, direction: dir,
       levels: computeFibLevels(Math.min(newPrice, originalDrawing.swingHighPrice), Math.max(newPrice, originalDrawing.swingHighPrice), dir),
-    } as Partial<Drawing>);
+    });
     return;
   }
 
@@ -152,13 +152,13 @@ const applyDragUpdate = (
     store.updateDrawing(originalDrawing.id, {
       swingHighIndex: newIndex, swingHighPrice: newPrice, swingHighTime: newTime, direction: dir,
       levels: computeFibLevels(Math.min(originalDrawing.swingLowPrice, newPrice), Math.max(originalDrawing.swingLowPrice, newPrice), dir),
-    } as Partial<Drawing>);
+    });
   }
 
   if ((originalDrawing.type === 'longPosition' || originalDrawing.type === 'shortPosition')) {
-    if (handleType === 'start') store.updateDrawing(originalDrawing.id, { entryPrice: newPrice, entryIndex: newIndex, entryTime: newTime } as Partial<Drawing>);
-    else if (handleType === 'end') store.updateDrawing(originalDrawing.id, { stopLossPrice: newPrice } as Partial<Drawing>);
-    else if (handleType === 'width') store.updateDrawing(originalDrawing.id, { takeProfitPrice: newPrice } as Partial<Drawing>);
+    if (handleType === 'start') store.updateDrawing(originalDrawing.id, { entryPrice: newPrice, entryIndex: newIndex, entryTime: newTime });
+    else if (handleType === 'end') store.updateDrawing(originalDrawing.id, { stopLossPrice: newPrice });
+    else if (handleType === 'width') store.updateDrawing(originalDrawing.id, { takeProfitPrice: newPrice });
   }
 };
 
@@ -232,7 +232,7 @@ export const useDrawingInteraction = ({
       if (!rawDrawing) return true;
 
       phaseRef.current = 'dragging';
-      dragStartRef.current = { x, y, handleType: hit.handleType, originalDrawing: { ...rawDrawing } as Drawing };
+      dragStartRef.current = { x, y, handleType: hit.handleType, originalDrawing: { ...rawDrawing } };
       return true;
     }
 
@@ -243,7 +243,7 @@ export const useDrawingInteraction = ({
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         points: [{ index, price, time }],
-      } as Drawing;
+      };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'drawing-freeform';
       return true;
@@ -267,7 +267,7 @@ export const useDrawingInteraction = ({
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
         index, price, time,
-      } as Drawing;
+      };
       store.addDrawing(drawing);
       store.selectDrawing(drawing.id);
       manager?.markDirty('overlays');
@@ -280,7 +280,7 @@ export const useDrawingInteraction = ({
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
-      } as Drawing;
+      };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
       return true;
@@ -292,7 +292,7 @@ export const useDrawingInteraction = ({
         createdAt: Date.now(), updatedAt: Date.now(),
         entryIndex: index, entryPrice: price, entryTime: time,
         stopLossPrice: price, takeProfitPrice: price,
-      } as Drawing;
+      };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
       return true;
@@ -300,7 +300,7 @@ export const useDrawingInteraction = ({
 
     if (activeTool === 'channel' || activeTool === 'pitchfork') {
       if (phaseRef.current === 'placing-third' && pendingDrawingRef.current && (pendingDrawingRef.current.type === 'channel' || pendingDrawingRef.current.type === 'pitchfork')) {
-        const finalDrawing: Drawing = { ...pendingDrawingRef.current, widthIndex: index, widthPrice: price, widthTime: time } as Drawing;
+        const finalDrawing: Drawing = { ...pendingDrawingRef.current, widthIndex: index, widthPrice: price, widthTime: time };
         store.addDrawing(finalDrawing);
         store.selectDrawing(finalDrawing.id);
         pendingDrawingRef.current = null;
@@ -313,7 +313,7 @@ export const useDrawingInteraction = ({
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time, widthIndex: index, widthPrice: price, widthTime: time,
-      } as Drawing;
+      };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
       return true;
@@ -342,7 +342,7 @@ export const useDrawingInteraction = ({
         createdAt: Date.now(), updatedAt: Date.now(),
         startIndex: index, startPrice: price, endIndex: index, endPrice: price,
         startTime: time, endTime: time,
-      } as Drawing;
+      };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'placing-second';
       return true;
@@ -359,7 +359,7 @@ export const useDrawingInteraction = ({
 
     if (phase === 'placing-third' && pending && (pending.type === 'channel' || pending.type === 'pitchfork')) {
       const { index, price, time } = getIndexAndPrice(x, y);
-      pendingDrawingRef.current = { ...pending, widthIndex: index, widthPrice: price, widthTime: time } as Drawing;
+      pendingDrawingRef.current = { ...pending, widthIndex: index, widthPrice: price, widthTime: time };
       manager.markDirty('overlays');
       return true;
     }
@@ -370,7 +370,7 @@ export const useDrawingInteraction = ({
         const risk = Math.abs(pending.entryPrice - price);
         const isLong = pending.type === 'longPosition';
         const tp = isLong ? pending.entryPrice + risk : pending.entryPrice - risk;
-        pendingDrawingRef.current = { ...pending, stopLossPrice: price, takeProfitPrice: tp } as Drawing;
+        pendingDrawingRef.current = { ...pending, stopLossPrice: price, takeProfitPrice: tp };
       } else if (pending.type === 'fibonacci') {
         const lowPrice = Math.min(pending.swingLowPrice, price);
         const highPrice = Math.max(pending.swingLowPrice, price);
@@ -384,7 +384,7 @@ export const useDrawingInteraction = ({
           levels: computeFibLevels(lowPrice, highPrice, dir),
         };
       } else if (isTwoPointDrawing(pending)) {
-        pendingDrawingRef.current = { ...pending, endIndex: index, endPrice: price, endTime: time } as Drawing;
+        pendingDrawingRef.current = { ...pending, endIndex: index, endPrice: price, endTime: time };
       }
       manager.markDirty('overlays');
       return true;
@@ -454,7 +454,7 @@ export const useDrawingInteraction = ({
         manager?.markDirty('overlays');
         return true;
       }
-      pendingDrawingRef.current = { ...drawing, endIndex: index, endPrice: price, endTime: time } as Drawing;
+      pendingDrawingRef.current = { ...drawing, endIndex: index, endPrice: price, endTime: time };
       phaseRef.current = 'placing-third';
       return true;
     }
@@ -501,7 +501,7 @@ export const useDrawingInteraction = ({
           levels: computeFibLevels(lowPrice, highPrice, dir),
         };
       } else if (isTwoPointDrawing(drawing)) {
-        drawing = { ...drawing, endIndex: index, endPrice: price } as Drawing;
+        drawing = { ...drawing, endIndex: index, endPrice: price };
       }
 
       const isZeroLength =

@@ -1,10 +1,9 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { IconButton } from '@renderer/components/ui';
-import { useAutoTradingLogs } from '@renderer/hooks/useAutoTradingLogs';
+import { useAutoTradingLogs, type FrontendLogEntry } from '@renderer/hooks/useAutoTradingLogs';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useUIPref } from '@renderer/store/preferencesStore';
-import type { FrontendLogEntry } from '@renderer/hooks/useWebSocket';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuMinus, LuPlus, LuTrash2 } from 'react-icons/lu';

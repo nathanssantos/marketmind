@@ -102,7 +102,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
   const isError = checklistQuery.isError;
 
   const checklistConditions = useMemo<ChecklistCondition[]>(
-    () => (defaultProfile?.checklistConditions ?? []) as ChecklistCondition[],
+    () => (defaultProfile?.checklistConditions ?? []),
     [defaultProfile?.checklistConditions],
   );
   const clientResults = useChecklistEvaluation({

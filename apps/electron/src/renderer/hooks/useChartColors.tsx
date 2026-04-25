@@ -237,7 +237,7 @@ export const useChartColors = (): ChartThemeColors => {
   const colors = useMemo(() => {
     const palette = paletteId !== 'default' ? getPalette(paletteId, colorMode) : undefined;
     const themeColors = getChartColors(colorMode, palette);
-    return themeColors as ChartThemeColors;
+    return themeColors;
   }, [colorMode, paletteId]);
 
   return colors;

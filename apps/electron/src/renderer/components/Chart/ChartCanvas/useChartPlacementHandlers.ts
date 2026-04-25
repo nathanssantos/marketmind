@@ -132,7 +132,7 @@ export const useChartPlacementHandlers = ({
       if (placementType === 'stopLoss') updatePayload.stopLoss = price;
       else updatePayload.takeProfit = price;
 
-      handleUpdateOrder(execId, updatePayload as Partial<Order>);
+      handleUpdateOrder(execId, updatePayload);
 
       event.preventDefault();
       return;

@@ -1,6 +1,7 @@
 import { serializeError } from '../utils/errors';
 import { WebsocketClient } from 'binance';
 import { and, eq, inArray } from 'drizzle-orm';
+import { ROOM_PREFIXES } from '@marketmind/types';
 import { AUTO_TRADING_TIMING, WEBSOCKET_CONFIG } from '../constants';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
@@ -27,7 +28,7 @@ export interface TradeTick {
 export type TradeTickHandler = (tick: TradeTick) => void;
 
 const POSITION_CHECK_THROTTLE_MS = AUTO_TRADING_TIMING.POSITION_CHECK_THROTTLE_MS;
-const SUBSCRIPTION_CHECK_INTERVAL_MS = AUTO_TRADING_TIMING.SUBSCRIPTION_CHECK_INTERVAL_MS;
+const SUBSCRIPTION_RECONCILE_SAFETY_MS = 30 * 60_000;
 const EXECUTION_CACHE_TTL_MS = 10_000;
 
 export class BinancePriceStreamService {
@@ -94,11 +95,11 @@ export class BinancePriceStreamService {
       }, 2000);
     });
 
-    void this.subscribeToActivePositions();
+    void this.reconcileSubscriptions();
 
     this.subscriptionInterval = setInterval(() => {
-      void this.subscribeToActivePositions();
-    }, SUBSCRIPTION_CHECK_INTERVAL_MS);
+      void this.reconcileSubscriptions();
+    }, SUBSCRIPTION_RECONCILE_SAFETY_MS);
   }
 
   stop(): void {
@@ -266,7 +267,7 @@ export class BinancePriceStreamService {
     }
   }
 
-  private async subscribeToActivePositions(): Promise<void> {
+  public async reconcileSubscriptions(): Promise<void> {
     try {
       const openExecutions = await db
         .select()
@@ -283,6 +284,12 @@ export class BinancePriceStreamService {
         } else {
           spotSymbols.add(symbol);
         }
+      }
+
+      const wsService = getWebSocketService();
+      const viewedRooms = wsService?.getActiveRooms(ROOM_PREFIXES.prices) ?? [];
+      for (const symbol of viewedRooms) {
+        futuresSymbols.add(symbol.toLowerCase());
       }
 
       const allSymbolsNeeded = new Set([...spotSymbols, ...futuresSymbols]);
@@ -322,12 +329,12 @@ export class BinancePriceStreamService {
         logger.trace({
           removedSymbols: unsubscribed,
           totalSubscribed: this.subscribedSymbols.size,
-        }, `Unsubscribed from ${unsubscribed.length} symbol(s) - no open positions`);
+        }, `Unsubscribed from ${unsubscribed.length} symbol(s) — no open positions and no active room subscribers`);
       }
     } catch (error) {
       logger.error({
         error: serializeError(error),
-      }, 'Error subscribing to active positions');
+      }, 'Error reconciling price-stream subscriptions');
     }
   }
 
@@ -341,7 +348,13 @@ export class BinancePriceStreamService {
     }
 
     try {
-      void this.client.subscribeTrades(symbol, market);
+      // Use @aggTrade (public market stream) instead of @trade. The Binance SDK
+      // routes `subscribeTrades` for usdm/coinm to a "private" wsKey that requires
+      // API authentication and returns HTTP 400 without it; this silently drops
+      // every futures trade subscription. `subscribeAggregateTrades` routes to
+      // the public `usdmMarket` wsKey. Aggregated trades carry the same price/qty
+      // info our `handleMessage` already recognizes (`e: 'aggTrade'`).
+      void this.client.subscribeAggregateTrades(symbol, market);
       this.subscribedSymbols.add(symbol);
     } catch (error) {
       logger.error({

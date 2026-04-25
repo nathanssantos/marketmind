@@ -45,6 +45,10 @@ vi.mock('../Trading/WalletManager', () => ({
     WalletManager: () => <div>WalletManager Content</div>,
 }));
 
+vi.mock('../CustomSymbols', () => ({
+    CustomSymbolsTab: () => <div>CustomSymbolsTab Content</div>,
+}));
+
 const renderWithChakra = (component: React.ReactElement) => {
     return render(
         <ChakraProvider value={defaultSystem}>

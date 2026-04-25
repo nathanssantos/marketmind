@@ -34,9 +34,42 @@ interface PriceState {
   cleanupStaleSymbols: () => void;
 }
 
-const PRICE_STALENESS_MS = 30000;
 const MAX_PRICE_SYMBOLS = 500;
 const STALE_CLEANUP_THRESHOLD_MS = 5 * 60 * 1000;
+
+const symbolListeners = new Map<string, Set<(price: number) => void>>();
+
+const fanout = (symbol: string, price: number): void => {
+  const listeners = symbolListeners.get(symbol);
+  if (!listeners || listeners.size === 0) return;
+  for (const cb of listeners) {
+    try {
+      cb(price);
+    } catch {
+      // best-effort
+    }
+  }
+};
+
+/**
+ * Per-symbol subscribe API. Only fires when *this* symbol's price changes.
+ * Avoids the broad `usePriceStore.subscribe` pattern that wakes every consumer
+ * on every tick.
+ */
+export const subscribeToPrice = (symbol: string, cb: (price: number) => void): () => void => {
+  let set = symbolListeners.get(symbol);
+  if (!set) {
+    set = new Set();
+    symbolListeners.set(symbol, set);
+  }
+  set.add(cb);
+  return () => {
+    const s = symbolListeners.get(symbol);
+    if (!s) return;
+    s.delete(cb);
+    if (s.size === 0) symbolListeners.delete(symbol);
+  };
+};
 
 export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   prices: {},
@@ -66,35 +99,27 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   updatePrice: (symbol, price, source) => {
     const now = Date.now();
     const current = get().prices[symbol];
-
-    if (current) {
-      if (source === 'chart') {
-        set((state) => { state.prices[symbol] = { price, timestamp: now, source }; });
-      } else if (source === 'websocket') {
-        if (current.source !== 'chart' || now - current.timestamp > PRICE_STALENESS_MS) {
-          set((state) => { state.prices[symbol] = { price, timestamp: now, source }; });
-        }
-      } else if (current.source === 'api' || now - current.timestamp > PRICE_STALENESS_MS) {
-        set((state) => { state.prices[symbol] = { price, timestamp: now, source }; });
-      }
-    } else {
-      set((state) => {
-        const symbolCount = Object.keys(state.prices).length;
-        if (symbolCount >= MAX_PRICE_SYMBOLS) get().cleanupStaleSymbols();
-        state.prices[symbol] = { price, timestamp: now, source };
-      });
-    }
+    if (current && current.timestamp >= now && current.price === price) return;
+    set((state) => {
+      const symbolCount = Object.keys(state.prices).length;
+      if (!current && symbolCount >= MAX_PRICE_SYMBOLS) get().cleanupStaleSymbols();
+      state.prices[symbol] = { price, timestamp: now, source };
+    });
+    fanout(symbol, price);
   },
 
   updatePriceBatch: (updates) => {
     const now = Date.now();
+    const changed: Array<[string, number]> = [];
     set((state) => {
       for (const [symbol, price] of updates) {
         const current = state.prices[symbol];
-        if (current?.source === 'chart' && now - current.timestamp <= PRICE_STALENESS_MS) continue;
+        if (current && current.price === price) continue;
         state.prices[symbol] = { price, timestamp: now, source: 'websocket' };
+        changed.push([symbol, price]);
       }
     });
+    for (const [symbol, price] of changed) fanout(symbol, price);
   },
 
   getPrice: (symbol) => {
@@ -132,8 +157,6 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   },
 })));
 
-const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
-
 const LIVE_PRICE_THROTTLE_MS = 250;
 
 export const useFastPriceForSymbol = (symbol: string): number | null => {
@@ -162,7 +185,7 @@ export const useFastPriceForSymbol = (symbol: string): number | null => {
     };
 
     run();
-    const unsub = usePriceStore.subscribe(schedule);
+    const unsub = subscribeToPrice(symbol, schedule);
 
     return () => {
       unsub();
@@ -185,6 +208,9 @@ const computeDailyChangePct = (symbol: string, marketType: MarketType): number |
 };
 
 export const useDailyChangePct = (symbol: string, marketType: MarketType): number | null => {
+  // Subscribe (narrowly) to the dailyOpen entry: this re-renders only when this
+  // symbol's daily snapshot is set or rolls over, not on every store mutation.
+  const dailyEntry = usePriceStore((s) => s.dailyOpen[dailyOpenKey(symbol, marketType)]);
   const [pct, setPct] = useState<number | null>(() => computeDailyChangePct(symbol, marketType));
   const lastPctRef = useRef<number | null>(pct);
 
@@ -192,7 +218,7 @@ export const useDailyChangePct = (symbol: string, marketType: MarketType): numbe
     let timer: ReturnType<typeof setTimeout> | null = null;
     let pending = false;
 
-    const run = () => {
+    const run = (): void => {
       timer = null;
       pending = false;
       const next = computeDailyChangePct(symbol, marketType);
@@ -201,38 +227,34 @@ export const useDailyChangePct = (symbol: string, marketType: MarketType): numbe
       setPct(next);
     };
 
-    const schedule = () => {
+    const schedule = (): void => {
       if (pending) return;
       pending = true;
       timer = setTimeout(run, DAILY_CHANGE_THROTTLE_MS);
     };
 
     run();
-
-    const unsub = usePriceStore.subscribe(schedule);
+    const unsub = subscribeToPrice(symbol, schedule);
 
     return () => {
       unsub();
       if (timer !== null) clearTimeout(timer);
     };
-  }, [symbol, marketType]);
+  }, [symbol, marketType, dailyEntry]);
 
   return pct;
 };
+
+const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
 
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');
   const symbolsKey = useMemo(
     () => (joinedSymbols ? joinedSymbols.split(',').sort().join(',') : ''),
-    [joinedSymbols]
+    [joinedSymbols],
   );
-  const symbolsRef = useRef<string[]>(symbols);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const lastPricesRef = useRef<Record<string, number>>({});
-
-  useEffect(() => {
-    symbolsRef.current = symbols;
-  });
 
   useEffect(() => {
     if (!symbolsKey) {
@@ -242,17 +264,15 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
     }
 
     const currentSymbols = symbolsKey.split(',');
-    let throttleTimeout: NodeJS.Timeout | null = null;
+    let throttleTimeout: ReturnType<typeof setTimeout> | null = null;
     let pendingUpdate = false;
 
-    const getCurrentPrices = () => {
+    const getCurrentPrices = (): Record<string, number> => {
       const state = usePriceStore.getState();
       const result: Record<string, number> = {};
       for (const symbol of currentSymbols) {
         const entry = state.prices[symbol];
-        if (entry) {
-          result[symbol] = entry.price;
-        }
+        if (entry) result[symbol] = entry.price;
       }
       return result;
     };
@@ -261,22 +281,16 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
     lastPricesRef.current = initial;
     setPrices(initial);
 
-    const processUpdate = () => {
-      const syms = symbolsRef.current;
-      if (syms.length === 0) return;
-
+    const processUpdate = (): void => {
       const state = usePriceStore.getState();
       const newPrices: Record<string, number> = {};
       let hasChanged = false;
 
-      for (const symbol of syms) {
+      for (const symbol of currentSymbols) {
         const entry = state.prices[symbol];
         const newPrice = entry?.price ?? 0;
         newPrices[symbol] = newPrice;
-
-        if (lastPricesRef.current[symbol] !== newPrice) {
-          hasChanged = true;
-        }
+        if (lastPricesRef.current[symbol] !== newPrice) hasChanged = true;
       }
 
       if (hasChanged) {
@@ -286,15 +300,17 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
       pendingUpdate = false;
     };
 
-    const unsubscribe = usePriceStore.subscribe(() => {
+    const schedule = (): void => {
       if (pendingUpdate) return;
       pendingUpdate = true;
       if (throttleTimeout) clearTimeout(throttleTimeout);
       throttleTimeout = setTimeout(processUpdate, SIDEBAR_PRICE_UPDATE_THROTTLE_MS);
-    });
+    };
+
+    const unsubs = currentSymbols.map((sym) => subscribeToPrice(sym, schedule));
 
     return () => {
-      unsubscribe();
+      for (const u of unsubs) u();
       if (throttleTimeout) clearTimeout(throttleTimeout);
     };
   }, [symbolsKey]);

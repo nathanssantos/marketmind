@@ -1,4 +1,3 @@
-import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { trpc } from '@renderer/utils/trpc';
 import { useToast } from '@renderer/hooks/useToast';
 import { useCallback, useRef } from 'react';
@@ -54,23 +53,23 @@ export const useWatcherConfig = (walletId: string) => {
   }, [walletId, utils]);
 
   const handleTpModeChange = (details: { value: string }): void => {
-    handleConfigUpdate({ tpCalculationMode: details.value as 'default' | 'fibonacci' });
+    handleConfigUpdate({ tpCalculationMode: details.value });
   };
 
   const handleFibonacciLevelLongChange = (details: { value: string }): void => {
-    handleConfigUpdate({ fibonacciTargetLevelLong: details.value as FibonacciTargetLevel });
+    handleConfigUpdate({ fibonacciTargetLevelLong: details.value });
   };
 
   const handleFibonacciLevelShortChange = (details: { value: string }): void => {
-    handleConfigUpdate({ fibonacciTargetLevelShort: details.value as FibonacciTargetLevel });
+    handleConfigUpdate({ fibonacciTargetLevelShort: details.value });
   };
 
   const handleFibonacciSwingRangeChange = (details: { value: string }): void => {
-    handleConfigUpdate({ fibonacciSwingRange: details.value as 'extended' | 'nearest' });
+    handleConfigUpdate({ fibonacciSwingRange: details.value });
   };
 
   const handleInitialStopModeChange = (details: { value: string }): void => {
-    handleConfigUpdate({ initialStopMode: details.value as 'fibo_target' | 'nearest_swing' });
+    handleConfigUpdate({ initialStopMode: details.value });
   };
 
   const handleFilterToggle = (filterKey: string, value: boolean): void => {

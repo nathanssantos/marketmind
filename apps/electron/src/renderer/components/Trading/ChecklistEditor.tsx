@@ -1,5 +1,5 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import type { ChecklistCondition, ConditionOp, UserIndicator } from '@marketmind/trading-core';
+import type { ChecklistCondition, UserIndicator } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import type { ChecklistConditionDto } from '@marketmind/types';
 import {
@@ -107,7 +107,7 @@ export const ChecklistEditor = ({
       initialCondition: {
         userIndicatorId: cond.userIndicatorId,
         timeframe: cond.timeframe,
-        op: cond.op as ConditionOp,
+        op: cond.op,
         threshold: cond.threshold,
         tier: cond.tier,
         side: cond.side,

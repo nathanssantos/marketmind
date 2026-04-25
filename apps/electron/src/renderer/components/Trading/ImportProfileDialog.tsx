@@ -82,7 +82,7 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
       name: profileName.trim(),
       enabledSetupTypes: parsedData.enabledSetupTypes ?? [],
       ...configFields,
-    } as Parameters<typeof importMutation.mutateAsync>[0]);
+    });
   };
 
   return (

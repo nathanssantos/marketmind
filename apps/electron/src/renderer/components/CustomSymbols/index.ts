@@ -1,1 +1,1 @@
-export { CustomSymbolsModal } from './CustomSymbolsModal';
+export { CustomSymbolsTab } from './CustomSymbolsTab';

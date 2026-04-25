@@ -1,6 +1,6 @@
 import { Box, Heading, Text, VStack } from '@chakra-ui/react';
 import { Button } from '@renderer/components/ui';
-import type { ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
 import type { FallbackProps } from 'react-error-boundary';
@@ -10,60 +10,74 @@ interface Props {
   fallback?: ReactNode;
 }
 
-const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => (
-  <Box
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
-    minH="100vh"
-    bg="gray.900"
-    p={8}
-  >
-    <VStack gap={6} maxW="600px" textAlign="center">
-      <Heading size="xl" color="red.400">
-        Something went wrong
-      </Heading>
-      <Text color="gray.300">
-        An unexpected error occurred. This might be due to a temporary connection issue.
-      </Text>
-      {error && (
-        <Box
-          p={4}
-          bg="gray.800"
-          borderRadius="md"
-          w="100%"
-          maxH="200px"
-          overflow="auto"
-        >
-          <Text color="red.300" fontSize="sm" fontFamily="mono">
-            {error.message}
-          </Text>
-          {error.stack && (
-            <Text color="gray.500" fontSize="xs" fontFamily="mono" mt={2}>
-              {error.stack.split('\n').slice(0, 5).join('\n')}
-            </Text>
-          )}
-        </Box>
-      )}
-      <Box display="flex" gap={4}>
-        <Button colorScheme="blue" onClick={() => window.location.reload()}>
-          Reload App
-        </Button>
-        <Button variant="outline" onClick={resetErrorBoundary}>
-          Try Again
-        </Button>
-      </Box>
-    </VStack>
-  </Box>
-);
+const toError = (e: unknown): Error | null => {
+  if (e instanceof Error) return e;
+  if (e && typeof e === 'object' && 'message' in e && typeof e.message === 'string') {
+    const fake = new Error(e.message);
+    if ('stack' in e && typeof e.stack === 'string') fake.stack = e.stack;
+    return fake;
+  }
+  return null;
+};
 
-const handleError = (error: Error, info: { componentStack?: string | null }) => {
+const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
+  const err = toError(error);
+  return (
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      minH="100vh"
+      bg="gray.900"
+      p={8}
+    >
+      <VStack gap={6} maxW="600px" textAlign="center">
+        <Heading size="xl" color="red.400">
+          Something went wrong
+        </Heading>
+        <Text color="gray.300">
+          An unexpected error occurred. This might be due to a temporary connection issue.
+        </Text>
+        {err && (
+          <Box
+            p={4}
+            bg="gray.800"
+            borderRadius="md"
+            w="100%"
+            maxH="200px"
+            overflow="auto"
+          >
+            <Text color="red.300" fontSize="sm" fontFamily="mono">
+              {err.message}
+            </Text>
+            {err.stack && (
+              <Text color="gray.500" fontSize="xs" fontFamily="mono" mt={2}>
+                {err.stack.split('\n').slice(0, 5).join('\n')}
+              </Text>
+            )}
+          </Box>
+        )}
+        <Box display="flex" gap={4}>
+          <Button colorScheme="blue" onClick={() => window.location.reload()}>
+            Reload App
+          </Button>
+          <Button variant="outline" onClick={resetErrorBoundary}>
+            Try Again
+          </Button>
+        </Box>
+      </VStack>
+    </Box>
+  );
+};
+
+const handleError = (error: unknown, info: ErrorInfo) => {
+  const err = toError(error);
   console.error('[ErrorBoundary] Caught error:', error);
   console.error('[ErrorBoundary] Component stack:', info.componentStack);
   try {
     const errorLog = {
-      message: error.message,
-      stack: error.stack,
+      message: err?.message ?? String(error),
+      stack: err?.stack,
       componentStack: info.componentStack,
       timestamp: new Date().toISOString(),
       url: window.location.href,

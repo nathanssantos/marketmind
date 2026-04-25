@@ -34,7 +34,7 @@ export const useLayoutSync = (): LayoutSyncResult => {
   const effectiveSymbol = activeTab?.symbol ?? symbol;
   const effectiveMarketType = activeTab?.marketType ?? marketType;
   const effectiveTimeframe = (focusedPanel?.timeframe ?? timeframe) as Timeframe;
-  const effectiveChartType = (focusedPanel?.chartType ?? chartType) as ChartType;
+  const effectiveChartType = (focusedPanel?.chartType ?? chartType);
 
   const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
     clearDetectedSetups();

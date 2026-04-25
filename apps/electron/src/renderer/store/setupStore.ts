@@ -189,7 +189,7 @@ export const useSetupStore = create<SetupStoreState>()(
     isAutoTradingActive: false,
     detectedSetups: [],
     setupHistory: [],
-    performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
+    performanceByType: {},
     globalPerformance: createEmptyPerformanceStats(),
 
     setConfig: (config) =>
@@ -342,7 +342,7 @@ export const useSetupStore = create<SetupStoreState>()(
     clearHistory: () =>
       set({
         setupHistory: [],
-        performanceByType: {} as Record<SetupType, SetupPerformanceStats>,
+        performanceByType: {},
         globalPerformance: createEmptyPerformanceStats(),
       }),
 

@@ -12,33 +12,33 @@ interface TableComponentProps {
 }
 
 const TableRoot = ({ children, ...props }: TableRootProps) => (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <ChakraTable.Root {...(props as any)}>{children}</ChakraTable.Root>
+     
+    <ChakraTable.Root {...(props)}>{children}</ChakraTable.Root>
 );
 
 const TableHeader = ({ children, ...props }: TableComponentProps) => (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <ChakraTable.Header {...(props as any)}>{children}</ChakraTable.Header>
+     
+    <ChakraTable.Header {...(props)}>{children}</ChakraTable.Header>
 );
 
 const TableBody = ({ children, ...props }: TableComponentProps) => (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <ChakraTable.Body {...(props as any)}>{children}</ChakraTable.Body>
+     
+    <ChakraTable.Body {...(props)}>{children}</ChakraTable.Body>
 );
 
 const TableRow = ({ children, ...props }: TableComponentProps) => (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <ChakraTable.Row {...(props as any)}>{children}</ChakraTable.Row>
+     
+    <ChakraTable.Row {...(props)}>{children}</ChakraTable.Row>
 );
 
 const TableColumnHeader = ({ children, ...props }: TableComponentProps) => (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <ChakraTable.ColumnHeader {...(props as any)}>{children}</ChakraTable.ColumnHeader>
+     
+    <ChakraTable.ColumnHeader {...(props)}>{children}</ChakraTable.ColumnHeader>
 );
 
 const TableCell = ({ children, ...props }: TableComponentProps) => (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <ChakraTable.Cell {...(props as any)}>{children}</ChakraTable.Cell>
+     
+    <ChakraTable.Cell {...(props)}>{children}</ChakraTable.Cell>
 );
 
 export const Table = {

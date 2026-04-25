@@ -25,36 +25,6 @@ interface NotificationOptions {
   urgency?: 'normal' | 'critical' | 'low';
 }
 
-interface NotificationAPI {
-  show: (options: NotificationOptions) => Promise<{ success: boolean; error?: string }>;
-  isSupported: () => Promise<boolean>;
-}
-
-interface WindowAPI {
-  openChart: (symbol?: string, timeframe?: string) => Promise<{ success: boolean; windowId?: number; error?: string }>;
-  getChartWindows: () => Promise<number[]>;
-}
-
-interface ZoomAPI {
-  setFactor: (factor: number) => void;
-  getFactor: () => number;
-}
-
-interface UpdateAPI {
-  checkForUpdates: () => Promise<{ success: boolean; error?: string }>;
-  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
-  installUpdate: () => Promise<{ success: boolean; error?: string }>;
-  getInfo: () => Promise<{ currentVersion: string; platform: string }>;
-  startAutoCheck: (intervalHours: number) => Promise<{ success: boolean; error?: string }>;
-  stopAutoCheck: () => Promise<{ success: boolean; error?: string }>;
-  onChecking: (callback: () => void) => void;
-  onAvailable: (callback: (info: UpdateInfo) => void) => void;
-  onNotAvailable: (callback: (info: UpdateInfo) => void) => void;
-  onDownloadProgress: (callback: (progress: UpdateProgress) => void) => void;
-  onDownloaded: (callback: (info: UpdateInfo) => void) => void;
-  onError: (callback: (error: UpdateError) => void) => void;
-}
-
 const API = {
   send: (channel: string, data: unknown) => {
     ipcRenderer.send(channel, data);
@@ -116,7 +86,7 @@ const API = {
     onError: (callback: (error: UpdateError) => void) => {
       ipcRenderer.on('update:error', (_event, error) => callback(error));
     },
-  } as UpdateAPI,
+  },
 
   http: {
     fetch: async (url: string, options?: { method?: string; headers?: Record<string, string>; body?: unknown }) => {
@@ -132,7 +102,7 @@ const API = {
     isSupported: async () => {
       return await ipcRenderer.invoke('notification:isSupported');
     },
-  } as NotificationAPI,
+  },
 
   window: {
     openChart: async (symbol?: string, timeframe?: string) => {
@@ -142,12 +112,12 @@ const API = {
     getChartWindows: async () => {
       return await ipcRenderer.invoke('window:getChartWindows');
     },
-  } as WindowAPI,
+  },
 
   zoom: {
     setFactor: (factor: number) => { webFrame.setZoomFactor(factor); },
     getFactor: () => webFrame.getZoomFactor(),
-  } as ZoomAPI,
+  },
 } as const;
 
 contextBridge.exposeInMainWorld('electron', API);

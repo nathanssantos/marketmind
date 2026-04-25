@@ -19,9 +19,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "pino": "^9.7.0"
+    "pino": "^10.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }

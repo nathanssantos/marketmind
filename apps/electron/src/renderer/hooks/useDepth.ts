@@ -1,47 +1,26 @@
-import { useEffect, useState, useRef } from 'react';
-import type { DepthUpdate, DepthLevel } from '@marketmind/types';
-import { socketService } from '../services/socketService';
+import { useEffect, useState } from 'react';
+import type { DepthLevel } from '@marketmind/types';
+import { useSocketEvent, useSymbolStreamSubscription } from './socket';
 
 export const useDepth = (symbol: string | null, enabled = true) => {
   const [bids, setBids] = useState<DepthLevel[]>([]);
   const [asks, setAsks] = useState<DepthLevel[]>([]);
-  const latestRef = useRef<DepthUpdate | null>(null);
-  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!symbol || !enabled) return;
-
-    const socket = socketService.connect();
-
     setBids([]);
     setAsks([]);
-    socket.emit('subscribe:depth', symbol);
+  }, [symbol]);
 
-    const handler = (update: DepthUpdate) => {
-      latestRef.current = update;
-      if (!frameRef.current) {
-        frameRef.current = requestAnimationFrame(() => {
-          if (latestRef.current) {
-            setBids(latestRef.current.bids);
-            setAsks(latestRef.current.asks);
-          }
-          frameRef.current = null;
-        });
-      }
-    };
+  useSymbolStreamSubscription('depth', enabled && symbol ? symbol : undefined);
 
-    socket.on('depth:update', handler);
-
-    return () => {
-      socket.off('depth:update', handler);
-      socket.emit('unsubscribe:depth', symbol);
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-      socketService.disconnect();
-    };
-  }, [symbol, enabled]);
+  useSocketEvent(
+    'depth:update',
+    (update) => {
+      setBids(update.bids);
+      setAsks(update.asks);
+    },
+    enabled && !!symbol,
+  );
 
   return { bids, asks };
 };

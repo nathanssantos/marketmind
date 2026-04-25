@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.0] - 2026-04-25
+
+### Added
+- **Unified socket architecture** — typed events/rooms (`packages/types/src/socket-events.ts`), refcounted room subscriptions, single dispatcher with RAF-coalesced fan-out for high-rate events (`price:update`, `kline:update`, `aggTrade:update`, `depth:update`, `bookTicker:update`, `scalpingMetrics:update`). Frontend `socketBus` replaces `socketService`; backend collapses 13 hand-written `socket.on('subscribe:*')` into one ROOM_HANDLERS table.
+- **Per-symbol price subscribers** — new `priceStore.subscribeToPrice(symbol, cb)` keeps non-active symbol-tab badges live without waking every consumer on every tick. Fixes the regression where only the active tab's percentage updated in real time.
+- **Tab/chart-viewed symbols stay subscribed** across the price-stream reconcile window (was the user-visible bug). Reconcile now needs = open positions ∪ active subscription rooms, and the safety-net interval was widened from 5 → 30 minutes.
+- **Beta badge** UI primitive (`components/ui/beta-badge.tsx`); Screener modal title carries it. **Custom Symbols** moved from a standalone modal into a Settings tab (also marked beta). README + landing site (4 locales) flag both as "(beta)".
+
+### Changed
+- **Bumped every external dep to latest** across the monorepo (9 package.json files). Major bumps with migration: `electron 39 → 41`, `vite 7 → 8 (Rolldown)`, `typescript 5.9 → 6.0`, `eslint 9 → 10`, `vitest 3 → 4` (packages aligned), `i18next 25 → 26 + react-i18next 16 → 17`, `pino 9 → 10`, `jsdom 27 → 29`, `globals 16 → 17`. `pnpm outdated -r` reports zero outdated packages.
+- **TypeScript 6 fallout**: removed deprecated `baseUrl` from electron tsconfig (paths still resolve); set `noUncheckedSideEffectImports: false` for CSS side-effect imports.
+- **ESLint 10 fallout**: 21 new dead-code findings fixed across 13 backend + 1 frontend file (`no-useless-assignment`, `preserve-caught-error`).
+- **Vite 8 fallout**: rewrote `manualChunks` from object → function (Rolldown rejects the object form); switched from `vite-plugin-electron/simple` to the regular API to avoid the now-deprecated `inlineDynamicImports` flag in the preload bundle.
+- **Electron 41 fallout**: migrated `webContents.on('console-message', ...)` to the new single-event-object signature.
+- **`source='chart'` 30 s gate dropped** — strict timestamp-monotonic wins so WS ticks never get blocked by chart writes.
+- **Aggregate-trade public stream** (`@aggTrade`) replaces `@trade` for live-price feed (Binance SDK regression: `subscribeTrades` routed to `usdmPrivate` and 400'd; `subscribeAggregateTrades` correctly hits `usdmMarket`).
+- **`pnpm-workspace.yaml`** allowlist key fixed: `ignoredBuiltDependencies` → `onlyBuiltDependencies` so electron's binary install actually runs on bumps.
+
+### Removed
+- `vite-plugin-electron-renderer` — our renderer doesn't import any Node/Electron module (uses `contextBridge` via preload). Eliminated the `customResolver` deprecation it injected.
+- `eslint-plugin-react` — only used to disable two rules that aren't needed in React 19 + TS. Deleted plugin and its rule entries.
+- `react-virtualized-auto-sizer` and 3 deprecated `@types/*` packages (libs ship their own types now).
+- Frontend dead code from the socket refactor: `services/socketService{,test}.ts`, `hooks/useWebSocket{,test}.ts`, `CustomSymbols/CustomSymbolsModal.tsx`.
+- Redundant polling: `trading.getTickerPrices` (live via priceStore + WS).
+
+### Fixed
+- **`fees = exitFee` race** — `getAllTradeFeesForPosition` could return `exitFee=0` before the closing trade was indexed; guarded with `> 0`.
+- **`accumulatedFunding` double-count** — funding was re-added every hourly sync when status was already closed; now skipped.
+- Type cascade after the React-error-boundary 6.x bump (`ErrorBoundary` rewritten with an `unknown → Error` helper).
+- Unsafe `x?.foo !== null` patterns in `MarketIndicatorCharts` exposed by stricter typescript-eslint.
+
+### Notes
+- Two CI flakes surfaced and were resolved in-flight: an integration-only test (`applyTransferDelta`) was running in the unit project (added to `INTEGRATION_SERVICE_TESTS`); a CodeQL "incomplete escaping" alert in an E2E spec (`replace('%','').replace('+','')` only strips first occurrence — switched to `/[%+]/g`).
+- Two upstream peer warnings silenced via `pnpm.peerDependencyRules.allowedVersions`: `vite-plugin-pwa` doesn't yet declare vite 8 in its peer range (works in practice; only loaded for web builds anyway).
+
 ## [0.98.3] - 2026-04-24
 
 ### Added
