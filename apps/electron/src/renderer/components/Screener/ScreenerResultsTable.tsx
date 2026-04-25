@@ -3,7 +3,6 @@ import { Box, Text } from '@chakra-ui/react';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '../Trading/TradingTable';
-import type { SortDirection } from '../Trading/TradingTable';
 
 interface ScreenerResultsTableProps {
   results: ScreenerResultRow[];
@@ -59,7 +58,7 @@ export const ScreenerResultsTable = memo(({
     <TradingTable
       columns={columns}
       sortKey={sortKey}
-      sortDirection={sortDirection as SortDirection}
+      sortDirection={sortDirection}
       onSort={onSort}
       minW="900px"
     >

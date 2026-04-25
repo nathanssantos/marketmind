@@ -54,7 +54,7 @@ export const TrailingStopSection = ({
   onUseAdaptiveTrailingChange,
   isPending,
   compact = false,
-  indicatorInterval = '30m' as TimeInterval,
+  indicatorInterval = '30m',
   onIndicatorIntervalChange,
   activationModeLong = 'auto',
   onActivationModeLongChange,

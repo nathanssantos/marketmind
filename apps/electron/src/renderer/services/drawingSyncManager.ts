@@ -1,4 +1,4 @@
-import type { Drawing, DrawingType, KlineTimeLookup } from '@marketmind/chart-studies';
+import type { Drawing, KlineTimeLookup } from '@marketmind/chart-studies';
 import { serializeDrawingData } from '@marketmind/chart-studies';
 import { trpc } from '@renderer/services/trpc';
 import { useDrawingStore } from '@renderer/store/drawingStore';
@@ -44,7 +44,7 @@ const handleCreate = async (drawing: Drawing, sync: SymbolSync) => {
     const result = await trpc.drawing.create.mutate({
       symbol: drawing.symbol,
       interval: drawing.interval,
-      type: drawing.type as DrawingType,
+      type: drawing.type,
       data: serializeDrawingData(drawing, sync.getOpenTime),
       visible: drawing.visible,
       locked: drawing.locked,

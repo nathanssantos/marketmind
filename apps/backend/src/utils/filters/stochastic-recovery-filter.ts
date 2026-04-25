@@ -51,7 +51,7 @@ export const checkStochasticRecoveryCondition = async (
   const isOversold = currentK < OVERSOLD_THRESHOLD;
   const isOverbought = currentK > OVERBOUGHT_THRESHOLD;
 
-  let isAllowed = false;
+  let isAllowed: boolean;
   let reason: string;
 
   if (direction === 'LONG') {

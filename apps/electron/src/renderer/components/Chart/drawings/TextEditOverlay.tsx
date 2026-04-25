@@ -1,4 +1,3 @@
-import type { TextDrawing } from '@marketmind/chart-studies';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { INDICATOR_COLORS } from '@shared/constants';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
@@ -52,7 +51,7 @@ export const TextEditOverlay = ({ manager, symbol, interval }: TextEditOverlayPr
     if (!val) {
       store.deleteDrawing(textDrawing.id, symbol, interval);
     } else {
-      store.updateDrawing(textDrawing.id, { text: val } as Partial<TextDrawing>);
+      store.updateDrawing(textDrawing.id, { text: val });
     }
     setEditing(false);
   }, [textDrawing, symbol, interval]);

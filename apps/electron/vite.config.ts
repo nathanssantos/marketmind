@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
-import electron from 'vite-plugin-electron/simple';
+import electron from 'vite-plugin-electron';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const target = process.env.VITE_TARGET || 'electron';
@@ -60,8 +60,8 @@ export default defineConfig(({ mode }) => {
           ],
         },
       }),
-      !isWeb && electron({
-        main: {
+      !isWeb && electron([
+        {
           entry: 'src/main/index.ts',
           vite: {
             build: {
@@ -77,16 +77,24 @@ export default defineConfig(({ mode }) => {
             },
           },
         },
-        preload: {
-          input: 'src/main/preload.ts',
+        {
+          onstart: ({ reload }) => reload(),
           vite: {
             build: {
               outDir: 'dist-electron/preload',
+              rollupOptions: {
+                input: 'src/main/preload.ts',
+                output: {
+                  format: 'cjs',
+                  entryFileNames: '[name].mjs',
+                  chunkFileNames: '[name].mjs',
+                  assetFileNames: '[name].[ext]',
+                },
+              },
             },
           },
         },
-        renderer: {},
-      }),
+      ]),
     ].filter(Boolean),
     resolve: {
       alias: {
@@ -109,12 +117,13 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react/jsx-runtime'],
-            'vendor-chakra': ['@chakra-ui/react'],
-            'vendor-query': ['@tanstack/react-query'],
-            'vendor-i18n': ['i18next', 'react-i18next'],
-            'vendor-zustand': ['zustand', 'immer'],
+          manualChunks: (id) => {
+            if (/[\\/]node_modules[\\/](react|react-dom)[\\/]/.test(id)) return 'vendor-react';
+            if (id.includes('/node_modules/@chakra-ui/')) return 'vendor-chakra';
+            if (id.includes('/node_modules/@tanstack/react-query/')) return 'vendor-query';
+            if (/[\\/]node_modules[\\/](i18next|react-i18next)[\\/]/.test(id)) return 'vendor-i18n';
+            if (/[\\/]node_modules[\\/](zustand|immer)[\\/]/.test(id)) return 'vendor-zustand';
+            return undefined;
           },
         },
       },

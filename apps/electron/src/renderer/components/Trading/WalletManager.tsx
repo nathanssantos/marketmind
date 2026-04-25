@@ -39,7 +39,7 @@ export const WalletManager = () => {
     return backendWalletsData.map((w): ExtendedWallet => ({
       id: w.id,
       name: w.name,
-      walletType: (w.walletType ?? 'paper') as WalletType,
+      walletType: (w.walletType ?? 'paper'),
       balance: parseFloat(w.currentBalance || '0'),
       initialBalance: parseFloat(w.initialBalance || '0'),
       totalDeposits: parseFloat(w.totalDeposits || '0'),

@@ -306,10 +306,9 @@ const createWindow = (): void => {
     console.log('[Main] Renderer process is responsive again');
   });
 
-  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-    if (level >= 2) {
-      const levelName = ['verbose', 'info', 'warning', 'error'][level] || 'unknown';
-      console.log(`[Renderer ${levelName}] ${message} (${sourceId}:${line})`);
+  mainWindow.webContents.on('console-message', (event) => {
+    if (event.level === 'warning' || event.level === 'error') {
+      console.log(`[Renderer ${event.level}] ${event.message} (${event.sourceId}:${event.lineNumber})`);
     }
   });
 

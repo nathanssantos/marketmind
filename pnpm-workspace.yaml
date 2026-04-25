@@ -2,8 +2,12 @@ packages:
   - apps/*
   - packages/*
 
-ignoredBuiltDependencies:
+onlyBuiltDependencies:
   - canvas
   - electron
   - electron-winstaller
   - esbuild
+
+peerDependencyRules:
+  allowedVersions:
+    vite-plugin-pwa>vite: '8'

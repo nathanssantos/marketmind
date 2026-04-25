@@ -270,7 +270,7 @@ export class IndicatorEngine {
 
     if (!base) return [];
 
-    let baseSeries: (number | null)[] = [];
+    let baseSeries: (number | null)[];
 
     if (['open', 'high', 'low', 'close', 'volume'].includes(base)) {
       const priceIndicator = indicators['_price'];

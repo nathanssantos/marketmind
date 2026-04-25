@@ -117,7 +117,7 @@ export const checkDirectionFilter = async (
   const effectiveDirection: MarketDirection = confirmedDirection === 'NEUTRAL' ? 'NEUTRAL' : marketDirection;
 
   let isAllowed = true;
-  let reason = '';
+  let reason: string;
 
   if (tradeDirection === 'LONG' && effectiveDirection === 'BEARISH') {
     if (enableLongInBearMarket) {

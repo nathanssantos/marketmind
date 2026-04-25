@@ -16,8 +16,8 @@ export const renderRay = (
   const dx = x2 - x1;
   const dy = y2 - y1;
 
-  let extX = x2;
-  let extY = y2;
+  let extX: number;
+  let extY: number;
 
   if (dx === 0 && dy === 0) {
     extX = x2;

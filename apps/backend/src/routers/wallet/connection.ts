@@ -159,7 +159,7 @@ export const walletConnectionRouter = router({
               const locked = parseFloat(balance.locked?.toString() || '0');
               const total = free + locked;
 
-              let valueUSDT = 0;
+              let valueUSDT: number;
 
               if (STABLECOINS.includes(balance.asset as typeof STABLECOINS[number])) {
                 valueUSDT = total;

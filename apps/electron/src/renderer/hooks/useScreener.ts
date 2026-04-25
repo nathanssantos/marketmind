@@ -70,7 +70,7 @@ export const useScreener = () => {
 
   const activeQuery = isPresetMode ? presetQuery : customQuery;
 
-  const results: ScreenerResponse | undefined = activeQuery.data as ScreenerResponse | undefined;
+  const results: ScreenerResponse | undefined = activeQuery.data;
   const isLoading = activeQuery.isLoading;
   const isFetching = activeQuery.isFetching;
   const error = activeQuery.error;
@@ -94,7 +94,7 @@ export const useScreener = () => {
   );
 
   const presets = useMemo<ScreenerPreset[]>(
-    () => (presetsQuery.data as ScreenerPreset[] | undefined) ?? [],
+    () => (presetsQuery.data) ?? [],
     [presetsQuery.data],
   );
 
@@ -138,8 +138,8 @@ export const useScannerPreset = (
   );
 
   return {
-    presets: (presetsQuery.data as ScreenerPreset[] | undefined) ?? [],
-    results: resultsQuery.data as ScreenerResponse | undefined,
+    presets: (presetsQuery.data) ?? [],
+    results: resultsQuery.data,
     isLoading: resultsQuery.isLoading,
     isFetching: resultsQuery.isFetching,
     error: resultsQuery.error,
