@@ -348,7 +348,13 @@ export class BinancePriceStreamService {
     }
 
     try {
-      void this.client.subscribeTrades(symbol, market);
+      // Use @aggTrade (public market stream) instead of @trade. The Binance SDK
+      // routes `subscribeTrades` for usdm/coinm to a "private" wsKey that requires
+      // API authentication and returns HTTP 400 without it; this silently drops
+      // every futures trade subscription. `subscribeAggregateTrades` routes to
+      // the public `usdmMarket` wsKey. Aggregated trades carry the same price/qty
+      // info our `handleMessage` already recognizes (`e: 'aggTrade'`).
+      void this.client.subscribeAggregateTrades(symbol, market);
       this.subscribedSymbols.add(symbol);
     } catch (error) {
       logger.error({
