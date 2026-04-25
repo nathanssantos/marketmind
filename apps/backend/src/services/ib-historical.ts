@@ -53,11 +53,10 @@ export const smartBackfillIBKlines = async (
     };
   }
 
-  let klineStream: IBKlineStream | null = null;
   let downloaded = 0;
 
   try {
-    klineStream = new IBKlineStream(sharedConnectionManager ?? undefined);
+    const klineStream = new IBKlineStream(sharedConnectionManager ?? undefined);
     const duration = getIBDuration(interval);
 
     logger.info({ symbol, interval, duration }, '[IB Backfill] Fetching historical data from IB Gateway');

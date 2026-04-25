@@ -34,9 +34,9 @@ export const executeLiveOrder = async (
   orderType: 'MARKET',
   useLimit: boolean,
 ): Promise<LiveOrderResult | null> => {
-  let entryOrderId: string | null = null;
-  let actualEntryPrice = setup.entryPrice;
-  let actualQuantity = dynamicSize.quantity;
+  let entryOrderId: string;
+  let actualEntryPrice: number;
+  let actualQuantity: number;
   let actualEntryFee: number | null = null;
   let stopLossOrderId: string | null = null;
   let takeProfitOrderId: string | null = null;

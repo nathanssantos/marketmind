@@ -226,7 +226,7 @@ export const setFuturesLeverage = async (
       return;
     }
     logger.error({ symbol, leverage, error: errorMsg }, 'Failed to set futures leverage');
-    throw new Error(`Failed to set leverage for ${symbol}: ${errorMsg}`);
+    throw new Error(`Failed to set leverage for ${symbol}: ${errorMsg}`, { cause: error });
   }
 };
 
@@ -251,7 +251,7 @@ export const setFuturesMarginType = async (
       return;
     }
     logger.error({ symbol, marginType, error: errorMsg }, 'Failed to set futures margin type');
-    throw new Error(`Failed to set margin type for ${symbol}: ${errorMsg}`);
+    throw new Error(`Failed to set margin type for ${symbol}: ${errorMsg}`, { cause: error });
   }
 };
 
@@ -275,6 +275,6 @@ export const setFuturesPositionMode = async (
       return;
     }
     logger.error({ dualSidePosition, error: errorMsg }, 'Failed to set futures position mode');
-    throw new Error(`Failed to set position mode: ${errorMsg}`);
+    throw new Error(`Failed to set position mode: ${errorMsg}`, { cause: error });
   }
 };

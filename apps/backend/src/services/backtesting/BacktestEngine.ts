@@ -408,7 +408,7 @@ export class BacktestEngine {
 
       const { stopLoss, takeProfit } = tradeExecutor.resolveStopLossAndTakeProfit(setup, entryPrice, trades.length);
 
-      let { positionSize, positionValue } = tradeExecutor.calculatePositionSize(
+      const { positionSize: rawPositionSize } = tradeExecutor.calculatePositionSize(
         equity,
         entryPrice,
         stopLoss,
@@ -417,14 +417,14 @@ export class BacktestEngine {
       );
 
       const volatilityAdjusted = await tradeExecutor.applyVolatilityAdjustment(
-        positionSize,
+        rawPositionSize,
         entryPrice,
         historicalKlines as Kline[],
         setupIndex,
         trades.length
       );
-      positionSize = volatilityAdjusted.positionSize;
-      positionValue = volatilityAdjusted.positionValue;
+      const positionSize = volatilityAdjusted.positionSize;
+      const positionValue = volatilityAdjusted.positionValue;
 
       const currentExposure = openPositions.reduce((sum, p) => sum + p.positionValue, 0);
       if (!filterManager.checkMaxExposure(currentExposure, positionValue, equity)) continue;

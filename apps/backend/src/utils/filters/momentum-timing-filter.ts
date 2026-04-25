@@ -86,9 +86,9 @@ export const checkMomentumTiming = async (
     }
   }
 
-  let isAllowed = false;
-  let mfiConfirmation = false;
-  let reason = '';
+  let isAllowed: boolean;
+  let mfiConfirmation: boolean;
+  let reason: string;
 
   if (direction === 'LONG') {
     const rsiMinThreshold = isPullback ? RSI_PULLBACK_LONG_MIN : RSI_LONG_MIN;

@@ -66,7 +66,7 @@ export const calculateRelativeStrength = (
 
   const outperforming = ratio > cfg.outperformThreshold;
 
-  let strength: 'strong' | 'moderate' | 'weak' | 'underperforming' = 'weak';
+  let strength: 'strong' | 'moderate' | 'weak' | 'underperforming';
   if (ratio > 1.5) {
     strength = 'strong';
   } else if (ratio > 1.2) {

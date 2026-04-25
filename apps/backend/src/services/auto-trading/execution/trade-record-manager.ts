@@ -79,8 +79,8 @@ export const createAndExecuteTrade = async (
   const expectedEntryWithSlippage = setup.entryPrice * slippageFactor;
 
   let entryOrderId: string | null = null;
-  let actualEntryPrice = isLiveExecution ? setup.entryPrice : expectedEntryWithSlippage;
-  let actualQuantity = dynamicSize.quantity;
+  let actualEntryPrice: number;
+  let actualQuantity: number;
   let actualEntryFee: number | null = null;
   let stopLossOrderId: string | null = null;
   let takeProfitOrderId: string | null = null;
