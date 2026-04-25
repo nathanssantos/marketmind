@@ -2,7 +2,7 @@ packages:
   - apps/*
   - packages/*
 
-ignoredBuiltDependencies:
+onlyBuiltDependencies:
   - canvas
   - electron
   - electron-winstaller
