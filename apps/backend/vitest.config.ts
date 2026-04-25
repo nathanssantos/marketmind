@@ -13,6 +13,7 @@ const INTEGRATION_SERVICE_TESTS = [
   'src/__tests__/services/cooldown.test.ts',
   'src/__tests__/services/binance-futures-user-stream.test.ts',
   'src/__tests__/services/income-events/**/*.test.ts',
+  'src/__tests__/services/wallet-balance/**/*.test.ts',
 ];
 
 export default defineConfig({
