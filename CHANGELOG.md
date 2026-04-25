@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.3] - 2026-04-25
+
+Follow-up to v0.99.2's chart performance overhaul. v0.99.2 had the right architecture (Wave 1's `React.memo` with structural comparator on `ChartCanvas`) but missed a stable callback in the parent — so the memo never actually short-circuited. v0.99.3 fixes that and pins the new perf baseline so CI catches any regression.
+
+### Fixed
+- **`ChartCanvas` memo wasn't firing in production** — `ChartPanelContent` was passing `onNearLeftEdge={hasMore ? () => { void loadOlderKlines(); } : undefined}`, an inline arrow recreated on every parent render. Wave 1's structural comparator correctly detected `prev.onNearLeftEdge !== next.onNearLeftEdge` and forced a re-render, defeating the optimization. The perf-test page snapshot showed `ChartCanvas#BTCUSDT@1h` re-rendering ~105×/s under tick storm despite Wave 1 — the cascade was untouched. Wrap `onNearLeftEdge` in `useCallback` (`loadOlderKlines` from `useKlinePagination` is already stable). Memo now actually skips on live ticks; perf tests confirm the win.
+- **Electron-builder uploaded zero binaries to v0.99.1 / v0.99.2 releases** — the desktop-release workflow runs `electron-builder --publish always`, but our config left `releaseType` at the default `draft`. The release process creates the GitHub release as finalized BEFORE the build, so when electron-builder tried to publish a "draft" to an existing "release", it logged `existing type not compatible with publishing type` and skipped every artifact. Manual recovery for v0.99.2 (toggle release to draft → re-run workflow → publish) brought the assets back. Pinning `releaseType: 'release'` in `apps/electron/electron-builder.js` prevents the recurrence.
+
+### Changed
+- **`apps/electron/e2e/perf/baseline.json` refreshed** to lock in the post-overhaul render rates as the new floor:
+  - `kline-append`: 166.66 → 0 renders/s
+  - `many-drawings`: 44.84 → 0
+  - `kline-replace-loop`: 28.01 → 0
+  - `price-tick-storm`: 6.51 → 0
+  Future PRs that regress the React.memo path will fail the perf suite's `assertRegression`.
+
+### Notes
+- Multi-PR delivery: #142 (release-type fix), #144 (`onNearLeftEdge` callback), #145 (baseline refresh).
+- Verified end-to-end: `pnpm --filter @marketmind/electron test:perf` runs all 18 perf scenarios green; `assertRegression` passes against the new baseline; full unit + browser + backend suites unchanged (1,782 + 97 + 5,352 passing).
+
 ## [0.99.2] - 2026-04-25
 
 Chart performance overhaul — multi-wave initiative to fix the cross-chart re-render fan-out users see when running 2+ chart panels in the grid. With one chart the UI was fluid; with 2+ each kline tick / focus change / hover event was waking many panels at once. This release decouples the canvas from React's per-tick render path, narrows store fan-out to per-symbol/per-chart, and prunes redundant resize/store work in the render pipeline.

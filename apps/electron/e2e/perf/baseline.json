@@ -1,102 +1,108 @@
 {
   "price-tick-storm": {
     "fps": 26,
-    "p95FrameMs": 0.10000002384185791,
-    "renderRate": 6.51678071083536,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "p95FrameMs": 0.09999999776482582,
+    "renderRate": 0,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "kline-replace-loop": {
-    "fps": 27,
-    "p95FrameMs": 0.10000002384185791,
-    "renderRate": 28.01120444437876,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "fps": 29,
+    "p95FrameMs": 0.10000000149011612,
+    "renderRate": 0,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "kline-append": {
-    "fps": 26,
-    "p95FrameMs": 0.19999992847442627,
-    "renderRate": 166.66666666666666,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "fps": 27,
+    "p95FrameMs": 0.30000000074505806,
+    "renderRate": 0,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "pan-drag-loop": {
     "fps": 27,
-    "p95FrameMs": 0.10000002384185791,
+    "p95FrameMs": 0.19999999925494194,
     "renderRate": 0,
     "droppedFrames": 0,
     "longSections": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "wheel-zoom-loop": {
     "fps": 27,
-    "p95FrameMs": 0.10000002384185791,
+    "p95FrameMs": 0.19999999925494194,
     "renderRate": 0,
     "droppedFrames": 0,
     "longSections": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "indicator-churn": {
     "fps": 27,
-    "p95FrameMs": 0.10000002384185791,
+    "p95FrameMs": 0.19999999925494194,
     "renderRate": 0,
     "droppedFrames": 0,
     "longSections": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "many-drawings": {
-    "fps": 28,
-    "p95FrameMs": 0.10000002384185791,
-    "renderRate": 44.8430494232414,
+    "fps": 27,
+    "p95FrameMs": 0.10000000149011612,
+    "renderRate": 0,
     "droppedFrames": 0,
     "longSections": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "price-tick-storm-20": {
     "fps": 27,
-    "p95FrameMs": 0.2999999523162842,
+    "p95FrameMs": 0.10000000149011612,
     "renderRate": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "mobile-overlay": {
-    "fps": 28,
-    "p95FrameMs": 0.10000002384185791,
+    "fps": 27,
+    "p95FrameMs": 0.10000000149011612,
     "renderRate": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "mobile-pan-zoom": {
-    "fps": 26,
-    "p95FrameMs": 0,
-    "renderRate": 59.171597716613064,
+    "fps": 27,
+    "p95FrameMs": 0.10000000149011612,
+    "renderRate": 0,
     "droppedFrames": 0,
     "longSections": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "mobile-tick-storm": {
-    "fps": 27,
-    "p95FrameMs": 0.10000002384185791,
-    "renderRate": 46.94835691261371,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "fps": 28,
+    "p95FrameMs": 0,
+    "renderRate": 0,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "5-panels": {
     "fps": 27,
-    "p95FrameMs": 0.20000004768371582,
+    "p95FrameMs": 0.10000000149011612,
     "renderRate": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "overlay-only": {
     "fps": 27,
-    "p95FrameMs": 0.20000004768371582,
-    "renderRate": 10.362694300518134,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "p95FrameMs": 0.09999999776482582,
+    "renderRate": 0,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "hover-and-tick-storm": {
-    "fps": 28,
-    "p95FrameMs": 0.30000007152557373,
+    "fps": 27,
+    "p95FrameMs": 0.10000000149011612,
     "renderRate": 0,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "generatedAt": "2026-04-25T23:23:54.131Z"
+  },
+  "idle-tick-poll": {
+    "fps": 4,
+    "p95FrameMs": 0.30000001192092896,
+    "renderRate": 109.89010996208748,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   },
   "mount-unmount-churn": {
-    "fps": 55,
-    "p95FrameMs": 0.20000004768371582,
-    "renderRate": 65.35947707325845,
-    "generatedAt": "2026-04-22T00:51:41.557Z"
+    "fps": 49,
+    "p95FrameMs": 0.19999999925494194,
+    "renderRate": 0,
+    "generatedAt": "2026-04-25T23:23:54.131Z"
   }
 }
