@@ -1,13 +1,4 @@
-import type {
-  BacktestConfig,
-  BacktestMetrics,
-  BacktestEquityPoint,
-  TrailingStopOptimizationConfig,
-  FibonacciProjectionData,
-  Interval,
-  Kline,
-  MarketType,
-} from '@marketmind/types';
+import type { BacktestConfig, BacktestEquityPoint, BacktestMetrics, FibonacciProjectionData, Interval, Kline, MarketType, PositionSide, TrailingStopOptimizationConfig } from '@marketmind/types';
 
 export type LogLevel = 'silent' | 'summary' | 'verbose';
 
@@ -36,7 +27,7 @@ export interface TrailingStopBacktestConfig extends TrailingStopOptimizationConf
 export interface BacktestTradeSetup {
   id: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   entryPrice: number;
   entryTime: number;
   stopLoss: number;

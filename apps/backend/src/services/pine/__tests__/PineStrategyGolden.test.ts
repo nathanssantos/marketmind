@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import { PineStrategyLoader } from '../PineStrategyLoader';
 import { PineStrategyRunner } from '../PineStrategyRunner';
 
@@ -49,7 +49,7 @@ const round = (n: number, decimals = 4): number => {
 
 interface SerializedSetup {
   triggerKlineIndex: number | undefined;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   entryPrice: number;
   stopLoss: number | null;
   takeProfit: number | null;
@@ -72,7 +72,7 @@ const serializeDetections = (
   strategyId: string,
   detections: Array<{
     setup: {
-      direction: 'LONG' | 'SHORT';
+      direction: PositionSide;
       entryPrice: number;
       stopLoss?: number;
       takeProfit?: number;

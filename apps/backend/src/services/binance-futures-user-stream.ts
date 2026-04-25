@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type { USDMClient} from 'binance';
 import { WebsocketClient } from 'binance';
 import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
@@ -244,7 +245,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     return closeResidualPositionFn(this, walletId, symbol, executionId);
   }
 
-  async verifyAlgoFillProcessed(walletId: string, executionId: string, symbol: string, side: 'LONG' | 'SHORT', openedAt: number, exitReason: string): Promise<void> {
+  async verifyAlgoFillProcessed(walletId: string, executionId: string, symbol: string, side: PositionSide, openedAt: number, exitReason: string): Promise<void> {
     return verifyAlgoFillProcessedFn(this, walletId, executionId, symbol, side, openedAt, exitReason);
   }
 

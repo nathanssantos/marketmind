@@ -1,3 +1,4 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import { calculateTotalFees } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
@@ -26,8 +27,8 @@ const createExitOrder = async (
   symbol: string,
   quantity: number,
   _price: number,
-  side: 'LONG' | 'SHORT',
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  side: PositionSide,
+  marketType: MarketType = 'FUTURES'
 ): Promise<string> => {
   const orderSide = side === 'LONG' ? 'SELL' : 'BUY';
 

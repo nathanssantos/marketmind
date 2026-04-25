@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets } from '../../db/schema';
@@ -15,7 +16,7 @@ export async function verifyAlgoFillProcessed(
   walletId: string,
   executionId: string,
   symbol: string,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   openedAt: number,
   exitReason: string
 ): Promise<void> {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 
 const { mockCompute } = vi.hoisted(() => ({
   mockCompute: vi.fn().mockResolvedValue([]),
@@ -48,7 +48,7 @@ const createMockKline = (options: {
   takerBuyQuoteVolume: '25000000',
 });
 
-const createMockSetup = (direction: 'LONG' | 'SHORT', options?: {
+const createMockSetup = (direction: PositionSide, options?: {
   stopLoss?: number;
   takeProfit?: number;
   confidence?: number;

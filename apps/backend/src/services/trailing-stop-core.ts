@@ -1,4 +1,4 @@
-import type { FibonacciProjectionData } from '@marketmind/types';
+import type { FibonacciProjectionData, PositionSide } from '@marketmind/types';
 import { TRAILING_STOP } from '../constants';
 
 export interface TrailingStopCoreConfig {
@@ -17,7 +17,7 @@ export interface TrailingStopCoreInput {
   entryPrice: number;
   currentPrice: number;
   currentStopLoss: number | null;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   takeProfit?: number | null;
   swingPoints?: Array<{ price: number; type: 'high' | 'low' }>;
   atr?: number;

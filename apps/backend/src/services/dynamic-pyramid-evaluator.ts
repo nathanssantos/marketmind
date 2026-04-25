@@ -1,4 +1,4 @@
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import { logger } from './logger';
 import { PineIndicatorService } from './pine/PineIndicatorService';
 
@@ -151,7 +151,7 @@ export const evaluateDynamicConditions = async (
 
 export interface PyramidCandidate {
   symbol: string;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   adxValue: number | null;
   currentPrice: number;
   profitPercent: number;

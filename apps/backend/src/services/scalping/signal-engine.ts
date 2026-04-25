@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import type { ScalpingSignal, ScalpingStrategy } from '@marketmind/types';
+import type { PositionSide, ScalpingSignal, ScalpingStrategy } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { SCALPING_ENGINE, SCALPING_STRATEGY, SCALPING_ATR } from '../../constants/scalping';
 import type { CircuitBreakerState, IndicatorState, StrategyContext, StrategyResult } from './types';
@@ -241,7 +241,7 @@ export class SignalEngine {
   }
 
   private buildResult(
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     strategy: ScalpingStrategy,
     confidence: number,
     price: number,
@@ -271,7 +271,7 @@ export class SignalEngine {
     const { imbalanceRatio } = ctx.metrics;
     if (Math.abs(imbalanceRatio) < this.config.imbalanceThreshold) return null;
 
-    const direction: 'LONG' | 'SHORT' = imbalanceRatio > 0 ? 'LONG' : 'SHORT';
+    const direction: PositionSide = imbalanceRatio > 0 ? 'LONG' : 'SHORT';
     const confidence = Math.min(
       SCALPING_STRATEGY.IMBALANCE_MAX_CONFIDENCE,
       SCALPING_STRATEGY.IMBALANCE_BASE_CONFIDENCE + Math.abs(imbalanceRatio) * 50,
@@ -303,7 +303,7 @@ export class SignalEngine {
     const cvdDirection = lastCvd.value > firstCvd.value ? 1 : -1;
     if (priceDirection === cvdDirection) return null;
 
-    const direction: 'LONG' | 'SHORT' = cvdDirection > 0 ? 'LONG' : 'SHORT';
+    const direction: PositionSide = cvdDirection > 0 ? 'LONG' : 'SHORT';
 
     const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
       this.getAtrPercent(ctx),
@@ -321,7 +321,7 @@ export class SignalEngine {
     const sigma = this.config.vwapDeviationSigma / 100;
     if (Math.abs(deviation) < sigma) return null;
 
-    const direction: 'LONG' | 'SHORT' = deviation > 0 ? 'SHORT' : 'LONG';
+    const direction: PositionSide = deviation > 0 ? 'SHORT' : 'LONG';
     const confidence = Math.min(
       SCALPING_STRATEGY.MEAN_REVERSION_MAX_CONFIDENCE,
       SCALPING_STRATEGY.MEAN_REVERSION_BASE_CONFIDENCE + Math.abs(deviation) / sigma * 15,
@@ -348,7 +348,7 @@ export class SignalEngine {
     if (recentVolume < ctx.avgVolume * SCALPING_DEFAULTS.LARGE_TRADE_MULTIPLIER) return null;
     if (Math.abs(ctx.metrics.imbalanceRatio) < SCALPING_STRATEGY.MOMENTUM_BURST_MIN_IMBALANCE) return null;
 
-    const direction: 'LONG' | 'SHORT' = ctx.metrics.imbalanceRatio > 0 ? 'LONG' : 'SHORT';
+    const direction: PositionSide = ctx.metrics.imbalanceRatio > 0 ? 'LONG' : 'SHORT';
 
     const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
       this.getAtrPercent(ctx),
@@ -362,7 +362,7 @@ export class SignalEngine {
   private evaluateAbsorptionReversal(ctx: StrategyContext): StrategyResult | null {
     if (ctx.metrics.absorptionScore < this.config.absorptionThreshold) return null;
 
-    const direction: 'LONG' | 'SHORT' = ctx.metrics.imbalanceRatio > 0 ? 'LONG' : 'SHORT';
+    const direction: PositionSide = ctx.metrics.imbalanceRatio > 0 ? 'LONG' : 'SHORT';
 
     const { slPercent, tpPercent } = SignalEngine.computeAtrExit(
       this.getAtrPercent(ctx),
@@ -399,7 +399,7 @@ export class SignalEngine {
     if (bullishCross && currCci > 150) return null;
     if (bearishCross && currCci < -150) return null;
 
-    const direction: 'LONG' | 'SHORT' = bullishCross ? 'LONG' : 'SHORT';
+    const direction: PositionSide = bullishCross ? 'LONG' : 'SHORT';
 
     let confidence: number = SCALPING_STRATEGY.EMA_CROSS_BASE_CONFIDENCE;
     if (bullishCross && currCci < -50) confidence += 15;

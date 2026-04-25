@@ -1,11 +1,11 @@
-import type { Viewport } from '@marketmind/types';
+import type { PositionSide, Viewport } from '@marketmind/types';
 import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
 export interface SetupMarker {
   klineIndex: number;
   price: number;
   type: 'ENTRY' | 'EXIT' | 'STOP_LOSS' | 'TAKE_PROFIT';
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   label?: string;
 }
 

@@ -1,3 +1,5 @@
+import type { PositionSide } from './direction';
+
 export interface AggTrade {
   tradeId: number;
   symbol: string;
@@ -69,7 +71,7 @@ export interface ScalpingSignal {
   id: string;
   symbol: string;
   strategy: ScalpingStrategy;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   entryPrice: number;
   stopLoss: number;
   takeProfit: number;

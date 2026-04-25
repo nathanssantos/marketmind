@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import {
   bigint,
   boolean,
@@ -18,7 +19,7 @@ export const klines = pgTable(
   {
     symbol: varchar({ length: 20 }).notNull(),
     interval: varchar({ length: 5 }).notNull(),
-    marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES').notNull(),
+    marketType: varchar('market_type', { length: 10 }).$type<MarketType>().default('FUTURES').notNull(),
     openTime: timestamp('open_time', { mode: 'date' }).notNull(),
     closeTime: timestamp('close_time', { mode: 'date' }).notNull(),
     open: numeric({ precision: 20, scale: 8 }).notNull(),

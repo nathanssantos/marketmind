@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { sql } from 'drizzle-orm';

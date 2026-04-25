@@ -1,5 +1,5 @@
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import type { Kline, Viewport } from '@marketmind/types';
+import type { Kline, PositionSide, Viewport } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createSetupMarkerRenderer, type SetupMarker } from '../layers/AnnotationLayer';
 import { createGridRenderer } from '../layers/GridLayer';
@@ -16,7 +16,7 @@ export interface MiniChartProps {
         entryPrice: number;
         exitIndex?: number;
         exitPrice?: number;
-        direction: 'LONG' | 'SHORT';
+        direction: PositionSide;
         stopLoss?: number;
         takeProfit?: number;
     }>;

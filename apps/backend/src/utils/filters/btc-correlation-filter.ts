@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -348,7 +348,7 @@ export const getBtcTrendEmaInfo = async (btcKlines: Kline[]): Promise<BtcTrendIn
 
 export const checkBtcCorrelation = async (
   btcKlines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   tradingSymbol: string
 ): Promise<BtcCorrelationResult> => {
   const isAltcoin = !isBtcPair(tradingSymbol);

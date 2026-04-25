@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { ALGO_ORDER_DEFAULTS } from '../constants/algo-orders';
 import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
@@ -18,7 +19,7 @@ export interface TrailingStopParams {
 }
 
 export interface FuturesTrailingStopParams extends TrailingStopParams {
-  positionSide?: 'LONG' | 'SHORT';
+  positionSide?: PositionSide;
   tickSize?: string;
 }
 
@@ -210,7 +211,7 @@ export class ExchangeTrailingStopService {
     return cancelled;
   }
 
-  calculateActivationPrice(entryPrice: number, side: 'LONG' | 'SHORT', breakevenThreshold: number = 0.0015): number {
+  calculateActivationPrice(entryPrice: number, side: PositionSide, breakevenThreshold: number = 0.0015): number {
     if (side === 'LONG') {
       return entryPrice * (1 + breakevenThreshold);
     } else {

@@ -1,3 +1,5 @@
+import type { PositionSide } from './direction';
+import type { MarketType } from './futures';
 import type { Kline } from './kline';
 import type { TradingSetup } from './tradingSetup';
 import type { TrailingDistanceMode } from './trading-config';
@@ -72,7 +74,7 @@ export interface BacktestConfig {
 
   positionSizePercent?: number; // Position size as percentage of available capital (default: 10%)
 
-  marketType?: 'SPOT' | 'FUTURES'; // Market type (default: FUTURES)
+  marketType?: MarketType; // Market type (default: FUTURES)
   useBnbDiscount?: boolean; // Apply 25% BNB discount to fees (default: false)
   vipLevel?: number; // Binance VIP level 0-9 for fee calculation (default: 0)
   leverage?: number; // Futures leverage 1-125 (default: 1)
@@ -134,7 +136,7 @@ export interface BacktestTrade {
   entryPrice: number;
   exitTime?: string; // ISO date
   exitPrice?: number;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   quantity: number;
   stopLoss?: number;
   takeProfit?: number;
@@ -145,7 +147,7 @@ export interface BacktestTrade {
   exitReason?: 'STOP_LOSS' | 'TAKE_PROFIT' | 'MANUAL' | 'END_OF_PERIOD' | 'LIQUIDATION' | 'EXIT_CONDITION' | 'MAX_BARS';
   status: 'OPEN' | 'CLOSED';
 
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   leverage?: number;
   marginType?: 'ISOLATED' | 'CROSSED';
   liquidationPrice?: number;
@@ -254,7 +256,7 @@ export interface TrailingStopOptimizationConfig {
   trailingDistanceMode?: TrailingDistanceMode;
   trailingStopOffsetPercent?: number;
   useVolatilityBasedThresholds?: boolean;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   useBnbDiscount?: boolean;
   useFibonacciThresholds?: boolean;
   activationPercentLong?: number;
@@ -335,7 +337,7 @@ export interface WatcherConfig {
   symbol: string;
   interval: string;
   setupTypes?: string[];
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   profileId?: string;
 }
 

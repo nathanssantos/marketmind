@@ -1,9 +1,4 @@
-import type {
-    FuturesAccount,
-    FuturesLeverage,
-    FuturesPosition,
-    MarginType,
-} from '@marketmind/types';
+import type { FuturesAccount, FuturesLeverage, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
 import { USDMClient } from 'binance';
 import type { Wallet } from '../db/schema';
 import { guardBinanceCall } from './binance-api-cache';
@@ -76,7 +71,7 @@ export async function modifyIsolatedPositionMargin(
   symbol: string,
   amount: number,
   type: '0' | '1',
-  positionSide?: 'LONG' | 'SHORT' | 'BOTH'
+  positionSide?: PositionSide | 'BOTH'
 ): Promise<{ amount: string; type: number; code: number; msg: string }> {
   try {
     const result = await guardBinanceCall(() => client.setIsolatedPositionMargin({

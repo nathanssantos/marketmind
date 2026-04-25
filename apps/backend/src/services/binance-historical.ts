@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
 import { ABSOLUTE_MINIMUM_KLINES, AUTO_TRADING_API, AUTO_TRADING_BATCH } from '../constants';
@@ -18,7 +18,7 @@ export const backfillHistoricalKlines = async (
   interval: Interval,
   startTime: Date,
   endTime: Date = new Date(),
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: MarketType = 'FUTURES'
 ): Promise<number> => {
   const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
   const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
@@ -230,7 +230,7 @@ export const smartBackfillKlines = async (
   symbol: string,
   interval: Interval,
   targetCount: number,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
+  marketType: MarketType = 'FUTURES',
   forRotation: boolean = false
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMilliseconds(interval);
@@ -373,7 +373,7 @@ export const smartBackfillKlines = async (
 export interface AggregatedKline {
   symbol: string;
   interval: '1y';
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   openTime: Date;
   closeTime: Date;
   open: string;
@@ -390,7 +390,7 @@ export interface AggregatedKline {
 export const aggregateYearlyKline = async (
   symbol: string,
   year: number,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: MarketType = 'FUTURES'
 ): Promise<AggregatedKline | null> => {
   const startTime = new Date(year, 0, 1);
   const endTime = new Date(year + 1, 0, 1);
@@ -447,7 +447,7 @@ export const aggregateYearlyKline = async (
 
 export const aggregateYearlyKlines = async (
   symbol: string,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
+  marketType: MarketType = 'FUTURES',
   limit: number = 10
 ): Promise<AggregatedKline[]> => {
   const currentYear = new Date().getFullYear();

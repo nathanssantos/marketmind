@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../services/binance-client', () => ({
@@ -16,7 +17,7 @@ interface PriceCacheEntry {
 
 interface SymbolKey {
   symbol: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
 }
 
 const DEFAULT_MAX_AGE_MS = 3000;
@@ -31,16 +32,16 @@ class TestableInMemoryPriceCache {
     this.maxAgeMs = maxAgeMs;
   }
 
-  private getCacheKey(symbol: string, marketType: 'SPOT' | 'FUTURES'): string {
+  private getCacheKey(symbol: string, marketType: MarketType): string {
     return `${symbol}-${marketType}`;
   }
 
-  updateFromWebSocket(symbol: string, marketType: 'SPOT' | 'FUTURES', price: number): void {
+  updateFromWebSocket(symbol: string, marketType: MarketType, price: number): void {
     const key = this.getCacheKey(symbol, marketType);
     this.prices.set(key, { price, timestamp: Date.now() });
   }
 
-  getPrice(symbol: string, marketType: 'SPOT' | 'FUTURES'): number | null {
+  getPrice(symbol: string, marketType: MarketType): number | null {
     const key = this.getCacheKey(symbol, marketType);
     const entry = this.prices.get(key);
     if (!entry || Date.now() - entry.timestamp > this.maxAgeMs) {
@@ -351,7 +352,7 @@ describe('InMemoryPriceCache Integration', () => {
       vi.setSystemTime(new Date('2024-01-15T12:00:00Z'));
 
       const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'AVAXUSDT', 'DOTUSDT'];
-      const marketTypes: Array<'SPOT' | 'FUTURES'> = ['SPOT', 'FUTURES'];
+      const marketTypes: Array<MarketType> = ['SPOT', 'FUTURES'];
 
       for (const symbol of symbols) {
         for (const marketType of marketTypes) {

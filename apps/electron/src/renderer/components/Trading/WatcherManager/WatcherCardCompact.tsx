@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Box, Flex, Portal, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import { CryptoIcon, IconButton } from '@renderer/components/ui';
@@ -9,7 +10,7 @@ export interface WatcherCardCompactProps {
   symbol: string;
   interval: string;
   profileName?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   onStop: () => void;
   isStopping?: boolean;
 }

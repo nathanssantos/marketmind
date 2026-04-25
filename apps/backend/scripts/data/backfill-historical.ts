@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -70,7 +71,7 @@ const backfillHistorical = async (
   interval: string,
   startDate: string,
   endDate: string,
-  marketType: 'SPOT' | 'FUTURES'
+  marketType: MarketType
 ) => {
   const startTime = new Date(startDate).getTime();
   const endTime = new Date(endDate).getTime();
@@ -171,7 +172,7 @@ const main = async () => {
   const interval = process.argv[3] || '30m';
   const startDate = process.argv[4] || '2021-11-01';
   const endDate = process.argv[5] || '2022-12-31';
-  const marketType = (process.argv[6] || 'FUTURES') as 'SPOT' | 'FUTURES';
+  const marketType = (process.argv[6] || 'FUTURES') as MarketType;
 
   console.log(`\nConfig: ${symbol} ${interval} ${marketType}`);
   console.log(`Period: ${startDate} to ${endDate}`);

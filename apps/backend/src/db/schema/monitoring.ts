@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import {
   boolean,
   index,
@@ -21,7 +22,7 @@ export const activeWatchers = pgTable('active_watchers', {
     .references(() => tradingProfiles.id, { onDelete: 'set null' }),
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
-  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES').notNull(),
+  marketType: varchar('market_type', { length: 10 }).$type<MarketType>().default('FUTURES').notNull(),
   exchange: varchar({ length: 20 }).default('BINANCE'),
   isManual: boolean('is_manual').default(true).notNull(),
   startedAt: timestamp('started_at', { mode: 'date' }).defaultNow().notNull(),

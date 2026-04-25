@@ -1,4 +1,4 @@
-import type { Interval, MarketType } from '@marketmind/types';
+import type { Interval, MarketType, PositionSide } from '@marketmind/types';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { useSocketEvent, useUserChannelSubscription } from './socket';
@@ -22,7 +22,7 @@ interface DetectCurrentParams {
 interface GetHistoryParams {
   symbol?: string;
   setupType?: SetupType;
-  direction?: 'LONG' | 'SHORT';
+  direction?: PositionSide;
   startDate?: Date;
   endDate?: Date;
   limit?: number;

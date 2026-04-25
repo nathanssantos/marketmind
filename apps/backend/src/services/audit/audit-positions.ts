@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { calculateTotalFees } from '@marketmind/types';
 import { db } from '../../db';
@@ -100,7 +101,7 @@ export async function auditPositions(ctx: AuditContext): Promise<void> {
   for (const [symbol, position] of exchangePositionsBySymbol) {
     const positionAmt = parseFloat(String(position.positionAmt));
     const entryPrice = parseFloat(String(position.entryPrice));
-    const side: 'LONG' | 'SHORT' = positionAmt > 0 ? 'LONG' : 'SHORT';
+    const side: PositionSide = positionAmt > 0 ? 'LONG' : 'SHORT';
     const executionId = generateExecutionId();
 
     const { slAlgoId, tpAlgoId } = findProtectionOrders(symbol, openAlgoOrders);

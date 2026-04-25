@@ -1,3 +1,4 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import { beforeAll, afterAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { setupTestDatabase, teardownTestDatabase, getTestDatabase, cleanupTables } from '../helpers/test-db';
@@ -117,13 +118,13 @@ describe('PositionMonitorService', () => {
     userId: string;
     walletId: string;
     symbol?: string;
-    side?: 'LONG' | 'SHORT';
+    side?: PositionSide;
     entryPrice?: string;
     quantity?: string;
     stopLoss?: string | null;
     takeProfit?: string | null;
     status?: string;
-    marketType?: 'SPOT' | 'FUTURES';
+    marketType?: MarketType;
     limitEntryPrice?: string | null;
     expiresAt?: Date | null;
     stopLossAlgoId?: string | null;

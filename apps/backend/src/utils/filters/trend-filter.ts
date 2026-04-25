@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -32,7 +32,7 @@ export interface TrendFilterResult {
 
 export const checkTrendCondition = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   emaPeriod: number = TREND_FILTER.EMA_PERIOD,
 ): Promise<TrendFilterResult> => {
   if (klines.length < 3) {

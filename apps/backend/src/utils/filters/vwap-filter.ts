@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline, PriceVsVwap, VwapFilterResult } from '@marketmind/types';
+import type { Kline, PositionSide, PriceVsVwap, VwapFilterResult } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -13,7 +13,7 @@ export type { PriceVsVwap, VwapFilterResult };
 
 export const checkVwapCondition = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
 ): Promise<VwapFilterResult> => {
   if (klines.length < MIN_KLINES_REQUIRED) {
     return {

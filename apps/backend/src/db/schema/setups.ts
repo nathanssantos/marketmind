@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import {
   boolean,
   bigint,
@@ -22,7 +23,7 @@ export const tradingSetups = pgTable('trading_setups', {
   type: varchar({ length: 100 }).notNull(),
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
-  direction: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
+  direction: varchar({ length: 10 }).$type<PositionSide>().notNull(),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
   stopLoss: numeric('stop_loss', { precision: 20, scale: 8 }).notNull(),
   takeProfit: numeric('take_profit', { precision: 20, scale: 8 }).notNull(),
@@ -44,7 +45,7 @@ export const setupDetections = pgTable('setup_detections', {
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
   setupType: varchar('setup_type', { length: 100 }).notNull(),
-  direction: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
+  direction: varchar({ length: 10 }).$type<PositionSide>().notNull(),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
   stopLoss: numeric('stop_loss', { precision: 20, scale: 8 }),
   takeProfit: numeric('take_profit', { precision: 20, scale: 8 }),
@@ -75,7 +76,7 @@ export const signalSuggestions = pgTable('signal_suggestions', {
   watcherId: varchar('watcher_id', { length: 255 }),
   symbol: varchar({ length: 20 }).notNull(),
   interval: varchar({ length: 5 }).notNull(),
-  side: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
+  side: varchar({ length: 10 }).$type<PositionSide>().notNull(),
   setupType: varchar('setup_type', { length: 100 }).notNull(),
   strategyId: varchar('strategy_id', { length: 100 }),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),

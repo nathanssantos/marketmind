@@ -20,7 +20,7 @@ export const BINANCE_DEFAULT_FEES = {
 } as const;
 
 export const getDefaultFee = (
-  marketType: 'SPOT' | 'FUTURES',
+  marketType: MarketType,
   orderType: FeeOrderType = 'TAKER'
 ): number => {
   const fees = marketType === 'FUTURES'

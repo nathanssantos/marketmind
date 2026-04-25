@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type TradeExecution, type Wallet } from '../db/schema';
@@ -18,7 +19,7 @@ export interface PnLResult {
 }
 
 export function detectExitReason(
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   entryPrice: number,
   exitPrice: number
 ): 'STOP_LOSS' | 'TAKE_PROFIT' {
@@ -29,7 +30,7 @@ export function detectExitReason(
 }
 
 export function calculatePnL(
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   entryPrice: number,
   exitPrice: number,
   quantity: number,
@@ -278,7 +279,7 @@ export async function getExecutionById(executionId: string): Promise<TradeExecut
   return execution || null;
 }
 
-export function isClosingSide(executionSide: 'LONG' | 'SHORT', orderSide: 'BUY' | 'SELL'): boolean {
+export function isClosingSide(executionSide: PositionSide, orderSide: 'BUY' | 'SELL'): boolean {
   return (executionSide === 'LONG' && orderSide === 'SELL') ||
          (executionSide === 'SHORT' && orderSide === 'BUY');
 }

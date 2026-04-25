@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
@@ -66,7 +67,7 @@ export const rotationRouter = router({
         {
           targetWatcherCount: targetCount,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
-          marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
+          marketType: (wallet.marketType as MarketType) || 'FUTURES',
           interval: rotationConfig.interval,
           profileId: undefined,
           leverage: config.leverage ?? 1,

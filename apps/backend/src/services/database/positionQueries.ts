@@ -1,11 +1,12 @@
+import type { PositionSide } from '@marketmind/types';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { db } from '../../db';
 import { positions } from '../../db/schema';
 
+export type { PositionSide };
 export type PositionRecord = typeof positions.$inferSelect;
 export type PositionStatus = 'open' | 'closed';
-export type PositionSide = 'LONG' | 'SHORT';
 
 export interface PositionQueryOptions {
   throwIfNotFound?: boolean;

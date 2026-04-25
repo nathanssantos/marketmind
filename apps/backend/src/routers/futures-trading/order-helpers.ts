@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
@@ -156,7 +157,7 @@ export const handleMarketOrderProtection = async (
   },
   futuresOrder: { orderId: string; price: string; avgPrice?: string },
   wallet: Awaited<ReturnType<typeof walletQueries.getByIdAndUser>>,
-  orderDirection: 'LONG' | 'SHORT',
+  orderDirection: PositionSide,
   actualLeverage: number,
 ) => {
   const quantity = parseFloat(input.quantity);

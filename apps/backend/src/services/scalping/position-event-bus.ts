@@ -1,9 +1,10 @@
+import type { PositionSide } from '@marketmind/types';
 import { EventEmitter } from 'events';
 
 export interface PositionClosedEvent {
   walletId: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   pnl: number;
   executionId: string;
 }

@@ -1,10 +1,11 @@
+import type { PositionSide } from './direction';
 import type { TriggerCandleSnapshot, TriggerIndicatorValues } from './strategyVisualization';
 
 export type BuiltinSetupType = 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
 
 export type SetupType = BuiltinSetupType | string;
 
-export type SetupDirection = 'LONG' | 'SHORT';
+export type SetupDirection = PositionSide;
 
 export interface SetupSpecificData {
   [key: string]: unknown;

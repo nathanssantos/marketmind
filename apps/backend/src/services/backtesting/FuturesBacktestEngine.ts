@@ -1,4 +1,4 @@
-import type { BacktestConfig, BacktestResult, BacktestTrade } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, BacktestTrade, PositionSide } from '@marketmind/types';
 import {
   calculateLiquidationPrice,
   calculateLeveragedPnl,
@@ -76,7 +76,7 @@ export class FuturesBacktestEngine {
 
   private calculateFundingPayments(
     positionValue: number,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     entryTime: number,
     exitTime: number,
     fundingRates: LocalFundingRateData[]
@@ -99,7 +99,7 @@ export class FuturesBacktestEngine {
     klines: any[],
     entryIndex: number,
     liquidationPrice: number,
-    side: 'LONG' | 'SHORT'
+    side: PositionSide
   ): { liquidated: boolean; exitIndex: number; exitPrice: number } | null {
     for (let i = entryIndex + 1; i < klines.length; i++) {
       const kline = klines[i];

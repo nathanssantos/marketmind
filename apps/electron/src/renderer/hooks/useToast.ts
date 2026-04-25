@@ -1,9 +1,10 @@
+import type { MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
 import { toaster } from '../utils/toaster';
 
 export interface ToastMeta {
   symbol?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
 }
 
 export interface ToastOptions {

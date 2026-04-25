@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { AUTO_TRADING_LIQUIDATION } from '../../constants';
 
 export const LIQUIDATION_THRESHOLDS = {
@@ -11,7 +12,7 @@ export type LiquidationRiskLevel = 'safe' | 'warning' | 'danger' | 'critical';
 export interface LiquidationRiskCheck {
   executionId: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   markPrice: number;
   liquidationPrice: number;
   distancePercent: number;

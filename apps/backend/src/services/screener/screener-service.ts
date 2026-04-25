@@ -1,11 +1,4 @@
-import type {
-  Kline,
-  ScreenerConfig,
-  ScreenerFilterCondition,
-  ScreenerResponse,
-  ScreenerResultRow,
-  ScreenerSortField,
-} from '@marketmind/types';
+import type { Kline, MarketType, ScreenerConfig, ScreenerFilterCondition, ScreenerResponse, ScreenerResultRow, ScreenerSortField } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { SCREENER } from '../../constants/screener';
@@ -121,7 +114,7 @@ const computeCompositeScore = (
 const fetchKlinesFromDb = async (
   symbol: string,
   interval: string,
-  marketType: 'SPOT' | 'FUTURES',
+  marketType: MarketType,
   limit: number,
 ): Promise<Kline[]> => {
   const dbKlines = await db
@@ -314,7 +307,7 @@ export class ScreenerService {
   private async fetchMarketData(
     config: ScreenerConfig,
     limit: number,
-    marketType: 'SPOT' | 'FUTURES',
+    marketType: MarketType,
     isIB: boolean,
     interval: string,
   ) {
@@ -404,7 +397,7 @@ export class ScreenerService {
   private async fetchKlinesBatch(
     symbols: string[],
     interval: string,
-    marketType: 'SPOT' | 'FUTURES',
+    marketType: MarketType,
     isIB: boolean,
   ): Promise<Map<string, Kline[]>> {
     const klineMap = new Map<string, Kline[]>();

@@ -1,11 +1,11 @@
-import type { FibonacciProjectionData, Order } from '@marketmind/types';
+import type { FibonacciProjectionData, MarketType, Order, PositionSide } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
 export interface BackendExecution {
   id: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   entryPrice: string;
   quantity: string;
   stopLoss: string | null;
@@ -13,7 +13,7 @@ export interface BackendExecution {
   status: string | null;
   setupType: string | null;
   entryOrderType?: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | null;
-  marketType?: 'SPOT' | 'FUTURES' | null;
+  marketType?: MarketType | null;
   openedAt?: string | Date | null;
   triggerKlineOpenTime?: number | null;
   fibonacciProjection?: FibonacciProjectionData | null;
@@ -69,7 +69,7 @@ export interface SlTpButtonHitbox {
 export interface PendingSetup {
   id: string;
   type: string;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   entryPrice: number;
   limitEntryPrice?: number;
   entryOrderType?: 'MARKET' | 'LIMIT';

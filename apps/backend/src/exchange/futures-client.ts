@@ -1,10 +1,4 @@
-import type {
-  FuturesAccount,
-  FuturesLeverage,
-  FuturesOrder,
-  FuturesPosition,
-  MarginType,
-} from '@marketmind/types';
+import type { FuturesAccount, FuturesLeverage, FuturesOrder, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
 import type { ExchangeId } from './types';
 
 export interface FuturesOrderParams {
@@ -36,7 +30,7 @@ export interface FuturesAlgoOrderParams {
   clientAlgoId?: string;
   workingType?: 'MARK_PRICE' | 'CONTRACT_PRICE';
   priceProtect?: boolean;
-  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide?: PositionSide | 'BOTH';
 }
 
 export interface FuturesAlgoOrder {
@@ -44,7 +38,7 @@ export interface FuturesAlgoOrder {
   clientAlgoId: string;
   symbol: string;
   side: 'BUY' | 'SELL';
-  positionSide: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide: PositionSide | 'BOTH';
   type: string;
   quantity: string;
   triggerPrice?: string;
@@ -168,12 +162,12 @@ export interface IExchangeFuturesClient {
   getRecentTrades(symbol: string, limit?: number): Promise<AccountTradeRecord[]>;
   getLastClosingTrade(
     symbol: string,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     openedAt: number
   ): Promise<ClosingTradeResult | null>;
   getAllTradeFeesForPosition(
     symbol: string,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     openedAt: number,
     closedAt?: number
   ): Promise<AllTradeFeesResult | null>;

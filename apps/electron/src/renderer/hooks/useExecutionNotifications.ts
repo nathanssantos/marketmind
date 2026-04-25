@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { useBackendAutoTrading } from './useBackendAutoTrading';
 import { useBackendWallet } from './useBackendWallet';
 import { useEffect, useMemo, useRef } from 'react';
@@ -13,7 +14,7 @@ interface ExecutionState {
   pnl?: string | null;
   pnlPercent?: string | null;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   entryPrice: string;
   exitPrice?: string | null;
   quantity: string;

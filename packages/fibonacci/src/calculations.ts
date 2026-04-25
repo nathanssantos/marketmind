@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { FIBONACCI_RETRACEMENT_LEVELS, FIBONACCI_ALL_LEVELS, formatFibonacciLabel } from './levels';
 import type { FibonacciLevelData, SwingPointWithIndex } from './types';
 
@@ -44,7 +45,7 @@ export const calculateFibonacciExtension = (
 export const calculateProjectionLevels = (
   swingLow: SwingPointWithIndex,
   swingHigh: SwingPointWithIndex,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
 ): FibonacciLevelData[] => {
   const range = swingHigh.price - swingLow.price;
 

@@ -1,10 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type {
-  DirectionFilterConfig,
-  DirectionFilterResult,
-  Kline,
-  MarketDirection,
-} from '@marketmind/types';
+import type { DirectionFilterConfig, DirectionFilterResult, Kline, MarketDirection, PositionSide } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -61,7 +56,7 @@ const getMarketDirection = (
 
 export const checkDirectionFilter = async (
   klines: Kline[],
-  tradeDirection: 'LONG' | 'SHORT',
+  tradeDirection: PositionSide,
   config: DirectionFilterConfig = {}
 ): Promise<DirectionFilterResult> => {
   const { enableLongInBearMarket = false, enableShortInBullMarket = false } = config;

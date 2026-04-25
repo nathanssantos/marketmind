@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import { INDICATOR_PERIODS, FILTER_THRESHOLDS } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
@@ -23,7 +23,7 @@ export const ADX_FILTER = {
 
 export const checkAdxCondition = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): Promise<AdxFilterResult> => {
   const { PERIOD, TREND_THRESHOLD, MIN_KLINES_REQUIRED } = ADX_FILTER;
 

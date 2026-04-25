@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type { TradeExecution, Wallet } from '../../db/schema';
 import { getFuturesClient } from '../../exchange';
 import { calculateGrossPnl, roundToDecimals } from '../../utils/formatters';
@@ -17,7 +18,7 @@ const recalcPnl = (
   entryPrice: number,
   exitPrice: number,
   quantity: number,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   fees: number,
   accumulatedFunding: number,
 ): { pnl: number; pnlPercent: number } => {

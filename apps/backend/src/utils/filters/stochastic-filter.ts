@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline, StochasticFilterResult } from '@marketmind/types';
+import type { Kline, PositionSide, StochasticFilterResult } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -15,7 +15,7 @@ export const STOCHASTIC_FILTER = {
 
 export const checkStochasticCondition = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): Promise<StochasticFilterResult> => {
   const { K_PERIOD, K_SMOOTHING, D_PERIOD, OVERSOLD_THRESHOLD, OVERBOUGHT_THRESHOLD } =
     STOCHASTIC_FILTER;

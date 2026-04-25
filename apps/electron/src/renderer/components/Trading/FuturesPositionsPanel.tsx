@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Badge, Button, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
@@ -30,7 +31,7 @@ const FuturesPositionCard = memo(({
   isClosing: boolean;
   onReverse: () => void;
   isReversing: boolean;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }) => {
   const { t } = useTranslation();
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);

@@ -1,5 +1,5 @@
 import { calculateFVG } from '../../lib/indicators';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { isDirectionAllowed } from '../../utils/trading-validation';
 import {
@@ -123,7 +123,7 @@ export class FilterManager {
   private currentDay = '';
   private dailyLossLimitReached = false;
   private emaTrend: number[] = [];
-  private openPositionsBySymbol: Map<string, 'LONG' | 'SHORT'> = new Map();
+  private openPositionsBySymbol: Map<string, PositionSide> = new Map();
   private positionsPerStrategy: Map<string, number> = new Map();
   private pineService = new PineIndicatorService();
 
@@ -153,7 +153,7 @@ export class FilterManager {
   async runRegisteredFilters(
     klines: Kline[],
     setupIndex: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     setupType: string,
   ): Promise<boolean> {
     const filterKlines = klines.slice(0, setupIndex + 1);
@@ -172,7 +172,7 @@ export class FilterManager {
   async runValidatorFilters(
     klines: Kline[],
     setupIndex: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     setupType: string,
   ): Promise<boolean> {
     const filterKlines = klines.slice(0, setupIndex + 1);
@@ -266,7 +266,7 @@ export class FilterManager {
   }
 
   checkDirection(setupDirection: string): boolean {
-    if (this.config.directionMode) return isDirectionAllowed(this.config.directionMode, setupDirection as 'LONG' | 'SHORT');
+    if (this.config.directionMode) return isDirectionAllowed(this.config.directionMode, setupDirection as PositionSide);
     if (this.config.onlyLong && setupDirection === 'SHORT') return false;
     return true;
   }
@@ -274,7 +274,7 @@ export class FilterManager {
   async checkStochasticHtfFilter(
     htfKlines: Kline[],
     setupTimestamp: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     tradesCount: number
   ): Promise<boolean> {
     if (!this.config.useStochasticHtfFilter) return true;
@@ -301,7 +301,7 @@ export class FilterManager {
   async checkStochasticRecoveryHtfFilter(
     htfKlines: Kline[],
     setupTimestamp: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     tradesCount: number
   ): Promise<boolean> {
     if (!this.config.useStochasticRecoveryHtfFilter) return true;
@@ -328,7 +328,7 @@ export class FilterManager {
   async checkTrendFilter(
     klines: Kline[],
     setupIndex: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     useTrendFilter: boolean,
     tradesCount: number
   ): Promise<boolean> {
@@ -388,7 +388,7 @@ export class FilterManager {
 
   async checkMtfFilter(
     htfKlines: Kline[],
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     htfInterval: string | null,
     tradesCount: number
   ): Promise<{ passed: boolean; result: MtfFilterResult | null }> {
@@ -415,7 +415,7 @@ export class FilterManager {
 
   async checkBtcCorrelationFilter(
     btcKlines: Kline[],
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     symbol: string,
     tradesCount: number
   ): Promise<{ passed: boolean; result: BtcCorrelationResult | null }> {
@@ -471,7 +471,7 @@ export class FilterManager {
   async checkVolumeFilter(
     klines: Kline[],
     setupIndex: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     setupType: string,
     tradesCount: number
   ): Promise<{ passed: boolean; result: VolumeFilterResult | null }> {
@@ -499,7 +499,7 @@ export class FilterManager {
 
   checkFundingFilter(
     fundingRate: number | null,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     tradesCount: number
   ): { passed: boolean; result: FundingFilterResult | null } {
     if (!this.config.useFundingFilter) {
@@ -545,7 +545,7 @@ export class FilterManager {
     klines: Kline[],
     setupIndex: number,
     entryPrice: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     tradesCount: number
   ): boolean {
     if (!this.config.useFvgFilter) return true;
@@ -601,7 +601,7 @@ export class FilterManager {
 
   checkPositionConflict(
     symbol: string,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     tradesCount: number
   ): boolean {
     const existingDirection = this.openPositionsBySymbol.get(symbol);
@@ -616,7 +616,7 @@ export class FilterManager {
     return true;
   }
 
-  updatePositionTracking(symbol: string, direction: 'LONG' | 'SHORT', isOpen: boolean): void {
+  updatePositionTracking(symbol: string, direction: PositionSide, isOpen: boolean): void {
     if (isOpen) {
       this.openPositionsBySymbol.set(symbol, direction);
     } else {
