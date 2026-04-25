@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Kline, PositionSide } from '@marketmind/types';
+import type { Kline, PositionSide, TradingSetup } from '@marketmind/types';
+import type { TradeResult } from '../TradeExecutor';
 
 const { mockCompute } = vi.hoisted(() => ({
   mockCompute: vi.fn().mockResolvedValue([]),
@@ -52,7 +53,7 @@ const createMockSetup = (direction: PositionSide, options?: {
   stopLoss?: number;
   takeProfit?: number;
   confidence?: number;
-}) => ({
+}): TradingSetup => ({
   id: 'setup-1',
   type: 'test-setup',
   direction,
@@ -61,13 +62,13 @@ const createMockSetup = (direction: PositionSide, options?: {
   stopLoss: options?.stopLoss,
   takeProfit: options?.takeProfit,
   openTime: Date.now(),
-});
+} as unknown as TradingSetup);
 
-const createMockTrade = (pnlPercent: number) => ({
+const createMockTrade = (pnlPercent: number): TradeResult => ({
   id: 'trade-1',
   pnlPercent,
   pnl: pnlPercent * 50,
-});
+} as unknown as TradeResult);
 
 describe('TradeExecutor', () => {
   beforeEach(() => {

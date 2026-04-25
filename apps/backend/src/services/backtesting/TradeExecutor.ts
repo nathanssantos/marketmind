@@ -1,4 +1,4 @@
-import type { Kline, MarketType, PositionSide } from '@marketmind/types';
+import type { Kline, MarketType, PositionSide, TradingSetup } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
 import { generateShortId } from '../../utils/id';
 import {
@@ -70,7 +70,7 @@ export class TradeExecutor {
     this.config = config;
   }
 
-  calculateRollingStats(trades: any[], lookback: number = 30): TradeStats | null {
+  calculateRollingStats(trades: TradeResult[], lookback: number = 30): TradeStats | null {
     if (trades.length === 0) return null;
 
     const recentTrades = trades.slice(-lookback);
@@ -80,15 +80,15 @@ export class TradeExecutor {
     if (winners.length === 0 || losers.length === 0) return null;
 
     const winRate = winners.length / recentTrades.length;
-    const avgWinPercent = winners.reduce((sum: number, t: any) => sum + t.pnlPercent, 0) / winners.length;
-    const avgLossPercent = Math.abs(losers.reduce((sum: number, t: any) => sum + t.pnlPercent, 0) / losers.length);
+    const avgWinPercent = winners.reduce((sum: number, t: TradeResult) => sum + t.pnlPercent, 0) / winners.length;
+    const avgLossPercent = Math.abs(losers.reduce((sum: number, t: TradeResult) => sum + t.pnlPercent, 0) / losers.length);
 
     return { winRate, avgWinPercent, avgLossPercent };
   }
 
   resolveEntryPrice(
-    _setup: any,
-    entryKline: any,
+    _setup: TradingSetup,
+    entryKline: Kline,
     _klines: Kline[],
     entryKlineIndex: number,
     _tradesCount: number
@@ -101,7 +101,7 @@ export class TradeExecutor {
   }
 
   resolveStopLossAndTakeProfit(
-    setup: any,
+    setup: TradingSetup,
     entryPrice: number,
     tradesCount: number
   ): { stopLoss: number | undefined; takeProfit: number | undefined } {
@@ -140,7 +140,7 @@ export class TradeExecutor {
     return { stopLoss, takeProfit };
   }
 
-  private getFibonacciTargetPrice(setup: any, entryPrice: number): number | null {
+  private getFibonacciTargetPrice(setup: TradingSetup, entryPrice: number): number | null {
     const result = resolveFibonacciTarget({
       fibonacciProjection: setup.fibonacciProjection,
       entryPrice,
@@ -156,7 +156,7 @@ export class TradeExecutor {
     equity: number,
     entryPrice: number,
     stopLoss: number | undefined,
-    trades: any[],
+    trades: TradeResult[],
     tradesCount: number
   ): PositionSizeResult {
     const positionSizingMethod = this.config.positionSizingMethod ?? 'fixed-fractional';
@@ -287,7 +287,7 @@ export class TradeExecutor {
   }
 
   createTrade(
-    setup: any,
+    setup: TradingSetup,
     actualEntryTime: number,
     entryPrice: number,
     exitTime: string,

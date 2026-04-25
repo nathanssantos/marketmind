@@ -15,7 +15,14 @@ export const intervalSchema = z.enum([
 export const marketTypeSchema = z.enum(['SPOT', 'FUTURES']).default('FUTURES');
 export const assetClassSchema = z.enum(['CRYPTO', 'STOCKS']).default('CRYPTO');
 
-export const symbolsCache = new KeyedCache<any[]>(5 * TIME_MS.MINUTE);
+export interface CachedSymbolInfo {
+  symbol: string;
+  baseAsset: string;
+  quoteAsset: string;
+  displayName: string;
+}
+
+export const symbolsCache = new KeyedCache<CachedSymbolInfo[]>(5 * TIME_MS.MINUTE);
 export const corruptionCheckCache = new KeyedCache<boolean>(2 * TIME_MS.MINUTE);
 
 export const triggerCorruptionCheck = (symbol: string, interval: string, marketType: MarketType): void => {

@@ -1,5 +1,5 @@
 import { calculateFVG } from '../../lib/indicators';
-import type { Kline, PositionSide } from '@marketmind/types';
+import type { Kline, PositionSide, TradingSetup } from '@marketmind/types';
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { isDirectionAllowed } from '../../utils/trading-validation';
 import {
@@ -105,7 +105,7 @@ export interface FilterStats {
 }
 
 export interface FilterContext {
-  setup: any;
+  setup: TradingSetup;
   klines: Kline[];
   entryPrice: number;
   equity: number;

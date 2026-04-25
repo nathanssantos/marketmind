@@ -2,6 +2,7 @@ import type { PositionSide } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
+import type { DatabaseType } from '../../db/client';
 import { orders, tradeExecutions } from '../../db/schema';
 import { autoTradingService } from '../../services/auto-trading';
 import type {
@@ -15,7 +16,7 @@ import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/for
 import { generateEntityId } from '../../utils/id';
 
 export const handleConditionalOrder = async (
-  ctx: { db: any; user: { id: string } },
+  ctx: { db: DatabaseType; user: { id: string } },
   input: {
     walletId: string;
     symbol: string;
@@ -145,7 +146,7 @@ export const handleConditionalOrder = async (
 };
 
 export const handleMarketOrderProtection = async (
-  ctx: { db: any; user: { id: string } },
+  ctx: { db: DatabaseType; user: { id: string } },
   input: {
     walletId: string;
     symbol: string;

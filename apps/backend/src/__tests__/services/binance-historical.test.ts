@@ -237,9 +237,9 @@ describe('BinanceHistorical Service', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(result[0].openTime).toBe(1700000000000);
-      expect(result[0].open).toBe('50000');
-      expect(result[0].close).toBe('50200');
+      expect(result[0]?.openTime).toBe(1700000000000);
+      expect(result[0]?.open).toBe('50000');
+      expect(result[0]?.close).toBe('50200');
     });
 
     it('should throw error on API failure', async () => {
@@ -279,7 +279,7 @@ describe('BinanceHistorical Service', () => {
       );
 
       expect(result).toHaveLength(1);
-      expect(result[0].openTime).toBe(1700000000000);
+      expect(result[0]?.openTime).toBe(1700000000000);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('fapi.binance.com'),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
