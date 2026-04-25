@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import type { ScalpingSignal, ScalpingExecutionMode } from '@marketmind/types';
+import type { EntryOrderType, ScalpingSignal, ScalpingExecutionMode } from '@marketmind/types';
 import { db } from '../../db';
 import { tradeExecutions } from '../../db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -105,7 +105,7 @@ export class ExecutionEngine {
         setupType,
         marketType: 'FUTURES',
         leverage: actualLeverage,
-        entryOrderType: orderParams.type as 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
+        entryOrderType: orderParams.type as EntryOrderType,
         openedAt: new Date(),
       });
 

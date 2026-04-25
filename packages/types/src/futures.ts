@@ -7,6 +7,20 @@ export type MarginType = 'ISOLATED' | 'CROSSED';
 
 export type FuturesContractType = 'PERPETUAL' | 'CURRENT_MONTH' | 'NEXT_MONTH' | 'CURRENT_QUARTER' | 'NEXT_QUARTER';
 
+export type FuturesOrderType =
+  | 'MARKET'
+  | 'LIMIT'
+  | 'STOP'
+  | 'STOP_MARKET'
+  | 'TAKE_PROFIT'
+  | 'TAKE_PROFIT_MARKET';
+
+export type EntryOrderType =
+  | 'MARKET'
+  | 'LIMIT'
+  | 'STOP_MARKET'
+  | 'TAKE_PROFIT_MARKET';
+
 export interface FuturesSymbolInfo {
   symbol: string;
   pair: string;
