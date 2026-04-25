@@ -7,6 +7,7 @@ import {
 import { BACKEND_URL } from '@shared/constants/api';
 import { useConnectionStore } from '../store/connectionStore';
 import { exposeSocketForE2E } from '../utils/e2eBridge';
+import { perfMonitor } from '../utils/canvas/perfMonitor';
 
 type ServerEvent = keyof ServerToClientEvents;
 type ClientEvent = keyof ClientToServerEvents;
@@ -80,6 +81,7 @@ class SocketBus {
   private dispatch<E extends ServerEvent>(event: E, payload: Parameters<ServerHandler<E>>[0]): void {
     const handlers = this.listeners.get(event);
     if (!handlers || handlers.size === 0) return;
+    perfMonitor.recordSocketDispatch(event, handlers.size);
     for (const h of handlers) {
       try {
         (h as ServerHandler<E>)(payload as never);
