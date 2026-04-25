@@ -170,6 +170,10 @@ export const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult
           actionColor = 'red';
           actionIcon = ICONS.WARNING;
           break;
+        case 'PENDING':
+          actionColor = 'dim';
+          actionIcon = ICONS.INFO;
+          break;
       }
 
       const details = action.error

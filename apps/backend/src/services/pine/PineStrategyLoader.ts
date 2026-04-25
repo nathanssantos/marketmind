@@ -54,6 +54,9 @@ const parseMetadataLine = (
       metadata.filters ??= {};
       metadata.filters.volumeType = v;
       break;
+    default:
+      // Unknown metadata key — ignore silently for forward compatibility
+      break;
   }
 };
 

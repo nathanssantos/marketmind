@@ -316,6 +316,10 @@ export class OpportunityCostManagerService {
         }
         break;
       }
+
+      case 'NONE':
+        // No action — health check passed without issues
+        break;
     }
   }
 
