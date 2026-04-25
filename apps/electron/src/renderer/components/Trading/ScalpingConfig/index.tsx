@@ -56,8 +56,8 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
     if (!data) return;
     setSymbols(data.symbols ?? []);
     setEnabledStrategies((data.enabledStrategies ?? ['imbalance']) as ScalpingStrategy[]);
-    setDirectionMode((data.directionMode as DirectionMode) ?? 'auto');
-    setParams(buildParams(data as unknown as Record<string, unknown>));
+    setDirectionMode((data.directionMode) ?? 'auto');
+    setParams(buildParams(data));
   }, [data]);
 
   const handleParamChange = useCallback((key: string, value: number | boolean | string) => {

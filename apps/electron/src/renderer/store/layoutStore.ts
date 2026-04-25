@@ -88,7 +88,7 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
   symbolTabs: [{
     id: 'default',
     symbol: 'BTCUSDT',
-    marketType: 'FUTURES' as MarketType,
+    marketType: 'FUTURES',
     activeLayoutId: 'single',
     order: 0,
   }],

@@ -130,7 +130,7 @@ export const BtcDominanceSection = ({ btcDominance, isLoading, hasWidth }: BtcDo
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>{t('marketSidebar.indicators.btcDominance')}</SectionTitle>
-      {btcDominance && btcDominance.current !== null && (
+      {btcDominance?.current !== null && (
         <Flex align="center" gap={2} mb={2}>
           <Badge colorPalette="orange" size="xs" px={2}>{btcDominance.current.toFixed(1)}%</Badge>
           {btcDominance.change24h !== null && (
@@ -169,7 +169,7 @@ export const MvrvSection = ({ mvrv, isLoading, hasWidth }: MvrvSectionProps) => 
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>{t('marketSidebar.indicators.mvrv')}</SectionTitle>
-      {mvrv && mvrv.current !== null && (
+      {mvrv?.current !== null && (
         <Flex align="center" gap={2} mb={2}>
           <Badge colorPalette={getMvrvColor(mvrv.current)} size="xs" px={2}>
             {mvrv.current.toFixed(2)}
@@ -209,7 +209,7 @@ export const ProductionCostSection = ({ btcProductionCost, isLoading, hasWidth }
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>{t('marketSidebar.indicators.btcProductionCost')}</SectionTitle>
-      {btcProductionCost && btcProductionCost.currentCost !== null && btcProductionCost.currentPrice !== null && (
+      {btcProductionCost?.currentCost !== null && btcProductionCost.currentPrice !== null && (
         <Flex align="center" gap={2} mb={2} flexWrap="wrap">
           <Badge colorPalette="orange" size="xs" px={2}>
             Cost: {formatUsd(btcProductionCost.currentCost)}
@@ -254,7 +254,7 @@ interface OpenInterestSectionProps {
 export const OpenInterestSection = ({ openInterest, isLoading, hasWidth }: OpenInterestSectionProps) => (
   <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
     <SectionTitle>Open Interest (BTC)</SectionTitle>
-    {openInterest && openInterest.current !== null && (
+    {openInterest?.current !== null && (
       <Flex align="center" gap={2} mb={2}>
         <Badge colorPalette="blue" size="xs" px={2}>{formatLargeNumber(openInterest.current)}</Badge>
         {openInterest.change24h !== null && (

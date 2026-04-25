@@ -68,7 +68,7 @@ export const AddWatcherDialog = ({
   const resetForm = () => {
     setSymbol('BTCUSDT');
     setSelectedSymbols([]);
-    setInterval('1h' as Timeframe);
+    setInterval('1h');
     setProfileId(null);
     setUseDefault(true);
     setMarketType('FUTURES');

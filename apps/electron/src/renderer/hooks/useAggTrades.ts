@@ -58,7 +58,7 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
       }).then((historical) => {
         if (historical.length > 0) {
           setTrades((prev) => {
-            if (prev.length === 0) return historical as AggTradeWithLarge[];
+            if (prev.length === 0) return historical;
             const lastHistTs = historical[historical.length - 1]!.timestamp;
             const newOnly = prev.filter((t) => t.timestamp > lastHistTs);
             const merged = [...(historical as AggTradeWithLarge[]), ...newOnly];

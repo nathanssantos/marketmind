@@ -125,7 +125,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
         maxConcurrentPositions: overrideConcurrentPositions ? maxConcurrentPositions : undefined,
         isDefault,
         ...overridesPayload,
-      } as UpdateTradingProfileInput;
+      };
       await updateProfile(profile.id, data);
       await updateChecklist(profile.id, checklistConditions);
     } else {
@@ -137,7 +137,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
         maxConcurrentPositions: overrideConcurrentPositions ? maxConcurrentPositions : undefined,
         isDefault,
         ...overridesPayload,
-      } as CreateTradingProfileInput;
+      };
       const created = await createProfile(data);
       if (checklistConditions.length > 0 && created?.id) {
         await updateChecklist(created.id, checklistConditions);

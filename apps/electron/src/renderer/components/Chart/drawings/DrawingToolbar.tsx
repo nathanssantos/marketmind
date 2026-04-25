@@ -38,7 +38,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
   }, [selectedDrawingId, symbol, interval]);
 
   const handleToggleLock = useCallback(() => {
-    updateDrawing({ locked: !selectedDrawing?.locked } as Partial<Drawing>);
+    updateDrawing({ locked: !selectedDrawing?.locked });
   }, [selectedDrawing?.locked, updateDrawing]);
 
   if (!selectedDrawing || !manager) return null;
@@ -77,7 +77,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               borderColor={selectedDrawing.color === color ? 'blue.400' : 'border'}
               cursor="pointer"
               flexShrink={0}
-              onClick={() => !isLocked && updateDrawing({ color } as Partial<Drawing>)}
+              onClick={() => !isLocked && updateDrawing({ color })}
               opacity={isLocked ? 0.4 : 1}
             />
           </TooltipWrapper>
@@ -86,7 +86,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
         <input
           type="color"
           value={selectedDrawing.color ?? '#ffffff'}
-          onChange={(e) => !isLocked && updateDrawing({ color: e.target.value } as Partial<Drawing>)}
+          onChange={(e) => !isLocked && updateDrawing({ color: e.target.value })}
           disabled={isLocked}
           style={{ width: '20px', height: '20px', padding: 0, border: 'none', cursor: isLocked ? 'not-allowed' : 'pointer', background: 'transparent', opacity: isLocked ? 0.4 : 1 }}
         />
@@ -107,7 +107,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               bg={currentLineWidth === lw ? 'blue.500/20' : 'transparent'}
               _hover={{ bg: isLocked ? undefined : 'blue.500/10' }}
               opacity={isLocked ? 0.4 : 1}
-              onClick={() => !isLocked && updateDrawing({ lineWidth: lw } as Partial<Drawing>)}
+              onClick={() => !isLocked && updateDrawing({ lineWidth: lw })}
             >
               <LuMinus style={{ strokeWidth: lw + 1 }} size={14} />
             </Box>
@@ -120,7 +120,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
 
             <select
               value={textDrawing.fontSize}
-              onChange={(e) => !isLocked && updateDrawing({ fontSize: parseInt(e.target.value) } as Partial<Drawing>)}
+              onChange={(e) => !isLocked && updateDrawing({ fontSize: parseInt(e.target.value) })}
               disabled={isLocked}
               style={{
                 background: 'transparent',
@@ -144,7 +144,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
                 size="2xs"
                 variant={textDrawing.fontWeight === 'bold' ? 'solid' : 'ghost'}
                 aria-label={t('chart.drawingToolbar.bold', 'Bold')}
-                onClick={() => !isLocked && updateDrawing({ fontWeight: textDrawing.fontWeight === 'bold' ? 'normal' : 'bold' } as Partial<Drawing>)}
+                onClick={() => !isLocked && updateDrawing({ fontWeight: textDrawing.fontWeight === 'bold' ? 'normal' : 'bold' })}
                 disabled={isLocked}
               >
                 <LuBold />
@@ -156,7 +156,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
                 size="2xs"
                 variant={textDrawing.textDecoration === 'underline' ? 'solid' : 'ghost'}
                 aria-label={t('chart.drawingToolbar.underline', 'Underline')}
-                onClick={() => !isLocked && updateDrawing({ textDecoration: textDrawing.textDecoration === 'underline' ? 'none' : 'underline' } as Partial<Drawing>)}
+                onClick={() => !isLocked && updateDrawing({ textDecoration: textDrawing.textDecoration === 'underline' ? 'none' : 'underline' })}
                 disabled={isLocked}
               >
                 <LuUnderline />

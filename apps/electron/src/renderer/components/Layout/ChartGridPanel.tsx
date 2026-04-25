@@ -6,7 +6,7 @@ import { useLayoutStore } from '@renderer/store/layoutStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
 import { useStreamHealth } from '@renderer/hooks/useStreamHealth';
 import type { GridPanelConfig } from '@shared/types/layout';
-import type { MarketType, Interval } from '@marketmind/types';
+import type { MarketType } from '@marketmind/types';
 import { memo, useCallback } from 'react';
 import { ChartPanelContent } from './ChartPanelContent';
 
@@ -34,7 +34,7 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
 
   const streamHealth = useStreamHealth({
     symbol,
-    interval: panelConfig.timeframe as Interval,
+    interval: panelConfig.timeframe,
     marketType,
     enabled: !!symbol,
   });
