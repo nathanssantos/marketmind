@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.2] - 2026-04-25
+
+Chart performance overhaul — multi-wave initiative to fix the cross-chart re-render fan-out users see when running 2+ chart panels in the grid. With one chart the UI was fluid; with 2+ each kline tick / focus change / hover event was waking many panels at once. This release decouples the canvas from React's per-tick render path, narrows store fan-out to per-symbol/per-chart, and prunes redundant resize/store work in the render pipeline.
+
+Plus a CI hotfix that unblocks the `Lint & Type Check` and `Dependency Audit` jobs that had been silently failing on develop.
+
+### Performance
+- **`ChartCanvas` decoupled from per-tick re-renders** — `useKlineLiveStream` now exposes a stable `klineSource` (ref + RAF-flushed subscribe). `ChartCanvas` is wrapped in `React.memo` with a structural comparator that returns "equal" when only the live candle's OHLC changed. The canvas redraws via `manager.markDirty('klines')` from the imperative subscribe, without re-executing the component body or its ~25 sub-hooks. Structural changes (new candle, symbol/timeframe switch) still go through React so indicators / state still update.
+- **Per-symbol price subscribe** — `ChartCanvas` swapped global `usePriceStore.subscribe` for the existing per-symbol `subscribeToPrice(symbol, cb)`. Charts no longer wake on unrelated symbols' price ticks.
+- **Narrow store subscribers** — `strategyVisualizationStore` and `setupStore` now use `subscribeWithSelector` middleware. The `ChartCanvas` listeners pass a slice selector + listener pair, so they only fire when `highlightedCandles` / `detectedSetups` actually change — not on unrelated mutations like `setActiveStrategy` or `setLoading`.
+- **`focusedPanelId` boolean selector** — `ChartGridPanel` was selecting the focused-panel-id string, so EVERY panel re-rendered on any focus change. Now selects `s.focusedPanelId === panelConfig.id` (boolean). Only the previously-focused and newly-focused panels re-render.
+- **`getActiveLayout` decomposed** — `ChartGrid` was calling a method inside its selector (`useLayoutStore(s => s.getActiveLayout())`), which triggers re-runs on every store mutation. Replaced with three primitive selectors + `useMemo` to derive `activeTab` and `activeLayout`. No spurious re-renders on unrelated layoutStore writes.
+- **RAF-throttled `ResizeObserver`** in both `useChartCanvas` and `CanvasManager.observeResize`. During grid drag/resize, multiple resize events within the same frame coalesce to a single resize + redraw.
+- **Memoized contexts and JSX**: `PinnedControlsContext` provider value (`useMemo` + `useCallback`), `ChartGridPanel` header HStack (`useMemo`).
+- **`orderFlashStore` batch lookup** — `useOrderLinesRenderer` now reads the flash-times Map once at the top of `renderOrderLines` instead of calling `useOrderFlashStore.getState().getFlashTime(orderId)` per order per frame.
+- **tRPC invalidation flush window** in `RealtimeTradingSyncContext` bumped from 16ms to 100ms. Under realtime event storms (rapid position / order / wallet updates), invalidations now coalesce into a single flush instead of firing every frame.
+
+### Added
+- **`chart.perf` overlay extensions** (`apps/electron/src/renderer/utils/canvas/perfMonitor.ts`) — counters for per-instance `ChartCanvas` renders (keyed `<symbol>@<timeframe>`), store wakes per imperative subscriber (`priceStore`, `setupStore`, `strategyVisualizationStore`, `tooltipStore`), and socket dispatch handler-counts. The overlay (`ChartPerfOverlay`) gains "store wakes/s" and "socket handlers/s" sections. All counters early-return when the flag is off — zero overhead in normal use. New `docs/CHART_PERF_BASELINE.md` documents the measurement recipe (2×2 grid, 60-s windows for idle/hover/focus/pan scenarios).
+
+### Fixed
+- **CI: `Lint & Type Check` job** — `packages/fibonacci` and `packages/logger` imported `@marketmind/types` from src but didn't declare the dependency in `package.json`, so pnpm couldn't compute the correct topological build order; the job had been silently failing on develop since Waves 6/7/8 of the previous quality overhaul. Adding the deps revealed a circular dep — `packages/types/src/trading-config.ts` re-exported `FIBONACCI_TARGET_LEVELS` from `@marketmind/fibonacci`, but `git grep` confirmed every consumer already imported the symbols directly from `@marketmind/fibonacci` so the re-export was dead. Removed it.
+- **CI: `Dependency Audit` job** — `pnpm install --frozen-lockfile` was failing with HTTP 502 from electron's binary CDN. The audit doesn't need the binary; pass `--ignore-scripts` and set `ELECTRON_SKIP_BINARY_DOWNLOAD=1`.
+- **CI: pact `Run Tests` flake** — pact mock servers grab random ports per `executeTest`, and vitest's default parallel file execution would race two contract tests onto the same port on CI's smaller runner. New `contracts` vitest project with `pool: 'forks'`, `fileParallelism: false`, `retry: 2`. Unit project excludes contract tests; CI runs both as separate steps.
+
+### Notes
+- Multi-wave plan and per-wave PRs: #136 (Wave 0 — instrumentation), #137 (Waves 2/3/4/5/8 mechanical), #138 (Wave 1 + Wave 7 partial), #139 (Wave 6 + Wave 4). Plus #132 (CI build-order fix) and #134 (CI audit + pact fix).
+- Behavior preserved: 1,782 unit + 97 browser tests pass throughout. Smoke-test the live candle on a 2×2 grid after upgrading — if anything looks frozen (tooltip lag, indicator stuck, drawing snap fails on the live candle), the consumer needs to migrate to `klineSource.subscribe`.
+- Deferred (await measurements before tackling): incremental indicator append-only path, dirty-layer split (crosshair vs full overlay), `walletAutoTradingConfig` hoist to a shared parent hook, `getActiveExecutions` server-side symbol filter.
+
 ## [0.99.1] - 2026-04-25
 
 Quality overhaul release — eight-wave initiative covering the lint config, the type system, and the `@marketmind/types` package architecture. No user-facing changes; entirely internal refactor + rule tightening. Backend went from ~999 lint warnings + ~360 `any` to **0 lint errors / 603 warnings** with `no-explicit-any` now enforced as `error` in `apps/backend/src` (test mocks and CLI scripts keep `warn` as an intentional escape hatch).
