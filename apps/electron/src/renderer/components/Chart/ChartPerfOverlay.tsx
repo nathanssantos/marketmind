@@ -10,6 +10,8 @@ const emptySnapshot: PerfSnapshot = {
   sections: [],
   longSections: [],
   componentRenders: [],
+  storeWakes: [],
+  socketDispatches: [],
 };
 
 const subscribe = (cb: () => void): (() => void) => perfMonitor.subscribe(cb);
@@ -89,11 +91,37 @@ export const ChartPerfOverlay = (): ReactElement | null => {
       {snap.componentRenders.length > 0 && (
         <>
           <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>renders/s</div>
-          {snap.componentRenders.slice(0, 5).map((c) => (
+          {snap.componentRenders.slice(0, 8).map((c) => (
             <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>{c.name}</span>
               <span>
                 {c.ratePerSec.toFixed(1)} <span style={{ color: '#6b7280' }}>({c.total})</span>
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+      {snap.storeWakes.length > 0 && (
+        <>
+          <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>store wakes/s</div>
+          {snap.storeWakes.slice(0, 6).map((s) => (
+            <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{s.name}</span>
+              <span>
+                {s.ratePerSec.toFixed(1)} <span style={{ color: '#6b7280' }}>({s.total})</span>
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+      {snap.socketDispatches.length > 0 && (
+        <>
+          <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>socket handlers/s</div>
+          {snap.socketDispatches.slice(0, 6).map((s) => (
+            <div key={s.event} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{s.event}</span>
+              <span>
+                {s.handlersPerSec.toFixed(1)} <span style={{ color: '#6b7280' }}>({s.total})</span>
               </span>
             </div>
           ))}

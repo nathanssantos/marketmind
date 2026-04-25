@@ -3,6 +3,7 @@ import type {
   StrategyVisualizationData,
 } from '@marketmind/types';
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 
 interface StrategyVisualizationState {
   highlightedCandles: HighlightedCandle[];
@@ -40,8 +41,8 @@ const createHighlightedCandles = (
   }));
 };
 
-export const useStrategyVisualizationStore = create<StrategyVisualizationState>(
-  (set) => ({
+export const useStrategyVisualizationStore = create<StrategyVisualizationState>()(
+  subscribeWithSelector((set) => ({
     highlightedCandles: [],
     activeStrategyId: null,
     activeExecutionId: null,
@@ -77,5 +78,5 @@ export const useStrategyVisualizationStore = create<StrategyVisualizationState>(
       set({
         highlightedCandles: createHighlightedCandles(data, baseIndex),
       }),
-  })
+  }))
 );

@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@marketmind/types';
+import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
@@ -9,13 +10,13 @@ import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
 import { useSetupStore } from '@renderer/store';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
-import { usePriceStore } from '@renderer/store/priceStore';
+import { subscribeToPrice, usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
@@ -55,6 +56,13 @@ const TOOLTIP_DEBOUNCE_MS = 150;
 
 export interface ChartCanvasProps {
   klines: Kline[];
+  /**
+   * Optional live-tick source — when provided, intra-candle OHLC updates flow
+   * imperatively to the canvas via `klineSource.subscribe`, and `React.memo`'s
+   * structural comparator skips re-rendering ChartCanvas on those updates.
+   * Without it, ChartCanvas falls back to re-rendering on every klines prop change.
+   */
+  klineSource?: KlineSource;
   symbol?: string;
   marketType?: MarketType;
   width?: string | number;
@@ -68,8 +76,9 @@ export interface ChartCanvasProps {
   isLoadingMore?: boolean;
 }
 
-export const ChartCanvas = ({
+const ChartCanvasInternal = ({
   klines,
+  klineSource,
   symbol,
   marketType,
   width = '100%',
@@ -82,7 +91,7 @@ export const ChartCanvas = ({
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
 }: ChartCanvasProps): ReactElement => {
-  perfMonitor.recordComponentRender('ChartCanvas');
+  perfMonitor.recordComponentRender('ChartCanvas', `${symbol ?? '?'}@${timeframe}`);
 
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
@@ -112,9 +121,13 @@ export const ChartCanvas = ({
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {
-    const unsubscribe = useStrategyVisualizationStore.subscribe((state) => {
-      highlightedCandlesRef.current = state.highlightedCandles;
-    });
+    const unsubscribe = useStrategyVisualizationStore.subscribe(
+      (state) => state.highlightedCandles,
+      (highlightedCandles) => {
+        perfMonitor.recordStoreWake('strategyVisualizationStore', 'highlightedCandles');
+        highlightedCandlesRef.current = highlightedCandles;
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -144,10 +157,14 @@ export const ChartCanvas = ({
   const managerRef = useRef<CanvasManager | null>(null);
 
   useEffect(() => {
-    const unsubscribe = useSetupStore.subscribe((state) => {
-      detectedSetupsVisibleRef.current = state.detectedSetups.filter((s) => s.visible);
-      managerRef.current?.markDirty('overlays');
-    });
+    const unsubscribe = useSetupStore.subscribe(
+      (state) => state.detectedSetups,
+      (detectedSetups) => {
+        perfMonitor.recordStoreWake('setupStore', 'detectedSetups');
+        detectedSetupsVisibleRef.current = detectedSetups.filter((s) => s.visible);
+        managerRef.current?.markDirty('overlays');
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -172,6 +189,15 @@ export const ChartCanvas = ({
   managerRef.current = manager;
 
   useEffect(() => {
+    if (!manager || !klineSource) return;
+    return klineSource.subscribe(() => {
+      const latest = klineSource.klinesRef.current;
+      manager.setKlines(latest);
+      manager.markDirty('klines');
+    });
+  }, [manager, klineSource]);
+
+  useEffect(() => {
     exposeCanvasManagerForE2E(manager);
     return () => exposeCanvasManagerForE2E(null);
   }, [manager]);
@@ -186,6 +212,7 @@ export const ChartCanvas = ({
   const hoveredKlineIndexRef = useRef<number | undefined>(tooltipStore.getSnapshot().klineIndex);
   useEffect(() => {
     const unsubscribe = tooltipStore.subscribeHoveredKlineIndex((index) => {
+      perfMonitor.recordStoreWake('tooltipStore', 'klineIndex');
       if (hoveredKlineIndexRef.current === index) return;
       hoveredKlineIndexRef.current = index;
       managerRef.current?.markDirty('overlays');
@@ -199,6 +226,7 @@ export const ChartCanvas = ({
     let lastVisible = false;
     let lastKline = tooltipStore.getSnapshot().kline;
     const unsubscribe = tooltipStore.subscribe(() => {
+      perfMonitor.recordStoreWake('tooltipStore', 'full');
       const snap = tooltipStore.getSnapshot();
       if (snap.visible === lastVisible && snap.kline === lastKline) return;
       lastVisible = snap.visible;
@@ -236,13 +264,12 @@ export const ChartCanvas = ({
     }
     symbolPriceRef.current = usePriceStore.getState().getPrice(symbol);
     apply(symbolPriceRef.current ?? klinePriceRef.current);
-    const unsubscribe = usePriceStore.subscribe((state) => {
-      const p = state.getPrice(symbol);
-      if (p === symbolPriceRef.current) return;
-      symbolPriceRef.current = p;
-      apply(p ?? klinePriceRef.current);
+    return subscribeToPrice(symbol, (price) => {
+      perfMonitor.recordStoreWake('priceStore', symbol);
+      if (price === symbolPriceRef.current) return;
+      symbolPriceRef.current = price;
+      apply(price);
     });
-    return unsubscribe;
   }, [symbol]);
 
   useEffect(() => {
@@ -467,3 +494,33 @@ export const ChartCanvas = ({
     </>
   );
 };
+
+const arePropsStructurallyEqual = (prev: ChartCanvasProps, next: ChartCanvasProps): boolean => {
+  if (prev.symbol !== next.symbol) return false;
+  if (prev.marketType !== next.marketType) return false;
+  if (prev.timeframe !== next.timeframe) return false;
+  if (prev.chartType !== next.chartType) return false;
+  if (prev.width !== next.width) return false;
+  if (prev.height !== next.height) return false;
+  if (prev.advancedConfig !== next.advancedConfig) return false;
+  if (prev.initialViewport !== next.initialViewport) return false;
+  if (prev.onViewportChange !== next.onViewportChange) return false;
+  if (prev.onNearLeftEdge !== next.onNearLeftEdge) return false;
+  if (prev.isLoadingMore !== next.isLoadingMore) return false;
+  if (prev.klineSource !== next.klineSource) return false;
+
+  if (!prev.klineSource) {
+    if (prev.klines !== next.klines) return false;
+    return true;
+  }
+
+  const pk = prev.klines;
+  const nk = next.klines;
+  if (pk.length !== nk.length) return false;
+  if (pk.length === 0) return true;
+  const pl = pk[pk.length - 1]!;
+  const nl = nk[nk.length - 1]!;
+  return pl.openTime === nl.openTime;
+};
+
+export const ChartCanvas = memo(ChartCanvasInternal, arePropsStructurallyEqual);

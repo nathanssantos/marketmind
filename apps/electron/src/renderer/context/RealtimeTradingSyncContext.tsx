@@ -13,6 +13,15 @@ import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
 
+/**
+ * Trailing-debounce window for batching tRPC query invalidations triggered by
+ * realtime socket events. With high-frequency event storms (rapid order /
+ * position / wallet updates), a smaller window means N invalidations × N
+ * refetches per second. 100 ms is the sweet spot: feels instantaneous to a
+ * human but coalesces a typical multi-event burst into one refetch cycle.
+ */
+const INVALIDATION_FLUSH_MS = 100;
+
 interface RealtimeTradingSyncContextValue {
   forceRefresh: () => void;
 }
@@ -56,7 +65,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const scheduleInvalidation = useCallback((...keys: string[]) => {
     for (const key of keys) pendingInvalidations.current.add(key);
     if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
-    flushTimeoutRef.current = setTimeout(flushInvalidations, 16);
+    flushTimeoutRef.current = setTimeout(flushInvalidations, INVALIDATION_FLUSH_MS);
   }, [flushInvalidations]);
 
   const scheduleRef = useRef(scheduleInvalidation);

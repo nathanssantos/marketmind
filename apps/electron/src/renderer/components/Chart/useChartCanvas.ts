@@ -127,19 +127,27 @@ export const useChartCanvas = ({
       }
     };
 
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize();
-    });
+    let resizeRafId: number | null = null;
+    const scheduleResize = (): void => {
+      if (resizeRafId !== null) return;
+      resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null;
+        handleResize();
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(scheduleResize);
 
     if (canvasRef.current.parentElement) {
       resizeObserver.observe(canvasRef.current.parentElement);
     }
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', scheduleResize);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', scheduleResize);
+      if (resizeRafId !== null) cancelAnimationFrame(resizeRafId);
       if (managerRef.current) {
         managerRef.current.destroy();
         managerRef.current = null;
