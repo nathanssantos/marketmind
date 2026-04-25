@@ -1,10 +1,10 @@
-import type { FuturesAccount, FuturesLeverage, FuturesOrder, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
+import type { FuturesAccount, FuturesLeverage, FuturesOrder, FuturesOrderType, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
 import type { ExchangeId } from './types';
 
 export interface FuturesOrderParams {
   symbol: string;
   side: 'BUY' | 'SELL';
-  type: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_MARKET' | 'TAKE_PROFIT' | 'TAKE_PROFIT_MARKET';
+  type: FuturesOrderType;
   quantity: string;
   price?: string;
   stopPrice?: string;

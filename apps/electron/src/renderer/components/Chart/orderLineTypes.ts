@@ -1,4 +1,4 @@
-import type { FibonacciProjectionData, MarketType, Order, PositionSide } from '@marketmind/types';
+import type { EntryOrderType, FibonacciProjectionData, MarketType, Order, PositionSide } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
 
@@ -12,7 +12,7 @@ export interface BackendExecution {
   takeProfit: string | null;
   status: string | null;
   setupType: string | null;
-  entryOrderType?: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | null;
+  entryOrderType?: EntryOrderType | null;
   marketType?: MarketType | null;
   openedAt?: string | Date | null;
   triggerKlineOpenTime?: number | null;

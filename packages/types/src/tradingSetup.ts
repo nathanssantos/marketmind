@@ -25,6 +25,18 @@ export type SetupCancellationReason =
   | 'retest-failed'
   | 'manual';
 
+export type SetupSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+
+export type TradeExecutionStatus = 'open' | 'pending' | 'closed';
+
+export type ExitReason =
+  | 'TRAILING_STOP'
+  | 'TAKE_PROFIT'
+  | 'STOP_LOSS'
+  | 'END_OF_PERIOD'
+  | 'MAX_BARS'
+  | 'EXIT_SIGNAL';
+
 export interface FibonacciProjectionData {
   swingLow: { price: number; index: number; timestamp: number };
   swingHigh: { price: number; index: number; timestamp: number };
