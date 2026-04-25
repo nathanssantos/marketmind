@@ -9,7 +9,7 @@ import { useTradingShortcuts } from '@renderer/hooks/useTradingShortcuts';
 import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
 import { useSetupStore } from '@renderer/store';
 import { useGridOrderStore } from '@renderer/store/gridOrderStore';
-import { usePriceStore } from '@renderer/store/priceStore';
+import { subscribeToPrice, usePriceStore } from '@renderer/store/priceStore';
 import { useStrategyVisualizationStore } from '@renderer/store/strategyVisualizationStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
 import { CHART_CONFIG } from '@shared/constants';
@@ -112,10 +112,13 @@ export const ChartCanvas = ({
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {
-    const unsubscribe = useStrategyVisualizationStore.subscribe((state) => {
-      perfMonitor.recordStoreWake('strategyVisualizationStore');
-      highlightedCandlesRef.current = state.highlightedCandles;
-    });
+    const unsubscribe = useStrategyVisualizationStore.subscribe(
+      (state) => state.highlightedCandles,
+      (highlightedCandles) => {
+        perfMonitor.recordStoreWake('strategyVisualizationStore', 'highlightedCandles');
+        highlightedCandlesRef.current = highlightedCandles;
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -145,11 +148,14 @@ export const ChartCanvas = ({
   const managerRef = useRef<CanvasManager | null>(null);
 
   useEffect(() => {
-    const unsubscribe = useSetupStore.subscribe((state) => {
-      perfMonitor.recordStoreWake('setupStore');
-      detectedSetupsVisibleRef.current = state.detectedSetups.filter((s) => s.visible);
-      managerRef.current?.markDirty('overlays');
-    });
+    const unsubscribe = useSetupStore.subscribe(
+      (state) => state.detectedSetups,
+      (detectedSetups) => {
+        perfMonitor.recordStoreWake('setupStore', 'detectedSetups');
+        detectedSetupsVisibleRef.current = detectedSetups.filter((s) => s.visible);
+        managerRef.current?.markDirty('overlays');
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -240,14 +246,12 @@ export const ChartCanvas = ({
     }
     symbolPriceRef.current = usePriceStore.getState().getPrice(symbol);
     apply(symbolPriceRef.current ?? klinePriceRef.current);
-    const unsubscribe = usePriceStore.subscribe((state) => {
-      perfMonitor.recordStoreWake('priceStore');
-      const p = state.getPrice(symbol);
-      if (p === symbolPriceRef.current) return;
-      symbolPriceRef.current = p;
-      apply(p ?? klinePriceRef.current);
+    return subscribeToPrice(symbol, (price) => {
+      perfMonitor.recordStoreWake('priceStore', symbol);
+      if (price === symbolPriceRef.current) return;
+      symbolPriceRef.current = price;
+      apply(price);
     });
-    return unsubscribe;
   }, [symbol]);
 
   useEffect(() => {

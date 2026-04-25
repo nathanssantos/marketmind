@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactElement, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 
 export type PinnedControl =
   | 'rightMargin'
@@ -30,7 +30,7 @@ export const usePinnedControls = (): PinnedControlsContextType => {
 export const PinnedControlsProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [pinnedControls, setPinnedControls] = useState<Set<PinnedControl>>(new Set());
 
-  const togglePin = (control: PinnedControl): void => {
+  const togglePin = useCallback((control: PinnedControl): void => {
     setPinnedControls((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(control)) {
@@ -40,14 +40,20 @@ export const PinnedControlsProvider = ({ children }: { children: ReactNode }): R
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const isPinned = (control: PinnedControl): boolean => {
-    return pinnedControls.has(control);
-  };
+  const isPinned = useCallback(
+    (control: PinnedControl): boolean => pinnedControls.has(control),
+    [pinnedControls],
+  );
+
+  const value = useMemo(
+    () => ({ pinnedControls, togglePin, isPinned }),
+    [pinnedControls, togglePin, isPinned],
+  );
 
   return (
-    <PinnedControlsContext.Provider value={{ pinnedControls, togglePin, isPinned }}>
+    <PinnedControlsContext.Provider value={value}>
       {children}
     </PinnedControlsContext.Provider>
   );
