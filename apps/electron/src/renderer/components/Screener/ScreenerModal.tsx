@@ -7,6 +7,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useScreener } from '../../hooks/useScreener';
 import { useScreenerStore } from '../../store/screenerStore';
 import {
+  BetaBadge,
   Button,
   CloseButton,
   DialogBackdrop,
@@ -139,7 +140,10 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
           <DialogContent maxH="90vh" maxW="1200px" w="95vw">
             <DialogHeader px={4} pt={4}>
               <Flex justify="space-between" align="center" w="100%">
-                <DialogTitle fontSize="md">{t('screener.title')}</DialogTitle>
+                <HStack gap={2}>
+                  <DialogTitle fontSize="md">{t('screener.title')}</DialogTitle>
+                  <BetaBadge />
+                </HStack>
                 <HStack gap={2}>
                   <Select
                     size="xs"

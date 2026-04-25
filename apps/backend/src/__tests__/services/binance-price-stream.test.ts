@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockOn = vi.fn();
 const mockCloseAll = vi.fn();
-const mockSubscribeTrades = vi.fn();
+const mockSubscribeAggregateTrades = vi.fn();
 
 vi.mock('binance', () => ({
   WebsocketClient: class MockWebsocketClient {
     on = mockOn;
     closeAll = mockCloseAll;
-    subscribeTrades = mockSubscribeTrades;
+    subscribeAggregateTrades = mockSubscribeAggregateTrades;
   },
 }));
 
@@ -33,6 +33,8 @@ vi.mock('../../services/position-monitor', () => ({
 
 const mockWebSocketService = {
   emitPriceUpdate: vi.fn(),
+  getActiveRooms: vi.fn(() => [] as string[]),
+  getActivelyViewedSymbols: vi.fn(() => [] as string[]),
 };
 
 vi.mock('../../services/websocket', () => ({
@@ -115,23 +117,23 @@ describe('BinancePriceStreamService', () => {
       service.start();
       service.subscribeSymbol('BTCUSDT');
 
-      expect(mockSubscribeTrades).toHaveBeenCalledWith('btcusdt', 'usdm');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('btcusdt', 'usdm');
       expect(service.getSubscribedSymbols()).toContain('btcusdt');
     });
 
     it('should not subscribe if client not initialized', () => {
       service.subscribeSymbol('BTCUSDT');
 
-      expect(mockSubscribeTrades).not.toHaveBeenCalled();
+      expect(mockSubscribeAggregateTrades).not.toHaveBeenCalled();
     });
 
     it('should not resubscribe to already subscribed symbol', () => {
       service.start();
       service.subscribeSymbol('BTCUSDT');
-      mockSubscribeTrades.mockClear();
+      mockSubscribeAggregateTrades.mockClear();
       service.subscribeSymbol('BTCUSDT');
 
-      expect(mockSubscribeTrades).not.toHaveBeenCalled();
+      expect(mockSubscribeAggregateTrades).not.toHaveBeenCalled();
     });
   });
 
@@ -317,7 +319,7 @@ describe('BinancePriceStreamService', () => {
     it('should resubscribe on reconnection', async () => {
       service.start();
       service.subscribeSymbol('BTCUSDT');
-      mockSubscribeTrades.mockClear();
+      mockSubscribeAggregateTrades.mockClear();
 
       const reconnectHandler = mockOn.mock.calls.find((c) => c[0] === 'reconnected')?.[1];
       expect(reconnectHandler).toBeDefined();
@@ -325,7 +327,7 @@ describe('BinancePriceStreamService', () => {
       reconnectHandler();
       await vi.runOnlyPendingTimersAsync();
 
-      expect(mockSubscribeTrades).toHaveBeenCalled();
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalled();
     });
 
     it('should ignore duplicate reconnection events', () => {
@@ -335,11 +337,11 @@ describe('BinancePriceStreamService', () => {
       const reconnectHandler = mockOn.mock.calls.find((c) => c[0] === 'reconnected')?.[1];
 
       reconnectHandler();
-      mockSubscribeTrades.mockClear();
+      mockSubscribeAggregateTrades.mockClear();
 
       reconnectHandler();
 
-      expect(mockSubscribeTrades).not.toHaveBeenCalled();
+      expect(mockSubscribeAggregateTrades).not.toHaveBeenCalled();
     });
   });
 
@@ -357,8 +359,8 @@ describe('BinancePriceStreamService', () => {
       service.start();
       await vi.runOnlyPendingTimersAsync();
 
-      expect(mockSubscribeTrades).toHaveBeenCalledWith('btcusdt', 'spot');
-      expect(mockSubscribeTrades).toHaveBeenCalledWith('ethusdt', 'usdm');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('btcusdt', 'spot');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('ethusdt', 'usdm');
     });
 
     it('should unsubscribe from symbols without open positions', async () => {

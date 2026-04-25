@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import type { MarketType } from '@marketmind/types';
 import { usePriceStore } from '../store/priceStore';
 import { trpc } from '../utils/trpc';
+import { usePriceSubscription, useSocketEvent } from './socket';
 
 export interface TabTickerTarget {
   symbol: string;
@@ -81,4 +82,12 @@ export const useTabTickers = (targets: TabTickerTarget[]): void => {
     let timer = scheduleRollover();
     return () => clearTimeout(timer);
   }, [spotKey, futuresKey, utils]);
+
+  const allSymbols = useMemo(() => [...new Set([...groups.SPOT, ...groups.FUTURES])], [groups]);
+
+  usePriceSubscription(allSymbols);
+
+  useSocketEvent('price:update', (data) => {
+    usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
+  });
 };

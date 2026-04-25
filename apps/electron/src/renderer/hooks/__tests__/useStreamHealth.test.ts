@@ -12,12 +12,11 @@ const off = vi.fn((event: string, handler: Handler) => {
   listeners[event] = (listeners[event] ?? []).filter((h) => h !== handler);
 });
 
-vi.mock('../useWebSocket', () => ({
-  useWebSocket: () => ({
-    isConnected: true,
-    on,
-    off,
-  }),
+vi.mock('../socket', () => ({
+  useSocketEvent: (event: string, handler: Handler, enabled = true): void => {
+    if (!enabled) return;
+    on(event, handler);
+  },
 }));
 
 import { useStreamHealth } from '../useStreamHealth';

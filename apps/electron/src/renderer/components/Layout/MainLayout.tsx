@@ -10,7 +10,6 @@ import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { ChartType } from '@marketmind/types';
 import { MarketSidebar } from '../MarketSidebar';
 import { AnalyticsModal } from '../Analytics';
-import { CustomSymbolsModal } from '../CustomSymbols';
 import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -267,7 +266,6 @@ const MainLayoutComponent = ({
         />
         <ScreenerModal onSymbolClick={onNavigateToSymbol} />
         <AnalyticsModal />
-        <CustomSymbolsModal />
       </Box>
     </GlobalActionsProvider>
   );

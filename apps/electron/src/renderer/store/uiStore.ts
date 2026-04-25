@@ -25,7 +25,7 @@ const HYDRATE_KEYS = [
   'portfolioFilterOption', 'portfolioSortBy', 'ordersViewMode', 'portfolioViewMode',
   'ordersTableSortKey', 'ordersTableSortDirection', 'portfolioTableSortKey', 'portfolioTableSortDirection',
   'watchersTableSortKey', 'watchersTableSortDirection', 'showEventRow', 'enableShiftAltOrderEntry',
-  'isAnalyticsOpen', 'isCustomSymbolsOpen', 'trailingStopPanelExpanded',
+  'isAnalyticsOpen', 'trailingStopPanelExpanded',
   'orderFlowSidebarOpen', 'orderFlowSidebarTab',
 ] as const;
 
@@ -97,10 +97,6 @@ interface UIState {
   isAnalyticsOpen: boolean;
   setAnalyticsOpen: (open: boolean) => void;
   toggleAnalytics: () => void;
-
-  isCustomSymbolsOpen: boolean;
-  setCustomSymbolsOpen: (open: boolean) => void;
-  toggleCustomSymbols: () => void;
 
   trailingStopPanelExpanded: boolean;
   setTrailingStopPanelExpanded: (expanded: boolean) => void;
@@ -215,14 +211,6 @@ export const useUIStore = create<UIState>()(
       const val = !state.isAnalyticsOpen;
       syncUI('isAnalyticsOpen', val);
       return { isAnalyticsOpen: val };
-    }),
-
-    isCustomSymbolsOpen: false,
-    setCustomSymbolsOpen: (open) => { set({ isCustomSymbolsOpen: open }); syncUI('isCustomSymbolsOpen', open); },
-    toggleCustomSymbols: () => set((state) => {
-      const val = !state.isCustomSymbolsOpen;
-      syncUI('isCustomSymbolsOpen', val);
-      return { isCustomSymbolsOpen: val };
     }),
 
     trailingStopPanelExpanded: false,

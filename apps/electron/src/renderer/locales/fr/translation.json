@@ -173,7 +173,8 @@
       "tradingSimulator": "Simulateur de Trading",
       "data": "Données",
       "about": "À propos",
-      "indicators": "Indicateurs"
+      "indicators": "Indicateurs",
+      "customSymbols": "Symboles Personnalisés"
     },
     "contextConfig": {
       "title": "Configuration du Contexte de Marché",

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AggTrade } from '@marketmind/types';
-import { socketService } from '../services/socketService';
 import { trpc } from '../utils/trpc';
+import { useSocketEvent, useSymbolStreamSubscription } from './socket';
 
 const MAX_BUFFER_SIZE = 10_000;
 const PRELOAD_WINDOW_MS = 2 * 60 * 60 * 1000;
@@ -13,11 +13,9 @@ interface AggTradeWithLarge extends AggTrade {
 export const useAggTrades = (symbol: string | null, enabled = true) => {
   const [trades, setTrades] = useState<AggTradeWithLarge[]>([]);
   const [largeTrades, setLargeTrades] = useState<AggTradeWithLarge[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
   const bufferRef = useRef<AggTradeWithLarge[]>([]);
   const frameRef = useRef<number | null>(null);
   const preloadedRef = useRef<string | null>(null);
-
   const utils = trpc.useUtils();
 
   const flush = useCallback(() => {
@@ -40,17 +38,13 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
 
   useEffect(() => {
     if (!symbol || !enabled) return;
-
-    const socket = socketService.getSocket();
-    if (!socket) return;
-
     setTrades([]);
     setLargeTrades([]);
     bufferRef.current = [];
 
     if (preloadedRef.current !== symbol) {
       const now = Date.now();
-      utils.scalping.getAggTradeHistory.fetch({
+      void utils.scalping.getAggTradeHistory.fetch({
         symbol,
         from: now - PRELOAD_WINDOW_MS,
         to: now,
@@ -69,10 +63,19 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
       }).catch(() => {});
     }
 
-    socket.emit('subscribe:aggTrades', symbol);
-    setIsConnected(true);
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
+  }, [symbol, enabled, utils]);
 
-    const handler = (data: AggTradeWithLarge) => {
+  useSymbolStreamSubscription('aggTrades', enabled && symbol ? symbol : undefined);
+
+  useSocketEvent(
+    'aggTrade:update',
+    (data) => {
       bufferRef.current.push(data);
       if (!frameRef.current) {
         frameRef.current = requestAnimationFrame(() => {
@@ -80,20 +83,9 @@ export const useAggTrades = (symbol: string | null, enabled = true) => {
           frameRef.current = null;
         });
       }
-    };
+    },
+    enabled && !!symbol,
+  );
 
-    socket.on('aggTrade:update', handler);
-
-    return () => {
-      socket.off('aggTrade:update', handler);
-      socket.emit('unsubscribe:aggTrades', symbol);
-      setIsConnected(false);
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-    };
-  }, [symbol, enabled, flush, utils]);
-
-  return { trades, largeTrades, isConnected };
+  return { trades, largeTrades, isConnected: enabled && !!symbol };
 };

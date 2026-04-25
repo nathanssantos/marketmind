@@ -3,6 +3,7 @@ import type { Socket } from 'socket.io-client';
 import { useConnectionStore } from '../store/connectionStore';
 import { useDrawingStore } from '../store/drawingStore';
 import { useIndicatorStore } from '../store/indicatorStore';
+import { useLayoutStore } from '../store/layoutStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { usePriceStore } from '../store/priceStore';
 import type { CanvasManager } from './canvas/CanvasManager';
@@ -17,6 +18,7 @@ declare global {
   interface Window {
     __drawingStore?: typeof useDrawingStore;
     __indicatorStore?: typeof useIndicatorStore;
+    __layoutStore?: typeof useLayoutStore;
     __preferencesStore?: typeof usePreferencesStore;
     __priceStore?: typeof usePriceStore;
     __connectionStore?: typeof useConnectionStore;
@@ -32,6 +34,7 @@ export const installE2EBridge = (): void => {
   if (typeof window === 'undefined') return;
   window.__drawingStore = useDrawingStore;
   window.__indicatorStore = useIndicatorStore;
+  window.__layoutStore = useLayoutStore;
   window.__preferencesStore = usePreferencesStore;
   window.__priceStore = usePriceStore;
   window.__connectionStore = useConnectionStore;

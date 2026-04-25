@@ -8,7 +8,6 @@ import {
   LuBot,
   LuChartBar,
   LuDollarSign,
-  LuLayers,
   LuPlus,
   LuSquareArrowOutUpRight,
   LuScanLine,
@@ -116,7 +115,7 @@ export const Toolbar = memo(({
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
-  const { marketSidebarOpen, toggleMarketSidebar, orderFlowSidebarOpen, toggleOrderFlowSidebar, isAnalyticsOpen, toggleAnalytics, isCustomSymbolsOpen, toggleCustomSymbols } = useUIStore(
+  const { marketSidebarOpen, toggleMarketSidebar, orderFlowSidebarOpen, toggleOrderFlowSidebar, isAnalyticsOpen, toggleAnalytics } = useUIStore(
     useShallow((state) => ({
       marketSidebarOpen: state.marketSidebarOpen,
       toggleMarketSidebar: state.toggleMarketSidebar,
@@ -124,8 +123,6 @@ export const Toolbar = memo(({
       toggleOrderFlowSidebar: state.toggleOrderFlowSidebar,
       isAnalyticsOpen: state.isAnalyticsOpen,
       toggleAnalytics: state.toggleAnalytics,
-      isCustomSymbolsOpen: state.isCustomSymbolsOpen,
-      toggleCustomSymbols: state.toggleCustomSymbols,
     }))
   );
 
@@ -251,16 +248,6 @@ export const Toolbar = memo(({
                 onClick={toggleAnalytics}
               >
                 <LuChartBar />
-              </ToggleIconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('customSymbols.title')} showArrow>
-              <ToggleIconButton
-                active={isCustomSymbolsOpen}
-                size="2xs"
-                aria-label={t('customSymbols.title')}
-                onClick={toggleCustomSymbols}
-              >
-                <LuLayers />
               </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
