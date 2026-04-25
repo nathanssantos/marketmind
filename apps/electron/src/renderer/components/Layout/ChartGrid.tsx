@@ -17,8 +17,17 @@ const buildLayoutItem = (panel: GridPanelConfig) => ({
 });
 
 function ChartGridComponent() {
-  const activeLayout = useLayoutStore(s => s.getActiveLayout());
-  const activeTab = useLayoutStore(s => s.getActiveTab());
+  const symbolTabs = useLayoutStore(s => s.symbolTabs);
+  const activeSymbolTabId = useLayoutStore(s => s.activeSymbolTabId);
+  const layoutPresets = useLayoutStore(s => s.layoutPresets);
+  const activeTab = useMemo(
+    () => symbolTabs.find(t => t.id === activeSymbolTabId),
+    [symbolTabs, activeSymbolTabId],
+  );
+  const activeLayout = useMemo(
+    () => activeTab ? layoutPresets.find(l => l.id === activeTab.activeLayoutId) : undefined,
+    [activeTab, layoutPresets],
+  );
   const updatePanelGridPosition = useLayoutStore(s => s.updatePanelGridPosition);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const focusedPanelId = useLayoutStore(s => s.focusedPanelId);

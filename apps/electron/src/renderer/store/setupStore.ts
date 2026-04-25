@@ -1,5 +1,6 @@
 import type { SetupType, TradingSetup } from '@marketmind/types';
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 import { usePreferencesStore } from './preferencesStore';
 import type { SetupDetectionConfig } from './setupConfig';
 import { createDefaultSetupDetectionConfig, mergeSetupConfigs } from './setupConfig';
@@ -172,7 +173,7 @@ const calculateStatsFromExecutions = (
 };
 
 export const useSetupStore = create<SetupStoreState>()(
-  (set, get) => ({
+  subscribeWithSelector((set, get) => ({
     hydrate: (data) => {
       const updates: Record<string, unknown> = {};
       if ('setupConfig' in data) {
@@ -347,5 +348,5 @@ export const useSetupStore = create<SetupStoreState>()(
       }),
 
     exportHistory: () => get().setupHistory,
-  }),
+  })),
 );

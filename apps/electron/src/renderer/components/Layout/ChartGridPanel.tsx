@@ -7,7 +7,7 @@ import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStor
 import { useStreamHealth } from '@renderer/hooks/useStreamHealth';
 import type { GridPanelConfig } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { ChartPanelContent } from './ChartPanelContent';
 
 interface ChartGridPanelProps {
@@ -19,7 +19,7 @@ interface ChartGridPanelProps {
 }
 
 function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, isSinglePanel }: ChartGridPanelProps) {
-  const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
+  const isFocused = useLayoutStore(s => s.focusedPanelId === panelConfig.id);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const setPanelWindowState = useLayoutStore(s => s.setPanelWindowState);
   const removePanel = useLayoutStore(s => s.removePanel);
@@ -39,19 +39,22 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
     enabled: !!symbol,
   });
 
-  const header = (
-    <HStack gap={2} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
-      <StreamHealthDot status={streamHealth.status} />
-      <Text fontSize="xs" color="fg.muted" flexShrink={0}>{panelConfig.timeframe} {panelConfig.chartType}</Text>
-      {hoveredKline && <KlineOHLCRow kline={hoveredKline} compact />}
-    </HStack>
+  const header = useMemo(
+    () => (
+      <HStack gap={2} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
+        <StreamHealthDot status={streamHealth.status} />
+        <Text fontSize="xs" color="fg.muted" flexShrink={0}>{panelConfig.timeframe} {panelConfig.chartType}</Text>
+        {hoveredKline && <KlineOHLCRow kline={hoveredKline} compact />}
+      </HStack>
+    ),
+    [streamHealth.status, panelConfig.timeframe, panelConfig.chartType, hoveredKline],
   );
 
   return (
     <GridWindow
       id={panelConfig.id}
       windowState={panelConfig.windowState}
-      isFocused={focusedPanelId === panelConfig.id}
+      isFocused={isFocused}
       showFocusBorder={!isSinglePanel}
       header={header}
       onFocus={handleFocus}
