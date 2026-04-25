@@ -1,4 +1,5 @@
 export * from './backtesting';
+export * from './branded';
 export * from './binance';
 export * from './filter-config';
 export * from './filter-defaults';
