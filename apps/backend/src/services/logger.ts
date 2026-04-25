@@ -65,7 +65,7 @@ const createLogger = (): pino.Logger => {
           }),
     },
     {
-      level: 'warn' as pino.Level,
+      level: 'warn',
       stream: pino.destination({
         dest: ERROR_LOG_FILE,
         sync: false,

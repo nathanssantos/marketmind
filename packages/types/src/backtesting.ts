@@ -1,3 +1,6 @@
+import type { Kline } from './kline';
+import type { TradingSetup } from './tradingSetup';
+import type { TrailingDistanceMode } from './trading-config';
 
 export interface DirectionalVolumeConfig {
   breakoutMultiplier?: number; // Volume ratio required for breakout setups
@@ -203,8 +206,8 @@ export interface BacktestResult {
   duration: number; // execution time in ms
   status: 'RUNNING' | 'COMPLETED' | 'FAILED';
   error?: string;
-  setupDetections?: import('./tradingSetup').TradingSetup[];
-  klines?: import('./kline').Kline[];
+  setupDetections?: TradingSetup[];
+  klines?: Kline[];
 }
 
 export interface BacktestSummary {
@@ -248,7 +251,7 @@ export interface TrailingStopOptimizationConfig {
   useATRMultiplier: boolean;
   atrMultiplier: number;
   trailingDistancePercent?: number;
-  trailingDistanceMode?: import('./trading-config').TrailingDistanceMode;
+  trailingDistanceMode?: TrailingDistanceMode;
   trailingStopOffsetPercent?: number;
   useVolatilityBasedThresholds?: boolean;
   marketType?: 'SPOT' | 'FUTURES';

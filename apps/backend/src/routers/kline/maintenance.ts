@@ -9,7 +9,6 @@ import { logger } from '../../services/logger';
 import { getOpportunityScoringService } from '../../services/opportunity-scoring';
 import { protectedProcedure } from '../../trpc';
 import { intervalSchema, marketTypeSchema } from './shared';
-import type { MarketType, Interval } from '@marketmind/types';
 import { CHART_INITIAL_KLINES } from '../../constants';
 
 export const maintenanceProcedures = {
@@ -23,7 +22,7 @@ export const maintenanceProcedures = {
       })
     )
     .mutation(async ({ input }) => {
-      const marketType = input.marketType as MarketType;
+      const marketType = input.marketType;
 
       const result = await prefetchKlines({
         symbol: input.symbol,
@@ -53,11 +52,11 @@ export const maintenanceProcedures = {
     )
     .mutation(async ({ input }) => {
       const gapFiller = getKlineMaintenance();
-      const marketType = input.marketType as MarketType;
+      const marketType = input.marketType;
 
       const result = await gapFiller.forceCheckSymbol(
         input.symbol,
-        input.interval as Interval,
+        input.interval,
         marketType
       );
 

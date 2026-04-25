@@ -37,7 +37,7 @@ class BinanceRateLimiter {
 
     return new Promise<T>((resolve, reject) => {
       this.queue.push({
-        execute: fn as () => Promise<unknown>,
+        execute: fn,
         resolve: resolve as (value: unknown) => void,
         reject,
         priority,

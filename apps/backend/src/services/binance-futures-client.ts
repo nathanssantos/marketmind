@@ -111,7 +111,7 @@ export async function getPositions(client: USDMClient): Promise<FuturesPosition[
       .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
       .map((p) => ({
         symbol: p.symbol,
-        positionSide: p.positionSide as 'LONG' | 'SHORT' | 'BOTH',
+        positionSide: p.positionSide,
         positionAmt: String(p.positionAmt),
         entryPrice: String(p.entryPrice),
         markPrice: String(p.markPrice || '0'),
@@ -144,7 +144,7 @@ export async function getPosition(
 
     return {
       symbol: position.symbol,
-      positionSide: position.positionSide as 'LONG' | 'SHORT' | 'BOTH',
+      positionSide: position.positionSide,
       positionAmt: String(position.positionAmt),
       entryPrice: String(position.entryPrice),
       markPrice: String(position.markPrice || '0'),
@@ -203,7 +203,7 @@ export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount
         .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
         .map((p) => ({
           symbol: p.symbol,
-          positionSide: p.positionSide as 'LONG' | 'SHORT' | 'BOTH',
+          positionSide: p.positionSide,
           positionAmt: String(p.positionAmt),
           entryPrice: String(p.entryPrice),
           markPrice: '0',

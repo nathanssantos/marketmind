@@ -72,7 +72,29 @@ const start = async (): Promise<void> => {
         router: appRouter,
         createContext,
         onError({ path, error }: { path?: string; error: unknown }) {
-          fastify.log.error({ path, error }, 'tRPC error');
+          const code = (error as { code?: string } | null)?.code;
+          // 4xx-equivalent codes are normal client-flow events (session expired,
+          // input validation, missing resource) — not server errors. Log at debug
+          // so they don't pollute prod error feeds. 5xx and unknown codes stay
+          // at error level so real bugs are still surfaced.
+          const is4xx =
+            code === 'UNAUTHORIZED' ||
+            code === 'FORBIDDEN' ||
+            code === 'NOT_FOUND' ||
+            code === 'BAD_REQUEST' ||
+            code === 'CONFLICT' ||
+            code === 'PRECONDITION_FAILED' ||
+            code === 'PAYLOAD_TOO_LARGE' ||
+            code === 'METHOD_NOT_SUPPORTED' ||
+            code === 'TIMEOUT' ||
+            code === 'UNPROCESSABLE_CONTENT' ||
+            code === 'TOO_MANY_REQUESTS' ||
+            code === 'CLIENT_CLOSED_REQUEST';
+          if (is4xx) {
+            fastify.log.debug({ path, code }, 'tRPC client error');
+          } else {
+            fastify.log.error({ path, error }, 'tRPC error');
+          }
         },
       },
     });

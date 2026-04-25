@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockOn = vi.fn();
 const mockCloseAll = vi.fn();
-const mockSubscribeTrades = vi.fn();
+const mockSubscribeAggregateTrades = vi.fn();
 
 vi.mock('binance', () => ({
   WebsocketClient: class MockWebsocketClient {
     on = mockOn;
     closeAll = mockCloseAll;
-    subscribeTrades = mockSubscribeTrades;
+    subscribeAggregateTrades = mockSubscribeAggregateTrades;
   },
 }));
 
@@ -51,13 +51,13 @@ describe('KlineSynthesisService', () => {
     it('starts a WS client on first enable', () => {
       service.enable('BTCUSDT', '1m', 'FUTURES');
       expect(mockOn).toHaveBeenCalledWith('message', expect.any(Function));
-      expect(mockSubscribeTrades).toHaveBeenCalledWith('BTCUSDT', 'usdm');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('BTCUSDT', 'usdm');
     });
 
     it('does not double-subscribe the same symbol across intervals', () => {
       service.enable('BTCUSDT', '1m', 'FUTURES');
       service.enable('BTCUSDT', '5m', 'FUTURES');
-      expect(mockSubscribeTrades).toHaveBeenCalledTimes(1);
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledTimes(1);
     });
 
     it('isActive reflects current enabled state', () => {

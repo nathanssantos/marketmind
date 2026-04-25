@@ -1,5 +1,4 @@
 import { SecType } from '@stoqey/ib';
-import type { TickType } from '@stoqey/ib/dist/api/market/tickType';
 import type { Contract, MarketDataTicks } from '@stoqey/ib';
 import type { IBConnectionManager} from './connection-manager';
 import { getDefaultConnectionManager } from './connection-manager';
@@ -15,7 +14,7 @@ const SHORTABILITY_THRESHOLDS = {
 const TICK_TYPE_SHORTABLE = 46;
 
 const getTickValue = (ticks: MarketDataTicks, tickType: number): number | undefined => {
-  return ticks.get(tickType as TickType)?.value;
+  return ticks.get(tickType)?.value;
 };
 
 const classifyShortability = (shortableValue: number): ShortDifficulty => {

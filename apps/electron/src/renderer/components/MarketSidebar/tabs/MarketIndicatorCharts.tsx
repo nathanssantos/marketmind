@@ -130,6 +130,7 @@ export const BtcDominanceSection = ({ btcDominance, isLoading, hasWidth }: BtcDo
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>{t('marketSidebar.indicators.btcDominance')}</SectionTitle>
+      {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined, narrowing fails inside JSX block */}
       {btcDominance && btcDominance.current !== null && (
         <Flex align="center" gap={2} mb={2}>
           <Badge colorPalette="orange" size="xs" px={2}>{btcDominance.current.toFixed(1)}%</Badge>
@@ -151,6 +152,7 @@ export const BtcDominanceSection = ({ btcDominance, isLoading, hasWidth }: BtcDo
           formatter={(v) => `${v.toFixed(2)}%`}
           label="Dominance"
         />
+      // eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- !x || x.foo === null catches both undefined and null cases; ?.foo === null only catches null
       ) : !btcDominance || btcDominance.current === null ? (
         <Text fontSize="xs" color="fg.muted">-</Text>
       ) : null}
@@ -169,6 +171,7 @@ export const MvrvSection = ({ mvrv, isLoading, hasWidth }: MvrvSectionProps) => 
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>{t('marketSidebar.indicators.mvrv')}</SectionTitle>
+      {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
       {mvrv && mvrv.current !== null && (
         <Flex align="center" gap={2} mb={2}>
           <Badge colorPalette={getMvrvColor(mvrv.current)} size="xs" px={2}>
@@ -209,6 +212,7 @@ export const ProductionCostSection = ({ btcProductionCost, isLoading, hasWidth }
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>{t('marketSidebar.indicators.btcProductionCost')}</SectionTitle>
+      {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
       {btcProductionCost && btcProductionCost.currentCost !== null && btcProductionCost.currentPrice !== null && (
         <Flex align="center" gap={2} mb={2} flexWrap="wrap">
           <Badge colorPalette="orange" size="xs" px={2}>
@@ -254,6 +258,7 @@ interface OpenInterestSectionProps {
 export const OpenInterestSection = ({ openInterest, isLoading, hasWidth }: OpenInterestSectionProps) => (
   <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
     <SectionTitle>Open Interest (BTC)</SectionTitle>
+    {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
     {openInterest && openInterest.current !== null && (
       <Flex align="center" gap={2} mb={2}>
         <Badge colorPalette="blue" size="xs" px={2}>{formatLargeNumber(openInterest.current)}</Badge>

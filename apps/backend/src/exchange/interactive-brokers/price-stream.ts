@@ -10,7 +10,7 @@ import { getDefaultConnectionManager } from './connection-manager';
 import type { IBPriceData } from './types';
 
 const getTickValue = (ticks: MarketDataTicks, tickType: number): number | undefined => {
-  return ticks.get(tickType as TickType)?.value;
+  return ticks.get(tickType)?.value;
 };
 
 type PriceUpdateHandler = (update: PriceUpdate) => void;

@@ -129,7 +129,12 @@ export class KlineSynthesisService {
     const subKey = `${marketType}:${symbol.toUpperCase()}`;
     if (this.subscribedSymbols.has(subKey)) return;
     try {
-      void this.client.subscribeTrades(symbol, marketType === 'SPOT' ? 'spot' : 'usdm');
+      // Use @aggTrade (public market stream) instead of @trade. The Binance SDK
+      // routes `subscribeTrades` for usdm/coinm to a "private" wsKey that requires
+      // listenKey/auth and 400s for public symbols. `subscribeAggregateTrades`
+      // hits the public `usdmMarket` wsKey and carries the same price/quantity
+      // info our handler needs (e: 'aggTrade').
+      void this.client.subscribeAggregateTrades(symbol, marketType === 'SPOT' ? 'spot' : 'usdm');
       this.subscribedSymbols.add(subKey);
     } catch (error) {
       logger.error({ symbol, marketType, error: serializeError(error) }, 'Failed to subscribe trade for synthesis');
@@ -141,7 +146,7 @@ export class KlineSynthesisService {
       if (typeof data !== 'object' || data === null) return;
       const message = data as Record<string, unknown>;
       const eventType = message['eventType'] ?? message['e'];
-      if (eventType !== 'trade') return;
+      if (eventType !== 'trade' && eventType !== 'aggTrade') return;
 
       const symbol = (message['symbol'] ?? message['s']) as string | undefined;
       if (!symbol) return;

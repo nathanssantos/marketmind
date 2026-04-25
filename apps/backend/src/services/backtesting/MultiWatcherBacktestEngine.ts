@@ -22,7 +22,7 @@ import {
 } from '../../utils/filters';
 import type { FilterResults } from '../../utils/confluence-scoring';
 import type { PineStrategy } from '../pine/types';
-import { FilterManager, type FilterConfig } from './FilterManager';
+import { FilterManager } from './FilterManager';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { BACKTEST_ENGINE } from '../../constants';
@@ -274,7 +274,7 @@ export class MultiWatcherBacktestEngine {
         detectedSetups: setups,
         strategies: watcherPineStrategies,
         stats: this.initWatcherStats(watcherConfig),
-        filterManager: new FilterManager(this.config as unknown as FilterConfig),
+        filterManager: new FilterManager(this.config),
       });
     }
   }
