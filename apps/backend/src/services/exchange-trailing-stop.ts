@@ -95,7 +95,7 @@ export class ExchangeTrailingStopService {
       return {
         orderId: String(result.orderId),
         symbol: result.symbol,
-        status: String(response.status ?? 'NEW'),
+        status: String((response.status ?? 'NEW') as string),
         clientOrderId: result.clientOrderId ?? '',
       };
     } catch (error) {

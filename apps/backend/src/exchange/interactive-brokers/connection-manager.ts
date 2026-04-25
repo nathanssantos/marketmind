@@ -152,7 +152,8 @@ export class IBConnectionManager {
 
     this.errorSubscription = this.api.error.subscribe({
       next: (error) => {
-        const isConnectionError = error.code >= 1100 && error.code <= 1102;
+        const errorCode = error.code as number;
+        const isConnectionError = errorCode >= 1100 && errorCode <= 1102;
         if (isConnectionError) {
           this.updateState({
             connected: false,

@@ -51,6 +51,12 @@ export default [
             '@typescript-eslint/no-unnecessary-type-assertion': 'error',
             '@typescript-eslint/prefer-nullish-coalescing': 'error',
             '@typescript-eslint/prefer-optional-chain': 'error',
+            '@typescript-eslint/switch-exhaustiveness-check': ['error', {
+                considerDefaultExhaustiveForUnions: true,
+            }],
+            '@typescript-eslint/no-base-to-string': 'error',
+            '@typescript-eslint/no-unsafe-enum-comparison': 'error',
+            '@typescript-eslint/only-throw-error': 'error',
             'no-console': 'off',
         },
     },
